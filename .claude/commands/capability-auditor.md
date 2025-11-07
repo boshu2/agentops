@@ -1,1 +1,0 @@
-../../profiles/life/commands/capability-auditor.md
