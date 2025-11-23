@@ -1,0 +1,11 @@
+# AgentOps Custom Agent Requirements
+# ==================================
+
+# Claude Agent SDK (required)
+claude-agent-sdk>=1.0.0
+
+# Async runtime
+anyio>=4.0.0
+
+# Type hints (optional, for development)
+typing-extensions>=4.0.0

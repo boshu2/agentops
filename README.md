@@ -243,6 +243,67 @@ Use to test:
 - [12-Factor AgentOps](https://github.com/boshu2/12-factor-agentops) - Operational framework
 - [AgentOps Showcase](https://agentops-showcase.com) - Examples and tutorials
 
+## Custom Agent (Claude Agent SDK)
+
+This repository includes a **custom agent implementation** built with the Claude Agent SDK that programmatically implements the 12-Factor AgentOps principles.
+
+### Installation
+
+```bash
+# Install dependencies
+pip install -r agent/requirements.txt
+
+# Install Claude Code globally
+npm install -g @anthropic-ai/claude-code
+
+# Set API key
+export ANTHROPIC_API_KEY=your_key_here
+```
+
+### Usage
+
+```bash
+# Interactive mode
+python -m agent.main -i
+
+# Single task
+python -m agent.main "Add user authentication with JWT"
+
+# With specific working directory
+python -m agent.main --cwd /path/to/project "Your task"
+```
+
+### Agent Structure
+
+```
+agent/
+├── __init__.py      # Package exports
+├── main.py          # Entry point and orchestration
+├── config.py        # System prompts and configuration
+├── tools.py         # Workflow tools (research, plan, implement, learn)
+├── skills.py        # JIT skill loading
+├── hooks.py         # Constitutional guardrails (Five Laws)
+└── requirements.txt # Python dependencies
+```
+
+### Features
+
+- **4-Phase Workflow**: Research → Plan → Implement → Learn
+- **Constitutional Guardrails**: Enforces the Five Laws through hooks
+- **JIT Skill Loading**: Load domain knowledge on-demand
+- **Validation Gates**: Blocks dangerous operations, requires testing
+- **Metrics Tracking**: Captures learnings and patterns
+
+### Workflow Commands
+
+| Command | Description |
+|---------|-------------|
+| `/research [topic]` | Start research phase |
+| `/plan [summary]` | Create implementation plan |
+| `/implement [plan]` | Execute with validation |
+| `/learn` | Extract patterns |
+| `/workflow [topic]` | Complete 4-phase cycle |
+
 ## License
 
 Apache 2.0 - See [LICENSE](LICENSE) file
@@ -250,5 +311,5 @@ Apache 2.0 - See [LICENSE](LICENSE) file
 ---
 
 **Created by**: Boden Fuller
-**Purpose**: Personal marketplace example + production marketplace references
+**Purpose**: Personal marketplace example + production marketplace references + custom agent
 **Status**: Example/Educational
