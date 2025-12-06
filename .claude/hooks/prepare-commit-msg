@@ -1,0 +1,23 @@
+#\!/bin/bash
+# Auto-regenerate CLAUDE.md if sources changed
+# Skip with: SKIP_CLAUDE_HOOK=1 git commit
+set -e
+
+[ "$SKIP_CLAUDE_HOOK" = "1" ] && exit 0
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Check if base or extension changed
+if git diff --cached --name-only | grep -qE "\.claude/(CLAUDE-base|CLAUDE-extension)\.md"; then
+    echo "CLAUDE sources changed, regenerating..."
+
+    python3 "$REPO_ROOT/.claude/build-claude.py" || {
+        echo "ERROR: CLAUDE.md generation failed"
+        exit 1
+    }
+
+    git add "$REPO_ROOT/CLAUDE.md"
+    echo "CLAUDE.md regenerated and staged."
+fi
+
+exit 0

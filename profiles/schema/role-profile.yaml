@@ -1,0 +1,70 @@
+# Role Profile Schema v1.0.0
+# Defines the structure for role-based .claude/ artifact organization
+
+role_profile:
+  # Profile metadata
+  name: string              # Role name (sre-devops, platform-engineer, web-developer, researcher, personal)
+  version: semver           # Profile version (follows semver)
+  description: string       # What this role does
+
+  # Repository mapping
+  primary_repository: string    # Main repo for this role (work/gitops/, personal/life/, etc.)
+  related_repositories: [string]  # Other repos this role works with
+
+  # Resource budgets
+  token_budget: int         # Estimated tokens when fully loaded (for 40% rule tracking)
+  load_priority: int        # Loading order (1=highest, 5=lowest)
+
+  # Inheritance and composition
+  includes:
+    shared: [string]        # Shared profiles always loaded (foundational, orchestration, context)
+    optional: [string]      # Optional profiles that can be composed
+
+  # Artifacts organized by type
+  artifacts:
+    commands:               # Slash commands (/prime, /validate, etc.)
+      - path: string        # Relative to workspace root
+        description: string
+        token_cost: int     # Estimated tokens when loaded
+
+    agents:                 # Specialized workflow agents
+      - path: string
+        description: string
+        token_cost: int
+        category: string    # monitoring, deployment, documentation, etc.
+
+    skills:                 # Reusable capabilities (scripts, tools)
+      - path: string
+        description: string
+        token_cost: int
+
+    workflows:              # Multi-phase workflows
+      - path: string
+        description: string
+        token_cost: int
+
+    settings:               # Configuration files
+      - path: string
+        description: string
+
+  # Role detection and suggestions
+  triggers:
+    keywords: [string]      # Words that suggest this role ("incident", "monitoring", "deploy")
+    file_patterns: [string] # File patterns that indicate this role (*.yaml, *.go, *.tsx)
+    git_patterns: [string]  # Git patterns (branch names, commit prefixes)
+
+  # Tool integrations
+  tools:
+    mcp_servers: [string]   # MCP servers used by this role (podman, context7, memory)
+    required_commands: [string]  # Shell commands needed (kubectl, helm, docker)
+
+  # Knowledge sources
+  knowledge:
+    bundles: [string]       # Context bundles relevant to this role
+    documentation: [string] # Key documentation paths
+    patterns: [string]      # Pattern libraries (deployment patterns, monitoring patterns)
+
+# Example usage:
+# /role-load sre-devops
+# → Loads shared/foundational + shared/orchestration + roles/sre-devops
+# → Total: ~5k (shared) + ~30k (role) = 35k tokens (17.5% of budget)

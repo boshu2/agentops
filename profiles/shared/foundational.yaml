@@ -1,0 +1,92 @@
+# Shared Profile: Foundational
+# Always loaded regardless of role - contains constitutional baseline
+
+name: foundational
+version: 1.0.0
+description: Core system behavior, laws, principles, and standards enforced across all roles
+token_budget: 3000  # ~3k tokens
+
+# Always included in every role
+required: true
+load_priority: 1  # Loaded first
+
+artifacts:
+  # Core constitutional documents
+  documents:
+    - path: work/gitops/.claude/CONSTITUTION.md
+      description: AgentOps Laws (5 laws mandatory for all agents)
+      token_cost: 1500
+
+    - path: .claude/AGENT_INTERACTION_STANDARDS.md
+      description: Consistent prompting patterns (AskUserQuestion vs freeform)
+      token_cost: 800
+
+  # Git enforcement
+  git_hooks:
+    - path: work/gitops/.claude/git-hooks/pre-commit
+      description: Law validation before commit
+
+    - path: work/gitops/.claude/git-hooks/prepare-commit-msg
+      description: Inject commit template
+
+    - path: work/gitops/.claude/git-hooks/commit-msg
+      description: Validate commit format (semantic commits)
+
+    - path: work/gitops/.claude/git-hooks/post-commit
+      description: Generate session logs
+
+    - path: work/gitops/tools/scripts/post-push-law4-check.sh
+      description: Hook loop prevention (Law 4)
+
+  # Settings
+  settings:
+    - path: .claude/settings.json
+      description: Model config, permissions, hooks (workspace baseline)
+
+    - path: .claude/settings.local.json
+      description: Personal overrides (not committed)
+
+  # Standards
+  guides:
+    - path: work/gitops/docs/how-to/guides/commit-conventions.md
+      description: Semantic commit format specification
+      token_cost: 500
+
+    - path: work/gitops/docs/explanation/agentops/laws-of-an-agent.md
+      description: Complete Laws specification
+      token_cost: 200
+
+# Core principles enforced
+principles:
+  - Law 1: Always extract learnings
+  - Law 2: Always improve self or system
+  - Law 3: Always document context for future agents
+  - Law 4: Always prevent hook loops
+  - Law 5: Always guide with workflow suggestions
+
+# Commit format enforced
+commit_format: |
+  <type>(<scope>): <subject>
+
+  ## Context
+  [Why was this needed?]
+
+  ## Solution
+  [What was done?]
+
+  ## Learning
+  [Patterns discovered?]
+
+  ## Impact
+  [Measured improvement?]
+
+  🤖 Generated with Claude Code
+  Co-Authored-By: Claude <noreply@anthropic.com>
+
+# Integration
+mcp_servers:
+  - memory  # MCP memory system (always available)
+
+# This profile is the constitutional baseline
+# All roles inherit these laws and standards
+# Cannot be disabled or overridden

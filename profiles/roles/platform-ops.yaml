@@ -1,0 +1,322 @@
+# Role Profile: Platform Operations
+# SRE, DevOps, infrastructure, monitoring, incidents, reliability
+
+name: platform-ops
+version: 1.0.0
+description: |
+  Platform operations and site reliability engineering. Manage production infrastructure,
+  respond to incidents, deploy applications safely, monitor system health, maintain platform
+  reliability, harmonize configurations, and ensure 99.9%+ uptime.
+
+primary_repository: work/gitops/
+related_repositories:
+  - work/jren-cm/
+  - work/release-engineering/
+  - work/test-site/
+
+token_budget: 28000  # ~28k tokens when fully loaded
+load_priority: 1
+
+includes:
+  shared:
+    - foundational  # Laws, standards, git hooks
+    - orchestration  # Workflow commands (loaded JIT)
+    - context  # Bundles, memory (loaded on-demand)
+
+artifacts:
+  # Operations commands
+  commands:
+    - path: .claude/commands/prime-debug.md
+      description: Systematic troubleshooting
+      token_cost: 600
+      category: debugging
+
+    - path: .claude/commands/validate.md
+      description: Infrastructure validation
+      token_cost: 500
+      category: validation
+
+    - path: work/gitops/.claude/commands/agent-metrics.md
+      description: Agent performance dashboard
+      token_cost: 400
+      category: observability
+
+  # Monitoring agents
+  monitoring_agents:
+    - path: work/gitops/.claude/agents/monitoring-alerts-runbooks.md
+      description: Alert management and runbook automation
+      token_cost: 2000
+      category: monitoring
+
+    - path: work/gitops/.claude/agents/monitoring-slo-dashboards.md
+      description: SLO tracking and dashboard creation
+      token_cost: 1800
+      category: monitoring
+
+  # Incident response agents
+  incident_agents:
+    - path: work/gitops/.claude/agents/incidents-response.md
+      description: Incident triage and response
+      token_cost: 2200
+      category: incidents
+
+    - path: work/gitops/.claude/agents/incidents-postmortems.md
+      description: Postmortem analysis and documentation
+      token_cost: 1800
+      category: incidents
+
+  # Deployment agents
+  deployment_agents:
+    - path: work/gitops/.claude/agents/deployments-progressive-delivery.md
+      description: Blue-green, canary deployments
+      token_cost: 2000
+      category: deployment
+
+    - path: work/gitops/.claude/agents/deployments-rollback-automation.md
+      description: Automated rollback procedures
+      token_cost: 1500
+      category: deployment
+
+    - path: work/gitops/.claude/agents/argocd-debug-sync.md
+      description: ArgoCD sync troubleshooting
+      token_cost: 1800
+      category: deployment
+
+    - path: work/gitops/.claude/agents/applications-debug-sync.md
+      description: Debug ArgoCD sync issues for apps
+      token_cost: 2000
+      category: deployment
+
+  # Infrastructure agents
+  infrastructure_agents:
+    - path: work/gitops/.claude/agents/sites-harmonize.md
+      description: Site configuration harmonization
+      token_cost: 2500
+      category: infrastructure
+
+    - path: work/gitops/.claude/agents/sites-site-config.md
+      description: Site-specific configuration management
+      token_cost: 1800
+      category: infrastructure
+
+    - path: work/gitops/.claude/agents/harmonize-guide.md
+      description: Config.env harmonization workflow
+      token_cost: 2000
+      category: infrastructure
+
+  # Operations agents
+  operations_agents:
+    - path: work/gitops/.claude/agents/operations-jira-tickets.md
+      description: JIRA ticket management
+      token_cost: 1500
+      category: operations
+
+    - path: work/gitops/.claude/agents/playbooks-gitops-operations.md
+      description: GitOps operational playbooks
+      token_cost: 2000
+      category: operations
+
+    - path: work/gitops/.claude/agents/playbooks-platform-upgrades.md
+      description: Platform upgrade procedures
+      token_cost: 2200
+      category: operations
+
+  # Security agents
+  security_agents:
+    - path: work/gitops/.claude/agents/security-scanning.md
+      description: Security vulnerability scanning
+      token_cost: 1800
+      category: security
+
+    - path: work/gitops/.claude/agents/services-kyverno-policies.md
+      description: Kyverno policy management
+      token_cost: 1600
+      category: security
+
+  # Skills (operations-focused)
+  skills:
+    - path: work/gitops/.claude/skills/validate.sh
+      description: YAML/syntax validation
+      token_cost: 100
+      category: validation
+
+    - path: work/gitops/.claude/skills/sync.sh
+      description: ArgoCD sync automation
+      token_cost: 150
+      category: deployment
+
+    - path: work/gitops/.claude/skills/harmonize.sh
+      description: Config rendering (config.env → values.yaml)
+      token_cost: 200
+      category: infrastructure
+
+    - path: work/gitops/.claude/skills/cleanup.sh
+      description: Resource cleanup
+      token_cost: 100
+      category: operations
+
+# Role-specific workflows
+workflows:
+  - name: incident-response
+    description: Full incident lifecycle (triage → fix → postmortem)
+    phases: [detect, triage, debug, fix, validate, deploy, monitor, postmortem]
+
+  - name: deployment-pipeline
+    description: Safe deployment with progressive rollout
+    phases: [validate, deploy-canary, monitor, deploy-full, verify, rollback-if-needed]
+
+  - name: platform-upgrade
+    description: Major platform version upgrades
+    phases: [research, plan, test-upgrade, production-upgrade, verify, rollback-plan]
+
+  - name: harmonize-sites
+    description: Harmonize site configurations
+    phases: [preview-changes, validate, apply, verify]
+
+  - name: runbook-execution
+    description: Execute operational runbook
+    phases: [verify-conditions, execute-steps, validate-outcome, document]
+
+  - name: slo-monitoring
+    description: Monitor and maintain SLOs
+    phases: [define-slos, implement-monitoring, alert-setup, dashboard-creation, review]
+
+# Trigger patterns
+triggers:
+  keywords:
+    # Incidents
+    - incident
+    - outage
+    - down
+    - failing
+    - error
+    - alert
+    - emergency
+
+    # Operations
+    - deploy
+    - rollback
+    - upgrade
+    - patch
+    - maintenance
+
+    # Monitoring
+    - monitoring
+    - metrics
+    - dashboard
+    - slo
+    - sla
+    - observability
+
+    # Infrastructure
+    - site config
+    - harmonize
+    - infrastructure
+    - cluster
+    - node
+
+  file_patterns:
+    - "*.yaml"  # Kubernetes manifests
+    - "config.env"  # Site configuration
+    - "values.yaml"  # Helm values
+    - "kustomization.yaml"  # Kustomize overlays
+    - "prometheus/*"  # Monitoring configs
+    - "grafana/*"  # Dashboard configs
+
+  git_patterns:
+    - "fix(ops):"
+    - "fix(monitoring):"
+    - "fix(deploy):"
+    - "feat(deployment):"
+    - "feat(monitoring):"
+    - "feat(infrastructure):"
+
+# Tool integrations
+tools:
+  mcp_servers:
+    - memory  # Incident tracking, pattern learning
+
+  required_commands:
+    - kubectl
+    - helm
+    - argocd
+    - yamllint
+    - prometheus
+    - grafana-cli
+
+# Knowledge sources
+knowledge:
+  bundles:
+    - infrastructure-ops
+    - incident-patterns
+    - deployment-strategies
+    - sre-runbooks
+
+  documentation:
+    - work/gitops/docs/how-to/guides/git-workflow-guide.md
+    - work/gitops/docs/reference/workflows/
+    - work/release-engineering/docs/harmonize-guide.md
+    - work/release-engineering/docs/security-hardening.md
+
+  patterns:
+    - Neo4j knowledge graph (deployment patterns, monitoring patterns)
+    - 204 session logs (incident response patterns)
+    - SRE best practices (Google SRE book patterns)
+
+# Operations standards
+standards:
+  incident_response:
+    severity_levels: [P0, P1, P2, P3, P4]
+    response_times:
+      P0: "5 minutes (critical outage)"
+      P1: "30 minutes (major degradation)"
+      P2: "4 hours (minor issues)"
+    postmortem_required: [P0, P1]
+
+  deployment:
+    validation_required: true
+    canary_percentage: 10
+    rollback_threshold: "5% error rate increase"
+    deployment_windows: "Mon-Thu 9am-3pm PT"
+
+  monitoring:
+    slo_targets:
+      availability: "99.9%"
+      latency_p99: "500ms"
+      error_rate: "<0.1%"
+    alert_thresholds:
+      critical: "SLO burn rate > 10x"
+      warning: "SLO burn rate > 5x"
+
+# SRE practices
+sre_practices:
+  error_budgets:
+    calculation: "1 - SLO target (e.g., 1 - 0.999 = 0.1%)"
+    tracking: Monthly
+    action_on_exhaustion: "Freeze feature work, focus on reliability"
+
+  toil_reduction:
+    target: "<50% of time on toil"
+    automation_priority: "Toil > 2 hours/week"
+
+  blameless_postmortems:
+    required_sections:
+      - Timeline
+      - Root cause analysis
+      - Action items (with owners + dates)
+      - What went well
+    review_deadline: "5 business days after incident resolution"
+
+# On-call rotation
+on_call:
+  rotation: Weekly
+  escalation_path: [primary, secondary, manager, vp-engineering]
+  handoff_required: "Document all ongoing issues"
+  tools: PagerDuty, Slack, Jira
+
+# Meta-pattern: Platform ops is GUARDIAN
+# - Focuses on: Reliability, uptime, incident response
+# - Values: Prevention > cure, automation > manual
+# - Validates: Production metrics, SLOs, customer impact
+# - Key skill: Systems thinking (understand how everything connects)
+# - Balance: 70% proactive (prevent), 30% reactive (respond)

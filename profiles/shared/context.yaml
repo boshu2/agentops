@@ -1,0 +1,95 @@
+# Shared Profile: Context Management
+# Knowledge systems, memory, bundles, continuity
+
+name: context
+version: 1.0.0
+description: Context bundles, memory systems, knowledge graph integration (loaded on-demand)
+token_budget: 4000  # ~4k tokens (loaded when invoked)
+
+# Loaded when context management is needed
+required: false
+load_priority: 3
+
+artifacts:
+  # Bundle system commands
+  commands:
+    - path: .claude/commands/bundle-load.md
+      description: Load context bundle (multi-repo search)
+      token_cost: 400
+
+    - path: .claude/commands/bundle-save.md
+      description: Save session as bundle
+      token_cost: 400
+
+    - path: .claude/commands/bundle-save-enhanced.md
+      description: Enhanced bundle saving with metadata
+      token_cost: 500
+
+    - path: .claude/commands/bundle-list.md
+      description: Browse all available bundles
+      token_cost: 500
+
+    - path: .claude/commands/bundle-search.md
+      description: Search bundles by keyword
+      token_cost: 500
+
+    - path: .claude/commands/bundle-load-multi.md
+      description: Load multiple bundles (multi-flavor coordination)
+      token_cost: 800
+
+    - path: .claude/commands/bundle-index-all.md
+      description: Index all bundles across workspace
+      token_cost: 600
+
+  # Memory management
+  memory_commands:
+    - path: .claude/commands/memory-prune.md
+      description: MCP memory management and cleanup
+      token_cost: 500
+
+  # Workflow tracking
+  tracking:
+    - path: .claude/commands/workflow-status.md
+      description: Show current workflow phase
+      token_cost: 300
+
+  # Documentation
+  guides:
+    - path: .claude/COMMAND_HIERARCHY.md
+      description: 3-level command system (workspace → container → repo)
+      token_cost: 400
+
+# Bundle storage
+bundle_storage:
+  - path: .agents/bundles/
+    description: Context bundle storage directory
+
+# Knowledge systems
+knowledge_systems:
+  - name: Neo4j Knowledge Graph
+    description: Pattern library (deployment, monitoring, cache patterns)
+    connection: localhost:7474
+    mcp_integration: false
+    credentials: ~/.neo4j-creds
+
+  - name: MCP Memory
+    description: Session memory and entity tracking
+    mcp_integration: true
+    tools:
+      - mcp__memory__create_entities
+      - mcp__memory__create_relations
+      - mcp__memory__search_nodes
+      - mcp__memory__open_nodes
+
+# MCP integrations
+mcp_servers:
+  - memory  # Entity and relation tracking
+
+# Bundle format
+bundle_schema:
+  path: .agents/bundles/schema/v1.yaml
+  description: Bundle format specification
+
+# This profile enables knowledge continuity
+# Bundles allow multi-day work without context collapse
+# Memory systems track learnings across sessions

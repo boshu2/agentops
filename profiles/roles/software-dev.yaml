@@ -1,0 +1,296 @@
+# Role Profile: Software Development
+# Full-stack development, backend, frontend, APIs, applications
+
+name: software-dev
+version: 1.0.0
+description: |
+  Software development across the stack. Build applications (backend APIs, frontends,
+  full-stack features), work with modern frameworks (React, Next.js, Node.js), manage
+  Kubernetes/Helm deployments, create CI/CD pipelines, and implement features end-to-end.
+
+primary_repository: work/jren-cm/
+related_repositories:
+  - work/gitops/
+  - personal/agentops-showcase/
+  - work/kubic-cm/
+  - work/ci-container/
+
+token_budget: 25000  # ~25k tokens when fully loaded
+load_priority: 1
+
+includes:
+  shared:
+    - foundational  # Laws, standards, git hooks
+    - orchestration  # Workflow commands (loaded JIT)
+    - context  # Bundles, memory (loaded on-demand)
+
+artifacts:
+  # Core development commands
+  commands:
+    - path: .claude/commands/create-app.md
+      description: New application from pattern
+      token_cost: 500
+      category: application
+
+    - path: .claude/commands/containerize-application.md
+      description: Docker/container setup
+      token_cost: 600
+      category: containerization
+
+    - path: .claude/commands/create-onboarding-guide.md
+      description: Developer onboarding documentation
+      token_cost: 600
+      category: documentation
+
+    - path: .claude/commands/architecture-review.md
+      description: Application architecture review
+      token_cost: 500
+      category: architecture
+
+  # Backend/Platform agents
+  backend_agents:
+    - path: work/gitops/.claude/agents/applications-create-app.md
+      description: Create Kubernetes applications (unified workflow)
+      token_cost: 2500
+      category: backend
+
+    - path: work/gitops/.claude/agents/applications-modify-app-jren.md
+      description: Modify existing JREN applications
+      token_cost: 2200
+      category: backend
+
+    - path: work/gitops/.claude/agents/services-crossplane-dev.md
+      description: Crossplane provider development
+      token_cost: 2500
+      category: backend
+
+    - path: work/gitops/.claude/agents/services-edb-databases.md
+      description: EDB PostgreSQL database management
+      token_cost: 2000
+      category: backend
+
+    - path: work/gitops/.claude/agents/containers-build-modify.md
+      description: Build and modify container images
+      token_cost: 1800
+      category: backend
+
+  # Frontend/UI agents
+  frontend_agents:
+    - path: work/gitops/.claude/agents/documentation-create-docs.md
+      description: Create documentation (Diátaxis format)
+      token_cost: 2000
+      category: frontend
+
+    - path: personal/agentops-showcase/.claude/AGENT-WORKFLOW-STANDARDS.md
+      description: Agent workflow standards for public-facing work
+      token_cost: 800
+      category: frontend
+
+  # Pipeline/CI agents
+  pipeline_agents:
+    - path: work/gitops/.claude/agents/pipelines-gitlab-ci.md
+      description: GitLab CI pipeline configuration
+      token_cost: 2000
+      category: pipelines
+
+    - path: work/gitops/.claude/agents/pipelines-troubleshooting.md
+      description: CI/CD pipeline debugging
+      token_cost: 1800
+      category: pipelines
+
+  # Testing agents
+  testing_agents:
+    - path: work/gitops/.claude/agents/testing-integration-e2e.md
+      description: Integration and end-to-end testing
+      token_cost: 2000
+      category: testing
+
+  # Skills (reusable across backend/frontend)
+  skills:
+    - path: work/gitops/.claude/skills/test.sh
+      description: Test execution
+      token_cost: 100
+      category: testing
+
+    - path: work/gitops/.claude/skills/rendering.sh
+      description: Values file generation (Helm templating)
+      token_cost: 150
+      category: rendering
+
+    - path: work/gitops/.claude/skills/audit.sh
+      description: Compliance and policy checks
+      token_cost: 100
+      category: compliance
+
+    - path: personal/agentops-showcase/.claude/skills/
+      description: Frontend build tools, VitePress, container management
+      token_cost: 500
+      category: development
+
+# Role-specific workflows
+workflows:
+  - name: full-stack-feature
+    description: Build complete feature (backend + frontend)
+    phases: [design, backend-api, frontend-ui, integration, testing, deployment]
+
+  - name: api-development
+    description: Build RESTful API or GraphQL service
+    phases: [design-schema, implement-endpoints, testing, documentation]
+
+  - name: frontend-feature
+    description: Build React/Next.js feature
+    phases: [design-ui, implement-component, integrate-api, test, deploy]
+
+  - name: microservice-creation
+    description: Create new microservice end-to-end
+    phases: [architecture, implementation, containerization, ci-cd, deploy]
+
+  - name: app-modernization
+    description: Refactor legacy to modern stack
+    phases: [assessment, incremental-migration, testing, rollout]
+
+# Trigger patterns
+triggers:
+  keywords:
+    # Backend
+    - create app
+    - new service
+    - api
+    - backend
+    - microservice
+    - database
+    - kubernetes
+    - helm
+    - crossplane
+
+    # Frontend
+    - react
+    - next.js
+    - frontend
+    - ui component
+    - web app
+    - vitepress
+
+    # General
+    - full stack
+    - feature
+    - implement
+    - refactor
+
+  file_patterns:
+    # Backend
+    - "apps/*/kustomization.yaml"
+    - "apps/*/values.yaml"
+    - "charts/*/Chart.yaml"
+    - "*.go"
+    - "*.py"
+    - "*.java"
+
+    # Frontend
+    - "*.tsx"
+    - "*.jsx"
+    - "*.vue"
+    - "*.css"
+    - "package.json"
+    - "vitepress.config.ts"
+    - "next.config.js"
+
+    # CI/CD
+    - ".gitlab-ci.yml"
+    - "Dockerfile"
+
+  git_patterns:
+    - "feat(apps):"
+    - "feat(api):"
+    - "feat(ui):"
+    - "feat(backend):"
+    - "feat(frontend):"
+    - "feat(charts):"
+    - "feat(ci):"
+
+# Tool integrations
+tools:
+  mcp_servers:
+    - context7  # API docs (Kubernetes, React, Next.js, etc.)
+    - memory  # Pattern tracking
+    - podman  # Container management
+
+  required_commands:
+    - kubectl
+    - helm
+    - kustomize
+    - docker
+    - podman
+    - node
+    - npm
+    - git
+
+# Knowledge sources
+knowledge:
+  bundles:
+    - application-patterns
+    - helm-best-practices
+    - frontend-patterns
+    - react-best-practices
+    - api-design
+
+  documentation:
+    - work/jren-cm/CLAUDE.md  # Application primer
+    - work/jren-cm/examples/  # 7 golden patterns
+    - work/jren-cm/STYLE-GUIDE.md  # File organization
+    - personal/agentops-showcase/README.md  # Frontend standards
+    - work/gitops/docs/reference/workflows/application-creation.md
+
+  patterns:
+    # Backend
+    - Pattern 1 (Simple): Base chart in kubic-cm, no modifications
+    - Pattern 2 (Patches): Base chart with Kustomize overlays
+    - Pattern 3 (JREN-only): Custom application, no upstream chart
+    - 7 golden patterns in jren-cm/examples/
+
+    # Frontend
+    - VitePress site structure
+    - React component patterns
+    - Next.js app architecture
+
+# Development standards
+standards:
+  backend:
+    source_of_truth: sites/config.env
+    generated_files: apps/*/values.yaml
+    rule: "ALWAYS edit config.env, NEVER edit values.yaml directly"
+    validation: "make test-app APP=name before commit"
+
+  frontend:
+    container_tool: Podman MCP (not terminal commands)
+    documentation: Diátaxis format
+    accessibility: WCAG 2.1 AA compliance
+
+# Stack coverage
+stacks:
+  backend:
+    - Kubernetes + Kustomize + Helm
+    - Crossplane (infrastructure as code)
+    - PostgreSQL (EDB)
+    - Python, Go, Node.js
+    - Redis, message queues
+
+  frontend:
+    - React, Next.js, Vue
+    - VitePress (documentation sites)
+    - TypeScript, JavaScript
+    - CSS, Tailwind
+    - Component libraries
+
+  infrastructure:
+    - Docker, Podman
+    - GitLab CI/CD
+    - ArgoCD (GitOps)
+    - Kyverno (policy engine)
+
+# Meta-pattern: Software developer is CREATOR
+# - Focuses on: Building features, solving user problems
+# - Values: Clean code, good UX, maintainability
+# - Validates: Tests pass, builds succeed, users satisfied
+# - Key skill: End-to-end thinking (API → UI → deployment)
+# - Spans: Backend + Frontend + DevOps (full ownership)

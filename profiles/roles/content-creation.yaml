@@ -1,0 +1,359 @@
+# Role Profile: Content Creation
+# Documentation, writing, research, pattern extraction, tutorials, frameworks
+
+name: content-creation
+version: 1.0.0
+description: |
+  Content creation, research, and knowledge synthesis. Write documentation (technical
+  and non-technical), extract patterns from production work, conduct meta-analysis,
+  create tutorials and examples, develop frameworks, and synthesize learnings into
+  reusable knowledge.
+
+primary_repository: personal/12-factor-agentops/
+related_repositories:
+  - work/gitops/
+  - personal/agentops-showcase/
+  - personal/12-factor-agents/
+  - personal/life/
+
+token_budget: 22000  # ~22k tokens when fully loaded
+load_priority: 2
+
+includes:
+  shared:
+    - foundational  # Laws, standards
+    - orchestration  # Research workflows (JIT)
+    - context  # Bundles, memory (critical for research)
+
+artifacts:
+  # Research commands
+  commands:
+    - path: .claude/commands/research.md
+      description: Single-agent research phase
+      token_cost: 600
+      category: research
+
+    - path: .claude/commands/research-multi.md
+      description: Parallel 3-agent research (3x faster)
+      token_cost: 800
+      category: research
+
+    - path: .claude/commands/learn.md
+      description: Extract learnings from session
+      token_cost: 500
+      category: learning
+
+    - path: .claude/commands/ultra-think.md
+      description: Deep multi-dimensional analysis
+      token_cost: 800
+      category: analysis
+
+    - path: .claude/commands/create-onboarding-guide.md
+      description: Developer onboarding documentation
+      token_cost: 600
+      category: documentation
+
+    - path: .claude/commands/update-docs.md
+      description: Documentation updates
+      token_cost: 500
+      category: documentation
+
+  # Meta-analysis agents
+  meta_agents:
+    - path: work/gitops/.claude/agents/meta-retro-analyzer.md
+      description: Retrospective analysis (weekly, quarterly)
+      token_cost: 2200
+      category: meta
+
+    - path: work/gitops/.claude/agents/meta-workflow-auditor.md
+      description: Workflow compliance auditing
+      token_cost: 2000
+      category: meta
+
+    - path: work/gitops/.claude/agents/meta-memory-integration.md
+      description: Memory system integration and optimization
+      token_cost: 1800
+      category: meta
+
+    - path: work/gitops/.claude/agents/meta-implement-agent.md
+      description: Implement new agents based on patterns
+      token_cost: 2500
+      category: meta
+
+    - path: work/gitops/.claude/agents/meta-pitch-generator.md
+      description: Generate framework pitches and presentations
+      token_cost: 1800
+      category: meta
+
+  # Documentation agents
+  documentation_agents:
+    - path: work/gitops/.claude/agents/documentation-create-docs.md
+      description: Create documentation (Diátaxis format)
+      token_cost: 2000
+      category: documentation
+
+    - path: work/gitops/.claude/agents/documentation-optimize-docs.md
+      description: Optimize existing documentation
+      token_cost: 1800
+      category: documentation
+
+    - path: work/gitops/.claude/agents/documentation-search-docs.md
+      description: Search and synthesize documentation
+      token_cost: 1500
+      category: documentation
+
+    - path: work/gitops/.claude/agents/documentation-diataxis-auditor.md
+      description: Audit documentation for Diátaxis compliance
+      token_cost: 1800
+      category: documentation
+
+  # Innovation agents
+  innovation_agents:
+    - path: work/gitops/.claude/agents/innovation-architecture-review.md
+      description: Comprehensive architecture review
+      token_cost: 2200
+      category: innovation
+
+    - path: work/gitops/.claude/agents/innovation-capability-explorer.md
+      description: Explore new capabilities and patterns
+      token_cost: 2000
+      category: innovation
+
+  # Skills
+  skills:
+    - path: work/gitops/.claude/skills/agent-refactoring.sh
+      description: AI-powered agent improvement
+      token_cost: 300
+      category: meta
+
+    - path: personal/12-factor-agentops/.claude/skills/
+      description: Compliance auditing, pattern extraction
+      token_cost: 600
+      category: compliance
+
+# Role-specific workflows
+workflows:
+  - name: pattern-extraction
+    description: Extract reusable patterns from production work
+    phases: [gather-sessions, analyze-patterns, synthesize, document, validate]
+
+  - name: meta-analysis
+    description: Analyze meta-patterns across multiple domains
+    phases: [define-scope, collect-data, cross-domain-analysis, insights, recommendations]
+
+  - name: documentation-creation
+    description: Create comprehensive documentation
+    phases: [outline, research, write, review, publish]
+
+  - name: tutorial-development
+    description: Create step-by-step tutorial
+    phases: [define-audience, outline-steps, write-content, test-tutorial, publish]
+
+  - name: framework-development
+    description: Develop new framework patterns
+    phases: [research, hypothesis, prototype, validate, document, generalize]
+
+  - name: retrospective
+    description: Weekly/quarterly retrospective analysis
+    phases: [gather-data, identify-patterns, learnings, improvements, action-items]
+
+  - name: research-synthesis
+    description: Synthesize research findings
+    phases: [literature-review, data-collection, analysis, synthesis, publication]
+
+# Trigger patterns
+triggers:
+  keywords:
+    # Research
+    - research
+    - analyze
+    - study
+    - investigate
+    - explore
+
+    # Documentation
+    - document
+    - write
+    - tutorial
+    - guide
+    - readme
+    - explanation
+
+    # Pattern extraction
+    - pattern
+    - meta
+    - learning
+    - insight
+    - discovery
+
+    # Framework
+    - framework
+    - methodology
+    - compliance
+    - audit
+
+  file_patterns:
+    - "docs/**/*.md"
+    - "README.md"
+    - "ARCHITECTURE.md"
+    - "*.bib"  # Citations
+    - "validation/**/*"
+    - "patterns/**/*.md"
+    - "factors/**/*.md"
+    - "examples/**/*.md"
+
+  git_patterns:
+    - "docs(explanation):"
+    - "docs(research):"
+    - "docs(tutorial):"
+    - "feat(framework):"
+    - "feat(pattern):"
+
+# Tool integrations
+tools:
+  mcp_servers:
+    - memory  # Critical for tracking patterns across sessions
+    - context7  # Research latest patterns from external sources
+
+  required_commands:
+    - git  # History analysis
+    - grep  # Pattern searching
+    - find  # Artifact discovery
+    - markdown  # Documentation
+
+# Knowledge sources
+knowledge:
+  bundles:
+    - agentops-roadmap-complete
+    - framework-sanitization
+    - launch
+    - research-findings
+
+  documentation:
+    - work/gitops/docs/explanation/agentops/agentops-manifesto.md  # Four Pillars
+    - work/gitops/docs/explanation/concepts/context-engineering-complete.md
+    - work/gitops/docs/reference/12factor-audits/README.md
+    - personal/12-factor-agentops/CLAUDE.md  # Framework theory
+    - personal/12-factor-agentops/foundations/
+    - personal/12-factor-agentops/factors/
+    - personal/12-factor-agentops/patterns/
+
+  patterns:
+    - 204 session logs (institutional memory)
+    - 47 meta-patterns extracted
+    - 23,064 lines of session documentation
+    - Neo4j knowledge graph (cross-domain patterns)
+    - Research citations (academic validation)
+
+# Research data sources
+data_sources:
+  production_work:
+    - 538 commits in 60 days
+    - 204 sessions
+    - 52 workflows
+    - 95% success rate (last 100 commits)
+
+  compliance_tracking:
+    - 12-factor audits for all 52 agents
+    - Law compliance metrics
+    - Pattern evolution tracking
+
+  git_history:
+    - Commit messages (Context/Solution/Learning/Impact)
+    - Session logs in codex-ops-notebook.md
+    - Post-commit hook metadata
+
+  academic_research:
+    - Cognitive Load Theory (Sweller, 1988)
+    - Working Memory Capacity (Cowan, 2001)
+    - Context Window Studies (Liu et al., 2023)
+
+# Documentation standards
+standards:
+  format: Diátaxis (Tutorial, How-To, Reference, Explanation)
+  style:
+    - Professional tone (not marketing/hype)
+    - Evidence-based claims
+    - Clear examples
+    - Generous cross-references
+
+  structure:
+    tutorials: Learning-oriented, hands-on
+    how_to: Problem-oriented, practical steps
+    reference: Information-oriented, comprehensive
+    explanation: Understanding-oriented, context and theory
+
+  validation:
+    - Peer review required
+    - Production validation preferred
+    - Cite sources for claims
+    - Be transparent about limitations
+
+# Content types
+content_types:
+  technical_documentation:
+    - API references
+    - Architecture docs
+    - How-to guides
+    - Tutorials
+
+  framework_documentation:
+    - Philosophical foundations
+    - Operational principles
+    - Pattern catalogs
+    - Compliance guides
+
+  research_outputs:
+    - Case studies
+    - Meta-analyses
+    - Validation reports
+    - Academic papers
+
+  educational_content:
+    - Quick-start guides
+    - Video scripts
+    - Workshop materials
+    - Blog posts
+
+# Publishing channels
+publishing:
+  internal:
+    - Git repositories (Markdown)
+    - Knowledge base
+    - Team documentation
+    - Session logs
+
+  public:
+    - GitHub (open source frameworks)
+    - Personal website
+    - LinkedIn (thought leadership)
+    - YouTube (demonstrations)
+    - Conference talks
+
+# Quality metrics
+quality_metrics:
+  documentation:
+    - Readability (Flesch-Kincaid)
+    - Completeness (coverage of topic)
+    - Accuracy (technical review)
+    - Usefulness (adoption rate)
+
+  research:
+    - Rigor (methodology quality)
+    - Reproducibility (can others replicate?)
+    - Impact (citations, adoption)
+    - Transparency (limitations acknowledged)
+
+  patterns:
+    - Production validation (used in real work?)
+    - Generalizability (works across domains?)
+    - Clarity (easy to understand?)
+    - Actionability (can people apply it?)
+
+# Meta-pattern: Content creator is SYNTHESIZER
+# - Focuses on: Extracting signal from noise
+# - Values: Clarity, evidence, reusability
+# - Validates: Through adoption (do people use this?)
+# - Key skill: Pattern recognition across domains
+# - Output: Documentation, tutorials, frameworks, insights
+# - Impact: Knowledge that compounds over time

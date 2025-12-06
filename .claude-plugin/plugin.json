@@ -1,0 +1,28 @@
+{
+  "name": "knowledge-os",
+  "version": "1.0.0",
+  "description": "Complete Knowledge OS for Claude Code - Research/Plan/Implement workflow, session management, vibe-coding metrics, and 85+ specialized agents",
+  "author": {
+    "name": "Brandon Fuller",
+    "email": "fullerbt@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/fullerbt/claude-code-marketplace",
+  "repository": "https://github.com/fullerbt/claude-code-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "rpi",
+    "research",
+    "planning",
+    "implementation",
+    "session-management",
+    "vibe-coding",
+    "agents",
+    "skills",
+    "gitops",
+    "devops"
+  ],
+  "commands": "./commands/",
+  "agents": "./agents/",
+  "strict": false
+}

@@ -1,0 +1,975 @@
+# Agent Catalog Registry
+# Auto-generated from agent definitions
+# Purpose: Enable discovery, routing, and orchestration of specialized agents
+#
+# Aligned with HumanLayer Factor 1 (Natural Language → Tool Calls)
+# See: docs/improvement-plan/humanlayer-pattern-adoption.md
+
+version: 1.2
+last_updated: 2025-11-13
+total_agents: 53
+
+# Agent Tiers
+# Tier 1: Foundational (specification compliant, 90%+ success rate, universal patterns)
+# Tier 2: Specialized (specification compliant, domain-specific patterns, 90%+ success)
+# Tier 3: Production ready (not yet specified, proven patterns)
+# Tier 4: Experimental (evolving, validation in progress)
+tiers:
+  tier1: 5  # Foundational + specification compliant
+  tier2: 7  # Specialized + specification compliant (4 + 3 new)
+  tier3: 44 # Production ready (37 + 7 now with specs)
+  tier4: 7  # Experimental
+
+# Domain Organization
+domains:
+  applications: 6
+  documentation: 4
+  operations: 3
+  sites: 2
+  containers: 1
+  deployments: 2
+  innovation: 4
+  incidents: 2
+  monitoring: 2
+  pipelines: 2
+  playbooks: 5
+  code_review: 1
+  security: 1
+  services: 3
+  testing: 2
+  q1_initiative: 3
+  meta: 6
+  personal: 1
+
+# Agent Definitions
+agents:
+  # ========================================
+  # APPLICATIONS (6 agents)
+  # ========================================
+
+  applications-create-app:
+    domain: applications
+    tier: 1  # Tier 1: Specification compliant
+    specification: .claude/specs/applications/create-app.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation of new GitOps applications using 7-pattern catalog with Context7 integration
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - pattern-selection
+      - helm-chart-creation
+      - values-generation
+      - validation
+    inputs:
+      required: [app_name, pattern_type]
+      optional: [namespace, resources, replicas]
+    outputs: [values.yaml, kustomization.yaml]
+    error_recovery: retry-with-context
+    stateless: false
+    avg_duration: 90s  # From spec: 20x faster (30 min → 90 sec)
+    success_rate: 0.95
+    time_savings: 20x
+
+  applications-create-app-context7:
+    domain: applications
+    description: Create GitOps applications with latest technology patterns using Context7 integration
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob, Task]
+    capabilities:
+      - context7-integration
+      - latest-patterns
+      - technology-research
+    stateless: false
+
+  applications-create-app-jren:
+    domain: applications
+    description: Add new application to jren-cm using golden patterns
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, mcp__context7__resolve-library-id, mcp__context7__get-library-docs]
+    capabilities:
+      - jren-specific-patterns
+      - config-env-integration
+    stateless: false
+
+  applications-modify-app:
+    domain: applications
+    tier: 1  # Tier 1: Specification compliant
+    specification: .claude/specs/applications/modify-app.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide safe modification of existing GitOps applications
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - safe-modification
+      - backward-compatibility
+      - rollback-support
+    stateless: false
+    avg_duration: 2m  # From spec: 10x faster (20 min → 2 min)
+    success_rate: 0.90
+    time_savings: 10x
+
+  applications-modify-app-jren:
+    domain: applications
+    description: Safely modify existing applications in jren-cm
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, mcp__context7__resolve-library-id, mcp__context7__get-library-docs]
+    capabilities:
+      - jren-modification
+      - config-env-updates
+    stateless: false
+
+  applications-debug-sync:
+    domain: applications
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/applications/debug-sync.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Debug ArgoCD synchronization failures with systematic diagnostics
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - argocd-debugging
+      - log-analysis
+      - drift-detection
+      - hierarchical-troubleshooting
+    inputs:
+      required: [app_name]
+      optional: [namespace, cluster]
+    outputs: [diagnosis, fix_recommendations]
+    error_recovery: escalate-with-context
+    stateless: true
+    avg_duration: 180s  # From spec: 8x faster (20-30 min → 2-3 min)
+    success_rate: 0.92
+    time_savings: 8x
+
+  applications-paas-audit:
+    domain: applications
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/applications/paas-audit.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Audit jren-cm applications for multi-tenant OpenShift PaaS best practices
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob, Write]
+    capabilities:
+      - multi-tenant-audit
+      - resource-management-validation
+      - security-assessment
+      - observability-check
+      - gitops-pattern-compliance
+      - openshift-validation
+    stateless: true
+    avg_duration: 4m  # From spec: 4-5 min per audit
+    success_rate: 0.90
+    time_savings: 15x
+
+  # ========================================
+  # DOCUMENTATION (4 agents)
+  # ========================================
+
+  documentation-create-docs:
+    domain: documentation
+    tier: 1  # Tier 1: Specification compliant
+    specification: .claude/specs/documentation/create-docs.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation of clear and maintainable documentation
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - diataxis-format
+      - markdown-generation
+      - structure-planning
+    stateless: true
+    avg_duration: 10m  # From spec: 50%+ faster with structure
+    success_rate: 0.85
+    time_savings: 2x
+
+  documentation-optimize-docs:
+    domain: documentation
+    description: Optimize and refactor documentation to Knowledge OS standards
+    model: sonnet
+    tools: [Read, Edit, Write, Grep, Glob]
+    capabilities:
+      - documentation-refactoring
+      - knowledge-os-alignment
+      - structure-optimization
+    stateless: true
+
+  documentation-search-docs:
+    domain: documentation
+    description: Fast documentation search using parallel strategies
+    model: haiku
+    tools: [Read, Grep, Glob]
+    capabilities:
+      - parallel-search
+      - fast-retrieval
+    stateless: true
+    avg_duration: 30s
+
+  documentation-diataxis-auditor:
+    domain: documentation
+    description: Audit documentation for Diátaxis compliance and prevent misplaced files
+    model: sonnet
+    tools: [Bash]
+    capabilities:
+      - diataxis-compliance
+      - file-placement-validation
+    stateless: true
+
+  # ========================================
+  # OPERATIONS (3 agents)
+  # ========================================
+
+  operations-gitops-operations:
+    domain: operations
+    tier: 1  # Tier 1: Specification compliant
+    specification: .claude/specs/operations/gitops-operations.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide day-2 GitOps operations for JREN platform
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - day2-operations
+      - bootstrap-procedures
+      - deployment-workflows
+      - troubleshooting-patterns
+      - disaster-recovery
+    stateless: false
+    avg_duration: 15m  # From spec: 80%+ incident time reduction
+    success_rate: 0.90
+    time_savings: 5x
+
+  operations-organize-repo:
+    domain: operations
+    description: Systematic repository cleanup, organization, and structure optimization
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - repository-cleanup
+      - structure-optimization
+      - file-organization
+    stateless: false
+
+  operations-drift-detection:
+    domain: operations
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/operations/drift-detection.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide drift detection comparing cluster state vs GitOps desired state
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - cluster-drift-detection
+      - state-comparison
+      - reconciliation
+    stateless: true
+    avg_duration: 5m
+    success_rate: 0.90
+    time_savings: 12x
+
+  # ========================================
+  # SITES (2 agents)
+  # ========================================
+
+  sites-site-config:
+    domain: sites
+    description: Guide safe addition or modification of site configuration in config.env
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - config-env-editing
+      - site-configuration
+      - validation
+    stateless: false
+
+  sites-harmonize:
+    domain: sites
+    tier: 1  # Tier 1: Specification compliant
+    specification: .claude/specs/sites/harmonize.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide safe execution of harmonize workflow to render site configurations
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - harmonize-workflow
+      - config-rendering
+      - values-generation
+    stateless: true
+    avg_duration: 3m  # From spec: 10x faster (30 min → 3 min)
+    success_rate: 0.95
+    time_savings: 10x
+
+  # ========================================
+  # DEPLOYMENTS (2 agents)
+  # ========================================
+
+  deployments-progressive-delivery:
+    domain: deployments
+    description: Guide implementation of progressive delivery patterns (canary, blue-green)
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - canary-deployments
+      - blue-green-deployment
+      - traffic-management
+    stateless: false
+
+  deployments-rollback-automation:
+    domain: deployments
+    description: Guide implementation of automated rollback mechanisms triggered by metrics
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - automated-rollback
+      - metric-triggers
+      - safety-gates
+    stateless: false
+
+  # ========================================
+  # MONITORING (2 agents)
+  # ========================================
+
+  monitoring-alerts-runbooks:
+    domain: monitoring
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/monitoring/alerts-runbooks.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation of actionable alerts with linked runbooks
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - alert-creation
+      - runbook-linking
+      - actionable-monitoring
+    stateless: false
+    avg_duration: 40m
+    success_rate: 0.93
+    time_savings: 12x
+
+  monitoring-slo-dashboards:
+    domain: monitoring
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/monitoring/slo-dashboards.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation and maintenance of Service Level Objective (SLO) dashboards
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - golden-signals-monitoring
+      - slo-definition
+      - error-budget-calculation
+      - burn-rate-alerts
+      - dashboard-creation
+      - runbook-integration
+    stateless: false
+    avg_duration: 6m  # From spec: 6-10 min per service
+    success_rate: 0.90
+    time_savings: 10x
+
+  # ========================================
+  # INCIDENTS (2 agents)
+  # ========================================
+
+  incidents-response:
+    domain: incidents
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/incidents/response.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide incident triage and response following structured procedures
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - incident-triage
+      - response-procedures
+      - escalation-management
+    stateless: false
+    avg_duration: 45m
+    success_rate: 0.95
+    time_savings: 2.7x
+    avg_duration: 20m
+
+  incidents-postmortems:
+    domain: incidents
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/incidents/postmortems.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Create blameless postmortems with root cause analysis and actionable prevention
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - postmortem-creation
+      - root-cause-analysis
+      - prevention-planning
+    stateless: false
+    avg_duration: 105m
+    success_rate: 0.90
+    time_savings: 2.3x
+    avg_duration: 30m
+
+  # ========================================
+  # INNOVATION (4 agents)
+  # ========================================
+
+  innovation-architecture-review:
+    domain: innovation
+    description: Review JREN platform architecture to identify improvement opportunities
+    model: sonnet
+    tools: [Read, Grep, Glob, Write, Edit, Bash]
+    capabilities:
+      - architecture-review
+      - improvement-identification
+      - technical-assessment
+    stateless: true
+    avg_duration: 25m
+
+  innovation-capability-explorer:
+    domain: innovation
+    description: Explore untapped capabilities of JREN platform tools to identify underutilized features
+    model: sonnet
+    tools: [Read, Grep, Glob, Write, Edit, Bash]
+    capabilities:
+      - capability-exploration
+      - feature-discovery
+      - utilization-analysis
+    stateless: true
+
+  innovation-automation-opportunities:
+    domain: innovation
+    description: Analyze workflows to identify automation opportunities and reduce operational toil
+    model: sonnet
+    tools: [Read, Grep, Glob, Write, Edit, Bash]
+    capabilities:
+      - workflow-analysis
+      - automation-identification
+      - toil-reduction
+    stateless: true
+
+  innovation-brainstorm-solutions:
+    domain: innovation
+    description: Facilitate open-ended innovation brainstorming for JREN platform improvements
+    model: sonnet
+    tools: [Read, Write, Edit, Grep, Glob]
+    capabilities:
+      - brainstorming
+      - solution-ideation
+      - innovation-facilitation
+    stateless: true
+
+  # ========================================
+  # SERVICES (3 agents)
+  # ========================================
+
+  services-crossplane-dev:
+    domain: services
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/services/crossplane-dev.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide development and extension of Crossplane-based infrastructure
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - crossplane-development
+      - infrastructure-provisioning
+      - custom-resources
+    stateless: false
+    avg_duration: 13m
+    success_rate: 0.88
+    time_savings: 5x
+
+  services-edb-databases:
+    domain: services
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/services/edb-databases.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation, configuration, and troubleshooting of EDB Postgres databases
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - postgres-configuration
+      - database-troubleshooting
+      - edb-operator
+      - cloudnative-pg
+      - backup-and-recovery
+    stateless: false
+    avg_duration: 480s  # From spec: 8m provision, 3m troubleshoot
+    success_rate: 0.95
+    time_savings: 7.5x
+
+  services-kyverno-policies:
+    domain: services
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/services/kyverno-policies.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide creation, validation, and debugging of Kyverno policies for JREN platform
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - policy-creation
+      - kyverno-validation
+      - compliance-enforcement
+      - audit-before-enforce
+    stateless: false
+    avg_duration: 180s  # From spec: 20x faster (60 min → 3 min)
+    success_rate: 0.95
+    time_savings: 20x
+
+  # ========================================
+  # TESTING (2 agents)
+  # ========================================
+
+  testing-integration-e2e:
+    domain: testing
+    description: Guide creation of integration and end-to-end tests
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - e2e-testing
+      - integration-tests
+      - test-automation
+    stateless: false
+
+  testing-onboarding-audit:
+    domain: testing
+    description: Continuously audit new developer onboarding experience
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob, Write]
+    capabilities:
+      - onboarding-audit
+      - experience-assessment
+      - improvement-recommendations
+    stateless: true
+
+  # ========================================
+  # PIPELINES (2 agents)
+  # ========================================
+
+  pipelines-gitlab-ci:
+    domain: pipelines
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/pipelines/gitlab-ci.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide safe modification of GitLab CI/CD pipelines following best practices
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - gitlab-ci-configuration
+      - pipeline-optimization
+      - best-practices
+    stateless: false
+    avg_duration: 3m
+    success_rate: 0.90
+    time_savings: 8x
+
+  pipelines-troubleshooting:
+    domain: pipelines
+    description: Diagnose and resolve pipeline failures in release-engineering workflow
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - pipeline-debugging
+      - failure-analysis
+      - resolution-guidance
+    stateless: true
+
+  # ========================================
+  # PLAYBOOKS (5 agents)
+  # ========================================
+
+  playbooks-keycloak-sso:
+    domain: playbooks
+    description: Guide Keycloak SSO deployment and configuration for JREN platform
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - keycloak-deployment
+      - sso-configuration
+      - integration-guidance
+    stateless: false
+
+  playbooks-harmonize-workflow:
+    domain: playbooks
+    description: Guide execution of JREN harmonize workflow rendering config.env to values.yaml
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - harmonize-execution
+      - config-rendering
+      - validation
+    stateless: true
+
+  playbooks-gitops-operations:
+    domain: playbooks
+    description: Guide day-2 GitOps operations for JREN platform
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - day2-operations
+      - gitops-maintenance
+      - operational-guidance
+    stateless: false
+
+  playbooks-storagegrid-onboarding:
+    domain: playbooks
+    description: Guide StorageGrid S3 onboarding for JREN sites including bucket provisioning
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - s3-onboarding
+      - bucket-provisioning
+      - storagegrid-integration
+    stateless: false
+
+  playbooks-platform-upgrades:
+    domain: playbooks
+    description: Guide JREN platform version upgrades with pre-upgrade checks and validation
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - platform-upgrades
+      - pre-upgrade-validation
+      - rollout-management
+    stateless: false
+
+  # ========================================
+  # CONTAINERS (1 agent)
+  # ========================================
+
+  containers-build-modify:
+    domain: containers
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/containers/build-modify.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide building and modification of container images
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - container-building
+      - dockerfile-optimization
+      - image-modification
+    stateless: false
+    avg_duration: 7m
+    success_rate: 0.92
+    time_savings: 6x
+
+  # ========================================
+  # CODE REVIEW (1 agent)
+  # ========================================
+
+  code-review-improve:
+    domain: code_review
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/code-review/improve.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Systematic code review focusing on correctness, maintainability, security
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - code-review
+      - security-analysis
+      - maintainability-assessment
+      - performance-analysis
+      - security-first-pattern
+    stateless: true
+    avg_duration: 120s  # From spec: 15x faster (30 min → 2 min)
+    success_rate: 0.95
+    time_savings: 15x
+
+  # ========================================
+  # SECURITY (1 agent)
+  # ========================================
+
+  security-scanning:
+    domain: security
+    tier: 2  # Tier 2: Specialized + Specification compliant
+    specification: .claude/specs/security/scanning.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Guide integration of security scanning (SAST, DAST, dependency scanning)
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - security-scanning
+      - vulnerability-detection
+      - compliance-checking
+    stateless: true
+    avg_duration: 4m
+    success_rate: 0.90
+    time_savings: 30x
+
+  # ========================================
+  # Q1 INITIATIVE (3 agents)
+  # ========================================
+
+  q1-install-config:
+    domain: q1_initiative
+    description: Guide design and implementation of install-config pipeline for reproducible setup
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - install-config-design
+      - pipeline-implementation
+      - reproducibility
+    stateless: false
+
+  q1-devworkspace:
+    domain: q1_initiative
+    description: Guide Phase 1 PoC for in-cluster DevWorkspace replacing jumpbox workflow
+    model: sonnet
+    tools: [Read, Write, Edit, Bash, Grep, Glob]
+    capabilities:
+      - devworkspace-poc
+      - jumpbox-replacement
+      - in-cluster-development
+    stateless: false
+
+  q1-architectural-mentor:
+    domain: q1_initiative
+    description: Act as Codex-aware Architectural Mentor for Q1 deliverables scaffolding
+    model: sonnet
+    tools: [Read, Grep, Glob]
+    capabilities:
+      - architectural-mentoring
+      - codex-integration
+      - q1-guidance
+    stateless: true
+
+  # ========================================
+  # META-AGENTS (6 agents)
+  # ========================================
+
+  meta-pitch-generator:
+    domain: meta
+    description: Generate comprehensive pitch for Universal Mind Optimization vision
+    model: sonnet
+    tools: [Read, Grep, Glob]
+    capabilities:
+      - pitch-generation
+      - vision-articulation
+    stateless: true
+
+  meta-ipc-auditor:
+    domain: meta
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/meta/ipc-auditor.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Audit IPC database integrity for data consistency and schema compliance
+    model: sonnet
+    tools: [Read, Bash, Grep, Glob]
+    capabilities:
+      - ipc-auditing
+      - data-integrity
+      - schema-validation
+    stateless: true
+    avg_duration: 3m
+    success_rate: 0.95
+    time_savings: 20x
+
+  meta-workflow-auditor:
+    domain: meta
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/meta/workflow-auditor.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Audit multi-agent workflow outputs to identify constraint violations
+    model: sonnet
+    tools: [Read, Grep, Bash]
+    capabilities:
+      - workflow-auditing
+      - constraint-validation
+      - decision-analysis
+    stateless: true
+    avg_duration: 4m
+    success_rate: 0.92
+    time_savings: 15x
+
+  meta-implement-agent:
+    domain: meta
+    description: Execute approved plan exactly with validation at each step
+    model: sonnet
+    tools: [Read, Edit, Write, Bash]
+    capabilities:
+      - plan-execution
+      - step-validation
+      - implementation
+    stateless: false
+
+  meta-retro-analyzer:
+    domain: meta
+    description: Deep retrospective analysis of sessions to extract patterns and insights
+    model: sonnet
+    tools: [Read, Grep, Glob]
+    capabilities:
+      - retrospective-analysis
+      - pattern-extraction
+      - insight-generation
+    stateless: true
+    avg_duration: 30m
+
+  meta-todo-planner:
+    domain: meta
+    description: Multi-agent todo plan generation using parallel sub-agent analysis
+    model: sonnet
+    tools: [Read, Grep, Glob, TodoWrite]
+    capabilities:
+      - todo-planning
+      - multi-agent-coordination
+      - task-breakdown
+    stateless: true
+
+  meta-research-context7:
+    domain: meta
+    description: Specialized research agent that optimizes Context7 library documentation
+    model: sonnet
+    tools: [Read, Grep]
+    capabilities:
+      - context7-research
+      - library-optimization
+    stateless: true
+
+  # ========================================
+  # PERSONAL (1 agent)
+  # ========================================
+
+  personal-12factor-audit:
+    domain: personal
+    description: Audit projects for 12-factor compliance, generate remediation plans
+    model: sonnet
+    tools: [Bash, Read, Grep, Glob]
+    capabilities:
+      - 12factor-audit
+      - compliance-assessment
+      - remediation-planning
+    stateless: true
+    avg_duration: 4m  # From spec: 4-5 min per audit
+    success_rate: 0.90
+    time_savings: 15x
+
+  # ========================================
+  # ARGOCD DEBUGGING (1 agent)
+  # ========================================
+
+  argocd-debug-sync:
+    domain: applications
+    description: Debug Argo CD application sync failures
+    model: sonnet
+    tools: [Bash, Read, Grep, mcp__context7__resolve-library-id, mcp__context7__get-library-docs, mcp__podman__container_list, mcp__podman__container_logs, mcp__podman__container_inspect]
+    capabilities:
+      - argocd-debugging
+      - sync-failure-analysis
+      - container-inspection
+    stateless: true
+    avg_duration: 15m
+
+  # ========================================
+  # GITOPS SPECIALIST GENERATOR (1 agent)
+  # ========================================
+
+  gitops-specialist-generator:
+    domain: meta
+    tier: 3  # Tier 3: Production ready + Specification compliant
+    specification: .claude/specs/meta/specialist-generator.spec.md
+    version: 1.0.0
+    compliance: compliant
+    description: Analyze GitOps Knowledge OS repository to identify agent coverage gaps
+    model: sonnet  # Complex reasoning for gap analysis and spec generation
+    tools: [Read, Grep, Bash, Write]
+    capabilities:
+      - agent-inventory
+      - workflow-analysis
+      - gap-identification
+      - agent-spec-generation
+      - priority-calculation
+      - impact-estimation
+    stateless: true
+    avg_duration: 30m  # From spec: 30 min for quarterly review
+    success_rate: 0.85
+    time_savings: 20x
+
+  # ========================================
+  # HARMONIZE GUIDE (1 agent)
+  # ========================================
+
+  harmonize-guide:
+    domain: playbooks
+    description: Orchestrate harmonize workflow (config.env → values.yaml)
+    model: sonnet
+    tools: [Read, Edit, Bash, mcp__context7__resolve-library-id, mcp__context7__get-library-docs]
+    capabilities:
+      - harmonize-orchestration
+      - config-rendering
+      - workflow-execution
+    stateless: true
+    avg_duration: 5m
+
+# Usage Patterns
+usage_patterns:
+  high_frequency:
+    - applications-create-app
+    - applications-debug-sync
+    - sites-harmonize
+    - documentation-create-docs
+
+  specialized:
+    - services-crossplane-dev
+    - services-kyverno-policies
+    - services-edb-databases
+
+  meta_operations:
+    - meta-retro-analyzer
+    - meta-workflow-auditor
+    - meta-ipc-auditor
+
+# Discovery Metadata
+keywords:
+  create: [applications-create-app, applications-create-app-jren, documentation-create-docs, monitoring-slo-dashboards, services-kyverno-policies]
+  debug: [applications-debug-sync, argocd-debug-sync, pipelines-troubleshooting, services-edb-databases]
+  modify: [applications-modify-app, applications-modify-app-jren, sites-site-config, pipelines-gitlab-ci]
+  review: [code-review-improve, innovation-architecture-review, documentation-diataxis-auditor]
+  deploy: [deployments-progressive-delivery, playbooks-platform-upgrades, playbooks-keycloak-sso]
+  monitor: [monitoring-alerts-runbooks, monitoring-slo-dashboards]
+  incident: [incidents-response, incidents-postmortems]
+
+# Metrics (From Recent Sessions)
+metrics:
+  total_sessions: 204
+  total_commits: 538
+  success_rate: 0.95
+  context_collapse_rate: 0.00
+  avg_speedup: 24
+  pattern_framework:
+    total_patterns: 59
+    categories: 10
+    universal_patterns: 4
+    universal_adoption: 100%
+    average_adoption: 89%
+    highest_roi_pattern: "Index-First Search"
+    highest_roi_multiplier: "40x"
+  rebuild_metrics:
+    agents_rebuilt: 53
+    coverage: "100%"
+    net_growth: "+48,925 lines"
+    growth_multiplier: "3.6x average"
+    pattern_implementations: "400+"
+    success_rate: "95%+"
+    time_invested: "5 days"
+    velocity: "10x vs sequential"
+
+# Next: Natural Language Router
+# See: docs/improvement-plan/humanlayer-pattern-adoption.md#1-context-metrics-dashboard

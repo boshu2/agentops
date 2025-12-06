@@ -1,213 +1,174 @@
-# AgentOps - Claude Code Plugin Marketplace
+# Knowledge OS - Claude Code Plugin Marketplace
 
-> **Production-ready patterns for AI-assisted development**
-
-## What's Inside
-
-**6 plugins** demonstrating 12-Factor AgentOps principles:
-
-| Plugin | Description | Highlights |
-|--------|-------------|------------|
-| **constitution** | Foundational laws and guardrails | Nine Laws, 40% Rule, Git Discipline |
-| **core-workflow** | Research → Plan → Implement → Learn | 4 agents, 5 commands |
-| **session-management** | Long-lived sessions that survive context resets | Bundles, progress.json, session protocol |
-| **vibe-coding** | 5 metrics, 6 levels, 12 failure patterns | Tracer tests, vibe-check CLI |
-| **devops-operations** | Kubernetes, Helm, ArgoCD patterns | GitOps workflows |
-| **software-development** | Python, JavaScript, Go development | TDD patterns |
-
----
+Production-ready patterns for AI-assisted development. The Research → Plan → Implement workflow, session persistence, and 55 specialized agents.
 
 ## Quick Install
 
 ```bash
-# Add marketplace
+# Clone to your plugins directory
+git clone https://github.com/boshu2/agentops.git ~/.claude/plugins/knowledge-os
+
+# Or add as marketplace
 /plugin marketplace add boshu2/agentops
-
-# Install featured plugins
-/plugin install constitution@agentops
-/plugin install core-workflow@agentops
-/plugin install session-management@agentops
-/plugin install vibe-coding@agentops
 ```
 
----
+## What's Included
 
-## Featured Plugins
+| Category | Count | Description |
+|----------|-------|-------------|
+| **Commands** | 29 | RPI workflow, sessions, bundles, quality, documentation |
+| **Agents** | 55 | Specialized agents across 8 domains |
+| **Skills** | 7 | Domain knowledge packs |
 
-### Constitution (Foundation)
-
-**Guidelines that shape agent behavior.**
-
-- **Nine Laws** - Learn, document, validate, guide, measure, protect
-- **40% Rule** - Keep context lean for better quality
-- **Git Discipline** - Semantic commits, clean workspaces
-
-```bash
-/plugin install constitution@agentops
-```
-
-### Core Workflow (Required Base)
-
-**Universal Research → Plan → Implement → Learn workflow.**
+## Core Workflow
 
 ```mermaid
 graph LR
-    R["Research<br/><i>explore options</i>"] -->|bundle| P["Plan<br/><i>specify changes</i>"]
-    P -->|spec| I["Implement<br/><i>execute & validate</i>"]
-    I -->|patterns| L["Learn<br/><i>extract insights</i>"]
-    L -.->|next iteration| R
-
-    style R fill:#3498db,stroke:#2980b9,color:#fff
-    style P fill:#9b59b6,stroke:#8e44ad,color:#fff
-    style I fill:#2ecc71,stroke:#27ae60,color:#fff
-    style L fill:#f39c12,stroke:#d68910,color:#fff
+    R["Research"] -->|bundle| P["Plan"]
+    P -->|spec| I["Implement"]
+    I -->|patterns| L["Learn"]
+    L -.->|next| R
 ```
 
-- 4 specialized agents (research, plan, implement, learn)
-- 5 commands for workflow orchestration
-- Human gates between phases
+### Essential Commands
 
 ```bash
-/plugin install core-workflow@agentops
+/research          # Deep exploration before planning
+/plan              # Create implementation plan
+/implement         # Execute approved plan with validation
+
+/session-start     # Initialize session with context
+/session-end       # Save progress and summarize
+
+/bundle-save       # Save context for multi-session work
+/bundle-load       # Resume from saved context
 ```
 
-### Session Management (Long-Lived Sessions)
+## Agent Categories
 
-**The real solution for multi-day projects.**
+| Domain | Count | Examples |
+|--------|-------|----------|
+| **Code Quality** | 8 | code-reviewer, test-generator, validation-planner |
+| **Languages** | 7 | golang-pro, python-pro, typescript-pro, rust-pro, java-pro |
+| **Architecture** | 6 | backend-architect, spec-architect, fullstack-developer |
+| **DevOps** | 5 | deployment-engineer, incident-responder, error-detective |
+| **Documentation** | 5 | api-documenter, doc-explorer, documentation-create-docs |
+| **Data/ML** | 4 | data-engineer, ml-engineer, ai-engineer, mlops-engineer |
+| **Security** | 3 | penetration-tester, risk-assessor, continuous-validator |
+| **Meta** | 5 | context-manager, task-decomposition-expert, prompt-engineer |
 
-AI agents have goldfish memory - each session starts fresh. Session Management solves this:
+### All Agents
 
-- **Context Bundling** - Compress 60k tokens to 2-3k, survive context resets
-- **Progress Tracking** - `claude-progress.json` tracks state across sessions
-- **Session Protocol** - `/session-start`, `/session-end`, `/session-resume`
+<details>
+<summary>55 agents (click to expand)</summary>
 
-```bash
-# Day 1
-/session-start
-# ... work ...
-/bundle-save my-feature-research
-/session-end
+- accessibility-specialist
+- ai-engineer
+- api-documenter
+- archive-researcher
+- assumption-validator
+- autonomous-worker
+- backend-architect
+- change-executor
+- code-explorer
+- code-review-improve
+- code-reviewer
+- connection-agent
+- context-manager
+- continuous-validator
+- customer-support
+- data-engineer
+- data-scientist
+- deployment-engineer
+- doc-explorer
+- document-structure-analyzer
+- documentation-create-docs
+- documentation-diataxis-auditor
+- documentation-optimize-docs
+- error-detective
+- frontend-developer
+- fullstack-developer
+- golang-pro
+- history-explorer
+- incident-responder
+- incidents-postmortems
+- incidents-response
+- ios-developer
+- java-pro
+- meta-memory-manager
+- meta-observer
+- meta-retro-analyzer
+- ml-engineer
+- mlops-engineer
+- mobile-developer
+- monitoring-alerts-runbooks
+- network-engineer
+- penetration-tester
+- performance-engineer
+- prompt-engineer
+- python-pro
+- risk-assessor
+- rust-pro
+- shell-scripting-pro
+- spec-architect
+- task-decomposition-expert
+- test-generator
+- tracer-bullet-deployer
+- typescript-pro
+- ui-ux-designer
+- validation-planner
 
-# Day 2
-/session-resume
-# Picks up exactly where you left off
-```
+</details>
 
-```bash
-/plugin install session-management@agentops
-```
+## Skills
 
-### Vibe Coding
+| Skill | Purpose |
+|-------|---------|
+| **base** | Foundation patterns and templates |
+| **brand-guidelines** | Consistent documentation styling |
+| **doc-curator** | Documentation quality management |
+| **git-workflow** | Git best practices and automation |
+| **skill-creator** | Create new skills from patterns |
+| **test-gap-scanner** | Identify missing test coverage |
+| **testing** | Test patterns and frameworks |
 
-**Measure and improve AI-assisted development.**
+## Vibe Levels
 
-- **5 Core Metrics** - Iteration velocity, rework ratio, trust pass rate
-- **6 Vibe Levels** - Classify task difficulty (0-5)
-- **Tracer Tests** - Validate assumptions before coding
+Trust calibration for AI collaboration:
 
-```bash
-npm install -g @boshu2/vibe-check
-/plugin install vibe-coding@agentops
-```
-
----
+| Level | Trust | Verification | Use For |
+|-------|-------|--------------|---------|
+| **L5** | 95% | Final only | Formatting, linting |
+| **L4** | 80% | Spot check | Boilerplate, config |
+| **L3** | 60% | Key outputs | Standard features |
+| **L2** | 40% | Every change | New features |
+| **L1** | 20% | Every line | Architecture, security |
+| **L0** | 0% | Research only | Novel exploration |
 
 ## The 12 Factors
 
 | Factor | Description |
 |--------|-------------|
-| I | Git Memory - Commits as knowledge writes |
-| II | JIT Context - Load only what's needed |
-| III | Single Responsibility - One agent = one job |
-| IV | Validation Gates - Verify before proceeding |
-| V | Operational Telemetry - Track metrics |
-| VI | Session Continuity - Bundles preserve state |
-| VII | Intelligent Routing - Route to right specialist |
-| VIII | Human Gate Reviews - Approval at key points |
-| IX | Pattern Extraction - Capture reusables |
-| X | Continuous Improvement - Identify improvements |
-| XI | Constitutional Guardrails - Enforce rules |
-| XII | Domain Portability - Works across domains |
+| I | **Git Memory** - Commits as knowledge writes |
+| II | **JIT Context** - Load only what's needed |
+| III | **Single Responsibility** - One agent = one job |
+| IV | **Validation Gates** - Verify before proceeding |
+| V | **Operational Telemetry** - Track metrics |
+| VI | **Session Continuity** - Bundles preserve state |
+| VII | **Intelligent Routing** - Route to right specialist |
+| VIII | **Human Gate Reviews** - Approval at key points |
+| IX | **Pattern Extraction** - Capture reusables |
+| X | **Continuous Improvement** - Identify improvements |
+| XI | **Constitutional Guardrails** - Enforce rules |
+| XII | **Domain Portability** - Works across domains |
 
----
+## Related
 
-## Plugin Dependency Graph
-
-```mermaid
-graph TD
-    A["constitution<br/><i>foundation</i>"] --> B["core-workflow<br/><i>required base</i>"]
-    B --> C["session-management"]
-    B --> D["vibe-coding"]
-    B --> E["devops-operations"]
-    B --> F["software-development"]
-
-    style A fill:#1a1a2e,stroke:#16213e,color:#eee
-    style B fill:#16213e,stroke:#0f3460,color:#eee
-    style C fill:#0f3460,stroke:#e94560,color:#eee
-    style D fill:#0f3460,stroke:#e94560,color:#eee
-    style E fill:#0f3460,stroke:#e94560,color:#eee
-    style F fill:#0f3460,stroke:#e94560,color:#eee
-```
-
----
-
-## Create Your Own Plugin
-
-### Structure
-
-```
-plugins/your-plugin/
-├── .claude-plugin/
-│   └── plugin.json       # Required: manifest
-├── agents/               # AI specialists
-├── commands/             # Slash commands
-├── skills/               # Knowledge modules
-└── README.md             # Documentation
-```
-
-### Plugin Manifest
-
-```json
-{
-  "name": "your-plugin",
-  "version": "1.0.0",
-  "description": "What your plugin does",
-  "dependencies": ["core-workflow"],
-  "components": {
-    "agents": ["agents/your-agent.md"],
-    "commands": ["commands/your-command.md"]
-  }
-}
-```
-
----
-
-## Other Marketplaces
-
-For more plugins, check these comprehensive catalogs:
-
-| Marketplace | Size | Install |
-|-------------|------|---------|
-| [AITMPL](https://www.aitmpl.com) | 63+ plugins, 85+ agents | `/plugin marketplace add https://www.aitmpl.com/agents` |
-| [Claude Code Templates](https://github.com/davila7/claude-code-templates) | 100+ templates | `/plugin marketplace add davila7/claude-code-templates` |
-| [wshobson/agents](https://github.com/wshobson/agents) | 63 plugins | `/plugin marketplace add wshobson/agents` |
-
----
-
-## Resources
-
+- [Vibe Coding Book](https://itrevolution.com/product/vibe-coding-book/) - Gene Kim & Steve Yegge's methodology
+- [vibe-check](https://www.npmjs.com/package/@boshu2/vibe-check) - Measure your vibe coding metrics
 - [12-Factor AgentOps](https://github.com/boshu2/12-factor-agentops) - Full framework documentation
-- [vibe-check npm](https://www.npmjs.com/package/@boshu2/vibe-check) - CLI metrics tool
-- [Claude Code Plugins Docs](https://docs.claude.com/en/docs/claude-code/plugins) - Official documentation
-
----
+- [bodenfuller.com/workflow](https://bodenfuller.com/workflow) - Watch the workflow in action
 
 ## License
 
-Apache 2.0 - See [LICENSE](LICENSE)
-
----
-
-**Created by:** Boden Fuller
-**Purpose:** Production-ready AgentOps patterns
-**Status:** Production
+MIT

@@ -1,0 +1,117 @@
+# Shared Profile: Orchestration
+# Workflow coordination, task routing, phase management
+
+name: orchestration
+version: 1.0.0
+description: Workflow coordination commands and multi-phase workflows (loaded JIT based on task)
+token_budget: 6000  # ~6k tokens (loaded on-demand)
+
+# Loaded when user invokes orchestration commands
+required: false
+load_priority: 2
+
+artifacts:
+  # Core primer commands (interactive routers)
+  commands:
+    - path: .claude/commands/prime.md
+      description: Interactive workflow router
+      token_cost: 500
+      triggers: ["need help", "not sure", "what should"]
+
+    - path: .claude/commands/prime-simple.md
+      description: Straightforward work routing
+      token_cost: 400
+      triggers: ["quick fix", "simple change", "straightforward"]
+
+    - path: .claude/commands/prime-complex.md
+      description: Multi-phase Research→Plan→Implement
+      token_cost: 800
+      triggers: ["complex", "research", "architecture"]
+
+    - path: .claude/commands/prime-with-routing.md
+      description: Prime with automatic routing
+      token_cost: 600
+
+  # Phase commands
+  phase_commands:
+    - path: .claude/commands/research.md
+      description: Research phase (single agent)
+      token_cost: 600
+
+    - path: .claude/commands/research-multi.md
+      description: Research phase (3 parallel agents)
+      token_cost: 800
+
+    - path: .claude/commands/plan.md
+      description: Planning phase
+      token_cost: 700
+
+    - path: .claude/commands/implement.md
+      description: Implementation phase
+      token_cost: 600
+
+    - path: .claude/commands/validate.md
+      description: Validation suite
+      token_cost: 500
+
+    - path: .claude/commands/validate-multi.md
+      description: Parallel validation (3 agents)
+      token_cost: 700
+
+    - path: .claude/commands/learn.md
+      description: Learning extraction
+      token_cost: 500
+
+  # Multi-phase workflows
+  workflows:
+    - path: .claude/workflows/complete-cycle.md
+      description: Full Research→Plan→Implement→Validate→Learn workflow
+      token_cost: 800
+
+    - path: .claude/workflows/debug-cycle.md
+      description: Systematic debugging workflow
+      token_cost: 600
+
+    - path: .claude/workflows/quick-fix.md
+      description: Fast iteration for simple changes
+      token_cost: 400
+
+    - path: .claude/workflows/continuous-improvement.md
+      description: Incremental improvement workflow
+      token_cost: 500
+
+    - path: .claude/workflows/knowledge-synthesis.md
+      description: Knowledge extraction and synthesis
+      token_cost: 600
+
+  # Meta-observation
+  meta:
+    - path: .claude/workflows/meta-observer-pattern.md
+      description: Meta-observer for self-improvement
+      token_cost: 700
+
+    - path: .claude/commands/workflow-status.md
+      description: Current workflow phase tracking
+      token_cost: 300
+
+# Workflow patterns
+patterns:
+  - Research→Plan→Implement (complex work)
+  - Quick-fix (simple changes)
+  - Debug cycle (troubleshooting)
+  - Continuous improvement (incremental)
+
+# Trigger patterns
+triggers:
+  keywords:
+    - "help me"
+    - "not sure how"
+    - "what should I"
+    - "research"
+    - "plan"
+    - "implement"
+    - "validate"
+
+# This profile enables workflow coordination
+# Loaded JIT when user invokes orchestration
+# Not always in memory (saves tokens)
