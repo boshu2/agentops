@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Example Claude Code plugin marketplace demonstrating 12-Factor AgentOps patterns. Educational repository showing how to create marketplaces and pointing to production-ready alternatives.
+Claude Code plugin marketplace implementing the Vibe Coding ecosystem by Gene Kim & Steve Yegge. Educational repository with production-ready patterns for AI-assisted development.
 
 ---
 
@@ -122,22 +122,41 @@ grep -r "dependencies" plugins/*/. claude-plugin/plugin.json
 
 ---
 
-## 12-Factor AgentOps Reference
+## Vibe Coding Ecosystem
 
-| Factor | Description |
-|--------|-------------|
-| I. Git Memory | Commit with context, not just code |
-| II. JIT Context | Load only what's needed |
-| III. Single-Responsibility | One agent = one job |
-| IV. Validation Gates | Verify before proceeding |
-| V. Operational Telemetry | Track metrics throughout |
-| VI. Session Continuity | Bundles preserve state |
-| VII. Intelligent Routing | Route to right specialist |
-| VIII. Human Gate Reviews | Approval at key points |
-| IX. Pattern Extraction | Capture reusable patterns |
-| X. Continuous Improvement | Identify process improvements |
-| XI. Constitutional Guardrails | Enforce rules automatically |
-| XII. Domain Portability | Works across domains |
+Based on [Vibe Coding](https://itrevolution.com/product/vibe-coding-book/) by Gene Kim & Steve Yegge.
+
+### Trust Calibration (L0-L5)
+
+| Level | Trust | Use For |
+|-------|-------|---------|
+| L5 | 95% | Formatting, linting |
+| L4 | 80% | Boilerplate, config |
+| L3 | 60% | Standard features |
+| L2 | 40% | New features, integrations |
+| L1 | 20% | Architecture, security |
+| L0 | 0% | Novel research |
+
+### The 40% Rule
+
+- **Below 40% context** → 98% success rate
+- **Above 60% context** → 24% success rate
+
+### Three Feedback Loops
+
+| Loop | Timeframe | Focus |
+|------|-----------|-------|
+| Inner | Seconds | Prompts/responses |
+| Middle | Hours | Sessions/features |
+| Outer | Days-weeks | Architecture |
+
+### FAAFO Promise
+
+**F**ast (10-16x) · **A**mbitious (solo feasible) · **A**utonomous (team output) · **F**un (50% more flow) · **O**ptionality (120x options)
+
+### Failure Patterns
+
+Watch for: Tests Passing Lie, Fix Spiral, Eldritch Horror, Silent Deletion, Confident Hallucination
 
 ---
 
@@ -164,12 +183,14 @@ For real work, use these comprehensive catalogs:
 
 ## Resources
 
-- [12-Factor AgentOps](https://github.com/boshu2/12-factor-agentops)
-- [Claude Code Plugins Docs](https://docs.claude.com/en/docs/claude-code/plugins)
-- [Plugin Marketplaces Docs](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces)
+- [Vibe Coding Book](https://itrevolution.com/product/vibe-coding-book/) - Gene Kim & Steve Yegge
+- [Vibe Ecosystem](https://www.bodenfuller.com/builds/vibe-ecosystem) - Implementation details
+- [vibe-check](https://www.npmjs.com/package/@boshu2/vibe-check) - Metrics tool
+- [Claude Code Plugins Docs](https://docs.anthropic.com/en/docs/claude-code/plugins)
+- [Plugin Marketplaces Docs](https://docs.anthropic.com/en/docs/claude-code/plugin-marketplaces)
 
 ---
 
 ## Last Updated
 
-December 1, 2025
+December 7, 2025

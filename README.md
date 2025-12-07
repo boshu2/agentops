@@ -145,28 +145,45 @@ Trust calibration for AI collaboration:
 | **L1** | 20% | Every line | Architecture, security |
 | **L0** | 0% | Research only | Novel exploration |
 
-## The 12 Factors
+## Vibe Coding Ecosystem
 
-| Factor | Description |
-|--------|-------------|
-| I | **Git Memory** - Commits as knowledge writes |
-| II | **JIT Context** - Load only what's needed |
-| III | **Single Responsibility** - One agent = one job |
-| IV | **Validation Gates** - Verify before proceeding |
-| V | **Operational Telemetry** - Track metrics |
-| VI | **Session Continuity** - Bundles preserve state |
-| VII | **Intelligent Routing** - Route to right specialist |
-| VIII | **Human Gate Reviews** - Approval at key points |
-| IX | **Pattern Extraction** - Capture reusables |
-| X | **Continuous Improvement** - Identify improvements |
-| XI | **Constitutional Guardrails** - Enforce rules |
-| XII | **Domain Portability** - Works across domains |
+Based on [Vibe Coding](https://itrevolution.com/product/vibe-coding-book/) by Gene Kim & Steve Yegge.
+
+### The FAAFO Promise
+
+| Letter | Meaning | Result |
+|--------|---------|--------|
+| **F** | Fast | 10-16x productivity gains |
+| **A** | Ambitious | Projects become feasible solo |
+| **A** | Autonomous | Team-scale output from individuals |
+| **F** | Fun | 50% more flow state time |
+| **O** | Optionality | 120x more exploration options |
+
+### Three Feedback Loops
+
+| Loop | Timeframe | Focus |
+|------|-----------|-------|
+| **Inner** | Seconds | Individual prompts and responses |
+| **Middle** | Hours | Work sessions or features |
+| **Outer** | Days-weeks | Architecture and direction |
+
+### The 40% Rule
+
+Context utilization matters:
+- **Below 40%** → 98% success rate
+- **Above 60%** → 24% success rate
+
+Higher context causes AI to forget instructions and contradict itself.
+
+### Twelve Failure Patterns
+
+Watch for: Tests Passing Lie, Fix Spiral, Eldritch Horror, Silent Deletion, Confident Hallucination, and others documented in the book.
 
 ## Related
 
 - [Vibe Coding Book](https://itrevolution.com/product/vibe-coding-book/) - Gene Kim & Steve Yegge's methodology
+- [Vibe Ecosystem](https://www.bodenfuller.com/builds/vibe-ecosystem) - Full ecosystem documentation
 - [vibe-check](https://www.npmjs.com/package/@boshu2/vibe-check) - Measure your vibe coding metrics
-- [12-Factor AgentOps](https://github.com/boshu2/12-factor-agentops) - Full framework documentation
 - [bodenfuller.com/workflow](https://bodenfuller.com/workflow) - Watch the workflow in action
 
 ## License
