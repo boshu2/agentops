@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "knowledge-os",
   "version": "1.0.0",
   "description": "Complete Knowledge OS for Claude Code - Research/Plan/Implement workflow, session management, vibe-coding metrics, and 85+ specialized agents",

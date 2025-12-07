@@ -1,7 +1,7 @@
 {
   "name": "knowledge-os-marketplace",
   "version": "2.0.0",
-  "schema": "anthropic-2025-marketplace-v1",
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "owner": {
     "name": "Brandon Fuller",
     "email": "fullerbt@users.noreply.github.com"

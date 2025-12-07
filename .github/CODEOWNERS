@@ -1,0 +1,23 @@
+# CODEOWNERS for Knowledge OS Marketplace
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @boshu2
+
+# Plugin marketplace definition
+/.claude-plugin/ @boshu2
+
+# Agents directory
+/agents/ @boshu2
+
+# Commands directory
+/commands/ @boshu2
+
+# Skills directory
+/skills/ @boshu2
+
+# Profiles directory
+/profiles/ @boshu2
+
+# Workflows directory
+/workflows/ @boshu2
