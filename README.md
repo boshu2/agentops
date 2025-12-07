@@ -2,6 +2,8 @@
 
 Production-ready patterns for AI-assisted development. The Research → Plan → Implement workflow, session persistence, and 55 specialized agents.
 
+**[See it in action →](https://www.bodenfuller.com/workflow)**
+
 ## Quick Install
 
 ```bash
