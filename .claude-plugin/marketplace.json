@@ -1,489 +1,254 @@
 {
-  "name": "knowledge-os-marketplace",
-  "version": "2.0.0",
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentops-marketplace",
+  "version": "2.0.0",
+  "description": "AgentOps Marketplace - Vibe Coding ecosystem plugins for Claude Code with modular architecture",
   "owner": {
     "name": "Brandon Fuller",
     "email": "fullerbt@users.noreply.github.com"
   },
-  "metadata": {
-    "description": "Knowledge OS Marketplace - Modular Claude Code extensions with 3-tier architecture",
-    "pluginRoot": ".."
-  },
-  "tiers": {
-    "foundation": {
-      "description": "Required core plugins - install first",
-      "plugins": ["foundation-core", "foundation-bundles", "foundation-quality", "foundation-learning", "foundation-meta"]
-    },
-    "domain": {
-      "description": "Role-based plugins - pick 1-3 based on your work",
-      "plugins": ["domain-software-engineer", "domain-devops", "domain-platform", "domain-data", "domain-security", "domain-documentation", "domain-mobile", "domain-innovation"]
-    },
-    "specialist": {
-      "description": "Deep expertise plugins - optional, install as needed",
-      "plugins": ["specialist-golang", "specialist-python", "specialist-typescript", "specialist-shell", "specialist-rust", "specialist-java", "specialist-performance", "specialist-accessibility"]
-    },
-    "niche": {
-      "description": "Specialized domains - install for specific use cases",
-      "plugins": []
-    }
-  },
-  "installation_profiles": {
-    "minimal": {
-      "description": "Core workflow only",
-      "plugins": ["foundation-core", "foundation-bundles"]
-    },
-    "developer": {
-      "description": "Full-stack developer setup",
-      "plugins": ["foundation-core", "foundation-bundles", "foundation-quality", "foundation-learning", "foundation-meta", "domain-software-engineer", "specialist-typescript", "specialist-python"]
-    },
-    "devops": {
-      "description": "DevOps/Platform engineer setup",
-      "plugins": ["foundation-core", "foundation-bundles", "foundation-quality", "foundation-learning", "foundation-meta", "domain-devops", "domain-platform", "specialist-shell"]
-    },
-    "data": {
-      "description": "Data engineer/scientist setup",
-      "plugins": ["foundation-core", "foundation-bundles", "foundation-quality", "foundation-learning", "foundation-meta", "domain-data", "specialist-python"]
-    },
-    "full": {
-      "description": "Everything",
-      "plugins": ["*"]
-    }
-  },
   "plugins": [
     {
       "name": "foundation-core",
-      "tier": "foundation",
-      "source": "./",
       "description": "Core RPI workflow (Research/Plan/Implement), session management, and vibe-coding metrics",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["workflow", "rpi", "session", "vibe-coding"],
-      "dependencies": [],
-      "commands": [
-        "../commands/research.md",
-        "../commands/plan.md",
-        "../commands/implement.md",
-        "../commands/session-start.md",
-        "../commands/session-end.md",
-        "../commands/session-resume.md",
-        "../commands/vibe-check.md",
-        "../commands/vibe-level.md",
-        "../commands/progress-update.md"
-      ],
-      "strict": false
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "productivity"
     },
     {
       "name": "foundation-bundles",
-      "tier": "foundation",
-      "source": "./",
       "description": "Context persistence and bundle management for multi-session work",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["bundles", "context", "persistence"],
-      "dependencies": ["foundation-core"],
-      "commands": [
-        "../commands/bundle-save.md",
-        "../commands/bundle-load.md",
-        "../commands/bundle-search.md",
-        "../commands/bundle-list.md",
-        "../commands/bundle-prune.md",
-        "../commands/bundle-load-multi.md"
-      ],
-      "strict": false
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "productivity"
     },
     {
       "name": "foundation-quality",
-      "tier": "foundation",
-      "source": "./",
       "description": "Code review, testing, and architecture analysis",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["code-review", "testing", "architecture"],
-      "dependencies": ["foundation-core"],
-      "commands": [
-        "../commands/code-review.md",
-        "../commands/architecture-review.md",
-        "../commands/generate-tests.md"
-      ],
-      "agents": [
-        "../agents/code-reviewer.md",
-        "../agents/code-review-improve.md",
-        "../agents/code-explorer.md",
-        "../agents/test-generator.md",
-        "../agents/testing-integration-e2e.md",
-        "../agents/testing-onboarding-audit.md",
-        "../agents/continuous-validator.md"
-      ],
-      "strict": false
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "productivity"
     },
     {
       "name": "foundation-learning",
-      "tier": "foundation",
-      "source": "./",
       "description": "Pattern extraction, retrospectives, and knowledge maintenance",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["learning", "patterns", "retrospective"],
-      "dependencies": ["foundation-core", "foundation-bundles"],
-      "commands": [
-        "../commands/learn.md",
-        "../commands/retro.md",
-        "../commands/maintain.md"
-      ],
-      "strict": false
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "learning"
     },
     {
       "name": "foundation-meta",
-      "tier": "foundation",
-      "source": "./",
       "description": "Multi-agent orchestration, context management, and AI engineering",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["meta", "orchestration", "workflow", "ai"],
-      "dependencies": ["foundation-core"],
-      "commands": [
-        "../commands/ultra-think.md",
-        "../commands/project-init.md",
-        "../commands/research-multi.md"
-      ],
-      "agents": [
-        "../agents/meta-implement-agent.md",
-        "../agents/meta-observer.md",
-        "../agents/meta-retro-analyzer.md",
-        "../agents/meta-workflow-auditor.md",
-        "../agents/ai-engineer.md",
-        "../agents/autonomous-worker.md",
-        "../agents/context-manager.md",
-        "../agents/task-decomposition-expert.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-software-engineer",
-      "tier": "domain",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
       "source": "./",
-      "description": "Full-stack development: frontend, backend, APIs, UI/UX",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["frontend", "backend", "fullstack", "ui-ux", "api"],
-      "dependencies": ["foundation-core", "foundation-quality"],
-      "agents": [
-        "../agents/frontend-developer.md",
-        "../agents/backend-architect.md",
-        "../agents/fullstack-developer.md",
-        "../agents/ui-ux-designer.md",
-        "../agents/api-documenter.md",
-        "../agents/prompt-engineer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-devops",
-      "tier": "domain",
-      "source": "./",
-      "description": "CI/CD, containers, deployments, pipelines, networking",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["devops", "deployment", "containers", "pipelines", "cicd"],
-      "dependencies": ["foundation-core"],
-      "commands": [
-        "../commands/containerize-application.md"
-      ],
-      "agents": [
-        "../agents/deployment-engineer.md",
-        "../agents/deployments-progressive-delivery.md",
-        "../agents/deployments-rollback-automation.md",
-        "../agents/containers-build-modify.md",
-        "../agents/pipelines-gitlab-ci.md",
-        "../agents/pipelines-troubleshooting.md",
-        "../agents/network-engineer.md",
-        "../agents/networking-nsx-load-balancer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-platform",
-      "tier": "domain",
-      "source": "./",
-      "description": "GitOps, Crossplane, Kyverno, databases, monitoring, platform services",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["gitops", "argocd", "crossplane", "kyverno", "monitoring"],
-      "dependencies": ["foundation-core", "domain-devops"],
-      "agents": [
-        "../agents/applications-create-app.md",
-        "../agents/applications-modify-app.md",
-        "../agents/applications-debug-sync.md",
-        "../agents/applications-paas-audit.md",
-        "../agents/argocd-debug-sync.md",
-        "../agents/operations-gitops-operations.md",
-        "../agents/gitops-specialist-generator.md",
-        "../agents/harmonize-guide.md",
-        "../agents/services-crossplane-dev.md",
-        "../agents/services-edb-databases.md",
-        "../agents/services-kyverno-policies.md",
-        "../agents/services-gpu-node-validation.md",
-        "../agents/sites-harmonize.md",
-        "../agents/sites-site-config.md",
-        "../agents/monitoring-alerts-runbooks.md",
-        "../agents/operations-jira-tickets.md",
-        "../agents/playbooks-gitops-operations.md",
-        "../agents/playbooks-harmonize-workflow.md",
-        "../agents/playbooks-keycloak-sso.md",
-        "../agents/playbooks-platform-upgrades.md",
-        "../agents/playbooks-storagegrid-onboarding.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-data",
-      "tier": "domain",
-      "source": "./",
-      "description": "Data engineering, analytics, machine learning, and MLOps",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["data", "analytics", "ml", "mlops", "pipelines"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/data-engineer.md",
-        "../agents/data-scientist.md",
-        "../agents/ml-engineer.md",
-        "../agents/mlops-engineer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-security",
-      "tier": "domain",
-      "source": "./",
-      "description": "Security scanning, penetration testing, incident response",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["security", "scanning", "incidents", "penetration-testing"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/security-scanning.md",
-        "../agents/penetration-tester.md",
-        "../agents/incident-responder.md",
-        "../agents/incidents-response.md",
-        "../agents/incidents-postmortems.md",
-        "../agents/error-detective.md",
-        "../agents/history-explorer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-documentation",
-      "tier": "domain",
-      "source": "./",
-      "description": "Documentation creation, optimization, diagrams, Diataxis compliance",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["documentation", "diataxis", "diagrams", "onboarding"],
-      "dependencies": ["foundation-core"],
-      "commands": [
-        "../commands/update-docs.md",
-        "../commands/create-architecture-documentation.md",
-        "../commands/create-onboarding-guide.md"
-      ],
-      "agents": [
-        "../agents/documentation-create-docs.md",
-        "../agents/documentation-optimize-docs.md",
-        "../agents/documentation-search-docs.md",
-        "../agents/documentation-diataxis-auditor.md",
-        "../agents/documentation-add-diagrams.md",
-        "../agents/doc-explorer.md",
-        "../agents/document-structure-analyzer.md",
-        "../agents/customer-support.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-mobile",
-      "tier": "domain",
-      "source": "./",
-      "description": "iOS, Android, and cross-platform mobile development",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["ios", "android", "mobile", "flutter", "react-native"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/ios-developer.md",
-        "../agents/mobile-developer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "domain-innovation",
-      "tier": "domain",
-      "source": "./",
-      "description": "Architecture review, automation discovery, brainstorming, capability exploration",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["innovation", "architecture", "automation", "brainstorming"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/innovation-architecture-review.md",
-        "../agents/innovation-automation-opportunities.md",
-        "../agents/innovation-brainstorm-solutions.md",
-        "../agents/innovation-capability-explorer.md",
-        "../agents/spec-architect.md",
-        "../agents/validation-planner.md",
-        "../agents/assumption-validator.md",
-        "../agents/risk-assessor.md",
-        "../agents/change-executor.md",
-        "../agents/tracer-bullet-deployer.md",
-        "../agents/connection-agent.md",
-        "../agents/archive-researcher.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-golang",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Idiomatic Go: goroutines, channels, interfaces, error handling",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["golang", "go", "concurrency"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/golang-pro.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-python",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Advanced Python: decorators, generators, async, testing",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["python", "async", "testing"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/python-pro.md",
-        "../agents/python-uv-migration.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-typescript",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Advanced TypeScript: type system, generics, strict typing",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["typescript", "types", "generics"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/typescript-pro.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-shell",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Shell scripting: POSIX compliance, automation, system integration",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["shell", "bash", "scripting", "posix"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/shell-scripting-pro.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-rust",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Rust systems programming: ownership, lifetimes, async, performance",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["rust", "systems", "memory-safe", "performance"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/rust-pro.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-java",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Java/Spring development: Spring Boot, JVM, enterprise patterns",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["java", "spring", "jvm", "enterprise"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/java-pro.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-performance",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Performance testing, profiling, and optimization",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["performance", "testing", "profiling", "optimization"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/performance-engineer.md"
-      ],
-      "strict": false
-    },
-    {
-      "name": "specialist-accessibility",
-      "tier": "specialist",
-      "source": "./",
-      "description": "Web accessibility, WCAG compliance, and inclusive design",
-      "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["accessibility", "wcag", "a11y", "inclusive"],
-      "dependencies": ["foundation-core"],
-      "agents": [
-        "../agents/accessibility-specialist.md"
-      ],
-      "strict": false
+      "category": "development"
     },
     {
       "name": "foundation-skills",
-      "tier": "foundation",
-      "source": "./",
       "description": "Domain knowledge packs for GitOps, infrastructure, security, and platform engineering",
       "version": "2.0.0",
-      "author": { "name": "Brandon Fuller" },
-      "license": "MIT",
-      "keywords": ["skills", "gitops", "infrastructure", "security"],
-      "dependencies": ["foundation-core"],
-      "strict": false
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-software-engineer",
+      "description": "Full-stack development: frontend, backend, APIs, UI/UX",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-devops",
+      "description": "CI/CD, containers, deployments, pipelines, networking",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-platform",
+      "description": "GitOps, Crossplane, Kyverno, databases, monitoring, platform services",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-data",
+      "description": "Data engineering, analytics, machine learning, and MLOps",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-security",
+      "description": "Security scanning, penetration testing, incident response",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "security"
+    },
+    {
+      "name": "domain-documentation",
+      "description": "Documentation creation, optimization, diagrams, Diataxis compliance",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "productivity"
+    },
+    {
+      "name": "domain-mobile",
+      "description": "iOS, Android, and cross-platform mobile development",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "domain-innovation",
+      "description": "Architecture review, automation discovery, brainstorming, capability exploration",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-golang",
+      "description": "Idiomatic Go: goroutines, channels, interfaces, error handling",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-python",
+      "description": "Advanced Python: decorators, generators, async, testing",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-typescript",
+      "description": "Advanced TypeScript: type system, generics, strict typing",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-shell",
+      "description": "Shell scripting: POSIX compliance, automation, system integration",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-rust",
+      "description": "Rust systems programming: ownership, lifetimes, async, performance",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-java",
+      "description": "Java/Spring development: Spring Boot, JVM, enterprise patterns",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-performance",
+      "description": "Performance testing, profiling, and optimization",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
+    },
+    {
+      "name": "specialist-accessibility",
+      "description": "Web accessibility, WCAG compliance, and inclusive design",
+      "version": "2.0.0",
+      "author": {
+        "name": "Brandon Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./",
+      "category": "development"
     }
   ]
 }
