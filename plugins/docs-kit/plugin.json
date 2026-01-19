@@ -2,28 +2,8 @@
   "name": "docs-kit",
   "version": "1.0.0",
   "description": "Documentation generation and scaffolding skills",
-  "author": "Bo Fuller",
-  "license": "MIT",
-  "repository": "https://github.com/boshu2/agentops",
-  "homepage": "https://12factoragentops.com",
-  "skills": [
-    "skills/doc/",
-    "skills/oss-docs/",
-    "skills/golden-init/"
-  ],
-  "agents": [],
-  "templates": [],
-  "philosophy": {
-    "core_rule": "Documentation as code",
-    "principles": [
-      "Generate docs from code",
-      "OSS-ready from day one",
-      "Golden templates for consistency"
-    ]
-  },
-  "tags": [
-    "documentation",
-    "oss",
-    "templates"
-  ]
+  "author": {
+    "name": "Bo Fuller",
+    "email": "fullerbt@users.noreply.github.com"
+  }
 }

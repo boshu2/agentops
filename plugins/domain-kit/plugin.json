@@ -2,44 +2,8 @@
   "name": "domain-kit",
   "version": "1.1.0",
   "description": "Reference knowledge across 16 domains - languages, development, operations, and more",
-  "author": "Bo Fuller",
-  "license": "MIT",
-  "repository": "https://github.com/boshu2/agentops",
-  "homepage": "https://12factoragentops.com",
-  "skills": [
-    "skills/languages/",
-    "skills/development/",
-    "skills/documentation/",
-    "skills/code-quality/",
-    "skills/validation/",
-    "skills/operations/",
-    "skills/monitoring/",
-    "skills/security/",
-    "skills/data/",
-    "skills/meta/",
-    "skills/specialized/",
-    "skills/testing/",
-    "skills/git-workflow/",
-    "skills/maintenance/",
-    "skills/brand-guidelines/",
-    "skills/skill-creator/",
-    "skills/test-gap-scanner/"
-  ],
-  "agents": [],
-  "templates": [],
-  "philosophy": {
-    "core_rule": "Domain knowledge on demand",
-    "principles": [
-      "Load knowledge when needed",
-      "16 domains covering full development lifecycle",
-      "Reference-style documentation"
-    ]
-  },
-  "tags": [
-    "reference",
-    "knowledge",
-    "domain",
-    "languages",
-    "operations"
-  ]
+  "author": {
+    "name": "Bo Fuller",
+    "email": "fullerbt@users.noreply.github.com"
+  }
 }

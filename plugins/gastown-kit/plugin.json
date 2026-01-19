@@ -2,32 +2,8 @@
   "name": "gastown-kit",
   "version": "1.0.0",
   "description": "Gas Town multi-agent orchestration - crew, polecats, and routing",
-  "author": "Bo Fuller",
-  "license": "MIT",
-  "repository": "https://github.com/boshu2/agentops",
-  "homepage": "https://github.com/steveyegge/gastown",
-  "skills": [
-    "skills/crew/",
-    "skills/polecat-lifecycle/",
-    "skills/gastown/",
-    "skills/bd-routing/"
-  ],
-  "agents": [],
-  "templates": [],
-  "philosophy": {
-    "core_rule": "Gas Town is a steam engine - agents are pistons",
-    "principles": [
-      "Crew for human-guided work",
-      "Polecats for autonomous parallel execution",
-      "Beads routing enables multi-rig coordination"
-    ]
-  },
-  "tags": [
-    "gastown",
-    "multi-agent",
-    "orchestration",
-    "crew",
-    "polecat"
-  ],
-  "upstream": "https://github.com/steveyegge/gastown"
+  "author": {
+    "name": "Bo Fuller",
+    "email": "fullerbt@users.noreply.github.com"
+  }
 }

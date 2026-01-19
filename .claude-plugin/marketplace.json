@@ -77,6 +77,108 @@
         "open-source",
         "contribution"
       ]
+    },
+    {
+      "name": "beads-kit",
+      "description": "Git-based issue tracking with beads",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/beads-kit",
+      "category": "productivity",
+      "keywords": [
+        "beads",
+        "issue-tracking",
+        "molecules"
+      ]
+    },
+    {
+      "name": "core-kit",
+      "description": "Core workflow skills - research, plan, implement, and iterate",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/core-kit",
+      "category": "productivity",
+      "keywords": [
+        "workflow",
+        "research",
+        "implementation",
+        "planning"
+      ]
+    },
+    {
+      "name": "dispatch-kit",
+      "description": "Work assignment and orchestration primitives",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/dispatch-kit",
+      "category": "orchestration",
+      "keywords": [
+        "dispatch",
+        "orchestration",
+        "handoff",
+        "multi-agent"
+      ]
+    },
+    {
+      "name": "docs-kit",
+      "description": "Documentation generation and scaffolding skills",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/docs-kit",
+      "category": "productivity",
+      "keywords": [
+        "documentation",
+        "oss",
+        "templates"
+      ]
+    },
+    {
+      "name": "domain-kit",
+      "description": "Reference knowledge across 16 domains - languages, development, operations, and more",
+      "version": "1.1.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/domain-kit",
+      "category": "productivity",
+      "keywords": [
+        "reference",
+        "knowledge",
+        "domain",
+        "languages",
+        "operations"
+      ]
+    },
+    {
+      "name": "gastown-kit",
+      "description": "Gas Town multi-agent orchestration - crew, polecats, and routing",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/gastown-kit",
+      "category": "orchestration",
+      "keywords": [
+        "gastown",
+        "multi-agent",
+        "orchestration",
+        "crew",
+        "polecat"
+      ]
     }
   ],
   "skills": {
