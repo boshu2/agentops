@@ -61,6 +61,22 @@
         "beads",
         "contribution"
       ]
+    },
+    {
+      "name": "pr-kit",
+      "description": "Open source contribution workflow - from research to retro",
+      "version": "1.0.0",
+      "author": {
+        "name": "Bo Fuller",
+        "email": "fullerbt@users.noreply.github.com"
+      },
+      "source": "./plugins/pr-kit",
+      "category": "productivity",
+      "keywords": [
+        "pr-workflow",
+        "open-source",
+        "contribution"
+      ]
     }
   ],
   "skills": {
