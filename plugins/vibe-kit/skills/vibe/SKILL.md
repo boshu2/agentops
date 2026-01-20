@@ -45,6 +45,49 @@ architecture, accessibility, complexity, and more.
 
 ---
 
+## Context Inference
+
+When `/vibe` is invoked without a target, check the preceding conversation for context:
+
+### Priority Order
+
+1. **Explicit target** - If user provides a path/target, use it
+2. **Recent code changes in conversation** - If code was just written or edited, validate those files
+3. **Staged git changes** - If `git diff --cached` shows staged files, validate those
+4. **Unstaged changes** - If `git diff` shows modified files, validate those
+5. **Default to `recent`** - Fall back to recent git changes
+
+### Detection Logic
+
+```markdown
+## On Invocation Without Target
+
+1. Check if files were edited in this conversation:
+   - Look for recent Edit/Write tool calls
+   - Extract file paths from tool results
+   - If found: validate those specific files
+
+2. Check git state:
+   ```bash
+   git diff --cached --name-only  # Staged changes
+   git diff --name-only           # Unstaged changes
+   ```
+
+3. If nothing found, use `recent` (HEAD~1..HEAD)
+```
+
+### Example
+
+```
+User: [writes some code to services/auth/handler.py]
+User: /vibe
+
+→ Vibe infers target from conversation: services/auth/handler.py
+→ Validates that specific file instead of requiring explicit path
+```
+
+---
+
 ## Aspects
 
 Vibe validates across 8 aspects. By default, all aspects run.

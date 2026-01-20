@@ -54,6 +54,57 @@ fi
 /crank <epic-id> --mode=mayor    # Parallel via polecats
 ```
 
+---
+
+## Context Inference
+
+When `/crank` is invoked without an epic-id, check the preceding conversation for context:
+
+### Priority Order
+
+1. **Explicit epic-id** - If user provides an epic ID, use it
+2. **Recently discussed epic** - If an epic was mentioned in conversation, use it
+3. **Hooked work** - Check `gt hook` for assigned epic
+4. **In-progress epic** - Check `bd list --type=epic --status=in_progress`
+5. **Ask user** - If no context found, ask which epic to crank
+
+### Detection Logic
+
+```markdown
+## On Invocation Without Epic ID
+
+1. Scan conversation for epic references:
+   - Look for issue IDs with epic type (e.g., "ap-68ohb")
+   - Check for "epic", "parent issue" mentions
+   - Extract from recent bd commands in conversation
+
+2. Check Gas Town hook:
+   ```bash
+   gt hook  # Returns hooked work including parent epic
+   ```
+
+3. Check beads state:
+   ```bash
+   bd list --type=epic --status=in_progress | head -1
+   ```
+
+4. If nothing found, ask:
+   "Which epic should I crank? Run `bd list --type=epic` to see available epics."
+```
+
+### Example
+
+```
+User: let's work on ap-68ohb - it has 27 children to implement
+User: [does some planning work]
+User: /crank
+
+→ Crank infers epic from conversation: ap-68ohb
+→ Starts autonomous execution without requiring re-specification
+```
+
+---
+
 ## The ODMCR Loop
 
 Both modes use the same reconciliation loop, just different dispatch mechanisms:
