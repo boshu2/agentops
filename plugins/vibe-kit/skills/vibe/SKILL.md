@@ -16,6 +16,7 @@ context-budget:
   typical-session: 15KB
 skills:
   - beads
+  - standards
 ---
 
 # Vibe - Talos Comprehensive Validation

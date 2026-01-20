@@ -10,6 +10,7 @@ allowed-tools: Read, Grep, Glob, Task, TodoWrite
 skills:
   - beads
   - vibe
+  - standards
 triggers:
   - "validate changes"
   - "run validation"
