@@ -1,0 +1,37 @@
+version: 2
+project_name: ao
+
+builds:
+  - id: ao
+    dir: cli
+    main: ./cmd/ao
+    binary: ao-{{ .Os }}-{{ .Arch }}
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: ao
+    name_template: ao-{{ .Os }}-{{ .Arch }}
+    wrap_in_directory: false
+
+brews:
+  - name: agentops
+    directory: Formula
+    homepage: https://github.com/boshu2/agentops
+    description: Knowledge Flywheel CLI for AI-assisted development
+    license: MIT
+    install: |
+      bin.install "ao-{{ .Os }}-{{ .Arch }}" => "ao"
+    test: |
+      system "#{bin}/ao version"
+    repository:
+      owner: boshu2
+      name: homebrew-agentops
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
