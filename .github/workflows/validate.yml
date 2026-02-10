@@ -263,7 +263,7 @@ jobs:
           echo "✅ Go tests passed"
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: go-coverage
