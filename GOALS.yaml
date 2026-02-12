@@ -52,8 +52,13 @@ goals:
     weight: 2
 
   - id: go-coverage-floor
-    description: "Go CLI average test coverage stays above 60%"
-    check: "cd cli && go test -cover ./... 2>&1 | grep '^ok' | sed -n 's/.*coverage: \\([0-9.]*\\)%.*/\\1/p' | awk '{s+=$1;n++} END{if(n>0 && s/n>=60) exit 0; else exit 1}'"
+    description: "Go CLI average test coverage stays above 80%"
+    check: "cd cli && go test -cover ./... 2>&1 | grep '^ok' | sed -n 's/.*coverage: \\([0-9.]*\\)%.*/\\1/p' | awk '{s+=$1;n++} END{if(n>0 && s/n>=80) exit 0; else exit 1}'"
+    weight: 2
+
+  - id: rpi-context-window-contract
+    description: "RPI large-repo context sharding contract is healthy and runnable."
+    check: "./scripts/rpi/context-window-contract.sh"
     weight: 2
 
   # === Hygiene (weight 1-2) — Docs & consistency ===

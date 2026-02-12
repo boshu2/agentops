@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - **`--test-first` flag passthrough** — `/rpi --test-first` and `/evolve --test-first` now pass the flag through to `/crank` for spec-first TDD across the full lifecycle.
+- **RPI large-repo context windowing tools** — Added `scripts/rpi/` shard generator, progress tracker, bounded shard runner, and `context-window-contract.sh`; wired into `/rpi` docs and smoke tests for deterministic full-file coverage under bounded context budgets.
 
 ## [2.5.0] - 2026-02-12
 

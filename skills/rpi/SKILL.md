@@ -63,6 +63,18 @@ Given `/rpi <goal | epic-id> [--from=<phase>] [--interactive]`:
 mkdir -p .agents/rpi
 ```
 
+**Large-repo mode (recommended when context is tight):**
+
+If the repo is large (for example, >1500 tracked files), initialize deterministic
+context-window shards before Phase 1:
+
+```bash
+scripts/rpi/context-window-contract.sh
+```
+
+Read `references/context-windowing.md` for shard generation, progress tracking,
+and bounded one-shard-at-a-time execution.
+
 Determine the starting phase:
 - Default: Phase 1 (research)
 - `--from=plan`: Start at Phase 2
