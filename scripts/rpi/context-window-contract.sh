@@ -12,38 +12,31 @@ if [ ! -f GOALS.yaml ]; then
   exit 1
 fi
 
-python3 - <<'PY'
-from __future__ import annotations
+mission_line="$(rg -n '^[[:space:]]*mission:[[:space:]]*' GOALS.yaml | head -n 1 || true)"
+if [ -z "$mission_line" ]; then
+  echo "FAIL: GOALS.yaml mission field is required" >&2
+  exit 1
+fi
 
-import sys
-from pathlib import Path
+mission_value="${mission_line#*:}"
+mission_value="$(printf '%s' "$mission_value" | sed -E "s/^[[:space:]]+//; s/[[:space:]]+$//; s/^['\"]//; s/['\"]$//")"
+if [ "${#mission_value}" -lt 20 ]; then
+  echo "FAIL: GOALS.yaml mission must be at least 20 chars" >&2
+  exit 1
+fi
 
-import yaml
+if ! rg -q '^[[:space:]]*goals:[[:space:]]*$' GOALS.yaml; then
+  echo "FAIL: GOALS.yaml goals list is required" >&2
+  exit 1
+fi
 
+goal_count="$(rg -c '^[[:space:]]*-[[:space:]]*id:[[:space:]]*[^[:space:]]+' GOALS.yaml || true)"
+if [ "${goal_count:-0}" -lt 1 ]; then
+  echo "FAIL: GOALS.yaml goals list must include at least one id entry" >&2
+  exit 1
+fi
 
-def fail(msg: str) -> None:
-    print(f"FAIL: {msg}", file=sys.stderr)
-    raise SystemExit(1)
-
-path = Path("GOALS.yaml")
-try:
-    data = yaml.safe_load(path.read_text())
-except Exception as exc:
-    fail(f"Unable to parse GOALS.yaml: {exc}")
-
-if not isinstance(data, dict):
-    fail("GOALS.yaml must parse to a mapping")
-
-mission = data.get("mission")
-if not isinstance(mission, str) or len(mission.strip()) < 20:
-    fail("GOALS.yaml mission must be a descriptive string")
-
-goals = data.get("goals")
-if not isinstance(goals, list) or not goals:
-    fail("GOALS.yaml must include a non-empty goals list")
-
-print("PASS: goals schema contract")
-PY
+echo "PASS: goals schema contract"
 
 scripts/rpi/generate-context-shards.py \
   --max-units 80 \
