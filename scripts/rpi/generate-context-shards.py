@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Generate deterministic context-window shards for full-repo reading.
 
-The manifest covers every tracked file from `rg --files`, splitting large text
-files into line chunks and representing binary assets as metadata units.
+The manifest covers every tracked file present in the working tree (via
+`git ls-files`), splitting large text files into line chunks and representing
+binary assets as metadata units.
 """
 
 from __future__ import annotations
@@ -40,8 +41,22 @@ class Shard:
 
 
 def list_tracked_files() -> list[str]:
-    out = subprocess.check_output(["rg", "--files"], text=True)
-    files = [line.strip() for line in out.splitlines() if line.strip()]
+    # Prefer git for determinism and to avoid depending on ripgrep being installed.
+    try:
+        out = subprocess.check_output(["git", "ls-files"], text=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        out = subprocess.check_output(["rg", "--files"], text=True)
+
+    # Some environments use sparse/partial checkouts (skip-worktree). Filter to
+    # files that actually exist so the shard generator is runnable everywhere.
+    files: list[str] = []
+    for line in out.splitlines():
+        path = line.strip()
+        if not path:
+            continue
+        if Path(path).is_file():
+            files.append(path)
+
     files.sort()
     return files
 
