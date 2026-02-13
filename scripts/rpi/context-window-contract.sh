@@ -7,12 +7,46 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
+has_rg() {
+  command -v rg >/dev/null 2>&1
+}
+
+search_n() {
+  local pattern="$1"
+  local file="$2"
+  if has_rg; then
+    rg -n "$pattern" "$file"
+  else
+    grep -nE "$pattern" "$file"
+  fi
+}
+
+search_q() {
+  local pattern="$1"
+  local file="$2"
+  if has_rg; then
+    rg -q "$pattern" "$file"
+  else
+    grep -qE "$pattern" "$file"
+  fi
+}
+
+search_c() {
+  local pattern="$1"
+  local file="$2"
+  if has_rg; then
+    rg -c "$pattern" "$file"
+  else
+    grep -cE "$pattern" "$file"
+  fi
+}
+
 if [ ! -f GOALS.yaml ]; then
   echo "FAIL: GOALS.yaml not found" >&2
   exit 1
 fi
 
-mission_line="$(rg -n '^[[:space:]]*mission:[[:space:]]*' GOALS.yaml | head -n 1 || true)"
+mission_line="$(search_n '^[[:space:]]*mission:[[:space:]]*' GOALS.yaml | head -n 1 || true)"
 if [ -z "$mission_line" ]; then
   echo "FAIL: GOALS.yaml mission field is required" >&2
   exit 1
@@ -25,12 +59,12 @@ if [ "${#mission_value}" -lt 20 ]; then
   exit 1
 fi
 
-if ! rg -q '^[[:space:]]*goals:[[:space:]]*$' GOALS.yaml; then
+if ! search_q '^[[:space:]]*goals:[[:space:]]*$' GOALS.yaml; then
   echo "FAIL: GOALS.yaml goals list is required" >&2
   exit 1
 fi
 
-goal_count="$(rg -c '^[[:space:]]*-[[:space:]]*id:[[:space:]]*[^[:space:]]+' GOALS.yaml || true)"
+goal_count="$(search_c '^[[:space:]]*-[[:space:]]*id:[[:space:]]*[^[:space:]]+' GOALS.yaml || true)"
 if [ "${goal_count:-0}" -lt 1 ]; then
   echo "FAIL: GOALS.yaml goals list must include at least one id entry" >&2
   exit 1
