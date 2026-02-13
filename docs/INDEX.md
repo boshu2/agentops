@@ -127,6 +127,7 @@
 ## Plans
 
 - [Validated Release Pipeline](plans/2026-01-28-validated-release-pipeline.md) — Release pipeline design (2026-01-28)
+- [AO-Olympus Bridge Next Steps](plans/2026-02-13-ao-olympus-bridge-next-steps.md) — Follow-up work to make the AO↔OL bridge enforceable (2026-02-13)
 
 ## Templates
 
