@@ -96,7 +96,7 @@ jobs:
   # Stage 2: Validate the darwin-arm64 binary
   validate:
     needs: build
-    runs-on: macos-14  # Explicit arm64 runner
+    runs-on: macos-15  # Explicit arm64 runner
     steps:
       - uses: actions/checkout@v6
 
