@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "The missing DevOps layer for coding agents. Flow, feedback, and memory that compounds between sessions.",
-    "version": "2.12.0"
+    "version": "2.12.1"
   },
   "plugins": [
     {
       "name": "agentops",
       "description": "The missing DevOps layer for coding agents. Flow, feedback, and memory that compounds between sessions.",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "source": "./",
       "author": {
         "name": "Boden Fuller",
