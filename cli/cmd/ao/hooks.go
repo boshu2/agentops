@@ -19,6 +19,7 @@ var (
 	hooksDryRun       bool
 	hooksForce        bool
 	hooksFull         bool
+	hooksMinimal      bool
 	hooksSourceDir    string
 )
 
@@ -1079,4 +1080,14 @@ func runHooksTest(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func countInstalledEvents(hooksMap map[string]interface{}) int {
+	installed := 0
+	for _, event := range AllEventNames() {
+		if groups, ok := hooksMap[event].([]interface{}); ok && len(groups) > 0 {
+			installed++
+		}
+	}
+	return installed
 }
