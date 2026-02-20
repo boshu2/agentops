@@ -196,7 +196,19 @@ For the science behind the flywheel, see [`knowledge-flywheel.md`](knowledge-fly
 
 ## Installation Options
 
-### Per-Agent Install
+### Claude Code (Plugin + Marketplace, preferred)
+
+```bash
+# Add/update marketplace source
+claude plugin marketplace add boshu2/agentops
+claude plugin marketplace update agentops-marketplace
+
+# Install/update plugin
+claude plugin install agentops@agentops-marketplace
+claude plugin update agentops
+```
+
+### Per-Agent Install (non-Claude runtimes)
 
 ```bash
 # Codex

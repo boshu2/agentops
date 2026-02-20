@@ -53,7 +53,8 @@ Skills must be installed as a Claude Code plugin.
 **Diagnosis:**
 
 ```bash
-npx skills@latest list
+claude plugin list
+claude plugin marketplace list
 ao doctor
 ```
 
@@ -63,19 +64,21 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
 
 1. Install or reinstall the AgentOps skills:
    ```bash
-   npx skills@latest add boshu2/agentops --all -g
+   claude plugin marketplace add boshu2/agentops
+   claude plugin install agentops@agentops-marketplace
    ```
 
 2. Update existing skills:
    ```bash
-   npx skills@latest update
+   claude plugin marketplace update agentops-marketplace
+   claude plugin update agentops
    ```
 
 3. If updates seem stale, clear the cache and reinstall:
    ```bash
    # The skills cache lives here:
    ls ~/.claude/plugins/marketplaces/agentops-marketplace/
-   # Pull latest directly if npx update lags:
+   # Pull latest directly if marketplace update lags:
    cd ~/.claude/plugins/marketplaces/agentops-marketplace/ && git pull
    ```
 
@@ -83,6 +86,14 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
    ```bash
    claude --plugin ./
    ```
+
+5. If skills load but automation hooks are missing, install hooks from repo root:
+   ```bash
+   ao init --hooks
+   ao hooks test
+   ```
+
+For Codex/Cursor/OpenCode, use the `npx skills@latest add boshu2/agentops --all -g` install path instead of Claude plugin commands.
 
 ---
 

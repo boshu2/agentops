@@ -250,12 +250,17 @@ What are you trying to do?
 
 **Requirements**
 
-- `node` 18+ (for `npx skills`) and `git`
+- `git`
 - One supported runtime: Claude Code, Codex CLI, Cursor, or OpenCode
+- `node` 18+ (for `npx skills` install path used by non-Claude runtimes)
 - Optional for `ao` CLI install path shown below: Homebrew (`brew`)
 
 ```bash
-# Claude Code, Codex CLI, Cursor (most users)
+# Claude Code (recommended): marketplace + plugin install
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
+
+# Codex CLI / Cursor
 npx skills@latest add boshu2/agentops --all -g
 
 # OpenCode
@@ -266,12 +271,9 @@ curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/instal
 
 Then type `/quickstart` in your agent chat.
 
-```bash
-# Claude Code plugin (alternative)
-claude plugin add boshu2/agentops
-```
+For Claude plugin installs, skills are available immediately after plugin install/update (restart Claude Code if prompted). To enable hooks and flywheel automation, install the `ao` CLI and run `ao init --hooks` in each repo.
 
-`npx skills` installs skills into your agent's global skills directory. The plugin path registers AgentOps as a Claude Code plugin instead — same skills, different integration point. Most users should start with `npx skills`.
+`claude plugin install` is the primary path for Claude Code. `npx skills` remains the cross-agent install path for Codex CLI, Cursor, and mixed-runtime setups.
 
 <details>
 <summary><b>The ao CLI</b> — powers the knowledge flywheel</summary>
