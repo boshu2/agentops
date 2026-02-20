@@ -282,6 +282,16 @@ func countHooksInMap(raw interface{}) int {
 	return count
 }
 
+func countInstalledEvents(hooksMap map[string]interface{}) int {
+	installed := 0
+	for _, event := range AllEventNames() {
+		if groups, ok := hooksMap[event].([]interface{}); ok && len(groups) > 0 {
+			installed++
+		}
+	}
+	return installed
+}
+
 // checkKnowledgeBase checks that the .agents/ao directory exists.
 func checkKnowledgeBase() doctorCheck {
 	cwd, err := os.Getwd()

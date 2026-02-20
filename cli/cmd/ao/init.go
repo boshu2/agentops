@@ -145,8 +145,14 @@ func runInit(cmd *cobra.Command, args []string) error {
 			fmt.Printf("[dry-run] Would install %s hooks\n", mode)
 		} else {
 			// Delegate to existing hooks install logic
-			hooksFull = initFull
-			hooksMinimal = initMinimalHooks
+			// Default to full coverage for `ao init --hooks`.
+			hooksFull = true
+			if initMinimalHooks {
+				hooksFull = false
+			}
+			if initFull {
+				hooksFull = true
+			}
 			hooksDryRun = false
 			hooksForce = false
 			if err := runHooksInstall(cmd, nil); err != nil {
