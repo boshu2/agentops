@@ -101,7 +101,7 @@ func TestCollectSessionStatusPromptOverrideAndCritical(t *testing.T) {
 	}
 	writeTranscriptLines(t, transcript, lines)
 
-	status, usage, err := collectSessionStatus(cwd, sessionID, "new high-priority task", contextbudget.DefaultMaxTokens, 20*time.Minute)
+	status, usage, err := collectSessionStatus(cwd, sessionID, "new high-priority task", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
 	if err != nil {
 		t.Fatalf("collectSessionStatus: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestCollectSessionStatusStaleWatchdogAction(t *testing.T) {
 	}
 	writeTranscriptLines(t, transcript, lines)
 
-	status, _, err := collectSessionStatus(cwd, sessionID, "", contextbudget.DefaultMaxTokens, 10*time.Minute)
+	status, _, err := collectSessionStatus(cwd, sessionID, "", contextbudget.DefaultMaxTokens, 10*time.Minute, "")
 	if err != nil {
 		t.Fatalf("collectSessionStatus: %v", err)
 	}
@@ -165,6 +165,122 @@ func TestCollectSessionStatusStaleWatchdogAction(t *testing.T) {
 	}
 	if status.Action != "recover_dead_session" {
 		t.Fatalf("action = %q, want recover_dead_session", status.Action)
+	}
+}
+
+func TestCollectSessionStatusResolvesAssignmentFromTeamConfig(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	cwd := t.TempDir()
+
+	teamsDir := filepath.Join(tmpHome, ".claude", "teams", "alpha-team")
+	if err := os.MkdirAll(teamsDir, 0755); err != nil {
+		t.Fatalf("mkdir teams dir: %v", err)
+	}
+	cfg := `{"members":[{"name":"worker-7","agentType":"general-purpose","tmuxPaneId":"convoy-20260220:0.2"}]}`
+	if err := os.WriteFile(filepath.Join(teamsDir, "config.json"), []byte(cfg), 0644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	sessionID := "session-assignment-01"
+	transcript := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations", sessionID+".jsonl")
+	if err := os.MkdirAll(filepath.Dir(transcript), 0755); err != nil {
+		t.Fatalf("mkdir transcript dir: %v", err)
+	}
+	lines := []map[string]any{
+		{
+			"type":      "user",
+			"timestamp": time.Now().Add(-1 * time.Minute).UTC().Format(time.RFC3339),
+			"message": map[string]any{
+				"role":    "user",
+				"content": "continue ag-gjw with mapping updates",
+			},
+		},
+		{
+			"type":      "assistant",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"message": map[string]any{
+				"role":  "assistant",
+				"model": "claude-sonnet",
+				"usage": map[string]any{
+					"input_tokens":                1000,
+					"cache_creation_input_tokens": 1000,
+					"cache_read_input_tokens":     1000,
+				},
+			},
+		},
+	}
+	writeTranscriptLines(t, transcript, lines)
+
+	status, _, err := collectSessionStatus(cwd, sessionID, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "worker-7")
+	if err != nil {
+		t.Fatalf("collectSessionStatus: %v", err)
+	}
+	if status.AgentName != "worker-7" {
+		t.Fatalf("agent name = %q, want worker-7", status.AgentName)
+	}
+	if status.AgentRole != "general-purpose" {
+		t.Fatalf("agent role = %q, want general-purpose", status.AgentRole)
+	}
+	if status.TeamName != "alpha-team" {
+		t.Fatalf("team name = %q, want alpha-team", status.TeamName)
+	}
+	if status.IssueID != "ag-gjw" {
+		t.Fatalf("issue id = %q, want ag-gjw", status.IssueID)
+	}
+	if status.TmuxPaneID != "convoy-20260220:0.2" {
+		t.Fatalf("tmux pane id = %q, want convoy-20260220:0.2", status.TmuxPaneID)
+	}
+	if status.TmuxTarget != "convoy-20260220:0" {
+		t.Fatalf("tmux target = %q, want convoy-20260220:0", status.TmuxTarget)
+	}
+	if status.TmuxSession != "convoy-20260220" {
+		t.Fatalf("tmux session = %q, want convoy-20260220", status.TmuxSession)
+	}
+}
+
+func TestMaybeAutoRestartStaleSession(t *testing.T) {
+	tmp := t.TempDir()
+	tmuxLog := filepath.Join(tmp, "tmux.log")
+	tmuxBinDir := filepath.Join(tmp, "bin")
+	if err := os.MkdirAll(tmuxBinDir, 0755); err != nil {
+		t.Fatalf("mkdir tmux bin dir: %v", err)
+	}
+	tmuxScript := `#!/bin/sh
+if [ "$1" = "has-session" ]; then
+  exit 1
+fi
+if [ "$1" = "new-session" ] && [ "$2" = "-d" ] && [ "$3" = "-s" ]; then
+  echo "$4" >> "$TMUX_TEST_LOG"
+  exit 0
+fi
+exit 2
+`
+	tmuxPath := filepath.Join(tmuxBinDir, "tmux")
+	if err := os.WriteFile(tmuxPath, []byte(tmuxScript), 0755); err != nil {
+		t.Fatalf("write fake tmux: %v", err)
+	}
+	t.Setenv("PATH", tmuxBinDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TMUX_TEST_LOG", tmuxLog)
+
+	status := contextSessionStatus{
+		Action:      "recover_dead_session",
+		TmuxTarget:  "worker-123:0",
+		TmuxSession: "worker-123",
+	}
+	updated := maybeAutoRestartStaleSession(status)
+	if !updated.RestartAttempt {
+		t.Fatal("expected restart attempt")
+	}
+	if !updated.RestartSuccess {
+		t.Fatalf("expected restart success, message=%q", updated.RestartMessage)
+	}
+	logData, err := os.ReadFile(tmuxLog)
+	if err != nil {
+		t.Fatalf("read tmux log: %v", err)
+	}
+	if strings.TrimSpace(string(logData)) != "worker-123" {
+		t.Fatalf("tmux new-session target = %q, want worker-123", strings.TrimSpace(string(logData)))
 	}
 }
 

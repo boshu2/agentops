@@ -28,9 +28,14 @@ const (
 var (
 	contextSessionID      string
 	contextPrompt         string
+	contextAgentName      string
 	contextMaxTokens      int
 	contextWriteHandoff   bool
+	contextAutoRestart    bool
 	contextWatchdogMinute int
+
+	filenameSanitizer   = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+	contextIssuePattern = regexp.MustCompile(`(?i)\bag-[a-z0-9]+\b`)
 )
 
 type transcriptUsage struct {
@@ -39,6 +44,38 @@ type transcriptUsage struct {
 	CacheReadInputToken     int
 	Model                   string
 	Timestamp               time.Time
+}
+
+type contextAssignment struct {
+	AgentName   string
+	AgentRole   string
+	TeamName    string
+	IssueID     string
+	TmuxPaneID  string
+	TmuxTarget  string
+	TmuxSession string
+}
+
+type contextAssignmentSnapshot struct {
+	SessionID   string `json:"session_id"`
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentRole   string `json:"agent_role,omitempty"`
+	TeamName    string `json:"team_name,omitempty"`
+	IssueID     string `json:"issue_id,omitempty"`
+	TmuxPaneID  string `json:"tmux_pane_id,omitempty"`
+	TmuxTarget  string `json:"tmux_target,omitempty"`
+	TmuxSession string `json:"tmux_session,omitempty"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type teamConfigFile struct {
+	Members []teamConfigMember `json:"members"`
+}
+
+type teamConfigMember struct {
+	Name      string `json:"name"`
+	AgentType string `json:"agentType"`
+	TmuxPane  string `json:"tmuxPaneId"`
 }
 
 type contextSessionStatus struct {
@@ -57,6 +94,16 @@ type contextSessionStatus struct {
 	LastUpdated    string  `json:"last_updated,omitempty"`
 	IsStale        bool    `json:"is_stale"`
 	Action         string  `json:"action"`
+	AgentName      string  `json:"agent_name,omitempty"`
+	AgentRole      string  `json:"agent_role,omitempty"`
+	TeamName       string  `json:"team_name,omitempty"`
+	IssueID        string  `json:"issue_id,omitempty"`
+	TmuxPaneID     string  `json:"tmux_pane_id,omitempty"`
+	TmuxTarget     string  `json:"tmux_target,omitempty"`
+	TmuxSession    string  `json:"tmux_session,omitempty"`
+	RestartAttempt bool    `json:"restart_attempted,omitempty"`
+	RestartSuccess bool    `json:"restart_succeeded,omitempty"`
+	RestartMessage string  `json:"restart_message,omitempty"`
 }
 
 type contextGuardResult struct {
@@ -110,8 +157,10 @@ Examples:
 	}
 	guardCmd.Flags().StringVar(&contextSessionID, "session", "", "Session ID (default: $CLAUDE_SESSION_ID)")
 	guardCmd.Flags().StringVar(&contextPrompt, "prompt", "", "Current user prompt (used as immediate task hint)")
+	guardCmd.Flags().StringVar(&contextAgentName, "agent-name", "", "Worker/agent name for assignment mapping (default: $CLAUDE_AGENT_NAME)")
 	guardCmd.Flags().IntVar(&contextMaxTokens, "max-tokens", contextbudget.DefaultMaxTokens, "Context window size for percentage calculations")
 	guardCmd.Flags().BoolVar(&contextWriteHandoff, "write-handoff", false, "Write auto-handoff marker when status is CRITICAL")
+	guardCmd.Flags().BoolVar(&contextAutoRestart, "auto-restart-stale", false, "Attempt tmux restart when stale non-optimal sessions appear dead")
 	guardCmd.Flags().IntVar(&contextWatchdogMinute, "watchdog-minutes", defaultWatchdogMinutes, "Mark session stale after N minutes without telemetry updates")
 
 	contextCmd.AddCommand(statusCmd, guardCmd)
@@ -139,18 +188,20 @@ func runContextStatus(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("%-18s %-10s %-9s %-8s %-20s %s\n", "SESSION", "STATUS", "USAGE", "STALE", "ACTION", "TASK")
-	fmt.Println(strings.Repeat("─", 110))
+	fmt.Printf("%-18s %-10s %-9s %-8s %-14s %-12s %-20s %s\n", "SESSION", "STATUS", "USAGE", "STALE", "AGENT", "ISSUE", "ACTION", "TASK")
+	fmt.Println(strings.Repeat("─", 140))
 	for _, s := range statuses {
 		task := s.LastTask
 		if len(task) > 48 {
 			task = task[:45] + "..."
 		}
-		fmt.Printf("%-18s %-10s %6.1f%%   %-8t %-20s %s\n",
+		fmt.Printf("%-18s %-10s %6.1f%%   %-8t %-14s %-12s %-20s %s\n",
 			truncateDisplay(s.SessionID, 18),
 			s.Status,
 			s.UsagePercent*100,
 			s.IsStale,
+			truncateDisplay(displayOrDash(s.AgentName), 14),
+			truncateDisplay(displayOrDash(s.IssueID), 12),
 			s.Action,
 			task,
 		)
@@ -177,13 +228,23 @@ func runContextGuard(cmd *cobra.Command, args []string) error {
 	if watchdog <= 0 {
 		watchdog = defaultWatchdogMinutes * time.Minute
 	}
+	agentName := strings.TrimSpace(contextAgentName)
+	if agentName == "" {
+		agentName = strings.TrimSpace(os.Getenv("CLAUDE_AGENT_NAME"))
+	}
 
-	status, usage, err := collectSessionStatus(cwd, sessionID, strings.TrimSpace(contextPrompt), contextMaxTokens, watchdog)
+	status, usage, err := collectSessionStatus(cwd, sessionID, strings.TrimSpace(contextPrompt), contextMaxTokens, watchdog, agentName)
 	if err != nil {
 		return err
 	}
+	if contextAutoRestart {
+		status = maybeAutoRestartStaleSession(status)
+	}
 	if err := persistBudget(cwd, status); err != nil {
 		return fmt.Errorf("persist budget: %w", err)
+	}
+	if err := persistAssignment(cwd, status); err != nil {
+		return fmt.Errorf("persist assignment: %w", err)
 	}
 
 	result := contextGuardResult{
@@ -241,7 +302,7 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 		if err := json.Unmarshal(data, &b); err != nil || strings.TrimSpace(b.SessionID) == "" {
 			continue
 		}
-		status, _, err := collectSessionStatus(cwd, b.SessionID, "", b.MaxTokens, watchdog)
+		status, _, err := collectSessionStatus(cwd, b.SessionID, "", b.MaxTokens, watchdog, "")
 		if err != nil {
 			// Keep stale budget rows visible even if transcript is unavailable.
 			status = contextSessionStatus{
@@ -256,6 +317,7 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 				Action:         actionForStatus(string(b.GetStatus()), !b.LastUpdated.IsZero() && time.Since(b.LastUpdated) > watchdog),
 			}
 		}
+		mergePersistedAssignment(cwd, &status)
 		statuses = append(statuses, status)
 	}
 	sort.Slice(statuses, func(i, j int) bool {
@@ -277,7 +339,7 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 	return statuses, nil
 }
 
-func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog time.Duration) (contextSessionStatus, transcriptUsage, error) {
+func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog time.Duration, agentName string) (contextSessionStatus, transcriptUsage, error) {
 	transcriptPath, err := findTranscriptBySessionID(sessionID)
 	if err != nil {
 		return contextSessionStatus{}, transcriptUsage{}, fmt.Errorf("find transcript for session %s: %w", sessionID, err)
@@ -320,6 +382,8 @@ func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog
 		IsStale:        isStale,
 		Action:         actionForStatus(string(tracker.GetStatus()), isStale),
 	}
+	applyContextAssignment(&status, resolveContextAssignment(cwd, status.LastTask, agentName))
+	mergePersistedAssignment(cwd, &status)
 	return status, usage, nil
 }
 
@@ -402,6 +466,13 @@ func renderHandoffMarkdown(now time.Time, status contextSessionStatus, usage tra
 	b.WriteString("## Active Work\n")
 	b.WriteString(activeBead)
 	b.WriteString("\n\n")
+
+	b.WriteString("## Assignment\n")
+	b.WriteString(fmt.Sprintf("- agent: %s\n", displayOrDash(status.AgentName)))
+	b.WriteString(fmt.Sprintf("- role: %s\n", displayOrDash(status.AgentRole)))
+	b.WriteString(fmt.Sprintf("- team: %s\n", displayOrDash(status.TeamName)))
+	b.WriteString(fmt.Sprintf("- issue: %s\n", displayOrDash(status.IssueID)))
+	b.WriteString(fmt.Sprintf("- tmux target: %s\n\n", displayOrDash(status.TmuxTarget)))
 
 	b.WriteString("## Next Action\n")
 	b.WriteString("Start a fresh session, consume this handoff at startup, and continue from the listed task.\n\n")
@@ -663,10 +734,332 @@ func hookMessageForStatus(status contextSessionStatus) string {
 	case "checkpoint_and_prepare_handoff":
 		return fmt.Sprintf("Context is WARNING (%.1f%%). Prepare a handoff before continuing long orchestration.", status.UsagePercent*100)
 	case "recover_dead_session":
+		if status.RestartAttempt {
+			if status.RestartSuccess {
+				return fmt.Sprintf("Watchdog: stale session auto-restarted (%s). Verify bootstrap and continue in the fresh session.", status.TmuxSession)
+			}
+			return fmt.Sprintf("Watchdog: stale session auto-restart failed (%s). Trigger recovery handoff.", status.RestartMessage)
+		}
+		if status.RestartMessage != "" {
+			return fmt.Sprintf("Watchdog: session appears stale with unfinished work (%s). Trigger recovery handoff.", status.RestartMessage)
+		}
 		return "Watchdog: session appears stale with unfinished work. Trigger recovery handoff."
 	default:
 		return ""
 	}
+}
+
+func resolveContextAssignment(cwd, task, agentName string) contextAssignment {
+	assignment := contextAssignment{
+		AgentName: strings.TrimSpace(agentName),
+	}
+	assignment.IssueID = extractIssueID(task)
+	if assignment.IssueID == "" {
+		assignment.IssueID = extractIssueID(runCommand(cwd, 1200*time.Millisecond, "bd", "current"))
+	}
+	if assignment.AgentName != "" {
+		teamName, member, ok := findTeamMemberByName(assignment.AgentName)
+		if ok {
+			assignment.TeamName = teamName
+			assignment.TmuxPaneID = strings.TrimSpace(member.TmuxPane)
+			assignment.TmuxTarget = tmuxTargetFromPaneID(assignment.TmuxPaneID)
+			assignment.TmuxSession = tmuxSessionFromTarget(assignment.TmuxTarget)
+			assignment.AgentRole = normalizeLine(member.AgentType)
+		}
+	}
+	assignment.AgentRole = inferAgentRole(assignment.AgentName, assignment.AgentRole)
+	return assignment
+}
+
+func applyContextAssignment(status *contextSessionStatus, assignment contextAssignment) {
+	if status == nil {
+		return
+	}
+	if strings.TrimSpace(assignment.AgentName) != "" {
+		status.AgentName = strings.TrimSpace(assignment.AgentName)
+	}
+	if strings.TrimSpace(assignment.AgentRole) != "" {
+		status.AgentRole = strings.TrimSpace(assignment.AgentRole)
+	}
+	if strings.TrimSpace(assignment.TeamName) != "" {
+		status.TeamName = strings.TrimSpace(assignment.TeamName)
+	}
+	if strings.TrimSpace(assignment.IssueID) != "" {
+		status.IssueID = strings.TrimSpace(assignment.IssueID)
+	}
+	if strings.TrimSpace(assignment.TmuxPaneID) != "" {
+		status.TmuxPaneID = strings.TrimSpace(assignment.TmuxPaneID)
+	}
+	if strings.TrimSpace(assignment.TmuxTarget) != "" {
+		status.TmuxTarget = strings.TrimSpace(assignment.TmuxTarget)
+	}
+	if strings.TrimSpace(assignment.TmuxSession) != "" {
+		status.TmuxSession = strings.TrimSpace(assignment.TmuxSession)
+	}
+}
+
+func assignmentFromStatus(status contextSessionStatus) contextAssignment {
+	return contextAssignment{
+		AgentName:   strings.TrimSpace(status.AgentName),
+		AgentRole:   strings.TrimSpace(status.AgentRole),
+		TeamName:    strings.TrimSpace(status.TeamName),
+		IssueID:     strings.TrimSpace(status.IssueID),
+		TmuxPaneID:  strings.TrimSpace(status.TmuxPaneID),
+		TmuxTarget:  strings.TrimSpace(status.TmuxTarget),
+		TmuxSession: strings.TrimSpace(status.TmuxSession),
+	}
+}
+
+func (a contextAssignment) isEmpty() bool {
+	return strings.TrimSpace(a.AgentName) == "" &&
+		strings.TrimSpace(a.AgentRole) == "" &&
+		strings.TrimSpace(a.TeamName) == "" &&
+		strings.TrimSpace(a.IssueID) == "" &&
+		strings.TrimSpace(a.TmuxPaneID) == "" &&
+		strings.TrimSpace(a.TmuxTarget) == "" &&
+		strings.TrimSpace(a.TmuxSession) == ""
+}
+
+func persistAssignment(cwd string, status contextSessionStatus) error {
+	assignment := assignmentFromStatus(status)
+	if assignment.isEmpty() {
+		return nil
+	}
+	snapshot := contextAssignmentSnapshot{
+		SessionID:   status.SessionID,
+		AgentName:   assignment.AgentName,
+		AgentRole:   assignment.AgentRole,
+		TeamName:    assignment.TeamName,
+		IssueID:     assignment.IssueID,
+		TmuxPaneID:  assignment.TmuxPaneID,
+		TmuxTarget:  assignment.TmuxTarget,
+		TmuxSession: assignment.TmuxSession,
+		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
+	}
+	data, err := json.MarshalIndent(snapshot, "", "  ")
+	if err != nil {
+		return err
+	}
+	contextDir := filepath.Join(cwd, ".agents", "ao", "context")
+	if err := os.MkdirAll(contextDir, 0755); err != nil {
+		return err
+	}
+	path := filepath.Join(contextDir, "assignment-"+sanitizeForFilename(status.SessionID)+".json")
+	return os.WriteFile(path, data, 0644)
+}
+
+func mergePersistedAssignment(cwd string, status *contextSessionStatus) {
+	if status == nil || strings.TrimSpace(status.SessionID) == "" {
+		return
+	}
+	assignment, ok := readPersistedAssignment(cwd, status.SessionID)
+	if !ok {
+		return
+	}
+	current := assignmentFromStatus(*status)
+	if current.AgentName == "" {
+		status.AgentName = assignment.AgentName
+	}
+	if current.AgentRole == "" {
+		status.AgentRole = assignment.AgentRole
+	}
+	if current.TeamName == "" {
+		status.TeamName = assignment.TeamName
+	}
+	if current.IssueID == "" {
+		status.IssueID = assignment.IssueID
+	}
+	if current.TmuxPaneID == "" {
+		status.TmuxPaneID = assignment.TmuxPaneID
+	}
+	if current.TmuxTarget == "" {
+		status.TmuxTarget = assignment.TmuxTarget
+	}
+	if current.TmuxSession == "" {
+		status.TmuxSession = assignment.TmuxSession
+	}
+}
+
+func readPersistedAssignment(cwd, sessionID string) (contextAssignment, bool) {
+	path := filepath.Join(cwd, ".agents", "ao", "context", "assignment-"+sanitizeForFilename(sessionID)+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return contextAssignment{}, false
+	}
+	var snapshot contextAssignmentSnapshot
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		return contextAssignment{}, false
+	}
+	assignment := contextAssignment{
+		AgentName:   strings.TrimSpace(snapshot.AgentName),
+		AgentRole:   strings.TrimSpace(snapshot.AgentRole),
+		TeamName:    strings.TrimSpace(snapshot.TeamName),
+		IssueID:     strings.TrimSpace(snapshot.IssueID),
+		TmuxPaneID:  strings.TrimSpace(snapshot.TmuxPaneID),
+		TmuxTarget:  strings.TrimSpace(snapshot.TmuxTarget),
+		TmuxSession: strings.TrimSpace(snapshot.TmuxSession),
+	}
+	if assignment.isEmpty() {
+		return contextAssignment{}, false
+	}
+	return assignment, true
+}
+
+func maybeAutoRestartStaleSession(status contextSessionStatus) contextSessionStatus {
+	if status.Action != "recover_dead_session" {
+		return status
+	}
+	target := strings.TrimSpace(status.TmuxTarget)
+	if target == "" {
+		status.RestartMessage = "missing tmux target mapping"
+		return status
+	}
+	if _, err := exec.LookPath("tmux"); err != nil {
+		status.RestartMessage = "tmux unavailable"
+		return status
+	}
+	if tmuxTargetAlive(target) {
+		status.RestartMessage = "tmux target already alive"
+		return status
+	}
+	status.RestartAttempt = true
+	sessionName := strings.TrimSpace(status.TmuxSession)
+	if sessionName == "" {
+		sessionName = tmuxSessionFromTarget(target)
+	}
+	if sessionName == "" {
+		status.RestartMessage = "invalid tmux target"
+		return status
+	}
+	if err := tmuxStartDetachedSession(sessionName); err != nil {
+		status.RestartMessage = normalizeLine(err.Error())
+		return status
+	}
+	status.RestartSuccess = true
+	status.TmuxSession = sessionName
+	status.RestartMessage = "started tmux session " + sessionName
+	return status
+}
+
+func tmuxTargetAlive(target string) bool {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return false
+	}
+	ctx, cancel := contextWithTimeout(1200 * time.Millisecond)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "tmux", "has-session", "-t", target)
+	return cmd.Run() == nil
+}
+
+func tmuxStartDetachedSession(sessionName string) error {
+	sessionName = strings.TrimSpace(sessionName)
+	if sessionName == "" {
+		return errors.New("missing tmux session name")
+	}
+	ctx, cancel := contextWithTimeout(1200 * time.Millisecond)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "tmux", "new-session", "-d", "-s", sessionName)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return nil
+	}
+	if strings.TrimSpace(string(out)) != "" {
+		return errors.New(normalizeLine(string(out)))
+	}
+	return err
+}
+
+func findTeamMemberByName(agentName string) (string, teamConfigMember, bool) {
+	agentName = strings.TrimSpace(agentName)
+	if agentName == "" {
+		return "", teamConfigMember{}, false
+	}
+	homeDir := strings.TrimSpace(os.Getenv("HOME"))
+	if homeDir == "" {
+		return "", teamConfigMember{}, false
+	}
+	teamsDir := filepath.Join(homeDir, ".claude", "teams")
+	entries, err := os.ReadDir(teamsDir)
+	if err != nil {
+		return "", teamConfigMember{}, false
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		cfgPath := filepath.Join(teamsDir, entry.Name(), "config.json")
+		data, err := os.ReadFile(cfgPath)
+		if err != nil {
+			continue
+		}
+		var config teamConfigFile
+		if err := json.Unmarshal(data, &config); err != nil {
+			continue
+		}
+		for _, member := range config.Members {
+			if strings.EqualFold(strings.TrimSpace(member.Name), agentName) {
+				return entry.Name(), member, true
+			}
+		}
+	}
+	return "", teamConfigMember{}, false
+}
+
+func inferAgentRole(agentName, explicitRole string) string {
+	if strings.TrimSpace(explicitRole) != "" {
+		return strings.TrimSpace(explicitRole)
+	}
+	agentName = strings.ToLower(strings.TrimSpace(agentName))
+	switch {
+	case agentName == "":
+		return ""
+	case strings.Contains(agentName, "lead"):
+		return "team-lead"
+	case strings.Contains(agentName, "worker"):
+		return "worker"
+	default:
+		return "agent"
+	}
+}
+
+func extractIssueID(text string) string {
+	m := contextIssuePattern.FindString(strings.TrimSpace(text))
+	if m == "" {
+		return ""
+	}
+	return strings.ToLower(m)
+}
+
+func tmuxTargetFromPaneID(paneID string) string {
+	paneID = strings.TrimSpace(paneID)
+	if paneID == "" || paneID == "in-process" {
+		return ""
+	}
+	if idx := strings.LastIndex(paneID, "."); idx > 0 {
+		return paneID[:idx]
+	}
+	return paneID
+}
+
+func tmuxSessionFromTarget(target string) string {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return ""
+	}
+	if idx := strings.Index(target, ":"); idx > 0 {
+		return strings.TrimSpace(target[:idx])
+	}
+	return target
+}
+
+func displayOrDash(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "-"
+	}
+	return value
 }
 
 func gitChangedFiles(cwd string, limit int) []string {
@@ -708,8 +1101,7 @@ func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelF
 }
 
 func sanitizeForFilename(input string) string {
-	re := regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
-	out := re.ReplaceAllString(strings.TrimSpace(input), "-")
+	out := filenameSanitizer.ReplaceAllString(strings.TrimSpace(input), "-")
 	out = strings.Trim(out, "-")
 	if out == "" {
 		return "session"

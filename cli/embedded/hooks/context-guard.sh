@@ -24,11 +24,15 @@ fi
 MAX_TOKENS="${AGENTOPS_CONTEXT_MAX_TOKENS:-200000}"
 WATCHDOG_MINUTES="${AGENTOPS_CONTEXT_GUARD_WATCHDOG_MINUTES:-20}"
 WRITE_HANDOFF="${AGENTOPS_CONTEXT_GUARD_WRITE_HANDOFF:-1}"
+AUTO_RESTART_STALE="${AGENTOPS_CONTEXT_GUARD_AUTO_RESTART_STALE:-0}"
 STRICT_MODE="${AGENTOPS_CONTEXT_GUARD_STRICT:-0}"
 
+AGENT_NAME="${CLAUDE_AGENT_NAME:-}"
 AO_ARGS=(context guard --session "$SESSION_ID" --max-tokens "$MAX_TOKENS" --watchdog-minutes "$WATCHDOG_MINUTES" -o json)
 [ -n "$PROMPT" ] && AO_ARGS+=(--prompt "$PROMPT")
+[ -n "$AGENT_NAME" ] && AO_ARGS+=(--agent-name "$AGENT_NAME")
 [ "$WRITE_HANDOFF" = "1" ] && AO_ARGS+=(--write-handoff)
+[ "$AUTO_RESTART_STALE" = "1" ] && AO_ARGS+=(--auto-restart-stale)
 
 RESULT=$(timeout 3 ao "${AO_ARGS[@]}" 2>/dev/null) || exit 0
 [ -z "$RESULT" ] && exit 0
