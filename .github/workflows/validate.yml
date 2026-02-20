@@ -52,6 +52,21 @@ jobs:
           chmod +x scripts/validate-embedded-sync.sh
           ./scripts/validate-embedded-sync.sh
 
+  cli-docs-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+
+      - name: Verify CLI docs are up to date
+        run: |
+          chmod +x scripts/generate-cli-reference.sh
+          ./scripts/generate-cli-reference.sh --check
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:
