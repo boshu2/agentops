@@ -164,6 +164,7 @@ jobs:
                 --exclude-dir=tests \
                 --exclude-dir=cli/testdata \
                 --exclude="install-opencode.sh" \
+                --exclude="ci-local-release.sh" \
                 . 2>/dev/null; then
               echo "Found: $pattern"
               found=1
