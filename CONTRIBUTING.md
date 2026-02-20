@@ -371,7 +371,7 @@ Report issues to: fullerbt@users.noreply.github.com
 ### Useful Resources
 
 **Project Documentation:**
-- [CLAUDE.md](CLAUDE.md) - Project structure overview
+- [AGENTS.md](AGENTS.md) - Project instructions for AI agents
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
 - [docs/SKILLS.md](docs/SKILLS.md) - Skills reference
 - [skills/SKILL-TIERS.md](skills/SKILL-TIERS.md) - Skill taxonomy

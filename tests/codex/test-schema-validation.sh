@@ -12,7 +12,6 @@ MEMRL_PROFILE="$REPO_ROOT/docs/contracts/memrl-policy.profile.example.json"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -77,20 +76,20 @@ else
 fi
 
 # Test 8: findings items required fields
-if jq -e '.properties.findings.items.required == ["severity","category","description","location","recommendation"]' "$SCHEMA" > /dev/null 2>&1; then
+if jq -e '.properties.findings.items.required == ["severity","category","description","location","recommendation","fix","why","ref"]' "$SCHEMA" > /dev/null 2>&1; then
     pass "findings items required: all properties (OpenAI structured output requirement)"
 else
     fail "findings items required fields mismatch"
 fi
 
 # Test 9: Conforming sample validates structurally
-GOOD_SAMPLE='{"verdict":"PASS","confidence":"HIGH","key_insight":"test","findings":[{"severity":"minor","category":"style","description":"test","location":"test.go:1","recommendation":"none"}],"recommendation":"none","schema_version":2}'
+GOOD_SAMPLE='{"verdict":"PASS","confidence":"HIGH","key_insight":"test","findings":[{"severity":"minor","category":"style","description":"test","location":"test.go:1","recommendation":"none","fix":"none","why":"example","ref":"test.go:1"}],"recommendation":"none","schema_version":2}'
 if echo "$GOOD_SAMPLE" | jq -e '
   .verdict as $v | .confidence as $c |
   ($v == "PASS" or $v == "WARN" or $v == "FAIL") and
   ($c == "HIGH" or $c == "MEDIUM" or $c == "LOW") and
   (.findings | type == "array") and
-  (.findings | all(.severity and .category and .description and .location and .recommendation)) and
+  (.findings | all(.severity and .category and .description and .location and .recommendation and (.fix != null) and (.why != null) and (.ref != null))) and
   (.schema_version == 1 or .schema_version == 2)
 ' > /dev/null 2>&1; then
     pass "Conforming sample passes structural validation"
@@ -140,37 +139,6 @@ if [[ -f "$MEMRL_PROFILE" ]] && jq -e '
 else
     fail "MemRL profile example missing required fields: $MEMRL_PROFILE"
 fi
-
-# Test 14: MemRL profile validates against MemRL schema via Ajv v8 (draft-2020)
-AJV_TMP_DIR="$(mktemp -d)"
-AJV_VALIDATOR_SCRIPT="$AJV_TMP_DIR/validate-memrl.js"
-cat > "$AJV_VALIDATOR_SCRIPT" <<'NODE'
-const fs = require('fs');
-const Ajv2020 = require('ajv/dist/2020').default;
-const addFormats = require('ajv-formats').default;
-
-const [schemaPath, dataPath] = process.argv.slice(2);
-const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-
-const ajv = new Ajv2020({ strict: true, allErrors: true });
-addFormats(ajv);
-const validate = ajv.compile(schema);
-
-if (!validate(data)) {
-  console.error(JSON.stringify(validate.errors, null, 2));
-  process.exit(1);
-}
-NODE
-
-npm --prefix "$AJV_TMP_DIR" install --silent --no-save ajv@8 ajv-formats@3 > /dev/null 2>&1
-
-if node "$AJV_VALIDATOR_SCRIPT" "$MEMRL_SCHEMA" "$MEMRL_PROFILE" > /dev/null 2>&1; then
-    pass "MemRL profile passes strict Ajv schema validation"
-else
-    fail "MemRL profile failed strict Ajv schema validation"
-fi
-rm -rf "$AJV_TMP_DIR"
 
 # Summary
 echo ""

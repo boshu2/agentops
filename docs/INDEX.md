@@ -7,7 +7,6 @@
 - [README](../README.md) — Project overview and quick start
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](../CONTRIBUTING.md) — How to contribute
-- [CLAUDE.md](../CLAUDE.md) — Project instructions for AI agents
 - [AGENTS.md](../AGENTS.md) — Local agent instructions for this repo
 - [Changelog](../CHANGELOG.md) — Release history
 - [Security](../SECURITY.md) — Vulnerability reporting

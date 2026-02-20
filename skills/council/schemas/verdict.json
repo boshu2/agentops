@@ -14,11 +14,11 @@
           "description": {"type": "string"},
           "location": {"type": "string"},
           "recommendation": {"type": "string"},
-          "fix": {"type": "string", "description": "Specific action to resolve this finding"},
-          "why": {"type": "string", "description": "Root cause or rationale"},
-          "ref": {"type": "string", "description": "File path, spec anchor, or doc reference"}
+          "fix": {"type": ["string", "null"], "description": "Specific action to resolve this finding"},
+          "why": {"type": ["string", "null"], "description": "Root cause or rationale"},
+          "ref": {"type": ["string", "null"], "description": "File path, spec anchor, or doc reference"}
         },
-        "required": ["severity", "category", "description", "location", "recommendation"],
+        "required": ["severity", "category", "description", "location", "recommendation", "fix", "why", "ref"],
         "additionalProperties": false
       }
     },

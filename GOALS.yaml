@@ -7,7 +7,7 @@ pillars:
   - validated-acceleration
   - goal-driven-automation
   - zero-friction-workflow
-# Total: 79 goals (30 pillar + 28 infrastructure + 10 cross-runtime + 8 meta + 3 self-healing)
+# Total: 83 goals
 # Pillar goals define WHAT the system does (user-visible value).
 # Infrastructure goals define HOW the system stays healthy (build, test, docs).
 #
@@ -469,6 +469,13 @@ goals:
     pillar: zero-friction-workflow
     added: "2026-02-19"
   # --- Meta-Goals (type: meta) ---
+  - id: go-complexity-gate
+    description: "Changed non-test Go code under cli/ stays below complexity failure threshold"
+    check: "bash scripts/check-go-complexity.sh"
+    weight: 5
+    type: meta
+    pillar: infrastructure
+    added: "2026-02-20"
   - id: wiring-closure
     description: "All scripts, skills, and hooks are referenced by their parent registries"
     check: "bash scripts/check-wiring-closure.sh"

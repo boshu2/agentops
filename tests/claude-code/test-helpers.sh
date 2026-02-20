@@ -30,7 +30,8 @@ run_claude() {
     local output_file
     output_file="$(mktemp)"
 
-    if timeout "$timeout" claude -p "$prompt" \
+    if AGENTOPS_HOOKS_DISABLED="${AGENTOPS_HOOKS_DISABLED:-1}" \
+        timeout "$timeout" claude -p "$prompt" \
         --plugin-dir "$REPO_ROOT" \
         --dangerously-skip-permissions \
         --max-turns "$MAX_TURNS" \
@@ -56,7 +57,8 @@ run_claude_json() {
     ts="$(date +%s)"
     local log_file="$LOG_DIR/claude-${ts}-$$.jsonl"
 
-    if timeout "$timeout" claude -p "$prompt" \
+    if AGENTOPS_HOOKS_DISABLED="${AGENTOPS_HOOKS_DISABLED:-1}" \
+        timeout "$timeout" claude -p "$prompt" \
         --plugin-dir "$REPO_ROOT" \
         --dangerously-skip-permissions \
         --max-turns "$MAX_TURNS" \
@@ -122,9 +124,11 @@ assert_no_premature_tools() {
         return 0
     fi
 
-    # Check for tool calls before Skill
+    # Check for tool calls before Skill. Ignore known SessionStart automation hooks.
+    local tool_calls
+    tool_calls="$(head -n "$skill_line" "$log_file" | grep -E '"name":"(Bash|Read|Write|Edit|Glob|Grep)"' || true)"
     local premature_tools
-    premature_tools="$(head -n "$skill_line" "$log_file" | grep -E '"name":"(Bash|Read|Write|Edit|Glob|Grep)"' | head -3)"
+    premature_tools="$(echo "$tool_calls" | grep -Ev '"command":"gt (mol status|mail inbox)|"file_path":"[^"]*/\.agents/learnings/|No significant learnings from this session' | head -3 || true)"
 
     if [[ -n "$premature_tools" ]]; then
         echo -e "  ${RED}[FAIL]${NC} $test_name: Tools called before Skill"
