@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-02-20
+
+### Added
+
+- **Context-guard workflow protections** — Added assignment mapping plus proactive handoff and one-shot recovery markers to reduce stale-session drift and improve recovery behavior.
+- **Claude team context enhancements** — Expanded `ao` support for Claude team context handling and related docs.
+
+### Changed
+
+- **Install guidance priorities** — Claude marketplace/plugin install is now the first install path, with `npx skills` positioned as the cross-agent path for Codex/Cursor/OpenCode.
+- **Homebrew update consistency** — Standardized upgrade messaging to `brew update && brew upgrade agentops` across docs/release notes and improved installer fallback messaging.
+- **Repository hygiene** — `.agents/` artifacts are now fully ignored to keep generated local state out of tracked source history.
+
+### Fixed
+
+- **Claude plugin marketplace compatibility** — Removed unsupported `"$schema"` key in plugin manifest so `claude plugin install agentops@agentops-marketplace` succeeds.
+- **RPI phased reliability** — Hardened stream startup/fallback behavior and resolved related validation regressions.
+- **Hook/runtime regressions** — Fixed hook-coverage compile regressions and restored install symbols used by `ao init`/`ao doctor`.
+- **CLI quality debt** — Addressed lint/staticcheck regressions and reduced `runInit` complexity below CI threshold.
+
 ## [2.12.1] - 2026-02-20
 
 ### Fixed
