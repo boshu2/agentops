@@ -74,6 +74,12 @@ Every runtime maps these capabilities to its own API. Skills describe WHAT to do
 
 Use capability detection at runtime, not hardcoded tool names. The same skill must work across any agent harness that provides multi-agent primitives. If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
 
+**Selection policy (runtime-native first):**
+1. If running in a Claude session and `TeamCreate`/`SendMessage` are available, use **Claude Native Teams** as the primary backend.
+2. If running in a Codex session and `spawn_agent` is available, use **Codex sub-agents** as the primary backend.
+3. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution.
+4. Only use background tasks when neither native backend is available.
+
 | Operation | Codex Sub-Agents | Claude Native Teams | OpenCode Subagents | Inline Fallback |
 |-----------|------------------|---------------------|--------------------|-----------------|
 | Spawn | `spawn_agent(message=...)` | `TeamCreate` + `Task(team_name=...)` | `task(subagent_type="general", prompt=...)` | Execute inline |

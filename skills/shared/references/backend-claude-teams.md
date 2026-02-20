@@ -23,6 +23,34 @@ TeamCreate(team_name="swarm-1739812345-w1", description="Wave 1: parallel implem
 - Swarm: `swarm-<epoch>-w<wave>`
 - Crank: delegates to swarm naming
 
+## Leader Contract (Native Teams)
+
+Claude teams are leader-first orchestration:
+
+1. One lead creates the team and assigns all work.
+2. Teammates never self-assign from shared tasks.
+3. Teammates report to lead via short `SendMessage` signals.
+4. Lead reads result artifacts from disk, validates, and decides retries/escalation.
+
+Recommended signal envelope (single-line JSON, under 100 tokens):
+
+```json
+{"type":"completion|blocked|help_request","agent":"worker-3","task":"3","detail":"short status","artifact":".agents/swarm/results/3.json"}
+```
+
+`completion`: task finished, artifact written.
+`blocked`: cannot proceed safely.
+`help_request`: teammate needs coordination or scope clarification.
+
+### Peer Messaging (Allowed, Lead-Controlled)
+
+Native teams support direct teammate-to-teammate messaging. Use this only for coordination handoffs; keep messages thin and always copy the lead in follow-up summaries.
+
+```text
+worker-2 -> worker-5: "Need auth schema constant name; please confirm from src/auth/schema.ts"
+worker-5 -> lead: "Resolved peer question for worker-2; no scope change."
+```
+
 ---
 
 ## Spawn: Create Workers/Judges

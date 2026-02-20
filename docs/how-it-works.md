@@ -42,8 +42,10 @@ Operational contract reference: `skills/shared/references/ralph-loop-contract.md
 
 Skills auto-select the best available backend:
 
-1. Codex sub-agents (`spawn_agent`)
-2. Claude native teams (`TeamCreate` + `SendMessage`)
+1. Runtime-native backend first:
+   Claude sessions → Claude native teams (`TeamCreate` + `SendMessage`)
+   Codex sessions → Codex sub-agents (`spawn_agent`)
+2. Secondary/mixed backend only when explicitly requested
 3. Background task fallback (`Task(run_in_background=true)`)
 
 ```

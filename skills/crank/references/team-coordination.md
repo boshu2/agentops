@@ -54,7 +54,7 @@ Swarm finds unblocked TaskList tasks and executes them.
 ### Both Modes — Swarm Will:
 
 - Find all unblocked TaskList tasks
-- Select runtime backend for the wave (`spawn_agent` -> `TeamCreate` -> fallback tasks)
+- Select runtime backend for the wave (runtime-native first: Claude sessions -> `TeamCreate`, Codex sessions -> `spawn_agent`, fallback tasks only if needed)
 - Spawn workers with fresh context (Ralph pattern)
 - Workers execute in parallel and report via backend channel (`wait`/`SendMessage`/`TaskOutput`)
 - Team lead validates, then cleans up backend resources (`close_agent`/`TeamDelete`/none)

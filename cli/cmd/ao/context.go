@@ -79,31 +79,34 @@ type teamConfigMember struct {
 }
 
 type contextSessionStatus struct {
-	SessionID      string  `json:"session_id"`
-	TranscriptPath string  `json:"transcript_path,omitempty"`
-	Model          string  `json:"model,omitempty"`
-	LastTask       string  `json:"last_task,omitempty"`
-	InputTokens    int     `json:"input_tokens"`
-	CacheCreate    int     `json:"cache_creation_input_tokens"`
-	CacheRead      int     `json:"cache_read_input_tokens"`
-	EstimatedUsage int     `json:"estimated_usage"`
-	MaxTokens      int     `json:"max_tokens"`
-	UsagePercent   float64 `json:"usage_percent"`
-	Status         string  `json:"status"`
-	Recommendation string  `json:"recommendation"`
-	LastUpdated    string  `json:"last_updated,omitempty"`
-	IsStale        bool    `json:"is_stale"`
-	Action         string  `json:"action"`
-	AgentName      string  `json:"agent_name,omitempty"`
-	AgentRole      string  `json:"agent_role,omitempty"`
-	TeamName       string  `json:"team_name,omitempty"`
-	IssueID        string  `json:"issue_id,omitempty"`
-	TmuxPaneID     string  `json:"tmux_pane_id,omitempty"`
-	TmuxTarget     string  `json:"tmux_target,omitempty"`
-	TmuxSession    string  `json:"tmux_session,omitempty"`
-	RestartAttempt bool    `json:"restart_attempted,omitempty"`
-	RestartSuccess bool    `json:"restart_succeeded,omitempty"`
-	RestartMessage string  `json:"restart_message,omitempty"`
+	SessionID        string  `json:"session_id"`
+	TranscriptPath   string  `json:"transcript_path,omitempty"`
+	Model            string  `json:"model,omitempty"`
+	LastTask         string  `json:"last_task,omitempty"`
+	InputTokens      int     `json:"input_tokens"`
+	CacheCreate      int     `json:"cache_creation_input_tokens"`
+	CacheRead        int     `json:"cache_read_input_tokens"`
+	EstimatedUsage   int     `json:"estimated_usage"`
+	MaxTokens        int     `json:"max_tokens"`
+	UsagePercent     float64 `json:"usage_percent"`
+	RemainingPercent float64 `json:"remaining_percent"`
+	Status           string  `json:"status"`
+	Readiness        string  `json:"readiness"`
+	ReadinessAction  string  `json:"readiness_action"`
+	Recommendation   string  `json:"recommendation"`
+	LastUpdated      string  `json:"last_updated,omitempty"`
+	IsStale          bool    `json:"is_stale"`
+	Action           string  `json:"action"`
+	AgentName        string  `json:"agent_name,omitempty"`
+	AgentRole        string  `json:"agent_role,omitempty"`
+	TeamName         string  `json:"team_name,omitempty"`
+	IssueID          string  `json:"issue_id,omitempty"`
+	TmuxPaneID       string  `json:"tmux_pane_id,omitempty"`
+	TmuxTarget       string  `json:"tmux_target,omitempty"`
+	TmuxSession      string  `json:"tmux_session,omitempty"`
+	RestartAttempt   bool    `json:"restart_attempted,omitempty"`
+	RestartSuccess   bool    `json:"restart_succeeded,omitempty"`
+	RestartMessage   string  `json:"restart_message,omitempty"`
 }
 
 type contextGuardResult struct {
@@ -124,6 +127,13 @@ type handoffMarker struct {
 	Consumed      bool    `json:"consumed"`
 	ConsumedAt    string  `json:"consumed_at,omitempty"`
 }
+
+const (
+	contextReadinessGreen    = "GREEN"
+	contextReadinessAmber    = "AMBER"
+	contextReadinessRed      = "RED"
+	contextReadinessCritical = "CRITICAL"
+)
 
 func init() {
 	contextCmd := &cobra.Command{
@@ -188,17 +198,19 @@ func runContextStatus(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Printf("%-18s %-10s %-9s %-8s %-14s %-12s %-20s %s\n", "SESSION", "STATUS", "USAGE", "STALE", "AGENT", "ISSUE", "ACTION", "TASK")
-	fmt.Println(strings.Repeat("─", 140))
+	fmt.Printf("%-18s %-10s %-9s %-9s %-9s %-8s %-14s %-12s %-22s %s\n", "SESSION", "STATUS", "USAGE", "REMAIN", "HULL", "STALE", "AGENT", "ISSUE", "ACTION", "TASK")
+	fmt.Println(strings.Repeat("─", 170))
 	for _, s := range statuses {
 		task := s.LastTask
 		if len(task) > 48 {
 			task = task[:45] + "..."
 		}
-		fmt.Printf("%-18s %-10s %6.1f%%   %-8t %-14s %-12s %-20s %s\n",
+		fmt.Printf("%-18s %-10s %6.1f%%   %6.1f%%   %-9s %-8t %-14s %-12s %-22s %s\n",
 			truncateDisplay(s.SessionID, 18),
 			s.Status,
 			s.UsagePercent*100,
+			s.RemainingPercent*100,
+			s.Readiness,
 			s.IsStale,
 			truncateDisplay(displayOrDash(s.AgentName), 14),
 			truncateDisplay(displayOrDash(s.IssueID), 12),
@@ -306,22 +318,33 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 		if err != nil {
 			// Keep stale budget rows visible even if transcript is unavailable.
 			status = contextSessionStatus{
-				SessionID:      b.SessionID,
-				EstimatedUsage: b.EstimatedUsage,
-				MaxTokens:      nonZeroOrDefault(b.MaxTokens, contextbudget.DefaultMaxTokens),
-				UsagePercent:   b.GetUsagePercent(),
-				Status:         string(b.GetStatus()),
-				Recommendation: b.GetRecommendation(),
-				LastUpdated:    b.LastUpdated.Format(time.RFC3339),
-				IsStale:        !b.LastUpdated.IsZero() && time.Since(b.LastUpdated) > watchdog,
-				Action:         actionForStatus(string(b.GetStatus()), !b.LastUpdated.IsZero() && time.Since(b.LastUpdated) > watchdog),
+				SessionID:        b.SessionID,
+				EstimatedUsage:   b.EstimatedUsage,
+				MaxTokens:        nonZeroOrDefault(b.MaxTokens, contextbudget.DefaultMaxTokens),
+				UsagePercent:     b.GetUsagePercent(),
+				RemainingPercent: remainingPercent(b.GetUsagePercent()),
+				Status:           string(b.GetStatus()),
+				Readiness:        readinessForUsage(b.GetUsagePercent()),
+				ReadinessAction:  readinessAction(readinessForUsage(b.GetUsagePercent())),
+				Recommendation:   b.GetRecommendation(),
+				LastUpdated:      b.LastUpdated.Format(time.RFC3339),
+				IsStale:          !b.LastUpdated.IsZero() && time.Since(b.LastUpdated) > watchdog,
+				Action:           actionForStatus(string(b.GetStatus()), !b.LastUpdated.IsZero() && time.Since(b.LastUpdated) > watchdog),
 			}
 		}
 		mergePersistedAssignment(cwd, &status)
 		statuses = append(statuses, status)
 	}
 	sort.Slice(statuses, func(i, j int) bool {
+		ri := readinessRank(statuses[i].Readiness)
+		rj := readinessRank(statuses[j].Readiness)
+		if ri != rj {
+			return ri < rj
+		}
 		if statuses[i].Status == statuses[j].Status {
+			if statuses[i].IsStale != statuses[j].IsStale {
+				return statuses[i].IsStale
+			}
 			return statuses[i].SessionID < statuses[j].SessionID
 		}
 		rank := func(s string) int {
@@ -363,24 +386,29 @@ func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog
 	tracker := contextbudget.NewBudgetTracker(sessionID)
 	tracker.MaxTokens = max
 	tracker.UpdateUsage(estimated)
+	usagePercent := tracker.GetUsagePercent()
+	readiness := readinessForUsage(usagePercent)
 
 	isStale := !usage.Timestamp.IsZero() && watchdog > 0 && time.Since(usage.Timestamp) > watchdog
 	status := contextSessionStatus{
-		SessionID:      sessionID,
-		TranscriptPath: transcriptPath,
-		Model:          usage.Model,
-		LastTask:       normalizeLine(lastTask),
-		InputTokens:    usage.InputTokens,
-		CacheCreate:    usage.CacheCreationInputToken,
-		CacheRead:      usage.CacheReadInputToken,
-		EstimatedUsage: estimated,
-		MaxTokens:      max,
-		UsagePercent:   tracker.GetUsagePercent(),
-		Status:         string(tracker.GetStatus()),
-		Recommendation: tracker.GetRecommendation(),
-		LastUpdated:    usage.Timestamp.UTC().Format(time.RFC3339),
-		IsStale:        isStale,
-		Action:         actionForStatus(string(tracker.GetStatus()), isStale),
+		SessionID:        sessionID,
+		TranscriptPath:   transcriptPath,
+		Model:            usage.Model,
+		LastTask:         normalizeLine(lastTask),
+		InputTokens:      usage.InputTokens,
+		CacheCreate:      usage.CacheCreationInputToken,
+		CacheRead:        usage.CacheReadInputToken,
+		EstimatedUsage:   estimated,
+		MaxTokens:        max,
+		UsagePercent:     usagePercent,
+		RemainingPercent: remainingPercent(usagePercent),
+		Status:           string(tracker.GetStatus()),
+		Readiness:        readiness,
+		ReadinessAction:  readinessAction(readiness),
+		Recommendation:   tracker.GetRecommendation(),
+		LastUpdated:      usage.Timestamp.UTC().Format(time.RFC3339),
+		IsStale:          isStale,
+		Action:           actionForStatus(string(tracker.GetStatus()), isStale),
 	}
 	applyContextAssignment(&status, resolveContextAssignment(cwd, status.LastTask, agentName))
 	mergePersistedAssignment(cwd, &status)
@@ -452,11 +480,21 @@ func ensureCriticalHandoff(cwd string, status contextSessionStatus, usage transc
 }
 
 func renderHandoffMarkdown(now time.Time, status contextSessionStatus, usage transcriptUsage, activeBead string, changedFiles []string) string {
+	hull := strings.TrimSpace(status.Readiness)
+	if hull == "" {
+		hull = readinessForUsage(status.UsagePercent)
+	}
+	remaining := status.RemainingPercent
+	if remaining <= 0 && status.UsagePercent > 0 {
+		remaining = remainingPercent(status.UsagePercent)
+	}
+
 	var b strings.Builder
 	b.WriteString("# Auto-Handoff (Context Guard)\n\n")
 	b.WriteString(fmt.Sprintf("**Timestamp:** %s\n", now.Format(time.RFC3339)))
 	b.WriteString(fmt.Sprintf("**Session:** %s\n", status.SessionID))
 	b.WriteString(fmt.Sprintf("**Status:** %s (%.1f%%)\n", status.Status, status.UsagePercent*100))
+	b.WriteString(fmt.Sprintf("**Hull:** %s (%.1f%% remaining)\n", hull, remaining*100))
 	b.WriteString(fmt.Sprintf("**Action:** %s\n\n", status.Action))
 
 	b.WriteString("## Last Task\n")
@@ -730,9 +768,9 @@ func actionForStatus(status string, stale bool) string {
 func hookMessageForStatus(status contextSessionStatus) string {
 	switch status.Action {
 	case "handoff_now":
-		return fmt.Sprintf("Context is CRITICAL (%.1f%%). End this session and start a fresh one to avoid compaction loss.", status.UsagePercent*100)
+		return fmt.Sprintf("Context is CRITICAL (%.1f%% used, %s %.1f%% remaining). End this session and start a fresh one to avoid compaction loss.", status.UsagePercent*100, status.Readiness, status.RemainingPercent*100)
 	case "checkpoint_and_prepare_handoff":
-		return fmt.Sprintf("Context is WARNING (%.1f%%). Prepare a handoff before continuing long orchestration.", status.UsagePercent*100)
+		return fmt.Sprintf("Context is WARNING (%.1f%% used, hull %s %.1f%% remaining). Prepare a handoff before continuing long orchestration.", status.UsagePercent*100, status.Readiness, status.RemainingPercent*100)
 	case "recover_dead_session":
 		if status.RestartAttempt {
 			if status.RestartSuccess {
@@ -745,6 +783,9 @@ func hookMessageForStatus(status contextSessionStatus) string {
 		}
 		return "Watchdog: session appears stale with unfinished work. Trigger recovery handoff."
 	default:
+		if status.Readiness == contextReadinessRed {
+			return fmt.Sprintf("Hull is RED (%.1f%% remaining). Finish current work and prepare relief-on-station handoff.", status.RemainingPercent*100)
+		}
 		return ""
 	}
 }
@@ -1015,12 +1056,80 @@ func inferAgentRole(agentName, explicitRole string) string {
 	switch {
 	case agentName == "":
 		return ""
-	case strings.Contains(agentName, "lead"):
+	case strings.Contains(agentName, "admiral"),
+		strings.Contains(agentName, "captain"),
+		strings.Contains(agentName, "coordinator"),
+		strings.Contains(agentName, "orchestrator"),
+		strings.Contains(agentName, "quarterback"),
+		strings.Contains(agentName, "mayor"),
+		strings.Contains(agentName, "leader"),
+		strings.Contains(agentName, "lead"):
 		return "team-lead"
-	case strings.Contains(agentName, "worker"):
+	case strings.Contains(agentName, "red-cell"),
+		strings.Contains(agentName, "navigator"),
+		strings.Contains(agentName, "judge"),
+		strings.Contains(agentName, "reviewer"):
+		return "review"
+	case strings.Contains(agentName, "worker"),
+		strings.Contains(agentName, "crew"),
+		strings.Contains(agentName, "mate"):
 		return "worker"
 	default:
 		return "agent"
+	}
+}
+
+func remainingPercent(usagePercent float64) float64 {
+	remaining := 1 - usagePercent
+	switch {
+	case remaining < 0:
+		return 0
+	case remaining > 1:
+		return 1
+	default:
+		return remaining
+	}
+}
+
+func readinessForUsage(usagePercent float64) string {
+	remaining := remainingPercent(usagePercent)
+	switch {
+	case remaining >= 0.75:
+		return contextReadinessGreen
+	case remaining >= 0.60:
+		return contextReadinessAmber
+	case remaining >= 0.40:
+		return contextReadinessRed
+	default:
+		return contextReadinessCritical
+	}
+}
+
+func readinessAction(readiness string) string {
+	switch readiness {
+	case contextReadinessGreen:
+		return "carry_on"
+	case contextReadinessAmber:
+		return "finish_current_scope"
+	case contextReadinessRed:
+		return "relief_on_station"
+	default:
+		return "immediate_relief"
+	}
+}
+
+func readinessRank(readiness string) int {
+	switch strings.TrimSpace(readiness) {
+	case contextReadinessCritical:
+		return 0
+	case contextReadinessRed:
+		return 1
+	case contextReadinessAmber:
+		return 2
+	case contextReadinessGreen:
+		return 3
+	default:
+		return 4
 	}
 }
 

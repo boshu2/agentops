@@ -108,6 +108,12 @@ func TestCollectSessionStatusPromptOverrideAndCritical(t *testing.T) {
 	if status.Status != string(contextbudget.StatusCritical) {
 		t.Fatalf("status = %q, want %q", status.Status, contextbudget.StatusCritical)
 	}
+	if status.Readiness != contextReadinessCritical {
+		t.Fatalf("readiness = %q, want %q", status.Readiness, contextReadinessCritical)
+	}
+	if status.ReadinessAction != "immediate_relief" {
+		t.Fatalf("readiness action = %q, want immediate_relief", status.ReadinessAction)
+	}
 	if status.Action != "handoff_now" {
 		t.Fatalf("action = %q, want handoff_now", status.Action)
 	}
@@ -162,6 +168,12 @@ func TestCollectSessionStatusStaleWatchdogAction(t *testing.T) {
 	}
 	if !status.IsStale {
 		t.Fatal("expected stale session")
+	}
+	if status.Readiness != contextReadinessRed {
+		t.Fatalf("readiness = %q, want %q", status.Readiness, contextReadinessRed)
+	}
+	if status.ReadinessAction != "relief_on_station" {
+		t.Fatalf("readiness action = %q, want relief_on_station", status.ReadinessAction)
 	}
 	if status.Action != "recover_dead_session" {
 		t.Fatalf("action = %q, want recover_dead_session", status.Action)
@@ -236,6 +248,38 @@ func TestCollectSessionStatusResolvesAssignmentFromTeamConfig(t *testing.T) {
 	}
 	if status.TmuxSession != "convoy-20260220" {
 		t.Fatalf("tmux session = %q, want convoy-20260220", status.TmuxSession)
+	}
+	if status.Readiness != contextReadinessGreen {
+		t.Fatalf("readiness = %q, want %q", status.Readiness, contextReadinessGreen)
+	}
+	if status.ReadinessAction != "carry_on" {
+		t.Fatalf("readiness action = %q, want carry_on", status.ReadinessAction)
+	}
+}
+
+func TestReadinessForUsage(t *testing.T) {
+	tests := []struct {
+		name          string
+		usagePercent  float64
+		wantReadiness string
+		wantAction    string
+	}{
+		{name: "green", usagePercent: 0.20, wantReadiness: contextReadinessGreen, wantAction: "carry_on"},
+		{name: "amber", usagePercent: 0.30, wantReadiness: contextReadinessAmber, wantAction: "finish_current_scope"},
+		{name: "red", usagePercent: 0.55, wantReadiness: contextReadinessRed, wantAction: "relief_on_station"},
+		{name: "critical", usagePercent: 0.70, wantReadiness: contextReadinessCritical, wantAction: "immediate_relief"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotReadiness := readinessForUsage(tt.usagePercent)
+			if gotReadiness != tt.wantReadiness {
+				t.Fatalf("readinessForUsage(%0.2f) = %q, want %q", tt.usagePercent, gotReadiness, tt.wantReadiness)
+			}
+			gotAction := readinessAction(gotReadiness)
+			if gotAction != tt.wantAction {
+				t.Fatalf("readinessAction(%q) = %q, want %q", gotReadiness, gotAction, tt.wantAction)
+			}
+		})
 	}
 }
 

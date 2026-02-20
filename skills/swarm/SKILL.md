@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: 'Spawn isolated agents for parallel task execution. Local mode auto-selects Codex sub-agents or Claude teams. Distributed mode uses tmux + Agent Mail (process isolation, persistence). Triggers: "swarm", "spawn agents", "parallel work", "run in parallel", "parallel execution".'
+description: 'Spawn isolated agents for parallel task execution. Local mode auto-selects runtime-native teams (Claude Native Teams in Claude sessions, Codex sub-agents in Codex sessions). Distributed mode uses tmux + Agent Mail (process isolation, persistence). Triggers: "swarm", "spawn agents", "parallel work", "run in parallel", "parallel execution".'
 metadata:
   tier: execution
   dependencies:
@@ -13,7 +13,7 @@ metadata:
 Spawn isolated agents to execute tasks in parallel. Fresh context per agent (Ralph Wiggum pattern).
 
 **Execution Modes:**
-- **Local** (default) - Runtime-native spawning (Codex sub-agents when available, otherwise Claude teams/task agents)
+- **Local** (default) - Runtime-native spawning (Claude Native Teams in Claude sessions; Codex sub-agents in Codex sessions; fallback tasks only if needed)
 - **Distributed** (`--mode=distributed`) - tmux sessions + Agent Mail for robust coordination
 
 **Integration modes:**
@@ -31,7 +31,7 @@ Mayor (this session)
     |
     +-> Identify wave: tasks with no blockers
     |
-    +-> Select spawn backend (Codex sub-agents | Claude teams | fallback tasks)
+    +-> Select spawn backend (runtime-native first: Claude teams in Claude runtime, Codex sub-agents in Codex runtime; fallback tasks if unavailable)
     |
     +-> Assign: TaskUpdate(taskId, owner="worker-<id>", status="in_progress")
     |
@@ -114,7 +114,7 @@ Mayor: "Let's build a user auth system"
 
 ## Key Points
 
-- **Runtime-native local mode** - Auto-selects Codex sub-agents or Claude teams
+- **Runtime-native local mode** - Auto-selects the native backend for the current runtime (Claude teams or Codex sub-agents)
 - **Universal orchestration contract** - Same swarm behavior across Claude and Codex sessions
 - **Pre-assigned tasks** - Mayor assigns tasks before spawning; workers never race-claim
 - **Fresh worker contexts** - New sub-agents/teammates per wave preserve Ralph isolation
@@ -328,7 +328,7 @@ ol hero ratchet "$BEAD_ID" --quest "$QUEST_ID"
 
 **What happens:**
 1. Agent identifies unblocked tasks from TaskList (e.g., "Create User model")
-2. Agent selects spawn backend (Codex sub-agents if available, else Claude teams)
+2. Agent selects spawn backend using runtime-native priority (Claude session -> Claude teams; Codex session -> Codex sub-agents)
 3. Agent spawns worker for task #1, assigns ownership via TaskUpdate
 4. Worker completes, team lead validates changes
 5. Agent identifies next wave (tasks #2 and #3 now unblocked)

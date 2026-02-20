@@ -4,6 +4,10 @@ type: learning
 created_at: 2026-02-16
 category: process
 confidence: high
+utility: 0.0715
+last_reward: 0.00
+reward_count: 123
+last_reward_at: 2026-02-20T10:53:02-05:00
 ---
 
 # Learning: Competitive Analysis Pipeline
