@@ -464,6 +464,13 @@ fi
 
 ## Examples
 
+**User says:** "Run a quick validation on the latest changes."
+
+**Do:**
+```bash
+/vibe recent
+```
+
 ### Validate Recent Changes
 
 ```bash

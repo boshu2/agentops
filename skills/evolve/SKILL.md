@@ -739,6 +739,20 @@ See `references/artifacts.md` for the full list of generated files and their pur
 
 ## Examples
 
+**User says:** "Run evolve until goals are green."
+
+**Do:**
+```bash
+/evolve
+```
+
+**User says:** "Run evolve in dry-run mode for two cycles."
+
+**Do:**
+```bash
+/evolve --dry-run --max-cycles=2
+```
+
 See `references/examples.md` for detailed examples including infinite improvement, dry-run mode, and regression with revert.
 
 ---
