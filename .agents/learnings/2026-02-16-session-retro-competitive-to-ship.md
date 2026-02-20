@@ -4,6 +4,10 @@ type: learning
 created_at: 2026-02-16
 category: process
 confidence: high
+utility: 0.4050
+last_reward: 0.00
+reward_count: 2
+last_reward_at: 2026-02-20T12:03:41-05:00
 ---
 
 # Learning: Competitive Intelligence as Feature Driver
