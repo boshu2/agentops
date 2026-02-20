@@ -153,6 +153,84 @@ Each check uses one of the validation-contract.md types:
 ]
 ```
 
+## Example 4: Implementation Detail — "Add Stale Run Detection"
+
+This example demonstrates symbol-level implementation detail — the key differentiator between vague plans and actionable specs.
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `cli/cmd/ao/rpi_status.go` | Add worktree check to `classifyRunStatus`, add `Reason` field to `rpiRunInfo` |
+| `cli/cmd/ao/rpi_cleanup.go` | **NEW** — `ao rpi cleanup` command |
+| `cli/cmd/ao/rpi_phased.go` | Add terminal metadata fields to `phasedState` |
+| `cli/internal/config/config.go` | Add `RPIConfig` with `WorktreeMode` |
+
+### Implementation (Symbol-Level)
+
+#### 1. Stale Run Detection in `rpi_status.go`
+
+- **Modify `classifyRunStatus`**: Add check for `state.TerminalStatus != ""` — return it directly. Add check for `state.WorktreePath != ""` with `os.Stat()` — if directory gone, return `"stale"`.
+
+- **Add `Reason` field to `rpiRunInfo`**:
+  ```go
+  Reason string `json:"reason,omitempty"` // why a run is stale/failed
+  ```
+
+- **Modify `determineRunLiveness`**: If `state.WorktreePath != ""` and `os.Stat(state.WorktreePath)` fails, short-circuit to `return false, hb` without probing tmux.
+
+- **Key functions to reuse:**
+  - `readRunHeartbeat()` at `rpi_phased.go:1963`
+  - `checkTmuxSessionAlive()` at `rpi_status.go:896`
+  - `parsePhasedState()` at `rpi_phased.go:1924`
+
+#### 2. Terminal Metadata in `rpi_phased.go`
+
+- **Add fields to `phasedState`**:
+  ```go
+  TerminalStatus string `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+  TerminalReason string `json:"terminal_reason,omitempty"`
+  TerminatedAt   string `json:"terminated_at,omitempty"`
+  ```
+
+### Tests (Named Functions)
+
+**`cli/cmd/ao/rpi_status_test.go`** — add:
+- `TestClassifyRunStatus_StaleWorktree`: Run with `worktree_path` pointing to nonexistent dir → status "stale"
+- `TestClassifyRunStatus_TerminalMetadata`: Run with `terminal_status` set → uses that status directly
+- `TestDetermineRunLiveness_MissingWorktree`: Worktree path gone → not active
+
+**`cli/cmd/ao/rpi_cleanup_test.go`** — **NEW**:
+- `TestCleanupStaleRun`: Create stale registry entry, run cleanup, verify terminal metadata written
+- `TestCleanupActiveRunUntouched`: Create active (fresh heartbeat) entry, verify unchanged
+- `TestCleanupDryRun`: Dry-run produces output but doesn't modify state
+
+### Verification
+
+1. **Unit tests**: `cd cli && go test ./cmd/ao/ -run "TestClassifyRunStatus|TestCleanup" -v`
+2. **Manual stale simulation**:
+   ```bash
+   mkdir -p .agents/rpi/runs/fakestale
+   echo '{"schema_version":1,"run_id":"fakestale","phase":2,"worktree_path":"/nonexistent"}' \
+     > .agents/rpi/runs/fakestale/phased-state.json
+   ao rpi status           # Should show "stale" not "running"
+   ao rpi cleanup --all --dry-run   # Preview
+   ao rpi cleanup --all             # Fix
+   ao rpi status                    # Should show "stale" with reason
+   ```
+
+### Why This Format Works
+
+Compared to a category-level spec like "Add stale worktree detection to `classifyRunStatus`", the implementation detail above tells the worker:
+- The exact parameter name (`state.TerminalStatus`)
+- The exact condition (`os.Stat(state.WorktreePath)` fails)
+- The exact return value (`"stale"`)
+- Where to find existing code (`readRunHeartbeat()` at `rpi_phased.go:1963`)
+- What to name tests (`TestClassifyRunStatus_StaleWorktree`)
+- How to verify manually (create fake stale run, check output)
+
+This enabled single-pass implementation of an 8-file change with zero spec-divergence.
+
 ## Cross-Cutting Constraints: How They Work
 
 "Always" boundaries become cross-cutting constraints that /crank injects into **every** worker task:

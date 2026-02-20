@@ -277,6 +277,57 @@ Wave 2 (Depends on Wave 1):
 - **Wave N:** Steps where all `needs` are in Wave N-1 or earlier
 - **Can Parallel:** "Yes" if steps in same wave affect different files
 
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `{{base_path}}{{service_name}}/core.py` | Add core module with main logic |
+| `{{base_path}}{{service_name}}/config.py` | **NEW** — configuration handling |
+| `tests/unit/test_{{service_name}}.py` | **NEW** — unit tests |
+
+## Implementation
+
+### 1. Core Module
+
+In `{{base_path}}{{service_name}}/core.py`:
+
+- **Create `ServiceHandler` class** with `__init__(self, config: ServiceConfig)` and `process(self, request: Request) -> Response`
+- **Key functions to reuse:**
+  - `validate_request()` at `{{base_path}}common/validation.py:45`
+  - `format_response()` at `{{base_path}}common/response.py:23`
+
+### 2. Configuration
+
+In `{{base_path}}{{service_name}}/config.py`:
+
+- **Add `ServiceConfig` dataclass:**
+  ```python
+  @dataclass
+  class ServiceConfig:
+      service_name: str = "{{service_name}}"
+      base_path: str = "{{base_path}}"
+  ```
+
+## Tests
+
+**`tests/unit/test_{{service_name}}.py`** — **NEW**:
+- `test_service_handler_happy_path`: Valid request returns expected response
+- `test_service_handler_invalid_input`: Bad request raises ValueError
+- `test_config_defaults`: ServiceConfig has correct defaults
+
+## Verification
+
+1. **Unit tests**: `pytest tests/unit/test_{{service_name}}.py -v`
+2. **Build check**: `python -c "from {{base_path.replace('/', '.')}}{{service_name}} import core"`
+3. **Manual test**:
+   ```bash
+   python -c "
+   from {{base_path.replace('/', '.')}}{{service_name}}.core import ServiceHandler
+   handler = ServiceHandler()
+   print(handler.process({'data': 'test'}))
+   "
+   ```
+
 ## Implementation Notes
 [Key decisions, patterns to follow, risks identified]
 

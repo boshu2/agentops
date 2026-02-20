@@ -53,7 +53,7 @@ If ao returns relevant learnings or patterns, incorporate them into the plan. Sk
 
 ### Step 3: Explore the Codebase (if needed)
 
-**USE THE TASK TOOL** to dispatch an Explore agent:
+**USE THE TASK TOOL** to dispatch an Explore agent. The explore prompt MUST request symbol-level detail:
 
 ```
 Tool: Task
@@ -67,7 +67,14 @@ Parameters:
     2. Understand current architecture
     3. Identify what needs to change
 
-    Return: key files, current state, suggested approach
+    For EACH file that needs modification, return:
+    - Exact function/method signatures that need changes
+    - Struct/type definitions that need new fields
+    - Key functions to reuse (with file:line references)
+    - Existing test file locations and naming conventions (e.g., TestFoo_Bar)
+    - Import paths and package relationships
+
+    Return: file inventory, per-file symbol details, reuse points with line numbers, test patterns
 ```
 
 #### Pre-Planning Baseline Audit (Mandatory)
@@ -91,6 +98,81 @@ Run grep/wc/ls commands to count the current state of what you're changing:
 | "add missing sections" | "Add Examples to 27 skills (verified: `grep -L '## Examples' skills/*/SKILL.md \| wc -l` = 27)" |
 
 Ground truth with numbers prevents scope creep and makes completion verifiable. In ol-571, the audit found 5,752 LOC to remove — without it, the plan would have been vague. In ag-dnu, wrong counts (11 vs 14, 0 vs 7) caused a pre-mortem FAIL that a simple grep audit would have prevented.
+
+### Step 3.5: Generate Implementation Detail (Mandatory)
+
+**After exploring the codebase**, generate symbol-level implementation detail for EVERY file in the plan. This is what separates actionable specs from vague descriptions. A worker reading the plan should know exactly what to write without rediscovering function names, parameters, or code locations.
+
+#### File Inventory Table
+
+Start with a `## Files to Modify` table listing EVERY file the plan touches:
+
+```markdown
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/auth/middleware.go` | Add rate limit check to `AuthMiddleware` |
+| `src/config/config.go` | Add `RateLimit` section to `Config` struct |
+| `src/auth/middleware_test.go` | **NEW** — rate limit middleware tests |
+```
+
+Mark new files with `**NEW**`. This table gives the implementer the full blast radius in 30 seconds.
+
+#### Per-Section Implementation Specs
+
+For each logical change group, provide symbol-level detail:
+
+1. **Exact function signatures** — name the function, its parameters, and what changes:
+   - "Add `worktreePath string` parameter to `classifyRunStatus`"
+   - "Create new `RPIConfig` struct with `WorktreeMode string` field"
+
+2. **Key functions to reuse** — with `file:line` references from the explore step:
+   - "Reuse `readRunHeartbeat()` at `rpi_phased.go:1963`"
+   - "Call existing `parsePhasedState()` at `rpi_phased.go:1924`"
+
+3. **Inline code blocks** — for non-obvious constructs (struct definitions, CLI flags, config snippets):
+   ```go
+   type RPIConfig struct {
+       WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
+   }
+   ```
+
+4. **New struct fields with tags** — exact field names and JSON/YAML tags
+
+5. **CLI flag definitions** — exact flag names, types, defaults, and help text
+
+#### Named Test Functions
+
+For each test file, list specific test functions with one-line descriptions:
+
+```markdown
+**`src/auth/middleware_test.go`** — add:
+- `TestRateLimitMiddleware_UnderLimit`: Request within limit returns 200
+- `TestRateLimitMiddleware_OverLimit`: Request exceeding limit returns 429
+- `TestRateLimitMiddleware_ResetAfterWindow`: Counter resets after time window
+```
+
+#### Verification Procedures
+
+Add a `## Verification` section with runnable bash sequences that reproduce the scenario and confirm the fix:
+
+```markdown
+## Verification
+
+1. **Unit tests**: `go test ./src/auth/ -run "TestRateLimit" -v`
+2. **Build check**: `go build ./...`
+3. **Manual simulation**:
+   ```bash
+   # Start server
+   go run ./cmd/server/ &
+   # Hit endpoint 11 times (limit is 10)
+   for i in $(seq 1 11); do curl -s -o /dev/null -w "%{http_code}\n" localhost:8080/api; done
+   # Last request should return 429
+   ```
+```
+
+**Why this matters:** The golden plan pattern (file tables + symbol-level specs + verification procedures) enabled single-pass implementation of an 8-file, 5-area change with zero ambiguity. Category-level specs ("modify classifyRunStatus") force implementers to rediscover symbols, causing divergence and rework.
 
 ### Step 4: Decompose into Issues
 
@@ -163,8 +245,15 @@ False dependencies reduce parallelism. Pre-mortem judges will also flag these. I
 **Date:** YYYY-MM-DD
 **Source:** <research doc if any>
 
-## Overview
-<1-2 sentence summary of what we're building>
+## Context
+<1-2 paragraphs explaining the problem, current state, and why this change is needed>
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `path/to/file.go` | Description of change |
+| `path/to/new_file.go` | **NEW** — description |
 
 ## Boundaries
 
@@ -178,6 +267,39 @@ False dependencies reduce parallelism. Pre-mortem judges will also flag these. I
 |--------|---------|--------|
 | <what was measured> | `<grep/wc/ls command used>` | <result> |
 
+## Implementation
+
+### 1. <Change Group Name>
+
+In `path/to/file.go`:
+
+- **Modify `functionName`**: Add `paramName Type` parameter. If `paramName != ""` and condition, return `"value"`.
+
+- **Add `NewStruct`**:
+  ```go
+  type NewStruct struct {
+      FieldName string `json:"field_name,omitempty"`
+  }
+  ```
+
+- **Key functions to reuse:**
+  - `existingHelper()` at `path/to/file.go:123`
+  - `anotherFunc()` at `path/to/other.go:456`
+
+### 2. <Next Change Group>
+
+<Same pattern — exact symbols, inline code, reuse references>
+
+## Tests
+
+**`path/to/file_test.go`** — add:
+- `TestFunctionName_ScenarioA`: Input X produces output Y
+- `TestFunctionName_ScenarioB`: Edge case Z handled correctly
+
+**`path/to/new_test.go`** — **NEW**:
+- `TestNewFeature_HappyPath`: Normal flow succeeds
+- `TestNewFeature_ErrorCase`: Bad input returns error
+
 ## Conformance Checks
 
 | Issue | Check Type | Check |
@@ -186,12 +308,27 @@ False dependencies reduce parallelism. Pre-mortem judges will also flag these. I
 | Issue 1 | tests | `go test ./src/auth/...` |
 | Issue 2 | files_exist | `["docs/api-v2.md"]` |
 
+## Verification
+
+1. **Unit tests**: `go test ./path/to/ -run "TestFoo" -v`
+2. **Full suite**: `go test ./... -short -timeout 120s`
+3. **Manual simulation**:
+   ```bash
+   # Create test scenario
+   mkdir -p .test/data
+   echo '{"key": "value"}' > .test/data/input.json
+   # Run the tool
+   ./bin/tool --flag value
+   # Verify expected output
+   cat .test/data/output.json  # Should show "result"
+   ```
+
 ## Issues
 
 ### Issue 1: <Title>
 **Dependencies:** None
 **Acceptance:** <how to verify>
-**Description:** <what to do>
+**Description:** <what to do — reference Implementation section for symbol-level detail>
 
 ### Issue 2: <Title>
 **Dependencies:** Issue 1
@@ -205,6 +342,7 @@ False dependencies reduce parallelism. Pre-mortem judges will also flag these. I
 **Wave 3** (after Wave 2): Issue 5
 
 ## Next Steps
+- Run `/pre-mortem` to validate plan
 - Run `/crank` for autonomous execution
 - Or `/implement <issue>` for single issue
 ```
@@ -364,6 +502,19 @@ Tell the user:
 4. Output includes deletion verification checks
 
 **Result:** Scoped cleanup plan with measurable completion criteria (e.g., "Delete 1,500 LOC from pkg/legacy").
+
+### Plan with Implementation Detail (Symbol-Level)
+
+**User says:** `/plan "add stale run detection to ao rpi status"`
+
+**What happens:**
+1. Agent explores codebase, finds `classifyRunStatus` at `rpi_status.go:850`, `phasedState` at `rpi_phased.go:100`
+2. Produces file inventory: 4 files to modify, 2 new files
+3. Each implementation section names exact functions, parameters, struct fields with JSON tags
+4. Tests section lists `TestClassifyRunStatus_StaleWorktree`, `TestDetermineRunLiveness_MissingWorktree` with descriptions
+5. Verification section provides manual simulation: create fake stale run, check `ao rpi status` output
+
+**Result:** Implementer can execute the plan in a single pass without rediscovering any symbol names, reducing implementation time by ~50% and eliminating spec-divergence rework.
 
 ## Troubleshooting
 
