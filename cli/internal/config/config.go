@@ -33,6 +33,16 @@ type Config struct {
 
 	// Paths settings for artifact locations (configurable, not hardcoded)
 	Paths PathsConfig `yaml:"paths" json:"paths"`
+
+	// RPI settings
+	RPI RPIConfig `yaml:"rpi" json:"rpi"`
+}
+
+// RPIConfig holds RPI-specific settings.
+type RPIConfig struct {
+	// WorktreeMode controls worktree behavior for phased runs.
+	// Values: "auto" (default, creates worktree), "always" (force worktree), "never" (no worktree).
+	WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
 }
 
 // PathsConfig holds configurable paths for artifact locations.
@@ -113,6 +123,9 @@ func Default() *Config {
 		Search: SearchConfig{
 			DefaultLimit:        10,
 			UseSmartConnections: true,
+		},
+		RPI: RPIConfig{
+			WorktreeMode: "auto",
 		},
 		Paths: PathsConfig{
 			LearningsDir:   ".agents/learnings",
@@ -207,6 +220,9 @@ func applyEnv(cfg *Config) *Config {
 		cfg.Search.UseSmartConnections = false
 		cfg.Search.UseSmartConnectionsSet = true
 	}
+	if v := os.Getenv("AGENTOPS_RPI_WORKTREE_MODE"); v != "" {
+		cfg.RPI.WorktreeMode = v
+	}
 	return cfg
 }
 
@@ -235,6 +251,11 @@ func merge(dst, src *Config) *Config {
 	if src.Search.UseSmartConnectionsSet {
 		dst.Search.UseSmartConnections = src.Search.UseSmartConnections
 		dst.Search.UseSmartConnectionsSet = true
+	}
+
+	// Merge RPI config
+	if src.RPI.WorktreeMode != "" {
+		dst.RPI.WorktreeMode = src.RPI.WorktreeMode
 	}
 
 	// Merge paths (G5: configurable paths, not hardcoded)

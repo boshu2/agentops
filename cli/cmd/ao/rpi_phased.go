@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cliConfig "github.com/boshu2/agentops/cli/internal/config"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -179,8 +180,11 @@ type phasedState struct {
 	StartedAt     string              `json:"started_at"`
 	WorktreePath  string              `json:"worktree_path,omitempty"`
 	RunID         string              `json:"run_id,omitempty"`
-	Backend       string              `json:"backend,omitempty"`
-	Opts          phasedEngineOptions `json:"opts"`
+	Backend        string              `json:"backend,omitempty"`
+	TerminalStatus string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+	TerminalReason string              `json:"terminal_reason,omitempty"`
+	TerminatedAt   string              `json:"terminated_at,omitempty"`
+	Opts           phasedEngineOptions `json:"opts"`
 }
 
 // retryContext holds context for retrying a failed gate.
@@ -467,7 +471,30 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		NtmPollInterval:      ntmPollInterval,
 		StallCheckInterval:   stallCheckInterval,
 	}
+
+	// Apply config-based worktree mode if the --no-worktree flag was not explicitly set.
+	if !cmd.Flags().Changed("no-worktree") {
+		opts.NoWorktree = resolveWorktreeModeFromConfig(opts.NoWorktree)
+	}
+
 	return runRPIPhasedWithOpts(opts, args)
+}
+
+// resolveWorktreeModeFromConfig checks the agentops config for rpi.worktree_mode
+// and returns the effective NoWorktree value.
+func resolveWorktreeModeFromConfig(flagDefault bool) bool {
+	cfg, err := cliConfig.Load(nil)
+	if err != nil {
+		return flagDefault
+	}
+	switch cfg.RPI.WorktreeMode {
+	case "never":
+		return true
+	case "always":
+		return false
+	default: // "auto" or empty
+		return flagDefault
+	}
 }
 
 // runRPIPhasedWithOpts is the core implementation of the phased RPI lifecycle.

@@ -73,6 +73,7 @@ type rpiRunInfo struct {
 	Phase     int    `json:"phase"`
 	PhaseName string `json:"phase_name"`
 	Status    string `json:"status"`
+	Reason    string `json:"reason,omitempty"` // why a run is stale/failed (e.g. "worktree missing")
 	EpicID    string `json:"epic_id,omitempty"`
 	Worktree  string `json:"worktree,omitempty"`
 	StartedAt string `json:"started_at,omitempty"`
@@ -171,12 +172,30 @@ func renderStateRunsSection(title string, runs []rpiRunInfo, label string, withL
 		fmt.Println()
 	}
 
-	fmt.Println(title)
-	fmt.Printf("%-14s %-30s %-14s %-10s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "ELAPSED")
-	fmt.Println(strings.Repeat("─", 82))
+	// Check if any run has a reason to show the extra column.
+	hasReason := false
 	for _, r := range runs {
-		fmt.Printf("%-14s %-30s %-14s %-10s %s\n",
-			r.RunID, truncateGoal(r.Goal, 28), r.PhaseName, r.Status, r.Elapsed)
+		if r.Reason != "" {
+			hasReason = true
+			break
+		}
+	}
+
+	fmt.Println(title)
+	if hasReason {
+		fmt.Printf("%-14s %-26s %-14s %-12s %-20s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "REASON", "ELAPSED")
+		fmt.Println(strings.Repeat("─", 100))
+		for _, r := range runs {
+			fmt.Printf("%-14s %-26s %-14s %-12s %-20s %s\n",
+				r.RunID, truncateGoal(r.Goal, 24), r.PhaseName, r.Status, r.Reason, r.Elapsed)
+		}
+	} else {
+		fmt.Printf("%-14s %-30s %-14s %-10s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "ELAPSED")
+		fmt.Println(strings.Repeat("─", 82))
+		for _, r := range runs {
+			fmt.Printf("%-14s %-30s %-14s %-10s %s\n",
+				r.RunID, truncateGoal(r.Goal, 28), r.PhaseName, r.Status, r.Elapsed)
+		}
 	}
 	fmt.Printf("\n%d %s run(s) found.\n", len(runs), label)
 }
@@ -725,6 +744,7 @@ func scanRegistryRuns(root string) []rpiRunInfo {
 
 		phaseName := displayPhaseName(*state)
 		status := classifyRunStatus(*state, isActive)
+		reason := classifyRunReason(*state, isActive)
 
 		elapsed := ""
 		if state.StartedAt != "" {
@@ -739,6 +759,7 @@ func scanRegistryRuns(root string) []rpiRunInfo {
 			Phase:         state.Phase,
 			PhaseName:     phaseName,
 			Status:        status,
+			Reason:        reason,
 			EpicID:        state.EpicID,
 			Worktree:      root,
 			StartedAt:     state.StartedAt,
@@ -753,6 +774,7 @@ func scanRegistryRuns(root string) []rpiRunInfo {
 // determineRunLiveness decides whether a run is alive.
 //
 // Priority:
+//  0. If worktree path is set but the directory is gone, the run cannot be alive.
 //  1. If heartbeat file exists and is recent (< heartbeatLiveThreshold), the run
 //     is alive without any tmux probe.
 //  2. If heartbeat is absent or stale, probe tmux with a bounded timeout.
@@ -760,6 +782,14 @@ func scanRegistryRuns(root string) []rpiRunInfo {
 //
 // Returns (isActive bool, lastHeartbeat time.Time).
 func determineRunLiveness(cwd string, state *phasedState) (bool, time.Time) {
+	// Short-circuit: if worktree path is recorded but gone, run is dead.
+	if state.WorktreePath != "" {
+		if _, err := os.Stat(state.WorktreePath); err != nil {
+			hb := readRunHeartbeat(cwd, state.RunID)
+			return false, hb
+		}
+	}
+
 	hb := readRunHeartbeat(cwd, state.RunID)
 	if !hb.IsZero() && time.Since(hb) < heartbeatLiveThreshold {
 		// Recent heartbeat — alive without tmux probe.
@@ -775,15 +805,38 @@ func determineRunLiveness(cwd string, state *phasedState) (bool, time.Time) {
 }
 
 // classifyRunStatus derives a human-readable status string.
-// Uses liveness information and phase number.
+// Uses terminal metadata, worktree presence, liveness, and phase number.
 func classifyRunStatus(state phasedState, isActive bool) string {
+	// Terminal metadata takes precedence (written by interrupt/failure handlers).
+	if state.TerminalStatus != "" {
+		return state.TerminalStatus
+	}
 	if isActive {
 		return "running"
 	}
 	if state.Phase >= completedPhaseNumber(state) {
 		return "completed"
 	}
+	// Check if worktree path is set but directory is missing → stale.
+	if state.WorktreePath != "" {
+		if _, err := os.Stat(state.WorktreePath); err != nil {
+			return "stale"
+		}
+	}
 	return "unknown"
+}
+
+// classifyRunReason returns a human-readable reason for non-active/non-completed runs.
+func classifyRunReason(state phasedState, isActive bool) string {
+	if state.TerminalReason != "" {
+		return state.TerminalReason
+	}
+	if !isActive && state.WorktreePath != "" {
+		if _, err := os.Stat(state.WorktreePath); err != nil {
+			return "worktree missing"
+		}
+	}
+	return ""
 }
 
 // --- State-file based discovery (legacy, kept for backward compat) ---
@@ -831,12 +884,15 @@ func loadRPIRun(dir string) (rpiRunInfo, bool) {
 		}
 	}
 
+	reason := classifyRunReason(state, isActive)
+
 	return rpiRunInfo{
 		RunID:         state.RunID,
 		Goal:          state.Goal,
 		Phase:         state.Phase,
 		PhaseName:     phaseName,
 		Status:        status,
+		Reason:        reason,
 		EpicID:        state.EpicID,
 		Worktree:      dir,
 		StartedAt:     state.StartedAt,

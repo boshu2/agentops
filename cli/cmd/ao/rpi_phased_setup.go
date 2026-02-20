@@ -124,6 +124,11 @@ func setupWorktreeLifecycle(cwd, originalCwd string, opts phasedEngineOptions, s
 	go func() {
 		if sig, ok := <-sigCh; ok {
 			fmt.Fprintf(os.Stderr, "\nInterrupted (%v). Worktree preserved at: %s\n", sig, worktreePath)
+			// Write terminal metadata so `ao rpi status` shows "interrupted" instead of "running".
+			state.TerminalStatus = "interrupted"
+			state.TerminalReason = fmt.Sprintf("signal: %v", sig)
+			state.TerminatedAt = time.Now().Format(time.RFC3339)
+			_ = savePhasedState(spawnCwd, state)
 			os.Exit(1)
 		}
 	}()

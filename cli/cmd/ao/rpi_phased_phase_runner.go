@@ -117,6 +117,10 @@ func logAndFailPhase(state *phasedState, phaseName, logPath string, err error) e
 	logPhaseTransition(logPath, state.RunID, phaseName, fmt.Sprintf("FATAL: %v", err))
 	emitRPIStatus(state.RunID, phaseName, "failed")
 	logFailureContext(logPath, state.RunID, phaseName, err)
+	// Write terminal metadata so `ao rpi status` shows "failed" with reason.
+	state.TerminalStatus = "failed"
+	state.TerminalReason = fmt.Sprintf("phase %s: %v", phaseName, err)
+	state.TerminatedAt = time.Now().Format(time.RFC3339)
 	return err
 }
 

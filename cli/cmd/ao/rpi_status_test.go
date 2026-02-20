@@ -1203,3 +1203,156 @@ func TestRPIStatusActiveHistoricalSeparation(t *testing.T) {
 		t.Error("expected interrupted to be historical")
 	}
 }
+
+// TestClassifyRunStatus_StaleWorktree verifies that a run with a worktree_path
+// pointing to a nonexistent directory is classified as "stale".
+func TestClassifyRunStatus_StaleWorktree(t *testing.T) {
+	state := phasedState{
+		SchemaVersion: 1,
+		RunID:         "stale-wt",
+		Phase:         2,
+		WorktreePath:  "/nonexistent/worktree/path",
+	}
+	status := classifyRunStatus(state, false)
+	if status != "stale" {
+		t.Errorf("expected status 'stale' for missing worktree, got %s", status)
+	}
+}
+
+// TestClassifyRunStatus_TerminalMetadata verifies that when terminal_status is set,
+// classifyRunStatus uses it directly.
+func TestClassifyRunStatus_TerminalMetadata(t *testing.T) {
+	tests := []struct {
+		name           string
+		terminalStatus string
+		phase          int
+		isActive       bool
+		expected       string
+	}{
+		{"interrupted", "interrupted", 2, false, "interrupted"},
+		{"failed", "failed", 1, false, "failed"},
+		{"stale explicit", "stale", 2, false, "stale"},
+		// Terminal status takes precedence even if phase looks completed.
+		{"failed at terminal phase", "failed", 3, false, "failed"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := phasedState{
+				SchemaVersion:  1,
+				RunID:          "term-test",
+				Phase:          tt.phase,
+				TerminalStatus: tt.terminalStatus,
+			}
+			status := classifyRunStatus(state, tt.isActive)
+			if status != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, status)
+			}
+		})
+	}
+}
+
+// TestDetermineRunLiveness_MissingWorktree verifies that when a state has a
+// worktree_path set but the directory doesn't exist, the run is not active.
+func TestDetermineRunLiveness_MissingWorktree(t *testing.T) {
+	tmpDir := t.TempDir()
+	runID := "missing-wt"
+
+	// Write a fresh heartbeat (which would normally make it active).
+	updateRunHeartbeat(tmpDir, runID)
+
+	state := &phasedState{
+		SchemaVersion: 1,
+		RunID:         runID,
+		Phase:         2,
+		WorktreePath:  "/nonexistent/worktree/path",
+	}
+
+	isActive, _ := determineRunLiveness(tmpDir, state)
+	if isActive {
+		t.Error("expected run with missing worktree to NOT be active, even with fresh heartbeat")
+	}
+}
+
+// TestClassifyRunReason verifies reason generation for various run states.
+func TestClassifyRunReason(t *testing.T) {
+	tests := []struct {
+		name     string
+		state    phasedState
+		isActive bool
+		expected string
+	}{
+		{
+			name: "terminal reason from state",
+			state: phasedState{
+				TerminalReason: "signal: interrupt",
+			},
+			isActive: false,
+			expected: "signal: interrupt",
+		},
+		{
+			name: "worktree missing",
+			state: phasedState{
+				WorktreePath: "/nonexistent/path",
+			},
+			isActive: false,
+			expected: "worktree missing",
+		},
+		{
+			name:     "no reason for active run",
+			state:    phasedState{},
+			isActive: true,
+			expected: "",
+		},
+		{
+			name:     "no reason when no worktree",
+			state:    phasedState{},
+			isActive: false,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reason := classifyRunReason(tt.state, tt.isActive)
+			if reason != tt.expected {
+				t.Errorf("expected reason %q, got %q", tt.expected, reason)
+			}
+		})
+	}
+}
+
+// TestScanRegistryRuns_StaleWorktreeReason verifies that scanRegistryRuns populates
+// the Reason field when a worktree is missing.
+func TestScanRegistryRuns_StaleWorktreeReason(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a run with a worktree_path pointing to a nonexistent directory.
+	runDir := filepath.Join(tmpDir, ".agents", "rpi", "runs", "stale-wt-run")
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := map[string]interface{}{
+		"schema_version": 1,
+		"run_id":         "stale-wt-run",
+		"goal":           "stale worktree test",
+		"phase":          2,
+		"worktree_path":  "/nonexistent/worktree",
+		"started_at":     time.Now().Add(-30 * time.Minute).Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	runs := scanRegistryRuns(tmpDir)
+	if len(runs) != 1 {
+		t.Fatalf("expected 1 run, got %d", len(runs))
+	}
+	if runs[0].Status != "stale" {
+		t.Errorf("expected status 'stale', got %s", runs[0].Status)
+	}
+	if runs[0].Reason != "worktree missing" {
+		t.Errorf("expected reason 'worktree missing', got %q", runs[0].Reason)
+	}
+}

@@ -663,6 +663,91 @@ func TestDefault_Forge(t *testing.T) {
 	}
 }
 
+func TestDefault_RPI(t *testing.T) {
+	cfg := Default()
+	if cfg.RPI.WorktreeMode != "auto" {
+		t.Errorf("Default RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "auto")
+	}
+}
+
+func TestMerge_RPI(t *testing.T) {
+	dst := Default()
+	src := &Config{
+		RPI: RPIConfig{
+			WorktreeMode: "never",
+		},
+	}
+
+	result := merge(dst, src)
+	if result.RPI.WorktreeMode != "never" {
+		t.Errorf("merge RPI.WorktreeMode = %q, want %q", result.RPI.WorktreeMode, "never")
+	}
+}
+
+func TestMerge_RPIPreservedWhenEmpty(t *testing.T) {
+	dst := Default()
+	src := &Config{
+		Output: "json",
+		// RPI.WorktreeMode is empty string
+	}
+
+	result := merge(dst, src)
+	if result.RPI.WorktreeMode != "auto" {
+		t.Errorf("merge should preserve default RPI.WorktreeMode, got %q", result.RPI.WorktreeMode)
+	}
+}
+
+func TestApplyEnv_RPIWorktreeMode(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "never")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.RPI.WorktreeMode != "never" {
+		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "never")
+	}
+}
+
+func TestApplyEnv_RPIWorktreeModeEmpty(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.RPI.WorktreeMode != "auto" {
+		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q (unchanged from default)", cfg.RPI.WorktreeMode, "auto")
+	}
+}
+
+func TestLoadFromPath_WithRPI(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	content := `
+rpi:
+  worktree_mode: always
+`
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("loadFromPath() error = %v", err)
+	}
+	if cfg.RPI.WorktreeMode != "always" {
+		t.Errorf("loadFromPath RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "always")
+	}
+}
+
 func TestLoadFromPath_WithPaths(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yaml")
