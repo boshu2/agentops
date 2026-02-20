@@ -19,7 +19,6 @@ var (
 	hooksDryRun       bool
 	hooksForce        bool
 	hooksFull         bool
-	hooksMinimal      bool
 	hooksSourceDir    string
 )
 
@@ -165,12 +164,13 @@ This command:
   3. Creates a backup of the original settings
   4. Writes the updated configuration
 
-Default mode installs all 8 events with hook scripts copied to ~/.agentops/:
+Default mode installs flywheel hooks only (SessionStart + Stop).
+
+Use --full to install all 8 events with hook scripts copied to ~/.agentops/:
   SessionStart, SessionEnd, PreToolUse, PostToolUse,
   UserPromptSubmit, TaskCompleted, Stop, PreCompact
 
-Use --minimal to install only the lightweight SessionStart + Stop hooks.
-Use --source-dir with full installs to specify the agentops repo checkout path.
+Use --source-dir with --full to specify the agentops repo checkout path.
 Use --force to overwrite existing ao hooks.`,
 	RunE: runHooksInstall,
 }
@@ -208,9 +208,8 @@ func init() {
 	// Install flags
 	hooksInstallCmd.Flags().BoolVar(&hooksDryRun, "dry-run", false, "Show what would be installed without making changes")
 	hooksInstallCmd.Flags().BoolVar(&hooksForce, "force", false, "Overwrite existing ao hooks")
-	hooksInstallCmd.Flags().BoolVar(&hooksFull, "full", false, "Install all 8 events with hook scripts copied to ~/.agentops/ (legacy explicit flag)")
-	hooksInstallCmd.Flags().BoolVar(&hooksMinimal, "minimal", false, "Install only SessionStart + Stop hooks")
-	hooksInstallCmd.Flags().StringVar(&hooksSourceDir, "source-dir", "", "Path to agentops repo checkout (for full script installation)")
+	hooksInstallCmd.Flags().BoolVar(&hooksFull, "full", false, "Install all 8 events with hook scripts copied to ~/.agentops/")
+	hooksInstallCmd.Flags().StringVar(&hooksSourceDir, "source-dir", "", "Path to agentops repo checkout (for --full script installation)")
 
 	// Test flags
 	hooksTestCmd.Flags().BoolVar(&hooksDryRun, "dry-run", false, "Show test steps without running hooks")
@@ -456,21 +455,13 @@ func installFullHooks(sourceDir, installBase string) (int, error) {
 		}
 	}
 
-	// Copy lib/*.sh helpers used by hooks (e.g., hook-helpers.sh, chain-parser.sh)
-	libDir := filepath.Join(sourceDir, "lib")
-	libEntries, err := os.ReadDir(libDir)
-	if err == nil {
-		for _, e := range libEntries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".sh") {
-				continue
-			}
-			src := filepath.Join(libDir, e.Name())
-			dst := filepath.Join(installBase, "lib", e.Name())
-			if err := hooksCopyFile(src, dst); err != nil {
-				return copied, fmt.Errorf("copy %s: %w", e.Name(), err)
-			}
-			copied++
+	// Copy lib/hook-helpers.sh
+	libSrc := filepath.Join(sourceDir, "lib", "hook-helpers.sh")
+	if _, err := os.Stat(libSrc); err == nil {
+		if err := hooksCopyFile(libSrc, filepath.Join(installBase, "lib", "hook-helpers.sh")); err != nil {
+			return copied, fmt.Errorf("copy hook-helpers.sh: %w", err)
 		}
+		copied++
 	}
 
 	// Copy skills/standards/references/
@@ -533,115 +524,74 @@ func installFullHooksFromEmbed(installBase string) (int, error) {
 	return copied, err
 }
 
-func runHooksInstall(cmd *cobra.Command, args []string) error {
-	if hooksFull && hooksMinimal {
-		return fmt.Errorf("--full and --minimal are mutually exclusive")
-	}
-	installFull := true
-	if hooksMinimal {
-		installFull = false
-	}
-	if hooksFull {
-		installFull = true
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("get home directory: %w", err)
-	}
-
-	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
-
-	// Read existing settings
-	var rawSettings map[string]interface{}
-	if data, err := os.ReadFile(settingsPath); err == nil {
+func loadHooksSettings(settingsPath string) (map[string]interface{}, error) {
+	rawSettings := make(map[string]interface{})
+	data, err := os.ReadFile(settingsPath)
+	if err == nil {
 		if err := json.Unmarshal(data, &rawSettings); err != nil {
-			return fmt.Errorf("parse existing settings: %w", err)
+			return nil, fmt.Errorf("parse existing settings: %w", err)
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("read settings: %w", err)
-	} else {
-		rawSettings = make(map[string]interface{})
+		return rawSettings, nil
+	}
+	if os.IsNotExist(err) {
+		return rawSettings, nil
+	}
+	return nil, fmt.Errorf("read settings: %w", err)
+}
+
+func installFullHookScripts(installBase string) error {
+	sourceDir, err := resolveSourceDir()
+	if err != nil {
+		// No repo checkout available — fall back to embedded files
+		if hooksDryRun {
+			fmt.Printf("[dry-run] Would extract embedded files to %s\n", installBase)
+			return nil
+		}
+		copied, embedErr := installFullHooksFromEmbed(installBase)
+		if embedErr != nil {
+			return fmt.Errorf("install from embedded: %w (repo resolve failed: %v)", embedErr, err)
+		}
+		fmt.Printf("Extracted %d embedded files to %s\n", copied, installBase)
+		return nil
 	}
 
-	// For full mode, resolve source directory and copy scripts first
-	installBase := filepath.Join(homeDir, ".agentops")
-	if installFull {
-		sourceDir, err := resolveSourceDir()
-		if err != nil {
-			// No repo checkout available — fall back to embedded files
-			if !hooksDryRun {
-				copied, embedErr := installFullHooksFromEmbed(installBase)
-				if embedErr != nil {
-					return fmt.Errorf("install from embedded: %w (repo resolve failed: %v)", embedErr, err)
-				}
-				fmt.Printf("Extracted %d embedded files to %s\n", copied, installBase)
-			} else {
-				fmt.Printf("[dry-run] Would extract embedded files to %s\n", installBase)
-			}
-		} else {
-			// Repo checkout available — copy from filesystem (dev override)
-			if !hooksDryRun {
-				copied, err := installFullHooks(sourceDir, installBase)
-				if err != nil {
-					return fmt.Errorf("install scripts: %w", err)
-				}
-				fmt.Printf("Copied %d files to %s\n", copied, installBase)
-			} else {
-				fmt.Printf("[dry-run] Would copy scripts to %s\n", installBase)
-			}
-		}
+	// Repo checkout available — copy from filesystem (dev override)
+	if hooksDryRun {
+		fmt.Printf("[dry-run] Would copy scripts to %s\n", installBase)
+		return nil
+	}
+	copied, err := installFullHooks(sourceDir, installBase)
+	if err != nil {
+		return fmt.Errorf("install scripts: %w", err)
+	}
+	fmt.Printf("Copied %d files to %s\n", copied, installBase)
+	return nil
+}
+
+func generateHooksForInstall(installBase string) (*HooksConfig, []string, error) {
+	if !hooksFull {
+		return generateMinimalHooksConfig(), []string{"SessionStart", "Stop"}, nil
 	}
 
-	// Generate hooks config
-	var newHooks *HooksConfig
-	if installFull {
-		// For full mode, load full hooks config (filesystem or embedded)
-		config, err := generateFullHooksConfig()
-		if err != nil {
-			return fmt.Errorf("full install requires hooks.json: %w", err)
-		}
-		newHooks = config
-		replacePluginRoot(newHooks, installBase)
-	} else {
-		// Default: minimal flywheel hooks only
-		newHooks = generateMinimalHooksConfig()
+	config, err := generateFullHooksConfig()
+	if err != nil {
+		return nil, nil, fmt.Errorf("--full requires hooks.json: %w", err)
 	}
+	replacePluginRoot(config, installBase)
+	return config, AllEventNames(), nil
+}
 
-	// Check for existing ao hooks
-	if existingHooks, ok := rawSettings["hooks"].(map[string]interface{}); ok && !hooksForce {
-		if hookGroupContainsAo(existingHooks, "SessionStart") {
-			if installFull {
-				installedEvents := countInstalledEvents(existingHooks)
-				if installedEvents >= len(AllEventNames()) {
-					fmt.Println("ao hooks already installed with full coverage.")
-					return nil
-				}
-				fmt.Printf("ao hooks detected with partial coverage (%d/%d). Upgrading to full coverage...\n", installedEvents, len(AllEventNames()))
-			} else {
-				fmt.Println("ao hooks already installed. Use --force to overwrite.")
-				return nil
-			}
-		}
-	}
-
-	// Merge hooks - preserve existing non-ao hook groups
+func cloneHooksMap(rawSettings map[string]interface{}) map[string]interface{} {
 	hooksMap := make(map[string]interface{})
 	if existing, ok := rawSettings["hooks"].(map[string]interface{}); ok {
 		for k, v := range existing {
 			hooksMap[k] = v
 		}
 	}
+	return hooksMap
+}
 
-	// Determine which events to install
-	var eventsToInstall []string
-	if installFull {
-		eventsToInstall = AllEventNames()
-	} else {
-		eventsToInstall = []string{"SessionStart", "Stop"}
-	}
-
-	// For each event: filter out existing ao groups, add new ones
+func mergeHookEvents(hooksMap map[string]interface{}, newHooks *HooksConfig, eventsToInstall []string) int {
 	installedEvents := 0
 	for _, event := range eventsToInstall {
 		groups := filterNonAoHookGroups(hooksMap, event)
@@ -654,27 +604,26 @@ func runHooksInstall(cmd *cobra.Command, args []string) error {
 			installedEvents++
 		}
 	}
+	return installedEvents
+}
 
-	rawSettings["hooks"] = hooksMap
-
-	if hooksDryRun {
-		fmt.Println("[dry-run] Would write to", settingsPath)
-		data, _ := json.MarshalIndent(rawSettings, "", "  ")
-		fmt.Println(string(data))
+func backupHooksSettings(settingsPath string) error {
+	if _, err := os.Stat(settingsPath); err != nil {
 		return nil
 	}
-
-	// Create backup
-	if _, err := os.Stat(settingsPath); err == nil {
-		backupPath := fmt.Sprintf("%s.backup.%s", settingsPath, time.Now().Format("20060102-150405"))
-		if data, err := os.ReadFile(settingsPath); err == nil {
-			if err := os.WriteFile(backupPath, data, 0644); err != nil {
-				return fmt.Errorf("create backup: %w", err)
-			}
-			fmt.Printf("Backed up existing settings to %s\n", backupPath)
-		}
+	backupPath := fmt.Sprintf("%s.backup.%s", settingsPath, time.Now().Format("20060102-150405"))
+	data, err := os.ReadFile(settingsPath)
+	if err != nil {
+		return nil
 	}
+	if err := os.WriteFile(backupPath, data, 0644); err != nil {
+		return fmt.Errorf("create backup: %w", err)
+	}
+	fmt.Printf("Backed up existing settings to %s\n", backupPath)
+	return nil
+}
 
+func writeHooksSettings(settingsPath string, rawSettings map[string]interface{}) error {
 	// Ensure .claude directory exists
 	claudeDir := filepath.Dir(settingsPath)
 	if err := os.MkdirAll(claudeDir, 0755); err != nil {
@@ -686,14 +635,16 @@ func runHooksInstall(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("marshal settings: %w", err)
 	}
-
 	if err := os.WriteFile(settingsPath, data, 0644); err != nil {
 		return fmt.Errorf("write settings: %w", err)
 	}
+	return nil
+}
 
+func printHooksInstallSummary(settingsPath string, newHooks *HooksConfig, eventsToInstall []string, installedEvents int) {
 	fmt.Printf("✓ Installed ao hooks to %s\n", settingsPath)
 	fmt.Println()
-	if installFull {
+	if hooksFull {
 		fmt.Printf("Hooks installed: %d/%d events\n", installedEvents, len(AllEventNames()))
 		for _, event := range eventsToInstall {
 			groups := newHooks.GetEventGroups(event)
@@ -710,10 +661,62 @@ func runHooksInstall(cmd *cobra.Command, args []string) error {
 		fmt.Println("  SessionStart: ao inject --apply-decay")
 		fmt.Println("  Stop: ao forge + ao task-sync")
 		fmt.Println()
-		fmt.Println("Run 'ao hooks install --force' for complete hook coverage (all 8 events).")
+		fmt.Println("Run 'ao hooks install --full' for complete hook coverage (all 8 events).")
 	}
 	fmt.Println()
 	fmt.Println("Run 'ao hooks test' to verify the installation.")
+}
+
+func runHooksInstall(cmd *cobra.Command, args []string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home directory: %w", err)
+	}
+
+	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
+	rawSettings, err := loadHooksSettings(settingsPath)
+	if err != nil {
+		return err
+	}
+
+	installBase := filepath.Join(homeDir, ".agentops")
+	if hooksFull {
+		if err := installFullHookScripts(installBase); err != nil {
+			return err
+		}
+	}
+
+	newHooks, eventsToInstall, err := generateHooksForInstall(installBase)
+	if err != nil {
+		return err
+	}
+
+	// Check for existing ao hooks
+	if existingHooks, ok := rawSettings["hooks"].(map[string]interface{}); ok && !hooksForce {
+		if hookGroupContainsAo(existingHooks, "SessionStart") {
+			fmt.Println("ao hooks already installed. Use --force to overwrite.")
+			return nil
+		}
+	}
+
+	hooksMap := cloneHooksMap(rawSettings)
+	installedEvents := mergeHookEvents(hooksMap, newHooks, eventsToInstall)
+	rawSettings["hooks"] = hooksMap
+
+	if hooksDryRun {
+		fmt.Println("[dry-run] Would write to", settingsPath)
+		data, _ := json.MarshalIndent(rawSettings, "", "  ")
+		fmt.Println(string(data))
+		return nil
+	}
+
+	if err := backupHooksSettings(settingsPath); err != nil {
+		return err
+	}
+	if err := writeHooksSettings(settingsPath, rawSettings); err != nil {
+		return err
+	}
+	printHooksInstallSummary(settingsPath, newHooks, eventsToInstall, installedEvents)
 
 	return nil
 }
@@ -730,7 +733,7 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("No Claude settings found at", settingsPath)
-			fmt.Println("Run 'ao hooks install --force' to set up hooks.")
+			fmt.Println("Run 'ao hooks install' to set up hooks.")
 			return nil
 		}
 		return fmt.Errorf("read settings: %w", err)
@@ -744,7 +747,7 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 	hooks, ok := settings["hooks"]
 	if !ok {
 		fmt.Println("No hooks configured in", settingsPath)
-		fmt.Println("Run 'ao hooks install --force' to set up hooks.")
+		fmt.Println("Run 'ao hooks install' to set up hooks.")
 		return nil
 	}
 
@@ -782,7 +785,7 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 
 	if installedCount < len(allEvents) {
 		fmt.Println()
-		fmt.Println("Run 'ao hooks install --force' for complete coverage.")
+		fmt.Println("Run 'ao hooks install --full' for complete coverage.")
 	}
 
 	// Check for ao hooks specifically
@@ -791,26 +794,10 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 		fmt.Println("✓ ao hooks are installed")
 	} else {
 		fmt.Println()
-		fmt.Println("⚠ ao hooks not found. Run 'ao hooks install --force' to set up.")
+		fmt.Println("⚠ ao hooks not found. Run 'ao hooks install' to set up.")
 	}
 
 	return nil
-}
-
-func isAgentOpsManagedCommand(cmd string) bool {
-	if strings.Contains(cmd, "ao ") {
-		return true
-	}
-	if strings.Contains(cmd, "${CLAUDE_PLUGIN_ROOT}/hooks/") {
-		return true
-	}
-	if strings.Contains(cmd, "/.agentops/hooks/") {
-		return true
-	}
-	if strings.Contains(cmd, "/.agentops/lib/") {
-		return true
-	}
-	return false
 }
 
 // hookGroupContainsAo checks if any hook group in the given event contains an ao command.
@@ -828,7 +815,7 @@ func hookGroupContainsAo(hooksMap map[string]interface{}, event string) bool {
 		if hooks, ok := group["hooks"].([]interface{}); ok {
 			for _, h := range hooks {
 				if hook, ok := h.(map[string]interface{}); ok {
-					if cmd, ok := hook["command"].(string); ok && isAgentOpsManagedCommand(cmd) {
+					if cmd, ok := hook["command"].(string); ok && strings.Contains(cmd, "ao ") {
 						return true
 					}
 				}
@@ -836,7 +823,7 @@ func hookGroupContainsAo(hooksMap map[string]interface{}, event string) bool {
 		}
 		// Legacy format: check top-level command array
 		if cmd, ok := group["command"].([]interface{}); ok && len(cmd) > 1 {
-			if cmdStr, ok := cmd[1].(string); ok && isAgentOpsManagedCommand(cmdStr) {
+			if cmdStr, ok := cmd[1].(string); ok && strings.Contains(cmdStr, "ao ") {
 				return true
 			}
 		}
@@ -861,7 +848,7 @@ func filterNonAoHookGroups(hooksMap map[string]interface{}, event string) []map[
 		if hooks, ok := group["hooks"].([]interface{}); ok {
 			for _, h := range hooks {
 				if hook, ok := h.(map[string]interface{}); ok {
-					if cmd, ok := hook["command"].(string); ok && isAgentOpsManagedCommand(cmd) {
+					if cmd, ok := hook["command"].(string); ok && strings.Contains(cmd, "ao ") {
 						isAo = true
 						break
 					}
@@ -870,7 +857,7 @@ func filterNonAoHookGroups(hooksMap map[string]interface{}, event string) []map[
 		}
 		// Check legacy format
 		if cmd, ok := group["command"].([]interface{}); ok && len(cmd) > 1 {
-			if cmdStr, ok := cmd[1].(string); ok && isAgentOpsManagedCommand(cmdStr) {
+			if cmdStr, ok := cmd[1].(string); ok && strings.Contains(cmdStr, "ao ") {
 				isAo = true
 			}
 		}
@@ -903,27 +890,19 @@ func hookGroupToMap(g HookGroup) map[string]interface{} {
 	return result
 }
 
-func runHooksTest(cmd *cobra.Command, args []string) error {
-	fmt.Println("Testing ao hooks configuration...")
-	fmt.Println()
-
-	allPassed := true
-	testNum := 0
-
-	// Test 1: Check ao is in PATH
-	testNum++
+func runAoPathTest(testNum int, allPassed *bool) {
 	fmt.Printf("%d. Checking ao is in PATH... ", testNum)
 	aoPath, err := exec.LookPath("ao")
 	if err != nil {
 		fmt.Println("✗ FAILED")
 		fmt.Printf("   ao not found in PATH. Ensure ao is installed and in your PATH.\n")
-		allPassed = false
-	} else {
-		fmt.Printf("✓ found at %s\n", aoPath)
+		*allPassed = false
+		return
 	}
+	fmt.Printf("✓ found at %s\n", aoPath)
+}
 
-	// Test 2: Check required subcommands
-	testNum++
+func runRequiredSubcommandsTest(testNum int, allPassed *bool) {
 	subcommands := []string{"inject", "forge", "task-sync", "feedback-loop"}
 	fmt.Printf("%d. Checking required subcommands... ", testNum)
 	missingCmds := []string{}
@@ -936,109 +915,151 @@ func runHooksTest(cmd *cobra.Command, args []string) error {
 	if len(missingCmds) > 0 {
 		fmt.Println("✗ FAILED")
 		fmt.Printf("   Missing subcommands: %s\n", strings.Join(missingCmds, ", "))
-		allPassed = false
-	} else {
-		fmt.Println("✓ all present")
+		*allPassed = false
+		return
 	}
+	fmt.Println("✓ all present")
+}
 
-	// Test 3: Check settings.json and hook coverage
-	testNum++
+func runSettingsCoverageTest(testNum int, homeDir string, allPassed *bool) {
 	fmt.Printf("%d. Checking Claude settings... ", testNum)
-	homeDir, _ := os.UserHomeDir()
 	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
 	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
 		fmt.Println("⚠ settings.json not found")
-		fmt.Println("   Run 'ao hooks install --force' to create hooks configuration.")
-	} else {
-		data, err := os.ReadFile(settingsPath)
-		if err != nil {
-			fmt.Println("✗ FAILED to read")
-			allPassed = false
-		} else {
-			var settings map[string]interface{}
-			if err := json.Unmarshal(data, &settings); err != nil {
-				fmt.Println("✗ FAILED to parse")
-				allPassed = false
-			} else if hooksRaw, ok := settings["hooks"]; !ok {
-				fmt.Println("⚠ no hooks configured")
-				fmt.Println("   Run 'ao hooks install --force' to set up hooks.")
-			} else if hooksMap, ok := hooksRaw.(map[string]interface{}); ok {
-				installed := 0
-				for _, event := range AllEventNames() {
-					if groups, ok := hooksMap[event].([]interface{}); ok && len(groups) > 0 {
-						installed++
-					}
-				}
-				fmt.Printf("✓ %d/%d events installed\n", installed, len(AllEventNames()))
-				if installed < len(AllEventNames()) {
-					fmt.Println("   Run 'ao hooks install --force' for complete coverage.")
-				}
-			}
-		}
+		fmt.Println("   Run 'ao hooks install' to create hooks configuration.")
+		return
 	}
 
-	// Test 4: Check hook scripts are accessible (for --full installs)
-	testNum++
+	data, err := os.ReadFile(settingsPath)
+	if err != nil {
+		fmt.Println("✗ FAILED to read")
+		*allPassed = false
+		return
+	}
+
+	var settings map[string]interface{}
+	if err := json.Unmarshal(data, &settings); err != nil {
+		fmt.Println("✗ FAILED to parse")
+		*allPassed = false
+		return
+	}
+
+	hooksRaw, ok := settings["hooks"]
+	if !ok {
+		fmt.Println("⚠ no hooks configured")
+		fmt.Println("   Run 'ao hooks install' to set up hooks.")
+		return
+	}
+
+	hooksMap, ok := hooksRaw.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	installed := 0
+	for _, event := range AllEventNames() {
+		if groups, ok := hooksMap[event].([]interface{}); ok && len(groups) > 0 {
+			installed++
+		}
+	}
+	fmt.Printf("✓ %d/%d events installed\n", installed, len(AllEventNames()))
+	if installed < len(AllEventNames()) {
+		fmt.Println("   Run 'ao hooks install --full' for complete coverage.")
+	}
+}
+
+func runHookScriptsAccessTest(testNum int, homeDir string) {
 	fmt.Printf("%d. Checking hook scripts... ", testNum)
 	agentopsDir := filepath.Join(homeDir, ".agentops", "hooks")
-	if _, err := os.Stat(agentopsDir); err == nil {
-		// Scripts were installed via --full
-		entries, _ := os.ReadDir(agentopsDir)
-		scriptCount := 0
-		missingExec := []string{}
-		for _, e := range entries {
-			if strings.HasSuffix(e.Name(), ".sh") {
-				scriptCount++
-				info, err := e.Info()
-				if err == nil && info.Mode()&0111 == 0 {
-					missingExec = append(missingExec, e.Name())
-				}
-			}
-		}
-		if len(missingExec) > 0 {
-			fmt.Printf("⚠ %d scripts, %d not executable\n", scriptCount, len(missingExec))
-		} else {
-			fmt.Printf("✓ %d scripts installed\n", scriptCount)
-		}
-	} else {
-		fmt.Println("- not installed (use default full install)")
+	if _, err := os.Stat(agentopsDir); err != nil {
+		fmt.Println("- not installed (use --full)")
+		return
 	}
 
-	// Test 5: Dry-run inject command
-	testNum++
+	// Scripts were installed via --full
+	entries, _ := os.ReadDir(agentopsDir)
+	scriptCount := 0
+	missingExec := []string{}
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".sh") {
+			scriptCount++
+			info, err := e.Info()
+			if err == nil && info.Mode()&0111 == 0 {
+				missingExec = append(missingExec, e.Name())
+			}
+		}
+	}
+	if len(missingExec) > 0 {
+		fmt.Printf("⚠ %d scripts, %d not executable\n", scriptCount, len(missingExec))
+		return
+	}
+	fmt.Printf("✓ %d scripts installed\n", scriptCount)
+}
+
+func runInjectCommandTest(testNum int, allPassed *bool) {
 	fmt.Printf("%d. Testing inject command... ", testNum)
 	if hooksDryRun {
 		fmt.Println("⏭ skipped (--dry-run)")
-	} else {
-		testCmd := exec.Command("ao", "inject", "--max-tokens", "100", "--no-cite")
-		output, err := testCmd.CombinedOutput()
-		if err != nil {
-			if strings.Contains(string(output), "No prior knowledge") || len(output) > 0 {
-				fmt.Println("✓ working")
-			} else {
-				fmt.Println("✗ FAILED")
-				fmt.Printf("   Error: %v\n", err)
-				allPassed = false
-			}
-		} else {
-			fmt.Println("✓ working")
-		}
+		return
 	}
 
-	// Test 6: Check forge can find transcripts
-	testNum++
+	testCmd := exec.Command("ao", "inject", "--max-tokens", "100", "--no-cite")
+	output, err := testCmd.CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(output), "No prior knowledge") || len(output) > 0 {
+			fmt.Println("✓ working")
+			return
+		}
+		fmt.Println("✗ FAILED")
+		fmt.Printf("   Error: %v\n", err)
+		*allPassed = false
+		return
+	}
+	fmt.Println("✓ working")
+}
+
+func runForgeTranscriptAccessTest(testNum int, homeDir string) {
 	fmt.Printf("%d. Testing forge transcript access... ", testNum)
 	if hooksDryRun {
 		fmt.Println("⏭ skipped (--dry-run)")
-	} else {
-		projectsDir := filepath.Join(homeDir, ".claude", "projects")
-		if _, err := os.Stat(projectsDir); os.IsNotExist(err) {
-			fmt.Println("⚠ no Claude projects found")
-			fmt.Println("   This is OK for first-time setup.")
-		} else {
-			fmt.Println("✓ projects directory found")
-		}
+		return
 	}
+
+	projectsDir := filepath.Join(homeDir, ".claude", "projects")
+	if _, err := os.Stat(projectsDir); os.IsNotExist(err) {
+		fmt.Println("⚠ no Claude projects found")
+		fmt.Println("   This is OK for first-time setup.")
+		return
+	}
+	fmt.Println("✓ projects directory found")
+}
+
+func runHooksTest(cmd *cobra.Command, args []string) error {
+	fmt.Println("Testing ao hooks configuration...")
+	fmt.Println()
+
+	allPassed := true
+	testNum := 0
+
+	testNum++
+	runAoPathTest(testNum, &allPassed)
+
+	testNum++
+	runRequiredSubcommandsTest(testNum, &allPassed)
+
+	homeDir, _ := os.UserHomeDir()
+
+	testNum++
+	runSettingsCoverageTest(testNum, homeDir, &allPassed)
+
+	testNum++
+	runHookScriptsAccessTest(testNum, homeDir)
+
+	testNum++
+	runInjectCommandTest(testNum, &allPassed)
+
+	testNum++
+	runForgeTranscriptAccessTest(testNum, homeDir)
 
 	fmt.Println()
 	if allPassed {
@@ -1048,14 +1069,4 @@ func runHooksTest(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func countInstalledEvents(hooksMap map[string]interface{}) int {
-	installed := 0
-	for _, event := range AllEventNames() {
-		if groups, ok := hooksMap[event].([]interface{}); ok && len(groups) > 0 {
-			installed++
-		}
-	}
-	return installed
 }

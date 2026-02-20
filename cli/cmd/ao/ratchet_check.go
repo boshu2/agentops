@@ -71,8 +71,7 @@ func runRatchetCheck(cmd *cobra.Command, args []string) error {
 				fmt.Fprintf(w, "Input: %s (%s)\n", result.Input, result.Location)
 			}
 		} else {
-			fmt.Fprintf(w, "GATE FAILED: %s\n", result.Message)
-			os.Exit(1)
+			return fmt.Errorf("gate failed: %s", result.Message)
 		}
 	}
 

@@ -421,86 +421,106 @@ func runMaturityEvict(cmd *cobra.Command) error {
 	}
 
 	citationsPath := filepath.Join(cwd, ".agents", "ao", "citations.jsonl")
-
-	// Step 1: Build citation map (one O(n) scan)
 	lastCited := buildCitationMap(citationsPath)
-
-	// Step 2: Scan learnings for eviction candidates
 	files, err := filepath.Glob(filepath.Join(learningsDir, "*.jsonl"))
 	if err != nil {
 		return fmt.Errorf("glob learnings: %w", err)
 	}
 
 	cutoff := time.Now().AddDate(0, 0, -90)
-	var candidates []evictionCandidate
+	candidates := collectEvictionCandidates(files, lastCited, cutoff)
 
-	for _, file := range files {
-		content, readErr := os.ReadFile(file)
-		if readErr != nil {
-			continue
-		}
-
-		lines := strings.Split(string(content), "\n")
-		if len(lines) == 0 || strings.TrimSpace(lines[0]) == "" {
-			continue
-		}
-
-		var data map[string]interface{}
-		if err := json.Unmarshal([]byte(lines[0]), &data); err != nil {
-			continue
-		}
-
-		// Extract fields with defaults
-		utility := 0.5
-		if u, ok := data["utility"].(float64); ok {
-			utility = u
-		}
-
-		confidence := 0.5
-		if c, ok := data["confidence"].(float64); ok {
-			confidence = c
-		}
-
-		maturity := "provisional"
-		if m, ok := data["maturity"].(string); ok && m != "" {
-			maturity = m
-		}
-
-		// Criterion 4: Don't evict established learnings
-		if maturity == "established" {
-			continue
-		}
-
-		// Criterion 1: Utility < 0.3
-		if utility >= 0.3 {
-			continue
-		}
-
-		// Criterion 3: Confidence < 0.2
-		if confidence >= 0.2 {
-			continue
-		}
-
-		// Criterion 2: No citation in 90+ days
-		lastCitedStr := "never"
-		if citedAt, ok := lastCited[file]; ok {
-			if citedAt.After(cutoff) {
-				continue // Cited recently, skip
-			}
-			lastCitedStr = citedAt.Format("2006-01-02")
-		}
-
-		candidates = append(candidates, evictionCandidate{
-			Path:       file,
-			Name:       filepath.Base(file),
-			Utility:    utility,
-			Confidence: confidence,
-			Maturity:   maturity,
-			LastCited:  lastCitedStr,
-		})
+	shouldArchive, err := reportEvictionCandidates(files, candidates)
+	if err != nil {
+		return err
+	}
+	if !shouldArchive || !maturityArchive {
+		return nil
 	}
 
-	// Step 3: Report
+	return archiveEvictionCandidates(cwd, candidates)
+}
+
+func collectEvictionCandidates(files []string, lastCited map[string]time.Time, cutoff time.Time) []evictionCandidate {
+	candidates := make([]evictionCandidate, 0, len(files))
+	for _, file := range files {
+		candidate, ok := buildEvictionCandidate(file, lastCited, cutoff)
+		if ok {
+			candidates = append(candidates, candidate)
+		}
+	}
+	return candidates
+}
+
+func buildEvictionCandidate(file string, lastCited map[string]time.Time, cutoff time.Time) (evictionCandidate, bool) {
+	data, ok := readLearningJSONLData(file)
+	if !ok {
+		return evictionCandidate{}, false
+	}
+
+	utility := floatValueFromData(data, "utility", 0.5)
+	confidence := floatValueFromData(data, "confidence", 0.5)
+	maturity := nonEmptyStringFromData(data, "maturity", "provisional")
+	if !isEvictionEligible(utility, confidence, maturity) {
+		return evictionCandidate{}, false
+	}
+
+	lastCitedStr, ok := evictionCitationStatus(file, lastCited, cutoff)
+	if !ok {
+		return evictionCandidate{}, false
+	}
+
+	return evictionCandidate{
+		Path:       file,
+		Name:       filepath.Base(file),
+		Utility:    utility,
+		Confidence: confidence,
+		Maturity:   maturity,
+		LastCited:  lastCitedStr,
+	}, true
+}
+
+func readLearningJSONLData(file string) (map[string]interface{}, bool) {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return nil, false
+	}
+
+	lines := strings.Split(string(content), "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) == "" {
+		return nil, false
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[0]), &data); err != nil {
+		return nil, false
+	}
+
+	return data, true
+}
+
+func isEvictionEligible(utility, confidence float64, maturity string) bool {
+	if maturity == "established" {
+		return false
+	}
+	if utility >= 0.3 {
+		return false
+	}
+	return confidence < 0.2
+}
+
+func evictionCitationStatus(file string, lastCited map[string]time.Time, cutoff time.Time) (string, bool) {
+	citedAt, ok := lastCited[file]
+	if !ok {
+		return "never", true
+	}
+	if citedAt.After(cutoff) {
+		return "", false
+	}
+	return citedAt.Format("2006-01-02"), true
+}
+
+func reportEvictionCandidates(files []string, candidates []evictionCandidate) (bool, error) {
 	fmt.Printf("=== Eviction Scan ===\n")
 	fmt.Printf("  Learnings scanned: %d\n", len(files))
 	fmt.Printf("  Eviction candidates: %d\n", len(candidates))
@@ -508,13 +528,13 @@ func runMaturityEvict(cmd *cobra.Command) error {
 
 	if len(candidates) == 0 {
 		fmt.Println("No eviction candidates found.")
-		return nil
+		return false, nil
 	}
 
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(candidates)
+		return false, enc.Encode(candidates)
 	}
 
 	fmt.Println("Candidates (utility < 0.3, confidence < 0.2, not cited in 90d, not established):")
@@ -523,37 +543,53 @@ func runMaturityEvict(cmd *cobra.Command) error {
 			c.Name, c.Utility, c.Confidence, c.Maturity, c.LastCited)
 	}
 
-	// Archive if requested
-	if maturityArchive {
-		archiveDir := filepath.Join(cwd, ".agents", "archive", "learnings")
+	return true, nil
+}
 
-		if GetDryRun() {
-			fmt.Println()
-			for _, c := range candidates {
-				fmt.Printf("[dry-run] Would archive: %s -> .agents/archive/learnings/%s\n", c.Name, c.Name)
-			}
-			return nil
-		}
+func archiveEvictionCandidates(cwd string, candidates []evictionCandidate) error {
+	archiveDir := filepath.Join(cwd, ".agents", "archive", "learnings")
 
-		if err := os.MkdirAll(archiveDir, 0o755); err != nil {
-			return fmt.Errorf("create archive directory: %w", err)
-		}
-
+	if GetDryRun() {
 		fmt.Println()
-		archived := 0
 		for _, c := range candidates {
-			dst := filepath.Join(archiveDir, c.Name)
-			if err := os.Rename(c.Path, dst); err != nil {
-				fmt.Fprintf(os.Stderr, "Error moving %s: %v\n", c.Name, err)
-				continue
-			}
-			fmt.Printf("Archived: %s -> .agents/archive/learnings/%s\n", c.Name, c.Name)
-			archived++
+			fmt.Printf("[dry-run] Would archive: %s -> .agents/archive/learnings/%s\n", c.Name, c.Name)
 		}
-		fmt.Printf("\nArchived %d learning(s).\n", archived)
+		return nil
 	}
 
+	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
+		return fmt.Errorf("create archive directory: %w", err)
+	}
+
+	fmt.Println()
+	archived := 0
+	for _, c := range candidates {
+		dst := filepath.Join(archiveDir, c.Name)
+		if err := os.Rename(c.Path, dst); err != nil {
+			fmt.Fprintf(os.Stderr, "Error moving %s: %v\n", c.Name, err)
+			continue
+		}
+		fmt.Printf("Archived: %s -> .agents/archive/learnings/%s\n", c.Name, c.Name)
+		archived++
+	}
+	fmt.Printf("\nArchived %d learning(s).\n", archived)
 	return nil
+}
+
+func floatValueFromData(data map[string]interface{}, key string, defaultValue float64) float64 {
+	value, ok := data[key].(float64)
+	if !ok {
+		return defaultValue
+	}
+	return value
+}
+
+func nonEmptyStringFromData(data map[string]interface{}, key, defaultValue string) string {
+	value, ok := data[key].(string)
+	if !ok || value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 // antiPatternCmd lists and manages anti-patterns.

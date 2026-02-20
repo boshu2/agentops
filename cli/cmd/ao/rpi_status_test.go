@@ -382,6 +382,41 @@ func TestRPIStatusParseLogOldFormat(t *testing.T) {
 	}
 }
 
+func TestRPIStatusParseLogOldFormatWithoutStartFirst(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "phased-orchestration.log")
+
+	logContent := `[2026-02-15T09:00:00Z] plan: completed in 2m0s
+[2026-02-15T09:02:00Z] complete: epic=ag-first verdicts=map[]
+[2026-02-15T09:03:00Z] start: goal="second run" from=discovery
+[2026-02-15T09:04:00Z] complete: epic=ag-second verdicts=map[]
+`
+	if err := os.WriteFile(logPath, []byte(logContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	runs, err := parseOrchestrationLog(logPath)
+	if err != nil {
+		t.Fatalf("parseOrchestrationLog failed: %v", err)
+	}
+	if len(runs) != 2 {
+		t.Fatalf("expected 2 runs, got %d", len(runs))
+	}
+
+	if runs[0].RunID != "anon-1" {
+		t.Errorf("expected first run anon-1, got %s", runs[0].RunID)
+	}
+	if runs[0].Status != "completed" {
+		t.Errorf("expected first run completed, got %s", runs[0].Status)
+	}
+	if runs[1].RunID != "anon-2" {
+		t.Errorf("expected second run anon-2, got %s", runs[1].RunID)
+	}
+	if runs[1].Goal != "second run" {
+		t.Errorf("expected second run goal 'second run', got %q", runs[1].Goal)
+	}
+}
+
 func TestRPIStatusParseLogMultipleRuns(t *testing.T) {
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "phased-orchestration.log")

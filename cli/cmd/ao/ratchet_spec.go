@@ -48,23 +48,23 @@ func runRatchetSpec(cmd *cobra.Command, args []string) error {
 	for _, pattern := range patterns {
 		path, loc, err := locator.FindFirst(pattern)
 		if err == nil {
+			w := cmd.OutOrStdout()
 			switch GetOutput() {
 			case "json":
 				result := map[string]string{
 					"path":     path,
 					"location": string(loc),
 				}
-				enc := json.NewEncoder(os.Stdout)
+				enc := json.NewEncoder(w)
 				return enc.Encode(result)
 
 			default:
-				fmt.Println(path)
+				fmt.Fprintln(w, path)
 			}
 			return nil
 		}
 	}
 
-	fmt.Fprintln(os.Stderr, "No spec found")
-	os.Exit(1)
-	return nil
+	fmt.Fprintln(cmd.ErrOrStderr(), "No spec found")
+	return fmt.Errorf("no spec found")
 }

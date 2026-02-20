@@ -116,121 +116,145 @@ func runRPIStatusOnce() error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
+	output := buildRPIStatusOutput(cwd)
+	if GetOutput() == "json" {
+		return writeRPIStatusJSON(output)
+	}
+
+	return renderRPIStatusTable(cwd, output)
+}
+
+func buildRPIStatusOutput(cwd string) rpiStatusOutput {
 	active, historical := discoverRPIRunsRegistryFirst(cwd)
 	allRuns := append(active, historical...)
 
-	// Parse orchestration logs for enriched data
-	logRuns := discoverLogRuns(cwd)
-	liveStatuses := discoverLiveStatuses(cwd)
-
-	output := rpiStatusOutput{
+	return rpiStatusOutput{
 		Active:       active,
 		Historical:   historical,
 		Runs:         allRuns,
-		LogRuns:      logRuns,
-		LiveStatuses: liveStatuses,
+		LogRuns:      discoverLogRuns(cwd),
+		LiveStatuses: discoverLiveStatuses(cwd),
 		Count:        len(allRuns),
 	}
+}
 
-	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(output)
-	}
+func writeRPIStatusJSON(output rpiStatusOutput) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(output)
+}
 
-	// Table output: state-file runs
-	if len(allRuns) == 0 && len(logRuns) == 0 && len(liveStatuses) == 0 {
+func renderRPIStatusTable(cwd string, output rpiStatusOutput) error {
+	if len(output.Runs) == 0 && len(output.LogRuns) == 0 && len(output.LiveStatuses) == 0 {
 		fmt.Println("No active RPI runs found.")
 		return nil
 	}
 
-	// Active runs section
-	if len(active) > 0 {
-		fmt.Println("Active Runs")
-		fmt.Printf("%-14s %-30s %-14s %-10s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "ELAPSED")
-		fmt.Println(strings.Repeat("─", 82))
-		for _, r := range active {
-			goal := r.Goal
-			if len(goal) > 28 {
-				goal = goal[:25] + "..."
-			}
-			fmt.Printf("%-14s %-30s %-14s %-10s %s\n",
-				r.RunID, goal, r.PhaseName, r.Status, r.Elapsed)
-		}
-		fmt.Printf("\n%d active run(s) found.\n", len(active))
+	if len(output.Active) > 0 {
+		renderStateRunsSection("Active Runs", output.Active, "active", false)
 	}
-
-	// Historical runs section
-	if len(historical) > 0 {
-		if len(active) > 0 {
-			fmt.Println()
-		}
-		fmt.Println("Historical Runs")
-		fmt.Printf("%-14s %-30s %-14s %-10s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "ELAPSED")
-		fmt.Println(strings.Repeat("─", 82))
-		for _, r := range historical {
-			goal := r.Goal
-			if len(goal) > 28 {
-				goal = goal[:25] + "..."
-			}
-			fmt.Printf("%-14s %-30s %-14s %-10s %s\n",
-				r.RunID, goal, r.PhaseName, r.Status, r.Elapsed)
-		}
-		fmt.Printf("\n%d historical run(s) found.\n", len(historical))
+	if len(output.Historical) > 0 {
+		renderStateRunsSection("Historical Runs", output.Historical, "historical", len(output.Active) > 0)
 	}
-
-	// Log history section
-	if len(logRuns) > 0 {
-		fmt.Printf("\n%-14s %-30s %-12s %-10s %-10s %s\n", "RUN-ID", "GOAL", "LAST-PHASE", "STATUS", "RETRIES", "DURATION")
-		fmt.Println(strings.Repeat("─", 100))
-		for _, lr := range logRuns {
-			goal := lr.Goal
-			if len(goal) > 28 {
-				goal = goal[:25] + "..."
-			}
-			lastPhase := ""
-			if len(lr.Phases) > 0 {
-				lastPhase = lr.Phases[len(lr.Phases)-1].Name
-			}
-			totalRetries := 0
-			for _, v := range lr.Retries {
-				totalRetries += v
-			}
-			dur := ""
-			if lr.Duration > 0 {
-				dur = lr.Duration.Truncate(time.Second).String()
-			}
-			retryStr := fmt.Sprintf("%d", totalRetries)
-			verdictStr := ""
-			for k, v := range lr.Verdicts {
-				if verdictStr != "" {
-					verdictStr += ","
-				}
-				verdictStr += k + "=" + v
-			}
-			status := lr.Status
-			if verdictStr != "" && status == "completed" {
-				status += " [" + verdictStr + "]"
-			}
-			fmt.Printf("%-14s %-30s %-12s %-10s %-10s %s\n",
-				lr.RunID, goal, lastPhase, status, retryStr, dur)
-		}
-		fmt.Printf("\n%d log run(s) found.\n", len(logRuns))
+	if len(output.LogRuns) > 0 {
+		renderLogRunsSection(output.LogRuns)
 	}
-
-	if len(liveStatuses) > 0 {
-		fmt.Println("\nLive Status Files")
-		fmt.Println(strings.Repeat("─", 100))
-		for _, ls := range liveStatuses {
-			path := ls.Path
-			if rel, err := filepath.Rel(cwd, ls.Path); err == nil {
-				path = rel
-			}
-			fmt.Printf("\n[%s]\n%s\n", path, strings.TrimSpace(ls.Content))
-		}
+	if len(output.LiveStatuses) > 0 {
+		renderLiveStatusesSection(cwd, output.LiveStatuses)
 	}
 
 	return nil
+}
+
+func renderStateRunsSection(title string, runs []rpiRunInfo, label string, withLeadingBlank bool) {
+	if withLeadingBlank {
+		fmt.Println()
+	}
+
+	fmt.Println(title)
+	fmt.Printf("%-14s %-30s %-14s %-10s %s\n", "RUN-ID", "GOAL", "PHASE", "STATUS", "ELAPSED")
+	fmt.Println(strings.Repeat("─", 82))
+	for _, r := range runs {
+		fmt.Printf("%-14s %-30s %-14s %-10s %s\n",
+			r.RunID, truncateGoal(r.Goal, 28), r.PhaseName, r.Status, r.Elapsed)
+	}
+	fmt.Printf("\n%d %s run(s) found.\n", len(runs), label)
+}
+
+func renderLogRunsSection(logRuns []rpiRun) {
+	fmt.Printf("\n%-14s %-30s %-12s %-10s %-10s %s\n", "RUN-ID", "GOAL", "LAST-PHASE", "STATUS", "RETRIES", "DURATION")
+	fmt.Println(strings.Repeat("─", 100))
+	for _, lr := range logRuns {
+		fmt.Printf("%-14s %-30s %-12s %-10s %-10d %s\n",
+			lr.RunID,
+			truncateGoal(lr.Goal, 28),
+			lastPhaseName(lr.Phases),
+			formattedLogRunStatus(lr),
+			totalRetries(lr.Retries),
+			formatLogRunDuration(lr.Duration),
+		)
+	}
+	fmt.Printf("\n%d log run(s) found.\n", len(logRuns))
+}
+
+func renderLiveStatusesSection(cwd string, liveStatuses []liveStatusSnapshot) {
+	fmt.Println("\nLive Status Files")
+	fmt.Println(strings.Repeat("─", 100))
+	for _, ls := range liveStatuses {
+		path := ls.Path
+		if rel, err := filepath.Rel(cwd, ls.Path); err == nil {
+			path = rel
+		}
+		fmt.Printf("\n[%s]\n%s\n", path, strings.TrimSpace(ls.Content))
+	}
+}
+
+func truncateGoal(goal string, maxLen int) string {
+	if len(goal) <= maxLen {
+		return goal
+	}
+	return goal[:maxLen-3] + "..."
+}
+
+func lastPhaseName(phases []rpiPhaseEntry) string {
+	if len(phases) == 0 {
+		return ""
+	}
+	return phases[len(phases)-1].Name
+}
+
+func totalRetries(retries map[string]int) int {
+	total := 0
+	for _, v := range retries {
+		total += v
+	}
+	return total
+}
+
+func formatLogRunDuration(dur time.Duration) string {
+	if dur <= 0 {
+		return ""
+	}
+	return dur.Truncate(time.Second).String()
+}
+
+func formattedLogRunStatus(run rpiRun) string {
+	verdictStr := joinVerdicts(run.Verdicts)
+	if verdictStr == "" || run.Status != "completed" {
+		return run.Status
+	}
+	return run.Status + " [" + verdictStr + "]"
+}
+
+func joinVerdicts(verdicts map[string]string) string {
+	verdictStr := ""
+	for k, v := range verdicts {
+		if verdictStr != "" {
+			verdictStr += ","
+		}
+		verdictStr += k + "=" + v
+	}
+	return verdictStr
 }
 
 // runRPIStatusWatch polls every 5s and redraws the display.
@@ -288,130 +312,189 @@ func parseOrchestrationLog(logPath string) ([]rpiRun, error) {
 	}
 	defer f.Close() //nolint:errcheck
 
-	// Map runID -> *rpiRun for grouping
-	runMap := make(map[string]*rpiRun)
-	// Order of first appearance
-	var runOrder []string
-	// Counter for old-format entries without a runID
-	anonymousCounter := 0
+	state := newOrchestrationLogState()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := scanner.Text()
-		matches := logLineRegex.FindStringSubmatch(line)
-		if matches == nil {
+		entry, ok := parseOrchestrationLogLine(scanner.Text())
+		if !ok {
 			continue
 		}
 
-		timestamp := matches[1]
-		runID := matches[2] // may be empty for old format
-		phaseName := strings.TrimSpace(matches[3])
-		details := strings.TrimSpace(matches[4])
-
-		// For old format without runID, group by start->complete blocks
-		if runID == "" {
-			if phaseName == "start" {
-				anonymousCounter++
-				runID = fmt.Sprintf("anon-%d", anonymousCounter)
-			} else {
-				// Attach to the current anonymous run
-				runID = fmt.Sprintf("anon-%d", anonymousCounter)
-				if anonymousCounter == 0 {
-					anonymousCounter = 1
-					runID = "anon-1"
-				}
-			}
-		}
-
-		run, exists := runMap[runID]
-		if !exists {
-			run = &rpiRun{
-				RunID:    runID,
-				Verdicts: make(map[string]string),
-				Retries:  make(map[string]int),
-				Status:   "running",
-			}
-			runMap[runID] = run
-			runOrder = append(runOrder, runID)
-		}
-
-		// Parse timestamp
-		t, tErr := time.Parse(time.RFC3339, timestamp)
-		if tErr == nil {
-			if run.StartedAt.IsZero() {
-				run.StartedAt = t
-			}
-		}
-
-		// Add phase entry
-		entry := rpiPhaseEntry{
-			Name:    phaseName,
-			Details: details,
-			Time:    timestamp,
-		}
-		run.Phases = append(run.Phases, entry)
-
-		// Extract structured data from details
-		switch phaseName {
-		case "start":
-			run.Goal = extractGoalFromDetails(details)
-		case "complete":
-			run.Status = "completed"
-			if tErr == nil {
-				run.FinishedAt = t
-				if !run.StartedAt.IsZero() {
-					run.Duration = run.FinishedAt.Sub(run.StartedAt)
-				}
-			}
-			run.EpicID = extractEpicFromDetails(details)
-			extractVerdictsFromDetails(details, run.Verdicts)
-		default:
-			// Check for terminal failure details.
-			if strings.HasPrefix(details, "FAILED:") || strings.HasPrefix(details, "FATAL:") {
-				run.Status = "failed"
-			}
-			// Check for RETRY
-			if strings.HasPrefix(details, "RETRY") {
-				run.Retries[phaseName]++
-			}
-			// Check for completed with duration
-			if strings.HasPrefix(details, "completed in ") {
-				durStr := strings.TrimPrefix(details, "completed in ")
-				if d, dErr := time.ParseDuration(durStr); dErr == nil {
-					// Update last-known finish time based on duration
-					if tErr == nil {
-						run.FinishedAt = t
-						_ = d // duration per phase, total computed from start->complete
-					}
-				}
-			}
-			// Extract inline verdicts from phase details (legacy + consolidated formats).
-			if v := extractInlineVerdict(details); v != "" {
-				lphase := strings.ToLower(phaseName)
-				ldetails := strings.ToLower(details)
-				switch {
-				case strings.Contains(lphase, "pre-mortem") || strings.Contains(ldetails, "pre-mortem verdict"):
-					run.Verdicts["pre_mortem"] = v
-				case strings.Contains(lphase, "vibe") || strings.Contains(ldetails, "vibe verdict"):
-					run.Verdicts["vibe"] = v
-				case strings.Contains(lphase, "post-mortem") || strings.Contains(ldetails, "post-mortem verdict"):
-					run.Verdicts["post_mortem"] = v
-				}
-			}
-		}
+		runID := state.resolveRunID(entry.RunID, entry.PhaseName)
+		run := state.getOrCreateRun(runID)
+		applyOrchestrationLogEntry(run, entry)
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scan log: %w", err)
 	}
 
-	// Build ordered result
-	result := make([]rpiRun, 0, len(runOrder))
-	for _, id := range runOrder {
-		result = append(result, *runMap[id])
+	return state.orderedRuns(), nil
+}
+
+type orchestrationLogState struct {
+	runMap           map[string]*rpiRun
+	runOrder         []string
+	anonymousCounter int
+}
+
+type orchestrationLogEntry struct {
+	Timestamp string
+	RunID     string
+	PhaseName string
+	Details   string
+	ParsedAt  time.Time
+	HasTime   bool
+}
+
+func newOrchestrationLogState() *orchestrationLogState {
+	return &orchestrationLogState{
+		runMap: make(map[string]*rpiRun),
+	}
+}
+
+func parseOrchestrationLogLine(line string) (orchestrationLogEntry, bool) {
+	matches := logLineRegex.FindStringSubmatch(line)
+	if matches == nil {
+		return orchestrationLogEntry{}, false
 	}
 
-	return result, nil
+	entry := orchestrationLogEntry{
+		Timestamp: matches[1],
+		RunID:     matches[2],
+		PhaseName: strings.TrimSpace(matches[3]),
+		Details:   strings.TrimSpace(matches[4]),
+	}
+
+	if parsedAt, err := time.Parse(time.RFC3339, entry.Timestamp); err == nil {
+		entry.ParsedAt = parsedAt
+		entry.HasTime = true
+	}
+
+	return entry, true
+}
+
+func (s *orchestrationLogState) resolveRunID(runID, phaseName string) string {
+	if runID != "" {
+		return runID
+	}
+	if phaseName == "start" {
+		s.anonymousCounter++
+		return fmt.Sprintf("anon-%d", s.anonymousCounter)
+	}
+	if s.anonymousCounter == 0 {
+		s.anonymousCounter = 1
+	}
+	return fmt.Sprintf("anon-%d", s.anonymousCounter)
+}
+
+func (s *orchestrationLogState) getOrCreateRun(runID string) *rpiRun {
+	if run, exists := s.runMap[runID]; exists {
+		return run
+	}
+
+	run := &rpiRun{
+		RunID:    runID,
+		Verdicts: make(map[string]string),
+		Retries:  make(map[string]int),
+		Status:   "running",
+	}
+	s.runMap[runID] = run
+	s.runOrder = append(s.runOrder, runID)
+	return run
+}
+
+func (s *orchestrationLogState) orderedRuns() []rpiRun {
+	result := make([]rpiRun, 0, len(s.runOrder))
+	for _, id := range s.runOrder {
+		result = append(result, *s.runMap[id])
+	}
+	return result
+}
+
+func applyOrchestrationLogEntry(run *rpiRun, entry orchestrationLogEntry) {
+	if entry.HasTime && run.StartedAt.IsZero() {
+		run.StartedAt = entry.ParsedAt
+	}
+
+	run.Phases = append(run.Phases, rpiPhaseEntry{
+		Name:    entry.PhaseName,
+		Details: entry.Details,
+		Time:    entry.Timestamp,
+	})
+
+	switch entry.PhaseName {
+	case "start":
+		run.Goal = extractGoalFromDetails(entry.Details)
+	case "complete":
+		applyCompletePhase(run, entry)
+	default:
+		applyNonTerminalPhase(run, entry)
+	}
+}
+
+func applyCompletePhase(run *rpiRun, entry orchestrationLogEntry) {
+	run.Status = "completed"
+	if entry.HasTime {
+		run.FinishedAt = entry.ParsedAt
+		if !run.StartedAt.IsZero() {
+			run.Duration = run.FinishedAt.Sub(run.StartedAt)
+		}
+	}
+	run.EpicID = extractEpicFromDetails(entry.Details)
+	extractVerdictsFromDetails(entry.Details, run.Verdicts)
+}
+
+func applyNonTerminalPhase(run *rpiRun, entry orchestrationLogEntry) {
+	updateFailureStatus(run, entry.Details)
+	updateRetryCount(run, entry.PhaseName, entry.Details)
+	updateFinishedAtFromCompletedDuration(run, entry)
+	updateInlineVerdicts(run, entry.PhaseName, entry.Details)
+}
+
+func updateFailureStatus(run *rpiRun, details string) {
+	if strings.HasPrefix(details, "FAILED:") || strings.HasPrefix(details, "FATAL:") {
+		run.Status = "failed"
+	}
+}
+
+func updateRetryCount(run *rpiRun, phaseName, details string) {
+	if strings.HasPrefix(details, "RETRY") {
+		run.Retries[phaseName]++
+	}
+}
+
+func updateFinishedAtFromCompletedDuration(run *rpiRun, entry orchestrationLogEntry) {
+	if !strings.HasPrefix(entry.Details, "completed in ") {
+		return
+	}
+
+	durStr := strings.TrimPrefix(entry.Details, "completed in ")
+	if _, err := time.ParseDuration(durStr); err != nil {
+		return
+	}
+	if entry.HasTime {
+		run.FinishedAt = entry.ParsedAt
+	}
+}
+
+func updateInlineVerdicts(run *rpiRun, phaseName, details string) {
+	v := extractInlineVerdict(details)
+	if v == "" {
+		return
+	}
+
+	lphase := strings.ToLower(phaseName)
+	ldetails := strings.ToLower(details)
+	switch {
+	case strings.Contains(lphase, "pre-mortem") || strings.Contains(ldetails, "pre-mortem verdict"):
+		run.Verdicts["pre_mortem"] = v
+	case strings.Contains(lphase, "vibe") || strings.Contains(ldetails, "vibe verdict"):
+		run.Verdicts["vibe"] = v
+	case strings.Contains(lphase, "post-mortem") || strings.Contains(ldetails, "post-mortem verdict"):
+		run.Verdicts["post_mortem"] = v
+	}
 }
 
 // extractGoalFromDetails extracts goal from "goal=\"...\" from=..." format.

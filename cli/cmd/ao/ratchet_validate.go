@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -62,6 +63,7 @@ func runRatchetValidate(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := buildValidateOptions()
+	w := cmd.OutOrStdout()
 
 	allValid := true
 	for _, file := range files {
@@ -71,16 +73,16 @@ func runRatchetValidate(cmd *cobra.Command, args []string) error {
 		}
 
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
+			enc := json.NewEncoder(w)
 			enc.SetIndent("", "  ")
 			_ = enc.Encode(result) //nolint:errcheck // CLI JSON output to stdout
 		} else {
-			formatValidationResult(file, result, &allValid)
+			formatValidationResult(w, file, result, &allValid)
 		}
 	}
 
 	if !allValid {
-		os.Exit(1)
+		return fmt.Errorf("validation failed: one or more artifacts are invalid")
 	}
 
 	return nil
@@ -118,40 +120,40 @@ func buildValidateOptions() *ratchet.ValidateOptions {
 }
 
 // formatValidationResult prints a single validation result in text format.
-func formatValidationResult(file string, result *ratchet.ValidationResult, allValid *bool) {
-	fmt.Printf("Validation: %s\n", file)
+func formatValidationResult(w io.Writer, file string, result *ratchet.ValidationResult, allValid *bool) {
+	fmt.Fprintf(w, "Validation: %s\n", file)
 	if result.Valid {
-		fmt.Printf("  Status: VALID ✓\n")
+		fmt.Fprintln(w, "  Status: VALID ✓")
 	} else {
-		fmt.Printf("  Status: INVALID ✗\n")
+		fmt.Fprintln(w, "  Status: INVALID ✗")
 		*allValid = false
 	}
 
 	if result.Lenient {
-		fmt.Printf("  Mode: LENIENT (legacy bypass)\n")
+		fmt.Fprintln(w, "  Mode: LENIENT (legacy bypass)")
 		if result.LenientExpiryDate != nil {
-			fmt.Printf("  Expires: %s\n", *result.LenientExpiryDate)
+			fmt.Fprintf(w, "  Expires: %s\n", *result.LenientExpiryDate)
 		}
 		if result.LenientExpiringSoon {
-			fmt.Printf("  ⚠️  Expiring soon - migration required\n")
+			fmt.Fprintln(w, "  ⚠️  Expiring soon - migration required")
 		}
 	}
 
 	if len(result.Issues) > 0 {
-		fmt.Println("  Issues:")
+		fmt.Fprintln(w, "  Issues:")
 		for _, issue := range result.Issues {
-			fmt.Printf("    - %s\n", issue)
+			fmt.Fprintf(w, "    - %s\n", issue)
 		}
 	}
 
 	if len(result.Warnings) > 0 {
-		fmt.Println("  Warnings:")
+		fmt.Fprintln(w, "  Warnings:")
 		for _, warn := range result.Warnings {
-			fmt.Printf("    - %s\n", warn)
+			fmt.Fprintf(w, "    - %s\n", warn)
 		}
 	}
 
 	if result.Tier != nil {
-		fmt.Printf("  Tier: %d (%s)\n", *result.Tier, result.Tier.String())
+		fmt.Fprintf(w, "  Tier: %d (%s)\n", *result.Tier, result.Tier.String())
 	}
 }

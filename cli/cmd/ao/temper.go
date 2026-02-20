@@ -19,11 +19,11 @@ import (
 )
 
 var (
-	temperMinMaturity  string
-	temperMinUtility   float64
-	temperMinFeedback  int
-	temperForce        bool
-	temperRecursive    bool
+	temperMinMaturity string
+	temperMinUtility  float64
+	temperMinFeedback int
+	temperForce       bool
+	temperRecursive   bool
 )
 
 var temperCmd = &cobra.Command{
@@ -47,25 +47,25 @@ Commands:
 
 // TemperResult holds validation results for an artifact.
 type TemperResult struct {
-	Path          string        `json:"path"`
-	Valid         bool          `json:"valid"`
-	Tempered      bool          `json:"tempered,omitempty"`
-	Issues        []string      `json:"issues,omitempty"`
-	Warnings      []string      `json:"warnings,omitempty"`
+	Path          string         `json:"path"`
+	Valid         bool           `json:"valid"`
+	Tempered      bool           `json:"tempered,omitempty"`
+	Issues        []string       `json:"issues,omitempty"`
+	Warnings      []string       `json:"warnings,omitempty"`
 	Maturity      types.Maturity `json:"maturity,omitempty"`
-	Utility       float64       `json:"utility,omitempty"`
-	Confidence    float64       `json:"confidence,omitempty"`
-	FeedbackCount int           `json:"feedback_count,omitempty"`
-	ValidatedAt   time.Time     `json:"validated_at,omitempty"`
+	Utility       float64        `json:"utility,omitempty"`
+	Confidence    float64        `json:"confidence,omitempty"`
+	FeedbackCount int            `json:"feedback_count,omitempty"`
+	ValidatedAt   time.Time      `json:"validated_at,omitempty"`
 }
 
 // TemperStatus holds overall status of tempered artifacts.
 type TemperStatus struct {
-	Tempered     int            `json:"tempered"`
-	Pending      int            `json:"pending"`
-	ByMaturity   map[string]int `json:"by_maturity"`
-	MeanUtility  float64        `json:"mean_utility"`
-	Artifacts    []TemperResult `json:"artifacts,omitempty"`
+	Tempered    int            `json:"tempered"`
+	Pending     int            `json:"pending"`
+	ByMaturity  map[string]int `json:"by_maturity"`
+	MeanUtility float64        `json:"mean_utility"`
+	Artifacts   []TemperResult `json:"artifacts,omitempty"`
 }
 
 func init() {
@@ -137,8 +137,10 @@ Examples:
 }
 
 func runTemperValidate(cmd *cobra.Command, args []string) error {
+	w := cmd.OutOrStdout()
+
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would validate %d file(s)\n", len(args))
+		fmt.Fprintf(w, "[dry-run] Would validate %d file(s)\n", len(args))
 		return nil
 	}
 
@@ -171,12 +173,12 @@ func runTemperValidate(cmd *cobra.Command, args []string) error {
 	// Output
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
+		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		return enc.Encode(results)
 
 	case "yaml":
-		enc := yaml.NewEncoder(os.Stdout)
+		enc := yaml.NewEncoder(w)
 		return enc.Encode(results)
 
 	default:
@@ -184,7 +186,7 @@ func runTemperValidate(cmd *cobra.Command, args []string) error {
 	}
 
 	if !allValid {
-		os.Exit(1)
+		return fmt.Errorf("validation failed: one or more artifacts are invalid")
 	}
 
 	return nil

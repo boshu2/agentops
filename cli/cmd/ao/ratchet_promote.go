@@ -63,16 +63,17 @@ func runRatchetPromote(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("validate promotion: %w", err)
 	}
 
+	w := cmd.OutOrStdout()
 	if !result.Valid {
-		fmt.Println("Promotion blocked:")
+		fmt.Fprintln(w, "Promotion blocked:")
 		for _, issue := range result.Issues {
-			fmt.Printf("  - %s\n", issue)
+			fmt.Fprintf(w, "  - %s\n", issue)
 		}
-		os.Exit(1)
+		return fmt.Errorf("promotion blocked: requirements not met")
 	}
 
 	if GetDryRun() {
-		fmt.Printf("Would promote %s to tier %d (%s)\n", artifact, targetTier, targetTier.String())
+		fmt.Fprintf(w, "Would promote %s to tier %d (%s)\n", artifact, targetTier, targetTier.String())
 		return nil
 	}
 
@@ -95,7 +96,7 @@ func runRatchetPromote(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("record promotion: %w", err)
 	}
 
-	fmt.Printf("Promoted: %s → tier %d (%s)\n", artifact, targetTier, targetTier.String())
+	fmt.Fprintf(w, "Promoted: %s → tier %d (%s)\n", artifact, targetTier, targetTier.String())
 
 	return nil
 }

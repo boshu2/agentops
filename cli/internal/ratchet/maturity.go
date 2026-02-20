@@ -55,13 +55,26 @@ type MaturityTransitionResult struct {
 //   - established → candidate: utility < 0.5 (demotion)
 //   - candidate → provisional: utility < 0.3 (demotion)
 func CheckMaturityTransition(learningPath string) (*MaturityTransitionResult, error) {
-	// Read the learning file
+	data, err := readLearningData(learningPath)
+	if err != nil {
+		return nil, err
+	}
+
+	result := buildMaturityTransitionResult(learningPath, data)
+	if applyAntiPatternTransition(result) {
+		return result, nil
+	}
+
+	applyMaturitySpecificTransition(result)
+	return result, nil
+}
+
+func readLearningData(learningPath string) (map[string]interface{}, error) {
 	content, err := os.ReadFile(learningPath)
 	if err != nil {
 		return nil, fmt.Errorf("read learning: %w", err)
 	}
 
-	// Parse JSONL (first line)
 	lines := strings.Split(string(content), "\n")
 	if len(lines) == 0 || strings.TrimSpace(lines[0]) == "" {
 		return nil, fmt.Errorf("empty learning file")
@@ -72,117 +85,132 @@ func CheckMaturityTransition(learningPath string) (*MaturityTransitionResult, er
 		return nil, fmt.Errorf("parse learning: %w", err)
 	}
 
-	// Extract current values
-	learningID := filepath.Base(learningPath)
-	if id, ok := data["id"].(string); ok {
-		learningID = id
-	}
+	return data, nil
+}
 
-	currentMaturity := types.MaturityProvisional
-	if m, ok := data["maturity"].(string); ok && m != "" {
-		currentMaturity = types.Maturity(m)
-	}
+func buildMaturityTransitionResult(learningPath string, data map[string]interface{}) *MaturityTransitionResult {
+	learningID := stringFromData(data, "id", filepath.Base(learningPath), false)
+	currentMaturity := types.Maturity(stringFromData(data, "maturity", string(types.MaturityProvisional), true))
 
-	utility := types.InitialUtility
-	if u, ok := data["utility"].(float64); ok {
-		utility = u
-	}
-
-	confidence := 0.5
-	if c, ok := data["confidence"].(float64); ok {
-		confidence = c
-	}
-
-	rewardCount := 0
-	if rc, ok := data["reward_count"].(float64); ok {
-		rewardCount = int(rc)
-	}
-
-	helpfulCount := 0
-	if hc, ok := data["helpful_count"].(float64); ok {
-		helpfulCount = int(hc)
-	}
-
-	harmfulCount := 0
-	if hc, ok := data["harmful_count"].(float64); ok {
-		harmfulCount = int(hc)
-	}
-
-	result := &MaturityTransitionResult{
+	return &MaturityTransitionResult{
 		LearningID:   learningID,
 		OldMaturity:  currentMaturity,
 		NewMaturity:  currentMaturity,
 		Transitioned: false,
-		Utility:      utility,
-		Confidence:   confidence,
-		HelpfulCount: helpfulCount,
-		HarmfulCount: harmfulCount,
-		RewardCount:  rewardCount,
+		Utility:      floatFromData(data, "utility", types.InitialUtility),
+		Confidence:   floatFromData(data, "confidence", 0.5),
+		HelpfulCount: intFromData(data, "helpful_count"),
+		HarmfulCount: intFromData(data, "harmful_count"),
+		RewardCount:  intFromData(data, "reward_count"),
+	}
+}
+
+func applyAntiPatternTransition(result *MaturityTransitionResult) bool {
+	if result.Utility > types.MaturityAntiPatternThreshold || result.HarmfulCount < types.MinFeedbackForAntiPattern {
+		return false
 	}
 
-	// Check for anti-pattern transition (takes priority)
-	if utility <= types.MaturityAntiPatternThreshold && harmfulCount >= types.MinFeedbackForAntiPattern {
-		result.NewMaturity = types.MaturityAntiPattern
-		result.Transitioned = currentMaturity != types.MaturityAntiPattern
-		result.Reason = fmt.Sprintf("utility %.2f <= %.2f and harmful_count %d >= %d",
-			utility, types.MaturityAntiPatternThreshold, harmfulCount, types.MinFeedbackForAntiPattern)
-		return result, nil
-	}
+	result.NewMaturity = types.MaturityAntiPattern
+	result.Transitioned = result.OldMaturity != types.MaturityAntiPattern
+	result.Reason = fmt.Sprintf("utility %.2f <= %.2f and harmful_count %d >= %d",
+		result.Utility, types.MaturityAntiPatternThreshold, result.HarmfulCount, types.MinFeedbackForAntiPattern)
+	return true
+}
 
-	// Check transitions based on current maturity
-	switch currentMaturity {
+func applyMaturitySpecificTransition(result *MaturityTransitionResult) {
+	switch result.OldMaturity {
 	case types.MaturityProvisional:
-		// provisional → candidate
-		if utility >= types.MaturityPromotionThreshold && rewardCount >= types.MinFeedbackForPromotion {
-			result.NewMaturity = types.MaturityCandidate
-			result.Transitioned = true
-			result.Reason = fmt.Sprintf("utility %.2f >= %.2f and reward_count %d >= %d",
-				utility, types.MaturityPromotionThreshold, rewardCount, types.MinFeedbackForPromotion)
-		} else {
-			result.Reason = "not enough positive feedback for promotion"
-		}
-
+		applyProvisionalTransition(result)
 	case types.MaturityCandidate:
-		// candidate → established (promotion)
-		if utility >= types.MaturityPromotionThreshold && rewardCount >= 5 && helpfulCount > harmfulCount {
-			result.NewMaturity = types.MaturityEstablished
-			result.Transitioned = true
-			result.Reason = fmt.Sprintf("utility %.2f >= %.2f, reward_count %d >= 5, helpful > harmful (%d > %d)",
-				utility, types.MaturityPromotionThreshold, rewardCount, helpfulCount, harmfulCount)
-		} else if utility < types.MaturityDemotionThreshold {
-			// candidate → provisional (demotion)
-			result.NewMaturity = types.MaturityProvisional
-			result.Transitioned = true
-			result.Reason = fmt.Sprintf("utility %.2f < %.2f (demotion)",
-				utility, types.MaturityDemotionThreshold)
-		} else {
-			result.Reason = "maintaining candidate status"
-		}
-
+		applyCandidateTransition(result)
 	case types.MaturityEstablished:
-		// established → candidate (demotion)
-		if utility < 0.5 {
-			result.NewMaturity = types.MaturityCandidate
-			result.Transitioned = true
-			result.Reason = fmt.Sprintf("utility %.2f < 0.5 (demotion from established)",
-				utility)
-		} else {
-			result.Reason = "maintaining established status"
-		}
-
+		applyEstablishedTransition(result)
 	case types.MaturityAntiPattern:
-		// Anti-patterns can be rehabilitated if utility improves significantly
-		if utility >= 0.6 && helpfulCount > harmfulCount*2 {
-			result.NewMaturity = types.MaturityProvisional
-			result.Transitioned = true
-			result.Reason = fmt.Sprintf("utility %.2f >= 0.6 and helpful > 2*harmful (%d > %d) - rehabilitation",
-				utility, helpfulCount, harmfulCount*2)
-		} else {
-			result.Reason = "maintaining anti-pattern status"
-		}
+		applyAntiPatternRehabilitationTransition(result)
+	}
+}
+
+func applyProvisionalTransition(result *MaturityTransitionResult) {
+	if result.Utility >= types.MaturityPromotionThreshold && result.RewardCount >= types.MinFeedbackForPromotion {
+		result.NewMaturity = types.MaturityCandidate
+		result.Transitioned = true
+		result.Reason = fmt.Sprintf("utility %.2f >= %.2f and reward_count %d >= %d",
+			result.Utility, types.MaturityPromotionThreshold, result.RewardCount, types.MinFeedbackForPromotion)
+		return
 	}
 
-	return result, nil
+	result.Reason = "not enough positive feedback for promotion"
+}
+
+func applyCandidateTransition(result *MaturityTransitionResult) {
+	if result.Utility >= types.MaturityPromotionThreshold && result.RewardCount >= 5 && result.HelpfulCount > result.HarmfulCount {
+		result.NewMaturity = types.MaturityEstablished
+		result.Transitioned = true
+		result.Reason = fmt.Sprintf("utility %.2f >= %.2f, reward_count %d >= 5, helpful > harmful (%d > %d)",
+			result.Utility, types.MaturityPromotionThreshold, result.RewardCount, result.HelpfulCount, result.HarmfulCount)
+		return
+	}
+
+	if result.Utility < types.MaturityDemotionThreshold {
+		result.NewMaturity = types.MaturityProvisional
+		result.Transitioned = true
+		result.Reason = fmt.Sprintf("utility %.2f < %.2f (demotion)",
+			result.Utility, types.MaturityDemotionThreshold)
+		return
+	}
+
+	result.Reason = "maintaining candidate status"
+}
+
+func applyEstablishedTransition(result *MaturityTransitionResult) {
+	if result.Utility < 0.5 {
+		result.NewMaturity = types.MaturityCandidate
+		result.Transitioned = true
+		result.Reason = fmt.Sprintf("utility %.2f < 0.5 (demotion from established)",
+			result.Utility)
+		return
+	}
+
+	result.Reason = "maintaining established status"
+}
+
+func applyAntiPatternRehabilitationTransition(result *MaturityTransitionResult) {
+	if result.Utility >= 0.6 && result.HelpfulCount > result.HarmfulCount*2 {
+		result.NewMaturity = types.MaturityProvisional
+		result.Transitioned = true
+		result.Reason = fmt.Sprintf("utility %.2f >= 0.6 and helpful > 2*harmful (%d > %d) - rehabilitation",
+			result.Utility, result.HelpfulCount, result.HarmfulCount*2)
+		return
+	}
+
+	result.Reason = "maintaining anti-pattern status"
+}
+
+func stringFromData(data map[string]interface{}, key, defaultValue string, requireNonEmpty bool) string {
+	value, ok := data[key].(string)
+	if !ok {
+		return defaultValue
+	}
+	if requireNonEmpty && value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func floatFromData(data map[string]interface{}, key string, defaultValue float64) float64 {
+	value, ok := data[key].(float64)
+	if !ok {
+		return defaultValue
+	}
+	return value
+}
+
+func intFromData(data map[string]interface{}, key string) int {
+	value, ok := data[key].(float64)
+	if !ok {
+		return 0
+	}
+	return int(value)
 }
 
 // ApplyMaturityTransition checks and applies a maturity transition to a learning file.

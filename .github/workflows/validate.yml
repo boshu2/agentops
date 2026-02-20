@@ -288,6 +288,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -310,6 +312,18 @@ jobs:
           echo "=== Coverage Summary ==="
           go tool cover -func=coverage.out | tail -1
           echo "✅ Go tests passed"
+
+      - name: Enforce Go complexity budget on changed files
+        run: |
+          echo "=== Enforcing Go complexity budget ==="
+          GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            BASE_REF="origin/${{ github.base_ref }}"
+          else
+            BASE_REF="HEAD~1"
+          fi
+          ./scripts/check-go-complexity.sh --base "$BASE_REF" --warn 15 --fail 25
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v6

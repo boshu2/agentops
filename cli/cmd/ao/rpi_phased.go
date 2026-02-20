@@ -2,24 +2,21 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -443,316 +440,51 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 	return runRPIPhasedWithOpts(opts, args)
 }
 
-// validatePhasedInput checks preconditions and parses arguments for phased RPI.
-func validatePhasedInput(args []string, opts phasedEngineOptions) (cwd, goal string, startPhase int, err error) {
-	cwd, err = os.Getwd()
-	if err != nil {
-		return "", "", 0, fmt.Errorf("get working directory: %w", err)
-	}
-
-	// Pre-flight: check claude on PATH (skip in dry-run mode).
-	// Dry-run never spawns phase sessions and should remain CI-safe even when
-	// claude CLI is unavailable.
-	if !GetDryRun() {
-		if _, err := exec.LookPath("claude"); err != nil {
-			return "", "", 0, fmt.Errorf("claude CLI not found on PATH (required for spawning phase sessions)")
-		}
-	}
-
-	if len(args) > 0 {
-		goal = args[0]
-	}
-
-	startPhase = phaseNameToNum(opts.From)
-	if startPhase == 0 {
-		return "", "", 0, fmt.Errorf("unknown phase: %q (valid: discovery, implementation, validation)", opts.From)
-	}
-
-	if startPhase >= 2 && goal == "" {
-		existing, loadErr := loadPhasedState(cwd)
-		if loadErr == nil && existing.EpicID != "" {
-			goal = existing.Goal
-		}
-	}
-
-	if goal == "" && startPhase <= 1 {
-		return "", "", 0, fmt.Errorf("goal is required (provide as argument)")
-	}
-
-	return cwd, goal, startPhase, nil
-}
-
 // runRPIPhasedWithOpts is the core implementation of the phased RPI lifecycle.
 // All configuration is read from opts; no package-level globals are read after
 // this point (except test-injection points: lookPath, spawnDirectFn, gtPath).
-// initOrResumeState builds a fresh phasedState or resumes from a prior run.
-// Returns the state and the effective spawnCwd (may differ from cwd if a
-// worktree is being resumed).
-func initOrResumeState(cwd, goal string, startPhase int, opts phasedEngineOptions) (*phasedState, string, error) {
-	spawnCwd := cwd
-	state := &phasedState{
-		SchemaVersion: 1,
-		Goal:          goal,
-		Phase:         startPhase,
-		StartPhase:    startPhase,
-		Cycle:         1,
-		FastPath:      opts.FastPath,
-		TestFirst:     opts.TestFirst,
-		SwarmFirst:    opts.SwarmFirst,
-		Verdicts:      make(map[string]string),
-		Attempts:      make(map[string]int),
-		StartedAt:     time.Now().Format(time.RFC3339),
-		Opts:          opts,
-	}
-
-	if startPhase > 1 {
-		existing, err := loadPhasedState(cwd)
-		if err == nil {
-			state.EpicID = existing.EpicID
-			state.FastPath = existing.FastPath || opts.FastPath
-			state.SwarmFirst = existing.SwarmFirst || opts.SwarmFirst
-			if existing.Verdicts != nil {
-				state.Verdicts = existing.Verdicts
-			}
-			if existing.Attempts != nil {
-				state.Attempts = existing.Attempts
-			}
-			if goal == "" {
-				state.Goal = existing.Goal
-			}
-			if !opts.NoWorktree && existing.WorktreePath != "" {
-				if _, statErr := os.Stat(existing.WorktreePath); statErr == nil {
-					spawnCwd = existing.WorktreePath
-					state.WorktreePath = existing.WorktreePath
-					state.RunID = existing.RunID
-					fmt.Printf("Resuming in existing worktree: %s\n", spawnCwd)
-				} else {
-					return nil, "", fmt.Errorf("worktree %s from previous run no longer exists (was it removed?)", existing.WorktreePath)
-				}
-			}
-		}
-	}
-
-	return state, spawnCwd, nil
-}
-
-// setupRuntimeEnv ensures the RunID is set, creates the state directory,
-// cleans stale summaries on fresh starts, and initializes live-status reporting.
-func setupRuntimeEnv(spawnCwd string, startPhase int, state *phasedState, opts phasedEngineOptions) (logPath, statusPath string, allPhases []PhaseProgress, err error) {
-	if state.RunID == "" {
-		b := make([]byte, 4)
-		_, _ = rand.Read(b)
-		state.RunID = hex.EncodeToString(b)
-	}
-
-	stateDir := filepath.Join(spawnCwd, ".agents", "rpi")
-	if err := os.MkdirAll(stateDir, 0755); err != nil {
-		return "", "", nil, fmt.Errorf("create state directory: %w", err)
-	}
-
-	logPath = filepath.Join(stateDir, "phased-orchestration.log")
-	statusPath = filepath.Join(stateDir, "live-status.md")
-
-	if startPhase == 1 {
-		cleanPhaseSummaries(stateDir)
-	}
-
-	fmt.Printf("\n=== RPI Phased: %s ===\n", state.Goal)
-	fmt.Printf("Starting from phase %d (%s)\n", startPhase, phases[startPhase-1].Name)
-	fmt.Println("Monitor in a second terminal: ao rpi status --watch")
-	if opts.LiveStatus {
-		allPhases = buildAllPhases(phases)
-		fmt.Printf("Live phase status file: %s\n", statusPath)
-		if err := WriteLiveStatus(statusPath, allPhases, startPhase-1); err != nil {
-			VerbosePrintf("Warning: could not initialize live status: %v\n", err)
-		}
-	}
-	logPhaseTransition(logPath, state.RunID, "start", fmt.Sprintf("goal=%q from=%s", state.Goal, opts.From))
-
-	return logPath, statusPath, allPhases, nil
-}
-
-// worktreeCleanup merges and removes a worktree on success, or preserves it
-// for debugging on failure. Returns an error only if merge or removal fails.
-func worktreeCleanup(originalCwd, worktreePath, worktreeRunID, logPath, runID string, cleanupSuccess bool) error {
-	if !cleanupSuccess {
-		fmt.Fprintf(os.Stderr, "Worktree preserved for debugging: %s\n", worktreePath)
-		return nil
-	}
-
-	if mergeErr := mergeWorktree(originalCwd, worktreeRunID); mergeErr != nil {
-		fmt.Fprintf(os.Stderr, "Merge failed: %v\nWorktree preserved at: %s\n", mergeErr, worktreePath)
-		return fmt.Errorf("worktree merge failed: %w", mergeErr)
-	}
-
-	if rmErr := removeWorktree(originalCwd, worktreePath, worktreeRunID); rmErr != nil {
-		fmt.Fprintf(os.Stderr, "Cleanup failed: %v\nWorktree may require manual removal: %s\n", rmErr, worktreePath)
-		logFailureContext(logPath, runID, "cleanup", rmErr)
-		return fmt.Errorf("worktree cleanup failed: %w", rmErr)
-	}
-
-	return nil
-}
-
-// executeSinglePhase runs one phase of the RPI lifecycle: builds prompt,
-// executes via the backend, handles errors/retries, writes artifacts, and saves
-// state. Returns (true, nil) when a gate retry succeeded and the caller should
-// skip to the next iteration.
-func executeSinglePhase(
-	p phase, i, startPhase int,
-	cwd, spawnCwd string,
-	state *phasedState,
-	opts phasedEngineOptions,
-	executor PhaseExecutor,
-	logPath, statusPath string,
-	allPhases []PhaseProgress,
-	logAndFail func(string, error) error,
-) (retry bool, _ error) {
-	prompt, err := buildPromptForPhase(spawnCwd, i, state, nil)
-	if err != nil {
-		return false, logAndFail(p.Name, fmt.Errorf("build prompt for phase %d: %w", i, err))
-	}
-
-	logPhaseTransition(logPath, state.RunID, p.Name, "started")
-	emitRPIStatus(state.RunID, p.Name, "started")
-	if opts.LiveStatus {
-		retryKey := fmt.Sprintf("phase_%d", i)
-		updateLivePhaseStatus(statusPath, allPhases, i, "starting", state.Attempts[retryKey], "")
-	}
-
-	if GetDryRun() {
-		fmt.Printf("[dry-run] Would spawn: claude -p '%s'\n", prompt)
-		if !opts.NoWorktree && i == startPhase {
-			runID := generateRunID()
-			fmt.Printf("[dry-run] Would create worktree: ../%s-rpi-%s/ (branch: rpi/%s)\n",
-				filepath.Base(cwd), runID, runID)
-		}
-		logPhaseTransition(logPath, state.RunID, p.Name, "dry-run")
-		return false, nil
-	}
-
-	fmt.Printf("Spawning: claude -p '%s'\n", prompt)
-	start := time.Now()
-	updateRunHeartbeat(spawnCwd, state.RunID)
-
-	if spawnErr := executor.Execute(prompt, spawnCwd, state.RunID, i); spawnErr != nil {
-		if opts.LiveStatus {
-			retryKey := fmt.Sprintf("phase_%d", i)
-			updateLivePhaseStatus(statusPath, allPhases, i, "failed", state.Attempts[retryKey], spawnErr.Error())
-		}
-		logPhaseTransition(logPath, state.RunID, p.Name, fmt.Sprintf("FAILED: %v", spawnErr))
-		return false, fmt.Errorf("phase %d (%s) failed: %w", i, p.Name, spawnErr)
-	}
-
-	elapsed := time.Since(start).Round(time.Second)
-	fmt.Printf("Phase %d completed in %s\n", i, elapsed)
-	logPhaseTransition(logPath, state.RunID, p.Name, fmt.Sprintf("completed in %s", elapsed))
-	emitRPIStatus(state.RunID, p.Name, "completed")
-	if opts.LiveStatus {
-		retryKey := fmt.Sprintf("phase_%d", i)
-		updateLivePhaseStatus(statusPath, allPhases, i, "completed", state.Attempts[retryKey], "")
-	}
-
-	retryKey := fmt.Sprintf("phase_%d", i)
-	pr := &phaseResult{
-		SchemaVersion:   1,
-		RunID:           state.RunID,
-		Phase:           i,
-		PhaseName:       p.Name,
-		Status:          "completed",
-		Retries:         state.Attempts[retryKey],
-		Verdicts:        state.Verdicts,
-		StartedAt:       start.Format(time.RFC3339),
-		CompletedAt:     time.Now().Format(time.RFC3339),
-		DurationSeconds: elapsed.Seconds(),
-	}
-	if err := writePhaseResult(spawnCwd, pr); err != nil {
-		VerbosePrintf("Warning: could not write phase result: %v\n", err)
-	}
-
-	updateRunHeartbeat(spawnCwd, state.RunID)
-
-	if err := postPhaseProcessing(spawnCwd, state, i, logPath); err != nil {
-		if retryErr, ok := err.(*gateFailError); ok {
-			retried, retryErr2 := handleGateRetry(spawnCwd, state, i, retryErr, logPath, spawnCwd, statusPath, allPhases, executor)
-			if retryErr2 != nil {
-				return false, logAndFail(p.Name, retryErr2)
-			}
-			if !retried {
-				return false, logAndFail(p.Name, fmt.Errorf("phase %d (%s): gate failed after max retries", i, p.Name))
-			}
-			return true, nil
-		}
-		return false, logAndFail(p.Name, err)
-	}
-
-	if handoffDetected(spawnCwd, i) {
-		fmt.Printf("Phase %d: handoff detected — phase reported context degradation\n", i)
-		logPhaseTransition(logPath, state.RunID, p.Name, "HANDOFF detected — context degradation")
-	}
-
-	writePhaseSummary(spawnCwd, state, i)
-	recordRatchetCheckpoint(p.Step)
-
-	if err := savePhasedState(spawnCwd, state); err != nil {
-		VerbosePrintf("Warning: could not save state: %v\n", err)
-	}
-
-	return false, nil
-}
-
 func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error) {
-	cwd, goal, startPhase, err := validatePhasedInput(args, opts)
+	cwd, err := os.Getwd()
 	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	if err := preflightClaudeAvailability(); err != nil {
 		return err
 	}
 
 	originalCwd := cwd
+	goal, startPhase, err := resolveGoalAndStartPhase(opts, args, cwd)
+	if err != nil {
+		return err
+	}
+	state := newPhasedState(opts, startPhase, goal)
 
-	state, spawnCwd, err := initOrResumeState(cwd, goal, startPhase, opts)
+	spawnCwd, err := resumePhasedStateIfNeeded(cwd, opts, startPhase, goal, state)
 	if err != nil {
 		return err
 	}
 
-	// logPath is declared here so it is in scope for the deferred worktree cleanup.
-	var logPath string
-
-	// Create worktree for isolation (unless resuming into existing one, or opted out).
 	cleanupSuccess := false
-	var worktreeRunID string
-	if !opts.NoWorktree && !GetDryRun() && state.WorktreePath == "" {
-		worktreePath, runID, wtErr := createWorktree(cwd)
-		if wtErr != nil {
-			return fmt.Errorf("create worktree: %w", wtErr)
-		}
-		spawnCwd = worktreePath
-		worktreeRunID = runID
-		state.WorktreePath = worktreePath
-		state.RunID = runID
-		fmt.Printf("Worktree created: %s (branch: rpi/%s)\n", worktreePath, runID)
-
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		go func() {
-			if sig, ok := <-sigCh; ok {
-				fmt.Fprintf(os.Stderr, "\nInterrupted (%v). Worktree preserved at: %s\n", sig, worktreePath)
-				os.Exit(1)
-			}
-		}()
-
-		defer func() {
-			signal.Stop(sigCh)
-			close(sigCh)
-			if cleanupErr := worktreeCleanup(originalCwd, worktreePath, worktreeRunID, logPath, state.RunID, cleanupSuccess); cleanupErr != nil && retErr == nil {
-				retErr = cleanupErr
-			}
-		}()
-	}
-
-	logPath, statusPath, allPhases, err := setupRuntimeEnv(spawnCwd, startPhase, state, opts)
+	var logPath string
+	spawnCwd, cleanupWorktree, err := setupWorktreeLifecycle(cwd, originalCwd, opts, state)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if cleanupErr := cleanupWorktree(cleanupSuccess, logPath); cleanupErr != nil && retErr == nil {
+			retErr = cleanupErr
+		}
+	}()
+
+	ensureStateRunID(state)
+
+	_, runLogPath, statusPath, allPhases, err := initializeRunArtifacts(spawnCwd, startPhase, state, opts)
+	if err != nil {
+		return err
+	}
+	logPath = runLogPath
+
+	logPhaseTransition(logPath, state.RunID, "start", fmt.Sprintf("goal=%q from=%s", state.Goal, opts.From))
 
 	// Register with agent mail for observability
 	registerRPIAgent(state.RunID)
@@ -760,41 +492,19 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 
 	// logAndFail logs an error to the orchestration log, emits a failure status
 	// event, records actionable context, and returns the error.
-	logAndFail := func(phaseName string, err error) error {
-		logPhaseTransition(logPath, state.RunID, phaseName, fmt.Sprintf("FATAL: %v", err))
-		emitRPIStatus(state.RunID, phaseName, "failed")
-		logFailureContext(logPath, state.RunID, phaseName, err)
-		return err
-	}
-
 	// Resolve executor backend once for the entire run.
 	// selectExecutorWithLog records the selection and reason to the orchestration log.
 	executor := selectExecutorWithLog(statusPath, allPhases, logPath, state.RunID, opts.LiveStatus, opts)
 	state.Backend = executor.Name()
 
-	// Execute phases sequentially
-	for i := startPhase; i <= len(phases); i++ {
-		p := phases[i-1]
-		fmt.Printf("\n--- Phase %d: %s ---\n", p.Num, p.Name)
-		state.Phase = i
-
-		_, err := executeSinglePhase(p, i, startPhase, cwd, spawnCwd, state, opts, executor, logPath, statusPath, allPhases, logAndFail)
-		if err != nil {
-			return err
-		}
+	if err := runPhaseLoop(cwd, spawnCwd, state, startPhase, opts, statusPath, allPhases, logPath, executor); err != nil {
+		return err
 	}
 
 	// All phases completed — mark worktree for merge+cleanup.
 	cleanupSuccess = true
 
-	// Final report
-	fmt.Printf("\n=== RPI Phased Complete ===\n")
-	fmt.Printf("Goal: %s\n", state.Goal)
-	if state.EpicID != "" {
-		fmt.Printf("Epic: %s\n", state.EpicID)
-	}
-	fmt.Printf("Verdicts: %v\n", state.Verdicts)
-	logPhaseTransition(logPath, state.RunID, "complete", fmt.Sprintf("epic=%s verdicts=%v", state.EpicID, state.Verdicts))
+	writeFinalPhasedReport(state, logPath)
 
 	return nil
 }
@@ -1880,203 +1590,38 @@ const worktreeTimeout = 30 * time.Second
 
 // generateRunID returns a 12-char lowercase hex string from crypto/rand.
 func generateRunID() string {
-	b := make([]byte, 6)
-	if _, err := rand.Read(b); err != nil {
-		// Fallback to time-based if crypto/rand fails (shouldn't happen).
-		return fmt.Sprintf("%012x", time.Now().UnixNano()&0xffffffffffff)
-	}
-	return hex.EncodeToString(b)
+	return cliRPI.GenerateRunID()
 }
 
 // getCurrentBranch returns the current branch name, or error if detached HEAD.
 func getCurrentBranch(repoRoot string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD")
-	cmd.Dir = repoRoot
-	out, err := cmd.Output()
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("git rev-parse timed out after %s", worktreeTimeout)
-		}
-		return "", fmt.Errorf("get current branch: %w", err)
-	}
-	branch := strings.TrimSpace(string(out))
-	if branch == "HEAD" {
-		return "", fmt.Errorf("detached HEAD: worktree requires a named branch")
-	}
-	return branch, nil
+	return cliRPI.GetCurrentBranch(repoRoot, worktreeTimeout)
 }
 
 // getRepoRoot returns the git repository root directory.
 // dir sets the working directory for the git command; when empty, uses the process cwd.
 func getRepoRoot(dir string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	out, err := cmd.Output()
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", fmt.Errorf("git rev-parse timed out after %s", worktreeTimeout)
-		}
-		return "", fmt.Errorf("not a git repository (run ao rpi phased from inside a git repo)")
-	}
-	return strings.TrimSpace(string(out)), nil
+	return cliRPI.GetRepoRoot(dir, worktreeTimeout)
 }
 
 // createWorktree creates a sibling git worktree for isolated RPI execution.
 // Path: ../<repo-basename>-rpi-<runID>/
 // Branch: rpi/<runID>
 func createWorktree(cwd string) (worktreePath, runID string, err error) {
-	repoRoot, err := getRepoRoot(cwd)
-	if err != nil {
-		return "", "", err
-	}
-
-	currentBranch, err := getCurrentBranch(repoRoot)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Retry up to 3 times in case of branch collision (astronomically unlikely with crypto/rand).
-	for attempt := 0; attempt < 3; attempt++ {
-		runID = generateRunID()
-		repoBasename := filepath.Base(repoRoot)
-		worktreePath = filepath.Join(filepath.Dir(repoRoot), repoBasename+"-rpi-"+runID)
-		branchName := "rpi/" + runID
-
-		ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-		cmd := exec.CommandContext(ctx, "git", "worktree", "add", "-b", branchName, worktreePath, currentBranch)
-		cmd.Dir = repoRoot
-		output, cmdErr := cmd.CombinedOutput()
-		cancel()
-
-		if cmdErr == nil {
-			// Create .agents/rpi/ inside worktree for state files.
-			if mkErr := os.MkdirAll(filepath.Join(worktreePath, ".agents", "rpi"), 0755); mkErr != nil {
-				// Non-fatal: phase session will create it if needed.
-				VerbosePrintf("Warning: could not create .agents/rpi/ in worktree: %v\n", mkErr)
-			}
-			return worktreePath, runID, nil
-		}
-
-		// Check if branch already exists (collision) — retry with new ID.
-		if strings.Contains(string(output), "already exists") {
-			VerbosePrintf("Worktree branch collision on %s, retrying (%d/3)\n", branchName, attempt+1)
-			continue
-		}
-
-		if ctx.Err() == context.DeadlineExceeded {
-			return "", "", fmt.Errorf("git worktree add timed out after %s", worktreeTimeout)
-		}
-		return "", "", fmt.Errorf("git worktree add failed: %w (output: %s)", cmdErr, string(output))
-	}
-	return "", "", fmt.Errorf("failed to create unique worktree branch after 3 attempts")
+	return cliRPI.CreateWorktree(cwd, worktreeTimeout, VerbosePrintf)
 }
 
 // mergeWorktree merges the RPI worktree branch back into the original branch.
 // Retries the pre-merge dirty check with backoff to handle the race where
 // another parallel run is mid-merge (repo momentarily dirty).
 func mergeWorktree(repoRoot, runID string) error {
-	// Retry dirty check up to 5 times with 2s backoff.
-	// Another parallel run's merge takes <1s, so 10s total wait is generous.
-	var dirtyErr error
-	for attempt := 0; attempt < 5; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-		checkCmd := exec.CommandContext(ctx, "git", "diff-index", "--quiet", "HEAD")
-		checkCmd.Dir = repoRoot
-		dirtyErr = checkCmd.Run()
-		cancel()
-
-		if dirtyErr == nil {
-			break // Repo is clean, proceed to merge.
-		}
-		if attempt < 4 {
-			VerbosePrintf("Repo dirty (another merge in progress?), retrying in 2s (%d/5)\n", attempt+1)
-			time.Sleep(2 * time.Second)
-		}
-	}
-	if dirtyErr != nil {
-		return fmt.Errorf("original repo has uncommitted changes after 5 retries: commit or stash before merge")
-	}
-
-	// Merge the worktree branch.
-	ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-	defer cancel()
-
-	branchName := "rpi/" + runID
-	mergeMsg := fmt.Sprintf("Merge %s (ao rpi phased worktree)", branchName)
-	mergeCmd := exec.CommandContext(ctx, "git", "merge", "--no-ff", "-m", mergeMsg, branchName)
-	mergeCmd.Dir = repoRoot
-	if err := mergeCmd.Run(); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return fmt.Errorf("git merge timed out after %s", worktreeTimeout)
-		}
-		// Detect conflict files.
-		conflictCmd := exec.Command("git", "diff", "--name-only", "--diff-filter=U")
-		conflictCmd.Dir = repoRoot
-		conflictOut, _ := conflictCmd.Output()
-		// Abort the merge to leave repo clean.
-		abortCmd := exec.Command("git", "merge", "--abort")
-		abortCmd.Dir = repoRoot
-		_ = abortCmd.Run() //nolint:errcheck
-		files := strings.TrimSpace(string(conflictOut))
-		if files != "" {
-			return fmt.Errorf("merge conflict in %s.\nConflicting files:\n%s\nResolve manually: cd %s && git merge %s",
-				branchName, files, repoRoot, branchName)
-		}
-		return fmt.Errorf("git merge failed: %w", err)
-	}
-	return nil
+	return cliRPI.MergeWorktree(repoRoot, runID, worktreeTimeout, VerbosePrintf)
 }
 
 // removeWorktree removes a worktree directory and its branch.
 // Modeled on Olympus internal/git/worktree.go Remove().
 func removeWorktree(repoRoot, worktreePath, runID string) error {
-	// Structural path validation: worktree must be a sibling of repoRoot
-	// with basename matching <repoBasename>-rpi-<runID>.
-	// Use EvalSymlinks to resolve macOS /var → /private/var and similar.
-	absPath, err := filepath.EvalSymlinks(worktreePath)
-	if err != nil {
-		// Path may already be removed; try Abs as fallback.
-		absPath, err = filepath.Abs(worktreePath)
-		if err != nil {
-			return fmt.Errorf("invalid worktree path: %w", err)
-		}
-	}
-	resolvedRoot, err := filepath.EvalSymlinks(repoRoot)
-	if err != nil {
-		resolvedRoot = repoRoot
-	}
-	expectedBasename := filepath.Base(resolvedRoot) + "-rpi-" + runID
-	expectedPath := filepath.Join(filepath.Dir(resolvedRoot), expectedBasename)
-	if absPath != expectedPath {
-		return fmt.Errorf("refusing to remove %s: expected %s (path validation failed)", absPath, expectedPath)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), worktreeTimeout)
-	defer cancel()
-
-	// Remove worktree via git.
-	cmd := exec.CommandContext(ctx, "git", "worktree", "remove", absPath, "--force")
-	cmd.Dir = repoRoot
-	if _, err := cmd.CombinedOutput(); err != nil {
-		// Fallback: direct removal if git fails.
-		_ = os.RemoveAll(absPath) //nolint:errcheck
-	}
-
-	// Delete branch (only rpi/* prefix for safety).
-	branchName := "rpi/" + runID
-	branchCmd := exec.CommandContext(ctx, "git", "branch", "-D", branchName)
-	branchCmd.Dir = repoRoot
-	_ = branchCmd.Run() //nolint:errcheck — branch may not exist
-
-	return nil
+	return cliRPI.RemoveWorktree(repoRoot, worktreePath, runID, worktreeTimeout)
 }
 
 // --- Phase result artifacts ---

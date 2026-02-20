@@ -118,65 +118,81 @@ func init() {
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQueue, "queue", false, "Queue for learning extraction at next session start")
 }
 
-func runForgeTranscript(cmd *cobra.Command, args []string) error {
-	w := cmd.OutOrStdout()
-
-	// Handle --last-session flag
-	var files []string
+func resolveTranscriptFiles(args []string, quiet bool) ([]string, error) {
 	if forgeLastSession {
 		lastFile, err := findLastSession()
 		if err != nil {
-			if forgeQuiet {
-				return nil // Silent fail for hooks
+			if quiet {
+				return nil, nil // Silent fail for hooks
 			}
-			return fmt.Errorf("find last session: %w", err)
+			return nil, fmt.Errorf("find last session: %w", err)
 		}
-		files = []string{lastFile}
-	} else {
-		// Expand globs and collect files
-		for _, pattern := range args {
-			matches, err := filepath.Glob(pattern)
-			if err != nil {
-				return fmt.Errorf("invalid pattern %q: %w", pattern, err)
+		return []string{lastFile}, nil
+	}
+
+	return collectFilesFromPatterns(args, nil)
+}
+
+func resolveMarkdownFiles(args []string) ([]string, error) {
+	return collectFilesFromPatterns(args, func(path string) bool {
+		return filepath.Ext(path) == ".md"
+	})
+}
+
+func collectFilesFromPatterns(patterns []string, matchFilter func(string) bool) ([]string, error) {
+	var files []string
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid pattern %q: %w", pattern, err)
+		}
+
+		if len(matches) == 0 {
+			// Treat as literal path.
+			if _, err := os.Stat(pattern); err == nil {
+				files = append(files, pattern)
 			}
-			if len(matches) == 0 {
-				// Treat as literal path
-				if _, err := os.Stat(pattern); err == nil {
-					files = append(files, pattern)
-				}
-			} else {
-				files = append(files, matches...)
+			continue
+		}
+
+		for _, match := range matches {
+			if matchFilter == nil || matchFilter(match) {
+				files = append(files, match)
 			}
 		}
 	}
 
-	if GetDryRun() && !forgeQuiet {
-		fmt.Fprintf(w, "[dry-run] Would process %d file(s)\n", len(files))
-		for _, path := range files {
-			fmt.Fprintf(w, "  - %s\n", path)
-		}
-		return nil
+	return files, nil
+}
+
+func handleForgeDryRun(w io.Writer, quiet bool, files []string, noun string) bool {
+	if !GetDryRun() || quiet {
+		return false
 	}
 
-	if len(files) == 0 {
-		if forgeQuiet {
-			return nil // Silent fail for hooks
-		}
-		return fmt.Errorf("no files found matching patterns")
+	fmt.Fprintf(w, "[dry-run] Would process %d %s\n", len(files), noun)
+	for _, path := range files {
+		fmt.Fprintf(w, "  - %s\n", path)
 	}
 
-	if !forgeQuiet {
-		VerbosePrintf("Processing %d transcript file(s)...\n", len(files))
-	}
+	return true
+}
 
-	// Initialize storage with formatters
-	cwd, err := os.Getwd()
+func noFilesError(quiet bool, msg string) error {
+	if quiet {
+		return nil // Silent fail for hooks
+	}
+	return fmt.Errorf(msg)
+}
+
+func initForgeStorage() (cwd, baseDir string, fs *storage.FileStorage, err error) {
+	cwd, err = os.Getwd()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
+		return "", "", nil, fmt.Errorf("get working directory: %w", err)
 	}
 
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
-	fs := storage.NewFileStorage(
+	baseDir = filepath.Join(cwd, storage.DefaultBaseDir)
+	fs = storage.NewFileStorage(
 		storage.WithBaseDir(baseDir),
 		storage.WithFormatters(
 			formatter.NewMarkdownFormatter(),
@@ -184,9 +200,87 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 		),
 	)
 
-	// Ensure directories exist
 	if err := fs.Init(); err != nil {
-		return fmt.Errorf("initialize storage: %w", err)
+		return "", "", nil, fmt.Errorf("initialize storage: %w", err)
+	}
+
+	return cwd, baseDir, fs, nil
+}
+
+func forgeWarnf(quiet bool, format string, args ...any) {
+	if quiet {
+		return
+	}
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+type forgeTotals struct {
+	sessions  int
+	decisions int
+	knowledge int
+}
+
+func (t *forgeTotals) addSession(session *storage.Session) {
+	t.sessions++
+	t.decisions += len(session.Decisions)
+	t.knowledge += len(session.Knowledge)
+}
+
+func writeSessionIndex(fs *storage.FileStorage, session *storage.Session, sessionPath string) error {
+	indexEntry := &storage.IndexEntry{
+		SessionID:   session.ID,
+		Date:        session.Date,
+		SessionPath: sessionPath,
+		Summary:     session.Summary,
+	}
+	return fs.WriteIndex(indexEntry)
+}
+
+func writeSessionProvenance(fs *storage.FileStorage, sessionID, sessionPath, sourcePath, sourceType string, includeSessionID bool) error {
+	provRecord := &storage.ProvenanceRecord{
+		ID:           fmt.Sprintf("prov-%s", sessionID[:7]),
+		ArtifactPath: sessionPath,
+		ArtifactType: "session",
+		SourcePath:   sourcePath,
+		SourceType:   sourceType,
+		CreatedAt:    time.Now(),
+	}
+	if includeSessionID {
+		provRecord.SessionID = sessionID
+	}
+	return fs.WriteProvenance(provRecord)
+}
+
+func printForgeSummary(w io.Writer, totals forgeTotals, baseDir, noun string) {
+	fmt.Fprintf(w, "\n✓ Processed %d %s\n", totals.sessions, noun)
+	fmt.Fprintf(w, "  Decisions: %d\n", totals.decisions)
+	fmt.Fprintf(w, "  Knowledge: %d\n", totals.knowledge)
+	fmt.Fprintf(w, "  Output: %s\n", baseDir)
+}
+
+func runForgeTranscript(cmd *cobra.Command, args []string) error {
+	w := cmd.OutOrStdout()
+
+	files, err := resolveTranscriptFiles(args, forgeQuiet)
+	if err != nil {
+		return err
+	}
+
+	if handleForgeDryRun(w, forgeQuiet, files, "file(s)") {
+		return nil
+	}
+
+	if len(files) == 0 {
+		return noFilesError(forgeQuiet, "no files found matching patterns")
+	}
+
+	if !forgeQuiet {
+		VerbosePrintf("Processing %d transcript file(s)...\n", len(files))
+	}
+
+	cwd, baseDir, fs, err := initForgeStorage()
+	if err != nil {
+		return err
 	}
 
 	// Create parser with no truncation for full content extraction
@@ -197,63 +291,34 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 	extractor := parser.NewExtractor()
 
 	// Process each file
-	totalSessions := 0
-	totalDecisions := 0
-	totalKnowledge := 0
+	totals := forgeTotals{}
 
 	for _, filePath := range files {
 		session, err := processTranscript(filePath, p, extractor, forgeQuiet, w)
 		if err != nil {
-			if !forgeQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to process %s: %v\n", filePath, err)
-			}
+			forgeWarnf(forgeQuiet, "Warning: failed to process %s: %v\n", filePath, err)
 			continue
 		}
 
 		// Write session
 		sessionPath, err := fs.WriteSession(session)
 		if err != nil {
-			if !forgeQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to write session for %s: %v\n", filePath, err)
-			}
+			forgeWarnf(forgeQuiet, "Warning: failed to write session for %s: %v\n", filePath, err)
 			continue
 		}
 
-		// Write to index
-		indexEntry := &storage.IndexEntry{
-			SessionID:   session.ID,
-			Date:        session.Date,
-			SessionPath: sessionPath,
-			Summary:     session.Summary,
-		}
-		if err := fs.WriteIndex(indexEntry); err != nil {
-			if !forgeQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to index session: %v\n", err)
-			}
+		if err := writeSessionIndex(fs, session, sessionPath); err != nil {
+			forgeWarnf(forgeQuiet, "Warning: failed to index session: %v\n", err)
 		}
 
-		// Write provenance
-		provRecord := &storage.ProvenanceRecord{
-			ID:           fmt.Sprintf("prov-%s", session.ID[:7]),
-			ArtifactPath: sessionPath,
-			ArtifactType: "session",
-			SourcePath:   filePath,
-			SourceType:   "transcript",
-			SessionID:    session.ID,
-			CreatedAt:    time.Now(),
-		}
-		if err := fs.WriteProvenance(provRecord); err != nil {
-			if !forgeQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to write provenance: %v\n", err)
-			}
+		if err := writeSessionProvenance(fs, session.ID, sessionPath, filePath, "transcript", true); err != nil {
+			forgeWarnf(forgeQuiet, "Warning: failed to write provenance: %v\n", err)
 		}
 
 		// Update search index with the new session file
 		updateSearchIndexForFile(baseDir, sessionPath, forgeQuiet)
 
-		totalSessions++
-		totalDecisions += len(session.Decisions)
-		totalKnowledge += len(session.Knowledge)
+		totals.addSession(session)
 
 		if !forgeQuiet {
 			VerbosePrintf("  ✓ %s → %s\n", filepath.Base(filePath), filepath.Base(sessionPath))
@@ -262,18 +327,13 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 		// Queue for extraction if requested
 		if forgeQueue {
 			if err := queueForExtraction(session, sessionPath, filePath, cwd); err != nil {
-				if !forgeQuiet {
-					fmt.Fprintf(os.Stderr, "Warning: failed to queue for extraction: %v\n", err)
-				}
+				forgeWarnf(forgeQuiet, "Warning: failed to queue for extraction: %v\n", err)
 			}
 		}
 	}
 
 	if !forgeQuiet {
-		fmt.Fprintf(w, "\n✓ Processed %d session(s)\n", totalSessions)
-		fmt.Fprintf(w, "  Decisions: %d\n", totalDecisions)
-		fmt.Fprintf(w, "  Knowledge: %d\n", totalKnowledge)
-		fmt.Fprintf(w, "  Output: %s\n", baseDir)
+		printForgeSummary(w, totals, baseDir, "session(s)")
 	}
 
 	return nil
@@ -600,118 +660,57 @@ func queueForExtraction(session *storage.Session, sessionPath, transcriptPath, c
 func runForgeMarkdown(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 
-	// Expand globs and collect files
-	var files []string
-	for _, pattern := range args {
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			return fmt.Errorf("invalid pattern %q: %w", pattern, err)
-		}
-		if len(matches) == 0 {
-			if _, err := os.Stat(pattern); err == nil {
-				files = append(files, pattern)
-			}
-		} else {
-			for _, m := range matches {
-				if filepath.Ext(m) == ".md" {
-					files = append(files, m)
-				}
-			}
-		}
+	files, err := resolveMarkdownFiles(args)
+	if err != nil {
+		return err
 	}
 
-	if GetDryRun() && !forgeMdQuiet {
-		fmt.Fprintf(w, "[dry-run] Would process %d markdown file(s)\n", len(files))
-		for _, path := range files {
-			fmt.Fprintf(w, "  - %s\n", path)
-		}
+	if handleForgeDryRun(w, forgeMdQuiet, files, "markdown file(s)") {
 		return nil
 	}
 
 	if len(files) == 0 {
-		if forgeMdQuiet {
-			return nil
-		}
-		return fmt.Errorf("no markdown files found matching patterns")
+		return noFilesError(forgeMdQuiet, "no markdown files found matching patterns")
 	}
 
 	if !forgeMdQuiet {
 		VerbosePrintf("Processing %d markdown file(s)...\n", len(files))
 	}
 
-	cwd, err := os.Getwd()
+	cwd, baseDir, fs, err := initForgeStorage()
 	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
-		),
-	)
-
-	if err := fs.Init(); err != nil {
-		return fmt.Errorf("initialize storage: %w", err)
+		return err
 	}
 
 	extractor := parser.NewExtractor()
 
-	totalSessions := 0
-	totalDecisions := 0
-	totalKnowledge := 0
+	totals := forgeTotals{}
 
 	for _, filePath := range files {
 		session, err := processMarkdown(filePath, extractor, forgeMdQuiet)
 		if err != nil {
-			if !forgeMdQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to process %s: %v\n", filePath, err)
-			}
+			forgeWarnf(forgeMdQuiet, "Warning: failed to process %s: %v\n", filePath, err)
 			continue
 		}
 
 		sessionPath, err := fs.WriteSession(session)
 		if err != nil {
-			if !forgeMdQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to write session for %s: %v\n", filePath, err)
-			}
+			forgeWarnf(forgeMdQuiet, "Warning: failed to write session for %s: %v\n", filePath, err)
 			continue
 		}
 
-		indexEntry := &storage.IndexEntry{
-			SessionID:   session.ID,
-			Date:        session.Date,
-			SessionPath: sessionPath,
-			Summary:     session.Summary,
-		}
-		if err := fs.WriteIndex(indexEntry); err != nil {
-			if !forgeMdQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to index session: %v\n", err)
-			}
+		if err := writeSessionIndex(fs, session, sessionPath); err != nil {
+			forgeWarnf(forgeMdQuiet, "Warning: failed to index session: %v\n", err)
 		}
 
-		provRecord := &storage.ProvenanceRecord{
-			ID:           fmt.Sprintf("prov-%s", session.ID[:7]),
-			ArtifactPath: sessionPath,
-			ArtifactType: "session",
-			SourcePath:   filePath,
-			SourceType:   "markdown",
-			CreatedAt:    time.Now(),
-		}
-		if err := fs.WriteProvenance(provRecord); err != nil {
-			if !forgeMdQuiet {
-				fmt.Fprintf(os.Stderr, "Warning: failed to write provenance: %v\n", err)
-			}
+		if err := writeSessionProvenance(fs, session.ID, sessionPath, filePath, "markdown", false); err != nil {
+			forgeWarnf(forgeMdQuiet, "Warning: failed to write provenance: %v\n", err)
 		}
 
 		// Update search index with the new session file
 		updateSearchIndexForFile(baseDir, sessionPath, forgeMdQuiet)
 
-		totalSessions++
-		totalDecisions += len(session.Decisions)
-		totalKnowledge += len(session.Knowledge)
+		totals.addSession(session)
 
 		if !forgeMdQuiet {
 			VerbosePrintf("  ✓ %s → %s\n", filepath.Base(filePath), filepath.Base(sessionPath))
@@ -719,18 +718,13 @@ func runForgeMarkdown(cmd *cobra.Command, args []string) error {
 
 		if forgeMdQueue {
 			if err := queueForExtraction(session, sessionPath, filePath, cwd); err != nil {
-				if !forgeMdQuiet {
-					fmt.Fprintf(os.Stderr, "Warning: failed to queue for extraction: %v\n", err)
-				}
+				forgeWarnf(forgeMdQuiet, "Warning: failed to queue for extraction: %v\n", err)
 			}
 		}
 	}
 
 	if !forgeMdQuiet {
-		fmt.Fprintf(w, "\n✓ Processed %d markdown file(s)\n", totalSessions)
-		fmt.Fprintf(w, "  Decisions: %d\n", totalDecisions)
-		fmt.Fprintf(w, "  Knowledge: %d\n", totalKnowledge)
-		fmt.Fprintf(w, "  Output: %s\n", baseDir)
+		printForgeSummary(w, totals, baseDir, "markdown file(s)")
 	}
 
 	return nil

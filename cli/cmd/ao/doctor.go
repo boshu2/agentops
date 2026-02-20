@@ -126,7 +126,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// Exit non-zero if any required checks failed
 	for _, c := range output.Checks {
 		if c.Required && c.Status == "fail" {
-			os.Exit(1)
+			return fmt.Errorf("doctor failed: one or more required checks did not pass")
 		}
 	}
 
