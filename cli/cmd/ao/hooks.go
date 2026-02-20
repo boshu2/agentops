@@ -815,7 +815,7 @@ func hookGroupContainsAo(hooksMap map[string]interface{}, event string) bool {
 		if hooks, ok := group["hooks"].([]interface{}); ok {
 			for _, h := range hooks {
 				if hook, ok := h.(map[string]interface{}); ok {
-					if cmd, ok := hook["command"].(string); ok && strings.Contains(cmd, "ao ") {
+					if cmd, ok := hook["command"].(string); ok && isAoManagedHookCommand(cmd) {
 						return true
 					}
 				}
@@ -823,7 +823,7 @@ func hookGroupContainsAo(hooksMap map[string]interface{}, event string) bool {
 		}
 		// Legacy format: check top-level command array
 		if cmd, ok := group["command"].([]interface{}); ok && len(cmd) > 1 {
-			if cmdStr, ok := cmd[1].(string); ok && strings.Contains(cmdStr, "ao ") {
+			if cmdStr, ok := cmd[1].(string); ok && isAoManagedHookCommand(cmdStr) {
 				return true
 			}
 		}
@@ -848,7 +848,7 @@ func filterNonAoHookGroups(hooksMap map[string]interface{}, event string) []map[
 		if hooks, ok := group["hooks"].([]interface{}); ok {
 			for _, h := range hooks {
 				if hook, ok := h.(map[string]interface{}); ok {
-					if cmd, ok := hook["command"].(string); ok && strings.Contains(cmd, "ao ") {
+					if cmd, ok := hook["command"].(string); ok && isAoManagedHookCommand(cmd) {
 						isAo = true
 						break
 					}
@@ -857,7 +857,7 @@ func filterNonAoHookGroups(hooksMap map[string]interface{}, event string) []map[
 		}
 		// Check legacy format
 		if cmd, ok := group["command"].([]interface{}); ok && len(cmd) > 1 {
-			if cmdStr, ok := cmd[1].(string); ok && strings.Contains(cmdStr, "ao ") {
+			if cmdStr, ok := cmd[1].(string); ok && isAoManagedHookCommand(cmdStr) {
 				isAo = true
 			}
 		}
@@ -866,6 +866,16 @@ func filterNonAoHookGroups(hooksMap map[string]interface{}, event string) []map[
 		}
 	}
 	return result
+}
+
+func isAoManagedHookCommand(cmd string) bool {
+	if strings.Contains(cmd, "ao ") {
+		return true
+	}
+
+	// Installed scripts live under ~/.agentops/hooks/*.sh and should be treated as ao-managed.
+	normalized := filepath.ToSlash(cmd)
+	return strings.Contains(normalized, "/.agentops/hooks/")
 }
 
 // hookGroupToMap converts a HookGroup to a map for JSON serialization.
