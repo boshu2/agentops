@@ -279,13 +279,72 @@ if [ "${AGENTOPS_AUTOCHAIN:-}" != "0" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
-# Check for auto-handoff from precompact
+# Check for auto-handoff recovery (marker-based one-shot, with legacy fallback)
 handoff_section=""
-HANDOFF_FILE=$(find "$ROOT/.agents/handoff/" -maxdepth 1 -name 'auto-*.md' -print 2>/dev/null | sort -r | head -1)
-if [[ -n "$HANDOFF_FILE" && -f "$HANDOFF_FILE" ]]; then
-    handoff_content=$(cat "$HANDOFF_FILE" 2>/dev/null || echo "")
-    if [[ -n "$handoff_content" ]]; then
-        handoff_section="
+HANDOFF_ROOT="$ROOT/.agents/handoff"
+HANDOFF_PENDING_DIR="$HANDOFF_ROOT/pending"
+HANDOFF_CONSUMED_DIR="$HANDOFF_ROOT/consumed"
+HANDOFF_FILE=""
+
+# 1) Marker-based one-shot consumption (preferred)
+if [ -d "$HANDOFF_PENDING_DIR" ]; then
+    HANDOFF_MARKER=$(find "$HANDOFF_PENDING_DIR" -maxdepth 1 -name '*.json' -print 2>/dev/null | sort -r | head -1)
+    if [[ -n "$HANDOFF_MARKER" && -f "$HANDOFF_MARKER" ]]; then
+        HANDOFF_PATH=""
+        if command -v jq >/dev/null 2>&1; then
+            rel_path=$(jq -r '.handoff_file // ""' "$HANDOFF_MARKER" 2>/dev/null)
+            if [[ -n "$rel_path" && "$rel_path" != "null" ]]; then
+                case "$rel_path" in
+                    .agents/*) HANDOFF_PATH="$ROOT/$rel_path" ;;
+                    /*)        HANDOFF_PATH="$rel_path" ;;
+                    *)         HANDOFF_PATH="$ROOT/$rel_path" ;;
+                esac
+            fi
+        else
+            rel_path=$(grep -o '"handoff_file"[[:space:]]*:[[:space:]]*"[^"]*"' "$HANDOFF_MARKER" | head -1 | sed 's/.*"handoff_file"[[:space:]]*:[[:space:]]*"//;s/"$//')
+            if [[ -n "$rel_path" ]]; then
+                case "$rel_path" in
+                    .agents/*) HANDOFF_PATH="$ROOT/$rel_path" ;;
+                    /*)        HANDOFF_PATH="$rel_path" ;;
+                    *)         HANDOFF_PATH="$ROOT/$rel_path" ;;
+                esac
+            fi
+        fi
+
+        if [[ -n "$HANDOFF_PATH" && -f "$HANDOFF_PATH" ]]; then
+            handoff_content=$(cat "$HANDOFF_PATH" 2>/dev/null || echo "")
+            if [[ -n "$handoff_content" ]]; then
+                handoff_section="
+
+---
+## 🔄 Recovery: Auto-Handoff
+
+${handoff_content}
+---
+"
+
+                mkdir -p "$HANDOFF_CONSUMED_DIR" 2>/dev/null || log_hook_fail "handoff consumed dir create failed"
+                consumed_marker="$HANDOFF_CONSUMED_DIR/$(basename "$HANDOFF_MARKER")"
+                if command -v jq >/dev/null 2>&1; then
+                    consumed_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                    jq --arg ts "$consumed_ts" '.consumed = true | .consumed_at = $ts' "$HANDOFF_MARKER" > "$consumed_marker" 2>/dev/null \
+                        || cp "$HANDOFF_MARKER" "$consumed_marker" 2>/dev/null
+                    rm -f "$HANDOFF_MARKER" 2>/dev/null
+                else
+                    mv "$HANDOFF_MARKER" "$consumed_marker" 2>/dev/null || true
+                fi
+            fi
+        fi
+    fi
+fi
+
+# 2) Legacy fallback: consume latest auto-*.md from precompact
+if [[ -z "$handoff_section" ]]; then
+    HANDOFF_FILE=$(find "$HANDOFF_ROOT/" -maxdepth 1 -name 'auto-*.md' -print 2>/dev/null | sort -r | head -1)
+    if [[ -n "$HANDOFF_FILE" && -f "$HANDOFF_FILE" ]]; then
+        handoff_content=$(cat "$HANDOFF_FILE" 2>/dev/null || echo "")
+        if [[ -n "$handoff_content" ]]; then
+            handoff_section="
 
 ---
 ## 🔄 Recovery: Auto-Handoff from Pre-Compaction
@@ -293,8 +352,9 @@ if [[ -n "$HANDOFF_FILE" && -f "$HANDOFF_FILE" ]]; then
 ${handoff_content}
 ---
 "
-        # Delete handoff file after reading (consumed once)
-        rm -f "$HANDOFF_FILE" 2>/dev/null
+            # Legacy behavior: delete after one read
+            rm -f "$HANDOFF_FILE" 2>/dev/null
+        fi
     fi
 fi
 

@@ -156,6 +156,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/context-guard.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/prompt-nudge.sh",
             "timeout": 2
           }

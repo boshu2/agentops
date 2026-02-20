@@ -39,6 +39,7 @@ HOOK_FILES=(
   "hooks/git-worker-guard.sh"
   "hooks/pre-mortem-gate.sh"
   "hooks/push-gate.sh"
+  "hooks/context-guard.sh"
   "hooks/prompt-nudge.sh"
   "hooks/ratchet-advance.sh"
   "hooks/standards-injector.sh"
@@ -111,6 +112,12 @@ if search_q "AGENTOPS_AUTOCHAIN" hooks/ratchet-advance.sh; then
     pass "ratchet-advance has hook-specific kill switch"
 else
     fail "ratchet-advance missing AGENTOPS_AUTOCHAIN"
+fi
+
+if search_q "AGENTOPS_CONTEXT_GUARD_DISABLED" hooks/context-guard.sh; then
+    pass "context-guard has hook-specific kill switch"
+else
+    fail "context-guard missing AGENTOPS_CONTEXT_GUARD_DISABLED"
 fi
 
 # 3) Path rooting checks
