@@ -95,6 +95,30 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
 
 For Codex/Cursor/OpenCode, use the `npx skills@latest add boshu2/agentops --all -g` install path instead of Claude plugin commands.
 
+### `npx skills` update issues (Codex/Cursor/OpenCode)
+
+**Symptoms:**
+
+- Running `npx update` installs an unrelated npm package and does not update skills.
+- `npx skills@latest update` reports failed skills without actionable detail.
+
+**Fixes:**
+
+1. Use the correct updater command:
+   ```bash
+   npx skills@latest update
+   ```
+2. If specific skills still fail, reinstall each failed skill directly:
+   ```bash
+   npx skills@latest add boshu2/agentops -g -a codex -s <skill-name> -y
+   ```
+3. Re-run update to verify a clean state:
+   ```bash
+   npx skills@latest update
+   ```
+
+If reinstalling one-by-one works but bulk update previously failed, the local skills lock state was stale; per-skill reinstall refreshes it.
+
 ---
 
 ## Push blocked by vibe gate
