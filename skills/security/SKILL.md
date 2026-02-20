@@ -86,3 +86,6 @@ Actions:
   - `.github/workflows/validate.yml`
   - `.github/workflows/nightly.yml`
   - `.github/workflows/release.yml`
+- For binary/internal black-box assurance (static + dynamic + baseline + policy), use:
+  - `skills/security-suite/SKILL.md`
+  - `scripts/security-suite.sh`
