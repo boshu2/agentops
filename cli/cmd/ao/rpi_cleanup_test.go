@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -220,5 +221,107 @@ func TestCleanupSkipsCompletedRuns(t *testing.T) {
 		if sr.runID == "done-run" {
 			t.Fatal("completed run should not be detected as stale")
 		}
+	}
+}
+
+func TestRemoveOrphanedWorktree_PathValidation(t *testing.T) {
+	// Create a fake repo root structure: /tmp/xxx/repo/
+	parentDir := t.TempDir()
+	repoRoot := filepath.Join(parentDir, "myrepo")
+	if err := os.MkdirAll(repoRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name         string
+		worktreePath string
+		wantErr      string
+	}{
+		{
+			name:         "sibling directory is allowed",
+			worktreePath: filepath.Join(parentDir, "myrepo-rpi-abc123"),
+			wantErr:      "", // no path validation error (will fail on git worktree remove, but path check passes)
+		},
+		{
+			name:         "deeply nested outside path is rejected",
+			worktreePath: "/tmp/evil/path",
+			wantErr:      "not a sibling",
+		},
+		{
+			name:         "root path is rejected",
+			worktreePath: "/",
+			wantErr:      "not a sibling",
+		},
+		{
+			name:         "repo root itself is rejected",
+			worktreePath: repoRoot,
+			wantErr:      "repo root",
+		},
+		{
+			name:         "child of repo is rejected (not a sibling)",
+			worktreePath: filepath.Join(repoRoot, "subdir"),
+			wantErr:      "not a sibling",
+		},
+		{
+			name:         "cousin directory is rejected",
+			worktreePath: filepath.Join(parentDir, "other", "nested"),
+			wantErr:      "not a sibling",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create the worktree directory so os.Stat passes in the caller.
+			if tt.worktreePath != "/" {
+				_ = os.MkdirAll(tt.worktreePath, 0755)
+			}
+
+			err := removeOrphanedWorktree(repoRoot, tt.worktreePath, "test-run")
+			if tt.wantErr == "" {
+				// We expect path validation to pass but git worktree remove will fail.
+				// That's fine — we're testing the path guard, not git.
+				if err != nil && strings.Contains(err.Error(), "not a sibling") {
+					t.Errorf("expected path validation to pass, got: %v", err)
+				}
+				if err != nil && strings.Contains(err.Error(), "repo root") {
+					t.Errorf("expected path validation to pass, got: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("expected error containing %q, got: %v", tt.wantErr, err)
+				}
+			}
+		})
+	}
+}
+
+func TestRemoveOrphanedWorktree_RepoRootProtection(t *testing.T) {
+	// Ensure we never delete the repo root even with a matching parent.
+	parentDir := t.TempDir()
+	repoRoot := filepath.Join(parentDir, "repo")
+	if err := os.MkdirAll(repoRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a sentinel file inside repo root.
+	sentinel := filepath.Join(repoRoot, "DO_NOT_DELETE")
+	if err := os.WriteFile(sentinel, []byte("important"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := removeOrphanedWorktree(repoRoot, repoRoot, "test-run")
+	if err == nil {
+		t.Fatal("expected error when worktree path equals repo root")
+	}
+	if !strings.Contains(err.Error(), "repo root") {
+		t.Errorf("expected 'repo root' error, got: %v", err)
+	}
+
+	// Verify sentinel file still exists.
+	if _, err := os.Stat(sentinel); err != nil {
+		t.Fatalf("sentinel file was deleted — repo root was removed!")
 	}
 }

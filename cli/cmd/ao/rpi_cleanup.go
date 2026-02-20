@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -233,12 +232,18 @@ func markRunStale(sr staleRunEntry) error {
 
 // removeOrphanedWorktree removes a worktree directory and its branch.
 func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
-	// Safety: validate that worktreePath is under the repo's parent directory
-	// to prevent accidental deletion of unrelated paths from corrupted state files.
+	// Safety: validate that worktreePath is a sibling of the repo root (same parent dir).
+	// Worktrees are created as ../repo-rpi-<id>/ — siblings of the repo, not children.
+	// This prevents corrupted state files from directing os.RemoveAll at unrelated paths.
 	repoParent := filepath.Dir(filepath.Clean(repoRoot))
+	wtParent := filepath.Dir(filepath.Clean(worktreePath))
+	if wtParent != repoParent {
+		return fmt.Errorf("worktree path %q is not a sibling of repo %q; refusing removal", worktreePath, repoRoot)
+	}
+	// Additional safety: never remove the repo root itself.
 	cleanWT := filepath.Clean(worktreePath)
-	if !strings.HasPrefix(cleanWT, repoParent+string(filepath.Separator)) {
-		return fmt.Errorf("worktree path %q is outside repo parent %q; refusing removal", worktreePath, repoParent)
+	if cleanWT == filepath.Clean(repoRoot) {
+		return fmt.Errorf("worktree path %q is the repo root; refusing removal", worktreePath)
 	}
 
 	// Force remove the worktree.
