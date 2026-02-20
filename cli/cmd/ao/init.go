@@ -80,20 +80,17 @@ func runInit(cmd *cobra.Command, args []string) error {
 	isGitRepo := isGitRepository(cwd)
 
 	// Phase 1: Create .agents/ subdirectories
-	created := 0
 	for _, dir := range agentsDirs {
 		target := filepath.Join(cwd, dir)
 		if dryRun {
 			if _, err := os.Stat(target); os.IsNotExist(err) {
 				fmt.Printf("[dry-run] Would create %s\n", dir)
-				created++
 			}
 			continue
 		}
 		if err := os.MkdirAll(target, 0700); err != nil {
 			return fmt.Errorf("create directory %s: %w", dir, err)
 		}
-		created++
 	}
 
 	// Phase 1b: Create .agents/ao/ storage (sessions, index, provenance)
@@ -118,78 +115,99 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Phase 2b: Nested .agents/.gitignore (belt-and-suspenders)
-	nestedGitignore := filepath.Join(cwd, ".agents", ".gitignore")
-	if dryRun {
-		if _, err := os.Stat(nestedGitignore); os.IsNotExist(err) {
-			fmt.Println("[dry-run] Would create .agents/.gitignore")
-		}
-	} else {
-		if _, err := os.Stat(nestedGitignore); os.IsNotExist(err) {
-			content := "# Do not commit this directory — session artifacts, absolute paths, sensitive output.\n*\n!.gitignore\n!README.md\n"
-			if err := os.WriteFile(nestedGitignore, []byte(content), 0644); err != nil {
-				return fmt.Errorf("create .agents/.gitignore: %w", err)
-			}
-		}
+	if err := ensureNestedAgentsGitignore(cwd); err != nil {
+		return err
 	}
 
 	// Phase 3: Hooks (optional)
 	if initHooks {
-		if initFull && initMinimalHooks {
-			return fmt.Errorf("--full and --minimal-hooks are mutually exclusive")
-		}
-		if dryRun {
-			mode := "full"
-			if initMinimalHooks {
-				mode = "minimal"
-			}
-			fmt.Printf("[dry-run] Would install %s hooks\n", mode)
-		} else {
-			// Delegate to existing hooks install logic
-			// Default to full coverage for `ao init --hooks`.
-			hooksFull = true
-			if initMinimalHooks {
-				hooksFull = false
-			}
-			if initFull {
-				hooksFull = true
-			}
-			hooksDryRun = false
-			hooksForce = false
-			if err := runHooksInstall(cmd, nil); err != nil {
-				return fmt.Errorf("install hooks: %w", err)
-			}
+		if err := installInitHooks(cmd); err != nil {
+			return err
 		}
 	}
 
 	// Summary
 	if !dryRun {
-		fmt.Printf("✓ Initialized AgentOps in %s\n", cwd)
-		fmt.Println()
-		fmt.Println("Created:")
-		for _, dir := range agentsDirs {
-			fmt.Printf("  %s/\n", dir)
-		}
-		fmt.Printf("  %s/{sessions,index,provenance}/\n", storage.DefaultBaseDir)
-		if isGitRepo {
-			if initStealth {
-				fmt.Println("  .git/info/exclude (stealth)")
-			} else {
-				fmt.Println("  .gitignore (.agents/ entry)")
-			}
-			fmt.Println("  .agents/.gitignore")
-		}
-		if initHooks {
-			fmt.Println("  hooks registered")
-		}
-		fmt.Println()
-		fmt.Println("Next steps:")
-		if !initHooks {
-			fmt.Println("  ao init --hooks        - Register session hooks")
-		}
-		fmt.Println("  ao forge transcript <path.jsonl>  - Extract knowledge from transcript")
+		printInitSummary(cwd, isGitRepo)
 	}
 
 	return nil
+}
+
+func ensureNestedAgentsGitignore(cwd string) error {
+	nestedGitignore := filepath.Join(cwd, ".agents", ".gitignore")
+	if dryRun {
+		if _, err := os.Stat(nestedGitignore); os.IsNotExist(err) {
+			fmt.Println("[dry-run] Would create .agents/.gitignore")
+		}
+		return nil
+	}
+
+	if _, err := os.Stat(nestedGitignore); os.IsNotExist(err) {
+		content := "# Do not commit this directory — session artifacts, absolute paths, sensitive output.\n*\n!.gitignore\n!README.md\n"
+		if err := os.WriteFile(nestedGitignore, []byte(content), 0644); err != nil {
+			return fmt.Errorf("create .agents/.gitignore: %w", err)
+		}
+	}
+	return nil
+}
+
+func installInitHooks(cmd *cobra.Command) error {
+	if initFull && initMinimalHooks {
+		return fmt.Errorf("--full and --minimal-hooks are mutually exclusive")
+	}
+
+	if dryRun {
+		mode := "full"
+		if initMinimalHooks {
+			mode = "minimal"
+		}
+		fmt.Printf("[dry-run] Would install %s hooks\n", mode)
+		return nil
+	}
+
+	// Delegate to existing hooks install logic.
+	// Default to full coverage for `ao init --hooks`.
+	hooksFull = true
+	if initMinimalHooks {
+		hooksFull = false
+	}
+	if initFull {
+		hooksFull = true
+	}
+	hooksDryRun = false
+	hooksForce = false
+	if err := runHooksInstall(cmd, nil); err != nil {
+		return fmt.Errorf("install hooks: %w", err)
+	}
+	return nil
+}
+
+func printInitSummary(cwd string, isGitRepo bool) {
+	fmt.Printf("✓ Initialized AgentOps in %s\n", cwd)
+	fmt.Println()
+	fmt.Println("Created:")
+	for _, dir := range agentsDirs {
+		fmt.Printf("  %s/\n", dir)
+	}
+	fmt.Printf("  %s/{sessions,index,provenance}/\n", storage.DefaultBaseDir)
+	if isGitRepo {
+		if initStealth {
+			fmt.Println("  .git/info/exclude (stealth)")
+		} else {
+			fmt.Println("  .gitignore (.agents/ entry)")
+		}
+		fmt.Println("  .agents/.gitignore")
+	}
+	if initHooks {
+		fmt.Println("  hooks registered")
+	}
+	fmt.Println()
+	fmt.Println("Next steps:")
+	if !initHooks {
+		fmt.Println("  ao init --hooks        - Register session hooks")
+	}
+	fmt.Println("  ao forge transcript <path.jsonl>  - Extract knowledge from transcript")
 }
 
 // isGitRepository checks if cwd is inside a git repo.
