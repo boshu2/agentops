@@ -6,8 +6,11 @@
 
 # Get plugin directory (where this script lives)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-# shellcheck source=../lib/chain-parser.sh
-. "$SCRIPT_DIR/../lib/chain-parser.sh"
+CHAIN_LIB="$SCRIPT_DIR/../lib/chain-parser.sh"
+if [ -f "$CHAIN_LIB" ]; then
+    # shellcheck source=../lib/chain-parser.sh
+    . "$CHAIN_LIB"
+fi
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"

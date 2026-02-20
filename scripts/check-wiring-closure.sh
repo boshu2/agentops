@@ -52,6 +52,16 @@ for lib_script in lib/scripts/*.sh; do
   fi
 done
 
+# 5. Every lib/*.sh helper should be referenced by at least one hook
+for helper_script in lib/*.sh; do
+  [ -f "$helper_script" ] || continue
+  base=$(basename "$helper_script")
+  if ! grep -rq "$base" hooks/ cli/embedded/hooks/ 2>/dev/null; then
+    echo "ORPHANED LIB HELPER: $base not referenced by any hook"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
 if [ "$ERRORS" -eq 0 ]; then
   echo "All wiring checks passed"
   exit 0

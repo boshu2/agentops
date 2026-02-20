@@ -295,6 +295,26 @@ func TestHookGroupContainsAoAllEvents(t *testing.T) {
 	}
 }
 
+func TestHookGroupContainsAoForInstalledScriptPaths(t *testing.T) {
+	hooksMap := map[string]interface{}{
+		"SessionStart": []interface{}{
+			map[string]interface{}{
+				"hooks": []interface{}{
+					map[string]interface{}{"type": "command", "command": "/Users/test/.agentops/hooks/session-start.sh"},
+				},
+			},
+		},
+	}
+	if !hookGroupContainsAo(hooksMap, "SessionStart") {
+		t.Fatal("expected .agentops hook script path to be treated as ao-managed")
+	}
+
+	filtered := filterNonAoHookGroups(hooksMap, "SessionStart")
+	if len(filtered) != 0 {
+		t.Fatalf("expected ao-managed script group to be filtered out, got %d group(s)", len(filtered))
+	}
+}
+
 func TestBackwardsCompatDefaultInstall(t *testing.T) {
 	// generateMinimalHooksConfig should ALWAYS return SessionStart + Stop
 	hooks := generateMinimalHooksConfig()
@@ -397,6 +417,12 @@ func TestInstallFromEmbedded(t *testing.T) {
 	helpers := filepath.Join(tmpDir, "lib", "hook-helpers.sh")
 	if _, err := os.Stat(helpers); err != nil {
 		t.Errorf("hook-helpers.sh not extracted: %v", err)
+	}
+
+	// Verify chain-parser.sh was extracted
+	chainParser := filepath.Join(tmpDir, "lib", "chain-parser.sh")
+	if _, err := os.Stat(chainParser); err != nil {
+		t.Errorf("chain-parser.sh not extracted: %v", err)
 	}
 }
 

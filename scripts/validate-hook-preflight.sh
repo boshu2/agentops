@@ -56,6 +56,18 @@ for file in "${HOOK_FILES[@]}"; do
     fi
 done
 
+if [[ -f "lib/hook-helpers.sh" ]]; then
+    pass "lib/hook-helpers.sh exists"
+else
+    fail "lib/hook-helpers.sh missing"
+fi
+
+if [[ -f "lib/chain-parser.sh" ]]; then
+    pass "lib/chain-parser.sh exists"
+else
+    fail "lib/chain-parser.sh missing"
+fi
+
 # 2) Kill switches
 for file in "${HOOK_FILES[@]}"; do
     if search_q "AGENTOPS_HOOKS_DISABLED" "$file"; then

@@ -66,9 +66,28 @@ fi
 
 # Idempotency: check if next step already recorded in chain.jsonl
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-# shellcheck source=../lib/chain-parser.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. "$SCRIPT_DIR/../lib/chain-parser.sh"
+CHAIN_LIB="$SCRIPT_DIR/../lib/chain-parser.sh"
+if [ -f "$CHAIN_LIB" ]; then
+    # shellcheck source=../lib/chain-parser.sh
+    . "$CHAIN_LIB"
+else
+    chain_find_entry() {
+        local chain_file="$1" step_name="$2"
+        grep -E "\"(step|gate)\"[[:space:]]*:[[:space:]]*\"${step_name}\"" "$chain_file" 2>/dev/null | tail -1
+    }
+    chain_is_done() {
+        local entry="$1"
+        [ -z "$entry" ] && return 1
+        if echo "$entry" | grep -qE '"status"[[:space:]]*:[[:space:]]*"(locked|skipped)"'; then
+            return 0
+        fi
+        if echo "$entry" | grep -qE '"locked"[[:space:]]*:[[:space:]]*true'; then
+            return 0
+        fi
+        return 1
+    }
+fi
 CHAIN="$ROOT/.agents/ao/chain.jsonl"
 if [ -f "$CHAIN" ]; then
     # Determine the next step NAME (not the skill name)

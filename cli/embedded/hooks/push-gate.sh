@@ -38,10 +38,38 @@ fi
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 # Source hook-helpers from plugin install dir, not repo root (security: prevents malicious repo sourcing)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../lib/hook-helpers.sh
-. "$SCRIPT_DIR/../lib/hook-helpers.sh"
-# shellcheck source=../lib/chain-parser.sh
-. "$SCRIPT_DIR/../lib/chain-parser.sh"
+HELPERS_LIB="$SCRIPT_DIR/../lib/hook-helpers.sh"
+CHAIN_LIB="$SCRIPT_DIR/../lib/chain-parser.sh"
+
+if [ -f "$HELPERS_LIB" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$HELPERS_LIB"
+else
+    # Missing helper library must never hard-fail git push.
+    write_failure() { return 0; }
+fi
+
+if [ -f "$CHAIN_LIB" ]; then
+    # shellcheck source=../lib/chain-parser.sh
+    . "$CHAIN_LIB"
+else
+    # Fallback parser keeps gate functional when helper lib is absent.
+    chain_find_entry() {
+        local chain_file="$1" step_name="$2"
+        grep -E "\"(step|gate)\"[[:space:]]*:[[:space:]]*\"${step_name}\"" "$chain_file" 2>/dev/null | tail -1
+    }
+    chain_is_done() {
+        local entry="$1"
+        [ -z "$entry" ] && return 1
+        if echo "$entry" | grep -qE '"status"[[:space:]]*:[[:space:]]*"(locked|skipped)"'; then
+            return 0
+        fi
+        if echo "$entry" | grep -qE '"locked"[[:space:]]*:[[:space:]]*true'; then
+            return 0
+        fi
+        return 1
+    }
+fi
 
 LOG_DIR="$ROOT/.agents/ao"
 mkdir -p "$LOG_DIR" 2>/dev/null
