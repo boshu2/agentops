@@ -17,7 +17,6 @@ TAG="${1:?Usage: extract-release-notes.sh TAG [PREV_TAG]}"
 PREV_TAG="${2:-}"
 VERSION="${TAG#v}"
 REPO="boshu2/agentops"
-DATE=$(date +%Y-%m-%d)
 
 CHANGELOG="CHANGELOG.md"
 if [[ ! -f "$CHANGELOG" ]]; then
@@ -53,7 +52,7 @@ fi
 {
   # Header
   cat <<HEADER
-\`brew upgrade agentops\` · \`npx skills@latest update\` · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
+\`brew update && brew upgrade agentops\` · \`npx skills@latest update\` · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
 
 ---
 

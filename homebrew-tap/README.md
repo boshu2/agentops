@@ -15,6 +15,13 @@ Or directly:
 brew install boshu2/agentops/agentops
 ```
 
+## Update to Latest
+
+```bash
+brew update && brew upgrade agentops
+ao version
+```
+
 ## Commands
 
 ```bash

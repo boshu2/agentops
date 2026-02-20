@@ -284,6 +284,13 @@ cd /path/to/your/repo
 ao init --hooks
 ```
 
+Update to the latest CLI later with:
+
+```bash
+brew update && brew upgrade agentops
+ao version
+```
+
 This installs 25+ hooks across core lifecycle events:
 
 | Event | What happens |

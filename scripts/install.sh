@@ -24,8 +24,20 @@ npx skills@latest add boshu2/agentops --all -g
 # Step 2: Install CLI (optional — enhances with knowledge flywheel)
 if command -v brew >/dev/null 2>&1; then
     echo "Step 2/3: Installing CLI via Homebrew..."
-    brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops 2>/dev/null || true
-    brew install agentops 2>/dev/null || brew upgrade agentops 2>/dev/null || true
+    if ! brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops; then
+        echo "Error: failed to add Homebrew tap boshu2/agentops." >&2
+        exit 1
+    fi
+
+    if ! brew install agentops; then
+        echo "brew install agentops failed; trying brew upgrade agentops..."
+        if ! brew upgrade agentops; then
+            echo "Error: Homebrew could not install or upgrade agentops." >&2
+            echo "Try manually:" >&2
+            echo "  brew update && brew upgrade agentops" >&2
+            exit 1
+        fi
+    fi
 
     # Step 3: Install hooks
     if command -v ao >/dev/null 2>&1; then
@@ -37,7 +49,9 @@ if command -v brew >/dev/null 2>&1; then
         ao doctor 2>/dev/null && echo "Health check: PASS" || echo "Health check: run 'ao doctor' after setup"
     fi
 else
-    echo "Step 2/3: Skipping CLI (Homebrew not found). Install manually: brew install agentops"
+    echo "Step 2/3: Skipping CLI (Homebrew not found). Install manually:"
+    echo "  brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops"
+    echo "  brew install agentops"
     echo "Step 3/3: Skipped (CLI needed for hooks)"
 fi
 
