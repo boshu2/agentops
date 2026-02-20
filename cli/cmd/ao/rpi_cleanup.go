@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -232,6 +233,14 @@ func markRunStale(sr staleRunEntry) error {
 
 // removeOrphanedWorktree removes a worktree directory and its branch.
 func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
+	// Safety: validate that worktreePath is under the repo's parent directory
+	// to prevent accidental deletion of unrelated paths from corrupted state files.
+	repoParent := filepath.Dir(filepath.Clean(repoRoot))
+	cleanWT := filepath.Clean(worktreePath)
+	if !strings.HasPrefix(cleanWT, repoParent+string(filepath.Separator)) {
+		return fmt.Errorf("worktree path %q is outside repo parent %q; refusing removal", worktreePath, repoParent)
+	}
+
 	// Force remove the worktree.
 	cmd := exec.Command("git", "worktree", "remove", "--force", worktreePath)
 	cmd.Dir = repoRoot

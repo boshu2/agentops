@@ -11,7 +11,7 @@ func runPhaseLoop(cwd, spawnCwd string, state *phasedState, startPhase int, opts
 	for i := startPhase; i <= len(phases); i++ {
 		p := phases[i-1]
 		if err := runSinglePhase(cwd, spawnCwd, state, startPhase, p, opts, statusPath, allPhases, logPath, executor); err != nil {
-			return logAndFailPhase(state, p.Name, logPath, err)
+			return logAndFailPhase(state, p.Name, logPath, spawnCwd, err)
 		}
 	}
 	return nil
@@ -113,7 +113,7 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	return nil
 }
 
-func logAndFailPhase(state *phasedState, phaseName, logPath string, err error) error {
+func logAndFailPhase(state *phasedState, phaseName, logPath, spawnCwd string, err error) error {
 	logPhaseTransition(logPath, state.RunID, phaseName, fmt.Sprintf("FATAL: %v", err))
 	emitRPIStatus(state.RunID, phaseName, "failed")
 	logFailureContext(logPath, state.RunID, phaseName, err)
@@ -121,6 +121,9 @@ func logAndFailPhase(state *phasedState, phaseName, logPath string, err error) e
 	state.TerminalStatus = "failed"
 	state.TerminalReason = fmt.Sprintf("phase %s: %v", phaseName, err)
 	state.TerminatedAt = time.Now().Format(time.RFC3339)
+	if saveErr := savePhasedState(spawnCwd, state); saveErr != nil {
+		VerbosePrintf("Warning: could not persist terminal state: %v\n", saveErr)
+	}
 	return err
 }
 
