@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security-suite primitives** — Added `/security-suite` for composable binary assurance (static/dynamic collection, contract capture, baseline drift, and policy gating).
 - **RPI stale-run cleanup tooling** — Added stale run detection, `ao rpi cleanup`, and configurable worktree cleanup mode.
 - **Plan skill symbol-level specs** — `/plan` now generates file inventory tables, exact function references with line numbers, inline code blocks, named test functions, and verification procedures for implementation-ready specs.
+- **Inline quick-start examples** — Added working examples to `/evolve` and `/vibe` skill docs for faster onboarding.
+- **Destructive path tests** — Added test coverage for worktree path validation edge cases.
+- **Skill lint references dir** — Added `references/` directory for skill lint tooling.
 
 ### Changed
 
@@ -23,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Homebrew update consistency** — Standardized upgrade messaging to `brew update && brew upgrade agentops` across docs/release notes and improved installer fallback messaging.
 - **Repository hygiene** — `.agents/` artifacts are now fully ignored to keep generated local state out of tracked source history.
 - **Release gating model** — Release validation moved to local CI (`scripts/ci-local-release.sh`) while GitHub Actions release workflow is now publisher-only.
+- **Validate script compatibility** — Updated validate scripts for tier renames and ruff output format changes.
+- **npx skills troubleshooting** — Added troubleshooting guidance for `npx skills update` issues.
 
 ### Fixed
 
@@ -31,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hook/runtime regressions** — Fixed hook-coverage compile regressions and restored install symbols used by `ao init`/`ao doctor`.
 - **CLI quality debt** — Addressed lint/staticcheck regressions and reduced `runInit` complexity below CI threshold.
 - **RPI cleanup reliability** — Persisted terminal metadata and validated stale-run worktree paths before cleanup.
+- **Worktree path validation** — Tightened path validation to prevent destructive operations on invalid worktree paths.
 
 ## [2.12.1] - 2026-02-20
 
