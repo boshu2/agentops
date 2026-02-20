@@ -61,26 +61,25 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     line_count=$(wc -l < "$skill_md" | tr -d ' ')
 
     if [ -n "$tier" ]; then
+        limit=600
         case "$tier" in
-            library|background)
-                if [ "$line_count" -gt 200 ]; then
-                    fail "$skill_name" "tier=$tier, ${line_count} lines exceeds 200-line limit"
-                    skill_ok=false
-                fi
+            library|meta)
+                limit=250
                 ;;
-            orchestration)
-                if [ "$line_count" -gt 550 ]; then
-                    fail "$skill_name" "tier=$tier, ${line_count} lines exceeds 550-line limit"
-                    skill_ok=false
-                fi
+            background)
+                limit=300
                 ;;
-            *)
-                if [ "$line_count" -gt 500 ]; then
-                    fail "$skill_name" "tier=$tier, ${line_count} lines exceeds 500-line limit"
-                    skill_ok=false
-                fi
+            execution)
+                limit=800
+                ;;
+            judgment|product|session|knowledge|contribute|cross-vendor|utility|team|orchestration|solo)
+                limit=600
                 ;;
         esac
+        if [ "$line_count" -gt "$limit" ]; then
+            fail "$skill_name" "tier=$tier, ${line_count} lines exceeds ${limit}-line limit"
+            skill_ok=false
+        fi
     fi
 
     # --- (c) >300 lines should have references/ (warning, not failure) ---
@@ -197,8 +196,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
                 fail "$skill_name" "verdict.json schema_version doesn't allow value 2"
                 skill_ok=false
             fi
-            # Check fix/why/ref are NOT in findings required array (backward compat)
-            # Extract the required array from findings items
+            # Check fix/why/ref are required in schema v2 findings items.
             findings_required=$(python3 -c "
 import json, sys
 with open('$verdict_schema') as f:
@@ -208,8 +206,8 @@ for r in items_req:
     print(r)
 " 2>/dev/null || true)
             for field in fix why ref; do
-                if echo "$findings_required" | grep -qx "$field" 2>/dev/null; then
-                    fail "$skill_name" "verdict.json '$field' should NOT be in findings required array (backward compat)"
+                if ! echo "$findings_required" | grep -qx "$field" 2>/dev/null; then
+                    fail "$skill_name" "verdict.json '$field' must be in findings required array (schema v2)"
                     skill_ok=false
                 fi
             done

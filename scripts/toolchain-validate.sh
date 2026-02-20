@@ -214,20 +214,16 @@ run_ruff() {
     fi
 
     # Run ruff and capture output
-    if ruff check "$REPO_ROOT" --output-format=text > "$output_file" 2>&1; then
+    if ruff check "$REPO_ROOT" --output-format=concise > "$output_file" 2>&1; then
         echo "CLEAN" > "$output_file"
         TOOL_STATUS["ruff"]="pass"
     else
-        # Count issues by severity (ruff uses E=error, W=warning, F=fatal)
-        local errors warnings
-        errors=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: [EF]" "$output_file" 2>/dev/null || true)
-        errors=${errors:-0}
-        errors=$(echo "$errors" | tr -d '[:space:]')
-        warnings=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: [WC]" "$output_file" 2>/dev/null || true)
-        warnings=${warnings:-0}
-        warnings=$(echo "$warnings" | tr -d '[:space:]')
-        HIGH_COUNT=$((HIGH_COUNT + errors))
-        MEDIUM_COUNT=$((MEDIUM_COUNT + warnings))
+        # Ruff concise/full output doesn't expose stable severities; count all issues.
+        local issues
+        issues=$(grep -cE "^[^:]+:[0-9]+:[0-9]+:" "$output_file" 2>/dev/null || true)
+        issues=${issues:-0}
+        issues=$(echo "$issues" | tr -d '[:space:]')
+        HIGH_COUNT=$((HIGH_COUNT + issues))
         TOOL_STATUS["ruff"]="findings"
     fi
 }
