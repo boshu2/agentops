@@ -40,7 +40,7 @@ func TestSpawnClaudePhaseWithStream_TimesOut(t *testing.T) {
 	statusPath := filepath.Join(tmpDir, "live-status.md")
 	allPhases := []PhaseProgress{{Name: "discovery", CurrentAction: "starting"}}
 
-	err := spawnClaudePhaseWithStream("test prompt", tmpDir, "run-1", 1, statusPath, allPhases, 200*time.Millisecond, 0, 30*time.Second)
+	err := spawnClaudePhaseWithStream("test prompt", tmpDir, "run-1", 1, statusPath, allPhases, 200*time.Millisecond, 0, 0, 30*time.Second)
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
@@ -64,12 +64,32 @@ func TestSpawnClaudePhaseWithStream_StallDetected(t *testing.T) {
 	allPhases := []PhaseProgress{{Name: "discovery", CurrentAction: "starting"}}
 
 	// phaseTimeout=0 disables hard timeout; stallTimeout=100ms with checkInterval=50ms fires quickly.
-	err := spawnClaudePhaseWithStream("test prompt", tmpDir, "run-stall", 1, statusPath, allPhases, 0, 100*time.Millisecond, 50*time.Millisecond)
+	err := spawnClaudePhaseWithStream("test prompt", tmpDir, "run-stall", 1, statusPath, allPhases, 0, 100*time.Millisecond, 0, 50*time.Millisecond)
 	if err == nil {
 		t.Fatal("expected stall error")
 	}
 	if !strings.Contains(err.Error(), string(failReasonStall)) {
 		t.Fatalf("expected stall failure reason in error, got: %v", err)
+	}
+}
+
+// TestSpawnClaudePhaseWithStream_StartupTimeout verifies that the stream startup
+// watchdog fires when no parseable stream events are received initially.
+func TestSpawnClaudePhaseWithStream_StartupTimeout(t *testing.T) {
+	// Fake claude: no output, just hang.
+	binDir := writeFakeClaude(t, "#!/bin/sh\nsleep 10\n")
+	t.Setenv("PATH", binDir+":"+os.Getenv("PATH"))
+
+	tmpDir := t.TempDir()
+	statusPath := filepath.Join(tmpDir, "live-status.md")
+	allPhases := []PhaseProgress{{Name: "discovery", CurrentAction: "starting"}}
+
+	err := spawnClaudePhaseWithStream("test prompt", tmpDir, "run-startup-timeout", 1, statusPath, allPhases, 0, 0, 120*time.Millisecond, 40*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected startup timeout error")
+	}
+	if !strings.Contains(err.Error(), "stream startup timeout") {
+		t.Fatalf("expected startup timeout in error, got: %v", err)
 	}
 }
 

@@ -28,9 +28,12 @@ var (
 	phasedMaxRetries   int
 	phasedPhaseTimeout time.Duration
 	phasedStallTimeout time.Duration
-	phasedNoWorktree   bool
-	phasedLiveStatus   bool
-	phasedSwarmFirst   bool
+	// phasedStreamStartupTimeout bounds how long stream backend can run without
+	// receiving its first parsed event before falling back to direct execution.
+	phasedStreamStartupTimeout time.Duration
+	phasedNoWorktree           bool
+	phasedLiveStatus           bool
+	phasedSwarmFirst           bool
 )
 
 // phaseFailureReason classifies why a phase spawn failed.
@@ -47,30 +50,32 @@ const (
 // This allows the loop and other callers to invoke the phased engine programmatically
 // without depending on global cobra flag variables.
 type phasedEngineOptions struct {
-	From               string
-	FastPath           bool
-	TestFirst          bool
-	Interactive        bool
-	MaxRetries         int
-	PhaseTimeout       time.Duration
-	StallTimeout       time.Duration
-	NoWorktree         bool
-	LiveStatus         bool
-	SwarmFirst         bool
-	NtmPollInterval    time.Duration
-	StallCheckInterval time.Duration
+	From                 string
+	FastPath             bool
+	TestFirst            bool
+	Interactive          bool
+	MaxRetries           int
+	PhaseTimeout         time.Duration
+	StallTimeout         time.Duration
+	StreamStartupTimeout time.Duration
+	NoWorktree           bool
+	LiveStatus           bool
+	SwarmFirst           bool
+	NtmPollInterval      time.Duration
+	StallCheckInterval   time.Duration
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.
 func defaultPhasedEngineOptions() phasedEngineOptions {
 	return phasedEngineOptions{
-		From:               "discovery",
-		MaxRetries:         3,
-		PhaseTimeout:       90 * time.Minute,
-		StallTimeout:       10 * time.Minute,
-		SwarmFirst:         true,
-		NtmPollInterval:    5 * time.Second,
-		StallCheckInterval: 30 * time.Second,
+		From:                 "discovery",
+		MaxRetries:           3,
+		PhaseTimeout:         90 * time.Minute,
+		StallTimeout:         10 * time.Minute,
+		StreamStartupTimeout: 45 * time.Second,
+		SwarmFirst:           true,
+		NtmPollInterval:      5 * time.Second,
+		StallCheckInterval:   30 * time.Second,
 	}
 }
 
@@ -136,6 +141,7 @@ Examples:
 	phasedCmd.Flags().IntVar(&phasedMaxRetries, "max-retries", 3, "Maximum retry attempts per gate (default: 3)")
 	phasedCmd.Flags().DurationVar(&phasedPhaseTimeout, "phase-timeout", 90*time.Minute, "Maximum wall-clock runtime per phase (0 disables timeout)")
 	phasedCmd.Flags().DurationVar(&phasedStallTimeout, "stall-timeout", 10*time.Minute, "Maximum time without progress before declaring stall (0 disables)")
+	phasedCmd.Flags().DurationVar(&phasedStreamStartupTimeout, "stream-startup-timeout", 45*time.Second, "Maximum time to wait for first stream event before falling back to direct execution (0 disables)")
 	phasedCmd.Flags().BoolVar(&phasedNoWorktree, "no-worktree", false, "Disable worktree isolation (run in current directory)")
 	phasedCmd.Flags().BoolVar(&phasedLiveStatus, "live-status", false, "Stream phase progress to a live-status.md file")
 	phasedCmd.Flags().BoolVar(&phasedSwarmFirst, "swarm-first", true, "Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable")
@@ -231,16 +237,38 @@ func (n *ntmExecutor) Execute(prompt, cwd, runID string, phaseNum int) error {
 }
 
 type streamExecutor struct {
-	statusPath         string
-	allPhases          []PhaseProgress
-	phaseTimeout       time.Duration
-	stallTimeout       time.Duration
-	stallCheckInterval time.Duration
+	statusPath           string
+	allPhases            []PhaseProgress
+	phaseTimeout         time.Duration
+	stallTimeout         time.Duration
+	streamStartupTimeout time.Duration
+	stallCheckInterval   time.Duration
 }
 
 func (s *streamExecutor) Name() string { return "stream" }
 func (s *streamExecutor) Execute(prompt, cwd, runID string, phaseNum int) error {
-	return spawnClaudePhaseWithStream(prompt, cwd, runID, phaseNum, s.statusPath, s.allPhases, s.phaseTimeout, s.stallTimeout, s.stallCheckInterval)
+	err := spawnClaudePhaseWithStream(prompt, cwd, runID, phaseNum, s.statusPath, s.allPhases, s.phaseTimeout, s.stallTimeout, s.streamStartupTimeout, s.stallCheckInterval)
+	if err == nil {
+		return nil
+	}
+	if !shouldFallbackToDirect(err) {
+		return err
+	}
+	fmt.Printf("Stream backend degraded for phase %d; falling back to direct execution (%v)\n", phaseNum, err)
+	if directErr := spawnClaudeDirectImpl(prompt, cwd, phaseNum, s.phaseTimeout); directErr != nil {
+		return fmt.Errorf("stream execution failed: %w; direct fallback failed: %v", err, directErr)
+	}
+	return nil
+}
+
+func shouldFallbackToDirect(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "stream startup timeout") ||
+		strings.Contains(msg, "stream parse error") ||
+		(strings.Contains(msg, string(failReasonStall)) && strings.Contains(msg, "no stream activity"))
 }
 
 // backendCapabilities probes the runtime environment for executor prerequisites.
@@ -280,11 +308,12 @@ func probeBackendCapabilities(liveStatus bool) backendCapabilities {
 func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhases []PhaseProgress, opts phasedEngineOptions) (PhaseExecutor, string) {
 	if caps.LiveStatusEnabled {
 		return &streamExecutor{
-			statusPath:         statusPath,
-			allPhases:          allPhases,
-			phaseTimeout:       opts.PhaseTimeout,
-			stallTimeout:       opts.StallTimeout,
-			stallCheckInterval: opts.StallCheckInterval,
+			statusPath:           statusPath,
+			allPhases:            allPhases,
+			phaseTimeout:         opts.PhaseTimeout,
+			stallTimeout:         opts.StallTimeout,
+			streamStartupTimeout: opts.StreamStartupTimeout,
+			stallCheckInterval:   opts.StallCheckInterval,
 		}, "live-status enabled"
 	}
 	if caps.InAgentSession {
@@ -424,18 +453,19 @@ var retryPrompts = map[int]string{
 // It reads options from package-level cobra flag variables and delegates to runRPIPhasedWithOpts.
 func runRPIPhased(cmd *cobra.Command, args []string) error {
 	opts := phasedEngineOptions{
-		From:               phasedFrom,
-		FastPath:           phasedFastPath,
-		TestFirst:          phasedTestFirst,
-		Interactive:        phasedInteractive,
-		MaxRetries:         phasedMaxRetries,
-		PhaseTimeout:       phasedPhaseTimeout,
-		StallTimeout:       phasedStallTimeout,
-		NoWorktree:         phasedNoWorktree,
-		LiveStatus:         phasedLiveStatus,
-		SwarmFirst:         phasedSwarmFirst,
-		NtmPollInterval:    ntmPollInterval,
-		StallCheckInterval: stallCheckInterval,
+		From:                 phasedFrom,
+		FastPath:             phasedFastPath,
+		TestFirst:            phasedTestFirst,
+		Interactive:          phasedInteractive,
+		MaxRetries:           phasedMaxRetries,
+		PhaseTimeout:         phasedPhaseTimeout,
+		StallTimeout:         phasedStallTimeout,
+		StreamStartupTimeout: phasedStreamStartupTimeout,
+		NoWorktree:           phasedNoWorktree,
+		LiveStatus:           phasedLiveStatus,
+		SwarmFirst:           phasedSwarmFirst,
+		NtmPollInterval:      ntmPollInterval,
+		StallCheckInterval:   stallCheckInterval,
 	}
 	return runRPIPhasedWithOpts(opts, args)
 }
@@ -1151,9 +1181,9 @@ func spawnClaudePhaseNtm(ntmPath, prompt, cwd, runID string, phaseNum int, phase
 // An onUpdate callback calls WriteLiveStatus after every parsed event so that
 // external watchers (e.g. ao status) can tail the status file.
 // Stderr is passed through to os.Stderr for real-time error visibility.
-// phaseTimeout, stallTimeout, and checkInterval are passed explicitly so the function
-// does not read package-level globals.
-func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusPath string, allPhases []PhaseProgress, phaseTimeout, stallTimeout, checkInterval time.Duration) error {
+// phaseTimeout, stallTimeout, streamStartupTimeout, and checkInterval are passed
+// explicitly so the function does not read package-level globals.
+func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusPath string, allPhases []PhaseProgress, phaseTimeout, stallTimeout, streamStartupTimeout, checkInterval time.Duration) error {
 	ctx := context.Background()
 	cancel := func() {}
 	if phaseTimeout > 0 {
@@ -1161,19 +1191,56 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 	}
 	defer cancel()
 
+	effectiveCheckInterval := checkInterval
+	if effectiveCheckInterval <= 0 {
+		effectiveCheckInterval = 1 * time.Second
+	}
+
+	startedAt := time.Now()
+
+	// Track whether we received at least one parsed event.
+	var streamEventCount atomic.Int64
+
 	// Stall detection: track last activity time atomically.
 	// Updated on every stream event; a watchdog goroutine checks for staleness.
 	var lastActivityUnix atomic.Int64
-	lastActivityUnix.Store(time.Now().UnixNano())
+	lastActivityUnix.Store(startedAt.UnixNano())
 
 	// stallCtx wraps the timeout context with stall-cancellation capability.
 	stallCtx, stallCancel := context.WithCancelCause(ctx)
 	defer stallCancel(nil)
 
+	// Startup watchdog: fail stream backend if no first event arrives in time.
+	// This catches hangs where claude starts but stream-json never yields events.
+	if streamStartupTimeout > 0 {
+		startupCheckInterval := effectiveCheckInterval
+		if startupCheckInterval > 5*time.Second {
+			startupCheckInterval = 5 * time.Second
+		}
+		go func() {
+			ticker := time.NewTicker(startupCheckInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stallCtx.Done():
+					return
+				case <-ticker.C:
+					if streamEventCount.Load() > 0 {
+						return
+					}
+					if time.Since(startedAt) > streamStartupTimeout {
+						stallCancel(fmt.Errorf("stream startup timeout: no events received after %s", streamStartupTimeout))
+						return
+					}
+				}
+			}
+		}()
+	}
+
 	// Start stall watchdog goroutine (if stall timeout is configured).
 	if stallTimeout > 0 {
 		go func() {
-			ticker := time.NewTicker(checkInterval)
+			ticker := time.NewTicker(effectiveCheckInterval)
 			defer ticker.Stop()
 			for {
 				select {
@@ -1209,6 +1276,7 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 
 	onUpdate := func(p PhaseProgress) {
 		// Record activity for stall detection.
+		streamEventCount.Add(1)
 		lastActivityUnix.Store(time.Now().UnixNano())
 
 		if phaseIdx >= 0 && phaseIdx < len(allPhases) {
@@ -1253,6 +1321,9 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 	}
 	if parseErr != nil {
 		return fmt.Errorf("stream parse error: %w", parseErr)
+	}
+	if streamEventCount.Load() == 0 {
+		return fmt.Errorf("stream startup timeout: stream completed without parseable events")
 	}
 	return nil
 }
