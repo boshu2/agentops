@@ -22,12 +22,40 @@ npx skills@latest update
 ## Quick Reference
 
 ```bash
+# Issue tracking
 bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd sync               # Sync with git
+
+# CLI development
+cd cli && make build  # Build ao binary
+cd cli && make test   # Run tests
+cd cli && make lint   # Run linter
+
+# Validation
+scripts/ci-local-release.sh     # Full local release gate
+scripts/validate-go-fast.sh     # Quick Go validation
+scripts/security-gate.sh        # Security scanning
 ```
+
+## Releasing
+
+Standard release flow:
+
+1. Run `scripts/ci-local-release.sh` to validate
+2. Tag and push: `git tag v2.X.0 && git push origin v2.X.0`
+3. GitHub Actions runs GoReleaser — builds binaries, creates release, updates Homebrew tap
+4. Upgrade locally: `brew update && brew upgrade agentops`
+
+For retagging (rolling post-tag commits into an existing release):
+
+```bash
+scripts/retag-release.sh v2.13.0
+```
+
+This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Homebrew tap, and upgrades locally. One command, no manual steps.
 
 ## Landing the Plane (Session Completion)
 
@@ -54,4 +82,3 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
-
