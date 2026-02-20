@@ -173,83 +173,62 @@ func checkCLIDependencies() doctorCheck {
 	}
 }
 
-// checkHookCoverage checks if .claude/hooks.json exists and has entries.
+// checkHookCoverage checks if Claude hooks are installed with full 8-event coverage.
 func checkHookCoverage() doctorCheck {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return doctorCheck{Name: "Hook Coverage", Status: "fail", Detail: "cannot determine home directory", Required: true}
 	}
 
+	// Prefer settings.json (active Claude configuration).
+	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
+	if data, err := os.ReadFile(settingsPath); err == nil {
+		if hooksMap, ok := extractHooksMap(data); ok {
+			return evaluateHookCoverage(hooksMap)
+		}
+	}
+
+	// Fallback: standalone hooks.json format.
 	hooksPath := filepath.Join(homeDir, ".claude", "hooks.json")
-	data, err := os.ReadFile(hooksPath)
-	if err != nil {
-		// Fall back to settings.json hooks section
-		settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
-		data, err = os.ReadFile(settingsPath)
-		if err != nil {
-			return doctorCheck{
-				Name:     "Hook Coverage",
-				Status:   "warn",
-				Detail:   "No hooks found \u2014 run 'ao hooks install'",
-				Required: false,
-			}
+	if data, err := os.ReadFile(hooksPath); err == nil {
+		if hooksMap, ok := extractHooksMap(data); ok {
+			return evaluateHookCoverage(hooksMap)
 		}
+	}
 
-		var settings map[string]interface{}
-		if err := json.Unmarshal(data, &settings); err != nil {
-			return doctorCheck{
-				Name:     "Hook Coverage",
-				Status:   "warn",
-				Detail:   "No hooks found \u2014 run 'ao hooks install'",
-				Required: false,
-			}
-		}
+	return doctorCheck{
+		Name:     "Hook Coverage",
+		Status:   "warn",
+		Detail:   "No hooks found \u2014 run 'ao hooks install --force'",
+		Required: false,
+	}
+}
 
-		hooksRaw, ok := settings["hooks"]
-		if !ok {
-			return doctorCheck{
-				Name:     "Hook Coverage",
-				Status:   "warn",
-				Detail:   "No hooks found \u2014 run 'ao hooks install'",
-				Required: false,
-			}
-		}
-
-		hookCount := countHooksInMap(hooksRaw)
-		if hookCount == 0 {
-			return doctorCheck{
-				Name:     "Hook Coverage",
-				Status:   "warn",
-				Detail:   "No hooks found \u2014 run 'ao hooks install'",
-				Required: false,
-			}
-		}
-
+func evaluateHookCoverage(hooksMap map[string]interface{}) doctorCheck {
+	installedEvents := countInstalledEvents(hooksMap)
+	if installedEvents == 0 {
 		return doctorCheck{
 			Name:     "Hook Coverage",
-			Status:   "pass",
-			Detail:   fmt.Sprintf("%d hooks configured", hookCount),
+			Status:   "warn",
+			Detail:   "No hooks found \u2014 run 'ao hooks install --force'",
 			Required: false,
 		}
 	}
 
-	// Parse hooks.json directly
-	var hooksData interface{}
-	if err := json.Unmarshal(data, &hooksData); err != nil {
+	if !hookGroupContainsAo(hooksMap, "SessionStart") {
 		return doctorCheck{
 			Name:     "Hook Coverage",
 			Status:   "warn",
-			Detail:   "No hooks found \u2014 run 'ao hooks install'",
+			Detail:   "Non-ao hooks detected \u2014 run 'ao hooks install --force'",
 			Required: false,
 		}
 	}
 
-	hookCount := countHooksInMap(hooksData)
-	if hookCount == 0 {
+	if installedEvents < len(AllEventNames()) {
 		return doctorCheck{
 			Name:     "Hook Coverage",
 			Status:   "warn",
-			Detail:   "No hooks found \u2014 run 'ao hooks install'",
+			Detail:   fmt.Sprintf("Partial coverage: %d/%d events \u2014 run 'ao hooks install --force'", installedEvents, len(AllEventNames())),
 			Required: false,
 		}
 	}
@@ -257,9 +236,32 @@ func checkHookCoverage() doctorCheck {
 	return doctorCheck{
 		Name:     "Hook Coverage",
 		Status:   "pass",
-		Detail:   fmt.Sprintf("%d hooks configured", hookCount),
+		Detail:   fmt.Sprintf("Full coverage: %d/%d events", installedEvents, len(AllEventNames())),
 		Required: false,
 	}
+}
+
+func extractHooksMap(data []byte) (map[string]interface{}, bool) {
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return nil, false
+	}
+
+	// settings.json shape
+	if hooksRaw, ok := parsed["hooks"]; ok {
+		if hooksMap, ok := hooksRaw.(map[string]interface{}); ok {
+			return hooksMap, true
+		}
+	}
+
+	// hooks.json shape with top-level events
+	for _, event := range AllEventNames() {
+		if _, ok := parsed[event]; ok {
+			return parsed, true
+		}
+	}
+
+	return nil, false
 }
 
 func countHooksInMap(raw interface{}) int {

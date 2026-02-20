@@ -31,7 +31,7 @@ if command -v brew >/dev/null 2>&1; then
     if command -v ao >/dev/null 2>&1; then
         echo "Step 3/3: Registering hooks..."
         echo "Note: To create repo-local .agents/ scaffolding, run 'ao init' from your repo root."
-        ao hooks install
+        ao hooks install --force
 
         # Optional health check
         ao doctor 2>/dev/null && echo "Health check: PASS" || echo "Health check: run 'ao doctor' after setup"

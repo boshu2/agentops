@@ -30,9 +30,10 @@ var agentsDirs = []string{
 }
 
 var (
-	initStealth bool
-	initHooks   bool
-	initFull    bool
+	initStealth      bool
+	initHooks        bool
+	initFull         bool
+	initMinimalHooks bool
 )
 
 var initCmd = &cobra.Command{
@@ -64,8 +65,9 @@ Run in your project root. Safe to run multiple times (idempotent).`,
 
 func init() {
 	initCmd.Flags().BoolVar(&initStealth, "stealth", false, "Use .git/info/exclude instead of .gitignore")
-	initCmd.Flags().BoolVar(&initHooks, "hooks", false, "Also register hooks (equivalent to ao hooks install)")
-	initCmd.Flags().BoolVar(&initFull, "full", false, "With --hooks, install all events (equivalent to ao hooks install --full)")
+	initCmd.Flags().BoolVar(&initHooks, "hooks", false, "Also register hooks (full 8-event coverage by default; equivalent to ao hooks install)")
+	initCmd.Flags().BoolVar(&initFull, "full", false, "With --hooks, explicitly request full coverage (legacy explicit flag)")
+	initCmd.Flags().BoolVar(&initMinimalHooks, "minimal-hooks", false, "With --hooks, install only SessionStart + Stop hooks")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -132,15 +134,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Phase 3: Hooks (optional)
 	if initHooks {
+		if initFull && initMinimalHooks {
+			return fmt.Errorf("--full and --minimal-hooks are mutually exclusive")
+		}
 		if dryRun {
-			mode := "minimal"
-			if initFull {
-				mode = "full"
+			mode := "full"
+			if initMinimalHooks {
+				mode = "minimal"
 			}
 			fmt.Printf("[dry-run] Would install %s hooks\n", mode)
 		} else {
 			// Delegate to existing hooks install logic
 			hooksFull = initFull
+			hooksMinimal = initMinimalHooks
 			hooksDryRun = false
 			hooksForce = false
 			if err := runHooksInstall(cmd, nil); err != nil {

@@ -5,7 +5,7 @@ The ao CLI integrates with Claude Code's hooks system to automate the CASS (Cont
 ## Quick Start
 
 ```bash
-# Install ao hooks to Claude Code
+# Install ao hooks to Claude Code (full 8-event coverage by default)
 ao hooks install
 
 # Verify installation
@@ -74,14 +74,17 @@ ao hooks init --format shell
 Install ao hooks to `~/.claude/settings.json`.
 
 ```bash
-# Install (creates backup automatically)
+# Install full coverage (creates backup automatically)
 ao hooks install
 
 # Preview changes without modifying
 ao hooks install --dry-run
 
-# Overwrite existing ao hooks
+# Overwrite existing ao hooks explicitly
 ao hooks install --force
+
+# Optional: install lightweight mode only (SessionStart + Stop)
+ao hooks install --minimal
 ```
 
 ### `ao hooks show`
@@ -106,7 +109,8 @@ ao hooks test --dry-run
 
 ## Manual Configuration
 
-If you prefer manual setup, add this to `~/.claude/settings.json`:
+If you prefer manual setup, add this to `~/.claude/settings.json`.
+Note: this is a minimal example. `ao hooks install` is recommended for full 8-event coverage.
 
 ```json
 {

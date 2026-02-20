@@ -281,7 +281,7 @@ Skills work standalone. The `ao` CLI powers the automated learning loop — know
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops
 cd /path/to/your/repo
-ao init --hooks --full
+ao init --hooks
 ```
 
 This installs 25+ hooks across core lifecycle events:
