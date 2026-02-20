@@ -466,7 +466,7 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 
 	cleanupSuccess := false
 	var logPath string
-	spawnCwd, cleanupWorktree, err := setupWorktreeLifecycle(cwd, originalCwd, opts, state)
+	spawnCwd, cleanupWorktree, err := setupWorktreeLifecycle(spawnCwd, originalCwd, opts, state)
 	if err != nil {
 		return err
 	}
@@ -1596,12 +1596,6 @@ func generateRunID() string {
 // getCurrentBranch returns the current branch name, or error if detached HEAD.
 func getCurrentBranch(repoRoot string) (string, error) {
 	return cliRPI.GetCurrentBranch(repoRoot, worktreeTimeout)
-}
-
-// getRepoRoot returns the git repository root directory.
-// dir sets the working directory for the git command; when empty, uses the process cwd.
-func getRepoRoot(dir string) (string, error) {
-	return cliRPI.GetRepoRoot(dir, worktreeTimeout)
 }
 
 // createWorktree creates a sibling git worktree for isolated RPI execution.

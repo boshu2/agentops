@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -182,7 +183,7 @@ func noFilesError(quiet bool, msg string) error {
 	if quiet {
 		return nil // Silent fail for hooks
 	}
-	return fmt.Errorf(msg)
+	return errors.New(msg)
 }
 
 func initForgeStorage() (cwd, baseDir string, fs *storage.FileStorage, err error) {
