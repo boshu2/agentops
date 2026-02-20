@@ -54,6 +54,7 @@ func TestAnalyze(t *testing.T) {
 	// Verify result structure
 	if result == nil {
 		t.Fatal("result is nil")
+		return
 	}
 
 	// Score should be between 0 and 100
