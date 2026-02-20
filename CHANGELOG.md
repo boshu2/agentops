@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-02-20
+
+### Added
+
+- **RPI phased engine enhancements** — Added executor backend routing (swarm-first), deterministic queue semantics, run-scoped artifact contracts, step aliases, and stricter lifecycle/failure propagation.
+- **MemRL policy foundation** — Added deterministic MemRL policy package and AO export contract.
+- **Validation and security gates** — Added changed-scope Go race pre-push gating, markdownlint baseline CI gating, and blocking gitleaks security gate integration.
+- **Flywheel/knowledge coverage** — Added ao-free fallbacks, cross-repo knowledge wiring, and stronger flywheel consistency diagnostics.
+
+### Changed
+
+- **RPI model alignment** — Standardized docs and tests around the 3-phase RPI model.
+- **Hook install defaults** — `ao init --hooks` now defaults to full 8-event coverage, with explicit minimal mode available.
+- **Docs and routing guidance** — Expanded README/skill routing guidance and reverse-engineering documentation.
+
+### Fixed
+
+- **Hook runtime/install regression** — `chain-parser.sh` is now shipped with installs, and hook sourcing degrades gracefully if helper files are missing.
+- **RPI reliability** — Fixed dry-run preflight behavior, stream watchdog timeout handling, and pre-mortem default mode fallback.
+- **Knowledge/search correctness** — Research now searches all knowledge locations; retrieval effectiveness calculation was corrected.
+- **Security/CI stability** — Fixed gitleaks install path, resolved semgrep false positives, and re-enabled the blocking security gate.
+- **CLI correctness** — Fixed `ao doctor` plugin path checks, pool promotion filename-collision handling, and schema test repo-pollution behavior.
+
 ## [2.11.0] - 2026-02-18
 
 ### Added

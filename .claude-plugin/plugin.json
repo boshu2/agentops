@@ -1,7 +1,7 @@
 {
   "$schema": "../schemas/plugin-manifest.v1.schema.json",
   "name": "agentops",
-  "version": "2.11.0",
+  "version": "2.12.0",
   "description": "The missing DevOps layer for coding agents. Flow, feedback, and memory that compounds between sessions.",
   "author": {
     "name": "Boden Fuller",
