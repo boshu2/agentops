@@ -39,11 +39,8 @@ coverage.xml
 reports/
 release-notes.md
 
-# Claude session artifacts — ignore everything except curated release notes
-.agents/*
-!.agents/releases/
-.agents/releases/*
-!.agents/releases/*-notes.md
+# Claude session artifacts
+.agents/
 tests/claude-code/.agents/
 
 # Runtime state
