@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Claude team context enhancements** — Expanded `ao` support for Claude team context handling and related docs.
 - **Security-suite primitives** — Added `/security-suite` for composable binary assurance (static/dynamic collection, contract capture, baseline drift, and policy gating).
 - **RPI stale-run cleanup tooling** — Added stale run detection, `ao rpi cleanup`, and configurable worktree cleanup mode.
+- **Plan skill symbol-level specs** — `/plan` now generates file inventory tables, exact function references with line numbers, inline code blocks, named test functions, and verification procedures for implementation-ready specs.
 
 ### Changed
 
