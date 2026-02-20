@@ -765,6 +765,107 @@ fi
 
 # ============================================================
 echo ""
+echo "=== citation-tracker.sh ==="
+# ============================================================
+
+# Test: writes citation record for .agents knowledge reads
+MOCK_CITE="$TMPDIR/mock-citation"
+setup_mock_repo "$MOCK_CITE"
+mkdir -p "$MOCK_CITE/.agents/learnings" "$MOCK_CITE/.agents/ao"
+echo "test" > "$MOCK_CITE/.agents/learnings/item.md"
+CITE_SESSION_ID="sess-cite-$$-$(date +%s)"
+(
+  cd "$MOCK_CITE" && \
+  echo '{"tool_input":{"file_path":".agents/learnings/item.md"}}' | \
+  CLAUDE_SESSION_ID="$CITE_SESSION_ID" bash "$HOOKS_DIR/citation-tracker.sh" >/dev/null 2>&1
+)
+if [ -f "$MOCK_CITE/.agents/ao/citations.jsonl" ] && grep -q ".agents/learnings/item.md" "$MOCK_CITE/.agents/ao/citations.jsonl"; then
+    pass "citation-tracker records citations for knowledge reads"
+else
+    fail "citation-tracker records citations for knowledge reads"
+fi
+
+# Test: dedup prevents duplicate citation in same session
+before_lines=$(wc -l < "$MOCK_CITE/.agents/ao/citations.jsonl" | tr -d ' ')
+(
+  cd "$MOCK_CITE" && \
+  echo '{"tool_input":{"file_path":".agents/learnings/item.md"}}' | \
+  CLAUDE_SESSION_ID="$CITE_SESSION_ID" bash "$HOOKS_DIR/citation-tracker.sh" >/dev/null 2>&1
+)
+after_lines=$(wc -l < "$MOCK_CITE/.agents/ao/citations.jsonl" | tr -d ' ')
+if [ "$before_lines" = "$after_lines" ]; then
+    pass "citation-tracker dedups same-session reads"
+else
+    fail "citation-tracker dedups same-session reads"
+fi
+
+# ============================================================
+echo ""
+echo "=== context-guard.sh ==="
+# ============================================================
+
+# Test: emits additionalContext when ao context guard returns message
+MOCK_CTX="$TMPDIR/mock-context-guard"
+mkdir -p "$MOCK_CTX"
+cat > "$MOCK_CTX/ao" <<'EOF'
+#!/usr/bin/env bash
+echo '{"session":{"action":"warn"},"hook_message":"Context warning message"}'
+EOF
+chmod +x "$MOCK_CTX/ao"
+OUTPUT=$(echo '{"prompt":"keep going"}' | PATH="$MOCK_CTX:$PATH" CLAUDE_SESSION_ID="sess-ctx-1" bash "$HOOKS_DIR/context-guard.sh" 2>/dev/null || true)
+if echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext == "Context warning message"' >/dev/null 2>&1; then
+    pass "context-guard emits additionalContext from ao output"
+else
+    fail "context-guard emits additionalContext from ao output"
+fi
+
+# Test: strict mode blocks on handoff_now action
+cat > "$MOCK_CTX/ao" <<'EOF'
+#!/usr/bin/env bash
+echo '{"session":{"action":"handoff_now"},"hook_message":"Context critical"}'
+EOF
+chmod +x "$MOCK_CTX/ao"
+EC=0
+echo '{"prompt":"continue"}' | PATH="$MOCK_CTX:$PATH" CLAUDE_SESSION_ID="sess-ctx-2" AGENTOPS_CONTEXT_GUARD_STRICT=1 bash "$HOOKS_DIR/context-guard.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 2 ]; then
+    pass "context-guard strict mode blocks on handoff_now"
+else
+    fail "context-guard strict mode blocks on handoff_now (exit=$EC, expected 2)"
+fi
+
+# ============================================================
+echo ""
+echo "=== skill-lint-gate.sh ==="
+# ============================================================
+
+# Test: non-skill edit path exits cleanly
+EC=0
+TOOL_INPUT='{"file_path":"README.md"}' bash "$HOOKS_DIR/skill-lint-gate.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then
+    pass "skill-lint-gate ignores non-skill files"
+else
+    fail "skill-lint-gate ignores non-skill files"
+fi
+
+# Test: oversized orchestration SKILL.md emits warning (non-blocking)
+MOCK_SKILL="$TMPDIR/mock-skill-lint"
+mkdir -p "$MOCK_SKILL/skills/demo"
+{
+  echo "---"
+  echo "name: demo"
+  echo "tier: orchestration"
+  echo "---"
+  for i in $(seq 1 560); do echo "line $i"; done
+} > "$MOCK_SKILL/skills/demo/SKILL.md"
+OUTPUT=$(TOOL_INPUT="{\"file_path\":\"$MOCK_SKILL/skills/demo/SKILL.md\"}" bash "$HOOKS_DIR/skill-lint-gate.sh" 2>&1 || true)
+if echo "$OUTPUT" | grep -q "SKILL LINT"; then
+    pass "skill-lint-gate warns on oversized SKILL.md"
+else
+    fail "skill-lint-gate warns on oversized SKILL.md"
+fi
+
+# ============================================================
+echo ""
 echo "=== Coverage check ==="
 # ============================================================
 

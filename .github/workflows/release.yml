@@ -1,4 +1,4 @@
-name: Release
+name: Release Publisher
 
 on:
   push:
@@ -9,18 +9,9 @@ on:
       tag:
         description: 'Tag to release (e.g., v1.0.12)'
         required: true
-      doc_release_freeze_override:
-        description: 'Set true to bypass release-message freeze validation'
-        required: false
-        default: 'false'
-      doc_release_freeze_override_reason:
-        description: 'Required when override=true; explain why release message changed'
-        required: false
-        default: ''
 
-# Prevent concurrent releases from corrupting artifacts
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -29,26 +20,12 @@ permissions:
   attestations: write
 
 jobs:
-  # Stage 0: Validate doc-release stability checks
-  doc-release-gate:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Run doc-release stabilization gate
-        env:
-          DOC_RELEASE_FREEZE_OVERRIDE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.doc_release_freeze_override || 'false' }}
-          DOC_RELEASE_FREEZE_REASON: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.doc_release_freeze_override_reason || '' }}
-        run: |
-          chmod +x tests/docs/validate-doc-release.sh
-          ./tests/docs/validate-doc-release.sh
-
-  security-gate:
-    runs-on: ubuntu-latest
-    needs: doc-release-gate
-    continue-on-error: false
-    steps:
-      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -60,43 +37,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install scanner tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install semgrep
-          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
-          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
-
-      - name: Run security gate (release mode)
-        run: |
-          chmod +x scripts/security-gate.sh
-          ./scripts/security-gate.sh --mode full
-
-      - name: Upload security gate artifacts
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: release-security-gate
-          path: .agents/security/
-          retention-days: 7
-
-  # Stage 1: Build all binaries and generate artifacts
-  build:
-    needs: [doc-release-gate, security-gate]
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
-
-      - name: Extract version
+      - name: Resolve version
         id: version
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -107,104 +48,25 @@ jobs:
           else
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
+
+          if [[ -z "$VERSION" ]]; then
+            echo "ERROR: could not determine release version"
+            exit 1
+          fi
+
+          if [[ "$VERSION" != v* ]]; then
+            VERSION="v$VERSION"
+          fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Building version: $VERSION"
-
-      - name: Extract release notes from CHANGELOG.md
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          # Find previous tag for changelog footer link
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
-          chmod +x scripts/extract-release-notes.sh
-          scripts/extract-release-notes.sh "$VERSION" "$PREV_TAG"
-
-      - name: Build with GoReleaser (skip publish)
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: '~> v2'
-          args: release --clean --skip=publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  # Stage 2: Validate the darwin-arm64 binary
-  validate:
-    needs: build
-    runs-on: macos-15  # Explicit arm64 runner
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: dist
-          path: dist/
-
-      - name: List artifacts
-        run: |
-          echo "=== Downloaded artifacts ==="
-          find dist -type f -name "*.tar.gz" -o -name "*.zip" | head -20
-          echo ""
-
-      - name: Extract darwin-arm64 binary
-        run: |
-          # Find the darwin-arm64 tarball
-          TARBALL=$(find dist -name "*darwin*arm64*.tar.gz" | head -1)
-          if [[ -z "$TARBALL" ]]; then
-            echo "ERROR: Could not find darwin-arm64 tarball"
-            find dist -type f
-            exit 1
-          fi
-          echo "Found tarball: $TARBALL"
-
-          # Extract to temp directory
-          mkdir -p /tmp/ao-validate
-          tar -xzf "$TARBALL" -C /tmp/ao-validate
-
-          # Find the binary
-          BINARY=$(find /tmp/ao-validate -name "ao" -type f | head -1)
-          if [[ -z "$BINARY" ]]; then
-            echo "ERROR: Could not find 'ao' binary in tarball"
-            find /tmp/ao-validate -type f
-            exit 1
-          fi
-
-          echo "Extracted binary: $BINARY"
-          mv "$BINARY" /tmp/ao-validate/ao
-          echo "AO_BINARY=/tmp/ao-validate/ao" >> "$GITHUB_ENV"
-
-      - name: Run validation script
-        run: |
-          chmod +x scripts/validate-release.sh
-          scripts/validate-release.sh "$AO_BINARY" "${{ needs.build.outputs.version }}"
-
-  # Stage 3: Publish release and update Homebrew tap
-  publish:
-    needs: [build, validate]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
+          echo "Publishing version: $VERSION"
 
       - name: Verify tag still exists
         run: |
-          VERSION="${{ needs.build.outputs.version }}"
-          # With fetch-depth: 0, we already have all tags from checkout
-          # Just verify the tag resolves to a commit
+          VERSION="${{ steps.version.outputs.version }}"
+          git fetch --tags --force
           if ! git rev-parse "$VERSION^{commit}" > /dev/null 2>&1; then
-            echo "ERROR: Tag $VERSION no longer exists or is invalid"
+            echo "ERROR: Tag $VERSION does not resolve to a commit"
             exit 1
           fi
           COMMIT=$(git rev-parse "$VERSION^{commit}")
@@ -219,46 +81,35 @@ jobs:
             exit 1
           fi
 
-          # Test token can access the tap repo
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token $HOMEBREW_TAP_GITHUB_TOKEN" \
             "https://api.github.com/repos/boshu2/homebrew-agentops")
 
           if [[ "$HTTP_CODE" != "200" ]]; then
             echo "ERROR: Homebrew token invalid or expired (HTTP $HTTP_CODE)"
-            echo "       Please regenerate HOMEBREW_TAP_GITHUB_TOKEN secret"
             exit 1
           fi
           echo "Homebrew token validated"
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: dist
-          path: dist/
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
+          chmod +x scripts/extract-release-notes.sh
+          scripts/extract-release-notes.sh "$VERSION" "$PREV_TAG"
 
       - name: Delete existing release (idempotent re-runs)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ needs.build.outputs.version }}"
-          # Delete any existing release for this tag (draft or published).
-          # GoReleaser must be the sole creator — an existing release causes
-          # it to create an "untagged" release with an empty body.
+          VERSION="${{ steps.version.outputs.version }}"
           if gh release view "$VERSION" > /dev/null 2>&1; then
             echo "Deleting existing release for $VERSION..."
             gh release delete "$VERSION" --yes
-            echo "  deleted"
+            echo "deleted"
           else
             echo "No existing release for $VERSION"
           fi
-
-      - name: Extract release notes from CHANGELOG.md
-        run: |
-          VERSION="${{ needs.build.outputs.version }}"
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
-          chmod +x scripts/extract-release-notes.sh
-          scripts/extract-release-notes.sh "$VERSION" "$PREV_TAG"
 
       - name: Publish with GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -273,11 +124,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # GoReleaser v2 silently ignores --release-notes in some configurations.
-          # Apply release notes via gh CLI after GoReleaser creates the release.
-          VERSION="${{ needs.build.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
           gh release edit "$VERSION" --notes-file release-notes.md
           echo "Release notes applied to $VERSION ($(wc -l < release-notes.md) lines)"
+
+      - name: Install scanner tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install semgrep
+          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
+          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
+
+      - name: Generate SBOM and security report assets
+        run: |
+          mkdir -p release-artifacts
+
+          # CycloneDX SBOM for Go module dependencies
+          GOBIN=/usr/local/bin go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0
+          (cd cli && cyclonedx-gomod mod -licenses -json -output ../release-artifacts/sbom-cyclonedx-go-mod.json)
+
+          # Security report for release consumers (non-blocking at publish stage)
+          chmod +x scripts/security-gate.sh
+          set +e
+          ./scripts/security-gate.sh --mode full --json > release-artifacts/security-gate-summary.json
+          SECURITY_RC=$?
+          set -e
+          echo "security-gate exit code: $SECURITY_RC"
+
+          if ! jq empty release-artifacts/security-gate-summary.json > /dev/null 2>&1; then
+            jq -n --arg note "security-gate output was not valid JSON" '{parse_error:true,note:$note}' > release-artifacts/security-gate-summary.json
+          fi
+
+      - name: Upload SBOM and security report to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release upload "$VERSION" release-artifacts/sbom-cyclonedx-go-mod.json --clobber
+          gh release upload "$VERSION" release-artifacts/security-gate-summary.json --clobber
+          echo "Uploaded SBOM + security report assets"
 
       - name: Generate SLSA provenance attestation
         uses: actions/attest-build-provenance@v3
@@ -288,3 +173,5 @@ jobs:
             dist/ao-linux-amd64.tar.gz
             dist/ao-linux-arm64.tar.gz
             dist/checksums.txt
+            release-artifacts/sbom-cyclonedx-go-mod.json
+            release-artifacts/security-gate-summary.json

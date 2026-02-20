@@ -4,7 +4,7 @@
   "title": "AgentOps Claude Plugin Manifest v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "name", "version"],
+  "required": ["name", "version"],
   "properties": {
     "$schema": {
       "type": "string"

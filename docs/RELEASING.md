@@ -4,31 +4,27 @@ This document describes the release process for the `ao` CLI and AgentOps plugin
 
 ## Overview
 
-Releases are triggered by git tags and follow a 4-stage pipeline:
+Releases are triggered by git tags and use a publisher-only workflow:
 
 ```
 git tag vX.Y.Z
     ↓
 ┌──────────────────────────────────────────────────────┐
-│                release.yml workflow                  │
+│          Local gate (authoritative)                 │
 ├──────────────────────────────────────────────────────┤
-│  DOC GATE   → Runs tests/docs/validate-doc-release.sh│
-│               Checks links, skill counts, and        │
-│               release-message freeze                 │
+│  ./scripts/ci-local-release.sh                      │
+│  - validation + tests + smoke checks                │
+│  - hook install + ao rpi smoke                      │
+│  - SBOM + security report artifacts                 │
+└──────────────────────────────────────────────────────┘
+                         ↓
+┌──────────────────────────────────────────────────────┐
+│           release.yml (publisher only)              │
 ├──────────────────────────────────────────────────────┤
-│  BUILD      → GoReleaser builds 4 binaries           │
-│               (darwin/linux × amd64/arm64)           │
-│               Generates checksums.txt (SHA256)       │
-│               Uploads as workflow artifacts           │
-├──────────────────────────────────────────────────────┤
-│  VALIDATE   → Downloads darwin-arm64 artifact        │
-│               Runs scripts/validate-release.sh       │
-│               Checks version, size, executability    │
-├──────────────────────────────────────────────────────┤
-│  PUBLISH    → Creates GitHub Release with notes      │
-│               Uploads binaries + checksums           │
-│               Pushes Homebrew formula                │
-│               Generates SLSA provenance attestation  │
+│  - GoReleaser publish                               │
+│  - GitHub Release notes + assets                    │
+│  - Homebrew update                                  │
+│  - SLSA provenance attestation                      │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -36,6 +32,8 @@ git tag vX.Y.Z
 
 ### 1. Pre-release Checklist
 
+- [ ] Local CI release gate passes (`./scripts/ci-local-release.sh`)
+- [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM + security report)
 - [ ] All tests pass locally (`cd cli && make test`)
 - [ ] CI green on main (check Actions tab)
 - [ ] Version number follows semver (vX.Y.Z)
@@ -43,7 +41,6 @@ git tag vX.Y.Z
 - [ ] plugin.json version matches tag
 - [ ] No uncommitted changes on main
 - [ ] Homebrew token is valid (check secrets)
-- [ ] Doc-release gate passes locally (`./tests/docs/validate-doc-release.sh`)
 
 ### 1a. Release Size Check
 
@@ -91,15 +88,12 @@ git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-### 4. Monitor the Workflow
+### 4. Monitor the Publisher Workflow
 
 Watch the release at: https://github.com/boshu2/agentops/actions
 
-The workflow runs four jobs sequentially:
-1. **doc-release-gate** - Validates links, skill counts, and release-message freeze
-2. **build** - Creates binaries + checksums (~2 min)
-3. **validate** - Tests darwin-arm64 binary (~1 min)
-4. **publish** - Creates release, updates Homebrew, signs attestation (~2 min)
+The workflow runs one publish job:
+1. **publish** - Builds and publishes artifacts, updates Homebrew, uploads SBOM/security report, signs attestation
 
 ### 5. Verify the Release
 
@@ -139,6 +133,8 @@ Each release produces:
 | `ao-linux-amd64.tar.gz` | Linux x86_64 binary |
 | `ao-linux-arm64.tar.gz` | Linux ARM64 binary |
 | `checksums.txt` | SHA256 checksums for all archives |
+| `sbom-cyclonedx-go-mod.json` | Publishable CycloneDX SBOM for Go dependencies |
+| `security-gate-summary.json` | Security scan summary (gitleaks/semgrep/gosec/trivy/etc.) |
 | SLSA attestation | Build provenance (verifiable via `gh attestation verify`) |
 
 ## Release Notes
@@ -152,59 +148,30 @@ The template lives in `.goreleaser.yml` under `release.header` and `release.foot
 
 ## Validation Checks
 
-The `validate` stage runs `scripts/validate-release.sh` which checks:
-
-| Check | What it Catches |
-|-------|-----------------|
-| Binary exists | Build produced no output |
-| Size > 1MB | Truncated or corrupted binary |
-| File is executable | Wrong file type in archive |
-| Version matches tag | ldflags injection failed |
-| `--help` works | Binary crashes on startup |
-| `-h` works | Flag parsing broken |
-| `status` runs | Basic command execution |
-
-## Doc-Release Stabilization Gate
-
-The `doc-release-gate` stage runs `tests/docs/validate-doc-release.sh`, which is a single
-gate for:
-
-- Link validation (`tests/docs/validate-links.sh`)
-- Skill count consistency (`tests/docs/validate-skill-count.sh`)
-- Release message freeze check (against `.goreleaser.yml` release header/footer text)
-
-### Message Freeze Override
-
-By default, release message text is frozen. Any change to the canonical release header/footer
-in `.goreleaser.yml` fails the gate.
-
-To intentionally bypass this check, set both variables:
+Release validation is local-first and enforced by:
 
 ```bash
-DOC_RELEASE_FREEZE_OVERRIDE=true
-DOC_RELEASE_FREEZE_REASON="short explanation of approved copy change"
+./scripts/ci-local-release.sh
 ```
 
-In GitHub Actions `workflow_dispatch`, these are exposed as inputs:
-
-- `doc_release_freeze_override` (`true` or `false`)
-- `doc_release_freeze_override_reason` (required when override is true)
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, and security scans.
 
 ## Failure Modes
 
-### Validation Fails
+### Local Gate Fails
 
-If validation fails, the release is NOT published. The tag exists but no release was created.
+If `./scripts/ci-local-release.sh` fails, do not tag or publish.
 
 **To fix:**
 1. Identify the issue from the workflow logs
 2. Fix the code
 3. Delete the tag: `git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`
-4. Create a new tag after fixing
+4. Re-run the local gate until all checks pass
+5. Create and push the tag
 
 ### Publish Fails
 
-If publish fails after validation passed, the release may be in a partial state.
+If publisher CI fails after a local gate pass, the release may be in a partial state.
 
 **To fix:**
 1. Check if GitHub release was created (may need manual cleanup)
@@ -226,14 +193,22 @@ If you need to re-run a release without pushing a new tag:
 1. Go to Actions → Release workflow
 2. Click "Run workflow"
 3. Enter the tag (e.g., `vX.Y.Z`)
-4. Optionally set `doc_release_freeze_override=true` and provide a reason
-5. Click "Run workflow"
+4. Click "Run workflow"
 
 ## Local Testing
 
 Before tagging, you can test the build locally:
 
 ```bash
+# Run CI-equivalent local release gate (required)
+./scripts/ci-local-release.sh
+
+# Publishable local artifacts will be written to:
+# .agents/releases/local-ci/<timestamp>/
+#   - sbom-vX.Y.Z.cyclonedx.json
+#   - sbom-vX.Y.Z.spdx.json
+#   - security-gate-full.json
+
 # Install goreleaser
 brew install goreleaser
 
@@ -268,7 +243,7 @@ Dependency automation is managed by Dependabot and follows this policy:
 | File | Purpose |
 |------|---------|
 | `.goreleaser.yml` | Build config, checksums, release notes, Homebrew formula |
-| `.github/workflows/release.yml` | 4-stage release workflow (doc gate → build → validate → publish) |
+| `.github/workflows/release.yml` | Publisher-only release workflow (publish + assets + attestation) |
 | `.github/workflows/validate.yml` | CI validation (includes doc-release stabilization gate) |
 | `.github/workflows/nightly.yml` | Nightly tests with failure alerts |
 | `.github/dependabot.yml` | Dependabot policy and schedules for Go modules + GitHub Actions |
@@ -305,13 +280,13 @@ ldflags:
   - -s -w -X main.version={{ .Version }}
 ```
 
-The validation stage should catch this before publish.
+`./scripts/ci-local-release.sh` should catch this before tagging.
 
-### Binary not found in tarball
+### Binary artifact missing or renamed
 
 GoReleaser archive naming doesn't match extraction pattern. Check:
 - `.goreleaser.yml` `archives` section
-- Workflow's `find` command for tarball
+- Release asset names in the GitHub Release page
 
 ### Homebrew formula not updated
 

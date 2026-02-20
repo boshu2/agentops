@@ -1241,17 +1241,18 @@ ao rpi phased <goal> [flags]
 **Flags:**
 
 ```
-      --fast-path                Force fast path (--quick for gates)
-      --from string              Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
-  -h, --help                     help for phased
-      --interactive              Enable human gates at research and plan phases
-      --live-status              Stream phase progress to a live-status.md file
-      --max-retries int          Maximum retry attempts per gate (default: 3) (default 3)
-      --no-worktree              Disable worktree isolation (run in current directory)
-      --phase-timeout duration   Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
-      --stall-timeout duration   Maximum time without progress before declaring stall (0 disables) (default 10m0s)
-      --swarm-first              Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable (default true)
-      --test-first               Pass --test-first to /crank for spec-first TDD
+      --fast-path                         Force fast path (--quick for gates)
+      --from string                       Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
+  -h, --help                              help for phased
+      --interactive                       Enable human gates at research and plan phases
+      --live-status                       Stream phase progress to a live-status.md file
+      --max-retries int                   Maximum retry attempts per gate (default: 3) (default 3)
+      --no-worktree                       Disable worktree isolation (run in current directory)
+      --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
+      --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
+      --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)
+      --swarm-first                       Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable (default true)
+      --test-first                        Pass --test-first to /crank for spec-first TDD
 ```
 
 #### `ao rpi status`

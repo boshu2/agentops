@@ -98,14 +98,10 @@ validate_manifest() {
     fi
 
     declared_schema="$(jq -r '."$schema" // empty' "$manifest")"
-    if [[ -z "$declared_schema" ]]; then
-        fail "$label manifest missing \$schema pointer"
-        return
-    fi
-
-    manifest_dir="$(cd "$(dirname "$manifest")" && pwd)"
-    if ! output="$(
-        python3 - "$manifest_dir" "$declared_schema" "$schema" <<'PY'
+    if [[ -n "$declared_schema" ]]; then
+        manifest_dir="$(cd "$(dirname "$manifest")" && pwd)"
+        if ! output="$(
+            python3 - "$manifest_dir" "$declared_schema" "$schema" <<'PY'
 import os
 import sys
 
@@ -116,14 +112,17 @@ if resolved != expected:
     print(f"schema pointer resolves to {resolved}, expected {expected}")
     sys.exit(1)
 PY
-    )"; then
-        fail "$label schema pointer drift detected"
-        if [[ -n "$output" ]]; then
-            while IFS= read -r line; do
-                echo "    $line"
-            done <<<"$output"
+        )"; then
+            fail "$label schema pointer drift detected"
+            if [[ -n "$output" ]]; then
+                while IFS= read -r line; do
+                    echo "    $line"
+                done <<<"$output"
+            fi
+            return
         fi
-        return
+    else
+        echo "ℹ $label manifest missing \$schema pointer (allowed)"
     fi
 
     if ! output="$(

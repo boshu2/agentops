@@ -71,9 +71,9 @@ VERSION_OUTPUT=$("$BINARY" version 2>&1) || true
 # Strip 'v' prefix if present for comparison
 CLEAN_VERSION="${EXPECTED_VERSION#v}"
 
-if ! echo "$VERSION_OUTPUT" | grep -qF "ao version $CLEAN_VERSION"; then
+if [[ "$VERSION_OUTPUT" != *"ao version $CLEAN_VERSION"* ]] && [[ "$VERSION_OUTPUT" != *"ao version v$CLEAN_VERSION"* ]]; then
     echo "FAIL: Version mismatch"
-    echo "  Expected to find: ao version $CLEAN_VERSION"
+    echo "  Expected to find: ao version $CLEAN_VERSION (or ao version v$CLEAN_VERSION)"
     echo "  Actual output: $VERSION_OUTPUT"
     echo ""
     echo "  This usually means ldflags version injection failed."
