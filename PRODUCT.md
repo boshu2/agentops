@@ -39,7 +39,7 @@ AgentOps should be the local-first DevOps layer around your coding agent. Execut
 
 ## Relationship to Olympus
 
-AgentOps is a complete, standalone system — autonomous within a session. You do not need Olympus to use AgentOps. The 52 skills, 12 hooks, knowledge flywheel, and RPI lifecycle work independently — `/rpi` ships features end-to-end, `/evolve` runs goal-driven improvement loops, and the flywheel compounds knowledge across sessions, all without any external daemon.
+AgentOps is a complete, standalone system — autonomous within a session. You do not need Olympus to use AgentOps. The 53 skills, 12 hooks, knowledge flywheel, and RPI lifecycle work independently — `/rpi` ships features end-to-end, `/evolve` runs goal-driven improvement loops, and the flywheel compounds knowledge across sessions, all without any external daemon.
 
 **Olympus is the power-user layer for people who want to go further.**
 

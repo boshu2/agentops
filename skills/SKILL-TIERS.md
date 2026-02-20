@@ -178,7 +178,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (42)
+### User-Facing Skills (43)
 
 **Judgment:**
 
@@ -221,6 +221,7 @@ These are how skills chain in practice:
 | **goals** | product | Maintain GOALS.yaml fitness specification |
 | **release** | product | Pre-flight, changelog, version bumps, tag |
 | **security** | product | Continuous security scanning and release gating |
+| **security-suite** | execution | Composable binary security suite for static/dynamic assurance and policy gating |
 | **readme** | product | Gold-standard README generation with council validation |
 | **doc** | product | Generate documentation |
 
@@ -316,6 +317,7 @@ Hidden from interactive `npx skills add` discovery. Loaded JIT by other skills v
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
+| **security-suite** | - | - (standalone) |
 | ratchet | - | - |
 | **recover** | - | - (standalone) |
 | **reverse-engineer-rpi** | - | - (standalone) |

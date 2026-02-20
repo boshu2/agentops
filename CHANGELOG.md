@@ -13,12 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Context-guard workflow protections** — Added assignment mapping plus proactive handoff and one-shot recovery markers to reduce stale-session drift and improve recovery behavior.
 - **Claude team context enhancements** — Expanded `ao` support for Claude team context handling and related docs.
+- **Security-suite primitives** — Added `/security-suite` for composable binary assurance (static/dynamic collection, contract capture, baseline drift, and policy gating).
+- **RPI stale-run cleanup tooling** — Added stale run detection, `ao rpi cleanup`, and configurable worktree cleanup mode.
 
 ### Changed
 
 - **Install guidance priorities** — Claude marketplace/plugin install is now the first install path, with `npx skills` positioned as the cross-agent path for Codex/Cursor/OpenCode.
 - **Homebrew update consistency** — Standardized upgrade messaging to `brew update && brew upgrade agentops` across docs/release notes and improved installer fallback messaging.
 - **Repository hygiene** — `.agents/` artifacts are now fully ignored to keep generated local state out of tracked source history.
+- **Release gating model** — Release validation moved to local CI (`scripts/ci-local-release.sh`) while GitHub Actions release workflow is now publisher-only.
 
 ### Fixed
 
@@ -26,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **RPI phased reliability** — Hardened stream startup/fallback behavior and resolved related validation regressions.
 - **Hook/runtime regressions** — Fixed hook-coverage compile regressions and restored install symbols used by `ao init`/`ao doctor`.
 - **CLI quality debt** — Addressed lint/staticcheck regressions and reduced `runInit` complexity below CI threshold.
+- **RPI cleanup reliability** — Persisted terminal metadata and validated stale-run worktree paths before cleanup.
 
 ## [2.12.1] - 2026-02-20
 

@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 52 AgentOps skills (42 user-facing + 10 internal).
+Complete reference for all 53 AgentOps skills (43 user-facing + 10 internal).
 
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
 

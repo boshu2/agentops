@@ -1214,6 +1214,24 @@ ao rpi [command]
 
 **Subcommands:**
 
+#### `ao rpi cleanup`
+
+Detect and clean up stale RPI phased runs.
+
+```
+ao rpi cleanup [flags]
+```
+
+**Flags:**
+
+```
+      --all               Clean up all stale runs
+      --dry-run           Show what would be done without making changes
+  -h, --help              help for cleanup
+      --prune-worktrees   Run 'git worktree prune' after cleanup
+      --run-id string     Clean up a specific run by ID
+```
+
 #### `ao rpi loop`
 
 Execute RPI cycles in a loop, consuming from next-work.jsonl.
