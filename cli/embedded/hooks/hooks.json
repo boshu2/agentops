@@ -14,27 +14,27 @@
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao extract 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao extract\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-extract.sh",
             "timeout": 8
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao inject --apply-decay --format markdown --max-tokens 1000 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao inject\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-inject.sh",
             "timeout": 8
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao ratchet status -o json 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao ratchet status\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-ratchet-status.sh",
             "timeout": 4
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao maturity --scan 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao maturity --scan\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-maturity-scan.sh",
             "timeout": 6
           },
           {
             "type": "command",
-            "command": "AGENTS_DIR=\"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents\"; FCOUNT=$(find \"$AGENTS_DIR\" -type f 2>/dev/null | wc -l | tr -d ' '); if [ \"$FCOUNT\" -gt 500 ]; then echo \"⚠️ .agents/ has $FCOUNT files. Run: scripts/prune-agents.sh --execute\"; fi || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-agents-check.sh",
             "timeout": 3
           },
           {
@@ -50,22 +50,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao forge transcript --last-session --queue --quiet 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao forge transcript\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-forge.sh",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao session-outcome 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao session-outcome\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-session-outcome.sh",
             "timeout": 6
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao feedback-loop --session \"${CLAUDE_SESSION_ID:-}\" 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao feedback-loop\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-feedback-loop.sh",
             "timeout": 8
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao task-sync 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao task-sync\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-task-sync.sh",
             "timeout": 8
           },
           {
@@ -187,7 +187,7 @@
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao flywheel close-loop --quiet 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao flywheel close-loop\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-flywheel-close.sh",
             "timeout": 15
           }
         ]
