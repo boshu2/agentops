@@ -58,6 +58,7 @@ Council requires a runtime that can **spawn parallel subagents** and (for `--deb
 Skills describe WHAT to do, not WHICH tool to call. See `skills/shared/SKILL.md` for the capability contract.
 
 **After detecting your backend, read the matching reference for concrete spawn/wait/message/cleanup examples:**
+- Claude feature contract → `skills/shared/references/claude-code-latest-features.md`
 - Claude Native Teams → `skills/shared/references/backend-claude-teams.md`
 - Codex Sub-Agents / CLI → `skills/shared/references/backend-codex-subagents.md`
 - Background Tasks → `skills/shared/references/backend-background-tasks.md`

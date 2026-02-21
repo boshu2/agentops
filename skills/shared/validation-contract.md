@@ -316,7 +316,7 @@ def default_validation(task_id, worker_artifacts):
         if not os.path.exists(artifact):
             return FAIL(f"Reported artifact not found: {artifact}")
 
-    # Check for modified files (workers write to shared worktree)
+    # Check for modified files (workers write in main tree or isolated worktrees)
     result = subprocess.run("git status --porcelain", shell=True, capture_output=True)
     if not result.stdout.strip():
         return WARN("No file changes detected — worker may not have written anything")

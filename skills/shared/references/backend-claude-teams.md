@@ -6,6 +6,20 @@ Concrete tool calls for spawning agents using Claude Code native teams (`TeamCre
 
 ---
 
+## Pre-Flight: Confirm Modern Claude Features
+
+Before spawning teammates, verify feature readiness:
+
+1. `claude agents` succeeds (custom agents discoverable)
+2. Teammate profiles for write tasks declare `isolation: worktree`
+3. Long-running teammates prefer `background: true`
+4. Hooks include worktree lifecycle coverage (`WorktreeCreate`, `WorktreeRemove`) and config auditing (`ConfigChange`) where policy requires it
+
+For canonical feature details, read:
+`skills/shared/references/claude-code-latest-features.md`.
+
+---
+
 ## Setup: Create Team
 
 Every spawn session starts by creating a team. One team per wave (fresh context = Ralph Wiggum preserved; see `skills/shared/references/ralph-loop-contract.md`).
@@ -218,7 +232,7 @@ This ensures each wave's workers start with clean context (no leftover state fro
 
 ## Key Rules
 
-1. **`TeamCreate` before `TaskCreate`** — tasks created before the team are invisible to teammates
+1. **`TeamCreate` before `Task`** — tasks created before the team are invisible to teammates
 2. **Pre-assign tasks before spawning** — workers do NOT race-claim from TaskList
 3. **Lead-only commits** — workers write files, lead runs `git add` + `git commit`
 4. **Thin messages** — workers send <100 token signals, full results go to disk

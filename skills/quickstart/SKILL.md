@@ -54,6 +54,11 @@ fi
 
 # 4. Claude Code version (informational)
 claude --version 2>/dev/null || echo "Claude Code version: unknown"
+
+# 5. Claude custom agents inventory (informational)
+if command -v claude &>/dev/null; then
+  claude agents 2>/dev/null | head -20 || echo "Claude agents: unavailable in this environment"
+fi
 ```
 
 **If GIT_REPO=false:** Continue the walkthrough but skip git-dependent steps (Steps 3, 5). Replace them with file-browsing equivalents. Tell the user which steps were adapted and why.

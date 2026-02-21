@@ -60,6 +60,7 @@ Use runtime capability detection, not hardcoded tool names. Swarm requires:
 See `skills/shared/SKILL.md` for the capability contract.
 
 **After detecting your backend, read the matching reference for concrete spawn/wait/message/cleanup examples:**
+- Claude feature contract → `skills/shared/references/claude-code-latest-features.md`
 - Claude Native Teams → `skills/shared/references/backend-claude-teams.md`
 - Codex Sub-Agents / CLI → `skills/shared/references/backend-codex-subagents.md`
 - Background Tasks → `skills/shared/references/backend-background-tasks.md`
@@ -368,7 +369,9 @@ ol hero ratchet "$BEAD_ID" --quest "$QUEST_ID"
 
 ## Worktree Isolation (Multi-Epic Dispatch)
 
-**Default behavior:** Workers share the current worktree (safe for single-epic waves).
+**Default behavior:** Auto-detect and prefer runtime-native isolation first.
+
+In Claude runtime, first verify teammate profiles with `claude agents` and use agent definitions with `isolation: worktree` for write-heavy parallel waves. If native isolation is unavailable, use manual `git worktree` fallback below.
 
 **When to use worktrees:** Activate worktree isolation when:
 - Dispatching workers across **multiple epics** (each epic touches different packages)

@@ -24,6 +24,16 @@ mkdir -p .agents/swarm/results
 
 Evidence: shared-worktree multi-epic dispatch produced build breaks and algorithm duplication (`.agents/evolve/dispatch-comparison.md`).
 
+### Claude-Native Isolation (preferred when available)
+
+If running in Claude runtime with modern agent definitions, prefer declarative isolation first:
+
+1. Confirm teammate profiles with `claude agents`
+2. Use teammate definitions that set `isolation: worktree`
+3. For long-running workers, set `background: true`
+
+Only fall back to manual `git worktree` management when declarative isolation is unavailable.
+
 ### Detection
 
 ```bash
@@ -80,7 +90,7 @@ Use whatever multi-agent primitives your runtime provides to spawn parallel work
 
 Workers should use **sonnet** (not opus) to minimize cost. The orchestrator (lead) stays on opus for coordination and validation.
 
-When spawning via the Task tool, pass `model: "sonnet"`. When spawning via native teams, teammates inherit from the session model unless overridden — set `COUNCIL_CLAUDE_MODEL=sonnet` or use `model: "sonnet"` in the Task call.
+When spawning via the Task tool, pass `model: "sonnet"`. When spawning via native teams, teammates inherit from the session model unless overridden — set `COUNCIL_CLAUDE_MODEL=sonnet` or use `model: "sonnet"` in the Task call. For longer tasks, prefer teammate profiles with `background: true`.
 
 | Role | Model | Rationale |
 |------|-------|-----------|

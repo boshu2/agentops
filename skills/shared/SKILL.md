@@ -12,6 +12,7 @@ This directory contains shared reference documents used by multiple skills:
 
 - `agent-mail-protocol.md` - Message protocol for distributed mode coordination
 - `validation-contract.md` - Verification requirements for accepting spawned work
+- `references/claude-code-latest-features.md` - Claude Code feature contract (slash commands, agent isolation, hooks, settings)
 - `references/backend-claude-teams.md` - Concrete examples for Claude native teams (`TeamCreate` + `SendMessage`)
 - `references/backend-codex-subagents.md` - Concrete examples for Codex CLI and Codex sub-agents
 - `references/backend-background-tasks.md` - Fallback: `Task(run_in_background=true)`
@@ -65,6 +66,7 @@ Every runtime maps these capabilities to its own API. Skills describe WHAT to do
 
 | Backend | Reference |
 |---------|-----------|
+| Claude feature contract | `skills/shared/references/claude-code-latest-features.md` |
 | Claude Native Teams | `skills/shared/references/backend-claude-teams.md` |
 | Codex Sub-Agents / CLI | `skills/shared/references/backend-codex-subagents.md` |
 | Background Tasks (fallback) | `skills/shared/references/backend-background-tasks.md` |
@@ -107,7 +109,7 @@ Use capability detection at runtime, not hardcoded tool names. The same skill mu
 | Graceful stop | `close_agent` | `shutdown_request` | **TaskStop (lossy)** | `tmux kill-session` |
 | Redirect to different task | `send_input` | `SendMessage` | **NO** | Agent Mail |
 | Adjust scope mid-flight | `send_input` | `SendMessage` | **NO** | Agent Mail |
-| File conflict prevention | Worktree (planned) | Lead-only commits | None | File reservations |
+| File conflict prevention | Manual `git worktree` routing | Native `isolation: worktree` + lead-only commits | None | File reservations |
 | Crash recovery | NO | NO | NO | **YES** (tmux persists) |
 | Process isolation | YES (sub-process) | Shared worktree | Shared worktree | **YES** (separate process) |
 

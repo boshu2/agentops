@@ -126,6 +126,23 @@ else
     echo -e "  ${YELLOW}⚠ lint-skills.sh not found${NC}"
 fi
 
+# Run Claude feature coverage checks
+echo ""
+echo -e "${BLUE}━━━ Claude Feature Coverage ━━━${NC}"
+echo ""
+CLAUDE_FEATURE_SCRIPT="$SCRIPT_DIR/test-claude-feature-coverage.sh"
+if [ -f "$CLAUDE_FEATURE_SCRIPT" ]; then
+    chmod +x "$CLAUDE_FEATURE_SCRIPT"
+    if "$CLAUDE_FEATURE_SCRIPT"; then
+        echo -e "  ${GREEN}✓ claude feature coverage passed${NC}"
+    else
+        echo -e "  ${RED}✗ claude feature coverage failed${NC}"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    echo -e "  ${YELLOW}⚠ test-claude-feature-coverage.sh not found${NC}"
+fi
+
 # Run alias collision detection
 echo ""
 echo -e "${BLUE}━━━ Alias Collision Detection ━━━${NC}"
