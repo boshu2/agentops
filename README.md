@@ -4,7 +4,7 @@
 
 ### Coding agents forget everything between sessions. This fixes that.
 
-[What's Different](#whats-different) · [Install](#install) · [See It Work](#see-it-work) · [How It Works](#how-it-works) · [Skills](#skills) · [CLI](#the-ao-cli) · [FAQ](#faq)
+[How It Works](#how-it-works) · [Install](#install) · [See It Work](#see-it-work) · [Skills](#skills) · [CLI](#the-ao-cli) · [FAQ](#faq)
 
 </div>
 
@@ -16,11 +16,17 @@
 
 ---
 
-## What's Different
+## How It Works
 
-Your agent validates a PR. The council verdict, your decisions, and the patterns used are automatically written to `.agents/` — an append-only ledger. Session ends, hooks extract learnings.
+Coding agents get a blank context window every session. AgentOps is a toolbox of primitives — pick the ones you need, skip the ones you don't. Every skill works standalone. Swarm any of them for parallelism. Chain them into a pipeline when you want structure. Knowledge compounds between sessions automatically.
 
-Three weeks later, different task, but your agent already knows:
+**DevOps' Three Ways** — applied to the agent loop as composable primitives:
+
+- **Flow** (`/research`, `/plan`, `/crank`, `/swarm`, `/rpi`): orchestration skills that move work through the system. Single-piece flow, minimizing context switches. Swarm parallelizes any skill; crank runs dependency-ordered waves; rpi chains the full pipeline.
+- **Feedback** (`/council`, `/vibe`, `/pre-mortem`, hooks): shorten the feedback loop until defects can't survive it. Independent judges catch issues before code ships. Hooks make the rules unavoidable — validation gates, push blocking, standards injection. Problems found Friday don't wait until Monday.
+- **Learning** (`.agents/`, `ao` CLI, `/retro`, `/knowledge`): stop rediscovering what you already know. Every session extracts learnings into an append-only ledger, scores them by freshness, and re-injects the best ones at next session start. Session 50 knows what session 1 learned the hard way.
+
+Here's what that looks like — your agent validates a PR, and the council verdict, decisions, and patterns are automatically written to `.agents/`. Three weeks later, different task, but your agent already knows:
 
 ```text
 > /research "retry backoff strategies"
@@ -265,18 +271,6 @@ Swarms full pipelines in parallel. Evolve measures goals and fixes gaps in a loo
 </details>
 
 Not sure which skill to run? See the [Skill Router](docs/SKILL-ROUTER.md).
-
----
-
-## How It Works
-
-Coding agents get a blank context window every session. AgentOps is a toolbox of primitives — pick the ones you need, skip the ones you don't. Every skill works standalone. Swarm any of them for parallelism. Chain them into a pipeline when you want structure. Knowledge compounds between sessions automatically.
-
-**DevOps' Three Ways** — applied to the agent loop as composable primitives:
-
-- **Flow** (`/research`, `/plan`, `/crank`, `/swarm`, `/rpi`): orchestration skills that move work through the system. Single-piece flow, minimizing context switches. Swarm parallelizes any skill; crank runs dependency-ordered waves; rpi chains the full pipeline.
-- **Feedback** (`/council`, `/vibe`, `/pre-mortem`, hooks): shorten the feedback loop until defects can't survive it. Independent judges catch issues before code ships. Hooks make the rules unavoidable — validation gates, push blocking, standards injection. Problems found Friday don't wait until Monday.
-- **Learning** (`.agents/`, `ao` CLI, `/retro`, `/knowledge`): stop rediscovering what you already know. Every session extracts learnings into an append-only ledger, scores them by freshness, and re-injects the best ones at next session start. Session 50 knows what session 1 learned the hard way.
 
 ---
 
