@@ -69,10 +69,12 @@ if command -v jq >/dev/null 2>&1; then
         '{ts:$ts,agent:$agent,config_key:$key,old_value:$old,new_value:$new,severity:$severity,session_id:$session}' \
         >> "$LOG_DIR/config-changes.jsonl" 2>/dev/null
 else
-    ESC_OLD=$(printf '%s' "$OLD_VALUE" | sed 's/["\\]/\\&/g')
-    ESC_NEW=$(printf '%s' "$NEW_VALUE" | sed 's/["\\]/\\&/g')
+    ESC_OLD=$(json_escape_value "$OLD_VALUE")
+    ESC_NEW=$(json_escape_value "$NEW_VALUE")
+    ESC_KEY=$(json_escape_value "$CONFIG_KEY")
+    ESC_AGENT=$(json_escape_value "$AGENT_NAME")
     printf '{"ts":"%s","agent":"%s","config_key":"%s","old_value":"%s","new_value":"%s","severity":"%s","session_id":"%s"}\n' \
-        "$TIMESTAMP" "$AGENT_NAME" "$CONFIG_KEY" "$ESC_OLD" "$ESC_NEW" "$SEVERITY" "${CLAUDE_SESSION_ID:-unknown}" \
+        "$TIMESTAMP" "$ESC_AGENT" "$ESC_KEY" "$ESC_OLD" "$ESC_NEW" "$SEVERITY" "${CLAUDE_SESSION_ID:-unknown}" \
         >> "$LOG_DIR/config-changes.jsonl" 2>/dev/null
 fi
 

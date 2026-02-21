@@ -172,6 +172,31 @@ prune_older_than "$AGENTS_DIR/opencode-tests" 7 "*.log" "opencode-tests"
 prune_older_than "$AGENTS_DIR/opencode-tests" 7 "*.txt" "opencode-tests/summaries"
 [[ "$QUIET" == false ]] && echo ""
 
+# --- Policy: ao/subagent-outputs/ — keep last 50 ---
+prune_keep_newest "$AGENTS_DIR/ao/subagent-outputs" 50 "ao/subagent-outputs"
+[[ "$QUIET" == false ]] && echo ""
+
+# --- Policy: archived-worktrees/ — older than 7 days ---
+if [[ -d "$AGENTS_DIR/archived-worktrees" ]]; then
+    old_wt=$(find "$AGENTS_DIR/archived-worktrees" -maxdepth 1 -mindepth 1 -type d -mtime +7 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$old_wt" -gt 0 ]]; then
+        [[ "$QUIET" == false ]] && echo "[archived-worktrees] $old_wt directories older than 7d"
+        find "$AGENTS_DIR/archived-worktrees" -maxdepth 1 -mindepth 1 -type d -mtime +7 -print0 2>/dev/null \
+            | while IFS= read -r -d '' d; do
+                if [[ "$DRY_RUN" == true ]]; then
+                    [[ "$QUIET" == false ]] && echo "  would delete: $d"
+                else
+                    rm -rf "$d"
+                    [[ "$QUIET" == false ]] && echo "  deleted: $d"
+                fi
+                TOTAL_FILES=$((TOTAL_FILES + 1))
+            done
+    else
+        [[ "$QUIET" == false ]] && echo "[archived-worktrees] No directories older than 7d. Nothing to prune."
+    fi
+fi
+[[ "$QUIET" == false ]] && echo ""
+
 # --- Summary ---
 echo "========================================"
 if [[ "$DRY_RUN" == true ]]; then

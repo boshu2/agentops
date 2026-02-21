@@ -58,6 +58,13 @@ write_failure() {
     fi
 }
 
+# json_escape_value — Escape a string for safe use as a JSON string value.
+# Handles: backslashes, double quotes, newlines, tabs, carriage returns.
+# Usage: ESCAPED=$(json_escape_value "$RAW_VALUE")
+json_escape_value() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/	/\\t/g' | tr '\n' ' ' | tr '\r' ' '
+}
+
 # read_hook_input — Read stdin and extract last_assistant_message.
 # Sets global variables: INPUT, LAST_ASSISTANT_MSG
 # Usage: call at top of hook script, then use $LAST_ASSISTANT_MSG

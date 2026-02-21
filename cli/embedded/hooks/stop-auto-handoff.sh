@@ -36,9 +36,11 @@ if command -v jq >/dev/null 2>&1; then
         > "$HANDOFF_FILE" 2>/dev/null
 else
     # Fallback without jq — escape for JSON safety
-    ESC_MSG=$(printf '%s' "${LAST_ASSISTANT_MSG:0:2000}" | sed 's/["\\]/\\&/g' | tr '\n' ' ')
+    ESC_MSG=$(json_escape_value "${LAST_ASSISTANT_MSG:0:2000}")
+    ESC_RATCHET=$(json_escape_value "$RATCHET_STATE")
+    ESC_BEAD=$(json_escape_value "$ACTIVE_BEAD")
     printf '{"ts":"%s","type":"stop","last_assistant_message":"%s","ratchet_state":"%s","active_bead":"%s","session_id":"%s"}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$ESC_MSG" "$RATCHET_STATE" "$ACTIVE_BEAD" "${CLAUDE_SESSION_ID:-unknown}" \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$ESC_MSG" "$ESC_RATCHET" "$ESC_BEAD" "${CLAUDE_SESSION_ID:-unknown}" \
         > "$HANDOFF_FILE" 2>/dev/null
 fi
 

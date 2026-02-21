@@ -26,6 +26,10 @@ if [ -n "$INPUT" ]; then
 fi
 [ -z "$AGENT_NAME" ] && AGENT_NAME="unknown"
 
+# Sanitize for safe filename use (strip path separators and special chars)
+AGENT_NAME=$(printf '%s' "$AGENT_NAME" | tr -cd 'a-zA-Z0-9_-')
+[ -z "$AGENT_NAME" ] && AGENT_NAME="unknown"
+
 # Write output
 OUTPUT_DIR="$ROOT/.agents/ao/subagent-outputs"
 mkdir -p "$OUTPUT_DIR"
