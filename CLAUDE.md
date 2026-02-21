@@ -1,5 +1,27 @@
 # AgentOps Skills Repository
 
+## Zero-Context Startup (Read First)
+
+If this is your first message in a fresh session, orient in this order:
+
+1. `docs/README.md` and `docs/INDEX.md` for navigation.
+2. `README.md` for product-level framing.
+3. Task-specific canonical surfaces:
+   - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`
+   - Skills behavior: `skills/**/SKILL.md`
+   - Hooks/gates: `hooks/hooks.json` and `hooks/*.sh`
+   - Contracts/schemas: `schemas/**`, `lib/schemas/**`
+
+## Source-of-Truth Precedence
+
+When files disagree, trust in this order:
+
+1. Executable implementation and generated outputs (`cli/**`, `hooks/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
+2. Declared contracts/manifests (`skills/**/SKILL.md`, `hooks/hooks.json`, `schemas/**`)
+3. Narrative docs (`docs/**`, `README.md`)
+
+Always report mismatches; do not silently pick a lower-precedence doc over executable behavior.
+
 ## Project Structure
 
 ```

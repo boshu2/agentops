@@ -56,7 +56,7 @@ Required:
 
 Optional:
 - `--docs-sitemap-url` (recommended when available; supports `https://...` and `file:///...`)
-- `--docs-features-prefix` (default: `docs/features/`)
+- `--docs-features-prefix` (default: `auto`; detects best local docs prefix, falls back to `docs/features/`)
 - `--upstream-repo` (optional)
 - `--upstream-ref` (pin clone to a specific commit, tag, or branch; records resolved SHA in `clone-metadata.json`)
 - `--local-clone-dir` (default: `.tmp/<product_name>`)

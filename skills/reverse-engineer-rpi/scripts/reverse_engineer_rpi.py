@@ -49,6 +49,70 @@ def _slugify(s: str) -> str:
     return slug.strip("-") or "product"
 
 
+def _detect_docs_prefix_for_repo(analysis_root: Path) -> str:
+    """
+    Choose a sensible docs slug prefix for repos that do not use docs/features/.
+    Returns a prefix with trailing slash.
+    """
+    candidates = [
+        "docs/features/",
+        "docs/code-map/",
+        "docs/workflows/",
+        "docs/levels/",
+        "docs/",
+    ]
+    best = "docs/features/"
+    best_count = -1
+    for cand in candidates:
+        base = analysis_root / cand.strip("/")
+        if not base.exists() or not base.is_dir():
+            continue
+        count = 0
+        for p in base.rglob("*"):
+            if p.is_file() and p.suffix.lower() in (".md", ".mdx"):
+                count += 1
+        if count > best_count:
+            best = cand
+            best_count = count
+    if best_count >= 0:
+        return best
+    return "docs/features/"
+
+
+def _detect_docs_prefix_from_paths(paths: list[str]) -> str:
+    """
+    Choose docs prefix from sitemap-style path inventory.
+    """
+    normalized: list[str] = []
+    for raw in paths:
+        p = raw.strip()
+        if not p:
+            continue
+        if not p.startswith("/"):
+            p = "/" + p
+        normalized.append(p)
+
+    if not normalized:
+        return "docs/features/"
+
+    candidates = [
+        "docs/features/",
+        "docs/code-map/",
+        "docs/workflows/",
+        "docs/levels/",
+        "docs/",
+    ]
+    best = "docs/features/"
+    best_count = -1
+    for cand in candidates:
+        prefix = "/" + cand.strip("/").rstrip("/")
+        count = sum(1 for p in normalized if p == prefix or p.startswith(prefix + "/"))
+        if count > best_count:
+            best = cand
+            best_count = count
+    return best
+
+
 def _render_template(src: Path, dst: Path, vars: dict[str, str]) -> None:
     text = src.read_text(encoding="utf-8")
     for k, v in vars.items():
@@ -1306,9 +1370,10 @@ def _write_comparison_report(
 
 
 def _write_wrapper_validate_feature_registry(output_dir: Path) -> None:
+    skill_validate_path = (SKILL_DIR / "scripts" / "validate_feature_registry.py").resolve()
     wrapper = output_dir / "validate-feature-registry.py"
     wrapper.write_text(
-        """#!/usr/bin/env python3
+        f"""#!/usr/bin/env python3
 from __future__ import annotations
 
 import os
@@ -1317,7 +1382,18 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SKILL_VALIDATE = Path(__file__).resolve().parents[3] / "skills" / "reverse-engineer-rpi" / "scripts" / "validate_feature_registry.py"
+SKILL_VALIDATE_CANDIDATES = [
+    Path({str(skill_validate_path)!r}),
+    Path(__file__).resolve().parents[3] / "skills" / "reverse-engineer-rpi" / "scripts" / "validate_feature_registry.py",
+    Path(__file__).resolve().parents[2] / "skills" / "reverse-engineer-rpi" / "scripts" / "validate_feature_registry.py",
+    Path.cwd() / "skills" / "reverse-engineer-rpi" / "scripts" / "validate_feature_registry.py",
+]
+
+def _resolve_validator() -> Path:
+    for cand in SKILL_VALIDATE_CANDIDATES:
+        if cand.exists():
+            return cand
+    raise FileNotFoundError("Could not locate validate_feature_registry.py")
 
 def main() -> int:
     # Delegate to the canonical validator, but default paths to this output dir.
@@ -1330,7 +1406,8 @@ def main() -> int:
             "--docs-features", str(HERE / "docs-features.txt"),
             "--local-clone-dir", local_root,
         ]
-    p = subprocess.run([sys.executable, str(SKILL_VALIDATE), *args])
+    validator = _resolve_validator()
+    p = subprocess.run([sys.executable, str(validator), *args])
     return p.returncode
 
 if __name__ == "__main__":
@@ -1367,7 +1444,11 @@ def main() -> int:
     )
 
     ap.add_argument("--docs-sitemap-url", default=None)
-    ap.add_argument("--docs-features-prefix", default="docs/features/")
+    ap.add_argument(
+        "--docs-features-prefix",
+        default="auto",
+        help="Docs slug prefix, e.g. docs/features/. Use 'auto' to detect from repo/sitemap (default).",
+    )
     ap.add_argument("--upstream-repo", default=None)
     ap.add_argument("--upstream-ref", default=None, help="Pin clone to a specific commit, tag, or branch. Records resolved SHA in clone-metadata.json.")
     ap.add_argument("--local-clone-dir", default=None)
@@ -1475,10 +1556,11 @@ def main() -> int:
         _run([sys.executable, str(SKILL_DIR / "scripts" / "fetch_url.py"), args.docs_sitemap_url, str(sitemap_xml)])
 
         paths_txt = tmp_dir / f"{product_slug}-sitemap-paths.txt"
-        paths_txt.write_text(
-            subprocess.check_output([str(SKILL_DIR / "scripts" / "extract_sitemap_paths.sh"), str(sitemap_xml)], text=True),
-            encoding="utf-8",
-        )
+        sitemap_paths = subprocess.check_output([str(SKILL_DIR / "scripts" / "extract_sitemap_paths.sh"), str(sitemap_xml)], text=True)
+        paths_txt.write_text(sitemap_paths, encoding="utf-8")
+
+        if args.docs_features_prefix in ("", "auto"):
+            effective_docs_prefix = _detect_docs_prefix_from_paths(sitemap_paths.splitlines())
 
         docs_features = subprocess.check_output(
             [
@@ -1492,8 +1574,10 @@ def main() -> int:
     else:
         # No sitemap: for repo mode, inventory docs/features from the repo tree; otherwise empty.
         if args.mode in ("repo", "both") and analysis_root.exists():
-            # If the user left the default and docs/features doesn't exist, fall back to docs/ for better UX.
-            if args.docs_features_prefix == "docs/features/":
+            if args.docs_features_prefix in ("", "auto"):
+                effective_docs_prefix = _detect_docs_prefix_for_repo(analysis_root)
+            # Backward-compatibility fallback for explicit old default.
+            elif args.docs_features_prefix == "docs/features/":
                 if not (analysis_root / "docs" / "features").exists() and (analysis_root / "docs").exists():
                     effective_docs_prefix = "docs/"
 

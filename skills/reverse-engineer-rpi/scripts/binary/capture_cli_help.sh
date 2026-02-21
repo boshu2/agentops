@@ -38,10 +38,14 @@ mkdir -p "$OUT_DIR"
 
 TREE_FILE="$OUT_DIR/cli-help-tree.txt"
 CMDS_FILE="$OUT_DIR/cli-commands.txt"
+SEEN_PATHS_FILE="$OUT_DIR/.seen-command-paths.tmp"
+VISITED_PREFIX_FILE="$OUT_DIR/.visited-prefixes.tmp"
 
 # Start fresh.
 : > "$TREE_FILE"
 : > "$CMDS_FILE"
+: > "$SEEN_PATHS_FILE"
+: > "$VISITED_PREFIX_FILE"
 
 # Track total elapsed time.
 START_TIME="$(date +%s)"
@@ -79,6 +83,70 @@ looks_like_help() {
     return 1
 }
 
+seen_contains() {
+    local file="$1"
+    local key="$2"
+    grep -Fqx -- "$key" "$file" 2>/dev/null
+}
+
+seen_add() {
+    local file="$1"
+    local key="$2"
+    printf '%s\n' "$key" >> "$file"
+}
+
+record_command_path() {
+    local path="$1"
+    [ -z "$path" ] && return 0
+    if seen_contains "$SEEN_PATHS_FILE" "$path"; then
+        return 0
+    fi
+    seen_add "$SEEN_PATHS_FILE" "$path"
+    echo "$path" >> "$CMDS_FILE"
+}
+
+extract_usage_path() {
+    local help_text="$1"
+    local usage_line
+    usage_line="$(echo "$help_text" | awk '
+        /^Usage:/ {
+            line=$0
+            sub(/^Usage:[[:space:]]*/, "", line)
+            if (line != "") {
+                print line
+                exit
+            }
+            in_usage=1
+            next
+        }
+        in_usage {
+            if ($0 ~ /^[[:space:]]*$/) {
+                in_usage=0
+                next
+            }
+            line=$0
+            sub(/^[[:space:]]+/, "", line)
+            if (line != "") {
+                print line
+                exit
+            }
+        }
+    ')"
+    [ -z "$usage_line" ] && return 0
+    echo "$usage_line" | awk '
+        {
+            out=""
+            for (i=1; i<=NF; i++) {
+                t=$i
+                first = substr(t, 1, 1)
+                if (first == "[" || first == "<" || first == "-" || first == "(" || first == "{") break
+                out = (out ? out " " : "") t
+            }
+            print out
+        }
+    '
+}
+
 # Extract subcommand names from help output.
 # Looks for lines after "Commands:" or "Available Commands:" header,
 # matching pattern: leading whitespace, then a word (the subcommand name).
@@ -102,7 +170,7 @@ extract_subcommands() {
             fi
             # Extract the first word (subcommand name) from indented lines.
             local cmd
-            cmd="$(echo "$line" | sed -n 's/^[[:space:]]\{1,\}\([a-zA-Z0-9_-]\{1,\}\).*/\1/p')"
+            cmd="$(echo "$line" | sed -n 's/^[[:space:]]\{1,\}\([a-zA-Z0-9_-]\{1,\}\)[[:space:]].*/\1/p')"
             if [ -n "$cmd" ]; then
                 # Skip common non-command words that appear in help sections.
                 case "$cmd" in
@@ -128,6 +196,10 @@ capture_help() {
     local depth="$1"; shift
     local cmd_prefix="$1"; shift
     # Remaining args are the command to execute.
+    if seen_contains "$VISITED_PREFIX_FILE" "$cmd_prefix"; then
+        return 0
+    fi
+    seen_add "$VISITED_PREFIX_FILE" "$cmd_prefix"
 
     if budget_exceeded; then
         return 0
@@ -156,11 +228,29 @@ capture_help() {
     echo "$help_output" >> "$TREE_FILE"
     echo "" >> "$TREE_FILE"
 
+    # Resolve canonical path from Usage: for alias handling and de-noising.
+    local usage_path=""
+    usage_path="$(extract_usage_path "$help_output" || true)"
+
     # Write to commands file (skip top-level binary name alone).
     if [ "$depth" -gt 0 ]; then
-        # Strip the binary name prefix to get just the subcommand path.
-        local subcmd_path="${cmd_prefix#"$BINARY_NAME "}"
-        echo "$subcmd_path" >> "$CMDS_FILE"
+        # Strip first token (binary executable/command name) to compare subcommand paths robustly.
+        local subcmd_path="${cmd_prefix#* }"
+        local canonical_subcmd_path=""
+        if [ -n "$usage_path" ] && [ "$usage_path" != "${usage_path#* }" ]; then
+            canonical_subcmd_path="${usage_path#* }"
+        fi
+        if [ -n "$canonical_subcmd_path" ]; then
+            record_command_path "$canonical_subcmd_path"
+        else
+            record_command_path "$subcmd_path"
+        fi
+
+        # If Usage path subcommands differ from invocation subcommands, this likely hit
+        # an alias/help redirect. Stop recursion to avoid fake paths like "mail inbox inbox".
+        if [ -n "$canonical_subcmd_path" ] && [ "$canonical_subcmd_path" != "$subcmd_path" ]; then
+            return 0
+        fi
     fi
 
     # Extract and recurse into subcommands.
