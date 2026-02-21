@@ -11,7 +11,7 @@ metadata:
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-Extract learnings from completed work and feed the knowledge flywheel.
+Extract learnings from completed work, propose proactive improvements, and feed the knowledge flywheel.
 
 ## Execution Steps
 
@@ -145,20 +145,57 @@ For each learning, capture:
 
 See: `.agents/learnings/YYYY-MM-DD-<topic>.md`
 
+## Proactive Improvement Agenda
+
+| # | Area | Improvement | Priority | Horizon | Effort | Evidence |
+|---|------|-------------|----------|---------|--------|----------|
+| 1 | repo / execution / CI | <improvement> | P0/P1/P2 | now/next-cycle/later | S/M/L | <retro evidence> |
+
+### Recommended Next /rpi
+/rpi "<highest-value item>"
+
 ## Action Items
 - [ ] <any follow-up needed>
+```
+
+### Step 6.5: Proactive Improvement Agenda (MANDATORY)
+
+After writing the retro summary, use the full context you just gathered to propose concrete improvements.
+
+Ask explicitly:
+1. **Repo:** What should we improve in the codebase/contracts/docs to reduce future defects?
+2. **Execution:** What should we improve in planning/implementation/review workflow to increase throughput?
+3. **CI/Automation:** What should we improve in validation gates/tooling to reduce noise and catch regressions earlier?
+
+Requirements:
+- Propose at least **5** items total.
+- Cover all three areas above (repo, execution, CI/automation).
+- Include at least **1 quick win** (small, low-risk, same-session viable).
+- For each item include: `priority` (P0/P1/P2), `horizon` (now/next-cycle/later), `effort` (S/M/L), and one-line rationale tied to retro evidence.
+- Mark one item as **Recommended Next /rpi**.
+
+Write this into the retro file under:
+```markdown
+## Proactive Improvement Agenda
+
+| # | Area | Improvement | Priority | Horizon | Effort | Evidence |
+|---|------|-------------|----------|---------|--------|----------|
+| 1 | CI | <improvement> | P0 | now | S | <retro evidence> |
+
+### Recommended Next /rpi
+/rpi "<highest-value item>"
 ```
 
 ### Step 7: Feed the Knowledge Flywheel (auto-extract)
 
 ```bash
-# If ao available, index via forge and close feedback loop
+# If ao available, index via forge and apply task feedback
 if command -v ao &>/dev/null; then
-  ao forge index .agents/learnings/YYYY-MM-DD-*.md 2>/dev/null
+  ao forge markdown .agents/learnings/YYYY-MM-DD-*.md 2>/dev/null
   echo "Learnings indexed in knowledge flywheel"
 
   # Apply feedback from completed tasks to associated learnings
-  ao task-feedback --quiet 2>/dev/null
+  ao task-feedback 2>/dev/null
   echo "Task feedback applied"
 else
   # Learnings are already written to .agents/learnings/ by Step 5.
@@ -185,6 +222,7 @@ Tell the user:
 2. Key insights (top 2-3)
 3. Location of retro and learnings files
 4. Knowledge has been indexed for future sessions
+5. Top proactive improvements (top 3) + recommended next `/rpi`
 
 ## Key Rules
 
@@ -192,13 +230,14 @@ Tell the user:
 - **Be actionable** - learnings should inform future decisions
 - **Cite sources** - reference what work the learning came from
 - **Write both files** - retro summary AND detailed learnings
+- **Be proactive** - always produce repo + execution + CI improvements from gathered context
 - **Index knowledge** - make it discoverable
 
 ## The Flywheel
 
 Learnings feed future research:
 ```
-Work → /retro → .agents/learnings/ → ao forge index → /research finds it
+Work → /retro → improvements + learnings → ao forge markdown → /research finds it
 ```
 
 Future sessions start smarter because of your retrospective.
@@ -217,7 +256,7 @@ Future sessions start smarter because of your retrospective.
 5. Agent identifies 4 learnings: L1 (token expiry pattern), L2 (middleware ordering matters), L3 (test coverage caught edge case), L4 (documentation prevents support load)
 6. Agent writes learnings file to `.agents/learnings/2026-02-13-auth-refactor.md`
 7. Agent writes retro summary to `.agents/retros/2026-02-13-auth-refactor.md`
-8. Agent runs `ao forge index` to add learnings to knowledge base
+8. Agent runs `ao forge markdown` to add learnings to knowledge base
 
 **Result:** 4 learnings extracted and indexed, retro summary documents what went well and improvements needed.
 
@@ -241,5 +280,5 @@ Future sessions start smarter because of your retrospective.
 |---------|-------|----------|
 | No recent activity found | Clean git history or work not committed yet | Ask user what to retrospect. Accept manual topic: `/retro "planning process improvements"`. Review uncommitted changes if needed. |
 | Learnings too generic | Insufficient analysis or surface-level review | Dig deeper into code changes. Ask "why" repeatedly. Ensure learnings are actionable (specific pattern, not vague principle). Check confidence level. |
-| ao forge index fails | ao CLI not installed or .agents/ structure wrong | Graceful fallback: index learnings locally to `.agents/ao/search-index.jsonl`. Notify user ao not available. Learnings still in `.agents/learnings/` and discoverable via grep-based search. |
+| ao forge markdown fails | ao CLI not installed or .agents/ structure wrong | Graceful fallback: index learnings locally to `.agents/ao/search-index.jsonl`. Notify user ao not available. Learnings still in `.agents/learnings/` and discoverable via grep-based search. |
 | Duplicate learnings extracted | Same insight from multiple sources | Deduplicate before writing. Check existing learnings with grep. Merge duplicates into single learning with multiple source citations. |

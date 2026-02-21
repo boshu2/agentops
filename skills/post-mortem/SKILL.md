@@ -194,37 +194,62 @@ Post-mortem always completes if council succeeds. Retro is optional enrichment.
 ### Anti-Patterns to Avoid
 - ...
 
+## Proactive Improvement Agenda
+
+| # | Area | Improvement | Priority | Horizon | Effort | Evidence |
+|---|------|-------------|----------|---------|--------|----------|
+| 1 | repo / execution / ci-automation | ... | P0/P1/P2 | now/next-cycle/later | S/M/L | ... |
+
+### Recommended Next /rpi
+/rpi "<highest-value improvement>"
+
 ## Status
 
 [ ] CLOSED - Work complete, learnings captured
 [ ] FOLLOW-UP - Issues need addressing (create new beads)
 ```
 
-### Step 5.5: Synthesize Process Improvement Proposals
+### Step 5.5: Synthesize Proactive Improvement Agenda (MANDATORY)
 
-**After writing the post-mortem report, analyze retro learnings for process improvement opportunities — things that make development more effective with each cycle.**
+**After writing the post-mortem report, analyze retro + council context and proactively propose improvements to repo quality and execution quality.**
 
 Read the retro output (from Step 4) and the council report (from Step 3). For each learning, ask:
 1. **What process does this improve?** (build, test, review, deploy, documentation, automation, etc.)
 2. **What's the concrete change?** (new check, new automation, workflow change, tooling improvement)
 3. **Is it actionable in one RPI cycle?** (if not, split into smaller pieces)
 
+Coverage requirements:
+- Include at least **5** improvements total.
+- Cover all three surfaces:
+  - `repo` (code/contracts/docs quality)
+  - `execution` (planning/implementation/review workflow)
+  - `ci-automation` (validation/tooling reliability)
+- Include at least **1 quick win** (small, low-risk, same-session viable).
+
 Write process improvement items with type `process-improvement` (distinct from `tech-debt` or `improvement`). Each item must have:
 - `title`: imperative form, e.g. "Add pre-commit lint check"
 - `area`: which part of the development process to improve
 - `description`: 2-3 sentences describing the change and why retro evidence supports it
 - `evidence`: which retro finding or council finding motivates this
+- `priority`: P0 / P1 / P2
+- `horizon`: now / next-cycle / later
+- `effort`: S / M / L
 
 **These items feed directly into Step 8 (Harvest Next Work) alongside council findings. They are the flywheel's growth vector — each cycle makes the system smarter.**
 
+Write this into the post-mortem report under `## Proactive Improvement Agenda`.
+
 Example output:
 ```markdown
-### Process Improvement Proposals
+## Proactive Improvement Agenda
 
-| # | Area | Improvement | Evidence |
-|---|------|-------------|----------|
-| 1 | testing | Add validation metadata requirement for Go tasks | Workers shipped untested code when metadata didn't require `go test` |
-| 2 | review | Add consistency-check finding category | Partial refactoring left stale references undetected |
+| # | Area | Improvement | Priority | Horizon | Effort | Evidence |
+|---|------|-------------|----------|---------|--------|----------|
+| 1 | ci-automation | Add validation metadata requirement for Go tasks | P0 | now | S | Workers shipped untested code when metadata didn't require `go test` |
+| 2 | execution | Add consistency-check finding category in review | P1 | next-cycle | M | Partial refactoring left stale references undetected |
+
+### Recommended Next /rpi
+/rpi "<highest-value improvement>"
 ```
 
 ### Step 6: Feed the Knowledge Flywheel
@@ -233,19 +258,20 @@ Post-mortem automatically feeds learnings into the flywheel:
 
 ```bash
 if command -v ao &>/dev/null; then
-  ao forge index .agents/learnings/ 2>/dev/null
+  ao forge markdown .agents/learnings/*.md 2>/dev/null
   echo "Learnings indexed in knowledge flywheel"
 
   # Close the MemRL feedback loop — update utility scores for cited learnings
-  ao feedback-loop --quiet 2>/dev/null
+  ao feedback-loop 2>/dev/null
   echo "Feedback loop closed"
 
-  # Record session outcome for cycle-time tracking and reward signals
-  ao session-outcome --quiet 2>/dev/null
-  echo "Session outcome recorded"
+  # Record session outcome when transcript/session metadata is available
+  # (skip gracefully when unavailable)
+  ao session-outcome --session "${SESSION_ID:-post-mortem}" 2>/dev/null || true
+  echo "Session outcome recorded (or skipped if metadata unavailable)"
 
   # Validate and lock artifacts that passed council review
-  ao temper validate .agents/learnings/YYYY-MM-DD-*.md --quiet 2>/dev/null
+  ao temper validate .agents/learnings/YYYY-MM-DD-*.md 2>/dev/null || true
   echo "Artifacts validated for tempering"
 else
   # Learnings are already in .agents/learnings/ from /retro (Step 4).
@@ -284,6 +310,7 @@ Tell the user:
 4. Location of post-mortem report
 5. Knowledge flywheel status
 6. **Suggested next `/rpi` command** (ALWAYS — this is how the flywheel spins itself)
+7. Top proactive improvements (top 3), including one quick win
 
 **The next `/rpi` suggestion is MANDATORY, not opt-in.** After every post-mortem, present the highest-severity harvested item as a ready-to-copy command:
 
@@ -312,7 +339,7 @@ Scan the council report and retro for actionable follow-up items:
 1. **Council findings:** Extract tech debt, warnings, and improvement suggestions from the council report (items with severity "significant" or "critical" that weren't addressed in this epic)
 2. **Retro patterns:** Extract recurring patterns from retro learnings that warrant dedicated RPIs (items from "Do Differently Next Time" and "Anti-Patterns to Avoid")
 3. **Process improvements:** Include all items from Step 5.5 (type: `process-improvement`). These are the flywheel's growth vector — each cycle makes development more effective.
-3. **Write `## Next Work` section** to the post-mortem report:
+4. **Write `## Next Work` section** to the post-mortem report:
 
 ```markdown
 ## Next Work
@@ -322,7 +349,7 @@ Scan the council report and retro for actionable follow-up items:
 | 1 | <title> | tech-debt / improvement / pattern-fix / process-improvement | high / medium / low | council-finding / retro-learning / retro-pattern | <repo-name or *> |
 ```
 
-4. **SCHEMA VALIDATION (MANDATORY):** Before writing, validate each harvested item against the schema contract (`.agents/rpi/next-work.schema.md`):
+5. **SCHEMA VALIDATION (MANDATORY):** Before writing, validate each harvested item against the schema contract (`.agents/rpi/next-work.schema.md`):
 
 ```bash
 validate_next_work_item() {
@@ -380,7 +407,7 @@ done
 echo "Schema validation: ${#VALID_ITEMS[@]}/$((${#VALID_ITEMS[@]} + INVALID_COUNT)) items passed"
 ```
 
-5. **Write to next-work.jsonl** (canonical path: `.agents/rpi/next-work.jsonl`):
+6. **Write to next-work.jsonl** (canonical path: `.agents/rpi/next-work.jsonl`):
 
 ```bash
 mkdir -p .agents/rpi
@@ -415,7 +442,7 @@ Use the Write tool to append a single JSON line to `.agents/rpi/next-work.jsonl`
 - `items`: array of harvested items (min 0 — if nothing found, write entry with empty items array)
 - `consumed`: false, `consumed_by`: null, `consumed_at`: null
 
-6. **Do NOT auto-create bd issues.** Report the items and suggest: "Run `/rpi --spawn-next` to create an epic from these items."
+7. **Do NOT auto-create bd issues.** Report the items and suggest: "Run `/rpi --spawn-next` to create an epic from these items."
 
 If no actionable items found, write: "No follow-up items identified. Flywheel stable."
 
