@@ -172,26 +172,27 @@ var phases = []phase{
 
 // phasedState persists orchestrator state between phase spawns.
 type phasedState struct {
-	SchemaVersion  int                 `json:"schema_version"`
-	Goal           string              `json:"goal"`
-	EpicID         string              `json:"epic_id,omitempty"`
-	Phase          int                 `json:"phase"`
-	StartPhase     int                 `json:"start_phase"`
-	Cycle          int                 `json:"cycle"`
-	ParentEpic     string              `json:"parent_epic,omitempty"`
-	FastPath       bool                `json:"fast_path"`
-	TestFirst      bool                `json:"test_first"`
-	SwarmFirst     bool                `json:"swarm_first"`
-	Verdicts       map[string]string   `json:"verdicts"`
-	Attempts       map[string]int      `json:"attempts"`
-	StartedAt      string              `json:"started_at"`
-	WorktreePath   string              `json:"worktree_path,omitempty"`
-	RunID          string              `json:"run_id,omitempty"`
-	Backend        string              `json:"backend,omitempty"`
-	TerminalStatus string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
-	TerminalReason string              `json:"terminal_reason,omitempty"`
-	TerminatedAt   string              `json:"terminated_at,omitempty"`
-	Opts           phasedEngineOptions `json:"opts"`
+	SchemaVersion   int                 `json:"schema_version"`
+	Goal            string              `json:"goal"`
+	EpicID          string              `json:"epic_id,omitempty"`
+	Phase           int                 `json:"phase"`
+	StartPhase      int                 `json:"start_phase"`
+	Cycle           int                 `json:"cycle"`
+	ParentEpic      string              `json:"parent_epic,omitempty"`
+	FastPath        bool                `json:"fast_path"`
+	TestFirst       bool                `json:"test_first"`
+	SwarmFirst      bool                `json:"swarm_first"`
+	Verdicts        map[string]string   `json:"verdicts"`
+	Attempts        map[string]int      `json:"attempts"`
+	StartedAt       string              `json:"started_at"`
+	WorktreePath    string              `json:"worktree_path,omitempty"`
+	RunID           string              `json:"run_id,omitempty"`
+	OrchestratorPID int                 `json:"orchestrator_pid,omitempty"`
+	Backend         string              `json:"backend,omitempty"`
+	TerminalStatus  string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+	TerminalReason  string              `json:"terminal_reason,omitempty"`
+	TerminatedAt    string              `json:"terminated_at,omitempty"`
+	Opts            phasedEngineOptions `json:"opts"`
 }
 
 // retryContext holds context for retrying a failed gate.
@@ -556,6 +557,7 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	}()
 
 	ensureStateRunID(state)
+	state.OrchestratorPID = os.Getpid()
 
 	_, runLogPath, statusPath, allPhases, err := initializeRunArtifacts(spawnCwd, startPhase, state, opts)
 	if err != nil {
