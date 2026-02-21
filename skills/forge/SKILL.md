@@ -83,7 +83,7 @@ Look for these patterns in the transcript:
 
 ```bash
 if command -v ao &>/dev/null; then
-  ao forge index .agents/forge/YYYY-MM-DD-forge.md 2>/dev/null
+  ao forge markdown .agents/forge/YYYY-MM-DD-forge.md 2>/dev/null
 else
   # Without ao CLI: auto-promote high-confidence candidates to learnings
   mkdir -p .agents/learnings .agents/ao
@@ -156,7 +156,7 @@ Transcript → /forge → .agents/forge/ (Tier 0)
 2. Agent scans transcript for knowledge patterns (decisions, learnings, failures, patterns)
 3. Agent scores each extraction by confidence (0.0-1.0)
 4. Agent writes candidates to `.agents/forge/YYYY-MM-DD-forge.md`
-5. Agent indexes forge output with `ao forge index`
+5. Agent indexes forge output with `ao forge markdown`
 6. Agent reports extraction counts and candidate locations
 
 **Result:** Transcript mined for reusable knowledge, candidates ready for human review or 2+ citations promotion.

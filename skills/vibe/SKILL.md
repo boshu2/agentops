@@ -415,7 +415,7 @@ EOF
 
   # Index for flywheel if ao available
   if command -v ao &>/dev/null; then
-    ao forge index "$LEARNING_FILE" 2>/dev/null || true
+    ao forge markdown "$LEARNING_FILE" 2>/dev/null || true
   fi
 fi
 ```
