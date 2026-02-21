@@ -293,7 +293,7 @@ brew update && brew upgrade agentops
 ao version
 ```
 
-This installs 25+ hooks across core lifecycle events:
+This installs 30+ hooks across core lifecycle events:
 
 | Event | What happens |
 |-------|-------------|
@@ -362,6 +362,8 @@ Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
 
 ## Deep Dive
 
+How the knowledge system and pipeline phases work under the hood.
+
 ### The Knowledge Ledger
 
 `.agents/` is an append-only ledger with cache-like semantics. Nothing gets overwritten — every learning, council verdict, pattern, and decision is a new dated file. Freshness decay prunes what's stale. The cycle:
@@ -420,16 +422,7 @@ Learnings pass quality gates (specificity, actionability, novelty) and land in t
 <details>
 <summary><b>Phased RPI</b> — fresh context per phase for larger goals</summary>
 
-`ao rpi phased "goal"` runs each phase in its own session — no context bleed between phases.
-
-```bash
-ao rpi phased "add rate limiting"      # Hands-free, fresh context per phase
-ao rpi phased "add auth" &             # Run multiple in parallel (auto-worktrees)
-ao rpi phased --from=implementation "fix perf"  # Resume at execution phase
-ao rpi status --watch                   # Monitor active phased runs
-```
-
-Use `/rpi` when context fits in one session. Use `ao rpi phased` when it doesn't.
+`ao rpi phased "goal"` runs each phase in its own session — no context bleed between phases. Use `/rpi` when context fits in one session. Use `ao rpi phased` when it doesn't. See [The ao CLI](#the-ao-cli) for examples.
 
 </details>
 
@@ -528,7 +521,7 @@ Every skill works alone. Compose them however you want.
 | **Session** | `/handoff`, `/recover`, `/status` |
 | **Traceability** | `/trace`, `/provenance` |
 | **Product** | `/product`, `/goals`, `/release`, `/readme`, `/doc` |
-| **Utility** | `/quickstart`, `/brainstorm`, `/bug-hunt`, `/complexity` |
+| **Utility** | `/brainstorm`, `/bug-hunt`, `/complexity` |
 
 Full reference: [docs/SKILLS.md](docs/SKILLS.md)
 
