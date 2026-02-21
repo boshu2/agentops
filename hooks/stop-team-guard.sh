@@ -62,6 +62,13 @@ cleanup_stale_teams() {
 # Handle --cleanup flag (SessionStart mode)
 [ "${1:-}" = "--cleanup" ] && cleanup_stale_teams
 
+# --- Read stdin and extract last assistant message ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/hook-helpers.sh
+. "$SCRIPT_DIR/../lib/hook-helpers.sh"
+read_hook_input
+mkdir -p "$ROOT/.agents/ao" && echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) STOP: last_msg=${LAST_ASSISTANT_MSG:0:200}" >> "$ROOT/.agents/ao/stop-events.log"
+
 # --- Original Stop guard logic below ---
 
 # If teams directory doesn't exist, nothing to guard
@@ -109,12 +116,10 @@ done <<< "$configs"
 
 # Only block if there are teams with actually-running members
 if [ -n "$active_teams" ]; then
-    # Source hook-helpers from plugin install dir, not repo root (security: prevents malicious repo sourcing)
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    # shellcheck source=../lib/hook-helpers.sh
-    . "$SCRIPT_DIR/../lib/hook-helpers.sh"
     write_failure "stop_team_guard" "stop" 2 "active teams with running members: $active_teams"
-    echo "Active teams with running members: ${active_teams}. Send shutdown_request to teammates or run TeamDelete before stopping." >&2
+    block_msg="Active teams with running members: ${active_teams}. Send shutdown_request to teammates or run TeamDelete before stopping."
+    [ -n "${LAST_ASSISTANT_MSG:-}" ] && block_msg="${block_msg} Last agent message: ${LAST_ASSISTANT_MSG:0:100}"
+    echo "$block_msg" >&2
     exit 2
 fi
 

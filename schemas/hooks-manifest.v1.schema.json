@@ -60,6 +60,30 @@
           "items": {
             "$ref": "#/$defs/hookRule"
           }
+        },
+        "SubagentStop": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hookRule"
+          }
+        },
+        "WorktreeCreate": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hookRule"
+          }
+        },
+        "WorktreeRemove": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hookRule"
+          }
+        },
+        "ConfigChange": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hookRule"
+          }
         }
       }
     }

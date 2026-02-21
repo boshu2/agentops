@@ -36,18 +36,20 @@ type HookGroup struct {
 	Hooks   []HookEntry `json:"hooks"`
 }
 
-// AllEventNames returns all 8 Claude Code hook event names in canonical order.
+// AllEventNames returns all 12 Claude Code hook event names in canonical order.
 func AllEventNames() []string {
 	return []string{
 		"SessionStart", "SessionEnd",
 		"PreToolUse", "PostToolUse",
 		"UserPromptSubmit", "TaskCompleted",
 		"Stop", "PreCompact",
+		"SubagentStop", "WorktreeCreate",
+		"WorktreeRemove", "ConfigChange",
 	}
 }
 
 // HooksConfig represents the hooks section of Claude settings.
-// Supports all 8 Claude Code hook events.
+// Supports all 12 Claude Code hook events.
 type HooksConfig struct {
 	SessionStart     []HookGroup `json:"SessionStart,omitempty"`
 	SessionEnd       []HookGroup `json:"SessionEnd,omitempty"`
@@ -57,6 +59,10 @@ type HooksConfig struct {
 	TaskCompleted    []HookGroup `json:"TaskCompleted,omitempty"`
 	Stop             []HookGroup `json:"Stop,omitempty"`
 	PreCompact       []HookGroup `json:"PreCompact,omitempty"`
+	SubagentStop     []HookGroup `json:"SubagentStop,omitempty"`
+	WorktreeCreate   []HookGroup `json:"WorktreeCreate,omitempty"`
+	WorktreeRemove   []HookGroup `json:"WorktreeRemove,omitempty"`
+	ConfigChange     []HookGroup `json:"ConfigChange,omitempty"`
 }
 
 // GetEventGroups returns the hook groups for a given event name.
@@ -78,6 +84,14 @@ func (c *HooksConfig) GetEventGroups(event string) []HookGroup {
 		return c.Stop
 	case "PreCompact":
 		return c.PreCompact
+	case "SubagentStop":
+		return c.SubagentStop
+	case "WorktreeCreate":
+		return c.WorktreeCreate
+	case "WorktreeRemove":
+		return c.WorktreeRemove
+	case "ConfigChange":
+		return c.ConfigChange
 	default:
 		return nil
 	}
@@ -102,6 +116,14 @@ func (c *HooksConfig) SetEventGroups(event string, groups []HookGroup) {
 		c.Stop = groups
 	case "PreCompact":
 		c.PreCompact = groups
+	case "SubagentStop":
+		c.SubagentStop = groups
+	case "WorktreeCreate":
+		c.WorktreeCreate = groups
+	case "WorktreeRemove":
+		c.WorktreeRemove = groups
+	case "ConfigChange":
+		c.ConfigChange = groups
 	}
 }
 
@@ -166,9 +188,10 @@ This command:
 
 Default mode installs flywheel hooks only (SessionStart + Stop).
 
-Use --full to install all 8 events with hook scripts copied to ~/.agentops/:
+Use --full to install all 12 events with hook scripts copied to ~/.agentops/:
   SessionStart, SessionEnd, PreToolUse, PostToolUse,
-  UserPromptSubmit, TaskCompleted, Stop, PreCompact
+  UserPromptSubmit, TaskCompleted, Stop, PreCompact,
+  SubagentStop, WorktreeCreate, WorktreeRemove, ConfigChange
 
 Use --source-dir with --full to specify the agentops repo checkout path.
 Use --force to overwrite existing ao hooks.`,
@@ -208,7 +231,7 @@ func init() {
 	// Install flags
 	hooksInstallCmd.Flags().BoolVar(&hooksDryRun, "dry-run", false, "Show what would be installed without making changes")
 	hooksInstallCmd.Flags().BoolVar(&hooksForce, "force", false, "Overwrite existing ao hooks")
-	hooksInstallCmd.Flags().BoolVar(&hooksFull, "full", false, "Install all 8 events with hook scripts copied to ~/.agentops/")
+	hooksInstallCmd.Flags().BoolVar(&hooksFull, "full", false, "Install all 12 events with hook scripts copied to ~/.agentops/")
 	hooksInstallCmd.Flags().StringVar(&hooksSourceDir, "source-dir", "", "Path to agentops repo checkout (for --full script installation)")
 
 	// Test flags
@@ -324,7 +347,7 @@ func generateFullHooksConfig() (*HooksConfig, error) {
 }
 
 // generateHooksConfig creates the ao hooks configuration.
-// Tries to read from hooks.json for full 8-event coverage; falls back to minimal (SessionStart + Stop).
+// Tries to read from hooks.json for full 12-event coverage; falls back to minimal (SessionStart + Stop).
 func generateHooksConfig() *HooksConfig {
 	config, err := generateFullHooksConfig()
 	if err != nil {
@@ -661,7 +684,7 @@ func printHooksInstallSummary(settingsPath string, newHooks *HooksConfig, events
 		fmt.Println("  SessionStart: ao inject --apply-decay")
 		fmt.Println("  Stop: ao forge + ao task-sync")
 		fmt.Println()
-		fmt.Println("Run 'ao hooks install --full' for complete hook coverage (all 8 events).")
+		fmt.Println("Run 'ao hooks install --full' for complete hook coverage (all 12 events).")
 	}
 	fmt.Println()
 	fmt.Println("Run 'ao hooks test' to verify the installation.")

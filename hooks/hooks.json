@@ -188,6 +188,11 @@
           },
           {
             "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-auto-handoff.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "command -v ao >/dev/null 2>&1 && { ao flywheel close-loop --quiet 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao flywheel close-loop\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
             "timeout": 15
           }
@@ -200,6 +205,50 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/precompact-snapshot.sh",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/subagent-stop.sh",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/worktree-setup.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/worktree-cleanup.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/config-change-monitor.sh",
             "timeout": 2
           }
         ]

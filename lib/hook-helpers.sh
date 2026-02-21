@@ -57,3 +57,21 @@ write_failure() {
             > "$_HOOK_HELPERS_ERROR_LOG_DIR/last-failure.json" 2>/dev/null
     fi
 }
+
+# read_hook_input — Read stdin and extract last_assistant_message.
+# Sets global variables: INPUT, LAST_ASSISTANT_MSG
+# Usage: call at top of hook script, then use $LAST_ASSISTANT_MSG
+read_hook_input() {
+    INPUT=$(cat)
+    LAST_ASSISTANT_MSG=""
+    if [ -n "$INPUT" ]; then
+        if command -v jq >/dev/null 2>&1; then
+            LAST_ASSISTANT_MSG=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' 2>/dev/null) || true
+        fi
+        # Fallback without jq
+        if [ -z "$LAST_ASSISTANT_MSG" ] && [ -n "$INPUT" ]; then
+            LAST_ASSISTANT_MSG=$(echo "$INPUT" | grep -o '"last_assistant_message"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null \
+                | sed 's/.*"last_assistant_message"[[:space:]]*:[[:space:]]*"//;s/"$//' 2>/dev/null) || true
+        fi
+    fi
+}

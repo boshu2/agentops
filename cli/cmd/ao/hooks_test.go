@@ -48,14 +48,16 @@ func TestGenerateMinimalHooksConfig(t *testing.T) {
 
 func TestAllEventNames(t *testing.T) {
 	events := AllEventNames()
-	if len(events) != 8 {
-		t.Fatalf("expected 8 events, got %d", len(events))
+	if len(events) != 12 {
+		t.Fatalf("expected 12 events, got %d", len(events))
 	}
 	expected := []string{
 		"SessionStart", "SessionEnd",
 		"PreToolUse", "PostToolUse",
 		"UserPromptSubmit", "TaskCompleted",
 		"Stop", "PreCompact",
+		"SubagentStop", "WorktreeCreate",
+		"WorktreeRemove", "ConfigChange",
 	}
 	for i, e := range expected {
 		if events[i] != e {
@@ -163,7 +165,11 @@ func TestReadHooksManifest(t *testing.T) {
 			"UserPromptSubmit": [{"hooks": [{"type": "command", "command": "test-prompt"}]}],
 			"TaskCompleted": [{"hooks": [{"type": "command", "command": "test-task", "timeout": 120}]}],
 			"Stop": [{"hooks": [{"type": "command", "command": "test-stop"}]}],
-			"PreCompact": [{"hooks": [{"type": "command", "command": "test-compact"}]}]
+			"PreCompact": [{"hooks": [{"type": "command", "command": "test-compact"}]}],
+			"SubagentStop": [{"hooks": [{"type": "command", "command": "test-subagent-stop"}]}],
+			"WorktreeCreate": [{"hooks": [{"type": "command", "command": "test-worktree-create"}]}],
+			"WorktreeRemove": [{"hooks": [{"type": "command", "command": "test-worktree-remove"}]}],
+			"ConfigChange": [{"hooks": [{"type": "command", "command": "test-config-change"}]}]
 		}
 	}`
 
@@ -172,7 +178,7 @@ func TestReadHooksManifest(t *testing.T) {
 		t.Fatalf("ReadHooksManifest failed: %v", err)
 	}
 
-	// Verify all 8 events parsed
+	// Verify all 12 events parsed
 	for _, event := range AllEventNames() {
 		groups := config.GetEventGroups(event)
 		if len(groups) == 0 {
@@ -344,7 +350,7 @@ func TestReadEmbeddedHooks(t *testing.T) {
 		t.Fatalf("failed to parse embedded hooks.json: %v", err)
 	}
 
-	// Verify all 8 events have at least one hook group
+	// Verify all 12 events have at least one hook group
 	for _, event := range AllEventNames() {
 		groups := config.GetEventGroups(event)
 		if len(groups) == 0 {
@@ -360,7 +366,7 @@ func TestGenerateFullHooksConfig(t *testing.T) {
 		t.Fatalf("generateFullHooksConfig failed: %v", err)
 	}
 
-	// Should have all 8 events populated
+	// Should have all 12 events populated
 	for _, event := range AllEventNames() {
 		groups := config.GetEventGroups(event)
 		if len(groups) == 0 {
@@ -409,8 +415,8 @@ func TestInstallFromEmbedded(t *testing.T) {
 		}
 	}
 
-	if shCount != 15 {
-		t.Errorf("expected 15 shell scripts, got %d", shCount)
+	if shCount != 20 {
+		t.Errorf("expected 20 shell scripts, got %d", shCount)
 	}
 
 	// Verify hook-helpers.sh was extracted
