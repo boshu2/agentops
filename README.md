@@ -61,7 +61,7 @@ npx skills@latest add boshu2/agentops --all -g
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
 ```
 
-Then type `/quickstart` in your agent chat.
+Then type `/quickstart` in your agent chat. Not sure which skill to run? See the **[Skill Router](docs/SKILL-ROUTER.md)**.
 
 For Claude plugin installs, skills are available immediately after plugin install/update (restart Claude Code if prompted). To enable hooks and flywheel automation, install the `ao` CLI and run `ao init --hooks` in each repo.
 
@@ -144,7 +144,7 @@ Full reference with examples and precedence rules: [docs/ENV-VARS.md](docs/ENV-V
 | Hook registration | `.claude/settings.json` | `ao hooks uninstall` or delete entries |
 | Git push gate | Pre-push hook (optional, only with CLI) | `AGENTOPS_HOOKS_DISABLED=1` |
 
-Nothing modifies your source code. Nothing phones home. Everything is [open source](cli/) — audit it yourself.
+Nothing modifies your source code.
 
 Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
 
