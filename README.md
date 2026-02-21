@@ -362,14 +362,6 @@ Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
 
 ## Deep Dive
 
-Standard iterative development — research, plan, validate, build, review, learn — automated for agents that can't carry context between sessions.
-
-This is DevOps thinking applied to agent work: the **Three Ways** as composable primitives.
-
-- **Flow**: wave-based execution (`/crank`) + workflow orchestration (`/rpi`) to keep work moving.
-- **Feedback**: shift-left validation (`/pre-mortem`, `/vibe`, `/council`) plus optional gates/hooks to make feedback unavoidable.
-- **Continual learning**: post-mortems turn outcomes into reusable knowledge in `.agents/`, so the next session starts smarter. `/flywheel` monitors health.
-
 ### The Knowledge Ledger
 
 `.agents/` is an append-only ledger with cache-like semantics. Nothing gets overwritten — every learning, council verdict, pattern, and decision is a new dated file. Freshness decay prunes what's stale. The cycle:
