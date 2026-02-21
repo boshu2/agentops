@@ -40,7 +40,8 @@ var poolIngestCmd = &cobra.Command{
 This command bridges LLM-authored markdown learnings (typically written to
 .agents/knowledge/pending/) into .agents/pool/pending/ as scored candidates.
 
-If no args are provided, it ingests *.md from --dir (default: .agents/knowledge/pending).
+If no args are provided, it ingests *.md from --dir (default: .agents/knowledge/pending)
+and also scans legacy manual captures in .agents/knowledge/*.md.
 
 Examples:
   ao pool ingest
@@ -165,7 +166,11 @@ func outputPoolIngestResult(res poolIngestResult) error {
 func resolveIngestFiles(cwd, defaultDir string, args []string) ([]string, error) {
 	var patterns []string
 	if len(args) == 0 {
-		patterns = []string{filepath.Join(cwd, defaultDir, "*.md")}
+		patterns = []string{
+			filepath.Join(cwd, defaultDir, "*.md"),
+			// Legacy /learn captures were written directly to .agents/knowledge/.
+			filepath.Join(cwd, ".agents", "knowledge", "*.md"),
+		}
 	} else {
 		for _, a := range args {
 			// Allow relative paths
@@ -218,6 +223,9 @@ var (
 func parseLearningBlocks(md string) []learningBlock {
 	locs := reLearningHeader.FindAllStringSubmatchIndex(md, -1)
 	if len(locs) == 0 {
+		if legacy, ok := parseLegacyFrontmatterLearning(md); ok {
+			return []learningBlock{legacy}
+		}
 		return nil
 	}
 
@@ -250,6 +258,76 @@ func parseLearningBlocks(md string) []learningBlock {
 		blocks = append(blocks, b)
 	}
 	return blocks
+}
+
+func parseLegacyFrontmatterLearning(md string) (learningBlock, bool) {
+	fmMatch := reFrontmatter.FindStringSubmatchIndex(md)
+	if len(fmMatch) < 4 {
+		return learningBlock{}, false
+	}
+
+	fmRaw := md[fmMatch[2]:fmMatch[3]]
+	body := strings.TrimSpace(md[fmMatch[1]:])
+	if body == "" {
+		return learningBlock{}, false
+	}
+
+	frontmatter := make(map[string]string)
+	for _, line := range strings.Split(fmRaw, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		val := strings.TrimSpace(parts[1])
+		frontmatter[key] = strings.Trim(val, `"'`)
+	}
+
+	// Legacy /learn files include type/source/date frontmatter. Require type to
+	// avoid treating arbitrary markdown files as candidates.
+	category := strings.TrimSpace(frontmatter["type"])
+	if category == "" {
+		return learningBlock{}, false
+	}
+
+	title := ""
+	for _, line := range strings.Split(body, "\n") {
+		l := strings.TrimSpace(line)
+		if l == "" {
+			continue
+		}
+		l = strings.TrimPrefix(l, "#")
+		l = strings.TrimSpace(l)
+		if l != "" {
+			title = l
+			break
+		}
+	}
+	if title == "" {
+		return learningBlock{}, false
+	}
+
+	confidence := strings.TrimSpace(frontmatter["confidence"])
+	if confidence == "" {
+		confidence = "medium"
+	}
+
+	id := strings.TrimSpace(frontmatter["id"])
+	if id == "" {
+		id = "legacy"
+	}
+
+	return learningBlock{
+		Title:      title,
+		ID:         id,
+		Category:   category,
+		Confidence: confidence,
+		Body:       body,
+	}, true
 }
 
 func parsePendingFileHeader(md, path string) (fileDate time.Time, sessionHint string) {
@@ -349,33 +427,33 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 	gateRequired := taxonomy.RequiresHumanGate(tier, taxonomy.DefaultTierConfigs)
 
 	cand := types.Candidate{
-		ID:         id,
-		Type:       types.KnowledgeTypeLearning,
-		Content:    strings.TrimSpace(b.Body),
-		Source:     types.Source{TranscriptPath: srcPath, Timestamp: fileDate, SessionID: sessionHint, MessageIndex: 0},
-		RawScore:   raw,
-		Tier:       tier,
+		ID:          id,
+		Type:        types.KnowledgeTypeLearning,
+		Content:     strings.TrimSpace(b.Body),
+		Source:      types.Source{TranscriptPath: srcPath, Timestamp: fileDate, SessionID: sessionHint, MessageIndex: 0},
+		RawScore:    raw,
+		Tier:        tier,
 		ExtractedAt: fileDate,
 		Metadata: map[string]interface{}{
 			"pending_category":   b.Category,
 			"pending_confidence": b.Confidence,
 			"pending_title":      b.Title,
 		},
-		IsCurrent:     true,
-		ExpiryStatus:  types.ExpiryStatusActive,
-		Utility:       types.InitialUtility,
-		Maturity:      types.MaturityProvisional,
-		Confidence:    taxonomy.GetConfidence(tier, taxonomy.DefaultTierConfigs),
-		LastDecayAt:   fileDate,
-		DecayCount:    0,
-		HelpfulCount:  0,
-		HarmfulCount:  0,
-		RewardCount:   0,
-		LastReward:    0,
-		LastRewardAt:  time.Time{},
-		ValidUntil:    "",
-		Location:      "",
-		LocationPath:  "",
+		IsCurrent:    true,
+		ExpiryStatus: types.ExpiryStatusActive,
+		Utility:      types.InitialUtility,
+		Maturity:     types.MaturityProvisional,
+		Confidence:   taxonomy.GetConfidence(tier, taxonomy.DefaultTierConfigs),
+		LastDecayAt:  fileDate,
+		DecayCount:   0,
+		HelpfulCount: 0,
+		HarmfulCount: 0,
+		RewardCount:  0,
+		LastReward:   0,
+		LastRewardAt: time.Time{},
+		ValidUntil:   "",
+		Location:     "",
+		LocationPath: "",
 	}
 
 	scoring := types.Scoring{

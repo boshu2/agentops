@@ -243,6 +243,30 @@ func TestPoolRejectPreventsPromotion(t *testing.T) {
 	}
 }
 
+func TestPoolPromoteRequiresStagedStatus(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewPool(tmpDir)
+
+	candidate := types.Candidate{
+		ID:      "pending-promote-test",
+		Tier:    types.TierSilver,
+		Type:    types.KnowledgeTypeLearning,
+		Content: "Should require staging first",
+	}
+
+	if err := p.Add(candidate, types.Scoring{}); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	_, err := p.Promote("pending-promote-test")
+	if err == nil {
+		t.Fatal("expected promote from pending to fail")
+	}
+	if !strings.Contains(err.Error(), "must be staged before promotion") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestPoolBulkApprove(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)

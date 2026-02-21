@@ -915,7 +915,7 @@ ao pool auto-promote [flags]
   -h, --help               help for auto-promote
       --include-gold       Include gold-tier candidates when using --promote (default true)
       --promote            Also stage+promote eligible candidates into .agents/ (not just approval)
-      --threshold string   Minimum age for auto-promotion (default: 168h / 7 days) (default "168h")
+      --threshold string   Minimum age for auto-promotion (default: 24h) (default "24h")
 ```
 
 #### `ao pool batch-promote`
@@ -940,6 +940,7 @@ ao pool batch-promote [flags]
 #### `ao pool ingest`
 
 Ingest pending learnings into the quality pool.
+Also scans legacy manual captures in `.agents/knowledge/*.md` when no explicit files are passed.
 
 ```
 ao pool ingest [<files-or-globs...>] [flags]
@@ -1594,4 +1595,3 @@ ao vibe-check [flags]
 ```
 
 ---
-

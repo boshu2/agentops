@@ -382,6 +382,9 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 	if entry.Status == types.PoolStatusRejected {
 		return "", fmt.Errorf("cannot promote rejected candidate")
 	}
+	if entry.Status != types.PoolStatusStaged {
+		return "", fmt.Errorf("candidate must be staged before promotion (current: %s)", entry.Status)
+	}
 
 	// Determine destination based on type
 	var destDir string

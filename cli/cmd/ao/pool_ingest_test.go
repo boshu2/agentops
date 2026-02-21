@@ -50,6 +50,70 @@ Do the other thing.
 	}
 }
 
+func TestParseLearningBlocksLegacyFrontmatter(t *testing.T) {
+	md := `---
+type: learning
+source: manual
+date: 2026-02-20
+---
+
+# Fix shell PATH mismatch for ao detection
+
+Ensure command checks run in the same shell context as runtime.
+`
+
+	blocks := parseLearningBlocks(md)
+	if len(blocks) != 1 {
+		t.Fatalf("blocks=%d, want 1", len(blocks))
+	}
+	if blocks[0].Category != "learning" {
+		t.Fatalf("category=%q, want learning", blocks[0].Category)
+	}
+	if blocks[0].Confidence != "medium" {
+		t.Fatalf("confidence=%q, want medium default", blocks[0].Confidence)
+	}
+	if blocks[0].Title == "" {
+		t.Fatal("expected non-empty title")
+	}
+}
+
+func TestResolveIngestFilesDefaultIncludesLegacyKnowledge(t *testing.T) {
+	tmp := t.TempDir()
+	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
+	rootKnowledge := filepath.Join(tmp, ".agents", "knowledge")
+	if err := os.MkdirAll(pendingDir, 0o700); err != nil {
+		t.Fatalf("mkdir pending: %v", err)
+	}
+	if err := os.MkdirAll(rootKnowledge, 0o700); err != nil {
+		t.Fatalf("mkdir knowledge: %v", err)
+	}
+
+	pendingFile := filepath.Join(pendingDir, "2026-02-20-a.md")
+	legacyFile := filepath.Join(rootKnowledge, "2026-02-20-b.md")
+	if err := os.WriteFile(pendingFile, []byte("# Learning: A"), 0o600); err != nil {
+		t.Fatalf("write pending: %v", err)
+	}
+	if err := os.WriteFile(legacyFile, []byte("# Learning: B"), 0o600); err != nil {
+		t.Fatalf("write legacy: %v", err)
+	}
+
+	files, err := resolveIngestFiles(tmp, filepath.Join(".agents", "knowledge", "pending"), nil)
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+
+	seen := make(map[string]bool)
+	for _, f := range files {
+		seen[f] = true
+	}
+	if !seen[pendingFile] {
+		t.Fatalf("missing pending file in default ingest set: %s", pendingFile)
+	}
+	if !seen[legacyFile] {
+		t.Fatalf("missing legacy file in default ingest set: %s", legacyFile)
+	}
+}
+
 func TestIngestAutoPromoteAndIndex(t *testing.T) {
 	tmp := t.TempDir()
 	prev, _ := os.Getwd()

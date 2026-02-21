@@ -177,6 +177,11 @@ func promoteEntry(p *pool.Pool, entry pool.PoolEntry, result *batchPromoteResult
 		return nil
 	}
 
+	// Normalize state transitions: pending -> staged -> promoted.
+	if err := p.Stage(entry.Candidate.ID, types.TierBronze); err != nil {
+		return fmt.Errorf("stage: %w", err)
+	}
+
 	artifactPath, err := p.Promote(entry.Candidate.ID)
 	if err != nil {
 		return err

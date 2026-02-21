@@ -357,7 +357,7 @@ var poolAutoPromoteCmd = &cobra.Command{
 	Use:   "auto-promote",
 	Short: "Auto-promote eligible candidates older than threshold",
 	Long: `Automatically approve (and optionally promote) high-quality candidates
-that have been pending for longer than the specified threshold (default: 168h / 7 days).
+	that have been pending for longer than the specified threshold (default: 24h).
 
 By default, this command bulk-approves eligible candidates. With --promote,
 it will also stage + promote them into .agents/learnings/ or .agents/patterns/.
@@ -365,9 +365,9 @@ it will also stage + promote them into .agents/learnings/ or .agents/patterns/.
 This is a bulk operation - use with caution. The threshold must be at least
 1 hour to prevent accidental mass approval of recently added candidates.
 
-Examples:
-  ao pool auto-promote
-  ao pool auto-promote --threshold=24h
+	Examples:
+	  ao pool auto-promote
+	  ao pool auto-promote --threshold=24h
   ao pool auto-promote --threshold=48h --dry-run
   ao pool auto-promote --threshold=24h --promote`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -416,11 +416,11 @@ Examples:
 }
 
 type poolAutoPromotePromoteResult struct {
-	Threshold string   `json:"threshold"`
-	Considered int     `json:"considered"`
-	Promoted  int      `json:"promoted"`
-	Skipped   int      `json:"skipped"`
-	Artifacts []string `json:"artifacts,omitempty"`
+	Threshold  string   `json:"threshold"`
+	Considered int      `json:"considered"`
+	Promoted   int      `json:"promoted"`
+	Skipped    int      `json:"skipped"`
+	Artifacts  []string `json:"artifacts,omitempty"`
 	SkippedIDs []string `json:"skipped_ids,omitempty"`
 }
 
@@ -527,7 +527,7 @@ func init() {
 	_ = poolRejectCmd.MarkFlagRequired("reason") //nolint:errcheck
 
 	// Add flags to auto-promote command
-	poolAutoPromoteCmd.Flags().StringVar(&poolThreshold, "threshold", "168h", "Minimum age for auto-promotion (default: 168h / 7 days)")
+	poolAutoPromoteCmd.Flags().StringVar(&poolThreshold, "threshold", defaultAutoPromoteThreshold, "Minimum age for auto-promotion (default: 24h)")
 	poolAutoPromoteCmd.Flags().BoolVar(&poolDoPromote, "promote", false, "Also stage+promote eligible candidates into .agents/ (not just approval)")
 	poolAutoPromoteCmd.Flags().BoolVar(&poolGold, "include-gold", true, "Include gold-tier candidates when using --promote")
 }

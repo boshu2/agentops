@@ -16,7 +16,7 @@ Capture knowledge manually for future sessions. Fast path to feed the knowledge 
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--global` | off | Write to `~/.claude/patterns/` instead of `.agents/knowledge/`. Use for knowledge that applies across all projects. |
+| `--global` | off | Write to `~/.claude/patterns/` instead of `.agents/knowledge/pending/`. Use for knowledge that applies across all projects. |
 
 > **When to use `--global`:** Use for knowledge that applies across all your projects (e.g., language patterns, tooling preferences, debugging techniques). Use default (no flag) for repo-specific knowledge (e.g., architecture decisions, local conventions).
 
@@ -72,7 +72,7 @@ counter=2
 if [[ "$GLOBAL" == "true" ]]; then
   base_dir="$HOME/.claude/patterns"
 else
-  base_dir=".agents/knowledge"
+  base_dir=".agents/knowledge/pending"
 fi
 while [ -f "${base_dir}/$(date +%Y-%m-%d)-${slug}.md" ]; do
   slug="<generated-slug>-${counter}"
@@ -88,14 +88,14 @@ done
 if [[ "$GLOBAL" == "true" ]]; then
   mkdir -p ~/.claude/patterns
 else
-  mkdir -p .agents/knowledge
+  mkdir -p .agents/knowledge/pending
 fi
 ```
 
 ### Step 5: Write Knowledge File
 
 **Path:**
-- Default: `.agents/knowledge/YYYY-MM-DD-<slug>.md`
+- Default: `.agents/knowledge/pending/YYYY-MM-DD-<slug>.md`
 - With `--global`: `~/.claude/patterns/YYYY-MM-DD-<slug>.md`
 
 **Format:**
@@ -106,7 +106,19 @@ source: manual
 date: YYYY-MM-DD
 ---
 
+# Learning: <short title>
+
+**ID**: L1
+**Category**: <classification>
+**Confidence**: medium
+
+## What We Learned
+
 <content>
+
+## Source
+
+Manual capture via /learn
 ```
 
 **Example:**
@@ -117,11 +129,20 @@ source: manual
 date: 2026-02-16
 ---
 
-# Token Bucket Rate Limiting
+# Learning: Token Bucket Rate Limiting
+**ID**: L1
+**Category**: pattern
+**Confidence**: high
+
+## What We Learned
 
 Use token bucket pattern for rate limiting instead of fixed windows. Allows burst traffic while maintaining average rate limit. Implementation: bucket refills at constant rate, requests consume tokens, reject when empty.
 
 Key advantage: smoother user experience during brief bursts.
+
+## Source
+
+Manual capture via /learn
 ```
 
 ### Step 6: Integrate with ao CLI (if available)
@@ -131,10 +152,13 @@ Check if ao is installed:
 if command -v ao &>/dev/null; then
   echo "✓ Knowledge saved to <path>"
   echo ""
-  echo "To add this to the quality pool for review:"
-  echo "  ao pool stage <path>"
+  echo "To move this into cached memory now:"
+  echo "  ao pool ingest <path>"
+  echo "  ao pool list --status pending"
+  echo "  ao pool stage <candidate-id>"
+  echo "  ao pool promote <candidate-id>"
   echo ""
-  echo "Or let it auto-index on next /retro or /extract."
+  echo "Or let hooks run close-loop automation."
 else
   echo "✓ Knowledge saved to <path>"
   echo ""
@@ -142,7 +166,7 @@ else
 fi
 ```
 
-**Do NOT auto-run `ao pool stage`.** The user should decide when to promote to the quality pool.
+**Do NOT auto-run promotion commands.** The user should decide when to stage/promote.
 
 **Note:** If `--global` is set, skip ao CLI integration. Global patterns are file-based only and are found via grep search in `/research`, `/knowledge`, and `/inject`.
 
@@ -152,10 +176,10 @@ Tell the user:
 ```
 Learned: <one-line summary from content>
 
-Saved to: .agents/knowledge/YYYY-MM-DD-<slug>.md
+Saved to: .agents/knowledge/pending/YYYY-MM-DD-<slug>.md
 Type: <classification>
 
-This knowledge is now available for future sessions via /research and /inject.
+This capture is queued for flywheel ingestion; once promoted it is available via /research and /inject.
 ```
 
 ## Key Rules
@@ -163,7 +187,7 @@ This knowledge is now available for future sessions via /research and /inject.
 - **Be concise** - This is for quick captures, not full retrospectives
 - **Preserve user's words** - Don't rephrase unless they ask
 - **Use simple slugs** - Clear, descriptive, lowercase-hyphenated
-- **Minimal frontmatter** - Just type, source, date
+- **Ingest-compatible format** - Include `# Learning:` block with category/confidence
 - **No auto-promotion** - User controls quality pool workflow
 
 ## Examples
@@ -177,22 +201,22 @@ This knowledge is now available for future sessions via /research and /inject.
 2. Agent asks for classification via AskUserQuestion
 3. User selects "pattern"
 4. Agent generates slug: `token-bucket-rate-limiting`
-5. Agent creates `.agents/knowledge/2026-02-16-token-bucket-rate-limiting.md`
+5. Agent creates `.agents/knowledge/pending/2026-02-16-token-bucket-rate-limiting.md`
 6. Agent writes frontmatter + content
-7. Agent checks for ao CLI, informs user about `ao pool stage` option
-8. Agent confirms: "Learned: Use token bucket for rate limiting. Saved to .agents/knowledge/2026-02-16-token-bucket-rate-limiting.md"
+7. Agent checks for ao CLI, informs user about `ao pool ingest` + stage/promote options
+8. Agent confirms: "Learned: Use token bucket for rate limiting. Saved to .agents/knowledge/pending/2026-02-16-token-bucket-rate-limiting.md"
 
 ### Interactive Capture
 
 **User says:** `/learn`
 
-Agent asks for content and type, generates slug `never-eval-hooks`, creates `.agents/knowledge/2026-02-16-never-eval-hooks.md`, confirms save.
+Agent asks for content and type, generates slug `never-eval-hooks`, creates `.agents/knowledge/pending/2026-02-16-never-eval-hooks.md`, confirms save.
 
 ### Gotcha Capture
 
 **User says:** `/learn "bd dep add A B means A depends on B, not A blocks B"`
 
-Agent classifies as "gotcha", generates slug `bd-dep-direction`, creates file, confirms save.
+Agent classifies as "gotcha", generates slug `bd-dep-direction`, creates file in pending, confirms save.
 
 ## Troubleshooting
 
@@ -200,14 +224,14 @@ Agent classifies as "gotcha", generates slug `bd-dep-direction`, creates file, c
 |---------|-------|----------|
 | Slug collision | Same topic on same day | Append `-2`, `-3` counter automatically |
 | Content too long | User pasted large block | Accept it. /learn has no length limit. Suggest /retro for structured extraction if very large. |
-| ao pool stage fails | Path wrong or ao not installed | Show error, confirm file was saved to .agents/knowledge/ regardless |
+| ao pool ingest/stage fails | Candidate ID mismatch or ao not installed | Show exact next commands (`ingest`, `list`, `stage`, `promote`) and confirm file was saved |
 | Duplicate knowledge | Same insight already captured | Check existing files with grep before writing. If duplicate, tell user and show existing path. |
 
 ## The Flywheel
 
 Manual captures feed the same flywheel as automatic extraction:
 ```
-/learn → .agents/knowledge/ → /research finds it → future work is smarter
+/learn → .agents/knowledge/pending/ → ao pool ingest → .agents/learnings/ → /inject + feedback-loop
 ```
 
 This skill is for quick wins. For deeper reflection, use `/retro`.

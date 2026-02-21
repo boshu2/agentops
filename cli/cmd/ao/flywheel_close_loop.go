@@ -23,7 +23,7 @@ var (
 )
 
 type flywheelCloseLoopResult struct {
-	Ingest      poolIngestResult            `json:"ingest"`
+	Ingest      poolIngestResult             `json:"ingest"`
 	AutoPromote poolAutoPromotePromoteResult `json:"auto_promote"`
 	AntiPattern struct {
 		Eligible int      `json:"eligible"`
@@ -31,8 +31,8 @@ type flywheelCloseLoopResult struct {
 		Paths    []string `json:"paths,omitempty"`
 	} `json:"anti_pattern"`
 	Store struct {
-		Categorize bool  `json:"categorize"`
-		Indexed    int   `json:"indexed"`
+		Categorize bool   `json:"categorize"`
+		Indexed    int    `json:"indexed"`
 		IndexPath  string `json:"index_path,omitempty"`
 	} `json:"store"`
 }
@@ -57,7 +57,7 @@ Examples:
 func init() {
 	flywheelCmd.AddCommand(flywheelCloseLoopCmd)
 	flywheelCloseLoopCmd.Flags().StringVar(&flywheelCloseLoopPendingDir, "pending-dir", filepath.Join(".agents", "knowledge", "pending"), "Pending directory to ingest from")
-	flywheelCloseLoopCmd.Flags().StringVar(&flywheelCloseLoopThreshold, "threshold", "24h", "Minimum age for auto-promotion (e.g., 24h)")
+	flywheelCloseLoopCmd.Flags().StringVar(&flywheelCloseLoopThreshold, "threshold", defaultAutoPromoteThreshold, "Minimum age for auto-promotion (default: 24h)")
 	flywheelCloseLoopCmd.Flags().BoolVar(&flywheelCloseLoopQuiet, "quiet", false, "Suppress non-essential output (hook-friendly)")
 }
 
