@@ -88,3 +88,56 @@ The orchestrator can resume from any phase using `--from=<phase>`. On resume, it
 ### Clean Start
 
 When starting from phase 1 (fresh run), the orchestrator removes stale phase summaries and handoff files from prior runs. Phase result files from the current run are written fresh.
+
+## Worktree Lifecycle Semantics
+
+`ao rpi phased` creates sibling worktrees named `../<repo>-rpi-<run-id>/` (unless `--no-worktree` is set). Cleanup behavior is intentional and asymmetric:
+
+- Success path: after all phases complete, the orchestrator merges `rpi/<run-id>` into the source branch and removes the worktree + branch.
+- Failure path: worktree is preserved for debugging (no auto-destroy on failed phase).
+- Interrupt path (`SIGINT`/`SIGTERM`): worktree is preserved and terminal metadata is written (`terminal_status: interrupted`).
+
+This design prevents data loss on partial runs while still auto-cleaning successful runs.
+
+## Monitoring and Liveness
+
+Use:
+
+```bash
+ao rpi status
+ao rpi status --watch
+```
+
+Status classification is registry-first:
+
+- Primary source: `.agents/rpi/runs/<run-id>/phased-state.json`
+- Liveness signal: `.agents/rpi/runs/<run-id>/heartbeat.txt` (fresh heartbeat => active)
+- Fallback liveness probe: tmux session check if heartbeat is stale/missing
+
+Stale reasons include `worktree missing` when state references a removed worktree directory.
+
+## Stale Cleanup Workflow
+
+Use manual cleanup commands:
+
+```bash
+ao rpi cleanup --all --dry-run
+ao rpi cleanup --all
+ao rpi cleanup --all --prune-worktrees
+ao rpi cleanup --run-id <id>
+```
+
+Behavior:
+
+- Marks stale runs with terminal metadata (`terminal_status: stale`, reason, timestamp)
+- Removes orphaned worktree directories when safe
+- Optionally runs `git worktree prune`
+
+Safety guards:
+
+- Refuses to remove non-sibling paths
+- Refuses to remove repo root as a worktree target
+
+## Current Limitation
+
+`ao rpi cleanup` operates on run-registry state entries. If a historical/log-only run never wrote `.agents/rpi/runs/<run-id>/phased-state.json`, it may appear in log views but not be selected by stale cleanup. In that case, use standard git worktree hygiene (`git worktree list`, `git worktree remove --force <path>`, `git branch -D rpi/<run-id>`) after verifying the branch has no unique commits.
