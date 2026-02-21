@@ -14,8 +14,29 @@ import (
 )
 
 var (
-	rpiMaxCycles  int
-	rpiRepoFilter string
+	rpiMaxCycles             int
+	rpiRepoFilter            string
+	rpiSupervisor            bool
+	rpiFailurePolicy         string
+	rpiCycleRetries          int
+	rpiRetryBackoff          time.Duration
+	rpiCycleDelay            time.Duration
+	rpiLease                 bool
+	rpiLeasePath             string
+	rpiLeaseTTL              time.Duration
+	rpiDetachedHeal          bool
+	rpiDetachedBranchPrefix  string
+	rpiAutoClean             bool
+	rpiAutoCleanStaleAfter   time.Duration
+	rpiEnsureCleanup         bool
+	rpiCleanupPruneWorktrees bool
+	rpiGatePolicy            string
+	rpiValidateFastScript    string
+	rpiSecurityGateScript    string
+	rpiLandingPolicy         string
+	rpiLandingBranch         string
+	rpiLandingCommitMessage  string
+	rpiBDSyncPolicy          string
 )
 
 func init() {
@@ -50,6 +71,27 @@ Examples:
 
 	loopCmd.Flags().IntVar(&rpiMaxCycles, "max-cycles", 0, "Maximum cycles (0 = unlimited, stop when queue empty)")
 	loopCmd.Flags().StringVar(&rpiRepoFilter, "repo-filter", "", "Only process queue items targeting this repo (empty = all)")
+	loopCmd.Flags().BoolVar(&rpiSupervisor, "supervisor", false, "Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup)")
+	loopCmd.Flags().StringVar(&rpiFailurePolicy, "failure-policy", "stop", "Cycle failure policy: stop|continue")
+	loopCmd.Flags().IntVar(&rpiCycleRetries, "cycle-retries", 0, "Automatic retry count per cycle after a failed attempt")
+	loopCmd.Flags().DurationVar(&rpiRetryBackoff, "retry-backoff", 30*time.Second, "Backoff between cycle retry attempts")
+	loopCmd.Flags().DurationVar(&rpiCycleDelay, "cycle-delay", 0, "Delay between completed cycles")
+	loopCmd.Flags().BoolVar(&rpiLease, "lease", false, "Acquire a single-flight supervisor lease lock before running")
+	loopCmd.Flags().StringVar(&rpiLeasePath, "lease-path", filepath.Join(".agents", "rpi", "supervisor.lock"), "Lease lock file path (absolute or repo-relative)")
+	loopCmd.Flags().DurationVar(&rpiLeaseTTL, "lease-ttl", 2*time.Minute, "Lease heartbeat TTL for supervisor lock metadata")
+	loopCmd.Flags().BoolVar(&rpiDetachedHeal, "detached-heal", false, "Auto-create/switch to a named branch when HEAD is detached")
+	loopCmd.Flags().StringVar(&rpiDetachedBranchPrefix, "detached-branch-prefix", "codex/auto-rpi", "Branch prefix used by detached HEAD self-heal")
+	loopCmd.Flags().BoolVar(&rpiAutoClean, "auto-clean", false, "Run stale RPI cleanup before each phased cycle")
+	loopCmd.Flags().DurationVar(&rpiAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only auto-clean runs older than this age")
+	loopCmd.Flags().BoolVar(&rpiEnsureCleanup, "ensure-cleanup", false, "Run stale-run cleanup after each cycle (cleanup guarantee)")
+	loopCmd.Flags().BoolVar(&rpiCleanupPruneWorktrees, "cleanup-prune-worktrees", true, "Run git worktree prune during supervisor cleanup")
+	loopCmd.Flags().StringVar(&rpiGatePolicy, "gate-policy", "off", "Quality/security gate policy: off|best-effort|required")
+	loopCmd.Flags().StringVar(&rpiValidateFastScript, "gate-fast-script", filepath.Join("scripts", "validate-go-fast.sh"), "Fast validation gate script path")
+	loopCmd.Flags().StringVar(&rpiSecurityGateScript, "gate-security-script", filepath.Join("scripts", "security-gate.sh"), "Security gate script path")
+	loopCmd.Flags().StringVar(&rpiLandingPolicy, "landing-policy", "off", "Landing policy after successful cycle: off|commit|sync-push")
+	loopCmd.Flags().StringVar(&rpiLandingBranch, "landing-branch", "", "Landing target branch (empty resolves origin/HEAD, then current branch, then main)")
+	loopCmd.Flags().StringVar(&rpiLandingCommitMessage, "landing-commit-message", "chore(rpi): autonomous cycle {{cycle}}", "Commit message template for landing policies that commit")
+	loopCmd.Flags().StringVar(&rpiBDSyncPolicy, "bd-sync-policy", "auto", "bd sync policy for landing: auto|always|never")
 
 	rpiCmd.AddCommand(loopCmd)
 }
@@ -88,6 +130,10 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
+	cfg, err := resolveLoopSupervisorConfig(cmd, cwd)
+	if err != nil {
+		return err
+	}
 
 	// Parse explicit goal if provided
 	explicitGoal := ""
@@ -96,6 +142,24 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 	}
 
 	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents", "rpi"), 0755); err != nil {
+		return fmt.Errorf("ensure .agents/rpi directory: %w", err)
+	}
+
+	var lease *supervisorLease
+	if cfg.LeaseEnabled && !GetDryRun() {
+		runID := generateRunID()
+		lease, err = acquireSupervisorLease(cwd, cfg.LeasePath, cfg.LeaseTTL, runID)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if releaseErr := lease.Release(); releaseErr != nil {
+				VerbosePrintf("Warning: could not release supervisor lease: %v\n", releaseErr)
+			}
+		}()
+		fmt.Printf("Supervisor lease acquired: %s (run=%s)\n", lease.Path(), runID)
+	}
 
 	cycle := 0
 	for {
@@ -104,6 +168,10 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		if rpiMaxCycles > 0 && cycle > rpiMaxCycles {
 			fmt.Printf("\nReached max cycles (%d). Stopping.\n", rpiMaxCycles)
 			break
+		}
+		if cycle > 1 && cfg.CycleDelay > 0 {
+			fmt.Printf("\nSleeping %s before next cycle...\n", cfg.CycleDelay.Round(time.Second))
+			time.Sleep(cfg.CycleDelay)
 		}
 
 		fmt.Printf("\n=== RPI Loop: Cycle %d ===\n", cycle)
@@ -144,13 +212,26 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 
 		fmt.Printf("Running phased engine for: %q\n", goal)
 		start := time.Now()
-
-		opts := defaultPhasedEngineOptions()
-		phasedErr := runPhasedEngine(cwd, goal, opts)
+		var cycleErr error
+		maxAttempts := cfg.MaxCycleAttempts()
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			cycleErr = runRPISupervisedCycle(cwd, goal, cycle, attempt, cfg)
+			if cycleErr == nil {
+				break
+			}
+			if attempt >= maxAttempts {
+				break
+			}
+			fmt.Printf("Cycle %d attempt %d/%d failed: %v\n", cycle, attempt, maxAttempts, cycleErr)
+			if cfg.RetryBackoff > 0 {
+				fmt.Printf("Retrying in %s...\n", cfg.RetryBackoff.Round(time.Second))
+				time.Sleep(cfg.RetryBackoff)
+			}
+		}
 		elapsed := time.Since(start).Round(time.Second)
 
-		if phasedErr != nil {
-			fmt.Printf("Cycle %d failed after %s: %v\n", cycle, elapsed, phasedErr)
+		if cycleErr != nil {
+			fmt.Printf("Cycle %d failed after %s: %v\n", cycle, elapsed, cycleErr)
 
 			// Mark the queue entry as failed so it is not retried blindly.
 			if sel != nil {
@@ -161,8 +242,13 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 				}
 			}
 
-			fmt.Println("Stopping loop. Fix the issue and re-run ao rpi loop.")
-			return phasedErr
+			if cfg.ShouldContinueAfterFailure() && explicitGoal == "" {
+				fmt.Printf("Failure policy %q: continuing to next queue item.\n", cfg.FailurePolicy)
+				continue
+			}
+
+			fmt.Println("Stopping loop due to failure policy.")
+			return cycleErr
 		}
 
 		fmt.Printf("Cycle %d completed in %s\n", cycle, elapsed)
@@ -374,6 +460,7 @@ func markEntryConsumed(path string, entryIndex int, consumedBy string) error {
 //   - Missing file: returns an error (caller should verify file exists before calling).
 //   - Wrong/no match: no-op (idempotent — safe to call even if already consumed).
 //   - Match: sets Consumed=true, ConsumedAt, and ConsumedBy=runID.
+//
 // markEntryFailed records a FailedAt timestamp on the entry at entryIndex without
 // setting Consumed. This leaves the entry recoverable: set consumed=false to retry.
 func markEntryFailed(path string, entryIndex int) error {

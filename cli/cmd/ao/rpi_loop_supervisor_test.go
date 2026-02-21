@@ -1,0 +1,231 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/spf13/cobra"
+)
+
+func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
+	prev := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prev)
+
+	rpiSupervisor = true
+	rpiFailurePolicy = "stop"
+	rpiCycleRetries = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiDetachedHeal = false
+	rpiAutoClean = false
+	rpiEnsureCleanup = false
+	rpiGatePolicy = "off"
+	rpiLandingPolicy = "off"
+	rpiBDSyncPolicy = "auto"
+	rpiLeaseTTL = 2 * time.Minute
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiLeasePath = ".agents/rpi/supervisor.lock"
+
+	cmd := newLoopSupervisorTestCommand()
+
+	cfg, err := resolveLoopSupervisorConfig(cmd, t.TempDir())
+	if err != nil {
+		t.Fatalf("resolveLoopSupervisorConfig: %v", err)
+	}
+	if cfg.FailurePolicy != loopFailurePolicyContinue {
+		t.Fatalf("failure policy: got %q, want %q", cfg.FailurePolicy, loopFailurePolicyContinue)
+	}
+	if cfg.CycleRetries != 1 {
+		t.Fatalf("cycle retries: got %d, want 1", cfg.CycleRetries)
+	}
+	if cfg.CycleDelay != 5*time.Minute {
+		t.Fatalf("cycle delay: got %s, want 5m", cfg.CycleDelay)
+	}
+	if !cfg.LeaseEnabled {
+		t.Fatal("expected lease to be enabled in supervisor defaults")
+	}
+	if !cfg.DetachedHeal {
+		t.Fatal("expected detached heal to be enabled in supervisor defaults")
+	}
+	if !cfg.AutoClean {
+		t.Fatal("expected auto-clean to be enabled in supervisor defaults")
+	}
+	if !cfg.EnsureCleanup {
+		t.Fatal("expected ensure-cleanup to be enabled in supervisor defaults")
+	}
+	if cfg.GatePolicy != loopGatePolicyRequired {
+		t.Fatalf("gate policy: got %q, want %q", cfg.GatePolicy, loopGatePolicyRequired)
+	}
+}
+
+func TestAcquireSupervisorLease_SingleFlight(t *testing.T) {
+	tmpDir := t.TempDir()
+	leasePath := filepath.Join(tmpDir, "supervisor.lock")
+
+	lease1, err := acquireSupervisorLease(tmpDir, leasePath, 2*time.Minute, "run-1")
+	if err != nil {
+		t.Fatalf("acquire first lease: %v", err)
+	}
+
+	if _, err := acquireSupervisorLease(tmpDir, leasePath, 2*time.Minute, "run-2"); err == nil {
+		t.Fatal("expected second lease acquisition to fail while first is held")
+	}
+
+	if err := lease1.Release(); err != nil {
+		t.Fatalf("release first lease: %v", err)
+	}
+
+	lease3, err := acquireSupervisorLease(tmpDir, leasePath, 2*time.Minute, "run-3")
+	if err != nil {
+		t.Fatalf("acquire after release: %v", err)
+	}
+	defer func() { _ = lease3.Release() }()
+}
+
+func TestShouldRunBDSync(t *testing.T) {
+	prevLookPath := loopLookPath
+	defer func() { loopLookPath = prevLookPath }()
+
+	tmpDir := t.TempDir()
+
+	loopLookPath = func(_ string) (string, error) {
+		return "", fmt.Errorf("not found")
+	}
+	run, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto)
+	if err != nil {
+		t.Fatalf("auto policy with missing bd should not error: %v", err)
+	}
+	if run {
+		t.Fatal("auto policy should skip when bd is unavailable")
+	}
+
+	loopLookPath = func(_ string) (string, error) {
+		return "/usr/bin/bd", nil
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".beads"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	run, err = shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto)
+	if err != nil {
+		t.Fatalf("auto policy with bd/.beads should not error: %v", err)
+	}
+	if !run {
+		t.Fatal("auto policy should run when bd exists and .beads exists")
+	}
+
+	loopLookPath = func(_ string) (string, error) {
+		return "", fmt.Errorf("not found")
+	}
+	if _, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAlways); err == nil {
+		t.Fatal("always policy should error when bd is unavailable")
+	}
+}
+
+func TestRenderLandingCommitMessage(t *testing.T) {
+	msg := renderLandingCommitMessage("cycle={{cycle}} attempt={{attempt}} goal={{goal}}", 4, 2, "ship it")
+	if !strings.Contains(msg, "cycle=4") || !strings.Contains(msg, "attempt=2") || !strings.Contains(msg, "goal=ship it") {
+		t.Fatalf("unexpected rendered message: %q", msg)
+	}
+}
+
+func TestRunGateScript(t *testing.T) {
+	tmpDir := t.TempDir()
+	missing := filepath.Join("scripts", "missing.sh")
+	if err := runGateScript(tmpDir, missing, false); err != nil {
+		t.Fatalf("optional missing gate should not fail: %v", err)
+	}
+	if err := runGateScript(tmpDir, missing, true); err == nil {
+		t.Fatal("required missing gate should fail")
+	}
+}
+
+type loopSupervisorGlobals struct {
+	rpiSupervisor            bool
+	rpiFailurePolicy         string
+	rpiCycleRetries          int
+	rpiRetryBackoff          time.Duration
+	rpiCycleDelay            time.Duration
+	rpiLease                 bool
+	rpiLeasePath             string
+	rpiLeaseTTL              time.Duration
+	rpiDetachedHeal          bool
+	rpiDetachedBranchPrefix  string
+	rpiAutoClean             bool
+	rpiAutoCleanStaleAfter   time.Duration
+	rpiEnsureCleanup         bool
+	rpiCleanupPruneWorktrees bool
+	rpiGatePolicy            string
+	rpiValidateFastScript    string
+	rpiSecurityGateScript    string
+	rpiLandingPolicy         string
+	rpiLandingBranch         string
+	rpiLandingCommitMessage  string
+	rpiBDSyncPolicy          string
+}
+
+func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
+	return loopSupervisorGlobals{
+		rpiSupervisor:            rpiSupervisor,
+		rpiFailurePolicy:         rpiFailurePolicy,
+		rpiCycleRetries:          rpiCycleRetries,
+		rpiRetryBackoff:          rpiRetryBackoff,
+		rpiCycleDelay:            rpiCycleDelay,
+		rpiLease:                 rpiLease,
+		rpiLeasePath:             rpiLeasePath,
+		rpiLeaseTTL:              rpiLeaseTTL,
+		rpiDetachedHeal:          rpiDetachedHeal,
+		rpiDetachedBranchPrefix:  rpiDetachedBranchPrefix,
+		rpiAutoClean:             rpiAutoClean,
+		rpiAutoCleanStaleAfter:   rpiAutoCleanStaleAfter,
+		rpiEnsureCleanup:         rpiEnsureCleanup,
+		rpiCleanupPruneWorktrees: rpiCleanupPruneWorktrees,
+		rpiGatePolicy:            rpiGatePolicy,
+		rpiValidateFastScript:    rpiValidateFastScript,
+		rpiSecurityGateScript:    rpiSecurityGateScript,
+		rpiLandingPolicy:         rpiLandingPolicy,
+		rpiLandingBranch:         rpiLandingBranch,
+		rpiLandingCommitMessage:  rpiLandingCommitMessage,
+		rpiBDSyncPolicy:          rpiBDSyncPolicy,
+	}
+}
+
+func restoreLoopSupervisorGlobals(prev loopSupervisorGlobals) {
+	rpiSupervisor = prev.rpiSupervisor
+	rpiFailurePolicy = prev.rpiFailurePolicy
+	rpiCycleRetries = prev.rpiCycleRetries
+	rpiRetryBackoff = prev.rpiRetryBackoff
+	rpiCycleDelay = prev.rpiCycleDelay
+	rpiLease = prev.rpiLease
+	rpiLeasePath = prev.rpiLeasePath
+	rpiLeaseTTL = prev.rpiLeaseTTL
+	rpiDetachedHeal = prev.rpiDetachedHeal
+	rpiDetachedBranchPrefix = prev.rpiDetachedBranchPrefix
+	rpiAutoClean = prev.rpiAutoClean
+	rpiAutoCleanStaleAfter = prev.rpiAutoCleanStaleAfter
+	rpiEnsureCleanup = prev.rpiEnsureCleanup
+	rpiCleanupPruneWorktrees = prev.rpiCleanupPruneWorktrees
+	rpiGatePolicy = prev.rpiGatePolicy
+	rpiValidateFastScript = prev.rpiValidateFastScript
+	rpiSecurityGateScript = prev.rpiSecurityGateScript
+	rpiLandingPolicy = prev.rpiLandingPolicy
+	rpiLandingBranch = prev.rpiLandingBranch
+	rpiLandingCommitMessage = prev.rpiLandingCommitMessage
+	rpiBDSyncPolicy = prev.rpiBDSyncPolicy
+}
+
+func newLoopSupervisorTestCommand() *cobra.Command {
+	cmd := &cobra.Command{Use: "test-loop"}
+	cmd.Flags().String("failure-policy", "stop", "")
+	cmd.Flags().Int("cycle-retries", 0, "")
+	cmd.Flags().Duration("cycle-delay", 0, "")
+	cmd.Flags().Bool("lease", false, "")
+	cmd.Flags().Bool("detached-heal", false, "")
+	cmd.Flags().Bool("auto-clean", false, "")
+	cmd.Flags().Bool("ensure-cleanup", false, "")
+	cmd.Flags().String("gate-policy", "off", "")
+	return cmd
+}
