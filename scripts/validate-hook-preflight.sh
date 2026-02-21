@@ -181,6 +181,68 @@ else
     fail "task-validation telemetry missing"
 fi
 
+section "Hook manifest guardrails"
+
+if [[ -f "hooks/hooks.json" ]]; then
+    pass "hooks/hooks.json exists"
+else
+    fail "hooks/hooks.json missing"
+fi
+
+if command -v jq >/dev/null 2>&1; then
+    missing_timeout="$(
+        jq -r '
+          .hooks
+          | to_entries[]
+          | .key as $event
+          | (.value[]?.hooks[]? // empty)
+          | select(.type == "command")
+          | select(.command | test("(^|[ ;{])ao "))
+          | select((.timeout // 0) <= 0)
+          | "\($event): \(.command)"
+        ' hooks/hooks.json
+    )"
+    if [[ -n "$missing_timeout" ]]; then
+        fail "hooks/hooks.json has ao commands without timeout"
+        echo "$missing_timeout" | sed 's/^/  - /'
+    else
+        pass "all ao hook commands have explicit timeout"
+    fi
+
+    inline_missing_guard="$(
+        jq -r '
+          .hooks
+          | to_entries[]
+          | .key as $event
+          | (.value[]?.hooks[]? // empty)
+          | select(.type == "command")
+          | select(.command | contains("command -v ao"))
+          | select((.command | contains("AGENTOPS_HOOKS_DISABLED")) | not)
+          | "\($event): \(.command)"
+        ' hooks/hooks.json
+    )"
+    if [[ -n "$inline_missing_guard" ]]; then
+        fail "inline ao hook commands missing AGENTOPS_HOOKS_DISABLED guard"
+        echo "$inline_missing_guard" | sed 's/^/  - /'
+    else
+        pass "inline ao hook commands include AGENTOPS_HOOKS_DISABLED guard"
+    fi
+
+    if jq -e '
+      .hooks.SessionEnd[]?.hooks[]?
+      | select(.command | contains("ao batch-feedback"))
+      | select(.command | contains("--max-sessions"))
+      | select(.command | contains("--max-runtime"))
+      | select((.timeout // 0) > 0)
+    ' hooks/hooks.json >/dev/null 2>&1; then
+        pass "batch-feedback hook is bounded (timeout + runtime/session caps)"
+    else
+        fail "batch-feedback hook missing bounded runtime guardrails"
+    fi
+else
+    fail "jq is required for hooks/hooks.json guardrail checks"
+fi
+
 echo ""
 if [[ "$errors" -gt 0 ]]; then
     echo -e "${RED}Hook preflight FAILED (${errors} issues)${NC}"

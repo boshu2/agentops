@@ -40,6 +40,20 @@ When your session ends:
 2. **Task sync** promotes completed tasks to higher maturity levels
 3. **Feedback loop** updates utility scores based on session outcome
 
+### CPU Safety Guardrails
+
+`ao hooks install --full` now installs bounded hook commands by default:
+
+- Inline `ao` hook commands include `AGENTOPS_HOOKS_DISABLED` guard checks.
+- All inline `ao` hook commands have explicit per-hook `timeout` values.
+- Session-end `ao batch-feedback` runs with bounded defaults:
+  - `--days ${AGENTOPS_BATCH_FEEDBACK_DAYS:-2}`
+  - `--max-sessions ${AGENTOPS_BATCH_FEEDBACK_MAX_SESSIONS:-3}`
+  - `--max-runtime ${AGENTOPS_BATCH_FEEDBACK_MAX_RUNTIME:-8s}`
+  - `--reward ${AGENTOPS_BATCH_FEEDBACK_REWARD:-0.70}`
+
+Override those defaults via environment variables when needed.
+
 ## The Knowledge Flywheel Equation
 
 ```

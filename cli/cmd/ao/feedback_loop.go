@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -378,13 +379,31 @@ Examples:
 }
 
 var batchFeedbackDays int
+var batchFeedbackMaxSessions int
+var batchFeedbackReward float64
+var batchFeedbackMaxRuntime time.Duration
 
 func init() {
 	rootCmd.AddCommand(batchFeedbackCmd)
 	batchFeedbackCmd.Flags().IntVar(&batchFeedbackDays, "days", 7, "Process sessions from the last N days")
+	batchFeedbackCmd.Flags().IntVar(&batchFeedbackMaxSessions, "max-sessions", 0, "Process at most N sessions per run (0 = no limit)")
+	batchFeedbackCmd.Flags().Float64Var(&batchFeedbackReward, "reward", -1, "Override reward value for all sessions (0.0-1.0); -1 = compute from transcript")
+	batchFeedbackCmd.Flags().DurationVar(&batchFeedbackMaxRuntime, "max-runtime", 0, "Maximum wall-clock runtime for this invocation (0 disables)")
 }
 
 func runBatchFeedback(cmd *cobra.Command, args []string) error {
+	if batchFeedbackMaxSessions < 0 {
+		return fmt.Errorf("--max-sessions must be >= 0")
+	}
+	if batchFeedbackReward != -1 && (batchFeedbackReward < 0 || batchFeedbackReward > 1) {
+		return fmt.Errorf("--reward must be between 0.0 and 1.0, or -1 to auto-compute")
+	}
+	if batchFeedbackMaxRuntime < 0 {
+		return fmt.Errorf("--max-runtime must be >= 0")
+	}
+
+	startedAt := time.Now()
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -411,6 +430,7 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 	// Find sessions with citations but no feedback
 	since := time.Now().AddDate(0, 0, -batchFeedbackDays)
 	sessionCitations := make(map[string][]types.CitationEvent)
+	sessionLatestCitation := make(map[string]time.Time)
 
 	for _, c := range citations {
 		if c.CitedAt.Before(since) {
@@ -420,6 +440,9 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 			continue
 		}
 		sessionCitations[c.SessionID] = append(sessionCitations[c.SessionID], c)
+		if latest, ok := sessionLatestCitation[c.SessionID]; !ok || c.CitedAt.After(latest) {
+			sessionLatestCitation[c.SessionID] = c.CitedAt
+		}
 	}
 
 	if len(sessionCitations) == 0 {
@@ -427,9 +450,28 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	sessionIDs := make([]string, 0, len(sessionCitations))
+	for sessionID := range sessionCitations {
+		sessionIDs = append(sessionIDs, sessionID)
+	}
+	sort.Slice(sessionIDs, func(i, j int) bool {
+		ti := sessionLatestCitation[sessionIDs[i]]
+		tj := sessionLatestCitation[sessionIDs[j]]
+		if ti.Equal(tj) {
+			return sessionIDs[i] < sessionIDs[j]
+		}
+		return ti.After(tj)
+	})
+
+	candidateCount := len(sessionIDs)
+	if batchFeedbackMaxSessions > 0 && len(sessionIDs) > batchFeedbackMaxSessions {
+		sessionIDs = sessionIDs[:batchFeedbackMaxSessions]
+	}
+
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would process %d sessions:\n", len(sessionCitations))
-		for sessionID, citations := range sessionCitations {
+		fmt.Printf("[dry-run] Would process %d/%d sessions:\n", len(sessionIDs), candidateCount)
+		for _, sessionID := range sessionIDs {
+			citations := sessionCitations[sessionID]
 			fmt.Printf("  - %s (%d citations)\n", sessionID, len(citations))
 		}
 		return nil
@@ -437,10 +479,15 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 
 	// Process each session
 	processed := 0
-	for sessionID := range sessionCitations {
+	for _, sessionID := range sessionIDs {
+		if batchFeedbackMaxRuntime > 0 && time.Since(startedAt) >= batchFeedbackMaxRuntime {
+			VerbosePrintf("Batch feedback runtime budget reached after %s\n", time.Since(startedAt).Truncate(time.Millisecond))
+			break
+		}
+
 		// Set flags and run feedback loop
 		feedbackLoopSessionID = sessionID
-		feedbackLoopReward = -1 // Compute from transcript
+		feedbackLoopReward = batchFeedbackReward
 		feedbackLoopTranscript = ""
 
 		fmt.Printf("Processing session %s...\n", sessionID)
@@ -451,7 +498,7 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 		processed++
 	}
 
-	fmt.Printf("\nProcessed %d/%d sessions\n", processed, len(sessionCitations))
+	fmt.Printf("\nProcessed %d/%d sessions (candidates: %d)\n", processed, len(sessionIDs), candidateCount)
 	return nil
 }
 

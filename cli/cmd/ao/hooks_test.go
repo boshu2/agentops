@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/embedded"
@@ -372,6 +373,47 @@ func TestGenerateFullHooksConfig(t *testing.T) {
 		if len(groups) == 0 {
 			t.Errorf("full config: event %s has no hook groups", event)
 		}
+	}
+}
+
+func TestEmbeddedAoCommandsHaveGuardrails(t *testing.T) {
+	config, err := ReadHooksManifest(embedded.HooksJSON)
+	if err != nil {
+		t.Fatalf("failed to parse embedded hooks: %v", err)
+	}
+
+	foundBatchFeedback := false
+	for _, event := range AllEventNames() {
+		for _, group := range config.GetEventGroups(event) {
+			for _, hook := range group.Hooks {
+				if hook.Type != "command" {
+					continue
+				}
+
+				cmd := strings.TrimSpace(hook.Command)
+				isAOCommand := strings.HasPrefix(cmd, "ao ") || strings.Contains(cmd, "command -v ao") || strings.Contains(cmd, "; ao ")
+				if !isAOCommand {
+					continue
+				}
+
+				if hook.Timeout <= 0 {
+					t.Errorf("%s hook has ao command without timeout: %q", event, hook.Command)
+				}
+				if strings.Contains(cmd, "command -v ao") && !strings.Contains(cmd, "AGENTOPS_HOOKS_DISABLED") {
+					t.Errorf("%s inline ao command missing AGENTOPS_HOOKS_DISABLED guard: %q", event, hook.Command)
+				}
+				if strings.Contains(cmd, "ao batch-feedback") {
+					foundBatchFeedback = true
+					if !strings.Contains(cmd, "--max-sessions") || !strings.Contains(cmd, "--max-runtime") {
+						t.Errorf("batch-feedback hook missing bounded flags: %q", hook.Command)
+					}
+				}
+			}
+		}
+	}
+
+	if !foundBatchFeedback {
+		t.Error("expected embedded hooks to include ao batch-feedback command")
 	}
 }
 

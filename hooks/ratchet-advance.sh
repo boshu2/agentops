@@ -6,6 +6,16 @@
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_AUTOCHAIN:-}" = "0" ] && exit 0
+AO_TIMEOUT_BIN="timeout"
+command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
+
+run_ao_quick() {
+    if command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1; then
+        "$AO_TIMEOUT_BIN" "${AGENTOPS_RATCHET_ADVANCE_TIMEOUT:-2}" ao "$@" 2>/dev/null
+        return $?
+    fi
+    ao "$@" 2>/dev/null
+}
 
 # Read stdin JSON
 INPUT=$(cat)
@@ -31,8 +41,8 @@ STEP=$(echo "$CMD" | sed -n 's/.*ao ratchet record[[:space:]]\{1,\}\([a-z_-]*\).
 
 # Map step → next skill
 # Try new structured command first
-if command -v jq >/dev/null 2>&1 && ao ratchet next --help >/dev/null 2>&1; then
-    next_json=$(ao ratchet next -o json 2>/dev/null)
+if command -v jq >/dev/null 2>&1 && run_ao_quick ratchet next --help >/dev/null 2>&1; then
+    next_json=$(run_ao_quick ratchet next -o json)
     if [ -n "$next_json" ]; then
         NEXT=$(echo "$next_json" | jq -r '.skill // ""')
         COMPLETE=$(echo "$next_json" | jq -r '.complete // false')

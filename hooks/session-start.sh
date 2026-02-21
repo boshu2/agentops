@@ -20,11 +20,23 @@ HOOK_ERROR_LOG="$AO_DIR/hook-errors.log"
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_SESSION_START_DISABLED:-}" = "1" ] && exit 0
+AO_TIMEOUT_BIN="timeout"
+command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
 
 log_hook_fail() {
     local message="$1"
     mkdir -p "$AO_DIR" 2>/dev/null || return 0
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ${message}" >> "$HOOK_ERROR_LOG" 2>/dev/null || true
+}
+
+run_ao_quick() {
+    local seconds="$1"
+    shift
+    if command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1; then
+        "$AO_TIMEOUT_BIN" "$seconds" ao "$@" 2>/dev/null
+        return $?
+    fi
+    ao "$@" 2>/dev/null
 }
 
 # Ensure relative paths and ao commands are rooted to the active repo.
@@ -117,15 +129,15 @@ rm -f "$ROOT/.agents/ao/.ratchet-advance-fired" 2>/dev/null
 
 # Process pending extraction queue (closes forge → extract loop)
 if command -v ao &>/dev/null; then
-    timeout 5 ao extract 2>/dev/null || true
+    run_ao_quick "${AGENTOPS_SESSION_START_EXTRACT_TIMEOUT:-5}" extract || true
 fi
 
 # Get flywheel status (brief one-liner for visibility)
 flywheel_status=""
 if command -v ao &>/dev/null; then
     # Try new structured command first
-    if ao flywheel nudge --help >/dev/null 2>&1; then
-        nudge_json=$(ao flywheel nudge -o json 2>/dev/null) || {
+    if run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" flywheel nudge --help >/dev/null 2>&1; then
+        nudge_json=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" flywheel nudge -o json) || {
             log_hook_fail "ao flywheel nudge"
             nudge_json=""
         }
@@ -143,7 +155,7 @@ if command -v ao &>/dev/null; then
 
     # Fallback: old grep/tr parsing if new command unavailable or failed
     if [[ -z "$flywheel_status" ]]; then
-        flywheel_output=$(ao flywheel status 2>/dev/null) || {
+        flywheel_output=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" flywheel status) || {
             log_hook_fail "ao flywheel status"
             flywheel_output=""
         }
@@ -151,7 +163,7 @@ if command -v ao &>/dev/null; then
             # Parse the status line and velocity (tr -d removes newlines)
             status_line=$(echo "$flywheel_output" | grep -o '\[.*\]' | head -1 | tr -d '\n' || echo "[UNKNOWN]")
             velocity=$(echo "$flywheel_output" | grep "velocity:" | grep -o '[+-][0-9.]*' | tr -d '\n' || echo "?")
-            sessions=$(ao status 2>/dev/null | grep "^Sessions:" | awk '{print $2}' | head -1 | tr -d '\n' || echo "?")
+            sessions=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" status | grep "^Sessions:" | awk '{print $2}' | head -1 | tr -d '\n' || echo "?")
             learnings_count=$(find "$ROOT"/.agents/learnings -maxdepth 1 -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
             flywheel_status="**Flywheel:** ${status_line} | ${sessions} sessions | ${learnings_count} learnings | velocity: ${velocity}/week"
         fi
@@ -163,7 +175,7 @@ ratchet_status=""
 ratchet_output=""
 if command -v ao &>/dev/null; then
     if command -v jq >/dev/null 2>&1; then
-        ratchet_json=$(ao ratchet status -o json 2>/dev/null) || {
+        ratchet_json=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" ratchet status -o json) || {
             log_hook_fail "ao ratchet status"
             ratchet_json=""
         }
@@ -173,7 +185,7 @@ if command -v ao &>/dev/null; then
             ' 2>/dev/null)
         fi
     else
-        ratchet_output=$(ao ratchet status -o table 2>/dev/null | head -3) || {
+        ratchet_output=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" ratchet status -o table | head -3) || {
             log_hook_fail "ao ratchet status"
             ratchet_output=""
         }
@@ -187,8 +199,8 @@ fi
 resume_directive=""
 if [ "${AGENTOPS_AUTOCHAIN:-}" != "0" ] && command -v jq >/dev/null 2>&1; then
     # Try new structured command first
-    if ao ratchet next --help >/dev/null 2>&1; then
-        next_json=$(ao ratchet next -o json 2>/dev/null)
+    if run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" ratchet next --help >/dev/null 2>&1; then
+        next_json=$(run_ao_quick "${AGENTOPS_SESSION_START_STATUS_TIMEOUT:-3}" ratchet next -o json)
         if [ -n "$next_json" ]; then
             next_step=$(echo "$next_json" | jq -r '.next // ""')
             last_step=$(echo "$next_json" | jq -r '.last_step // ""')

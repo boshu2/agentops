@@ -11,6 +11,16 @@
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_SKIP_PRE_MORTEM_GATE:-}" = "1" ] && exit 0
+AO_TIMEOUT_BIN="timeout"
+command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
+
+run_ao_quick() {
+    if command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1; then
+        "$AO_TIMEOUT_BIN" "${AGENTOPS_PRE_MORTEM_GATE_TIMEOUT:-2}" ao "$@" 2>/dev/null
+        return $?
+    fi
+    ao "$@" 2>/dev/null
+}
 
 # Workers are exempt
 [ "${AGENTOPS_WORKER:-}" = "1" ] && exit 0
@@ -99,7 +109,7 @@ fi
 
 # --- Method 4: Ratchet chain (legacy/non-phased runs) ---
 if command -v ao &>/dev/null; then
-    if ao ratchet status -o json 2>/dev/null | grep -q '"pre-mortem"'; then
+    if run_ao_quick ratchet status -o json | grep -q '"pre-mortem"'; then
         exit 0
     fi
 fi

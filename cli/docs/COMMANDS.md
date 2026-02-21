@@ -46,8 +46,11 @@ ao batch-feedback [flags]
 **Flags:**
 
 ```
-      --days int   Process sessions from the last N days (default 7)
-  -h, --help       help for batch-feedback
+      --days int               Process sessions from the last N days (default 7)
+  -h, --help                   help for batch-feedback
+      --max-runtime duration   Maximum wall-clock runtime for this invocation (0 disables)
+      --max-sessions int       Process at most N sessions per run (0 = no limit)
+      --reward float           Override reward value for all sessions (0.0-1.0); -1 = compute from transcript (default -1)
 ```
 
 ---

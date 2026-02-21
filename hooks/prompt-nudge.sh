@@ -7,6 +7,16 @@
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
+AO_TIMEOUT_BIN="timeout"
+command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
+
+run_ao_quick() {
+    if command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1; then
+        "$AO_TIMEOUT_BIN" "${AGENTOPS_PROMPT_NUDGE_TIMEOUT:-2}" ao "$@" 2>/dev/null
+        return $?
+    fi
+    ao "$@" 2>/dev/null
+}
 
 # Read all stdin
 INPUT=$(cat)
@@ -44,7 +54,7 @@ fi
 command -v ao >/dev/null 2>&1 || exit 0
 
 # Get ratchet status as JSON
-RATCHET=$(ao ratchet status -o json 2>/dev/null) || exit 0
+RATCHET=$(run_ao_quick ratchet status -o json) || exit 0
 [ -z "$RATCHET" ] && exit 0
 
 # Parse steps (requires jq for JSON parsing)
