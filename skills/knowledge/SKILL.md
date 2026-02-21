@@ -1,6 +1,8 @@
 ---
 name: knowledge
 description: 'Query knowledge artifacts across all locations. Triggers: "find learnings", "search patterns", "query knowledge", "what do we know about", "where is the plan".'
+allowed-tools: Read, Grep, Glob, Bash
+model: haiku
 metadata:
   tier: knowledge
   dependencies: []

@@ -1,6 +1,7 @@
 ---
 name: shared
 description: Shared reference documents for distributed mode skills (not directly invocable)
+user-invocable: false
 metadata:
   tier: library
   internal: true

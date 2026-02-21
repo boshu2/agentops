@@ -1,6 +1,7 @@
 ---
 name: research
 description: 'Deep codebase exploration. Triggers: research, explore, investigate, understand, deep dive, current state.'
+allowed-tools: Read, Grep, Glob, Bash
 metadata:
   tier: execution
   dependencies:

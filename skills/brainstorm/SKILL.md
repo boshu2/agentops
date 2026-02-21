@@ -132,6 +132,18 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 ---
 
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Brainstorm loops in Phase 1 without advancing | Goal remains too vague after follow-up questions | Provide a concrete, testable problem statement (e.g., "reduce API search latency below 200ms" instead of "improve performance"). |
+| Output file missing one or more required sections | Phase 4 was interrupted or the skill terminated early | Re-run `/brainstorm` with the same goal; verify all 5 sections (`Problem Statement`, `Approaches Considered`, `Selected Approach`, `Open Questions`, `Next Step: /plan`) are present in the output. |
+| `.agents/brainstorm/` directory not created | The skill could not create the directory (permissions or path issue) | Manually create it with `mkdir -p .agents/brainstorm` and re-run. |
+| `/plan` invocation in "Next Step" section is generic or incomplete | The selected approach was not specific enough to generate a concrete plan command | Edit the output file to refine the selected approach, then craft a `/plan` invocation that includes the approach name and key constraints. |
+| Brainstorm produces only one approach in Phase 3 | The problem space is narrow or the goal is overly constrained | Widen the goal slightly or explicitly ask for alternative approaches (e.g., "consider a caching approach and a query optimization approach"). |
+
+---
+
 ## See Also
 
 - [skills/plan/SKILL.md](../plan/SKILL.md) — Decompose the selected approach into actionable issues

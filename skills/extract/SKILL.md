@@ -1,6 +1,7 @@
 ---
 name: extract
 description: 'Extract decisions and learnings from Claude session transcripts. Triggers: "extract learnings", "process pending", SessionStart hook.'
+user-invocable: false
 metadata:
   tier: background
   dependencies: []

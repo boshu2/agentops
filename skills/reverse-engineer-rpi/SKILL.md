@@ -261,3 +261,35 @@ This must show:
 - registry generated
 - registry validator exits 0
 - in security mode: `validate-security-audit.sh` exits 0 and secret scan passes
+
+## Examples
+
+### Scenario: Reverse-Engineer an Open-Source CLI in Repo Mode
+
+**User says:** `/reverse-engineer-rpi cc-sdd --mode=repo --upstream-repo="https://github.com/gotalab/cc-sdd.git" --upstream-ref=v1.0.0`
+
+**What happens:**
+1. The script shallow-clones the upstream repo at the pinned tag `v1.0.0` and records the resolved SHA in `clone-metadata.json`.
+2. It scans the repo for CLI entry points, config/env surface, schema files, and artifact manifests, then writes `feature-inventory.md`, `feature-registry.yaml`, contract JSON, and all spec files under the output directory.
+
+**Result:** A complete feature catalog and machine-checkable `contracts/repo-contract.json` are generated under `.agents/research/cc-sdd/`, ready for golden-fixture diffing.
+
+### Scenario: Binary Analysis With Security Audit
+
+**User says:** `/reverse-engineer-rpi ao --authorized --mode=binary --binary-path="$(command -v ao)" --security-audit`
+
+**What happens:**
+1. The script runs static analysis on the `ao` binary (file metadata, linked libraries, embedded archive signatures) and writes `binary-analysis.md` and `binary-embedded-archives.md`.
+2. It generates the full security audit suite (`threat-model.md`, `attack-surface.md`, `findings.md`, etc.) under `output_dir/security/` and runs the secret-scan gate over all outputs.
+
+**Result:** Binary analysis artifacts plus a validated security audit are produced; `validate-security-audit.sh` exits 0 confirming all security deliverables are present and secrets-clean.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Script refuses to run binary analysis | Missing `--authorized` flag | Add `--authorized` to confirm you have explicit written authorization to analyze the binary. |
+| `clone-metadata.json` not generated | `--upstream-repo` was not provided | Pass `--upstream-repo` (and optionally `--upstream-ref`) to enable clone metadata tracking. |
+| Fixture test diff fails unexpectedly | Upstream repo changed or golden fixtures are stale | Re-run with the pinned ref, copy fresh contracts into `fixtures/`, and commit the updated golden files (see Updating Fixtures). |
+| `spec-cli-surface.md` not generated | No recognized CLI framework (Node/Python/Go) detected in the repo | Check that the target repo has a discoverable CLI entry point; otherwise the CLI surface is documented in `spec-code-map.md` instead. |
+| Network error during repo clone | Firewall, VPN, or GitHub rate limit blocking the shallow clone | Verify network connectivity, authenticate with `gh auth login` if the repo is private, or use `--local-clone-dir` to point at a pre-cloned directory. |

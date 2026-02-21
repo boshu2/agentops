@@ -1,8 +1,8 @@
 # Skill Structure Standard
 
-**Version:** 1.0.0
-**Last Updated:** 2026-02-13
-**Source:** Anthropic Official Skills Guide (docs/anthropic-skills-guide.md)
+**Version:** 2.0.0
+**Last Updated:** 2026-02-20
+**Source:** Claude Code official documentation (https://code.claude.com/docs/en/skills)
 **Purpose:** Defines the required structure, frontmatter, and quality standards for all AgentOps skills.
 
 ---
@@ -52,14 +52,49 @@ description: 'What it does. When to use it. Trigger phrases.'
 ---
 ```
 
-### Anthropic-Defined Optional Fields
+Only `description` is technically required (recommended). If `name` is omitted, the directory name is used.
 
-| Field | Type | Max Length | Purpose |
-|-------|------|-----------|---------|
-| `license` | string | — | Open source license (MIT, Apache-2.0) |
-| `allowed-tools` | string | — | Restrict tool access |
-| `compatibility` | string | 500 chars | Environment requirements |
-| `metadata` | object | — | Custom key-value pairs |
+### All Claude Code Frontmatter Fields
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `name` | No | Display name. Lowercase letters, numbers, hyphens only (max 64 chars). Defaults to directory name. |
+| `description` | Recommended | What the skill does and when to use it. Claude uses this to decide when to load the skill. |
+| `argument-hint` | No | Hint shown during autocomplete (e.g., `[issue-number]`, `[filename] [format]`). |
+| `disable-model-invocation` | No | Set to `true` to prevent Claude from auto-loading. User must invoke with `/name`. Default: `false`. |
+| `user-invocable` | No | Set to `false` to hide from `/` menu. Use for background knowledge. Default: `true`. |
+| `allowed-tools` | No | Tools Claude can use without permission when skill is active (e.g., `Read, Grep, Glob`). |
+| `model` | No | Model to use when skill is active (`sonnet`, `opus`, `haiku`, `inherit`). |
+| `context` | No | Set to `fork` to run in a forked subagent context. |
+| `agent` | No | Which subagent type to use when `context: fork` is set (e.g., `Explore`, `Plan`, `general-purpose`). |
+| `hooks` | No | Hooks scoped to this skill's lifecycle. |
+
+### Invocation Control Matrix
+
+| Frontmatter | User can invoke | Claude can invoke | Context loading |
+|-------------|----------------|-------------------|-----------------|
+| (default) | Yes | Yes | Description always in context, full skill loads when invoked |
+| `disable-model-invocation: true` | Yes | No | Description not in context, full skill loads when user invokes |
+| `user-invocable: false` | No | Yes | Description always in context, full skill loads when invoked |
+
+### String Substitutions
+
+| Variable | Description |
+|----------|-------------|
+| `$ARGUMENTS` | All arguments passed when invoking the skill |
+| `$ARGUMENTS[N]` | Specific argument by 0-based index |
+| `$N` | Shorthand for `$ARGUMENTS[N]` |
+| `${CLAUDE_SESSION_ID}` | Current session ID |
+
+### Dynamic Context Injection
+
+The `` !`command` `` syntax runs shell commands before skill content is sent to Claude:
+
+```yaml
+## Context
+- Current branch: !`git branch --show-current`
+- Recent changes: !`git log --oneline -5`
+```
 
 ### AgentOps Extension Fields (under `metadata:`)
 
@@ -188,7 +223,7 @@ Solution: ...
 
 | Aspect | Requirement |
 |--------|-------------|
-| Size | Under 5,000 words |
+| Size | Under 5,000 words; keep SKILL.md under 500 lines |
 | Instructions | Specific and actionable (exact commands, not "validate the data") |
 | Examples | At least 2-3 usage examples for user-facing skills |
 | Error handling | Troubleshooting section for common failures |
@@ -242,7 +277,7 @@ Skills use three levels:
 
 ## AgentOps Extensions
 
-These are AgentOps-specific patterns not in the Anthropic spec:
+These are AgentOps-specific patterns not in the Claude Code spec:
 
 ### Tier System
 

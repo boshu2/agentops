@@ -87,3 +87,37 @@ One line per finding:
 - The script is **idempotent** -- running `--fix` twice produces the same result.
 - `DEAD_REF` is warn-only in `--fix` mode because the correct resolution (delete reference, create file, or update link) requires human judgment.
 - When run without a path argument, scans all directories under `skills/`.
+
+## Examples
+
+### Running a health check across all skills
+
+**User says:** `/heal-skill`
+
+**What happens:**
+1. The heal script scans every directory under `skills/`, checking each for the six issue types (missing name, missing description, name mismatch, unlinked references, empty directories, dead references).
+2. Findings are printed one per line with issue codes (e.g., `[NAME_MISMATCH] skills/foo: Frontmatter name 'bar' != directory 'foo'`).
+3. The script exits with code 1 if any findings exist, or 0 if all skills are clean.
+
+**Result:** A diagnostic report showing all skill hygiene issues across the repository, with no files modified.
+
+### Auto-fixing a specific skill
+
+**User says:** `/heal-skill --fix skills/vibe`
+
+**What happens:**
+1. The heal script inspects only `skills/vibe/`, running all six checks against that skill.
+2. For each fixable issue found (e.g., `MISSING_NAME`, `UNLINKED_REF`), the script applies the repair automatically -- adding the name from the directory, converting bare backtick references to markdown links, etc.
+3. Any `DEAD_REF` findings are reported as warnings since they require human judgment to resolve.
+
+**Result:** The `skills/vibe/SKILL.md` is repaired in place, with a summary of changes applied and any remaining warnings.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| `DEAD_REF` findings persist after `--fix` | Dead references are warn-only because the correct fix (delete, create, or update) requires human judgment | Manually inspect each dead reference and either create the missing file, remove the link from SKILL.md, or update the path |
+| Script reports `EMPTY_DIR` for a skill in progress | The skill directory was created but SKILL.md has not been written yet | Either add a SKILL.md to the directory or remove the empty directory. Running `--fix` will remove it automatically |
+| `NAME_MISMATCH` fix changed the wrong name | The script always updates the frontmatter `name` to match the directory name, not the other way around | If the directory name is wrong, rename the directory first, then re-run `--fix` |
+| Script exits 0 but a skill still has issues | The issue type is not one of the six checks the heal script detects | The heal script covers structural hygiene only. Content quality issues require manual review or `/council` validation |
+| Running `--fix` twice produces different output | This should not happen -- the script is idempotent | File a bug. Check if another process modified the skill files between runs |

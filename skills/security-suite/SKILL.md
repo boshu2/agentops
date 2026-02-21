@@ -120,3 +120,35 @@ python3 skills/security-suite/scripts/security_suite.py run \
   --out-dir .tmp/security-suite-smoke \
   --policy-file skills/security-suite/references/policy-example.json
 ```
+
+## Examples
+
+### Scenario: Capture a Baseline and Gate a New Release
+
+**User says:** `/security-suite run --binary $(command -v ao) --out-dir .agents/security-suite/ao-v2.4`
+
+**What happens:**
+1. The suite runs static analysis (file metadata, linked libraries, embedded archive signatures), dynamic tracing (sandboxed `--help` execution observing processes, file changes, network endpoints), and contract capture against the `ao` binary.
+2. It writes `static/static-analysis.json`, `dynamic/dynamic-analysis.json`, `contract/contract.json`, and `suite-summary.json` under the output directory.
+
+**Result:** A complete baseline snapshot is captured for `ao` v2.4, ready to be used as `--baseline-dir` for future release comparisons.
+
+### Scenario: CI Regression Gate With Baseline and Policy
+
+**User says:** `/security-suite run --binary ./bin/ao-candidate --out-dir .tmp/ao-candidate --baseline-dir .agents/security-suite/ao-v2.4 --policy-file skills/security-suite/references/policy-example.json --fail-on-removed --fail-on-policy-fail`
+
+**What happens:**
+1. The suite runs all three collection primitives on the candidate binary, then compares the resulting contract against the v2.4 baseline to produce `compare/baseline-diff.json` with any added, removed, or changed commands.
+2. It evaluates the policy file checks (required commands, denied patterns, network allowlists, file limits) and writes `policy/policy-verdict.json` with a pass/fail verdict.
+
+**Result:** The suite exits non-zero if any commands were removed or a policy check failed, blocking the candidate from promotion in the CI pipeline.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Suite exits non-zero with no clear finding | `--fail-on-removed` or `--fail-on-policy-fail` triggered on a legitimate change | Review `compare/baseline-diff.json` and `policy/policy-verdict.json` to identify the specific delta, then update the baseline or policy file accordingly. |
+| `dynamic/dynamic-analysis.json` is empty or minimal | Binary requires arguments beyond `--help`, or sandbox blocked execution | Supply a custom dynamic command if supported, or verify the binary runs in the sandboxed environment (check permissions, missing shared libraries). |
+| `contract/contract.json` shows zero commands | The binary does not expose a `--help` surface or uses a non-standard help flag | Verify the binary supports `--help`; for binaries with unusual help interfaces, run `collect-contract` separately with the correct invocation. |
+| Policy verdict fails on `deny_command_patterns` | A new subcommand matches a deny regex in the policy file | Either rename the subcommand or update `deny_command_patterns` in your policy JSON to exclude the legitimate pattern. |
+| `baseline-diff.json` not generated | `--baseline-dir` was not provided or points to a missing directory | Ensure the baseline directory exists and contains a valid `contract/contract.json` from a prior run. |

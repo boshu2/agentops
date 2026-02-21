@@ -320,6 +320,40 @@ When rewriting or validating, flag these:
 
 ---
 
+## Examples
+
+### Generating a README from scratch for a new project
+
+**User says:** `/readme`
+
+**What happens:**
+1. Pre-flight detects no existing README.md and proceeds to generate from scratch.
+2. The skill reads project context (manifest files, source directories, license) and runs a short interview asking about the problem, the fix, the audience, install command, quick demo, and trust concerns.
+3. A README is generated following all 8 gold-standard patterns (problem-first lead, trust block near install, collapsed depth, etc.) and validated by a quick council review.
+
+**Result:** A complete `README.md` written to disk that converts skimmers into users and serves deep readers, with a council verdict confirming quality.
+
+### Validating an existing README without changes
+
+**User says:** `/readme --validate`
+
+**What happens:**
+1. Pre-flight confirms README.md exists and enters validate-only mode, skipping the interview and generation steps.
+2. A full council review (2 judges) evaluates the README against the 8 patterns and the anti-pattern detection table (flywheel echo, guru tone, buried trust info, etc.).
+3. Findings are presented with options to auto-fix, review manually, or ship as-is.
+
+**Result:** A detailed council report identifying specific anti-patterns and structural issues in the existing README, with actionable fix suggestions.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Council validation step fails or hangs | The `/council` skill dependency is not installed or is broken | Run `/update` to reinstall all skills, then retry. Verify `/council` works independently |
+| Generated README has no trust block | No trust concerns were selected during the interview (step 3f answered "None of the above") | If your tool does run hooks, modify config, or make network calls, re-run `/readme --rewrite` and select the applicable trust concerns |
+| `<details>` blocks render as raw HTML on GitHub | Missing blank line after `<summary>` tag or before `</details>` | The skill enforces this formatting rule, but manual edits may break it. Ensure there is a blank line after every `<summary>...</summary>` line and before every `</details>` |
+| Interview keeps asking questions the project manifest already answers | The manifest file format is not recognized by the context-gathering step | Ensure your project has a standard manifest (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`) in the repo root |
+| Anti-pattern detection flags false positives on rewrite | Some content patterns trigger heuristic detection even when intentional | Review each finding during the council step and select "Ship it" for intentional choices. The detection is heuristic, not absolute |
+
 ## See Also
 
 - `skills/product/SKILL.md` — PRODUCT.md generation (feeds into README context)

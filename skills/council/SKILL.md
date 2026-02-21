@@ -1,6 +1,7 @@
 ---
 name: council
 description: 'Multi-model consensus council. Spawns parallel judges with configurable perspectives. Modes: validate, brainstorm, research. Triggers: "council", "get consensus", "multi-model review", "multi-perspective review", "council validate", "council brainstorm", "council research".'
+context: fork
 metadata:
   tier: judgment
   dependencies:

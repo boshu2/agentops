@@ -197,6 +197,40 @@ Recount all goals mechanically and update the header comment.
 
 ---
 
+## Examples
+
+### Checking fitness status across all goals
+
+**User says:** `/goals`
+
+**What happens:**
+1. Parses `GOALS.yaml` from the repo root, extracting all goals with their checks, weights, and pillar assignments.
+2. Executes every goal's `check` command and records PASS/FAIL/ERROR results.
+3. Groups results by pillar and infrastructure, then prints a fitness summary with pass rates and weighted scores.
+
+**Result:** A dashboard showing overall fitness (e.g., "52/65 passing, 80%") with per-pillar breakdowns and any stale or broken checks flagged.
+
+### Generating new goals from repo state
+
+**User says:** `/goals generate`
+
+**What happens:**
+1. Reads `GOALS.yaml`, `PRODUCT.md`, `README.md`, and `skills/SKILL-TIERS.md` to understand current coverage.
+2. Identifies gaps: skills with no corresponding goal, infrastructure scripts not covered by any check, pillars with thin coverage, and README claims with no verification.
+3. Drafts new goals with mechanically verifiable shell checks and presents them for user selection via multi-select prompt.
+
+**Result:** User-approved goals are appended to `GOALS.yaml` with updated header counts, closing coverage gaps.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| `GOALS.yaml: No such file or directory` | The repo has no goals file yet | Create an initial `GOALS.yaml` with at least one goal, or run `/goals generate` which will offer to scaffold one |
+| Multiple goals show ERROR status | Check commands reference tools or paths that are not available in the current environment | Run `/goals prune` to identify and fix broken checks. Ensure required CLI tools are installed |
+| Pillar counts in header comment drift from actual | Goals were manually added or removed without updating the header | Run `/goals prune` which mechanically recounts and updates the header comment |
+| Generate mode proposes trivially true goals | Heuristics matched stable files that rarely change | Review proposals carefully during the selection step and reject goals that check for files unchanged in 6+ months |
+| Staleness check flags valid paths as missing | Check commands use relative paths that depend on working directory | Ensure check commands use repo-root-relative paths or prefix with `cd "$(git rev-parse --show-toplevel)" &&` |
+
 ## See Also
 
 - `/evolve` — consumes GOALS.yaml for fitness-scored improvement loops

@@ -88,6 +88,40 @@ To add a new target platform:
 2. Update the target table above
 3. Add reference docs to `references/` if the target format needs documentation
 
+## Examples
+
+### Converting a single skill to Codex format
+
+**User says:** `/converter skills/council codex`
+
+**What happens:**
+1. The converter parses `skills/council/SKILL.md` frontmatter, markdown body, and any `references/` and `scripts/` files into a SkillBundle.
+2. The Codex adapter transforms the bundle into a `SKILL.md` (body + inlined references + scripts as code blocks) and a `prompt.md` (Codex prompt referencing the skill).
+3. Output is written to `.agents/converter/codex/council/`.
+
+**Result:** A Codex-compatible skill package ready to use with OpenAI Codex CLI.
+
+### Batch-converting all skills to Cursor rules
+
+**User says:** `/converter --all cursor`
+
+**What happens:**
+1. The converter scans every directory under `skills/` and parses each into a SkillBundle.
+2. The Cursor adapter transforms each bundle into a `.mdc` rule file with YAML frontmatter and body content, budget-fitted to 100KB max. Skills referencing MCP servers also get a `mcp.json` stub.
+3. Each skill's output is written to `.agents/converter/cursor/<skill-name>/`.
+
+**Result:** All skills are available as Cursor rules, ready to drop into a `.cursor/rules/` directory.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| `parse error: no frontmatter found` | SKILL.md is missing the `---` delimited YAML frontmatter block | Add frontmatter with at least `name:` and `description:` fields, or run `/heal-skill --fix` on the skill first |
+| Cursor `.mdc` output is missing references | Total bundle size exceeded the 100KB budget limit | The converter omits references largest-first to fit the budget. Split large reference files or move non-essential content to external docs |
+| Output directory already has old files | Previous conversion artifacts remain | This is expected -- the converter clean-writes by deleting the target directory before writing. If old files persist, manually delete `.agents/converter/<target>/<skill>/` |
+| `--all` skips a skill directory | The directory has no `SKILL.md` file | Ensure each skill directory contains a valid `SKILL.md`. Run `/heal-skill` to detect empty directories |
+| Codex `prompt.md` description is truncated | The skill description exceeds 1024 characters | This is by design. The converter truncates at a word boundary to fit Codex limits. Shorten the description in SKILL.md frontmatter if the truncation point is awkward |
+
 ## References
 
 - `references/skill-bundle-schema.md` -- SkillBundle interchange format specification

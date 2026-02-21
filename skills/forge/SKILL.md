@@ -1,6 +1,7 @@
 ---
 name: forge
 description: 'Mine transcripts for knowledge - decisions, learnings, failures, patterns. Triggers: "forge insights", "mine transcripts", "extract knowledge".'
+user-invocable: false
 metadata:
   tier: background
   dependencies: []

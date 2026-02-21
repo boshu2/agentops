@@ -26,7 +26,7 @@
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skill Tiers](../skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [Testing Skills](testing-skills.md) — Guide for writing and running skill tests
-- [Anthropic Skills Guide](anthropic-skills-guide.md) — Official Anthropic guide for building skills (Feb 2026)
+- [Claude Code Skills Docs](https://code.claude.com/docs/en/skills) — Official Claude Code skills documentation (upstream)
 
 ## Workflows
 

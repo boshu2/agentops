@@ -1,6 +1,7 @@
 ---
 name: provenance
 description: 'Trace knowledge artifact lineage and sources. Find orphans, stale citations. Triggers: "where did this come from", "trace this learning", "knowledge lineage".'
+allowed-tools: Read, Grep, Glob, Bash
 metadata:
   tier: background
   dependencies: []
