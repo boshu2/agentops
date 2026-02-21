@@ -953,11 +953,17 @@ func checkTmuxSessionAlive(runID string) bool {
 	if runID == "" {
 		return false
 	}
+	tmuxCommand := "tmux"
+	if tc, err := resolveRPIToolchainDefaults(); err == nil {
+		tmuxCommand = tc.TmuxCommand
+	} else {
+		VerbosePrintf("Warning: could not resolve RPI toolchain for tmux probe: %v\n", err)
+	}
 	// Probe consolidated 3-phase session names: ao-rpi-<runID>-p<N>, N=1..3.
 	for i := 1; i <= 3; i++ {
 		sessionName := fmt.Sprintf("ao-rpi-%s-p%d", runID, i)
 		ctx, cancel := context.WithTimeout(context.Background(), tmuxProbeTimeout)
-		cmd := exec.CommandContext(ctx, "tmux", "has-session", "-t", sessionName)
+		cmd := exec.CommandContext(ctx, tmuxCommand, "has-session", "-t", sessionName)
 		err := cmd.Run()
 		cancel()
 		if err == nil {

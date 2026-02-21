@@ -35,6 +35,21 @@ These control deterministic MemRL policy evaluation in retry/escalation paths.
 |----------|---------|-------------|
 | `MEMRL_MODE` | `off` | MemRL policy mode: `off` (strict legacy parity), `observe` (evaluate + audit without enforcement), `enforce` (evaluate + enforce `retry|escalate` decision). |
 
+## CLI / RPI Toolchain
+
+These control AO CLI configuration loading and RPI control-plane command customization.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENTOPS_CONFIG` | unset | Explicit config file path for AO CLI. When set, this path is used instead of the default project config location (`.agentops/config.yaml`). |
+| `AGENTOPS_RPI_WORKTREE_MODE` | `auto` | Worktree policy for phased runs: `auto`, `always`, `never`. |
+| `AGENTOPS_RPI_RUNTIME` | `auto` | Legacy alias for runtime mode (`auto`, `direct`, `stream`). |
+| `AGENTOPS_RPI_RUNTIME_MODE` | `auto` | Preferred runtime mode variable (`auto`, `direct`, `stream`). Overrides `AGENTOPS_RPI_RUNTIME` when both are set. |
+| `AGENTOPS_RPI_RUNTIME_COMMAND` | `claude` | Runtime command used for phase prompt execution. |
+| `AGENTOPS_RPI_AO_COMMAND` | `ao` | `ao` command used for ratchet/checkpoint operations in RPI control plane. |
+| `AGENTOPS_RPI_BD_COMMAND` | `bd` | `bd` command used for epic and child issue queries in RPI control plane. |
+| `AGENTOPS_RPI_TMUX_COMMAND` | `tmux` | `tmux` command used for status liveness probes in RPI control plane. |
+
 ## Hooks
 
 These control the optional hook system installed via `ao init --hooks`. Each hook checks `AGENTOPS_HOOKS_DISABLED` first (global kill switch), then its own variable.

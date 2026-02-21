@@ -71,6 +71,9 @@ type phasedEngineOptions struct {
 	StallCheckInterval   time.Duration
 	RuntimeMode          string
 	RuntimeCommand       string
+	AOCommand            string
+	BDCommand            string
+	TmuxCommand          string
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.
@@ -86,6 +89,9 @@ func defaultPhasedEngineOptions() phasedEngineOptions {
 		StallCheckInterval:   30 * time.Second,
 		RuntimeMode:          "auto",
 		RuntimeCommand:       "claude",
+		AOCommand:            "ao",
+		BDCommand:            "bd",
+		TmuxCommand:          "tmux",
 	}
 }
 
@@ -485,12 +491,24 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 	if !cmd.Flags().Changed("no-worktree") {
 		opts.NoWorktree = resolveWorktreeModeFromConfig(opts.NoWorktree)
 	}
-	if !cmd.Flags().Changed("runtime") {
-		opts.RuntimeMode = resolveRuntimeModeFromConfig(opts.RuntimeMode)
+	toolchain, err := resolveRPIToolchain(
+		cliRPI.Toolchain{
+			RuntimeMode:    phasedRuntimeMode,
+			RuntimeCommand: phasedRuntimeCommand,
+		},
+		rpiToolchainFlagSet{
+			RuntimeMode:    cmd.Flags().Changed("runtime"),
+			RuntimeCommand: cmd.Flags().Changed("runtime-cmd"),
+		},
+	)
+	if err != nil {
+		return err
 	}
-	if !cmd.Flags().Changed("runtime-cmd") {
-		opts.RuntimeCommand = resolveRuntimeCommandFromConfig(opts.RuntimeCommand)
-	}
+	opts.RuntimeMode = toolchain.RuntimeMode
+	opts.RuntimeCommand = toolchain.RuntimeCommand
+	opts.AOCommand = toolchain.AOCommand
+	opts.BDCommand = toolchain.BDCommand
+	opts.TmuxCommand = toolchain.TmuxCommand
 	if cmd.Flags().Changed("auto-clean-stale-after") {
 		opts.AutoCleanStale = true
 	}
@@ -515,28 +533,6 @@ func resolveWorktreeModeFromConfig(flagDefault bool) bool {
 	}
 }
 
-func resolveRuntimeModeFromConfig(flagDefault string) string {
-	cfg, err := cliConfig.Load(nil)
-	if err != nil {
-		return flagDefault
-	}
-	if strings.TrimSpace(cfg.RPI.RuntimeMode) == "" {
-		return flagDefault
-	}
-	return cfg.RPI.RuntimeMode
-}
-
-func resolveRuntimeCommandFromConfig(flagDefault string) string {
-	cfg, err := cliConfig.Load(nil)
-	if err != nil {
-		return flagDefault
-	}
-	if strings.TrimSpace(cfg.RPI.RuntimeCommand) == "" {
-		return flagDefault
-	}
-	return cfg.RPI.RuntimeCommand
-}
-
 func normalizeRuntimeMode(mode string) string {
 	normalized := strings.ToLower(strings.TrimSpace(mode))
 	if normalized == "" {
@@ -549,6 +545,30 @@ func effectiveRuntimeCommand(command string) string {
 	normalized := strings.TrimSpace(command)
 	if normalized == "" {
 		return "claude"
+	}
+	return normalized
+}
+
+func effectiveAOCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "ao"
+	}
+	return normalized
+}
+
+func effectiveBDCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "bd"
+	}
+	return normalized
+}
+
+func effectiveTmuxCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "tmux"
 	}
 	return normalized
 }
@@ -572,6 +592,9 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	}
 	opts.RuntimeMode = normalizeRuntimeMode(opts.RuntimeMode)
 	opts.RuntimeCommand = effectiveRuntimeCommand(opts.RuntimeCommand)
+	opts.AOCommand = effectiveAOCommand(opts.AOCommand)
+	opts.BDCommand = effectiveBDCommand(opts.BDCommand)
+	opts.TmuxCommand = effectiveTmuxCommand(opts.TmuxCommand)
 	if err := validateRuntimeMode(opts.RuntimeMode); err != nil {
 		return err
 	}
@@ -669,7 +692,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 	switch phaseNum {
 	case 1: // Discovery — extract epic ID, check pre-mortem verdict
 		// Extract epic ID (created by /plan within the discovery session)
-		epicID, err := extractEpicID()
+		epicID, err := extractEpicID(state.Opts.BDCommand)
 		if err != nil {
 			return fmt.Errorf("discovery phase: could not extract epic ID (implementation needs this): %w", err)
 		}
@@ -679,7 +702,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 
 		// Detect fast path
 		if !state.Opts.FastPath {
-			fast, err := detectFastPath(state.EpicID)
+			fast, err := detectFastPath(state.EpicID, state.Opts.BDCommand)
 			if err != nil {
 				VerbosePrintf("Warning: fast-path detection failed (continuing without): %v\n", err)
 			} else if fast {
@@ -719,7 +742,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 			}
 		}
 		if state.EpicID != "" {
-			status, err := checkCrankCompletion(state.EpicID)
+			status, err := checkCrankCompletion(state.EpicID, state.Opts.BDCommand)
 			if err != nil {
 				VerbosePrintf("Warning: could not check crank completion (continuing to validation): %v\n", err)
 			} else {
@@ -1514,8 +1537,8 @@ func extractCouncilFindings(reportPath string, max int) ([]finding, error) {
 // extractEpicID finds the most recently created open epic ID via bd CLI.
 // bd list returns epics in creation order; we take the LAST match so that
 // the epic just created by the plan phase is selected over older ones.
-func extractEpicID() (string, error) {
-	cmd := exec.Command("bd", "list", "--type", "epic", "--status", "open")
+func extractEpicID(bdCommand string) (string, error) {
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "list", "--type", "epic", "--status", "open")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("bd list: %w", err)
@@ -1531,8 +1554,8 @@ func extractEpicID() (string, error) {
 }
 
 // detectFastPath checks if an epic is a micro-epic (≤2 issues, no blockers).
-func detectFastPath(epicID string) (bool, error) {
-	cmd := exec.Command("bd", "children", epicID)
+func detectFastPath(epicID string, bdCommand string) (bool, error) {
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "children", epicID)
 	out, err := cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("bd children: %w", err)
@@ -1559,8 +1582,8 @@ func parseFastPath(output string) bool {
 
 // checkCrankCompletion checks epic completion via bd children statuses.
 // Returns "DONE", "BLOCKED", or "PARTIAL".
-func checkCrankCompletion(epicID string) (string, error) {
-	cmd := exec.Command("bd", "children", epicID)
+func checkCrankCompletion(epicID string, bdCommand string) (string, error) {
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "children", epicID)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("bd children: %w", err)
@@ -2009,8 +2032,8 @@ func readRunHeartbeat(cwd, runID string) time.Time {
 // --- Ratchet and logging ---
 
 // recordRatchetCheckpoint records a ratchet checkpoint for a phase.
-func recordRatchetCheckpoint(step string) {
-	cmd := exec.Command("ao", "ratchet", "record", step)
+func recordRatchetCheckpoint(step, aoCommand string) {
+	cmd := exec.Command(effectiveAOCommand(aoCommand), "ratchet", "record", step)
 	if err := cmd.Run(); err != nil {
 		VerbosePrintf("Warning: ratchet record %s: %v\n", step, err)
 	}

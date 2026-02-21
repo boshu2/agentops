@@ -67,6 +67,11 @@ type rpiLoopSupervisorConfig struct {
 	LandingCommitMessage  string
 	BDSyncPolicy          string
 	CommandTimeout        time.Duration
+	RuntimeMode           string
+	RuntimeCommand        string
+	AOCommand             string
+	BDCommand             string
+	TmuxCommand           string
 }
 
 func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervisorConfig, error) {
@@ -169,6 +174,16 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		cfg.LeasePath = filepath.Join(cwd, cfg.LeasePath)
 	}
 
+	toolchain, err := resolveRPIToolchainDefaults()
+	if err != nil {
+		return cfg, err
+	}
+	cfg.RuntimeMode = toolchain.RuntimeMode
+	cfg.RuntimeCommand = toolchain.RuntimeCommand
+	cfg.AOCommand = toolchain.AOCommand
+	cfg.BDCommand = toolchain.BDCommand
+	cfg.TmuxCommand = toolchain.TmuxCommand
+
 	return cfg, nil
 }
 
@@ -265,8 +280,11 @@ func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupe
 	opts := defaultPhasedEngineOptions()
 	opts.AutoCleanStale = cfg.AutoClean
 	opts.AutoCleanStaleAfter = cfg.AutoCleanStaleAfter
-	opts.RuntimeMode = resolveRuntimeModeFromConfig(opts.RuntimeMode)
-	opts.RuntimeCommand = resolveRuntimeCommandFromConfig(opts.RuntimeCommand)
+	opts.RuntimeMode = cfg.RuntimeMode
+	opts.RuntimeCommand = cfg.RuntimeCommand
+	opts.AOCommand = cfg.AOCommand
+	opts.BDCommand = cfg.BDCommand
+	opts.TmuxCommand = cfg.TmuxCommand
 
 	if err := runPhasedEngine(cwd, goal, opts); err != nil {
 		return wrapCycleFailure(cycleFailureTask, "phased engine", err)
@@ -372,12 +390,12 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 			return fmt.Errorf("landing rebase failed: %w (rebase aborted)", err)
 		}
 
-		runSync, err := shouldRunBDSync(cwd, cfg.BDSyncPolicy)
+		runSync, err := shouldRunBDSync(cwd, cfg.BDSyncPolicy, cfg.BDCommand)
 		if err != nil {
 			return err
 		}
 		if runSync {
-			if err := loopCommandRunner(cwd, cfg.CommandTimeout, "bd", "sync"); err != nil {
+			if err := loopCommandRunner(cwd, cfg.CommandTimeout, cfg.BDCommand, "sync"); err != nil {
 				return fmt.Errorf("bd sync failed: %w", err)
 			}
 		}
@@ -462,17 +480,21 @@ func resolveLandingBranch(cwd, explicit string, timeout time.Duration) (string, 
 	return "main", nil
 }
 
-func shouldRunBDSync(cwd, policy string) (bool, error) {
+func shouldRunBDSync(cwd, policy, bdCommand string) (bool, error) {
+	command := strings.TrimSpace(bdCommand)
+	if command == "" {
+		command = "bd"
+	}
 	switch policy {
 	case loopBDSyncPolicyNever:
 		return false, nil
 	case loopBDSyncPolicyAlways:
-		if _, err := loopLookPath("bd"); err != nil {
-			return false, fmt.Errorf("bd-sync-policy=always but bd CLI not found on PATH")
+		if _, err := loopLookPath(command); err != nil {
+			return false, fmt.Errorf("bd-sync-policy=always but %s CLI not found on PATH", command)
 		}
 		return true, nil
 	case loopBDSyncPolicyAuto:
-		if _, err := loopLookPath("bd"); err != nil {
+		if _, err := loopLookPath(command); err != nil {
 			return false, nil
 		}
 		if _, err := os.Stat(filepath.Join(cwd, ".beads")); err != nil {

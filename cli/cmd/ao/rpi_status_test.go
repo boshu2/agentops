@@ -1005,6 +1005,24 @@ func TestCheckTmuxSessionAlive_EmptyRunID(t *testing.T) {
 	}
 }
 
+func TestCheckTmuxSessionAlive_UsesConfiguredTmuxCommand(t *testing.T) {
+	tmpBin := t.TempDir()
+	customTmux := filepath.Join(tmpBin, "tmux-custom")
+	script := "#!/usr/bin/env bash\nexit 0\n"
+	if err := os.WriteFile(customTmux, []byte(script), 0755); err != nil {
+		t.Fatalf("write custom tmux script: %v", err)
+	}
+
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "auto")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "tmux-custom")
+	t.Setenv("PATH", tmpBin+":"+os.Getenv("PATH"))
+
+	if !checkTmuxSessionAlive("run-custom-tmux") {
+		t.Fatal("expected run to be considered alive when configured tmux command succeeds")
+	}
+}
+
 // TestDetermineRunLiveness_FreshHeartbeat verifies that a fresh heartbeat
 // marks a run as alive without a tmux probe.
 func TestDetermineRunLiveness_FreshHeartbeat(t *testing.T) {

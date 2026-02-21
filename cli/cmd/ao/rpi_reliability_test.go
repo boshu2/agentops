@@ -434,9 +434,9 @@ func TestRecordRatchetCheckpoint_FailSilently(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
 	// Should not panic.
-	recordRatchetCheckpoint("research")
-	recordRatchetCheckpoint("implement")
-	recordRatchetCheckpoint("validate")
+	recordRatchetCheckpoint("research", "")
+	recordRatchetCheckpoint("implement", "")
+	recordRatchetCheckpoint("validate", "")
 }
 
 // TestRecordRatchetCheckpoint_StepsDoNotPanic verifies multiple checkpoint steps
@@ -450,7 +450,7 @@ func TestRecordRatchetCheckpoint_StepsDoNotPanic(t *testing.T) {
 					t.Errorf("step=%q: recordRatchetCheckpoint panicked: %v", step, r)
 				}
 			}()
-			recordRatchetCheckpoint(step)
+			recordRatchetCheckpoint(step, "")
 		}()
 	}
 }

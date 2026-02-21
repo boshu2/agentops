@@ -155,7 +155,7 @@
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
-- [Agent Mail](agent-mail.md) — MCP setup for distributed mode
+- [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [OL-AO Bridge Contracts](ol-bridge-contracts.md) — Olympus-AgentOps interchange formats
 - [MemRL Policy Integration](contracts/memrl-policy-integration.md) — AO-exported deterministic MemRL policy contract for Olympus hooks
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable schema for MemRL policy package

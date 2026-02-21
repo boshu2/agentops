@@ -12,6 +12,12 @@ import (
 )
 
 func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
 	prev := snapshotLoopSupervisorGlobals()
 	defer restoreLoopSupervisorGlobals(prev)
 
@@ -95,7 +101,7 @@ func TestShouldRunBDSync(t *testing.T) {
 	loopLookPath = func(_ string) (string, error) {
 		return "", fmt.Errorf("not found")
 	}
-	run, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto)
+	run, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto, "bd")
 	if err != nil {
 		t.Fatalf("auto policy with missing bd should not error: %v", err)
 	}
@@ -109,7 +115,7 @@ func TestShouldRunBDSync(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(tmpDir, ".beads"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	run, err = shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto)
+	run, err = shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto, "bd")
 	if err != nil {
 		t.Fatalf("auto policy with bd/.beads should not error: %v", err)
 	}
@@ -120,8 +126,35 @@ func TestShouldRunBDSync(t *testing.T) {
 	loopLookPath = func(_ string) (string, error) {
 		return "", fmt.Errorf("not found")
 	}
-	if _, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAlways); err == nil {
+	if _, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAlways, "bd"); err == nil {
 		t.Fatal("always policy should error when bd is unavailable")
+	}
+}
+
+func TestShouldRunBDSync_UsesConfiguredCommand(t *testing.T) {
+	prevLookPath := loopLookPath
+	defer func() { loopLookPath = prevLookPath }()
+
+	var lookedUp string
+	loopLookPath = func(name string) (string, error) {
+		lookedUp = name
+		return "/usr/bin/" + name, nil
+	}
+
+	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".beads"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	run, err := shouldRunBDSync(tmpDir, loopBDSyncPolicyAuto, "bd-custom")
+	if err != nil {
+		t.Fatalf("shouldRunBDSync returned error: %v", err)
+	}
+	if !run {
+		t.Fatal("expected auto policy to run when custom command resolves and .beads exists")
+	}
+	if lookedUp != "bd-custom" {
+		t.Fatalf("lookPath called with %q, want %q", lookedUp, "bd-custom")
 	}
 }
 

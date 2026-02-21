@@ -105,7 +105,7 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	}
 
 	writePhaseSummary(spawnCwd, state, p.Num)
-	recordRatchetCheckpoint(p.Step)
+	recordRatchetCheckpoint(p.Step, state.Opts.AOCommand)
 
 	if err := savePhasedState(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not save state: %v\n", err)
