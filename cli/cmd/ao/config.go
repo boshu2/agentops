@@ -32,6 +32,9 @@ Environment variables:
   AGENTOPS_BASE_DIR   - Data directory path
   AGENTOPS_VERBOSE    - Enable verbose output (true/1)
   AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
+  AGENTOPS_RPI_WORKTREE_MODE - RPI worktree policy (auto|always|never)
+  AGENTOPS_RPI_RUNTIME / AGENTOPS_RPI_RUNTIME_MODE - RPI runtime mode (auto|direct|stream)
+  AGENTOPS_RPI_RUNTIME_COMMAND - Runtime command used by ao rpi phased (default: claude)
   AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD - Default auto-promote age threshold (e.g. 24h)
 
 Examples:
@@ -89,7 +92,17 @@ func runConfig(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 	fmt.Println("Environment variables (if set):")
-	envVars := []string{"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC", "AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"}
+	envVars := []string{
+		"AGENTOPS_OUTPUT",
+		"AGENTOPS_BASE_DIR",
+		"AGENTOPS_VERBOSE",
+		"AGENTOPS_NO_SC",
+		"AGENTOPS_RPI_WORKTREE_MODE",
+		"AGENTOPS_RPI_RUNTIME",
+		"AGENTOPS_RPI_RUNTIME_MODE",
+		"AGENTOPS_RPI_RUNTIME_COMMAND",
+		"AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD",
+	}
 	anySet := false
 	for _, env := range envVars {
 		if v := os.Getenv(env); v != "" {

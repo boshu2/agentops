@@ -39,7 +39,6 @@ const (
 const defaultLoopCommandTimeout = 20 * time.Minute
 
 var (
-	loopExecCommand         = exec.Command
 	loopExecCommandContext  = exec.CommandContext
 	loopLookPath            = exec.LookPath
 	loopCommandRunner       = runLoopCommandWithTimeout
@@ -266,6 +265,8 @@ func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupe
 	opts := defaultPhasedEngineOptions()
 	opts.AutoCleanStale = cfg.AutoClean
 	opts.AutoCleanStaleAfter = cfg.AutoCleanStaleAfter
+	opts.RuntimeMode = resolveRuntimeModeFromConfig(opts.RuntimeMode)
+	opts.RuntimeCommand = resolveRuntimeCommandFromConfig(opts.RuntimeCommand)
 
 	if err := runPhasedEngine(cwd, goal, opts); err != nil {
 		return wrapCycleFailure(cycleFailureTask, "phased engine", err)
@@ -481,14 +482,6 @@ func shouldRunBDSync(cwd, policy string) (bool, error) {
 	default:
 		return false, fmt.Errorf("unsupported bd-sync-policy: %s", policy)
 	}
-}
-
-func runLoopCommand(cwd string, name string, args ...string) error {
-	return runLoopCommandWithTimeout(cwd, 0, name, args...)
-}
-
-func runLoopCommandOutput(cwd string, name string, args ...string) (string, error) {
-	return runLoopCommandOutputWithTimeout(cwd, 0, name, args...)
 }
 
 func runLoopCommandWithTimeout(cwd string, timeout time.Duration, name string, args ...string) error {

@@ -671,19 +671,33 @@ func TestDefault_RPI(t *testing.T) {
 	if cfg.RPI.WorktreeMode != "auto" {
 		t.Errorf("Default RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "auto")
 	}
+	if cfg.RPI.RuntimeMode != "auto" {
+		t.Errorf("Default RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "auto")
+	}
+	if cfg.RPI.RuntimeCommand != "claude" {
+		t.Errorf("Default RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "claude")
+	}
 }
 
 func TestMerge_RPI(t *testing.T) {
 	dst := Default()
 	src := &Config{
 		RPI: RPIConfig{
-			WorktreeMode: "never",
+			WorktreeMode:   "never",
+			RuntimeMode:    "stream",
+			RuntimeCommand: "codex",
 		},
 	}
 
 	result := merge(dst, src)
 	if result.RPI.WorktreeMode != "never" {
 		t.Errorf("merge RPI.WorktreeMode = %q, want %q", result.RPI.WorktreeMode, "never")
+	}
+	if result.RPI.RuntimeMode != "stream" {
+		t.Errorf("merge RPI.RuntimeMode = %q, want %q", result.RPI.RuntimeMode, "stream")
+	}
+	if result.RPI.RuntimeCommand != "codex" {
+		t.Errorf("merge RPI.RuntimeCommand = %q, want %q", result.RPI.RuntimeCommand, "codex")
 	}
 }
 
@@ -705,12 +719,18 @@ func TestMerge_RPIPreservedWhenEmpty(t *testing.T) {
 	dst := Default()
 	src := &Config{
 		Output: "json",
-		// RPI.WorktreeMode is empty string
+		// RPI config fields are empty strings
 	}
 
 	result := merge(dst, src)
 	if result.RPI.WorktreeMode != "auto" {
 		t.Errorf("merge should preserve default RPI.WorktreeMode, got %q", result.RPI.WorktreeMode)
+	}
+	if result.RPI.RuntimeMode != "auto" {
+		t.Errorf("merge should preserve default RPI.RuntimeMode, got %q", result.RPI.RuntimeMode)
+	}
+	if result.RPI.RuntimeCommand != "claude" {
+		t.Errorf("merge should preserve default RPI.RuntimeCommand, got %q", result.RPI.RuntimeCommand)
 	}
 }
 
@@ -720,6 +740,9 @@ func TestApplyEnv_RPIWorktreeMode(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "never")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
 
 	cfg := Default()
 	cfg = applyEnv(cfg)
@@ -735,6 +758,9 @@ func TestApplyEnv_FlywheelAutoPromoteThreshold(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
 	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "48h")
 
 	cfg := Default()
@@ -751,12 +777,52 @@ func TestApplyEnv_RPIWorktreeModeEmpty(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
 
 	cfg := Default()
 	cfg = applyEnv(cfg)
 
 	if cfg.RPI.WorktreeMode != "auto" {
 		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q (unchanged from default)", cfg.RPI.WorktreeMode, "auto")
+	}
+}
+
+func TestApplyEnv_RPIRuntimeMode(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "direct")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "stream")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	// AGENTOPS_RPI_RUNTIME_MODE should win when both are set.
+	if cfg.RPI.RuntimeMode != "stream" {
+		t.Errorf("applyEnv RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "stream")
+	}
+}
+
+func TestApplyEnv_RPIRuntimeCommand(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "codex")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.RPI.RuntimeCommand != "codex" {
+		t.Errorf("applyEnv RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "codex")
 	}
 }
 
@@ -767,6 +833,8 @@ func TestLoadFromPath_WithRPI(t *testing.T) {
 	content := `
 rpi:
   worktree_mode: always
+  runtime_mode: stream
+  runtime_command: codex
 `
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		t.Fatal(err)
@@ -778,6 +846,12 @@ rpi:
 	}
 	if cfg.RPI.WorktreeMode != "always" {
 		t.Errorf("loadFromPath RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "always")
+	}
+	if cfg.RPI.RuntimeMode != "stream" {
+		t.Errorf("loadFromPath RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "stream")
+	}
+	if cfg.RPI.RuntimeCommand != "codex" {
+		t.Errorf("loadFromPath RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "codex")
 	}
 }
 

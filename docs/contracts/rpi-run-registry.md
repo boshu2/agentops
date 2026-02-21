@@ -54,11 +54,15 @@ Optional fields populated when available:
 |-------|------|-------------|
 | `retries` | integer | Number of retry attempts (default 0) |
 | `error` | string | Error message on failure |
-| `backend` | string | Execution backend: `direct`, `ntm`, or `stream` |
+| `backend` | string | Execution backend: `direct` or `stream` |
 | `artifacts` | object | Map of artifact names to paths |
 | `verdicts` | object | Map of gate names to verdict strings |
 | `completed_at` | string | ISO 8601 timestamp |
 | `duration_seconds` | number | Wall-clock duration |
+
+Runtime selection is controlled by `ao rpi phased --runtime`, `ao rpi phased --runtime-cmd`,
+or config/env (`rpi.runtime_mode`, `rpi.runtime_command`, `AGENTOPS_RPI_RUNTIME[_MODE]`,
+`AGENTOPS_RPI_RUNTIME_COMMAND`).
 
 ## Phase Transition Validation
 
@@ -112,7 +116,7 @@ Status classification is registry-first:
 
 - Primary source: `.agents/rpi/runs/<run-id>/phased-state.json`
 - Liveness signal: `.agents/rpi/runs/<run-id>/heartbeat.txt` (fresh heartbeat => active)
-- Fallback liveness probe: tmux session check if heartbeat is stale/missing
+- Fallback liveness probe: tmux session check (legacy runs) if heartbeat is stale/missing
 
 Stale reasons include `worktree missing` when state references a removed worktree directory.
 

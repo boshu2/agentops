@@ -8,16 +8,21 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 )
 
-func preflightClaudeAvailability() error {
+func preflightRuntimeAvailability(runtimeCommand string) error {
 	if GetDryRun() {
 		return nil
 	}
-	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("claude CLI not found on PATH (required for spawning phase sessions)")
+	command := strings.TrimSpace(runtimeCommand)
+	if command == "" {
+		command = "claude"
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		return fmt.Errorf("runtime command %q not found on PATH (required for spawning phase sessions)", command)
 	}
 	return nil
 }

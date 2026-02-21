@@ -46,6 +46,12 @@ type RPIConfig struct {
 	// WorktreeMode controls worktree behavior for phased runs.
 	// Values: "auto" (default, creates worktree), "always" (force worktree), "never" (no worktree).
 	WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
+	// RuntimeMode controls phased executor selection.
+	// Values: "auto" (default), "direct", "stream".
+	RuntimeMode string `yaml:"runtime_mode" json:"runtime_mode"`
+	// RuntimeCommand is the CLI command used to spawn phase sessions.
+	// Default: "claude".
+	RuntimeCommand string `yaml:"runtime_command" json:"runtime_command"`
 }
 
 // FlywheelConfig holds flywheel-specific settings.
@@ -135,7 +141,9 @@ func Default() *Config {
 			UseSmartConnections: true,
 		},
 		RPI: RPIConfig{
-			WorktreeMode: "auto",
+			WorktreeMode:   "auto",
+			RuntimeMode:    "auto",
+			RuntimeCommand: "claude",
 		},
 		Flywheel: FlywheelConfig{
 			AutoPromoteThreshold: "24h",
@@ -236,6 +244,15 @@ func applyEnv(cfg *Config) *Config {
 	if v := os.Getenv("AGENTOPS_RPI_WORKTREE_MODE"); v != "" {
 		cfg.RPI.WorktreeMode = v
 	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME"); v != "" {
+		cfg.RPI.RuntimeMode = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME_MODE"); v != "" {
+		cfg.RPI.RuntimeMode = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME_COMMAND"); v != "" {
+		cfg.RPI.RuntimeCommand = v
+	}
 	if v := os.Getenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"); v != "" {
 		cfg.Flywheel.AutoPromoteThreshold = v
 	}
@@ -272,6 +289,12 @@ func merge(dst, src *Config) *Config {
 	// Merge RPI config
 	if src.RPI.WorktreeMode != "" {
 		dst.RPI.WorktreeMode = src.RPI.WorktreeMode
+	}
+	if src.RPI.RuntimeMode != "" {
+		dst.RPI.RuntimeMode = src.RPI.RuntimeMode
+	}
+	if src.RPI.RuntimeCommand != "" {
+		dst.RPI.RuntimeCommand = src.RPI.RuntimeCommand
 	}
 
 	// Merge Flywheel config

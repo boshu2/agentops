@@ -94,26 +94,15 @@ func TestSelectExecutor_ReturnsNonNil(t *testing.T) {
 	}
 }
 
-// TestSelectExecutor_DirectFallback verifies that direct is the fallback when
-// neither ntm nor live-status are available.
+// TestSelectExecutor_DirectFallback verifies that direct is selected when
+// runtime mode is auto and live-status is disabled.
 func TestSelectExecutor_DirectFallback(t *testing.T) {
 	origLiveStatus := phasedLiveStatus
-	origLookPath := lookPath
-	origCC := os.Getenv("CLAUDECODE")
-	origCCE := os.Getenv("CLAUDE_CODE_ENTRYPOINT")
 	defer func() {
 		phasedLiveStatus = origLiveStatus
-		lookPath = origLookPath
-		os.Setenv("CLAUDECODE", origCC)
-		os.Setenv("CLAUDE_CODE_ENTRYPOINT", origCCE)
 	}()
 
-	os.Unsetenv("CLAUDECODE")
-	os.Unsetenv("CLAUDE_CODE_ENTRYPOINT")
 	phasedLiveStatus = false
-	lookPath = func(name string) (string, error) {
-		return "", fmt.Errorf("not found: %s", name)
-	}
 
 	exec := selectExecutor("", nil)
 	if exec.Name() != "direct" {
@@ -135,20 +124,6 @@ func TestDirectExecutor_Execute_PropagatesError(t *testing.T) {
 	err := d.Execute("test prompt", t.TempDir(), "run-1", 1)
 	if err == nil {
 		t.Fatal("expected error when claude binary is absent")
-	}
-}
-
-// TestNtmExecutor_Execute_PropagatesError verifies ntmExecutor.Execute surfaces
-// errors when ntm spawning fails (non-existent ntm path).
-func TestNtmExecutor_Execute_PropagatesError(t *testing.T) {
-	origTimeout := phasedPhaseTimeout
-	defer func() { phasedPhaseTimeout = origTimeout }()
-	phasedPhaseTimeout = 50 * time.Millisecond
-
-	n := &ntmExecutor{ntmPath: "/nonexistent/ntm"}
-	err := n.Execute("prompt", t.TempDir(), "run-ntm-err", 2)
-	if err == nil {
-		t.Fatal("expected error from ntm with bad path")
 	}
 }
 
@@ -498,7 +473,7 @@ func TestLedgerActionFromDetails(t *testing.T) {
 		{"dry-run: would spawn", "dry-run"},
 		{"handoff: vibe failed", "handoff"},
 		{"epic=ag-abc1 verdicts=map[]", "summary"},
-		{"backend=direct reason=\"ntm not found\"", "backend=direct"},
+		{"backend=direct reason=\"runtime=auto live-status disabled\"", "backend=direct"},
 		{"discovery: pre-mortem verdict: PASS", "discovery"},
 	}
 
@@ -1085,7 +1060,7 @@ func TestLogPhaseTransition_WithoutRunID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	logPhaseTransition(logPath, "", "backend-selection", "backend=direct reason=\"ntm not found\"")
+	logPhaseTransition(logPath, "", "backend-selection", "backend=direct reason=\"runtime=auto live-status disabled\"")
 
 	data, err := os.ReadFile(logPath)
 	if err != nil {

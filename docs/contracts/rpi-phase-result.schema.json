@@ -52,7 +52,7 @@
     "backend": {
       "type": "string",
       "description": "Execution backend used for this phase.",
-      "enum": ["direct", "ntm", "stream"]
+      "enum": ["direct", "stream"]
     },
     "artifacts": {
       "type": "object",
