@@ -43,6 +43,48 @@ func TestResolveFeedbackLoopSessionID(t *testing.T) {
 	})
 }
 
+func TestLoadSessionCitationsSupportsSessionAliases(t *testing.T) {
+	tempDir := t.TempDir()
+	timestampSession := "session-20260221-123456"
+	uuidSession := "2d608ace-e8e4-4649-8ac0-70aeba0dcfee"
+
+	entries := []types.CitationEvent{
+		{
+			ArtifactPath: filepath.Join(tempDir, ".agents", "learnings", "L-timestamp.jsonl"),
+			SessionID:    timestampSession,
+			CitedAt:      time.Now(),
+			CitationType: "retrieved",
+		},
+		{
+			ArtifactPath: filepath.Join(tempDir, ".agents", "learnings", "L-uuid.jsonl"),
+			SessionID:    uuidSession,
+			CitedAt:      time.Now(),
+			CitationType: "retrieved",
+		},
+	}
+	for _, entry := range entries {
+		if err := ratchet.RecordCitation(tempDir, entry); err != nil {
+			t.Fatalf("record citation: %v", err)
+		}
+	}
+
+	gotTimestamp, err := loadSessionCitations(tempDir, "20260221-123456", "all")
+	if err != nil {
+		t.Fatalf("loadSessionCitations timestamp alias: %v", err)
+	}
+	if len(gotTimestamp) != 1 {
+		t.Fatalf("expected 1 timestamp alias citation, got %d", len(gotTimestamp))
+	}
+
+	gotUUID, err := loadSessionCitations(tempDir, "session-uuid-2d608ace-e8e4-4649-8ac0-70aeba0dcfee", "all")
+	if err != nil {
+		t.Fatalf("loadSessionCitations uuid alias: %v", err)
+	}
+	if len(gotUUID) != 1 {
+		t.Fatalf("expected 1 uuid alias citation, got %d", len(gotUUID))
+	}
+}
+
 func TestWriteFeedbackEvents(t *testing.T) {
 	// Create temp directory
 	tempDir, err := os.MkdirTemp("", "feedback-test-*")
@@ -138,9 +180,9 @@ func TestCanonicalSessionID(t *testing.T) {
 			expected: "session-20260125-120000",
 		},
 		{
-			name:    "UUID format",
-			input:   "2d608ace-e8e4-4649-8ac0-70aeba0dcfee",
-			pattern: `^session-\d{8}-\d{6}$`,
+			name:     "UUID format",
+			input:    "2d608ace-e8e4-4649-8ac0-70aeba0dcfee",
+			expected: "session-uuid-2d608ace-e8e4-4649-8ac0-70aeba0dcfee",
 		},
 		{
 			name:     "custom ID preserved",

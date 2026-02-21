@@ -125,18 +125,7 @@ type periodCitationStats struct {
 
 // normalizeArtifactPath resolves citation/file paths to a stable absolute form.
 func normalizeArtifactPath(baseDir, artifactPath string) string {
-	if artifactPath == "" {
-		return ""
-	}
-	p := filepath.Clean(artifactPath)
-	if !filepath.IsAbs(p) {
-		p = filepath.Join(baseDir, p)
-	}
-	abs, err := filepath.Abs(p)
-	if err != nil {
-		return filepath.Clean(p)
-	}
-	return filepath.Clean(abs)
+	return canonicalArtifactPath(baseDir, artifactPath)
 }
 
 func isRetrievableArtifactPath(baseDir, artifactPath string) bool {
@@ -188,7 +177,7 @@ func computeSigmaRho(totalArtifacts, uniqueCited, citationCount, days int) (sigm
 func countLoopMetrics(baseDir string, periodStart time.Time, periodCitations []types.CitationEvent) (created, found int) {
 	created, _ = countNewArtifactsInDir(filepath.Join(baseDir, ".agents", "learnings"), periodStart)
 	for _, c := range periodCitations {
-		if strings.Contains(c.ArtifactPath, "/learnings/") {
+		if strings.Contains(filepath.ToSlash(canonicalArtifactPath(baseDir, c.ArtifactPath)), "/learnings/") {
 			found++
 		}
 	}
@@ -231,6 +220,10 @@ func computeMetrics(baseDir string, days int) (*types.FlywheelMetrics, error) {
 	citations, err := ratchet.LoadCitations(baseDir)
 	if err != nil {
 		VerbosePrintf("Warning: load citations: %v\n", err)
+	}
+	for i := range citations {
+		citations[i].ArtifactPath = canonicalArtifactPath(baseDir, citations[i].ArtifactPath)
+		citations[i].SessionID = canonicalSessionID(citations[i].SessionID)
 	}
 	stats := filterCitationsForPeriod(citations, periodStart, now)
 	metrics.CitationsThisPeriod = len(stats.citations)

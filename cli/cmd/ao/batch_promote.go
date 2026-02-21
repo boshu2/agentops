@@ -122,7 +122,7 @@ func runBatchPromote(cmd *cobra.Command, args []string) error {
 		}
 
 		// Check criteria
-		if reason := checkPromotionCriteria(entry, minAge, citationCounts, promotedContent); reason != "" {
+		if reason := checkPromotionCriteria(cwd, entry, minAge, citationCounts, promotedContent); reason != "" {
 			result.Skipped++
 			result.Reasons = append(result.Reasons, skipReason{
 				CandidateID: entry.Candidate.ID,
@@ -147,7 +147,7 @@ func runBatchPromote(cmd *cobra.Command, args []string) error {
 }
 
 // checkPromotionCriteria returns a skip reason if the candidate does not qualify, or "" if it qualifies.
-func checkPromotionCriteria(entry pool.PoolEntry, minAge time.Duration, citationCounts map[string]int, promotedContent map[string]bool) string {
+func checkPromotionCriteria(baseDir string, entry pool.PoolEntry, minAge time.Duration, citationCounts map[string]int, promotedContent map[string]bool) string {
 	// Check age
 	if entry.Age < minAge {
 		return fmt.Sprintf("too young (%s < %s)", entry.AgeString, minAge)
@@ -156,7 +156,8 @@ func checkPromotionCriteria(entry pool.PoolEntry, minAge time.Duration, citation
 	// Check citations
 	if citationCounts[entry.Candidate.ID] < 1 {
 		// Also check by file path in case citations reference the pool file
-		if entry.FilePath == "" || citationCounts[entry.FilePath] < 1 {
+		entryPath := canonicalArtifactKey(baseDir, entry.FilePath)
+		if entry.FilePath == "" || (citationCounts[entry.FilePath] < 1 && citationCounts[entryPath] < 1) {
 			return "no citations"
 		}
 	}
@@ -200,6 +201,10 @@ func buildCitationCounts(citations []types.CitationEvent, baseDir string) map[st
 	for _, c := range citations {
 		// Count by artifact path
 		counts[c.ArtifactPath]++
+		canonicalPath := canonicalArtifactKey(baseDir, c.ArtifactPath)
+		if canonicalPath != "" {
+			counts[canonicalPath]++
+		}
 
 		// Also extract candidate ID from path if it's a pool entry
 		// e.g., .agents/pool/pending/cand-abc123.json -> cand-abc123

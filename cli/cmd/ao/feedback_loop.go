@@ -77,9 +77,16 @@ func loadSessionCitations(cwd, sessionID, citationType string) ([]types.Citation
 		return nil, fmt.Errorf("load citations: %w", err)
 	}
 
+	targetAliases := make(map[string]bool)
+	for _, alias := range sessionIDAliases(sessionID) {
+		targetAliases[alias] = true
+	}
+
 	var sessionCitations []types.CitationEvent
 	for _, c := range allCitations {
-		if c.SessionID != sessionID {
+		c.SessionID = canonicalSessionID(c.SessionID)
+		c.ArtifactPath = canonicalArtifactPath(cwd, c.ArtifactPath)
+		if !targetAliases[c.SessionID] {
 			continue
 		}
 		if citationType != "all" && c.CitationType != citationType {
@@ -112,12 +119,14 @@ func computeRewardFromTranscript(transcriptPath, sessionID string) (float64, err
 }
 
 // deduplicateCitations returns unique citations by artifact path.
-func deduplicateCitations(citations []types.CitationEvent) []types.CitationEvent {
+func deduplicateCitations(baseDir string, citations []types.CitationEvent) []types.CitationEvent {
 	seen := make(map[string]bool)
 	var unique []types.CitationEvent
 	for _, c := range citations {
-		if !seen[c.ArtifactPath] {
-			seen[c.ArtifactPath] = true
+		c.ArtifactPath = canonicalArtifactPath(baseDir, c.ArtifactPath)
+		key := canonicalArtifactKey(baseDir, c.ArtifactPath)
+		if !seen[key] {
+			seen[key] = true
 			unique = append(unique, c)
 		}
 	}
@@ -130,12 +139,13 @@ func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []t
 	updatedCount, failedCount := 0, 0
 
 	for _, citation := range citations {
-		learningPath, err := findLearningFile(cwd, filepath.Base(citation.ArtifactPath))
+		artifactPath := canonicalArtifactPath(cwd, citation.ArtifactPath)
+		learningPath, err := findLearningFile(cwd, filepath.Base(artifactPath))
 		if err != nil {
-			if _, statErr := os.Stat(citation.ArtifactPath); statErr == nil {
-				learningPath = citation.ArtifactPath
+			if _, statErr := os.Stat(artifactPath); statErr == nil {
+				learningPath = artifactPath
 			} else {
-				VerbosePrintf("Warning: learning not found for %s: %v\n", citation.ArtifactPath, err)
+				VerbosePrintf("Warning: learning not found for %s: %v\n", artifactPath, err)
 				failedCount++
 				continue
 			}
@@ -149,7 +159,7 @@ func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []t
 		}
 
 		event := FeedbackEvent{
-			SessionID:      sessionID,
+			SessionID:      canonicalSessionID(sessionID),
 			ArtifactPath:   learningPath,
 			Reward:         reward,
 			UtilityBefore:  oldUtility,
@@ -204,7 +214,7 @@ func runFeedbackLoop(cmd *cobra.Command, args []string) error {
 	}
 
 	// Process citations
-	uniqueCitations := deduplicateCitations(sessionCitations)
+	uniqueCitations := deduplicateCitations(cwd, sessionCitations)
 	feedbackEvents, updatedCount, failedCount := processUniqueCitations(
 		cwd, sessionID, feedbackLoopTranscript, uniqueCitations, reward, feedbackLoopAlpha,
 	)
@@ -241,21 +251,29 @@ func markCitationFeedback(baseDir, sessionID string, reward float64, events []Fe
 		return nil
 	}
 
+	targetAliases := make(map[string]bool)
+	for _, alias := range sessionIDAliases(sessionID) {
+		targetAliases[alias] = true
+	}
+
 	eventByPath := make(map[string]FeedbackEvent, len(events))
 	for _, event := range events {
-		eventByPath[event.ArtifactPath] = event
+		key := canonicalArtifactKey(baseDir, event.ArtifactPath)
+		eventByPath[key] = event
 	}
 
 	updated := 0
 	now := time.Now()
 	for i := range citations {
-		if citations[i].SessionID != sessionID {
+		citations[i].SessionID = canonicalSessionID(citations[i].SessionID)
+		citations[i].ArtifactPath = canonicalArtifactPath(baseDir, citations[i].ArtifactPath)
+		if !targetAliases[citations[i].SessionID] {
 			continue
 		}
 		citations[i].FeedbackGiven = true
 		citations[i].FeedbackReward = reward
 		citations[i].FeedbackAt = now
-		if event, ok := eventByPath[citations[i].ArtifactPath]; ok {
+		if event, ok := eventByPath[canonicalArtifactKey(baseDir, citations[i].ArtifactPath)]; ok {
 			citations[i].UtilityBefore = event.UtilityBefore
 			citations[i].UtilityAfter = event.UtilityAfter
 		}
@@ -424,7 +442,7 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 	// Build set of sessions that already have feedback
 	processedSessions := make(map[string]bool)
 	for _, f := range existingFeedback {
-		processedSessions[f.SessionID] = true
+		processedSessions[canonicalSessionID(f.SessionID)] = true
 	}
 
 	// Find sessions with citations but no feedback
@@ -436,12 +454,14 @@ func runBatchFeedback(cmd *cobra.Command, args []string) error {
 		if c.CitedAt.Before(since) {
 			continue
 		}
-		if processedSessions[c.SessionID] {
+		sessionKey := canonicalSessionID(c.SessionID)
+		c.SessionID = sessionKey
+		if processedSessions[sessionKey] {
 			continue
 		}
-		sessionCitations[c.SessionID] = append(sessionCitations[c.SessionID], c)
-		if latest, ok := sessionLatestCitation[c.SessionID]; !ok || c.CitedAt.After(latest) {
-			sessionLatestCitation[c.SessionID] = c.CitedAt
+		sessionCitations[sessionKey] = append(sessionCitations[sessionKey], c)
+		if latest, ok := sessionLatestCitation[sessionKey]; !ok || c.CitedAt.After(latest) {
+			sessionLatestCitation[sessionKey] = c.CitedAt
 		}
 	}
 

@@ -482,6 +482,40 @@ func TestRecordCitation_DefaultTimestamp(t *testing.T) {
 	}
 }
 
+func TestCitationPathCanonicalization_MixedRelativeAndAbsolute(t *testing.T) {
+	baseDir := t.TempDir()
+	rel := ".agents/learnings/L1.md"
+	abs := filepath.Join(baseDir, ".agents", "learnings", "L1.md")
+
+	events := []types.CitationEvent{
+		{ArtifactPath: rel, SessionID: "s1", CitedAt: time.Now()},
+		{ArtifactPath: abs, SessionID: "s2", CitedAt: time.Now().Add(1 * time.Minute)},
+	}
+	for _, e := range events {
+		if err := RecordCitation(baseDir, e); err != nil {
+			t.Fatalf("RecordCitation failed: %v", err)
+		}
+	}
+
+	count, err := CountCitationsForArtifact(baseDir, abs)
+	if err != nil {
+		t.Fatalf("CountCitationsForArtifact failed: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("expected canonical count=2, got %d", count)
+	}
+
+	since := time.Now().Add(-1 * time.Hour)
+	until := time.Now().Add(1 * time.Hour)
+	unique, err := GetUniqueCitedArtifacts(baseDir, since, until)
+	if err != nil {
+		t.Fatalf("GetUniqueCitedArtifacts failed: %v", err)
+	}
+	if len(unique) != 1 {
+		t.Fatalf("expected 1 unique canonical artifact, got %d (%v)", len(unique), unique)
+	}
+}
+
 // --- GetCitationsSince ---
 
 func TestGetCitationsSince(t *testing.T) {

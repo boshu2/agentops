@@ -1,6 +1,6 @@
 #!/bin/bash
-# SubagentStop hook: capture worker output from swarm/crank executions
-# Writes final worker message to .agents/ao/subagent-outputs/ for knowledge preservation
+# SubagentStop hook: capture worker output from swarm/crank executions.
+# Writes final worker message + schema packet for session-start consumption.
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
@@ -47,5 +47,16 @@ OUTPUT_FILE="$OUTPUT_DIR/${TIMESTAMP}_${AGENT_NAME}.md"
     echo ""
     echo "${LAST_ASSISTANT_MSG:0:2000}"
 } > "$OUTPUT_FILE" 2>/dev/null
+
+OUTPUT_REL=$(to_repo_relative_path "$OUTPUT_FILE")
+PAYLOAD_JSON='{}'
+if command -v jq >/dev/null 2>&1; then
+    PAYLOAD_JSON=$(jq -n \
+        --arg agent_name "$AGENT_NAME" \
+        --arg summary "${LAST_ASSISTANT_MSG:0:2000}" \
+        '{agent_name:$agent_name,last_assistant_message:$summary}')
+fi
+
+write_memory_packet "subagent_stop" "subagent-stop" "$PAYLOAD_JSON" "$OUTPUT_REL" >/dev/null 2>&1 || true
 
 exit 0

@@ -46,11 +46,19 @@ func TestDeduplicateCitations(t *testing.T) {
 			},
 			wantCount: 1,
 		},
+		{
+			name: "mixed relative and absolute path aliases",
+			citations: []types.CitationEvent{
+				{ArtifactPath: ".agents/learnings/L1.md", SessionID: "s1", CitedAt: now},
+				{ArtifactPath: "/tmp/repo/.agents/learnings/L1.md", SessionID: "s2", CitedAt: now},
+			},
+			wantCount: 1,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := deduplicateCitations(tt.citations)
+			got := deduplicateCitations("/tmp/repo", tt.citations)
 			if len(got) != tt.wantCount {
 				t.Errorf("deduplicateCitations() returned %d, want %d", len(got), tt.wantCount)
 			}

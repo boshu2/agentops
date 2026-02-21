@@ -16,6 +16,11 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 AO_DIR="$ROOT/.agents/ao"
 HOOK_ERROR_LOG="$AO_DIR/hook-errors.log"
+HOOK_HELPERS_LIB="$SCRIPT_DIR/../lib/hook-helpers.sh"
+if [ -f "$HOOK_HELPERS_LIB" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$HOOK_HELPERS_LIB"
+fi
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
@@ -291,35 +296,119 @@ if [ "${AGENTOPS_AUTOCHAIN:-}" != "0" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
-# Check for auto-handoff recovery (marker-based one-shot, with legacy fallback)
+# Check for auto-handoff recovery
+# Priority: packet queue (v1) -> pending markers -> legacy auto-*.md.
 handoff_section=""
 HANDOFF_ROOT="$ROOT/.agents/handoff"
 HANDOFF_PENDING_DIR="$HANDOFF_ROOT/pending"
 HANDOFF_CONSUMED_DIR="$HANDOFF_ROOT/consumed"
 HANDOFF_FILE=""
+PACKET_ROOT="$ROOT/.agents/ao/packets"
+PACKET_PENDING_DIR="$PACKET_ROOT/pending"
+PACKET_CONSUMED_DIR="$PACKET_ROOT/consumed"
+PACKET_QUARANTINE_DIR="$PACKET_ROOT/quarantine"
 
-# 1) Marker-based one-shot consumption (preferred)
-if [ -d "$HANDOFF_PENDING_DIR" ]; then
+resolve_handoff_path() {
+    local rel_path="$1"
+    case "$rel_path" in
+        .agents/*) printf '%s\n' "$ROOT/$rel_path" ;;
+        /*)        printf '%s\n' "$rel_path" ;;
+        *)         printf '%s\n' "$ROOT/$rel_path" ;;
+    esac
+}
+
+# 1) Packet-first one-shot consumption (preferred)
+if [ -d "$PACKET_PENDING_DIR" ]; then
+    PACKET_FILE=$(find "$PACKET_PENDING_DIR" -maxdepth 1 -name '*.json' -print 2>/dev/null | sort -r | head -1)
+    if [[ -n "$PACKET_FILE" && -f "$PACKET_FILE" ]]; then
+        packet_valid=false
+        if command -v validate_memory_packet_file >/dev/null 2>&1; then
+            if validate_memory_packet_file "$PACKET_FILE"; then
+                packet_valid=true
+            fi
+        elif command -v jq >/dev/null 2>&1; then
+            if jq -e '.schema_version == 1 and (.packet_type | type == "string") and (.payload | type == "object")' "$PACKET_FILE" >/dev/null 2>&1; then
+                packet_valid=true
+            fi
+        fi
+
+        if $packet_valid; then
+            packet_type="packet"
+            packet_handoff_path=""
+            packet_summary=""
+            handoff_content=""
+
+            if command -v jq >/dev/null 2>&1; then
+                packet_type=$(jq -r '.packet_type // "packet"' "$PACKET_FILE" 2>/dev/null)
+                rel_path=$(jq -r '.handoff_file // ""' "$PACKET_FILE" 2>/dev/null)
+                packet_summary=$(jq -r '.payload.summary // .payload.last_assistant_message // ""' "$PACKET_FILE" 2>/dev/null)
+                if [[ -n "$rel_path" && "$rel_path" != "null" ]]; then
+                    packet_handoff_path=$(resolve_handoff_path "$rel_path")
+                fi
+            fi
+
+            if [[ -n "$packet_handoff_path" && -f "$packet_handoff_path" ]]; then
+                handoff_content=$(cat "$packet_handoff_path" 2>/dev/null || echo "")
+            fi
+            if [[ -z "$handoff_content" && -n "$packet_summary" ]]; then
+                handoff_content="$packet_summary"
+            fi
+            if [ -z "$handoff_content" ] && command -v jq >/dev/null 2>&1; then
+                handoff_content=$(jq -r '.payload | tostring' "$PACKET_FILE" 2>/dev/null)
+            fi
+
+            if [[ -n "$handoff_content" ]]; then
+                handoff_section="
+
+---
+## 🔄 Recovery: Memory Packet (${packet_type})
+
+${handoff_content}
+---
+"
+            fi
+
+            mkdir -p "$PACKET_CONSUMED_DIR" 2>/dev/null || log_hook_fail "packet consumed dir create failed"
+            consumed_packet="$PACKET_CONSUMED_DIR/$(basename "$PACKET_FILE")"
+            if command -v jq >/dev/null 2>&1; then
+                consumed_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                jq --arg ts "$consumed_ts" '.consumed = true | .consumed_at = $ts' "$PACKET_FILE" > "$consumed_packet" 2>/dev/null \
+                    || cp "$PACKET_FILE" "$consumed_packet" 2>/dev/null
+                rm -f "$PACKET_FILE" 2>/dev/null
+            else
+                mv "$PACKET_FILE" "$consumed_packet" 2>/dev/null || true
+            fi
+        else
+            mkdir -p "$PACKET_QUARANTINE_DIR" 2>/dev/null || log_hook_fail "packet quarantine dir create failed"
+            quarantined_packet="$PACKET_QUARANTINE_DIR/$(basename "$PACKET_FILE")"
+            if command -v jq >/dev/null 2>&1; then
+                quarantined_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                jq --arg ts "$quarantined_ts" --arg reason "schema_validation_failed" \
+                    '.quarantined = true | .quarantined_at = $ts | .quarantine_reason = $reason' \
+                    "$PACKET_FILE" > "$quarantined_packet" 2>/dev/null || mv "$PACKET_FILE" "$quarantined_packet" 2>/dev/null
+            else
+                mv "$PACKET_FILE" "$quarantined_packet" 2>/dev/null || true
+            fi
+            rm -f "$PACKET_FILE" 2>/dev/null || true
+            log_hook_fail "malformed packet quarantined: $(basename "$PACKET_FILE")"
+        fi
+    fi
+fi
+
+# 2) Marker-based one-shot consumption
+if [[ -z "$handoff_section" && -d "$HANDOFF_PENDING_DIR" ]]; then
     HANDOFF_MARKER=$(find "$HANDOFF_PENDING_DIR" -maxdepth 1 -name '*.json' -print 2>/dev/null | sort -r | head -1)
     if [[ -n "$HANDOFF_MARKER" && -f "$HANDOFF_MARKER" ]]; then
         HANDOFF_PATH=""
         if command -v jq >/dev/null 2>&1; then
             rel_path=$(jq -r '.handoff_file // ""' "$HANDOFF_MARKER" 2>/dev/null)
             if [[ -n "$rel_path" && "$rel_path" != "null" ]]; then
-                case "$rel_path" in
-                    .agents/*) HANDOFF_PATH="$ROOT/$rel_path" ;;
-                    /*)        HANDOFF_PATH="$rel_path" ;;
-                    *)         HANDOFF_PATH="$ROOT/$rel_path" ;;
-                esac
+                HANDOFF_PATH=$(resolve_handoff_path "$rel_path")
             fi
         else
             rel_path=$(grep -o '"handoff_file"[[:space:]]*:[[:space:]]*"[^"]*"' "$HANDOFF_MARKER" | head -1 | sed 's/.*"handoff_file"[[:space:]]*:[[:space:]]*"//;s/"$//')
             if [[ -n "$rel_path" ]]; then
-                case "$rel_path" in
-                    .agents/*) HANDOFF_PATH="$ROOT/$rel_path" ;;
-                    /*)        HANDOFF_PATH="$rel_path" ;;
-                    *)         HANDOFF_PATH="$ROOT/$rel_path" ;;
-                esac
+                HANDOFF_PATH=$(resolve_handoff_path "$rel_path")
             fi
         fi
 
@@ -350,7 +439,7 @@ ${handoff_content}
     fi
 fi
 
-# 2) Legacy fallback: consume latest auto-*.md from precompact
+# 3) Legacy fallback: consume latest auto-*.md from precompact
 if [[ -z "$handoff_section" ]]; then
     HANDOFF_FILE=$(find "$HANDOFF_ROOT/" -maxdepth 1 -name 'auto-*.md' -print 2>/dev/null | sort -r | head -1)
     if [[ -n "$HANDOFF_FILE" && -f "$HANDOFF_FILE" ]]; then

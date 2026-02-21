@@ -5,6 +5,12 @@
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOK_HELPERS_LIB="$SCRIPT_DIR/../lib/hook-helpers.sh"
+if [ -f "$HOOK_HELPERS_LIB" ]; then
+  # shellcheck source=../lib/hook-helpers.sh
+  . "$HOOK_HELPERS_LIB"
+fi
 AO_DIR="$ROOT/.agents/ao"
 LOG_FILE="$AO_DIR/hook-errors.log"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -158,6 +164,26 @@ MODIFIED_FILES=$(git diff --name-only HEAD 2>/dev/null | head -20)
     echo "none"
   fi
 } > "$HANDOFF_FILE" 2>/dev/null || log_error "failed writing auto-handoff: $HANDOFF_FILE"
+
+HANDOFF_REL=""
+if [ -f "$HANDOFF_FILE" ] && command -v to_repo_relative_path >/dev/null 2>&1; then
+  HANDOFF_REL=$(to_repo_relative_path "$HANDOFF_FILE")
+fi
+
+PACKET_PAYLOAD='{}'
+if command -v jq >/dev/null 2>&1; then
+  PACKET_PAYLOAD=$(jq -n \
+    --arg summary "$SUMMARY" \
+    --arg branch "$BRANCH" \
+    --arg teams "$TEAM_NAMES" \
+    --arg bead "$ACTIVE_BEAD" \
+    --arg ratchet "$RATCHET_STATE" \
+    '{summary:$summary,branch:$branch,active_teams:$teams,active_bead:$bead,ratchet_state:$ratchet}')
+fi
+
+if command -v write_memory_packet >/dev/null 2>&1; then
+  write_memory_packet "precompact" "precompact-snapshot" "$PACKET_PAYLOAD" "$HANDOFF_REL" >/dev/null 2>&1 || true
+fi
 
 # Output JSON for hook system
 if command -v jq >/dev/null 2>&1; then

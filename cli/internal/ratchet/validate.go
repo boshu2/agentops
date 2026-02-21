@@ -794,6 +794,26 @@ func ValidateCloseReason(closeReason string) []string {
 // CitationsFilePath is the relative path to the citations JSONL file.
 const CitationsFilePath = ".agents/ao/citations.jsonl"
 
+// CanonicalArtifactPath resolves citation artifact paths to a stable absolute form.
+func CanonicalArtifactPath(baseDir, artifactPath string) string {
+	p := strings.TrimSpace(artifactPath)
+	if p == "" {
+		return ""
+	}
+	p = filepath.Clean(p)
+	if !filepath.IsAbs(p) {
+		if strings.TrimSpace(baseDir) == "" {
+			baseDir = "."
+		}
+		p = filepath.Join(baseDir, p)
+	}
+	abs, err := filepath.Abs(p)
+	if err == nil {
+		p = abs
+	}
+	return filepath.Clean(p)
+}
+
 // RecordCitation appends a citation event to the citations log.
 // Creates the file and parent directories if they don't exist.
 func RecordCitation(baseDir string, event types.CitationEvent) error {
@@ -801,6 +821,7 @@ func RecordCitation(baseDir string, event types.CitationEvent) error {
 	if event.CitedAt.IsZero() {
 		event.CitedAt = time.Now()
 	}
+	event.ArtifactPath = CanonicalArtifactPath(baseDir, event.ArtifactPath)
 
 	// Build full path
 	citationsPath := filepath.Join(baseDir, CitationsFilePath)
@@ -866,6 +887,7 @@ func LoadCitations(baseDir string) ([]types.CitationEvent, error) {
 			// Skip malformed lines
 			continue
 		}
+		event.ArtifactPath = CanonicalArtifactPath(baseDir, event.ArtifactPath)
 		citations = append(citations, event)
 	}
 
@@ -883,9 +905,10 @@ func CountCitationsForArtifact(baseDir, artifactPath string) (int, error) {
 		return 0, err
 	}
 
+	target := CanonicalArtifactPath(baseDir, artifactPath)
 	count := 0
 	for _, c := range citations {
-		if c.ArtifactPath == artifactPath {
+		if CanonicalArtifactPath(baseDir, c.ArtifactPath) == target {
 			count++
 		}
 	}
@@ -920,9 +943,10 @@ func GetUniqueCitedArtifacts(baseDir string, since, until time.Time) ([]string, 
 
 	for _, c := range allCitations {
 		if c.CitedAt.After(since) && c.CitedAt.Before(until) {
-			if !seen[c.ArtifactPath] {
-				seen[c.ArtifactPath] = true
-				unique = append(unique, c.ArtifactPath)
+			path := CanonicalArtifactPath(baseDir, c.ArtifactPath)
+			if !seen[path] {
+				seen[path] = true
+				unique = append(unique, path)
 			}
 		}
 	}

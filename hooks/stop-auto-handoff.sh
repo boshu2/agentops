@@ -1,6 +1,6 @@
 #!/bin/bash
-# Stop hook: capture last_assistant_message for session handoff
-# Writes handoff to .agents/handoff/pending/ for session-start.sh to consume
+# Stop hook: capture last_assistant_message for session continuity.
+# Writes markdown handoff + schema packet for session-start.sh packet-first recovery.
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
@@ -18,30 +18,48 @@ RATCHET_STATE=$(timeout_run 1 ao ratchet status -o json 2>/dev/null || echo "")
 ACTIVE_BEAD=$(timeout_run 1 bd current 2>/dev/null || echo "")
 TIMESTAMP=$(date -u +%Y-%m-%dT%H%M%SZ)
 
-# Write handoff
-HANDOFF_DIR="$ROOT/.agents/handoff/pending"
-mkdir -p "$HANDOFF_DIR"
+# Write markdown handoff artifact (legacy-friendly human-readable context).
+HANDOFF_DIR="$ROOT/.agents/handoff"
+mkdir -p "$HANDOFF_DIR" 2>/dev/null || exit 0
 
-HANDOFF_FILE="$HANDOFF_DIR/${TIMESTAMP}-stop.json"
+HANDOFF_FILE="$HANDOFF_DIR/stop-${TIMESTAMP}.md"
+{
+    echo "# Auto-Handoff (Stop)"
+    echo ""
+    echo "**Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "**Session:** ${CLAUDE_SESSION_ID:-unknown}"
+    echo ""
+    echo "## Last Assistant Message"
+    echo "${LAST_ASSISTANT_MSG:0:2000}"
+    echo ""
+    echo "## Ratchet State"
+    if [ -n "$RATCHET_STATE" ]; then
+        echo '```json'
+        echo "$RATCHET_STATE"
+        echo '```'
+    else
+        echo "none"
+    fi
+    echo ""
+    echo "## Active Work"
+    if [ -n "$ACTIVE_BEAD" ]; then
+        echo "$ACTIVE_BEAD"
+    else
+        echo "none"
+    fi
+} > "$HANDOFF_FILE" 2>/dev/null || exit 0
 
+HANDOFF_REL=$(to_repo_relative_path "$HANDOFF_FILE")
+PAYLOAD_JSON='{}'
 if command -v jq >/dev/null 2>&1; then
-    jq -n \
-        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --arg type "stop" \
-        --arg last_msg "${LAST_ASSISTANT_MSG:0:2000}" \
+    PAYLOAD_JSON=$(jq -n \
+        --arg message "${LAST_ASSISTANT_MSG:0:2000}" \
         --arg ratchet "$RATCHET_STATE" \
         --arg bead "$ACTIVE_BEAD" \
-        --arg session "${CLAUDE_SESSION_ID:-unknown}" \
-        '{ts:$ts,type:$type,last_assistant_message:$last_msg,ratchet_state:$ratchet,active_bead:$bead,session_id:$session}' \
-        > "$HANDOFF_FILE" 2>/dev/null
-else
-    # Fallback without jq — escape for JSON safety
-    ESC_MSG=$(json_escape_value "${LAST_ASSISTANT_MSG:0:2000}")
-    ESC_RATCHET=$(json_escape_value "$RATCHET_STATE")
-    ESC_BEAD=$(json_escape_value "$ACTIVE_BEAD")
-    printf '{"ts":"%s","type":"stop","last_assistant_message":"%s","ratchet_state":"%s","active_bead":"%s","session_id":"%s"}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$ESC_MSG" "$ESC_RATCHET" "$ESC_BEAD" "${CLAUDE_SESSION_ID:-unknown}" \
-        > "$HANDOFF_FILE" 2>/dev/null
+        '{last_assistant_message:$message,ratchet_state:$ratchet,active_bead:$bead}')
 fi
+
+# Packet write is best-effort; fail-open hook semantics remain.
+write_memory_packet "stop" "stop-auto-handoff" "$PAYLOAD_JSON" "$HANDOFF_REL" >/dev/null 2>&1 || true
 
 exit 0

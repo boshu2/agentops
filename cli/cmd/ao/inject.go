@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -340,32 +339,6 @@ func truncateText(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
-// canonicalSessionID normalizes session IDs to a consistent format.
-// Addresses pre-mortem C2: session ID format mismatch causing zero citation matches.
-// Format: session-YYYYMMDD-HHMMSS (auto-generated if empty or random string).
-func canonicalSessionID(raw string) string {
-	if raw == "" {
-		// Generate new session ID with timestamp
-		return fmt.Sprintf("session-%s", time.Now().Format("20060102-150405"))
-	}
-
-	// Check if already in canonical format
-	canonicalPattern := regexp.MustCompile(`^session-\d{8}-\d{6}$`)
-	if canonicalPattern.MatchString(raw) {
-		return raw
-	}
-
-	// Check for UUID format (e.g., from Claude sessions)
-	uuidPattern := regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
-	if uuidPattern.MatchString(raw) {
-		// Convert UUID to canonical by prepending "session-" and using current timestamp
-		return fmt.Sprintf("session-%s", time.Now().Format("20060102-150405"))
-	}
-
-	// Return as-is for other formats (e.g., user-provided IDs)
-	return raw
-}
-
 // collectOLConstraints reads constraints from .ol/constraints/quarantine.json.
 // Returns nil (no-op) if .ol/ directory doesn't exist.
 func collectOLConstraints(cwd, query string) ([]olConstraint, error) {
@@ -408,10 +381,11 @@ func collectOLConstraints(cwd, query string) ([]olConstraint, error) {
 // This is critical for closing the MemRL feedback loop (Phase 0).
 // Citations link: session → learning → feedback → utility update.
 func recordCitations(baseDir string, learnings []learning, sessionID, query string) error {
+	canonicalSession := canonicalSessionID(sessionID)
 	for _, l := range learnings {
 		event := types.CitationEvent{
-			ArtifactPath: l.Source,
-			SessionID:    sessionID,
+			ArtifactPath: canonicalArtifactPath(baseDir, l.Source),
+			SessionID:    canonicalSession,
 			CitedAt:      time.Now(),
 			CitationType: "retrieved", // Will be upgraded to "applied" if session succeeds
 			Query:        query,
@@ -426,13 +400,14 @@ func recordCitations(baseDir string, learnings []learning, sessionID, query stri
 
 // recordPatternCitations records citation events for retrieved patterns.
 func recordPatternCitations(baseDir string, patterns []pattern, sessionID, query string) error {
+	canonicalSession := canonicalSessionID(sessionID)
 	for _, p := range patterns {
 		if p.FilePath == "" {
 			continue
 		}
 		event := types.CitationEvent{
-			ArtifactPath: p.FilePath,
-			SessionID:    sessionID,
+			ArtifactPath: canonicalArtifactPath(baseDir, p.FilePath),
+			SessionID:    canonicalSession,
 			CitedAt:      time.Now(),
 			CitationType: "retrieved",
 			Query:        query,

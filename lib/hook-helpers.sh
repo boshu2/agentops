@@ -17,6 +17,17 @@ if [ -z "${ROOT:-}" ]; then
 fi
 
 _HOOK_HELPERS_ERROR_LOG_DIR="${ROOT}/.agents/ao"
+_HOOK_PACKET_ROOT="${ROOT}/.agents/ao/packets"
+_HOOK_PACKET_PENDING_DIR="${_HOOK_PACKET_ROOT}/pending"
+
+to_repo_relative_path() {
+    local abs="$1"
+    local repo="${ROOT%/}"
+    case "$abs" in
+        "$repo"/*) printf '.%s\n' "${abs#$repo}" ;;
+        *) printf '%s\n' "$abs" ;;
+    esac
+}
 
 write_failure() {
     local type="$1"
@@ -96,4 +107,118 @@ read_hook_input() {
                 | sed 's/.*"last_assistant_message"[[:space:]]*:[[:space:]]*"//;s/"$//' 2>/dev/null) || true
         fi
     fi
+}
+
+# validate_memory_packet_file — shallow schema check for memory-packet v1.
+# Returns 0 if valid, non-zero otherwise.
+validate_memory_packet_file() {
+    local packet_file="$1"
+    [ -f "$packet_file" ] || return 1
+
+    if command -v jq >/dev/null 2>&1; then
+        jq -e '
+            .schema_version == 1 and
+            (.packet_id | type == "string" and length > 0) and
+            (.packet_type | type == "string" and length > 0) and
+            (.created_at | type == "string" and length > 0) and
+            (.source_hook | type == "string" and length > 0) and
+            (.session_id | type == "string" and length > 0) and
+            (.payload | type == "object")
+        ' "$packet_file" >/dev/null 2>&1
+        return $?
+    fi
+
+    # Fallback (no jq): coarse key-presence checks.
+    grep -q '"schema_version"' "$packet_file" &&
+        grep -q '"packet_id"' "$packet_file" &&
+        grep -q '"packet_type"' "$packet_file" &&
+        grep -q '"created_at"' "$packet_file" &&
+        grep -q '"source_hook"' "$packet_file" &&
+        grep -q '"session_id"' "$packet_file" &&
+        grep -q '"payload"' "$packet_file"
+}
+
+# write_memory_packet TYPE SOURCE PAYLOAD_JSON [HANDOFF_FILE]
+# Emits a v1 memory packet under .agents/ao/packets/pending and prints packet path.
+write_memory_packet() {
+    local packet_type="$1"
+    local source_hook="$2"
+    local payload_json="$3"
+    local handoff_file="${4:-}"
+
+    mkdir -p "$_HOOK_PACKET_PENDING_DIR" 2>/dev/null || return 1
+
+    local created_at safe_ts packet_id packet_file session_id
+    created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
+    safe_ts=$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null || echo "unknown")
+    session_id="${CLAUDE_SESSION_ID:-unknown}"
+    packet_id="${safe_ts}-${packet_type}-$$"
+    packet_file="${_HOOK_PACKET_PENDING_DIR}/${packet_id}.json"
+
+    if command -v jq >/dev/null 2>&1; then
+        if [ -z "$payload_json" ] || ! echo "$payload_json" | jq -e . >/dev/null 2>&1; then
+            payload_json='{}'
+        fi
+
+        if [ -n "$handoff_file" ]; then
+            jq -n \
+                --argjson schema_version 1 \
+                --arg packet_id "$packet_id" \
+                --arg packet_type "$packet_type" \
+                --arg created_at "$created_at" \
+                --arg source_hook "$source_hook" \
+                --arg session_id "$session_id" \
+                --arg handoff_file "$handoff_file" \
+                --argjson payload "$payload_json" \
+                '{
+                    schema_version: $schema_version,
+                    packet_id: $packet_id,
+                    packet_type: $packet_type,
+                    created_at: $created_at,
+                    source_hook: $source_hook,
+                    session_id: $session_id,
+                    handoff_file: $handoff_file,
+                    payload: $payload
+                }' > "$packet_file" 2>/dev/null || return 1
+        else
+            jq -n \
+                --argjson schema_version 1 \
+                --arg packet_id "$packet_id" \
+                --arg packet_type "$packet_type" \
+                --arg created_at "$created_at" \
+                --arg source_hook "$source_hook" \
+                --arg session_id "$session_id" \
+                --argjson payload "$payload_json" \
+                '{
+                    schema_version: $schema_version,
+                    packet_id: $packet_id,
+                    packet_type: $packet_type,
+                    created_at: $created_at,
+                    source_hook: $source_hook,
+                    session_id: $session_id,
+                    payload: $payload
+                }' > "$packet_file" 2>/dev/null || return 1
+        fi
+    else
+        local esc_payload esc_handoff
+        esc_payload=$(json_escape_value "$payload_json")
+        esc_handoff=$(json_escape_value "$handoff_file")
+        if [ -n "$handoff_file" ]; then
+            printf '{"schema_version":1,"packet_id":"%s","packet_type":"%s","created_at":"%s","source_hook":"%s","session_id":"%s","handoff_file":"%s","payload":{"raw":"%s"}}\n' \
+                "$packet_id" "$packet_type" "$created_at" "$source_hook" "$session_id" "$esc_handoff" "$esc_payload" \
+                > "$packet_file" 2>/dev/null || return 1
+        else
+            printf '{"schema_version":1,"packet_id":"%s","packet_type":"%s","created_at":"%s","source_hook":"%s","session_id":"%s","payload":{"raw":"%s"}}\n' \
+                "$packet_id" "$packet_type" "$created_at" "$source_hook" "$session_id" "$esc_payload" \
+                > "$packet_file" 2>/dev/null || return 1
+        fi
+    fi
+
+    if ! validate_memory_packet_file "$packet_file"; then
+        rm -f "$packet_file" 2>/dev/null || true
+        return 1
+    fi
+
+    printf '%s\n' "$packet_file"
+    return 0
 }

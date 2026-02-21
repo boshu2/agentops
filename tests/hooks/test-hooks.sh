@@ -415,6 +415,82 @@ fi
 
 # ============================================================
 echo ""
+echo "=== memory packet v1 compatibility ==="
+# ============================================================
+
+# Test 43: stop-auto-handoff emits packet v1
+MOCK_STOP_PACKET="$TMPDIR/mock-stop-packet"
+mkdir -p "$MOCK_STOP_PACKET/.agents/ao"
+git -C "$MOCK_STOP_PACKET" init -q >/dev/null 2>&1
+printf '{"last_assistant_message":"STOP_PACKET_MARKER_123"}' \
+  | (cd "$MOCK_STOP_PACKET" && bash "$HOOKS_DIR/stop-auto-handoff.sh" >/dev/null 2>&1 || true)
+STOP_PACKET_FILE=$(ls -t "$MOCK_STOP_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1)
+if [ -f "$STOP_PACKET_FILE" ] \
+  && jq -e '.schema_version == 1 and .packet_type == "stop" and .source_hook == "stop-auto-handoff" and (.payload.last_assistant_message | contains("STOP_PACKET_MARKER_123"))' "$STOP_PACKET_FILE" >/dev/null 2>&1; then
+    pass "stop-auto-handoff emits schema packet v1"
+else
+    fail "stop-auto-handoff emits schema packet v1"
+fi
+
+# Test 44: subagent-stop emits packet v1
+MOCK_SUB_PACKET="$TMPDIR/mock-subagent-packet"
+mkdir -p "$MOCK_SUB_PACKET/.agents/ao"
+git -C "$MOCK_SUB_PACKET" init -q >/dev/null 2>&1
+printf '{"last_assistant_message":"SUB_PACKET_MARKER_999","agent_name":"worker-a"}' \
+  | (cd "$MOCK_SUB_PACKET" && bash "$HOOKS_DIR/subagent-stop.sh" >/dev/null 2>&1 || true)
+SUB_PACKET_FILE=$(ls -t "$MOCK_SUB_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1)
+if [ -f "$SUB_PACKET_FILE" ] \
+  && jq -e '.schema_version == 1 and .packet_type == "subagent_stop" and .source_hook == "subagent-stop" and .payload.agent_name == "worker-a"' "$SUB_PACKET_FILE" >/dev/null 2>&1; then
+    pass "subagent-stop emits schema packet v1"
+else
+    fail "subagent-stop emits schema packet v1"
+fi
+
+# Test 45: session-start consumes packet-first and moves packet to consumed
+MOCK_PACKET_CONSUME="$TMPDIR/mock-packet-consume"
+mkdir -p "$MOCK_PACKET_CONSUME/.agents/ao/packets/pending" "$MOCK_PACKET_CONSUME/.agents/handoff"
+git -C "$MOCK_PACKET_CONSUME" init -q >/dev/null 2>&1
+echo "PACKET_CONSUME_MARKER_777" > "$MOCK_PACKET_CONSUME/.agents/handoff/test-packet.md"
+cat > "$MOCK_PACKET_CONSUME/.agents/ao/packets/pending/packet-test.json" <<'EOF'
+{
+  "schema_version": 1,
+  "packet_id": "packet-test",
+  "packet_type": "stop",
+  "created_at": "2026-02-21T00:00:00Z",
+  "source_hook": "stop-auto-handoff",
+  "session_id": "session-20260221-000000",
+  "handoff_file": ".agents/handoff/test-packet.md",
+  "payload": {"summary":"fallback"}
+}
+EOF
+PACKET_OUTPUT=$(cd "$MOCK_PACKET_CONSUME" && bash "$HOOKS_DIR/session-start.sh" 2>/dev/null || true)
+if echo "$PACKET_OUTPUT" | grep -q "PACKET_CONSUME_MARKER_777"; then
+    pass "session-start consumes packet-first handoff content"
+else
+    fail "session-start consumes packet-first handoff content"
+fi
+if [ -f "$MOCK_PACKET_CONSUME/.agents/ao/packets/consumed/packet-test.json" ] \
+  && [ ! -f "$MOCK_PACKET_CONSUME/.agents/ao/packets/pending/packet-test.json" ]; then
+    pass "session-start moves consumed packet to consumed/"
+else
+    fail "session-start moves consumed packet to consumed/"
+fi
+
+# Test 46: malformed packet is quarantined and skipped
+MOCK_PACKET_QUAR="$TMPDIR/mock-packet-quarantine"
+mkdir -p "$MOCK_PACKET_QUAR/.agents/ao/packets/pending"
+git -C "$MOCK_PACKET_QUAR" init -q >/dev/null 2>&1
+echo '{"schema_version":1,"packet_id":"bad-only"}' > "$MOCK_PACKET_QUAR/.agents/ao/packets/pending/bad.json"
+(cd "$MOCK_PACKET_QUAR" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+if [ -f "$MOCK_PACKET_QUAR/.agents/ao/packets/quarantine/bad.json" ] \
+  && [ ! -f "$MOCK_PACKET_QUAR/.agents/ao/packets/pending/bad.json" ]; then
+    pass "session-start quarantines malformed packet"
+else
+    fail "session-start quarantines malformed packet"
+fi
+
+# ============================================================
+echo ""
 echo "=== standards-injector.sh ==="
 # ============================================================
 

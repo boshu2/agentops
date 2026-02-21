@@ -77,6 +77,10 @@ func runMetricsCiteReport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		VerbosePrintf("Warning: load citations: %v\n", err)
 	}
+	for i := range allCitations {
+		allCitations[i].ArtifactPath = canonicalArtifactPath(baseDir, allCitations[i].ArtifactPath)
+		allCitations[i].SessionID = canonicalSessionID(allCitations[i].SessionID)
+	}
 	now := time.Now()
 	periodStart := now.AddDate(0, 0, -days)
 	if len(allCitations) == 0 {
@@ -121,12 +125,13 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 	artifactSessions := make(map[string]map[string]bool)
 
 	for _, c := range filtered {
-		artifactCounts[c.ArtifactPath]++
+		canonicalPath := canonicalArtifactPath(baseDir, c.ArtifactPath)
+		artifactCounts[canonicalPath]++
 		sessions[c.SessionID] = true
-		if artifactSessions[c.ArtifactPath] == nil {
-			artifactSessions[c.ArtifactPath] = make(map[string]bool)
+		if artifactSessions[canonicalPath] == nil {
+			artifactSessions[canonicalPath] = make(map[string]bool)
 		}
-		artifactSessions[c.ArtifactPath][c.SessionID] = true
+		artifactSessions[canonicalPath][c.SessionID] = true
 
 		report.FeedbackTotal++
 		if c.FeedbackGiven {
@@ -177,10 +182,10 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 		files, _ := filepath.Glob(filepath.Join(learningsDir, "*.md"))
 		citedSet := make(map[string]bool)
 		for _, c := range all {
-			citedSet[c.ArtifactPath] = true
+			citedSet[canonicalArtifactPath(baseDir, c.ArtifactPath)] = true
 		}
 		for _, f := range files {
-			if !citedSet[f] {
+			if !citedSet[canonicalArtifactPath(baseDir, f)] {
 				report.UncitedLearnings = append(report.UncitedLearnings, f)
 			}
 		}
@@ -190,8 +195,9 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 	now := time.Now()
 	lastCited := make(map[string]time.Time)
 	for _, c := range all {
-		if t, ok := lastCited[c.ArtifactPath]; !ok || c.CitedAt.After(t) {
-			lastCited[c.ArtifactPath] = c.CitedAt
+		canonicalPath := canonicalArtifactPath(baseDir, c.ArtifactPath)
+		if t, ok := lastCited[canonicalPath]; !ok || c.CitedAt.After(t) {
+			lastCited[canonicalPath] = c.CitedAt
 		}
 	}
 	for _, threshold := range []int{30, 60, 90} {

@@ -239,7 +239,11 @@ func TestEvictArchivesCandidate(t *testing.T) {
 
 func TestBuildCitationMap(t *testing.T) {
 	tmp := t.TempDir()
-	citationsPath := filepath.Join(tmp, "citations.jsonl")
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	citationsPath := filepath.Join(aoDir, "citations.jsonl")
 
 	t1 := time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC)
 	t2 := time.Date(2026, 2, 10, 10, 0, 0, 0, time.UTC)
@@ -250,25 +254,25 @@ func TestBuildCitationMap(t *testing.T) {
 	createTestCitation(t, citationsPath, "/path/to/a.jsonl", t2)
 	createTestCitation(t, citationsPath, "/path/to/b.jsonl", t3)
 
-	m := buildCitationMap(citationsPath)
+	m := buildCitationMap(tmp)
 
 	if len(m) != 2 {
 		t.Fatalf("expected 2 entries in citation map, got %d", len(m))
 	}
 
 	// path-a should have the LATEST citation (t2)
-	if got := m["/path/to/a.jsonl"]; !got.Equal(t2) {
+	if got := m[canonicalArtifactPath(tmp, "/path/to/a.jsonl")]; !got.Equal(t2) {
 		t.Errorf("expected latest citation for path-a to be %v, got %v", t2, got)
 	}
 
 	// path-b should have t3
-	if got := m["/path/to/b.jsonl"]; !got.Equal(t3) {
+	if got := m[canonicalArtifactPath(tmp, "/path/to/b.jsonl")]; !got.Equal(t3) {
 		t.Errorf("expected citation for path-b to be %v, got %v", t3, got)
 	}
 }
 
 func TestBuildCitationMapMissingFile(t *testing.T) {
-	m := buildCitationMap("/nonexistent/citations.jsonl")
+	m := buildCitationMap(t.TempDir())
 	if len(m) != 0 {
 		t.Errorf("expected empty map for missing file, got %d entries", len(m))
 	}

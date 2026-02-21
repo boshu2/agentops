@@ -282,7 +282,7 @@ func analyzeTranscript(path string, sessionID string) (*SessionOutcome, error) {
 	}()
 
 	outcome := &SessionOutcome{
-		SessionID:  sessionID,
+		SessionID:  canonicalSessionID(sessionID),
 		Transcript: path,
 		AnalyzedAt: time.Now(),
 		Signals:    []Signal{},
@@ -338,10 +338,10 @@ func extractSessionID(line string) string {
 	}
 
 	if sessionID, ok := data["sessionId"].(string); ok {
-		return sessionID
+		return canonicalSessionID(sessionID)
 	}
 	if sessionID, ok := data["session_id"].(string); ok {
-		return sessionID
+		return canonicalSessionID(sessionID)
 	}
 	return ""
 }
@@ -405,6 +405,11 @@ func findTranscriptForSession(baseDir, sessionID string) string {
 }
 
 func transcriptContainsSessionID(path, sessionID string) bool {
+	targetAliases := make(map[string]bool)
+	for _, alias := range sessionIDAliases(sessionID) {
+		targetAliases[alias] = true
+	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return false
@@ -420,7 +425,11 @@ func transcriptContainsSessionID(path, sessionID string) bool {
 	lineCount := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, sessionID) || extractSessionID(line) == sessionID {
+		extracted := extractSessionID(line)
+		if extracted != "" && targetAliases[extracted] {
+			return true
+		}
+		if strings.Contains(line, sessionID) {
 			return true
 		}
 		lineCount++

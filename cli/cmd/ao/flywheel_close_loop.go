@@ -205,7 +205,7 @@ func autoPromoteAndPromoteToArtifacts(p *pool.Pool, threshold time.Duration, inc
 		if e.Age < threshold {
 			continue
 		}
-		if reason := checkPromotionCriteria(e, threshold, citationCounts, promotedContent); reason != "" {
+		if reason := checkPromotionCriteria(p.BaseDir, e, threshold, citationCounts, promotedContent); reason != "" {
 			result.Skipped++
 			result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
 			VerbosePrintf("Skipping %s: %s\n", e.Candidate.ID, reason)

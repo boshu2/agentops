@@ -21,9 +21,7 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 	}
 
 	// Make path absolute if needed
-	if !filepath.IsAbs(artifactPath) {
-		artifactPath = filepath.Join(cwd, artifactPath)
-	}
+	artifactPath = canonicalArtifactPath(cwd, artifactPath)
 
 	// Verify artifact exists
 	if _, err := os.Stat(artifactPath); os.IsNotExist(err) {
@@ -39,6 +37,7 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 	if citeSession == "" {
 		citeSession = detectSessionID()
 	}
+	citeSession = canonicalSessionID(citeSession)
 
 	event := types.CitationEvent{
 		ArtifactPath: artifactPath,
@@ -68,10 +67,10 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 func detectSessionID() string {
 	// Check CLAUDE_SESSION_ID env var
 	if id := os.Getenv("CLAUDE_SESSION_ID"); id != "" {
-		return id
+		return canonicalSessionID(id)
 	}
 
 	// Check for session file in current dir
 	// This is a fallback - real session ID should come from Claude
-	return fmt.Sprintf("session-%s", time.Now().Format("20060102-150405"))
+	return canonicalSessionID("")
 }

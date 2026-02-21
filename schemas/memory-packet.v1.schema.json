@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/memory-packet.v1.schema.json",
+  "title": "AgentOps Memory Packet v1",
+  "description": "Boundary-memory packet emitted by lifecycle hooks for session continuity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "packet_id",
+    "packet_type",
+    "created_at",
+    "source_hook",
+    "session_id",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packet_type": {
+      "type": "string",
+      "enum": ["stop", "precompact", "subagent_stop", "context_guard"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_hook": {
+      "type": "string",
+      "enum": ["stop-auto-handoff", "precompact-snapshot", "subagent-stop", "context-guard"]
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handoff_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

@@ -378,30 +378,22 @@ type evictionCandidate struct {
 	LastCited  string  `json:"last_cited,omitempty"`
 }
 
-// buildCitationMap reads citations.jsonl and returns a map of artifact_path to the latest cited_at time.
-func buildCitationMap(citationsPath string) map[string]time.Time {
+// buildCitationMap returns a map of canonical artifact path to latest cited_at.
+func buildCitationMap(baseDir string) map[string]time.Time {
 	result := make(map[string]time.Time)
 
-	f, err := os.Open(citationsPath)
+	citations, err := ratchet.LoadCitations(baseDir)
 	if err != nil {
 		return result
 	}
-	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		var entry struct {
-			ArtifactPath string    `json:"artifact_path"`
-			CitedAt      time.Time `json:"cited_at"`
-		}
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+	for _, entry := range citations {
+		key := canonicalArtifactPath(baseDir, entry.ArtifactPath)
+		if key == "" {
 			continue
 		}
-		if entry.ArtifactPath == "" {
-			continue
-		}
-		if existing, ok := result[entry.ArtifactPath]; !ok || entry.CitedAt.After(existing) {
-			result[entry.ArtifactPath] = entry.CitedAt
+		if existing, ok := result[key]; !ok || entry.CitedAt.After(existing) {
+			result[key] = entry.CitedAt
 		}
 	}
 
@@ -420,15 +412,14 @@ func runMaturityEvict(cmd *cobra.Command) error {
 		return nil
 	}
 
-	citationsPath := filepath.Join(cwd, ".agents", "ao", "citations.jsonl")
-	lastCited := buildCitationMap(citationsPath)
+	lastCited := buildCitationMap(cwd)
 	files, err := filepath.Glob(filepath.Join(learningsDir, "*.jsonl"))
 	if err != nil {
 		return fmt.Errorf("glob learnings: %w", err)
 	}
 
 	cutoff := time.Now().AddDate(0, 0, -90)
-	candidates := collectEvictionCandidates(files, lastCited, cutoff)
+	candidates := collectEvictionCandidates(cwd, files, lastCited, cutoff)
 
 	shouldArchive, err := reportEvictionCandidates(files, candidates)
 	if err != nil {
@@ -441,10 +432,10 @@ func runMaturityEvict(cmd *cobra.Command) error {
 	return archiveEvictionCandidates(cwd, candidates)
 }
 
-func collectEvictionCandidates(files []string, lastCited map[string]time.Time, cutoff time.Time) []evictionCandidate {
+func collectEvictionCandidates(baseDir string, files []string, lastCited map[string]time.Time, cutoff time.Time) []evictionCandidate {
 	candidates := make([]evictionCandidate, 0, len(files))
 	for _, file := range files {
-		candidate, ok := buildEvictionCandidate(file, lastCited, cutoff)
+		candidate, ok := buildEvictionCandidate(baseDir, file, lastCited, cutoff)
 		if ok {
 			candidates = append(candidates, candidate)
 		}
@@ -452,7 +443,7 @@ func collectEvictionCandidates(files []string, lastCited map[string]time.Time, c
 	return candidates
 }
 
-func buildEvictionCandidate(file string, lastCited map[string]time.Time, cutoff time.Time) (evictionCandidate, bool) {
+func buildEvictionCandidate(baseDir, file string, lastCited map[string]time.Time, cutoff time.Time) (evictionCandidate, bool) {
 	data, ok := readLearningJSONLData(file)
 	if !ok {
 		return evictionCandidate{}, false
@@ -465,7 +456,7 @@ func buildEvictionCandidate(file string, lastCited map[string]time.Time, cutoff 
 		return evictionCandidate{}, false
 	}
 
-	lastCitedStr, ok := evictionCitationStatus(file, lastCited, cutoff)
+	lastCitedStr, ok := evictionCitationStatus(canonicalArtifactPath(baseDir, file), lastCited, cutoff)
 	if !ok {
 		return evictionCandidate{}, false
 	}
