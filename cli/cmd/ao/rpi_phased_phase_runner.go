@@ -20,6 +20,9 @@ func runPhaseLoop(cwd, spawnCwd string, state *phasedState, startPhase int, opts
 func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p phase, opts phasedEngineOptions, statusPath string, allPhases []PhaseProgress, logPath string, executor PhaseExecutor) error {
 	fmt.Printf("\n--- Phase %d: %s ---\n", p.Num, p.Name)
 	state.Phase = p.Num
+	if err := savePhasedState(spawnCwd, state); err != nil {
+		VerbosePrintf("Warning: could not persist phase start state: %v\n", err)
+	}
 
 	prompt, err := buildPromptForPhase(spawnCwd, p.Num, state, nil)
 	if err != nil {

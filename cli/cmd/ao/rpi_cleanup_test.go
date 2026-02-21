@@ -224,6 +224,86 @@ func TestCleanupSkipsCompletedRuns(t *testing.T) {
 	}
 }
 
+func TestFindStaleRunsWithMinAge_SkipsRecentRuns(t *testing.T) {
+	tmpDir := t.TempDir()
+	now := time.Now().UTC()
+
+	runDir := filepath.Join(tmpDir, ".agents", "rpi", "runs", "recent-run")
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := map[string]interface{}{
+		"schema_version": 1,
+		"run_id":         "recent-run",
+		"goal":           "recent",
+		"phase":          2,
+		"started_at":     now.Add(-10 * time.Minute).Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	staleRuns := findStaleRunsWithMinAge(tmpDir, 1*time.Hour, now)
+	if len(staleRuns) != 0 {
+		t.Fatalf("expected 0 stale runs with age filter, got %d", len(staleRuns))
+	}
+}
+
+func TestExecuteRPICleanup_StaleAfterOnlyMarksOldRuns(t *testing.T) {
+	tmpDir := t.TempDir()
+	now := time.Now().UTC()
+
+	makeRun := func(runID string, startedAt time.Time) {
+		t.Helper()
+		runDir := filepath.Join(tmpDir, ".agents", "rpi", "runs", runID)
+		if err := os.MkdirAll(runDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		state := map[string]interface{}{
+			"schema_version": 1,
+			"run_id":         runID,
+			"goal":           runID,
+			"phase":          2,
+			"started_at":     startedAt.Format(time.RFC3339),
+		}
+		data, _ := json.Marshal(state)
+		if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	makeRun("old-run", now.Add(-2*time.Hour))
+	makeRun("new-run", now.Add(-10*time.Minute))
+
+	if err := executeRPICleanup(tmpDir, "", true, false, false, 1*time.Hour); err != nil {
+		t.Fatalf("executeRPICleanup: %v", err)
+	}
+
+	readTerminalStatus := func(runID string) string {
+		t.Helper()
+		data, err := os.ReadFile(filepath.Join(tmpDir, ".agents", "rpi", "runs", runID, phasedStateFile))
+		if err != nil {
+			t.Fatalf("read %s state: %v", runID, err)
+		}
+		var raw map[string]interface{}
+		if err := json.Unmarshal(data, &raw); err != nil {
+			t.Fatalf("unmarshal %s state: %v", runID, err)
+		}
+		if v, ok := raw["terminal_status"].(string); ok {
+			return v
+		}
+		return ""
+	}
+
+	if got := readTerminalStatus("old-run"); got != "stale" {
+		t.Fatalf("expected old-run terminal_status=stale, got %q", got)
+	}
+	if got := readTerminalStatus("new-run"); got != "" {
+		t.Fatalf("expected new-run terminal_status to be empty, got %q", got)
+	}
+}
+
 func TestRemoveOrphanedWorktree_PathValidation(t *testing.T) {
 	// Create a fake repo root structure: /tmp/xxx/repo/
 	parentDir := t.TempDir()

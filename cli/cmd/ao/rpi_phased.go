@@ -35,6 +35,8 @@ var (
 	phasedNoWorktree           bool
 	phasedLiveStatus           bool
 	phasedSwarmFirst           bool
+	phasedAutoCleanStale       bool
+	phasedAutoCleanStaleAfter  time.Duration
 )
 
 // phaseFailureReason classifies why a phase spawn failed.
@@ -62,6 +64,8 @@ type phasedEngineOptions struct {
 	NoWorktree           bool
 	LiveStatus           bool
 	SwarmFirst           bool
+	AutoCleanStale       bool
+	AutoCleanStaleAfter  time.Duration
 	NtmPollInterval      time.Duration
 	StallCheckInterval   time.Duration
 }
@@ -75,6 +79,7 @@ func defaultPhasedEngineOptions() phasedEngineOptions {
 		StallTimeout:         10 * time.Minute,
 		StreamStartupTimeout: 45 * time.Second,
 		SwarmFirst:           true,
+		AutoCleanStaleAfter:  24 * time.Hour,
 		NtmPollInterval:      5 * time.Second,
 		StallCheckInterval:   30 * time.Second,
 	}
@@ -146,6 +151,8 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedNoWorktree, "no-worktree", false, "Disable worktree isolation (run in current directory)")
 	phasedCmd.Flags().BoolVar(&phasedLiveStatus, "live-status", false, "Stream phase progress to a live-status.md file")
 	phasedCmd.Flags().BoolVar(&phasedSwarmFirst, "swarm-first", true, "Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable")
+	phasedCmd.Flags().BoolVar(&phasedAutoCleanStale, "auto-clean-stale", false, "Run stale-run cleanup before starting phased execution")
+	phasedCmd.Flags().DurationVar(&phasedAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only clean stale runs older than this age when auto-clean is enabled")
 
 	rpiCmd.AddCommand(phasedCmd)
 }
@@ -165,21 +172,21 @@ var phases = []phase{
 
 // phasedState persists orchestrator state between phase spawns.
 type phasedState struct {
-	SchemaVersion int                 `json:"schema_version"`
-	Goal          string              `json:"goal"`
-	EpicID        string              `json:"epic_id,omitempty"`
-	Phase         int                 `json:"phase"`
-	StartPhase    int                 `json:"start_phase"`
-	Cycle         int                 `json:"cycle"`
-	ParentEpic    string              `json:"parent_epic,omitempty"`
-	FastPath      bool                `json:"fast_path"`
-	TestFirst     bool                `json:"test_first"`
-	SwarmFirst    bool                `json:"swarm_first"`
-	Verdicts      map[string]string   `json:"verdicts"`
-	Attempts      map[string]int      `json:"attempts"`
-	StartedAt     string              `json:"started_at"`
-	WorktreePath  string              `json:"worktree_path,omitempty"`
-	RunID         string              `json:"run_id,omitempty"`
+	SchemaVersion  int                 `json:"schema_version"`
+	Goal           string              `json:"goal"`
+	EpicID         string              `json:"epic_id,omitempty"`
+	Phase          int                 `json:"phase"`
+	StartPhase     int                 `json:"start_phase"`
+	Cycle          int                 `json:"cycle"`
+	ParentEpic     string              `json:"parent_epic,omitempty"`
+	FastPath       bool                `json:"fast_path"`
+	TestFirst      bool                `json:"test_first"`
+	SwarmFirst     bool                `json:"swarm_first"`
+	Verdicts       map[string]string   `json:"verdicts"`
+	Attempts       map[string]int      `json:"attempts"`
+	StartedAt      string              `json:"started_at"`
+	WorktreePath   string              `json:"worktree_path,omitempty"`
+	RunID          string              `json:"run_id,omitempty"`
 	Backend        string              `json:"backend,omitempty"`
 	TerminalStatus string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
 	TerminalReason string              `json:"terminal_reason,omitempty"`
@@ -468,6 +475,8 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		NoWorktree:           phasedNoWorktree,
 		LiveStatus:           phasedLiveStatus,
 		SwarmFirst:           phasedSwarmFirst,
+		AutoCleanStale:       phasedAutoCleanStale,
+		AutoCleanStaleAfter:  phasedAutoCleanStaleAfter,
 		NtmPollInterval:      ntmPollInterval,
 		StallCheckInterval:   stallCheckInterval,
 	}
@@ -475,6 +484,9 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 	// Apply config-based worktree mode if the --no-worktree flag was not explicitly set.
 	if !cmd.Flags().Changed("no-worktree") {
 		opts.NoWorktree = resolveWorktreeModeFromConfig(opts.NoWorktree)
+	}
+	if cmd.Flags().Changed("auto-clean-stale-after") {
+		opts.AutoCleanStale = true
 	}
 
 	return runRPIPhasedWithOpts(opts, args)
@@ -507,6 +519,16 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	}
 	if err := preflightClaudeAvailability(); err != nil {
 		return err
+	}
+	if opts.AutoCleanStale {
+		minAge := opts.AutoCleanStaleAfter
+		if minAge <= 0 {
+			minAge = 24 * time.Hour
+		}
+		fmt.Printf("Auto-cleaning stale runs older than %s before starting\n", minAge)
+		if err := executeRPICleanup(cwd, "", true, false, GetDryRun(), minAge); err != nil {
+			VerbosePrintf("Warning: auto-clean stale runs failed: %v\n", err)
+		}
 	}
 
 	originalCwd := cwd
@@ -553,9 +575,20 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	// selectExecutorWithLog records the selection and reason to the orchestration log.
 	executor := selectExecutorWithLog(statusPath, allPhases, logPath, state.RunID, opts.LiveStatus, opts)
 	state.Backend = executor.Name()
+	if err := savePhasedState(spawnCwd, state); err != nil {
+		VerbosePrintf("Warning: could not persist startup state: %v\n", err)
+	}
+	updateRunHeartbeat(spawnCwd, state.RunID)
 
 	if err := runPhaseLoop(cwd, spawnCwd, state, startPhase, opts, statusPath, allPhases, logPath, executor); err != nil {
 		return err
+	}
+
+	state.TerminalStatus = "completed"
+	state.TerminalReason = "all phases completed"
+	state.TerminatedAt = time.Now().Format(time.RFC3339)
+	if err := savePhasedState(spawnCwd, state); err != nil {
+		VerbosePrintf("Warning: could not persist completion state: %v\n", err)
 	}
 
 	// All phases completed — mark worktree for merge+cleanup.

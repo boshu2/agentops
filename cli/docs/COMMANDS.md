@@ -1225,11 +1225,12 @@ ao rpi cleanup [flags]
 **Flags:**
 
 ```
-      --all               Clean up all stale runs
-      --dry-run           Show what would be done without making changes
-  -h, --help              help for cleanup
-      --prune-worktrees   Run 'git worktree prune' after cleanup
-      --run-id string     Clean up a specific run by ID
+      --all                    Clean up all stale runs
+      --dry-run                Show what would be done without making changes
+  -h, --help                   help for cleanup
+      --prune-worktrees        Run 'git worktree prune' after cleanup
+      --run-id string          Clean up a specific run by ID
+      --stale-after duration   Only clean runs older than this age (0 disables age filtering)
 ```
 
 #### `ao rpi loop`
@@ -1259,6 +1260,8 @@ ao rpi phased <goal> [flags]
 **Flags:**
 
 ```
+      --auto-clean-stale                  Run stale-run cleanup before starting phased execution
+      --auto-clean-stale-after duration   Only clean stale runs older than this age when auto-clean is enabled (default 24h0m0s)
       --fast-path                         Force fast path (--quick for gates)
       --from string                       Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
   -h, --help                              help for phased

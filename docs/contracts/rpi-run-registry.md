@@ -123,6 +123,7 @@ Use manual cleanup commands:
 ```bash
 ao rpi cleanup --all --dry-run
 ao rpi cleanup --all
+ao rpi cleanup --all --stale-after 24h
 ao rpi cleanup --all --prune-worktrees
 ao rpi cleanup --run-id <id>
 ```
@@ -132,11 +133,26 @@ Behavior:
 - Marks stale runs with terminal metadata (`terminal_status: stale`, reason, timestamp)
 - Removes orphaned worktree directories when safe
 - Optionally runs `git worktree prune`
+- Supports age-gated cleanup via `--stale-after` to avoid touching recently interrupted runs
 
 Safety guards:
 
 - Refuses to remove non-sibling paths
 - Refuses to remove repo root as a worktree target
+
+## Optional Pre-Run Auto-Cleanup
+
+`ao rpi phased` supports optional stale-run cleanup before orchestration:
+
+```bash
+ao rpi phased --auto-clean-stale --auto-clean-stale-after 24h "<goal>"
+```
+
+Behavior:
+
+- Runs stale cleanup at phased startup before phase execution
+- Uses dry-run cleanup semantics when `ao rpi phased --dry-run` is set
+- Persists startup state (including `run_id`, backend, and phase) to state files before entering the phase loop
 
 ## Current Limitation
 

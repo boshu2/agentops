@@ -16,6 +16,7 @@ var (
 	cleanupAll            bool
 	cleanupPruneWorktrees bool
 	cleanupDryRun         bool
+	cleanupStaleAfter     time.Duration
 )
 
 func init() {
@@ -39,32 +40,38 @@ Examples:
 	cleanupCmd.Flags().BoolVar(&cleanupAll, "all", false, "Clean up all stale runs")
 	cleanupCmd.Flags().BoolVar(&cleanupPruneWorktrees, "prune-worktrees", false, "Run 'git worktree prune' after cleanup")
 	cleanupCmd.Flags().BoolVar(&cleanupDryRun, "dry-run", false, "Show what would be done without making changes")
+	cleanupCmd.Flags().DurationVar(&cleanupStaleAfter, "stale-after", 0, "Only clean runs older than this age (0 disables age filtering)")
 	rpiCmd.AddCommand(cleanupCmd)
 }
 
 func runRPICleanup(cmd *cobra.Command, args []string) error {
-	if !cleanupAll && cleanupRunID == "" {
-		return fmt.Errorf("specify --all or --run-id <id>")
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
+	return executeRPICleanup(cwd, cleanupRunID, cleanupAll, cleanupPruneWorktrees, cleanupDryRun, cleanupStaleAfter)
+}
+
+func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter time.Duration) error {
+	if !all && runID == "" {
+		return fmt.Errorf("specify --all or --run-id <id>")
+	}
+
 	roots := collectSearchRoots(cwd)
 	var staleRuns []staleRunEntry
 	seen := make(map[string]struct{})
+	now := time.Now()
 
 	for _, root := range roots {
-		entries := findStaleRuns(root)
+		entries := findStaleRunsWithMinAge(root, staleAfter, now)
 		for _, e := range entries {
 			if _, ok := seen[e.runID]; ok {
 				continue
 			}
 			seen[e.runID] = struct{}{}
 
-			if cleanupRunID != "" && e.runID != cleanupRunID {
+			if runID != "" && e.runID != runID {
 				continue
 			}
 			staleRuns = append(staleRuns, e)
@@ -73,14 +80,14 @@ func runRPICleanup(cmd *cobra.Command, args []string) error {
 
 	if len(staleRuns) == 0 {
 		fmt.Println("No stale runs found.")
-		if cleanupPruneWorktrees && !cleanupDryRun {
+		if prune && !dryRun {
 			return pruneWorktrees(cwd)
 		}
 		return nil
 	}
 
 	for _, sr := range staleRuns {
-		if cleanupDryRun {
+		if dryRun {
 			fmt.Printf("[dry-run] Would mark run %s as stale (reason: %s)\n", sr.runID, sr.reason)
 			if sr.worktreePath != "" {
 				if _, err := os.Stat(sr.worktreePath); err == nil {
@@ -108,7 +115,7 @@ func runRPICleanup(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if cleanupPruneWorktrees && !cleanupDryRun {
+	if prune && !dryRun {
 		if err := pruneWorktrees(cwd); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: git worktree prune failed: %v\n", err)
 		}
@@ -127,6 +134,12 @@ type staleRunEntry struct {
 
 // findStaleRuns scans the registry for runs that are not active and not completed.
 func findStaleRuns(root string) []staleRunEntry {
+	return findStaleRunsWithMinAge(root, 0, time.Now())
+}
+
+// findStaleRunsWithMinAge scans the registry for runs that are not active and
+// not completed, optionally filtering to runs older than minAge.
+func findStaleRunsWithMinAge(root string, minAge time.Duration, now time.Time) []staleRunEntry {
 	runsDir := filepath.Join(root, ".agents", "rpi", "runs")
 	entries, err := os.ReadDir(runsDir)
 	if err != nil {
@@ -163,6 +176,18 @@ func findStaleRuns(root string) []staleRunEntry {
 		// Completed runs are not stale.
 		if state.Phase >= completedPhaseNumber(*state) {
 			continue
+		}
+
+		// Optional age filter to reduce risk of cleaning recently interrupted runs.
+		if minAge > 0 {
+			startedAt, parseErr := time.Parse(time.RFC3339, state.StartedAt)
+			if parseErr != nil {
+				// Skip runs with malformed or missing start timestamps when age filtering is enabled.
+				continue
+			}
+			if now.Sub(startedAt) < minAge {
+				continue
+			}
 		}
 
 		// Determine reason.

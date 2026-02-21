@@ -1121,6 +1121,73 @@ func TestNoWorktreeRunIDGeneration(t *testing.T) {
 	if !runIDPattern.MatchString(content) {
 		t.Fatalf("expected generated runID in start entry, got: %s", content)
 	}
+
+	statePath := filepath.Join(tmpDir, ".agents", "rpi", phasedStateFile)
+	stateData, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatalf("read phased state: %v", err)
+	}
+	var st phasedState
+	if err := json.Unmarshal(stateData, &st); err != nil {
+		t.Fatalf("unmarshal phased state: %v", err)
+	}
+	if st.RunID == "" {
+		t.Fatal("expected run_id to be persisted")
+	}
+	if st.Backend == "" {
+		t.Fatal("expected backend to be persisted")
+	}
+	registryStatePath := filepath.Join(tmpDir, ".agents", "rpi", "runs", st.RunID, phasedStateFile)
+	if _, err := os.Stat(registryStatePath); err != nil {
+		t.Fatalf("expected run registry state at %s: %v", registryStatePath, err)
+	}
+}
+
+func TestRunPhasedEngine_AutoCleanupStale_DryRunDoesNotMutate(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	runID := "stale-old-run"
+	runDir := filepath.Join(tmpDir, ".agents", "rpi", "runs", runID)
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := map[string]any{
+		"schema_version": 1,
+		"run_id":         runID,
+		"goal":           "stale",
+		"phase":          2,
+		"started_at":     time.Now().Add(-3 * time.Hour).UTC().Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	prevDryRun := dryRun
+	dryRun = true
+	defer func() { dryRun = prevDryRun }()
+
+	opts := defaultPhasedEngineOptions()
+	opts.NoWorktree = true
+	opts.SwarmFirst = false
+	opts.AutoCleanStale = true
+	opts.AutoCleanStaleAfter = 1 * time.Hour
+
+	if err := runPhasedEngine(tmpDir, "test auto cleanup", opts); err != nil {
+		t.Fatalf("runPhasedEngine auto-clean --dry-run: %v", err)
+	}
+
+	updatedData, err := os.ReadFile(filepath.Join(runDir, phasedStateFile))
+	if err != nil {
+		t.Fatalf("read updated state: %v", err)
+	}
+	var updated map[string]any
+	if err := json.Unmarshal(updatedData, &updated); err != nil {
+		t.Fatalf("unmarshal updated state: %v", err)
+	}
+	if _, ok := updated["terminal_status"]; ok {
+		t.Fatalf("expected no terminal_status mutation in dry-run, got %v", updated["terminal_status"])
+	}
 }
 
 func writeFakeBDScript(t *testing.T, dir string) {
