@@ -5,7 +5,7 @@ The ao CLI integrates with Claude Code's hooks system to automate the CASS (Cont
 ## Quick Start
 
 ```bash
-# Install ao hooks to Claude Code (full 8-event coverage by default)
+# Install ao hooks to Claude Code (full 12-event coverage by default)
 ao hooks install
 
 # Verify installation
@@ -46,6 +46,7 @@ When your session ends:
 
 - Inline `ao` hook commands include `AGENTOPS_HOOKS_DISABLED` guard checks.
 - All inline `ao` hook commands have explicit per-hook `timeout` values.
+- SessionEnd heavy maintenance is serialized with a cross-process lock (`session-end-heavy.lock`).
 - Session-end `ao batch-feedback` runs with bounded defaults:
   - `--days ${AGENTOPS_BATCH_FEEDBACK_DAYS:-2}`
   - `--max-sessions ${AGENTOPS_BATCH_FEEDBACK_MAX_SESSIONS:-3}`
@@ -124,7 +125,7 @@ ao hooks test --dry-run
 ## Manual Configuration
 
 If you prefer manual setup, add this to `~/.claude/settings.json`.
-Note: this is a minimal example. `ao hooks install` is recommended for full 8-event coverage.
+Note: this is a minimal example. `ao hooks install --full` is recommended for full 12-event coverage.
 
 ```json
 {

@@ -645,7 +645,7 @@ ao init [flags]
 ```
       --full            With --hooks, explicitly request full coverage (legacy explicit flag)
   -h, --help            help for init
-      --hooks           Also register hooks (full 8-event coverage by default; equivalent to ao hooks install)
+      --hooks           Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)
       --minimal-hooks   With --hooks, install only SessionStart + Stop hooks
       --stealth         Use .git/info/exclude instead of .gitignore
 ```
@@ -1594,6 +1594,36 @@ ao vibe-check [flags]
       --markdown       Output as markdown report
       --repo string    Path to git repository (default ".")
       --since string   Time window for analysis (e.g., 7d, 30d, 90d) (default "7d")
+```
+
+---
+
+### `ao worktree`
+
+Worktree maintenance utilities
+
+```
+ao worktree [command]
+```
+
+**Subcommands:**
+
+#### `ao worktree gc`
+
+Safely remove stale AgentOps RPI worktrees and orphaned tmux sessions.
+
+```
+ao worktree gc [flags]
+```
+
+**Flags:**
+
+```
+      --clean-tmux             Clean stale ao-rpi tmux sessions without active run/worktree (default true)
+  -h, --help                   help for gc
+      --include-dirty          Also clean worktrees with uncommitted changes (unsafe)
+      --prune                  Run 'git worktree prune' after cleanup (default true)
+      --stale-after duration   Only clean worktrees/sessions older than this age (default 24h0m0s)
 ```
 
 ---

@@ -70,23 +70,8 @@
           },
           {
             "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { ao batch-feedback --days \"${AGENTOPS_BATCH_FEEDBACK_DAYS:-2}\" --max-sessions \"${AGENTOPS_BATCH_FEEDBACK_MAX_SESSIONS:-3}\" --max-runtime \"${AGENTOPS_BATCH_FEEDBACK_MAX_RUNTIME:-8s}\" --reward \"${AGENTOPS_BATCH_FEEDBACK_REWARD:-0.70}\" 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao batch-feedback\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo .); mkdir -p \"$REPO_ROOT/.agents/vibecheck\"; ao vibe-check --json --repo \"$REPO_ROOT\" > \"$REPO_ROOT/.agents/vibecheck/$(date -u +%Y-%m-%dT%H%M%SZ).json\" 2>/dev/null || { mkdir -p \"$REPO_ROOT/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao vibe-check\" >> \"$REPO_ROOT/.agents/ao/hook-errors.log\"; }; } || true",
-            "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { [ \"${AGENTOPS_EVICTION_DISABLED:-0}\" = \"1\" ] && exit 0; ao maturity --expire --archive 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao maturity --expire\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "[ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ] && exit 0; command -v ao >/dev/null 2>&1 && { [ \"${AGENTOPS_EVICTION_DISABLED:-0}\" = \"1\" ] && exit 0; ao maturity --evict --archive 2>/dev/null || { mkdir -p \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao\" && echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: ao maturity --evict\" >> \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents/ao/hook-errors.log\"; }; } || true",
-            "timeout": 5
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-end-maintenance.sh",
+            "timeout": 35
           }
         ]
       }

@@ -32,6 +32,7 @@ cd "$REPO_ROOT"
 
 HOOK_FILES=(
   "hooks/session-start.sh"
+  "hooks/session-end-maintenance.sh"
   "hooks/precompact-snapshot.sh"
   "hooks/pending-cleaner.sh"
   "hooks/task-validation-gate.sh"
@@ -235,12 +236,27 @@ if command -v jq >/dev/null 2>&1; then
       | select(.command | contains("--max-runtime"))
       | select((.timeout // 0) > 0)
     ' hooks/hooks.json >/dev/null 2>&1; then
-        pass "batch-feedback hook is bounded (timeout + runtime/session caps)"
+        pass "batch-feedback hook is bounded (inline)"
+    elif jq -e '
+      .hooks.SessionEnd[]?.hooks[]?
+      | select(.command | contains("session-end-maintenance.sh"))
+      | select((.timeout // 0) > 0)
+    ' hooks/hooks.json >/dev/null 2>&1; then
+        pass "session-end-maintenance hook is installed with timeout"
     else
-        fail "batch-feedback hook missing bounded runtime guardrails"
+        fail "session-end heavy maintenance guardrails missing"
     fi
 else
     fail "jq is required for hooks/hooks.json guardrail checks"
+fi
+
+if [[ -f "hooks/session-end-maintenance.sh" ]]; then
+    if search_q "session-end-heavy\\.lock" hooks/session-end-maintenance.sh \
+        && search_q "flock" hooks/session-end-maintenance.sh; then
+        pass "session-end-maintenance uses cross-process lock"
+    else
+        fail "session-end-maintenance missing cross-process lock guardrail"
+    fi
 fi
 
 echo ""

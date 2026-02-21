@@ -383,6 +383,7 @@ func TestEmbeddedAoCommandsHaveGuardrails(t *testing.T) {
 	}
 
 	foundBatchFeedback := false
+	foundSessionEndMaintenance := false
 	for _, event := range AllEventNames() {
 		for _, group := range config.GetEventGroups(event) {
 			for _, hook := range group.Hooks {
@@ -391,6 +392,12 @@ func TestEmbeddedAoCommandsHaveGuardrails(t *testing.T) {
 				}
 
 				cmd := strings.TrimSpace(hook.Command)
+				if strings.Contains(cmd, "session-end-maintenance.sh") {
+					foundSessionEndMaintenance = true
+					if hook.Timeout <= 0 {
+						t.Errorf("%s session-end-maintenance hook missing timeout: %q", event, hook.Command)
+					}
+				}
 				isAOCommand := strings.HasPrefix(cmd, "ao ") || strings.Contains(cmd, "command -v ao") || strings.Contains(cmd, "; ao ")
 				if !isAOCommand {
 					continue
@@ -412,8 +419,8 @@ func TestEmbeddedAoCommandsHaveGuardrails(t *testing.T) {
 		}
 	}
 
-	if !foundBatchFeedback {
-		t.Error("expected embedded hooks to include ao batch-feedback command")
+	if !foundBatchFeedback && !foundSessionEndMaintenance {
+		t.Error("expected embedded hooks to include bounded session-end heavy maintenance")
 	}
 }
 
@@ -457,8 +464,8 @@ func TestInstallFromEmbedded(t *testing.T) {
 		}
 	}
 
-	if shCount != 20 {
-		t.Errorf("expected 20 shell scripts, got %d", shCount)
+	if shCount != 21 {
+		t.Errorf("expected 21 shell scripts, got %d", shCount)
 	}
 
 	// Verify hook-helpers.sh was extracted
