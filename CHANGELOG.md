@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.13.1] - 2026-02-21
+
+### Fixed
+
+- **Hotfix release** — Bump plugin manifest and marketplace versions to trigger binary rebuild and marketplace update.
+
 ## [2.13.0] - 2026-02-20
 
 ### Added
