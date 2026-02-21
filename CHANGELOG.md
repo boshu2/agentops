@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.13.2] - 2026-02-21
+
+### Added
+
+- **Claude Code best-practices alignment** — All 53 skills now use appropriate frontmatter: `disable-model-invocation` on dangerous skills, `user-invocable: false` on background skills, `allowed-tools` on read-only skills, `model: haiku` on lightweight skills, `context: fork` on heavy skills.
+- **Plugin agents directory** — New `agents/code-reviewer.md` and `agents/researcher.md` distributed via the plugin for use as Claude Code subagents.
+- **Hook event coverage** — Adopted Claude Code v2.1.47–v2.1.50 hook events; extracted 10 inline hook commands into named scripts under `hooks/`.
+- **MemRL packet v1 lifecycle** — Added packet lifecycle contract with canonical identity joins for the memory reinforcement learning subsystem.
+- **Safe worktree GC** — Added worktree garbage collection with serialized session-end maintenance to prevent concurrent cleanup races.
+- **Proactive improvement agenda** — `/retro` and `/post-mortem` now require a structured improvement proposal with every retrospective.
+
+### Changed
+
+- **Local CI release gate parallelized** — Restructured `ci-local-release.sh` into phased parallel execution with new `--fast` flag (~30s vs ~100s+).
+- **Skill structure reference v2.0.0** — Updated `skill-structure.md` to document all 10 Claude Code frontmatter fields with upstream source attribution.
+- **Evolve skill split** — Reduced `skills/evolve/SKILL.md` from 778 to 493 lines by extracting cycle-history reference.
+- **Hook CPU guardrails** — Bounded batch feedback loops and hardened hook robustness for faster local CI.
+- **Auto-promotion hardening** — Hardened promotion pipeline with legacy capture migration support.
+- **Cached-memory flow** — Aligned learn-ingest and staged promotion flows for knowledge flywheel consistency.
+
+### Fixed
+
+- **CI false positives** — Excluded `.tmp/` from secret and dangerous-pattern scans; fixed dangerous-pattern scan for CI test fixtures.
+- **CLI reference generation** — Made UTC-stable to prevent timezone-dependent diffs.
+- **Hook tech debt** — Addressed post-mortem findings on hook reliability and install paths.
+- **RPI stale cleanup** — Hardened stale-run detection and startup state persistence.
+- **Reverse-engineer docs** — Improved detection and validation for reverse-engineer-rpi workflows.
+
+### Removed
+
+- **Stale docs/anthropic-skills-guide.md** — Deleted local copy of upstream Claude Code docs that caused false pre-mortem failures. Replaced with link to `code.claude.com/docs/en/skills`.
+
 ## [2.13.1] - 2026-02-21
 
 ### Fixed
