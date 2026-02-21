@@ -249,7 +249,7 @@ ao flywheel close-loop [flags]
   -h, --help                 help for close-loop
       --pending-dir string   Pending directory to ingest from (default ".agents/knowledge/pending")
       --quiet                Suppress non-essential output (hook-friendly)
-      --threshold string     Minimum age for auto-promotion (e.g., 24h) (default "24h")
+      --threshold string     Minimum age for auto-promotion (default: 24h) (default "24h")
 ```
 
 #### `ao flywheel nudge`
@@ -561,7 +561,7 @@ ao hooks install [flags]
 ```
       --dry-run             Show what would be installed without making changes
       --force               Overwrite existing ao hooks
-      --full                Install all 8 events with hook scripts copied to ~/.agentops/
+      --full                Install all 12 events with hook scripts copied to ~/.agentops/
   -h, --help                help for install
       --source-dir string   Path to agentops repo checkout (for --full script installation)
 ```
@@ -943,7 +943,6 @@ ao pool batch-promote [flags]
 #### `ao pool ingest`
 
 Ingest pending learnings into the quality pool.
-Also scans legacy manual captures in `.agents/knowledge/*.md` when no explicit files are passed.
 
 ```
 ao pool ingest [<files-or-globs...>] [flags]
@@ -1598,3 +1597,4 @@ ao vibe-check [flags]
 ```
 
 ---
+
