@@ -65,6 +65,21 @@ json_escape_value() {
     printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/	/\\t/g' | tr '\n' ' ' | tr '\r' ' '
 }
 
+# timeout_run SECONDS COMMAND [ARGS...]
+# Uses GNU timeout if available, falls back to gtimeout (macOS coreutils),
+# and finally runs without timeout to preserve fail-open hook behavior.
+timeout_run() {
+    local seconds="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$seconds" "$@"
+    elif command -v gtimeout >/dev/null 2>&1; then
+        gtimeout "$seconds" "$@"
+    else
+        "$@"
+    fi
+}
+
 # read_hook_input — Read stdin and extract last_assistant_message.
 # Sets global variables: INPUT, LAST_ASSISTANT_MSG
 # Usage: call at top of hook script, then use $LAST_ASSISTANT_MSG

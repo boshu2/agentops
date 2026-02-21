@@ -14,8 +14,8 @@ read_hook_input
 [ -z "$LAST_ASSISTANT_MSG" ] && exit 0
 
 # Gather context
-RATCHET_STATE=$(timeout 1 ao ratchet status -o json 2>/dev/null || echo "")
-ACTIVE_BEAD=$(timeout 1 bd current 2>/dev/null || echo "")
+RATCHET_STATE=$(timeout_run 1 ao ratchet status -o json 2>/dev/null || echo "")
+ACTIVE_BEAD=$(timeout_run 1 bd current 2>/dev/null || echo "")
 TIMESTAMP=$(date -u +%Y-%m-%dT%H%M%SZ)
 
 # Write handoff

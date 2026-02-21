@@ -292,6 +292,13 @@ run_golangci() {
 run_gitleaks() {
     local output_file="$OUTPUT_DIR/gitleaks.txt"
 
+    if [[ "$QUICK" == "true" ]]; then
+        echo "SKIPPED_QUICK_MODE" > "$output_file"
+        TOOL_STATUS["gitleaks"]="skipped"
+        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
+        return 0
+    fi
+
     if ! run_tool "gitleaks" gitleaks; then return 0; fi
 
     # Use repo config if available, --no-color to avoid ANSI codes

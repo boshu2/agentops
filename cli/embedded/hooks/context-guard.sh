@@ -11,6 +11,25 @@
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_CONTEXT_GUARD_DISABLED:-}" = "1" ] && exit 0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELPERS_LIB="$SCRIPT_DIR/../lib/hook-helpers.sh"
+if [ -f "$HELPERS_LIB" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$HELPERS_LIB"
+else
+    timeout_run() {
+        local seconds="$1"
+        shift
+        if command -v timeout >/dev/null 2>&1; then
+            timeout "$seconds" "$@"
+        elif command -v gtimeout >/dev/null 2>&1; then
+            gtimeout "$seconds" "$@"
+        else
+            "$@"
+        fi
+    }
+fi
+
 INPUT=$(cat)
 SESSION_ID="${CLAUDE_SESSION_ID:-}"
 [ -z "$SESSION_ID" ] && exit 0
@@ -34,7 +53,7 @@ AO_ARGS=(context guard --session "$SESSION_ID" --max-tokens "$MAX_TOKENS" --watc
 [ "$WRITE_HANDOFF" = "1" ] && AO_ARGS+=(--write-handoff)
 [ "$AUTO_RESTART_STALE" = "1" ] && AO_ARGS+=(--auto-restart-stale)
 
-RESULT=$(timeout 3 ao "${AO_ARGS[@]}" 2>/dev/null) || exit 0
+RESULT=$(timeout_run 3 ao "${AO_ARGS[@]}" 2>/dev/null) || exit 0
 [ -z "$RESULT" ] && exit 0
 
 if command -v jq >/dev/null 2>&1; then

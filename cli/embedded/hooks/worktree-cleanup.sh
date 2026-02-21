@@ -28,7 +28,7 @@ fi
 
 # Sync beads state back to parent (per-command timeout)
 if command -v bd >/dev/null 2>&1; then
-    (cd "$WORKTREE_PATH" && timeout 5 bd sync 2>/dev/null) || true
+    (cd "$WORKTREE_PATH" && timeout_run 5 bd sync 2>/dev/null) || true
 fi
 
 # Archive .agents/ from worktree to parent repo

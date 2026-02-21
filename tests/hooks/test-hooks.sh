@@ -866,6 +866,122 @@ fi
 
 # ============================================================
 echo ""
+echo "=== config-change-monitor.sh ==="
+# ============================================================
+
+# Test: logs config changes to repo-scoped telemetry
+MOCK_CONFIG="$TMPDIR/mock-config-change"
+setup_mock_repo "$MOCK_CONFIG"
+(
+  cd "$MOCK_CONFIG" && \
+  echo '{"config_key":"approval_policy","old_value":"never","new_value":"on-request"}' | \
+  CLAUDE_SESSION_ID="sess-config-1" bash "$HOOKS_DIR/config-change-monitor.sh" >/dev/null 2>&1
+)
+if [ -f "$MOCK_CONFIG/.agents/ao/config-changes.jsonl" ] && grep -q '"config_key":"approval_policy"' "$MOCK_CONFIG/.agents/ao/config-changes.jsonl"; then
+    pass "config-change-monitor logs config changes"
+else
+    fail "config-change-monitor logs config changes"
+fi
+
+# Test: strict mode blocks critical config changes
+EC=0
+(
+  cd "$MOCK_CONFIG" && \
+  echo '{"config_key":"approval_policy","old_value":"never","new_value":"on-request"}' | \
+  AGENTOPS_CONFIG_GUARD_STRICT=1 bash "$HOOKS_DIR/config-change-monitor.sh" >/dev/null 2>&1
+) || EC=$?
+if [ "$EC" -eq 2 ]; then
+    pass "config-change-monitor strict mode blocks critical changes"
+else
+    fail "config-change-monitor strict mode blocks critical changes (exit=$EC, expected 2)"
+fi
+
+# ============================================================
+echo ""
+echo "=== session-end-maintenance.sh ==="
+# ============================================================
+
+# Test: kill switch short-circuits session-end-maintenance
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/session-end-maintenance.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then
+    pass "session-end-maintenance kill switch"
+else
+    fail "session-end-maintenance kill switch"
+fi
+
+# Test: fail-open when ao is unavailable
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/session-end-maintenance.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then
+    pass "session-end-maintenance fail-open without ao"
+else
+    fail "session-end-maintenance fail-open without ao"
+fi
+
+# ============================================================
+echo ""
+echo "=== stop-auto-handoff.sh ==="
+# ============================================================
+
+# Test: writes stop handoff when last assistant message exists
+MOCK_STOP="$TMPDIR/mock-stop-handoff"
+setup_mock_repo "$MOCK_STOP"
+(
+  cd "$MOCK_STOP" && \
+  echo '{"last_assistant_message":"worker summary"}' | \
+  CLAUDE_SESSION_ID="sess-stop-1" bash "$HOOKS_DIR/stop-auto-handoff.sh" >/dev/null 2>&1
+)
+if ls "$MOCK_STOP/.agents/handoff/pending"/*.json >/dev/null 2>&1; then
+    pass "stop-auto-handoff writes pending handoff"
+else
+    fail "stop-auto-handoff writes pending handoff"
+fi
+
+# ============================================================
+echo ""
+echo "=== subagent-stop.sh ==="
+# ============================================================
+
+# Test: writes subagent output when message exists
+MOCK_SUBAGENT="$TMPDIR/mock-subagent-stop"
+setup_mock_repo "$MOCK_SUBAGENT"
+(
+  cd "$MOCK_SUBAGENT" && \
+  echo '{"agent_name":"worker-alpha","last_assistant_message":"final worker output"}' | \
+  CLAUDE_SESSION_ID="sess-subagent-1" bash "$HOOKS_DIR/subagent-stop.sh" >/dev/null 2>&1
+)
+if ls "$MOCK_SUBAGENT/.agents/ao/subagent-outputs"/*.md >/dev/null 2>&1; then
+    pass "subagent-stop writes output artifact"
+else
+    fail "subagent-stop writes output artifact"
+fi
+
+# ============================================================
+echo ""
+echo "=== worktree-setup.sh / worktree-cleanup.sh ==="
+# ============================================================
+
+# Test: worktree-setup exits cleanly when no worktree path is provided
+EC=0
+echo '{"event":"WorktreeCreate"}' | bash "$HOOKS_DIR/worktree-setup.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then
+    pass "worktree-setup no-path fail-open"
+else
+    fail "worktree-setup no-path fail-open"
+fi
+
+# Test: worktree-cleanup exits cleanly when no worktree path is provided
+EC=0
+echo '{"event":"WorktreeRemove"}' | bash "$HOOKS_DIR/worktree-cleanup.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then
+    pass "worktree-cleanup no-path fail-open"
+else
+    fail "worktree-cleanup no-path fail-open"
+fi
+
+# ============================================================
+echo ""
 echo "=== Coverage check ==="
 # ============================================================
 

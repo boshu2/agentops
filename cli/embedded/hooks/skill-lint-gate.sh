@@ -4,8 +4,17 @@
 # the file being edited is not a SKILL.md.
 set -euo pipefail
 
+# Kill switch
+[ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
+
 # Fast path: only check SKILL.md files
-FILE_PATH=$(echo "${TOOL_INPUT:-}" | jq -r '.file_path // empty' 2>/dev/null)
+FILE_PATH=""
+if command -v jq >/dev/null 2>&1; then
+  FILE_PATH=$(echo "${TOOL_INPUT:-}" | jq -r '.file_path // empty' 2>/dev/null || true)
+fi
+if [ -z "$FILE_PATH" ]; then
+  FILE_PATH=$(echo "${TOOL_INPUT:-}" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
+fi
 case "$FILE_PATH" in
   */skills/*/SKILL.md) ;;
   *) exit 0 ;;

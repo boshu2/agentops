@@ -8,6 +8,7 @@ set -euo pipefail
 # Usage:
 #   ./scripts/ci-local-release.sh
 #   ./scripts/ci-local-release.sh --skip-e2e-install
+#   ./scripts/ci-local-release.sh --security-mode quick
 #
 # Exit codes:
 #   0 = all checks passed
@@ -21,6 +22,7 @@ ARTIFACT_DIR="$REPO_ROOT/.agents/releases/local-ci/$RUN_ID"
 mkdir -p "$ARTIFACT_DIR"
 
 SKIP_E2E_INSTALL=false
+SECURITY_MODE="full"
 
 usage() {
     cat <<'USAGE'
@@ -28,6 +30,7 @@ Usage: scripts/ci-local-release.sh [options]
 
 Options:
   --skip-e2e-install   Skip tests/e2e-install-test.sh
+  --security-mode      quick|full (default: full)
   -h, --help           Show this help
 USAGE
 }
@@ -37,6 +40,10 @@ while [[ $# -gt 0 ]]; do
         --skip-e2e-install)
             SKIP_E2E_INSTALL=true
             shift
+            ;;
+        --security-mode)
+            SECURITY_MODE="${2:-}"
+            shift 2
             ;;
         -h|--help)
             usage
@@ -49,6 +56,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ "$SECURITY_MODE" != "quick" && "$SECURITY_MODE" != "full" ]]; then
+    echo "Invalid --security-mode: $SECURITY_MODE (expected quick or full)" >&2
+    exit 1
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -248,9 +260,9 @@ generate_sbom_artifacts() {
     echo "SBOM (SPDX):      $spdx_file"
 }
 
-run_security_gate_full() {
-    local output_file="$ARTIFACT_DIR/security-gate-full.json"
-    ./scripts/security-gate.sh --mode full --require-tools --json > "$output_file"
+run_security_gate() {
+    local output_file="$ARTIFACT_DIR/security-gate-${SECURITY_MODE}.json"
+    ./scripts/security-gate.sh --mode "$SECURITY_MODE" --require-tools --json > "$output_file"
     jq -e '.gate_status' "$output_file" >/dev/null
     echo "Security report:  $output_file"
 }
@@ -319,7 +331,7 @@ run_step "Markdownlint" run_markdownlint
 run_step "Secret pattern scan" run_security_scan_patterns
 run_step "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
-run_step "Security toolchain gate (full, require tools)" run_security_gate_full
+run_step "Security toolchain gate (${SECURITY_MODE}, require tools)" run_security_gate
 run_step "Go build + race tests" run_go_build_and_tests
 run_step "Release binary validation" run_release_binary_validation
 run_step "Hook install smoke (minimal + full)" run_hooks_install_smoke

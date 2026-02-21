@@ -9,8 +9,8 @@ SHELL := /usr/bin/env bash
 local-ci: ## Run full local CI release gate (includes build and release binary validation)
 	./scripts/ci-local-release.sh
 
-local-ci-fast: ## Run local CI without e2e install test
-	./scripts/ci-local-release.sh --skip-e2e-install
+local-ci-fast: ## Run local CI without e2e install test, using quick security mode
+	./scripts/ci-local-release.sh --skip-e2e-install --security-mode quick
 
 ci: local-ci ## Alias for local-ci
 

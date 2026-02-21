@@ -84,12 +84,10 @@ if [ -f "$PHASED_STATE" ]; then
     if command -v jq >/dev/null 2>&1; then
         PHASE_NUM=$(jq -r '.phase // 0' "$PHASED_STATE" 2>/dev/null)
         VIBE_VERDICT=$(jq -r '.verdicts.vibe // ""' "$PHASED_STATE" 2>/dev/null)
-        PM_VERDICT=$(jq -r '.verdicts.post_mortem // (.verdicts["post-mortem"] // "")' "$PHASED_STATE" 2>/dev/null)
         SCHEMA=$(jq -r '.schema_version // 0' "$PHASED_STATE" 2>/dev/null)
     else
         PHASE_NUM=$(grep -o '"phase"[[:space:]]*:[[:space:]]*[0-9]*' "$PHASED_STATE" 2>/dev/null | head -1 | grep -o '[0-9]*$')
         VIBE_VERDICT=$(grep -o '"vibe"[[:space:]]*:[[:space:]]*"[^"]*"' "$PHASED_STATE" 2>/dev/null | sed 's/.*"vibe"[[:space:]]*:[[:space:]]*"//;s/"$//')
-        PM_VERDICT=$(grep -o '"post.mortem"[[:space:]]*:[[:space:]]*"[^"]*"' "$PHASED_STATE" 2>/dev/null | sed 's/.*"post.mortem"[[:space:]]*:[[:space:]]*"//;s/"$//')
         SCHEMA=$(grep -o '"schema_version"[[:space:]]*:[[:space:]]*[0-9]*' "$PHASED_STATE" 2>/dev/null | head -1 | grep -o '[0-9]*$')
     fi
 

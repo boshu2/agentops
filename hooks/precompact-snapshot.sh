@@ -7,10 +7,29 @@ ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 AO_DIR="$ROOT/.agents/ao"
 LOG_FILE="$AO_DIR/hook-errors.log"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELPERS_LIB="$SCRIPT_DIR/../lib/hook-helpers.sh"
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_PRECOMPACT_DISABLED:-}" = "1" ] && exit 0
+
+if [ -f "$HELPERS_LIB" ]; then
+  # shellcheck source=../lib/hook-helpers.sh
+  . "$HELPERS_LIB"
+else
+  timeout_run() {
+    local seconds="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+      timeout "$seconds" "$@"
+    elif command -v gtimeout >/dev/null 2>&1; then
+      gtimeout "$seconds" "$@"
+    else
+      "$@"
+    fi
+  }
+fi
 
 log_error() {
   mkdir -p "$AO_DIR" 2>/dev/null || return 0
@@ -97,8 +116,8 @@ HANDOFF_TS_SAFE=$(date -u +%Y%m%dT%H%M%SZ)
 HANDOFF_FILE="$HANDOFF_DIR/auto-${HANDOFF_TS_SAFE}.md"
 
 # Gather handoff data (all with 1s timeout to stay under 2s budget)
-RATCHET_STATE=$(timeout 1 ao ratchet status -o json 2>/dev/null || echo "")
-ACTIVE_BEAD=$(timeout 1 bd current 2>/dev/null || echo "")
+RATCHET_STATE=$(timeout_run 1 ao ratchet status -o json 2>/dev/null || echo "")
+ACTIVE_BEAD=$(timeout_run 1 bd current 2>/dev/null || echo "")
 MODIFIED_FILES=$(git diff --name-only HEAD 2>/dev/null | head -20)
 
 # Write auto-handoff document
