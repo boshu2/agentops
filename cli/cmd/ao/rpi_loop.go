@@ -37,6 +37,7 @@ var (
 	rpiLandingBranch         string
 	rpiLandingCommitMessage  string
 	rpiBDSyncPolicy          string
+	rpiCommandTimeout        time.Duration
 )
 
 func init() {
@@ -92,6 +93,7 @@ Examples:
 	loopCmd.Flags().StringVar(&rpiLandingBranch, "landing-branch", "", "Landing target branch (empty resolves origin/HEAD, then current branch, then main)")
 	loopCmd.Flags().StringVar(&rpiLandingCommitMessage, "landing-commit-message", "chore(rpi): autonomous cycle {{cycle}}", "Commit message template for landing policies that commit")
 	loopCmd.Flags().StringVar(&rpiBDSyncPolicy, "bd-sync-policy", "auto", "bd sync policy for landing: auto|always|never")
+	loopCmd.Flags().DurationVar(&rpiCommandTimeout, "command-timeout", 20*time.Minute, "Timeout for supervisor external commands (git/bd/gate scripts)")
 
 	rpiCmd.AddCommand(loopCmd)
 }
@@ -105,6 +107,7 @@ type nextWorkEntry struct {
 	ConsumedBy *string        `json:"consumed_by"`
 	ConsumedAt *string        `json:"consumed_at"`
 	FailedAt   *string        `json:"failed_at,omitempty"`
+	QueueIndex int            `json:"-"`
 }
 
 // nextWorkItem represents a single harvested work item.
@@ -122,8 +125,10 @@ type nextWorkItem struct {
 // so the caller can mark the correct entry consumed/failed.
 type queueSelection struct {
 	Item       nextWorkItem
-	EntryIndex int // 0-based index into the entries slice returned by readQueueEntries
+	EntryIndex int // 0-based index among parseable JSON entries in next-work.jsonl
 }
+
+var runRPISupervisedCycleFn = runRPISupervisedCycle
 
 func runRPILoop(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
@@ -215,7 +220,7 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		var cycleErr error
 		maxAttempts := cfg.MaxCycleAttempts()
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			cycleErr = runRPISupervisedCycle(cwd, goal, cycle, attempt, cfg)
+			cycleErr = runRPISupervisedCycleFn(cwd, goal, cycle, attempt, cfg)
 			if cycleErr == nil {
 				break
 			}
@@ -233,12 +238,17 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		if cycleErr != nil {
 			fmt.Printf("Cycle %d failed after %s: %v\n", cycle, elapsed, cycleErr)
 
-			// Mark the queue entry as failed so it is not retried blindly.
+			// Mark only task failures as failed. Transient infra failures remain
+			// retryable queue items for a future cycle.
 			if sel != nil {
-				if markErr := markEntryFailed(nextWorkPath, sel.EntryIndex); markErr != nil {
-					VerbosePrintf("Warning: could not mark queue entry as failed: %v\n", markErr)
+				if shouldMarkQueueEntryFailed(cycleErr) {
+					if markErr := markEntryFailed(nextWorkPath, sel.EntryIndex); markErr != nil {
+						VerbosePrintf("Warning: could not mark queue entry as failed: %v\n", markErr)
+					} else {
+						fmt.Printf("Queue entry marked failed (set consumed=false to retry): %q\n", sel.Item.Title)
+					}
 				} else {
-					fmt.Printf("Queue entry marked failed (set consumed=false to retry): %q\n", sel.Item.Title)
+					fmt.Printf("Queue entry left unmodified (transient infra failure): %q\n", sel.Item.Title)
 				}
 			}
 
@@ -312,6 +322,7 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
+	parseableIndex := -1
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -324,6 +335,8 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 			VerbosePrintf("Skipping malformed line: %v\n", err)
 			continue
 		}
+		parseableIndex++
+		entry.QueueIndex = parseableIndex
 
 		// Skip entries that are already consumed or previously failed.
 		if entry.Consumed || entry.FailedAt != nil {
@@ -341,7 +354,7 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 
 // selectHighestSeverityEntry picks the best item across all eligible entries.
 // It returns a queueSelection containing the winning item and its source entry
-// index within entries. Items filtered out by repoFilter are skipped.
+// parseable index in next-work.jsonl. Items filtered out by repoFilter are skipped.
 // Returns nil if no eligible items exist.
 func selectHighestSeverityEntry(entries []nextWorkEntry, repoFilter string) *queueSelection {
 	type candidate struct {
@@ -351,12 +364,12 @@ func selectHighestSeverityEntry(entries []nextWorkEntry, repoFilter string) *que
 	}
 
 	var candidates []candidate
-	for i, entry := range entries {
+	for _, entry := range entries {
 		for _, item := range entry.Items {
 			if repoFilter != "" && item.TargetRepo != "" && item.TargetRepo != "*" && item.TargetRepo != repoFilter {
 				continue
 			}
-			candidates = append(candidates, candidate{item: item, entryIndex: i, rank: severityRank(item.Severity)})
+			candidates = append(candidates, candidate{item: item, entryIndex: entry.QueueIndex, rank: severityRank(item.Severity)})
 		}
 	}
 
@@ -429,8 +442,8 @@ func rewriteNextWorkFile(path string, transform func(idx int, entry *nextWorkEnt
 }
 
 // markEntryConsumed sets Consumed=true and ConsumedAt on the entry at entryIndex.
-// entryIndex is the 0-based index of the entry among all parseable lines in the file
-// (blank lines and malformed lines count toward the index but are not modified).
+// entryIndex is the 0-based index of the entry among parseable JSON entries in
+// the file (blank/malformed lines do not receive an index).
 //
 // Returns an error when the file does not exist so callers can distinguish a
 // missing-queue situation from a successful no-op.

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -34,9 +36,14 @@ const (
 	loopBDSyncPolicyNever  = "never"
 )
 
+const defaultLoopCommandTimeout = 20 * time.Minute
+
 var (
-	loopExecCommand = exec.Command
-	loopLookPath    = exec.LookPath
+	loopExecCommand         = exec.Command
+	loopExecCommandContext  = exec.CommandContext
+	loopLookPath            = exec.LookPath
+	loopCommandRunner       = runLoopCommandWithTimeout
+	loopCommandOutputRunner = runLoopCommandOutputWithTimeout
 )
 
 type rpiLoopSupervisorConfig struct {
@@ -60,6 +67,7 @@ type rpiLoopSupervisorConfig struct {
 	LandingBranch         string
 	LandingCommitMessage  string
 	BDSyncPolicy          string
+	CommandTimeout        time.Duration
 }
 
 func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervisorConfig, error) {
@@ -84,6 +92,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		LandingBranch:         strings.TrimSpace(rpiLandingBranch),
 		LandingCommitMessage:  rpiLandingCommitMessage,
 		BDSyncPolicy:          strings.ToLower(strings.TrimSpace(rpiBDSyncPolicy)),
+		CommandTimeout:        rpiCommandTimeout,
 	}
 
 	if rpiSupervisor {
@@ -122,8 +131,14 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 	if cfg.CycleDelay < 0 {
 		return cfg, fmt.Errorf("cycle-delay must be >= 0")
 	}
+	if cfg.CommandTimeout < 0 {
+		return cfg, fmt.Errorf("command-timeout must be >= 0")
+	}
 	if cfg.LeaseTTL <= 0 {
 		cfg.LeaseTTL = 2 * time.Minute
+	}
+	if cfg.CommandTimeout == 0 {
+		cfg.CommandTimeout = defaultLoopCommandTimeout
 	}
 	if cfg.AutoCleanStaleAfter <= 0 {
 		cfg.AutoCleanStaleAfter = 24 * time.Hour
@@ -166,14 +181,71 @@ func (c rpiLoopSupervisorConfig) ShouldContinueAfterFailure() bool {
 	return c.FailurePolicy == loopFailurePolicyContinue
 }
 
+type cycleFailureKind string
+
+const (
+	cycleFailureTask           cycleFailureKind = "task"
+	cycleFailureInfrastructure cycleFailureKind = "infrastructure"
+)
+
+type cycleFailureError struct {
+	kind cycleFailureKind
+	err  error
+}
+
+func (e *cycleFailureError) Error() string {
+	return e.err.Error()
+}
+
+func (e *cycleFailureError) Unwrap() error {
+	return e.err
+}
+
+func wrapCycleFailure(kind cycleFailureKind, stage string, err error) error {
+	if err == nil {
+		return nil
+	}
+	var existing *cycleFailureError
+	if errors.As(err, &existing) {
+		return err
+	}
+	if stage != "" {
+		err = fmt.Errorf("%s: %w", stage, err)
+	}
+	return &cycleFailureError{kind: kind, err: err}
+}
+
+func shouldMarkQueueEntryFailed(err error) bool {
+	return !isInfrastructureCycleFailure(err)
+}
+
+func isInfrastructureCycleFailure(err error) bool {
+	var failure *cycleFailureError
+	if !errors.As(err, &failure) {
+		return false
+	}
+	return failure.kind == cycleFailureInfrastructure
+}
+
+type landingScope struct {
+	baselineDirtyPaths map[string]struct{}
+}
+
 func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupervisorConfig) (retErr error) {
 	if cfg.DetachedHeal {
 		branch, healed, err := ensureLoopAttachedBranch(cwd, cfg.DetachedBranchPrefix)
 		if err != nil {
-			return err
+			return wrapCycleFailure(cycleFailureInfrastructure, "detached-head self-heal", err)
 		}
 		if healed {
 			fmt.Printf("Detached HEAD detected. Switched to branch: %s\n", branch)
+		}
+	}
+	var scope *landingScope
+	if cfg.LandingPolicy != loopLandingPolicyOff {
+		scope, retErr = captureLandingScope(cwd, cfg.CommandTimeout)
+		if retErr != nil {
+			return wrapCycleFailure(cycleFailureInfrastructure, "capture landing scope", retErr)
 		}
 	}
 
@@ -184,7 +256,7 @@ func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupe
 				return
 			}
 			if retErr == nil {
-				retErr = fmt.Errorf("supervisor cleanup failed: %w", cleanupErr)
+				retErr = wrapCycleFailure(cycleFailureInfrastructure, "supervisor cleanup", cleanupErr)
 				return
 			}
 			VerbosePrintf("Warning: supervisor cleanup after failure: %v\n", cleanupErr)
@@ -196,13 +268,13 @@ func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupe
 	opts.AutoCleanStaleAfter = cfg.AutoCleanStaleAfter
 
 	if err := runPhasedEngine(cwd, goal, opts); err != nil {
-		return err
+		return wrapCycleFailure(cycleFailureTask, "phased engine", err)
 	}
 	if err := runSupervisorGates(cwd, cfg); err != nil {
-		return err
+		return wrapCycleFailure(cycleFailureTask, "quality gates", err)
 	}
-	if err := runSupervisorLanding(cwd, cfg, cycle, attempt, goal); err != nil {
-		return err
+	if err := runSupervisorLanding(cwd, cfg, cycle, attempt, goal, scope); err != nil {
+		return wrapCycleFailure(cycleFailureInfrastructure, "landing", err)
 	}
 	return nil
 }
@@ -230,7 +302,7 @@ func runSupervisorGates(cwd string, cfg rpiLoopSupervisorConfig) error {
 		if strings.TrimSpace(gatePath) == "" {
 			continue
 		}
-		if err := runGateScript(cwd, gatePath, runRequired); err != nil {
+		if err := runGateScript(cwd, gatePath, runRequired, cfg.CommandTimeout); err != nil {
 			if cfg.GatePolicy == loopGatePolicyBestEffort {
 				VerbosePrintf("Warning: gate %s failed: %v\n", gatePath, err)
 				continue
@@ -244,7 +316,7 @@ func runSupervisorGates(cwd string, cfg rpiLoopSupervisorConfig) error {
 	return nil
 }
 
-func runGateScript(cwd, scriptPath string, required bool) error {
+func runGateScript(cwd, scriptPath string, required bool, timeout time.Duration) error {
 	path := scriptPath
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(cwd, path)
@@ -267,36 +339,36 @@ func runGateScript(cwd, scriptPath string, required bool) error {
 	}
 
 	fmt.Printf("Running gate: %s\n", path)
-	cmd := loopExecCommand("bash", path)
-	cmd.Dir = cwd
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := loopCommandRunner(cwd, timeout, "bash", path); err != nil {
 		return fmt.Errorf("gate script %s failed: %w", path, err)
 	}
 	return nil
 }
 
-func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attempt int, goal string) error {
+func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attempt int, goal string, scope *landingScope) error {
 	switch cfg.LandingPolicy {
 	case loopLandingPolicyOff:
 		return nil
 	case loopLandingPolicyCommit:
-		_, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal))
+		_, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope)
 		return err
 	case loopLandingPolicySyncPush:
-		if _, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal)); err != nil {
+		if _, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope); err != nil {
 			return err
 		}
-		targetBranch, err := resolveLandingBranch(cwd, cfg.LandingBranch)
+		targetBranch, err := resolveLandingBranch(cwd, cfg.LandingBranch, cfg.CommandTimeout)
 		if err != nil {
 			return err
 		}
-		if err := runLoopCommand(cwd, "git", "fetch", "origin", targetBranch); err != nil {
+		if err := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "fetch", "origin", targetBranch); err != nil {
 			return fmt.Errorf("landing fetch failed: %w", err)
 		}
-		if err := runLoopCommand(cwd, "git", "rebase", "origin/"+targetBranch); err != nil {
-			return fmt.Errorf("landing rebase failed: %w", err)
+		if err := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "rebase", "origin/"+targetBranch); err != nil {
+			abortErr := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "rebase", "--abort")
+			if abortErr != nil {
+				return fmt.Errorf("landing rebase failed: %w (rebase abort failed: %v)", err, abortErr)
+			}
+			return fmt.Errorf("landing rebase failed: %w (rebase aborted)", err)
 		}
 
 		runSync, err := shouldRunBDSync(cwd, cfg.BDSyncPolicy)
@@ -304,15 +376,15 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 			return err
 		}
 		if runSync {
-			if err := runLoopCommand(cwd, "bd", "sync"); err != nil {
+			if err := loopCommandRunner(cwd, cfg.CommandTimeout, "bd", "sync"); err != nil {
 				return fmt.Errorf("bd sync failed: %w", err)
 			}
 		}
 
-		if err := runLoopCommand(cwd, "git", "push", "origin", "HEAD:"+targetBranch); err != nil {
+		if err := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "push", "origin", "HEAD:"+targetBranch); err != nil {
 			return fmt.Errorf("landing push failed: %w", err)
 		}
-		_ = runLoopCommand(cwd, "git", "status", "-sb")
+		_ = loopCommandRunner(cwd, cfg.CommandTimeout, "git", "status", "-sb")
 		return nil
 	default:
 		return fmt.Errorf("unsupported landing policy: %s", cfg.LandingPolicy)
@@ -330,8 +402,8 @@ func renderLandingCommitMessage(template string, cycle, attempt int, goal string
 	return msg
 }
 
-func commitIfDirty(cwd, message string) (bool, error) {
-	dirty, err := repoHasChanges(cwd)
+func commitIfDirty(cwd, message string, timeout time.Duration, scope *landingScope) (bool, error) {
+	dirty, err := repoHasChanges(cwd, timeout)
 	if err != nil {
 		return false, err
 	}
@@ -339,35 +411,47 @@ func commitIfDirty(cwd, message string) (bool, error) {
 		fmt.Println("Landing: no changes to commit.")
 		return false, nil
 	}
-	if err := runLoopCommand(cwd, "git", "add", "-A"); err != nil {
-		return false, fmt.Errorf("git add failed: %w", err)
+	if scope == nil {
+		return false, fmt.Errorf("landing scope missing for autonomous commit")
 	}
-	if err := runLoopCommand(cwd, "git", "commit", "-m", message); err != nil {
+	ownedPaths, err := computeOwnedDirtyPaths(cwd, timeout, scope)
+	if err != nil {
+		return false, err
+	}
+	if len(ownedPaths) == 0 {
+		fmt.Println("Landing: only pre-existing dirty paths detected; skipping autonomous commit.")
+		return false, nil
+	}
+	addArgs := append([]string{"add", "--"}, ownedPaths...)
+	if err := loopCommandRunner(cwd, timeout, "git", addArgs...); err != nil {
+		return false, fmt.Errorf("git add owned paths failed: %w", err)
+	}
+	if err := loopCommandRunner(cwd, timeout, "git", "commit", "-m", message); err != nil {
 		return false, fmt.Errorf("git commit failed: %w", err)
 	}
 	return true, nil
 }
 
-func repoHasChanges(cwd string) (bool, error) {
-	out, err := runLoopCommandOutput(cwd, "git", "status", "--porcelain")
+func repoHasChanges(cwd string, timeout time.Duration) (bool, error) {
+	out, err := loopCommandOutputRunner(cwd, timeout, "git", "status", "--porcelain")
 	if err != nil {
 		return false, fmt.Errorf("git status failed: %w", err)
 	}
 	return strings.TrimSpace(out) != "", nil
 }
 
-func resolveLandingBranch(cwd, explicit string) (string, error) {
+func resolveLandingBranch(cwd, explicit string, timeout time.Duration) (string, error) {
 	if strings.TrimSpace(explicit) != "" {
 		return strings.TrimSpace(explicit), nil
 	}
-	out, err := runLoopCommandOutput(cwd, "git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
+	out, err := loopCommandOutputRunner(cwd, timeout, "git", "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
 	if err == nil {
 		branch := strings.TrimSpace(strings.TrimPrefix(out, "origin/"))
 		if branch != "" {
 			return branch, nil
 		}
 	}
-	out, err = runLoopCommandOutput(cwd, "git", "rev-parse", "--abbrev-ref", "HEAD")
+	out, err = loopCommandOutputRunner(cwd, timeout, "git", "rev-parse", "--abbrev-ref", "HEAD")
 	if err == nil {
 		branch := strings.TrimSpace(out)
 		if branch != "" && branch != "HEAD" {
@@ -400,18 +484,100 @@ func shouldRunBDSync(cwd, policy string) (bool, error) {
 }
 
 func runLoopCommand(cwd string, name string, args ...string) error {
-	cmd := loopExecCommand(name, args...)
-	cmd.Dir = cwd
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return runLoopCommandWithTimeout(cwd, 0, name, args...)
 }
 
 func runLoopCommandOutput(cwd string, name string, args ...string) (string, error) {
-	cmd := loopExecCommand(name, args...)
+	return runLoopCommandOutputWithTimeout(cwd, 0, name, args...)
+}
+
+func runLoopCommandWithTimeout(cwd string, timeout time.Duration, name string, args ...string) error {
+	timeout = normalizeLoopCommandTimeout(timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := loopExecCommandContext(ctx, name, args...)
+	cmd.Dir = cwd
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil && ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("%s %s timed out after %s", name, strings.Join(args, " "), timeout)
+	}
+	return err
+}
+
+func runLoopCommandOutputWithTimeout(cwd string, timeout time.Duration, name string, args ...string) (string, error) {
+	timeout = normalizeLoopCommandTimeout(timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := loopExecCommandContext(ctx, name, args...)
 	cmd.Dir = cwd
 	out, err := cmd.CombinedOutput()
+	if err != nil && ctx.Err() == context.DeadlineExceeded {
+		return strings.TrimSpace(string(out)), fmt.Errorf("%s %s timed out after %s", name, strings.Join(args, " "), timeout)
+	}
 	return strings.TrimSpace(string(out)), err
+}
+
+func normalizeLoopCommandTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return defaultLoopCommandTimeout
+	}
+	return timeout
+}
+
+func captureLandingScope(cwd string, timeout time.Duration) (*landingScope, error) {
+	paths, err := collectDirtyPaths(cwd, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return &landingScope{baselineDirtyPaths: paths}, nil
+}
+
+func computeOwnedDirtyPaths(cwd string, timeout time.Duration, scope *landingScope) ([]string, error) {
+	current, err := collectDirtyPaths(cwd, timeout)
+	if err != nil {
+		return nil, err
+	}
+	var owned []string
+	for path := range current {
+		if _, existed := scope.baselineDirtyPaths[path]; existed {
+			continue
+		}
+		owned = append(owned, path)
+	}
+	sort.Strings(owned)
+	return owned, nil
+}
+
+func collectDirtyPaths(cwd string, timeout time.Duration) (map[string]struct{}, error) {
+	paths := make(map[string]struct{})
+
+	trackedOut, err := loopCommandOutputRunner(cwd, timeout, "git", "diff", "--name-only", "HEAD", "--")
+	if err != nil {
+		return nil, fmt.Errorf("git diff failed while collecting landing scope: %w", err)
+	}
+	appendDirtyPaths(paths, trackedOut)
+
+	untrackedOut, err := loopCommandOutputRunner(cwd, timeout, "git", "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, fmt.Errorf("git ls-files failed while collecting landing scope: %w", err)
+	}
+	appendDirtyPaths(paths, untrackedOut)
+
+	return paths, nil
+}
+
+func appendDirtyPaths(dest map[string]struct{}, output string) {
+	for _, line := range strings.Split(output, "\n") {
+		path := strings.TrimSpace(line)
+		if path == "" {
+			continue
+		}
+		dest[path] = struct{}{}
+	}
 }
 
 type supervisorLease struct {

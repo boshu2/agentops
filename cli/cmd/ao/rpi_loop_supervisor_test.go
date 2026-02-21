@@ -135,11 +135,77 @@ func TestRenderLandingCommitMessage(t *testing.T) {
 func TestRunGateScript(t *testing.T) {
 	tmpDir := t.TempDir()
 	missing := filepath.Join("scripts", "missing.sh")
-	if err := runGateScript(tmpDir, missing, false); err != nil {
+	if err := runGateScript(tmpDir, missing, false, time.Second); err != nil {
 		t.Fatalf("optional missing gate should not fail: %v", err)
 	}
-	if err := runGateScript(tmpDir, missing, true); err == nil {
+	if err := runGateScript(tmpDir, missing, true, time.Second); err == nil {
 		t.Fatal("required missing gate should fail")
+	}
+}
+
+func TestRunSupervisorLanding_SyncPush_RebaseFailureAborts(t *testing.T) {
+	prevRunner := loopCommandRunner
+	prevOutputRunner := loopCommandOutputRunner
+	defer func() {
+		loopCommandRunner = prevRunner
+		loopCommandOutputRunner = prevOutputRunner
+	}()
+
+	var calls []string
+	loopCommandRunner = func(_ string, _ time.Duration, name string, args ...string) error {
+		calls = append(calls, name+" "+strings.Join(args, " "))
+		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "origin/main" {
+			return fmt.Errorf("simulated rebase conflict")
+		}
+		return nil
+	}
+	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
+		if name == "git" && len(args) > 0 && args[0] == "status" {
+			return "", nil
+		}
+		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
+			return "origin/main", nil
+		}
+		return "", nil
+	}
+
+	cfg := rpiLoopSupervisorConfig{
+		LandingPolicy:  loopLandingPolicySyncPush,
+		BDSyncPolicy:   loopBDSyncPolicyNever,
+		CommandTimeout: time.Minute,
+	}
+	err := runSupervisorLanding(t.TempDir(), cfg, 1, 1, "ship", &landingScope{
+		baselineDirtyPaths: map[string]struct{}{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "landing rebase failed") {
+		t.Fatalf("expected rebase failure, got: %v", err)
+	}
+
+	foundAbort := false
+	for _, call := range calls {
+		if call == "git rebase --abort" {
+			foundAbort = true
+			break
+		}
+	}
+	if !foundAbort {
+		t.Fatalf("expected git rebase --abort call, got calls: %v", calls)
+	}
+}
+
+func TestShouldMarkQueueEntryFailed_InfraVsTask(t *testing.T) {
+	taskErr := wrapCycleFailure(cycleFailureTask, "task", fmt.Errorf("task failed"))
+	if !shouldMarkQueueEntryFailed(taskErr) {
+		t.Fatal("task failure should mark queue entry failed")
+	}
+
+	infraErr := wrapCycleFailure(cycleFailureInfrastructure, "infra", fmt.Errorf("net timeout"))
+	if shouldMarkQueueEntryFailed(infraErr) {
+		t.Fatal("infrastructure failure should not mark queue entry failed")
+	}
+
+	if !shouldMarkQueueEntryFailed(fmt.Errorf("plain error")) {
+		t.Fatal("uncategorized errors should remain fail-closed and mark queue entry failed")
 	}
 }
 
@@ -165,6 +231,7 @@ type loopSupervisorGlobals struct {
 	rpiLandingBranch         string
 	rpiLandingCommitMessage  string
 	rpiBDSyncPolicy          string
+	rpiCommandTimeout        time.Duration
 }
 
 func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
@@ -190,6 +257,7 @@ func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
 		rpiLandingBranch:         rpiLandingBranch,
 		rpiLandingCommitMessage:  rpiLandingCommitMessage,
 		rpiBDSyncPolicy:          rpiBDSyncPolicy,
+		rpiCommandTimeout:        rpiCommandTimeout,
 	}
 }
 
@@ -215,6 +283,7 @@ func restoreLoopSupervisorGlobals(prev loopSupervisorGlobals) {
 	rpiLandingBranch = prev.rpiLandingBranch
 	rpiLandingCommitMessage = prev.rpiLandingCommitMessage
 	rpiBDSyncPolicy = prev.rpiBDSyncPolicy
+	rpiCommandTimeout = prev.rpiCommandTimeout
 }
 
 func newLoopSupervisorTestCommand() *cobra.Command {
@@ -227,5 +296,6 @@ func newLoopSupervisorTestCommand() *cobra.Command {
 	cmd.Flags().Bool("auto-clean", false, "")
 	cmd.Flags().Bool("ensure-cleanup", false, "")
 	cmd.Flags().String("gate-policy", "off", "")
+	cmd.Flags().Duration("command-timeout", 20*time.Minute, "")
 	return cmd
 }
