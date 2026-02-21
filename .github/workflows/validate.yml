@@ -368,7 +368,7 @@ jobs:
           ./tests/e2e-install-test.sh
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, shellcheck, markdownlint, security-scan, security-toolchain-gate, plugin-load-test, go-build, e2e-install-test]
+    needs: [doc-release-gate, smoke-test, hook-preflight, embedded-sync, cli-docs-parity, shellcheck, markdownlint, security-scan, security-toolchain-gate, plugin-load-test, go-build, e2e-install-test]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -378,6 +378,8 @@ jobs:
           echo "doc-release-gate: ${{ needs.doc-release-gate.result }}"
           echo "smoke-test: ${{ needs.smoke-test.result }}"
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
+          echo "embedded-sync: ${{ needs.embedded-sync.result }}"
+          echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
           echo "security-scan: ${{ needs.security-scan.result }}"
@@ -389,6 +391,8 @@ jobs:
           if [[ "${{ needs.doc-release-gate.result }}" != "success" ]] || \
              [[ "${{ needs.smoke-test.result }}" != "success" ]] || \
              [[ "${{ needs.hook-preflight.result }}" != "success" ]] || \
+             [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
+             [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
              [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
              [[ "${{ needs.markdownlint.result }}" != "success" ]] || \
              [[ "${{ needs.security-scan.result }}" != "success" ]] || \

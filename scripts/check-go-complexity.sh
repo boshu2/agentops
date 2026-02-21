@@ -88,25 +88,131 @@ echo "Fail threshold: $FAIL_THRESHOLD"
 printf 'Changed files:\n'
 printf '  - %s\n' "${CHANGED_FILES[@]}"
 
-REPORT=$(gocyclo -over "$WARN_THRESHOLD" "${CHANGED_FILES[@]}" || true)
+CURRENT_REPORT=$(gocyclo -over "$WARN_THRESHOLD" "${CHANGED_FILES[@]}" || true)
 
-if [[ -z "$REPORT" ]]; then
+TMP_DIR="$(mktemp -d)"
+CURRENT_FILE="$(mktemp)"
+BASE_FILE="$(mktemp)"
+trap 'rm -rf "$TMP_DIR" "$CURRENT_FILE" "$BASE_FILE"' EXIT
+
+printf '%s\n' "$CURRENT_REPORT" | sed '/^[[:space:]]*$/d' > "$CURRENT_FILE"
+
+BASE_VERSION_FILES=()
+for file in "${CHANGED_FILES[@]}"; do
+  if git cat-file -e "$BASE_REF:$file" 2>/dev/null; then
+    mkdir -p "$TMP_DIR/$(dirname "$file")"
+    git show "$BASE_REF:$file" > "$TMP_DIR/$file"
+    BASE_VERSION_FILES+=("$TMP_DIR/$file")
+  fi
+done
+
+BASE_REPORT=""
+if [[ ${#BASE_VERSION_FILES[@]} -gt 0 ]]; then
+  BASE_REPORT=$(gocyclo -over "$WARN_THRESHOLD" "${BASE_VERSION_FILES[@]}" || true)
+  BASE_REPORT="${BASE_REPORT//"$TMP_DIR/"/}"
+fi
+printf '%s\n' "$BASE_REPORT" | sed '/^[[:space:]]*$/d' > "$BASE_FILE"
+
+if [[ ! -s "$CURRENT_FILE" ]]; then
   echo "No functions exceed warning threshold."
   exit 0
 fi
 
 echo
 echo "Functions over warning threshold ($WARN_THRESHOLD):"
-echo "$REPORT"
+cat "$CURRENT_FILE"
 
-FAIL_REPORT=$(echo "$REPORT" | awk -v t="$FAIL_THRESHOLD" '$1 >= t')
-if [[ -n "$FAIL_REPORT" ]]; then
+NEW_OR_WORSE_FAILS=$(
+  awk -v fail="$FAIL_THRESHOLD" '
+    FNR==NR {
+      if (NF >= 4) {
+        path=$4
+        sub(/:[0-9]+:[0-9]+$/, "", path)
+        key=$2 " " $3 " " path
+        prev[key]=$1+0
+      }
+      next
+    }
+    NF >= 4 {
+      path=$4
+      sub(/:[0-9]+:[0-9]+$/, "", path)
+      key=$2 " " $3 " " path
+      curr=$1+0
+      old=(key in prev) ? prev[key] : -1
+      if (curr >= fail && (old < 0 || curr > old)) {
+        print $0
+      }
+    }
+  ' "$BASE_FILE" "$CURRENT_FILE"
+)
+
+NEW_OR_WORSE_WARNINGS=$(
+  awk -v warn="$WARN_THRESHOLD" -v fail="$FAIL_THRESHOLD" '
+    FNR==NR {
+      if (NF >= 4) {
+        path=$4
+        sub(/:[0-9]+:[0-9]+$/, "", path)
+        key=$2 " " $3 " " path
+        prev[key]=$1+0
+      }
+      next
+    }
+    NF >= 4 {
+      path=$4
+      sub(/:[0-9]+:[0-9]+$/, "", path)
+      key=$2 " " $3 " " path
+      curr=$1+0
+      old=(key in prev) ? prev[key] : -1
+      if (curr >= warn && curr < fail && (old < 0 || curr > old)) {
+        print $0
+      }
+    }
+  ' "$BASE_FILE" "$CURRENT_FILE"
+)
+
+LEGACY_FAILS=$(
+  awk -v fail="$FAIL_THRESHOLD" '
+    FNR==NR {
+      if (NF >= 4) {
+        path=$4
+        sub(/:[0-9]+:[0-9]+$/, "", path)
+        key=$2 " " $3 " " path
+        prev[key]=$1+0
+      }
+      next
+    }
+    NF >= 4 {
+      path=$4
+      sub(/:[0-9]+:[0-9]+$/, "", path)
+      key=$2 " " $3 " " path
+      curr=$1+0
+      old=(key in prev) ? prev[key] : -1
+      if (curr >= fail && old >= 0 && curr <= old) {
+        print $0
+      }
+    }
+  ' "$BASE_FILE" "$CURRENT_FILE"
+)
+
+if [[ -n "$NEW_OR_WORSE_WARNINGS" ]]; then
   echo
-  echo "ERROR: functions over failure threshold ($FAIL_THRESHOLD):"
-  echo "$FAIL_REPORT"
+  echo "New/worsened complexity warnings:"
+  echo "$NEW_OR_WORSE_WARNINGS"
+fi
+
+if [[ -n "$LEGACY_FAILS" ]]; then
+  echo
+  echo "Legacy high-complexity functions touched but not worsened (non-blocking):"
+  echo "$LEGACY_FAILS"
+fi
+
+if [[ -n "$NEW_OR_WORSE_FAILS" ]]; then
+  echo
+  echo "ERROR: new/worsened functions over failure threshold ($FAIL_THRESHOLD):"
+  echo "$NEW_OR_WORSE_FAILS"
   exit 1
 fi
 
 echo
-echo "Complexity warnings present, but no failures."
+echo "Complexity budget respected for new/changed complexity."
 exit 0
