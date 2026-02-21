@@ -371,9 +371,9 @@ This is a bulk operation - use with caution. The threshold must be at least
   ao pool auto-promote --threshold=48h --dry-run
   ao pool auto-promote --threshold=24h --promote`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		threshold, err := time.ParseDuration(poolThreshold)
+		threshold, thresholdRaw, err := resolveAutoPromoteThreshold(cmd, "threshold", poolThreshold)
 		if err != nil {
-			return fmt.Errorf("invalid threshold: %w", err)
+			return err
 		}
 
 		cwd, err := os.Getwd()
@@ -386,7 +386,7 @@ This is a bulk operation - use with caution. The threshold must be at least
 
 		if !poolDoPromote {
 			if GetDryRun() {
-				fmt.Printf("[dry-run] Would auto-promote (approve) eligible candidates older than %s\n", threshold)
+				fmt.Printf("[dry-run] Would auto-promote (approve) eligible candidates older than %s\n", thresholdRaw)
 			}
 
 			approved, err := p.BulkApprove(threshold, reviewer, GetDryRun())
@@ -435,6 +435,7 @@ func runPoolAutoPromoteAndPromote(p *pool.Pool, threshold time.Duration, reviewe
 	result := poolAutoPromotePromoteResult{
 		Threshold: threshold.String(),
 	}
+	citationCounts, promotedContent := loadPromotionGateContext(p.BaseDir)
 
 	for _, e := range entries {
 		// Only auto-promote high-quality tiers.
@@ -448,6 +449,12 @@ func runPoolAutoPromoteAndPromote(p *pool.Pool, threshold time.Duration, reviewe
 			continue
 		}
 		if e.Age < threshold {
+			continue
+		}
+		if reason := checkPromotionCriteria(e, threshold, citationCounts, promotedContent); reason != "" {
+			result.Skipped++
+			result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
+			VerbosePrintf("Skipping %s: %s\n", e.Candidate.ID, reason)
 			continue
 		}
 
@@ -478,6 +485,7 @@ func runPoolAutoPromoteAndPromote(p *pool.Pool, threshold time.Duration, reviewe
 		_ = reviewer
 		result.Promoted++
 		result.Artifacts = append(result.Artifacts, artifactPath)
+		promotedContent[normalizeContent(e.Candidate.Content)] = true
 	}
 
 	switch GetOutput() {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/pool"
+	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -164,6 +165,17 @@ Session: ag-xyz
 	}
 	if len(entries) != 1 {
 		t.Fatalf("pool entries=%d, want 1", len(entries))
+	}
+
+	// Auto-promotion now requires citation evidence.
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath: entries[0].FilePath,
+		SessionID:    "session-ingest-test",
+		CitedAt:      time.Now(),
+		CitationType: "retrieved",
+		Query:        "session hygiene",
+	}); err != nil {
+		t.Fatalf("record citation: %v", err)
 	}
 
 	// With a 1h threshold, a 2026-01-01 AddedAt should be eligible.

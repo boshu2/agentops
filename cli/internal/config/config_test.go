@@ -24,6 +24,9 @@ func TestDefault(t *testing.T) {
 	if !cfg.Search.UseSmartConnections {
 		t.Error("Default Search.UseSmartConnections = false, want true")
 	}
+	if cfg.Flywheel.AutoPromoteThreshold != "24h" {
+		t.Errorf("Default Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "24h")
+	}
 }
 
 func TestMerge(t *testing.T) {
@@ -97,7 +100,7 @@ func TestApplyEnv(t *testing.T) {
 		_ = os.Setenv("AGENTOPS_NO_SC", origNoSC)      //nolint:errcheck // test env restore
 	}()
 
-	_ = os.Setenv("AGENTOPS_OUTPUT", "yaml")   //nolint:errcheck // test env setup
+	_ = os.Setenv("AGENTOPS_OUTPUT", "yaml")  //nolint:errcheck // test env setup
 	_ = os.Setenv("AGENTOPS_VERBOSE", "true") //nolint:errcheck // test env setup
 	_ = os.Setenv("AGENTOPS_NO_SC", "1")      //nolint:errcheck // test env setup
 
@@ -684,6 +687,20 @@ func TestMerge_RPI(t *testing.T) {
 	}
 }
 
+func TestMerge_Flywheel(t *testing.T) {
+	dst := Default()
+	src := &Config{
+		Flywheel: FlywheelConfig{
+			AutoPromoteThreshold: "36h",
+		},
+	}
+
+	result := merge(dst, src)
+	if result.Flywheel.AutoPromoteThreshold != "36h" {
+		t.Errorf("merge Flywheel.AutoPromoteThreshold = %q, want %q", result.Flywheel.AutoPromoteThreshold, "36h")
+	}
+}
+
 func TestMerge_RPIPreservedWhenEmpty(t *testing.T) {
 	dst := Default()
 	src := &Config{
@@ -709,6 +726,22 @@ func TestApplyEnv_RPIWorktreeMode(t *testing.T) {
 
 	if cfg.RPI.WorktreeMode != "never" {
 		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "never")
+	}
+}
+
+func TestApplyEnv_FlywheelAutoPromoteThreshold(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "48h")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.Flywheel.AutoPromoteThreshold != "48h" {
+		t.Errorf("applyEnv Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "48h")
 	}
 }
 
@@ -745,6 +778,27 @@ rpi:
 	}
 	if cfg.RPI.WorktreeMode != "always" {
 		t.Errorf("loadFromPath RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "always")
+	}
+}
+
+func TestLoadFromPath_WithFlywheel(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	content := `
+flywheel:
+  auto_promote_threshold: 72h
+`
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("loadFromPath() error = %v", err)
+	}
+	if cfg.Flywheel.AutoPromoteThreshold != "72h" {
+		t.Errorf("loadFromPath Flywheel.AutoPromoteThreshold = %q, want %q", cfg.Flywheel.AutoPromoteThreshold, "72h")
 	}
 }
 

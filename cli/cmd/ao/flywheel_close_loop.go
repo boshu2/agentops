@@ -67,9 +67,9 @@ func runFlywheelCloseLoop(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	threshold, err := time.ParseDuration(flywheelCloseLoopThreshold)
+	threshold, _, err := resolveAutoPromoteThreshold(cmd, "threshold", flywheelCloseLoopThreshold)
 	if err != nil {
-		return fmt.Errorf("invalid --threshold: %w", err)
+		return err
 	}
 
 	result := flywheelCloseLoopResult{}
@@ -191,6 +191,7 @@ func autoPromoteAndPromoteToArtifacts(p *pool.Pool, threshold time.Duration, inc
 	result := poolAutoPromotePromoteResult{
 		Threshold: threshold.String(),
 	}
+	citationCounts, promotedContent := loadPromotionGateContext(p.BaseDir)
 
 	for _, e := range entries {
 		if e.Candidate.Tier != types.TierSilver && !(includeGold && e.Candidate.Tier == types.TierGold) {
@@ -202,6 +203,12 @@ func autoPromoteAndPromoteToArtifacts(p *pool.Pool, threshold time.Duration, inc
 			continue
 		}
 		if e.Age < threshold {
+			continue
+		}
+		if reason := checkPromotionCriteria(e, threshold, citationCounts, promotedContent); reason != "" {
+			result.Skipped++
+			result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
+			VerbosePrintf("Skipping %s: %s\n", e.Candidate.ID, reason)
 			continue
 		}
 
@@ -225,6 +232,7 @@ func autoPromoteAndPromoteToArtifacts(p *pool.Pool, threshold time.Duration, inc
 		}
 		result.Promoted++
 		result.Artifacts = append(result.Artifacts, artifactPath)
+		promotedContent[normalizeContent(e.Candidate.Content)] = true
 	}
 
 	return result, nil

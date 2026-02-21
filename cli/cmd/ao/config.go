@@ -32,6 +32,7 @@ Environment variables:
   AGENTOPS_BASE_DIR   - Data directory path
   AGENTOPS_VERBOSE    - Enable verbose output (true/1)
   AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
+  AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD - Default auto-promote age threshold (e.g. 24h)
 
 Examples:
   ao config --show           # Show resolved configuration
@@ -88,7 +89,7 @@ func runConfig(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 	fmt.Println("Environment variables (if set):")
-	envVars := []string{"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC"}
+	envVars := []string{"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC", "AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"}
 	anySet := false
 	for _, env := range envVars {
 		if v := os.Getenv(env); v != "" {

@@ -36,6 +36,9 @@ type Config struct {
 
 	// RPI settings
 	RPI RPIConfig `yaml:"rpi" json:"rpi"`
+
+	// Flywheel settings
+	Flywheel FlywheelConfig `yaml:"flywheel" json:"flywheel"`
 }
 
 // RPIConfig holds RPI-specific settings.
@@ -43,6 +46,13 @@ type RPIConfig struct {
 	// WorktreeMode controls worktree behavior for phased runs.
 	// Values: "auto" (default, creates worktree), "always" (force worktree), "never" (no worktree).
 	WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
+}
+
+// FlywheelConfig holds flywheel-specific settings.
+type FlywheelConfig struct {
+	// AutoPromoteThreshold controls default age gate for auto-promotion.
+	// Default: 24h
+	AutoPromoteThreshold string `yaml:"auto_promote_threshold" json:"auto_promote_threshold"`
 }
 
 // PathsConfig holds configurable paths for artifact locations.
@@ -126,6 +136,9 @@ func Default() *Config {
 		},
 		RPI: RPIConfig{
 			WorktreeMode: "auto",
+		},
+		Flywheel: FlywheelConfig{
+			AutoPromoteThreshold: "24h",
 		},
 		Paths: PathsConfig{
 			LearningsDir:   ".agents/learnings",
@@ -223,6 +236,9 @@ func applyEnv(cfg *Config) *Config {
 	if v := os.Getenv("AGENTOPS_RPI_WORKTREE_MODE"); v != "" {
 		cfg.RPI.WorktreeMode = v
 	}
+	if v := os.Getenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"); v != "" {
+		cfg.Flywheel.AutoPromoteThreshold = v
+	}
 	return cfg
 }
 
@@ -256,6 +272,11 @@ func merge(dst, src *Config) *Config {
 	// Merge RPI config
 	if src.RPI.WorktreeMode != "" {
 		dst.RPI.WorktreeMode = src.RPI.WorktreeMode
+	}
+
+	// Merge Flywheel config
+	if src.Flywheel.AutoPromoteThreshold != "" {
+		dst.Flywheel.AutoPromoteThreshold = src.Flywheel.AutoPromoteThreshold
 	}
 
 	// Merge paths (G5: configurable paths, not hardcoded)

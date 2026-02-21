@@ -138,7 +138,9 @@ func runBatchPromote(cmd *cobra.Command, args []string) error {
 				CandidateID: entry.Candidate.ID,
 				Reason:      fmt.Sprintf("error: %v", err),
 			})
+			continue
 		}
+		promotedContent[normalizeContent(entry.Candidate.Content)] = true
 	}
 
 	return outputBatchResult(result)
