@@ -151,6 +151,7 @@ run_security_scan_patterns() {
             --binary-files=without-match \
             --exclude-dir=.git \
             --exclude-dir=.agents \
+            --exclude-dir=.tmp \
             --exclude-dir=tests \
             --exclude-dir=testdata \
             --exclude-dir=cli/testdata \
@@ -183,6 +184,7 @@ run_dangerous_pattern_scan() {
             --include="*.sh" \
             --exclude-dir=.git \
             --exclude-dir=.agents \
+            --exclude-dir=.tmp \
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
             --exclude="install-opencode.sh" \
