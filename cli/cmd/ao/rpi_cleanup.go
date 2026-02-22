@@ -88,7 +88,11 @@ func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter ti
 
 	for _, sr := range staleRuns {
 		if dryRun {
-			fmt.Printf("[dry-run] Would mark run %s as stale (reason: %s)\n", sr.runID, sr.reason)
+			if sr.terminal == "" {
+				fmt.Printf("[dry-run] Would mark run %s as stale (reason: %s)\n", sr.runID, sr.reason)
+			} else {
+				fmt.Printf("[dry-run] Would clean terminal run %s (%s)\n", sr.runID, sr.reason)
+			}
 			if sr.worktreePath != "" {
 				if _, err := os.Stat(sr.worktreePath); err == nil {
 					fmt.Printf("[dry-run] Would remove worktree: %s\n", sr.worktreePath)
@@ -97,16 +101,21 @@ func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter ti
 			continue
 		}
 
-		if err := markRunStale(sr); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to mark run %s as stale: %v\n", sr.runID, err)
-			continue
+		if sr.terminal == "" {
+			if err := markRunStale(sr); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to mark run %s as stale: %v\n", sr.runID, err)
+				continue
+			}
+			fmt.Printf("Marked run %s as stale (reason: %s)\n", sr.runID, sr.reason)
+		} else {
+			fmt.Printf("Cleaning terminal run %s (%s)\n", sr.runID, sr.reason)
 		}
-		fmt.Printf("Marked run %s as stale (reason: %s)\n", sr.runID, sr.reason)
 
 		// Remove orphaned worktree directory if it still exists.
 		if sr.worktreePath != "" {
 			if _, statErr := os.Stat(sr.worktreePath); statErr == nil {
-				if rmErr := removeOrphanedWorktree(sr.root, sr.worktreePath, sr.runID); rmErr != nil {
+				repoRoot := resolveCleanupRepoRoot(cwd, sr.worktreePath)
+				if rmErr := removeOrphanedWorktree(repoRoot, sr.worktreePath, sr.runID); rmErr != nil {
 					fmt.Fprintf(os.Stderr, "Warning: could not remove worktree %s: %v\n", sr.worktreePath, rmErr)
 				} else {
 					fmt.Printf("Removed worktree: %s\n", sr.worktreePath)
@@ -124,12 +133,34 @@ func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter ti
 	return nil
 }
 
+// resolveCleanupRepoRoot picks a controller worktree root to execute
+// `git worktree remove` against. It prefers a sibling worktree in the same
+// parent directory as targetWorktree, avoiding attempts to remove a worktree
+// from within itself.
+func resolveCleanupRepoRoot(cwd, targetWorktree string) string {
+	target := filepath.Clean(targetWorktree)
+	targetParent := filepath.Dir(target)
+
+	roots := collectSearchRoots(cwd)
+	for _, root := range roots {
+		cleanRoot := filepath.Clean(root)
+		if cleanRoot == target {
+			continue
+		}
+		if filepath.Dir(cleanRoot) == targetParent {
+			return cleanRoot
+		}
+	}
+	return cwd
+}
+
 type staleRunEntry struct {
 	runID        string
 	root         string
 	statePath    string
 	reason       string
 	worktreePath string
+	terminal     string
 }
 
 // findStaleRuns scans the registry for runs that are not active and not completed.
@@ -162,22 +193,54 @@ func findStaleRunsWithMinAge(root string, minAge time.Duration, now time.Time) [
 			continue
 		}
 
-		// Already has terminal metadata — skip.
-		if state.TerminalStatus != "" {
-			continue
-		}
-
 		// Check liveness.
 		isActive, _ := determineRunLiveness(root, state)
 		if isActive {
 			continue
 		}
 
-		// Completed runs are not stale.
-		if state.Phase >= completedPhaseNumber(*state) {
+		// Terminal runs (except completed) are cleanup candidates only when their
+		// worktree still exists.
+		if state.TerminalStatus != "" {
+			if state.TerminalStatus == "completed" {
+				continue
+			}
+			if state.WorktreePath == "" {
+				continue
+			}
+			if _, statErr := os.Stat(state.WorktreePath); statErr != nil {
+				continue
+			}
+			if minAge > 0 {
+				candidateAt := state.TerminatedAt
+				if candidateAt == "" {
+					candidateAt = state.StartedAt
+				}
+				parsedAt, parseErr := time.Parse(time.RFC3339, candidateAt)
+				if parseErr != nil || now.Sub(parsedAt) < minAge {
+					continue
+				}
+			}
+
+			reason := state.TerminalReason
+			if reason == "" {
+				reason = "terminal status: " + state.TerminalStatus
+			}
+			stale = append(stale, staleRunEntry{
+				runID:        runID,
+				root:         root,
+				statePath:    statePath,
+				reason:       reason,
+				worktreePath: state.WorktreePath,
+				terminal:     state.TerminalStatus,
+			})
 			continue
 		}
 
+		// Non-terminal completed runs are not stale.
+		if state.Phase >= completedPhaseNumber(*state) {
+			continue
+		}
 		// Optional age filter to reduce risk of cleaning recently interrupted runs.
 		if minAge > 0 {
 			startedAt, parseErr := time.Parse(time.RFC3339, state.StartedAt)
@@ -189,7 +252,6 @@ func findStaleRunsWithMinAge(root string, minAge time.Duration, now time.Time) [
 				continue
 			}
 		}
-
 		// Determine reason.
 		reason := "no heartbeat, no tmux session"
 		if state.WorktreePath != "" {

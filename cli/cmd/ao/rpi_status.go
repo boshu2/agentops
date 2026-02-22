@@ -690,10 +690,43 @@ func discoverRPIRuns(cwd string) []rpiRunInfo {
 	return fallback
 }
 
-// collectSearchRoots returns the cwd plus any sibling worktree directories
-// that match the *-rpi-* naming convention.
+// collectSearchRoots returns the cwd plus any Git worktree roots attached to
+// the same repository. This allows status/cleanup/cancel commands to discover
+// runs created from other worktrees, not just sibling *-rpi-* directories.
+// If git worktree discovery fails, we fall back to the historical sibling glob.
 func collectSearchRoots(cwd string) []string {
-	roots := []string{cwd}
+	roots := []string{}
+	seen := make(map[string]struct{})
+	addRoot := func(path string) {
+		if path == "" {
+			return
+		}
+		normalized := normalizeSearchRootPath(path)
+		if _, ok := seen[normalized]; ok {
+			return
+		}
+		info, err := os.Stat(normalized)
+		if err != nil || !info.IsDir() {
+			return
+		}
+		stored := filepath.Clean(path)
+		if abs, err := filepath.Abs(stored); err == nil {
+			stored = filepath.Clean(abs)
+		}
+		seen[normalized] = struct{}{}
+		roots = append(roots, stored)
+	}
+
+	addRoot(cwd)
+
+	if discovered := discoverGitWorktreeRoots(cwd); len(discovered) > 0 {
+		for _, root := range discovered {
+			addRoot(root)
+		}
+		return roots
+	}
+
+	// Backward-compatible fallback: sibling *-rpi-* pattern.
 	parent := filepath.Dir(cwd)
 	pattern := filepath.Join(parent, "*-rpi-*")
 	matches, err := filepath.Glob(pattern)
@@ -701,14 +734,42 @@ func collectSearchRoots(cwd string) []string {
 		return roots
 	}
 	for _, m := range matches {
-		info, err := os.Stat(m)
-		if err != nil || !info.IsDir() {
+		addRoot(m)
+	}
+	return roots
+}
+
+func normalizeSearchRootPath(path string) string {
+	clean := filepath.Clean(path)
+	if resolved, err := filepath.EvalSymlinks(clean); err == nil && resolved != "" {
+		return filepath.Clean(resolved)
+	}
+	if abs, err := filepath.Abs(clean); err == nil {
+		return filepath.Clean(abs)
+	}
+	return clean
+}
+
+func discoverGitWorktreeRoots(cwd string) []string {
+	cmd := exec.Command("git", "worktree", "list", "--porcelain")
+	cmd.Dir = cwd
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	var roots []string
+	scanner := bufio.NewScanner(strings.NewReader(string(out)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if !strings.HasPrefix(line, "worktree ") {
 			continue
 		}
-		if m == cwd {
+		path := strings.TrimSpace(strings.TrimPrefix(line, "worktree "))
+		if path == "" {
 			continue
 		}
-		roots = append(roots, m)
+		roots = append(roots, path)
 	}
 	return roots
 }

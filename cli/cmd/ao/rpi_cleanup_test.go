@@ -196,6 +196,66 @@ func TestCleanupSkipsTerminalRuns(t *testing.T) {
 	}
 }
 
+func TestCleanupIncludesTerminalRunsWithExistingWorktree(t *testing.T) {
+	tmpDir := t.TempDir()
+	runDir := filepath.Join(tmpDir, ".agents", "rpi", "runs", "failed-run")
+	worktreePath := filepath.Join(tmpDir, "repo-rpi-failed-run")
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(worktreePath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	state := map[string]interface{}{
+		"schema_version":  1,
+		"run_id":          "failed-run",
+		"goal":            "failed run",
+		"phase":           2,
+		"terminal_status": "failed",
+		"terminal_reason": "phase implementation: error",
+		"terminated_at":   time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+		"started_at":      time.Now().Add(-3 * time.Hour).Format(time.RFC3339),
+		"worktree_path":   worktreePath,
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	staleRuns := findStaleRunsWithMinAge(tmpDir, 1*time.Hour, time.Now())
+	if len(staleRuns) != 1 {
+		t.Fatalf("expected 1 terminal cleanup candidate, got %d", len(staleRuns))
+	}
+	if staleRuns[0].runID != "failed-run" {
+		t.Fatalf("expected failed-run, got %s", staleRuns[0].runID)
+	}
+	if staleRuns[0].terminal != "failed" {
+		t.Fatalf("expected terminal=failed, got %q", staleRuns[0].terminal)
+	}
+}
+
+func TestResolveCleanupRepoRootPrefersSiblingController(t *testing.T) {
+	parent := t.TempDir()
+	cwd := filepath.Join(parent, "repo")
+	target := filepath.Join(parent, "repo-rpi-stale")
+	other := filepath.Join(parent, "repo-rpi-other")
+
+	for _, dir := range []string{cwd, target, other} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := resolveCleanupRepoRoot(cwd, target)
+	if filepath.Clean(got) == filepath.Clean(target) {
+		t.Fatalf("expected controller root different from target worktree, got %q", got)
+	}
+	if filepath.Dir(filepath.Clean(got)) != filepath.Dir(filepath.Clean(target)) {
+		t.Fatalf("expected sibling controller root, got %q for target %q", got, target)
+	}
+}
+
 func TestCleanupSkipsCompletedRuns(t *testing.T) {
 	tmpDir := t.TempDir()
 
