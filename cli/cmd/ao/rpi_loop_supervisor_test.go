@@ -200,8 +200,11 @@ func TestRunSupervisorLanding_SyncPush_RebaseFailureAborts(t *testing.T) {
 	}
 	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
 		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
-		if name == "git" && len(args) > 0 && args[0] == "status" {
-			return "", nil
+		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
+			return " M somefile.go\n", nil
+		}
+		if name == "git" && len(args) >= 2 && args[0] == "diff" && args[1] == "--name-only" {
+			return "somefile.go\n", nil
 		}
 		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
 			return "origin/main", nil
@@ -270,7 +273,10 @@ func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) 
 	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
 		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
 		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
-			return "", nil
+			return " M somefile.go\n", nil
+		}
+		if name == "git" && len(args) >= 2 && args[0] == "diff" && args[1] == "--name-only" {
+			return "somefile.go\n", nil
 		}
 		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
 			return "origin/main", nil

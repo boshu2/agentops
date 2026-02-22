@@ -392,7 +392,7 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 			}()
 		}
 
-		_, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope)
+		_, err = commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope)
 		if err != nil {
 			return err
 		}
@@ -447,7 +447,6 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 	default:
 		return fmt.Errorf("unsupported landing policy: %s", cfg.LandingPolicy)
 	}
-	return nil
 }
 
 func acquireLandingLock(cwd string, cfg rpiLoopSupervisorConfig) (*supervisorLease, error) {
