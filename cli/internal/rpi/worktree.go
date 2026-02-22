@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const detachedBranchSuffix = "-recovery"
+
 // GenerateRunID creates a 12-char crypto-random hex identifier.
 func GenerateRunID() string {
 	b := make([]byte, 6)
@@ -42,8 +44,10 @@ func GetCurrentBranch(repoRoot string, timeout time.Duration) (string, error) {
 	return branch, nil
 }
 
-// EnsureAttachedBranch guarantees the repository has a named branch checked out.
-// When HEAD is detached, it creates and switches to a new branch using branchPrefix.
+// EnsureAttachedBranch repairs detached HEAD state when possible by switching to
+// a stable recovery branch. If recovery cannot be performed safely (for example,
+// the branch is already checked out in another worktree), it returns the current
+// state and no error so callers can continue in detached mode.
 func EnsureAttachedBranch(repoRoot string, timeout time.Duration, branchPrefix string) (branch string, healed bool, err error) {
 	branch, err = GetCurrentBranch(repoRoot, timeout)
 	if err == nil {
@@ -58,39 +62,38 @@ func EnsureAttachedBranch(repoRoot string, timeout time.Duration, branchPrefix s
 		prefix = "codex/auto-rpi"
 	}
 	prefix = strings.TrimSuffix(prefix, "-")
+	preferred := prefix + detachedBranchSuffix
 
-	for attempt := 0; attempt < 3; attempt++ {
-		suffix := time.Now().UTC().Format("20060102T150405Z")
-		if attempt > 0 {
-			runID := GenerateRunID()
-			if len(runID) > 6 {
-				runID = runID[:6]
-			}
-			suffix = suffix + "-" + runID
-		}
-		branchName := prefix + "-" + suffix
-
-		switchOut, switchErr := runGitCreateBranch(repoRoot, timeout, "switch", "-c", branchName)
+	branchCreateOut, branchErr := runGitCreateBranch(repoRoot, timeout, "branch", "-f", preferred, "HEAD")
+	if branchErr == nil {
+		switchOut, switchErr := runGitCreateBranch(repoRoot, timeout, "switch", preferred)
 		if switchErr == nil {
-			return branchName, true, nil
+			return preferred, true, nil
 		}
-
-		checkoutOut, checkoutErr := runGitCreateBranch(repoRoot, timeout, "checkout", "-b", branchName)
-		if checkoutErr == nil {
-			return branchName, true, nil
+		switchOut = strings.TrimSpace(switchOut)
+		if isBranchBusyInWorktree(switchOut) {
+			return "", false, nil
 		}
-
-		combinedOut := strings.TrimSpace(switchOut + "\n" + checkoutOut)
-		if strings.Contains(combinedOut, "already exists") {
-			continue
-		}
-		if strings.Contains(combinedOut, "did not match any file") {
-			continue
-		}
-		return "", false, fmt.Errorf("detached HEAD self-heal failed: %s", combinedOut)
+		return "", false, fmt.Errorf("detached HEAD self-heal failed: %s", switchOut)
 	}
 
-	return "", false, fmt.Errorf("detached HEAD self-heal failed after 3 attempts")
+	branchCreateOut = strings.TrimSpace(branchCreateOut)
+	if isBranchBusyInWorktree(branchCreateOut) {
+		return "", false, nil
+	}
+	if branchCreateOut != "" {
+		return "", false, fmt.Errorf("detached HEAD self-heal failed: %s", branchCreateOut)
+	}
+	return "", false, fmt.Errorf("detached HEAD self-heal failed")
+
+}
+
+func isBranchBusyInWorktree(message string) bool {
+	if message == "" {
+		return false
+	}
+	message = strings.ToLower(message)
+	return strings.Contains(message, "used by worktree") || strings.Contains(message, "already used by worktree")
 }
 
 func runGitCreateBranch(repoRoot string, timeout time.Duration, subcommand string, args ...string) (string, error) {
