@@ -380,14 +380,10 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 			return err
 		}
 		if err := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "fetch", "origin", targetBranch); err != nil {
-			return fmt.Errorf("landing fetch failed: %w", err)
+			return wrapSyncPushLandingFailure(cwd, cfg.CommandTimeout, "fetch", err)
 		}
 		if err := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "rebase", "origin/"+targetBranch); err != nil {
-			abortErr := loopCommandRunner(cwd, cfg.CommandTimeout, "git", "rebase", "--abort")
-			if abortErr != nil {
-				return fmt.Errorf("landing rebase failed: %w (rebase abort failed: %v)", err, abortErr)
-			}
-			return fmt.Errorf("landing rebase failed: %w (rebase aborted)", err)
+			return wrapSyncPushLandingFailure(cwd, cfg.CommandTimeout, "rebase", err)
 		}
 
 		runSync, err := shouldRunBDSync(cwd, cfg.BDSyncPolicy, cfg.BDCommand)
@@ -408,6 +404,35 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 	default:
 		return fmt.Errorf("unsupported landing policy: %s", cfg.LandingPolicy)
 	}
+}
+
+func wrapSyncPushLandingFailure(cwd string, timeout time.Duration, stage string, err error) error {
+	if err == nil {
+		return nil
+	}
+	if recoveryErr := recoverSyncPushLandingState(cwd, timeout); recoveryErr != nil {
+		return fmt.Errorf("landing %s failed: %w (state recovery failed: %v)", stage, err, recoveryErr)
+	}
+	return fmt.Errorf("landing %s failed: %w (state recovered)", stage, err)
+}
+
+func recoverSyncPushLandingState(cwd string, timeout time.Duration) error {
+	abortOut, abortErr := loopCommandOutputRunner(cwd, timeout, "git", "rebase", "--abort")
+	if abortErr != nil && !isNoRebaseInProgressMessage(abortOut) {
+		return fmt.Errorf("git rebase --abort failed: %w", abortErr)
+	}
+	if err := loopCommandRunner(cwd, timeout, "git", "status", "-sb"); err != nil {
+		return fmt.Errorf("git status during state recovery failed: %w", err)
+	}
+	return nil
+}
+
+func isNoRebaseInProgressMessage(out string) bool {
+	msg := strings.ToLower(strings.TrimSpace(out))
+	if msg == "" {
+		return false
+	}
+	return strings.Contains(msg, "no rebase in progress") || strings.Contains(msg, "no rebase to abort")
 }
 
 func renderLandingCommitMessage(template string, cycle, attempt int, goal string) string {

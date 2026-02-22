@@ -167,6 +167,7 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 	}
 
 	cycle := 0
+	executedCycles := 0
 	for {
 		cycle++
 
@@ -216,6 +217,7 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		}
 
 		fmt.Printf("Running phased engine for: %q\n", goal)
+		executedCycles++
 		start := time.Now()
 		var cycleErr error
 		maxAttempts := cfg.MaxCycleAttempts()
@@ -279,7 +281,7 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("\nRPI loop finished after %d cycle(s).\n", cycle-1)
+	fmt.Printf("\nRPI loop finished after %d cycle(s).\n", executedCycles)
 	return nil
 }
 

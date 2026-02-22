@@ -184,20 +184,25 @@ func TestRunSupervisorLanding_SyncPush_RebaseFailureAborts(t *testing.T) {
 		loopCommandOutputRunner = prevOutputRunner
 	}()
 
-	var calls []string
+	var runnerCalls []string
+	var outputCalls []string
 	loopCommandRunner = func(_ string, _ time.Duration, name string, args ...string) error {
-		calls = append(calls, name+" "+strings.Join(args, " "))
+		runnerCalls = append(runnerCalls, name+" "+strings.Join(args, " "))
 		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "origin/main" {
 			return fmt.Errorf("simulated rebase conflict")
 		}
 		return nil
 	}
 	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
+		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
 		if name == "git" && len(args) > 0 && args[0] == "status" {
 			return "", nil
 		}
 		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
 			return "origin/main", nil
+		}
+		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "--abort" {
+			return "", nil
 		}
 		return "", nil
 	}
@@ -213,16 +218,120 @@ func TestRunSupervisorLanding_SyncPush_RebaseFailureAborts(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "landing rebase failed") {
 		t.Fatalf("expected rebase failure, got: %v", err)
 	}
+	if !strings.Contains(err.Error(), "state recovered") {
+		t.Fatalf("expected state recovery details in error, got: %v", err)
+	}
 
 	foundAbort := false
-	for _, call := range calls {
+	for _, call := range outputCalls {
 		if call == "git rebase --abort" {
 			foundAbort = true
 			break
 		}
 	}
 	if !foundAbort {
-		t.Fatalf("expected git rebase --abort call, got calls: %v", calls)
+		t.Fatalf("expected git rebase --abort call, got output calls: %v", outputCalls)
+	}
+
+	foundStatus := false
+	for _, call := range runnerCalls {
+		if call == "git status -sb" {
+			foundStatus = true
+			break
+		}
+	}
+	if !foundStatus {
+		t.Fatalf("expected git status -sb recovery call, got runner calls: %v", runnerCalls)
+	}
+}
+
+func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) {
+	prevRunner := loopCommandRunner
+	prevOutputRunner := loopCommandOutputRunner
+	defer func() {
+		loopCommandRunner = prevRunner
+		loopCommandOutputRunner = prevOutputRunner
+	}()
+
+	var runnerCalls []string
+	var outputCalls []string
+	loopCommandRunner = func(_ string, _ time.Duration, name string, args ...string) error {
+		runnerCalls = append(runnerCalls, name+" "+strings.Join(args, " "))
+		if name == "git" && len(args) >= 3 && args[0] == "fetch" && args[1] == "origin" && args[2] == "main" {
+			return fmt.Errorf("simulated fetch outage")
+		}
+		return nil
+	}
+	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
+		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
+		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
+			return "", nil
+		}
+		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
+			return "origin/main", nil
+		}
+		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "--abort" {
+			return "fatal: No rebase in progress?", fmt.Errorf("exit status 128")
+		}
+		return "", nil
+	}
+
+	cfg := rpiLoopSupervisorConfig{
+		LandingPolicy:  loopLandingPolicySyncPush,
+		BDSyncPolicy:   loopBDSyncPolicyNever,
+		CommandTimeout: time.Minute,
+	}
+	err := runSupervisorLanding(t.TempDir(), cfg, 1, 1, "ship", &landingScope{
+		baselineDirtyPaths: map[string]struct{}{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "landing fetch failed") {
+		t.Fatalf("expected fetch failure, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "state recovered") {
+		t.Fatalf("expected state recovery details in error, got: %v", err)
+	}
+
+	foundAbort := false
+	for _, call := range outputCalls {
+		if call == "git rebase --abort" {
+			foundAbort = true
+			break
+		}
+	}
+	if !foundAbort {
+		t.Fatalf("expected git rebase --abort call, got output calls: %v", outputCalls)
+	}
+
+	foundStatus := false
+	for _, call := range runnerCalls {
+		if call == "git status -sb" {
+			foundStatus = true
+			break
+		}
+	}
+	if !foundStatus {
+		t.Fatalf("expected git status -sb recovery call, got runner calls: %v", runnerCalls)
+	}
+}
+
+func TestIsNoRebaseInProgressMessage(t *testing.T) {
+	cases := []struct {
+		name string
+		msg  string
+		want bool
+	}{
+		{name: "empty", msg: "", want: false},
+		{name: "no rebase in progress", msg: "fatal: No rebase in progress?", want: true},
+		{name: "no rebase to abort", msg: "fatal: no rebase to abort", want: true},
+		{name: "other error", msg: "fatal: something else failed", want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isNoRebaseInProgressMessage(tc.msg); got != tc.want {
+				t.Fatalf("isNoRebaseInProgressMessage(%q) = %v, want %v", tc.msg, got, tc.want)
+			}
+		})
 	}
 }
 

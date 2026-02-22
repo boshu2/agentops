@@ -1538,19 +1538,71 @@ func extractCouncilFindings(reportPath string, max int) ([]finding, error) {
 // bd list returns epics in creation order; we take the LAST match so that
 // the epic just created by the plan phase is selected over older ones.
 func extractEpicID(bdCommand string) (string, error) {
-	cmd := exec.Command(effectiveBDCommand(bdCommand), "list", "--type", "epic", "--status", "open")
+	command := effectiveBDCommand(bdCommand)
+
+	// Prefer JSON output for prefix-agnostic parsing.
+	cmd := exec.Command(command, "list", "--type", "epic", "--status", "open", "--json")
 	out, err := cmd.Output()
+	if err == nil {
+		epicID, parseErr := parseLatestEpicIDFromJSON(out)
+		if parseErr == nil {
+			return epicID, nil
+		}
+		VerbosePrintf("Warning: could not parse bd JSON epic list (falling back to text): %v\n", parseErr)
+	} else {
+		VerbosePrintf("Warning: bd list --json failed (falling back to text): %v\n", err)
+	}
+
+	// Fallback for older bd builds that do not support JSON output.
+	cmd = exec.Command(command, "list", "--type", "epic", "--status", "open")
+	out, err = cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("bd list: %w", err)
 	}
+	return parseLatestEpicIDFromText(string(out))
+}
 
-	re := regexp.MustCompile(`(ag-[a-z0-9]+)`)
-	allMatches := re.FindAllSubmatch(out, -1)
-	if len(allMatches) == 0 {
+func parseLatestEpicIDFromJSON(data []byte) (string, error) {
+	var entries []struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return "", fmt.Errorf("parse bd list JSON: %w", err)
+	}
+	for i := len(entries) - 1; i >= 0; i-- {
+		epicID := strings.TrimSpace(entries[i].ID)
+		if epicID != "" {
+			return epicID, nil
+		}
+	}
+	return "", fmt.Errorf("no epic found in bd list output")
+}
+
+func parseLatestEpicIDFromText(output string) (string, error) {
+	// Allow custom prefixes (bd-*, ag-*, etc.) and keep the match anchored
+	// to issue-like tokens near the start of each line.
+	idPattern := regexp.MustCompile(`^[a-z][a-z0-9]*-[a-z0-9][a-z0-9.]*$`)
+
+	var latest string
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.Fields(line)
+		limit := len(fields)
+		if limit > 3 {
+			limit = 3
+		}
+		for i := 0; i < limit; i++ {
+			field := fields[i]
+			token := strings.Trim(field, "[]()")
+			if idPattern.MatchString(token) {
+				latest = token
+				break
+			}
+		}
+	}
+	if latest == "" {
 		return "", fmt.Errorf("no epic found in bd list output")
 	}
-	// Last match = most recently created epic.
-	return string(allMatches[len(allMatches)-1][1]), nil
+	return latest, nil
 }
 
 // detectFastPath checks if an epic is a micro-epic (≤2 issues, no blockers).
