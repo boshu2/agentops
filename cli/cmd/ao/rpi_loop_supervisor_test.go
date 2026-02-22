@@ -31,14 +31,16 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	rpiEnsureCleanup = false
 	rpiGatePolicy = "off"
 	rpiLandingPolicy = "off"
+	rpiLandingLockPath = ""
 	rpiBDSyncPolicy = "auto"
 	rpiLeaseTTL = 2 * time.Minute
 	rpiAutoCleanStaleAfter = 24 * time.Hour
 	rpiLeasePath = ".agents/rpi/supervisor.lock"
 
 	cmd := newLoopSupervisorTestCommand()
+	tmpDir := t.TempDir()
 
-	cfg, err := resolveLoopSupervisorConfig(cmd, t.TempDir())
+	cfg, err := resolveLoopSupervisorConfig(cmd, tmpDir)
 	if err != nil {
 		t.Fatalf("resolveLoopSupervisorConfig: %v", err)
 	}
@@ -65,6 +67,9 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	}
 	if cfg.GatePolicy != loopGatePolicyRequired {
 		t.Fatalf("gate policy: got %q, want %q", cfg.GatePolicy, loopGatePolicyRequired)
+	}
+	if cfg.LandingLockPath != filepath.Join(tmpDir, ".agents", "rpi", "landing.lock") {
+		t.Fatalf("landing lock path: got %q, want %q", cfg.LandingLockPath, filepath.Join(tmpDir, ".agents", "rpi", "landing.lock"))
 	}
 }
 
@@ -314,6 +319,37 @@ func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) 
 	}
 }
 
+func TestRunSupervisorLanding_CommitPolicy_RespectsLandingLock(t *testing.T) {
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "landing.lock")
+
+	landingLease, err := acquireSupervisorLease(tmpDir, lockPath, 2*time.Minute, "landing-run-locked")
+	if err != nil {
+		t.Fatalf("acquire landing lease: %v", err)
+	}
+	defer func() {
+		if err := landingLease.Release(); err != nil {
+			t.Fatalf("release landing lease: %v", err)
+		}
+	}()
+
+	cfg := rpiLoopSupervisorConfig{
+		LandingPolicy:      loopLandingPolicyCommit,
+		LandingLockPath:    lockPath,
+		LandingCommitMessage: "chore(rpi): autonomous cycle {{cycle}}",
+		CommandTimeout:      time.Minute,
+	}
+	err = runSupervisorLanding(tmpDir, cfg, 1, 1, "ship", &landingScope{
+		baselineDirtyPaths: map[string]struct{}{},
+	})
+	if err == nil {
+		t.Fatal("expected landing lock contention error")
+	}
+	if !strings.Contains(err.Error(), "landing lock acquisition failed") {
+		t.Fatalf("expected landing lock acquisition error, got: %v", err)
+	}
+}
+
 func TestIsNoRebaseInProgressMessage(t *testing.T) {
 	cases := []struct {
 		name string
@@ -372,6 +408,7 @@ type loopSupervisorGlobals struct {
 	rpiLandingPolicy         string
 	rpiLandingBranch         string
 	rpiLandingCommitMessage  string
+	rpiLandingLockPath       string
 	rpiBDSyncPolicy          string
 	rpiCommandTimeout        time.Duration
 }
@@ -398,6 +435,7 @@ func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
 		rpiLandingPolicy:         rpiLandingPolicy,
 		rpiLandingBranch:         rpiLandingBranch,
 		rpiLandingCommitMessage:  rpiLandingCommitMessage,
+		rpiLandingLockPath:       rpiLandingLockPath,
 		rpiBDSyncPolicy:          rpiBDSyncPolicy,
 		rpiCommandTimeout:        rpiCommandTimeout,
 	}
@@ -424,6 +462,7 @@ func restoreLoopSupervisorGlobals(prev loopSupervisorGlobals) {
 	rpiLandingPolicy = prev.rpiLandingPolicy
 	rpiLandingBranch = prev.rpiLandingBranch
 	rpiLandingCommitMessage = prev.rpiLandingCommitMessage
+	rpiLandingLockPath = prev.rpiLandingLockPath
 	rpiBDSyncPolicy = prev.rpiBDSyncPolicy
 	rpiCommandTimeout = prev.rpiCommandTimeout
 }
@@ -438,6 +477,7 @@ func newLoopSupervisorTestCommand() *cobra.Command {
 	cmd.Flags().Bool("auto-clean", false, "")
 	cmd.Flags().Bool("ensure-cleanup", false, "")
 	cmd.Flags().String("gate-policy", "off", "")
+	cmd.Flags().String("landing-lock-path", "", "")
 	cmd.Flags().Duration("command-timeout", 20*time.Minute, "")
 	return cmd
 }

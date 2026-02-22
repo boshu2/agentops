@@ -36,6 +36,7 @@ var (
 	rpiLandingPolicy         string
 	rpiLandingBranch         string
 	rpiLandingCommitMessage  string
+	rpiLandingLockPath       string
 	rpiBDSyncPolicy          string
 	rpiCommandTimeout        time.Duration
 )
@@ -92,6 +93,7 @@ Examples:
 	loopCmd.Flags().StringVar(&rpiLandingPolicy, "landing-policy", "off", "Landing policy after successful cycle: off|commit|sync-push")
 	loopCmd.Flags().StringVar(&rpiLandingBranch, "landing-branch", "", "Landing target branch (empty resolves origin/HEAD, then current branch, then main)")
 	loopCmd.Flags().StringVar(&rpiLandingCommitMessage, "landing-commit-message", "chore(rpi): autonomous cycle {{cycle}}", "Commit message template for landing policies that commit")
+	loopCmd.Flags().StringVar(&rpiLandingLockPath, "landing-lock-path", filepath.Join(".agents", "rpi", "landing.lock"), "Landing lock file path for synchronized integration (absolute or repo-relative)")
 	loopCmd.Flags().StringVar(&rpiBDSyncPolicy, "bd-sync-policy", "auto", "bd sync policy for landing: auto|always|never")
 	loopCmd.Flags().DurationVar(&rpiCommandTimeout, "command-timeout", 20*time.Minute, "Timeout for supervisor external commands (git/bd/gate scripts)")
 
