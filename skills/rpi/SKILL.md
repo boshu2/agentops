@@ -33,6 +33,30 @@ metadata:
 /rpi --test-first "add auth"                          # pass --test-first to /crank
 ```
 
+## CLI Toolchain Configuration
+
+RPI control-plane command paths are configurable through `.agentops/config.yaml` or environment variables:
+
+```yaml
+rpi:
+  runtime_mode: auto        # auto|direct|stream
+  runtime_command: claude   # runtime process command
+  ao_command: ao            # ratchet/checkpoint command
+  bd_command: bd            # epic/child query command
+  tmux_command: tmux        # status liveness probe command
+```
+
+Environment variable overrides:
+- `AGENTOPS_RPI_RUNTIME` / `AGENTOPS_RPI_RUNTIME_MODE`
+- `AGENTOPS_RPI_RUNTIME_COMMAND`
+- `AGENTOPS_RPI_AO_COMMAND`
+- `AGENTOPS_RPI_BD_COMMAND`
+- `AGENTOPS_RPI_TMUX_COMMAND`
+
+Safety defaults:
+- `git`, `bash`, and `ps` remain fixed system tools in the RPI control plane.
+- Command precedence is `flags > env > config > defaults` where flags exist.
+
 ## Architecture
 
 ```

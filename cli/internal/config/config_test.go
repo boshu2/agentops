@@ -175,6 +175,7 @@ func TestLoadFromPath_Empty(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	// Test that flag overrides take precedence
 	rc := Resolve("json", "/flag/path", true)
 
@@ -193,6 +194,7 @@ func TestResolve(t *testing.T) {
 }
 
 func TestResolve_Defaults(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	// No flags, no env — should get defaults
 	for _, key := range []string{"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE"} {
 		t.Setenv(key, "")
@@ -209,6 +211,7 @@ func TestResolve_Defaults(t *testing.T) {
 }
 
 func TestResolve_EnvOverride(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Setenv("AGENTOPS_OUTPUT", "yaml")
 	t.Setenv("AGENTOPS_BASE_DIR", "/env/path")
 	t.Setenv("AGENTOPS_VERBOSE", "1")
@@ -232,6 +235,38 @@ func TestResolve_EnvOverride(t *testing.T) {
 	}
 	if rc.Verbose.Source != SourceEnv {
 		t.Errorf("Resolve env Verbose.Source = %v, want %v", rc.Verbose.Source, SourceEnv)
+	}
+}
+
+func TestResolve_RPIEnvOverrides(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "always")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "direct")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "stream")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "runtime-env")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "ao-env")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "bd-env")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "tmux-env")
+
+	rc := Resolve("", "", false)
+
+	if rc.RPIWorktreeMode.Value != "always" || rc.RPIWorktreeMode.Source != SourceEnv {
+		t.Fatalf("RPIWorktreeMode = (%v, %v), want (always, %v)", rc.RPIWorktreeMode.Value, rc.RPIWorktreeMode.Source, SourceEnv)
+	}
+	if rc.RPIRuntimeMode.Value != "stream" || rc.RPIRuntimeMode.Source != SourceEnv {
+		t.Fatalf("RPIRuntimeMode = (%v, %v), want (stream, %v)", rc.RPIRuntimeMode.Value, rc.RPIRuntimeMode.Source, SourceEnv)
+	}
+	if rc.RPIRuntimeCommand.Value != "runtime-env" || rc.RPIRuntimeCommand.Source != SourceEnv {
+		t.Fatalf("RPIRuntimeCommand = (%v, %v), want (runtime-env, %v)", rc.RPIRuntimeCommand.Value, rc.RPIRuntimeCommand.Source, SourceEnv)
+	}
+	if rc.RPIAOCommand.Value != "ao-env" || rc.RPIAOCommand.Source != SourceEnv {
+		t.Fatalf("RPIAOCommand = (%v, %v), want (ao-env, %v)", rc.RPIAOCommand.Value, rc.RPIAOCommand.Source, SourceEnv)
+	}
+	if rc.RPIBDCommand.Value != "bd-env" || rc.RPIBDCommand.Source != SourceEnv {
+		t.Fatalf("RPIBDCommand = (%v, %v), want (bd-env, %v)", rc.RPIBDCommand.Value, rc.RPIBDCommand.Source, SourceEnv)
+	}
+	if rc.RPITmuxCommand.Value != "tmux-env" || rc.RPITmuxCommand.Source != SourceEnv {
+		t.Fatalf("RPITmuxCommand = (%v, %v), want (tmux-env, %v)", rc.RPITmuxCommand.Value, rc.RPITmuxCommand.Source, SourceEnv)
 	}
 }
 
@@ -533,6 +568,7 @@ func TestMerge_SearchDefaultLimit(t *testing.T) {
 }
 
 func TestLoad_WithFlagOverrides(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	// Clear env vars to avoid interference
 	t.Setenv("AGENTOPS_OUTPUT", "")
 	t.Setenv("AGENTOPS_BASE_DIR", "")
@@ -562,6 +598,7 @@ func TestLoad_WithFlagOverrides(t *testing.T) {
 }
 
 func TestLoad_NilOverrides(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Setenv("AGENTOPS_OUTPUT", "")
 	t.Setenv("AGENTOPS_BASE_DIR", "")
 	t.Setenv("AGENTOPS_VERBOSE", "")
@@ -582,6 +619,7 @@ func TestLoad_NilOverrides(t *testing.T) {
 }
 
 func TestLoad_EnvOverrides(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Setenv("AGENTOPS_OUTPUT", "yaml")
 	t.Setenv("AGENTOPS_BASE_DIR", "/env/dir")
 	t.Setenv("AGENTOPS_VERBOSE", "1")
@@ -671,19 +709,54 @@ func TestDefault_RPI(t *testing.T) {
 	if cfg.RPI.WorktreeMode != "auto" {
 		t.Errorf("Default RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "auto")
 	}
+	if cfg.RPI.RuntimeMode != "auto" {
+		t.Errorf("Default RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "auto")
+	}
+	if cfg.RPI.RuntimeCommand != "claude" {
+		t.Errorf("Default RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "claude")
+	}
+	if cfg.RPI.AOCommand != "ao" {
+		t.Errorf("Default RPI.AOCommand = %q, want %q", cfg.RPI.AOCommand, "ao")
+	}
+	if cfg.RPI.BDCommand != "bd" {
+		t.Errorf("Default RPI.BDCommand = %q, want %q", cfg.RPI.BDCommand, "bd")
+	}
+	if cfg.RPI.TmuxCommand != "tmux" {
+		t.Errorf("Default RPI.TmuxCommand = %q, want %q", cfg.RPI.TmuxCommand, "tmux")
+	}
 }
 
 func TestMerge_RPI(t *testing.T) {
 	dst := Default()
 	src := &Config{
 		RPI: RPIConfig{
-			WorktreeMode: "never",
+			WorktreeMode:   "never",
+			RuntimeMode:    "stream",
+			RuntimeCommand: "codex",
+			AOCommand:      "ao-custom",
+			BDCommand:      "bd-custom",
+			TmuxCommand:    "tmux-custom",
 		},
 	}
 
 	result := merge(dst, src)
 	if result.RPI.WorktreeMode != "never" {
 		t.Errorf("merge RPI.WorktreeMode = %q, want %q", result.RPI.WorktreeMode, "never")
+	}
+	if result.RPI.RuntimeMode != "stream" {
+		t.Errorf("merge RPI.RuntimeMode = %q, want %q", result.RPI.RuntimeMode, "stream")
+	}
+	if result.RPI.RuntimeCommand != "codex" {
+		t.Errorf("merge RPI.RuntimeCommand = %q, want %q", result.RPI.RuntimeCommand, "codex")
+	}
+	if result.RPI.AOCommand != "ao-custom" {
+		t.Errorf("merge RPI.AOCommand = %q, want %q", result.RPI.AOCommand, "ao-custom")
+	}
+	if result.RPI.BDCommand != "bd-custom" {
+		t.Errorf("merge RPI.BDCommand = %q, want %q", result.RPI.BDCommand, "bd-custom")
+	}
+	if result.RPI.TmuxCommand != "tmux-custom" {
+		t.Errorf("merge RPI.TmuxCommand = %q, want %q", result.RPI.TmuxCommand, "tmux-custom")
 	}
 }
 
@@ -705,12 +778,27 @@ func TestMerge_RPIPreservedWhenEmpty(t *testing.T) {
 	dst := Default()
 	src := &Config{
 		Output: "json",
-		// RPI.WorktreeMode is empty string
+		// RPI config fields are empty strings
 	}
 
 	result := merge(dst, src)
 	if result.RPI.WorktreeMode != "auto" {
 		t.Errorf("merge should preserve default RPI.WorktreeMode, got %q", result.RPI.WorktreeMode)
+	}
+	if result.RPI.RuntimeMode != "auto" {
+		t.Errorf("merge should preserve default RPI.RuntimeMode, got %q", result.RPI.RuntimeMode)
+	}
+	if result.RPI.RuntimeCommand != "claude" {
+		t.Errorf("merge should preserve default RPI.RuntimeCommand, got %q", result.RPI.RuntimeCommand)
+	}
+	if result.RPI.AOCommand != "ao" {
+		t.Errorf("merge should preserve default RPI.AOCommand, got %q", result.RPI.AOCommand)
+	}
+	if result.RPI.BDCommand != "bd" {
+		t.Errorf("merge should preserve default RPI.BDCommand, got %q", result.RPI.BDCommand)
+	}
+	if result.RPI.TmuxCommand != "tmux" {
+		t.Errorf("merge should preserve default RPI.TmuxCommand, got %q", result.RPI.TmuxCommand)
 	}
 }
 
@@ -720,6 +808,12 @@ func TestApplyEnv_RPIWorktreeMode(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "never")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
 
 	cfg := Default()
 	cfg = applyEnv(cfg)
@@ -735,6 +829,12 @@ func TestApplyEnv_FlywheelAutoPromoteThreshold(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
 	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "48h")
 
 	cfg := Default()
@@ -751,12 +851,88 @@ func TestApplyEnv_RPIWorktreeModeEmpty(t *testing.T) {
 	t.Setenv("AGENTOPS_VERBOSE", "")
 	t.Setenv("AGENTOPS_NO_SC", "")
 	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
 
 	cfg := Default()
 	cfg = applyEnv(cfg)
 
 	if cfg.RPI.WorktreeMode != "auto" {
 		t.Errorf("applyEnv RPI.WorktreeMode = %q, want %q (unchanged from default)", cfg.RPI.WorktreeMode, "auto")
+	}
+}
+
+func TestApplyEnv_RPIRuntimeMode(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "direct")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "stream")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	// AGENTOPS_RPI_RUNTIME_MODE should win when both are set.
+	if cfg.RPI.RuntimeMode != "stream" {
+		t.Errorf("applyEnv RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "stream")
+	}
+}
+
+func TestApplyEnv_RPIRuntimeCommand(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "codex")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.RPI.RuntimeCommand != "codex" {
+		t.Errorf("applyEnv RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "codex")
+	}
+}
+
+func TestApplyEnv_RPICommandOverrides(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+	t.Setenv("AGENTOPS_RPI_WORKTREE_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "aox")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "bdx")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "tmuxx")
+
+	cfg := Default()
+	cfg = applyEnv(cfg)
+
+	if cfg.RPI.AOCommand != "aox" {
+		t.Errorf("applyEnv RPI.AOCommand = %q, want %q", cfg.RPI.AOCommand, "aox")
+	}
+	if cfg.RPI.BDCommand != "bdx" {
+		t.Errorf("applyEnv RPI.BDCommand = %q, want %q", cfg.RPI.BDCommand, "bdx")
+	}
+	if cfg.RPI.TmuxCommand != "tmuxx" {
+		t.Errorf("applyEnv RPI.TmuxCommand = %q, want %q", cfg.RPI.TmuxCommand, "tmuxx")
 	}
 }
 
@@ -767,6 +943,11 @@ func TestLoadFromPath_WithRPI(t *testing.T) {
 	content := `
 rpi:
   worktree_mode: always
+  runtime_mode: stream
+  runtime_command: codex
+  ao_command: aox
+  bd_command: bdx
+  tmux_command: tmuxx
 `
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		t.Fatal(err)
@@ -778,6 +959,32 @@ rpi:
 	}
 	if cfg.RPI.WorktreeMode != "always" {
 		t.Errorf("loadFromPath RPI.WorktreeMode = %q, want %q", cfg.RPI.WorktreeMode, "always")
+	}
+	if cfg.RPI.RuntimeMode != "stream" {
+		t.Errorf("loadFromPath RPI.RuntimeMode = %q, want %q", cfg.RPI.RuntimeMode, "stream")
+	}
+	if cfg.RPI.RuntimeCommand != "codex" {
+		t.Errorf("loadFromPath RPI.RuntimeCommand = %q, want %q", cfg.RPI.RuntimeCommand, "codex")
+	}
+	if cfg.RPI.AOCommand != "aox" {
+		t.Errorf("loadFromPath RPI.AOCommand = %q, want %q", cfg.RPI.AOCommand, "aox")
+	}
+	if cfg.RPI.BDCommand != "bdx" {
+		t.Errorf("loadFromPath RPI.BDCommand = %q, want %q", cfg.RPI.BDCommand, "bdx")
+	}
+	if cfg.RPI.TmuxCommand != "tmuxx" {
+		t.Errorf("loadFromPath RPI.TmuxCommand = %q, want %q", cfg.RPI.TmuxCommand, "tmuxx")
+	}
+}
+
+func TestProjectConfigPath_UsesAgentOpsConfigEnv(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "custom.yaml")
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+
+	got := projectConfigPath()
+	if got != configPath {
+		t.Fatalf("projectConfigPath() = %q, want %q", got, configPath)
 	}
 }
 

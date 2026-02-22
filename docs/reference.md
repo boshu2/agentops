@@ -24,12 +24,12 @@ Deep documentation for AgentOps. For quick start, see [README](../README.md).
 
 | | Local (default) | Distributed (`--mode=distributed`) |
 |---|---|---|
-| **How** | Runtime-native backends (`spawn_agent` -> `TeamCreate` -> `Task(run_in_background=true)`) | tmux sessions + Agent Mail |
-| **Dependencies** | None (runtime-native) | `tmux`, `claude` CLI, Agent Mail MCP |
+| **How** | Runtime-native backends (`spawn_agent` -> `TeamCreate` -> `Task(run_in_background=true)`) | tmux sessions + runtime-specific coordination backend |
+| **Dependencies** | None (runtime-native) | `tmux` plus runtime/backend-specific coordinator |
 | **Context** | Fresh per agent (team-per-wave) | Fresh per agent |
 | **Persistence** | Dies if mayor disconnects | Survives disconnection |
 | **Debugging** | Click tmux pane or Shift+Up/Down | Attach to tmux session |
-| **Coordination** | `wait`/`SendMessage`/`TaskOutput` + `TaskList` | Agent Mail + file reservations |
+| **Coordination** | `wait`/`SendMessage`/`TaskOutput` + `TaskList` | Runtime-selected transport + file reservations |
 | **Commits** | Lead-only (workers blocked by hook) | Lead-only (workers blocked by hook) |
 
 **When to use which:**
@@ -46,12 +46,10 @@ Deep documentation for AgentOps. For quick start, see [README](../README.md).
 **Distributed mode dependencies:**
 ```bash
 brew install tmux                    # Session management
-# claude CLI - already installed if you're using Claude Code
+# plus any runtime-specific coordinator required by your selected backend
 ```
 
-Agent Mail is an MCP server for inter-agent messaging. Distributed mode requires it for coordination. See [`agent-mail.md`](agent-mail.md) for setup options.
-
-> **Note:** Local mode works out of the box with zero extra dependencies. Only set up distributed mode if you need persistence or complex coordination.
+> **Note:** Local mode works out of the box with zero extra dependencies. Distributed mode requires a runtime-compatible coordinator.
 
 ---
 

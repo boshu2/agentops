@@ -1263,9 +1263,30 @@ ao rpi loop [goal] [flags]
 **Flags:**
 
 ```
-  -h, --help                 help for loop
-      --max-cycles int       Maximum cycles (0 = unlimited, stop when queue empty)
-      --repo-filter string   Only process queue items targeting this repo (empty = all)
+      --auto-clean                        Run stale RPI cleanup before each phased cycle
+      --auto-clean-stale-after duration   Only auto-clean runs older than this age (default 24h0m0s)
+      --bd-sync-policy string             bd sync policy for landing: auto|always|never (default "auto")
+      --cleanup-prune-worktrees           Run git worktree prune during supervisor cleanup (default true)
+      --cycle-delay duration              Delay between completed cycles
+      --cycle-retries int                 Automatic retry count per cycle after a failed attempt
+      --detached-branch-prefix string     Branch prefix used by detached HEAD self-heal (default "codex/auto-rpi")
+      --detached-heal                     Auto-create/switch to a named branch when HEAD is detached
+      --ensure-cleanup                    Run stale-run cleanup after each cycle (cleanup guarantee)
+      --failure-policy string             Cycle failure policy: stop|continue (default "stop")
+      --gate-fast-script string           Fast validation gate script path (default "scripts/validate-go-fast.sh")
+      --gate-policy string                Quality/security gate policy: off|best-effort|required (default "off")
+      --gate-security-script string       Security gate script path (default "scripts/security-gate.sh")
+  -h, --help                              help for loop
+      --landing-branch string             Landing target branch (empty resolves origin/HEAD, then current branch, then main)
+      --landing-commit-message string     Commit message template for landing policies that commit (default "chore(rpi): autonomous cycle {{cycle}}")
+      --landing-policy string             Landing policy after successful cycle: off|commit|sync-push (default "off")
+      --lease                             Acquire a single-flight supervisor lease lock before running
+      --lease-path string                 Lease lock file path (absolute or repo-relative) (default ".agents/rpi/supervisor.lock")
+      --lease-ttl duration                Lease heartbeat TTL for supervisor lock metadata (default 2m0s)
+      --max-cycles int                    Maximum cycles (0 = unlimited, stop when queue empty)
+      --repo-filter string                Only process queue items targeting this repo (empty = all)
+      --retry-backoff duration            Backoff between cycle retry attempts (default 30s)
+      --supervisor                        Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup)
 ```
 
 #### `ao rpi phased`
@@ -1289,6 +1310,8 @@ ao rpi phased <goal> [flags]
       --max-retries int                   Maximum retry attempts per gate (default: 3) (default 3)
       --no-worktree                       Disable worktree isolation (run in current directory)
       --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
+      --runtime string                    Phase runtime mode: auto|direct|stream (default "auto")
+      --runtime-cmd string                Runtime command to execute prompts (must support '-p') (default "claude")
       --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
       --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)
       --swarm-first                       Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable (default true)
@@ -1643,4 +1666,3 @@ ao worktree gc [flags]
 ```
 
 ---
-

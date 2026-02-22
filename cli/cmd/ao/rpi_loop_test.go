@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestReadUnconsumedItems_NoFile(t *testing.T) {
@@ -685,8 +688,8 @@ func TestSelectHighestSeverityEntry_RepoFilter_NoneMatch(t *testing.T) {
 
 func TestSelectHighestSeverityEntry_EntryIndexCorrect(t *testing.T) {
 	entries := []nextWorkEntry{
-		{SourceEpic: "ag-0", Items: []nextWorkItem{{Title: "Entry 0", Severity: "low"}}},
-		{SourceEpic: "ag-1", Items: []nextWorkItem{{Title: "Entry 1", Severity: "high"}}},
+		{SourceEpic: "ag-0", QueueIndex: 0, Items: []nextWorkItem{{Title: "Entry 0", Severity: "low"}}},
+		{SourceEpic: "ag-1", QueueIndex: 1, Items: []nextWorkItem{{Title: "Entry 1", Severity: "high"}}},
 	}
 	sel := selectHighestSeverityEntry(entries, "")
 	if sel == nil {
@@ -694,6 +697,47 @@ func TestSelectHighestSeverityEntry_EntryIndexCorrect(t *testing.T) {
 	}
 	if sel.EntryIndex != 1 {
 		t.Errorf("expected EntryIndex=1 (high severity), got %d", sel.EntryIndex)
+	}
+}
+
+func TestSelectHighestSeverityEntry_UsesParseableQueueIndex(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "next-work.jsonl")
+
+	consumed := nextWorkEntry{
+		SourceEpic: "ag-consumed",
+		Items:      []nextWorkItem{{Title: "Consumed", Severity: "low"}},
+		Consumed:   true,
+	}
+	open := nextWorkEntry{
+		SourceEpic: "ag-open",
+		Items:      []nextWorkItem{{Title: "Open", Severity: "high"}},
+		Consumed:   false,
+	}
+	consumedData, _ := json.Marshal(consumed)
+	openData, _ := json.Marshal(open)
+	content := string(consumedData) + "\nnot-json\n" + string(openData) + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+
+	entries, err := readQueueEntries(path)
+	if err != nil {
+		t.Fatalf("readQueueEntries: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected one eligible entry, got %d", len(entries))
+	}
+	if entries[0].QueueIndex != 1 {
+		t.Fatalf("expected parseable queue index 1, got %d", entries[0].QueueIndex)
+	}
+
+	sel := selectHighestSeverityEntry(entries, "")
+	if sel == nil {
+		t.Fatal("expected selection, got nil")
+	}
+	if sel.EntryIndex != 1 {
+		t.Fatalf("expected queue entry index 1, got %d", sel.EntryIndex)
 	}
 }
 
@@ -779,6 +823,276 @@ func TestRPILoop_DryRun_FromQueue(t *testing.T) {
 	if after[0].Consumed {
 		t.Errorf("queue entry should not be consumed in dry-run mode")
 	}
+}
+
+func TestRPILoop_InfraFailure_DoesNotMarkQueueFailed(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 1
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
+		SourceEpic: "ag-infra",
+		Items:      []nextWorkItem{{Title: "Infra failing goal", Severity: "high"}},
+		Consumed:   false,
+	})
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 1
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	attempts := 0
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		attempts++
+		return wrapCycleFailure(cycleFailureInfrastructure, "landing", fmt.Errorf("transient network"))
+	}
+
+	err := runRPILoop(nil, nil)
+	if err == nil {
+		t.Fatal("expected loop to fail under failure-policy=stop")
+	}
+	if attempts != 2 {
+		t.Fatalf("expected 2 attempts (1 retry), got %d", attempts)
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt != nil {
+		t.Fatal("infra failures should not mark queue entry failed")
+	}
+	if after[0].Consumed {
+		t.Fatal("infra failures should not mark queue entry consumed")
+	}
+}
+
+func TestRPILoop_InfraFailure_ContinuePolicy_RetriesUntilMaxCycles(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 2
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
+		SourceEpic: "ag-infra-continue",
+		Items:      []nextWorkItem{{Title: "Infra continue goal", Severity: "high"}},
+		Consumed:   false,
+	})
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyContinue
+	rpiCycleRetries = 1
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	attempts := 0
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		attempts++
+		return wrapCycleFailure(cycleFailureInfrastructure, "landing", fmt.Errorf("simulated rebase conflict"))
+	}
+
+	if err := runRPILoop(nil, nil); err != nil {
+		t.Fatalf("expected nil error under failure-policy=continue, got: %v", err)
+	}
+	if attempts != 4 {
+		t.Fatalf("expected 4 attempts (2 cycles x 2 attempts), got %d", attempts)
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt != nil {
+		t.Fatal("infra failures should not mark queue entry failed under continue policy")
+	}
+	if after[0].Consumed {
+		t.Fatal("infra failures should not mark queue entry consumed under continue policy")
+	}
+}
+
+func TestRPILoop_TaskFailure_MarksQueueFailed(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 1
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
+		SourceEpic: "ag-task",
+		Items:      []nextWorkItem{{Title: "Task failing goal", Severity: "high"}},
+		Consumed:   false,
+	})
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 0
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		return wrapCycleFailure(cycleFailureTask, "phased engine", fmt.Errorf("validation failed"))
+	}
+
+	err := runRPILoop(nil, nil)
+	if err == nil {
+		t.Fatal("expected loop to fail under failure-policy=stop")
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt == nil {
+		t.Fatal("task failures should mark queue entry failed")
+	}
+	if after[0].Consumed {
+		t.Fatal("failed queue entry should remain unconsumed")
+	}
+}
+
+func TestRPILoop_ExplicitGoalReportsExecutedCycles(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	rpiMaxCycles = 0
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 0
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		return nil
+	}
+
+	output, err := captureStdoutWithError(func() error {
+		return runRPILoop(nil, []string{"count cycles"})
+	})
+	if err != nil {
+		t.Fatalf("runRPILoop returned error: %v", err)
+	}
+	if !strings.Contains(output, "Explicit goal completed.") {
+		t.Fatalf("expected explicit goal completion message, got:\n%s", output)
+	}
+	if !strings.Contains(output, "RPI loop finished after 1 cycle(s).") {
+		t.Fatalf("expected cycle count message, got:\n%s", output)
+	}
+}
+
+func captureStdoutWithError(fn func() error) (string, error) {
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		return "", err
+	}
+	os.Stdout = w
+
+	runErr := fn()
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	data, readErr := io.ReadAll(r)
+	_ = r.Close()
+	if readErr != nil {
+		return "", readErr
+	}
+	return string(data), runErr
+}
+
+func setupSingleQueueEntry(t *testing.T, tmpDir string, entry nextWorkEntry) string {
+	t.Helper()
+	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	queuePath := filepath.Join(rpiDir, "next-work.jsonl")
+	data, _ := json.Marshal(entry)
+	if err := os.WriteFile(queuePath, append(data, '\n'), 0644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+	return queuePath
 }
 
 // ---- phasedEngineOptions defaults ----

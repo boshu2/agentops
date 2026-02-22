@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -40,6 +41,9 @@ The Knowledge Flywheel:
   Sessions compound via .agents/ + Smart Connections.
   Others start fresh. You get smarter every session.`,
 	SilenceUsage: true,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		syncConfigFlagToEnv()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -82,6 +86,14 @@ func VerbosePrintf(format string, args ...interface{}) {
 	if verbose {
 		fmt.Printf(format, args...)
 	}
+}
+
+func syncConfigFlagToEnv() {
+	path := strings.TrimSpace(GetConfigFile())
+	if path == "" {
+		return
+	}
+	_ = os.Setenv("AGENTOPS_CONFIG", path)
 }
 
 // GetCurrentUser returns the current system username.

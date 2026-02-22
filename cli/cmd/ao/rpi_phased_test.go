@@ -525,6 +525,105 @@ func TestParseFastPath(t *testing.T) {
 	}
 }
 
+func TestParseLatestEpicIDFromJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "ag prefix",
+			input: `[{"id":"ag-a1"},{"id":"ag-b2"}]`,
+			want:  "ag-b2",
+		},
+		{
+			name:  "custom prefix",
+			input: `[{"id":"bd-10"},{"id":"bd-11"}]`,
+			want:  "bd-11",
+		},
+		{
+			name:    "empty list",
+			input:   `[]`,
+			wantErr: true,
+		},
+		{
+			name:    "malformed json",
+			input:   `{`,
+			wantErr: true,
+		},
+		{
+			name:    "missing id",
+			input:   `[{"title":"x"}]`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseLatestEpicIDFromJSON([]byte(tt.input))
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got id=%q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestParseLatestEpicIDFromText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "unicode bullets",
+			input: strings.Join([]string{
+				"○ ag-4p9 [● P2] [epic] - Existing epic",
+				"○ bd-17 [● P2] [epic] - Runtime-focused follow-up",
+			}, "\n"),
+			want: "bd-17",
+		},
+		{
+			name:  "plain output",
+			input: "ag-1 open first\nag-2 open second",
+			want:  "ag-2",
+		},
+		{
+			name:    "no ids",
+			input:   "no epic rows here",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseLatestEpicIDFromText(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got id=%q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
 func TestParseCrankCompletion(t *testing.T) {
 	tests := []struct {
 		name     string

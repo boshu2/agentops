@@ -10,6 +10,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -46,6 +47,21 @@ type RPIConfig struct {
 	// WorktreeMode controls worktree behavior for phased runs.
 	// Values: "auto" (default, creates worktree), "always" (force worktree), "never" (no worktree).
 	WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
+	// RuntimeMode controls phased executor selection.
+	// Values: "auto" (default), "direct", "stream".
+	RuntimeMode string `yaml:"runtime_mode" json:"runtime_mode"`
+	// RuntimeCommand is the CLI command used to spawn phase sessions.
+	// Default: "claude".
+	RuntimeCommand string `yaml:"runtime_command" json:"runtime_command"`
+	// AOCommand is the CLI command used for ao subcommands in orchestration.
+	// Default: "ao".
+	AOCommand string `yaml:"ao_command" json:"ao_command"`
+	// BDCommand is the CLI command used for beads operations in orchestration.
+	// Default: "bd".
+	BDCommand string `yaml:"bd_command" json:"bd_command"`
+	// TmuxCommand is the CLI command used for tmux liveness probes.
+	// Default: "tmux".
+	TmuxCommand string `yaml:"tmux_command" json:"tmux_command"`
 }
 
 // FlywheelConfig holds flywheel-specific settings.
@@ -135,7 +151,12 @@ func Default() *Config {
 			UseSmartConnections: true,
 		},
 		RPI: RPIConfig{
-			WorktreeMode: "auto",
+			WorktreeMode:   "auto",
+			RuntimeMode:    "auto",
+			RuntimeCommand: "claude",
+			AOCommand:      "ao",
+			BDCommand:      "bd",
+			TmuxCommand:    "tmux",
 		},
 		Flywheel: FlywheelConfig{
 			AutoPromoteThreshold: "24h",
@@ -192,6 +213,9 @@ func homeConfigPath() string {
 
 // projectConfigPath returns the project config path.
 func projectConfigPath() string {
+	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
+		return override
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return ""
@@ -236,6 +260,24 @@ func applyEnv(cfg *Config) *Config {
 	if v := os.Getenv("AGENTOPS_RPI_WORKTREE_MODE"); v != "" {
 		cfg.RPI.WorktreeMode = v
 	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME"); v != "" {
+		cfg.RPI.RuntimeMode = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME_MODE"); v != "" {
+		cfg.RPI.RuntimeMode = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_RUNTIME_COMMAND"); v != "" {
+		cfg.RPI.RuntimeCommand = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_AO_COMMAND"); v != "" {
+		cfg.RPI.AOCommand = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_BD_COMMAND"); v != "" {
+		cfg.RPI.BDCommand = v
+	}
+	if v := os.Getenv("AGENTOPS_RPI_TMUX_COMMAND"); v != "" {
+		cfg.RPI.TmuxCommand = v
+	}
 	if v := os.Getenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"); v != "" {
 		cfg.Flywheel.AutoPromoteThreshold = v
 	}
@@ -272,6 +314,21 @@ func merge(dst, src *Config) *Config {
 	// Merge RPI config
 	if src.RPI.WorktreeMode != "" {
 		dst.RPI.WorktreeMode = src.RPI.WorktreeMode
+	}
+	if src.RPI.RuntimeMode != "" {
+		dst.RPI.RuntimeMode = src.RPI.RuntimeMode
+	}
+	if src.RPI.RuntimeCommand != "" {
+		dst.RPI.RuntimeCommand = src.RPI.RuntimeCommand
+	}
+	if src.RPI.AOCommand != "" {
+		dst.RPI.AOCommand = src.RPI.AOCommand
+	}
+	if src.RPI.BDCommand != "" {
+		dst.RPI.BDCommand = src.RPI.BDCommand
+	}
+	if src.RPI.TmuxCommand != "" {
+		dst.RPI.TmuxCommand = src.RPI.TmuxCommand
 	}
 
 	// Merge Flywheel config
@@ -365,9 +422,15 @@ func resolveStringField(home, project, env, flag, def string) resolved {
 
 // ResolvedConfig shows config values with their sources.
 type ResolvedConfig struct {
-	Output  resolved `json:"output"`
-	BaseDir resolved `json:"base_dir"`
-	Verbose resolved `json:"verbose"`
+	Output            resolved `json:"output"`
+	BaseDir           resolved `json:"base_dir"`
+	Verbose           resolved `json:"verbose"`
+	RPIWorktreeMode   resolved `json:"rpi_worktree_mode"`
+	RPIRuntimeMode    resolved `json:"rpi_runtime_mode"`
+	RPIRuntimeCommand resolved `json:"rpi_runtime_command"`
+	RPIAOCommand      resolved `json:"rpi_ao_command"`
+	RPIBDCommand      resolved `json:"rpi_bd_command"`
+	RPITmuxCommand    resolved `json:"rpi_tmux_command"`
 }
 
 type resolved struct {
@@ -385,30 +448,61 @@ func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
 	// Get config values (empty string if not set)
 	var homeOutput, homeBaseDir string
 	var homeVerbose bool
+	var homeRPIWorktreeMode, homeRPIRuntimeMode, homeRPIRuntimeCommand string
+	var homeRPIAOCommand, homeRPIBDCommand, homeRPITmuxCommand string
 	if homeConfig != nil {
 		homeOutput = homeConfig.Output
 		homeBaseDir = homeConfig.BaseDir
 		homeVerbose = homeConfig.Verbose
+		homeRPIWorktreeMode = homeConfig.RPI.WorktreeMode
+		homeRPIRuntimeMode = homeConfig.RPI.RuntimeMode
+		homeRPIRuntimeCommand = homeConfig.RPI.RuntimeCommand
+		homeRPIAOCommand = homeConfig.RPI.AOCommand
+		homeRPIBDCommand = homeConfig.RPI.BDCommand
+		homeRPITmuxCommand = homeConfig.RPI.TmuxCommand
 	}
 
 	var projectOutput, projectBaseDir string
 	var projectVerbose bool
+	var projectRPIWorktreeMode, projectRPIRuntimeMode, projectRPIRuntimeCommand string
+	var projectRPIAOCommand, projectRPIBDCommand, projectRPITmuxCommand string
 	if projectConfig != nil {
 		projectOutput = projectConfig.Output
 		projectBaseDir = projectConfig.BaseDir
 		projectVerbose = projectConfig.Verbose
+		projectRPIWorktreeMode = projectConfig.RPI.WorktreeMode
+		projectRPIRuntimeMode = projectConfig.RPI.RuntimeMode
+		projectRPIRuntimeCommand = projectConfig.RPI.RuntimeCommand
+		projectRPIAOCommand = projectConfig.RPI.AOCommand
+		projectRPIBDCommand = projectConfig.RPI.BDCommand
+		projectRPITmuxCommand = projectConfig.RPI.TmuxCommand
 	}
 
 	// Get environment values
 	envOutput, _ := getEnvString("AGENTOPS_OUTPUT")
 	envBaseDir, _ := getEnvString("AGENTOPS_BASE_DIR")
 	envVerbose, envVerboseSet := getEnvBool("AGENTOPS_VERBOSE")
+	envRPIWorktreeMode, _ := getEnvString("AGENTOPS_RPI_WORKTREE_MODE")
+	envRPIRuntimeMode, _ := getEnvString("AGENTOPS_RPI_RUNTIME")
+	if modeOverride, ok := getEnvString("AGENTOPS_RPI_RUNTIME_MODE"); ok {
+		envRPIRuntimeMode = modeOverride
+	}
+	envRPIRuntimeCommand, _ := getEnvString("AGENTOPS_RPI_RUNTIME_COMMAND")
+	envRPIAOCommand, _ := getEnvString("AGENTOPS_RPI_AO_COMMAND")
+	envRPIBDCommand, _ := getEnvString("AGENTOPS_RPI_BD_COMMAND")
+	envRPITmuxCommand, _ := getEnvString("AGENTOPS_RPI_TMUX_COMMAND")
 
 	// Resolve string fields through precedence chain
 	rc := &ResolvedConfig{
-		Output:  resolveStringField(homeOutput, projectOutput, envOutput, flagOutput, defaultOutput),
-		BaseDir: resolveStringField(homeBaseDir, projectBaseDir, envBaseDir, flagBaseDir, defaultBaseDir),
-		Verbose: resolved{Value: false, Source: SourceDefault},
+		Output:            resolveStringField(homeOutput, projectOutput, envOutput, flagOutput, defaultOutput),
+		BaseDir:           resolveStringField(homeBaseDir, projectBaseDir, envBaseDir, flagBaseDir, defaultBaseDir),
+		Verbose:           resolved{Value: false, Source: SourceDefault},
+		RPIWorktreeMode:   resolveStringField(homeRPIWorktreeMode, projectRPIWorktreeMode, envRPIWorktreeMode, "", "auto"),
+		RPIRuntimeMode:    resolveStringField(homeRPIRuntimeMode, projectRPIRuntimeMode, envRPIRuntimeMode, "", "auto"),
+		RPIRuntimeCommand: resolveStringField(homeRPIRuntimeCommand, projectRPIRuntimeCommand, envRPIRuntimeCommand, "", "claude"),
+		RPIAOCommand:      resolveStringField(homeRPIAOCommand, projectRPIAOCommand, envRPIAOCommand, "", "ao"),
+		RPIBDCommand:      resolveStringField(homeRPIBDCommand, projectRPIBDCommand, envRPIBDCommand, "", "bd"),
+		RPITmuxCommand:    resolveStringField(homeRPITmuxCommand, projectRPITmuxCommand, envRPITmuxCommand, "", "tmux"),
 	}
 
 	// Resolve verbose (boolean with OR semantics through chain)

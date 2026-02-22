@@ -30,14 +30,13 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	}
 
 	logPhaseTransition(logPath, state.RunID, p.Name, "started")
-	emitRPIStatus(state.RunID, p.Name, "started")
 	if opts.LiveStatus {
 		retryKey := fmt.Sprintf("phase_%d", p.Num)
 		updateLivePhaseStatus(statusPath, allPhases, p.Num, "starting", state.Attempts[retryKey], "")
 	}
 
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would spawn: claude -p '%s'\n", prompt)
+		fmt.Printf("[dry-run] Would spawn: %s -p '%s'\n", effectiveRuntimeCommand(state.Opts.RuntimeCommand), prompt)
 		if !opts.NoWorktree && p.Num == startPhase {
 			runID := generateRunID()
 			fmt.Printf("[dry-run] Would create worktree: ../%s-rpi-%s/ (branch: rpi/%s)\n",
@@ -48,7 +47,7 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	}
 
 	// Spawn phase session.
-	fmt.Printf("Spawning: claude -p '%s'\n", prompt)
+	fmt.Printf("Spawning: %s -p '%s'\n", effectiveRuntimeCommand(state.Opts.RuntimeCommand), prompt)
 	start := time.Now()
 	updateRunHeartbeat(spawnCwd, state.RunID)
 
@@ -64,7 +63,6 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	elapsed := time.Since(start).Round(time.Second)
 	fmt.Printf("Phase %d completed in %s\n", p.Num, elapsed)
 	logPhaseTransition(logPath, state.RunID, p.Name, fmt.Sprintf("completed in %s", elapsed))
-	emitRPIStatus(state.RunID, p.Name, "completed")
 	if opts.LiveStatus {
 		retryKey := fmt.Sprintf("phase_%d", p.Num)
 		updateLivePhaseStatus(statusPath, allPhases, p.Num, "completed", state.Attempts[retryKey], "")
@@ -107,7 +105,7 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 	}
 
 	writePhaseSummary(spawnCwd, state, p.Num)
-	recordRatchetCheckpoint(p.Step)
+	recordRatchetCheckpoint(p.Step, state.Opts.AOCommand)
 
 	if err := savePhasedState(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not save state: %v\n", err)
@@ -118,7 +116,6 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 
 func logAndFailPhase(state *phasedState, phaseName, logPath, spawnCwd string, err error) error {
 	logPhaseTransition(logPath, state.RunID, phaseName, fmt.Sprintf("FATAL: %v", err))
-	emitRPIStatus(state.RunID, phaseName, "failed")
 	logFailureContext(logPath, state.RunID, phaseName, err)
 	// Write terminal metadata so `ao rpi status` shows "failed" with reason.
 	state.TerminalStatus = "failed"

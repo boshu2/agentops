@@ -28,10 +28,17 @@ Configuration priority (highest to lowest):
   5. Defaults
 
 Environment variables:
+  AGENTOPS_CONFIG     - Explicit config file path (overrides default project config location)
   AGENTOPS_OUTPUT     - Default output format (table, json, yaml)
   AGENTOPS_BASE_DIR   - Data directory path
   AGENTOPS_VERBOSE    - Enable verbose output (true/1)
   AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
+  AGENTOPS_RPI_WORKTREE_MODE - RPI worktree policy (auto|always|never)
+  AGENTOPS_RPI_RUNTIME / AGENTOPS_RPI_RUNTIME_MODE - RPI runtime mode (auto|direct|stream)
+  AGENTOPS_RPI_RUNTIME_COMMAND - Runtime command used by ao rpi phased (default: claude)
+  AGENTOPS_RPI_AO_COMMAND - ao command used for ratchet/checkpoint calls (default: ao)
+  AGENTOPS_RPI_BD_COMMAND - bd command used for epic/child checks (default: bd)
+  AGENTOPS_RPI_TMUX_COMMAND - tmux command used for status liveness probes (default: tmux)
   AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD - Default auto-promote age threshold (e.g. 24h)
 
 Examples:
@@ -86,10 +93,30 @@ func runConfig(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  output:   %v  (from %s)\n", resolved.Output.Value, resolved.Output.Source)
 	fmt.Printf("  base_dir: %v  (from %s)\n", resolved.BaseDir.Value, resolved.BaseDir.Source)
 	fmt.Printf("  verbose:  %v  (from %s)\n", resolved.Verbose.Value, resolved.Verbose.Source)
+	fmt.Printf("  rpi.worktree_mode:  %v  (from %s)\n", resolved.RPIWorktreeMode.Value, resolved.RPIWorktreeMode.Source)
+	fmt.Printf("  rpi.runtime_mode:   %v  (from %s)\n", resolved.RPIRuntimeMode.Value, resolved.RPIRuntimeMode.Source)
+	fmt.Printf("  rpi.runtime_command: %v  (from %s)\n", resolved.RPIRuntimeCommand.Value, resolved.RPIRuntimeCommand.Source)
+	fmt.Printf("  rpi.ao_command:     %v  (from %s)\n", resolved.RPIAOCommand.Value, resolved.RPIAOCommand.Source)
+	fmt.Printf("  rpi.bd_command:     %v  (from %s)\n", resolved.RPIBDCommand.Value, resolved.RPIBDCommand.Source)
+	fmt.Printf("  rpi.tmux_command:   %v  (from %s)\n", resolved.RPITmuxCommand.Value, resolved.RPITmuxCommand.Source)
 
 	fmt.Println()
 	fmt.Println("Environment variables (if set):")
-	envVars := []string{"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE", "AGENTOPS_NO_SC", "AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD"}
+	envVars := []string{
+		"AGENTOPS_CONFIG",
+		"AGENTOPS_OUTPUT",
+		"AGENTOPS_BASE_DIR",
+		"AGENTOPS_VERBOSE",
+		"AGENTOPS_NO_SC",
+		"AGENTOPS_RPI_WORKTREE_MODE",
+		"AGENTOPS_RPI_RUNTIME",
+		"AGENTOPS_RPI_RUNTIME_MODE",
+		"AGENTOPS_RPI_RUNTIME_COMMAND",
+		"AGENTOPS_RPI_AO_COMMAND",
+		"AGENTOPS_RPI_BD_COMMAND",
+		"AGENTOPS_RPI_TMUX_COMMAND",
+		"AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD",
+	}
 	anySet := false
 	for _, env := range envVars {
 		if v := os.Getenv(env); v != "" {

@@ -14,8 +14,30 @@ import (
 )
 
 var (
-	rpiMaxCycles  int
-	rpiRepoFilter string
+	rpiMaxCycles             int
+	rpiRepoFilter            string
+	rpiSupervisor            bool
+	rpiFailurePolicy         string
+	rpiCycleRetries          int
+	rpiRetryBackoff          time.Duration
+	rpiCycleDelay            time.Duration
+	rpiLease                 bool
+	rpiLeasePath             string
+	rpiLeaseTTL              time.Duration
+	rpiDetachedHeal          bool
+	rpiDetachedBranchPrefix  string
+	rpiAutoClean             bool
+	rpiAutoCleanStaleAfter   time.Duration
+	rpiEnsureCleanup         bool
+	rpiCleanupPruneWorktrees bool
+	rpiGatePolicy            string
+	rpiValidateFastScript    string
+	rpiSecurityGateScript    string
+	rpiLandingPolicy         string
+	rpiLandingBranch         string
+	rpiLandingCommitMessage  string
+	rpiBDSyncPolicy          string
+	rpiCommandTimeout        time.Duration
 )
 
 func init() {
@@ -50,6 +72,28 @@ Examples:
 
 	loopCmd.Flags().IntVar(&rpiMaxCycles, "max-cycles", 0, "Maximum cycles (0 = unlimited, stop when queue empty)")
 	loopCmd.Flags().StringVar(&rpiRepoFilter, "repo-filter", "", "Only process queue items targeting this repo (empty = all)")
+	loopCmd.Flags().BoolVar(&rpiSupervisor, "supervisor", false, "Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup)")
+	loopCmd.Flags().StringVar(&rpiFailurePolicy, "failure-policy", "stop", "Cycle failure policy: stop|continue")
+	loopCmd.Flags().IntVar(&rpiCycleRetries, "cycle-retries", 0, "Automatic retry count per cycle after a failed attempt")
+	loopCmd.Flags().DurationVar(&rpiRetryBackoff, "retry-backoff", 30*time.Second, "Backoff between cycle retry attempts")
+	loopCmd.Flags().DurationVar(&rpiCycleDelay, "cycle-delay", 0, "Delay between completed cycles")
+	loopCmd.Flags().BoolVar(&rpiLease, "lease", false, "Acquire a single-flight supervisor lease lock before running")
+	loopCmd.Flags().StringVar(&rpiLeasePath, "lease-path", filepath.Join(".agents", "rpi", "supervisor.lock"), "Lease lock file path (absolute or repo-relative)")
+	loopCmd.Flags().DurationVar(&rpiLeaseTTL, "lease-ttl", 2*time.Minute, "Lease heartbeat TTL for supervisor lock metadata")
+	loopCmd.Flags().BoolVar(&rpiDetachedHeal, "detached-heal", false, "Auto-create/switch to a named branch when HEAD is detached")
+	loopCmd.Flags().StringVar(&rpiDetachedBranchPrefix, "detached-branch-prefix", "codex/auto-rpi", "Branch prefix used by detached HEAD self-heal")
+	loopCmd.Flags().BoolVar(&rpiAutoClean, "auto-clean", false, "Run stale RPI cleanup before each phased cycle")
+	loopCmd.Flags().DurationVar(&rpiAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only auto-clean runs older than this age")
+	loopCmd.Flags().BoolVar(&rpiEnsureCleanup, "ensure-cleanup", false, "Run stale-run cleanup after each cycle (cleanup guarantee)")
+	loopCmd.Flags().BoolVar(&rpiCleanupPruneWorktrees, "cleanup-prune-worktrees", true, "Run git worktree prune during supervisor cleanup")
+	loopCmd.Flags().StringVar(&rpiGatePolicy, "gate-policy", "off", "Quality/security gate policy: off|best-effort|required")
+	loopCmd.Flags().StringVar(&rpiValidateFastScript, "gate-fast-script", filepath.Join("scripts", "validate-go-fast.sh"), "Fast validation gate script path")
+	loopCmd.Flags().StringVar(&rpiSecurityGateScript, "gate-security-script", filepath.Join("scripts", "security-gate.sh"), "Security gate script path")
+	loopCmd.Flags().StringVar(&rpiLandingPolicy, "landing-policy", "off", "Landing policy after successful cycle: off|commit|sync-push")
+	loopCmd.Flags().StringVar(&rpiLandingBranch, "landing-branch", "", "Landing target branch (empty resolves origin/HEAD, then current branch, then main)")
+	loopCmd.Flags().StringVar(&rpiLandingCommitMessage, "landing-commit-message", "chore(rpi): autonomous cycle {{cycle}}", "Commit message template for landing policies that commit")
+	loopCmd.Flags().StringVar(&rpiBDSyncPolicy, "bd-sync-policy", "auto", "bd sync policy for landing: auto|always|never")
+	loopCmd.Flags().DurationVar(&rpiCommandTimeout, "command-timeout", 20*time.Minute, "Timeout for supervisor external commands (git/bd/gate scripts)")
 
 	rpiCmd.AddCommand(loopCmd)
 }
@@ -63,6 +107,7 @@ type nextWorkEntry struct {
 	ConsumedBy *string        `json:"consumed_by"`
 	ConsumedAt *string        `json:"consumed_at"`
 	FailedAt   *string        `json:"failed_at,omitempty"`
+	QueueIndex int            `json:"-"`
 }
 
 // nextWorkItem represents a single harvested work item.
@@ -80,13 +125,19 @@ type nextWorkItem struct {
 // so the caller can mark the correct entry consumed/failed.
 type queueSelection struct {
 	Item       nextWorkItem
-	EntryIndex int // 0-based index into the entries slice returned by readQueueEntries
+	EntryIndex int // 0-based index among parseable JSON entries in next-work.jsonl
 }
+
+var runRPISupervisedCycleFn = runRPISupervisedCycle
 
 func runRPILoop(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
+	}
+	cfg, err := resolveLoopSupervisorConfig(cmd, cwd)
+	if err != nil {
+		return err
 	}
 
 	// Parse explicit goal if provided
@@ -96,14 +147,37 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 	}
 
 	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents", "rpi"), 0755); err != nil {
+		return fmt.Errorf("ensure .agents/rpi directory: %w", err)
+	}
+
+	var lease *supervisorLease
+	if cfg.LeaseEnabled && !GetDryRun() {
+		runID := generateRunID()
+		lease, err = acquireSupervisorLease(cwd, cfg.LeasePath, cfg.LeaseTTL, runID)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if releaseErr := lease.Release(); releaseErr != nil {
+				VerbosePrintf("Warning: could not release supervisor lease: %v\n", releaseErr)
+			}
+		}()
+		fmt.Printf("Supervisor lease acquired: %s (run=%s)\n", lease.Path(), runID)
+	}
 
 	cycle := 0
+	executedCycles := 0
 	for {
 		cycle++
 
 		if rpiMaxCycles > 0 && cycle > rpiMaxCycles {
 			fmt.Printf("\nReached max cycles (%d). Stopping.\n", rpiMaxCycles)
 			break
+		}
+		if cycle > 1 && cfg.CycleDelay > 0 {
+			fmt.Printf("\nSleeping %s before next cycle...\n", cfg.CycleDelay.Round(time.Second))
+			time.Sleep(cfg.CycleDelay)
 		}
 
 		fmt.Printf("\n=== RPI Loop: Cycle %d ===\n", cycle)
@@ -143,26 +217,50 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		}
 
 		fmt.Printf("Running phased engine for: %q\n", goal)
+		executedCycles++
 		start := time.Now()
-
-		opts := defaultPhasedEngineOptions()
-		phasedErr := runPhasedEngine(cwd, goal, opts)
+		var cycleErr error
+		maxAttempts := cfg.MaxCycleAttempts()
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			cycleErr = runRPISupervisedCycleFn(cwd, goal, cycle, attempt, cfg)
+			if cycleErr == nil {
+				break
+			}
+			if attempt >= maxAttempts {
+				break
+			}
+			fmt.Printf("Cycle %d attempt %d/%d failed: %v\n", cycle, attempt, maxAttempts, cycleErr)
+			if cfg.RetryBackoff > 0 {
+				fmt.Printf("Retrying in %s...\n", cfg.RetryBackoff.Round(time.Second))
+				time.Sleep(cfg.RetryBackoff)
+			}
+		}
 		elapsed := time.Since(start).Round(time.Second)
 
-		if phasedErr != nil {
-			fmt.Printf("Cycle %d failed after %s: %v\n", cycle, elapsed, phasedErr)
+		if cycleErr != nil {
+			fmt.Printf("Cycle %d failed after %s: %v\n", cycle, elapsed, cycleErr)
 
-			// Mark the queue entry as failed so it is not retried blindly.
+			// Mark only task failures as failed. Transient infra failures remain
+			// retryable queue items for a future cycle.
 			if sel != nil {
-				if markErr := markEntryFailed(nextWorkPath, sel.EntryIndex); markErr != nil {
-					VerbosePrintf("Warning: could not mark queue entry as failed: %v\n", markErr)
+				if shouldMarkQueueEntryFailed(cycleErr) {
+					if markErr := markEntryFailed(nextWorkPath, sel.EntryIndex); markErr != nil {
+						VerbosePrintf("Warning: could not mark queue entry as failed: %v\n", markErr)
+					} else {
+						fmt.Printf("Queue entry marked failed (set consumed=false to retry): %q\n", sel.Item.Title)
+					}
 				} else {
-					fmt.Printf("Queue entry marked failed (set consumed=false to retry): %q\n", sel.Item.Title)
+					fmt.Printf("Queue entry left unmodified (transient infra failure): %q\n", sel.Item.Title)
 				}
 			}
 
-			fmt.Println("Stopping loop. Fix the issue and re-run ao rpi loop.")
-			return phasedErr
+			if cfg.ShouldContinueAfterFailure() && explicitGoal == "" {
+				fmt.Printf("Failure policy %q: continuing to next queue item.\n", cfg.FailurePolicy)
+				continue
+			}
+
+			fmt.Println("Stopping loop due to failure policy.")
+			return cycleErr
 		}
 
 		fmt.Printf("Cycle %d completed in %s\n", cycle, elapsed)
@@ -183,7 +281,7 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("\nRPI loop finished after %d cycle(s).\n", cycle-1)
+	fmt.Printf("\nRPI loop finished after %d cycle(s).\n", executedCycles)
 	return nil
 }
 
@@ -226,6 +324,7 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
+	parseableIndex := -1
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -238,6 +337,8 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 			VerbosePrintf("Skipping malformed line: %v\n", err)
 			continue
 		}
+		parseableIndex++
+		entry.QueueIndex = parseableIndex
 
 		// Skip entries that are already consumed or previously failed.
 		if entry.Consumed || entry.FailedAt != nil {
@@ -255,7 +356,7 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 
 // selectHighestSeverityEntry picks the best item across all eligible entries.
 // It returns a queueSelection containing the winning item and its source entry
-// index within entries. Items filtered out by repoFilter are skipped.
+// parseable index in next-work.jsonl. Items filtered out by repoFilter are skipped.
 // Returns nil if no eligible items exist.
 func selectHighestSeverityEntry(entries []nextWorkEntry, repoFilter string) *queueSelection {
 	type candidate struct {
@@ -265,12 +366,12 @@ func selectHighestSeverityEntry(entries []nextWorkEntry, repoFilter string) *que
 	}
 
 	var candidates []candidate
-	for i, entry := range entries {
+	for _, entry := range entries {
 		for _, item := range entry.Items {
 			if repoFilter != "" && item.TargetRepo != "" && item.TargetRepo != "*" && item.TargetRepo != repoFilter {
 				continue
 			}
-			candidates = append(candidates, candidate{item: item, entryIndex: i, rank: severityRank(item.Severity)})
+			candidates = append(candidates, candidate{item: item, entryIndex: entry.QueueIndex, rank: severityRank(item.Severity)})
 		}
 	}
 
@@ -343,8 +444,8 @@ func rewriteNextWorkFile(path string, transform func(idx int, entry *nextWorkEnt
 }
 
 // markEntryConsumed sets Consumed=true and ConsumedAt on the entry at entryIndex.
-// entryIndex is the 0-based index of the entry among all parseable lines in the file
-// (blank lines and malformed lines count toward the index but are not modified).
+// entryIndex is the 0-based index of the entry among parseable JSON entries in
+// the file (blank/malformed lines do not receive an index).
 //
 // Returns an error when the file does not exist so callers can distinguish a
 // missing-queue situation from a successful no-op.
@@ -374,6 +475,7 @@ func markEntryConsumed(path string, entryIndex int, consumedBy string) error {
 //   - Missing file: returns an error (caller should verify file exists before calling).
 //   - Wrong/no match: no-op (idempotent — safe to call even if already consumed).
 //   - Match: sets Consumed=true, ConsumedAt, and ConsumedBy=runID.
+//
 // markEntryFailed records a FailedAt timestamp on the entry at entryIndex without
 // setting Consumed. This leaves the entry recoverable: set consumed=false to retry.
 func markEntryFailed(path string, entryIndex int) error {

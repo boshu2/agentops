@@ -42,6 +42,71 @@ func GetCurrentBranch(repoRoot string, timeout time.Duration) (string, error) {
 	return branch, nil
 }
 
+// EnsureAttachedBranch guarantees the repository has a named branch checked out.
+// When HEAD is detached, it creates and switches to a new branch using branchPrefix.
+func EnsureAttachedBranch(repoRoot string, timeout time.Duration, branchPrefix string) (branch string, healed bool, err error) {
+	branch, err = GetCurrentBranch(repoRoot, timeout)
+	if err == nil {
+		return branch, false, nil
+	}
+	if !strings.Contains(err.Error(), "detached HEAD") {
+		return "", false, err
+	}
+
+	prefix := strings.TrimSpace(branchPrefix)
+	if prefix == "" {
+		prefix = "codex/auto-rpi"
+	}
+	prefix = strings.TrimSuffix(prefix, "-")
+
+	for attempt := 0; attempt < 3; attempt++ {
+		suffix := time.Now().UTC().Format("20060102T150405Z")
+		if attempt > 0 {
+			runID := GenerateRunID()
+			if len(runID) > 6 {
+				runID = runID[:6]
+			}
+			suffix = suffix + "-" + runID
+		}
+		branchName := prefix + "-" + suffix
+
+		switchOut, switchErr := runGitCreateBranch(repoRoot, timeout, "switch", "-c", branchName)
+		if switchErr == nil {
+			return branchName, true, nil
+		}
+
+		checkoutOut, checkoutErr := runGitCreateBranch(repoRoot, timeout, "checkout", "-b", branchName)
+		if checkoutErr == nil {
+			return branchName, true, nil
+		}
+
+		combinedOut := strings.TrimSpace(switchOut + "\n" + checkoutOut)
+		if strings.Contains(combinedOut, "already exists") {
+			continue
+		}
+		if strings.Contains(combinedOut, "did not match any file") {
+			continue
+		}
+		return "", false, fmt.Errorf("detached HEAD self-heal failed: %s", combinedOut)
+	}
+
+	return "", false, fmt.Errorf("detached HEAD self-heal failed after 3 attempts")
+}
+
+func runGitCreateBranch(repoRoot string, timeout time.Duration, subcommand string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmdArgs := append([]string{subcommand}, args...)
+	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
+	cmd.Dir = repoRoot
+	out, err := cmd.CombinedOutput()
+	if err != nil && ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("git %s timed out after %s", subcommand, timeout)
+	}
+	return string(out), err
+}
+
 // GetRepoRoot returns the git repository root directory.
 func GetRepoRoot(dir string, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

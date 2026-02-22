@@ -37,6 +37,8 @@ var (
 	phasedSwarmFirst           bool
 	phasedAutoCleanStale       bool
 	phasedAutoCleanStaleAfter  time.Duration
+	phasedRuntimeMode          string
+	phasedRuntimeCommand       string
 )
 
 // phaseFailureReason classifies why a phase spawn failed.
@@ -66,8 +68,12 @@ type phasedEngineOptions struct {
 	SwarmFirst           bool
 	AutoCleanStale       bool
 	AutoCleanStaleAfter  time.Duration
-	NtmPollInterval      time.Duration
 	StallCheckInterval   time.Duration
+	RuntimeMode          string
+	RuntimeCommand       string
+	AOCommand            string
+	BDCommand            string
+	TmuxCommand          string
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.
@@ -80,8 +86,12 @@ func defaultPhasedEngineOptions() phasedEngineOptions {
 		StreamStartupTimeout: 45 * time.Second,
 		SwarmFirst:           true,
 		AutoCleanStaleAfter:  24 * time.Hour,
-		NtmPollInterval:      5 * time.Second,
 		StallCheckInterval:   30 * time.Second,
+		RuntimeMode:          "auto",
+		RuntimeCommand:       "claude",
+		AOCommand:            "ao",
+		BDCommand:            "bd",
+		TmuxCommand:          "tmux",
 	}
 }
 
@@ -114,7 +124,7 @@ func runPhasedEngine(cwd, goal string, opts phasedEngineOptions) (retErr error) 
 func init() {
 	phasedCmd := &cobra.Command{
 		Use:   "phased <goal>",
-		Short: "Run RPI with fresh Claude session per phase",
+		Short: "Run RPI with fresh runtime session per phase",
 		Long: `Orchestrate the full RPI lifecycle using 3 consolidated phases.
 
 Each phase gets its own context window (Ralph Wiggum pattern):
@@ -153,6 +163,8 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedSwarmFirst, "swarm-first", true, "Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable")
 	phasedCmd.Flags().BoolVar(&phasedAutoCleanStale, "auto-clean-stale", false, "Run stale-run cleanup before starting phased execution")
 	phasedCmd.Flags().DurationVar(&phasedAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only clean stale runs older than this age when auto-clean is enabled")
+	phasedCmd.Flags().StringVar(&phasedRuntimeMode, "runtime", "auto", "Phase runtime mode: auto|direct|stream")
+	phasedCmd.Flags().StringVar(&phasedRuntimeCommand, "runtime-cmd", "claude", "Runtime command to execute prompts (must support '-p')")
 
 	rpiCmd.AddCommand(phasedCmd)
 }
@@ -172,26 +184,27 @@ var phases = []phase{
 
 // phasedState persists orchestrator state between phase spawns.
 type phasedState struct {
-	SchemaVersion  int                 `json:"schema_version"`
-	Goal           string              `json:"goal"`
-	EpicID         string              `json:"epic_id,omitempty"`
-	Phase          int                 `json:"phase"`
-	StartPhase     int                 `json:"start_phase"`
-	Cycle          int                 `json:"cycle"`
-	ParentEpic     string              `json:"parent_epic,omitempty"`
-	FastPath       bool                `json:"fast_path"`
-	TestFirst      bool                `json:"test_first"`
-	SwarmFirst     bool                `json:"swarm_first"`
-	Verdicts       map[string]string   `json:"verdicts"`
-	Attempts       map[string]int      `json:"attempts"`
-	StartedAt      string              `json:"started_at"`
-	WorktreePath   string              `json:"worktree_path,omitempty"`
-	RunID          string              `json:"run_id,omitempty"`
-	Backend        string              `json:"backend,omitempty"`
-	TerminalStatus string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
-	TerminalReason string              `json:"terminal_reason,omitempty"`
-	TerminatedAt   string              `json:"terminated_at,omitempty"`
-	Opts           phasedEngineOptions `json:"opts"`
+	SchemaVersion   int                 `json:"schema_version"`
+	Goal            string              `json:"goal"`
+	EpicID          string              `json:"epic_id,omitempty"`
+	Phase           int                 `json:"phase"`
+	StartPhase      int                 `json:"start_phase"`
+	Cycle           int                 `json:"cycle"`
+	ParentEpic      string              `json:"parent_epic,omitempty"`
+	FastPath        bool                `json:"fast_path"`
+	TestFirst       bool                `json:"test_first"`
+	SwarmFirst      bool                `json:"swarm_first"`
+	Verdicts        map[string]string   `json:"verdicts"`
+	Attempts        map[string]int      `json:"attempts"`
+	StartedAt       string              `json:"started_at"`
+	WorktreePath    string              `json:"worktree_path,omitempty"`
+	RunID           string              `json:"run_id,omitempty"`
+	OrchestratorPID int                 `json:"orchestrator_pid,omitempty"`
+	Backend         string              `json:"backend,omitempty"`
+	TerminalStatus  string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+	TerminalReason  string              `json:"terminal_reason,omitempty"`
+	TerminatedAt    string              `json:"terminated_at,omitempty"`
+	Opts            phasedEngineOptions `json:"opts"`
 }
 
 // retryContext holds context for retrying a failed gate.
@@ -212,42 +225,30 @@ type finding struct {
 //
 // Selection policy (deterministic, logged):
 //
-//	stream  — selected when --live-status is enabled; requires stream-json support.
-//	ntm     — selected when ntm is on PATH and NOT running inside a Claude agent
-//	          session (CLAUDECODE or CLAUDE_CODE_ENTRYPOINT env vars absent).
-//	direct  — fallback when stream and ntm are both unavailable or suppressed.
+//	stream  — stream-json execution with live parsing and fallback semantics.
+//	direct  — plain prompt execution without stream parsing.
 //
 // The chosen backend is recorded in phasedState.Backend, emitted to stdout, and
 // appended to the orchestration log so every run has a traceable selection record.
 type PhaseExecutor interface {
-	// Name returns the backend identifier ("direct", "ntm", or "stream").
+	// Name returns the backend identifier ("direct" or "stream").
 	Name() string
 	// Execute runs the phase prompt and blocks until the session completes.
 	Execute(prompt, cwd, runID string, phaseNum int) error
 }
 
 type directExecutor struct {
-	phaseTimeout time.Duration
+	runtimeCommand string
+	phaseTimeout   time.Duration
 }
 
 func (d *directExecutor) Name() string { return "direct" }
 func (d *directExecutor) Execute(prompt, cwd, runID string, phaseNum int) error {
-	return spawnClaudeDirectImpl(prompt, cwd, phaseNum, d.phaseTimeout)
-}
-
-type ntmExecutor struct {
-	ntmPath         string
-	phaseTimeout    time.Duration
-	stallTimeout    time.Duration
-	ntmPollInterval time.Duration
-}
-
-func (n *ntmExecutor) Name() string { return "ntm" }
-func (n *ntmExecutor) Execute(prompt, cwd, runID string, phaseNum int) error {
-	return spawnClaudePhaseNtm(n.ntmPath, prompt, cwd, runID, phaseNum, n.phaseTimeout, n.stallTimeout, n.ntmPollInterval)
+	return spawnRuntimeDirectImpl(d.runtimeCommand, prompt, cwd, phaseNum, d.phaseTimeout)
 }
 
 type streamExecutor struct {
+	runtimeCommand       string
 	statusPath           string
 	allPhases            []PhaseProgress
 	phaseTimeout         time.Duration
@@ -258,7 +259,7 @@ type streamExecutor struct {
 
 func (s *streamExecutor) Name() string { return "stream" }
 func (s *streamExecutor) Execute(prompt, cwd, runID string, phaseNum int) error {
-	err := spawnClaudePhaseWithStream(prompt, cwd, runID, phaseNum, s.statusPath, s.allPhases, s.phaseTimeout, s.stallTimeout, s.streamStartupTimeout, s.stallCheckInterval)
+	err := spawnRuntimePhaseWithStream(s.runtimeCommand, prompt, cwd, runID, phaseNum, s.statusPath, s.allPhases, s.phaseTimeout, s.stallTimeout, s.streamStartupTimeout, s.stallCheckInterval)
 	if err == nil {
 		return nil
 	}
@@ -266,7 +267,7 @@ func (s *streamExecutor) Execute(prompt, cwd, runID string, phaseNum int) error 
 		return err
 	}
 	fmt.Printf("Stream backend degraded for phase %d; falling back to direct execution (%v)\n", phaseNum, err)
-	if directErr := spawnClaudeDirectImpl(prompt, cwd, phaseNum, s.phaseTimeout); directErr != nil {
+	if directErr := spawnRuntimeDirectImpl(s.runtimeCommand, prompt, cwd, phaseNum, s.phaseTimeout); directErr != nil {
 		return fmt.Errorf("stream execution failed: %w; direct fallback failed: %v", err, directErr)
 	}
 	return nil
@@ -287,24 +288,17 @@ func shouldFallbackToDirect(err error) bool {
 type backendCapabilities struct {
 	// LiveStatusEnabled is true when --live-status flag is set.
 	LiveStatusEnabled bool
-	// InAgentSession is true when running inside a Claude agent session.
-	// ntm is suppressed in agent sessions to avoid interactive prompts.
-	InAgentSession bool
-	// NtmPath is the resolved path to the ntm binary, or empty if not found.
-	NtmPath string
+	// RuntimeMode is one of auto|direct|stream.
+	RuntimeMode string
 }
 
 // probeBackendCapabilities detects available backends in the current environment.
 // It is a pure function (no side effects) to keep selectExecutor testable.
-func probeBackendCapabilities(liveStatus bool) backendCapabilities {
-	caps := backendCapabilities{
+func probeBackendCapabilities(liveStatus bool, runtimeMode string) backendCapabilities {
+	return backendCapabilities{
 		LiveStatusEnabled: liveStatus,
-		InAgentSession:    os.Getenv("CLAUDECODE") != "" || os.Getenv("CLAUDE_CODE_ENTRYPOINT") != "",
+		RuntimeMode:       normalizeRuntimeMode(runtimeMode),
 	}
-	if !caps.InAgentSession {
-		caps.NtmPath, _ = lookPath("ntm")
-	}
-	return caps
 }
 
 // selectExecutorFromCaps resolves an executor from pre-probed capabilities.
@@ -313,39 +307,50 @@ func probeBackendCapabilities(liveStatus bool) backendCapabilities {
 // when calling from tests that do not have a full opts available.
 //
 // Selection order (first match wins):
-//  1. stream  — caps.LiveStatusEnabled
-//  2. ntm     — caps.NtmPath non-empty and not in agent session
-//  3. direct  — unconditional fallback
+//  1. runtime=stream — always stream
+//  2. runtime=direct — always direct
+//  3. runtime=auto   — stream when live-status enabled, otherwise direct
 func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhases []PhaseProgress, opts phasedEngineOptions) (PhaseExecutor, string) {
-	if caps.LiveStatusEnabled {
+	switch caps.RuntimeMode {
+	case "stream":
 		return &streamExecutor{
+			runtimeCommand:       opts.RuntimeCommand,
 			statusPath:           statusPath,
 			allPhases:            allPhases,
 			phaseTimeout:         opts.PhaseTimeout,
 			stallTimeout:         opts.StallTimeout,
 			streamStartupTimeout: opts.StreamStartupTimeout,
 			stallCheckInterval:   opts.StallCheckInterval,
-		}, "live-status enabled"
+		}, "runtime=stream"
+	case "direct":
+		return &directExecutor{
+			runtimeCommand: opts.RuntimeCommand,
+			phaseTimeout:   opts.PhaseTimeout,
+		}, "runtime=direct"
+	default: // auto
+		if caps.LiveStatusEnabled {
+			return &streamExecutor{
+				runtimeCommand:       opts.RuntimeCommand,
+				statusPath:           statusPath,
+				allPhases:            allPhases,
+				phaseTimeout:         opts.PhaseTimeout,
+				stallTimeout:         opts.StallTimeout,
+				streamStartupTimeout: opts.StreamStartupTimeout,
+				stallCheckInterval:   opts.StallCheckInterval,
+			}, "runtime=auto live-status enabled"
+		}
+		return &directExecutor{
+			runtimeCommand: opts.RuntimeCommand,
+			phaseTimeout:   opts.PhaseTimeout,
+		}, "runtime=auto live-status disabled"
 	}
-	if caps.InAgentSession {
-		return &directExecutor{phaseTimeout: opts.PhaseTimeout}, "agent session detected (CLAUDECODE/CLAUDE_CODE_ENTRYPOINT set) — ntm suppressed"
-	}
-	if caps.NtmPath != "" {
-		return &ntmExecutor{
-			ntmPath:         caps.NtmPath,
-			phaseTimeout:    opts.PhaseTimeout,
-			stallTimeout:    opts.StallTimeout,
-			ntmPollInterval: opts.NtmPollInterval,
-		}, fmt.Sprintf("ntm found at %s", caps.NtmPath)
-	}
-	return &directExecutor{phaseTimeout: opts.PhaseTimeout}, "ntm not found on PATH"
 }
 
 // selectExecutor resolves the executor backend based on flags and environment.
 // The selection policy, chosen backend, and reason are logged to logPath for
 // observability. Pass an empty logPath to skip log writing (e.g., in tests).
 //
-// Selection order: stream (live-status) > ntm (interactive) > direct (fallback).
+// Selection order: runtime override (stream/direct) > auto (live-status=>stream, else direct).
 func selectExecutor(statusPath string, allPhases []PhaseProgress) PhaseExecutor {
 	return selectExecutorWithLog(statusPath, allPhases, "", "", false, defaultPhasedEngineOptions())
 }
@@ -355,7 +360,7 @@ func selectExecutor(statusPath string, allPhases []PhaseProgress) PhaseExecutor 
 // liveStatus must be provided explicitly so the function does not read package globals.
 // opts provides timeout/interval values embedded into the returned executor.
 func selectExecutorWithLog(statusPath string, allPhases []PhaseProgress, logPath, runID string, liveStatus bool, opts phasedEngineOptions) PhaseExecutor {
-	caps := probeBackendCapabilities(liveStatus)
+	caps := probeBackendCapabilities(liveStatus, opts.RuntimeMode)
 	executor, reason := selectExecutorFromCaps(caps, statusPath, allPhases, opts)
 	msg := fmt.Sprintf("backend=%s reason=%q", executor.Name(), reason)
 	fmt.Printf("Executor backend: %s (%s)\n", executor.Name(), reason)
@@ -477,14 +482,33 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		SwarmFirst:           phasedSwarmFirst,
 		AutoCleanStale:       phasedAutoCleanStale,
 		AutoCleanStaleAfter:  phasedAutoCleanStaleAfter,
-		NtmPollInterval:      ntmPollInterval,
 		StallCheckInterval:   stallCheckInterval,
+		RuntimeMode:          phasedRuntimeMode,
+		RuntimeCommand:       phasedRuntimeCommand,
 	}
 
 	// Apply config-based worktree mode if the --no-worktree flag was not explicitly set.
 	if !cmd.Flags().Changed("no-worktree") {
 		opts.NoWorktree = resolveWorktreeModeFromConfig(opts.NoWorktree)
 	}
+	toolchain, err := resolveRPIToolchain(
+		cliRPI.Toolchain{
+			RuntimeMode:    phasedRuntimeMode,
+			RuntimeCommand: phasedRuntimeCommand,
+		},
+		rpiToolchainFlagSet{
+			RuntimeMode:    cmd.Flags().Changed("runtime"),
+			RuntimeCommand: cmd.Flags().Changed("runtime-cmd"),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	opts.RuntimeMode = toolchain.RuntimeMode
+	opts.RuntimeCommand = toolchain.RuntimeCommand
+	opts.AOCommand = toolchain.AOCommand
+	opts.BDCommand = toolchain.BDCommand
+	opts.TmuxCommand = toolchain.TmuxCommand
 	if cmd.Flags().Changed("auto-clean-stale-after") {
 		opts.AutoCleanStale = true
 	}
@@ -509,15 +533,72 @@ func resolveWorktreeModeFromConfig(flagDefault bool) bool {
 	}
 }
 
+func normalizeRuntimeMode(mode string) string {
+	normalized := strings.ToLower(strings.TrimSpace(mode))
+	if normalized == "" {
+		return "auto"
+	}
+	return normalized
+}
+
+func effectiveRuntimeCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "claude"
+	}
+	return normalized
+}
+
+func effectiveAOCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "ao"
+	}
+	return normalized
+}
+
+func effectiveBDCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "bd"
+	}
+	return normalized
+}
+
+func effectiveTmuxCommand(command string) string {
+	normalized := strings.TrimSpace(command)
+	if normalized == "" {
+		return "tmux"
+	}
+	return normalized
+}
+
+func validateRuntimeMode(mode string) error {
+	switch normalizeRuntimeMode(mode) {
+	case "auto", "direct", "stream":
+		return nil
+	default:
+		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream)", mode)
+	}
+}
+
 // runRPIPhasedWithOpts is the core implementation of the phased RPI lifecycle.
 // All configuration is read from opts; no package-level globals are read after
-// this point (except test-injection points: lookPath, spawnDirectFn, gtPath).
+// this point (except test-injection points: lookPath and spawnDirectFn).
 func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	if err := preflightClaudeAvailability(); err != nil {
+	opts.RuntimeMode = normalizeRuntimeMode(opts.RuntimeMode)
+	opts.RuntimeCommand = effectiveRuntimeCommand(opts.RuntimeCommand)
+	opts.AOCommand = effectiveAOCommand(opts.AOCommand)
+	opts.BDCommand = effectiveBDCommand(opts.BDCommand)
+	opts.TmuxCommand = effectiveTmuxCommand(opts.TmuxCommand)
+	if err := validateRuntimeMode(opts.RuntimeMode); err != nil {
+		return err
+	}
+	if err := preflightRuntimeAvailability(opts.RuntimeCommand); err != nil {
 		return err
 	}
 	if opts.AutoCleanStale {
@@ -556,6 +637,7 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	}()
 
 	ensureStateRunID(state)
+	state.OrchestratorPID = os.Getpid()
 
 	_, runLogPath, statusPath, allPhases, err := initializeRunArtifacts(spawnCwd, startPhase, state, opts)
 	if err != nil {
@@ -565,12 +647,6 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 
 	logPhaseTransition(logPath, state.RunID, "start", fmt.Sprintf("goal=%q from=%s", state.Goal, opts.From))
 
-	// Register with agent mail for observability
-	registerRPIAgent(state.RunID)
-	defer deregisterRPIAgent(state.RunID)
-
-	// logAndFail logs an error to the orchestration log, emits a failure status
-	// event, records actionable context, and returns the error.
 	// Resolve executor backend once for the entire run.
 	// selectExecutorWithLog records the selection and reason to the orchestration log.
 	executor := selectExecutorWithLog(statusPath, allPhases, logPath, state.RunID, opts.LiveStatus, opts)
@@ -616,7 +692,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 	switch phaseNum {
 	case 1: // Discovery — extract epic ID, check pre-mortem verdict
 		// Extract epic ID (created by /plan within the discovery session)
-		epicID, err := extractEpicID()
+		epicID, err := extractEpicID(state.Opts.BDCommand)
 		if err != nil {
 			return fmt.Errorf("discovery phase: could not extract epic ID (implementation needs this): %w", err)
 		}
@@ -626,7 +702,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 
 		// Detect fast path
 		if !state.Opts.FastPath {
-			fast, err := detectFastPath(state.EpicID)
+			fast, err := detectFastPath(state.EpicID, state.Opts.BDCommand)
 			if err != nil {
 				VerbosePrintf("Warning: fast-path detection failed (continuing without): %v\n", err)
 			} else if fast {
@@ -666,7 +742,7 @@ func postPhaseProcessing(cwd string, state *phasedState, phaseNum int, logPath s
 			}
 		}
 		if state.EpicID != "" {
-			status, err := checkCrankCompletion(state.EpicID)
+			status, err := checkCrankCompletion(state.EpicID, state.Opts.BDCommand)
 			if err != nil {
 				VerbosePrintf("Warning: could not check crank completion (continuing to validation): %v\n", err)
 			} else {
@@ -842,12 +918,12 @@ func handleGateRetry(cwd string, state *phasedState, phaseNum int, gateErr *gate
 	}
 
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would spawn retry: claude -p '%s'\n", retryPrompt)
+		fmt.Printf("[dry-run] Would spawn retry: %s -p '%s'\n", effectiveRuntimeCommand(state.Opts.RuntimeCommand), retryPrompt)
 		return false, nil
 	}
 
 	// Spawn retry session
-	fmt.Printf("Spawning retry: claude -p '%s'\n", retryPrompt)
+	fmt.Printf("Spawning retry: %s -p '%s'\n", effectiveRuntimeCommand(state.Opts.RuntimeCommand), retryPrompt)
 	if state.Opts.LiveStatus {
 		updateLivePhaseStatus(statusPath, allPhases, phaseNum, "running retry prompt", attempt, "")
 	}
@@ -1100,40 +1176,21 @@ func buildRetryPrompt(cwd string, phaseNum int, state *phasedState, retryCtx *re
 const (
 	ExitGateFail  = 10 // Council gate returned FAIL
 	ExitUserAbort = 20 // User cancelled the session
-	ExitCLIError  = 30 // Claude CLI error (not found, config issue)
+	ExitCLIError  = 30 // Runtime CLI error (not found, config issue)
 )
 
-// spawnClaudePhase spawns a fresh Claude session for a single phase.
-// When ntm is available in PATH, wraps the session in a named tmux pane
-// (ao-rpi-<runID>-p<N>) for live observability via ntm attach.
-// Falls back to direct exec when ntm is unavailable.
-// Strips CLAUDECODE env var so the child session doesn't trigger the
-// nesting guard — these are independent sequential sessions, not nested.
-// cmd.Dir is set to cwd for worktree isolation. GIT_DIR/GIT_WORK_TREE are
-// NOT set — git auto-discovers the repo from the working directory.
-//
-// Note: this function reads the package-level globals ntmPollInterval and
-// phasedPhaseTimeout / phasedStallTimeout for timeout configuration. It is
-// used in tests (via spawnDirectFn injection) and the old direct-call path.
+// spawnClaudePhase exists for compatibility with legacy direct-spawn tests.
 // Production code should use a PhaseExecutor (selectExecutorFromCaps) instead.
 func spawnClaudePhase(prompt, cwd, runID string, phaseNum int) error {
-	// Skip ntm when running inside a Claude agent session (non-interactive).
-	// ntm is for human-observable tmux sessions; agent-spawned runs should
-	// use direct exec to avoid interactive prompts and stdin issues.
-	if os.Getenv("CLAUDECODE") != "" || os.Getenv("CLAUDE_CODE_ENTRYPOINT") != "" {
-		return spawnDirectFn(prompt, cwd, phaseNum)
-	}
-	// Check if ntm is available for observable sessions
-	ntmPath, ntmErr := lookPath("ntm")
-	if ntmErr == nil {
-		return spawnClaudePhaseNtm(ntmPath, prompt, cwd, runID, phaseNum, phasedPhaseTimeout, phasedStallTimeout, ntmPollInterval)
-	}
+	_ = runID
 	return spawnDirectFn(prompt, cwd, phaseNum)
 }
 
-// spawnClaudeDirectImpl runs claude -p directly (fallback when ntm unavailable).
+// spawnRuntimeDirectImpl runs <runtimeCommand> -p directly.
 // phaseTimeout controls the maximum runtime; pass 0 to disable the timeout.
-func spawnClaudeDirectImpl(prompt, cwd string, phaseNum int, phaseTimeout time.Duration) error {
+func spawnRuntimeDirectImpl(runtimeCommand, prompt, cwd string, phaseNum int, phaseTimeout time.Duration) error {
+	command := effectiveRuntimeCommand(runtimeCommand)
+
 	ctx := context.Background()
 	cancel := func() {}
 	if phaseTimeout > 0 {
@@ -1141,7 +1198,7 @@ func spawnClaudeDirectImpl(prompt, cwd string, phaseNum int, phaseTimeout time.D
 	}
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "claude", "-p", prompt)
+	cmd := exec.CommandContext(ctx, command, "-p", prompt)
 	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -1155,95 +1212,26 @@ func spawnClaudeDirectImpl(prompt, cwd string, phaseNum int, phaseTimeout time.D
 		return nil
 	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
-		return fmt.Errorf("claude exited with code %d: %w", exitErr.ExitCode(), err)
+		return fmt.Errorf("%s exited with code %d: %w", command, exitErr.ExitCode(), err)
 	}
-	return fmt.Errorf("claude execution failed: %w", err)
+	return fmt.Errorf("%s execution failed: %w", command, err)
 }
 
-// spawnClaudePhaseNtm wraps a claude session inside an ntm-managed tmux pane.
-// Session name: ao-rpi-<runID>-p<phaseNum>. Attach with: ntm attach <name>.
-// phaseTimeout, stallTimeout, and pollInterval are passed explicitly so the function
-// does not read package-level globals.
-func spawnClaudePhaseNtm(ntmPath, prompt, cwd, runID string, phaseNum int, phaseTimeout, stallTimeout, pollInterval time.Duration) error {
-	sessionName := fmt.Sprintf("ao-rpi-%s-p%d", runID, phaseNum)
-	fmt.Printf("ntm session: %s (attach with: ntm attach %s)\n", sessionName, sessionName)
-
-	// Spawn ntm session with one claude agent
-	spawnCmd := exec.Command(ntmPath, "spawn", sessionName, "--cc=1", "--no-user")
-	spawnCmd.Dir = cwd
-	spawnCmd.Env = cleanEnvNoClaude()
-	if out, err := spawnCmd.CombinedOutput(); err != nil {
-		fmt.Printf("ntm spawn failed, falling back to direct exec: %s\n", string(out))
-		return spawnDirectFn(prompt, cwd, phaseNum)
-	}
-
-	// Send the prompt to the claude agent
-	sendCmd := exec.Command(ntmPath, "send", sessionName, prompt)
-	sendCmd.Env = cleanEnvNoClaude()
-	if out, err := sendCmd.CombinedOutput(); err != nil {
-		fmt.Printf("ntm send failed, falling back to direct exec: %s\n", string(out))
-		// Clean up session on failure and fall back
-		_ = exec.Command(ntmPath, "kill", sessionName).Run()
-		return spawnDirectFn(prompt, cwd, phaseNum)
-	}
-
-	// Poll for session completion (agent exits when prompt completes)
-	var timeout <-chan time.Time
-	if phaseTimeout > 0 {
-		timer := time.NewTimer(phaseTimeout)
-		defer timer.Stop()
-		timeout = timer.C
-	}
-
-	// Stall detection for ntm: track last pane content hash.
-	// If pane content doesn't change for stallTimeout, declare stall.
-	var lastPaneContent string
-	lastContentChange := time.Now()
-
-	for {
-		select {
-		case <-timeout:
-			_ = exec.Command(ntmPath, "kill", sessionName).Run() //nolint:errcheck
-			return fmt.Errorf("phase %d (%s) timed out after %s (set --phase-timeout to increase)", phaseNum, failReasonTimeout, phaseTimeout)
-		case <-time.After(pollInterval):
-			checkCmd := exec.Command("tmux", "has-session", "-t", sessionName)
-			if err := checkCmd.Run(); err != nil {
-				// Session gone — agent completed
-				break
-			}
-
-			// Stall detection: capture pane content and compare.
-			if stallTimeout > 0 {
-				captureCmd := exec.Command("tmux", "capture-pane", "-t", sessionName, "-p")
-				if paneOut, captureErr := captureCmd.Output(); captureErr == nil {
-					currentContent := string(paneOut)
-					if currentContent != lastPaneContent {
-						lastPaneContent = currentContent
-						lastContentChange = time.Now()
-					} else if time.Since(lastContentChange) > stallTimeout {
-						_ = exec.Command(ntmPath, "kill", sessionName).Run() //nolint:errcheck
-						return fmt.Errorf("phase %d (%s): stall detected: no pane activity for %s", phaseNum, failReasonStall, stallTimeout)
-					}
-				}
-			}
-			continue
-		}
-		break
-	}
-
-	// Clean up tmux session
-	_ = exec.Command(ntmPath, "kill", sessionName).Run()
-	return nil
+// spawnClaudeDirectImpl is the legacy wrapper pinned to the default runtime.
+func spawnClaudeDirectImpl(prompt, cwd string, phaseNum int, phaseTimeout time.Duration) error {
+	return spawnRuntimeDirectImpl("claude", prompt, cwd, phaseNum, phaseTimeout)
 }
 
-// spawnClaudePhaseWithStream spawns a Claude session using --output-format stream-json
+// spawnRuntimePhaseWithStream spawns a runtime session using --output-format stream-json
 // and feeds stdout through ParseStreamEvents for live progress tracking.
 // An onUpdate callback calls WriteLiveStatus after every parsed event so that
 // external watchers (e.g. ao status) can tail the status file.
 // Stderr is passed through to os.Stderr for real-time error visibility.
 // phaseTimeout, stallTimeout, streamStartupTimeout, and checkInterval are passed
 // explicitly so the function does not read package-level globals.
-func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusPath string, allPhases []PhaseProgress, phaseTimeout, stallTimeout, streamStartupTimeout, checkInterval time.Duration) error {
+func spawnRuntimePhaseWithStream(runtimeCommand, prompt, cwd, runID string, phaseNum int, statusPath string, allPhases []PhaseProgress, phaseTimeout, stallTimeout, streamStartupTimeout, checkInterval time.Duration) error {
+	command := effectiveRuntimeCommand(runtimeCommand)
+
 	ctx := context.Background()
 	cancel := func() {}
 	if phaseTimeout > 0 {
@@ -1317,7 +1305,7 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 		}()
 	}
 
-	cmd := exec.CommandContext(stallCtx, "claude", "-p", prompt, "--output-format", "stream-json", "--verbose")
+	cmd := exec.CommandContext(stallCtx, command, "-p", prompt, "--output-format", "stream-json", "--verbose")
 	cmd.Dir = cwd
 	cmd.Stderr = os.Stderr
 	cmd.Env = cleanEnvNoClaude()
@@ -1328,7 +1316,7 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("start claude: %w", err)
+		return fmt.Errorf("start %s: %w", command, err)
 	}
 
 	// phaseIdx is 0-based for allPhases slice.
@@ -1375,9 +1363,9 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 	// Prefer wait error (exit code) over parse error.
 	if waitErr != nil {
 		if exitErr, ok := waitErr.(*exec.ExitError); ok {
-			return fmt.Errorf("claude exited with code %d (%s): %w", exitErr.ExitCode(), failReasonExit, waitErr)
+			return fmt.Errorf("%s exited with code %d (%s): %w", command, exitErr.ExitCode(), failReasonExit, waitErr)
 		}
-		return fmt.Errorf("claude execution failed (%s): %w", failReasonUnknown, waitErr)
+		return fmt.Errorf("%s execution failed (%s): %w", command, failReasonUnknown, waitErr)
 	}
 	if parseErr != nil {
 		return fmt.Errorf("stream parse error: %w", parseErr)
@@ -1386,6 +1374,11 @@ func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusP
 		return fmt.Errorf("stream startup timeout: stream completed without parseable events")
 	}
 	return nil
+}
+
+// spawnClaudePhaseWithStream is the legacy wrapper pinned to the default runtime.
+func spawnClaudePhaseWithStream(prompt, cwd, runID string, phaseNum int, statusPath string, allPhases []PhaseProgress, phaseTimeout, stallTimeout, streamStartupTimeout, checkInterval time.Duration) error {
+	return spawnRuntimePhaseWithStream("claude", prompt, cwd, runID, phaseNum, statusPath, allPhases, phaseTimeout, stallTimeout, streamStartupTimeout, checkInterval)
 }
 
 func updateLivePhaseStatus(statusPath string, allPhases []PhaseProgress, phaseNum int, action string, retries int, lastErr string) {
@@ -1544,25 +1537,77 @@ func extractCouncilFindings(reportPath string, max int) ([]finding, error) {
 // extractEpicID finds the most recently created open epic ID via bd CLI.
 // bd list returns epics in creation order; we take the LAST match so that
 // the epic just created by the plan phase is selected over older ones.
-func extractEpicID() (string, error) {
-	cmd := exec.Command("bd", "list", "--type", "epic", "--status", "open")
+func extractEpicID(bdCommand string) (string, error) {
+	command := effectiveBDCommand(bdCommand)
+
+	// Prefer JSON output for prefix-agnostic parsing.
+	cmd := exec.Command(command, "list", "--type", "epic", "--status", "open", "--json")
 	out, err := cmd.Output()
+	if err == nil {
+		epicID, parseErr := parseLatestEpicIDFromJSON(out)
+		if parseErr == nil {
+			return epicID, nil
+		}
+		VerbosePrintf("Warning: could not parse bd JSON epic list (falling back to text): %v\n", parseErr)
+	} else {
+		VerbosePrintf("Warning: bd list --json failed (falling back to text): %v\n", err)
+	}
+
+	// Fallback for older bd builds that do not support JSON output.
+	cmd = exec.Command(command, "list", "--type", "epic", "--status", "open")
+	out, err = cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("bd list: %w", err)
 	}
+	return parseLatestEpicIDFromText(string(out))
+}
 
-	re := regexp.MustCompile(`(ag-[a-z0-9]+)`)
-	allMatches := re.FindAllSubmatch(out, -1)
-	if len(allMatches) == 0 {
+func parseLatestEpicIDFromJSON(data []byte) (string, error) {
+	var entries []struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return "", fmt.Errorf("parse bd list JSON: %w", err)
+	}
+	for i := len(entries) - 1; i >= 0; i-- {
+		epicID := strings.TrimSpace(entries[i].ID)
+		if epicID != "" {
+			return epicID, nil
+		}
+	}
+	return "", fmt.Errorf("no epic found in bd list output")
+}
+
+func parseLatestEpicIDFromText(output string) (string, error) {
+	// Allow custom prefixes (bd-*, ag-*, etc.) and keep the match anchored
+	// to issue-like tokens near the start of each line.
+	idPattern := regexp.MustCompile(`^[a-z][a-z0-9]*-[a-z0-9][a-z0-9.]*$`)
+
+	var latest string
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.Fields(line)
+		limit := len(fields)
+		if limit > 3 {
+			limit = 3
+		}
+		for i := 0; i < limit; i++ {
+			field := fields[i]
+			token := strings.Trim(field, "[]()")
+			if idPattern.MatchString(token) {
+				latest = token
+				break
+			}
+		}
+	}
+	if latest == "" {
 		return "", fmt.Errorf("no epic found in bd list output")
 	}
-	// Last match = most recently created epic.
-	return string(allMatches[len(allMatches)-1][1]), nil
+	return latest, nil
 }
 
 // detectFastPath checks if an epic is a micro-epic (≤2 issues, no blockers).
-func detectFastPath(epicID string) (bool, error) {
-	cmd := exec.Command("bd", "children", epicID)
+func detectFastPath(epicID string, bdCommand string) (bool, error) {
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "children", epicID)
 	out, err := cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("bd children: %w", err)
@@ -1589,8 +1634,8 @@ func parseFastPath(output string) bool {
 
 // checkCrankCompletion checks epic completion via bd children statuses.
 // Returns "DONE", "BLOCKED", or "PARTIAL".
-func checkCrankCompletion(epicID string) (string, error) {
-	cmd := exec.Command("bd", "children", epicID)
+func checkCrankCompletion(epicID string, bdCommand string) (string, error) {
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "children", epicID)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("bd children: %w", err)
@@ -2039,8 +2084,8 @@ func readRunHeartbeat(cwd, runID string) time.Time {
 // --- Ratchet and logging ---
 
 // recordRatchetCheckpoint records a ratchet checkpoint for a phase.
-func recordRatchetCheckpoint(step string) {
-	cmd := exec.Command("ao", "ratchet", "record", step)
+func recordRatchetCheckpoint(step, aoCommand string) {
+	cmd := exec.Command(effectiveAOCommand(aoCommand), "ratchet", "record", step)
 	if err := cmd.Run(); err != nil {
 		VerbosePrintf("Warning: ratchet record %s: %v\n", step, err)
 	}
@@ -2147,7 +2192,7 @@ func logFailureContext(logPath, runID, phase string, err error) {
 	logPhaseTransition(logPath, runID, phase, fmt.Sprintf("FAILURE_CONTEXT: %v | action: check .agents/rpi/ for phase artifacts, review .agents/council/ for verdicts", err))
 }
 
-// --- Agent mail observability ---
+// --- Runtime process helpers ---
 
 // lookPath is the function used to resolve binary paths. Package-level for testability.
 var lookPath = exec.LookPath
@@ -2161,48 +2206,9 @@ func spawnClaudeDirectGlobal(prompt, cwd string, phaseNum int) error {
 // spawnDirectFn is the function used to spawn claude directly. Package-level for testability.
 var spawnDirectFn = spawnClaudeDirectGlobal
 
-// ntmPollInterval controls how frequently spawnClaudePhaseNtm checks session liveness.
-// Overridable in tests for fast-forward timing without needing a real tmux session.
-var ntmPollInterval = 5 * time.Second
-
 // stallCheckInterval controls how frequently the stall watchdog goroutine fires in
 // spawnClaudePhaseWithStream. Overridable in tests to exercise stall detection quickly.
 var stallCheckInterval = 30 * time.Second
-
-// gtPath caches the resolved path to the gt binary, or empty string if not found.
-var gtPath string
-
-func init() {
-	gtPath, _ = lookPath("gt")
-}
-
-// registerRPIAgent registers this RPI run with agent mail for observability.
-// Fails silently if gt is not on PATH or the command errors.
-func registerRPIAgent(runID string) {
-	if gtPath == "" {
-		return
-	}
-	_ = exec.Command(gtPath, "mail", "register", "rpi-"+runID).Run() //nolint:errcheck
-}
-
-// emitRPIStatus sends a status message to mayor via agent mail.
-// Fails silently if gt is not on PATH or the command errors.
-func emitRPIStatus(runID, phaseName, status string) {
-	if gtPath == "" {
-		return
-	}
-	msg := fmt.Sprintf("rpi-%s: %s %s", runID, phaseName, status)
-	_ = exec.Command(gtPath, "mail", "send", "mayor", msg).Run() //nolint:errcheck
-}
-
-// deregisterRPIAgent deregisters this RPI run from agent mail.
-// Fails silently if gt is not on PATH or the command errors.
-func deregisterRPIAgent(runID string) {
-	if gtPath == "" {
-		return
-	}
-	_ = exec.Command(gtPath, "mail", "deregister", "rpi-"+runID).Run() //nolint:errcheck
-}
 
 // --- Phase name helpers ---
 

@@ -159,7 +159,7 @@ func TestRunRPIPhased_DryRunBackendSelection(t *testing.T) {
 		lookPath = origLookPath
 	}()
 
-	// Force direct backend: ntm not found, not in agent session.
+	// Force direct backend: runtime=auto with live-status disabled.
 	lookPath = func(name string) (string, error) {
 		return "", fmt.Errorf("not found: %s", name)
 	}
@@ -177,7 +177,7 @@ func TestRunRPIPhased_DryRunBackendSelection(t *testing.T) {
 	opts.SwarmFirst = true
 	executor := selectExecutorWithLog("", nil, logPath, "dryrun-run-id", false, opts)
 	if executor.Name() != "direct" {
-		t.Errorf("expected direct executor (no ntm available), got %q", executor.Name())
+		t.Errorf("expected direct executor (runtime=auto, live-status disabled), got %q", executor.Name())
 	}
 
 	// Verify backend-selection was logged.
@@ -265,7 +265,7 @@ func TestRunRPIPhased_BackendStoredInState(t *testing.T) {
 		t.Error("state.Backend should be set after selectExecutorWithLog")
 	}
 	if state.Backend != "direct" {
-		t.Errorf("expected direct backend (no ntm), got %q", state.Backend)
+		t.Errorf("expected direct backend, got %q", state.Backend)
 	}
 }
 

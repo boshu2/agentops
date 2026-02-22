@@ -1,66 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
-
-// TestDeregisterOnSuccess verifies that deregisterRPIAgent is callable after a
-// successful run (i.e., the defer is in place for the success path).
-// We test this by directly verifying the function does not panic and produces
-// the correct gt command invocation.
-func TestDeregisterOnSuccess(t *testing.T) {
-	origGtPath := gtPath
-	defer func() { gtPath = origGtPath }()
-
-	tmpDir := t.TempDir()
-	markerFile := filepath.Join(tmpDir, "deregister.marker")
-	tmpBin := createFakeGtMarkerBinary(t, markerFile, "deregister")
-	gtPath = tmpBin
-
-	// Simulate success path: register then deregister (as defer would do).
-	runID := "test-success-run"
-	registerRPIAgent(runID)
-	deregisterRPIAgent(runID) // This is what the defer calls on success.
-
-	// Check synchronously — the shell script runs synchronously via exec.Command.Run().
-	if _, err := os.Stat(markerFile); err != nil {
-		t.Error("deregisterRPIAgent was not called on success path (marker file not created)")
-	}
-}
-
-// TestDeregisterOnFailure verifies that deregisterRPIAgent is callable after a
-// failed run. In the actual code, `defer deregisterRPIAgent(state.RunID)` is
-// registered unconditionally — it fires on all exit paths including failure.
-func TestDeregisterOnFailure(t *testing.T) {
-	origGtPath := gtPath
-	defer func() { gtPath = origGtPath }()
-
-	tmpDir := t.TempDir()
-	markerFile := filepath.Join(tmpDir, "deregister-fail.marker")
-	tmpBin := createFakeGtMarkerBinary(t, markerFile, "deregister")
-	gtPath = tmpBin
-
-	// Simulate failure path: register then hit an error, defer still fires.
-	runID := "test-failure-run"
-	registerRPIAgent(runID)
-
-	// Simulate what the defer does even on error exit.
-	func() {
-		defer deregisterRPIAgent(runID)
-		// Simulate a failure return — defer fires regardless.
-		_ = fmt.Errorf("simulated phase failure")
-	}()
-
-	// Check synchronously.
-	if _, err := os.Stat(markerFile); err != nil {
-		t.Error("deregisterRPIAgent was not called on failure path (defer must fire unconditionally)")
-	}
-}
 
 // TestMergeFailurePropagation verifies that mergeWorktree errors surface as
 // non-zero command results (non-nil error). Uses a real git repo to test the
@@ -160,56 +106,4 @@ func TestCleanupFailurePropagation(t *testing.T) {
 	}
 
 	t.Logf("cleanup failure logged with actionable context: %s", logContent)
-}
-
-// TestDeregisterRPIAgent_CalledOnAllExitPaths verifies the defer placement
-// ensures deregisterRPIAgent fires on all exit paths by testing the underlying
-// function directly under different conditions.
-func TestDeregisterRPIAgent_CalledOnAllExitPaths(t *testing.T) {
-	origGtPath := gtPath
-	defer func() { gtPath = origGtPath }()
-
-	// Test 1: no-op when gt not on PATH (must not panic).
-	gtPath = ""
-	deregisterRPIAgent("any-run-id") // Should not panic.
-
-	// Test 2: with a non-existent binary (should fail silently).
-	gtPath = "/nonexistent/gt-binary"
-	deregisterRPIAgent("any-run-id") // Should not panic or propagate error.
-
-	// Test 3: with a valid binary (verify correct arguments via marker file).
-	tmpDir := t.TempDir()
-	markerFile := filepath.Join(tmpDir, "deregister-all-paths.marker")
-	tmpBin := createFakeGtMarkerBinary(t, markerFile, "deregister")
-	gtPath = tmpBin
-
-	deregisterRPIAgent("run-123")
-	if _, err := os.Stat(markerFile); err != nil {
-		t.Error("deregisterRPIAgent did not attempt gt command")
-	}
-}
-
-// createFakeGtMarkerBinary creates a shell script that acts as a fake "gt" binary.
-// When invoked with any argument matching expectSubcommand, it creates markerFile.
-// Returns the path to the executable script.
-func createFakeGtMarkerBinary(t *testing.T, markerFile, expectSubcommand string) string {
-	t.Helper()
-	tmpDir := t.TempDir()
-	script := filepath.Join(tmpDir, "gt")
-
-	scriptContent := fmt.Sprintf(`#!/bin/sh
-for arg in "$@"; do
-  if [ "$arg" = "%s" ]; then
-    touch "%s"
-    exit 0
-  fi
-done
-exit 0
-`, expectSubcommand, markerFile)
-
-	if err := os.WriteFile(script, []byte(scriptContent), 0755); err != nil {
-		t.Fatalf("create fake gt script: %v", err)
-	}
-
-	return script
 }
