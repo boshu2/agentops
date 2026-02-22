@@ -1011,6 +1011,252 @@ func TestRPILoop_TaskFailure_MarksQueueFailed(t *testing.T) {
 	}
 }
 
+func TestRPILoop_TaskFailure_ContinuePolicy_AdvancesAfterFailingEntry(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 3
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	queuePath := filepath.Join(rpiDir, "next-work.jsonl")
+	writeJSONL(t, queuePath, []nextWorkEntry{
+		{
+			SourceEpic: "ag-task-continue-fail",
+			Items:      []nextWorkItem{{Title: "Task failing goal", Severity: "high"}},
+			Consumed:   false,
+		},
+		{
+			SourceEpic: "ag-task-continue-pass",
+			Items:      []nextWorkItem{{Title: "Task succeeding goal", Severity: "medium"}},
+			Consumed:   false,
+		},
+	})
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyContinue
+	rpiCycleRetries = 0
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	var goals []string
+	runRPISupervisedCycleFn = func(_ string, goal string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		goals = append(goals, goal)
+		if goal == "Task failing goal" {
+			return wrapCycleFailure(cycleFailureTask, "phased engine", fmt.Errorf("intentional task failure"))
+		}
+		return nil
+	}
+
+	output, err := captureStdoutWithError(func() error {
+		return runRPILoop(nil, nil)
+	})
+	if err != nil {
+		t.Fatalf("expected nil error under continue policy, got: %v", err)
+	}
+	if len(goals) != 2 {
+		t.Fatalf("expected 2 cycle executions, got %d (%v)", len(goals), goals)
+	}
+	if goals[0] != "Task failing goal" || goals[1] != "Task succeeding goal" {
+		t.Fatalf("unexpected goal progression: %v", goals)
+	}
+	if !strings.Contains(output, "RPI loop finished after 2 cycle(s).") {
+		t.Fatalf("expected 2-cycle summary, got:\n%s", output)
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt == nil {
+		t.Fatal("task failure should mark first queue entry failed")
+	}
+	if after[0].Consumed {
+		t.Fatal("failed queue entry should remain unconsumed")
+	}
+	if !after[1].Consumed {
+		t.Fatal("second queue entry should be consumed after continuing")
+	}
+}
+
+func TestRPILoop_TaskFailure_StopPolicy_DoesNotAdvanceQueue(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 3
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	queuePath := filepath.Join(rpiDir, "next-work.jsonl")
+	writeJSONL(t, queuePath, []nextWorkEntry{
+		{
+			SourceEpic: "ag-task-stop-fail",
+			Items:      []nextWorkItem{{Title: "Task failing goal", Severity: "high"}},
+			Consumed:   false,
+		},
+		{
+			SourceEpic: "ag-task-stop-next",
+			Items:      []nextWorkItem{{Title: "Never reached goal", Severity: "medium"}},
+			Consumed:   false,
+		},
+	})
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 0
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+
+	var goals []string
+	runRPISupervisedCycleFn = func(_ string, goal string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		goals = append(goals, goal)
+		return wrapCycleFailure(cycleFailureTask, "phased engine", fmt.Errorf("intentional task failure"))
+	}
+
+	err := runRPILoop(nil, nil)
+	if err == nil {
+		t.Fatal("expected error under stop policy")
+	}
+	if len(goals) != 1 {
+		t.Fatalf("expected one cycle attempt before stop, got %d (%v)", len(goals), goals)
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt == nil {
+		t.Fatal("first queue entry should be marked failed")
+	}
+	if after[1].FailedAt != nil || after[1].Consumed {
+		t.Fatal("second queue entry should be untouched when stop policy is active")
+	}
+}
+
+func TestRPILoop_KillSwitchDuringRetry_StopsWithoutQueueMutation(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	prevMaxCycles := rpiMaxCycles
+	rpiMaxCycles = 1
+	defer func() { rpiMaxCycles = prevMaxCycles }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
+		SourceEpic: "ag-kill-switch",
+		Items:      []nextWorkItem{{Title: "Kill switch retry goal", Severity: "high"}},
+		Consumed:   false,
+	})
+
+	killPath := filepath.Join(tmpDir, ".agents", "rpi", "KILL")
+	if err := os.MkdirAll(filepath.Dir(killPath), 0755); err != nil {
+		t.Fatalf("mkdir kill-switch dir: %v", err)
+	}
+
+	rpiSupervisor = false
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 2
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+	rpiKillSwitchPath = killPath
+
+	attempts := 0
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		attempts++
+		if attempts == 1 {
+			if err := os.WriteFile(killPath, []byte("stop\n"), 0644); err != nil {
+				t.Fatalf("write kill switch: %v", err)
+			}
+		}
+		return wrapCycleFailure(cycleFailureInfrastructure, "landing", fmt.Errorf("transient infra failure"))
+	}
+
+	output, err := captureStdoutWithError(func() error {
+		return runRPILoop(nil, nil)
+	})
+	if err != nil {
+		t.Fatalf("expected kill-switch exit to return nil, got: %v", err)
+	}
+	if attempts != 1 {
+		t.Fatalf("expected one attempt before kill-switch stop, got %d", attempts)
+	}
+	if !strings.Contains(output, "Stopping loop before cycle execution") {
+		t.Fatalf("expected kill-switch stop message, got:\n%s", output)
+	}
+
+	after := readJSONLEntries(t, queuePath)
+	if after[0].FailedAt != nil {
+		t.Fatal("kill-switch interruption should not mark queue entry failed")
+	}
+	if after[0].Consumed {
+		t.Fatal("kill-switch interruption should not consume queue entry")
+	}
+}
+
 func TestRPILoop_ExplicitGoalReportsExecutedCycles(t *testing.T) {
 	prevGlobals := snapshotLoopSupervisorGlobals()
 	defer restoreLoopSupervisorGlobals(prevGlobals)

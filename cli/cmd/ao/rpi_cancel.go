@@ -33,6 +33,7 @@ func init() {
 
 By default this sends SIGTERM to the orchestrator PID (and its descendants)
 for matching active runs discovered in the run registry and supervisor lease.
+Expired/corrupted lease metadata is treated as stale and ignored.
 
 Examples:
   ao rpi cancel --all
@@ -196,6 +197,9 @@ func discoverSupervisorLeaseTargets(root, runID string, procs []processInfo, see
 	if runID != "" && meta.RunID != runID {
 		return nil
 	}
+	if supervisorLeaseMetadataExpired(meta, time.Now().UTC()) {
+		return nil
+	}
 	if !processExists(meta.PID, procs) {
 		return nil
 	}
@@ -215,6 +219,20 @@ func discoverSupervisorLeaseTargets(root, runID string, procs []processInfo, see
 		LeasePath: leasePath,
 		PIDs:      dedupeInts(pids),
 	}}
+}
+
+func supervisorLeaseMetadataExpired(meta supervisorLeaseMetadata, now time.Time) bool {
+	expiryRaw := strings.TrimSpace(meta.ExpiresAt)
+	if expiryRaw == "" {
+		// Backward compatibility for lock files without expiry metadata.
+		return false
+	}
+	expiry, err := time.Parse(time.RFC3339, expiryRaw)
+	if err != nil {
+		// Corrupted lease metadata is treated as stale.
+		return true
+	}
+	return now.After(expiry)
 }
 
 func collectRunProcessPIDs(state *phasedState, procs []processInfo) []int {

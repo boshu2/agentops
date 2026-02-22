@@ -451,6 +451,8 @@ ao rpi status --watch                          # Monitor active/terminal runs
 
 Walk away, come back to committed code + extracted learnings.
 
+Supervisor determinism contract: task failures mark queue entries failed, infrastructure failures leave queue entries retryable, and `ao rpi cancel` ignores stale supervisor lease metadata. For recovery/hygiene, pair `ao rpi cancel` with `ao rpi cleanup --all --prune-worktrees --prune-branches`.
+
 ```bash
 ao search "query"      # Search knowledge across files and chat history
 ao demo                # Interactive demo

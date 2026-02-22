@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestParseCancelSignal(t *testing.T) {
@@ -93,6 +94,58 @@ func TestDiscoverSupervisorLeaseTargets(t *testing.T) {
 	}
 	if len(targets[0].PIDs) != 2 {
 		t.Fatalf("expected lease pid and child, got %v", targets[0].PIDs)
+	}
+}
+
+func TestDiscoverSupervisorLeaseTargets_SkipsStaleLease(t *testing.T) {
+	root := t.TempDir()
+	lockPath := filepath.Join(root, ".agents", "rpi", "supervisor.lock")
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	meta := supervisorLeaseMetadata{
+		RunID:     "stale-lease",
+		PID:       100,
+		ExpiresAt: time.Now().Add(-5 * time.Minute).UTC().Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(meta)
+	if err := os.WriteFile(lockPath, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	procs := []processInfo{
+		{PID: 100, PPID: 1, Command: "ao rpi loop --supervisor"},
+	}
+	targets := discoverSupervisorLeaseTargets(root, "", procs, map[string]struct{}{})
+	if len(targets) != 0 {
+		t.Fatalf("expected stale lease to be ignored, got %d targets", len(targets))
+	}
+}
+
+func TestDiscoverRunRegistryTargets_SkipsMissingAndMalformedState(t *testing.T) {
+	root := t.TempDir()
+	runsDir := filepath.Join(root, ".agents", "rpi", "runs")
+	if err := os.MkdirAll(runsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	missingStateDir := filepath.Join(runsDir, "missing-state")
+	if err := os.MkdirAll(missingStateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	malformedStateDir := filepath.Join(runsDir, "malformed-state")
+	if err := os.MkdirAll(malformedStateDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	malformedPath := filepath.Join(malformedStateDir, phasedStateFile)
+	if err := os.WriteFile(malformedPath, []byte("not-json"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	targets := discoverRunRegistryTargets(root, "", nil, map[string]struct{}{})
+	if len(targets) != 0 {
+		t.Fatalf("expected malformed/missing state to be skipped, got %d targets", len(targets))
 	}
 }
 

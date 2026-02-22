@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -360,6 +361,135 @@ func TestRunSupervisorLanding_CommitPolicy_RespectsLandingLock(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "landing lock acquisition failed") {
 		t.Fatalf("expected landing lock acquisition error, got: %v", err)
+	}
+}
+
+func TestRunSupervisorLanding_CommitPolicy_LockContentionThenSuccess(t *testing.T) {
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "landing.lock")
+
+	landingLease, err := acquireSupervisorLease(tmpDir, lockPath, 2*time.Minute, "landing-run-locked")
+	if err != nil {
+		t.Fatalf("acquire landing lease: %v", err)
+	}
+
+	cfg := rpiLoopSupervisorConfig{
+		LandingPolicy:        loopLandingPolicyCommit,
+		LandingLockPath:      lockPath,
+		LandingCommitMessage: "chore(rpi): autonomous cycle {{cycle}}",
+		CommandTimeout:       time.Minute,
+	}
+
+	err = runSupervisorLanding(tmpDir, cfg, 1, 1, "ship", &landingScope{
+		baselineDirtyPaths: map[string]struct{}{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "landing lock acquisition failed") {
+		t.Fatalf("expected lock contention failure, got: %v", err)
+	}
+
+	if err := landingLease.Release(); err != nil {
+		t.Fatalf("release landing lease: %v", err)
+	}
+
+	prevOutputRunner := loopCommandOutputRunner
+	defer func() { loopCommandOutputRunner = prevOutputRunner }()
+	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
+		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
+			return "", nil
+		}
+		return "", nil
+	}
+
+	if err := runSupervisorLanding(tmpDir, cfg, 1, 2, "ship", &landingScope{
+		baselineDirtyPaths: map[string]struct{}{},
+	}); err != nil {
+		t.Fatalf("expected landing to succeed after lock release, got: %v", err)
+	}
+}
+
+func TestCommitIfDirty_RepeatedCyclesInDirtyRepoCommitOnlyOwnedPaths(t *testing.T) {
+	repoPath := t.TempDir()
+
+	runGit := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %s failed: %v (%s)", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+		}
+		return string(out)
+	}
+
+	runGit("init", "-q")
+	runGit("config", "user.email", "noreply@example.com")
+	runGit("config", "user.name", "Test User")
+	runGit("checkout", "-q", "-b", "main")
+	runGit("commit", "-q", "--allow-empty", "-m", "init")
+
+	preExistingPath := filepath.Join(repoPath, "preexisting.txt")
+	if err := os.WriteFile(preExistingPath, []byte("dirty baseline\n"), 0644); err != nil {
+		t.Fatalf("write preexisting file: %v", err)
+	}
+
+	scope1, err := captureLandingScope(repoPath, time.Minute)
+	if err != nil {
+		t.Fatalf("capture scope 1: %v", err)
+	}
+
+	owned1Path := filepath.Join(repoPath, "owned-1.txt")
+	if err := os.WriteFile(owned1Path, []byte("owned cycle 1\n"), 0644); err != nil {
+		t.Fatalf("write owned-1 file: %v", err)
+	}
+
+	committed, err := commitIfDirty(repoPath, "cycle-1", time.Minute, scope1)
+	if err != nil {
+		t.Fatalf("commitIfDirty cycle 1: %v", err)
+	}
+	if !committed {
+		t.Fatal("expected cycle 1 to produce a commit")
+	}
+
+	showHead := strings.TrimSpace(runGit("show", "--name-only", "--pretty=format:", "HEAD"))
+	if showHead != "owned-1.txt" {
+		t.Fatalf("expected HEAD to include only owned-1.txt, got %q", showHead)
+	}
+
+	statusAfterFirst := runGit("status", "--porcelain")
+	if !strings.Contains(statusAfterFirst, " preexisting.txt") {
+		t.Fatalf("expected preexisting dirty file to remain after cycle 1, got:\n%s", statusAfterFirst)
+	}
+
+	scope2, err := captureLandingScope(repoPath, time.Minute)
+	if err != nil {
+		t.Fatalf("capture scope 2: %v", err)
+	}
+
+	owned2Path := filepath.Join(repoPath, "owned-2.txt")
+	if err := os.WriteFile(owned2Path, []byte("owned cycle 2\n"), 0644); err != nil {
+		t.Fatalf("write owned-2 file: %v", err)
+	}
+
+	committed, err = commitIfDirty(repoPath, "cycle-2", time.Minute, scope2)
+	if err != nil {
+		t.Fatalf("commitIfDirty cycle 2: %v", err)
+	}
+	if !committed {
+		t.Fatal("expected cycle 2 to produce a commit")
+	}
+
+	showLatest := strings.TrimSpace(runGit("show", "--name-only", "--pretty=format:", "HEAD"))
+	if showLatest != "owned-2.txt" {
+		t.Fatalf("expected latest commit to include only owned-2.txt, got %q", showLatest)
+	}
+	showPrevious := strings.TrimSpace(runGit("show", "--name-only", "--pretty=format:", "HEAD~1"))
+	if showPrevious != "owned-1.txt" {
+		t.Fatalf("expected previous commit to include only owned-1.txt, got %q", showPrevious)
+	}
+
+	statusAfterSecond := runGit("status", "--porcelain")
+	if !strings.Contains(statusAfterSecond, " preexisting.txt") {
+		t.Fatalf("expected preexisting dirty file to remain after cycle 2, got:\n%s", statusAfterSecond)
 	}
 }
 

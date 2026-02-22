@@ -545,6 +545,121 @@ func TestCleanupLegacyRPIBranches_AllAndActiveSafety(t *testing.T) {
 	}
 }
 
+func TestExecuteRPICleanup_DryRunWithPruneFlags_PreservesStateAndBranches(t *testing.T) {
+	repoPath := t.TempDir()
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v failed: %v (%s)", strings.Join(args, " "), err, string(output))
+		}
+	}
+
+	runGit("init", "-q")
+	runGit("config", "user.email", "noreply@example.com")
+	runGit("config", "user.name", "Test User")
+	runGit("checkout", "-q", "-b", "main")
+	runGit("commit", "-q", "--allow-empty", "-m", "init")
+	runGit("branch", "-q", "rpi/dry-run")
+
+	runDir := filepath.Join(repoPath, ".agents", "rpi", "runs", "dry-run-stale")
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	statePath := filepath.Join(runDir, phasedStateFile)
+	state := map[string]interface{}{
+		"schema_version": 1,
+		"run_id":         "dry-run-stale",
+		"goal":           "dry run stale",
+		"phase":          2,
+		"started_at":     time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(statePath, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := executeRPICleanup(repoPath, "", true, true, true, true, 0); err != nil {
+		t.Fatalf("executeRPICleanup dry-run: %v", err)
+	}
+
+	if err := runGitCheckBranch(repoPath, "rpi/dry-run"); err != nil {
+		t.Fatalf("dry-run should preserve branch: %v", err)
+	}
+
+	updated, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatalf("read state after dry-run: %v", err)
+	}
+	var raw map[string]interface{}
+	if err := json.Unmarshal(updated, &raw); err != nil {
+		t.Fatalf("unmarshal state after dry-run: %v", err)
+	}
+	if _, ok := raw["terminal_status"]; ok {
+		t.Fatalf("dry-run should not mutate terminal_status, got %v", raw["terminal_status"])
+	}
+}
+
+func TestExecuteRPICleanup_PruneBranchesPreservesActiveCheckedOutWorktree(t *testing.T) {
+	repoPath := t.TempDir()
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v failed: %v (%s)", strings.Join(args, " "), err, string(output))
+		}
+	}
+
+	runGit("init", "-q")
+	runGit("config", "user.email", "noreply@example.com")
+	runGit("config", "user.name", "Test User")
+	runGit("checkout", "-q", "-b", "main")
+	runGit("commit", "-q", "--allow-empty", "-m", "init")
+	runGit("checkout", "-q", "-b", "rpi/active")
+	runGit("checkout", "-q", "main")
+
+	activeWorktreePath := filepath.Join(repoPath, "active-worktree")
+	runGit("worktree", "add", activeWorktreePath, "rpi/active")
+
+	runDir := filepath.Join(repoPath, ".agents", "rpi", "runs", "active-run")
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	statePath := filepath.Join(runDir, phasedStateFile)
+	state := map[string]interface{}{
+		"schema_version": 1,
+		"run_id":         "active-run",
+		"goal":           "active run",
+		"phase":          2,
+		"worktree_path":  activeWorktreePath,
+		"started_at":     time.Now().Add(-30 * time.Minute).Format(time.RFC3339),
+	}
+	data, _ := json.Marshal(state)
+	if err := os.WriteFile(statePath, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	hbPath := filepath.Join(runDir, "heartbeat.txt")
+	hb := time.Now().UTC().Format(time.RFC3339Nano) + "\n"
+	if err := os.WriteFile(hbPath, []byte(hb), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := executeRPICleanup(repoPath, "", true, false, true, false, 0); err != nil {
+		t.Fatalf("executeRPICleanup: %v", err)
+	}
+
+	if _, err := os.Stat(activeWorktreePath); err != nil {
+		t.Fatalf("active checked-out worktree should be preserved: %v", err)
+	}
+	if err := runGitCheckBranch(repoPath, "rpi/active"); err != nil {
+		t.Fatalf("active checked-out branch should be preserved: %v", err)
+	}
+}
+
 func runGitCheckBranch(repoPath, name string) error {
 	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+name)
 	cmd.Dir = repoPath
