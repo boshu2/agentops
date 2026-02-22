@@ -65,6 +65,7 @@ type rpiLoopSupervisorConfig struct {
 	LandingPolicy         string
 	LandingBranch         string
 	LandingCommitMessage  string
+	LandingLockPath       string
 	BDSyncPolicy          string
 	CommandTimeout        time.Duration
 	RuntimeMode           string
@@ -95,6 +96,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		LandingPolicy:         strings.ToLower(strings.TrimSpace(rpiLandingPolicy)),
 		LandingBranch:         strings.TrimSpace(rpiLandingBranch),
 		LandingCommitMessage:  rpiLandingCommitMessage,
+		LandingLockPath:       rpiLandingLockPath,
 		BDSyncPolicy:          strings.ToLower(strings.TrimSpace(rpiBDSyncPolicy)),
 		CommandTimeout:        rpiCommandTimeout,
 	}
@@ -150,6 +152,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 	if cfg.LeasePath == "" {
 		cfg.LeasePath = filepath.Join(".agents", "rpi", "supervisor.lock")
 	}
+	if cfg.LandingLockPath == "" {
+		cfg.LandingLockPath = filepath.Join(".agents", "rpi", "landing.lock")
+	}
 
 	if cfg.FailurePolicy != loopFailurePolicyStop && cfg.FailurePolicy != loopFailurePolicyContinue {
 		return cfg, fmt.Errorf("invalid failure-policy %q (valid: stop|continue)", cfg.FailurePolicy)
@@ -172,6 +177,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 
 	if !filepath.IsAbs(cfg.LeasePath) {
 		cfg.LeasePath = filepath.Join(cwd, cfg.LeasePath)
+	}
+	if !filepath.IsAbs(cfg.LandingLockPath) {
+		cfg.LandingLockPath = filepath.Join(cwd, cfg.LandingLockPath)
 	}
 
 	toolchain, err := resolveRPIToolchainDefaults()
@@ -369,11 +377,43 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 	case loopLandingPolicyOff:
 		return nil
 	case loopLandingPolicyCommit:
+		landingLock, err := acquireLandingLock(cwd, cfg)
+		if err != nil {
+			return fmt.Errorf("landing lock acquisition failed: %w", err)
+		}
+		if landingLock != nil {
+			defer func() {
+				if releaseErr := landingLock.Release(); releaseErr != nil {
+					VerbosePrintf("Warning: could not release landing lock: %v\n", releaseErr)
+				}
+			}()
+		}
+
 		_, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope)
-		return err
-	case loopLandingPolicySyncPush:
-		if _, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope); err != nil {
+		if err != nil {
 			return err
+		}
+		return nil
+	case loopLandingPolicySyncPush:
+		landingLock, err := acquireLandingLock(cwd, cfg)
+		if err != nil {
+			return fmt.Errorf("landing lock acquisition failed: %w", err)
+		}
+		if landingLock != nil {
+			defer func() {
+				if releaseErr := landingLock.Release(); releaseErr != nil {
+					VerbosePrintf("Warning: could not release landing lock: %v\n", releaseErr)
+				}
+			}()
+		}
+
+		committed, err := commitIfDirty(cwd, renderLandingCommitMessage(cfg.LandingCommitMessage, cycle, attempt, goal), cfg.CommandTimeout, scope)
+		if err != nil {
+			return err
+		}
+		if !committed {
+			fmt.Println("Landing: no commit performed.")
+			return nil
 		}
 		targetBranch, err := resolveLandingBranch(cwd, cfg.LandingBranch, cfg.CommandTimeout)
 		if err != nil {
@@ -404,6 +444,19 @@ func runSupervisorLanding(cwd string, cfg rpiLoopSupervisorConfig, cycle, attemp
 	default:
 		return fmt.Errorf("unsupported landing policy: %s", cfg.LandingPolicy)
 	}
+	return nil
+}
+
+func acquireLandingLock(cwd string, cfg rpiLoopSupervisorConfig) (*supervisorLease, error) {
+	if cfg.LandingPolicy == loopLandingPolicyOff {
+		return nil, nil
+	}
+	if strings.TrimSpace(cfg.LandingLockPath) == "" {
+		return nil, nil
+	}
+
+	runID := cfg.LandingPolicy + "-run-" + cliRPI.GenerateRunID()
+	return acquireSupervisorLease(cwd, cfg.LandingLockPath, cfg.LeaseTTL, runID)
 }
 
 func wrapSyncPushLandingFailure(cwd string, timeout time.Duration, stage string, err error) error {

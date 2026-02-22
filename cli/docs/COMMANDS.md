@@ -1252,6 +1252,24 @@ ao rpi cleanup [flags]
       --stale-after duration   Only clean runs older than this age (0 disables age filtering)
 ```
 
+#### `ao rpi cancel`
+
+Cancel active in-flight RPI runs.
+
+```
+ao rpi cancel [flags]
+```
+
+**Flags:**
+
+```
+      --all              Cancel all active runs discovered under current/sibling roots
+  -h, --help             help for cancel
+      --run-id string    Cancel one active run by run ID
+      --signal string    Signal to send: TERM|KILL|INT (default "TERM")
+      --dry-run          Show what would be cancelled without sending signals
+```
+
 #### `ao rpi loop`
 
 Execute RPI cycles in a loop, consuming from next-work.jsonl.
@@ -1267,6 +1285,7 @@ ao rpi loop [goal] [flags]
       --auto-clean-stale-after duration   Only auto-clean runs older than this age (default 24h0m0s)
       --bd-sync-policy string             bd sync policy for landing: auto|always|never (default "auto")
       --cleanup-prune-worktrees           Run git worktree prune during supervisor cleanup (default true)
+      --command-timeout duration          Timeout for supervisor external commands (git/bd/gate scripts) (default 20m0s)
       --cycle-delay duration              Delay between completed cycles
       --cycle-retries int                 Automatic retry count per cycle after a failed attempt
       --detached-branch-prefix string     Branch prefix used by detached HEAD self-heal (default "codex/auto-rpi")
@@ -1280,6 +1299,7 @@ ao rpi loop [goal] [flags]
       --landing-branch string             Landing target branch (empty resolves origin/HEAD, then current branch, then main)
       --landing-commit-message string     Commit message template for landing policies that commit (default "chore(rpi): autonomous cycle {{cycle}}")
       --landing-policy string             Landing policy after successful cycle: off|commit|sync-push (default "off")
+      --landing-lock-path string          Landing lock file path for synchronized integration (absolute or repo-relative) (default ".agents/rpi/landing.lock")
       --lease                             Acquire a single-flight supervisor lease lock before running
       --lease-path string                 Lease lock file path (absolute or repo-relative) (default ".agents/rpi/supervisor.lock")
       --lease-ttl duration                Lease heartbeat TTL for supervisor lock metadata (default 2m0s)

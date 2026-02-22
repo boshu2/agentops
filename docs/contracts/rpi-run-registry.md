@@ -97,7 +97,7 @@ When starting from phase 1 (fresh run), the orchestrator removes stale phase sum
 
 `ao rpi phased` creates sibling worktrees named `../<repo>-rpi-<run-id>/` (unless `--no-worktree` is set). Cleanup behavior is intentional and asymmetric:
 
-- Success path: after all phases complete, the orchestrator merges `rpi/<run-id>` into the source branch and removes the worktree + branch.
+- Success path: after all phases complete, the orchestrator merges the worktree commit (detached checkout) into the source branch and removes the worktree directory.
 - Failure path: worktree is preserved for debugging (no auto-destroy on failed phase).
 - Interrupt path (`SIGINT`/`SIGTERM`): worktree is preserved and terminal metadata is written (`terminal_status: interrupted`).
 
@@ -139,6 +139,20 @@ Behavior:
 - Optionally runs `git worktree prune`
 - Supports age-gated cleanup via `--stale-after` to avoid touching recently interrupted runs
 
+## Kill-Switch and Cleanup Workflow
+
+Operators should use the following explicit sequence when suspending or recovering autonomous runs:
+
+- Stop active runs:
+  - `ao rpi cancel --all`
+  - `ao rpi cancel --run-id <id>`
+- Mark-and-prune terminal runs:
+  - `ao rpi cleanup --all --dry-run`
+  - `ao rpi cleanup --all --prune-worktrees`
+- Reclaim stale worktrees and stale tmux sessions:
+  - `ao worktree gc`
+  - `ao worktree gc --prune` (when a wider sweep is needed)
+
 Safety guards:
 
 - Refuses to remove non-sibling paths
@@ -161,3 +175,5 @@ Behavior:
 ## Current Limitation
 
 `ao rpi cleanup` operates on run-registry state entries. If a historical/log-only run never wrote `.agents/rpi/runs/<run-id>/phased-state.json`, it may appear in log views but not be selected by stale cleanup. In that case, use standard git worktree hygiene (`git worktree list`, `git worktree remove --force <path>`, `git branch -D rpi/<run-id>`) after verifying the branch has no unique commits.
+
+`ao rpi phased` no longer uses `rpi/<run-id>` branches in the current implementation; cleanup for historical branch names now applies only to legacy runs that were created before detached-worktree migration.
