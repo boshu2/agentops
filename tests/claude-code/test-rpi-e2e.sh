@@ -100,7 +100,7 @@ setup_test_project() {
     mkdir -p .agents/ao/sessions
     mkdir -p .agents/pool/pending
     mkdir -p .agents/pool/staged
-    mkdir -p .agents/tooling
+    mkdir -p .agents/tooling  # test fixture — legacy path kept for e2e isolation
 
     # Create .beads directory for issue tracking
     mkdir -p .beads/issues
@@ -559,7 +559,7 @@ No security issues detected.
 VIBE
 
     # Create tooling output simulation
-    cat > .agents/tooling/summary.json << 'TOOLSUMMARY'
+    cat > .agents/tooling/summary.json << 'TOOLSUMMARY'  # test fixture in isolated tmp dir
 {
   "timestamp": "2026-02-03T12:00:00Z",
   "exit_code": 0,

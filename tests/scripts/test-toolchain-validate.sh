@@ -125,13 +125,16 @@ test_tool_count() {
 
 # Test 8: Output directory is created
 test_output_dir() {
-    ./scripts/toolchain-validate.sh --quick > /dev/null 2>&1 || true
+    local test_dir
+    test_dir="$(mktemp -d)"
+    TOOLCHAIN_OUTPUT_DIR="$test_dir/tooling" ./scripts/toolchain-validate.sh --quick > /dev/null 2>&1 || true
 
-    if [[ -d ".agents/tooling" ]]; then
-        pass "Output directory .agents/tooling exists"
+    if [[ -d "$test_dir/tooling" ]]; then
+        pass "Output directory created at TOOLCHAIN_OUTPUT_DIR"
     else
-        fail "Output directory .agents/tooling not created"
+        fail "Output directory not created"
     fi
+    rm -rf "$test_dir"
 }
 
 # Run all tests

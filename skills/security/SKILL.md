@@ -33,7 +33,7 @@ scripts/security-gate.sh --mode quick
 
 Expected behavior:
 - Fails on high/critical findings from available scanners.
-- Writes artifacts under `.agents/security/<run-id>/`.
+- Writes artifacts under `$TMPDIR/agentops-security/<run-id>/`.
 
 ### 2) Pre-Release (strict)
 
@@ -62,7 +62,7 @@ Expected behavior:
 ## Triage Guidance
 
 When gate fails:
-1. Open latest artifact in `.agents/security/` and identify scanner + file.
+1. Open latest artifact in `$TMPDIR/agentops-security/` and identify scanner + file.
 2. Classify severity (critical/high/medium).
 3. Fix immediately for critical/high or create tracked follow-up issue with owner.
 4. Re-run `scripts/security-gate.sh` until gate passes.
@@ -98,7 +98,7 @@ Actions:
 
 **What happens:**
 1. The skill runs `scripts/security-gate.sh --mode quick`, which executes available scanners (semgrep, gosec, gitleaks) against the current working tree and flags high/critical findings.
-2. Scan artifacts are written to `.agents/security/<run-id>/` for review, and the gate reports a pass/blocked verdict.
+2. Scan artifacts are written to `$TMPDIR/agentops-security/<run-id>/` for review, and the gate reports a pass/blocked verdict.
 
 **Result:** The gate passes with no high/critical findings, confirming the branch is safe to open a PR.
 
@@ -108,7 +108,7 @@ Actions:
 
 **What happens:**
 1. The skill runs `scripts/security-gate.sh --mode full`, which performs a comprehensive scan including all scanner passes, test-inclusive toolchain checks, and stricter severity thresholds.
-2. Artifacts are retained under `.agents/security/<run-id>/` for audit trail and incident response, and a structured report is generated.
+2. Artifacts are retained under `$TMPDIR/agentops-security/<run-id>/` for audit trail and incident response, and a structured report is generated.
 
 **Result:** The full gate blocks the release on two medium-severity findings in `cli/internal/config.go`; the operator triages and fixes them before re-running the gate to get a clean pass.
 
@@ -117,7 +117,7 @@ Actions:
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | Gate reports "scanner not found" and skips checks | Required scanner (semgrep, gosec, or gitleaks) is not installed | Install the missing scanner: `brew install semgrep`, `go install github.com/securego/gosec/v2/cmd/gosec@latest`, or `brew install gitleaks`. |
-| Gate passes locally but fails in CI | CI environment has additional scanners or stricter config | Compare `.agents/security/` artifacts from both environments; align scanner versions and config files across local and CI. |
+| Gate passes locally but fails in CI | CI environment has additional scanners or stricter config | Compare `$TMPDIR/agentops-security/` artifacts from both environments; align scanner versions and config files across local and CI. |
 | False positive blocking the gate | Scanner flags a non-issue as high/critical severity | Add a scanner-specific inline suppression comment (e.g., `# nosemgrep: rule-id`) or update the scanner config to exclude the pattern, then document the suppression reason. |
-| Artifacts directory `.agents/security/` not created | Script lacks write permissions or the `.agents/` directory does not exist | Ensure `.agents/` exists and is writable; create it with `mkdir -p .agents/security` if needed. |
+| Artifacts directory `$TMPDIR/agentops-security/` not created | Script lacks write permissions or `$TMPDIR` is not writable | Verify `$TMPDIR` is set and writable; the script auto-creates subdirectories on each run. |
 | Nightly scan not detecting regressions | Nightly workflow is not configured or is pointing at stale branch | Verify `.github/workflows/nightly.yml` runs `scripts/security-gate.sh --mode full` against the correct branch (typically `main`). |

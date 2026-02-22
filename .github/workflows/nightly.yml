@@ -79,13 +79,16 @@ jobs:
         run: |
           chmod +x scripts/security-gate.sh
           ./scripts/security-gate.sh --mode full
+        env:
+          SECURITY_GATE_OUTPUT_DIR: ${{ runner.temp }}/agentops-security
+          TOOLCHAIN_OUTPUT_DIR: ${{ runner.temp }}/agentops-tooling
 
       - name: Upload security gate artifacts
         uses: actions/upload-artifact@v6
         if: always()
         with:
           name: nightly-security-gate
-          path: .agents/security/
+          path: ${{ runner.temp }}/agentops-security/
           retention-days: 7
 
   summary:

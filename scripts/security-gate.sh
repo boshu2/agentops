@@ -62,7 +62,8 @@ if [[ ! -x "$TOOLCHAIN_SCRIPT" ]]; then
 fi
 
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-${MODE}"
-SECURITY_DIR="$REPO_ROOT/.agents/security/$RUN_ID"
+SECURITY_BASE="${SECURITY_GATE_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-security}"
+SECURITY_DIR="$SECURITY_BASE/$RUN_ID"
 mkdir -p "$SECURITY_DIR"
 
 TOOLCHAIN_ARGS=(--gate --json)
@@ -78,8 +79,9 @@ set -e
 SUMMARY_JSON="$SECURITY_DIR/summary.json"
 printf '%s\n' "$TOOLCHAIN_OUTPUT" > "$SUMMARY_JSON"
 
-if [[ -d "$REPO_ROOT/.agents/tooling" ]]; then
-  cp -a "$REPO_ROOT/.agents/tooling/." "$SECURITY_DIR/" 2>/dev/null || true
+TOOLING_SRC="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
+if [[ -d "$TOOLING_SRC" ]]; then
+  cp -a "$TOOLING_SRC/." "$SECURITY_DIR/" 2>/dev/null || true
 fi
 
 if command -v jq >/dev/null 2>&1 && jq empty "$SUMMARY_JSON" >/dev/null 2>&1; then

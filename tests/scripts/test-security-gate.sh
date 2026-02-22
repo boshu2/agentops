@@ -53,7 +53,7 @@ cat <<'JSON'
     "low": 0
   },
   "gate_status": "PASS",
-  "output_dir": ".agents/tooling"
+  "output_dir": "/tmp/agentops-tooling"
 }
 JSON
 exit 0
@@ -111,13 +111,19 @@ test_json_output() {
 
 test_artifacts() {
   create_mock_toolchain
-  SECURITY_GATE_TOOLCHAIN_SCRIPT="$MOCK_TOOLCHAIN" scripts/security-gate.sh --mode quick >/dev/null 2>&1 || true
+  local test_output_dir
+  test_output_dir="$(mktemp -d)"
+  SECURITY_GATE_TOOLCHAIN_SCRIPT="$MOCK_TOOLCHAIN" \
+  SECURITY_GATE_OUTPUT_DIR="$test_output_dir/security" \
+  TOOLCHAIN_OUTPUT_DIR="$test_output_dir/tooling" \
+  scripts/security-gate.sh --mode quick >/dev/null 2>&1 || true
 
   local latest
-  latest=$(ls -td .agents/security/* 2>/dev/null | head -1 || true)
+  latest=$(ls -td "$test_output_dir/security"/* 2>/dev/null | head -1 || true)
 
   if [[ -z "$latest" ]]; then
-    fail "no .agents/security artifacts created"
+    fail "no security artifacts created"
+    rm -rf "$test_output_dir"
     return
   fi
 
@@ -126,6 +132,7 @@ test_artifacts() {
   else
     fail "missing security-gate-summary.json"
   fi
+  rm -rf "$test_output_dir"
 }
 
 echo "================================"

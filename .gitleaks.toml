@@ -5,10 +5,6 @@ title = "agentops gitleaks config"
 
 [allowlist]
   paths = [
-    # Security scan artifacts contain tool output (semgrep/gosec JSON)
-    # that references secret patterns — not actual secrets
-    '''^\.agents/security/''',
-    '''^\.agents/tooling/''',
-    # Temp directories used by tests and reverse-engineer scripts
+    # Temp directories used by tests, reverse-engineer scripts, and scanner output
     '''^\.tmp/''',
   ]

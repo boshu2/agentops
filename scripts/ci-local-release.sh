@@ -345,6 +345,8 @@ generate_sbom_artifacts() {
 
 run_security_gate() {
     local output_file="$ARTIFACT_DIR/security-gate-${SECURITY_MODE}.json"
+    SECURITY_GATE_OUTPUT_DIR="$ARTIFACT_DIR/security" \
+    TOOLCHAIN_OUTPUT_DIR="$ARTIFACT_DIR/tooling" \
     ./scripts/security-gate.sh --mode "$SECURITY_MODE" --require-tools --json > "$output_file"
     jq -e '.gate_status' "$output_file" >/dev/null
     echo "Security report:  $output_file"

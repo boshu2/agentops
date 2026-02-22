@@ -125,30 +125,23 @@ numfmt_size() {
 prune_keep_newest "$AGENTS_DIR/council" 30 "council"
 [[ "$QUIET" == false ]] && echo ""
 
-# --- Policy: tooling/ — keep last run only (newest date prefix) ---
-if [[ -d "$AGENTS_DIR/tooling" ]]; then
-    tooling_count=$(find "$AGENTS_DIR/tooling" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "$tooling_count" -gt 0 ]]; then
-        # All tooling files from the same run — keep newest by mtime, prune rest
-        # Since tooling has no date-prefix convention, keep files from last 1 day
-        old_tooling=$(find "$AGENTS_DIR/tooling" -maxdepth 1 -type f -mtime +1 2>/dev/null | wc -l | tr -d ' ')
-        if [[ "$old_tooling" -gt 0 ]]; then
-            [[ "$QUIET" == false ]] && echo "[tooling] $tooling_count total files — $old_tooling older than 1 day"
-            find "$AGENTS_DIR/tooling" -maxdepth 1 -type f -mtime +1 -print0 2>/dev/null \
-                | while IFS= read -r -d '' f; do
-                    size=$(stat -f%z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
-                    if [[ "$DRY_RUN" == true ]]; then
-                        [[ "$QUIET" == false ]] && echo "  would delete: $f"
-                    else
-                        rm -f "$f"
-                        [[ "$QUIET" == false ]] && echo "  deleted: $f"
-                    fi
-                done
-        else
-            [[ "$QUIET" == false ]] && echo "[tooling] $tooling_count files — all from recent run. Nothing to prune."
+# --- tooling/ and security/ no longer live in .agents/ (moved to $TMPDIR) ---
+# Clean up any legacy directories left from older versions
+for legacy_dir in "$AGENTS_DIR/tooling" "$AGENTS_DIR/security"; do
+    if [[ -d "$legacy_dir" ]]; then
+        legacy_count=$(find "$legacy_dir" -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "$legacy_count" -gt 0 ]]; then
+            [[ "$QUIET" == false ]] && echo "[legacy] $legacy_dir has $legacy_count files (scanner output moved to \$TMPDIR)"
+            if [[ "$DRY_RUN" == true ]]; then
+                [[ "$QUIET" == false ]] && echo "  would delete: $legacy_dir/ ($legacy_count files)"
+            else
+                rm -rf "$legacy_dir"
+                mkdir -p "$legacy_dir"
+                [[ "$QUIET" == false ]] && echo "  deleted: $legacy_dir/ ($legacy_count files)"
+            fi
         fi
     fi
-fi
+done
 [[ "$QUIET" == false ]] && echo ""
 
 # --- Policy: knowledge/pending/ — older than 14 days ---
@@ -210,6 +203,4 @@ if [[ "$QUIET" == false ]]; then
     echo ""
     echo "Protected directories (never pruned):"
     echo "  learnings/ patterns/ plans/ research/ retros/"
-    echo ""
-    echo "Recommendation: Add .agents/tooling/ to .gitignore (1.1GB of regenerable scanner output)"
 fi

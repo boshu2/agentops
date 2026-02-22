@@ -7,9 +7,11 @@ pillars:
   - validated-acceleration
   - goal-driven-automation
   - zero-friction-workflow
-# Total: 83 goals
-# Pillar goals define WHAT the system does (user-visible value).
-# Infrastructure goals define HOW the system stays healthy (build, test, docs).
+# Total: 25 goals
+# Pruned 2026-02-21 per council consensus: feature saturation reached.
+# Removed 58 grep-for-string-in-file-we-control goals, file-exists checks,
+# keyword-in-README/SKILL.md goals, and duplicates (go-race-clean = go-cli-tests).
+# Kept only goals that guard real mechanical invariants.
 #
 # Theoretical foundation (4 pillars → product pillars):
 #   Systems Theory (Meadows)     → targets leverage points #3-#6
@@ -20,493 +22,8 @@ pillars:
 #   Knowledge Flywheel (σ×ρ > δ) → escape velocity → knowledge-compounding
 goals:
   # ============================================================================
-  # PILLAR GOALS (25 total)
-  # ============================================================================
-
-  # === Pillar: Knowledge Compounding (10 goals, weight 3-5) ===
-  - id: readme-compounding-hero
-    description: "README hero subtitle communicates the core value prop"
-    check: "head -10 README.md | grep -qi 'forget.*sessions\\|sessions.*smarter\\|memory.*compounds'"
-    weight: 5
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: readme-compounding-story
-    description: "README leads with the compounding story (session 1 vs session N improvement narrative)"
-    check: "head -50 README.md | grep -qi 'session.*smarter\\|session.*better\\|session.*learns\\|session.*compounds'"
-    weight: 4
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: no-sigma-rho-user-facing
-    description: "No sigma/rho/delta Greek notation in README or user-facing skill SKILL.md descriptions"
-    check: "grep -rl 'σ\\|ρ\\|δ' README.md skills/*/SKILL.md 2>/dev/null | grep -v references/ | grep -v shared/ | wc -l | tr -d ' ' | xargs test 0 -eq"
-    weight: 3
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: no-stale-framing
-    description: "No stale factor names in docs, README, CONTRIBUTING, or SVG assets (factors must use 'Factor X: Name → Purpose' format)"
-    check: "bash -c \"find README.md CONTRIBUTING.md docs/ docs/assets/ -type f \\( -name '*.md' -o -name '*.svg' \\) 2>/dev/null | xargs grep -l 'Factor [IVX]\\+:' 2>/dev/null | xargs grep 'Factor [IVX]\\+:' 2>/dev/null | grep -v '→' | wc -l | tr -d ' ' | xargs test 0 -eq\""
-    weight: 3
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: positioning-no-vibe-coding-primary
-    description: "Positioning doc does not use 'DevOps for Vibe-Coding' as primary tagline"
-    check: "head -15 docs/positioning/devops-for-vibe-coding.md | grep -c 'Primary.*DevOps for Vibe-Coding' | xargs test 0 -eq"
-    weight: 3
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: mission-in-goals-yaml
-    description: "GOALS.yaml mission matches deliberation consensus"
-    check: "yq -e '.mission == \"Make every coding agent session smarter than the last\"' GOALS.yaml >/dev/null 2>&1"
-    weight: 5
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: three-ways-in-readme
-    description: "README references DevOps Three Ways (flow, feedback, continual learning) as design foundation"
-    check: "grep -q 'Three Ways' README.md && grep -qi 'flow.*feedback.*learning\\|flow.*feedback.*continual' README.md"
-    weight: 4
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: meadows-in-readme
-    description: "README references Meadows' hierarchy as design rationale for targeting information flows and rules"
-    check: "grep -q 'Meadows' README.md && grep -q 'information flows' README.md"
-    weight: 4
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: brownian-ratchet-in-docs
-    description: "Brownian Ratchet is documented as a theoretical pillar (chaos + filter + ratchet = progress)"
-    check: "grep -q 'Brownian' README.md && test -f docs/brownian-ratchet.md && grep -qi 'chaos.*filter.*ratchet\\|filter.*ratchet\\|one-way gate' docs/brownian-ratchet.md"
-    weight: 4
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: flywheel-escape-velocity-in-docs
-    description: "Knowledge Flywheel escape velocity condition is documented (σ×ρ > δ)"
-    check: "test -f docs/the-science.md && grep -q 'Escape Velocity' docs/the-science.md && grep -q 'retrieval.*usage.*decay\\|σ.*ρ.*δ' docs/the-science.md"
-    weight: 4
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  - id: four-pillars-in-product
-    description: "PRODUCT.md Design Principles section has at least 4 numbered theoretical pillars"
-    check: "awk '/^## Design Principles/,0 {print}' PRODUCT.md | grep -cE '^[0-9]+\\.' | xargs test 4 -le"
-    weight: 5
-    pillar: knowledge-compounding
-    added: "2026-02-19"
-  # === Pillar: Validated Acceleration (5 goals, weight 3-4) ===
-  - id: status-skill-shows-health
-    description: "/status skill references knowledge health or flywheel metrics"
-    check: "grep -qi 'flywheel\\|knowledge.*health\\|compounding\\|retrieval.*rate' skills/status/SKILL.md"
-    weight: 3
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: council-structured-verdicts
-    description: "/council outputs structured PASS/WARN/FAIL verdicts"
-    check: "grep -q 'PASS.*WARN.*FAIL\\|verdict.*PASS\\|PASS | WARN | FAIL' skills/council/SKILL.md"
-    weight: 4
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: vibe-runs-complexity
-    description: "/vibe skill runs complexity analysis before council"
-    check: "grep -qi 'complexity' skills/vibe/SKILL.md"
-    weight: 3
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: crank-wave-vibe-gate
-    description: "/crank enforces wave vibe gates between waves"
-    check: "grep -qi 'wave.*vibe\\|vibe.*gate' skills/crank/SKILL.md"
-    weight: 3
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  # === Pillar: Goal-Driven Automation (5 goals, weight 3-4) ===
-  - id: evolve-dormancy-messaging
-    description: "/evolve skill documents dormancy as a valid success state"
-    check: "grep -qi 'dormancy\\|dormant\\|nothing to do.*valid\\|all goals met.*stop' skills/evolve/SKILL.md"
-    weight: 3
-    pillar: goal-driven-automation
-    added: "2026-02-19"
-  - id: no-autonomous-user-facing
-    description: "README does not use the word 'autonomous' (use 'hands-free' or 'goal-driven' instead)"
-    check: "grep -ci 'autonomous' README.md | xargs test 0 -eq"
-    weight: 3
-    pillar: goal-driven-automation
-    added: "2026-02-19"
-  - id: evolve-kill-switch
-    description: "/evolve has documented kill switch (KILL and STOP files)"
-    check: "grep -q 'KILL' skills/evolve/SKILL.md && grep -q 'STOP' skills/evolve/SKILL.md"
-    weight: 4
-    pillar: goal-driven-automation
-    added: "2026-02-19"
-  - id: rpi-gate-retry-logic
-    description: "/rpi has retry gates for pre-mortem FAIL and vibe FAIL"
-    check: "grep -qi 'retry.*loop\\|max.*attempts\\|FAIL.*retry\\|retry.*FAIL' skills/rpi/SKILL.md"
-    weight: 3
-    pillar: goal-driven-automation
-    added: "2026-02-19"
-  - id: goals-yaml-pillar-coverage
-    description: "GOALS.yaml has goals for all 4 pillars"
-    check: "bash scripts/check-pillar-coverage.sh"
-    weight: 4
-    pillar: goal-driven-automation
-    added: "2026-02-19"
-  # === Pillar: Zero-Friction Workflow (10 goals, weight 3-4) ===
-  - id: quickstart-under-5min
-    description: "/quickstart skill promises value in under 5 minutes"
-    check: "grep -qi '5 min\\|five min\\|under.*minutes\\|minutes.*or less' skills/quickstart/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: session-start-injects-knowledge
-    description: "Session start hook injects prior knowledge automatically"
-    check: "grep -qi 'inject\\|ao inject\\|knowledge' hooks/session-start.sh"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: handoff-skill-exists
-    description: "/handoff skill exists for seamless session continuity"
-    check: "test -f skills/handoff/SKILL.md && grep -q '^name:' skills/handoff/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: implement-single-issue
-    description: "/implement skill exists for single-issue execution"
-    check: "test -f skills/implement/SKILL.md && grep -q '^name:' skills/implement/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: product-olympus-relationship
-    description: "PRODUCT.md has 'Relationship to Olympus' section distinguishing standalone AgentOps from Olympus daemon layer"
-    check: "head -70 PRODUCT.md | grep -q '^## Relationship to Olympus'"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: product-under-line-limit
-    description: "PRODUCT.md stays under 200 lines (prevents bloat creep)"
-    check: "test $(wc -l < PRODUCT.md | tr -d ' ') -le 200"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: quickstart-tiered-catalog
-    description: "Quickstart has tiered skill catalog (full catalog in references/, starter set in SKILL.md)"
-    check: "test -f skills/quickstart/references/full-catalog.md && grep -qi 'starter\\|core\\|begin\\|first' skills/quickstart/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: verb-aliases-exist
-    description: "Core skills have verb aliases in descriptions (review→vibe, execute→crank, parallel→swarm)"
-    check: "grep -qi 'review\\|check' skills/vibe/SKILL.md && grep -qi 'execute\\|run epic' skills/crank/SKILL.md && grep -qi 'parallel\\|concurrent' skills/swarm/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: learn-skill-exists
-    description: "/learn skill exists for manual knowledge capture into the flywheel"
-    check: "test -f skills/learn/SKILL.md && grep -q '^name:' skills/learn/SKILL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  # ============================================================================
-  # INFRASTRUCTURE GOALS (28 total)
-  # These are not tied to a pillar — they ensure the system itself is healthy.
-  # Sub-categories below are ordered by severity (fix Critical before Hygiene).
-  # ============================================================================
-
-  # === Critical (weight 5) — Build & test integrity ===
-  # If these fail, nothing works. Fix immediately.
-  - id: go-cli-builds
-    description: "Go CLI compiles without errors"
-    check: "cd cli && go build -o /tmp/test-ao ./cmd/ao >/dev/null 2>&1"
-    weight: 5
-    added: "2026-02-19"
-  - id: go-cli-tests
-    description: "Go CLI unit tests pass"
-    check: "cd cli && go test -race ./... >/dev/null 2>&1"
-    weight: 5
-    added: "2026-02-19"
-  # === Important (weight 3-4) — Suite & safety ===
-  # Full suite, hooks, manifests. Should stay green; fix within a cycle.
-  - id: full-test-suite
-    description: "Full test suite passes (all tiers)"
-    check: "./tests/run-all.sh"
-    weight: 4
-    added: "2026-02-19"
-  - id: hook-preflight
-    description: "All hooks pass safety checks (kill switches, paths)"
-    check: "./scripts/validate-hook-preflight.sh >/dev/null 2>&1"
-    weight: 4
-    added: "2026-02-19"
-  - id: toolchain-security-gate
-    description: "Unified security gate script is executable and testable"
-    check: "test -x scripts/security-gate.sh && bash tests/scripts/test-security-gate.sh >/dev/null 2>&1"
-    weight: 4
-    added: "2026-02-19"
-  - id: ci-security-toolchain-gate
-    description: "Validate workflow enforces security toolchain gate"
-    check: "grep -q 'security-toolchain-gate' .github/workflows/validate.yml && grep -q 'scripts/security-gate.sh' .github/workflows/validate.yml"
-    weight: 4
-    added: "2026-02-19"
-  - id: release-security-gate
-    description: "Release workflow requires security gate before build/publish"
-    check: "grep -q '^  security-gate:' .github/workflows/release.yml && grep -q 'needs: \\[doc-release-gate, security-gate\\]' .github/workflows/release.yml && grep -q 'scripts/security-gate.sh' .github/workflows/release.yml"
-    weight: 4
-    added: "2026-02-19"
-  - id: nightly-security-toolchain
-    description: "Nightly workflow runs security toolchain checks"
-    check: "grep -q '^  security-toolchain:' .github/workflows/nightly.yml && grep -q 'scripts/security-gate.sh' .github/workflows/nightly.yml"
-    weight: 3
-    added: "2026-02-19"
-  - id: smoke-tests
-    description: "Smoke tests pass (toolchain, skills, manifests)"
-    check: "./tests/smoke-test.sh"
-    weight: 3
-    added: "2026-02-19"
-  - id: go-vet-clean
-    description: "Go CLI passes vet checks (no common bugs)"
-    check: "cd cli && go vet ./... 2>&1"
-    weight: 3
-    added: "2026-02-19"
-  - id: manifest-versions-match
-    description: "Plugin and marketplace versions are in sync"
-    check: "test \"$(jq -r '.metadata.version' .claude-plugin/marketplace.json)\" = \"$(jq -r '.version' .claude-plugin/plugin.json)\""
-    weight: 3
-    added: "2026-02-19"
-  - id: go-race-clean
-    description: "Go CLI passes race detector (no data races)"
-    check: "cd cli && go test -race ./... >/dev/null 2>&1"
-    weight: 3
-    added: "2026-02-19"
-  # === Mission Fitness (weight 2-3) — AO ownership areas ===
-  # Knowledge quality, schema validity, contract health. Slower to degrade.
-  - id: knowledge-flywheel-health
-    description: "Knowledge flywheel has ≥5 learnings and newest is <30 days old"
-    check: "test $(ls .agents/learnings/*.md 2>/dev/null | wc -l | tr -d ' ') -ge 5 && test $(find .agents/learnings/ -name '*.md' -mtime -30 2>/dev/null | wc -l | tr -d ' ') -ge 1"
-    weight: 3
-    added: "2026-02-19"
-  - id: skill-semantic-stability
-    description: "Core skills have name, tier, and description in YAML frontmatter"
-    check: "for s in council crank swarm rpi vibe pre-mortem post-mortem plan research implement evolve; do grep -q '^name:' skills/$s/SKILL.md && grep -q 'tier:' skills/$s/SKILL.md && grep -q '^description:' skills/$s/SKILL.md || exit 1; done"
-    weight: 3
-    added: "2026-02-19"
-  - id: bridge-contract-schemas
-    description: "Bridge contracts doc defines all 3 canonical surfaces (INVOCATION_ENVELOPE, STATE_CHECKPOINT_HANDOFF, OBSERVABILITY_EVENTS)"
-    check: "grep -q 'INVOCATION_ENVELOPE' docs/ol-bridge-contracts.md && grep -q 'STATE_CHECKPOINT_HANDOFF' docs/ol-bridge-contracts.md && grep -q 'OBSERVABILITY_EVENTS' docs/ol-bridge-contracts.md"
-    weight: 2
-    added: "2026-02-19"
-  - id: learning-format-compliance
-    description: "All learnings conform to interchange spec (YAML frontmatter with id, type, created_at)"
-    check: "bash -c 'for f in $(ls .agents/learnings/*.md 2>/dev/null | grep -v INDEX.md); do head -10 \"$f\" | grep -q \"^---\" && head -10 \"$f\" | grep -q \"^id:\" && head -10 \"$f\" | grep -q \"^type:\" && head -10 \"$f\" | grep -q \"^created_at:\" || { echo FAIL:$f; exit 1; }; done'"
-    weight: 2
-    added: "2026-02-19"
-  - id: council-schema-valid
-    description: "Council verdict schema has additionalProperties:false at all levels and required covers core properties (v2 optional fields: fix, why, ref)"
-    check: "jq -e '. as $s | ($s.additionalProperties == false) and (($s.required | length) == ($s.properties | keys | length)) and ($s.properties.findings.items.additionalProperties == false) and (($s.properties.findings.items.required | length) >= 5) and (($s.properties.findings.items.properties | keys | length) <= ($s.properties.findings.items.required | length) + 3)' skills/council/schemas/verdict.json >/dev/null 2>&1"
-    weight: 2
-    added: "2026-02-19"
-  # === Hygiene (weight 1-3) — Docs & consistency ===
-  # Lint, coverage, doc counts. Nice to have green; low urgency.
-  - id: shellcheck-clean
-    description: "Hook scripts pass shellcheck with no warnings"
-    check: "shellcheck -x -P SCRIPTDIR hooks/*.sh 2>&1 | grep -c '^In ' | xargs test 0 -eq"
-    weight: 2
-    added: "2026-02-19"
-  - id: go-coverage-floor
-    description: "Go CLI average test coverage stays above 80%"
-    check: "cd cli && go test -cover ./... 2>&1 | grep '^ok' | sed -n 's/.*coverage: \\([0-9.]*\\)%.*/\\1/p' | awk '{s+=$1;n++} END{if(n>0 && s/n>=80) exit 0; else exit 1}'"
-    weight: 2
-    added: "2026-02-19"
-  - id: rpi-phased-context-discipline
-    description: "ao rpi phased includes context discipline and handoff instructions in every phase prompt"
-    check: "cd cli && go build -o /tmp/test-ao-rpi ./cmd/ao >/dev/null 2>&1 && grep -q 'phaseContextBudgets' cmd/ao/rpi_phased.go"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: rpi-context-window-contract
-    description: "RPI large-repo context sharding contract is healthy and runnable."
-    check: "./scripts/rpi/context-window-contract.sh"
-    weight: 2
-    added: "2026-02-19"
-  - id: doc-coverage
-    description: "All public skills have references/ documentation"
-    check: "test $(ls -d skills/*/references/ 2>/dev/null | wc -l | tr -d ' ') -ge 16"
-    weight: 2
-    added: "2026-02-19"
-  - id: skill-tier-coverage
-    description: "All skills have tier: defined in YAML frontmatter"
-    check: "test $(grep -rl 'tier:' skills/*/SKILL.md 2>/dev/null | wc -l | tr -d ' ') -eq $(ls -d skills/*/ 2>/dev/null | wc -l | tr -d ' ')"
-    weight: 2
-    added: "2026-02-19"
-  - id: skill-validation
-    description: "All skills have valid SKILL.md with frontmatter"
-    check: "./tests/skills/run-all.sh"
-    weight: 2
-    added: "2026-02-19"
-  - id: orchestration-skills-validated
-    description: "All orchestration-tier skills have validate.sh scripts"
-    check: "for d in council crank swarm codex-team rpi evolve; do test -x skills/$d/scripts/validate.sh || exit 1; done"
-    weight: 2
-    added: "2026-02-19"
-  - id: behavioral-skill-contracts
-    description: "All skills have behavioral validate.sh checks that pass"
-    check: "for d in skills/*/scripts/validate.sh; do \"$d\" >/dev/null 2>&1 || exit 1; done"
-    weight: 2
-    added: "2026-02-19"
-  - id: hook-tests-pass
-    description: "All 100 hook integration tests pass"
-    check: "bash tests/hooks/test-hooks.sh 2>&1 | tail -1 | grep -q 'ALL PASSED'"
-    weight: 2
-    added: "2026-02-19"
-  - id: export-constraints-readiness
-    description: "ao export-constraints subcommand is stubbed in CLI"
-    check: "grep -rq 'export.constraints\\|export-constraints\\|exportConstraints' cli/cmd/ao/ 2>/dev/null"
-    weight: 1
-    added: "2026-02-19"
-  - id: incident-runbook-exists
-    description: "Consumer incident runbook exists with recovery procedures"
-    check: "test -f docs/INCIDENT-RUNBOOK.md && grep -q 'AGENTOPS_HOOKS_DISABLED' docs/INCIDENT-RUNBOOK.md"
-    weight: 1
-    added: "2026-02-19"
-  - id: readme-goal-count
-    description: "README goal count matches actual GOALS.yaml goal count"
-    check: "bash tests/docs/validate-goal-count.sh"
-    weight: 2
-    added: "2026-02-19"
-  - id: passive-citation-tracking
-    description: "PostToolUse(Read) hook records passive citations for .agents/ reads"
-    check: "grep -q '\"Read\"' hooks/hooks.json && grep -q 'passive_read' hooks/citation-tracker.sh"
-    weight: 2
-    added: "2026-02-19"
-  - id: cache-eviction-wired
-    description: "SessionEnd eviction hook archives stale low-utility learnings"
-    check: "grep -q 'maturity --evict' hooks/hooks.json"
-    weight: 2
-    added: "2026-02-19"
-  - id: flywheel-cache-health
-    description: "Flywheel skill reports cache hit rate and eviction metrics"
-    check: "grep -qi 'cite-report' skills/flywheel/SKILL.md && grep -qi 'eviction' skills/flywheel/SKILL.md"
-    weight: 2
-    added: "2026-02-19"
-  # ============================================================================
-  # CROSS-RUNTIME COMPATIBILITY GOALS (10 total)
-  # Ensure skills work across Claude Code, Codex CLI, OpenCode, and Cursor.
-  # ============================================================================
-
-  # === Backend Detection (weight 4) — Skills detect and use correct runtime ===
-  - id: shared-backend-4tier
-    description: "Shared contract has 4-tier backend selection (Codex → Claude teams → OpenCode → Inline)"
-    check: "grep -q 'Codex experimental sub-agents' skills/shared/SKILL.md && grep -q 'Claude native teams' skills/shared/SKILL.md && grep -q 'OpenCode subagents' skills/shared/SKILL.md && grep -q 'Inline fallback' skills/shared/SKILL.md"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: shared-skill-chaining-contract
-    description: "Shared contract has cross-runtime skill chaining rules (Claude exec vs OpenCode read-only)"
-    check: "grep -q 'Skill Invocation Across Runtimes' skills/shared/SKILL.md && grep -qi 'read-only' skills/shared/SKILL.md && grep -q 'NEVER use slashcommand' skills/shared/SKILL.md"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: orchestration-skills-opencode-tier
-    description: "All orchestration skills include OpenCode in backend selection"
-    check: "grep -qi 'opencode' skills/council/SKILL.md && grep -qi 'opencode' skills/research/SKILL.md && grep -qi 'opencode' skills/swarm/SKILL.md && grep -qi 'opencode' skills/codex-team/SKILL.md && grep -qi 'opencode' skills/trace/SKILL.md"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  # === OpenCode Plugin (weight 3-4) — Plugin bridge is functional ===
-  - id: opencode-plugin-exists
-    description: "OpenCode plugin exists with system transform and tool guards"
-    check: "test -f .opencode/plugins/agentops.js && grep -q 'chat.system.transform' .opencode/plugins/agentops.js && grep -q 'tool.execute.before' .opencode/plugins/agentops.js && grep -q 'tool.definition' .opencode/plugins/agentops.js"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: opencode-plugin-audit-hook
-    description: "OpenCode plugin has tool.execute.after audit logging"
-    check: "grep -q 'tool.execute.after' .opencode/plugins/agentops.js && grep -q 'audit' .opencode/plugins/agentops.js"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: opencode-plugin-compaction-hook
-    description: "OpenCode plugin has session.compacting hook for context preservation"
-    check: "grep -q 'session.compacting' .opencode/plugins/agentops.js && grep -q 'AgentOps' .opencode/plugins/agentops.js"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: opencode-plugin-syntax-valid
-    description: "OpenCode plugin passes Node.js syntax check"
-    check: "node -c .opencode/plugins/agentops.js 2>/dev/null"
-    weight: 4
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  - id: opencode-install-script
-    description: "OpenCode one-liner install script exists and is executable"
-    check: "test -x scripts/install-opencode.sh && grep -q 'curl' .opencode/INSTALL.md"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  # === Headless Test Harness (weight 3) — Can verify skills in OpenCode ===
-  - id: opencode-test-harness
-    description: "OpenCode headless test harness exists with tier and ratchet support"
-    check: "test -x tests/opencode/run-headless-tests.sh && grep -q 'tier' tests/opencode/run-headless-tests.sh && grep -q 'MAX_ATTEMPTS' tests/opencode/run-headless-tests.sh"
-    weight: 3
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: opencode-assertions-framework
-    description: "OpenCode test assertion framework exists with per-skill validators"
-    check: "test -f tests/opencode/assertions.sh && test -f tests/opencode/skill-assertions.sh && grep -q 'assert_contains' tests/opencode/assertions.sh"
-    weight: 3
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: opencode-test-prompts-external
-    description: "OpenCode test prompts externalized to files for prompt tuning"
-    check: "test -d tests/opencode/prompts && ls tests/opencode/prompts/*.txt 2>/dev/null | wc -l | grep -qE '[5-9]|[1-9][0-9]'"
-    weight: 2
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  - id: opencode-live-tier1
-    description: "At least 4/6 Tier 1 skills pass headless testing with 3 attempts"
-    check: "bash scripts/check-opencode-live.sh"
-    weight: 5
-    pillar: validated-acceleration
-    added: "2026-02-19"
-  # === Universal Skill Format (weight 3) — Skills discoverable by all agents ===
-  - id: all-skills-have-frontmatter
-    description: "Every SKILL.md has YAML frontmatter with name and description (required by all runtimes)"
-    check: "bash -c 'for f in skills/*/SKILL.md; do head -5 \"$f\" | grep -q \"^---\" && head -10 \"$f\" | grep -q \"^name:\" && head -10 \"$f\" | grep -q \"^description:\" || { echo FAIL:$f; exit 1; }; done'"
-    weight: 3
-    pillar: zero-friction-workflow
-    added: "2026-02-19"
-  # --- Meta-Goals (type: meta) ---
-  - id: go-complexity-gate
-    description: "Changed non-test Go code under cli/ stays below complexity failure threshold"
-    check: "bash scripts/check-go-complexity.sh"
-    weight: 5
-    type: meta
-    pillar: infrastructure
-    added: "2026-02-20"
-  - id: wiring-closure
-    description: "All scripts, skills, and hooks are referenced by their parent registries"
-    check: "bash scripts/check-wiring-closure.sh"
-    weight: 6
-    type: meta
-    pillar: infrastructure
-    added: "2026-02-19"
-  - id: telemetry-coverage
-    description: "Orchestration skills log to skill-telemetry.jsonl"
-    check: "grep -q 'log-telemetry.sh' skills/rpi/SKILL.md && grep -q 'log-telemetry.sh' skills/crank/SKILL.md && grep -q 'log-telemetry.sh' skills/evolve/SKILL.md"
-    weight: 5
-    type: meta
-    pillar: infrastructure
-    added: "2026-02-19"
-  - id: compaction-proofing
-    description: "Orchestration skills commit checkpoints mid-workflow"
-    check: "grep -q 'checkpoint-commit.sh' skills/rpi/SKILL.md && grep -q 'checkpoint-commit.sh' skills/crank/SKILL.md"
-    weight: 5
-    type: meta
-    pillar: infrastructure
-    added: "2026-02-19"
-  - id: ao-goals-builds
-    description: "ao goals subcommand compiles and runs"
-    check: "cd cli && go build -o /tmp/test-ao ./cmd/ao && /tmp/test-ao goals validate --json >/dev/null 2>&1"
-    weight: 5
-    pillar: infrastructure
-    added: "2026-02-19"
-
-  # ============================================================================
-  # SELF-HEALING GOALS (3 total)
-  # Prevent the exact failure modes that required manual pruning.
+  # SELF-HEALING (3 goals, weight 7)
+  # Highest-weight goals. Prevent the failure modes that required manual pruning.
   # ============================================================================
 
   - id: no-stale-goals
@@ -525,4 +42,174 @@ goals:
     description: "PRODUCT.md is under 200 lines and last_reviewed within 30 days"
     check: "bash scripts/check-product-freshness.sh"
     weight: 7
+    added: "2026-02-19"
+
+  # ============================================================================
+  # BUILD INTEGRITY (4 goals, weight 3-5)
+  # If these fail, nothing works. Fix immediately.
+  # ============================================================================
+
+  - id: go-cli-builds
+    description: "Go CLI compiles without errors"
+    check: "cd cli && go build -o /tmp/test-ao ./cmd/ao >/dev/null 2>&1"
+    weight: 5
+    added: "2026-02-19"
+
+  - id: go-cli-tests
+    description: "Go CLI unit tests pass (with race detector)"
+    check: "cd cli && go test -race ./... >/dev/null 2>&1"
+    weight: 5
+    added: "2026-02-19"
+
+  - id: full-test-suite
+    description: "Full test suite passes (all tiers)"
+    check: "./tests/run-all.sh"
+    weight: 4
+    added: "2026-02-19"
+
+  - id: go-vet-clean
+    description: "Go CLI passes vet checks (no common bugs)"
+    check: "cd cli && go vet ./... 2>&1"
+    weight: 3
+    added: "2026-02-19"
+
+  # ============================================================================
+  # SECURITY (4 goals, weight 4)
+  # Safety gates across all pipelines.
+  # ============================================================================
+
+  - id: hook-preflight
+    description: "All hooks pass safety checks (kill switches, paths)"
+    check: "./scripts/validate-hook-preflight.sh >/dev/null 2>&1"
+    weight: 4
+    added: "2026-02-19"
+
+  - id: toolchain-security-gate
+    description: "Unified security gate script is executable and testable"
+    check: "test -x scripts/security-gate.sh && bash tests/scripts/test-security-gate.sh >/dev/null 2>&1"
+    weight: 4
+    added: "2026-02-19"
+
+  - id: ci-security-toolchain-gate
+    description: "Validate workflow enforces security toolchain gate"
+    check: "grep -q 'security-toolchain-gate' .github/workflows/validate.yml && grep -q 'scripts/security-gate.sh' .github/workflows/validate.yml"
+    weight: 4
+    added: "2026-02-19"
+
+  - id: release-security-gate
+    description: "Release workflow requires security gate before build/publish"
+    check: "grep -q '^  security-gate:' .github/workflows/release.yml && grep -q 'needs: \\[doc-release-gate, security-gate\\]' .github/workflows/release.yml && grep -q 'scripts/security-gate.sh' .github/workflows/release.yml"
+    weight: 4
+    added: "2026-02-19"
+
+  # ============================================================================
+  # QUALITY GATES (3 goals, weight 2-5)
+  # Complexity, coverage, and lint checks that catch regressions.
+  # ============================================================================
+
+  - id: go-complexity-gate
+    description: "Changed non-test Go code under cli/ stays below complexity failure threshold"
+    check: "bash scripts/check-go-complexity.sh"
+    weight: 5
+    type: meta
+    added: "2026-02-20"
+
+  - id: go-coverage-floor
+    description: "Go CLI average test coverage stays above 80%"
+    check: "cd cli && go test -cover ./... 2>&1 | grep '^ok' | sed -n 's/.*coverage: \\([0-9.]*\\)%.*/\\1/p' | awk '{s+=$1;n++} END{if(n>0 && s/n>=80) exit 0; else exit 1}'"
+    weight: 2
+    added: "2026-02-19"
+
+  - id: smoke-tests
+    description: "Smoke tests pass (toolchain, skills, manifests)"
+    check: "./tests/smoke-test.sh"
+    weight: 3
+    added: "2026-02-19"
+
+  # ============================================================================
+  # SYSTEM HEALTH (4 goals, weight 3-6)
+  # Goals subsystem, plugin versions, wiring integrity.
+  # ============================================================================
+
+  - id: ao-goals-builds
+    description: "ao goals subcommand compiles and runs"
+    check: "cd cli && go build -o /tmp/test-ao ./cmd/ao && /tmp/test-ao goals validate --json >/dev/null 2>&1"
+    weight: 5
+    added: "2026-02-19"
+
+  - id: manifest-versions-match
+    description: "Plugin and marketplace versions are in sync"
+    check: "test \"$(jq -r '.metadata.version' .claude-plugin/marketplace.json)\" = \"$(jq -r '.version' .claude-plugin/plugin.json)\""
+    weight: 3
+    added: "2026-02-19"
+
+  - id: wiring-closure
+    description: "All scripts, skills, and hooks are referenced by their parent registries"
+    check: "bash scripts/check-wiring-closure.sh"
+    weight: 6
+    type: meta
+    added: "2026-02-19"
+
+  - id: skill-validation
+    description: "All skills have valid SKILL.md with frontmatter"
+    check: "./tests/skills/run-all.sh"
+    weight: 2
+    added: "2026-02-19"
+
+  # ============================================================================
+  # SKILLS HEALTH (2 goals, weight 3)
+  # Core skill contracts and universal discoverability.
+  # ============================================================================
+
+  - id: skill-semantic-stability
+    description: "Core skills have name, tier, and description in YAML frontmatter"
+    check: "for s in council crank swarm rpi vibe pre-mortem post-mortem plan research implement evolve; do grep -q '^name:' skills/$s/SKILL.md && grep -q 'tier:' skills/$s/SKILL.md && grep -q '^description:' skills/$s/SKILL.md || exit 1; done"
+    weight: 3
+    added: "2026-02-19"
+
+  - id: all-skills-have-frontmatter
+    description: "Every SKILL.md has YAML frontmatter with name and description (required by all runtimes)"
+    check: "bash -c 'for f in skills/*/SKILL.md; do head -5 \"$f\" | grep -q \"^---\" && head -10 \"$f\" | grep -q \"^name:\" && head -10 \"$f\" | grep -q \"^description:\" || { echo FAIL:$f; exit 1; }; done'"
+    weight: 3
+    pillar: zero-friction-workflow
+    added: "2026-02-19"
+
+  # ============================================================================
+  # FEATURE-CRITICAL (5 goals, weight 3-5)
+  # Guard the core features that make the system work.
+  # ============================================================================
+
+  - id: session-start-injects-knowledge
+    description: "Session start hook injects prior knowledge automatically"
+    check: "grep -qi 'inject\\|ao inject\\|knowledge' hooks/session-start.sh"
+    weight: 4
+    pillar: zero-friction-workflow
+    added: "2026-02-19"
+
+  - id: evolve-kill-switch
+    description: "/evolve has documented kill switch (KILL and STOP files)"
+    check: "grep -q 'KILL' skills/evolve/SKILL.md && grep -q 'STOP' skills/evolve/SKILL.md"
+    weight: 4
+    pillar: goal-driven-automation
+    added: "2026-02-19"
+
+  - id: rpi-phased-context-discipline
+    description: "ao rpi phased includes context discipline and handoff instructions in every phase prompt"
+    check: "cd cli && go build -o /tmp/test-ao-rpi ./cmd/ao >/dev/null 2>&1 && grep -q 'phaseContextBudgets' cmd/ao/rpi_phased.go"
+    weight: 3
+    pillar: zero-friction-workflow
+    added: "2026-02-19"
+
+  - id: telemetry-coverage
+    description: "Orchestration skills log to skill-telemetry.jsonl"
+    check: "grep -q 'log-telemetry.sh' skills/rpi/SKILL.md && grep -q 'log-telemetry.sh' skills/crank/SKILL.md && grep -q 'log-telemetry.sh' skills/evolve/SKILL.md"
+    weight: 5
+    type: meta
+    added: "2026-02-19"
+
+  - id: compaction-proofing
+    description: "Orchestration skills commit checkpoints mid-workflow"
+    check: "grep -q 'checkpoint-commit.sh' skills/rpi/SKILL.md && grep -q 'checkpoint-commit.sh' skills/crank/SKILL.md"
+    weight: 5
+    type: meta
     added: "2026-02-19"

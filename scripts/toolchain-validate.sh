@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Toolchain Validate - Run all available linters/scanners
-# Outputs structured findings to .agents/tooling/
+# Outputs structured findings to $TOOLCHAIN_OUTPUT_DIR (default: $TMPDIR/agentops-tooling/)
 #
 # Usage: ./scripts/toolchain-validate.sh [OPTIONS]
 #
@@ -20,7 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
-OUTPUT_DIR="$REPO_ROOT/.agents/tooling"
+OUTPUT_DIR="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
 
 # Parse arguments
 QUICK=false

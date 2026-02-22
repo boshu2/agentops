@@ -9,7 +9,7 @@
 #   verdict     - Triage verdict: TRUE_POS or FALSE_POS
 #   agent       - Agent that made the decision (e.g., security-reviewer)
 #
-# Output: Appends JSONL entry to .agents/tooling/triage-decisions.jsonl
+# Output: Appends JSONL entry to $TOOLCHAIN_OUTPUT_DIR/triage-decisions.jsonl (default: $TMPDIR/agentops-tooling/)
 #
 # Ground truth can be added later via:
 #   jq '. | select(.file_line == "src/auth.go:42") | .ground_truth = "TRUE_POS"'
@@ -38,8 +38,9 @@ if [[ "$VERDICT" != "TRUE_POS" && "$VERDICT" != "FALSE_POS" ]]; then
     exit 1
 fi
 
-LOG_FILE=".agents/tooling/triage-decisions.jsonl"
-mkdir -p "$(dirname "$LOG_FILE")"
+TOOLING_DIR="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
+LOG_FILE="$TOOLING_DIR/triage-decisions.jsonl"
+mkdir -p "$TOOLING_DIR"
 
 jq -n \
   --arg file_line "$FILE_LINE" \

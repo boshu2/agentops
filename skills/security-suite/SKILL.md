@@ -34,7 +34,7 @@ Single run (default dynamic command is `--help`):
 ```bash
 python3 skills/security-suite/scripts/security_suite.py run \
   --binary "$(command -v ao)" \
-  --out-dir .agents/security-suite/ao-current
+  --out-dir .tmp/security-suite/ao-current
 ```
 
 Baseline regression gate:
@@ -42,8 +42,8 @@ Baseline regression gate:
 ```bash
 python3 skills/security-suite/scripts/security_suite.py run \
   --binary "$(command -v ao)" \
-  --out-dir .agents/security-suite/ao-current \
-  --baseline-dir .agents/security-suite/ao-baseline \
+  --out-dir .tmp/security-suite/ao-current \
+  --baseline-dir .tmp/security-suite/ao-baseline \
   --fail-on-removed
 ```
 
@@ -52,7 +52,7 @@ Policy gate:
 ```bash
 python3 skills/security-suite/scripts/security_suite.py run \
   --binary "$(command -v ao)" \
-  --out-dir .agents/security-suite/ao-current \
+  --out-dir .tmp/security-suite/ao-current \
   --policy-file skills/security-suite/references/policy-example.json \
   --fail-on-policy-fail
 ```
@@ -125,7 +125,7 @@ python3 skills/security-suite/scripts/security_suite.py run \
 
 ### Scenario: Capture a Baseline and Gate a New Release
 
-**User says:** `/security-suite run --binary $(command -v ao) --out-dir .agents/security-suite/ao-v2.4`
+**User says:** `/security-suite run --binary $(command -v ao) --out-dir .tmp/security-suite/ao-v2.4`
 
 **What happens:**
 1. The suite runs static analysis (file metadata, linked libraries, embedded archive signatures), dynamic tracing (sandboxed `--help` execution observing processes, file changes, network endpoints), and contract capture against the `ao` binary.
@@ -135,7 +135,7 @@ python3 skills/security-suite/scripts/security_suite.py run \
 
 ### Scenario: CI Regression Gate With Baseline and Policy
 
-**User says:** `/security-suite run --binary ./bin/ao-candidate --out-dir .tmp/ao-candidate --baseline-dir .agents/security-suite/ao-v2.4 --policy-file skills/security-suite/references/policy-example.json --fail-on-removed --fail-on-policy-fail`
+**User says:** `/security-suite run --binary ./bin/ao-candidate --out-dir .tmp/ao-candidate --baseline-dir .tmp/security-suite/ao-v2.4 --policy-file skills/security-suite/references/policy-example.json --fail-on-removed --fail-on-policy-fail`
 
 **What happens:**
 1. The suite runs all three collection primitives on the candidate binary, then compares the resulting contract against the v2.4 baseline to produce `compare/baseline-diff.json` with any added, removed, or changed commands.

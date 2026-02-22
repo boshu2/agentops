@@ -3,7 +3,7 @@
 #
 # Usage: ./scripts/compute-triage-accuracy.sh
 #
-# Reads: .agents/tooling/triage-decisions.jsonl
+# Reads: $TOOLCHAIN_OUTPUT_DIR/triage-decisions.jsonl (default: $TMPDIR/agentops-tooling/)
 # Output: Accuracy statistics by agent and tool
 #
 # Ground truth is set when:
@@ -13,12 +13,14 @@
 #
 # To add ground truth:
 #   # Read file, update ground_truth, write back
+#   TDIR="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
 #   jq 'if .file_line == "src/auth.go:42" then .ground_truth = "TRUE_POS" else . end' \
-#     .agents/tooling/triage-decisions.jsonl > tmp && mv tmp .agents/tooling/triage-decisions.jsonl
+#     "$TDIR/triage-decisions.jsonl" > tmp && mv tmp "$TDIR/triage-decisions.jsonl"
 
 set -euo pipefail
 
-LOG_FILE=".agents/tooling/triage-decisions.jsonl"
+TOOLING_DIR="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
+LOG_FILE="$TOOLING_DIR/triage-decisions.jsonl"
 
 if [[ ! -f "$LOG_FILE" ]]; then
     echo "No triage decisions logged yet"
