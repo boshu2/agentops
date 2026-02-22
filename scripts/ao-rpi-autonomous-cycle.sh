@@ -5,28 +5,37 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/ao-rpi-autonomous-cycle.sh [options]
 
-Runs one autonomous AO RPI cycle, including landing-plane actions.
+Runs one autonomous AO RPI cycle via the canonical supervisor path:
+  ao rpi loop --supervisor
 
 Options:
-  --goal <text>           Run ao rpi phased for an explicit goal/bead id.
-  --max-cycles <n>        For queue mode, pass --max-cycles to ao rpi loop (default: 1).
-  --repo-filter <name>    For queue mode, pass --repo-filter to ao rpi loop.
-  --no-gates              Skip scripts/validate-go-fast.sh and scripts/security-gate.sh.
-  --no-push               Skip git pull/rebase + bd sync + git push.
-  --push-branch <name>    Push target branch on origin (default: origin HEAD branch, fallback: main).
-  -h, --help              Show help.
-
-Environment:
-  AO_RPI_AUTO_CLEAN_AFTER   Duration for stale cleanup (default: 24h)
+  --goal <text>                Run one supervised cycle for an explicit goal/bead id.
+  --max-cycles <n>             Queue mode cycle cap (default: 1).
+  --repo-filter <name>         Queue mode filter for target_repo.
+  --gate-policy <policy>       Gate policy: off|best-effort|required (default: required).
+  --landing-policy <policy>    Landing policy: off|commit|sync-push (default: off).
+  --landing-branch <name>      Landing target branch (optional).
+  --bd-sync-policy <policy>    Landing beads sync policy: auto|always|never (default: auto).
+  --failure-policy <policy>    Failure policy: stop|continue (default: continue).
+  --kill-switch-path <path>    Loop kill-switch path (default: .agents/rpi/KILL).
+  --auto-clean-stale-after <d> Stale age threshold for auto-clean/ensure-cleanup (default: 24h).
+  --no-gates                   Shortcut for --gate-policy off.
+  --no-push                    Deprecated alias for --landing-policy off.
+  --push-branch <name>         Deprecated alias for --landing-policy sync-push + --landing-branch.
+  -h, --help                   Show help.
 USAGE
 }
 
 GOAL=""
 MAX_CYCLES="1"
 REPO_FILTER=""
-RUN_GATES="1"
-RUN_PUSH="1"
-PUSH_BRANCH=""
+GATE_POLICY="required"
+LANDING_POLICY="off"
+LANDING_BRANCH=""
+BD_SYNC_POLICY="auto"
+FAILURE_POLICY="continue"
+KILL_SWITCH_PATH=".agents/rpi/KILL"
+AUTO_CLEAN_STALE_AFTER="24h"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,16 +51,45 @@ while [[ $# -gt 0 ]]; do
       REPO_FILTER="${2:-}"
       shift 2
       ;;
+    --gate-policy)
+      GATE_POLICY="${2:-}"
+      shift 2
+      ;;
+    --landing-policy)
+      LANDING_POLICY="${2:-}"
+      shift 2
+      ;;
+    --landing-branch)
+      LANDING_BRANCH="${2:-}"
+      shift 2
+      ;;
+    --bd-sync-policy)
+      BD_SYNC_POLICY="${2:-}"
+      shift 2
+      ;;
+    --failure-policy)
+      FAILURE_POLICY="${2:-}"
+      shift 2
+      ;;
+    --kill-switch-path)
+      KILL_SWITCH_PATH="${2:-}"
+      shift 2
+      ;;
+    --auto-clean-stale-after)
+      AUTO_CLEAN_STALE_AFTER="${2:-}"
+      shift 2
+      ;;
     --no-gates)
-      RUN_GATES="0"
+      GATE_POLICY="off"
       shift
       ;;
     --no-push)
-      RUN_PUSH="0"
+      LANDING_POLICY="off"
       shift
       ;;
     --push-branch)
-      PUSH_BRANCH="${2:-}"
+      LANDING_POLICY="sync-push"
+      LANDING_BRANCH="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -79,58 +117,32 @@ if ! command -v ao >/dev/null 2>&1; then
   exit 1
 fi
 
-current_branch="$(git rev-parse --abbrev-ref HEAD)"
-if [[ "$current_branch" == "HEAD" ]]; then
-  echo "Detached HEAD detected. Running detached-safe, no branch created." >&2
+loop_args=(
+  rpi loop --supervisor
+  --max-cycles "$MAX_CYCLES"
+  --failure-policy "$FAILURE_POLICY"
+  --gate-policy "$GATE_POLICY"
+  --landing-policy "$LANDING_POLICY"
+  --bd-sync-policy "$BD_SYNC_POLICY"
+  --kill-switch-path "$KILL_SWITCH_PATH"
+  --auto-clean
+  --auto-clean-stale-after "$AUTO_CLEAN_STALE_AFTER"
+  --ensure-cleanup
+)
+
+if [[ -n "$REPO_FILTER" ]]; then
+  loop_args+=(--repo-filter "$REPO_FILTER")
 fi
 
-stale_after="${AO_RPI_AUTO_CLEAN_AFTER:-24h}"
-ao rpi cleanup --all --stale-after "$stale_after" >/dev/null 2>&1 || true
+if [[ -n "$LANDING_BRANCH" ]]; then
+  loop_args+=(--landing-branch "$LANDING_BRANCH")
+fi
 
 if [[ -n "$GOAL" ]]; then
-  echo "Running phased RPI for goal: $GOAL"
-  ao rpi phased --auto-clean-stale --auto-clean-stale-after "$stale_after" "$GOAL"
-else
-  echo "Running queue-driven RPI loop (max cycles: $MAX_CYCLES)"
-  loop_args=(rpi loop --max-cycles "$MAX_CYCLES")
-  if [[ -n "$REPO_FILTER" ]]; then
-    loop_args+=(--repo-filter "$REPO_FILTER")
-  fi
-  ao "${loop_args[@]}"
+  loop_args+=("$GOAL")
 fi
 
-if [[ "$RUN_GATES" == "1" ]]; then
-  if [[ -x scripts/validate-go-fast.sh ]]; then
-    scripts/validate-go-fast.sh
-  else
-    echo "Skipping fast validation gate (scripts/validate-go-fast.sh not executable)."
-  fi
-
-  if [[ -x scripts/security-gate.sh ]]; then
-    scripts/security-gate.sh
-  else
-    echo "Skipping security gate (scripts/security-gate.sh not executable)."
-  fi
-fi
-
-if [[ "$RUN_PUSH" == "1" ]]; then
-  if [[ -z "$PUSH_BRANCH" ]]; then
-    PUSH_BRANCH="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')"
-    if [[ -z "$PUSH_BRANCH" ]]; then
-      PUSH_BRANCH="main"
-    fi
-  fi
-
-  echo "Landing plane to origin/$PUSH_BRANCH"
-  git fetch origin "$PUSH_BRANCH"
-  git rebase "origin/$PUSH_BRANCH"
-
-  if command -v bd >/dev/null 2>&1; then
-    bd sync
-  fi
-
-  git push origin "HEAD:$PUSH_BRANCH"
-  git status -sb
-fi
+echo "Running canonical supervisor path: ao ${loop_args[*]}"
+ao "${loop_args[@]}"
 
 echo "Autonomous RPI cycle complete."

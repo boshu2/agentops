@@ -400,7 +400,7 @@ Learnings pass quality gates (specificity, actionability, novelty) and land in t
 <details>
 <summary><b>Phased RPI</b> — fresh context per phase for larger goals</summary>
 
-`ao rpi phased "goal"` runs each phase in its own session — no context bleed between phases. Use `/rpi` when context fits in one session. Use `ao rpi phased` when it doesn't. See [The ao CLI](#the-ao-cli) for examples.
+`ao rpi phased "goal"` runs each phase in its own session — no context bleed between phases. Use `/rpi` when context fits in one session. Use `ao rpi phased` when you need phase-level resume control. For autonomous control-plane operation, use the canonical path `ao rpi loop --supervisor`. See [The ao CLI](#the-ao-cli) for examples.
 
 </details>
 
@@ -443,10 +443,10 @@ Deep dive: [docs/how-it-works.md](docs/how-it-works.md) — Brownian Ratchet, Ra
 Skills work standalone — no CLI required. The `ao` CLI adds two things: (1) the knowledge flywheel that makes sessions compound (extract, inject, decay, maturity), and (2) terminal-based RPI that runs without an active chat session. Each phase gets its own fresh context window, so large goals don't hit context limits.
 
 ```bash
-ao rpi phased "add rate limiting"              # 3 sessions: discover → build → validate
-ao rpi phased "fix auth bug" &                 # Run multiple in parallel (auto-worktrees)
-ao rpi phased --from=implementation "ag-058"   # Resume at build phase
-ao rpi status --watch                          # Monitor active runs
+ao rpi loop --supervisor --max-cycles 1        # Canonical autonomous cycle (policy-gated landing)
+ao rpi loop --supervisor "fix auth bug"        # Single explicit-goal supervised cycle
+ao rpi phased --from=implementation "ag-058"   # Resume a specific phased run at build phase
+ao rpi status --watch                          # Monitor active/terminal runs
 ```
 
 Walk away, come back to committed code + extracted learnings.

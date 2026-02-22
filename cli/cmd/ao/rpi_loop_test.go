@@ -1061,6 +1061,69 @@ func TestRPILoop_ExplicitGoalReportsExecutedCycles(t *testing.T) {
 	}
 }
 
+func TestRPILoop_KillSwitchStopsBeforeCycleExecution(t *testing.T) {
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	prevDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = prevDryRun }()
+
+	prevRunCycle := runRPISupervisedCycleFn
+	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
+
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	killPath := filepath.Join(tmpDir, ".agents", "rpi", "KILL")
+	if err := os.MkdirAll(filepath.Dir(killPath), 0755); err != nil {
+		t.Fatalf("mkdir kill switch dir: %v", err)
+	}
+	if err := os.WriteFile(killPath, []byte("stop\n"), 0644); err != nil {
+		t.Fatalf("write kill switch: %v", err)
+	}
+
+	rpiMaxCycles = 1
+	rpiFailurePolicy = loopFailurePolicyStop
+	rpiCycleRetries = 0
+	rpiRetryBackoff = 0
+	rpiCycleDelay = 0
+	rpiLease = false
+	rpiLeaseTTL = 2 * time.Minute
+	rpiGatePolicy = loopGatePolicyOff
+	rpiLandingPolicy = loopLandingPolicyOff
+	rpiBDSyncPolicy = loopBDSyncPolicyAuto
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiCommandTimeout = time.Minute
+	rpiKillSwitchPath = killPath
+
+	attempts := 0
+	runRPISupervisedCycleFn = func(_ string, _ string, _ int, _ int, _ rpiLoopSupervisorConfig) error {
+		attempts++
+		return nil
+	}
+
+	output, err := captureStdoutWithError(func() error {
+		return runRPILoop(nil, []string{"stopped by kill switch"})
+	})
+	if err != nil {
+		t.Fatalf("runRPILoop returned error: %v", err)
+	}
+	if attempts != 0 {
+		t.Fatalf("expected kill switch to stop loop before execution; attempts=%d", attempts)
+	}
+	if !strings.Contains(output, "Kill switch detected") {
+		t.Fatalf("expected kill switch message, got:\n%s", output)
+	}
+	if !strings.Contains(output, "RPI loop finished after 0 cycle(s).") {
+		t.Fatalf("expected zero cycle summary, got:\n%s", output)
+	}
+}
+
 func captureStdoutWithError(fn func() error) (string, error) {
 	oldStdout := os.Stdout
 	r, w, err := os.Pipe()

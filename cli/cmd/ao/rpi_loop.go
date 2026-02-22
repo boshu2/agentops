@@ -30,6 +30,7 @@ var (
 	rpiAutoCleanStaleAfter   time.Duration
 	rpiEnsureCleanup         bool
 	rpiCleanupPruneWorktrees bool
+	rpiCleanupPruneBranches  bool
 	rpiGatePolicy            string
 	rpiValidateFastScript    string
 	rpiSecurityGateScript    string
@@ -39,6 +40,7 @@ var (
 	rpiLandingLockPath       string
 	rpiBDSyncPolicy          string
 	rpiCommandTimeout        time.Duration
+	rpiKillSwitchPath        string
 )
 
 func init() {
@@ -87,6 +89,7 @@ Examples:
 	loopCmd.Flags().DurationVar(&rpiAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only auto-clean runs older than this age")
 	loopCmd.Flags().BoolVar(&rpiEnsureCleanup, "ensure-cleanup", false, "Run stale-run cleanup after each cycle (cleanup guarantee)")
 	loopCmd.Flags().BoolVar(&rpiCleanupPruneWorktrees, "cleanup-prune-worktrees", true, "Run git worktree prune during supervisor cleanup")
+	loopCmd.Flags().BoolVar(&rpiCleanupPruneBranches, "cleanup-prune-branches", false, "Run legacy branch cleanup during supervisor cleanup")
 	loopCmd.Flags().StringVar(&rpiGatePolicy, "gate-policy", "off", "Quality/security gate policy: off|best-effort|required")
 	loopCmd.Flags().StringVar(&rpiValidateFastScript, "gate-fast-script", filepath.Join("scripts", "validate-go-fast.sh"), "Fast validation gate script path")
 	loopCmd.Flags().StringVar(&rpiSecurityGateScript, "gate-security-script", filepath.Join("scripts", "security-gate.sh"), "Security gate script path")
@@ -96,6 +99,7 @@ Examples:
 	loopCmd.Flags().StringVar(&rpiLandingLockPath, "landing-lock-path", filepath.Join(".agents", "rpi", "landing.lock"), "Landing lock file path for synchronized integration (absolute or repo-relative)")
 	loopCmd.Flags().StringVar(&rpiBDSyncPolicy, "bd-sync-policy", "auto", "bd sync policy for landing: auto|always|never")
 	loopCmd.Flags().DurationVar(&rpiCommandTimeout, "command-timeout", 20*time.Minute, "Timeout for supervisor external commands (git/bd/gate scripts)")
+	loopCmd.Flags().StringVar(&rpiKillSwitchPath, "kill-switch-path", filepath.Join(".agents", "rpi", "KILL"), "Supervisor kill-switch file path checked at cycle boundaries (absolute or repo-relative)")
 
 	rpiCmd.AddCommand(loopCmd)
 }
@@ -181,6 +185,14 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 			fmt.Printf("\nSleeping %s before next cycle...\n", cfg.CycleDelay.Round(time.Second))
 			time.Sleep(cfg.CycleDelay)
 		}
+		killSwitchSet, killErr := isLoopKillSwitchSet(cfg)
+		if killErr != nil {
+			return killErr
+		}
+		if killSwitchSet {
+			fmt.Printf("Kill switch detected (%s). Stopping loop.\n", cfg.KillSwitchPath)
+			break
+		}
 
 		fmt.Printf("\n=== RPI Loop: Cycle %d ===\n", cycle)
 
@@ -224,6 +236,15 @@ func runRPILoop(cmd *cobra.Command, args []string) error {
 		var cycleErr error
 		maxAttempts := cfg.MaxCycleAttempts()
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			killSwitchSet, killErr := isLoopKillSwitchSet(cfg)
+			if killErr != nil {
+				return killErr
+			}
+			if killSwitchSet {
+				fmt.Printf("Kill switch detected (%s). Stopping loop before cycle execution.\n", cfg.KillSwitchPath)
+				fmt.Printf("\nRPI loop finished after %d cycle(s).\n", executedCycles)
+				return nil
+			}
 			cycleErr = runRPISupervisedCycleFn(cwd, goal, cycle, attempt, cfg)
 			if cycleErr == nil {
 				break

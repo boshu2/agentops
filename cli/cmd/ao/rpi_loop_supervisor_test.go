@@ -29,6 +29,7 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	rpiDetachedHeal = false
 	rpiAutoClean = false
 	rpiEnsureCleanup = false
+	rpiCleanupPruneBranches = false
 	rpiGatePolicy = "off"
 	rpiLandingPolicy = "off"
 	rpiLandingLockPath = ""
@@ -65,11 +66,17 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	if !cfg.EnsureCleanup {
 		t.Fatal("expected ensure-cleanup to be enabled in supervisor defaults")
 	}
+	if !cfg.CleanupPruneBranches {
+		t.Fatal("expected cleanup-prune-branches to be enabled in supervisor defaults")
+	}
 	if cfg.GatePolicy != loopGatePolicyRequired {
 		t.Fatalf("gate policy: got %q, want %q", cfg.GatePolicy, loopGatePolicyRequired)
 	}
 	if cfg.LandingLockPath != filepath.Join(tmpDir, ".agents", "rpi", "landing.lock") {
 		t.Fatalf("landing lock path: got %q, want %q", cfg.LandingLockPath, filepath.Join(tmpDir, ".agents", "rpi", "landing.lock"))
+	}
+	if cfg.KillSwitchPath != filepath.Join(tmpDir, ".agents", "rpi", "KILL") {
+		t.Fatalf("kill switch path: got %q, want %q", cfg.KillSwitchPath, filepath.Join(tmpDir, ".agents", "rpi", "KILL"))
 	}
 }
 
@@ -340,10 +347,10 @@ func TestRunSupervisorLanding_CommitPolicy_RespectsLandingLock(t *testing.T) {
 	}()
 
 	cfg := rpiLoopSupervisorConfig{
-		LandingPolicy:      loopLandingPolicyCommit,
-		LandingLockPath:    lockPath,
+		LandingPolicy:        loopLandingPolicyCommit,
+		LandingLockPath:      lockPath,
 		LandingCommitMessage: "chore(rpi): autonomous cycle {{cycle}}",
-		CommandTimeout:      time.Minute,
+		CommandTimeout:       time.Minute,
 	}
 	err = runSupervisorLanding(tmpDir, cfg, 1, 1, "ship", &landingScope{
 		baselineDirtyPaths: map[string]struct{}{},
@@ -393,6 +400,31 @@ func TestShouldMarkQueueEntryFailed_InfraVsTask(t *testing.T) {
 	}
 }
 
+func TestIsLoopKillSwitchSet(t *testing.T) {
+	tmpDir := t.TempDir()
+	killPath := filepath.Join(tmpDir, "KILL")
+	cfg := rpiLoopSupervisorConfig{KillSwitchPath: killPath}
+
+	set, err := isLoopKillSwitchSet(cfg)
+	if err != nil {
+		t.Fatalf("isLoopKillSwitchSet (missing): %v", err)
+	}
+	if set {
+		t.Fatal("expected kill switch to be unset when file is missing")
+	}
+
+	if err := os.WriteFile(killPath, []byte("stop\n"), 0644); err != nil {
+		t.Fatalf("write kill switch: %v", err)
+	}
+	set, err = isLoopKillSwitchSet(cfg)
+	if err != nil {
+		t.Fatalf("isLoopKillSwitchSet (present): %v", err)
+	}
+	if !set {
+		t.Fatal("expected kill switch to be set when file exists")
+	}
+}
+
 type loopSupervisorGlobals struct {
 	rpiSupervisor            bool
 	rpiFailurePolicy         string
@@ -408,6 +440,7 @@ type loopSupervisorGlobals struct {
 	rpiAutoCleanStaleAfter   time.Duration
 	rpiEnsureCleanup         bool
 	rpiCleanupPruneWorktrees bool
+	rpiCleanupPruneBranches  bool
 	rpiGatePolicy            string
 	rpiValidateFastScript    string
 	rpiSecurityGateScript    string
@@ -417,6 +450,7 @@ type loopSupervisorGlobals struct {
 	rpiLandingLockPath       string
 	rpiBDSyncPolicy          string
 	rpiCommandTimeout        time.Duration
+	rpiKillSwitchPath        string
 }
 
 func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
@@ -435,6 +469,7 @@ func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
 		rpiAutoCleanStaleAfter:   rpiAutoCleanStaleAfter,
 		rpiEnsureCleanup:         rpiEnsureCleanup,
 		rpiCleanupPruneWorktrees: rpiCleanupPruneWorktrees,
+		rpiCleanupPruneBranches:  rpiCleanupPruneBranches,
 		rpiGatePolicy:            rpiGatePolicy,
 		rpiValidateFastScript:    rpiValidateFastScript,
 		rpiSecurityGateScript:    rpiSecurityGateScript,
@@ -444,6 +479,7 @@ func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
 		rpiLandingLockPath:       rpiLandingLockPath,
 		rpiBDSyncPolicy:          rpiBDSyncPolicy,
 		rpiCommandTimeout:        rpiCommandTimeout,
+		rpiKillSwitchPath:        rpiKillSwitchPath,
 	}
 }
 
@@ -462,6 +498,7 @@ func restoreLoopSupervisorGlobals(prev loopSupervisorGlobals) {
 	rpiAutoCleanStaleAfter = prev.rpiAutoCleanStaleAfter
 	rpiEnsureCleanup = prev.rpiEnsureCleanup
 	rpiCleanupPruneWorktrees = prev.rpiCleanupPruneWorktrees
+	rpiCleanupPruneBranches = prev.rpiCleanupPruneBranches
 	rpiGatePolicy = prev.rpiGatePolicy
 	rpiValidateFastScript = prev.rpiValidateFastScript
 	rpiSecurityGateScript = prev.rpiSecurityGateScript
@@ -471,6 +508,7 @@ func restoreLoopSupervisorGlobals(prev loopSupervisorGlobals) {
 	rpiLandingLockPath = prev.rpiLandingLockPath
 	rpiBDSyncPolicy = prev.rpiBDSyncPolicy
 	rpiCommandTimeout = prev.rpiCommandTimeout
+	rpiKillSwitchPath = prev.rpiKillSwitchPath
 }
 
 func newLoopSupervisorTestCommand() *cobra.Command {
@@ -482,6 +520,7 @@ func newLoopSupervisorTestCommand() *cobra.Command {
 	cmd.Flags().Bool("detached-heal", false, "")
 	cmd.Flags().Bool("auto-clean", false, "")
 	cmd.Flags().Bool("ensure-cleanup", false, "")
+	cmd.Flags().Bool("cleanup-prune-branches", false, "")
 	cmd.Flags().String("gate-policy", "off", "")
 	cmd.Flags().String("landing-lock-path", "", "")
 	cmd.Flags().Duration("command-timeout", 20*time.Minute, "")

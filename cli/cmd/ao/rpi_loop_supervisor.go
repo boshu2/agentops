@@ -59,6 +59,7 @@ type rpiLoopSupervisorConfig struct {
 	AutoCleanStaleAfter   time.Duration
 	EnsureCleanup         bool
 	CleanupPruneWorktrees bool
+	CleanupPruneBranches  bool
 	GatePolicy            string
 	ValidateFastScript    string
 	SecurityGateScript    string
@@ -68,6 +69,7 @@ type rpiLoopSupervisorConfig struct {
 	LandingLockPath       string
 	BDSyncPolicy          string
 	CommandTimeout        time.Duration
+	KillSwitchPath        string
 	RuntimeMode           string
 	RuntimeCommand        string
 	AOCommand             string
@@ -90,6 +92,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		AutoCleanStaleAfter:   rpiAutoCleanStaleAfter,
 		EnsureCleanup:         rpiEnsureCleanup,
 		CleanupPruneWorktrees: rpiCleanupPruneWorktrees,
+		CleanupPruneBranches:  rpiCleanupPruneBranches,
 		GatePolicy:            strings.ToLower(strings.TrimSpace(rpiGatePolicy)),
 		ValidateFastScript:    rpiValidateFastScript,
 		SecurityGateScript:    rpiSecurityGateScript,
@@ -99,6 +102,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		LandingLockPath:       rpiLandingLockPath,
 		BDSyncPolicy:          strings.ToLower(strings.TrimSpace(rpiBDSyncPolicy)),
 		CommandTimeout:        rpiCommandTimeout,
+		KillSwitchPath:        strings.TrimSpace(rpiKillSwitchPath),
 	}
 
 	if rpiSupervisor {
@@ -122,6 +126,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 		}
 		if !cmd.Flags().Changed("ensure-cleanup") {
 			cfg.EnsureCleanup = true
+		}
+		if !cmd.Flags().Changed("cleanup-prune-branches") {
+			cfg.CleanupPruneBranches = true
 		}
 		if !cmd.Flags().Changed("gate-policy") {
 			cfg.GatePolicy = loopGatePolicyRequired
@@ -158,6 +165,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 	if cfg.LandingLockPath == "" {
 		cfg.LandingLockPath = filepath.Join(".agents", "rpi", "landing.lock")
 	}
+	if cfg.KillSwitchPath == "" {
+		cfg.KillSwitchPath = filepath.Join(".agents", "rpi", "KILL")
+	}
 
 	if cfg.FailurePolicy != loopFailurePolicyStop && cfg.FailurePolicy != loopFailurePolicyContinue {
 		return cfg, fmt.Errorf("invalid failure-policy %q (valid: stop|continue)", cfg.FailurePolicy)
@@ -183,6 +193,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 	}
 	if !filepath.IsAbs(cfg.LandingLockPath) {
 		cfg.LandingLockPath = filepath.Join(cwd, cfg.LandingLockPath)
+	}
+	if !filepath.IsAbs(cfg.KillSwitchPath) {
+		cfg.KillSwitchPath = filepath.Join(cwd, cfg.KillSwitchPath)
 	}
 
 	toolchain, err := resolveRPIToolchainDefaults()
@@ -276,7 +289,12 @@ func runRPISupervisedCycle(cwd, goal string, cycle, attempt int, cfg rpiLoopSupe
 
 	if cfg.EnsureCleanup {
 		defer func() {
-			cleanupErr := runSupervisorCleanup(cwd, cfg.AutoCleanStaleAfter, cfg.CleanupPruneWorktrees)
+			cleanupErr := runSupervisorCleanupWithBranchPrune(
+				cwd,
+				cfg.AutoCleanStaleAfter,
+				cfg.CleanupPruneWorktrees,
+				cfg.CleanupPruneBranches,
+			)
 			if cleanupErr == nil {
 				return
 			}
@@ -317,8 +335,25 @@ func ensureLoopAttachedBranch(cwd, branchPrefix string) (string, bool, error) {
 	return cliRPI.EnsureAttachedBranch(repoRoot, worktreeTimeout, branchPrefix)
 }
 
-func runSupervisorCleanup(cwd string, staleAfter time.Duration, prune bool) error {
-	return executeRPICleanup(cwd, "", true, prune, false, GetDryRun(), staleAfter)
+func runSupervisorCleanupWithBranchPrune(cwd string, staleAfter time.Duration, pruneWorktrees, pruneBranches bool) error {
+	return executeRPICleanup(cwd, "", true, pruneWorktrees, pruneBranches, GetDryRun(), staleAfter)
+}
+
+func isLoopKillSwitchSet(cfg rpiLoopSupervisorConfig) (bool, error) {
+	if strings.TrimSpace(cfg.KillSwitchPath) == "" {
+		return false, nil
+	}
+	info, err := os.Stat(cfg.KillSwitchPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("check kill switch %s: %w", cfg.KillSwitchPath, err)
+	}
+	if info.IsDir() {
+		return false, fmt.Errorf("kill switch path is a directory: %s", cfg.KillSwitchPath)
+	}
+	return true, nil
 }
 
 func runSupervisorGates(cwd string, cfg rpiLoopSupervisorConfig) error {
