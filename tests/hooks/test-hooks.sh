@@ -1008,7 +1008,7 @@ setup_mock_repo "$MOCK_STOP"
   echo '{"last_assistant_message":"worker summary"}' | \
   CLAUDE_SESSION_ID="sess-stop-1" bash "$HOOKS_DIR/stop-auto-handoff.sh" >/dev/null 2>&1
 )
-if ls "$MOCK_STOP/.agents/handoff/pending"/*.json >/dev/null 2>&1; then
+if ls "$MOCK_STOP/.agents/handoff"/stop-*.md >/dev/null 2>&1; then
     pass "stop-auto-handoff writes pending handoff"
 else
     fail "stop-auto-handoff writes pending handoff"
@@ -1055,6 +1055,214 @@ if [ "$EC" -eq 0 ]; then
 else
     fail "worktree-cleanup no-path fail-open"
 fi
+
+# ============================================================
+echo ""
+echo "=== chain.jsonl rotation ==="
+# ============================================================
+
+# Test: chain.jsonl rotated when exceeding threshold
+MOCK_CHAIN="$TMPDIR/mock-chain-rotate"
+setup_mock_repo "$MOCK_CHAIN"
+mkdir -p "$MOCK_CHAIN/.agents/ao"
+for i in $(seq 1 300); do echo "{\"gate\":\"step-$i\",\"status\":\"locked\"}" >> "$MOCK_CHAIN/.agents/ao/chain.jsonl"; done
+(cd "$MOCK_CHAIN" && AGENTOPS_CHAIN_MAX_LINES=200 bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+CHAIN_LINES=$(wc -l < "$MOCK_CHAIN/.agents/ao/chain.jsonl" | tr -d ' ')
+if [ "$CHAIN_LINES" -eq 200 ]; then
+    pass "chain.jsonl rotated to 200 lines"
+else
+    fail "chain.jsonl rotated to 200 lines (got $CHAIN_LINES)"
+fi
+
+# Test: archive file created during rotation
+if ls "$MOCK_CHAIN/.agents/ao/archive"/chain-*.jsonl >/dev/null 2>&1; then
+    ARCHIVE_LINES=$(wc -l < "$(ls "$MOCK_CHAIN/.agents/ao/archive"/chain-*.jsonl | head -1)" | tr -d ' ')
+    if [ "$ARCHIVE_LINES" -eq 100 ]; then
+        pass "chain archive contains 100 excess lines"
+    else
+        fail "chain archive contains 100 excess lines (got $ARCHIVE_LINES)"
+    fi
+else
+    fail "chain archive file created"
+fi
+
+# Test: chain.jsonl under threshold not rotated
+MOCK_CHAIN_SMALL="$TMPDIR/mock-chain-small"
+setup_mock_repo "$MOCK_CHAIN_SMALL"
+mkdir -p "$MOCK_CHAIN_SMALL/.agents/ao"
+for i in $(seq 1 50); do echo "{\"gate\":\"step-$i\",\"status\":\"locked\"}" >> "$MOCK_CHAIN_SMALL/.agents/ao/chain.jsonl"; done
+(cd "$MOCK_CHAIN_SMALL" && AGENTOPS_CHAIN_MAX_LINES=200 bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+SMALL_LINES=$(wc -l < "$MOCK_CHAIN_SMALL/.agents/ao/chain.jsonl" | tr -d ' ')
+if [ "$SMALL_LINES" -eq 50 ]; then
+    pass "chain.jsonl under threshold not rotated"
+else
+    fail "chain.jsonl under threshold not rotated (got $SMALL_LINES)"
+fi
+
+# ============================================================
+echo ""
+echo "=== cached file count (prune check) ==="
+# ============================================================
+
+# Test: prune dry-run log exists when .agents has >500 files
+MOCK_PRUNE_CACHE="$TMPDIR/mock-prune-cache"
+setup_mock_repo "$MOCK_PRUNE_CACHE"
+mkdir -p "$MOCK_PRUNE_CACHE/.agents/ao"
+# Create 510 files to trigger the prune check
+for i in $(seq 1 510); do touch "$MOCK_PRUNE_CACHE/.agents/ao/dummy-$i"; done
+(cd "$MOCK_PRUNE_CACHE" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+if [ -f "$MOCK_PRUNE_CACHE/.agents/ao/prune-dry-run.log" ]; then
+    pass "prune dry-run triggered with cached file count"
+else
+    fail "prune dry-run triggered with cached file count"
+fi
+
+# ============================================================
+echo ""
+echo "=== ao-agents-check.sh removed from hook chain ==="
+# ============================================================
+
+# Test: ao-agents-check.sh no longer registered in hooks.json
+if ! grep -q "ao-agents-check" "$REPO_ROOT/hooks/hooks.json" 2>/dev/null; then
+    pass "ao-agents-check.sh removed from hooks.json"
+else
+    fail "ao-agents-check.sh removed from hooks.json"
+fi
+
+# ============================================================
+echo ""
+echo "=== ao-extract.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-extract
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-extract.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-extract kill switch"; else fail "ao-extract kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-extract.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-extract fail-open without ao"; else fail "ao-extract fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-feedback-loop.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-feedback-loop
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-feedback-loop.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-feedback-loop kill switch"; else fail "ao-feedback-loop kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-feedback-loop.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-feedback-loop fail-open without ao"; else fail "ao-feedback-loop fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-flywheel-close.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-flywheel-close
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-flywheel-close.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-flywheel-close kill switch"; else fail "ao-flywheel-close kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-flywheel-close.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-flywheel-close fail-open without ao"; else fail "ao-flywheel-close fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-forge.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-forge
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-forge.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-forge kill switch"; else fail "ao-forge kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-forge.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-forge fail-open without ao"; else fail "ao-forge fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-inject.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-inject
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-inject.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-inject kill switch"; else fail "ao-inject kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-inject.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-inject fail-open without ao"; else fail "ao-inject fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-maturity-scan.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-maturity-scan
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-maturity-scan.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-maturity-scan kill switch"; else fail "ao-maturity-scan kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-maturity-scan.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-maturity-scan fail-open without ao"; else fail "ao-maturity-scan fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-ratchet-status.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-ratchet-status
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-ratchet-status.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-ratchet-status kill switch"; else fail "ao-ratchet-status kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-ratchet-status.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-ratchet-status fail-open without ao"; else fail "ao-ratchet-status fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-session-outcome.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-session-outcome
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-session-outcome.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-session-outcome kill switch"; else fail "ao-session-outcome kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-session-outcome.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-session-outcome fail-open without ao"; else fail "ao-session-outcome fail-open without ao"; fi
+
+# ============================================================
+echo ""
+echo "=== ao-task-sync.sh ==="
+# ============================================================
+
+# Test: kill switch suppresses ao-task-sync
+EC=0
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/ao-task-sync.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-task-sync kill switch"; else fail "ao-task-sync kill switch"; fi
+
+# Test: fail-open without ao
+EC=0
+PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ao-task-sync.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "ao-task-sync fail-open without ao"; else fail "ao-task-sync fail-open without ao"; fi
 
 # ============================================================
 echo ""

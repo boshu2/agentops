@@ -34,11 +34,6 @@
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/ao-agents-check.sh",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-team-guard.sh --cleanup",
             "timeout": 2
           }

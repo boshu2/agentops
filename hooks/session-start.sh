@@ -132,6 +132,24 @@ ENVEOF
 # Clean up stale nudge dedup flag from previous session
 rm -f "$ROOT/.agents/ao/.ratchet-advance-fired" 2>/dev/null
 
+# Rotate chain.jsonl when it exceeds threshold (before any reads)
+CHAIN_FILE="$ROOT/.agents/ao/chain.jsonl"
+CHAIN_MAX_LINES="${AGENTOPS_CHAIN_MAX_LINES:-200}"
+if [ -f "$CHAIN_FILE" ]; then
+    line_count=$(wc -l < "$CHAIN_FILE" | tr -d ' ')
+    if [ "$line_count" -gt "$CHAIN_MAX_LINES" ]; then
+        archive_file="$ROOT/.agents/ao/archive/chain-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
+        mkdir -p "$(dirname "$archive_file")"
+        archive_count=$((line_count - CHAIN_MAX_LINES))
+        head -n "$archive_count" "$CHAIN_FILE" > "$archive_file"
+        tail -n "$CHAIN_MAX_LINES" "$CHAIN_FILE" > "$CHAIN_FILE.tmp"
+        mv "$CHAIN_FILE.tmp" "$CHAIN_FILE"
+    fi
+fi
+
+# Single file count for reuse (flywheel stats + prune check)
+AGENTS_FILE_COUNT=$(find "$ROOT/.agents" -type f 2>/dev/null | wc -l | tr -d ' ')
+
 # Process pending extraction queue (closes forge → extract loop)
 if command -v ao &>/dev/null; then
     run_ao_quick "${AGENTOPS_SESSION_START_EXTRACT_TIMEOUT:-5}" extract || true
@@ -461,7 +479,7 @@ fi
 
 # Prune check — auto-execute when AGENTOPS_PRUNE_AUTO=1, otherwise dry-run only
 if [ "${AGENTOPS_HOOKS_DISABLED:-}" != "1" ] && [ -x "$PLUGIN_ROOT/scripts/prune-agents.sh" ]; then
-    FCOUNT=$(find "$ROOT/.agents" -type f 2>/dev/null | wc -l | tr -d ' ')
+    FCOUNT="${AGENTS_FILE_COUNT:-0}"
     if [ "${FCOUNT:-0}" -gt 500 ]; then
         if [ "${AGENTOPS_PRUNE_AUTO:-}" = "1" ]; then
             "$PLUGIN_ROOT/scripts/prune-agents.sh" --execute --quiet > "$AO_DIR/prune-auto.log" 2>&1 || true
