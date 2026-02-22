@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -336,7 +337,7 @@ func TestExecuteRPICleanup_StaleAfterOnlyMarksOldRuns(t *testing.T) {
 	makeRun("old-run", now.Add(-2*time.Hour))
 	makeRun("new-run", now.Add(-10*time.Minute))
 
-	if err := executeRPICleanup(tmpDir, "", true, false, false, 1*time.Hour); err != nil {
+	if err := executeRPICleanup(tmpDir, "", true, false, false, false, 1*time.Hour); err != nil {
 		t.Fatalf("executeRPICleanup: %v", err)
 	}
 
@@ -464,4 +465,88 @@ func TestRemoveOrphanedWorktree_RepoRootProtection(t *testing.T) {
 	if _, err := os.Stat(sentinel); err != nil {
 		t.Fatalf("sentinel file was deleted — repo root was removed!")
 	}
+}
+
+func TestCollectLegacyRPIBranches_RunIDScope(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoPath := tmpDir
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v failed: %v (%s)", strings.Join(args, " "), err, string(output))
+		}
+	}
+
+	runGit("init", "-q")
+	runGit("config", "user.email", "noreply@example.com")
+	runGit("config", "user.name", "Test User")
+	runGit("checkout", "-q", "-b", "main")
+	runGit("commit", "-q", "--allow-empty", "-m", "init")
+	runGit("branch", "-q", "rpi/target")
+	runGit("branch", "-q", "rpi/other")
+	runGit("branch", "-q", "codex/auto-rpi-old")
+
+	branches, err := collectLegacyRPIBranches(repoPath, "target", false)
+	if err != nil {
+		t.Fatalf("collect branches: %v", err)
+	}
+	if len(branches) != 1 || branches[0] != "rpi/target" {
+		t.Fatalf("expected only runID branch, got %v", branches)
+	}
+
+	if err := cleanupLegacyRPIBranches(repoPath, "target", false, true); err != nil {
+		t.Fatalf("cleanup dry run: %v", err)
+	}
+	if err := runGitCheckBranch(repoPath, "rpi/target"); err != nil {
+		t.Fatalf("dry-run should preserve branch: %v", err)
+	}
+}
+
+func TestCleanupLegacyRPIBranches_AllAndActiveSafety(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoPath := tmpDir
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repoPath
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v failed: %v (%s)", strings.Join(args, " "), err, string(output))
+		}
+	}
+
+	runGit("init", "-q")
+	runGit("config", "user.email", "noreply@example.com")
+	runGit("config", "user.name", "Test User")
+	runGit("checkout", "-q", "-b", "main")
+	runGit("commit", "-q", "--allow-empty", "-m", "init")
+	runGit("checkout", "-q", "-b", "rpi/active")
+	runGit("branch", "-q", "rpi/inactive")
+	runGit("branch", "-q", "codex/auto-rpi-old")
+	runGit("checkout", "-q", "main")
+	worktreeActivePath := filepath.Join(repoPath, "active-worktree")
+	runGit("worktree", "add", worktreeActivePath, "rpi/active")
+
+	if err := cleanupLegacyRPIBranches(repoPath, "", true, false); err != nil {
+		t.Fatalf("cleanup all: %v", err)
+	}
+
+	if err := runGitCheckBranch(repoPath, "rpi/active"); err != nil {
+		t.Fatalf("active branch should be preserved: %v", err)
+	}
+	if err := runGitCheckBranch(repoPath, "codex/auto-rpi-old"); err == nil {
+		t.Fatalf("codex/auto-rpi-old branch should be removed")
+	}
+	if err := runGitCheckBranch(repoPath, "rpi/inactive"); err == nil {
+		t.Fatalf("rpi/inactive branch should be removed")
+	}
+}
+
+func runGitCheckBranch(repoPath, name string) error {
+	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+	cmd.Dir = repoPath
+	return cmd.Run()
 }

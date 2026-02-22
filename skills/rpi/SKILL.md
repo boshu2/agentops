@@ -249,11 +249,17 @@ Read `references/error-handling.md` for failure semantics and retries.
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
+| Supervisor spiraled branch count | Detached HEAD healing or legacy `codex/auto-rpi-*` naming created detached branches | Keep `--detached-heal` off for supervisor mode (default), prefer detached worktree execution, then run cleanup: `ao rpi cleanup --all --prune-worktrees --prune-branches --dry-run` to preview, then rerun without `--dry-run`. |
 | Discovery retries hit max attempts | Plan has unresolved risks | Review pre-mortem findings, re-run `/rpi --from=discovery` |
 | Implementation retries hit max attempts | Epic has blockers or unresolved dependencies | Inspect `bd show <epic-id>`, fix blockers, re-run `/rpi --from=implementation` |
 | Validation retries hit max attempts | Vibe found critical defects repeatedly | Apply findings, re-run `/rpi --from=validation` |
 | Missing epic ID at implementation start | Discovery did not produce a parseable epic | Verify latest open epic with `bd list --type epic --status open` |
 | Large-repo context pressure | Too much context in one window | Use `references/context-windowing.md` and summarize phase outputs aggressively |
+
+### Emergency control
+
+- Cancel in-flight RPI work immediately: `ao rpi cancel --all` (or `--run-id <id>` for one run).
+- Remove stale worktrees and legacy branches: `ao rpi cleanup --all --prune-worktrees --prune-branches`.
 
 ## See Also
 

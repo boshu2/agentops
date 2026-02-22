@@ -122,11 +122,8 @@ func TestCreateWorktree(t *testing.T) {
 		t.Fatalf("createWorktree: %v", err)
 	}
 	defer func() {
-		// Cleanup: remove worktree and branch.
+		// Cleanup: remove worktree.
 		cmd := exec.Command("git", "worktree", "remove", worktreePath, "--force")
-		cmd.Dir = repo
-		_ = cmd.Run()
-		cmd = exec.Command("git", "branch", "-D", "rpi/"+runID)
 		cmd.Dir = repo
 		_ = cmd.Run()
 	}()
@@ -149,15 +146,15 @@ func TestCreateWorktree(t *testing.T) {
 		t.Fatalf("unexpected basename: %q, expected %q", filepath.Base(worktreePath), expected)
 	}
 
-	// Verify branch exists.
+	// Verify branch was not created for detached worktree mode.
 	cmd := exec.Command("git", "branch", "--list", "rpi/"+runID)
 	cmd.Dir = repo
 	out, err := cmd.Output()
 	if err != nil {
 		t.Fatalf("list branches: %v", err)
 	}
-	if !strings.Contains(string(out), "rpi/"+runID) {
-		t.Fatalf("branch rpi/%s not found", runID)
+	if strings.Contains(string(out), "rpi/"+runID) {
+		t.Fatalf("branch rpi/%s should not exist", runID)
 	}
 
 	// Verify .agents/rpi/ exists in worktree.
@@ -176,29 +173,20 @@ func TestCreateWorktree_RetryOnCollision(t *testing.T) {
 	}
 	defer os.Chdir(origDir) //nolint:errcheck
 
-	// Pre-create a branch to simulate collision (unlikely in practice).
-	cmd := exec.Command("git", "branch", "rpi/collision-test")
-	cmd.Dir = repo
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pre-create branch: %v\n%s", err, out)
-	}
-
-	// createWorktree should still succeed with a different ID.
+	// createWorktree should still succeed and follow detached naming.
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
-		t.Fatalf("createWorktree should retry on collision: %v", err)
+		t.Fatalf("createWorktree should succeed: %v", err)
 	}
 	defer func() {
 		cmd := exec.Command("git", "worktree", "remove", worktreePath, "--force")
 		cmd.Dir = repo
 		_ = cmd.Run()
-		cmd = exec.Command("git", "branch", "-D", "rpi/"+runID)
-		cmd.Dir = repo
-		_ = cmd.Run()
 	}()
 
-	if runID == "collision-test" {
-		t.Fatal("should have generated a different runID than the pre-existing branch")
+	expected := filepath.Base(repo) + "-rpi-" + runID
+	if filepath.Base(worktreePath) != expected {
+		t.Fatalf("unexpected basename: %q, expected %q", filepath.Base(worktreePath), expected)
 	}
 }
 
@@ -220,9 +208,6 @@ func TestMergeWorktree(t *testing.T) {
 		cmd := exec.Command("git", "worktree", "remove", worktreePath, "--force")
 		cmd.Dir = repo
 		_ = cmd.Run()
-		cmd = exec.Command("git", "branch", "-D", "rpi/"+runID)
-		cmd.Dir = repo
-		_ = cmd.Run()
 	}()
 
 	// Make a commit in the worktree.
@@ -242,7 +227,7 @@ func TestMergeWorktree(t *testing.T) {
 	}
 
 	// Merge back.
-	if err := mergeWorktree(repo, runID); err != nil {
+	if err := mergeWorktree(repo, worktreePath, runID); err != nil {
 		t.Fatalf("mergeWorktree: %v", err)
 	}
 
@@ -268,9 +253,6 @@ func TestMergeWorktree_Conflict(t *testing.T) {
 	}
 	defer func() {
 		cmd := exec.Command("git", "worktree", "remove", worktreePath, "--force")
-		cmd.Dir = repo
-		_ = cmd.Run()
-		cmd = exec.Command("git", "branch", "-D", "rpi/"+runID)
 		cmd.Dir = repo
 		_ = cmd.Run()
 	}()
@@ -309,7 +291,7 @@ func TestMergeWorktree_Conflict(t *testing.T) {
 	}
 
 	// Merge should fail with conflict info.
-	err = mergeWorktree(repo, runID)
+	err = mergeWorktree(repo, worktreePath, runID)
 	if err == nil {
 		t.Fatal("expected merge conflict error")
 	}
@@ -355,9 +337,6 @@ func TestMergeWorktree_DirtyRepo(t *testing.T) {
 		cmd := exec.Command("git", "worktree", "remove", worktreePath, "--force")
 		cmd.Dir = repo
 		_ = cmd.Run()
-		cmd = exec.Command("git", "branch", "-D", "rpi/"+runID)
-		cmd.Dir = repo
-		_ = cmd.Run()
 	}()
 
 	// Make uncommitted changes in original repo.
@@ -370,7 +349,7 @@ func TestMergeWorktree_DirtyRepo(t *testing.T) {
 		t.Fatalf("git add: %v\n%s", err, out)
 	}
 
-	err = mergeWorktree(repo, runID)
+	err = mergeWorktree(repo, worktreePath, runID)
 	if err == nil {
 		t.Fatal("expected error for dirty repo")
 	}
@@ -408,13 +387,7 @@ func TestRemoveWorktree(t *testing.T) {
 		t.Fatalf("worktree dir should be removed, got: %v", err)
 	}
 
-	// Verify branch gone.
-	cmd := exec.Command("git", "branch", "--list", "rpi/"+runID)
-	cmd.Dir = repo
-	out, _ := cmd.Output()
-	if strings.Contains(string(out), "rpi/"+runID) {
-		t.Fatalf("branch rpi/%s should be deleted", runID)
-	}
+	// No branch assertion in detached mode; branch cleanup is best-effort.
 }
 
 func TestRemoveWorktree_PathValidation(t *testing.T) {

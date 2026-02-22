@@ -130,25 +130,39 @@ func GetRepoRoot(dir string, timeout time.Duration) (string, error) {
 }
 
 // CreateWorktree creates a sibling git worktree for isolated RPI execution.
+// Worktree checkouts are detached (no new branch created).
 func CreateWorktree(cwd string, timeout time.Duration, verbosef func(string, ...interface{})) (worktreePath, runID string, err error) {
 	repoRoot, err := GetRepoRoot(cwd, timeout)
 	if err != nil {
 		return "", "", err
 	}
 
-	currentBranch, err := GetCurrentBranch(repoRoot, timeout)
-	if err != nil {
-		return "", "", err
+	if branch, err := GetCurrentBranch(repoRoot, timeout); err == nil {
+		if verbosef != nil {
+			verbosef("Creating detached worktree from current branch=%s\n", branch)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	cmdHead := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	cmdHead.Dir = repoRoot
+	headOut, headErr := cmdHead.CombinedOutput()
+	cancel()
+	if headErr != nil {
+		return "", "", fmt.Errorf("git rev-parse HEAD: %w (output: %s)", headErr, strings.TrimSpace(string(headOut)))
+	}
+	currentCommit := strings.TrimSpace(string(headOut))
+	if currentCommit == "" {
+		return "", "", fmt.Errorf("unable to resolve HEAD commit for detached worktree creation")
 	}
 
 	for attempt := 0; attempt < 3; attempt++ {
 		runID = GenerateRunID()
 		repoBasename := filepath.Base(repoRoot)
 		worktreePath = filepath.Join(filepath.Dir(repoRoot), repoBasename+"-rpi-"+runID)
-		branchName := "rpi/" + runID
 
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		cmd := exec.CommandContext(ctx, "git", "worktree", "add", "-b", branchName, worktreePath, currentBranch)
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+		cmd := exec.CommandContext(ctx, "git", "worktree", "add", worktreePath, currentCommit)
 		cmd.Dir = repoRoot
 		output, cmdErr := cmd.CombinedOutput()
 		cancel()
@@ -164,7 +178,7 @@ func CreateWorktree(cwd string, timeout time.Duration, verbosef func(string, ...
 
 		if strings.Contains(string(output), "already exists") {
 			if verbosef != nil {
-				verbosef("Worktree branch collision on %s, retrying (%d/3)\n", branchName, attempt+1)
+				verbosef("Worktree path collision on %s, retrying (%d/3)\n", worktreePath, attempt+1)
 			}
 			continue
 		}
@@ -174,11 +188,11 @@ func CreateWorktree(cwd string, timeout time.Duration, verbosef func(string, ...
 		}
 		return "", "", fmt.Errorf("git worktree add failed: %w (output: %s)", cmdErr, string(output))
 	}
-	return "", "", fmt.Errorf("failed to create unique worktree branch after 3 attempts")
+	return "", "", fmt.Errorf("failed to create unique worktree path after 3 attempts")
 }
 
-// MergeWorktree merges the RPI worktree branch back into the original branch.
-func MergeWorktree(repoRoot, runID string, timeout time.Duration, verbosef func(string, ...interface{})) error {
+// MergeWorktree merges the RPI worktree commit back into the original branch.
+func MergeWorktree(repoRoot, worktreePath, runID string, timeout time.Duration, verbosef func(string, ...interface{})) error {
 	var dirtyErr error
 	for attempt := 0; attempt < 5; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -201,12 +215,38 @@ func MergeWorktree(repoRoot, runID string, timeout time.Duration, verbosef func(
 		return fmt.Errorf("original repo has uncommitted changes after 5 retries: commit or stash before merge")
 	}
 
+	if strings.TrimSpace(worktreePath) == "" {
+		if strings.TrimSpace(runID) == "" {
+			return fmt.Errorf("merge source unavailable: missing worktree path and run ID")
+		}
+		worktreePath = filepath.Join(filepath.Dir(repoRoot), filepath.Base(repoRoot)+"-rpi-"+runID)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	revCmd := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	revCmd.Dir = worktreePath
+	revOut, revErr := revCmd.CombinedOutput()
+	cancel()
+	if revErr != nil {
+		return fmt.Errorf("resolve worktree merge source: %w (output: %s)", revErr, strings.TrimSpace(string(revOut)))
+	}
+	mergeSource := strings.TrimSpace(string(revOut))
+	if mergeSource == "" {
+		return fmt.Errorf("worktree merge source commit is empty")
+	}
+	shortMergeSource := mergeSource
+	if len(shortMergeSource) > 12 {
+		shortMergeSource = shortMergeSource[:12]
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	branchName := "rpi/" + runID
-	mergeMsg := fmt.Sprintf("Merge %s (ao rpi phased worktree)", branchName)
-	mergeCmd := exec.CommandContext(ctx, "git", "merge", "--no-ff", "-m", mergeMsg, branchName)
+	mergeMsg := "Merge ao rpi worktree (detached checkout)"
+	if strings.TrimSpace(runID) != "" {
+		mergeMsg = fmt.Sprintf("Merge %s (ao rpi worktree)", runID)
+	}
+	mergeCmd := exec.CommandContext(ctx, "git", "merge", "--no-ff", "-m", mergeMsg, mergeSource)
 	mergeCmd.Dir = repoRoot
 	if err := mergeCmd.Run(); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
@@ -221,14 +261,23 @@ func MergeWorktree(repoRoot, runID string, timeout time.Duration, verbosef func(
 		files := strings.TrimSpace(string(conflictOut))
 		if files != "" {
 			return fmt.Errorf("merge conflict in %s.\nConflicting files:\n%s\nResolve manually: cd %s && git merge %s",
-				branchName, files, repoRoot, branchName)
+				shortMergeSource, files, repoRoot, mergeSource)
 		}
 		return fmt.Errorf("git merge failed: %w", err)
 	}
 	return nil
 }
 
-// RemoveWorktree removes a worktree directory and its branch.
+func rpiRunIDFromWorktree(repoRoot, worktreePath string) string {
+	base := filepath.Base(worktreePath)
+	prefix := filepath.Base(repoRoot) + "-rpi-"
+	if !strings.HasPrefix(base, prefix) {
+		return ""
+	}
+	return strings.TrimPrefix(base, prefix)
+}
+
+// RemoveWorktree removes a worktree directory and optionally a legacy branch reference.
 func RemoveWorktree(repoRoot, worktreePath, runID string, timeout time.Duration) error {
 	absPath, err := filepath.EvalSymlinks(worktreePath)
 	if err != nil {
@@ -240,6 +289,12 @@ func RemoveWorktree(repoRoot, worktreePath, runID string, timeout time.Duration)
 	resolvedRoot, err := filepath.EvalSymlinks(repoRoot)
 	if err != nil {
 		resolvedRoot = repoRoot
+	}
+	if strings.TrimSpace(runID) == "" {
+		runID = rpiRunIDFromWorktree(resolvedRoot, absPath)
+		if strings.TrimSpace(runID) == "" {
+			return fmt.Errorf("invalid run id for removeWorktree path %s", absPath)
+		}
 	}
 	expectedBasename := filepath.Base(resolvedRoot) + "-rpi-" + runID
 	expectedPath := filepath.Join(filepath.Dir(resolvedRoot), expectedBasename)
@@ -256,10 +311,13 @@ func RemoveWorktree(repoRoot, worktreePath, runID string, timeout time.Duration)
 		_ = os.RemoveAll(absPath) //nolint:errcheck
 	}
 
-	branchName := "rpi/" + runID
-	branchCmd := exec.CommandContext(ctx, "git", "branch", "-D", branchName)
-	branchCmd.Dir = repoRoot
-	_ = branchCmd.Run() //nolint:errcheck
+	// Best-effort cleanup for legacy branch-based runs.
+	if strings.TrimSpace(runID) != "" {
+		branchName := "rpi/" + runID
+		branchCmd := exec.CommandContext(ctx, "git", "branch", "-D", branchName)
+		branchCmd.Dir = repoRoot
+		_ = branchCmd.Run() //nolint:errcheck
+	}
 
 	return nil
 }

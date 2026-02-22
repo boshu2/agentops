@@ -39,8 +39,8 @@ func runSinglePhase(cwd, spawnCwd string, state *phasedState, startPhase int, p 
 		fmt.Printf("[dry-run] Would spawn: %s -p '%s'\n", effectiveRuntimeCommand(state.Opts.RuntimeCommand), prompt)
 		if !opts.NoWorktree && p.Num == startPhase {
 			runID := generateRunID()
-			fmt.Printf("[dry-run] Would create worktree: ../%s-rpi-%s/ (branch: rpi/%s)\n",
-				filepath.Base(cwd), runID, runID)
+			fmt.Printf("[dry-run] Would create worktree: ../%s-rpi-%s/ (detached)\n",
+				filepath.Base(cwd), runID)
 		}
 		logPhaseTransition(logPath, state.RunID, p.Name, "dry-run")
 		return nil

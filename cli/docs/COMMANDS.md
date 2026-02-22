@@ -1247,6 +1247,7 @@ ao rpi cleanup [flags]
       --all                    Clean up all stale runs
       --dry-run                Show what would be done without making changes
   -h, --help                   help for cleanup
+      --prune-branches         Delete legacy RPI branches (rpi/*, codex/auto-rpi-*)
       --prune-worktrees        Run 'git worktree prune' after cleanup
       --run-id string          Clean up a specific run by ID
       --stale-after duration   Only clean runs older than this age (0 disables age filtering)

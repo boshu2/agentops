@@ -122,7 +122,7 @@ func setupWorktreeLifecycle(cwd, originalCwd string, opts phasedEngineOptions, s
 	spawnCwd = worktreePath
 	state.WorktreePath = worktreePath
 	state.RunID = runID
-	fmt.Printf("Worktree created: %s (branch: rpi/%s)\n", worktreePath, runID)
+	fmt.Printf("Worktree created: %s (detached)\n", worktreePath)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -147,7 +147,7 @@ func setupWorktreeLifecycle(cwd, originalCwd string, opts phasedEngineOptions, s
 			return nil
 		}
 
-		if mergeErr := mergeWorktree(originalCwd, runID); mergeErr != nil {
+		if mergeErr := mergeWorktree(originalCwd, worktreePath, runID); mergeErr != nil {
 			fmt.Fprintf(os.Stderr, "Merge failed: %v\nWorktree preserved at: %s\n", mergeErr, worktreePath)
 			return fmt.Errorf("worktree merge failed: %w", mergeErr)
 		}

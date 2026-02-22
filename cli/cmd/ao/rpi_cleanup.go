@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ var (
 	cleanupRunID          string
 	cleanupAll            bool
 	cleanupPruneWorktrees bool
+	cleanupPruneBranches  bool
 	cleanupDryRun         bool
 	cleanupStaleAfter     time.Duration
 )
@@ -38,6 +40,7 @@ Examples:
 	}
 	cleanupCmd.Flags().StringVar(&cleanupRunID, "run-id", "", "Clean up a specific run by ID")
 	cleanupCmd.Flags().BoolVar(&cleanupAll, "all", false, "Clean up all stale runs")
+	cleanupCmd.Flags().BoolVar(&cleanupPruneBranches, "prune-branches", false, "Delete legacy RPI branches (rpi/*, codex/auto-rpi-*)")
 	cleanupCmd.Flags().BoolVar(&cleanupPruneWorktrees, "prune-worktrees", false, "Run 'git worktree prune' after cleanup")
 	cleanupCmd.Flags().BoolVar(&cleanupDryRun, "dry-run", false, "Show what would be done without making changes")
 	cleanupCmd.Flags().DurationVar(&cleanupStaleAfter, "stale-after", 0, "Only clean runs older than this age (0 disables age filtering)")
@@ -50,10 +53,10 @@ func runRPICleanup(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	return executeRPICleanup(cwd, cleanupRunID, cleanupAll, cleanupPruneWorktrees, cleanupDryRun, cleanupStaleAfter)
+	return executeRPICleanup(cwd, cleanupRunID, cleanupAll, cleanupPruneWorktrees, cleanupPruneBranches, cleanupDryRun, cleanupStaleAfter)
 }
 
-func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter time.Duration) error {
+func executeRPICleanup(cwd, runID string, all, prune, pruneBranches bool, dryRun bool, staleAfter time.Duration) error {
 	if !all && runID == "" {
 		return fmt.Errorf("specify --all or --run-id <id>")
 	}
@@ -80,6 +83,11 @@ func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter ti
 
 	if len(staleRuns) == 0 {
 		fmt.Println("No stale runs found.")
+		if pruneBranches {
+			if err := cleanupLegacyRPIBranches(cwd, runID, all, dryRun); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: legacy branch cleanup failed: %v\n", err)
+			}
+		}
 		if prune && !dryRun {
 			return pruneWorktrees(cwd)
 		}
@@ -130,7 +138,119 @@ func executeRPICleanup(cwd, runID string, all, prune, dryRun bool, staleAfter ti
 		}
 	}
 
+	if pruneBranches {
+		if err := cleanupLegacyRPIBranches(cwd, runID, all, dryRun); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: legacy branch cleanup failed: %v\n", err)
+		}
+	}
+
 	return nil
+}
+
+// cleanupLegacyRPIBranches removes legacy RPI branches for the selected scope.
+func cleanupLegacyRPIBranches(cwd, runID string, all, dryRun bool) error {
+	runID = strings.TrimSpace(runID)
+	if runID == "" && !all {
+		return fmt.Errorf("specify --all or --run-id to prune branches")
+	}
+	if strings.TrimSpace(cwd) == "" {
+		return fmt.Errorf("cleanup branch command missing repository path")
+	}
+
+	candidates, err := collectLegacyRPIBranches(cwd, runID, all)
+	if err != nil {
+		return err
+	}
+	if len(candidates) == 0 {
+		fmt.Println("No legacy RPI branches found for cleanup.")
+		return nil
+	}
+
+	activeBranches, err := checkedOutBranchSet(cwd)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range candidates {
+		if activeBranches[name] {
+			fmt.Printf("Skipping active branch: %s\n", name)
+			continue
+		}
+		if dryRun {
+			fmt.Printf("[dry-run] Would delete branch: %s\n", name)
+			continue
+		}
+
+		cmd := exec.Command("git", "branch", "-D", name)
+		cmd.Dir = cwd
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to delete branch %s: %v\n", name, err)
+			continue
+		}
+		fmt.Printf("Deleted branch: %s\n", name)
+	}
+
+	return nil
+}
+
+func collectLegacyRPIBranches(cwd, runID string, all bool) ([]string, error) {
+	branchPatterns := []string{}
+	if all {
+		branchPatterns = append(branchPatterns, "rpi/*", "codex/auto-rpi-*")
+	} else {
+		branchPatterns = append(branchPatterns, "rpi/"+runID)
+	}
+
+	seen := map[string]struct{}{}
+	var branches []string
+
+	for _, pattern := range branchPatterns {
+		refPattern := "refs/heads/" + pattern
+		cmd := exec.Command("git", "for-each-ref", "--format=%(refname:short)", refPattern)
+		cmd.Dir = cwd
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("list branches (%s): %w", pattern, err)
+		}
+
+		for _, raw := range strings.Split(string(out), "\n") {
+			name := strings.TrimSpace(raw)
+			if name == "" {
+				continue
+			}
+			if _, ok := seen[name]; !ok {
+				seen[name] = struct{}{}
+				branches = append(branches, name)
+			}
+		}
+	}
+	return branches, nil
+}
+
+func checkedOutBranchSet(cwd string) (map[string]bool, error) {
+	cmd := exec.Command("git", "worktree", "list", "--porcelain")
+	cmd.Dir = cwd
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("git worktree list: %w", err)
+	}
+
+	active := map[string]bool{}
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		const prefix = "branch "
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		ref := strings.TrimPrefix(line, prefix)
+		ref = strings.TrimSpace(ref)
+		const refsHeads = "refs/heads/"
+		if strings.HasPrefix(ref, refsHeads) {
+			active[strings.TrimPrefix(ref, refsHeads)] = true
+		}
+	}
+
+	return active, nil
 }
 
 // resolveCleanupRepoRoot picks a controller worktree root to execute
@@ -193,12 +313,6 @@ func findStaleRunsWithMinAge(root string, minAge time.Duration, now time.Time) [
 			continue
 		}
 
-		// Check liveness.
-		isActive, _ := determineRunLiveness(root, state)
-		if isActive {
-			continue
-		}
-
 		// Terminal runs (except completed) are cleanup candidates only when their
 		// worktree still exists.
 		if state.TerminalStatus != "" {
@@ -234,6 +348,12 @@ func findStaleRunsWithMinAge(root string, minAge time.Duration, now time.Time) [
 				worktreePath: state.WorktreePath,
 				terminal:     state.TerminalStatus,
 			})
+			continue
+		}
+
+		// Check liveness.
+		isActive, _ := determineRunLiveness(root, state)
+		if isActive {
 			continue
 		}
 
@@ -317,7 +437,7 @@ func markRunStale(sr staleRunEntry) error {
 	return nil
 }
 
-// removeOrphanedWorktree removes a worktree directory and its branch.
+// removeOrphanedWorktree removes a worktree directory and any legacy branch marker.
 func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
 	// Safety: validate that worktreePath is a sibling of the repo root (same parent dir).
 	// Worktrees are created as ../repo-rpi-<id>/ — siblings of the repo, not children.
@@ -343,11 +463,13 @@ func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
 		}
 	}
 
-	// Delete the branch.
-	branchName := "rpi/" + runID
-	branchCmd := exec.Command("git", "branch", "-D", branchName)
-	branchCmd.Dir = repoRoot
-	_ = branchCmd.Run() // Best-effort; branch may not exist.
+	// Delete legacy branch marker if present.
+	if strings.TrimSpace(runID) != "" {
+		branchName := "rpi/" + runID
+		branchCmd := exec.Command("git", "branch", "-D", branchName)
+		branchCmd.Dir = repoRoot
+		_ = branchCmd.Run() // Best-effort; branch may not exist.
+	}
 
 	return nil
 }

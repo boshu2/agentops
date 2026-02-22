@@ -115,7 +115,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 			cfg.LeaseEnabled = true
 		}
 		if !cmd.Flags().Changed("detached-heal") {
-			cfg.DetachedHeal = true
+			cfg.DetachedHeal = false
 		}
 		if !cmd.Flags().Changed("auto-clean") {
 			cfg.AutoClean = true
@@ -148,6 +148,9 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 	}
 	if cfg.AutoCleanStaleAfter <= 0 {
 		cfg.AutoCleanStaleAfter = 24 * time.Hour
+	}
+	if rpiSupervisor && !cmd.Flags().Changed("auto-clean-stale-after") {
+		cfg.AutoCleanStaleAfter = 0
 	}
 	if cfg.LeasePath == "" {
 		cfg.LeasePath = filepath.Join(".agents", "rpi", "supervisor.lock")
@@ -315,7 +318,7 @@ func ensureLoopAttachedBranch(cwd, branchPrefix string) (string, bool, error) {
 }
 
 func runSupervisorCleanup(cwd string, staleAfter time.Duration, prune bool) error {
-	return executeRPICleanup(cwd, "", true, prune, GetDryRun(), staleAfter)
+	return executeRPICleanup(cwd, "", true, prune, false, GetDryRun(), staleAfter)
 }
 
 func runSupervisorGates(cwd string, cfg rpiLoopSupervisorConfig) error {

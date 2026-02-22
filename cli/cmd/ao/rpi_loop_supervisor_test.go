@@ -56,8 +56,8 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	if !cfg.LeaseEnabled {
 		t.Fatal("expected lease to be enabled in supervisor defaults")
 	}
-	if !cfg.DetachedHeal {
-		t.Fatal("expected detached heal to be enabled in supervisor defaults")
+	if cfg.DetachedHeal {
+		t.Fatal("expected detached heal to be disabled in supervisor defaults")
 	}
 	if !cfg.AutoClean {
 		t.Fatal("expected auto-clean to be enabled in supervisor defaults")

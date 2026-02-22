@@ -81,14 +81,7 @@ fi
 
 current_branch="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "$current_branch" == "HEAD" ]]; then
-  ts="$(date -u +%Y%m%d%H%M%S)"
-  new_branch="codex/auto-rpi-$ts"
-  if git switch -c "$new_branch" >/dev/null 2>&1; then
-    :
-  else
-    git checkout -b "$new_branch" >/dev/null
-  fi
-  echo "Detached HEAD detected. Created branch: $new_branch"
+  echo "Detached HEAD detected. Running detached-safe, no branch created." >&2
 fi
 
 stale_after="${AO_RPI_AUTO_CLEAN_AFTER:-24h}"

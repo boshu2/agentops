@@ -45,7 +45,7 @@ func TestMergeFailurePropagation(t *testing.T) {
 	}
 
 	// mergeWorktree must return a non-nil error — callers must propagate it.
-	mergeErr := mergeWorktree(repo, runID)
+	mergeErr := mergeWorktree(repo, worktreePath, runID)
 	if mergeErr == nil {
 		t.Fatal("expected mergeWorktree to return error for dirty repo; got nil (silent-success violation)")
 	}

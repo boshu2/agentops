@@ -607,7 +607,7 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 			minAge = 24 * time.Hour
 		}
 		fmt.Printf("Auto-cleaning stale runs older than %s before starting\n", minAge)
-		if err := executeRPICleanup(cwd, "", true, false, GetDryRun(), minAge); err != nil {
+		if err := executeRPICleanup(cwd, "", true, false, false, GetDryRun(), minAge); err != nil {
 			VerbosePrintf("Warning: auto-clean stale runs failed: %v\n", err)
 		}
 	}
@@ -657,6 +657,12 @@ func runRPIPhasedWithOpts(opts phasedEngineOptions, args []string) (retErr error
 	updateRunHeartbeat(spawnCwd, state.RunID)
 
 	if err := runPhaseLoop(cwd, spawnCwd, state, startPhase, opts, statusPath, allPhases, logPath, executor); err != nil {
+		state.TerminalStatus = "failed"
+		state.TerminalReason = err.Error()
+		state.TerminatedAt = time.Now().Format(time.RFC3339)
+		if saveErr := savePhasedState(spawnCwd, state); saveErr != nil {
+			VerbosePrintf("Warning: could not persist failed terminal state: %v\n", saveErr)
+		}
 		return err
 	}
 
@@ -1776,7 +1782,6 @@ func getCurrentBranch(repoRoot string) (string, error) {
 
 // createWorktree creates a sibling git worktree for isolated RPI execution.
 // Path: ../<repo-basename>-rpi-<runID>/
-// Branch: rpi/<runID>
 func createWorktree(cwd string) (worktreePath, runID string, err error) {
 	return cliRPI.CreateWorktree(cwd, worktreeTimeout, VerbosePrintf)
 }
@@ -1784,11 +1789,11 @@ func createWorktree(cwd string) (worktreePath, runID string, err error) {
 // mergeWorktree merges the RPI worktree branch back into the original branch.
 // Retries the pre-merge dirty check with backoff to handle the race where
 // another parallel run is mid-merge (repo momentarily dirty).
-func mergeWorktree(repoRoot, runID string) error {
-	return cliRPI.MergeWorktree(repoRoot, runID, worktreeTimeout, VerbosePrintf)
+func mergeWorktree(repoRoot, worktreePath, runID string) error {
+	return cliRPI.MergeWorktree(repoRoot, worktreePath, runID, worktreeTimeout, VerbosePrintf)
 }
 
-// removeWorktree removes a worktree directory and its branch.
+// removeWorktree removes a worktree directory and any legacy branch marker.
 // Modeled on Olympus internal/git/worktree.go Remove().
 func removeWorktree(repoRoot, worktreePath, runID string) error {
 	return cliRPI.RemoveWorktree(repoRoot, worktreePath, runID, worktreeTimeout)
