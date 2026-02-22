@@ -1,24 +1,57 @@
-#!/usr/bin/env sh
-# bd-shim v1
+#!/usr/bin/env bash
+# bd-shim v1 + Go build gate
 # bd-hooks-version: 0.49.3
 #
-# bd (beads) pre-commit hook - thin shim
-#
-# This shim delegates to 'bd hook pre-commit' which contains
-# the actual hook logic. This pattern ensures hook behavior is always
-# in sync with the installed bd version - no manual updates needed.
-#
-# The 'bd hook' command (singular) supports:
-# - Per-worktree export state tracking
-# - Dolt branch-then-merge pattern for cell-level conflict resolution
-# - Hook chaining configuration
+# Pre-commit hook: validates Go code compiles before allowing commit.
+# Also checks embedded hooks sync when hooks/ files are staged.
+# Delegates to bd for issue tracking after validation passes.
 
-# Check if bd is available
-if ! command -v bd >/dev/null 2>&1; then
-    echo "Warning: bd command not found in PATH, skipping pre-commit hook" >&2
-    echo "  Install bd: brew install beads" >&2
-    echo "  Or add bd to your PATH" >&2
-    exit 0
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# --- Go build/vet gate (only when cli/ files are staged) ---
+if command -v go >/dev/null 2>&1; then
+    staged_go=$(git diff --cached --name-only -- 'cli/*.go' 'cli/**/*.go' 'cli/go.mod' 'cli/go.sum' 2>/dev/null || true)
+    if [[ -n "$staged_go" ]]; then
+        echo "pre-commit: Go files staged — running build + vet..."
+        if ! (cd "$REPO_ROOT/cli" && go build -o /dev/null ./cmd/ao 2>&1); then
+            echo "pre-commit: BLOCKED — go build failed. Fix compile errors before committing."
+            exit 1
+        fi
+        if ! (cd "$REPO_ROOT/cli" && go vet ./... 2>&1); then
+            echo "pre-commit: BLOCKED — go vet failed. Fix issues before committing."
+            exit 1
+        fi
+        echo "pre-commit: Go build + vet passed."
+    fi
 fi
 
-exec bd hook pre-commit "$@"
+# --- Embedded hooks sync check (only when hooks/ files are staged) ---
+staged_hooks=$(git diff --cached --name-only -- 'hooks/*' 2>/dev/null || true)
+if [[ -n "$staged_hooks" ]]; then
+    if [[ -f "$REPO_ROOT/cli/Makefile" ]] && command -v make >/dev/null 2>&1; then
+        # Check if embedded copies are stale relative to staged hooks
+        stale=0
+        for src in hooks/session-start.sh hooks/hooks.json; do
+            embedded="cli/embedded/$src"
+            if [[ -f "$REPO_ROOT/$src" ]] && [[ -f "$REPO_ROOT/$embedded" ]]; then
+                if ! diff -q "$REPO_ROOT/$src" "$REPO_ROOT/$embedded" >/dev/null 2>&1; then
+                    stale=1
+                    break
+                fi
+            fi
+        done
+        if [[ "$stale" -eq 1 ]]; then
+            echo "pre-commit: WARNING — hooks/ changed but cli/embedded/ is stale."
+            echo "  Run: cd cli && make sync-hooks"
+            echo "  Then stage the updated embedded files."
+            exit 1
+        fi
+    fi
+fi
+
+# --- bd issue tracking (existing behavior) ---
+if command -v bd >/dev/null 2>&1; then
+    bd hook pre-commit "$@"
+fi

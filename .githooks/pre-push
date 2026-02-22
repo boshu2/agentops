@@ -1,19 +1,24 @@
-#!/usr/bin/env sh
-# bd-shim v1
+#!/usr/bin/env bash
+# bd-shim v1 + pre-push gate
 # bd-hooks-version: 0.49.3
 #
-# bd (beads) pre-push hook - thin shim
-#
-# This shim delegates to 'bd hooks run pre-push' which contains
-# the actual hook logic. This pattern ensures hook behavior is always
-# in sync with the installed bd version - no manual updates needed.
+# Pre-push hook: runs lightweight validation gate, then delegates to bd.
+# Gate checks: go build/vet, race tests on changed packages, embedded sync,
+# skill count sync.
 
-# Check if bd is available
-if ! command -v bd >/dev/null 2>&1; then
-    echo "Warning: bd command not found in PATH, skipping pre-push hook" >&2
-    echo "  Install bd: brew install beads" >&2
-    echo "  Or add bd to your PATH" >&2
-    exit 0
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# --- Pre-push validation gate ---
+if [[ -x "$REPO_ROOT/scripts/pre-push-gate.sh" ]]; then
+    if ! "$REPO_ROOT/scripts/pre-push-gate.sh"; then
+        echo "pre-push: blocked by validation gate. Fix issues before pushing."
+        exit 1
+    fi
 fi
 
-exec bd hooks run pre-push "$@"
+# --- bd issue tracking (existing behavior) ---
+if command -v bd >/dev/null 2>&1; then
+    bd hooks run pre-push "$@"
+fi
