@@ -84,41 +84,44 @@ Research → Plan → Implement → Validate
 - Use `/swarm` directly for **parallel execution** without beads (TaskList only).
 - Use `/ratchet` to **gate/record progress** through RPI.
 
-## Available Skills (43 user-facing)
+## Available Skills
 
-## Core Skills (start here)
+## Start Here (8 starters)
+
+These are the skills every user needs first. Everything else is available when you need it.
 
 | Skill | Purpose |
 |-------|---------|
+| `/quickstart` | Guided onboarding — run this first |
 | `/research` | Deep codebase exploration |
-| `/brainstorm` | Structured idea exploration before planning |
-| `/plan` | Epic decomposition into issues |
-| `/implement` | Execute single issue |
+| `/council` | Multi-model consensus review (validate, brainstorm, research) |
 | `/vibe` | Code validation (complexity + multi-model council) |
+| `/rpi` | Full RPI lifecycle orchestrator (research → plan → implement → validate) |
+| `/implement` | Execute single issue |
+| `/learn` | Capture knowledge manually into the flywheel |
 | `/status` | Single-screen dashboard of current work and suggested next action |
 
-## Power Skills (when you're ready)
+## Advanced Skills (when you need them)
 
 | Skill | Purpose |
 |-------|---------|
-| `/council` | Multi-model consensus review (validate, brainstorm, research) |
+| `/brainstorm` | Structured idea exploration before planning |
+| `/plan` | Epic decomposition into issues |
 | `/pre-mortem` | Failure simulation before implementing |
 | `/post-mortem` | Full validation + knowledge extraction |
 | `/bug-hunt` | Root cause analysis |
 | `/release` | Pre-flight, changelog, version bumps, tag |
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
+| `/swarm` | Fresh-context parallel execution (Ralph pattern) |
+| `/evolve` | Goal-driven fitness-scored improvement loop |
 | `/doc` | Documentation generation |
 | `/retro` | Extract learnings from completed work |
 | `/knowledge` | Query knowledge artifacts |
-| `/learn` | Capture knowledge manually into the flywheel |
 
-## Expert Skills (advanced workflows)
+## Expert Skills (specialized workflows)
 
 | Skill | Purpose |
 |-------|---------|
-| `/swarm` | Fresh-context parallel execution (Ralph pattern) |
-| `/rpi` | Full RPI lifecycle orchestrator (research → plan → implement → validate) |
-| `/evolve` | Goal-driven fitness-scored improvement loop |
 | `/codex-team` | Parallel Codex agent execution |
 | `/openai-docs` | Official OpenAI docs lookup with citations |
 | `/oss-docs` | OSS documentation scaffold and audit |

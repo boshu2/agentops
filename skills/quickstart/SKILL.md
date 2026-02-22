@@ -352,6 +352,55 @@ What are you trying to do?
 
 For the complete catalog, use the Read tool on `skills/quickstart/references/full-catalog.md`.
 
+### Step 8: Prove the Flywheel Works
+
+Show the user that their sessions have already started compounding — and how to verify it:
+
+```bash
+# How many learnings have accumulated so far?
+ls .agents/learnings/ 2>/dev/null | wc -l
+
+# Surface the most relevant knowledge for this session
+if command -v ao &>/dev/null; then
+  ao inject --format markdown --max-tokens 1000 2>/dev/null | head -40
+else
+  # ao not installed: show raw learnings from disk
+  ls .agents/learnings/*.md 2>/dev/null | while read -r f; do
+    echo "--- $(basename "$f") ---"
+    head -8 "$f"
+    echo ""
+  done
+fi
+```
+
+**The aha moment.** Explain what just happened:
+
+```
+You just ran 'ao inject' — the same command the session-start hook runs automatically.
+
+What it does:
+  1. Scans .agents/learnings/ for knowledge from past sessions
+  2. Scores by freshness + retrieval history + confidence
+  3. Injects the best-scoring knowledge into the current session context
+
+What it means for you:
+  - Session 2 already knows what Session 1 learned
+  - Session 50 knows what Session 1 through 49 learned
+  - Patterns that surface repeatedly get promoted. Old ones decay.
+
+The flywheel is running. You can verify it any time:
+  ao inject                    ← see what this session inherited
+  ao status                    ← current knowledge inventory
+  ls .agents/learnings/        ← raw learning files
+```
+
+**If no learnings exist yet**, tell the user:
+```
+No learnings yet — that's expected on your first session.
+Run /rpi "a small goal" to complete one full cycle,
+then 'ao inject' in your NEXT session to see what compounded.
+```
+
 ### Step 7: What's Next
 
 Suggest the next skill to try based on what the user just saw:

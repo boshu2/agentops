@@ -7,7 +7,7 @@ pillars:
   - validated-acceleration
   - goal-driven-automation
   - zero-friction-workflow
-# Total: 25 goals
+# Total: 26 goals
 # Pruned 2026-02-21 per council consensus: feature saturation reached.
 # Removed 58 grep-for-string-in-file-we-control goals, file-exists checks,
 # keyword-in-README/SKILL.md goals, and duplicates (go-race-clean = go-cli-tests).
@@ -213,3 +213,15 @@ goals:
     weight: 5
     type: meta
     added: "2026-02-19"
+
+  # ============================================================================
+  # KNOWLEDGE COMPOUNDING (1 goal, weight 6)
+  # The core product promise: sessions compound.
+  # ============================================================================
+
+  - id: flywheel-proof-passes
+    description: "Flywheel proof run demonstrates 3-session compounding"
+    check: "bash tests/e2e/proof-run.sh"
+    weight: 6
+    pillar: knowledge-compounding
+    added: "2026-02-21"
