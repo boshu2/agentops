@@ -5,8 +5,9 @@
 If this is your first message in a fresh session, orient in this order:
 
 1. `docs/README.md` and `docs/INDEX.md` for navigation.
-2. `README.md` for product-level framing.
-3. Task-specific canonical surfaces:
+2. `docs/newcomer-guide.md` for a practical repo orientation and learning path.
+3. `README.md` for product-level framing.
+4. Task-specific canonical surfaces:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`
    - Skills behavior: `skills/**/SKILL.md`
    - Hooks/gates: `hooks/hooks.json` and `hooks/*.sh`

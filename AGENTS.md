@@ -7,6 +7,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 If you spawn into this repo without context, do this first:
 
 1. Open `docs/README.md` then `docs/INDEX.md` to get the current doc map.
+   - New contributors should also read `docs/newcomer-guide.md` for a practical repo orientation.
 2. Identify your task domain:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, `cli/docs/COMMANDS.md`
    - Skill behavior: `skills/<name>/SKILL.md`
