@@ -5,6 +5,7 @@
 ## Getting Started
 
 - [README](../README.md) — Project overview and quick start
+- [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [AGENTS.md](../AGENTS.md) — Local agent instructions for this repo
