@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -157,18 +159,12 @@ func TestMineAgentsDir_NoResearchDir(t *testing.T) {
 func TestMineGitLog_NoGit(t *testing.T) {
 	tmp := t.TempDir()
 	findings, err := mineGitLog(tmp, 26*time.Hour)
-	if err != nil {
-		t.Fatalf("mineGitLog error: %v", err)
+	// No git repo → error propagated from git log failure
+	if err == nil {
+		t.Fatal("expected error from mineGitLog in non-git directory, got nil")
 	}
-	// No git repo → empty findings, no error
-	if findings.CommitCount != 0 {
-		t.Errorf("CommitCount = %d, want 0", findings.CommitCount)
-	}
-	if len(findings.TopCoChangeFiles) != 0 {
-		t.Errorf("TopCoChangeFiles count = %d, want 0", len(findings.TopCoChangeFiles))
-	}
-	if len(findings.RecurringFixes) != 0 {
-		t.Errorf("RecurringFixes count = %d, want 0", len(findings.RecurringFixes))
+	if findings != nil {
+		t.Errorf("expected nil findings on error, got %+v", findings)
 	}
 }
 
@@ -649,4 +645,47 @@ func countNonEmptyLines(data []byte) int {
 		}
 	}
 	return count
+}
+
+// ---------------------------------------------------------------------------
+// loadExistingMineIDs error handling
+// ---------------------------------------------------------------------------
+
+func TestLoadExistingMineIDs_NotExist(t *testing.T) {
+	ids, err := loadExistingMineIDs(filepath.Join(t.TempDir(), "nonexistent.jsonl"))
+	if err != nil {
+		t.Fatalf("expected nil error for nonexistent file, got: %v", err)
+	}
+	if len(ids) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(ids))
+	}
+}
+
+func TestLoadExistingMineIDs_Unreadable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod-based permission test not reliable on Windows")
+	}
+	u, err := user.Current()
+	if err == nil && u.Uid == "0" {
+		t.Skip("running as root — permission test would not fail")
+	}
+
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "next-work.jsonl")
+	if err := os.WriteFile(path, []byte(`{"source_epic":"athena-mine"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Remove read permission
+	if err := os.Chmod(path, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(path, 0o644) }) // restore for cleanup
+
+	ids, err := loadExistingMineIDs(path)
+	if err == nil {
+		t.Fatal("expected error for unreadable file, got nil")
+	}
+	if ids != nil {
+		t.Errorf("expected nil map on error, got %v", ids)
+	}
 }
