@@ -153,7 +153,7 @@ func runMine(cmd *cobra.Command, args []string) error {
 			}
 			report.Agents = findings
 		case "code":
-			findings, codeErr := mineCodeComplexity(cwd)
+			findings, codeErr := mineCodeComplexity(cwd, window)
 			if codeErr != nil {
 				if !mineQuiet {
 					fmt.Fprintf(cmd.ErrOrStderr(), "warning: code source: %v\n", codeErr)
@@ -168,7 +168,7 @@ func runMine(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if mineEmitWorkItems && !GetDryRun() {
+	if mineEmitWorkItems {
 		if err := emitMineWorkItems(cwd, report); err != nil && !mineQuiet {
 			fmt.Fprintf(cmd.ErrOrStderr(), "warning: emit-work-items: %v\n", err)
 		}
@@ -394,7 +394,7 @@ func readDirContent(dir string) (map[string]string, error) {
 var gocycloLineRe = regexp.MustCompile(`^(\d+)\s+(\S+)\s+(\S+)\s+(\S+):(\d+):\d+$`)
 
 // mineCodeComplexity runs gocyclo and correlates with recent git edits.
-func mineCodeComplexity(cwd string) (*CodeFindings, error) {
+func mineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error) {
 	findings := &CodeFindings{}
 
 	gocycloPath, err := exec.LookPath("gocyclo")
@@ -425,7 +425,7 @@ func mineCodeComplexity(cwd string) (*CodeFindings, error) {
 		funcName := matches[3]
 		file := matches[4]
 
-		recentEdits := countRecentEdits(cwd, file)
+		recentEdits := countRecentEdits(cwd, file, window)
 
 		findings.Hotspots = append(findings.Hotspots, ComplexityHotspot{
 			File:        file,
@@ -441,9 +441,10 @@ func mineCodeComplexity(cwd string) (*CodeFindings, error) {
 	return findings, nil
 }
 
-// countRecentEdits counts how many commits touched a file in the last 7 days.
-func countRecentEdits(cwd, file string) int {
-	cmd := exec.Command("git", "log", "--since=7 days ago", "--oneline", "--", file)
+// countRecentEdits counts how many commits touched a file within the given window.
+func countRecentEdits(cwd, file string, window time.Duration) int {
+	sinceArg := fmt.Sprintf("--since=%d seconds ago", int64(window.Seconds()))
+	cmd := exec.Command("git", "log", sinceArg, "--oneline", "--", file)
 	cmd.Dir = cwd
 	out, err := cmd.Output()
 	if err != nil {
@@ -461,6 +462,7 @@ func writeMineReport(dir string, r *MineReport) error {
 	if dir == "" {
 		return fmt.Errorf("output directory must not be empty")
 	}
+	dir = filepath.Clean(dir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create mine output dir: %w", err)
 	}

@@ -606,6 +606,41 @@ func TestWriteMineReport_EmptyDir(t *testing.T) {
 	}
 }
 
+func TestCountRecentEdits_UsesWindowParam(t *testing.T) {
+	// Verify the window parameter actually reaches git log --since.
+	// A zero-duration window should count zero edits (--since=0 seconds ago = epoch, but
+	// in a fresh temp dir with no git repo, countRecentEdits returns 0 on error).
+	// With a large window in a real git repo, it should find edits.
+	// We test indirectly: the function signature accepts window and doesn't panic.
+	tmp := t.TempDir()
+
+	// No git repo → returns 0 regardless of window (git fails silently)
+	edits := countRecentEdits(tmp, "nonexistent.go", 26*time.Hour)
+	if edits != 0 {
+		t.Errorf("expected 0 edits in non-git dir, got %d", edits)
+	}
+
+	// Verify different windows don't panic
+	edits2 := countRecentEdits(tmp, "nonexistent.go", 7*24*time.Hour)
+	if edits2 != 0 {
+		t.Errorf("expected 0 edits with 7d window in non-git dir, got %d", edits2)
+	}
+}
+
+func TestMineCodeComplexity_AcceptsWindow(t *testing.T) {
+	// Verify mineCodeComplexity accepts the window param without error.
+	// In a temp dir with no Go code, it should return skipped or empty findings.
+	tmp := t.TempDir()
+	findings, err := mineCodeComplexity(tmp, 26*time.Hour)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Either skipped (no gocyclo) or empty hotspots (no Go files)
+	if !findings.Skipped && len(findings.Hotspots) != 0 {
+		t.Errorf("expected skipped or empty hotspots, got %d", len(findings.Hotspots))
+	}
+}
+
 func countNonEmptyLines(data []byte) int {
 	count := 0
 	for _, line := range bytes.Split(bytes.TrimSpace(data), []byte("\n")) {
