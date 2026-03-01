@@ -537,7 +537,13 @@ func TestEmitMineWorkItems_HotspotsBeforeOrphans(t *testing.T) {
 }
 
 func TestMineWorkItemID_Deterministic(t *testing.T) {
-	item := mineWorkItemEmit{Title: "Reduce complexity: foo in bar.go (CC=20)", Type: "refactor"}
+	// Hotspot item with File+Func: ID should be based on File+Func, not Title
+	item := mineWorkItemEmit{
+		Title: "Reduce complexity: foo in bar.go (CC=20)",
+		Type:  "refactor",
+		File:  "bar.go",
+		Func:  "foo",
+	}
 	id1 := mineWorkItemID(item)
 	id2 := mineWorkItemID(item)
 	if id1 != id2 {
@@ -545,6 +551,20 @@ func TestMineWorkItemID_Deterministic(t *testing.T) {
 	}
 	if len(id1) != 16 {
 		t.Errorf("expected 16-char ID, got %d chars: %q", len(id1), id1)
+	}
+
+	// Non-hotspot item (no File/Func): ID should be based on Title
+	orphanItem := mineWorkItemEmit{
+		Title: "Rescue orphan: old-research.md",
+		Type:  "knowledge-gap",
+	}
+	oid1 := mineWorkItemID(orphanItem)
+	oid2 := mineWorkItemID(orphanItem)
+	if oid1 != oid2 {
+		t.Errorf("expected deterministic IDs for orphan, got %q and %q", oid1, oid2)
+	}
+	if len(oid1) != 16 {
+		t.Errorf("expected 16-char ID for orphan, got %d chars: %q", len(oid1), oid1)
 	}
 }
 
@@ -657,12 +677,10 @@ func TestMineGitLog_ErrorIncludesStderr(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error in non-git directory")
 	}
-	// The error message should contain useful context beyond just exit code
 	errMsg := err.Error()
 	if !strings.Contains(errMsg, "git log") {
 		t.Errorf("error should contain 'git log' prefix, got: %v", err)
 	}
-	// stderr from git should be included for debugging
 	if !strings.Contains(errMsg, "fatal") && !strings.Contains(errMsg, "not a git repository") {
 		t.Errorf("error should include git stderr for debugging, got: %v", err)
 	}
@@ -728,7 +746,6 @@ func TestLoadExistingMineIDs_ErrorMessageNotDoubleWrapped(t *testing.T) {
 		t.Skip("cannot test permission denied as root")
 	}
 	tmp := t.TempDir()
-	// Create the rpi dir and an unreadable next-work.jsonl
 	rpiDir := filepath.Join(tmp, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -742,13 +759,11 @@ func TestLoadExistingMineIDs_ErrorMessageNotDoubleWrapped(t *testing.T) {
 	}
 	t.Cleanup(func() { os.Chmod(path, 0o644) })
 
-	// Exercise the full chain through emitMineWorkItems
 	r := makeTestMineReport([]string{"orphan.md"}, nil)
 	err := emitMineWorkItems(tmp, r)
 	if err == nil {
 		t.Fatal("expected error for unreadable file")
 	}
-	// The error chain should NOT contain redundant "mine IDs" prefixes
 	errMsg := err.Error()
 	if strings.Count(errMsg, "mine IDs") > 1 {
 		t.Errorf("error message is double-wrapped: %v", err)
@@ -779,11 +794,10 @@ func TestLoadExistingMineIDs_Unreadable(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"source_epic":"athena-mine"}`+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Remove read permission
 	if err := os.Chmod(path, 0o000); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chmod(path, 0o644) }) // restore for cleanup
+	t.Cleanup(func() { os.Chmod(path, 0o644) })
 
 	ids, err := loadExistingMineIDs(path)
 	if err == nil {
@@ -791,5 +805,39 @@ func TestLoadExistingMineIDs_Unreadable(t *testing.T) {
 	}
 	if ids != nil {
 		t.Errorf("expected nil map on error, got %v", ids)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Stable dedup IDs
+// ---------------------------------------------------------------------------
+
+func TestMineWorkItemID_StableAcrossCCChanges(t *testing.T) {
+	itemCC20 := mineWorkItemEmit{
+		Title: "Reduce complexity: heavy in foo.go (CC=20)",
+		Type:  "refactor",
+		File:  "foo.go",
+		Func:  "heavy",
+	}
+	itemCC25 := mineWorkItemEmit{
+		Title: "Reduce complexity: heavy in foo.go (CC=25)",
+		Type:  "refactor",
+		File:  "foo.go",
+		Func:  "heavy",
+	}
+	id20 := mineWorkItemID(itemCC20)
+	id25 := mineWorkItemID(itemCC25)
+	if id20 != id25 {
+		t.Errorf("same File+Func with different CC should produce same ID, got %q vs %q", id20, id25)
+	}
+}
+
+func TestMineWorkItemID_NoCollisionOnFieldBoundaries(t *testing.T) {
+	a := mineWorkItemEmit{Type: "ab", Title: "cd"}
+	b := mineWorkItemEmit{Type: "a", Title: "bcd"}
+	idA := mineWorkItemID(a)
+	idB := mineWorkItemID(b)
+	if idA == idB {
+		t.Errorf("field boundary shift should produce different IDs, both got %q", idA)
 	}
 }

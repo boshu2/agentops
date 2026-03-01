@@ -516,6 +516,8 @@ func collectMineWorkItems(r *MineReport) []mineWorkItemEmit {
 				Source:      "athena-mine",
 				Description: fmt.Sprintf("Function %s in %s has cyclomatic complexity %d with %d recent edits. Extract helpers to reduce CC below 15.", h.Func, h.File, h.Complexity, h.RecentEdits),
 				Evidence:    fmt.Sprintf("complexity=%d recent_edits=%d", h.Complexity, h.RecentEdits),
+				File:        h.File,
+				Func:        h.Func,
 			}
 			item.ID = mineWorkItemID(item)
 			items = append(items, item)
@@ -651,13 +653,26 @@ type mineWorkItemEmit struct {
 	Source      string `json:"source"`
 	Description string `json:"description"`
 	Evidence    string `json:"evidence,omitempty"`
+	File        string `json:"file,omitempty"`
+	Func        string `json:"func,omitempty"`
 }
 
 // mineWorkItemID generates a stable ID from the item's identifying fields.
+// For hotspot items (File+Func populated), the ID is based on File+Func so that
+// changes in cyclomatic complexity do not produce a different ID.
+// A null-byte separator prevents collisions when field boundaries shift
+// (e.g. Type="ab"+Title="cd" vs Type="a"+Title="bcd").
 func mineWorkItemID(item mineWorkItemEmit) string {
 	h := sha256.New()
-	h.Write([]byte(item.Title))
 	h.Write([]byte(item.Type))
+	h.Write([]byte{0})
+	if item.File != "" && item.Func != "" {
+		h.Write([]byte(item.File))
+		h.Write([]byte{0})
+		h.Write([]byte(item.Func))
+	} else {
+		h.Write([]byte(item.Title))
+	}
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
