@@ -592,6 +592,20 @@ func TestEmitMineWorkItems_ItemLevelDedup(t *testing.T) {
 	}
 }
 
+func TestWriteMineReport_EmptyDir(t *testing.T) {
+	// writeMineReport with empty dir should return an explicit error,
+	// NOT silently write to "." (current working directory).
+	// filepath.Clean("") returns "." so without an explicit guard,
+	// MkdirAll(filepath.Clean("")) would succeed and write to CWD.
+	err := writeMineReport("", &MineReport{})
+	if err == nil {
+		t.Fatal("expected error for empty output dir, got nil")
+	}
+	if !strings.Contains(err.Error(), "must not be empty") {
+		t.Errorf("expected 'must not be empty' in error, got: %v", err)
+	}
+}
+
 func countNonEmptyLines(data []byte) int {
 	count := 0
 	for _, line := range bytes.Split(bytes.TrimSpace(data), []byte("\n")) {

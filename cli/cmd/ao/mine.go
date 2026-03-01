@@ -458,6 +458,9 @@ func countRecentEdits(cwd, file string) int {
 
 // writeMineReport writes the mine report as JSON to the output directory.
 func writeMineReport(dir string, r *MineReport) error {
+	if dir == "" {
+		return fmt.Errorf("output directory must not be empty")
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create mine output dir: %w", err)
 	}
