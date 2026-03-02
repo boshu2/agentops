@@ -921,4 +921,21 @@ func TestMineWorkItemID_AlgorithmV2_BreaksBackcompat(t *testing.T) {
 		t.Fatal("new algorithm should produce different IDs than old — if this fails, the algorithm didn't actually change")
 	}
 	t.Logf("Old ID: %s, New ID: %s — one-time dedup miss accepted", oldID, newID)
+
+	// Orphan items also changed: old sha256(Title+Type) vs new sha256(Type+\0+Title)
+	orphan := mineWorkItemEmit{
+		Title: "Rescue orphan: old-research.md",
+		Type:  "knowledge-gap",
+	}
+	oldOrphanH := sha256.New()
+	oldOrphanH.Write([]byte(orphan.Title))
+	oldOrphanH.Write([]byte(orphan.Type))
+	oldOrphanID := hex.EncodeToString(oldOrphanH.Sum(nil))[:16]
+
+	newOrphanID := mineWorkItemID(orphan)
+
+	if oldOrphanID == newOrphanID {
+		t.Fatal("orphan IDs should also differ after algorithm change")
+	}
+	t.Logf("Orphan Old ID: %s, New ID: %s — one-time dedup miss accepted", oldOrphanID, newOrphanID)
 }
