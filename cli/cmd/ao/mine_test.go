@@ -648,8 +648,112 @@ func countNonEmptyLines(data []byte) int {
 }
 
 // ---------------------------------------------------------------------------
+// mineGitLog error includes stderr context (Finding 1)
+// ---------------------------------------------------------------------------
+
+func TestMineGitLog_ErrorIncludesStderr(t *testing.T) {
+	tmp := t.TempDir()
+	_, err := mineGitLog(tmp, 26*time.Hour)
+	if err == nil {
+		t.Fatal("expected error in non-git directory")
+	}
+	// The error message should contain useful context beyond just exit code
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "git log") {
+		t.Errorf("error should contain 'git log' prefix, got: %v", err)
+	}
+	// stderr from git should be included for debugging
+	if !strings.Contains(errMsg, "fatal") && !strings.Contains(errMsg, "not a git repository") {
+		t.Errorf("error should include git stderr for debugging, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // loadExistingMineIDs error handling
 // ---------------------------------------------------------------------------
+
+func TestLoadExistingMineIDs_InvalidJSON(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "next-work.jsonl")
+	content := `{"source_epic":"athena-mine","consumed":false,"items":[{"id":"abc123"}]}` + "\n" +
+		`{this is not valid json` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids, err := loadExistingMineIDs(path)
+	if err != nil {
+		t.Fatalf("invalid lines should be skipped, got error: %v", err)
+	}
+	if !ids["abc123"] {
+		t.Error("valid line's ID should be present")
+	}
+}
+
+func TestLoadExistingMineIDs_EmptyFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "next-work.jsonl")
+	if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids, err := loadExistingMineIDs(path)
+	if err != nil {
+		t.Fatalf("empty file should return nil error, got: %v", err)
+	}
+	if len(ids) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(ids))
+	}
+}
+
+func TestLoadExistingMineIDs_SkipsEmptyIDs(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "next-work.jsonl")
+	content := `{"source_epic":"athena-mine","consumed":false,"items":[{"id":""},{"id":"valid123"}]}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids, err := loadExistingMineIDs(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(ids) != 1 {
+		t.Errorf("expected 1 ID (empty should be skipped), got %d", len(ids))
+	}
+	if !ids["valid123"] {
+		t.Error("expected 'valid123' to be present")
+	}
+}
+
+func TestLoadExistingMineIDs_ErrorMessageNotDoubleWrapped(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("cannot test permission denied as root")
+	}
+	tmp := t.TempDir()
+	// Create the rpi dir and an unreadable next-work.jsonl
+	rpiDir := filepath.Join(tmp, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(rpiDir, "next-work.jsonl")
+	if err := os.WriteFile(path, []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(path, 0o644) })
+
+	// Exercise the full chain through emitMineWorkItems
+	r := makeTestMineReport([]string{"orphan.md"}, nil)
+	err := emitMineWorkItems(tmp, r)
+	if err == nil {
+		t.Fatal("expected error for unreadable file")
+	}
+	// The error chain should NOT contain redundant "mine IDs" prefixes
+	errMsg := err.Error()
+	if strings.Count(errMsg, "mine IDs") > 1 {
+		t.Errorf("error message is double-wrapped: %v", err)
+	}
+}
 
 func TestLoadExistingMineIDs_NotExist(t *testing.T) {
 	ids, err := loadExistingMineIDs(filepath.Join(t.TempDir(), "nonexistent.jsonl"))

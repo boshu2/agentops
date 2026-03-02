@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -259,6 +260,10 @@ func mineGitLog(cwd string, window time.Duration) (*GitFindings, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
+			return nil, fmt.Errorf("git log: %s", strings.TrimSpace(string(exitErr.Stderr)))
+		}
 		return nil, fmt.Errorf("git log: %w", err)
 	}
 
@@ -543,7 +548,7 @@ func loadExistingMineIDs(path string) (map[string]bool, error) {
 		if os.IsNotExist(err) {
 			return ids, nil
 		}
-		return nil, fmt.Errorf("read existing mine IDs: %w", err)
+		return nil, err
 	}
 	if len(existing) == 0 {
 		return ids, nil
