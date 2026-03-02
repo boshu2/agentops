@@ -89,7 +89,7 @@ jobs:
           TOOLCHAIN_OUTPUT_DIR: ${{ runner.temp }}/agentops-tooling
 
       - name: Upload security gate artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: nightly-security-gate
@@ -130,7 +130,7 @@ jobs:
           ATHENA_MAX_AGE_HOURS: 30
 
       - name: Upload Athena report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: athena-report
