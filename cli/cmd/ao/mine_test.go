@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"os/user"
@@ -832,6 +834,48 @@ func TestMineWorkItemID_StableAcrossCCChanges(t *testing.T) {
 	}
 }
 
+func TestCollectMineWorkItems_HotspotPopulatesFileFunc(t *testing.T) {
+	hotspot := ComplexityHotspot{File: "src/main.go", Func: "runServer", Complexity: 18, RecentEdits: 4}
+	r := makeTestMineReport(nil, []ComplexityHotspot{hotspot})
+	items := collectMineWorkItems(r)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].File != "src/main.go" {
+		t.Errorf("File = %q, want %q", items[0].File, "src/main.go")
+	}
+	if items[0].Func != "runServer" {
+		t.Errorf("Func = %q, want %q", items[0].Func, "runServer")
+	}
+}
+
+func TestCollectMineWorkItems_OrphanDoesNotSetFileFunc(t *testing.T) {
+	r := makeTestMineReport([]string{"stale-research.md"}, nil)
+	items := collectMineWorkItems(r)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].File != "" {
+		t.Errorf("orphan File = %q, want empty", items[0].File)
+	}
+	if items[0].Func != "" {
+		t.Errorf("orphan Func = %q, want empty", items[0].Func)
+	}
+}
+
+func TestMineWorkItemID_PartialFileFunc_FallsBackToTitle(t *testing.T) {
+	fileOnly := mineWorkItemEmit{Title: "Some title", Type: "refactor", File: "foo.go"}
+	titleOnly := mineWorkItemEmit{Title: "Some title", Type: "refactor"}
+	if mineWorkItemID(fileOnly) != mineWorkItemID(titleOnly) {
+		t.Error("File-only item should fall back to Title-based ID")
+	}
+
+	funcOnly := mineWorkItemEmit{Title: "Some title", Type: "refactor", Func: "bar"}
+	if mineWorkItemID(funcOnly) != mineWorkItemID(titleOnly) {
+		t.Error("Func-only item should fall back to Title-based ID")
+	}
+}
+
 func TestMineWorkItemID_NoCollisionOnFieldBoundaries(t *testing.T) {
 	a := mineWorkItemEmit{Type: "ab", Title: "cd"}
 	b := mineWorkItemEmit{Type: "a", Title: "bcd"}
@@ -840,4 +884,41 @@ func TestMineWorkItemID_NoCollisionOnFieldBoundaries(t *testing.T) {
 	if idA == idB {
 		t.Errorf("field boundary shift should produce different IDs, both got %q", idA)
 	}
+}
+
+func TestMineWorkItemID_NoCollisionOnFileFuncBoundary(t *testing.T) {
+	a := mineWorkItemEmit{Type: "refactor", File: "src/ab", Func: "cd"}
+	b := mineWorkItemEmit{Type: "refactor", File: "src/a", Func: "bcd"}
+	if mineWorkItemID(a) == mineWorkItemID(b) {
+		t.Error("File/Func boundary shift should produce different IDs")
+	}
+}
+
+func TestMineWorkItemID_AlgorithmV2_BreaksBackcompat(t *testing.T) {
+	// Document: ID algorithm changed in v2 (PR #64).
+	// Old algorithm: sha256(Title + Type)[:16]
+	// New algorithm: sha256(Type + \0 + File + \0 + Func)[:16] for hotspots,
+	//                sha256(Type + \0 + Title)[:16] for others.
+	// Existing next-work.jsonl entries will be re-emitted once after upgrade.
+	// This is accepted as a one-time cost for stable dedup going forward.
+
+	item := mineWorkItemEmit{
+		Title: "Reduce complexity: heavy in foo.go (CC=20)",
+		Type:  "refactor",
+		File:  "foo.go",
+		Func:  "heavy",
+	}
+
+	// Compute what the OLD algorithm would produce
+	oldH := sha256.New()
+	oldH.Write([]byte(item.Title))
+	oldH.Write([]byte(item.Type))
+	oldID := hex.EncodeToString(oldH.Sum(nil))[:16]
+
+	newID := mineWorkItemID(item)
+
+	if oldID == newID {
+		t.Fatal("new algorithm should produce different IDs than old — if this fails, the algorithm didn't actually change")
+	}
+	t.Logf("Old ID: %s, New ID: %s — one-time dedup miss accepted", oldID, newID)
 }
