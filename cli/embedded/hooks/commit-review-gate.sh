@@ -55,13 +55,13 @@ ${DIFF_CONTENT}"
 
 # Inject as additionalContext
 if command -v jq >/dev/null 2>&1; then
-    jq -n --arg ctx "$REVIEW_MSG" '{"hookSpecificOutput":{"additionalContext":$ctx}}'
+    jq -n --arg ctx "$REVIEW_MSG" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":$ctx}}'
 else
     # Fallback: escape for JSON
     safe_msg=${REVIEW_MSG//\\/\\\\}
     safe_msg=${safe_msg//\"/\\\"}
     safe_msg=$(echo "$safe_msg" | tr '\n' ' ')
-    echo "{\"hookSpecificOutput\":{\"additionalContext\":\"$safe_msg\"}}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"$safe_msg\"}}"
 fi
 
 exit 0

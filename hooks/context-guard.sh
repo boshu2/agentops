@@ -66,11 +66,11 @@ fi
 
 if [ -n "$MESSAGE" ] && [ "$MESSAGE" != "null" ]; then
     if command -v jq >/dev/null 2>&1; then
-        jq -n --arg msg "$MESSAGE" '{"hookSpecificOutput":{"additionalContext":$msg}}'
+        jq -n --arg msg "$MESSAGE" '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":$msg}}'
     else
         safe_msg=${MESSAGE//\\/\\\\}
         safe_msg=${safe_msg//\"/\\\"}
-        echo "{\"hookSpecificOutput\":{\"additionalContext\":\"$safe_msg\"}}"
+        echo "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"$safe_msg\"}}"
     fi
 fi
 

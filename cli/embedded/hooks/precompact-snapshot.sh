@@ -187,11 +187,11 @@ fi
 
 # Output JSON for hook system
 if command -v jq >/dev/null 2>&1; then
-  jq -n --arg summary "$SUMMARY" '{"hookSpecificOutput":{"additionalContext":$summary}}'
+  jq -n --arg summary "$SUMMARY" '{"hookSpecificOutput":{"hookEventName":"PreCompact","additionalContext":$summary}}'
 else
   safe_summary=${SUMMARY//\\/\\\\}
   safe_summary=${safe_summary//\"/\\\"}
-  echo "{\"hookSpecificOutput\":{\"additionalContext\":\"$safe_summary\"}}"
+  echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"$safe_summary\"}}"
 fi
 
 # Cleanup: keep last 5 snapshots, remove older

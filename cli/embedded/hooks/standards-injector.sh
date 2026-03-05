@@ -61,6 +61,6 @@ CONTENT=$(cat "$STANDARDS_FILE")
 ESCAPED=$(printf '%s' "$CONTENT" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/	/\\t/g' | awk '{if(NR>1) printf "\\n"; printf "%s", $0}')
 
 # Output hookSpecificOutput JSON
-printf '{"hookSpecificOutput":{"additionalContext":"%s"}}\n' "$ESCAPED"
+printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"%s"}}\n' "$ESCAPED"
 
 exit 0

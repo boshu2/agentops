@@ -91,6 +91,6 @@ fi
 [ -z "$NUDGE" ] && exit 0
 
 # Output nudge as additionalContext
-jq -n --arg nudge "$NUDGE" '{"hookSpecificOutput":{"additionalContext":$nudge}}'
+jq -n --arg nudge "$NUDGE" '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":$nudge}}'
 
 exit 0

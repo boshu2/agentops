@@ -45,7 +45,7 @@ if [[ "$FILE_PATH" == *_test.go ]] && [[ -f "$FILE_PATH" ]]; then
     DENSITY_MSG="Assertion density warning: test functions with no assertions detected:
 $(printf '%b' "$EMPTY_TESTS")  These tests will pass regardless of code behavior."
     if command -v jq >/dev/null 2>&1; then
-      jq -n --arg ctx "$DENSITY_MSG" '{"hookSpecificOutput":{"additionalContext":$ctx}}'
+      jq -n --arg ctx "$DENSITY_MSG" '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$ctx}}'
     else
       echo "$DENSITY_MSG" >&2
     fi

@@ -133,5 +133,5 @@ else
 fi
 
 # Output as additionalContext
-printf '{"hookSpecificOutput":{"additionalContext":"%s"}}\n' "$MSG"
+printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' "$MSG"
 exit 0

@@ -75,12 +75,12 @@ ECHO_MSG="HIGH-STAKES OPERATION DETECTED. Before proceeding:
 Proceed ONLY after this confirmation step."
 
 if command -v jq >/dev/null 2>&1; then
-    jq -n --arg ctx "$ECHO_MSG" '{"hookSpecificOutput":{"additionalContext":$ctx}}'
+    jq -n --arg ctx "$ECHO_MSG" '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":$ctx}}'
 else
     safe_msg=${ECHO_MSG//\\/\\\\}
     safe_msg=${safe_msg//\"/\\\"}
     safe_msg=$(echo "$safe_msg" | tr '\n' ' ')
-    echo "{\"hookSpecificOutput\":{\"additionalContext\":\"$safe_msg\"}}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"$safe_msg\"}}"
 fi
 
 exit 0

@@ -57,11 +57,11 @@ case "$TOOL_NAME" in
 
         if [ -n "$NUDGE" ]; then
             if command -v jq >/dev/null 2>&1; then
-                jq -n --arg ctx "$NUDGE" '{"hookSpecificOutput":{"additionalContext":$ctx}}'
+                jq -n --arg ctx "$NUDGE" '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$ctx}}'
             else
                 safe_msg=${NUDGE//\\/\\\\}
                 safe_msg=${safe_msg//\"/\\\"}
-                echo "{\"hookSpecificOutput\":{\"additionalContext\":\"$safe_msg\"}}"
+                echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"$safe_msg\"}}"
             fi
         fi
         ;;
