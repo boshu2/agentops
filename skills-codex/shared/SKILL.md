@@ -14,6 +14,7 @@ This directory contains shared reference documents used by multiple skills:
 - `references/backend-codex-subagents.md` - Concrete examples for Codex CLI and Codex sub-agents
 - `references/backend-background-tasks.md` - Fallback: `Task(run_in_background=true)`
 - `references/backend-inline.md` - Degraded single-agent mode (no spawn)
+- `references/claude-cli-verified-commands.md` - Verified Claude CLI command shapes and caveats
 - `references/codex-cli-verified-commands.md` - Verified Codex CLI command shapes and caveats
 - `references/cli-command-failures-2026-02-26.md` - Dated failure log and mitigations from live runs
 
@@ -159,6 +160,7 @@ Skills that chain to other skills (e.g., `$rpi` calls `$research`, `$vibe` calls
 - [references/backend-codex-subagents.md](references/backend-codex-subagents.md)
 - [references/backend-inline.md](references/backend-inline.md)
 - [references/claude-code-latest-features.md](references/claude-code-latest-features.md)
+- [references/claude-cli-verified-commands.md](references/claude-cli-verified-commands.md)
 - [references/codex-cli-verified-commands.md](references/codex-cli-verified-commands.md)
 - [references/cli-command-failures-2026-02-26.md](references/cli-command-failures-2026-02-26.md)
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
@@ -171,6 +173,7 @@ Skills that chain to other skills (e.g., `$rpi` calls `$research`, `$vibe` calls
 - [references/backend-claude-teams.md](references/backend-claude-teams.md)
 - [references/backend-codex-subagents.md](references/backend-codex-subagents.md)
 - [references/backend-inline.md](references/backend-inline.md)
+- [references/claude-cli-verified-commands.md](references/claude-cli-verified-commands.md)
 - [references/claude-code-latest-features.md](references/claude-code-latest-features.md)
 - [references/cli-command-failures-2026-02-26.md](references/cli-command-failures-2026-02-26.md)
 - [references/codex-cli-verified-commands.md](references/codex-cli-verified-commands.md)

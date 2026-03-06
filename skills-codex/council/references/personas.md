@@ -43,7 +43,7 @@ Use `--preset=<name>` for common persona configurations:
 | Preset | Perspectives | Best For |
 |--------|-------------|----------|
 | `default` | (none — independent judges) | General validation |
-| `security-audit` | attacker, defender, compliance | Security review |
+| `security-audit` | attacker, defender, compliance, web-security | Security review |
 | `architecture` | scalability, maintainability, simplicity | System design |
 | `research` | breadth, depth, contrarian | Deep investigation |
 | `ops` | reliability, observability, incident-response | Operations review |
@@ -69,6 +69,7 @@ Use `--preset=<name>` for common persona configurations:
 | security-audit | **Red** | attacker |
 | security-audit | **Blue** | defender |
 | security-audit | **Auditor** | compliance |
+| security-audit | **WebSec** | web-security |
 | architecture | **Scale** | scalability |
 | architecture | **Craft** | maintainability |
 | architecture | **Razor** | simplicity |
@@ -105,7 +106,8 @@ Use `--preset=<name>` for common persona configurations:
 security-audit:
   attacker:   {name: Red}       "How would I exploit this? What's the weakest link?"
   defender:   {name: Blue}      "How do we detect and prevent attacks? What's our blast radius?"
-  compliance: {name: Auditor}   "Does this meet regulatory requirements? What's our audit trail?"
+  compliance:   {name: Auditor}   "Does this meet regulatory requirements? What's our audit trail?"
+  web-security: {name: WebSec}    "What OWASP Top 10 risks are present? Check for injection, XSS, path traversal, CORS misconfig, auth bypass, CSRF, response splitting, SSRF (outbound URL validation), missing security headers (HSTS, X-Frame-Options, CSP), rate limiting on auth/API/upload endpoints, and credential/token exposure in logs."
 
 architecture:
   scalability:     {name: Scale}  "Will this handle 10x load? Where are the bottlenecks?"

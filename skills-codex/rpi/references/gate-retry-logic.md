@@ -44,13 +44,13 @@ Check completion status from crank's output. Look for `<promise>` tags:
 - **`<promise>BLOCKED</promise>`:** Retry (max 2 retries):
   1. Read crank output to extract block reason
   2. Log: "Crank: BLOCKED (attempt N/3) -- retrying with context"
-  3. Re-invoke `/crank` with epic-id and block context (include `--test-first` if set)
+  3. Re-invoke `/crank` with epic-id and block context (include `--test-first` by default; omit only when `--no-test-first` is set)
   4. If still BLOCKED after 3 total attempts, stop with message:
      "Crank blocked 3 times. Reason: <reason>. Manual intervention needed."
 - **`<promise>PARTIAL</promise>`:** Retry remaining (max 2 retries):
   1. Read crank output to identify remaining items
   2. Log: "Crank: PARTIAL (attempt N/3) -- retrying remaining items"
-  3. Re-invoke `/crank` with epic-id (it picks up unclosed issues; include `--test-first` if set)
+  3. Re-invoke `/crank` with epic-id (it picks up unclosed issues; include `--test-first` by default; omit only when `--no-test-first` is set)
   4. If still PARTIAL after 3 total attempts, stop with message:
      "Crank partial after 3 attempts. Remaining: <items>. Manual intervention needed."
 
@@ -80,8 +80,8 @@ Gate logic:
   2. Log: "Vibe: FAIL (attempt N/3) -- retrying crank with feedback"
   3. Re-invoke `/crank` with the epic-id AND the failure context including structured findings:
      ```
-     Skill(skill="crank", args="<epic-id> --context 'Vibe FAIL: <key issues>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z' --test-first")   # if --test-first set
-     Skill(skill="crank", args="<epic-id> --context 'Vibe FAIL: <key issues>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z'")                 # otherwise
+     Skill(skill="crank", args="<epic-id> --context 'Vibe FAIL: <key issues>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z' --test-first")   # default strict-quality path
+     Skill(skill="crank", args="<epic-id> --context 'Vibe FAIL: <key issues>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z'")                 # only when --no-test-first opted out
      ```
   4. Re-invoke `/vibe` on the new changes
   5. If still FAIL after 3 total attempts, stop with message:

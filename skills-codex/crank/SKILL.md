@@ -139,6 +139,14 @@ fi
 bd list --type epic --status open 2>/dev/null | head -5
 ```
 
+**Single-Epic Scope Check (WARN):**
+If `bd list --type epic --status open` returns more than one epic, log a warning:
+```
+WARN: Multiple open epics detected. $crank operates on a single epic.
+Use --allow-multi-epic to suppress this warning.
+```
+This is a WARN, not a FAIL — cranking with focused scope is a best practice but not a hard requirement.
+
 If multiple epics found, ask user which one.
 
 **TaskList mode:**
@@ -180,7 +188,7 @@ Track in memory: `wave=0`
 if [[ "$TEST_FIRST" == "true" ]]; then
     # Classify issues by type
     # spec-eligible: feature, bug, task → SPEC + TEST waves apply
-    # skip: chore, epic, docs → standard implementation waves only
+    # skip: docs, chore, ci, epic → standard implementation waves only
     SPEC_ELIGIBLE=()
     SPEC_SKIP=()
 
@@ -189,7 +197,7 @@ if [[ "$TEST_FIRST" == "true" ]]; then
             ISSUE_TYPE=$(bd show "$issue" 2>/dev/null | grep "Type:" | head -1 | awk '{print tolower($NF)}')
             case "$ISSUE_TYPE" in
                 feature|bug|task) SPEC_ELIGIBLE+=("$issue") ;;
-                chore|epic|docs) SPEC_SKIP+=("$issue") ;;
+                docs|chore|ci|epic) SPEC_SKIP+=("$issue") ;;
                 *)
                     echo "WARNING: Issue $issue has unknown type '$ISSUE_TYPE'. Defaulting to spec-eligible."
                     SPEC_ELIGIBLE+=("$issue")
@@ -201,7 +209,7 @@ if [[ "$TEST_FIRST" == "true" ]]; then
         SPEC_ELIGIBLE=($READY_ISSUES)
         echo "TaskList mode: all ${#SPEC_ELIGIBLE[@]} issues defaulted to spec-eligible (no bd type info)"
     fi
-    echo "Test-first mode: ${#SPEC_ELIGIBLE[@]} spec-eligible, ${#SPEC_SKIP[@]} skipped (chore/epic/docs)"
+    echo "Test-first mode: ${#SPEC_ELIGIBLE[@]} spec-eligible, ${#SPEC_SKIP[@]} skipped (docs/chore/ci/epic)"
 fi
 ```
 
@@ -277,6 +285,33 @@ fi
 
 **Why:** 7 consecutive epics (ag-oke through ag-9ad) showed positive ROI from pre-mortem validation. For epics with 3+ issues, the cost of a pre-mortem (~2 min) is negligible compared to the cost of cranking a flawed plan.
 
+### Step 3a.2: Pre-flight Check - Changed-String Grep
+
+**Before spawning workers, grep for every string being changed by the plan.**
+
+This catches stale cross-references that the plan missed. In na-lz0, 2 HIGH findings (stale "7-category" refs in agent-prompts.md and post-mortem/SKILL.md) were caught by council review, not by planning.
+
+```bash
+# PSEUDO-CODE
+# Read the plan to identify strings being changed
+PLAN_FILE=$(ls -t .agents/plans/*.md 2>/dev/null | head -1)
+if [[ -n "$PLAN_FILE" ]]; then
+    echo "Pre-flight: Checking for stale cross-references..."
+    # For each key term/string being modified, grep all skills
+    # Example: if changing "7-category" to "8-category":
+    #   grep -rn "7-category" skills/
+    # Any matches outside the planned file set = scope gap
+    echo "Review matches outside planned files. Add to scope if stale."
+fi
+```
+
+**Action on findings:**
+- If grep finds matches in files NOT in the plan's file manifest, either:
+  1. Add those files to the current epic (create new issue), or
+  2. Document as known tech debt with a follow-up beads issue
+
+**Why:** This is a P0 process fix. Both HIGH findings from na-lz0 would have been caught by this check.
+
 ### Step 3b: SPEC WAVE (--test-first only)
 
 **Skip if `--test-first` is NOT set or if no spec-eligible issues exist.**
@@ -325,6 +360,31 @@ This produces a 5-section briefing (GOALS, HISTORY, INTEL, TASK, PROTOCOL) at `.
 - Docs/chore/ci issues (skipped by SPEC/TEST waves) use standard worker prompts unchanged
 
 **File manifests (REQUIRED):** Include a `metadata.files` array in every TaskCreate listing the files that worker will modify. This feeds into swarm's pre-spawn conflict detection -- two workers claiming the same file in the same wave get serialized or worktree-isolated automatically. Derive file lists from the issue description, plan, or codebase exploration during planning.
+
+**Grep-for-existing-functions (REQUIRED for new function issues):** When an issue description says "create", "add", or "implement" a new function/utility, include `metadata.grep_check` with the function name pattern. Workers MUST grep the codebase for existing implementations before writing new code. This prevents utility duplication (e.g., `estimateTokens` was duplicated in context-orchestration-leverage because no grep check was specified).
+
+**Validation metadata policy (REQUIRED):** For implementation tasks typed `feature|bug|task`, include `metadata.validation.tests` plus at least one structural check (`files_exist` or `content_check`). `docs|chore|ci` use an explicit test-exempt path and should still include applicable structural and/or command/lint checks.
+
+**Validation block extraction (beads mode):** Before building TaskCreate calls, extract validation metadata from each issue's description. `$plan` embeds conformance checks as fenced `validation` blocks in issue bodies:
+
+```bash
+# For each issue in the current wave, extract validation JSON from bd show output
+ISSUE_BODY=$(bd show "$ISSUE_ID" 2>/dev/null)
+VALIDATION_JSON=$(echo "$ISSUE_BODY" | sed -n '/^```validation$/,/^```$/{ /^```/d; p }')
+
+if [[ -n "$VALIDATION_JSON" ]]; then
+    # Use extracted validation as metadata.validation in TaskCreate
+    echo "Extracted validation block for $ISSUE_ID"
+else
+    # Fallback: generate default validation from files mentioned in description
+    # Use files_exist check for any file paths found in the issue body
+    MENTIONED_FILES=$(echo "$ISSUE_BODY" | grep -oE '[a-zA-Z0-9_/.-]+\.(go|py|ts|sh|md|yaml|json)' | sort -u)
+    VALIDATION_JSON="{\"files_exist\": [$(echo "$MENTIONED_FILES" | sed 's/.*/"&"/' | paste -sd,)]}"
+    echo "WARNING: No validation block in $ISSUE_ID — using fallback files_exist check"
+fi
+```
+
+Inject the extracted or fallback `VALIDATION_JSON` into the `metadata.validation` field of each worker's TaskCreate. This closes the plan-to-crank validation pipeline: `$plan` writes conformance checks → bd stores them → `$crank` extracts and enforces them.
 
 ```
 TaskCreate(
@@ -392,6 +452,7 @@ fi
 Before spawning workers, check for cross-cutting constraints:
 
 ```bash
+# PSEUDO-CODE
 # Guard clause: skip if plan has no boundaries (backward compat)
 PLAN_FILE=$(ls -t .agents/plans/*.md 2>/dev/null | head -1)
 if [[ -n "$PLAN_FILE" ]] && grep -q "## Boundaries" "$PLAN_FILE"; then
@@ -470,6 +531,17 @@ EOF
 - `acceptance_verdict`: verdict from the Wave Acceptance Check (Step 5.5). Used by final validation to skip redundant $vibe on clean epics.
 - On retry of the same wave, the file is overwritten (same path).
 
+### Step 5.7b: Vibe Context Checkpoint
+
+After writing the wave checkpoint, copy it for downstream `$vibe` consumption:
+
+```bash
+mkdir -p .agents/vibe-context
+cp ".agents/crank/wave-${wave}-checkpoint.json" .agents/vibe-context/latest-crank-wave.json
+```
+
+This provides `$vibe` a stable path to read the latest crank state without scanning wave checkpoint files. Uses file copy (not symlink) per repo conventions.
+
 ### Step 5.8: Wave Status Report
 
 After each wave checkpoint, display a consolidated status table:
@@ -492,6 +564,48 @@ Epic Progress:
 
 This table is informational — it does not gate progression. Step 6 handles the loop decision.
 
+### Step 5.9: Refresh Worktree Base SHA (MANDATORY)
+
+**After committing a wave, refresh the base SHA before spawning the next wave.** This prevents cross-wave file collisions where later-wave worktrees overwrite earlier-wave fixes.
+
+```bash
+# After wave commit completes:
+WAVE_COMMIT_SHA=$(git rev-parse HEAD)
+
+# Verify the commit landed
+if [[ "$WAVE_COMMIT_SHA" == "$WAVE_START_SHA" ]]; then
+    echo "WARNING: Wave commit did not advance HEAD. Check for commit failures."
+fi
+
+# Next wave's worktrees MUST branch from this SHA, not the original base.
+# The swarm pre-spawn step uses HEAD as the worktree base, so this is
+# automatic IF the wave commit happens BEFORE the next $swarm invocation.
+echo "Wave $wave committed at $WAVE_COMMIT_SHA. Next wave branches from here."
+```
+
+**Cross-wave shared file check:**
+
+Before spawning the next wave, cross-reference the next wave's file manifests against files changed in the current wave:
+
+```bash
+# Files modified by the just-completed wave
+WAVE_CHANGED=$(git diff --name-only "${WAVE_START_SHA}..HEAD")
+
+# Files planned for next wave (from TaskCreate metadata.files)
+NEXT_WAVE_FILES=(<next wave file manifests>)
+
+# Check for overlap
+OVERLAP=$(comm -12 <(echo "$WAVE_CHANGED" | sort) <(printf '%s\n' "${NEXT_WAVE_FILES[@]}" | sort))
+if [[ -n "$OVERLAP" ]]; then
+    echo "Cross-wave file overlap detected:"
+    echo "$OVERLAP"
+    echo "These files were modified in Wave $wave and are planned for Wave $((wave+1))."
+    echo "Worktrees will include Wave $wave changes (branched from $WAVE_COMMIT_SHA)."
+fi
+```
+
+**Why:** In na-vs9, Wave 2 worktrees were created from pre-Wave-1 SHA. A Wave 2 agent overwrote Wave 1's `.md→.json` fix in `rpi_phased_test.go` because its worktree predated the fix. Refreshing the base SHA between waves eliminates this class of collision.
+
 ### Step 6: Check for More Work
 
 After completing a wave, check for newly unblocked issues (beads: `bd ready`, TaskList: `TaskList()`). Loop back to Step 4 if work remains, or proceed to Step 7 when done.
@@ -506,7 +620,28 @@ If hooks or `lib/hook-helpers.sh` were modified, verify embedded copies are in s
 
 **For detailed validation steps, read `skills/crank/references/failure-recovery.md`.**
 
-### Step 8: Extract Learnings (ao Integration)
+### Step 8: Write Phase-2 Summary
+
+Before extracting learnings, write a phase-2 summary for downstream `$post-mortem` consumption:
+
+```bash
+mkdir -p .agents/rpi
+cat > ".agents/rpi/phase-2-summary-$(date +%Y-%m-%d)-crank.md" <<PHASE2
+# Phase 2 Summary: Implementation
+
+- **Epic:** <epic-id>
+- **Waves completed:** ${wave}
+- **Issues completed:** <completed-count>/<total-count>
+- **Files modified:** $(git diff --name-only "${WAVE_START_SHA}..HEAD" | wc -l | tr -d ' ')
+- **Status:** <DONE|PARTIAL|BLOCKED>
+- **Completion marker:** <promise marker from Step 9>
+- **Timestamp:** $(date -Iseconds)
+PHASE2
+```
+
+This summary is consumed by `$post-mortem` Step 2.2 for scope reconciliation.
+
+### Step 8.5: Extract Learnings (ao Integration)
 
 If ao CLI available: run `ao know forge transcript`, `ao quality flywheel close-loop --quiet`, `ao quality metrics flywheel status`, and `ao quality pool list --status=pending` to extract and review learnings. If ao unavailable, skip and recommend `$post-mortem` manually.
 
@@ -637,6 +772,7 @@ See `skills/crank/references/troubleshooting.md` for extended troubleshooting.
 - [references/team-coordination.md](references/team-coordination.md)
 - [references/test-first-mode.md](references/test-first-mode.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+- [references/uat-integration-wave.md](references/uat-integration-wave.md)
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
 - [references/wave-patterns.md](references/wave-patterns.md)
 
@@ -655,6 +791,7 @@ See `skills/crank/references/troubleshooting.md` for extended troubleshooting.
 - [references/team-coordination.md](references/team-coordination.md)
 - [references/test-first-mode.md](references/test-first-mode.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+- [references/uat-integration-wave.md](references/uat-integration-wave.md)
 - [references/wave-patterns.md](references/wave-patterns.md)
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
 - [references/worktree-per-worker.md](references/worktree-per-worker.md)

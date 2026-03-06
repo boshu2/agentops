@@ -495,6 +495,7 @@ run_step_bg "Hook preflight" ./scripts/validate-hook-preflight.sh
 run_step_bg "Hooks/docs parity" ./scripts/validate-hooks-doc-parity.sh
 run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
+run_step_bg "Codex skill parity" bash ./scripts/validate-codex-skill-parity.sh
 run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
 run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan

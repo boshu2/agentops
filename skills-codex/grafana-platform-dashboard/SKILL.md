@@ -123,5 +123,6 @@ Report:
 
 - `scripts/grafanadashboard_roundtrip.sh`
 - `scripts/promql_scan_thanos.sh`
+- `scripts/validate.sh`
 
 

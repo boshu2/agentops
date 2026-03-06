@@ -296,7 +296,7 @@ This must show:
 - `scripts/reverse_engineer_rpi.py`
 - `scripts/scaffold_feature_registry.py`
 - `scripts/self_test.sh`
-- `scripts/validate_feature_registry.py`
 - `scripts/validate.sh`
+- `scripts/validate_feature_registry.py`
 
 

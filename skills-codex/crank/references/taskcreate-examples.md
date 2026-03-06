@@ -6,7 +6,7 @@
 
 ## SPEC WAVE TaskCreate
 
-Use when `--test-first` is set and issue is spec-eligible (feature/bugfix/refactor).
+Use when `--test-first` is set and issue is spec-eligible (`feature`/`bug`/`task`).
 
 ```
 TaskCreate(
@@ -37,9 +37,9 @@ files_exist:
   - .agents/specs/contract-<issue-id>.md
 content_check:
   - file: .agents/specs/contract-<issue-id>.md
-    patterns:
-      - "## Invariants"
-      - "## Test Cases"
+    pattern: "## Invariants"
+  - file: .agents/specs/contract-<issue-id>.md
+    pattern: "## Test Cases"
 ```
 
 Mark task complete when contract is written and validation passes.",
@@ -82,11 +82,12 @@ Output: test files in the appropriate location for the project's test framework.
 files_exist:
   - <test-file-path-1>
   - <test-file-path-2>
-red_gate:
-  command: "<test-command>"
-  expected: "FAIL"
-  reason: "All new tests must fail (RED state) before implementation"
 ```
+
+> **RED verification note:** The validation gate runs commands directly (no shell wrappers).
+> To confirm tests FAIL, the worker must run the test command manually and verify non-zero
+> exit before marking complete. Do NOT put negated commands in validation metadata — the
+> gate would treat test failure as a validation failure. Workers self-verify RED state.
 
 Mark task complete when tests are written and ALL tests FAIL.",
   activeForm="Writing tests for <issue-id>"
@@ -129,9 +130,11 @@ Execute using /implement <issue-id>. Mark complete when all tests pass.",
 
 ---
 
-## Standard IMPL TaskCreate
+## Standard IMPL TaskCreate (`feature`/`bug`/`task`)
 
-Use for non-spec-eligible issues (docs/chore/ci) or when `--test-first` is NOT set.
+Use when `--test-first` is NOT set for implementation issues. `metadata.validation` is required and MUST include:
+- `tests`
+- At least one structural check: `files_exist` or `content_check`
 
 ```
 TaskCreate(
@@ -144,28 +147,69 @@ Details from beads:
 Execute using /implement <issue-id>. Mark complete when done.
 
 ```validation
-<optional validation metadata specific to this issue>
-build:
-  command: "<build-command>"
-  expected: "success"
-tests:
-  command: "<test-command>"
-  expected: "pass"
+tests: "<test-command>"
 files_exist:
   - <expected-output-file-1>
-  - <expected-output-file-2>
+content_check:
+  - file: <expected-output-file-1>
+    pattern: "<required-structure-pattern>"
+command: "<optional-build-or-smoke-command>"
 ```
+
+> **Allowlist-safe commands:** Validation commands run via `run_restricted()` which only
+> permits: `go`, `pytest`, `npm`, `make`. No shell wrappers (`bash -c`), no compound
+> operators (`&&`, `||`), no pipes or redirects. One command per field.
+>
+> Examples by language:
+> - Go: `"tests": "go test ./..."`, `"command": "go vet ./..."`
+> - Python: `"tests": "pytest tests/"`
+> - Node: `"tests": "npm test"`
+> - Multi-step: `"tests": "make test"` (put compound logic in Makefile)
 ",
   activeForm="Implementing <issue-id>",
   metadata={
     "files": ["<expected-modified-file-1>", "<expected-modified-file-2>"],
     "validation": {
       "tests": "<test-command>",
-      "files_exist": ["<expected-output-file-1>"]
+      "files_exist": ["<expected-output-file-1>"],
+      "content_check": [
+        {"file": "<expected-output-file-1>", "pattern": "<required-structure-pattern>"}
+      ],
+      "command": "<optional-build-or-smoke-command>"
     }
   }
 )
 ```
+
+---
+
+## Docs/Chore/CI IMPL TaskCreate (Test Exemption)
+
+Use for non-spec-eligible issues (`docs`/`chore`/`ci`). `tests` is optional for this category; keep structural or command/lint checks.
+
+```
+TaskCreate(
+  subject="<issue-id>: <issue-title>",
+  description="Implement beads issue <issue-id> (`docs`/`chore`/`ci` path).",
+  activeForm="Implementing <issue-id>",
+  metadata={
+    "files": ["<expected-modified-file-1>"],
+    "validation": {
+      "files_exist": ["<expected-output-file-1>"],
+      "content_check": {
+        "file": "<expected-output-file-1>",
+        "pattern": "<required-doc-or-config-pattern>"
+      },
+      "command": "<optional-smoke-command>",
+      "lint": "<optional-lint-command>"
+    }
+  }
+)
+```
+
+> **Allowlist reminder:** `command` and `lint` fields are also subject to `run_restricted()`.
+> Use bare allowlisted binaries only: `go`, `pytest`, `npm`, `make`. Example:
+> `"command": "make lint"`, `"lint": "npm run lint"`.
 
 ---
 
@@ -179,8 +223,10 @@ files_exist:
 - **Validation blocks:**
   - Fenced with triple backticks and `validation` language tag
   - Always include for SPEC and TEST waves
-  - Optional but recommended for GREEN/IMPL waves
+  - For `feature`/`bug`/`task` IMPL tasks: required `tests` + structural checks
+  - For `docs`/`chore`/`ci` IMPL tasks: `tests` optional (explicit exemption path)
   - Consumed by lead during wave validation
+  - **Allowlist constraint:** `tests`, `command`, and `lint` fields execute via `run_restricted()` in `task-validation-gate.sh`. Only bare allowlisted binaries are permitted: `go`, `pytest`, `npm`, `make`. Shell wrappers (`bash -c`), compound operators (`&&`, `||`, `;`), pipes (`|`), and redirects (`>`, `<`) are blocked. Use `make` targets for multi-step validation.
 
 - **activeForm:**
   - Shows in TaskList UI while worker is active

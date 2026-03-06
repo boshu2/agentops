@@ -50,8 +50,8 @@ $swarm                 # Parallel execution (fresh context per agent)
 
 ```bash
 $vibe [target]         # Code validation (security, quality, architecture)
-$post-mortem           # Extract learnings after completion
-$retro                 # Quick retrospective
+$post-mortem           # Full validation + knowledge extraction (council + learnings + activation)
+$retro                 # Quick-capture a single learning
 ```
 
 **Output:** `.agents/learnings/`, `.agents/patterns/`
@@ -73,7 +73,7 @@ $release --dry-run     # Preview without writing
 | **Research** | `$research` | `$inject` |
 | **Plan** | `$plan` | `$pre-mortem` |
 | **Implement** | `$implement` | `$crank` (epic loop), `$swarm` (parallel execution) |
-| **Validate** | `$vibe` | `$retro`, `$post-mortem` |
+| **Validate** | `$vibe` | `$post-mortem` (full retro + knowledge lifecycle), `$retro` (quick-capture) |
 | **Release** | `$release` | — |
 
 **Choosing the skill:**
@@ -111,14 +111,14 @@ These are the skills every user needs first. Everything else is available when y
 | `$brainstorm` | Structured idea exploration before planning |
 | `$plan` | Epic decomposition into issues |
 | `$pre-mortem` | Failure simulation before implementing |
-| `$post-mortem` | Full validation + knowledge extraction |
+| `$post-mortem` | Full validation + knowledge lifecycle (council + extraction + activation + retirement) |
 | `$bug-hunt` | Root cause analysis |
 | `$release` | Pre-flight, changelog, version bumps, tag |
 | `$crank` | Autonomous epic loop (uses swarm for each wave) |
 | `$swarm` | Fresh-context parallel execution (Ralph pattern) |
 | `$evolve` | Goal-driven fitness-scored improvement loop |
 | `$doc` | Documentation generation |
-| `$retro` | Extract learnings from completed work |
+| `$retro` | Quick-capture a learning (full retro → $post-mortem) |
 | `$ratchet` | Brownian Ratchet progress gates for RPI workflow |
 | `$forge` | Mine transcripts for knowledge — decisions, learnings, patterns |
 | `$readme` | Generate gold-standard README for any project |

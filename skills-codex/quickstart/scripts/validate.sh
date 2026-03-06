@@ -8,7 +8,7 @@ check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"
 check "name is quickstart" "grep -q '^name: quickstart' '$SKILL_DIR/SKILL.md'"
 check "mentions onboarding" "grep -qi 'onboarding' '$SKILL_DIR/SKILL.md'"
-check "mentions RPI" "grep -q 'RPI' '$SKILL_DIR/SKILL.md'"
+check "mentions RPI" "grep -qi 'rpi' '$SKILL_DIR/SKILL.md'"
 check "mentions workflow" "grep -qi 'workflow' '$SKILL_DIR/SKILL.md'"
 check "mentions detect project" "grep -qi 'detect' '$SKILL_DIR/SKILL.md'"
 

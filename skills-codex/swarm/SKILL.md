@@ -160,6 +160,41 @@ File Ownership Map (Wave N):
 Conflicts: 1 (resolved: serialized task-3 into sub-wave 2)
 ```
 
+### Step 2.5: Pre-Spawn Base-SHA Refresh (Multi-Wave Only)
+
+When executing wave 2+ (not the first wave), verify workers branch from the latest commit — not a stale SHA from before the prior wave's changes were committed.
+
+```bash
+# PSEUDO-CODE
+# Capture current HEAD after prior wave's commit
+CURRENT_SHA=$(git rev-parse HEAD)
+
+# If using worktrees, verify they're up to date
+if [[ -n "$WORKTREE_PATH" ]]; then
+    (cd "$WORKTREE_PATH" && git pull --rebase origin "$(git branch --show-current)" 2>/dev/null || true)
+fi
+```
+
+**Cross-reference prior wave diff against current wave file manifests:**
+
+```bash
+# PSEUDO-CODE
+# Files changed in prior wave
+PRIOR_WAVE_FILES=$(git diff --name-only "${WAVE_START_SHA}..HEAD")
+
+# Check for overlap with current wave manifests
+for task in $WAVE_TASKS; do
+    TASK_FILES=$(echo "$task" | jq -r '.metadata.files[]')
+    OVERLAP=$(comm -12 <(echo "$PRIOR_WAVE_FILES" | sort) <(echo "$TASK_FILES" | sort))
+    if [[ -n "$OVERLAP" ]]; then
+        echo "WARNING: Task $task touches files modified in prior wave: $OVERLAP"
+        echo "Workers MUST read the latest version (post-prior-wave commit)"
+    fi
+done
+```
+
+**Why:** Without base-SHA refresh, wave 2+ workers may read stale file versions from before wave 1 changes were committed. This causes workers to overwrite prior wave edits or implement against outdated code. See crank Step 5.7 (wave checkpoint) for the SHA tracking pattern.
+
 ### Steps 3-6: Spawn Workers, Validate, Finalize
 
 **For detailed local mode execution (team creation, worker spawning, race condition prevention, git commit policy, validation contract, cleanup, and repeat logic), read `skills/swarm/references/local-mode.md`.**
@@ -189,6 +224,16 @@ Mayor: "Let's build a user auth system"
 
 6. $vibe -> Validate everything
 ```
+
+### Scope-Escape Protocol
+
+When a worker discovers work outside their assigned scope, they MUST NOT modify files outside their file manifest. Instead, append to `.agents/swarm/scope-escapes.jsonl`:
+
+```json
+{"worker": "<worker-id>", "finding": "<description>", "suggested_files": ["path/to/file"], "timestamp": "<ISO8601>"}
+```
+
+The lead reviews scope escapes after each wave and creates follow-up tasks as needed.
 
 ## Key Points
 

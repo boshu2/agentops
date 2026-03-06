@@ -60,7 +60,7 @@ echo ""
 check "git binary exists" "which git" "git"
 
 # Verify dependent skill exists
-check_exists "Beads skill exists" "$HOME/.claude/skills/beads/SKILL.md"
+check_exists "Beads skill exists" "$SKILL_DIR/../beads/SKILL.md"
 
 # Verify pr-research workflow patterns in SKILL.md
 check_pattern "SKILL.md has upstream exploration" "$SKILL_DIR/SKILL.md" "[Uu]pstream"

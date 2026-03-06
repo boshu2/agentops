@@ -26,7 +26,7 @@ Pick what you need. Every skill works standalone. `/swarm` multiplies any of the
 │  /implement ────► research + plan + build + vibe│
 │  /vibe ─────────► /complexity + /council        │
 │  /pre-mortem ───► /council (failure simulation) │
-│  /post-mortem ──► /council + /retro             │
+│  /post-mortem ──► /council + knowledge lifecycle │
 │  /council ──────► parallel judges (multi-model) │
 └─────────────────────────────────────────────────┘
 ```
@@ -37,14 +37,14 @@ Pick what you need. Every skill works standalone. `/swarm` multiplies any of the
 THE MULTIPLIER                   VALIDATE
 /swarm      - parallelize        /vibe        - code quality check
               anything           /pre-mortem  - plan validation
-                                 /post-mortem - wrap up + learn
+                                 /post-mortem - full retro + knowledge lifecycle
 BUILD                            /council     - multi-model judges
 /implement  - single task        /release     - tag + changelog
 /crank      - multi-issue epic
 /plan       - decompose work     KNOWLEDGE
 /rpi        - full lifecycle     /knowledge   - query learnings
-                                 /retro       - capture manually
-EXPLORE                          /retro       - extract from work
+                                 /retro       - quick-capture
+EXPLORE                          /post-mortem - full retro + knowledge
 /research   - deep dive          /trace       - decision provenance
 /brainstorm - explore ideas      /flywheel    - health monitoring
 /bug-hunt   - investigate

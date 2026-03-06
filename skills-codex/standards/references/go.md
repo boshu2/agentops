@@ -131,6 +131,93 @@ May eliminate the need for third-party routers for simple APIs.
 | `min(a, b)` / `max(a, b)` | 1.21+ | `if a > b` patterns or custom helpers |
 | `clear(m)` / `clear(s)` | 1.21+ | Manual map deletion loop / manual slice zeroing |
 
+## Testing
+
+### CI-Safe Test Pattern
+
+When testing functions that shell out to external CLIs (`bd`, `ao`, `gh`, etc.), **test the low-level function directly** instead of the wrapper that invokes the CLI. This ensures tests pass in CI where the CLI may not be installed.
+
+```go
+// BAD: calls processDiscoveryPhase() which requires bd CLI
+func TestGateDiscoveryVerdictC2Event(t *testing.T) {
+    processDiscoveryPhase(ctx, root, opts) // fails in CI — bd not available
+}
+
+// GOOD: test event shape directly via the underlying function
+func TestGateDiscoveryVerdictC2Event(t *testing.T) {
+    ev, err := appendRPIC2Event(root, rpiC2EventInput{
+        RunID: runID, Phase: 1, Type: "gate.discovery.verdict",
+        Message: "Pre-mortem verdict: PASS",
+        Details: map[string]any{"verdict": "PASS", "report": "report.md"},
+    })
+    require.NoError(t, err)
+    assert.Equal(t, "gate.discovery.verdict", ev.Type)
+}
+```
+
+**Rule:** If a function's only untestable part is the external CLI call, extract the testable logic (event emission, state mutation, file I/O) into a separate function and test that.
+
+### Table-Driven Tests
+
+Prefer table-driven tests for functions with multiple input/output cases:
+
+```go
+func TestClassifyServeArg(t *testing.T) {
+    tests := []struct {
+        name      string
+        flagRunID string
+        args      []string
+        wantGoal  string
+        wantRunID string
+    }{
+        {"empty", "", nil, "", ""},
+        {"flag run-id", "rpi-abc12345", nil, "", "rpi-abc12345"},
+        {"arg goal", "", []string{"fix the bug"}, "fix the bug", ""},
+    }
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            goal, runID := classifyServeArg(tt.flagRunID, tt.args)
+            assert.Equal(t, tt.wantGoal, goal)
+            assert.Equal(t, tt.wantRunID, runID)
+        })
+    }
+}
+```
+
+## HTTP Handler Security
+
+Go HTTP handlers in this codebase are localhost-only but should still follow defense-in-depth:
+
+| Pattern | Risk | Fix |
+|---------|------|-----|
+| `innerHTML = userInput` in embedded HTML | XSS | Use DOM construction (`createElement` + `textContent`) |
+| `r.URL.Query().Get("param")` used in file paths | Path traversal | Reject `..`, `/`, `\` before use |
+| `fmt.Fprintf(w, userInput)` in HTML handler | XSS | Use `html/template` or `text/template` with escaping |
+| `filepath.Join(root, userInput)` | Path traversal | Validate input against allowlist pattern (e.g., `regexp`) |
+| `Access-Control-Allow-Origin: *` | CORS bypass | Acceptable for localhost-only; restrict for public APIs |
+
+**Query parameter validation pattern:**
+
+```go
+param := strings.TrimSpace(r.URL.Query().Get("id"))
+if param != "" && (strings.Contains(param, "..") || strings.Contains(param, "/") || strings.Contains(param, "\\")) {
+    http.Error(w, "invalid parameter", http.StatusBadRequest)
+    return
+}
+```
+
+**DOM construction instead of innerHTML:**
+
+```javascript
+// BAD: innerHTML with user-controlled data
+el.innerHTML = '<span>' + userInput + '</span>';
+
+// GOOD: DOM construction
+const span = document.createElement('span');
+span.textContent = userInput;
+el.appendChild(span);
+```
+
 ## Future Features (Go 1.24+)
 
 This section tracks features by first-supported Go version and can be used to plan future target upgrades.

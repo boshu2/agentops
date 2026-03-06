@@ -1,17 +1,14 @@
 ---
 name: retro
-description: 'Quick-capture a learning. For full retrospectives, use /post-mortem. Trigger phrases: "quick learning", "capture lesson", "retro quick".'
-skill_api_version: 1
-metadata:
-  tier: knowledge
-  dependencies: []
+description: 'Quick-capture a learning. For full retrospectives, use $post-mortem. Trigger phrases: "quick learning", "capture lesson", "retro quick".'
 ---
+
 
 # Retro Skill
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-Quick-capture a learning to the knowledge flywheel. For comprehensive retrospectives with backlog processing, activation, and retirement, use `/post-mortem`.
+Quick-capture a learning to the knowledge flywheel. For comprehensive retrospectives with backlog processing, activation, and retirement, use `$post-mortem`.
 
 ## Flags
 
@@ -21,7 +18,7 @@ Quick-capture a learning to the knowledge flywheel. For comprehensive retrospect
 
 ## Quick Mode
 
-Given `/retro --quick "insight text"` or `/retro "insight text"`:
+Given `$retro --quick "insight text"` or `$retro "insight text"`:
 
 ### Quick Step 1: Generate Slug
 
@@ -49,7 +46,7 @@ date: YYYY-MM-DD
 
 ## Source
 
-Quick capture via `/retro --quick`
+Quick capture via `$retro --quick`
 ```
 
 This skips the pool pipeline — writes directly to learnings, not `.agents/knowledge/pending/`.
@@ -60,7 +57,7 @@ This skips the pool pipeline — writes directly to learnings, not `.agents/know
 Learned: <one-line summary>
 Saved to: .agents/learnings/YYYY-MM-DD-quick-<slug>.md
 
-For comprehensive knowledge extraction, use `/post-mortem`.
+For comprehensive knowledge extraction, use `$post-mortem`.
 ```
 
 **Done.** Return immediately after confirmation.
@@ -72,10 +69,10 @@ For comprehensive knowledge extraction, use `/post-mortem`.
 For comprehensive knowledge extraction with backlog processing and activation, use:
 
 ```
-/post-mortem <target>
+$post-mortem <target>
 ```
 
-The `/post-mortem` skill includes all retro functionality plus:
+The `$post-mortem` skill includes all retro functionality plus:
 - Council validation of completed work
 - Backlog deduplication and scoring
 - Auto-promotion to MEMORY.md
@@ -88,7 +85,7 @@ The `/post-mortem` skill includes all retro functionality plus:
 
 ### Quick Capture
 
-**User says:** `/retro --quick "macOS cp alias prompts on overwrite — use /bin/cp to bypass"`
+**User says:** `$retro --quick "macOS cp alias prompts on overwrite — use /bin/cp to bypass"`
 
 **What happens:**
 1. Agent generates slug: `macos-cp-alias-overwrite`
@@ -103,4 +100,12 @@ The `/post-mortem` skill includes all retro functionality plus:
 |---------|-------|----------|
 | Learning too generic | Surface-level capture | Be specific: "auth tokens expire after 1h" not "learned about auth" |
 | Duplicate learnings | Same insight captured twice | Check existing learnings with grep before writing |
-| Need full retrospective | Quick capture isn't enough | Use `/post-mortem` for comprehensive extraction + processing |
+| Need full retrospective | Quick capture isn't enough | Use `$post-mortem` for comprehensive extraction + processing |
+
+## Local Resources
+
+### scripts/
+
+- `scripts/validate.sh`
+
+

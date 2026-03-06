@@ -23,6 +23,7 @@
 
 # Shared backend contract references
 \bbackend-claude-teams\.md\b
+\bclaude-cli-verified-commands\.md\b
 \bclaude-code-latest-features\.md\b
 
 # Claude-native team primitives referenced by runtime-neutral orchestration docs

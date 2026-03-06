@@ -85,7 +85,20 @@ Parameters:
     - Any risks or concerns
 ```
 
-### Step 3.5: Write Failing Tests First (TDD-First Default)
+### Step 3.5: Grep for Existing Utilities
+
+Before implementing any new function or utility, grep the codebase for existing implementations:
+
+```bash
+# Search for the function name pattern you're about to create
+grep -rn "<function-name-pattern>" --include="*.go" --include="*.py" --include="*.ts" .
+```
+
+**Why:** In context-orchestration-leverage, a worker created a duplicate `estimateTokens` function that already existed in `context.go`. A 5-second grep would have prevented the duplication and the rework needed to consolidate it.
+
+If you find an existing implementation, reuse it. If it needs modification, modify it in place rather than creating a parallel version.
+
+### Step 3.6: Write Failing Tests First (TDD-First Default)
 
 Before implementing, write tests that define the expected behavior:
 
@@ -108,6 +121,8 @@ Before implementing, write tests that define the expected behavior:
 - No test framework detected in the project
 
 **Note:** Tests written here are MUTABLE — unlike GREEN mode's immutable tests, you may adjust these tests during implementation if you discover the initial test design was wrong. The goal is to think about behavior before code, not to be rigid.
+
+**CI-safe tests:** If the function under test shells out to an external CLI (`bd`, `ao`, `gh`), do NOT test the wrapper. Instead, test the underlying function that performs the testable work (event emission, state mutation, file I/O). See the Go standards (Testing section) for examples.
 
 ### Step 4: Implement the Change
 
@@ -155,6 +170,25 @@ fi
 **If build fails:** Fix compilation errors and re-run before proceeding. Do NOT skip to verification with a broken build.
 
 **If not a CLI repo:** This step is a no-op — proceed directly to Step 5.
+
+### Step 4.5: Security Verification
+
+Before proceeding to functional verification, check for common security issues in modified code:
+
+| Check | What to Look For | Action |
+|-------|------------------|--------|
+| Input validation | User/external input used without validation | Add validation at entry points |
+| Output escaping | Raw data in HTML/templates (innerHTML, document.write, dangerouslySetInnerHTML) | Use framework auto-escaping or explicit sanitization |
+| Path safety | Path traversal via `..` sequences; file paths from user input without sanitization | Reject `..`, absolute paths; use `filepath.Clean()` or equivalent; verify path stays within allowed directory |
+| Auth gates | Endpoints/handlers missing authentication or authorization checks | Add middleware or guard clauses |
+| Content-Type | HTTP responses without explicit Content-Type headers | Set Content-Type to prevent MIME-sniffing attacks |
+| CORS | Overly permissive CORS configuration (`*` origin, credentials: true) | Restrict to known origins; never combine wildcard with credentials |
+| CSRF tokens | State-changing endpoints (POST/PUT/DELETE) without anti-CSRF tokens | Add anti-CSRF token validation; do not rely solely on cookies for auth |
+| Rate limiting | Authentication, API, and upload endpoints without rate limits | Add rate-limit middleware; return 429 with Retry-After header |
+
+**Skip when:** The change does not involve HTTP handlers, user-facing input, file system operations, or template rendering. Pure internal refactors, test-only changes, and documentation edits skip this step.
+
+**If issues found:** Fix before proceeding to Step 5. Log fixes in the commit message.
 
 ### Step 5: Verify the Change
 

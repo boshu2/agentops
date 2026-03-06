@@ -133,3 +133,10 @@ defrag actions recommended.
 | Empty mine output | No recent activity | Widen `--since` window |
 | Oscillation sweep empty | No oscillating goals | Healthy state — no action needed |
 
+## Local Resources
+
+### scripts/
+
+- `scripts/validate.sh`
+
+

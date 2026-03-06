@@ -92,3 +92,10 @@ Output a summary:
 - If tests were not run (no test suite found), WARN the user before committing
 - If `git pull --rebase` fails, do NOT force push — ask the user
 
+## Local Resources
+
+### scripts/
+
+- `scripts/validate.sh`
+
+

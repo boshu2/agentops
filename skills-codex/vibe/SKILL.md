@@ -34,6 +34,21 @@ $vibe --debate recent                    # two-round adversarial review
 
 ## Execution Steps
 
+### Crank Checkpoint Detection
+
+Before scanning for changed files via git diff, check if a crank checkpoint exists:
+
+```bash
+if [ -f .agents/vibe-context/latest-crank-wave.json ]; then
+    echo "Crank checkpoint found — using files_changed from checkpoint"
+    FILES_CHANGED=$(jq -r '.files_changed[]' .agents/vibe-context/latest-crank-wave.json 2>/dev/null)
+    WAVE_COUNT=$(jq -r '.wave' .agents/vibe-context/latest-crank-wave.json 2>/dev/null)
+    echo "Wave $WAVE_COUNT checkpoint: $(echo "$FILES_CHANGED" | wc -l | tr -d ' ') files changed"
+fi
+```
+
+When a crank checkpoint is available, use its `files_changed` list instead of re-detecting via `git diff`. This ensures vibe validates exactly the files that crank modified.
+
 ### Step 1: Determine Target
 
 **If target provided:** Use it directly.
@@ -52,7 +67,7 @@ Do NOT spawn agents for empty file lists.
 
 ### Step 1.5: Fast Path (--quick mode)
 
-**If `--quick` flag is set**, skip Steps 2.5 and 2a–2g (prior findings check, constraint tests, metadata checks, OL validation, codex review, knowledge search, bug hunt, product context) and jump directly to Step 4 with inline council. Complexity analysis (Step 2) still runs — it's cheap and informative.
+**If `--quick` flag is set**, skip Steps 2a through 2e plus 2.5/2f/2g (prior findings check, constraint tests, metadata checks, OL validation, codex review, knowledge search, bug hunt, product context) and jump directly to Step 4 with inline council. Complexity analysis (Step 2) still runs — it's cheap and informative.
 
 **Why:** Steps 2.5 and 2a–2g add 30–90 seconds of pre-processing that feed multi-judge council packets. In --quick mode (single inline agent), these inputs aren't worth the cost — the inline reviewer reads files directly.
 
@@ -262,7 +277,7 @@ If ao returns prior code review patterns for this area, include them in the coun
 Read `references/deep-audit-protocol.md` for the full protocol. In summary:
 
 1. Chunk target files into batches of 3–5 (by line count — see protocol for rules)
-2. Dispatch up to 8 Explore agents in parallel, each with a mandatory 7-category checklist per file
+2. Dispatch up to 8 Explore agents in parallel, each with a mandatory 8-category checklist per file
 3. Merge all explorer findings into a sweep manifest at `.agents/council/sweep-manifest.md`
 4. Include sweep manifest in council packet (judges shift to adjudication mode — see Step 4)
 
@@ -389,7 +404,7 @@ Each judge reviews for:
 
 ### Step 7: Write Vibe Report
 
-**Write to:** `.agents/council/YYYYMMDDTHHMMSSZ-vibe-<target>.md` (use `date -u +%Y%m%dT%H%M%SZ`)
+**Write to:** `.agents/council/YYYY-MM-DD-vibe-<target>.md` (use `date +%Y-%m-%d`)
 
 ```markdown
 ---
@@ -479,54 +494,11 @@ After council verdict:
 
 ### Step 9.5: Feed Findings to Flywheel
 
-**If verdict is WARN or FAIL**, write top findings as a lightweight learning for future sessions:
-
-```bash
-if [[ "$VERDICT" == "WARN" || "$VERDICT" == "FAIL" ]]; then
-  mkdir -p .agents/learnings
-  LEARNING_FILE=".agents/learnings/$(date -u +%Y-%m-%d)-vibe-$(echo "$TARGET" | tr '/' '-' | head -c 40).md"
-  cat > "$LEARNING_FILE" <<EOF
----
-type: anti-pattern
-source: vibe
-date: $(date -Iseconds)
-confidence: high
----
-
-# Vibe findings: $TARGET
-
-$(for finding in "${ALL_FINDINGS[@]}"; do
-  echo "- **${finding.severity}:** ${finding.description} (${finding.location})"
-done)
-
-**Recommendation:** ${COUNCIL_RECOMMENDATION}
-EOF
-
-  # Index for flywheel if ao available
-  if command -v ao &>/dev/null; then
-    ao know forge markdown "$LEARNING_FILE" 2>/dev/null || true
-  fi
-fi
-```
-
-**Why:** Vibe catches anti-patterns repeatedly across epics but they evaporate unless `$post-mortem` runs. This captures findings at the point of discovery — lightweight (one file write, no `$retro` invocation) and immediately available to future sessions via inject.
-
-**Skip if:** PASS verdict (nothing to learn from clean code).
+**If verdict is WARN or FAIL**, write top findings as a learning file to `.agents/learnings/YYYY-MM-DD-vibe-<target>.md` with `type: anti-pattern`, `source: vibe`, `confidence: high` frontmatter. Include all findings and the council recommendation. Index via `ao know forge markdown` if available. Skip if PASS verdict.
 
 ### Step 10: Test Bead Cleanup
 
-After validation completes (regardless of verdict), clean up any stale test beads to prevent bead pollution:
-
-```bash
-# Test bead hygiene: close any beads created by test/validation runs
-if command -v bd &>/dev/null; then
-  test_beads=$(bd list --status=open 2>/dev/null | grep -iE "test bead|test quest|smoke test" | awk '{print $1}')
-  if [ -n "$test_beads" ]; then
-    echo "$test_beads" | xargs bd close 2>/dev/null || true
-    log "Cleaned up $(echo "$test_beads" | wc -l | tr -d ' ') test beads"
-  fi
-fi
-```
+After validation completes, clean up stale test beads (`bd list --status=open | grep -iE "test bead|test quest"`) via `bd close` to prevent bead pollution. Skip if `bd` unavailable.
 
 ---
 

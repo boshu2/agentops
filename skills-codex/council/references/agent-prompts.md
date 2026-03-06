@@ -40,7 +40,7 @@ For every finding, include these structured remediation fields:
 
 PRE-DISCOVERED FINDINGS (adjudication mode):
 If the context includes a "sweep_manifest" field, explorer agents have already swept
-every file with a 7-category checklist. Your role SHIFTS from discovery to adjudication:
+every file with an 8-category checklist. Your role SHIFTS from discovery to adjudication:
 
 1. CONFIRM or REJECT each sweep finding (with brief rationale per finding)
 2. RECLASSIFY severity where the explorer got it wrong
@@ -118,7 +118,7 @@ Instructions:
 
 PRE-DISCOVERED FINDINGS (adjudication mode):
 If the context includes a "sweep_manifest" field, explorer agents have already swept
-every file with a 7-category checklist. Your role SHIFTS from discovery to adjudication:
+every file with an 8-category checklist. Your role SHIFTS from discovery to adjudication:
 
 1. CONFIRM or REJECT each sweep finding (with brief rationale per finding)
 2. RECLASSIFY severity where the explorer got it wrong

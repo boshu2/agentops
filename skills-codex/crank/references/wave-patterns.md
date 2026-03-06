@@ -164,7 +164,23 @@ But do NOT read implementation details of the specific feature being specified.
    bd show <issue-id>  # extract ACCEPTANCE CRITERIA section
    ```
 
-3. **Spawn 2 inline judges** (Task agents, NOT skill invocations):
+3. **Validate worker result evidence (FAIL-CLOSED):**
+
+   For each issue closed in the wave, read `.agents/swarm/results/<issue-id>.json` and validate against:
+   `docs/contracts/swarm-worker-result.schema.json`.
+
+   Required evidence policy for IMPL/REFACTOR acceptance:
+   - `full_suite` evidence is mandatory for every completed implementation issue.
+   - `red_green` evidence is mandatory for issues that ran through TEST WAVE (`--test-first` path).
+   - Every check listed in `evidence.required_checks` must exist in `evidence.checks` and have `verdict: PASS`.
+
+   Any one of the following sets the wave verdict to **FAIL** immediately:
+   - missing result file
+   - schema validation failure
+   - missing required evidence
+   - required evidence check with `FAIL` verdict
+
+4. **Spawn 2 inline judges** (Task agents, NOT skill invocations):
 
    ```
    # Judge 1: Spec compliance
@@ -201,18 +217,19 @@ But do NOT read implementation details of the specific feature being specified.
 
    **Dispatch both judges in parallel** (single message, 2 Task tool calls).
 
-4. **Aggregate verdicts:**
-   - Both PASS → **PASS**
-   - Any FAIL → **FAIL**
+5. **Aggregate verdicts:**
+   - If Step 3 fails evidence validation → **FAIL**
+   - Else, both judges PASS → **PASS**
+   - Else, any judge FAIL → **FAIL**
    - Otherwise → **WARN**
 
-5. **Gate on verdict:**
+6. **Gate on verdict:**
 
    | Verdict | Action |
    |---------|--------|
    | **PASS** | Record verdict in epic notes. Advance to next wave. |
-   | **WARN** | Create fix beads as children of the epic (`bd create`). Execute fixes inline (small) or as wave N.5 via swarm. Re-run acceptance check. If PASS on re-check, advance. If still WARN after 2 attempts, treat as FAIL. |
-   | **FAIL** | Record verdict in epic notes. Output `<promise>BLOCKED</promise>` and exit. Human review required. |
+   | **WARN** | Create fix beads as children of the epic (`bd create`). Execute fixes inline (small) or as wave N.5 via swarm. Re-run acceptance check. If PASS on re-check, advance. If still WARN after 2 attempts, treat as FAIL. WARN is only for non-critical review gaps after evidence is complete. |
+   | **FAIL** | Record verdict in epic notes. Output `<promise>BLOCKED</promise>` and exit. Human review required. Includes missing mandatory evidence. |
 
    ```bash
    # Record verdict in epic notes

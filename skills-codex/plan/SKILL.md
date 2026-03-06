@@ -44,6 +44,25 @@ fi
 ```
 If ao returns relevant learnings or patterns, incorporate them into the plan. Skip silently if ao is unavailable or returns no results.
 
+### Step 2.2: Read and Validate Research Content
+
+If research files exist, read the most recent one and verify it contains substantive findings before proceeding:
+
+```bash
+LATEST_RESEARCH=$(ls -t .agents/research/*.md 2>/dev/null | head -1)
+if [ -n "$LATEST_RESEARCH" ]; then
+    # Verify research has substantive content (not just frontmatter)
+    if grep -qE '^## (Key Findings|Architecture|Executive Summary|Recommendations|Part [0-9])' "$LATEST_RESEARCH"; then
+        echo "Research validated: $LATEST_RESEARCH"
+    else
+        echo "WARNING: Research file exists but lacks standard sections (Key Findings, Architecture, Executive Summary, or Recommendations)."
+        echo "Consider running $research first for a thorough exploration."
+    fi
+fi
+```
+
+**Read the validated research file** with the Read tool before proceeding to Step 3. Do not plan based solely on file existence — understanding the research content is essential for accurate decomposition.
+
 ### Step 3: Explore the Codebase (if needed)
 
 **USE THE TASK TOOL** to dispatch an Explore agent. The explore prompt MUST request symbol-level detail:
@@ -90,6 +109,8 @@ Run grep/wc/ls commands to count the current state of what you're changing:
 | "update stale docs" | "Rewrite 4 specs (verified: `ls docs/specs/*.md \| wc -l` = 4)" |
 | "add missing sections" | "Add Examples to 27 skills (verified: `grep -L '## Examples' skills/*/SKILL.md \| wc -l` = 27)" |
 
+- **Test fixtures affected:** count test fixtures upstream of any filter/gate/hook being added or modified with `grep -rn 'func Test' <test-dir>/ | wc -l`. Changing a gate without updating its test fixtures causes false-green CI.
+
 Ground truth with numbers prevents scope creep and makes completion verifiable. In ol-571, the audit found 5,752 LOC to remove — without it, the plan would have been vague. In ag-dnu, wrong counts (11 vs 14, 0 vs 7) caused a pre-mortem FAIL that a simple grep audit would have prevented.
 
 ### Step 3.5: Generate Implementation Detail (Mandatory)
@@ -124,7 +145,7 @@ For each logical change group, provide symbol-level detail:
    - "Reuse `readRunHeartbeat()` at `rpi_phased.go:1963`"
    - "Call existing `parsePhasedState()` at `rpi_phased.go:1924`"
 
-3. **Inline code blocks** — for non-obvious constructs (struct definitions, CLI flags, config snippets):
+3. **Inline code blocks** — for non-obvious constructs (struct definitions, CLI flags, config snippets). Verify all inline snippets compile with `go build ./...` before including them in issue descriptions — workers copy them verbatim:
    ```go
    type RPIConfig struct {
        WorktreeMode string `yaml:"worktree_mode" json:"worktree_mode"`
@@ -167,6 +188,22 @@ Add a `## Verification` section with runnable bash sequences that reproduce the 
 
 **Why this matters:** The golden plan pattern (file tables + symbol-level specs + verification procedures) enabled single-pass implementation of an 8-file, 5-area change with zero ambiguity. Category-level specs ("modify classifyRunStatus") force implementers to rediscover symbols, causing divergence and rework.
 
+#### Data Transformation Mapping Tables (Mandatory for Filtering)
+
+When a plan declares any struct-level filtering, exclusion, or allowlist logic:
+- Create an explicit mapping table showing **source field → output transformation**
+- Format: source name → fields affected → transformation (zeroed, renamed, computed)
+
+Example from context orchestration (na-0v2):
+
+| Section Name | Fields Zeroed |
+|---|---|
+| `HISTORY` | `Sessions` |
+| `INTEL` | `Learnings`, `Patterns` |
+| `TASK` | `BeadID`, `Predecessor` |
+
+**Why:** Without explicit mapping tables, workers misinterpret data transformations. In na-0v2, section→field mapping ambiguity was caught only in pre-mortem. An explicit table prevents the concern entirely.
+
 ### Step 4: Decompose into Issues
 
 Analyze the goal and break it into discrete, implementable issues. For each issue define:
@@ -192,6 +229,15 @@ Without a design brief, workers invent design decisions. In ol-571, a spec rewri
   - Example: "Rewrite 4 specs" → 4 sub-issues (4.1, 4.2, 4.3, 4.4)
   - Enables N parallel workers instead of 1 serial worker
 - **Shared files between issues** → serialize or assign to same worker
+
+#### Operationalization Heuristics
+
+Each issue must be immediately executable by a swarm worker without further research:
+
+- **File ownership (`metadata.files`):** List every file the issue touches. Workers use this for conflict detection.
+- **Validation commands (`metadata.validation`):** Include runnable checks (e.g., `go test ./...`, `bash -n script.sh`). Workers run these before reporting done.
+- **Homogeneous wave grouping:** Group issues by work type (all Go, all docs, all shell) within the same wave. Mixed-type waves cause toolchain context-switching and increase conflict risk.
+- **Same-file serialization:** If two issues touch the same file, flag them for serialization (different waves) or merge into one issue. Never assign same-file issues to parallel workers.
 
 #### Conformance Checks
 
@@ -219,6 +265,44 @@ Group issues by dependencies for parallel execution:
 - **Wave 2**: Issues depending only on Wave 1
 - **Wave 3**: Issues depending on Wave 2
 - Continue until all issues assigned
+
+#### File-Level Dependency Matrix (Mandatory)
+
+Before assigning issues to waves, build a file-conflict matrix. For EACH issue, list which files it modifies. If any file appears in 2+ same-wave issues, either:
+- **Serialize** them (move one to a later wave), or
+- **Merge** them into a single issue assigned to one worker.
+
+```markdown
+## File-Conflict Matrix
+
+| File | Issues |
+|------|--------|
+| `src/auth.go` | Issue 1, Issue 3 | ← CONFLICT: serialize or merge
+| `src/config.go` | Issue 2 |
+| `src/auth_test.go` | Issue 1 |
+```
+
+**Why:** Issue-level dependency graphs miss shared-file conflicts. In context-orchestration-leverage, two tracks both modified `rpi_phased_handoff.go` and required an unplanned Wave 2a/2b split. A file-conflict matrix would have caught this during planning.
+
+#### Cross-Wave Shared File Registry (Mandatory)
+
+After computing waves, build a **cross-wave file registry** listing every file that appears in issues across different waves. These files are collision risks because later-wave worktrees are created from a base SHA that may not include earlier-wave changes.
+
+```markdown
+## Cross-Wave Shared Files
+
+| File | Wave 1 Issues | Wave 2+ Issues | Mitigation |
+|------|---------------|----------------|------------|
+| `src/auth_test.go` | Issue 1 | Issue 5 | Wave 2 worktree must branch from post-Wave-1 SHA |
+| `src/config.go` | Issue 2 | Issue 6 | Serial: Issue 6 blocked by Issue 2 |
+```
+
+**If any file appears in multiple waves:**
+1. Ensure the later-wave issue explicitly declares a dependency on the earlier-wave issue that touches the same file (so `bd dep add` / `addBlockedBy` is set).
+2. Flag the file in the plan's `## Cross-Wave Shared Files` section so `$crank` can enforce worktree base refresh between waves.
+3. For test files shared across waves, prefer splitting test additions into the same wave as the code they test — avoid a separate "test coverage" issue that touches files already modified in an earlier wave.
+
+**Why:** In na-vs9, Wave 2 agents started from pre-Wave-1 SHA. A Wave 2 test coverage issue overwrote Wave 1's `.md→.json` fix in `rpi_phased_test.go` because the worktree didn't include Wave 1's commit. The cross-wave registry makes these collisions visible during planning.
 
 #### Validate Dependency Necessity
 
@@ -339,6 +423,12 @@ In `path/to/file.go`:
 **Wave 2** (after Wave 1): Issue 2, Issue 4
 **Wave 3** (after Wave 2): Issue 5
 
+## Post-Merge Cleanup
+
+After bulk-merging wave results, audit for scaffold-era names:
+- Rename placeholder function/variable names (e.g., `handleThing`, `processItem`) to domain-specific names
+- Search with `grep -rn 'TODO\|FIXME\|HACK\|XXX' <modified-files>` for deferred cleanup markers
+
 ## Next Steps
 - Run `$pre-mortem` to validate plan
 - Run `$crank` for autonomous execution
@@ -414,6 +504,30 @@ bd create --title "<task>" --body "Description...
 **`bd ready` returns the current wave** - all unblocked issues that can run in parallel.
 
 Without bd issues, the ratchet validator cannot track gate progress. This is required for `$crank` autonomous execution and `$post-mortem` validation.
+
+### Step 7b: Verify Validation Blocks (Post-Creation Check)
+
+After creating all beads issues, verify that every issue body contains a fenced validation block. Missing validation blocks break the plan-to-crank pipeline — `$crank` cannot extract conformance checks from issues that lack them.
+
+```bash
+if command -v bd &>/dev/null && [[ -n "$EPIC_ID" ]]; then
+    MISSING_VALIDATION=()
+    for ISSUE_ID in $ALL_CREATED_ISSUES; do
+        if ! bd show "$ISSUE_ID" 2>/dev/null | grep -q '```validation'; then
+            MISSING_VALIDATION+=("$ISSUE_ID")
+        fi
+    done
+    if [[ ${#MISSING_VALIDATION[@]} -gt 0 ]]; then
+        echo "WARNING: ${#MISSING_VALIDATION[@]} issue(s) missing validation blocks: ${MISSING_VALIDATION[*]}"
+        echo "  $crank will fall back to default files_exist checks for these issues."
+        echo "  Consider adding ```validation``` blocks with conformance checks."
+    else
+        echo "All ${#ALL_CREATED_ISSUES[@]} issues have validation blocks."
+    fi
+fi
+```
+
+This is a warning gate, not a blocker — plans can proceed without validation blocks, but crank execution will use weaker fallback checks.
 
 ### Step 8: Request Human Approval (Gate 2)
 

@@ -8,25 +8,62 @@ CONVERTED_DIR="${1:?Usage: generate-allowlist-candidates.sh <converted-skills-di
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST="${SCRIPT_DIR}/codex-residual-allowlist.txt"
 
-# Load existing allowlist patterns
-mapfile -t patterns < <(grep -v '^#' "$ALLOWLIST" | grep -v '^$')
+# Find unallowlisted markers using the same matching rules as
+# validate-codex-runtime-sections.sh so warnings align with the blocking gate.
+mapfile -t candidates < <(
+  find "$CONVERTED_DIR" -name "SKILL.md" -type f | sort | xargs awk -v allowlist_file="$ALLOWLIST" '
+function normalize_word_boundaries(pattern,    n, i, out, parts) {
+  n = split(pattern, parts, /\\b/)
+  if (n == 1) {
+    return pattern
+  }
 
-# Find unallowlisted markers
-candidates=()
-while IFS= read -r file; do
-  while IFS= read -r line; do
-    allowed=false
-    for pat in "${patterns[@]}"; do
-      if echo "$line" | grep -qE "$pat" 2>/dev/null; then
-        allowed=true; break
-      fi
-    done
-    if ! $allowed; then
-      skill_name="$(echo "$file" | sed 's|.*/\([^/]*\)/SKILL.md|\1|')"
-      candidates+=("# $skill_name: $line")
-    fi
-  done < <(grep -inE '\bclaude\b' "$file" 2>/dev/null || true)
-done < <(find "$CONVERTED_DIR" -name "SKILL.md" -type f)
+  out = ""
+  for (i = 1; i <= n; i++) {
+    out = out parts[i]
+    if (i < n) {
+      if (i % 2 == 1) {
+        out = out "(^|[^[:alnum:]_])"
+      } else {
+        out = out "([^[:alnum:]_]|$)"
+      }
+    }
+  }
+
+  return out
+}
+
+function is_allowlisted(line,    i) {
+  for (i = 1; i <= allowlist_count; i++) {
+    if (line ~ allowlist_patterns[i]) {
+      return 1
+    }
+  }
+  return 0
+}
+
+BEGIN {
+  while ((getline raw < allowlist_file) > 0) {
+    if (raw ~ /^[[:space:]]*#/ || raw ~ /^[[:space:]]*$/) {
+      continue
+    }
+    allowlist_count++
+    allowlist_patterns[allowlist_count] = normalize_word_boundaries(raw)
+  }
+  close(allowlist_file)
+}
+
+{
+  if ($0 ~ /(^|[^[:alnum:]_])([Cc]laude|[Aa]nthropic|team-create|send-message)([^[:alnum:]_]|$)/) {
+    if (!is_allowlisted($0)) {
+      split(FILENAME, path_parts, "/")
+      skill_name = path_parts[length(path_parts) - 1]
+      printf "# %s: %d:%s\n", skill_name, FNR, $0
+    }
+  }
+}
+'
+)
 
 if [[ ${#candidates[@]} -eq 0 ]]; then
   echo "No unallowlisted residual markers found."

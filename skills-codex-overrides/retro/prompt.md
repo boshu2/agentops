@@ -1,6 +1,6 @@
 # retro
 
-Quick-capture a learning in a Codex-first format. For full retrospectives, use `/post-mortem`.
+Quick-capture a learning in a Codex-first format. For full retrospectives, use `$post-mortem`.
 
 ## Codex Execution Profile
 
@@ -11,5 +11,5 @@ Quick-capture a learning in a Codex-first format. For full retrospectives, use `
 ## Guardrails
 
 1. Avoid assumptions about `.claude/*` command layouts.
-2. For comprehensive knowledge extraction (backlog processing, activation, retirement), redirect to `/post-mortem`.
+2. For comprehensive knowledge extraction (backlog processing, activation, retirement), redirect to `$post-mortem`.
 3. Quick-capture should complete in under 10 seconds — slug, write, confirm.

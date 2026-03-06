@@ -174,8 +174,17 @@ skill_pattern="$(
 )"
 [[ -n "$skill_pattern" ]] || fail "Could not build skill-name regex for slash-command check"
 
-info "Checking generated skills for known slash-command references"
-if rg --pcre2 -n "(^|[^A-Za-z0-9_/])/(${skill_pattern})(?![A-Za-z0-9-])" "$REPO_ROOT/skills-codex" >/dev/null 2>&1; then
+info "Checking Codex entrypoints for known slash-command references"
+entrypoint_files=()
+while IFS= read -r -d '' file; do
+  entrypoint_files+=("$file")
+done < <(find "$REPO_ROOT/skills-codex" -type f \( -name "SKILL.md" -o -name "prompt.md" \) -print0)
+
+if [[ "${#entrypoint_files[@]}" -eq 0 ]]; then
+  fail "No Codex entrypoint files found for slash-command check"
+fi
+
+if rg --pcre2 -n "(^|[^A-Za-z0-9_/])/(${skill_pattern})(?![A-Za-z0-9-])" "${entrypoint_files[@]}" >/dev/null 2>&1; then
   fail "Found known /skill command references in skills-codex output"
 fi
 

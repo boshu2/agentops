@@ -24,7 +24,22 @@ $evolve --quality            # Quality-first mode: prioritize post-mortem findin
 $evolve --quality --max-cycles=10  # Quality mode with cycle cap
 $evolve --athena             # Mine → Defrag warmup before first cycle
 $evolve --athena --max-cycles=5  # Warm knowledge base then run 5 cycles
+$evolve --test-first         # Default strict-quality $rpi execution path
+$evolve --no-test-first      # Explicit opt-out from test-first mode
 ```
+
+## Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--max-cycles=N` | unlimited | Stop after `N` completed cycles |
+| `--dry-run` | off | Show planned cycle actions without executing |
+| `--beads-only` | off | Skip goal measurement and run backlog-only selection |
+| `--skip-baseline` | off | Skip first-run baseline snapshot |
+| `--quality` | off | Prioritize harvested post-mortem findings |
+| `--athena` | off | Run `ao mine` + `ao defrag` warmup before cycle 1 |
+| `--test-first` | on | Pass strict-quality defaults through to `$rpi` |
+| `--no-test-first` | off | Explicitly disable test-first passthrough to `$rpi` |
 
 ## Execution Steps
 
@@ -88,6 +103,16 @@ fi
 ```
 
 Parse flags: `--max-cycles=N` (default unlimited), `--dry-run`, `--beads-only`, `--skip-baseline`, `--quality`, `--athena`.
+
+Track cycle-level execution state:
+
+```text
+evolve_state = {
+  cycle: <current cycle number>,
+  mode: <standard|quality|beads-only>,
+  test_first: <true by default; false only when --no-test-first>
+}
+```
 
 ### Step 0.2: Athena Warmup (--athena only)
 

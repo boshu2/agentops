@@ -18,8 +18,8 @@
 3. Apply gate logic (only when `--loop` is set). If verdict is PASS or WARN, stop (TEMPER path). If verdict is FAIL, iterate (spawn another /rpi cycle), up to `--max-cycles`.
 4. Iterate behavior (spawn). Read the post-mortem report and extract 3 concrete fixes, then re-invoke /rpi from Phase 1 with a tightened goal that includes the fixes:
    ```
-   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>" --test-first   # if --test-first set
-   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>"                 # otherwise
+   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>"                 # default strict-quality path (test-first on)
+   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>" --no-test-first # explicit opt-out path
    ```
    If still FAIL after `--max-cycles` total cycles, stop and require manual intervention (file follow-up bd issues).
 

@@ -6,7 +6,7 @@ Two-phase architecture: cheap per-file explorer sweep (discovery) followed by co
 
 ```
 Files -> chunk into batches of 3-5
-  -> [up to 8 Explore agents in parallel, 7-category checklist per file] -> raw findings
+  -> [up to 8 Explore agents in parallel, 8-category checklist per file] -> raw findings
   -> sweep manifest (ALL findings merged)
   -> [council judges] adjudicate + add cross-cutting findings -> ALL findings reported
 ```
@@ -40,14 +40,17 @@ ship-readiness. Find problems. Be thorough. Be specific.
 
 {FILE_LIST}
 
-## Mandatory 7-Category Checklist
+## Mandatory 8-Category Checklist
 
-For EACH file, you MUST check all 7 categories. Do not skip any category for any file.
+For EACH file, you MUST check all 8 categories. Do not skip any category for any file.
 
 1. **Resource Leaks** — Unclosed files/connections/handles, missing defer/finally/cleanup,
    goroutine leaks, listener leaks, temp file accumulation
 2. **String Safety** — Unsanitized user input, format string injection, path traversal,
-   SQL/command injection, XSS vectors, unsafe interpolation
+   SQL/command injection, XSS vectors, unsafe interpolation.
+   **Boundary with Cat 8:** String Safety covers injection at the data layer (SQL, command, format string).
+   HTTP-layer concerns (XSS in HTML output, CORS headers, CSRF tokens) belong to Cat 8.
+   Path traversal appears in both: Cat 2 when sanitizing input strings, Cat 8 when serving HTTP file requests.
 3. **Dead Code** — Unreachable branches, unused imports/variables/functions, commented-out
    code left behind, feature flags that are always on/off
 4. **Hardcoded Values** — Magic numbers, hardcoded paths/URLs/credentials, environment-
@@ -58,12 +61,17 @@ For EACH file, you MUST check all 7 categories. Do not skip any category for any
    deadlock potential, shared state without synchronization
 7. **Error Handling** — Swallowed errors, generic catch-all, missing error propagation,
    panic/crash on recoverable errors, unclear error messages
+8. **HTTP/Web Security** — XSS vectors (innerHTML, document.write, dangerouslySetInnerHTML),
+   path traversal (../ sequences, directory escape), CORS misconfiguration, CSRF tokens missing,
+   HTTP response splitting, Content-Type mismatches, missing rate limiting, open redirects,
+   SSRF (outbound URL/IP validation), missing security headers (Strict-Transport-Security,
+   X-Frame-Options, Content-Security-Policy), credential/token exposure in logs
 
 ## Per-File Coverage Certification
 
 For each file, you MUST either:
 - Report at least 1 finding, OR
-- Explicitly certify all 7 categories clean with a brief reason per category
+- Explicitly certify all 8 categories clean with a brief reason per category
 
 Do NOT skip a file. Do NOT say "looks fine" without checking each category.
 
@@ -84,6 +92,7 @@ File: {filename}
 [x] Edge Cases — found: nil map access at line 78
 [ ] Concurrency — CLEAN: single-goroutine function, no shared state
 [ ] Error Handling — CLEAN: all errors returned with context wrapping
+[ ] HTTP/Web Security — CLEAN: no HTTP handlers, outbound requests, or log statements with credentials in this file
 ```
 
 ### Findings Table
@@ -156,12 +165,13 @@ After all explorers complete, merge their findings into a single sweep manifest:
 | Edge Cases | 4 | 3 |
 | Concurrency | 0 | 0 |
 | Error Handling | 3 | 2 |
+| HTTP/Web Security | 1 | 1 |
 
 ## Clean Certifications
 
 | File | Categories Certified Clean |
 |------|---------------------------|
-| utils.go | All 7 |
+| utils.go | All 8 |
 | config.go | Resource Leaks, String Safety, Dead Code, Edge Cases, Concurrency |
 ```
 

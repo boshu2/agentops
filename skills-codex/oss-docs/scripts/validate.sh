@@ -41,7 +41,7 @@ echo ""
 
 
 # Verify dependent skill exists
-check_exists "Standards skill exists" "$HOME/.claude/skills/standards/SKILL.md"
+check_exists "Standards skill exists" "$SKILL_DIR/../standards/SKILL.md"
 
 # Verify oss-docs workflow patterns in SKILL.md
 check_pattern "SKILL.md has README documentation" "$SKILL_DIR/SKILL.md" "README"

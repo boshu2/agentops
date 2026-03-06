@@ -50,6 +50,20 @@ Match the first row that applies. Output only that message — nothing else.
 
 ---
 
+## Examples
+
+### First-Time Setup
+
+**User says:** `$quickstart`
+
+**What happens:** Agent detects tools, shows one-line status, gives the single next action to run.
+
+### Already Set Up
+
+**User says:** `$quickstart`
+
+**What happens:** Agent detects full stack is ready and suggests `$rpi "your goal"` or `bd ready`.
+
 ## Troubleshooting
 
 | Problem | Solution |

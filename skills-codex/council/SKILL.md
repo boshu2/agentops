@@ -249,7 +249,8 @@ If `.agents/ao/environment.json` exists, include it in the context packet so jud
       "prior_decisions": [
         "Using JWT, not sessions",
         "Refresh tokens required"
-      ]
+      ],
+      "empirical_results": "(optional) test output, CLI flag verification, or Wave 0 findings — include when evaluating feasibility"
     },
     "perspective": "skeptic (only when --preset or --perspectives used)",
     "perspective_description": "What could go wrong? (only when --preset or --perspectives used)",
@@ -275,6 +276,12 @@ If `.agents/ao/environment.json` exists, include it in the context packet so jud
   }
 }
 ```
+
+### Empirical Evidence Rule
+
+When evaluating **implementation feasibility** (e.g., "will this CLI flag work?", "can these tools coexist?"), always include empirical test results in `context.empirical_results`. Judges reasoning from assumptions produce false verdicts — a Codex judge once gave a false FAIL on `-s read-only` because Wave 0 test output was not in the packet. The rule: **run the experiment first, then let judges evaluate the evidence.**
+
+Wrapper skills (`$vibe`, `$pre-mortem`) should include relevant test output when the council target involves tooling behavior, flag combinations, or runtime compatibility.
 
 ---
 
@@ -370,7 +377,7 @@ All reports write to `.agents/council/YYYY-MM-DD-<type>-<target>.md`.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COUNCIL_TIMEOUT` | 120 | Agent timeout in seconds |
-| `COUNCIL_CODEX_MODEL` | (user's default) | Override Codex model for --mixed. Omit `-m` flag to use the user's configured default. |
+| `COUNCIL_CODEX_MODEL` | gpt-5.3-codex | Override Codex model for --mixed. Set explicitly to pin Codex judge behavior; omit to use user's configured default. |
 | `COUNCIL_CLAUDE_MODEL` | sonnet | Claude model for judges (sonnet default — use opus for high-stakes via `--profile=thorough`) |
 | `COUNCIL_EXPLORER_MODEL` | sonnet | Model for explorer sub-agents |
 | `COUNCIL_EXPLORER_TIMEOUT` | 60 | Explorer timeout in seconds |
@@ -408,7 +415,7 @@ $council validate recent                                        # 2 judges, rece
 $council --deep --preset=architecture research the auth system  # 3 judges with architecture personas
 $council --mixed validate this plan                             # 3 Claude + 3 Codex
 $council --deep --explorers=3 research upgrade patterns         # 12 agents (3 judges x 4)
-$council --preset=security-audit --deep validate the API        # attacker, defender, compliance
+$council --preset=security-audit --deep validate the API        # attacker, defender, compliance, web-security
 $council --preset=doc-review validate README.md                  # 4 doc judges with named perspectives
 $council brainstorm caching strategies for the API              # 2 judges explore options
 $council --technique=scamper brainstorm API improvements               # structured SCAMPER brainstorm

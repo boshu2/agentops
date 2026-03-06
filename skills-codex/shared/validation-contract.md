@@ -41,6 +41,15 @@ TaskCreate(
 )
 ```
 
+### Required Validation by Issue Type
+
+| Issue Type | Requirement |
+|------------|-------------|
+| `feature`, `bug`, `task` | `metadata.validation.tests` is required, plus at least one structural check: `files_exist` and/or `content_check` |
+| `docs`, `chore`, `ci` | Explicit exemption from required `tests`; use structural and/or command/lint checks as applicable |
+
+If a `feature`/`bug`/`task` TaskCreate is missing required test or structural checks, do not dispatch the task.
+
 ### Validation Types
 
 | Type | Schema | Description |
@@ -212,7 +221,7 @@ Epic-level constraints applied to EVERY task. Derived from "Always" boundaries i
 {
   "cross_cutting": [
     {"name": "auth-required", "type": "content_check", "file": "src/middleware.go", "pattern": "AuthMiddleware"},
-    {"name": "tests-pass", "type": "tests", "command": "go test ./..."},
+    {"name": "tests-pass", "type": "tests", "tests": "go test ./..."},
     {"name": "builds-clean", "type": "command", "command": "go build ./..."}
   ]
 }
@@ -302,7 +311,7 @@ After MAX_RETRIES failures:
 
 ## Default Validation
 
-When no explicit validation is specified, apply minimal checks:
+When no explicit validation is specified (docs/chore/ci exemption path or legacy tasks), apply minimal checks:
 
 ```python
 def default_validation(task_id, worker_artifacts):
@@ -352,22 +361,38 @@ for issue in ready_issues:
 
 ```python
 def build_validation_from_issue(issue):
+    issue_type = (issue.type or "").lower()
     validation = {}
-
-    # Check for test requirements in issue
-    if "test" in issue.labels or "tests/" in issue.description:
-        validation["tests"] = detect_test_command(issue)
-
-    # Check for file creation requirements
     files_mentioned = extract_file_paths(issue.description)
+    patterns = extract_code_patterns(issue.description)
+
+    if issue_type in {"feature", "bug", "task"}:
+        test_cmd = detect_test_command(issue)
+        if not test_cmd:
+            raise ValueError("feature|bug|task require metadata.validation.tests")
+        validation["tests"] = test_cmd
+
+        if files_mentioned:
+            validation["files_exist"] = files_mentioned
+        if patterns:
+            validation["content_check"] = patterns
+        if "files_exist" not in validation and "content_check" not in validation:
+            raise ValueError("feature|bug|task require files_exist or content_check")
+        return validation
+
+    if issue_type in {"docs", "chore", "ci"}:
+        # Explicit test exemption path for non-implementation work.
+        if files_mentioned:
+            validation["files_exist"] = files_mentioned
+        if patterns:
+            validation["content_check"] = patterns
+        return validation
+
+    # Unknown type: best-effort inference with structural checks only.
     if files_mentioned:
         validation["files_exist"] = files_mentioned
-
-    # Check for function/method requirements
-    patterns = extract_code_patterns(issue.description)
     if patterns:
         validation["content_check"] = patterns
-
     return validation
 ```
 

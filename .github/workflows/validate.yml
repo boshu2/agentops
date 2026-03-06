@@ -72,6 +72,11 @@ jobs:
           chmod +x scripts/validate-codex-runtime-sections.sh
           ./scripts/validate-codex-runtime-sections.sh
 
+      - name: Validate Codex skill parity
+        run: |
+          chmod +x scripts/validate-codex-skill-parity.sh
+          ./scripts/validate-codex-skill-parity.sh
+
   embedded-sync:
     runs-on: ubuntu-latest
     steps:

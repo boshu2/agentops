@@ -57,6 +57,34 @@ epic_worktrees = {
 }
 ```
 
+Also record worker ownership for deterministic routing and conflict arbitration:
+```
+owner_worktrees = {
+  "worker-<task-id>": "/tmp/swarm-<epic-id>",
+  ...
+}
+```
+
+### Runtime `worktreePath` Contract (Ownership-Aware Isolation)
+
+When using declarative isolation (`isolation: worktree`), the lead must verify each spawned worker reports a `worktreePath` and that it matches `owner_worktrees`.
+
+1. At spawn time, record expected owner -> path mapping (`owner_worktrees`).
+2. On worker completion, read runtime Task result and extract `worktreePath`.
+3. Validate:
+   - `worktreePath` exists on disk
+   - `worktreePath` equals the expected path for that worker
+   - File ownership still maps to a single worker/worktree for that wave
+4. If `worktreePath` is missing or mismatched, treat isolation as failed:
+   - abort overlapping-file parallel merge flow
+   - requeue conflicting tasks into a serialized fix-up order
+   - proceed only after ownership/worktree mapping is unambiguous
+
+Example verification:
+```bash
+test -n "$worktreePath" && test -d "$worktreePath" && git -C "$worktreePath" rev-parse --is-inside-work-tree
+```
+
 ### Inject into Worker Prompts
 
 Each worker prompt must include:
@@ -133,10 +161,10 @@ Instructions:
 RESULT FILE FORMAT (MANDATORY — write this BEFORE sending any signal):
 
 On success:
-{"type":"completion","issue_id":"<task-id>","status":"done","detail":"<one-line summary max 100 chars>","artifacts":["path/to/file1","path/to/file2"]}
+{"type":"completion","issue_id":"<task-id>","status":"done","detail":"<one-line summary max 100 chars>","artifacts":["path/to/file1","path/to/file2"],"worktreePath":"<absolute-worktree-path-or-empty>"}
 
 If blocked:
-{"type":"blocked","issue_id":"<task-id>","status":"blocked","detail":"<reason max 200 chars>"}
+{"type":"blocked","issue_id":"<task-id>","status":"blocked","detail":"<reason max 200 chars>","worktreePath":"<absolute-worktree-path-or-empty>"}
 
 CONTEXT BUDGET RULE:
 Your message to the lead must be under 100 tokens.
@@ -318,7 +346,11 @@ When workers complete AND pass validation:
 3. Run any additional tests/validation
 4. Team lead commits all changes for the wave (sole committer)
 
-## Step 5a: Cleanup
+## Step 5a: Post-Merge Naming Cleanup
+
+After merging worker output, scan for scaffolding-era naming conventions introduced by parallel workers (e.g., `TestCov_` prefixes, `cov*_test.go` file names). Rename to follow project conventions. Run `go vet ./...` (or equivalent linter) to catch naming inconsistencies before committing.
+
+## Step 5b: Cleanup
 
 After wave completes:
 

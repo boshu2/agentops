@@ -1,7 +1,7 @@
 # Common Standards Catalog - Cross-Language Patterns
 
 **Version:** 1.0.0
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-03-03
 **Purpose:** Universal coding standards shared across all languages. Language-specific files reference this document for philosophical and cross-cutting patterns, keeping language-specific implementation details in their own catalogs.
 
 ---
@@ -240,6 +240,76 @@ Validate at system boundaries (user input, external APIs, file reads). Trust int
 | Avoid shell execution from application code | Use library APIs instead of shelling out |
 | If shell execution is unavoidable | Use array-based exec with no interpolation |
 | Shell scripts | Avoid `eval` for user-provided data; use functions for dispatch |
+
+### OWASP Top 10 Mapping
+
+| # | OWASP Category | Prevention Pattern | Detection |
+|---|----------------|-------------------|-----------|
+| A01 | Broken Access Control | Deny by default; enforce server-side auth on every endpoint | Prescan P3: missing auth middleware |
+| A02 | Cryptographic Failures | TLS 1.2+, strong hashing (bcrypt/argon2), no plaintext secrets | Prescan P2: hardcoded secrets |
+| A03 | Injection | Parameterized queries, array-based exec, template auto-escaping | Prescan P1: string interpolation in queries/commands |
+| A04 | Insecure Design | Threat modeling, abuse case testing, rate limiting | Architecture review |
+| A05 | Security Misconfiguration | Minimal permissions, disable defaults, harden headers | Config audit |
+| A06 | Vulnerable Components | `govulncheck`, `npm audit`, `pip-audit`, `cargo audit` | CI dependency scan |
+| A07 | Auth Failures | MFA, strong passwords, session timeout, credential rotation | Auth integration tests |
+| A08 | Data Integrity Failures | Signed updates, verified CI/CD pipeline, SBOM | Supply chain review |
+| A09 | Logging Failures | Log auth events, access control failures, input validation | Log coverage audit |
+| A10 | SSRF | Allowlist outbound hosts, block internal IPs, validate URLs | Prescan P4: unvalidated URL construction |
+
+### HTTP Handler Security Patterns
+
+| Pattern | ALWAYS | NEVER |
+|---------|--------|-------|
+| Request validation | Validate Content-Type, Content-Length, and body schema before processing | Process requests without type checking |
+| Response escaping | Use framework auto-escaping; set explicit Content-Type headers | Return user data in responses without escaping |
+| Content-Type | Set `Content-Type` and `X-Content-Type-Options: nosniff` on every response | Rely on browser MIME-sniffing |
+| CORS | Restrict `Access-Control-Allow-Origin` to known domains | Use wildcard (`*`) origin with credentials |
+| CSRF | Use anti-CSRF tokens for state-changing operations | Rely solely on cookies for authentication |
+| Rate limiting | Apply rate limits to authentication, API, and upload endpoints | Allow unlimited requests to sensitive endpoints |
+| Headers | Set `Strict-Transport-Security`, `X-Frame-Options`, `Content-Security-Policy` | Omit security headers from responses |
+
+### Path Traversal Prevention
+
+Resolve user-supplied paths to absolute form, then verify the result stays within the allowed directory.
+
+| Language | Pattern |
+|----------|---------|
+| Go | `cleaned := filepath.Clean(userPath); if !strings.HasPrefix(filepath.Join(baseDir, cleaned), baseDir) { reject }` |
+| Python | `resolved = (base_dir / user_path).resolve(); if not str(resolved).startswith(str(base_dir.resolve())): raise` |
+| Node | `const resolved = path.resolve(baseDir, userPath); if (!resolved.startsWith(baseDir)) throw` |
+| Shell | `realpath "$user_path" | grep -q "^$base_dir" || exit 1` |
+
+**Key rules:**
+- Always resolve BEFORE checking — `../` sequences bypass naive prefix checks
+- Block null bytes (`\0`) in file paths — some runtimes truncate at null
+- Reject absolute paths in user input when relative paths are expected
+
+### Logging Security
+
+| Rule | Description |
+|------|-------------|
+| Never log passwords | Hash or mask credentials before any log statement |
+| Never log tokens | API keys, JWTs, session tokens — redact to first/last 4 chars max |
+| Never log PII | Email, SSN, phone numbers — mask or omit in logs |
+| Structured logging | Use structured fields (JSON) to prevent log injection via newlines |
+| Log levels for security events | Auth failures = WARN, access control violations = ERROR, suspected attacks = CRITICAL |
+| Retention | Define log retention policy; purge logs containing sensitive data on schedule |
+
+### Rate Limiting Guidance
+
+| Endpoint Type | Recommended Limit | Strategy |
+|---------------|-------------------|----------|
+| Authentication (login, register) | 5-10 req/min per IP | Token bucket with exponential backoff |
+| API (authenticated) | 100-1000 req/min per user | Sliding window counter |
+| File upload | 5-10 req/hour per user | Fixed window with size limits |
+| Password reset | 3-5 req/hour per email | Fixed window, no enumeration leak |
+| Public (unauthenticated) | 30-60 req/min per IP | Sliding window with CAPTCHA fallback |
+
+**Implementation notes:**
+- Apply rate limits at the reverse proxy / API gateway level when possible
+- Return `429 Too Many Requests` with `Retry-After` header
+- Log rate limit hits for abuse detection
+- Consider separate limits for read vs write operations
 
 ---
 

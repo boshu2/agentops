@@ -277,17 +277,26 @@ for skill_dir in "${TARGETS[@]}"; do
 
   # Check 8: CLI command validation (prefer repo binary over PATH)
   ao_bin=""
-  if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
+  ao_cmds=""
+  commands_md="$REPO_ROOT/cli/docs/COMMANDS.md"
+  if [[ -f "$commands_md" ]]; then
+    ao_cmds="$(
+      grep -E '^### `ao [^`]+`' "$commands_md" 2>/dev/null \
+        | sed -E 's/^### `ao ([^` ]+).*$/\1/' \
+        | sort -u || true
+    )"
+  fi
+  if [[ -z "$ao_cmds" && -x "$REPO_ROOT/cli/bin/ao" ]]; then
     ao_bin="$REPO_ROOT/cli/bin/ao"
   elif command -v ao >/dev/null 2>&1; then
     ao_bin="$(command -v ao)"
   fi
-  if [[ -n "$ao_bin" ]]; then
-    ao_cmds="$("$ao_bin" help 2>&1 | grep -oE '^\s+[a-z][-a-z]*' | tr -d ' ' | sort -u || true)"
+  if [[ -z "$ao_cmds" && -n "$ao_bin" ]]; then
+    ao_cmds="$("$ao_bin" help 2>&1 | grep -oE '^[[:space:]]+[a-z][-a-z]*' | tr -d ' ' | sort -u || true)"
     # Guard: skip if binary produced no commands (broken build)
     [[ -z "$ao_cmds" ]] && ao_bin=""
   fi
-  if [[ -n "$ao_bin" ]]; then
+  if [[ -n "$ao_cmds" ]]; then
     while IFS= read -r subcmd; do
       [[ -z "$subcmd" ]] && continue
       if ! echo "$ao_cmds" | grep -qx "$subcmd"; then

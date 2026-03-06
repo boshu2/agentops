@@ -42,17 +42,17 @@ ls -lt .agents/specs/ 2>/dev/null | head -3
 
 Use the most recent file. If nothing found, ask user.
 
-### Step 1.5: Default Inline Mode
+### Step 1.5: Fast Path (--quick mode)
 
 **By default, pre-mortem runs inline (`--quick`)** — single-agent structured review, no spawning. This catches real implementation issues at ~10% of full council cost (proven in ag-nsx: 3 actionable bugs found inline that would have caused runtime failures).
 
-**Skip Steps 1a and 1b** (knowledge search, product context) unless `--deep`, `--mixed`, `--debate`, or `--explorers` is set. These pre-processing steps are for multi-judge council packets only.
+In `--quick` mode, **skip Steps 1a and 1b** (knowledge search, product context) unless `--deep`, `--mixed`, `--debate`, or `--explorers` is set. These pre-processing steps are for multi-judge council packets only.
 
 To escalate to full multi-judge council, use `--deep` (4 judges) or `--mixed` (cross-vendor).
 
 ### Step 1a: Search Knowledge Flywheel
 
-**Skip unless `--deep`, `--mixed`, or `--debate`.**
+**Skip if `--quick`.** Only run this step for `--deep`, `--mixed`, or `--debate`.
 
 ```bash
 if command -v ao &>/dev/null; then
@@ -63,7 +63,7 @@ If ao returns prior plan review findings, include them as context for the counci
 
 ### Step 1b: Check for Product Context
 
-**Skip unless `--deep`, `--mixed`, or `--debate`.**
+**Skip if `--quick`.** Only run this step for `--deep`, `--mixed`, or `--debate`.
 
 ```bash
 if [ -f PRODUCT.md ]; then
@@ -93,6 +93,8 @@ When `PRODUCT.md` does not exist: proceed to Step 2 unchanged.
 $council --quick validate <plan-path>
 ```
 Single-agent structured review. Catches real implementation issues at ~10% of full council cost. Sufficient for most plans (proven across 6+ epics).
+
+Default (2 judges with plan-review perspectives) applies when you intentionally run non-quick council mode.
 
 **With --deep (4 judges with plan-review perspectives):**
 ```

@@ -110,7 +110,7 @@ if command -v ao &>/dev/null; then
   ao quality metrics flywheel status 2>/dev/null || echo "ao quality metrics flywheel status unavailable"
   ao status 2>/dev/null || echo "ao status unavailable"
   ao quality maturity --scan 2>/dev/null || echo "ao quality maturity unavailable"
-  ao quality promote-anti-patterns --dry-run 2>/dev/null || echo "ao quality promote-anti-patterns unavailable"
+  ao promote-anti-patterns --dry-run 2>/dev/null || echo "ao promote-anti-patterns unavailable"
   ao quality badge 2>/dev/null || echo "ao quality badge unavailable"
 
   # Knowledge maintenance

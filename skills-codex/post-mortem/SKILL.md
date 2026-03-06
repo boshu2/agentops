@@ -1,13 +1,8 @@
 ---
 name: post-mortem
 description: 'Wrap up completed work. Council validates the implementation, then extract and process learnings. Triggers: "post-mortem", "wrap up", "close epic", "what did we learn".'
-skill_api_version: 1
-metadata:
-  tier: judgment
-  dependencies:
-    - council  # multi-model judgment
-    - beads    # optional - for issue status
 ---
+
 
 # Post-Mortem Skill
 
@@ -26,16 +21,16 @@ Six phases:
 ## Quick Start
 
 ```bash
-/post-mortem                    # wraps up recent work
-/post-mortem epic-123           # wraps up specific epic
-/post-mortem --quick "insight"  # quick-capture single learning (no council)
-/post-mortem --process-only     # skip council+extraction, run Phase 3-5 on backlog
-/post-mortem --skip-activate    # extract + process but don't write MEMORY.md
-/post-mortem --deep recent      # thorough council review
-/post-mortem --mixed epic-123   # cross-vendor (Claude + Codex)
-/post-mortem --explorers=2 epic-123  # deep investigation before judging
-/post-mortem --debate epic-123      # two-round adversarial review
-/post-mortem --skip-checkpoint-policy epic-123  # skip ratchet chain validation
+$post-mortem                    # wraps up recent work
+$post-mortem epic-123           # wraps up specific epic
+$post-mortem --quick "insight"  # quick-capture single learning (no council)
+$post-mortem --process-only     # skip council+extraction, run Phase 3-5 on backlog
+$post-mortem --skip-activate    # extract + process but don't write MEMORY.md
+$post-mortem --deep recent      # thorough council review
+$post-mortem --mixed epic-123   # cross-vendor (Claude + Codex)
+$post-mortem --explorers=2 epic-123  # deep investigation before judging
+$post-mortem --debate epic-123      # two-round adversarial review
+$post-mortem --skip-checkpoint-policy epic-123  # skip ratchet chain validation
 ```
 
 ---
@@ -44,7 +39,7 @@ Six phases:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--quick "text"` | off | Quick-capture a single learning directly to `.agents/learnings/` without running a full post-mortem. Formerly handled by `/retro --quick`. |
+| `--quick "text"` | off | Quick-capture a single learning directly to `.agents/learnings/` without running a full post-mortem. Formerly handled by `$retro --quick`. |
 | `--process-only` | off | Skip council and extraction (Phase 1-2). Run Phase 3-5 on the existing backlog only. |
 | `--skip-activate` | off | Extract and process learnings but do not write to MEMORY.md (skip Phase 4 promotions). |
 | `--deep` | off | 3 judges (default for post-mortem) |
@@ -58,7 +53,7 @@ Six phases:
 
 ## Quick Mode
 
-Given `/post-mortem --quick "insight text"`:
+Given `$post-mortem --quick "insight text"`:
 
 ### Quick Step 1: Generate Slug
 
@@ -86,7 +81,7 @@ date: YYYY-MM-DD
 
 ## Source
 
-Quick capture via `/post-mortem --quick`
+Quick capture via `$post-mortem --quick`
 ```
 
 This skips the full pipeline — writes directly to learnings, no council or backlog processing.
@@ -97,7 +92,7 @@ This skips the full pipeline — writes directly to learnings, no council or bac
 Learned: <one-line summary>
 Saved to: .agents/learnings/YYYY-MM-DD-quick-<slug>.md
 
-For deeper reflection, use `/post-mortem` without --quick.
+For deeper reflection, use `$post-mortem` without --quick.
 ```
 
 **Done.** Return immediately after confirmation.
@@ -110,7 +105,7 @@ For deeper reflection, use `/post-mortem` without --quick.
 
 Before proceeding, verify:
 1. **Git repo exists:** `git rev-parse --git-dir 2>/dev/null` — if not, error: "Not in a git repository"
-2. **Work was done:** `git log --oneline -1 2>/dev/null` — if empty, error: "No commits found. Run /implement first."
+2. **Work was done:** `git log --oneline -1 2>/dev/null` — if empty, error: "No commits found. Run $implement first."
 3. **Epic context:** If epic ID provided, verify it has closed children. If 0 closed children, error: "No completed work to review."
 
 **If `--process-only`:** Skip Pre-Flight Checks through Step 3. Jump directly to Phase 3: Process Backlog.
@@ -214,7 +209,7 @@ Read `references/metadata-verification.md` for the full verification procedure. 
 
 **Skip if `--quick` or `--skip-sweep`.**
 
-Before council runs, dispatch a deep audit sweep to systematically discover issues across all changed files. This uses the same protocol as `/vibe --deep` — see the deep audit protocol in the vibe skill (`skills/vibe/`) for the full specification.
+Before council runs, dispatch a deep audit sweep to systematically discover issues across all changed files. This uses the same protocol as `$vibe --deep` — see the deep audit protocol in the vibe skill (`skills/vibe/`) for the full specification.
 
 In summary:
 
@@ -233,10 +228,10 @@ In summary:
 
 ### Step 3: Council Validates the Work
 
-Run `/council` with the **retrospective** preset and always 3 judges:
+Run `$council` with the **retrospective** preset and always 3 judges:
 
 ```
-/council --deep --preset=retrospective validate <epic-or-recent>
+$council --deep --preset=retrospective validate <epic-or-recent>
 ```
 
 **Default (3 judges with retrospective perspectives):**
@@ -254,15 +249,15 @@ The plan/spec content is injected into the council packet context so the `plan-c
 
 **With --quick (inline, no spawning):**
 ```
-/council --quick validate <epic-or-recent>
+$council --quick validate <epic-or-recent>
 ```
 Single-agent structured review. Fast wrap-up without spawning.
 
 **With debate mode:**
 ```
-/post-mortem --debate epic-123
+$post-mortem --debate epic-123
 ```
-Enables adversarial two-round review for post-implementation validation. Use for high-stakes shipped work where missed findings have production consequences. See `/council` docs for full --debate details.
+Enables adversarial two-round review for post-implementation validation. Use for high-stakes shipped work where missed findings have production consequences. See `$council` docs for full --debate details.
 
 **Advanced options (passed through to council):**
 - `--mixed` — Cross-vendor (Claude + Codex) with retrospective perspectives
@@ -389,7 +384,7 @@ for f in .agents/learnings/YYYY-MM-DD-*.md; do
 done
 ```
 
-This produces draft constraint templates in `.agents/constraints/` that can later be activated via `ao constraint activate <id>`.
+This produces draft constraint templates in `.agents/constraints/` that can later be activated via `ao quality constraint activate <id>`.
 
 ### Phase 3: Process Backlog
 
@@ -578,7 +573,7 @@ Phase 5 (Retire) Summary:
 - N MEMORY.md references to review
 ```
 
-### Step 5: Write Post-Mortem Report
+### Step 4: Write Post-Mortem Report
 
 **Write to:** `.agents/council/YYYY-MM-DD-post-mortem-<topic>.md`
 
@@ -627,6 +622,16 @@ source: "[[.agents/plans/YYYY-MM-DD-<plan-slug>]]"
 ### Anti-Patterns to Avoid
 - ...
 
+### Footgun Entries (Required)
+
+List discovered footguns — common mistakes or surprising behaviors that cost time:
+
+| Footgun | Impact | Prevention |
+|---------|--------|-----------|
+| description | how it wasted time | how to prevent |
+
+These entries are promoted to `.agents/learnings/` and injected into future worker prompts to prevent recurrence. Zero-cycle lag between discovery and prevention.
+
 ## Knowledge Lifecycle
 
 ### Backlog Processing (Phase 3)
@@ -668,8 +673,8 @@ source: "[[.agents/plans/YYYY-MM-DD-<plan-slug>]]"
 |---|---|---|---|---|
 | cli/cmd/ao/<command>.go | yes/no | ... | yes/no | ... |
 
-### Recommended Next /rpi
-/rpi "<highest-value improvement>"
+### Recommended Next $rpi
+$rpi "<highest-value improvement>"
 
 ## Status
 
@@ -677,7 +682,7 @@ source: "[[.agents/plans/YYYY-MM-DD-<plan-slug>]]"
 [ ] FOLLOW-UP - Issues need addressing (create new beads)
 ```
 
-### Step 5.5: Synthesize Proactive Improvement Agenda (MANDATORY)
+### Step 4.5: Synthesize Proactive Improvement Agenda (MANDATORY)
 
 **After writing the post-mortem report, analyze extraction + council context and proactively propose improvements to repo quality and execution quality.**
 
@@ -703,7 +708,7 @@ Write process improvement items with type `process-improvement` (distinct from `
 - `horizon`: now / next-cycle / later
 - `effort`: S / M / L
 
-**These items feed directly into Step 8 (Harvest Next Work) alongside council findings. They are the flywheel's growth vector — each cycle makes the system smarter.**
+**These items feed directly into Step 7 (Harvest Next Work) alongside council findings. They are the flywheel's growth vector — each cycle makes the system smarter.**
 
 Write this into the post-mortem report under `## Proactive Improvement Agenda`.
 
@@ -716,15 +721,15 @@ Example output:
 | 1 | ci-automation | Add validation metadata requirement for Go tasks | P0 | now | S | Workers shipped untested code when metadata didn't require `go test` |
 | 2 | execution | Add consistency-check finding category in review | P1 | next-cycle | M | Partial refactoring left stale references undetected |
 
-### Recommended Next /rpi
-/rpi "<highest-value improvement>"
+### Recommended Next $rpi
+$rpi "<highest-value improvement>"
 ```
 
-### Step 5.6: Prior-Findings Resolution Tracking (MANDATORY)
+### Step 4.6: Prior-Findings Resolution Tracking (MANDATORY)
 
-After Step 5.5, compute and include prior-findings resolution tracking from `.agents/rpi/next-work.jsonl`. Read `references/harvest-next-work.md` for the jq queries that compute totals and per-source resolution rates. Write results into `## Prior Findings Resolution Tracking` in the post-mortem report.
+After Step 4.5, compute and include prior-findings resolution tracking from `.agents/rpi/next-work.jsonl`. Read `references/harvest-next-work.md` for the jq queries that compute totals and per-source resolution rates. Write results into `## Prior Findings Resolution Tracking` in the post-mortem report.
 
-### Step 5.7: Command-Surface Parity Gate (MANDATORY)
+### Step 4.7: Command-Surface Parity Gate (MANDATORY)
 
 Before marking post-mortem complete, enforce command-surface parity for modified CLI commands:
 
@@ -734,26 +739,26 @@ Before marking post-mortem complete, enforce command-surface parity for modified
 
 If any modified command file is missing both coverage evidence and an intentional-uncovered rationale, post-mortem cannot be marked complete.
 
-### Step 6: Feed the Knowledge Flywheel
+### Step 5: Feed the Knowledge Flywheel
 
 Post-mortem automatically feeds learnings into the flywheel:
 
 ```bash
 if command -v ao &>/dev/null; then
-  ao forge markdown .agents/learnings/*.md 2>/dev/null
+  ao know forge markdown .agents/learnings/*.md 2>/dev/null
   echo "Learnings indexed in knowledge flywheel"
 
   # Validate and lock artifacts that passed council review
-  ao temper validate .agents/learnings/YYYY-MM-DD-*.md 2>/dev/null || true
+  ao know temper validate .agents/learnings/YYYY-MM-DD-*.md 2>/dev/null || true
   echo "Artifacts validated for tempering"
 
   # Close session and trigger full flywheel close-loop (includes adaptive feedback)
-  ao session close 2>/dev/null || true
-  ao flywheel close-loop --quiet 2>/dev/null || true
+  ao work session close 2>/dev/null || true
+  ao quality flywheel close-loop --quiet 2>/dev/null || true
   echo "Session closed, flywheel loop triggered"
 else
   # Learnings are already in .agents/learnings/ from Phase 2.
-  # Without ao CLI, grep-based search in /research and /inject
+  # Without ao CLI, grep-based search in $research and $inject
   # will find them directly — no copy to pending needed.
 
   # Feedback-loop fallback: update confidence for cited learnings
@@ -774,12 +779,12 @@ else
   EPIC_ID="<epic-id>"
   echo "{\"epic\": \"$EPIC_ID\", \"verdict\": \"<council-verdict>\", \"cycle_time_minutes\": 0, \"timestamp\": \"$(date -Iseconds)\"}" >> .agents/ao/outcomes.jsonl
 
-  # Skip ao temper validate (no fallback needed — tempering is an optimization)
+  # Skip ao know temper validate (no fallback needed — tempering is an optimization)
   echo "Flywheel fed locally (ao CLI not available — learnings searchable via grep)"
 fi
 ```
 
-### Step 7: Report to User
+### Step 6: Report to User
 
 Tell the user:
 1. Council verdict on implementation
@@ -787,11 +792,11 @@ Tell the user:
 3. Any follow-up items
 4. Location of post-mortem report
 5. Knowledge flywheel status
-6. **Suggested next `/rpi` command** (ALWAYS — this is how the flywheel spins itself)
+6. **Suggested next `$rpi` command** (ALWAYS — this is how the flywheel spins itself)
 7. ALL proactive improvements, organized by priority (highlight one quick win)
 8. Knowledge lifecycle summary (Phase 3-5 stats)
 
-**The next `/rpi` suggestion is MANDATORY, not opt-in.** After every post-mortem, present the highest-severity harvested item as a ready-to-copy command:
+**The next `$rpi` suggestion is MANDATORY, not opt-in.** After every post-mortem, present the highest-severity harvested item as a ready-to-copy command:
 
 ```markdown
 ## Flywheel: Next Cycle
@@ -803,7 +808,7 @@ Based on this post-mortem, the highest-priority follow-up is:
 
 Ready to run:
 ```
-/rpi "<title>"
+$rpi "<title>"
 ```
 
 Or see all N harvested items in `.agents/rpi/next-work.jsonl`.
@@ -811,13 +816,13 @@ Or see all N harvested items in `.agents/rpi/next-work.jsonl`.
 
 If no items were harvested, write: "Flywheel stable — no follow-up items identified."
 
-### Step 8: Harvest Next Work
+### Step 7: Harvest Next Work
 
 Scan the council report and extracted learnings for actionable follow-up items:
 
 1. **Council findings:** Extract tech debt, warnings, and improvement suggestions from the council report (items with severity "significant" or "critical" that weren't addressed in this epic)
 2. **Retro patterns:** Extract recurring patterns from learnings that warrant dedicated RPIs (items from "Do Differently Next Time" and "Anti-Patterns to Avoid")
-3. **Process improvements:** Include all items from Step 5.5 (type: `process-improvement`). These are the flywheel's growth vector — each cycle makes development more effective.
+3. **Process improvements:** Include all items from Step 4.5 (type: `process-improvement`). These are the flywheel's growth vector — each cycle makes development more effective.
 4. **Footgun entries (REQUIRED):** Extract platform-specific gotchas, surprising API behaviors, or silent-failure modes discovered during implementation. Each must include: trigger condition, observable symptom, and fix. Write as type `pattern-fix` with source `retro-learning`. If a footgun was discovered this cycle, it must appear in this harvest — do not defer.
 5. **Write `## Next Work` section** to the post-mortem report:
 
@@ -833,7 +838,7 @@ Scan the council report and extracted learnings for actionable follow-up items:
 
 7. **Write to next-work.jsonl** (canonical path: `.agents/rpi/next-work.jsonl`). Read `references/harvest-next-work.md` for the write procedure (target_repo assignment, JSONL format, required fields).
 
-8. **Do NOT auto-create bd issues.** Report the items and suggest: "Run `/rpi --spawn-next` to create an epic from these items."
+8. **Do NOT auto-create bd issues.** Report the items and suggest: "Run `$rpi --spawn-next` to create an epic from these items."
 
 If no actionable items found, write: "No follow-up items identified. Flywheel stable."
 
@@ -842,22 +847,22 @@ If no actionable items found, write: "No follow-up items identified. Flywheel st
 ## Integration with Workflow
 
 ```
-/plan epic-123
+$plan epic-123
     |
     v
-/pre-mortem (council on plan)
+$pre-mortem (council on plan)
     |
     v
-/implement
+$implement
     |
     v
-/vibe (council on code)
+$vibe (council on code)
     |
     v
 Ship it
     |
     v
-/post-mortem              <-- You are here
+$post-mortem              <-- You are here
     |
     |-- Phase 1: Council validates implementation
     |-- Phase 2: Extract learnings (inline)
@@ -865,12 +870,12 @@ Ship it
     |-- Phase 4: Activate (promote to MEMORY.md, compile constraints)
     |-- Phase 5: Retire stale learnings
     |-- Phase 6: Harvest next work
-    |-- Suggest next /rpi --------------------+
+    |-- Suggest next $rpi --------------------+
                                               |
     +----------------------------------------+
     |  (flywheel: learnings become next work)
     v
-/rpi "<highest-priority enhancement>"
+$rpi "<highest-priority enhancement>"
 ```
 
 ---
@@ -879,11 +884,11 @@ Ship it
 
 ### Wrap Up Recent Work
 
-**User says:** `/post-mortem`
+**User says:** `$post-mortem`
 
 **What happens:**
 1. Agent scans recent commits (last 7 days)
-2. Runs `/council --deep --preset=retrospective validate recent`
+2. Runs `$council --deep --preset=retrospective validate recent`
 3. 3 judges (plan-compliance, tech-debt, learnings) review
 4. Extracts learnings inline (Phase 2: context gathering, classification, writing)
 5. Processes backlog (Phase 3: scores, deduplicates, flags stale)
@@ -891,13 +896,13 @@ Ship it
 7. Retires stale knowledge (Phase 5)
 8. Synthesizes process improvement proposals
 9. Harvests next-work items to `.agents/rpi/next-work.jsonl`
-10. Feeds learnings to knowledge flywheel via `ao forge`
+10. Feeds learnings to knowledge flywheel via `ao know forge`
 
-**Result:** Post-mortem report with learnings, tech debt identified, knowledge lifecycle stats, and suggested next `/rpi` command.
+**Result:** Post-mortem report with learnings, tech debt identified, knowledge lifecycle stats, and suggested next `$rpi` command.
 
 ### Wrap Up Specific Epic
 
-**User says:** `/post-mortem ag-5k2`
+**User says:** `$post-mortem ag-5k2`
 
 **What happens:**
 1. Agent loads original plan from `bd show ag-5k2`
@@ -912,7 +917,7 @@ Ship it
 
 ### Quick Capture
 
-**User says:** `/post-mortem --quick "always use O_CREATE|O_EXCL for atomic file creation when racing"`
+**User says:** `$post-mortem --quick "always use O_CREATE|O_EXCL for atomic file creation when racing"`
 
 **What happens:**
 1. Agent generates slug: `atomic-file-creation-racing`
@@ -923,7 +928,7 @@ Ship it
 
 ### Process-Only Mode
 
-**User says:** `/post-mortem --process-only`
+**User says:** `$post-mortem --process-only`
 
 **What happens:**
 1. Skips council and extraction entirely
@@ -935,7 +940,7 @@ Ship it
 
 ### Cross-Vendor Review
 
-**User says:** `/post-mortem --mixed ag-3b7`
+**User says:** `$post-mortem --mixed ag-3b7`
 
 **What happens:**
 1. Agent runs 3 Claude + 3 Codex judges
@@ -964,7 +969,7 @@ Ship it
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
-- `skills/vibe/SKILL.md` — Council validates code (`/vibe` after coding)
+- `skills/vibe/SKILL.md` — Council validates code (`$vibe` after coding)
 - `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
 
 
@@ -981,3 +986,26 @@ Ship it
 - [references/output-templates.md](references/output-templates.md)
 - [references/backlog-processing.md](references/backlog-processing.md)
 - [references/activation-policy.md](references/activation-policy.md)
+
+## Local Resources
+
+### references/
+
+- [references/activation-policy.md](references/activation-policy.md)
+- [references/backlog-processing.md](references/backlog-processing.md)
+- [references/checkpoint-policy.md](references/checkpoint-policy.md)
+- [references/closure-integrity-audit.md](references/closure-integrity-audit.md)
+- [references/context-gathering.md](references/context-gathering.md)
+- [references/harvest-next-work.md](references/harvest-next-work.md)
+- [references/learning-templates.md](references/learning-templates.md)
+- [references/metadata-verification.md](references/metadata-verification.md)
+- [references/output-templates.md](references/output-templates.md)
+- [references/plan-compliance-checklist.md](references/plan-compliance-checklist.md)
+- [references/security-patterns.md](references/security-patterns.md)
+
+### scripts/
+
+- `scripts/preflight-refs.sh`
+- `scripts/validate.sh`
+
+
