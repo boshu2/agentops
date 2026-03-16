@@ -1,6 +1,6 @@
 ---
 name: implement
-description: 'Execute a single issue with full lifecycle. Triggers: "implement", "work on task", "build this", "start feature", "pick up next issue", "work on issue".'
+description: 'Picks up an issue, researches context, writes code with tests, validates against quality gates, and commits the result. Triggers: "implement", "work on task", "build this", "start feature", "pick up next issue", "work on issue".'
 skill_api_version: 1
 metadata:
   tier: execution
@@ -403,16 +403,6 @@ fi
 ```
 
 **Fallback:** If ao is not available, the issue is still closed via bd but won't be tracked in the ratchet chain. The skill continues normally.
-
-### Step 7b: Post-Implementation Ratchet Record
-
-After implementation is complete:
-
-```bash
-if command -v ao &>/dev/null; then
-  ao ratchet record implement --output "<issue-id>" 2>/dev/null || true
-fi
-```
 
 Tell user: "Implementation complete. Run /vibe to validate before pushing."
 

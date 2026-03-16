@@ -1,6 +1,6 @@
 ---
 name: using-agentops
-description: 'Meta skill explaining the RPI workflow. Auto-injected on session start. Covers Research-Plan-Implement workflow, Knowledge Flywheel, and skill catalog.'
+description: 'Use when you need workflow guidance, planning complex work, session orientation, or finding what skills are available. Guides structured problem-solving through research, planning, implementation, and validation phases. Includes the full skill catalog.'
 skill_api_version: 1
 user-invocable: false
 context:
@@ -78,17 +78,9 @@ ao lookup --query "x"  # Search knowledge by relevance
 
 **Output:** Updated CHANGELOG.md, version bumps, git tag, `.agents/releases/`
 
-## Phase-to-Skill Mapping
+## Choosing the Right Skill
 
-| Phase | Primary Skill | Supporting Skills |
-|-------|---------------|-------------------|
-| **Discovery** | `/discovery` | `/brainstorm`, `/research`, `/plan`, `/pre-mortem` |
-| **Implement** | `/crank` | `/implement` (single issue), `/swarm` (parallel execution) |
-| **Validate** | `/validation` | `/vibe`, `/post-mortem`, `/retro`, `/forge` |
-| **Release** | `/release` | — |
-
-**Choosing the skill:**
-- Use `/implement` for **single issue** execution. **Now defaults to TDD-first** — writes failing tests before implementing. Skip with `--no-tdd`.
+- Use `/implement` for **single issue** execution. Defaults to TDD-first — writes failing tests before implementing. Skip with `--no-tdd`.
 - Use `/crank` for **autonomous epic execution** (loops waves via swarm until done). Auto-generates file-ownership maps to prevent worker conflicts.
 - Use `/swarm` directly for **parallel execution** without beads (TaskList only).
 - Use `/discovery` for the **discovery phase only** (brainstorm → search → research → plan → pre-mortem).
@@ -186,19 +178,6 @@ bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automat
 ```
 
 ## Examples
-
-### SessionStart Context Loading
-
-**Hook triggers:** `session-start.sh` runs at session start
-
-**What happens:**
-1. In `manual` mode (default): MEMORY.md is auto-loaded by Claude Code; hook emits a pointer to on-demand retrieval (`ao search`, `ao lookup`)
-2. In `lean` mode: hook extracts pending knowledge and injects prior learnings with a reduced token budget
-3. Hook injects this skill automatically into session context
-4. Agent loads RPI workflow overview, phase-to-skill mapping, trigger patterns
-5. User says "check my code" → agent recognizes `/vibe` trigger naturally
-
-**Result:** Agent knows the full skill catalog and workflow from session start. MEMORY.md is auto-loaded by default (`manual` mode). Set `AGENTOPS_STARTUP_CONTEXT_MODE=lean` for automatic knowledge injection alongside MEMORY.md.
 
 ### Workflow Reference During Planning
 

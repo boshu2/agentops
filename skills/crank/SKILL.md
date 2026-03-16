@@ -28,43 +28,17 @@ metadata:
 
 Autonomous execution: implement all issues until the epic is DONE.
 
-**CLI dependencies:** bd (issue tracking), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If bd is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
+**CLI dependencies:** bd (issue tracking), ao (knowledge flywheel). Both optional -- see `skills/shared/SKILL.md` for fallback table. If bd is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
 
-For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared source of truth is `skills/shared/references/claude-code-latest-features.md`, mirrored locally at `references/claude-code-latest-features.md`.
+For Claude runtime feature coverage, the shared source of truth is `skills/shared/references/claude-code-latest-features.md`, mirrored locally at `references/claude-code-latest-features.md`.
 
 ## Architecture: Crank + Swarm
 
-**Beads mode** (bd available):
-```
-Crank (orchestrator)           Swarm (executor)
-    |                              |
-    +-> bd ready (wave issues)     |
-    |                              |
-    +-> TaskCreate from beads  --->+-> Select spawn backend (codex sub-agents | claude teams | fallback)
-    |                              |
-    +-> /swarm                 --->+-> Spawn workers per backend
-    |                              |   (fresh context per wave)
-    +-> Verify + bd update     <---+-> Workers report via backend channel
-    |                              |
-    +-> Loop until epic DONE   <---+-> Cleanup backend resources after wave
-```
+**Crank** = Orchestration, epic/task lifecycle, knowledge flywheel. **Swarm** = Runtime-native parallel execution (Ralph Wiggum pattern via fresh worker set per wave).
 
-**TaskList mode** (bd unavailable):
-```
-Crank (orchestrator, TaskList mode)    Swarm (executor)
-    |                                      |
-    +-> TaskList() (wave tasks)            |
-    |                                      |
-    +-> /swarm                         --->+-> Select spawn backend per wave
-    |                                      |
-    +-> Verify via TaskList()          <---+-> Workers report via backend channel
-    |                                      |
-    +-> Loop until all completed       <---+-> Cleanup backend resources after wave
-```
+**Beads mode** (bd available): Crank discovers ready issues via `bd ready`, creates TaskList entries from them, invokes `/swarm` per wave, verifies results and updates bd, loops until epic DONE.
 
-**Separation of concerns:**
-- **Crank** = Orchestration, epic/task lifecycle, knowledge flywheel
-- **Swarm** = Runtime-native parallel execution (Ralph Wiggum pattern via fresh worker set per wave)
+**TaskList mode** (bd unavailable): Crank uses TaskList directly as source of truth, invokes `/swarm` per wave, verifies via TaskList, loops until all completed.
 
 Ralph alignment source: `../shared/references/ralph-loop-contract.md` (fresh context, scheduler/worker split, disk-backed state, backpressure).
 
@@ -72,21 +46,17 @@ Ralph alignment source: `../shared/references/ralph-loop-contract.md` (fresh con
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--test-first` | off | Enable spec-first TDD: SPEC WAVE generates contracts, TEST WAVE generates failing tests, IMPL WAVES make tests pass |
-| `--per-task-commits` | off | Opt-in per-task commit strategy. Falls back to wave-batch when file boundaries overlap. See `references/commit-strategies.md`. |
+| `--test-first` | off | Spec-first TDD: SPEC WAVE generates contracts, TEST WAVE generates failing tests, IMPL WAVES make tests pass |
+| `--per-task-commits` | off | Per-task commit strategy. Falls back to wave-batch when file boundaries overlap. See `references/commit-strategies.md`. |
 
 ## Global Limits
 
-**MAX_EPIC_WAVES = 50** (hard limit across entire epic)
-
-This prevents infinite loops on circular dependencies or cascading failures. Typical epics use 5–10 waves max.
+**MAX_EPIC_WAVES = 50** (hard limit). Typical epics use 5-10 waves.
 
 ## Completion Enforcement (The Sisyphus Rule)
 
-**THE SISYPHUS RULE:** Not done until explicitly DONE.
-
-After each wave, output completion marker:
-- `<promise>DONE</promise>` - Epic truly complete, all issues closed
+After each wave, output one of:
+- `<promise>DONE</promise>` - Epic complete, all issues closed
 - `<promise>BLOCKED</promise>` - Cannot proceed (with reason)
 - `<promise>PARTIAL</promise>` - Incomplete (with remaining items)
 
@@ -107,234 +77,70 @@ Register a `PostCompact` hook to auto-recover context if the session compacts mi
 }
 ```
 
-This surfaces the latest wave checkpoint after compaction so the orchestrator can resume from the correct wave. Also consider `worktree.sparsePaths` in project settings to reduce worktree size for large repos.
+Also consider `worktree.sparsePaths` in project settings to reduce worktree size for large repos.
 
-**Effort levels per worker type:**
+**Effort levels:** SPEC/TEST waves use `medium` effort. IMPL waves use `high`. Docs/chore use `low`.
 
-| Worker Role | Recommended Effort | Rationale |
-|-------------|-------------------|-----------|
-| SPEC wave (contracts) | `medium` | Balanced reasoning for spec generation |
-| TEST wave (failing tests) | `medium` | Test scaffolding needs moderate depth |
-| IMPL wave (make tests pass) | `high` | Deep reasoning for correct implementation |
-| Docs/chore tasks | `low` | Fast execution for simple tasks |
+### Step 0: Load Knowledge Context & Detect Tracking Mode
 
-### Step 0: Load Knowledge Context (ao Integration)
+**Knowledge (ao integration):** If ao CLI available, run `ao lookup --query "<epic-title>" --limit 5`, `ao metrics flywheel status`, and `ao ratchet status`. If ao unavailable, skip.
 
-**Search for relevant learnings before starting the epic:**
+**Tracking mode:** Check `command -v bd`. If available, set `TRACKING_MODE="beads"`. Otherwise, `TRACKING_MODE="tasklist"` and use TaskList for all issue tracking.
 
-```bash
-# If ao CLI available, pull relevant knowledge for this epic
-if command -v ao &>/dev/null; then
-    # Pull knowledge scoped to the epic
-    ao lookup --query "<epic-title>" --limit 5 2>/dev/null || \
-      ao search "epic execution implementation patterns" 2>/dev/null | head -20
-
-    # Check flywheel status
-    ao metrics flywheel status 2>/dev/null
-
-    # Get current ratchet state
-    ao ratchet status 2>/dev/null
-fi
-```
-
-If ao not available, skip this step and proceed. The knowledge flywheel enhances but is not required.
-
-### Step 0.5: Detect Tracking Mode
-
-```bash
-if command -v bd &>/dev/null; then
-  TRACKING_MODE="beads"
-else
-  TRACKING_MODE="tasklist"
-  echo "Note: bd CLI not found. Using TaskList for issue tracking."
-fi
-```
-
-**Tracking mode determines the source of truth for the rest of the workflow:**
-
-| | Beads Mode | TaskList Mode |
-|---|---|---|
-| **Source of truth** | `bd` (beads issues) | TaskList (Claude-native) |
-| **Find work** | `bd ready` | `TaskList()` → pending, unblocked |
-| **Get details** | `bd show <id>` | `TaskGet(taskId)` |
-| **Mark complete** | `bd update <id> --status closed` | `TaskUpdate(taskId, status="completed")` |
-| **Track retries** | `bd comments add` | Task description update |
-| **Epic tracking** | `bd update <epic-id> --append-notes` | In-memory wave counter |
+| Operation | Beads Mode | TaskList Mode |
+|-----------|-----------|---------------|
+| Find work | `bd ready` | `TaskList()` filtered for pending+unblocked |
+| Get details | `bd show <id>` | `TaskGet(taskId)` |
+| Mark complete | `bd update <id> --status closed` | `TaskUpdate(taskId, status="completed")` |
+| Track retries | `bd comments add` | Task description update |
 
 ### Step 1: Identify the Epic / Work Source
 
 **Beads mode:**
-
-**If epic ID provided:** Use it directly. Do NOT ask for confirmation.
-
-**If no epic ID:** Discover it:
-```bash
-bd list --type epic --status open 2>/dev/null | head -5
-```
-
-**Single-Epic Scope Check (WARN):**
-If `bd list --type epic --status open` returns more than one epic, log a warning:
-```
-WARN: Multiple open epics detected. /crank operates on a single epic.
-Use --allow-multi-epic to suppress this warning.
-```
-If multiple epics found, ask user which one (WARN, not FAIL).
+- If epic ID provided, use it directly. Do NOT ask for confirmation.
+- If no epic ID: discover via `bd list --type epic --status open | head -5`.
+- If multiple epics found, warn and ask user which one.
 
 **TaskList mode:**
+- Epic ID input: error -- bd required for beads epic tracking. Provide plan file or task list instead.
+- Plan file (`.md`): read, decompose into TaskList tasks with `TaskCreate`, set up dependencies via `TaskUpdate(addBlockedBy)`.
+- No input: check `TaskList()` for existing pending tasks; if none, ask user.
+- Description string: decompose into tasks, set up dependencies.
 
-If input is an epic ID → Error: "bd CLI required for beads epic tracking. Install bd or provide a plan file / task list."
-
-If input is a plan file path (`.md`):
-1. Read the plan file
-2. Decompose into TaskList tasks (one `TaskCreate` per distinct work item)
-3. Set up dependencies via `TaskUpdate(addBlockedBy)`
-4. Proceed to Step 3
-
-If no input:
-1. Check `TaskList()` for existing pending tasks
-2. If tasks exist, use them as the work items
-3. If no tasks, ask user what to work on
-
-If input is a description string:
-1. Decompose into tasks (`TaskCreate` for each)
-2. Set up dependencies
-3. Proceed to Step 3
-
-### Step 1a: Initialize Wave Counter
-
-**Beads mode:**
-```bash
-# Initialize crank tracking in epic notes
-bd update <epic-id> --append-notes "CRANK_START: wave=0 at $(date -Iseconds)" 2>/dev/null
-```
-
-**TaskList mode:** Track wave counter in memory only. No external state needed.
-
-Track in memory: `wave=0`
+Initialize wave counter: `wave=0`. In beads mode, also run `bd update <epic-id> --append-notes "CRANK_START: wave=0 at $(date -Iseconds)"`.
 
 ### Step 1b: Detect Test-First Mode (--test-first only)
 
-```bash
-# Check for --test-first flag
-if [[ "$TEST_FIRST" == "true" ]]; then
-    # Classify issues by type
-    # spec-eligible: feature, bug, task → SPEC + TEST waves apply
-    # skip: docs, chore, ci, epic → standard implementation waves only
-    SPEC_ELIGIBLE=()
-    SPEC_SKIP=()
+If `--test-first` is set, classify issues into spec-eligible (feature/bug/task) and spec-skip (docs/chore/ci/epic). In beads mode, use `bd show` to get issue types. In TaskList mode, default all to spec-eligible.
 
-    if [[ "$TRACKING_MODE" == "beads" ]]; then
-        for issue in $READY_ISSUES; do
-            ISSUE_TYPE=$(bd show "$issue" 2>/dev/null | grep "Type:" | head -1 | awk '{print tolower($NF)}')
-            case "$ISSUE_TYPE" in
-                feature|bug|task) SPEC_ELIGIBLE+=("$issue") ;;
-                docs|chore|ci|epic) SPEC_SKIP+=("$issue") ;;
-                *)
-                    echo "WARNING: Issue $issue has unknown type '$ISSUE_TYPE'. Defaulting to spec-eligible."
-                    SPEC_ELIGIBLE+=("$issue")
-                    ;;
-            esac
-        done
-    else
-        # TaskList mode: no bd available, default all to spec-eligible
-        SPEC_ELIGIBLE=($READY_ISSUES)
-        echo "TaskList mode: all ${#SPEC_ELIGIBLE[@]} issues defaulted to spec-eligible (no bd type info)"
-    fi
-    echo "Test-first mode: ${#SPEC_ELIGIBLE[@]} spec-eligible, ${#SPEC_SKIP[@]} skipped (docs/chore/ci/epic)"
-fi
-```
-
-If `--test-first` is NOT set, skip Steps 3b and 3c entirely — behavior is unchanged.
+If `--test-first` is NOT set, skip Steps 3b and 3c entirely.
 
 ### Step 2: Get Epic Details
 
-**Beads mode:**
-```bash
-bd show <epic-id> 2>/dev/null
-```
+**Beads mode:** `bd show <epic-id>`. **TaskList mode:** `TaskList()` to see all tasks and status/dependencies.
 
-**TaskList mode:** `TaskList()` to see all tasks and their status/dependencies.
+### Step 3: Pre-flight Checks & List Ready Issues
 
-### Step 3: List Ready Issues (Current Wave)
+**Find current wave:** Beads mode uses `bd ready`, TaskList mode filters for pending+unblocked tasks.
 
-**Beads mode:**
+**Pre-flight gates (all mandatory):**
 
-Find issues that can be worked on (no blockers):
-```bash
-bd ready 2>/dev/null
-```
+1. **Issues exist:** If 0 ready issues found, STOP with error. Verify epic has at least 1 child issue (otherwise `/plan` was not run). Do NOT proceed with empty issue list.
 
-**`bd ready` returns the current wave** - all unblocked issues. These can be executed in parallel because they have no dependencies on each other.
+2. **Pre-mortem required (3+ issues):** If epic has 3+ child issues, check `.agents/council/` for pre-mortem evidence. If missing, output `<promise>BLOCKED</promise>` with reason "pre-mortem required" and STOP.
 
-**TaskList mode:**
-
-`TaskList()` → filter for status=pending, no blockedBy (or all blockers completed). These are the current wave.
-
-### Step 3a: Pre-flight Check - Issues Exist
-
-**Verify there are issues to work on:**
-
-**If 0 ready issues found (beads mode) or 0 pending unblocked tasks (TaskList mode):**
-```
-STOP and return error:
-  "No ready issues found for this epic. Either:
-   - All issues are blocked (check dependencies)
-   - Epic has no child issues (run /plan first)
-   - All issues already completed"
-```
-
-Also verify: epic has at least 1 child issue total. An epic with 0 children means /plan was not run.
-
-Do NOT proceed with empty issue list - this produces false "epic complete" status.
-
-### Step 3a.1: Pre-flight Check - Pre-Mortem Required (3+ issues)
-
-**If the epic has 3 or more child issues, require pre-mortem evidence before proceeding.**
-
-```bash
-# Count child issues (beads mode)
-if [[ "$TRACKING_MODE" == "beads" ]]; then
-    CHILD_COUNT=$(bd show "$EPIC_ID" 2>/dev/null | grep -c "↳")
-else
-    CHILD_COUNT=$(TaskList | grep -c "pending\|in_progress")
-fi
-
-if [[ "$CHILD_COUNT" -ge 3 ]]; then
-    # Look for pre-mortem report in .agents/council/
-    PRE_MORTEM=""
-    if [ -d .agents/council ]; then
-        PRE_MORTEM=$(ls -t .agents/council/*pre-mortem* 2>/dev/null | head -1)
-    fi
-    if [[ -z "$PRE_MORTEM" ]]; then
-        echo "STOP: Epic has $CHILD_COUNT issues but no pre-mortem evidence found."
-        echo "Run '/pre-mortem' first to validate the plan before cranking."
-        echo "<promise>BLOCKED</promise>"
-        echo "Reason: pre-mortem required for epics with 3+ issues"
-        # STOP - do not continue
-        exit 1
-    fi
-    echo "Pre-mortem evidence found: $PRE_MORTEM"
-fi
-```
-
-**Why:** Pre-mortems have positive ROI for 3+ issue epics; cost (~2 min) is negligible.
-
-### Step 3a.2: Pre-flight Check - Changed-String Grep
-
-**Before spawning workers, grep for every string being changed by the plan.**
-
-This catches stale cross-references that the plan missed. Grep for each key term being modified across the codebase. Matches outside the planned file set indicate scope gaps — add those files to the epic or document as tech debt.
+3. **Changed-string grep:** Grep for every string being changed by the plan across the codebase. Matches outside the planned file set indicate scope gaps -- add those files to the epic or document as tech debt.
 
 ### Step 3b: SPEC WAVE (--test-first only)
 
 **Skip if `--test-first` is NOT set or if no spec-eligible issues exist.**
 
-For each spec-eligible issue (feature/bug/task):
+For each spec-eligible issue:
 1. **TaskCreate** with subject `SPEC: <issue-title>`
 2. Worker receives: issue description, plan boundaries, contract template (`skills/crank/references/contract-template.md`), codebase access (read-only)
 3. Worker generates: `.agents/specs/contract-<issue-id>.md`
 4. **Validation:** files_exist + content_check for `## Invariants` AND `## Test Cases`
-5. **Wave 1 spec consistency checklist (MANDATORY):** run `skills/crank/references/wave1-spec-consistency-checklist.md` across all contracts in this wave. If any item fails, re-run SPEC workers for affected issues and do NOT proceed to TEST WAVE.
+5. **Wave 1 spec consistency checklist (MANDATORY):** run `skills/crank/references/wave1-spec-consistency-checklist.md` across all contracts. If any item fails, re-run SPEC workers and do NOT proceed to TEST WAVE.
 6. Lead commits all specs after validation
 
 For BLOCKED recovery and full worker prompt, read `skills/crank/references/test-first-mode.md`.
@@ -346,85 +152,33 @@ For BLOCKED recovery and full worker prompt, read `skills/crank/references/test-
 For each spec-eligible issue:
 1. **TaskCreate** with subject `TEST: <issue-title>`
 2. Worker receives: contract-<issue-id>.md + codebase types (NOT implementation code)
-3. Worker generates: failing test files in appropriate location
-   - Workers classify generated tests by pyramid level: L0 (contract), L1 (unit), L2 (integration), L3 (component)
-   - If `test_levels` metadata exists on the issue, workers MUST generate tests at each required level
-4. **RED Gate:** Lead runs test suite — ALL new tests must FAIL
+3. Worker generates: failing test files. Workers classify tests by pyramid level (L0-L3). If `test_levels` metadata exists, workers MUST generate tests at each required level.
+4. **RED Gate:** Lead runs test suite -- ALL new tests must FAIL
 5. Lead commits test harness after RED Gate passes
 
 For RED Gate enforcement and retry logic, read `skills/crank/references/test-first-mode.md`.
 
-**Summary:** SPEC WAVE generates contracts from issues → TEST WAVE generates failing tests from contracts → RED Gate verifies all new tests fail before proceeding. Docs/chore/ci issues bypass both waves.
-
 ### Step 3b.1: Build Context Briefing (Before Worker Dispatch)
 
-```bash
-if command -v ao &>/dev/null; then
-    ao context assemble --task='<epic title>: wave $wave'
-fi
-```
+If ao CLI available, run `ao context assemble --task='<epic title>: wave $wave'` to produce a briefing at `.agents/rpi/briefing-current.md`. Include the briefing path in each worker's TaskCreate.
 
-This produces a 5-section briefing (GOALS, HISTORY, INTEL, TASK, PROTOCOL) at `.agents/rpi/briefing-current.md` with secrets redacted. Include the briefing path in each worker's TaskCreate description so workers start with full project context.
-
-Worker prompt signpost:
-- Claude workers should include: `Knowledge artifacts are in .agents/. See .agents/AGENTS.md for navigation. Use \`ao lookup --query "topic"\` for learnings.`
-- Codex workers cannot rely on `.agents/` file access in sandbox. The lead should search `.agents/learnings/` for relevant material and inline the top 3 results directly in the worker prompt body.
+- **Claude workers:** Include `Knowledge artifacts are in .agents/. See .agents/AGENTS.md for navigation. Use \`ao lookup --query "topic"\` for learnings.`
+- **Codex workers:** Lead searches `.agents/learnings/` and inlines top 3 results directly in worker prompt body (no `.agents/` file access in sandbox).
 
 ### Step 4: Execute Wave via Swarm
 
-**GREEN mode (--test-first only):** If `--test-first` is set and SPEC/TEST waves have completed, modify worker prompts for spec-eligible issues:
-- Include in each worker's TaskCreate: `"Failing tests exist at <test-file-paths>. Make them pass. Do NOT modify test files. See GREEN Mode rules in /implement SKILL.md."`
-- Workers receive: failing tests (immutable), contract, issue description
-- Workers follow GREEN Mode rules from `/implement` SKILL.md
-- Docs/chore/ci issues (skipped by SPEC/TEST waves) use standard worker prompts unchanged
+**GREEN mode (--test-first only):** If SPEC/TEST waves completed, include in each spec-eligible worker's TaskCreate: `"Failing tests exist at <test-file-paths>. Make them pass. Do NOT modify test files. See GREEN Mode rules in /implement SKILL.md."` Docs/chore/ci issues use standard prompts unchanged.
 
-**Issue typing + file manifests (REQUIRED):** Include `metadata.issue_type` plus a `metadata.files` array in every TaskCreate. `issue_type` feeds active constraint applicability and validation policy; `files` feed swarm's pre-spawn conflict detection. Two workers claiming the same file in the same wave get serialized or worktree-isolated automatically. Derive both from the issue description, plan, or codebase exploration during planning.
-This is the shift-left edge of the prevention ratchet: compiled findings target issue type plus changed files, so missing `metadata.issue_type` weakens enforcement back into guesswork.
+**Required metadata for every TaskCreate:**
 
-**Grep-for-existing-functions (REQUIRED for new function issues):** When an issue description says "create", "add", or "implement" a new function/utility, include `metadata.grep_check` with the function name pattern. Workers MUST grep the codebase for existing implementations before writing new code. This prevents utility duplication (e.g., `estimateTokens` was duplicated in context-orchestration-leverage because no grep check was specified).
+- **`metadata.issue_type`:** Feeds constraint applicability and validation policy. Do not omit.
+- **`metadata.files`:** File manifest for pre-spawn conflict detection. Two workers claiming the same file get serialized or worktree-isolated.
+- **`metadata.grep_check`:** For new function issues ("create"/"add"/"implement"), include the function name pattern. Workers MUST grep for existing implementations before writing new code.
+- **`metadata.validation`:** For `feature|bug|task`, include `tests` plus at least one structural check (`files_exist` or `content_check`). For `docs|chore|ci`, use test-exempt path with structural/lint checks. Carry forward `test_levels` from `/plan` into `metadata.validation.test_levels`. See test pyramid standard (`test-pyramid.md` in standards skill).
 
-**Validation metadata policy (REQUIRED):** For implementation tasks typed `feature|bug|task`, include `metadata.validation.tests` plus at least one structural check (`files_exist` or `content_check`). `docs|chore|ci` use an explicit test-exempt path and should still include applicable structural and/or command/lint checks. Do not omit `metadata.issue_type` and hope task-validation can infer it later. When `/plan` includes `test_levels` metadata in the issue, carry it forward into `metadata.validation.test_levels` so workers know which pyramid levels (L0–L3) to target. See the test pyramid standard (`test-pyramid.md` in the standards skill) for level definitions.
+**Language Standards Injection (code tasks):** Detect project language from repo root markers (`go.mod`, `pyproject.toml`, `Cargo.toml`, `package.json`). Lead Reads the applicable standards file and includes the Testing section verbatim in worker task descriptions. For test-modifying issues, also inject file naming conventions, assertion quality rules, and pre-commit verification commands.
 
-**Language Standards Injection (REQUIRED for code tasks):**
-
-Before spawning workers, detect project language and load applicable standards:
-
-1. **Detection:** Check repo root for language markers:
-   - `go.mod` → Load Go standards from the standards skill (`go.md`, Testing section)
-   - `pyproject.toml` or `setup.py` → Load Python standards (`python.md`, Testing section)
-   - `Cargo.toml` → Load Rust standards (`rust.md`)
-   - `package.json` → Load TypeScript standards (`typescript.md`)
-   - No match → Skip language-specific injection
-
-2. **Injection:** For issues typed `feature|bug|task`, the lead (not the worker) Reads the standards file and includes the Testing section verbatim in each worker's task description. This is a prompt instruction the lead follows, not runtime detection logic.
-
-3. **Test-specific rules:** For issues that create or modify test files, also inject:
-   - File naming conventions from the standard
-   - Assertion quality rules from the standard
-   - Pre-commit verification commands from the standard
-
-Note: This is advisory — the lead agent follows the instruction. Enforcement comes from the standards content being in the worker's context.
-
-**Validation block extraction (beads mode):** Before building TaskCreate calls, extract validation metadata from each issue's description. `/plan` embeds conformance checks as fenced `validation` blocks in issue bodies:
-
-```bash
-# For each issue in the current wave, extract validation JSON from bd show output
-ISSUE_BODY=$(bd show "$ISSUE_ID" 2>/dev/null)
-VALIDATION_JSON=$(echo "$ISSUE_BODY" | sed -n '/^```validation$/,/^```$/{ /^```/d; p }')
-
-if [[ -n "$VALIDATION_JSON" ]]; then
-    # Use extracted validation as metadata.validation in TaskCreate
-    echo "Extracted validation block for $ISSUE_ID"
-else
-    # Fallback: generate default validation from files mentioned in description
-    # Use files_exist check for any file paths found in the issue body
-    MENTIONED_FILES=$(echo "$ISSUE_BODY" | grep -oE '[a-zA-Z0-9_/.-]+\.(go|py|ts|sh|md|yaml|json)' | sort -u)
-    VALIDATION_JSON="{\"files_exist\": [$(echo "$MENTIONED_FILES" | sed 's/.*/"&"/' | paste -sd,)]}"
-    echo "WARNING: No validation block in $ISSUE_ID — using fallback files_exist check"
-fi
-```
-
-Inject the extracted or fallback `VALIDATION_JSON` into the `metadata.validation` field of each worker's TaskCreate. This closes the plan-to-crank validation pipeline: `/plan` writes conformance checks → bd stores them → `/crank` extracts and enforces them.
+**Validation block extraction (beads mode):** Extract `validation` fenced blocks from `bd show` output for each issue. If present, use as `metadata.validation`. If absent, generate fallback `files_exist` check from file paths mentioned in the issue body.
 
 ```
 TaskCreate(
@@ -442,23 +196,9 @@ TaskCreate(
 )
 ```
 
-**Display file-ownership table (from swarm Step 1.5):**
+**File ownership verification:** Before spawning, verify the ownership map (from swarm Step 1.5) has zero unresolved conflicts. If conflicts > 0, do NOT invoke `/swarm` -- serialize conflicting tasks into sub-waves or merge scope.
 
-Before spawning, verify the ownership map has zero unresolved conflicts:
-
-```
-File Ownership Map (Wave $wave):
-┌─────────────────────────────┬──────────┬──────────┐
-│ File                        │ Owner    │ Conflict │
-├─────────────────────────────┼──────────┼──────────┤
-│ (populated by swarm)        │          │          │
-└─────────────────────────────┴──────────┴──────────┘
-Conflicts: 0
-```
-
-**If conflicts > 0:** Do NOT invoke `/swarm`. Resolve by serializing conflicting tasks into sub-waves or merging task scope before proceeding.
-
-**BEFORE each wave:**
+**Before each wave:**
 ```bash
 wave=$((wave + 1))
 WAVE_START_SHA=$(git rev-parse HEAD)
@@ -471,87 +211,29 @@ fi
 if [[ $wave -ge 50 ]]; then
     echo "<promise>BLOCKED</promise>"
     echo "Global wave limit (50) reached."
-    # STOP - do not continue
 fi
 ```
 
-**Pre-Spawn: Spec Consistency Gate**
+**Pre-Spawn: Spec Consistency Gate:** If `.agents/specs/contract-*.md` exist, run `bash scripts/spec-consistency-gate.sh .agents/specs/` -- hard failures block spawn, WARN-level issues do not.
 
-Prevents workers from implementing inconsistent or incomplete specs. Hard failures (missing frontmatter, bad structure, scope conflicts) block spawn; WARN-level issues (terminology, implementability) do not.
-
-```bash
-if [ -d .agents/specs ] && ls .agents/specs/contract-*.md &>/dev/null 2>&1; then
-    bash scripts/spec-consistency-gate.sh .agents/specs/ || {
-        echo "⚠️ Spec consistency check failed — fix contract files before spawning workers"
-        exit 1
-    }
-fi
-```
-
-**Cross-cutting constraint injection (SDD):**
-
-Before spawning workers, check for cross-cutting constraints:
-
-```bash
-# PSEUDO-CODE
-# Guard clause: skip if plan has no boundaries (backward compat)
-PLAN_FILE=$(ls -t .agents/plans/*.md 2>/dev/null | head -1)
-if [[ -n "$PLAN_FILE" ]] && grep -q "## Boundaries" "$PLAN_FILE"; then
-    # Extract "Always" boundaries and convert to cross_cutting checks
-    # Read the plan's ## Cross-Cutting Constraints section or derive from ## Boundaries
-    # Inject into every TaskCreate's metadata.validation.cross_cutting
-fi
-# "Ask First" boundaries: in auto mode, log as annotation only (no blocking)
-# In --interactive mode, prompt before proceeding
-```
-
-When creating TaskCreate for each wave issue, include cross-cutting constraints in metadata:
-```json
-{
-  "validation": {
-    "files_exist": [...],
-    "content_check": {...},
-    "cross_cutting": [
-      {"name": "...", "type": "content_check", "file": "...", "pattern": "..."}
-    ]
-  }
-}
-```
+**Cross-cutting constraint injection (SDD):** If the plan has a `## Boundaries` section, extract "Always" boundaries and inject into every TaskCreate's `metadata.validation.cross_cutting`. "Ask First" boundaries: log as annotation in auto mode, prompt in `--interactive` mode.
 
 **For wave execution details (beads sync, TaskList bridging, swarm invocation), read `skills/crank/references/team-coordination.md`.**
 
-**Cross-cutting validation (SDD):**
+**Cross-cutting validation (SDD):** After per-task validation passes, run cross-cutting checks across all files modified in the wave (`git diff --name-only "${WAVE_START_SHA}..HEAD"`).
 
-After per-task validation passes, run cross-cutting checks across all files modified in the wave:
+### Step 5: Verify, Checkpoint, and Report
 
-```bash
-# Only if cross_cutting constraints were injected
-if [[ -n "$CROSS_CUTTING_CHECKS" ]]; then
-    WAVE_FILES=$(git diff --name-only "${WAVE_START_SHA}..HEAD")
-    for check in $CROSS_CUTTING_CHECKS; do
-        run_validation_check "$check" "$WAVE_FILES"
-    done
-fi
-```
-
-### Step 5: Verify and Sync to Beads (MANDATORY)
-
-> Swarm executes per-task validation (see `skills/shared/validation-contract.md`). Crank trusts swarm validation and focuses on beads sync.
+> Swarm executes per-task validation (see `skills/shared/validation-contract.md`). Crank trusts swarm validation and focuses on beads sync and wave acceptance.
 
 **For verification details, retry logic, and failure escalation, read `skills/crank/references/team-coordination.md` and `skills/crank/references/failure-recovery.md`.**
 
-### Step 5.5: Wave Acceptance Check (MANDATORY)
+**Wave Acceptance Check:** Verify each wave meets acceptance criteria using lightweight inline judges. No skill invocations -- prevents context explosion. **For details, read `skills/crank/references/wave-patterns.md`.**
 
-> **Principle:** Verify each wave meets acceptance criteria using lightweight inline judges. No skill invocations — prevents context explosion in the orchestrator loop.
-
-**For acceptance check details (diff computation, inline judges, verdict gating), read `skills/crank/references/wave-patterns.md`.**
-
-### Step 5.7: Wave Checkpoint
-
-After each wave completes (post-vibe-gate, pre-next-wave), write a checkpoint file:
+**Wave Checkpoint:** After each wave completes, write checkpoint:
 
 ```bash
-mkdir -p .agents/crank
+mkdir -p .agents/crank .agents/vibe-context
 
 cat > ".agents/crank/wave-${wave}-checkpoint.json" <<EOF
 {
@@ -566,86 +248,24 @@ cat > ".agents/crank/wave-${wave}-checkpoint.json" <<EOF
   "commit_strategy": "<per-task|wave-batch|wave-batch-fallback>"
 }
 EOF
-```
 
-- `COMPLETED_IDS` / `FAILED_IDS`: space-separated issue IDs from the wave results.
-- `acceptance_verdict`: verdict from the Wave Acceptance Check (Step 5.5). Used by final validation to skip redundant /vibe on clean epics.
-- On retry of the same wave, the file is overwritten (same path).
-
-### Step 5.7b: Vibe Context Checkpoint
-
-After writing the wave checkpoint, copy it for downstream `/vibe` consumption:
-
-```bash
-mkdir -p .agents/vibe-context
+# Copy for downstream /vibe consumption (file copy, not symlink)
 cp ".agents/crank/wave-${wave}-checkpoint.json" .agents/vibe-context/latest-crank-wave.json
 ```
 
-This provides `/vibe` a stable path to read the latest crank state without scanning wave checkpoint files. Uses file copy (not symlink) per repo conventions.
+On retry of the same wave, the file is overwritten (same path).
 
-### Step 5.8: Wave Status Report
-
-After each wave checkpoint, display a consolidated status table:
+**Wave Status Report:** Display consolidated status table after each wave:
 
 ```
 Wave $wave Status:
-┌────────┬──────────────────────────────┬───────────┬────────────┬──────────┐
-│ Task   │ Subject                      │ Status    │ Validation │ Duration │
-├────────┼──────────────────────────────┼───────────┼────────────┼──────────┤
-│ #1     │ Add auth middleware           │ completed │ PASS       │ 2m 14s   │
-│ #2     │ Fix rate limiting             │ completed │ PASS       │ 1m 47s   │
-│ #3     │ Update config schema          │ failed    │ FAIL       │ 3m 02s   │
-└────────┴──────────────────────────────┴───────────┴────────────┴──────────┘
-
-Epic Progress:
-  Issues closed: 5/12 (wave 3 of est. 5)
-  Blocked:       1 (#8, waiting on #7)
-  Next wave:     #6, #7 (2 tasks, 0 conflicts)
+| Task | Subject | Status | Validation | Duration |
+Epic Progress: Issues closed: X/Y (wave N of est. M), Blocked: ..., Next wave: ...
 ```
 
-This table is informational — it does not gate progression. Step 6 handles the loop decision.
+This table is informational -- it does not gate progression.
 
-### Step 5.9: Refresh Worktree Base SHA (MANDATORY)
-
-**After committing a wave, refresh the base SHA before spawning the next wave.** This prevents cross-wave file collisions where later-wave worktrees overwrite earlier-wave fixes.
-
-```bash
-# After wave commit completes:
-WAVE_COMMIT_SHA=$(git rev-parse HEAD)
-
-# Verify the commit landed
-if [[ "$WAVE_COMMIT_SHA" == "$WAVE_START_SHA" ]]; then
-    echo "WARNING: Wave commit did not advance HEAD. Check for commit failures."
-fi
-
-# Next wave's worktrees MUST branch from this SHA, not the original base.
-# The swarm pre-spawn step uses HEAD as the worktree base, so this is
-# automatic IF the wave commit happens BEFORE the next /swarm invocation.
-echo "Wave $wave committed at $WAVE_COMMIT_SHA. Next wave branches from here."
-```
-
-**Cross-wave shared file check:**
-
-Before spawning the next wave, cross-reference the next wave's file manifests against files changed in the current wave:
-
-```bash
-# Files modified by the just-completed wave
-WAVE_CHANGED=$(git diff --name-only "${WAVE_START_SHA}..HEAD")
-
-# Files planned for next wave (from TaskCreate metadata.files)
-NEXT_WAVE_FILES=(<next wave file manifests>)
-
-# Check for overlap
-OVERLAP=$(comm -12 <(echo "$WAVE_CHANGED" | sort) <(printf '%s\n' "${NEXT_WAVE_FILES[@]}" | sort))
-if [[ -n "$OVERLAP" ]]; then
-    echo "Cross-wave file overlap detected:"
-    echo "$OVERLAP"
-    echo "These files were modified in Wave $wave and are planned for Wave $((wave+1))."
-    echo "Worktrees will include Wave $wave changes (branched from $WAVE_COMMIT_SHA)."
-fi
-```
-
-**Why:** In na-vs9, Wave 2 worktrees were created from pre-Wave-1 SHA. A Wave 2 agent overwrote Wave 1's `.md→.json` fix in `rpi_phased_test.go` because its worktree predated the fix. Refreshing the base SHA between waves eliminates this class of collision.
+**Refresh Worktree Base SHA (MANDATORY):** After committing a wave, verify HEAD advanced past `WAVE_START_SHA`. Next wave's worktrees MUST branch from the new HEAD. Cross-reference next wave's file manifests against files changed in the current wave to detect overlap -- overlapping files will include current wave changes since worktrees branch from the updated SHA.
 
 ### Step 6: Check for More Work
 
@@ -661,40 +281,15 @@ If hooks or `lib/hook-helpers.sh` were modified, verify embedded copies are in s
 
 **For detailed validation steps, read `skills/crank/references/failure-recovery.md`.**
 
-### Step 8: Write Phase-2 Summary
+### Step 8: Summary and Learnings
 
-Before extracting learnings, write a phase-2 summary for downstream `/post-mortem` consumption:
+**Phase-2 summary:** Write to `.agents/rpi/phase-2-summary-$(date +%Y-%m-%d)-crank.md` with epic ID, waves completed, issues completed, files modified count, status, completion marker, and timestamp. Consumed by `/post-mortem` Step 2.2.
 
-```bash
-mkdir -p .agents/rpi
-cat > ".agents/rpi/phase-2-summary-$(date +%Y-%m-%d)-crank.md" <<PHASE2
-# Phase 2 Summary: Implementation
-
-- **Epic:** <epic-id>
-- **Waves completed:** ${wave}
-- **Issues completed:** <completed-count>/<total-count>
-- **Files modified:** $(git diff --name-only "${WAVE_START_SHA}..HEAD" | wc -l | tr -d ' ')
-- **Status:** <DONE|PARTIAL|BLOCKED>
-- **Completion marker:** <promise marker from Step 9>
-- **Timestamp:** $(date -Iseconds)
-PHASE2
-```
-
-This summary is consumed by `/post-mortem` Step 2.2 for scope reconciliation.
-
-### Step 8.5: Extract Learnings (ao Integration)
-
-If ao CLI available: run `ao forge transcript`, `ao flywheel close-loop --quiet`, `ao metrics flywheel status`, and `ao pool list --status=pending` to extract and review learnings. If ao unavailable, skip and recommend `/post-mortem` manually.
+**Extract learnings (ao integration):** If ao CLI available, run `ao forge transcript`, `ao flywheel close-loop --quiet`, `ao metrics flywheel status`, and `ao pool list --status=pending`. If ao unavailable, skip and recommend `/post-mortem` manually.
 
 ### Step 9: Report Completion
 
-Tell the user:
-1. Epic ID and title
-2. Number of issues completed
-3. Total iterations used (of 50 max)
-4. Final vibe results
-5. Flywheel status (if ao available)
-6. Suggest running `/post-mortem` to review and promote learnings
+Tell the user: epic ID/title, issues completed count, iterations used (of 50 max), final vibe results, flywheel status (if ao available). Suggest running `/post-mortem`.
 
 **Output completion marker:**
 ```
@@ -715,7 +310,7 @@ Iterations: M/50
 
 ## The FIRE Loop
 
-Crank follows FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wave. Loop until all issues are CLOSED (beads) or all tasks are completed (TaskList).
+Crank follows FIRE (Find -> Ignite -> Reap -> Vibe -> Escalate) for each wave. Loop until all issues are CLOSED (beads) or all tasks are completed (TaskList).
 
 **For FIRE loop details, parallel wave models, and wave acceptance check, read `skills/crank/references/wave-patterns.md`.**
 
@@ -733,11 +328,9 @@ Crank follows FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 - **Respect wave limit** - STOP at 50 waves (hard limit)
 - **Output completion markers** - DONE, BLOCKED, or PARTIAL (required)
 - **Knowledge flywheel** - load learnings at start, forge at end (ao optional)
-- **Beads ↔ TaskList sync** - in beads mode, crank bridges beads issues to TaskList for swarm
+- **Beads <-> TaskList sync** - in beads mode, crank bridges beads issues to TaskList for swarm
 
 ### Verb Disambiguation for Worker Prompts
-
-Ambiguous verbs cause workers to implement the wrong operation. Use explicit instructions:
 
 | Verb | Clarified Instruction |
 |------|----------------------|
@@ -751,10 +344,10 @@ Include `wc -l` assertions in task metadata when content moves between files.
 
 ## Examples
 
-**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final vibe.
+**User says:** `/crank ag-m0r` -- Beads epic: loads learnings, swarm per wave, loops until all closed, final vibe.
 
-**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final vibe.
-**User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
+**User says:** `/crank .agents/plans/auth-refactor.md` -- Plan file: decomposes into tasks, swarm per wave, final vibe.
+**User says:** `/crank --test-first ag-xj9` -- SPEC -> TEST -> RED Gate -> GREEN IMPL. See `references/test-first-mode.md`.
 
 ---
 

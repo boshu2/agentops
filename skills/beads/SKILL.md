@@ -1,6 +1,6 @@
 ---
 name: beads
-description: 'This skill should be used when the user asks to "track issues", "create beads issue", "show blockers", "what''s ready to work on", "beads routing", "prefix routing", "cross-rig beads", "BEADS_DIR", "two-level beads", "town vs rig beads", "slingable beads", or needs guidance on git-based issue tracking with the bd CLI.'
+description: 'Manages git-based issue tracking using the bd CLI: creates issues, tracks blockers, routes work across rigs (independent workstreams with their own issue prefixes), and organizes beads (issues) hierarchically with parent-child dependencies. Beads marked "slingable" are ready to hand off between agents or sessions. Activate when the user asks to "track issues", "create beads issue", "show blockers", "what''s ready to work on", "beads routing", "prefix routing", "cross-rig beads", "BEADS_DIR", "two-level beads", "town vs rig beads", "slingable beads", or needs guidance on the bd CLI.'
 skill_api_version: 1
 context:
   window: fork
@@ -66,15 +66,53 @@ bd dolt push                        # only if a Dolt remote is configured
 
 **Result:** Validation report includes issue context, no manual bd lookups needed.
 
+### Quick Start: Typical bd Workflow
+
+```bash
+# Check what's ready to work on
+bd ready
+
+# Inspect a specific issue
+bd show ag-xyz-123
+
+# Create a child issue to narrow scope
+bd create --parent ag-xyz-123 --title "Extract helper into shared lib"
+
+# Close the child after completing work
+bd close ag-xyz-124
+
+# Reconcile the parent if the child resolved its last gap
+bd show ag-xyz-123   # review remaining gaps
+bd close ag-xyz-123  # close if fully resolved
+
+# Export and commit tracker state
+bd export -o .beads/issues.jsonl
+bd vc status
+bd dolt commit -m "closed ag-xyz-123 and ag-xyz-124"
+```
+
 ### Skill Loading from /implement
 
 **User says:** `/implement ag-xyz-123`
 
 **What happens:**
-1. Agent loads beads skill to understand issue structure
-2. Agent calls `bd show ag-xyz-123` to read issue body
-3. Agent checks dependencies with bd output
-4. Agent closes issue with `bd close ag-xyz-123` after completion
+
+```bash
+# 1. Read the issue body and metadata
+bd show ag-xyz-123
+
+# 2. Check dependency status — are blockers resolved?
+bd list --deps ag-xyz-123
+
+# 3. Implement the work described in the issue body
+# ... (agent performs code changes) ...
+
+# 4. Close the issue after completion
+bd close ag-xyz-123
+
+# 5. Export updated state if tracked in git
+bd export -o .beads/issues.jsonl
+```
 
 **Result:** Issue lifecycle managed automatically during implementation.
 

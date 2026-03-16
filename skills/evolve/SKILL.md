@@ -1,6 +1,6 @@
 ---
 name: evolve
-description: Goal-driven fitness-scored improvement loop. Measures goals, picks worst gap, runs /rpi, compounds via knowledge flywheel. Also pulls from open beads when goals all pass. Accepts ordered roadmap via --queue for sequential execution with auto-unblocking.
+description: Autonomous improvement loop that measures goals, fixes the worst gap, and iterates until done. Use when you want to improve a codebase continuously, iterate on failing goals, fix issues across a project, or work through a task queue. Runs /rpi per cycle, compounds learnings across cycles, pulls from open backlog items when goals all pass, and accepts an ordered roadmap via --queue for sequential execution with auto-unblocking.
 skill_api_version: 1
 user-invocable: true
 context:
@@ -99,69 +99,48 @@ else
   CYCLE=1
 fi
 SESSION_START_SHA=$(git rev-parse HEAD)
-
-# Recover idle streak from disk (not in-memory — survives compaction)
-# Portable: forward-scanning awk counts trailing idle run without tac (unavailable on stock macOS)
 IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
   .agents/evolve/cycle-history.jsonl 2>/dev/null)
-
 PRODUCTIVE_THIS_SESSION=0
 
-# Recover generator state and queue claim state
 if [ -f .agents/evolve/session-state.json ]; then
   GENERATOR_EMPTY_STREAK=$(jq -r '.generator_empty_streak // 0' .agents/evolve/session-state.json 2>/dev/null || echo 0)
   LAST_SELECTED_SOURCE=$(jq -r '.last_selected_source // empty' .agents/evolve/session-state.json 2>/dev/null || true)
   CLAIMED_WORK_REF=$(jq -r '.claimed_work.ref // empty' .agents/evolve/session-state.json 2>/dev/null || true)
 else
-  GENERATOR_EMPTY_STREAK=0
-  LAST_SELECTED_SOURCE=""
-  CLAIMED_WORK_REF=""
+  GENERATOR_EMPTY_STREAK=0; LAST_SELECTED_SOURCE=""; CLAIMED_WORK_REF=""
 fi
+```
 
-# Circuit breaker: stop if last productive cycle was >60 minutes ago
+**Circuit breakers** — stop the loop when work stalls:
+- **Time-based:** Stop if no productive cycle in 60+ minutes (skipped when pinned queue has items remaining)
+- **Consecutive failure:** Stop after 5 consecutive failures in pinned queue mode
+- **Oscillation quarantine:** Goals that oscillate (improved->fail) 3+ times are quarantined to avoid burning cycles
+
+```bash
 LAST_PRODUCTIVE_TS=$(grep -v '"idle"\|"unchanged"' .agents/evolve/cycle-history.jsonl 2>/dev/null \
   | tail -1 | jq -r '.timestamp // empty')
-# Consecutive failure breaker (pinned queue mode)
 if [ -n "$QUEUE_FILE" ]; then
   CONSEC_FAILURES=$(awk '/"result"\s*:\s*"(regressed|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
     .agents/evolve/cycle-history.jsonl 2>/dev/null)
-  if [ "$CONSEC_FAILURES" -ge 5 ]; then
-    echo "CIRCUIT BREAKER: 5 consecutive failures in pinned queue mode. Stopping."
-    # go to Teardown
-  fi
+  [ "$CONSEC_FAILURES" -ge 5 ] && echo "CIRCUIT BREAKER: 5 consecutive failures. Stopping." # go to Teardown
 fi
-
-# Time-based circuit breaker: skip when pinned queue has items remaining
 if [ -z "$QUEUE_FILE" ] || [ "$QUEUE_INDEX" -ge "$QUEUE_TOTAL" ]; then
   if [ -n "$LAST_PRODUCTIVE_TS" ]; then
     NOW_EPOCH=$(date +%s)
     LAST_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" "$LAST_PRODUCTIVE_TS" +%s 2>/dev/null \
       || date -d "$LAST_PRODUCTIVE_TS" +%s 2>/dev/null || echo 0)
-    if [ "$LAST_EPOCH" -gt 1000000000 ] && [ $((NOW_EPOCH - LAST_EPOCH)) -ge 3600 ]; then
-      echo "CIRCUIT BREAKER: No productive work in 60+ minutes. Stopping."
-      # go to Teardown
-    fi
+    [ "$LAST_EPOCH" -gt 1000000000 ] && [ $((NOW_EPOCH - LAST_EPOCH)) -ge 3600 ] && \
+      echo "CIRCUIT BREAKER: No productive work in 60+ minutes. Stopping." # go to Teardown
   fi
 fi
 
-# Track oscillating goals (improved→fail→improved→fail) to avoid burning cycles
-declare -A QUARANTINED_GOALS  # goal_id → true if oscillation count >= 3
-
-# Pre-populate quarantine list from cycle history (lightweight local scan)
+declare -A QUARANTINED_GOALS
 if [ -f .agents/evolve/cycle-history.jsonl ]; then
   while IFS= read -r goal; do
     QUARANTINED_GOALS[$goal]=true
-    echo "Quarantined oscillating goal: $goal"
-  done < <(
-    jq -r '.target' .agents/evolve/cycle-history.jsonl 2>/dev/null \
-    | awk '{
-        if (prev != "" && prev != $0) transitions[$0]++
-        prev = $0
-      }
-      END {
-        for (g in transitions) if (transitions[g] >= 3) print g
-      }'
-  )
+  done < <(jq -r '.target' .agents/evolve/cycle-history.jsonl 2>/dev/null \
+    | awk '{if (prev!=""&&prev!=$0) transitions[$0]++; prev=$0} END{for(g in transitions) if(transitions[g]>=3) print g}')
 fi
 ```
 
@@ -177,31 +156,20 @@ Parse the queue file as an ordered markdown checklist:
 
 ```bash
 if [ -n "$QUEUE_FILE" ] && [ -f "$QUEUE_FILE" ]; then
-  QUEUE_ITEMS=()
-  declare -A QUEUE_BLOCKERS
-  declare -A QUEUE_LINES  # preserve full line per item ID for freeform prompts
+  QUEUE_ITEMS=(); declare -A QUEUE_BLOCKERS; declare -A QUEUE_LINES
   while IFS= read -r line; do
     ITEM_ID=$(echo "$line" | sed -n 's/.*`\([^`]*\)`.*/\1/p' | head -1)
     BLOCKER=$(echo "$line" | sed -n 's/.*blocker:[[:space:]]*`\([^`]*\)`.*/\1/p')
-    if [ -n "$ITEM_ID" ]; then
-      QUEUE_ITEMS+=("$ITEM_ID")
-      QUEUE_LINES["$ITEM_ID"]="$line"
-    fi
+    [ -n "$ITEM_ID" ] && QUEUE_ITEMS+=("$ITEM_ID") && QUEUE_LINES["$ITEM_ID"]="$line"
     [ -n "$BLOCKER" ] && QUEUE_BLOCKERS["$ITEM_ID"]="$BLOCKER"
   done < <(grep -E '^\s*[0-9]+\.' "$QUEUE_FILE")
   QUEUE_TOTAL=${#QUEUE_ITEMS[@]}
 fi
 
-# Initialize tracking arrays
-PINNED_COMPLETED=()
-PINNED_ESCALATED='[]'
-
-# Resume from persisted state
+PINNED_COMPLETED=(); PINNED_ESCALATED='[]'
 if [ -f .agents/evolve/pinned-queue-state.json ]; then
   QUEUE_INDEX=$(jq -r '.current_index // 0' .agents/evolve/pinned-queue-state.json)
-  # Restore completed items array
   mapfile -t PINNED_COMPLETED < <(jq -r '.completed[]? // empty' .agents/evolve/pinned-queue-state.json 2>/dev/null)
-  # Load escalated items (both IDs for skip-check and full JSON for state persistence)
   ESCALATED_IDS=$(jq -r '.escalated[]?.id // empty' .agents/evolve/pinned-queue-state.json 2>/dev/null)
   PINNED_ESCALATED=$(jq -c '.escalated // []' .agents/evolve/pinned-queue-state.json 2>/dev/null)
 else
@@ -448,18 +416,14 @@ See `references/quality-mode.md` for scoring and full details.
 **Nothing found?** HARD GATE — only consider dormancy after the generator layers also came up empty:
 
 ```bash
-# Count trailing idle/unchanged entries in cycle-history.jsonl (portable, no tac)
+# Re-compute IDLE_STREAK (may have changed since setup)
 IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
   .agents/evolve/cycle-history.jsonl 2>/dev/null)
 
-# Pinned queue mode: never consider stagnation while queue has items
-if [ -n "$QUEUE_FILE" ] && [ "$QUEUE_INDEX" -lt "$QUEUE_TOTAL" ]; then
-  # Queue not exhausted — skip stagnation check, return to Step 3.0
-  :
+if [ -n "$QUEUE_FILE" ] && [ "$QUEUE_INDEX" -lt "$QUEUE_TOTAL" ]; then :
 elif [ "$GENERATOR_EMPTY_STREAK" -ge 2 ] && [ "$IDLE_STREAK" -ge 2 ]; then
-  # Queue layers are empty AND producer layers were empty for the 3rd consecutive pass — STOP
   echo "Stagnation reached after repeated empty queue + generator passes. Dormancy is the last-resort outcome."
-  # go to Teardown — do NOT log another idle entry
+  # go to Teardown
 fi
 ```
 
@@ -595,7 +559,6 @@ Two paths: productive cycles get committed, idle cycles are local-only.
 **PRODUCTIVE cycles** (result is improved, regressed, or harvested):
 
 ```bash
-# Quality mode: compute quality_score BEFORE writing the JSONL entry
 QUALITY_SCORE_ARGS=()
 if [ "$QUALITY_MODE" = "true" ]; then
   REMAINING_HIGH=$(jq -r 'select(.consumed==false) | .items[] | select(.severity=="high")' \
@@ -607,52 +570,33 @@ if [ "$QUALITY_MODE" = "true" ]; then
   QUALITY_SCORE_ARGS=(--quality-score "$QUALITY_SCORE")
 fi
 
-# Pinned queue fields (appended to cycle entry when active)
 QUEUE_ARGS=()
 if [ -n "$QUEUE_FILE" ]; then
   QUEUE_ARGS=(--queue-item "${CURRENT_ITEM:-}" --queue-index "$QUEUE_INDEX" --queue-total "$QUEUE_TOTAL")
   [ -n "$UNBLOCK_TARGET" ] && QUEUE_ARGS+=(--unblock-target "$UNBLOCK_TARGET" --unblock-depth "$UNBLOCK_DEPTH")
 fi
 
-ENTRY_JSON="$(
-  bash scripts/evolve-log-cycle.sh \
-    --cycle "$CYCLE" \
-    --target "$TARGET" \
-    --result "$OUTCOME" \
-    --canonical-sha "$(git rev-parse --short HEAD)" \
-    --cycle-start-sha "$CYCLE_START_SHA" \
-    --goals-passing "$PASSING" \
-    --goals-total "$TOTAL" \
-    "${QUALITY_SCORE_ARGS[@]}" \
-    "${QUEUE_ARGS[@]}"
-)"
+ENTRY_JSON="$(bash scripts/evolve-log-cycle.sh \
+  --cycle "$CYCLE" --target "$TARGET" --result "$OUTCOME" \
+  --canonical-sha "$(git rev-parse --short HEAD)" --cycle-start-sha "$CYCLE_START_SHA" \
+  --goals-passing "$PASSING" --goals-total "$TOTAL" \
+  "${QUALITY_SCORE_ARGS[@]}" "${QUEUE_ARGS[@]}")"
 OUTCOME="$(printf '%s\n' "$ENTRY_JSON" | jq -r '.result')"
 REAL_CHANGES=$(git diff --name-only "${CYCLE_START_SHA}..HEAD" -- ':!.agents/**' ':!GOALS.yaml' ':!GOALS.md' \
   2>/dev/null | wc -l | tr -d ' ')
-
-# Telemetry
 bash scripts/log-telemetry.sh evolve cycle-complete cycle=${CYCLE} goal=${TARGET} outcome=${OUTCOME} 2>/dev/null || true
 
-if [ "$OUTCOME" = "unchanged" ]; then
-  # No-delta cycle: leave local-only so history stays honest and stagnation logic can see it.
-  :
+if [ "$OUTCOME" = "unchanged" ]; then :
 elif [ "$REAL_CHANGES" -gt 0 ]; then
-  # Full commit: real code was changed
   git add .agents/evolve/cycle-history.jsonl
   git commit -m "evolve: cycle ${CYCLE} -- ${TARGET} ${OUTCOME}"
 else
-  # Productive cycle with non-agent repo delta already committed by a sub-skill:
-  # stage the ledger but do not create a standalone follow-up commit.
   git add .agents/evolve/cycle-history.jsonl
 fi
-
 PRODUCTIVE_THIS_SESSION=$((PRODUCTIVE_THIS_SESSION + 1))
 
-# Advance pinned queue after successful cycle (not unblock sub-cycles)
 if [ -n "$QUEUE_FILE" ] && [ -z "$UNBLOCK_TARGET" ] && [ "$OUTCOME" != "regressed" ] && [ "$OUTCOME" != "failed" ]; then
-  PINNED_COMPLETED+=("$CURRENT_ITEM")
-  QUEUE_INDEX=$((QUEUE_INDEX + 1))
-  # Persist queue state (atomic write via temp file)
+  PINNED_COMPLETED+=("$CURRENT_ITEM"); QUEUE_INDEX=$((QUEUE_INDEX + 1))
   TMP=$(mktemp .agents/evolve/pinned-queue-state.XXXXXX.json)
   jq -n --arg file "$QUEUE_FILE" --argjson idx "$QUEUE_INDEX" \
     --argjson completed "$(printf '%s\n' "${PINNED_COMPLETED[@]}" | jq -R . | jq -s .)" \
@@ -764,16 +708,3 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - `skills/crank/SKILL.md` — Epic execution (called for beads epics)
 - `GOALS.yaml` — Fitness goals for this repo
 
-## Reference Documents
-
-- [references/artifacts.md](references/artifacts.md)
-- [references/compounding.md](references/compounding.md)
-- [references/cycle-history.md](references/cycle-history.md)
-- [references/examples.md](references/examples.md)
-- [references/goals-schema.md](references/goals-schema.md)
-- [references/oscillation.md](references/oscillation.md)
-- [references/parallel-execution.md](references/parallel-execution.md)
-- [references/quality-mode.md](references/quality-mode.md)
-- [references/autonomous-execution.md](references/autonomous-execution.md)
-- [references/pinned-queue.md](references/pinned-queue.md)
-- [references/teardown.md](references/teardown.md)

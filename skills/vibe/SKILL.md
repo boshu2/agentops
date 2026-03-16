@@ -1,6 +1,6 @@
 ---
 name: vibe
-description: 'Comprehensive code validation. Runs complexity analysis then multi-model council. Answer: Is this code ready to ship? Triggers: "vibe", "validate code", "check code", "review code", "code quality", "is this ready".'
+description: 'Comprehensive code validation. Runs cyclomatic complexity analysis, validates against constraints, then convenes a multi-model council to evaluate code quality and ship-readiness. Triggers: "vibe", "validate code", "check code", "review code", "code quality", "is this ready".'
 skill_api_version: 1
 metadata:
   tier: judgment
@@ -82,9 +82,9 @@ Do NOT spawn agents for empty file lists.
 
 ### Step 1.5: Fast Path (--quick mode)
 
-**If `--quick` flag is set**, skip Steps 2a through 2e plus 2.5/2f/2g (prior findings check, constraint tests, metadata checks, OL validation, codex review, knowledge search, bug hunt, product context) and jump directly to Step 4 with inline council. Steps 2.3 (domain checklists) and 2.4 (finding registry check) still run in quick mode — domain checklists are cheap to load and high-value, and reusable review findings are mandatory context. Complexity analysis (Step 2) still runs — it's cheap and informative.
+**`--quick` skips Steps 2.5, 2a–2g, 2h, and 3** (prior findings, constraint tests, metadata checks, OL validation, codex review, knowledge search, bug hunt, product context, spec loading) — jumping directly to Step 4 with inline council. These steps add 30–90s of pre-processing that aren't worth the cost for a single inline reviewer.
 
-**Why:** Steps 2.5 and 2a–2g add 30–90 seconds of pre-processing that feed multi-judge council packets. In --quick mode (single inline agent), these inputs aren't worth the cost — the inline reviewer reads files directly.
+**Always run in `--quick`:** Step 2 (complexity — cheap and informative), Step 2.3 (domain checklists — cheap and high-value), Step 2.4 (finding registry — mandatory context), Step 2g (test pyramid — cheap file existence checks).
 
 ### Step 2: Run Complexity Analysis
 
@@ -173,197 +173,60 @@ Include matched entries in the council packet as `known_risks` / checklist conte
 
 ### Step 2.5: Prior Findings Check
 
-**Skip if `--quick` (see Step 1.5).**
-
-Read `.agents/rpi/next-work.jsonl` and find unconsumed items with `severity=high` that match the target area. Include them in the council packet as `context.prior_findings` so judges have carry-forward context.
-
-Treat these high-severity queue items as part of the same ranked packet used earlier in discovery/plan/pre-mortem. The review stage should inherit and refine prior findings context, not restart retrieval from scratch.
+Read `.agents/rpi/next-work.jsonl` for unconsumed `severity=high` items matching the target area. Include them in the council packet as `context.prior_findings` so judges have carry-forward context. The review stage inherits prior findings context rather than restarting retrieval from scratch.
 
 ```bash
-# Count unconsumed high-severity items
 if [ -f .agents/rpi/next-work.jsonl ] && command -v jq &>/dev/null; then
   prior_count=$(jq -s '[.[] | select(.consumed == false) | .items[] | select(.severity == "high")] | length' \
     .agents/rpi/next-work.jsonl 2>/dev/null || echo 0)
   if [ "$prior_count" -gt 0 ]; then
-    echo "Prior findings: $prior_count unconsumed high-severity items from next-work.jsonl"
     jq -s '[.[] | select(.consumed == false) | .items[] | select(.severity == "high")]' \
       .agents/rpi/next-work.jsonl 2>/dev/null
   fi
 fi
 ```
 
-If unconsumed high-severity items are found, include them in the council packet context:
-```json
-"prior_findings": {
-  "source": ".agents/rpi/next-work.jsonl",
-  "count": 3,
-  "items": [/* array of high-severity unconsumed items */]
-}
-```
-
-**Skip conditions:**
-- `--quick` mode → skip
-- `.agents/rpi/next-work.jsonl` does not exist → skip silently
-- `jq` not on PATH → skip silently
-- No unconsumed high-severity items found → skip (do not add empty `prior_findings` to packet)
+Skip silently if the file is missing, `jq` is unavailable, or no unconsumed high-severity items exist.
 
 ### Step 2a: Run Constraint Tests
 
-**Skip if `--quick` (see Step 1.5).**
-
-**If the project has constraint tests, run them before council:**
+Run constraint tests before council if they exist (e.g., `internal/constraints/*_test.go`). Constraint tests catch mechanical violations (ghost references, TOCTOU races) that council judges miss. Failed constraint tests are CRITICAL findings that override council PASS verdict.
 
 ```bash
-# Check if constraint tests exist (Olympus pattern)
 if [ -d "internal/constraints" ] && ls internal/constraints/*_test.go &>/dev/null; then
-  echo "Running constraint tests..."
   go test ./internal/constraints/ -run TestConstraint -v 2>&1
-  # If FAIL → include failures in council context as CRITICAL findings
-  # If PASS → note "N constraint tests passed" in report
 fi
 ```
-
-**Why:** Constraint tests catch mechanical violations (ghost references, TOCTOU races, dead code at entry points) that council judges miss. Proven by Argus ghost ref in ol-571 — council gave PASS while constraint test caught it.
-
-Include constraint test results in the council packet context. Failed constraint tests are CRITICAL findings that override council PASS verdict.
 
 ### Step 2b: Metadata Verification Checklist (MANDATORY)
 
-**Skip if `--quick` (see Step 1.5).**
-
-Run mechanical checks BEFORE council — catches errors LLMs estimate instead of measure:
-1. **File existence** — every path in `git diff --name-only HEAD~3` must exist on disk
-2. **Line counts** — if a file claims "N lines", verify with `wc -l`
-3. **Cross-references** — internal markdown links resolve to existing files
-4. **Diagram sanity** — files with >3 ASCII boxes should have matching labels
-
-Include failures in council packet as `context.metadata_failures` (MECHANICAL findings). If all pass, note in report.
+Run mechanical checks BEFORE council (catches errors LLMs estimate instead of measure): file existence for all paths in `git diff --name-only HEAD~3`, line count verification, internal cross-reference resolution, and diagram label sanity. Include failures in council packet as `context.metadata_failures` (MECHANICAL findings).
 
 ### Step 2c: Deterministic Validation (Olympus)
 
-**Skip if `--quick` (see Step 1.5).**
-
 **Guard:** Only run when `.ol/config.yaml` exists AND `which ol` succeeds. Skip silently otherwise.
 
-**Implementation:**
-
-```bash
-# Run ol-validate.sh
-skills/vibe/scripts/ol-validate.sh
-ol_exit_code=$?
-
-case $ol_exit_code in
-  0)
-    # Passed: include the validation report in vibe output
-    echo "✅ Deterministic validation passed"
-    # Append the report section to council context and vibe report
-    ;;
-  1)
-    # Failed: abort vibe with FAIL verdict
-    echo "❌ Deterministic validation FAILED"
-    echo "VIBE FAILED — Olympus Stage1 validation did not pass"
-    exit 1
-    ;;
-  2)
-    # Skipped: note and continue
-    echo "⚠️ OL validation skipped"
-    # Continue to council
-    ;;
-esac
-```
-
-**Behavior:**
-- **Exit 0 (passed):** Include the validation report section in vibe output and council context. Proceed normally.
-- **Exit 1 (failed):** Auto-FAIL the vibe. Do NOT proceed to council.
-- **Exit 2 (skipped):** Note "OL validation skipped" in report. Proceed to council.
+Run `skills/vibe/scripts/ol-validate.sh`. Exit 0 = passed (include report in council context), Exit 1 = failed (auto-FAIL vibe, do NOT proceed to council), Exit 2 = skipped (note and continue).
 
 ### Step 2d: Codex Review (opt-in via `--mixed`)
 
-**Skip unless `--mixed` is passed.** Also skip if `--quick` (see Step 1.5).
+**Requires `--mixed` flag.** Adds Codex-generated review as pre-existing context for council judges (augments, does not replace council judgment).
 
-Codex review is opt-in because it adds 30–60s latency and token cost. Users explicitly request cross-vendor input with `--mixed`.
+Run `codex review --uncommitted`, save to `.agents/council/codex-review-pre.md`, and include the first 2000 chars in the council packet as `codex_review` (raw output can be 50k+ — truncation prevents context bloat across N judges).
 
-```bash
-echo "$(date -Iseconds) preflight: checking codex" >> .agents/council/preflight.log
-if which codex >> .agents/council/preflight.log 2>&1; then
-  codex review --uncommitted > .agents/council/codex-review-pre.md 2>&1 && \
-    echo "Codex review complete — output at .agents/council/codex-review-pre.md" || \
-    echo "Codex review skipped (failed)"
-else
-  echo "Codex review skipped (CLI not found)"
-fi
-```
-
-**If output exists**, summarize and include in council packet (cap at 2000 chars to prevent context bloat):
-```json
-"codex_review": {
-  "source": "codex review --uncommitted",
-  "content": "<first 2000 chars of .agents/council/codex-review-pre.md>"
-}
-```
-
-**IMPORTANT:** The raw codex review can be 50k+ chars. Including the full text in every judge's packet multiplies token cost by N judges. Truncate to the first 2000 chars (covers the summary and top findings). Judges can read the full file from disk if they need more detail.
-
-This gives council judges a Codex-generated review as pre-existing context — cheap, fast, diff-focused. It does NOT replace council judgment; it augments it.
-
-**Skip conditions:**
-- `--mixed` not passed → skip (opt-in only)
-- Codex CLI not on PATH → skip silently
-- `codex review` fails → skip silently, proceed with council only
-- No uncommitted changes → skip (nothing to review)
+Skip silently if `--mixed` not passed, Codex CLI not on PATH, review fails, or no uncommitted changes.
 
 ### Step 2e: Search Knowledge Flywheel
 
-**Skip if `--quick` (see Step 1.5).**
-
-```bash
-if command -v ao &>/dev/null; then
-    ao search "code review findings <target>" 2>/dev/null | head -10
-fi
-```
-If ao returns prior code review patterns for this area, include them in the council packet context. Skip silently if ao is unavailable or returns no results.
+Search for prior code review patterns via `ao search "code review findings <target>"` and include results in council packet context. Skip silently if `ao` is unavailable or returns no results.
 
 ### Step 2f: Bug Hunt or Deep Audit Sweep
 
-**Skip if `--quick` (see Step 1.5).**
+Two paths (skip both if no source files in target or target is non-code):
 
-**Path A — Deep Audit Sweep (`--deep` or `--sweep`):**
+**Path A — Deep Audit Sweep (`--deep` or `--sweep`):** Follow `references/deep-audit-protocol.md`. Chunk files into batches of 3–5, dispatch up to 8 Explore agents with 8-category checklists, merge findings into `.agents/council/sweep-manifest.md`, and include in council packet (judges shift to adjudication mode).
 
-Read `references/deep-audit-protocol.md` for the full protocol. In summary:
-
-1. Chunk target files into batches of 3–5 (by line count — see protocol for rules)
-2. Dispatch up to 8 Explore agents in parallel, each with a mandatory 8-category checklist per file
-3. Merge all explorer findings into a sweep manifest at `.agents/council/sweep-manifest.md`
-4. Include sweep manifest in council packet (judges shift to adjudication mode — see Step 4)
-
-**Why:** Generalist judges exhibit satisfaction bias — they stop at ~10 findings regardless of actual issue count. Per-file explorers with category checklists eliminate this bias and find 3x more issues in a single pass.
-
-**Path B — Lightweight Bug Hunt (default, no `--deep`/`--sweep`):**
-
-Run a proactive bug hunt on the target files before council review:
-
-```
-/bug-hunt --audit <target>
-```
-
-If bug-hunt produces findings, include them in the council packet as `context.bug_hunt`:
-```json
-"bug_hunt": {
-  "source": "/bug-hunt --audit",
-  "findings_count": 3,
-  "high": 1,
-  "medium": 1,
-  "low": 1,
-  "summary": "<first 2000 chars of bug hunt report>"
-}
-```
-
-**Why:** Bug hunt catches concrete line-level bugs (resource leaks, truncation errors, dead code) that council judges — reviewing holistically — often miss.
-
-**Skip conditions (both paths):**
-- `--quick` mode → skip (fast path)
-- No source files in target → skip (nothing to audit)
-- Target is non-code (pure docs/config) → skip
+**Path B — Lightweight Bug Hunt (default):** Run `/bug-hunt --audit <target>` and include findings in council packet as `context.bug_hunt` (first 2000 chars). Catches concrete line-level bugs that holistic council review often misses.
 
 ### Step 2g: Test Pyramid Inventory (MANDATORY)
 
@@ -405,47 +268,13 @@ Assess test coverage against the test pyramid standard (the test pyramid standar
 
 ### Step 2h: Check for Product Context
 
-**Skip if `--quick` (see Step 1.5).**
+When `PRODUCT.md` exists and no explicit `--preset` was passed, include it in the council packet via `context.files` and add a `developer-experience` perspective (DX judge covers api-clarity, error-experience, discoverability). With `--deep`, adds 1 more judge (4 total). If user passed explicit `--preset`, skip DX auto-include. If `PRODUCT.md` absent, proceed unchanged.
 
-```bash
-if [ -f PRODUCT.md ]; then
-  # PRODUCT.md exists — include developer-experience perspectives
-fi
-```
+> **Tip:** Create `PRODUCT.md` from `docs/PRODUCT-TEMPLATE.md` to enable DX-aware code review.
 
-When `PRODUCT.md` exists in the project root AND the user did NOT pass an explicit `--preset` override:
-1. Read `PRODUCT.md` content and include in the council packet via `context.files`
-2. Add a single consolidated `developer-experience` perspective to the council invocation:
-   - **With spec:** `/council --preset=code-review --perspectives="developer-experience" validate <target>` (3 judges: 2 code-review + 1 DX)
-   - **Without spec:** `/council --perspectives="developer-experience" validate <target>` (3 judges: 2 independent + 1 DX)
-   The DX judge covers api-clarity, error-experience, and discoverability in a single review.
-3. With `--deep`: adds 1 more judge per mode (4 judges total).
+### Step 3: Load the Spec
 
-When `PRODUCT.md` exists BUT the user passed an explicit `--preset`: skip DX auto-include (user's explicit preset takes precedence).
-
-When `PRODUCT.md` does not exist: proceed to Step 3 unchanged.
-
-> **Tip:** Create `PRODUCT.md` from `docs/PRODUCT-TEMPLATE.md` to enable developer-experience-aware code review.
-
-### Step 3: Load the Spec (New)
-
-**Skip if `--quick` (see Step 1.5).**
-
-Before invoking council, try to find the relevant spec/bead:
-
-1. **If target looks like a bead ID** (e.g., `na-0042`): `bd show <id>` to get the spec
-2. **Search for plan doc:** `ls .agents/plans/ | grep <target-keyword>`
-3. **Check git log:** `git log --oneline | head -10` to find the relevant bead reference
-
-If a spec is found, include it in the council packet's `context.spec` field:
-```json
-{
-  "spec": {
-    "source": "bead na-0042",
-    "content": "<the spec/bead description text>"
-  }
-}
-```
+Before invoking council, try to find the relevant spec/bead: check if target is a bead ID (`bd show <id>`), search `.agents/plans/`, or check `git log`. If found, include in the council packet's `context.spec` field.
 
 ### Step 3.5: Load Suppressions
 
@@ -598,43 +427,14 @@ Tell the user:
 ### Step 9: Record Ratchet Progress
 
 After council verdict:
-1. If verdict is PASS or WARN:
-   - Run: `ao ratchet record vibe --output "<report-path>" 2>/dev/null || true`
-   - Suggest: "Run /post-mortem to capture learnings and complete the cycle."
-2. If verdict is FAIL:
-   - Do NOT record ratchet progress.
-   - Extract ALL findings from the council report for structured retry context (group by category if >20):
-     ```
-     Read the council report. For each finding, format as:
-     FINDING: <description> | FIX: <fix or recommendation> | REF: <ref or location>
-
-     Fallback for v1 findings (no fix/why/ref fields):
-       fix = finding.fix || finding.recommendation || "No fix specified"
-       ref = finding.ref || finding.location || "No reference"
-     ```
-   - Tell user to fix issues and re-run /vibe, including the formatted findings as actionable guidance.
+1. **PASS or WARN:** Run `ao ratchet record vibe --output "<report-path>" 2>/dev/null || true`. Suggest running `/post-mortem` to capture learnings.
+2. **FAIL:** Do NOT record ratchet progress. Extract ALL findings from the council report as structured retry context (`FINDING: <desc> | FIX: <fix or recommendation> | REF: <ref or location>`, grouped by category if >20). Tell user to fix issues and re-run `/vibe`.
 
 ### Step 9.5: Feed Findings to Flywheel
 
-**If verdict is WARN or FAIL**, persist reusable findings to `.agents/findings/registry.jsonl` and optionally mirror the broader narrative to a learning file.
+**If verdict is WARN or FAIL**, persist reusable findings to `.agents/findings/registry.jsonl` (requires `dedup_key`, provenance, `pattern`, `detection_question`, `checklist_item`, `applicable_when` per finding-registry contract; append/merge by `dedup_key`; use temp-file-plus-rename atomic writes). Optionally write prose summary to `.agents/learnings/YYYY-MM-DD-vibe-<target>.md`. Skip if PASS.
 
-Registry write rules:
-
-- persist only reusable issues that should change future review or implementation behavior
-- require `dedup_key`, provenance, `pattern`, `detection_question`, `checklist_item`, `applicable_when`, and `confidence`
-- `applicable_when` must use the controlled vocabulary from the finding-registry contract
-- append or merge by `dedup_key`
-- use the contract's temp-file-plus-rename atomic write rule
-
-If a broader prose summary still helps, also write the existing anti-pattern learning file to `.agents/learnings/YYYY-MM-DD-vibe-<target>.md`. Skip both if verdict is PASS.
-
-After the registry update, if `hooks/finding-compiler.sh` exists, run:
-
-```bash
-bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
-```
-
-This keeps the same-session post-mortem path synchronized with the latest reusable findings. `session-end-maintenance.sh` remains the idempotent backstop.
+After registry update, run `bash hooks/finding-compiler.sh --quiet 2>/dev/null || true` if the hook exists (keeps post-mortem path synchronized).
 
 ### Step 10: Test Bead Cleanup
 
@@ -666,46 +466,7 @@ After validation completes, clean up stale test beads (`bd list --status=open | 
 
 ## Examples
 
-**User says:** "Run a quick validation on the latest changes."
-
-**Do:**
-```bash
-/vibe recent
-```
-
-### Validate Recent Changes
-
-```bash
-/vibe recent
-```
-
-Runs complexity on recent changes, then council reviews.
-
-### Validate Specific Directory
-
-```bash
-/vibe src/auth/
-```
-
-Complexity + council on auth directory.
-
-### Deep Review
-
-```bash
-/vibe --deep recent
-```
-
-Complexity + 3 judges for thorough review.
-
-### Cross-Vendor Consensus
-
-```bash
-/vibe --mixed recent
-```
-
-Complexity + Claude + Codex judges.
-
-See `references/examples.md` for additional examples: security audit with spec compliance, developer-experience code review with PRODUCT.md, and fast inline checks.
+See Quick Start above for common invocations. See `references/examples.md` for additional examples: security audit with spec compliance, developer-experience code review with PRODUCT.md, and fast inline checks.
 
 ---
 

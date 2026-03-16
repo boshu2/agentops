@@ -1,6 +1,12 @@
 ---
 name: shared
-description: Shared reference documents for multi-agent skills (not directly invocable)
+description: >-
+  Cross-runtime tool mapping, backend detection logic, CLI degradation fallbacks,
+  and multi-agent capability matrices for council, swarm, crank, research, and
+  implement skills. Contains concrete API translations (Claude Native Teams,
+  Codex Sub-Agents, OpenCode, inline fallback) and verified CLI command references.
+  Do not invoke directly; referenced automatically by swarm, council, and other
+  multi-agent skills when they need runtime-specific tool calls or fallback behavior.
 skill_api_version: 1
 user-invocable: false
 context:
@@ -115,11 +121,9 @@ Use capability detection at runtime, not hardcoded tool names. The same skill mu
 | Capability | Codex Sub-Agents | Claude Native Teams | Background Tasks |
 |------------|------------------|---------------------|------------------|
 | Observe output | `wait()` result | `SendMessage` delivery | `TaskOutput` (tail) |
-| Send message mid-flight | `send_input` | `SendMessage` | **NO** |
+| Mid-flight steering (message, redirect, adjust scope) | `send_input` | `SendMessage` | **NO** |
 | Pause / resume | NO | Idle → wake via `SendMessage` | **NO** |
 | Graceful stop | `close_agent` | `shutdown_request` | **TaskStop (lossy)** |
-| Redirect to different task | `send_input` | `SendMessage` | **NO** |
-| Adjust scope mid-flight | `send_input` | `SendMessage` | **NO** |
 | File conflict prevention | Manual `git worktree` routing | Native `isolation: worktree` + lead-only commits | None |
 | Process isolation | YES (sub-process) | Shared worktree | Shared worktree |
 

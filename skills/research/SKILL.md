@@ -1,6 +1,12 @@
 ---
 name: research
-description: 'Deep codebase exploration. Triggers: research, explore, investigate, understand, deep dive, current state.'
+description: >-
+  Traces function call hierarchies, maps module dependencies, analyzes code architecture,
+  and identifies usage patterns across files. Produces a structured research artifact in
+  .agents/research/ with file:line citations. Use when the user asks "how does this function
+  work", "trace the code path for X", "find all usages of Y", "understand the architecture
+  of Z", "map the dependencies", or "what calls this module". Triggers: /research, codebase
+  investigation, trace code path, map dependencies, find all usages, architecture analysis.
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:
@@ -99,14 +105,7 @@ Record the selected backend — it will be included in the research output docum
 
 ### Step 3: Launch Explore Agent
 
-**YOU MUST DISPATCH AN EXPLORATION AGENT NOW.** Select the backend using capability detection:
-
-#### Backend Selection (MANDATORY)
-
-1. If `spawn_agent` is available → **Codex sub-agent**
-2. Else if `TeamCreate` is available → **Claude native team** (Explore agent)
-3. Else if `skill` tool is read-only (OpenCode) → **OpenCode subagent** — `task(subagent_type="explore", description="Research: <topic>", prompt="<explore prompt>")`
-4. Else → **Background task fallback**
+**YOU MUST DISPATCH AN EXPLORATION AGENT NOW.** Use the backend detected in Step 2.5.
 
 #### Exploration Prompt (all backends)
 
@@ -337,9 +336,3 @@ Include in your Explore agent prompt:
 - [references/failure-patterns.md](references/failure-patterns.md)
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
 - [references/vibe-methodology.md](references/vibe-methodology.md)
-- [../shared/references/backend-background-tasks.md](../shared/references/backend-background-tasks.md)
-- [../shared/references/backend-claude-teams.md](../shared/references/backend-claude-teams.md)
-- [../shared/references/backend-codex-subagents.md](../shared/references/backend-codex-subagents.md)
-- [../shared/references/backend-inline.md](../shared/references/backend-inline.md)
-- [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
-- [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)

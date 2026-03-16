@@ -1,6 +1,6 @@
 ---
 name: doc
-description: 'This skill should be used when the user asks to "generate documentation", "validate docs", "check doc coverage", "find missing docs", "create code-map", "sync documentation", "update docs", or needs guidance on documentation generation and validation for any repository type. Triggers: doc, documentation, code-map, doc coverage, validate docs.'
+description: 'Generates code documentation, validates doc coverage against source, creates code-maps, and syncs documentation with implementation changes. Use when generating documentation, checking doc completeness, or updating stale docs.'
 skill_api_version: 1
 context:
   window: fork
@@ -115,6 +115,16 @@ obj.method1()
 ```
 ```
 
+### Step 3b: Validate Generated Docs
+
+After generating documentation, run a validation checkpoint before proceeding:
+
+1. **Check accuracy**: Compare generated parameter lists and return types against actual function signatures in source code.
+2. **Fix mismatches**: If signatures diverge from generated docs, update the docs to match the code.
+3. **Regenerate if needed**: If >20% of entries required fixes, re-run the generation step with corrected context.
+
+This prevents stale or inaccurate docs from being committed.
+
 ### Step 4: Create Code-Map (if requested)
 
 **Write to:** `docs/code-map/`
@@ -217,33 +227,12 @@ Tell the user:
 
 ## Examples
 
-### Generating API Documentation
-
-**User says:** `/doc gen authentication`
-
-**What happens:**
-1. Agent detects project type by checking for `package.json` and finding Node.js project
-2. Agent searches codebase for authentication-related functions using grep
-3. Agent reads authentication module files to understand implementation
-4. Agent generates documentation with purpose, parameters, returns, and usage examples
-5. Agent writes to `docs/api/authentication.md` with code samples
-6. Agent validates generated docs match actual function signatures
-
-**Result:** Complete API documentation created for authentication module with working code examples.
-
-### Checking Documentation Coverage
-
-**User says:** `/doc coverage`
-
-**What happens:**
-1. Agent detects Python project from `pyproject.toml`
-2. Agent counts total functions/classes with `grep -r "^def \|^class "`
-3. Agent counts documented items by searching for docstrings (`"""`)
-4. Agent calculates coverage: 45/67 items = 67% coverage
-5. Agent writes report to `.agents/doc/2026-02-13-coverage.md`
-6. Agent lists 22 undocumented functions as gaps
-
-**Result:** Documentation coverage report shows 67% coverage with specific list of 22 functions needing docs.
+| Input | Output |
+|-------|--------|
+| `/doc gen authentication` | Generates `docs/api/authentication.md` with full API docs (purpose, parameters, returns, examples) for the authentication module, validated against source signatures. |
+| `/doc coverage` | Produces coverage report at `.agents/doc/YYYY-MM-DD-coverage.md` showing percentage of documented items and listing specific undocumented functions. |
+| `/doc all` | Discovers all gaps, generates missing docs, validates existing docs against current code, and writes a summary report. |
+| `/doc validate` | Checks all existing docs for stale content, broken links, missing sections, and signature mismatches. |
 
 ## Troubleshooting
 
