@@ -1,0 +1,11 @@
+name: agentops
+version: 2.20.0
+description: The missing DevOps layer for coding agents. Flow, feedback, and memory that compounds between sessions.
+author: Boden Fuller
+license: MIT
+
+includes:
+  - skills/**/*
+  - agents/**/*
+  - hooks/**/*
+  - schemas/**/*
