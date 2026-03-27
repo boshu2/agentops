@@ -103,6 +103,16 @@
             "timeout": 3
           }
         ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/codex-parity-warn.sh",
+            "timeout": 3
+          }
+        ]
       }
     ],
     "PostToolUse": [

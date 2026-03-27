@@ -46,6 +46,18 @@ CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to 
 
 **Steer:** decrease (functions exceeding CC 20)
 
+### 6. Maintain competitive awareness
+
+Competitive analysis docs (`docs/comparisons/vs-*.md`) must stay fresh. GSD, Compound Engineer, and sdd are actively iterating — stale analysis means blind spots. Refresh comparisons within 45 days of last update. `/evolve` picks this up automatically when other goals pass.
+
+**Steer:** decrease (stale comparison doc count)
+
+### 7. Enforce codex parity proactively
+
+CI catches codex drift at push time, but 40% of fix commits in the March 2026 integration were codex parity issues caught too late. The PreToolUse hook warns during editing; the goal gate blocks push if drift exists.
+
+**Steer:** decrease (codex parity findings count)
+
 ## Gates
 
 | ID | Check | Weight | Description |
@@ -66,3 +78,5 @@ CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to 
 | goals-validate | `bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && cd .. && /tmp/ao-goals-val goals validate --json 2>/dev/null \| jq -e ".valid == true"'` | 5 | GOALS.md parses and validates without structural errors |
 | athena-freshness | `bash scripts/check-athena-health.sh` | 4 | Athena defrag report is fresh and stale learnings are low |
 | athena-no-oscillation | `bash -c 'test -f .agents/defrag/latest.json && jq -e "(.oscillation.oscillating_goals // []) \| length == 0" .agents/defrag/latest.json'` | 4 | No evolve goals oscillating across consecutive cycles |
+| competitive-freshness | `bash scripts/check-competitive-freshness.sh` | 3 | Competitive analysis docs updated within 45 days |
+| codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |
