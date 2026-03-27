@@ -134,6 +134,7 @@ Tell the user:
 2. Number of functions over threshold
 3. Top 3 refactoring targets
 4. Location of full report
+5. Run `/refactor <function>` to address critical complexity targets
 
 ## Key Rules
 
@@ -181,6 +182,10 @@ Tell the user:
 6. Agent reports top 3 targets: HandleWebhook (34), ProcessBatch (22), ValidateInput (15)
 
 **Result:** Critical function identified for immediate refactoring with actionable extraction plan.
+
+## See Also
+
+- [refactor](../refactor/SKILL.md) — Safe, verified refactoring for complexity targets
 
 ## Troubleshooting
 

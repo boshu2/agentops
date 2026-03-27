@@ -61,6 +61,8 @@ Match the first row that applies. Output only that message — nothing else.
 | BD=true + CODEX=true | "✅ Codex full stack ready.\n  `ao codex start` — start with prior context\n  `bd ready` — see open work\n  `/rpi \"your goal\"` — start a new goal from scratch\n  `ao codex stop` — close out the session cleanly" |
 | BD=true | "✅ Full stack ready.\n  `bd ready` — see open work\n  `/rpi \"your goal\"` — start a new goal from scratch\n  `/status` — see current session state" |
 
+Starting a new project? Run `/scaffold <language> <name>` to generate project structure with best practices.
+
 ---
 
 ## Examples
@@ -91,3 +93,7 @@ Match the first row that applies. Output only that message — nothing else.
 - [references/getting-started.md](references/getting-started.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
 - [references/full-catalog.md](references/full-catalog.md)
+
+## See Also
+
+- [scaffold](../scaffold/SKILL.md) — Project scaffolding and component generation

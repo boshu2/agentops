@@ -431,6 +431,8 @@ Assess test coverage against the test pyramid standard (the test pyramid standar
 - Missing BF4 on boundary code → **WARN** (advisory, not blocking)
 - All levels covered → no mention needed
 
+When coverage gaps are found, run `/test <module>` to generate test candidates for uncovered code.
+
 ### Step 2h: Check for Product Context
 
 **Skip if `--quick` (see Step 1.5).**
@@ -622,6 +624,9 @@ date: YYYY-MM-DD
 | 1 | ... | ... | ... | ... | ... | sweep / council |
 
 ## Recommendation
+
+For performance-sensitive code, run `/perf profile <target>` to identify optimization opportunities.
+
 <council recommendation>
 
 ## Decision
@@ -782,6 +787,8 @@ The hook is non-blocking (always exits 0) and outputs warnings via JSON. See [re
 - `skills/complexity/SKILL.md` — Standalone complexity analysis
 - `skills/bug-hunt/SKILL.md` — Proactive code audit and bug investigation
 - `.agents/specs/conflict-resolution-algorithm.md` — Conflict resolution between agent findings
+- [test](../test/SKILL.md) — Test generation and coverage analysis
+- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
 
 ## Reference Documents
 

@@ -192,6 +192,8 @@ Fix at the ROOT CAUSE, not at symptoms.
 
 Run the failing test - it should now pass.
 
+If the bug is in a high-complexity function, consider `/refactor` after fix to prevent recurrence.
+
 ---
 
 ## Audit Mode
@@ -246,6 +248,8 @@ For each finding, assign severity:
 | **HIGH** | Data loss, security, resource leak, process orphaning | Zombie processes, SQL injection, file handle leak |
 | **MEDIUM** | Wrong output, incorrect defaults, silent data corruption | UTF-8 truncation, hardcoded paths, wrong error code |
 | **LOW** | Dead code, cosmetic, minor inconsistency | Unreachable branch, unused import, style violation |
+
+Performance bugs (slow queries, memory leaks, N+1) → escalate to `/perf` for deeper analysis.
 
 ### Audit Step 4: Write Audit Report
 
@@ -385,3 +389,8 @@ Common bug patterns to check:
 - [references/audit-report-template.md](references/audit-report-template.md)
 - [references/bug-report-template.md](references/bug-report-template.md)
 - [references/failure-categories.md](references/failure-categories.md)
+
+## See Also
+
+- [refactor](../refactor/SKILL.md) — Safe refactoring for complex bug-prone code
+- [perf](../perf/SKILL.md) — Performance profiling for performance-related bugs

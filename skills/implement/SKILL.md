@@ -157,6 +157,8 @@ Reference: the test pyramid standard in `/standards` for full tooling matrix.
 
 **Note:** Tests written here are MUTABLE — unlike GREEN mode's immutable tests, you may adjust these tests during implementation if you discover the initial test design was wrong. The goal is to think about behavior before code, not to be rigid.
 
+Or use `/test <feature>` to auto-generate test candidates, then hand-refine.
+
 **CI-safe tests:** If the function under test shells out to an external CLI (`bd`, `ao`, `gh`), do NOT test the wrapper. Instead, test the underlying function that performs the testable work (event emission, state mutation, file I/O). See the Go standards (Testing section) for examples.
 
 ### Step 4: Implement the Change
@@ -517,3 +519,4 @@ If bd CLI not available:
 
 - [references/gate-checks.md](references/gate-checks.md)
 - [references/resume-protocol.md](references/resume-protocol.md)
+- [test](../test/SKILL.md) — Test generation, coverage analysis, and TDD workflow

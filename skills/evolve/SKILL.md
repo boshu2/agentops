@@ -40,6 +40,12 @@ Always-on autonomous loop over `/rpi`. Work selection order:
 6. **Complexity / TODO / FIXME / drift / dead code / stale docs / stale research mining**
 7. **Concrete feature suggestions** derived from repo purpose when no sharper work exists
 
+**Work generators** that feed the selection ladder:
+- `/test --coverage` for test coverage gaps (feeds Step 3.4)
+- `/refactor --sweep` for complexity debt (feeds Step 3.6)
+- `/deps audit` for dependency health (feeds Step 3.5)
+- `/perf profile` for performance debt (feeds Step 3.5)
+
 **Dormancy is last resort.** Empty current queues mean "run the generator layers", not "stop". Only go dormant after the queue layers and generator layers come up empty across multiple consecutive passes.
 
 ```bash
@@ -428,6 +434,10 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - `skills/crank/SKILL.md` — Epic execution (called for beads epics)
 - `docs/contracts/autodev-program.md` — Repo-local operational contract for bounded autonomous development
 - `GOALS.yaml` — Fitness goals for this repo
+- [test](../test/SKILL.md) — Test generation and coverage analysis
+- [refactor](../refactor/SKILL.md) — Safe, verified refactoring
+- [deps](../deps/SKILL.md) — Dependency audit and vulnerability scanning
+- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
 
 ## Reference Documents
 

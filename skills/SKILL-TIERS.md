@@ -139,6 +139,38 @@ What are you trying to do?
 │   ├─ Full retrospective ────────► /post-mortem
 │   └─ Trace a decision ─────────► /trace <concept>
 │
+├─ "Write or improve tests"
+│   ├─ Generate tests for code ───► /test <target>
+│   ├─ Find coverage gaps ────────► /test --coverage <scope>
+│   └─ TDD a new feature ────────► /test --tdd <feature>
+│
+├─ "Review someone's code"
+│   ├─ Review a PR ───────────────► /review <PR-number>
+│   ├─ Review agent output ───────► /review --agent <path>
+│   └─ Review local diff ────────► /review --diff
+│
+├─ "Refactor code"
+│   ├─ Refactor specific target ──► /refactor <file-or-function>
+│   ├─ Sweep for complexity ──────► /refactor --sweep <scope>
+│   └─ Extract method/module ─────► /refactor --extract <pattern>
+│
+├─ "Manage dependencies"
+│   ├─ Full health check ────────► /deps audit
+│   ├─ Update dependencies ──────► /deps update
+│   ├─ Vulnerability scan ───────► /deps vuln
+│   └─ License compliance ───────► /deps license
+│
+├─ "Performance work"
+│   ├─ Profile hotspots ─────────► /perf profile <target>
+│   ├─ Run benchmarks ───────────► /perf bench <target>
+│   ├─ Compare runs ─────────────► /perf compare <baseline> <candidate>
+│   └─ Optimize code ────────────► /perf optimize <target>
+│
+├─ "Start a new project"
+│   ├─ Scaffold project ─────────► /scaffold <language> <name>
+│   ├─ Add component ────────────► /scaffold component <type> <name>
+│   └─ Generate CI config ───────► /scaffold ci <platform>
+│
 ├─ "Contribute upstream"
 │   └─ Full PR workflow ──────────► /pr-research → /pr-plan → /pr-implement
 │
@@ -177,12 +209,18 @@ These are how skills chain in practice:
 | **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |
 | **TDD feature** | `/implement <issue>` | TDD-first by default (skip with `--no-tdd`) |
 | **Scoped parallel** | `/crank <epic>` | Auto file-ownership map prevents conflicts |
+| **Test-first build** | `/test --tdd` → `/implement` | Write tests before code |
+| **Reviewed PR** | `/review <PR>` → approve/request changes | Incoming PR review |
+| **Safe refactor** | `/complexity` → `/refactor` → `/test` | Find hotspots, refactor, verify |
+| **Dep hygiene** | `/deps audit` → `/deps update` → `/test` | Audit, update, verify |
+| **Perf cycle** | `/perf profile` → `/perf optimize` → `/perf compare` | Profile, fix, verify |
+| **New project** | `/scaffold` → `/test` → `/push` | Bootstrap, verify, ship |
 
 ---
 
 ## Current Skill Tiers
 
-### User-Facing Skills (45)
+### User-Facing Skills (51)
 
 **Judgment:**
 
@@ -192,6 +230,7 @@ These are how skills chain in practice:
 | **vibe** | judgment | Complexity analysis + council — code quality review |
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
+| **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |
 
 **Execution:**
 
@@ -211,6 +250,11 @@ These are how skills chain in practice:
 | **complexity** | execution | Cyclomatic complexity analysis |
 | **grafana-platform-dashboard** | execution | Build and validate platform operations dashboards with critical-first layout and PromQL gates |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
+| **test** | execution | Test generation, coverage analysis, and TDD workflow |
+| **refactor** | execution | Safe, verified refactoring with regression testing at each step |
+| **deps** | execution | Dependency audit, update, vulnerability scanning, and license compliance |
+| **perf** | execution | Performance profiling, benchmarking, regression detection, and optimization |
+| **scaffold** | execution | Project scaffolding, component generation, and boilerplate setup |
 
 **Knowledge:**
 
@@ -337,6 +381,12 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | trace | provenance | alternative |
 | **update** | - | - (standalone) |
 | using-agentops | - | - |
+| **test** | standards, complexity | required, optional |
+| **review** | standards, council | required, optional |
+| **refactor** | standards, complexity, beads | required, optional, optional |
+| **deps** | standards | optional |
+| **perf** | standards, complexity | optional, optional |
+| **scaffold** | standards | required |
 
 ---
 

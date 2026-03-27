@@ -140,6 +140,12 @@ These are the skills every user needs first. Everything else is available when y
 | `/readme` | Generate gold-standard README for any project |
 | `/security` | Continuous repository security scanning and release gating |
 | `/security-suite` | Binary and prompt-surface security suite — static analysis, dynamic tracing, offline redteam, policy gating |
+| `/test` | Test generation, coverage analysis, and TDD workflow |
+| `/review` | Review incoming PRs, agent output, or diffs — SCORED checklist |
+| `/refactor` | Safe, verified refactoring with regression testing at each step |
+| `/deps` | Dependency audit, update, vulnerability scanning, and license compliance |
+| `/perf` | Performance profiling, benchmarking, regression detection, and optimization |
+| `/scaffold` | Project scaffolding, component generation, and boilerplate setup |
 
 ## Expert Skills (specialized workflows)
 

@@ -96,6 +96,8 @@ Actions:
   - `.github/workflows/release.yml`
 - For binary/internal black-box assurance plus offline repo-surface redteam, use:
   - `skills/security-suite/SKILL.md` (includes `security_suite.py` and `prompt_redteam.py`)
+- For dependency vulnerability and license scanning, use:
+  - [deps](../deps/SKILL.md) — Dependency audit, vulnerability scanning, and license compliance
 
 ## Examples
 
@@ -105,7 +107,8 @@ Actions:
 
 **What happens:**
 1. The skill runs `scripts/security-gate.sh --mode quick`, which executes available scanners (semgrep, gosec, gitleaks) against the current working tree and flags high/critical findings.
-2. Scan artifacts are written to `$TMPDIR/agentops-security/<run-id>/` for review, and the gate reports a pass/blocked verdict.
+2. Run `/deps vuln` to scan for vulnerable dependencies (OWASP A06: Vulnerable and Outdated Components).
+3. Scan artifacts are written to `$TMPDIR/agentops-security/<run-id>/` for review, and the gate reports a pass/blocked verdict.
 
 **Result:** The gate passes with no high/critical findings, confirming the branch is safe to open a PR.
 
