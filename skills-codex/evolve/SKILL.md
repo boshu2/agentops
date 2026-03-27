@@ -390,6 +390,12 @@ fi
 
 **Step 3.4: Testing improvements**
 
+Work generators for concrete improvement signals:
+- `$test --coverage` — find test gaps and generate candidates
+- `$refactor --sweep` — find complexity debt and refactor targets
+- `$deps audit` — check dependency health, vulnerabilities, and license compliance
+- `$perf profile` — identify performance debt and optimization opportunities
+
 When queues and goals are empty, generate concrete testing work instead of idling:
 - find packages/files with thin or missing tests
 - look for missing regression tests around recent bug-fix paths
@@ -813,6 +819,10 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - `skills/crank/SKILL.md` — Epic execution (called for beads epics)
 - `docs/contracts/autodev-program.md` — Repo-local operational contract for bounded autonomous development
 - `GOALS.yaml` — Fitness goals for this repo
+- [test](../test/SKILL.md) — Test generation and coverage analysis
+- [refactor](../refactor/SKILL.md) — Safe, verified refactoring for complexity targets
+- [deps](../deps/SKILL.md) — Dependency audit, vulnerability scanning, and license compliance
+- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
 
 ## Reference Documents
 

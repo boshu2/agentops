@@ -55,6 +55,12 @@ Match the first row that applies. Output only that message — nothing else.
 
 ---
 
+Starting a new project? Run `$scaffold <language> <name>` to generate project structure with best practices.
+
+## See Also
+
+- [scaffold](../scaffold/SKILL.md) — Project scaffolding and component generation
+
 ## Examples
 
 ### First-Time Setup

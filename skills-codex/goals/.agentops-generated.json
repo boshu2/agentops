@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/goals",
   "layout": "modular",
-  "source_hash": "4eef0404176a6345265670378c4d20f4c92b783318e49ae4c673688e203b1124",
+  "source_hash": "3a2b714569c2378c300658f7796125275b18204a91d8e8eee252507f7c7caf91",
   "generated_hash": "aa595c26d36e868f1a98b6bda2358020db988c927d3155805a8e93ef9fc071ff"
 }

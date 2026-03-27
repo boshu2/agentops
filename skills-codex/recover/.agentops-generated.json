@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/recover",
   "layout": "modular",
-  "source_hash": "b81d186f9a50c3131f4f1bc203cd4765feaa545bb23878316d9bf3549bf0e07e",
+  "source_hash": "d4b69c42101d3dcdac9969bdcb19b695e1dfb206f01a312f6307a316e095117a",
   "generated_hash": "9738d91ebf218dd345061b92c617c8a0ffe1ad001ac873f37162b43c8eb51cdf"
 }

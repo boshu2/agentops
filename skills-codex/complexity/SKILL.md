@@ -122,6 +122,11 @@ Tell the user:
 2. Number of functions over threshold
 3. Top 3 refactoring targets
 4. Location of full report
+5. Run `$refactor <function>` to address critical complexity targets
+
+## See Also
+
+- [refactor](../refactor/SKILL.md) — Safe, verified refactoring for complexity targets
 
 ## Key Rules
 

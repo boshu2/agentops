@@ -147,6 +147,8 @@ If the implementation generates output files (configs, reports, manifests):
 
 Reference: the test pyramid standard in `$standards` for full tooling matrix.
 
+Or use `$test <feature>` to auto-generate test candidates, then hand-refine.
+
 **Skip conditions (any of these bypasses Step 3.5):**
 - GREEN mode is active (invoked by `$crank --test-first` — tests already exist)
 - Issue type is `chore`, `docs`, or `ci`
@@ -510,6 +512,10 @@ If bd CLI not available:
 | "BLOCKED" status | Contract contradicts tests or is incomplete in GREEN mode | Write BLOCKED with specific reason, do NOT modify tests |
 | Fresh verification missing | Agent claims success without running verification command | MUST run verification command fresh with full output before claiming completion |
 | Ratchet record failed | ao CLI unavailable or chain.jsonl corrupted | Implementation still closes via bd, but ratchet chain needs manual repair |
+
+## See Also
+
+- [test](../test/SKILL.md) — Test generation, coverage analysis, and TDD workflow
 
 ## Reference Documents
 

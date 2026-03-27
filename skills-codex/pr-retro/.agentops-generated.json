@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/pr-retro",
   "layout": "modular",
-  "source_hash": "6d30dc54d41c484331243c9e5958b5bdeaf5d0259830f8bc7afecbc7c8f965d3",
+  "source_hash": "0fa9c560102b23e4c948859292ab28146f060cc4f61334f81b83f1301d3f2b36",
   "generated_hash": "7c795ac6980b7548faad48000313b1f3d956011def25c2a0dc7337db2bfde663"
 }

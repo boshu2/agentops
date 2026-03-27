@@ -166,6 +166,8 @@ Fix at the ROOT CAUSE, not at symptoms.
 
 Run the failing test - it should now pass.
 
+If the bug is in a high-complexity function, consider `$refactor` after fix to prevent recurrence.
+
 ---
 
 ## Audit Mode
@@ -247,6 +249,8 @@ For each finding, assign severity:
 | **HIGH** | Data loss, security, resource leak, process orphaning | Zombie processes, SQL injection, file handle leak |
 | **MEDIUM** | Wrong output, incorrect defaults, silent data corruption | UTF-8 truncation, hardcoded paths, wrong error code |
 | **LOW** | Dead code, cosmetic, minor inconsistency | Unreachable branch, unused import, style violation |
+
+Performance bugs (slow queries, memory leaks, N+1) → escalate to `$perf` for deeper analysis.
 
 ### Audit Step 4: Write Audit Report
 
@@ -353,6 +357,11 @@ Common bug patterns to check:
 | Git archaeology returns too many commits | Broad search or high-churn file | Narrow timeframe with `--since` flag, focus on specific function with `git blame`, search commit messages for related keywords. |
 | Hit 3-failure limit during hypothesis testing | Multiple incorrect hypotheses or complex root cause | Escalate to architecture review. Read `failure-categories.md` to determine if failures are countable. Consider asking for domain expert input. |
 | Bug report missing key information | Incomplete investigation or skipped steps | Verify all 4 phases completed. Ensure root cause identified with file:line. Check git blame ran for responsible commit. |
+
+## See Also
+
+- [refactor](../refactor/SKILL.md) — Safe, verified refactoring for complexity targets
+- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
 
 ## Reference Documents
 

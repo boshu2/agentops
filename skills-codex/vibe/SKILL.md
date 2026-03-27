@@ -363,6 +363,8 @@ Assess test coverage against the test pyramid standard (see the standards skill)
 
 Missing L1 on feature code → WARN. Missing BF4 on boundary code → WARN.
 
+When coverage gaps are found, run `$test <module>` to generate test candidates for uncovered code.
+
 ### Step 2g: Check for Product Context
 
 **Skip if `--quick` (see Step 1.5).**
@@ -555,6 +557,8 @@ Tell the user:
 3. Key concerns
 4. Location of vibe report
 
+For performance-sensitive code, run `$perf profile <target>` to identify optimization opportunities.
+
 ### Step 9: Record Ratchet Progress
 
 After council verdict:
@@ -687,6 +691,8 @@ See `references/examples.md` for additional examples: security audit with spec c
 - `../council/SKILL.md` — Multi-model validation council
 - `../complexity/SKILL.md` — Standalone complexity analysis
 - `../bug-hunt/SKILL.md` — Proactive code audit and bug investigation
+- [test](../test/SKILL.md) — Test generation and coverage analysis
+- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
 - `.agents/specs/conflict-resolution-algorithm.md` — Conflict resolution between agent findings
 
 ## Reference Documents

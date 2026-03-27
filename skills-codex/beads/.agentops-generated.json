@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/beads",
   "layout": "modular",
-  "source_hash": "9cf7e4fea0c22ad0c8ae0e52bd574c1db1e2ed4ad531790d4102df7f039d746e",
+  "source_hash": "80a5b9fd59c945be2ea4f5b7f25f5439948b931d2ee15553568c1fe223b8d9cb",
   "generated_hash": "d5f314dcf90252cca443f51c71800ba6beb8c8b34f50f52aa8520b6e3c54969b"
 }

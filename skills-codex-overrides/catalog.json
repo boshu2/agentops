@@ -523,6 +523,42 @@
           "lead with defects, risks, and verification gaps"
         ]
       }
+    },
+    {
+      "name": "deps",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "perf",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "refactor",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "review",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "scaffold",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "test",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
     }
   ]
 }

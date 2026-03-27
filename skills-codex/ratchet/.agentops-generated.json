@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/ratchet",
   "layout": "modular",
-  "source_hash": "74dda2cf46e94b673abc44b9458253a9b0ec592c2529b1288a7632f500a25c3f",
+  "source_hash": "17bd565760c3834d4b34736edf3a1aacd4643f3267f98e6c959b4657856b06fb",
   "generated_hash": "e1162fbad634eb1d82ba3b74524394afdc727fe1e260a5eacda001f1cb301f41"
 }

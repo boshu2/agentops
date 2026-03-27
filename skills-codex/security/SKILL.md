@@ -79,6 +79,7 @@ Actions:
 
 ## Notes
 
+- For OWASP A06 dependency vulnerability scanning, run `$deps vuln` to complement static analysis with dependency-level checks.
 - Use this as the canonical security runbook instead of ad-hoc scanner commands.
 - Keep workflow wiring aligned with this contract in:
   - `.github/workflows/validate.yml`
@@ -118,6 +119,10 @@ Actions:
 | False positive blocking the gate | Scanner flags a non-issue as high/critical severity | Add a scanner-specific inline suppression comment (e.g., `# nosemgrep: rule-id`) or update the scanner config to exclude the pattern, then document the suppression reason. |
 | Artifacts directory `$TMPDIR/agentops-security/` not created | Script lacks write permissions or `$TMPDIR` is not writable | Verify `$TMPDIR` is set and writable; the script auto-creates subdirectories on each run. |
 | Nightly scan not detecting regressions | Nightly workflow is not configured or is pointing at stale branch | Verify `.github/workflows/nightly.yml` runs `scripts/security-gate.sh --mode full` against the correct branch (typically `main`). |
+
+## See Also
+
+- [deps](../deps/SKILL.md) — Dependency audit, vulnerability scanning, and license compliance
 
 ## Local Resources
 

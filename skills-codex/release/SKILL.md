@@ -90,6 +90,7 @@ Once the target version is known, rerun the gate as `./scripts/ci-local-release.
 | Lint clean | Detect and run lint command | Warn (show issues) |
 | Version consistency | Compare versions across package files | Warn (show mismatches) |
 | Manifest versions sync | Compare `.claude-plugin/plugin.json` and `marketplace.json` versions | Warn (show mismatches) |
+| Dependency vulnerabilities | Run `$deps vuln` to confirm no critical vulnerabilities ship with this release | Warn |
 | Commits since last tag | `git log --oneline <range>` | Block if empty — nothing to release |
 | Release cadence | Check date of last tag vs today | Warn if <7 days since last non-security release (see `references/release-cadence.md`) |
 | Unconsumed high-severity findings | Count items in `.agents/rpi/next-work.jsonl` where `consumed=false` and `severity=high` | Warn — not a blocker (see check below) |
@@ -512,6 +513,10 @@ Everything this skill does is local and reversible:
 | Tests fail during pre-flight | Breaking changes not caught earlier | Fix failing tests or use `--skip-checks` (not recommended) |
 | Dirty working tree warning | Uncommitted changes present | Commit or stash changes before release for clean state |
 | GitHub Release page has empty body | GoReleaser conflicts with existing draft release | CI workflow deletes existing releases before GoReleaser runs; do NOT `gh release create` locally |
+
+## See Also
+
+- [deps](../deps/SKILL.md) — Dependency audit and vulnerability scanning
 
 ## Reference Documents
 

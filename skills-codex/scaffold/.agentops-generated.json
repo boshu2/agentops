@@ -1,0 +1,7 @@
+{
+  "generator": "scripts/sync-codex-native-skills.sh",
+  "source_skill": "skills/scaffold",
+  "layout": "modular",
+  "source_hash": "8b5c25a85dfabd7d7b0b263d1f580c0d33691d3c1b6630b92aabd50f3c5bda6c",
+  "generated_hash": "1ec3d99808e7d5d3fc9ece6525e466cd5bb7da313b43e655b9379335bebd6f75"
+}

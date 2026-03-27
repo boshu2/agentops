@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/forge",
   "layout": "modular",
-  "source_hash": "7c02fd0416b8434eaa4044f783e62772c4b067dc47f6758dc118894d4e205fea",
+  "source_hash": "286b17f44efe413b7b8514cefded51f7085e82bf9698cc41d0136337af66662d",
   "generated_hash": "4356c8b0285f69539eaf7ad3d017e8c7d2e1d16b50bd998bb70a1c6978b67a10"
 }

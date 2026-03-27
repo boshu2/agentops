@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/pr-implement",
   "layout": "modular",
-  "source_hash": "c06a85c50586cd92b32cfd0fab36bbb99ab94fefd720405bd041f26be0bbd72c",
+  "source_hash": "c560b015b6e30089bf67760c38802a097becd40a9c5f8a8d50882fb1011cc7e3",
   "generated_hash": "932959dc1e62b84a01f43d8b1b4dd4f8a76f57d3eccdc3dd73c6da4478e1b1dc"
 }

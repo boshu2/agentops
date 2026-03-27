@@ -1,0 +1,7 @@
+{
+  "generator": "scripts/sync-codex-native-skills.sh",
+  "source_skill": "skills/review",
+  "layout": "modular",
+  "source_hash": "41592e863522cb5476c85e5edc5dfbb021cd62bc1b540ec69e0b8afe76e83d83",
+  "generated_hash": "45fd6e5bcfa7aef950c24bc1141b37c0959bce05bdf59c5e0a56aa1d814b67a7"
+}

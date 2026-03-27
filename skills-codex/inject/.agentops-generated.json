@@ -2,6 +2,6 @@
   "generator": "scripts/sync-codex-native-skills.sh",
   "source_skill": "skills/inject",
   "layout": "modular",
-  "source_hash": "030f40800f27cefba6f1b3cf18bdc175e61bf546424708950f045345c0418a3a",
+  "source_hash": "7daf8be8d1534231a37139b921992038b36616d1feeb293eea32c44dc776ff8d",
   "generated_hash": "01f6bc5ec26f3d2f401b8609840799a801a8cd52fd38f57b13a296014eb187ef"
 }
