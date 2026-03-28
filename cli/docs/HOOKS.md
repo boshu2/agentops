@@ -1,6 +1,18 @@
-# Claude Code Hooks for Automatic Knowledge Flywheel
+# Hooks for Automatic Knowledge Flywheel
 
-The ao CLI integrates with Claude Code's hooks system to automate the CASS (Contextual Agent Session Search) knowledge flywheel.
+The ao CLI integrates with runtime hooks to automate the CASS (Contextual Agent Session Search) knowledge flywheel.
+
+## Runtime Modes
+
+| Runtime | Hook Mechanism | Install |
+|---------|---------------|---------|
+| **Claude Code** | Full hook manifest via `~/.claude/settings.json` | `ao hooks install` |
+| **Codex** | Skill-driven lifecycle (`ao codex start/stop`) | `scripts/install-codex-plugin.sh` |
+| **Manual** | Explicit commands (`ao inject`, `ao forge`) | N/A |
+
+See `docs/contracts/hook-runtime-contract.md` for the full event mapping.
+
+The rest of this document covers the **Claude Code** hook configuration.
 
 ## Quick Start
 
@@ -111,7 +123,7 @@ ao hooks install --minimal
 
 ### `ao hooks show`
 
-Display current Claude Code hooks configuration.
+Display current hooks configuration (Claude Code runtime).
 
 ```bash
 ao hooks show
