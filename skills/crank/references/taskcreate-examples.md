@@ -147,13 +147,13 @@ Details from beads:
 Execute using /implement <issue-id>. Mark complete when done.
 
 ```validation
-tests: "<test-command>"
+tests: "go test ./cmd/ao -run TestFeatureName -count=1"
 files_exist:
   - <expected-output-file-1>
 content_check:
   - file: <expected-output-file-1>
     pattern: "<required-structure-pattern>"
-command: "<optional-build-or-smoke-command>"
+command: "go test ./cmd/ao -run TestSmoke -count=1"
 ```
 
 > **Allowlist-safe commands:** Validation commands run via `run_restricted()` which only
@@ -171,12 +171,12 @@ command: "<optional-build-or-smoke-command>"
     "issue_type": "feature",
     "files": ["<expected-modified-file-1>", "<expected-modified-file-2>"],
     "validation": {
-      "tests": "<test-command>",
+      "tests": "go test ./cmd/ao -run TestFeatureName -count=1",
       "files_exist": ["<expected-output-file-1>"],
       "content_check": [
         {"file": "<expected-output-file-1>", "pattern": "<required-structure-pattern>"}
       ],
-      "command": "<optional-build-or-smoke-command>"
+      "command": "go vet ./cmd/ao"
     }
   }
 )
@@ -202,8 +202,8 @@ TaskCreate(
         "file": "<expected-output-file-1>",
         "pattern": "<required-doc-or-config-pattern>"
       },
-      "command": "<optional-smoke-command>",
-      "lint": "<optional-lint-command>"
+      "command": "make lint",
+      "lint": "npm run lint"
     }
   }
 )
