@@ -75,6 +75,8 @@ Ralph alignment source: `../shared/references/ralph-loop-contract.md` (fresh con
 | `--test-first` | off | Enable spec-first TDD: SPEC WAVE generates contracts, TEST WAVE generates failing tests, IMPL WAVES make tests pass |
 | `--per-task-commits` | off | Opt-in per-task commit strategy. Falls back to wave-batch when file boundaries overlap. See `references/commit-strategies.md`. |
 | `--tier=<name>` | (auto) | Force a specific cost tier (quality/balanced/budget) for all council calls. Overrides effort-to-tier auto-mapping. |
+| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-vibe deps/test checks) |
+| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps vuln), `full` (all) |
 
 ## Global Limits
 
@@ -396,10 +398,16 @@ For BLOCKED recovery and full worker prompt, read `skills/crank/references/test-
 
 **Skip if `--test-first` is NOT set or if no spec-eligible issues exist.**
 
+**Lifecycle integration:** If `--no-lifecycle` is NOT set, delegate test generation to `/test`:
+
 For each spec-eligible issue:
 1. **TaskCreate** with subject `TEST: <issue-title>`
 2. Worker receives: contract-<issue-id>.md + codebase types (NOT implementation code)
-3. Worker generates: failing test files in appropriate location
+3. Worker generates failing tests via:
+   ```
+   Skill(skill="test", args="tdd <issue-description> --levels <test_levels>")
+   ```
+   If `/test` is unavailable or `--no-lifecycle` is set, workers generate tests inline (original behavior).
    - Workers classify generated tests by pyramid level: L0 (contract), L1 (unit), L2 (integration), L3 (component)
    - If `test_levels` metadata exists on the issue, workers MUST generate tests at each required level
 4. **RED Gate:** Lead runs test suite — ALL new tests must FAIL
@@ -648,6 +656,21 @@ if [[ "$SLOP_COUNT" -gt 0 ]]; then
     echo "De-sloppify: $SLOP_COUNT files with potential slop detected"
     # Spawn single cleanup worker (no parallelism needed)
 fi
+```
+
+### Step 6.9: Pre-Vibe Lifecycle Checks
+
+Skip if `--no-lifecycle` is set.
+
+```
+a) if dependency files changed (go.mod, go.sum, package.json, package-lock.json,
+     requirements.txt, poetry.lock, Cargo.toml, Cargo.lock, Gemfile, Gemfile.lock):
+     Skill(skill="deps", args="vuln --quick")
+     CRITICAL vulns (CVSS >= 9.0): BLOCK (treat as test failure — fix before vibe).
+     All others: WARN, append to phase summary.
+
+b) Skill(skill="test", args="coverage --quick")
+     Append coverage report to vibe context.
 ```
 
 ### Step 7: Final Batched Validation

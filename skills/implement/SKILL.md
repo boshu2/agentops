@@ -157,7 +157,17 @@ Reference: the test pyramid standard in `/standards` for full tooling matrix.
 
 **Note:** Tests written here are MUTABLE — unlike GREEN mode's immutable tests, you may adjust these tests during implementation if you discover the initial test design was wrong. The goal is to think about behavior before code, not to be rigid.
 
-Or use `/test <feature>` to auto-generate test candidates, then hand-refine.
+### Step 3.6a: Auto-Generate Tests via /test (lifecycle integration)
+
+If skip conditions above are NOT met AND `--no-lifecycle` is NOT set:
+
+```
+Skill(skill="test", args="generate <feature-scope> --quick")
+```
+
+Review the generated tests. Adjust as needed (tests are MUTABLE in this context). If `/test` fails to produce useful output or is unavailable, fall back to manual test writing in Step 3.6 above.
+
+**Skip if:** `--no-lifecycle` flag, GREEN mode active, issue type is chore/docs/ci, or `/test` is unavailable.
 
 **CI-safe tests:** If the function under test shells out to an external CLI (`bd`, `ao`, `gh`), do NOT test the wrapper. Instead, test the underlying function that performs the testable work (event emission, state mutation, file I/O). See the Go standards (Testing section) for examples.
 
@@ -330,10 +340,27 @@ Before committing, run a fix-verify loop on all files modified in this session (
    - Inconsistencies with existing patterns in the codebase
    - Unused imports or variables
    - Complexity budget violations (function cyclomatic complexity >15)
-4. **Report findings** as a numbered list with severity (HIGH/MEDIUM/LOW)
-5. **HIGH findings:** Fix immediately, re-run tests, re-sweep (next iteration)
+4. **Lifecycle review (once per loop, first iteration only):**
+   If `--no-lifecycle` is NOT set AND lifecycle tier is `standard` or `full` AND staged changes exist:
+   ```
+   Skill(skill="review", args="--diff --staged --quick")
+   ```
+   Merge review findings into the defect list. CRITICAL → HIGH, WARNING → MEDIUM, NIT → LOW.
+   This runs EXACTLY ONCE (first iteration only) — do NOT re-run review after fixes.
+   **Skip if:** `--no-lifecycle` flag, lifecycle tier is `minimal` or `fast`, no staged changes.
+
+4a. **Complexity-triggered refactor check (once per loop, first iteration only):**
+   If `--no-lifecycle` is NOT set AND lifecycle tier is `full` AND any modified function has cyclomatic complexity > 15:
+   ```
+   Skill(skill="refactor", args="<high-cc-function> --dry-run")
+   ```
+   Treat refactor suggestions as MEDIUM findings. Do NOT auto-apply — report only.
+   **Skip if:** `--no-lifecycle` flag, lifecycle tier is not `full`, no function exceeds CC > 15.
+
+5. **Report findings** as a numbered list with severity (HIGH/MEDIUM/LOW)
+6. **HIGH findings:** Fix immediately, re-run tests, re-sweep (next iteration)
    - If a fix causes test regression: **revert the fix**, report as unresolvable, proceed
-6. **MEDIUM/LOW findings:** Report in commit message, proceed
+7. **MEDIUM/LOW findings:** Report in commit message, proceed
 
 **Loop termination:**
 - 0 HIGH findings → exit loop, proceed to Step 6
@@ -443,9 +470,19 @@ Reason: <why blocked>
 Remaining: <what's left>
 ```
 
+## Lifecycle Integration Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test gen, review, refactor) |
+| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+review), `full` (+refactor dry-run) |
+
+Lifecycle tier defaults to matching the current complexity level. Explicit `--lifecycle=<tier>` overrides.
+
 ## Key Rules
 
 - **TDD by default** - write failing tests before implementing (skip with `--no-tdd`)
+- **Lifecycle skills fire automatically** - /test, /review, /refactor run at appropriate steps (disable with `--no-lifecycle`)
 - **Explore first** - understand before changing
 - **Edit, don't rewrite** - prefer Edit tool over Write tool
 - **Follow patterns** - match existing code style

@@ -45,6 +45,31 @@ STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
 STEP 1.5 ── Test pyramid coverage audit (advisory, append to summary)
               Check L0-L3 + BF1/BF4 per modified file. WARN only, not FAIL.
 
+STEP 1.6 ── Lifecycle Checks (advisory, WARN-only, never FAIL)
+              Skip entire step if: --no-lifecycle flag.
+              Each sub-step uses --quick mode to limit context consumption.
+              On budget expiry: skip remaining sub-steps, write [TIME-BOXED].
+
+              a) if lifecycle tier >= minimal AND test_framework_detected:
+                   Skill(skill="test", args="coverage --quick")
+                   Append coverage delta to phase summary.
+
+              b) if lifecycle tier >= standard AND dependency_manifest_exists:
+                   Skill(skill="deps", args="vuln --quick")
+                   CRITICAL vulns (CVSS >= 9.0): escalate to WARN in summary.
+                   Non-critical: advisory note only.
+
+              c) if lifecycle tier >= standard:
+                   Skill(skill="review", args="--diff --quick")
+                   Append review findings to summary as advisory.
+
+              d) if lifecycle tier == full AND modified_files_touch_hot_path:
+                   Skill(skill="perf", args="profile --quick")
+                   Append perf findings to summary as advisory.
+                   Hot path detection: modified files match benchmark files
+                   or patterns (handler, middleware, router, parser, engine,
+                   worker, pool, codec).
+
 STEP 2  ──  if epic_id:
               Skill(skill="post-mortem", args="<epic-id> [--quick]")
               Use --quick for fast/standard. Full council for full.
@@ -126,6 +151,8 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--complexity=<level>` | auto | Force complexity level (fast/standard/full) |
+| `--no-lifecycle` | off | Skip ALL lifecycle checks in STEP 1.6 (test, deps, review, perf) |
+| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps, +review), `full` (+perf) |
 | `--no-retro` | off | Skip retro + forge steps |
 | `--no-forge` | off | Skip forge step only |
 | `--no-budget` | off | Disable phase time budgets |
@@ -171,3 +198,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 - [skills/crank/SKILL.md](../crank/SKILL.md) — previous phase (implementation)
 - [skills/discovery/SKILL.md](../discovery/SKILL.md) — first phase (discovery)
 - [skills/rpi/SKILL.md](../rpi/SKILL.md) — full lifecycle orchestrator
+- [skills/test/SKILL.md](../test/SKILL.md) — test coverage (lifecycle STEP 1.6a)
+- [skills/deps/SKILL.md](../deps/SKILL.md) — dependency vuln scan (lifecycle STEP 1.6b)
+- [skills/review/SKILL.md](../review/SKILL.md) — structured review (lifecycle STEP 1.6c)
+- [skills/perf/SKILL.md](../perf/SKILL.md) — performance profiling (lifecycle STEP 1.6d)

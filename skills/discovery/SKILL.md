@@ -53,6 +53,15 @@ STEP 4  ──  Skill(skill="plan", args="<goal> [--auto]")
               After: extract epic-id, auto-detect complexity from issue count
               (1-2 → fast, 3-6 → standard, 7+ → full) unless --complexity override.
 
+STEP 4.5 ── if --no-lifecycle is NOT set
+              AND plan output contains new project/module creation
+              (keywords: scaffold, new project, bootstrap, init, create module,
+               new package, new service):
+                detect language from plan context or existing project files
+                Skill(skill="scaffold", args="<detected-language> <project-name>")
+                Scaffold output becomes input context for pre-mortem.
+              Skip if: --no-lifecycle flag, no new project/module detected in plan.
+
 STEP 5  ──  Skill(skill="pre-mortem", args="[--quick]")
               Use --quick for fast/standard. Full council for full.
               PASS/WARN? → continue to STEP 6
@@ -117,6 +126,7 @@ if command -v ao &>/dev/null; then AO_AVAILABLE=true; else AO_AVAILABLE=false; f
 | `--skip-brainstorm` | auto | Skip brainstorm step |
 | `--complexity=<level>` | auto | Force complexity level (fast/standard/full) |
 | `--no-budget` | off | Disable phase time budgets |
+| `--no-lifecycle` | off | Skip scaffold auto-invocation in STEP 4.5 |
 
 ## Quick Start
 
@@ -146,4 +156,4 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
 - [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
 
-**See also:** [brainstorm](../brainstorm/SKILL.md), [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md)
+**See also:** [brainstorm](../brainstorm/SKILL.md), [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)

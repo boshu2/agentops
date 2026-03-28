@@ -40,11 +40,11 @@ Always-on autonomous loop over `/rpi`. Work selection order:
 6. **Complexity / TODO / FIXME / drift / dead code / stale docs / stale research mining**
 7. **Concrete feature suggestions** derived from repo purpose when no sharper work exists
 
-**Work generators** that feed the selection ladder:
-- `/test --coverage` for test coverage gaps (feeds Step 3.4)
-- `/refactor --sweep` for complexity debt (feeds Step 3.6)
-- `/deps audit` for dependency health (feeds Step 3.5)
-- `/perf profile` for performance debt (feeds Step 3.5)
+**Work generators** that feed the selection ladder (auto-invoked, skip with `--no-lifecycle`):
+- `Skill(skill="test", args="coverage")` → files with <40% coverage become queue items (Step 3.4)
+- `Skill(skill="refactor", args="--sweep all --dry-run")` → functions with CC > 20 become queue items (Step 3.6)
+- `Skill(skill="deps", args="audit")` → deps with CVSS >= 7.0 or 2+ major versions behind become queue items (Step 3.5)
+- `Skill(skill="perf", args="profile --quick")` → perf findings become queue items when hot paths detected (Step 3.5)
 
 **Dormancy is last resort.** Empty current queues mean "run the generator layers", not "stop". Only go dormant after the queue layers and generator layers come up empty across multiple consecutive passes.
 
@@ -76,6 +76,7 @@ Always-on autonomous loop over `/rpi`. Work selection order:
 | `--test-first` | on | Pass strict-quality defaults through to `/rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `/rpi` |
 | `--queue=<file>` | none | Process items from ordered markdown queue file sequentially before fitness-driven selection |
+| `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /deps, /perf, /refactor). Falls back to manual scanning. |
 
 ## Execution Steps
 
@@ -212,7 +213,15 @@ FAILING=$(jq -r '.goals[] | select(.result=="fail") | .id' .agents/evolve/fitnes
 
 **Step 3.4: Testing improvements**
 
-When queues and goals are empty, generate concrete testing work instead of idling:
+When queues and goals are empty, generate concrete testing work via `/test`:
+
+```
+if --no-lifecycle is NOT set:
+  Skill(skill="test", args="coverage")
+  Only files with < 40% coverage become queue items (severity threshold).
+```
+
+If `/test` is unavailable or `--no-lifecycle` is set, fall back to manual scanning:
 - find packages/files with thin or missing tests
 - look for missing regression tests around recent bug-fix paths
 - identify flaky or absent headless/runtime smokes
@@ -223,7 +232,19 @@ Convert any real finding into durable work:
 
 **Step 3.5: Validation tightening and bug-hunt passes**
 
-If testing improvement generation returns nothing, run bug-hunt and validation sweeps:
+If testing improvement generation returns nothing, run lifecycle generators then bug-hunt sweeps:
+
+```
+if --no-lifecycle is NOT set:
+  a) Skill(skill="deps", args="audit")
+     Only deps with CVSS >= 7.0 or 2+ major versions behind become queue items.
+
+  b) if perf-sensitive code detected (benchmarks exist, hot path patterns):
+       Skill(skill="perf", args="profile --quick")
+       Convert significant perf findings to queue items.
+```
+
+If lifecycle generators return nothing or are skipped, fall back to manual sweeps:
 - missing validation gates
 - weak lint/contract coverage
 - bug-hunt style audits for risky areas
@@ -233,7 +254,15 @@ Again: convert findings into beads or queue items, then immediately select the h
 
 **Step 3.6: Drift / hotspot / dead-code mining**
 
-If the prior generators are empty, mine for:
+If the prior generators are empty, mine for complexity debt via `/refactor`:
+
+```
+if --no-lifecycle is NOT set:
+  Skill(skill="refactor", args="--sweep all --dry-run")
+  Only functions with CC > 20 become queue items (severity threshold).
+```
+
+If `/refactor` is unavailable or `--no-lifecycle` is set, fall back to manual mining:
 - complexity hotspots
 - stale TODO/FIXME markers
 - dead code
