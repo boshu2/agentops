@@ -532,3 +532,5 @@ If bd CLI not available:
 ### scripts/
 
 - `scripts/validate.sh`
+
+<!-- Lifecycle integration wired: 2026-03-28. See skills/implement/SKILL.md for canonical -->

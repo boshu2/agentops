@@ -130,27 +130,7 @@ This surfaces the latest wave checkpoint after compaction so the orchestrator ca
 | IMPL wave (make tests pass) | `high` | Deep reasoning for correct implementation |
 | Docs/chore tasks | `low` | Fast execution for simple tasks |
 
-**Effort-to-Tier Mapping:**
-
-Crank automatically maps worker effort levels to model cost tiers:
-
-| Effort Level | Cost Tier | Model | Rationale |
-|-------------|-----------|-------|-----------|
-| `high` | `quality` | opus | Deep reasoning for correct implementation |
-| `medium` | `balanced` | sonnet | Balanced cost/quality for most tasks |
-| `low` | `budget` | haiku | Fast execution for simple tasks |
-
-This mapping is used when spawning council calls within crank (e.g., wave acceptance checks, final vibe). Override with `--tier=<name>` to force a specific tier for all council calls in the epic.
-
-**Tier propagation:** When crank invokes `/council` for wave acceptance or final vibe, it passes the mapped tier via `--tier=<name>`. Explicit `--tier` flag on `/crank` overrides the effort-based auto-mapping.
-
-**Configuration override:** Set `models.skill_overrides.crank` in `.agentops/config.yaml` to override the default mapping:
-
-```yaml
-models:
-  skill_overrides:
-    crank: budget  # force budget tier for all crank council calls
-```
+**Effort-to-Tier Mapping:** high→opus, medium→sonnet, low→haiku. Used for council calls (wave acceptance, final vibe). Override with `--tier=<name>` flag or `models.skill_overrides.crank` in `.agentops/config.yaml`.
 
 ### Step 0: Load Knowledge Context (ao Integration)
 
@@ -761,22 +741,11 @@ Crank follows FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 ### Verb Disambiguation for Worker Prompts
 
-Ambiguous verbs cause workers to implement the wrong operation. Use explicit instructions:
-
-| Verb | Clarified Instruction |
-|------|----------------------|
-| "Extract (file)" | "Remove from source AND write to new file. Source line count must decrease." |
-| "Extract (spec)" | "Generate a specification document from issue/task metadata. Source is unchanged." |
-| "Remove" | "Delete the content. Verify it no longer appears in the file." |
-| "Update" | "Change [specific field] from [old] to [new]." |
-| "Consolidate" | "Merge from [A, B] into [C]. Delete [A, B] after merge." |
-
-Include `wc -l` assertions in task metadata when content moves between files.
+Read `references/worker-verb-disambiguation.md` for the verb clarification table. Ambiguous verbs (extract, remove, update, consolidate) cause workers to implement wrong operations — always use explicit instructions with `wc -l` assertions.
 
 ## Examples
 
 **User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final vibe.
-
 **User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final vibe.
 **User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
 
@@ -817,3 +786,4 @@ See `skills/crank/references/troubleshooting.md` for extended troubleshooting.
 - [references/uat-integration-wave.md](references/uat-integration-wave.md)
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
 - [references/wave-patterns.md](references/wave-patterns.md)
+- [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)

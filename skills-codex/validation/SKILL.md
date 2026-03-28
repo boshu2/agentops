@@ -161,3 +161,5 @@ $validation --no-forge ag-5k2             # skip forge only
 
 - [references/forge-scope.md](references/forge-scope.md)
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md)
+
+<!-- Lifecycle integration wired: 2026-03-28. See skills/validation/SKILL.md for canonical -->

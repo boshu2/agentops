@@ -158,3 +158,5 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/output-templates.md](references/output-templates.md)
 - [references/phase-budgets.md](references/phase-budgets.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+
+<!-- Lifecycle integration wired: 2026-03-28. See skills/discovery/SKILL.md for canonical -->

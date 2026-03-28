@@ -856,3 +856,5 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 - `scripts/validate.sh`
 
+
+<!-- Lifecycle integration wired: 2026-03-28. See skills/evolve/SKILL.md for canonical -->
