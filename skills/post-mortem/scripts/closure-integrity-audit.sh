@@ -4,6 +4,9 @@ set -euo pipefail
 SCOPE="auto"
 EPIC_ID=""
 COLLECTION_DETAIL=""
+# Grace window (seconds) for close-before-commit evidence.
+# Commits landing within this window after bead close are still considered valid.
+GRACE_SECONDS=86400  # 24 hours
 
 usage() {
   cat <<'EOF'
@@ -304,6 +307,23 @@ child_is_closed() {
       ' >/dev/null 2>&1
 }
 
+add_grace_to_timestamp() {
+  local ts="$1"
+  local grace="$2"
+  [[ -n "$ts" ]] || return 1
+  if date -d "$ts + ${grace} seconds" -Iseconds 2>/dev/null; then
+    return 0
+  fi
+  # macOS date fallback: strip colon from timezone offset for %z parsing
+  local ts_nocolon="${ts%:*}${ts##*:}"
+  local epoch
+  epoch="$(date -jf '%Y-%m-%dT%H:%M:%S%z' "$ts_nocolon" '+%s' 2>/dev/null)" || {
+    # Last resort: parse date portion only (loses TZ accuracy, acceptable for grace)
+    epoch="$(date -jf '%Y-%m-%dT%H:%M:%S' "${ts%%[+-]*}" '+%s' 2>/dev/null)" || return 1
+  }
+  date -r $((epoch + grace)) '+%Y-%m-%dT%H:%M:%S+00:00' 2>/dev/null
+}
+
 packet_is_valid_for_child() {
   local packet_path="$1"
   local child="$2"
@@ -408,15 +428,31 @@ classify_child() {
         build_child_result "$child" "$scoped_json" "commit" "matched scoped files in git history during issue lifetime" "$commit_json" "pass"
         return 0
       fi
+      # Grace window: check for close-before-commit pattern
+      if [[ -n "$closed_at" ]]; then
+        local grace_until=""
+        grace_until="$(add_grace_to_timestamp "$closed_at" "$GRACE_SECONDS" 2>/dev/null)" || true
+        if [[ -n "$grace_until" ]]; then
+          commit_json="$(commit_matches_json "$created_at" "$grace_until" "${scoped_files[@]}")"
+          if echo "$commit_json" | jq -e 'length > 0' >/dev/null 2>&1; then
+            build_child_result "$child" "$scoped_json" "commit" "matched scoped files in git history within grace window after close (close-before-commit)" "$commit_json" "pass"
+            return 0
+          fi
+        fi
+      fi
       if [[ "$SCOPE" == "commit" ]]; then
-        build_child_result "$child" "$scoped_json" "none" "no qualifying commit evidence" '[]' "fail"
+        if [[ "${#scoped_files[@]}" -eq 0 ]]; then
+          build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+        else
+          build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no commit evidence (checked grace window)" '[]' "fail"
+        fi
         return 0
       fi
       ;;
   esac
 
   if [[ "${#scoped_files[@]}" -eq 0 ]]; then
-    build_child_result "$child" "$scoped_json" "none" "no scoped files and no qualifying commit evidence" '[]' "fail"
+    build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
     return 0
   fi
 
@@ -428,7 +464,7 @@ classify_child() {
         return 0
       fi
       if [[ "$SCOPE" == "staged" ]]; then
-        build_child_result "$child" "$scoped_json" "none" "no qualifying staged evidence" '[]' "fail"
+        build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no staged evidence" '[]' "fail"
         return 0
       fi
       ;;
@@ -451,7 +487,7 @@ classify_child() {
     return 0
   fi
 
-  build_child_result "$child" "$scoped_json" "none" "no qualifying commit, staged, or worktree evidence" '[]' "fail"
+  build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no evidence in any scope (commit/grace/staged/worktree/packet)" '[]' "fail"
 }
 
 tmp_results="$(mktemp)"
@@ -508,5 +544,5 @@ jq -s \
       }
     },
     children: .,
-    failures: [.[] | select(.status == "fail") | {child_id, detail}]
+    failures: [.[] | select(.status == "fail") | {child_id, detail, failure_type: (if (.detail | startswith("parser_miss")) then "parser_miss" elif (.detail | startswith("timing_miss")) then "timing_miss" else "unknown" end)}]
   }' "$tmp_results"
