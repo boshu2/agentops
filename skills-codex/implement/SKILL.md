@@ -170,7 +170,7 @@ Or use `$test <feature>` to auto-generate test candidates, then hand-refine.
 Based on the context gathered:
 
 1. **Edit existing files** using apply_patch (preferred)
-2. **Write new files** only if necessary using the Write tool
+2. **Write new files** only if necessary
 3. **Follow existing patterns** in the codebase
 4. **Keep changes minimal** - don't over-engineer
 
@@ -445,7 +445,7 @@ Remaining: <what's left>
 
 - **TDD by default** - write failing tests before implementing (skip with `--no-tdd`)
 - **Explore first** - understand before changing
-- **Edit, don't rewrite** - prefer Edit tool over Write tool
+- **Edit, don't rewrite** - prefer targeted edits over full file rewrites
 - **Follow patterns** - match existing code style
 - **Verify changes** - run tests or sanity checks
 - **Commit with context** - reference the issue ID

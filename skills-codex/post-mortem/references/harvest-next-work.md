@@ -91,7 +91,7 @@ done
 # existing items. The queue is not append-only after initial write.
 ```
 
-Use the Write tool to append a single JSON line to `.agents/rpi/next-work.jsonl` with:
+Append a single JSON line to `.agents/rpi/next-work.jsonl` with:
 - `source_epic`: the epic ID being post-mortemed
 - `timestamp`: current ISO-8601
 - `items`: array of harvested items (min 0 — if nothing found, write entry with empty items array)

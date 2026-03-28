@@ -45,7 +45,7 @@ Scan the target files to identify languages:
 
 ## Step 2: Load Relevant Standards
 
-For each language detected, use Read tool:
+For each language detected, read the matching standard:
 
 Tool: Read
 Parameters:

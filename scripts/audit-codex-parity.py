@@ -73,6 +73,27 @@ RULES = [
         "summary": "Generated Codex body contains Claude-specific primitives that have no Codex equivalent.",
     },
     {
+        "code": "CLAUDE_TOOL_NAMING",
+        "patterns": [
+            r"\bEdit tool\b",
+            r"\bWrite tool\b",
+            r"\bRead tool\b",
+            r"\bGlob tool\b",
+            r"\bGrep tool\b",
+            r"\bBash tool\b",
+            r"\busing the Edit\b",
+            r"\busing the Write\b",
+            r"\busing the Read\b",
+        ],
+        "ignore_patterns": [
+            r"^\s*#",
+            r"(?i)do\s+not\s+use\b",
+            r"(?i)not\s+available\b",
+            r"\|.*`.*\|.*`.*\|",
+        ],
+        "summary": "Generated Codex body uses Claude-specific tool names (Edit/Write/Read) instead of Codex equivalents (apply_diff/write_file/read_file).",
+    },
+    {
         "code": "STALE_MULTI_AGENT_SYNTAX",
         "patterns": [
             r"\bspawn_agents_on_csv\b",
