@@ -175,6 +175,59 @@ func TestWritePendingLearnings_PoolIngestCompatible(t *testing.T) {
 	}
 }
 
+func TestWritePendingLearnings_ResearchProvenance(t *testing.T) {
+	dir := t.TempDir()
+	session := &storage.Session{
+		ID:   "provenance-test-123",
+		Date: time.Date(2026, 3, 22, 0, 0, 0, 0, time.UTC),
+		Knowledge: []string{
+			"Based on .agents/research/2026-03-22-flywheel-gap.md we found that escape velocity alone is insufficient for compounding claims",
+		},
+	}
+
+	n, err := writePendingLearnings(session, dir)
+	if err != nil {
+		t.Fatalf("writePendingLearnings failed: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("expected 1 file written, got %d", n)
+	}
+
+	pendingDir := filepath.Join(dir, ".agents", "knowledge", "pending")
+	entries, _ := os.ReadDir(pendingDir)
+	data, _ := os.ReadFile(filepath.Join(pendingDir, entries[0].Name()))
+	content := string(data)
+
+	if !strings.Contains(content, "research_sources:") {
+		t.Error("expected research_sources: in frontmatter when knowledge references research files")
+	}
+	if !strings.Contains(content, ".agents/research/2026-03-22-flywheel-gap.md") {
+		t.Error("expected exact research file path in research_sources frontmatter")
+	}
+}
+
+func TestWritePendingLearnings_NoResearchProvenance(t *testing.T) {
+	dir := t.TempDir()
+	session := &storage.Session{
+		ID:   "no-provenance-456",
+		Date: time.Date(2026, 3, 22, 0, 0, 0, 0, time.UTC),
+		Knowledge: []string{
+			"Generic knowledge without research references",
+		},
+	}
+
+	writePendingLearnings(session, dir)
+
+	pendingDir := filepath.Join(dir, ".agents", "knowledge", "pending")
+	entries, _ := os.ReadDir(pendingDir)
+	data, _ := os.ReadFile(filepath.Join(pendingDir, entries[0].Name()))
+	content := string(data)
+
+	if strings.Contains(content, "research_sources:") {
+		t.Error("expected NO research_sources in frontmatter when knowledge has no research references")
+	}
+}
+
 func TestInferCategory(t *testing.T) {
 	tests := []struct {
 		text     string

@@ -74,11 +74,15 @@ func writePendingLearnings(session *storage.Session, baseDir string) (int, error
 		safeText := escapeFrontmatterText(it.text)
 		safeSessionID := sanitizePathComponent(session.ID)
 
+		// Carry research provenance into pending learnings so closure metrics
+		// can trace learnings back to .agents/research/ sources (ag-73u.4).
+		researchSources := renderResearchSourcesFrontmatter(gatherResearchSources(it.text))
+
 		content := fmt.Sprintf(`---
 date: %s
 type: %s
 source: %s
----
+%s---
 
 # Learning: %s
 
@@ -91,7 +95,7 @@ source: %s
 ## Source
 
 - **Session**: %s
-`, dateStr, it.category, safeSessionID, title, id, it.category, safeText, safeSessionID)
+`, dateStr, it.category, safeSessionID, researchSources, title, id, it.category, safeText, safeSessionID)
 
 		path := filepath.Join(pendingDir, filename)
 		if err := os.WriteFile(path, []byte(content), 0600); err != nil {

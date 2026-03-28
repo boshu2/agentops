@@ -658,6 +658,117 @@ func TestOutputFinding_JSONMode(t *testing.T) {
 	}
 }
 
+// TestLookup_TopicalDiscoverability proves known flywheel-related learnings are
+// surfaced by topical queries. This is acceptance criterion #2 for ag-73u.5.
+func TestLookup_TopicalDiscoverability(t *testing.T) {
+	dir := t.TempDir()
+	learningsDir := filepath.Join(dir, ".agents", "learnings")
+	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Seed learnings with flywheel-related content
+	learningFiles := map[string]string{
+		"2026-03-20-escape-velocity.md": `---
+type: learning
+maturity: provisional
+confidence: high
+utility: 0.8
+---
+# Escape velocity threshold for knowledge compounding
+
+Escape velocity (σρ > δ) is necessary but not sufficient for true compounding.
+Golden signals must also be healthy.`,
+
+		"2026-03-20-research-closure.md": `---
+type: learning
+maturity: provisional
+confidence: high
+utility: 0.8
+---
+# Research closure reduces orphaned research
+
+Learnings that carry .agents/research/ provenance improve closure metrics
+and reduce the orphaned research percentage in flywheel health.`,
+
+		"2026-03-20-unrelated.md": `---
+type: learning
+maturity: provisional
+confidence: high
+utility: 0.8
+---
+# Database connection pooling best practices
+
+Use connection pooling to avoid exhausting database connections under load.`,
+	}
+
+	for name, content := range learningFiles {
+		if err := os.WriteFile(filepath.Join(learningsDir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	tests := []struct {
+		query       string
+		expectFound string // substring of title that should appear
+		expectMiss  string // substring of title that should NOT appear
+	}{
+		{
+			query:       "flywheel",
+			expectFound: "Research closure",
+			expectMiss:  "Database",
+		},
+		{
+			query:       "escape velocity",
+			expectFound: "Escape velocity",
+			expectMiss:  "Database",
+		},
+		{
+			query:       "compounding",
+			expectFound: "Escape velocity",
+			expectMiss:  "Database",
+		},
+		{
+			query:       "orphaned research",
+			expectFound: "Research closure",
+			expectMiss:  "Database",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.query, func(t *testing.T) {
+			results, err := collectLearnings(dir, tt.query, 10, "", 0)
+			if err != nil {
+				t.Fatalf("collectLearnings(%q): %v", tt.query, err)
+			}
+
+			found := false
+			foundMiss := false
+			for _, l := range results {
+				if strings.Contains(l.Title, tt.expectFound) {
+					found = true
+				}
+				if strings.Contains(l.Title, tt.expectMiss) {
+					foundMiss = true
+				}
+			}
+
+			if !found {
+				titles := make([]string, len(results))
+				for i, l := range results {
+					titles[i] = l.Title
+				}
+				t.Errorf("query %q should surface learning containing %q, got: %v",
+					tt.query, tt.expectFound, titles)
+			}
+			if foundMiss {
+				t.Errorf("query %q should NOT surface learning containing %q",
+					tt.query, tt.expectMiss)
+			}
+		})
+	}
+}
+
 func TestRecordLookupCitations(t *testing.T) {
 	dir := t.TempDir()
 	aoDir := filepath.Join(dir, ".agents", "ao")
