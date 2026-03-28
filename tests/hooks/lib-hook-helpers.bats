@@ -606,6 +606,46 @@ EOF
     [[ "$scoped_files" == *"skills/post-mortem/scripts/write-evidence-only-closure.sh"* ]]
 }
 
+@test "closure-integrity-audit.sh: parses labeled file lines and Files likely owned blocks from bd json" {
+    local audit_repo="$TMP_TEST_DIR/audit-labeled"
+    local child_description=""
+    local staged_child=""
+    local scoped_files=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p \
+        "$audit_repo/scripts" \
+        "$audit_repo/skills/council/references" \
+        "$audit_repo/cli/cmd/ao/assets"
+    printf 'script\n' > "$audit_repo/scripts/regen-codex-hashes.sh"
+    printf 'reference\n' > "$audit_repo/skills/council/references/reviewer-config-example.md"
+    printf 'serve\n' > "$audit_repo/cli/cmd/ao/rpi_serve.go"
+    printf 'html\n' > "$audit_repo/cli/cmd/ao/assets/watch.html"
+    printf 'outcome\n' > "$audit_repo/cli/cmd/ao/session_outcome.go"
+    git -C "$audit_repo" add \
+        scripts/regen-codex-hashes.sh \
+        skills/council/references/reviewer-config-example.md \
+        cli/cmd/ao/rpi_serve.go \
+        cli/cmd/ao/assets/watch.html \
+        cli/cmd/ao/session_outcome.go
+    child_description=$'Example child\n\nWhen regen-codex-hashes.sh runs, also copy any references/*.md files from source skills to skills-codex. File: scripts/regen-codex-hashes.sh\nCreate an example file showing the YAML frontmatter schema for reviewer config. New file: skills/council/references/reviewer-config-example.md. Link from council SKILL.md Step 1b.\n\nFiles likely owned:\n- cli/cmd/ao/rpi_serve.go\n- cli/cmd/ao/assets/watch.html\n- cli/cmd/ao/session_outcome.go or a successor contract file\n'
+    write_fake_bd_json "$audit_repo" "ag-labeled" "ag-labeled.1" "$child_description" \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope staged ag-labeled' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    staged_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes.staged[0]')
+    [ "$staged_child" = "ag-labeled.1" ]
+    scoped_files=$(printf '%s\n' "$output" | jq -r '.children[0].scoped_files | join("\n")')
+    [[ "$scoped_files" == *"scripts/regen-codex-hashes.sh"* ]]
+    [[ "$scoped_files" == *"skills/council/references/reviewer-config-example.md"* ]]
+    [[ "$scoped_files" == *"cli/cmd/ao/rpi_serve.go"* ]]
+    [[ "$scoped_files" == *"cli/cmd/ao/assets/watch.html"* ]]
+    [[ "$scoped_files" == *"cli/cmd/ao/session_outcome.go"* ]]
+    [[ "$scoped_files" != *"SKILL.md"* ]]
+}
+
 @test "closure-integrity-audit.sh: commit evidence does not regex-match similar child ids" {
     local audit_repo="$TMP_TEST_DIR/audit-regex"
     local failed_count=""

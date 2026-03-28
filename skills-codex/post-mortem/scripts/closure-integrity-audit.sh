@@ -62,6 +62,8 @@ command -v bd >/dev/null 2>&1 || {
   exit 1
 }
 
+FILE_PATH_REGEX='([.[:alnum:]_-]+/)*[.[:alnum:]_-]+\.[[:alpha:]][[:alnum:]_-]*'
+
 json_array_from_stream() {
   if ! sed '/^[[:space:]]*$/d' | sort -u | jq -R . | jq -s .; then
     printf '[]\n'
@@ -189,9 +191,18 @@ extract_validation_files_from_block() {
       ' 2>/dev/null || true
 }
 
+extract_file_paths_from_stream() {
+  grep -oE "$FILE_PATH_REGEX" || true
+}
+
+extract_first_file_path_from_stream() {
+  extract_file_paths_from_stream | head -n 1
+}
+
 extract_files_section_from_text() {
   awk '
-    /^Files:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*files:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*files likely owned:[[:space:]]*$/ { in_files = 1; next }
     in_files {
       if ($0 ~ /^[[:space:]]*$/ || $0 ~ /^```/) {
         exit
@@ -200,17 +211,32 @@ extract_files_section_from_text() {
         exit
       }
       sub(/^[[:space:]]*-[[:space:]]*/, "", $0)
-      gsub(/`/, "", $0)
-      sub(/[[:space:]]+\(.*\)$/, "", $0)
-      if ($0 ~ /^([.[:alnum:]_-]+\/)*[.[:alnum:]_-]+\.(go|py|ts|sh|md|yaml|yml|json)$/) {
-        print
-      }
+      print
     }
-  '
+  ' | extract_file_paths_from_stream
+}
+
+extract_labeled_files_from_text() {
+  local line=""
+  local candidate=""
+
+  while IFS= read -r line; do
+    candidate=""
+
+    if [[ "$line" =~ [Nn][Ee][Ww][[:space:]]+[Ff][Ii][Ll][Ee][Ss]?:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ [Ff][Ii][Ll][Ee]:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[1]}"
+    fi
+
+    if [[ -n "$candidate" ]]; then
+      printf '%s\n' "$candidate" | extract_first_file_path_from_stream
+    fi
+  done
 }
 
 extract_backticked_files_from_text() {
-  grep -oE '`[^`]+\.(go|py|ts|sh|md|yaml|yml|json)`' | tr -d '`' || true
+  grep -oE "\`$FILE_PATH_REGEX\`" | tr -d '`' || true
 }
 
 extract_scoped_files() {
@@ -231,6 +257,7 @@ extract_scoped_files() {
 
   {
     extract_validation_files_from_block "$validation_block"
+    printf '%s\n' "$description" | extract_labeled_files_from_text
     printf '%s\n' "$description" | extract_files_section_from_text
     printf '%s\n' "$description" | extract_backticked_files_from_text
   } | sed '/^[[:space:]]*$/d' | sort -u
