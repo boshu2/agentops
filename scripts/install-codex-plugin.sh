@@ -356,6 +356,7 @@ cat > "$PLUGIN_STATE_FILE" <<EOF
 {
   "installed_at": "$INSTALLED_AT",
   "install_mode": "native-plugin",
+  "hook_runtime": "codex-hookless-fallback",
   "version": "$VERSION",
   "manifest_hash": "$MANIFEST_HASH",
   "skill_count": $SKILL_COUNT,
@@ -368,6 +369,9 @@ cat > "$INSTALL_META" <<EOF
   "installed_at": "$INSTALLED_AT",
   "source": "install-codex-plugin.sh",
   "install_mode": "native-plugin",
+  "hook_runtime": "codex-hookless-fallback",
+  "hook_contract": "docs/contracts/hook-runtime-contract.md",
+  "lifecycle_commands": ["ao codex start", "ao codex stop"],
   "plugin_key": "$PLUGIN_KEY",
   "version": "$VERSION",
   "plugin_root": "$PLUGIN_CACHE_ROOT",

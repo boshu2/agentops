@@ -168,6 +168,10 @@ rg -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$CODEX_HOME/config.toml"
 rg -q '^enabled = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing enabled = true"
 rg -q '"install_mode": "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata missing native-plugin mode"
+rg -q '"hook_runtime": "codex-hookless-fallback"' "$CODEX_HOME/.agentops-codex-install.json" \
+  || fail "install metadata missing hook_runtime field"
+rg -q '"hook_contract": "docs/contracts/hook-runtime-contract.md"' "$CODEX_HOME/.agentops-codex-install.json" \
+  || fail "install metadata missing hook_contract reference"
 rg -q '"user_skills_root": null' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata should not record a raw skills mirror"
 
