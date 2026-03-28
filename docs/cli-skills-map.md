@@ -162,7 +162,7 @@ References to subcommands that don't exist under their parent command.
 | Phantom Call | Location | Problem | Fix |
 |-------------|----------|---------|-----|
 | `ao gate check` | `tests/rpi-e2e/run-full-rpi.sh:172,176,217` | `check` is a subcommand of `ao ratchet`, not `ao gate` | Change to `ao ratchet check` |
-| `ao forge index` | `scripts/test-flywheel.sh:94` | `index` doesn't exist under `forge` (has: `transcript`, `markdown`, `batch`) | Change to `ao forge markdown` |
+| `ao forge index` | `scripts/test-flywheel.sh:94` | `index` doesn't exist under `forge` (has: `transcript`, `markdown`, `batch`) | **Fixed** — changed to `ao forge markdown` |
 
 ---
 

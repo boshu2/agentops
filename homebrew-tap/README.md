@@ -25,8 +25,8 @@ ao version
 ## Commands
 
 ```bash
-ao forge search <query>    # Search knowledge base
-ao forge index <path>      # Index knowledge artifacts
+ao forge transcript <path>  # Extract from JSONL transcripts
+ao forge markdown <path>   # Extract from markdown files
 ao ratchet record <type>   # Record progress
 ao ratchet verify <epic>   # Verify completion
 ```
