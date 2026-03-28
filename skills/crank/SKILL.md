@@ -77,6 +77,7 @@ Ralph alignment source: `../shared/references/ralph-loop-contract.md` (fresh con
 | `--tier=<name>` | (auto) | Force a specific cost tier (quality/balanced/budget) for all council calls. Overrides effort-to-tier auto-mapping. |
 | `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-vibe deps/test checks) |
 | `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps vuln), `full` (all) |
+| `--no-scope-check` | off | Skip scope-completion check before DONE marker (Step 8.7) |
 
 ## Global Limits
 
@@ -110,16 +111,7 @@ Given `/crank [epic-id | plan-file.md | "description"]`:
 
 ### Recovery Hooks
 
-Register a `PostCompact` hook to auto-recover context if the session compacts mid-crank:
-
-```json
-{
-  "event": "PostCompact",
-  "command": "cat .agents/crank/wave-*-checkpoint.json | tail -1"
-}
-```
-
-This surfaces the latest wave checkpoint after compaction so the orchestrator can resume from the correct wave. Also consider `worktree.sparsePaths` in project settings to reduce worktree size for large repos.
+Register a `PostCompact` hook: `"command": "cat .agents/crank/wave-*-checkpoint.json | tail -1"` to auto-recover wave state after compaction. Consider `worktree.sparsePaths` to reduce worktree size.
 
 **Effort levels per worker type:**
 
@@ -689,6 +681,24 @@ If ao CLI available: run `ao forge transcript`, `ao flywheel close-loop --quiet`
 ### Step 8.6: Archive Shared Task Notes
 
 Archive `.agents/crank/SHARED_TASK_NOTES.md` to `.agents/crank/archives/` for post-mortem review. See [references/shared-task-notes.md](references/shared-task-notes.md) for the archive script.
+
+### Step 8.7: Scope-Completion Check (Pre-Close Gate)
+
+Before marking the epic DONE, verify planned acceptance criteria are met:
+
+1. Read the plan from `.agents/plans/` (most recent matching the epic)
+2. Extract acceptance criteria from each issue's `## Acceptance` section
+3. For each criterion, check current state:
+   - `files_exist`: verify file paths exist
+   - `content_check`: grep for expected patterns
+   - `command`: run verification commands
+4. Report results:
+   - All criteria met → proceed to Step 9
+   - Any criteria NOT met → **WARN** with list of unmet criteria (do not block — validation phase catches remaining gaps)
+
+Example: `PLAN_FILE=$(ls -t .agents/plans/*.md 2>/dev/null | head -1)` then extract and verify each acceptance criterion from the plan.
+
+**Opt-out:** `--no-scope-check` flag.
 
 ### Step 9: Report Completion
 

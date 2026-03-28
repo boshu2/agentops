@@ -31,6 +31,8 @@ context:
 |------|---------|-------------|
 | `--auto` | off | Skip human approval gate. Used by `/rpi --auto` for fully autonomous lifecycle. |
 | `--fast-path` | off | Force Minimal detail template (see Step 3.2) |
+| `--skip-symbol-check` | off | Skip symbol verification in Step 3.6 (for greenfield plans) |
+| `--skip-audit-gate` | off | Skip baseline audit gate in Step 6 (for documentation-only plans) |
 
 ## Execution Steps
 
@@ -282,6 +284,24 @@ Example from context orchestration (na-0v2):
 
 **Why:** Without explicit mapping tables, workers misinterpret data transformations. In na-0v2, section→field mapping ambiguity was caught only in pre-mortem. An explicit table prevents the concern entirely.
 
+### Step 3.6: Symbol Verification (Mandatory)
+
+For each function, struct, or type cited in the plan's implementation specs, grep the codebase to verify it exists:
+
+```bash
+# For each symbol referenced in the plan
+grep -rn "func <symbolName>" --include="*.go" . 2>/dev/null
+grep -rn "type <symbolName>" --include="*.go" . 2>/dev/null
+grep -rn "class <symbolName>" --include="*.py" . 2>/dev/null
+```
+
+**If >20% of cited symbols are stale (not found in codebase):**
+- **WARN** with list of stale references and their plan locations
+- Do NOT block — stale refs may indicate renamed symbols that workers can resolve
+- Log stale refs to plan document under `## Stale Symbol Warnings`
+
+**Opt-out:** `--skip-symbol-check` flag (for greenfield plans where symbols don't yet exist).
+
 ### Step 4: Decompose into Issues
 
 Analyze the goal and break it into discrete, implementable issues. For each issue define:
@@ -411,6 +431,11 @@ False dependencies reduce parallelism. Pre-mortem judges will also flag these. I
 ### Step 6: Write Plan Document
 
 **Write to:** `.agents/plans/YYYY-MM-DD-<goal-slug>.md`
+
+**Baseline Audit Gate (mechanical):** Before writing the plan, verify the `## Baseline Audit` table has at least 1 row with both a command and a result:
+- If `## Baseline Audit` is empty or missing: **BLOCK** with "Plan lacks baseline audit. Run quantitative checks first."
+- If any row has a command but no result (or vice versa): **WARN** with "Incomplete audit row — run the command and record the result."
+- **Opt-out:** `--skip-audit-gate` flag (for documentation-only plans with no quantitative claims).
 
 ```markdown
 ---

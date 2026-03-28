@@ -10,6 +10,80 @@
 
 ---
 
+## Vibe Report Markdown Template
+
+> Used by Step 7 in SKILL.md. Write to `.agents/council/YYYY-MM-DD-vibe-<target>.md`.
+
+```markdown
+---
+id: council-YYYY-MM-DD-vibe-<target-slug>
+type: council
+date: YYYY-MM-DD
+---
+
+# Vibe Report: <Target>
+
+**Files Reviewed:** <count>
+
+## Complexity Analysis
+
+**Status:** Completed | Skipped (<reason>)
+
+| File | Score | Rating | Notes |
+|------|-------|--------|-------|
+| src/auth.py | 15 | C | Consider breaking up |
+| src/utils.py | 4 | A | Good |
+
+**Hotspots:** <list files with C or worse>
+**Skipped reason:** <if skipped, explain why - e.g., "radon not installed">
+
+## Council Verdict: PASS / WARN / FAIL
+
+| Judge | Verdict | Key Finding |
+|-------|---------|-------------|
+| Error-Paths | ... | ... (with spec — code-review preset) |
+| API-Surface | ... | ... (with spec — code-review preset) |
+| Spec-Compliance | ... | ... (with spec — code-review preset) |
+| Judge 1 | ... | ... (no spec — 2 independent judges) |
+| Judge 2 | ... | ... (no spec — 2 independent judges) |
+| Judge 3 | ... | ... (no spec — 2 independent judges) |
+
+## Shared Findings
+- ...
+
+## CRITICAL Findings (blocks ship)
+- ... (findings that indicate correctness, security, or data-safety issues)
+
+## INFORMATIONAL Findings (include in PR body)
+- ... (style suggestions, minor improvements, suppressed/downgraded items)
+
+## Concerns Raised
+- ...
+
+## All Findings
+
+> Included when `--deep` or `--sweep` produces a sweep manifest. Lists ALL findings
+> from explorer sweep + council adjudication. Grouped by category if >20 findings.
+
+| # | File | Line | Category | Severity | Description | Source |
+|---|------|------|----------|----------|-------------|--------|
+| 1 | ... | ... | ... | ... | ... | sweep / council |
+
+## Recommendation
+
+For performance-sensitive code, run `/perf profile <target>` to identify optimization opportunities.
+
+<council recommendation>
+
+## Decision
+
+[ ] SHIP - Complexity acceptable, council passed
+[ ] FIX - Address concerns before shipping
+[ ] REFACTOR - High complexity, needs rework
+```
+
+---
+
 ## JSON Report Structure
 
 ```json

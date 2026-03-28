@@ -149,6 +149,12 @@ If the implementation generates output files (configs, reports, manifests):
 
 Reference: the test pyramid standard in `/standards` for full tooling matrix.
 
+**RED Verification Gate (mechanical):**
+After writing tests, run the test suite and verify ALL new tests FAIL:
+- If exit code == 0 (all tests PASS before implementation): **BLOCK** with "Tests pass before implementation -- either feature already exists or tests don't test new behavior. Investigate."
+- If exit code != 0 (tests fail as expected): proceed to Step 4
+- **Skip if:** `--no-tdd` flag is set, GREEN mode is active, or issue type is `chore`, `docs`, or `ci`
+
 **Skip conditions (any of these bypasses Step 3.5):**
 - GREEN mode is active (invoked by `/crank --test-first` — tests already exist)
 - Issue type is `chore`, `docs`, or `ci`
@@ -313,7 +319,16 @@ When invoked by /crank with `--test-first`, the worker receives:
 3. **Implement ONLY enough** to make all tests pass
 4. **Do NOT modify test files** — tests are immutable in GREEN mode
 5. **Do NOT add features** beyond what tests require
-6. **BLOCKED if spec error** — if contract contradicts tests or is incomplete, write BLOCKED with reason
+6. **Diff check (mechanical):** After implementation, verify no test files were modified:
+   ```bash
+   MODIFIED_TESTS=$(git diff --name-only -- '*_test.go' '*_test.py' '*.test.ts' '*.test.js' '*.spec.ts' '*.spec.js')
+   if [ -n "$MODIFIED_TESTS" ]; then
+     echo "BLOCK: GREEN mode violation: test file modified: $MODIFIED_TESTS"
+     # Revert test changes and re-implement without modifying tests
+   fi
+   ```
+   **Opt-out:** `--allow-test-modification` flag (for cases where test fixtures need updating)
+7. **BLOCKED if spec error** — if contract contradicts tests or is incomplete, write BLOCKED with reason
 
 **Verification (GREEN Mode):**
 1. Run test suite → ALL tests must PASS
@@ -400,7 +415,15 @@ if command -v ao &>/dev/null; then
 
   if [ -n "$COMMIT_HASH" ]; then
     # Record successful implementation
+    # Determine TDD mode for ratchet tracking
+    # Values: red (wrote failing tests), green (GREEN mode from crank),
+    #         skipped (skip conditions met), no-tdd (explicitly disabled)
+    TDD_MODE="red"  # default when TDD was followed
+    # Override based on context:
+    # GREEN mode → "green", skip conditions → "skipped", --no-tdd → "no-tdd"
+
     ao ratchet record implement \
+      --tdd-mode "$TDD_MODE" \
       --output "$COMMIT_HASH" \
       --files "$CHANGED_FILES" \
       --issue "<issue-id>" \

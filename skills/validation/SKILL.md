@@ -56,7 +56,7 @@ STEP 1.6 ── Lifecycle Checks (advisory, WARN-only, never FAIL)
 
               b) if lifecycle tier >= standard AND dependency_manifest_exists:
                    Skill(skill="deps", args="vuln --quick")
-                   CRITICAL vulns (CVSS >= 9.0): escalate to WARN in summary.
+                   CRITICAL vulns (CVSS >= 9.0): **FAIL** (block shipping). Opt-out: `--allow-critical-deps` for acknowledged risk acceptance.
                    Non-critical: advisory note only.
 
               c) if lifecycle tier >= standard:
@@ -156,6 +156,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | `--no-retro` | off | Skip retro + forge steps |
 | `--no-forge` | off | Skip forge step only |
 | `--no-budget` | off | Disable phase time budgets |
+| `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
 ## Quick Start
 

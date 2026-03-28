@@ -173,9 +173,11 @@ If your runtime supports spawning parallel subagents, spawn one or more research
 
 If no multi-agent capability is available, perform the exploration **inline** in the current session using file reading, grep, and glob tools directly.
 
-### Step 4: Validate Research Quality (Optional)
+### Step 4: Validate Research Quality (mandatory in auto mode)
 
 **For thorough research, perform quality validation:**
+
+**Auto mode enforcement:** When `--auto` is set, quality validation is mandatory. If depth rating < 2 for any critical area (Step 4b), emit WARN and log to `.agents/research/quality-warning.md`. In interactive mode, this step remains optional.
 
 #### 4a. Coverage Validation
 Check: Did we look everywhere we should? Any unexplored areas?
