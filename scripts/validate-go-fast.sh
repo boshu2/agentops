@@ -310,40 +310,49 @@ while IFS=$'\t' read -r module_root pattern; do
     fi
 
     # Display human-readable summary from JSON output.
+    # Uses awk instead of jq to avoid forking external processes — jq caused
+    # "fork: Resource temporarily unavailable" on large race-json output (ag-m7x).
+    # go test -json emits one JSON object per line, so simple string extraction works.
     if [[ -s "$tmp_json" ]]; then
-        # Show pass/fail lines for each package using one jq pass instead of
-        # spawning jq per line, which gets very slow on large race-json output.
-        while IFS=$'\t' read -r action pkg elapsed; do
-            [[ -n "$action" && -n "$pkg" && -n "$elapsed" ]] || continue
-            status_label="ok"
-            [[ "$action" == "fail" ]] && status_label="FAIL"
-            printf '  %-4s  %-60s  %.1fs\n' "$status_label" "$pkg" "$elapsed"
-
-            # Warn if package exceeded the slow threshold.
-            elapsed_int="${elapsed%%.*}"
-            if [[ -n "$elapsed_int" ]] && (( elapsed_int >= SLOW_THRESHOLD_SECS )); then
-                echo "  WARNING: $pkg took ${elapsed}s (threshold: ${SLOW_THRESHOLD_SECS}s)"
-            fi
-        done < <(
-            jq -r '
-                select((.Action == "pass" or .Action == "fail") and ((.Test // "") == ""))
-                | [(.Action // ""), (.Package // ""), ((.Elapsed // "") | tostring)]
-                | @tsv
-            ' "$tmp_json" 2>/dev/null
-        )
-
-        # Surface any DATA RACE output embedded in JSON.
-        if grep -q 'DATA RACE' "$tmp_json" 2>/dev/null; then
-            echo ""
-            echo "  WARNING: DATA RACE detected — see full output above"
-        fi
+        awk -v slow="$SLOW_THRESHOLD_SECS" '
+        /DATA RACE/ { data_race=1 }
+        /"Test"/ { next }
+        /"Action"/ && /"Package"/ && /"Elapsed"/ {
+            line = $0
+            # Extract Action value
+            sub(/.*"Action"[[:space:]]*:[[:space:]]*"/, "", line); sub(/".*/, "", line)
+            action = line
+            if (action != "pass" && action != "fail") next
+            # Extract Package value
+            line = $0
+            sub(/.*"Package"[[:space:]]*:[[:space:]]*"/, "", line); sub(/".*/, "", line)
+            pkg = line
+            # Extract Elapsed value
+            line = $0
+            sub(/.*"Elapsed"[[:space:]]*:[[:space:]]*/, "", line); sub(/[,}[:space:]].*/, "", line)
+            elapsed = line + 0
+            label = (action == "fail") ? "FAIL" : "ok"
+            printf "  %-4s  %-60s  %.1fs\n", label, pkg, elapsed
+            if (elapsed >= slow + 0)
+                printf "  WARNING: %s took %.1fs (threshold: %ds)\n", pkg, elapsed, slow + 0
+        }
+        END { if (data_race) print "\n  WARNING: DATA RACE detected — see full output above" }
+        ' "$tmp_json"
     fi
 
     if [[ "$race_exit" -ne 0 ]]; then
         # Print raw output lines for failed tests to aid debugging.
+        # Uses awk instead of jq to avoid fork exhaustion.
         echo ""
         echo "--- failure output ---"
-        jq -r 'select(.Action == "output" and (.Output // "") != "") | .Output' "$tmp_json" 2>/dev/null || true
+        awk '/"Action"[[:space:]]*:[[:space:]]*"output"/ {
+            line = $0
+            sub(/.*"Output"[[:space:]]*:[[:space:]]*"/, "", line)
+            sub(/"[[:space:]]*[,}][[:space:]]*$/, "", line)
+            gsub(/\\n/, "\n", line)
+            gsub(/\\t/, "\t", line)
+            printf "%s", line
+        }' "$tmp_json"
         echo "--- end failure output ---"
         exit 1
     fi
