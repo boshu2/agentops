@@ -195,6 +195,7 @@
 - [RPI C2 Events Schema](contracts/rpi-c2-events.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/events.jsonl`
 - [RPI C2 Commands Schema](contracts/rpi-c2-commands.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/commands.jsonl`
 - [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts
+- [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [dispatch-checklist.md](contracts/dispatch-checklist.md) — Standard references for agent dispatch prompts
 - [Headless Invocation Standards](contracts/headless-invocation-standards.md) — Required flags, tool allowlists, and timeout strategy for non-interactive Claude/Codex execution
