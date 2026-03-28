@@ -1501,7 +1501,7 @@ ao config models [flags]
 
 ### `ao hooks`
 
-The hooks command manages Claude Code hooks that automate the CASS knowledge flywheel.
+The hooks command manages runtime hooks that automate the CASS knowledge flywheel.
 
 ```
 ao hooks [command]
@@ -1511,7 +1511,7 @@ ao hooks [command]
 
 #### `ao hooks init`
 
-Generate Claude Code hooks configuration for the CASS knowledge flywheel.
+Generate hooks configuration for the CASS knowledge flywheel (Claude Code format).
 
 ```
 ao hooks init [flags]
@@ -1544,7 +1544,7 @@ ao hooks install [flags]
 
 #### `ao hooks show`
 
-Display the current Claude Code hooks configuration from ~/.claude/settings.json.
+Display the current hooks configuration from ~/.claude/settings.json (Claude Code runtime).
 
 ```
 ao hooks show [flags]

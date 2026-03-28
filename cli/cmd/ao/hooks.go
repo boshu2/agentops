@@ -30,13 +30,15 @@ type HookEntry struct {
 }
 
 // HookGroup represents a hook group with optional matcher and a hooks array.
-// Claude Code format: {"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "..."}]}
+// Hook manifest format: {"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "..."}]}
 type HookGroup struct {
 	Matcher string      `json:"matcher,omitempty"`
 	Hooks   []HookEntry `json:"hooks"`
 }
 
-// AllEventNames returns all 12 Claude Code hook event names in canonical order.
+// AllEventNames returns all 12 hook event names in canonical order.
+// These map to Claude Code events. Codex uses a skill-driven lifecycle instead.
+// See docs/contracts/hook-runtime-contract.md for the cross-runtime mapping.
 func AllEventNames() []string {
 	return []string{
 		"SessionStart", "SessionEnd",
@@ -139,7 +141,7 @@ func printLegacyPreservationReport(legacyEvents []string) {
 }
 
 // HooksConfig represents the hooks section of Claude settings.
-// Supports all 12 Claude Code hook events.
+// Supports all 12 hook events (Claude Code runtime).
 type HooksConfig struct {
 	SessionStart     []HookGroup `json:"SessionStart,omitempty"`
 	SessionEnd       []HookGroup `json:"SessionEnd,omitempty"`
@@ -206,8 +208,11 @@ type ClaudeSettings struct {
 
 var hooksCmd = &cobra.Command{
 	Use:   "hooks",
-	Short: "Manage Claude Code hooks for automatic knowledge flywheel",
-	Long: `The hooks command manages Claude Code hooks that automate the CASS knowledge flywheel.
+	Short: "Manage runtime hooks for automatic knowledge flywheel",
+	Long: `The hooks command manages runtime hooks that automate the CASS knowledge flywheel.
+Note: Hook install targets Claude Code (~/.claude/settings.json). Codex uses a
+skill-driven lifecycle instead — see 'ao codex start/stop' and
+docs/contracts/hook-runtime-contract.md for the cross-runtime mapping.
 
 Subcommands:
   init      Generate hooks configuration
@@ -228,7 +233,7 @@ Example workflow:
 var hooksInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Generate hooks configuration",
-	Long: `Generate Claude Code hooks configuration for the CASS knowledge flywheel.
+	Long: `Generate hooks configuration for the CASS knowledge flywheel (Claude Code format).
 
 The generated hooks will:
   SessionStart:
@@ -248,7 +253,7 @@ Output formats:
 
 var hooksInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "Install hooks to Claude Code settings",
+	Short: "Install hooks to Claude Code settings (Codex uses skill-driven lifecycle)",
 	Long: `Install ao hooks to ~/.claude/settings.json.
 
 This command:
@@ -268,7 +273,7 @@ Use --force to overwrite existing ao hooks.`,
 var hooksShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Display current hook configuration",
-	Long:  `Display the current Claude Code hooks configuration from ~/.claude/settings.json.`,
+	Long:  `Display the current hooks configuration from ~/.claude/settings.json (Claude Code runtime).`,
 	RunE:  runHooksShow,
 }
 
