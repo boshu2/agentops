@@ -5,9 +5,9 @@
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 
-### The local DevOps layer for coding agents.
+### Close the gaps between "agent wrote code" and "the system got smarter."
 
-AgentOps is the operating system around your coding agent: it tracks the work, validates the plan and code, and feeds what was learned into the next session.
+AgentOps is the repo layer that makes **validation, learning, and loop closure** explicit around your coding agent — so shipped code comes with judgment, memory, and a concrete next step.
 
 [Start Here](#start-here) · [Install](#install) · [See It Work](#see-it-work) · [Skills](#skills) · [CLI](#the-ao-cli) · [FAQ](#faq) · [Newcomer Guide](docs/newcomer-guide.md)
 
@@ -21,18 +21,19 @@ AgentOps is the operating system around your coding agent: it tracks the work, v
 
 ## Why AgentOps Exists
 
-Most coding-agent tools improve the session. AgentOps improves the repo around the session.
+Most coding-agent tools improve the prompt or the routing. The failure modes come after that — three gaps between "agent wrote code" and "the system got smarter":
 
-**Your agent remembers what worked.** Every session writes decisions, patterns, and learnings to `.agents/` — git-tracked, auditable, diffable. Not opaque SQLite. Not vector embeddings on someone else's server. Plain files that compound across sessions and transfer between machines with `git clone`.
+1. **Judgment validation** is missing, so agents ship without loading the risk context that would challenge the plan or the code.
+2. **Durable learning** is missing, so solved problems come back as if they were never solved.
+3. **Loop closure** is missing, so completed work does not reliably produce better next work, better rules, or better future context.
 
-**Your code reviewed by Claude AND GPT.** `/council` spawns independent judges across vendors — no anchoring, no single-model blind spots. The only plugin that does cross-vendor consensus validation.
+AgentOps treats those three gaps as a [lifecycle contract](docs/context-lifecycle.md), not as separate features. Every skill, hook, and CLI command exists to close one of these gaps.
 
-| Without AgentOps | With AgentOps |
-|------------------|---------------|
-| Partial memory each session | Repo-native memory via `.agents/` — retrieval, freshness weighting, injection |
-| Review after the fact | `/pre-mortem` before build, `/vibe` before commit |
-| Untracked agent runs | Issues, dependency waves, worktrees, audit trails |
-| Chat logs | Artifacts the next session can use |
+| Gap | Without AgentOps | With AgentOps |
+|-----|------------------|---------------|
+| Judgment validation | Review after the fact | `/pre-mortem` before build, `/vibe` + `/council` before commit |
+| Durable learning | Partial memory each session | Repo-native memory via `.agents/` — extraction, freshness decay, injection |
+| Loop closure | Chat logs, untracked runs | Artifacts, issues, and next-work suggestions the next session can act on |
 
 ---
 
@@ -103,7 +104,7 @@ Every skill works alone. Compose them however you want. Full catalog: [Skills](#
 
 ## How It Works
 
-A phased lifecycle, not a bag of prompts:
+Each phase closes one or more of the three gaps — judgment, learning, loop closure:
 
 | Phase | Primary skills | What gets locked in |
 |------|----------------|---------------------|
