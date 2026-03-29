@@ -14,6 +14,20 @@ The institutional knowledge stops walking out the door because the repo keeps it
 
 ---
 
+## The Three Gaps
+
+Most coding-agent tooling handles prompt construction and routing well. The failure mode comes after that, in three gaps that AgentOps treats as a single lifecycle contract (see [docs/context-lifecycle.md](context-lifecycle.md)):
+
+| Gap | Problem | AgentOps response |
+|-----|---------|-------------------|
+| **Judgment validation** | The agent ships without risk context that would challenge its choices | `/pre-mortem` before implementation, `/vibe` before commit, `/council` for multi-judge review |
+| **Durable learning** | Solved problems recur because nothing extracts, scores, or retrieves the lesson | `.agents/` ledger, `ao lookup`, finding registry, `/retro` extraction, freshness curation |
+| **Loop closure** | Completed work does not produce better next work | `/post-mortem` harvests learnings and next-work, finding compiler promotes failures into constraints, `GOALS.md` + `/evolve` turn findings into measurable improvements |
+
+The compound effect below only works because all three gaps are closed: validation catches the problem, learning remembers it, and loop closure ensures the next session loads that memory before repeating the mistake.
+
+---
+
 ## Four Load-Bearing Layers
 
 ### Skills — The Orchestration Layer
@@ -80,12 +94,13 @@ The most accurate current framing is:
 
 ```text
 12-Factor AgentOps -> operating conditions
-Stigmergic Spiral -> macro lifecycle for stateless builders
-Brownian Ratchet -> chaos filtered into locked progress
+Three Gaps         -> validation, learning, and loop closure as a lifecycle contract
+Stigmergic Spiral  -> macro lifecycle for stateless builders
+Brownian Ratchet   -> chaos filtered into locked progress
 Knowledge Flywheel -> durable learning and loop closure
 ```
 
-The claim is not "better models." The claim is "better repo mechanics around the models you already have."
+The claim is not "better models." The claim is "better repo mechanics around the models you already have." The three gaps are the organizing principle: every skill, hook, and CLI command exists to close one of them.
 
 ---
 
