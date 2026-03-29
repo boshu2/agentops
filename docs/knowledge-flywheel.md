@@ -6,6 +6,13 @@
 
 Coding agents forget everything between sessions. Notes alone do not fix that. If a solved problem is not extracted, curated, retrieved, and reused, the repo keeps paying for the same lesson.
 
+AgentOps frames this as two of the three gaps in the [Context Lifecycle Contract](context-lifecycle.md):
+
+- **Durable learning** (Gap 2) — solved problems recur because knowledge is not extracted, scored, and surfaced.
+- **Loop closure** (Gap 3) — completed work does not produce better next work because learnings are not harvested, promoted, or fed back into future sessions.
+
+The flywheel is the mechanism that closes both gaps. Each stage below maps to one or both.
+
 ## The Solution
 
 AgentOps turns session output into durable environment state. The automation path depends on the runtime: hook-capable runtimes can drive startup and closeout automatically, while Codex uses explicit lifecycle commands that provide the same flywheel stages without pretending hooks exist.
@@ -45,15 +52,17 @@ AgentOps turns session output into durable environment state. The automation pat
 
 ## The Six Stages
 
-### Stage 1: Work
+Each stage maps to the gaps it closes: **L** = Durable Learning (Gap 2), **C** = Loop Closure (Gap 3).
+
+### Stage 1: Work (source material)
 
 You build, debug, research, or plan. In hook-capable runtimes, transcripts are typically available directly from the runtime. In Codex, AgentOps prefers archived session transcripts and can fall back to `~/.codex/history.jsonl` when no archived transcript exists.
 
-### Stage 2: Forge
+### Stage 2: Forge — **L** (extraction)
 
-At closeout, `ao forge transcript` or `ao codex stop` parses the transcript and extracts structured knowledge — decisions, solutions, learnings, failures, and references. Each becomes a markdown file in `.agents/knowledge/pending/`.
+At closeout, `ao forge transcript` or `ao codex stop` parses the transcript and extracts structured knowledge — decisions, solutions, learnings, failures, and references. Each becomes a markdown file in `.agents/knowledge/pending/`. In hook-capable runtimes, the `SessionEnd` hook (`session-end-maintenance.sh`) triggers this automatically; the `athena-session-defrag.sh` hook runs deduplication and defrag in the same event.
 
-### Stage 3: Pool
+### Stage 3: Pool — **L** (curation)
 
 `ao flywheel close-loop` ingests pending files and scores each on five dimensions:
 
@@ -67,7 +76,7 @@ At closeout, `ao forge transcript` or `ao codex stop` parses the transcript and 
 
 Candidates are tiered: **Gold** (>0.85), **Silver** (0.70–0.85), **Bronze** (0.50–0.70), or **Discard** (<0.50).
 
-### Stage 4: Promote
+### Stage 4: Promote — **L** + **C** (graduation)
 
 Candidates that pass the promotion gate graduate to permanent knowledge:
 
@@ -75,7 +84,9 @@ Candidates that pass the promotion gate graduate to permanent knowledge:
 - **Citation gate:** Must have been cited at least once (proves another session found it useful)
 - **Tier gate:** Gold and Silver auto-promote. Bronze requires 3+ citations.
 
-### Stage 5: Learnings
+This is where durable learning and loop closure intersect: only knowledge that a later session actually cited gets promoted, proving the loop closed at least once.
+
+### Stage 5: Learnings — **L** (permanent store)
 
 Promoted knowledge lives in `.agents/learnings/` and `.agents/patterns/`. The maturity lifecycle:
 
@@ -83,9 +94,9 @@ Promoted knowledge lives in `.agents/learnings/` and `.agents/patterns/`. The ma
 provisional → established → archived
 ```
 
-Maintenance runs through the active lifecycle path: hook-capable runtimes can run it from hooks, while Codex runs the same hygiene from `ao codex start` / `ao codex stop`.
+AgentOps maturity controls (`ao maturity --expire`, `ao maturity --evict`, `ao dedup`, `ao contradict`) prevent the corpus from decaying into stale noise. Maintenance runs through the active lifecycle path: hook-capable runtimes run it from hooks, while Codex runs the same hygiene from `ao codex start` / `ao codex stop`.
 
-### Stage 6: Inject
+### Stage 6: Inject — **C** (retrieval closes the loop)
 
 At session start and during work, `ao inject`, `ao lookup`, or `ao codex start`
 retrieves the most relevant learnings for the current task. Startup retrieval
@@ -96,7 +107,7 @@ retrieved|reference|applied` to record that decision in-band instead of relying
 on tribal workflow knowledge. Each citation is the signal that drives the
 feedback loop.
 
-Citations with positive feedback increase the learning's utility score → higher utility → ranked higher in next injection → cited more → utility increases more → **compounding**.
+Citations with positive feedback increase the learning's utility score → higher utility → ranked higher in next injection → cited more → utility increases more → **compounding**. This is the loop closure mechanism: completed work produces better next work because the flywheel feeds validated knowledge back into future sessions.
 
 ## The Compounding Math
 
@@ -146,13 +157,14 @@ ao flywheel status
 
 ## The Compounding Effect
 
-| Without the flywheel | With the flywheel |
-|----------------------|-------------------|
-| The same bug is rediscovered each session | The prior failure is retrieved before planning |
-| Handoffs rely on chat memory | Handoffs and phased state live on disk |
-| Notes accumulate without pressure | Useful findings get promoted into rules and constraints |
-| Stale knowledge pollutes retrieval | Curation and maturity controls keep the corpus usable |
-| Session 50 starts from scratch | Session 50 starts with 50 sessions of accumulated wisdom |
+| Gap | Without the flywheel | With AgentOps flywheel |
+|-----|----------------------|------------------------|
+| Durable learning | The same bug is rediscovered each session | `ao lookup` retrieves the prior failure before planning starts |
+| Durable learning | Notes accumulate without pressure | AgentOps promotion gates ensure only cited, high-quality knowledge survives |
+| Durable learning | Stale knowledge pollutes retrieval | `ao maturity`, `ao dedup`, and `ao contradict` keep the corpus current |
+| Loop closure | Handoffs rely on chat memory | AgentOps stores handoffs and phased state on disk in `.agents/` |
+| Loop closure | Session 50 starts from scratch | Session 50 starts with 50 sessions of flywheel-promoted wisdom |
+| Loop closure | Completed work teaches nothing | `/post-mortem` + finding compiler + `ao-flywheel-close.sh` harvest and compile learnings automatically |
 
 ## See Also
 

@@ -4,6 +4,16 @@
 
 Parallel agents produce noisy output; councils filter it; ratchets lock progress so it can never regress.
 
+## The Three Gaps
+
+AgentOps exists because most agent tooling leaves three gaps open after prompt construction and routing are solved. The runtime mechanics described on this page are organized around closing them:
+
+1. **Judgment validation** — agents ship without risk context. Hooks and skills that challenge plans and implementations before they land (pre-mortem gate, `/vibe`, `/council`, task-validation gate).
+2. **Durable learning** — solved problems recur. The knowledge flywheel extracts, scores, promotes, and retrieves learnings so the same lesson is never re-paid (session-end forging, `ao forge`, `ao lookup`, maturity controls).
+3. **Loop closure** — completed work does not produce better next work. Post-mortems, finding registries, compiled constraints, and the flywheel close hook ensure every session leaves the environment smarter than it found it.
+
+The canonical contract is in [Context Lifecycle Contract](context-lifecycle.md). The sections below show how each runtime mechanism maps to one or more of these gaps.
+
 ## The Brownian Ratchet
 
 *A mechanism borrowed from molecular physics: random motion is captured by one-way gates, converting chaos into forward progress.*
@@ -96,20 +106,20 @@ The active runtime manifest currently declares **7 hook event sections** in `hoo
 
 ### Lifecycle anchors
 
-| Hook surface | Trigger | What it does |
-|--------------|---------|--------------|
-| Session start | `SessionStart` | Startup maintenance, lightweight retrieval, and continuity hints |
-| Session end maintenance | `SessionEnd` | Transcript mining, maturity management, and cleanup |
-| Flywheel close | `Stop` | Closes the feedback loop via `ao flywheel close-loop` |
+| Hook surface | Trigger | What it does | Gap closed |
+|--------------|---------|--------------|------------|
+| Session start | `SessionStart` | Runs `session-start.sh` — startup maintenance, lightweight retrieval, and continuity hints | Durable learning (retrieval) |
+| Session end maintenance | `SessionEnd` | Runs `session-end-maintenance.sh` (transcript mining, maturity management) and `athena-session-defrag.sh` (knowledge deduplication and defrag) | Durable learning (extraction), Loop closure |
+| Flywheel close | `Stop` | Runs `ao-flywheel-close.sh` — closes the feedback loop via `ao flywheel close-loop` | Loop closure |
 
 ### Guardrails and continuity surfaces
 
-| Hook surface | Trigger | What it does |
-|--------------|---------|--------------|
-| Prompt guidance | `UserPromptSubmit` | Nudges missing intent and ratchet status before work drifts |
-| Pre-tool gates | `PreToolUse` | Enforces pre-mortem, commit, and worker safety checks before risky actions |
-| Post-tool checks | `PostToolUse` | Runs complexity, vet, and loop-drift checks after edits or commands |
-| Task completion gate | `TaskCompleted` | Executes compiled constraints and validation checks before accepting task completion |
+| Hook surface | Trigger | What it does | Gap closed |
+|--------------|---------|--------------|------------|
+| Prompt guidance | `UserPromptSubmit` | Runs `prompt-nudge.sh` (nudges missing intent and ratchet status) and `intent-echo.sh` (confirms task understanding) | Judgment validation |
+| Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `commit-review-gate.sh` (pre-commit checks), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
+| Post-tool checks | `PostToolUse` | `write-time-quality.sh` (edit quality), `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh` (detects stalled loops), `context-monitor.sh` | Judgment validation, Loop closure |
+| Task completion gate | `TaskCompleted` | Runs `task-validation-gate.sh` — executes compiled constraints from `.agents/constraints/index.json` before accepting task completion | Judgment validation, Loop closure |
 
 All hooks use `lib/hook-helpers.sh` for structured error recovery — failures include suggested next actions and auto-handoff context.
 
@@ -171,6 +181,7 @@ Each phase spawns a fresh session — no context bleed. Worktree isolation means
 
 ## See Also
 
+- [Context Lifecycle Contract](context-lifecycle.md) — The three gaps this runtime is built to close
 - [Architecture](ARCHITECTURE.md) — System design and component overview
 - [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy
 - [The Science](the-science.md) — Research behind knowledge decay and compounding
