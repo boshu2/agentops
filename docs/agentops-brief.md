@@ -123,9 +123,9 @@ GOALS.md
 
 ```
                    ┌──────────────────────────────┐
-                   │           /council            │
-                   │  (independent reviewers       │
-                   │   debate, verdict gates work) │
+                   │           /council           │
+                   │  (independent reviewers      │
+                   │   debate, verdict gates work)│
                    └───────────┬──────────────────┘
                                │ used by
           ┌────────────────────┼────────────────────┐

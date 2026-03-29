@@ -81,12 +81,12 @@ FIRE is the reconciliation engine that implements the Brownian Ratchet:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                         FIRE LOOP                             │
-│                                                               │
+│                         FIRE LOOP                            │
+│                                                              │
 │      FIND ────► IGNITE ────► REAP ────► ESCALATE             │
 │     (state)    (chaos)    (ratchet)   (recovery)             │
-│        │                                   │                  │
-│        └───────────────────────────────────┘                  │
+│        │                                   │                 │
+│        └───────────────────────────────────┘                 │
 │                       (loop)                                  │
 │                                                               │
 │      EXIT when: all work reaped                               │
@@ -364,8 +364,8 @@ FIRE Loop (Ratchet)                    Knowledge Flywheel
               │                               │
               ▼                               ▼
     ┌─────────────────────────────────────────────────┐
-    │           NEXT FIRE CYCLE                        │
-    │    (with better knowledge = faster/cheaper)      │
+    │           NEXT FIRE CYCLE                       │
+    │    (with better knowledge = faster/cheaper)     │
     └─────────────────────────────────────────────────┘
 ```
 

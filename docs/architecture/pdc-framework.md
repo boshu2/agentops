@@ -12,14 +12,14 @@ PDC (Prevent, Detect, Correct) is a three-phase framework for maintaining qualit
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    PREVENT                                │
-│         Stop problems before they enter the system        │
+│                    PREVENT                               │
+│         Stop problems before they enter the system       │
 ├──────────────────────────────────────────────────────────┤
-│                    DETECT                                 │
-│         Catch problems as soon as they occur              │
+│                    DETECT                                │
+│         Catch problems as soon as they occur             │
 ├──────────────────────────────────────────────────────────┤
-│                    CORRECT                                │
-│         Fix problems and prevent recurrence               │
+│                    CORRECT                               │
+│         Fix problems and prevent recurrence              │
 └──────────────────────────────────────────────────────────┘
 ```
 

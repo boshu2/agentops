@@ -10,21 +10,21 @@ Releases are triggered by git tags and use a publisher-only workflow:
 git tag vX.Y.Z
     ↓
 ┌──────────────────────────────────────────────────────┐
-│          Local gate (authoritative)                 │
+│          Local gate (authoritative)                  │
 ├──────────────────────────────────────────────────────┤
-│  ./scripts/ci-local-release.sh                      │
-│  - validation + tests + smoke checks                │
-│  - hook install + ao rpi smoke                      │
-│  - SBOM + security report artifacts                 │
+│  ./scripts/ci-local-release.sh                       │
+│  - validation + tests + smoke checks                 │
+│  - hook install + ao rpi smoke                       │
+│  - SBOM + security report artifacts                  │
 └──────────────────────────────────────────────────────┘
                          ↓
 ┌──────────────────────────────────────────────────────┐
-│           release.yml (publisher only)              │
+│           release.yml (publisher only)               │
 ├──────────────────────────────────────────────────────┤
-│  - GoReleaser publish                               │
-│  - GitHub Release notes + assets                    │
-│  - Homebrew update                                  │
-│  - SLSA provenance attestation                      │
+│  - GoReleaser publish                                │
+│  - GitHub Release notes + assets                     │
+│  - Homebrew update                                   │
+│  - SLSA provenance attestation                       │
 └──────────────────────────────────────────────────────┘
 ```
 

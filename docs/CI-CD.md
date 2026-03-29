@@ -19,40 +19,40 @@ The validate workflow runs **29 jobs** across 4 tiers of parallelism. Most jobs 
 ### Job Dependency Graph
 
 ```text
-                    ┌─────────────────────────────────────────────┐
-                    │         25 independent parallel jobs         │
-                    │                                             │
-                    │  doc-release-gate    smoke-test              │
+                    ┌───────────────────────────────────────────────┐
+                    │         25 independent parallel jobs          │
+                    │                                               │
+                    │  doc-release-gate    smoke-test               │
                     │  hook-preflight      validate-hooks-doc-parity│
-                    │  validate-ci-policy-parity                   │
-                    │  codex-runtime-sections                      │
-                    │  embedded-sync       cli-docs-parity         │
-                    │  shellcheck          markdownlint            │
-                    │  security-scan       security-toolchain-gate │
-                    │  skill-integrity     skill-schema            │
-                    │  skill-dependency-check                      │
+                    │  validate-ci-policy-parity                    │
+                    │  codex-runtime-sections                       │
+                    │  embedded-sync       cli-docs-parity          │
+                    │  shellcheck          markdownlint             │
+                    │  security-scan       security-toolchain-gate  │
+                    │  skill-integrity     skill-schema             │
+                    │  skill-dependency-check                       │
                     │  contract-compatibility-gate                  │
-                    │  memrl-health        plugin-load-test        │
-                    │  go-build            cli-integration         │
-                    │  file-manifest-overlap                       │
-                    │  skill-lint          learning-coherence      │
-                    │  bats-tests          check-test-staleness    │
-                    └──────────────┬──────────────────────────────┘
+                    │  memrl-health        plugin-load-test         │
+                    │  go-build            cli-integration          │
+                    │  file-manifest-overlap                        │
+                    │  skill-lint          learning-coherence       │
+                    │  bats-tests          check-test-staleness     │
+                    └────────────────┬──────────────────────────────┘
                                    │
                     ┌──────────────┴──────────────┐
-                    │  go-build (must complete)    │
+                    │  go-build (must complete)   │
                     └──┬─────────────┬─────────┬──┘
                        │             │         │
                  ┌─────┴──┐  ┌──────┴───┐ ┌───┴──────────┐
-                 │ doctor- │  │coverage- │ │json-flag-    │
-                 │  check  │  │ ratchet  │ │consistency   │
-                 └────┬────┘  └────┬─────┘ └──────┬───────┘
+                 │ doctor- │  │coverage- │ │json-flag-   │
+                 │  check  │  │ ratchet  │ │consistency  │
+                 └────┬────┘  └────┬─────┘ └──────┬──────┘
                       │            │              │
                     ┌─┴────────────┴──────────────┴─┐
-                    │           summary              │
-                    │  (needs: ALL 28 jobs)           │
-                    │  if: always()                   │
-                    └────────────────────────────────┘
+                    │           summary             │
+                    │  (needs: ALL 28 jobs)         │
+                    │  if: always()                 │
+                    └───────────────────────────────┘
 ```
 
 ### The `summary` Aggregator Pattern

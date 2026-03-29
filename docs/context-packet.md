@@ -18,15 +18,15 @@ The packet has five sections, each with a defined character budget, content sour
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    CONTEXT PACKET                         │
-│                                                           │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐                  │
+│                    CONTEXT PACKET                        │
+│                                                          │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐                   │
 │  │  GOALS  │  │ HISTORY │  │  INTEL  │                   │
 │  │  ~2K ch │  │  ~8K ch │  │ ~12K ch │                   │
 │  └─────────┘  └─────────┘  └─────────┘                   │
 │  ┌─────────┐  ┌──────────┐                               │
-│  │  TASK   │  │ PROTOCOL │                                │
-│  │  ~4K ch │  │  ~2K ch  │                                │
+│  │  TASK   │  │ PROTOCOL │                               │
+│  │  ~4K ch │  │  ~2K ch  │                               │
 │  └─────────┘  └──────────┘                               │
 │                                                           │
 │  Total: ~28K chars / ~7K tokens                           │

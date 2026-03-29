@@ -72,7 +72,7 @@ with `ao codex ensure-stop`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     SESSION START                            │
+│                     SESSION START                           │
 │  "Continue the API work" or /session-start                  │
 ├─────────────────────────────────────────────────────────────┤
 │  • Load bundle (if exists)                                  │
@@ -83,22 +83,22 @@ with `ao codex ensure-stop`.
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                        WORK                                  │
+│                        WORK                                 │
 │  "Add the validation layer" or just start coding            │
 ├─────────────────────────────────────────────────────────────┤
-│  • Implement features                                        │
-│  • Fix bugs                                                  │
-│  • Research when needed                                      │
-│  • Commit frequently                                         │
-│                                                              │
-│  Track progress:                                             │
+│  • Implement features                                       │
+│  • Fix bugs                                                 │
+│  • Research when needed                                     │
+│  • Commit frequently                                        │
+│                                                             │
+│  Track progress:                                            │
 │  • "Feature X is done" or /progress-update --complete X     │
 │  • "I'm blocked on Y" or /progress-update --blocker "Y"     │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     SESSION END                              │
+│                     SESSION END                             │
 │  "Done for today" or /session-end                           │
 ├─────────────────────────────────────────────────────────────┤
 │  • Check for uncommitted changes                            │
@@ -113,7 +113,7 @@ with `ao codex ensure-stop`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CODEX SESSION START                       │
+│                    CODEX SESSION START                      │
 │  ao codex start                                             │
 ├─────────────────────────────────────────────────────────────┤
 │  • Inspect .agents/ and surfaced learnings                  │
@@ -134,7 +134,7 @@ with `ao codex ensure-stop`.
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    CODEX SESSION END                         │
+│                    CODEX SESSION END                        │
 │  ao codex stop                                              │
 ├─────────────────────────────────────────────────────────────┤
 │  • Resolve archived transcript or history fallback          │

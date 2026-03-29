@@ -75,31 +75,31 @@ GSD has persistence (state files, handoffs, threads) but no knowledge flywheel. 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         GSD                                      │
-│                                                                  │
+│                         GSD                                     │
+│                                                                 │
 │  Session 1: discuss → plan → execute → verify → Done            │
-│                                                   ↓              │
-│                                              (state saved)       │
-│                                                   ↓              │
+│                                                   ↓             │
+│                                              (state saved)      │
+│                                                   ↓             │
 │  Session 2: resume-work → (same state, same intelligence)       │
-│                                                                  │
+│                                                                 │
 │  Session 100: (agents are no smarter than session 1)            │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                      AGENTOPS                                    │
-│                                                                  │
-│  Session 1: research → plan → pre-mortem → crank → vibe → retro│
-│                                              ↓                   │
-│                                      (learnings extracted)       │
-│                                              ↓                   │
-│                                      (scored and stored)         │
-│                                                                  │
+│                      AGENTOPS                                   │
+│                                                                 │
+│  Session 1: research → plan → pre-mortem → crank → vibe → retro │
+│                                              ↓                  │
+│                                      (learnings extracted)      │
+│                                              ↓                  │
+│                                      (scored and stored)        │
+│                                                                 │
 │  Session 2: (inject prior knowledge) → better starting point    │
-│                                                                  │
+│                                                                 │
 │  Session 100: (agent is a domain expert with scored knowledge)  │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

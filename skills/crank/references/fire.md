@@ -10,12 +10,12 @@ FIRE is the reconciliation loop that extracts progress from chaos. Like a forge 
 
 ```
     ┌──────────────────────────────────────────────────────────┐
-    │                       FIRE LOOP                           │
-    │                                                           │
+    │                       FIRE LOOP                          │
+    │                                                          │
     │     FIND ────► IGNITE ────► REAP ────► ESCALATE          │
     │    (state)    (chaos)    (ratchet)   (recovery)          │
-    │       │                                   │               │
-    │       └───────────────────────────────────┘               │
+    │       │                                   │              │
+    │       └───────────────────────────────────┘              │
     │                      (loop)                               │
     │                                                           │
     │     EXIT when: all children closed                        │

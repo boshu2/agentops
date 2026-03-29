@@ -54,9 +54,9 @@ V3 introduced swarms that can adapt their behavior within a session.
 ┌─────────────────────────────────────────────────────────────────┐
 │                     CLAUDE-FLOW                                 │
 │                                                                 │
-│  Session 1: 60 agents solve auth bug                           │
-│  Session 2: 60 agents solve auth bug (no memory of Session 1)  │
-│  Session 3: 60 agents solve auth bug (no memory of Session 2)  │
+│  Session 1: 60 agents solve auth bug                            │
+│  Session 2: 60 agents solve auth bug (no memory of Session 1)   │
+│  Session 3: 60 agents solve auth bug (no memory of Session 2)   │
 │                                                                 │
 │  Fast parallel execution, but no compounding                    │
 └─────────────────────────────────────────────────────────────────┘
@@ -64,8 +64,8 @@ V3 introduced swarms that can adapt their behavior within a session.
 ┌─────────────────────────────────────────────────────────────────┐
 │                      AGENTOPS                                   │
 │                                                                 │
-│  Session 1: Solve auth bug        → Extract: "token refresh"   │
-│  Session 2: Auth issue?           ← Inject prior knowledge     │
+│  Session 1: Solve auth bug        → Extract: "token refresh"    │
+│  Session 2: Auth issue?           ← Inject prior knowledge      │
 │  Session 3: Auth?                 ← Instant domain expertise    │
 │                                                                 │
 │  Knowledge persists and compounds                               │
@@ -125,9 +125,9 @@ Claude-Flow excels at coordinating many agents. It doesn't provide the deep sema
 ┌─────────────────────────────────────────────────────────────────┐
 │                      CLAUDE-FLOW V3                             │
 │                                                                 │
-│  ┌─────────┐    ┌─────────────────────────────────────────┐    │
+│  ┌─────────┐    ┌─────────────────────────────────────────┐     │
 │  │  Task   │───▶│           SWARM COORDINATOR              │    │
-│  └─────────┘    └─────────────────────────────────────────┘    │
+│  └─────────┘    └─────────────────────────────────────────┘     │
 │                              │                                  │
 │         ┌────────────────────┼────────────────────┐            │
 │         ▼                    ▼                    ▼            │
@@ -220,16 +220,16 @@ AgentOps:           ████████████░░░░░░░░
 │                 CLAUDE-FLOW + AGENTOPS                          │
 │                                                                 │
 │  SessionStart:                                                  │
-│    └── AgentOps injects prior knowledge                        │
+│    └── AgentOps injects prior knowledge                         │
 │                                                                 │
 │  Execution:                                                     │
-│    └── Claude-Flow orchestrates 60+ agents                     │
+│    └── Claude-Flow orchestrates 60+ agents                      │
 │                                                                 │
 │  Validation:                                                    │
-│    └── AgentOps /vibe validates all outputs                    │
+│    └── AgentOps /vibe validates all outputs                     │
 │                                                                 │
 │  SessionEnd:                                                    │
-│    └── AgentOps extracts learnings for next time               │
+│    └── AgentOps extracts learnings for next time                │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```

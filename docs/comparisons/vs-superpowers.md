@@ -46,21 +46,21 @@ Built-in enforcement of software engineering best practices. No over-engineering
 ┌─────────────────────────────────────────────────────────────────┐
 │                     SUPERPOWERS                                 │
 │                                                                 │
-│  Session 1: Debug auth bug        [learned: token refresh]     │
-│  Session 2: Debug auth bug        [learned: token refresh]     │
-│  Session 3: Debug auth bug        [learned: token refresh]     │
-│                                   ↑                            │
+│  Session 1: Debug auth bug        [learned: token refresh]      │
+│  Session 2: Debug auth bug        [learned: token refresh]      │
+│  Session 3: Debug auth bug        [learned: token refresh]      │
+│                                   ↑                             │
 │                              Same learning, every time          │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
 │                      AGENTOPS                                   │
 │                                                                 │
-│  Session 1: Debug auth bug        [learned: token refresh]     │
-│                                          ↓ (stored)            │
-│  Session 2: Auth issue?           "I remember this pattern"    │
-│                                          ↓ (reinforced)        │
-│  Session 3: Auth?                 *instant recall*             │
+│  Session 1: Debug auth bug        [learned: token refresh]      │
+│                                          ↓ (stored)             │
+│  Session 2: Auth issue?           "I remember this pattern"     │
+│                                          ↓ (reinforced)         │
+│  Session 3: Auth?                 *instant recall*              │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```

@@ -158,7 +158,7 @@ Multi-Session           │   Olympus
        │                │
        │           ┌────┴────┐
        │           │ AgentOps │ ← WE ARE HERE
-       │           │(Shift-L) │
+       │           │(Shift-L)│
        │           └────┬────┘
        │                │
 Single-Session          │   Agent SDKs

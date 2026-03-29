@@ -132,7 +132,7 @@ reads each judge's output file sequentially with the Read tool and synthesizes.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Phase 1: Build Packet (JSON)                                   │
-│  - Task type (validate/brainstorm/research)                      │
+│  - Task type (validate/brainstorm/research)                     │
 │  - Target description                                           │
 │  - Context (files, diffs, prior decisions)                      │
 │  - Perspectives to assign                                       │
@@ -140,9 +140,9 @@ reads each judge's output file sequentially with the Read tool and synthesizes.
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Phase 1a: Select spawn backend                                  │
-│  codex_subagents | claude_teams | background_fallback            │
-│  Team lead = spawner (this agent)                                │
+│  Phase 1a: Select spawn backend                                 │
+│  codex_subagents | claude_teams | background_fallback           │
+│  Team lead = spawner (this agent)                               │
 └─────────────────────────────────────────────────────────────────┘
                               │
             ┌─────────────────┴─────────────────┐

@@ -347,8 +347,8 @@ profile:
 ┌─────────────────────────────────────────┐
 │ Workspace Profiles (Production)         │  ← Organize reality
 │ - 5 roles with 100+ real artifacts      │
-│ - Multi-repo coordination                │
-│ - Token budgets for composition          │
+│ - Multi-repo coordination               │
+│ - Token budgets for composition         │
 └─────────────────────────────────────────┘
 ```
 

@@ -249,16 +249,16 @@ AgentOps doesn't aim for "spec-as-source" — it captures *learnings*, not just 
 │    └── Requirements → Design → Tasks (structured specs)         │
 │                                                                 │
 │  AgentOps handles:                                              │
-│    └── Pre-mortem (failure simulation)                         │
-│    └── /vibe (8-aspect validation)                             │
-│    └── /post-mortem (learning extraction)                      │
-│    └── Cross-session memory                                    │
+│    └── Pre-mortem (failure simulation)                          │
+│    └── /vibe (8-aspect validation)                              │
+│    └── /post-mortem (learning extraction)                       │
+│    └── Cross-session memory                                     │
 │                                                                 │
 │  Combined flow:                                                 │
-│    SDD specs → AgentOps pre-mortem → Implement → AgentOps vibe │
-│                                                       ↓        │
+│    SDD specs → AgentOps pre-mortem → Implement → AgentOps vibe  │
+│                                                       ↓         │
 │                                              Extract learnings  │
-│                                                       ↓        │
+│                                                       ↓         │
 │                                              Next session       │
 └─────────────────────────────────────────────────────────────────┘
 ```

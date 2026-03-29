@@ -486,42 +486,42 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
   Agent Session
        │
        ▼
-  ┌─────────┐     ┌─────────┐
+  ┌──────────┐     ┌─────────┐
   │ /forge   │     │ /retro  │    (existing skills, unchanged)
   └────┬─────┘     └────┬────┘
        │                │
        ▼                ▼
   ┌──────────────────────────┐
   │  STAGE 1: CATALOG        │  v1
-  │  Structure into typed     │
-  │  artifacts with metadata  │
-  │  → .agents/pool/pending/  │
+  │  Structure into typed    │
+  │  artifacts with metadata │
+  │  → .agents/pool/pending/ │
   └────────────┬─────────────┘
                │
                ▼
   ┌──────────────────────────┐
   │  STAGE 2: VERIFY          │  v1
-  │  Mechanical checks:       │
-  │  tests pass? goals up?    │
-  │  → verification metadata  │
+  │  Mechanical checks:      │
+  │  tests pass? goals up?   │
+  │  → verification metadata │
   └────────────┬─────────────┘
                │
                ▼
   ┌──────────────────────────┐
   │  STAGE 3: INDEX           │  v2
-  │  Tag by topic, skill,     │
-  │  goal. Update search idx  │
-  │  → ao search, ao lookup    │
+  │  Tag by topic, skill,    │
+  │  goal. Update search idx │
+  │  → ao search, ao lookup  │
   └────────────┬─────────────┘
                │
                ▼
   ┌──────────────────────────┐
   │  STAGE 4: SCORE           │  v2
-  │  5-dim quality gate:      │
-  │  specificity, action-     │
-  │  ability, novelty,        │
-  │  context, confidence      │
-  │  → gold/silver/bronze     │
+  │  5-dim quality gate:     │
+  │  specificity, action-    │
+  │  ability, novelty,       │
+  │  context, confidence     │
+  │  → gold/silver/bronze    │
   └────────────┬─────────────┘
                │
           ┌────┴────┐
@@ -540,7 +540,7 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
                   │ CONSTRAIN    │
                   │ Compile into │
                   │ hook rules   │
-                  │ → constraints/│
+                  │→ constraints/│
                   └──────────────┘
                          │
                          ▼

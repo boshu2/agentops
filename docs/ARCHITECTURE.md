@@ -11,7 +11,7 @@ The architecture rests on five pillars. Each one is independent — you can use 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     DevOps Three Ways                           │
-│              (Flow · Feedback · Continual Learning)              │
+│              (Flow · Feedback · Continual Learning)             │
 ├─────────────┬─────────────┬─────────────┬───────────────────────┤
 │  Brownian   │    Ralph    │  Knowledge  │       Fractal         │
 │  Ratchet    │   Wiggum    │  Flywheel   │     Composition       │

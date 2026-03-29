@@ -408,10 +408,10 @@ This is why progress can be made one-way at the artifact level, while system-lev
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     THE AGENTOPS SYSTEM                          │
+│                     THE AGENTOPS SYSTEM                         │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  DEVOPS LAYER (The Three Ways)                                   │
+│                                                                 │
+│  DEVOPS LAYER (The Three Ways)                                  │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │ Flow: Session → Forge → Store → Inject → Session        │    │
 │  │ Feedback: Vibe, Pre-mortem, Citations, Utility scores   │    │
@@ -445,13 +445,13 @@ This is why progress can be made one-way at the artifact level, while system-lev
 │                           ▼                                      │
 │  THE GOAL (Escape Velocity)                                      │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │                                                          │    │
-│  │              σ × ρ > δ                                   │    │
-│  │                                                          │    │
+│  │                                                          │   │
+│  │              σ × ρ > δ                                   │   │
+│  │                                                          │   │
 │  │    retrieval × usage > decay                            │    │
-│  │                                                          │    │
-│  │    When true: KNOWLEDGE COMPOUNDS                        │    │
-│  │                                                          │    │
+│  │                                                          │   │
+│  │    When true: KNOWLEDGE COMPOUNDS                        │   │
+│  │                                                          │   │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘

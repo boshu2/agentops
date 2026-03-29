@@ -175,10 +175,10 @@ File Ownership Map (Wave N):
 ┌─────────────────────────────┬──────────┬──────────┐
 │ File                        │ Owner    │ Conflict │
 ├─────────────────────────────┼──────────┼──────────┤
-│ src/auth/middleware.go       │ task-1   │          │
-│ src/auth/middleware_test.go  │ task-1   │          │
-│ src/api/routes.go            │ task-2   │          │
-│ src/config/settings.go       │ task-1,3 │ YES      │
+│ src/auth/middleware.go       │ task-1   │         │
+│ src/auth/middleware_test.go  │ task-1   │         │
+│ src/api/routes.go            │ task-2   │         │
+│ src/config/settings.go       │ task-1,3 │ YES     │
 └─────────────────────────────┴──────────┴──────────┘
 Conflicts: 1 (resolved: serialized task-3 into sub-wave 2)
 ```

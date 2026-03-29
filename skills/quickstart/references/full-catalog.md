@@ -26,7 +26,7 @@ Pick what you need. Every skill works standalone. `/swarm` multiplies any of the
 │  /implement ────► research + plan + build + vibe│
 │  /vibe ─────────► /complexity + /council        │
 │  /pre-mortem ───► /council (failure simulation) │
-│  /post-mortem ──► /council + knowledge lifecycle │
+│  /post-mortem ──► /council + knowledge lifecycle│
 │  /council ──────► parallel judges (multi-model) │
 └─────────────────────────────────────────────────┘
 ```
