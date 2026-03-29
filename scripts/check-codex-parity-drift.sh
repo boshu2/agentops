@@ -7,6 +7,7 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Not in a git repo"; exit 1; }
 
 AUDIT_SCRIPT="$ROOT/scripts/audit-codex-parity.sh"
+AUDIT_CMD=()
 if [[ ! -x "$AUDIT_SCRIPT" ]]; then
     # Try Python version
     AUDIT_SCRIPT="$ROOT/scripts/audit-codex-parity.py"
@@ -14,10 +15,13 @@ if [[ ! -x "$AUDIT_SCRIPT" ]]; then
         echo "SKIP: No audit-codex-parity script found"
         exit 0
     fi
+    AUDIT_CMD=(python3 "$AUDIT_SCRIPT" --repo-root "$ROOT" --check)
+else
+    AUDIT_CMD=("$AUDIT_SCRIPT" --check)
 fi
 
 # Run audit in check mode, capture output
-OUTPUT=$(bash "$AUDIT_SCRIPT" --check 2>&1) || true
+OUTPUT=$("${AUDIT_CMD[@]}" 2>&1) || true
 FINDING_COUNT=$(echo "$OUTPUT" | grep -c "FINDING\|DRIFT\|LEAK" 2>/dev/null) || FINDING_COUNT=0
 
 if [[ "$FINDING_COUNT" -gt 0 ]]; then

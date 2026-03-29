@@ -207,6 +207,29 @@ AOEOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
+# 5. codex-parity-warn.sh — .tool_input.file_path (Edit skill file)
+# ═══════════════════════════════════════════════════════════════════════
+
+@test "codex-parity-warn: non-skill edit exits silently" {
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_name":"Edit","tool_input":{"file_path":"README.md"}}' "$HOOKS_DIR/codex-parity-warn.sh"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "codex-parity-warn: shared skill edit emits parity warning" {
+    mkdir -p "$MOCK_REPO/skills/example" "$MOCK_REPO/skills-codex/example"
+    touch "$MOCK_REPO/skills/example/SKILL.md" "$MOCK_REPO/skills-codex/example/SKILL.md"
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_name":"Edit","tool_input":{"file_path":"skills/example/SKILL.md"}}' "$HOOKS_DIR/codex-parity-warn.sh"
+    [ "$status" -eq 0 ]
+    echo "$output" | jq -e '.hookSpecificOutput.hookEventName == "PreToolUse"' >/dev/null 2>&1
+    echo "$output" | jq -e '.hookSpecificOutput.additionalContext | contains("skills-codex/example/")' >/dev/null 2>&1
+    echo "$output" | jq -e '.hookSpecificOutput.additionalContext | contains("regen-codex-hashes.sh")' >/dev/null 2>&1
+}
+
+# ═══════════════════════════════════════════════════════════════════════
 # 6. git-worker-guard.sh — .tool_input.command (Bash git)
 # ═══════════════════════════════════════════════════════════════════════
 
