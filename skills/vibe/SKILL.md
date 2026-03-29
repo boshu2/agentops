@@ -260,6 +260,8 @@ Each judge reviews for:
 
 ### Step 6: Interpret Verdict
 
+## Council Verdict:
+
 | Council Verdict | Vibe Result | Action |
 |-----------------|-------------|--------|
 | PASS | Ready to ship | Merge/deploy |

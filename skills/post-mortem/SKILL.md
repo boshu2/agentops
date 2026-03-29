@@ -267,6 +267,8 @@ In summary:
 
 ### Step 3: Council Validates the Work
 
+## Council Verdict:
+
 Run `/council` with the **retrospective** preset and always 3 judges:
 
 ```
