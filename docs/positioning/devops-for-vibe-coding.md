@@ -32,6 +32,21 @@
 
 ---
 
+## The Three Gaps
+
+Most coding-agent tooling is strong at prompt construction and agent routing. The failure mode comes after that. AgentOps treats three gaps as a lifecycle contract (see [docs/context-lifecycle.md](../context-lifecycle.md) for the full treatment):
+
+1. **Judgment validation** — the agent ships without the risk context that would challenge its choices. `/pre-mortem` before implementation, `/vibe` before commit, `/council` for multi-judge review.
+2. **Durable learning** — solved problems recur because nothing extracts, scores, and retrieves the lesson. The `.agents/` ledger, `ao lookup`, finding registry, and `/retro` keep learnings alive across sessions.
+3. **Loop closure** — completed work does not produce better next work. `/post-mortem` harvests learnings and next-work items, the finding compiler promotes repeat failures into preventive constraints, and `GOALS.md` + `/evolve` turn findings into measurable improvements.
+
+These three gaps are not separate features. They form a single feedback loop:
+
+```
+/pre-mortem → Implement → /vibe → Commit → /post-mortem → extract → curate → retrieve → next session
+   (gap 1)                (gap 1)           (gap 3)        (gap 2)   (gap 2)   (gap 2)    (gap 3)
+```
+
 ## Key Differentiators
 
 ### 1. Validation Built In, Not Bolted On
@@ -46,7 +61,7 @@ Write code → Ship → CI catches problems → Fix → Repeat
 /pre-mortem → Implement → /vibe → Commit → Knowledge compounds
 ```
 
-The validation loop happens before code ships, not after. But validation alone is not the whole story. The larger system also extracts what was learned, compiles repeat failures into preventive artifacts, and feeds better context into the next cycle.
+The validation loop happens before code ships, not after. But validation alone is not the whole story. The larger system also extracts what was learned, compiles repeat failures into preventive artifacts, and feeds better context into the next cycle. See gaps 2 and 3 above.
 
 ### 2. Coding Agent Specific
 
@@ -195,6 +210,7 @@ Single-Session          │   Agent SDKs
 ### Use These
 
 - "DevOps for Vibe-Coding"
+- "The Three Gaps" (judgment validation, durable learning, loop closure)
 - "Shift-left validation for coding agents"
 - "Validation built in, not bolted on"
 - "Catch it before you ship it"
@@ -202,6 +218,7 @@ Single-Session          │   Agent SDKs
 - "The 40% rule" (context budget)
 - "Pre-mortem before implement"
 - "Vibe check before commit"
+- "Findings compile into prevention"
 
 ### Avoid These
 
@@ -245,7 +262,7 @@ This positioning is successful when:
 
 1. **Users can state what we do in one sentence** — "DevOps for vibe-coding" or equivalent
 2. **No confusion with general agent frameworks** — Clear we're coding-specific
-3. **Validation emphasis is clear** — Shift-left, not shift-blame
+3. **All three gaps are understood** — Validation, learning, and loop closure carry equal weight
 4. **Knowledge flywheel is understood** — Sessions compound, not isolated
 
 ---
