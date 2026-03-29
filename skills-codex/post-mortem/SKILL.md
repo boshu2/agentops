@@ -558,7 +558,8 @@ Actionable improvements identified during processing -> append one schema v1.3
 batch entry to `.agents/rpi/next-work.jsonl` using the tracked contract in
 [`../../.agents/rpi/next-work.schema.md`](../../.agents/rpi/next-work.schema.md)
 and the write procedure in
-[`references/harvest-next-work.md`](references/harvest-next-work.md):
+[`references/harvest-next-work.md`](references/harvest-next-work.md).
+Follow the claim/finalize lifecycle documented in `references/harvest-next-work.md`.
 
 ```bash
 mkdir -p .agents/rpi
