@@ -6,7 +6,7 @@ user-invocable: false
 context:
   window: fork
   intent:
-    mode: inject
+    mode: none
   sections:
     exclude: [TASK]
   intel_scope: full

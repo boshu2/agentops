@@ -640,7 +640,7 @@
       "name": "inject",
       "source_skill": "skills/inject",
       "source_hash": "7daf8be8d1534231a37139b921992038b36616d1feeb293eea32c44dc776ff8d",
-      "generated_hash": "01f6bc5ec26f3d2f401b8609840799a801a8cd52fd38f57b13a296014eb187ef"
+      "generated_hash": "11d204e6fc81e595c578ec3868ba5f600ff34466f65ea0e3cd962623cc213ee5"
     },
     {
       "name": "openai-docs",
@@ -796,7 +796,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "c433dc12380733af9b7db7e942873b1143033cb0887d2c8945728cba174b5495",
-      "generated_hash": "0cbb4ffbb580bf865b6c9f915444a5d16f5a4039dadb5748caf96dd3c45acc85"
+      "generated_hash": "44e2d2018abffed1efcccd56e81989c6e00bea755e737eedddd0802a3667bfd4"
     },
     {
       "name": "scaffold",

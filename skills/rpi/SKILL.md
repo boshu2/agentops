@@ -42,28 +42,14 @@ metadata:
 /rpi --no-test-first "add auth"                       # opt out of strict-quality
 ```
 
-## Architecture
+## Lifecycle Ownership
 
-```
-/rpi <goal | epic-id> [--from=<phase>] [--interactive] [--deep|--fast-path]
-  │
-  ├── Step 0: Setup + complexity classification
-  │
-  ├── Phase 1: /discovery <goal>
-  │   └── brainstorm → ao search → research → plan → pre-mortem (gate)
-  │   └── Outputs: epic-id, execution-packet.json
-  │
-  ├── Phase 2: /crank <epic-id>
-  │   └── wave-based implementation + validation + rework
-  │   └── Gate: DONE → proceed, BLOCKED/PARTIAL → retry (max 3)
-  │
-  └── Phase 3: /validation <epic-id>
-      └── vibe → post-mortem → retro → forge
-      └── Gate: PASS/WARN → finish, FAIL → re-crank (max 3)
-```
+Phase orchestrators own all sub-skill sequencing, retry gates, and phase budgets:
+- Phase 1: `/discovery` handles brainstorm → search → research → plan → pre-mortem and writes the execution packet.
+- Phase 2: `/crank` handles wave-based implementation plus implementation retries.
+- Phase 3: `/validation` handles vibe → post-mortem → retro → forge plus validation retries.
 
-**Phase orchestrators own all sub-skill sequencing, retry gates, and phase budgets.**
-`/rpi` owns only: setup, complexity classification, phase routing, implementation gate, validation-fail-to-crank loop, and final report.
+`/rpi` stays thin: it owns setup, complexity classification, phase routing, the implementation gate, the validation-fail-to-crank loop, and the final report.
 
 ## Execution Steps
 

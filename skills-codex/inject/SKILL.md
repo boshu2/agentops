@@ -11,6 +11,7 @@ description: 'Inject relevant knowledge into session context from .agents/ artif
 **On-demand knowledge retrieval. Not run automatically at startup (since ag-8km).**
 
 Inject relevant prior knowledge into the current session.
+Treat `$inject` as passive context loading, not as a task-planning or task-execution entrypoint.
 
 ## How It Works
 
@@ -167,5 +168,4 @@ Knowledge relevance decays over time (~17%/week). More recent learnings are weig
 ### scripts/
 
 - `scripts/validate.sh`
-
 

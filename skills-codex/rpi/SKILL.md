@@ -42,6 +42,11 @@ startup once per thread and skips duplicate startup automatically. Let
 5. `<promise>PARTIAL</promise>` from `$crank` means re-enter STEP 2 on the same
    lifecycle objective. It is not completion, and it is not a reason to stop.
 
+Phase ownership stays split even when `$rpi` is the entrypoint: `$discovery`
+owns phase-1 sequencing, `$crank` owns phase-2 execution retries, and
+`$validation` owns phase-3 closeout. `$rpi` only classifies, routes, loops, and
+reports across those phase orchestrators.
+
 ## DAG — Execute This Sequentially
 
 ```text
