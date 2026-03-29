@@ -669,7 +669,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "2d8d94cbf81485c5025930119a35d2c54a81f2c9aa1f1199108e7e379aa8eb9a",
+      "source_hash": "afce1fac76a1e506e9405b76886ecdf390c3eead5d863d82b8311286ad00d6a4",
       "generated_hash": "4b7b3571156692989bd6efcf0801dfb61f0233b38e531e5bf950b6d616852319"
     },
     {
@@ -873,7 +873,7 @@
     {
       "name": "vibe",
       "source_skill": "skills/vibe",
-      "source_hash": "b975d8c2e1f75eaf77799064b4244ebc0b586177a3299b754994bc8ea951b67a",
+      "source_hash": "16b6b0f61dc91dfb1c90627594728a6ec345a876d7895b9a8e0dbe9010575af3",
       "generated_hash": "92b749668caae0aec3b53ed20c72594170dbd81b24d8cf3ffafdc576e3e090fc"
     }
   ]

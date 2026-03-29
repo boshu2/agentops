@@ -448,6 +448,49 @@ bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
 
 This promotes registry rows into `.agents/findings/*.md`, refreshes `.agents/planning-rules/*.md` and `.agents/pre-mortem-checks/*.md`, and rewrites draft constraint metadata under `.agents/constraints/`. Active enforcement still depends on the constraint index lifecycle and runtime hook support, but compilation itself is no longer deferred.
 
+#### Step ACT.3: Feed Next-Work
+
+Actionable improvements identified during processing -> append one schema v1.3
+batch entry to `.agents/rpi/next-work.jsonl` using the tracked contract in
+[`.agents/rpi/next-work.schema.md`](.agents/rpi/next-work.schema.md)
+and the write procedure in
+[`references/harvest-next-work.md`](references/harvest-next-work.md).
+Follow the claim/finalize lifecycle documented in `references/harvest-next-work.md`.
+
+```bash
+mkdir -p .agents/rpi
+# Build VALID_ITEMS via the schema-validation flow in references/harvest-next-work.md
+# Then append one entry per post-mortem / epic.
+ENTRY_TIMESTAMP="$(date -Iseconds)"
+SOURCE_EPIC="${EPIC_ID:-recent}"
+VALID_ITEMS_JSON="${VALID_ITEMS_JSON:-[]}"
+
+printf '%s\n' "$(jq -cn \
+  --arg source_epic "$SOURCE_EPIC" \
+  --arg timestamp "$ENTRY_TIMESTAMP" \
+  --argjson items "$VALID_ITEMS_JSON" \
+  '{
+    source_epic: $source_epic,
+    timestamp: $timestamp,
+    items: $items,
+    consumed: false,
+    claim_status: "available",
+    claimed_by: null,
+    claimed_at: null,
+    consumed_by: null,
+    consumed_at: null
+  }'
+)" >> .agents/rpi/next-work.jsonl
+```
+
+#### Step ACT.4: Update Marker
+
+```bash
+date -Iseconds > .agents/ao/last-processed
+```
+
+This must be the LAST action in Phase 4.
+
 **Phases 3-6 (Maintenance):** Read `references/maintenance-phases.md` for backlog processing, activation, retirement, and harvesting phases. Load when `--process-only` flag is set or when running full post-mortem.
 
 ### Step 7: Report to User

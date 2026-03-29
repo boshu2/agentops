@@ -110,3 +110,4 @@ HANDOFF_SUMMARY.md
 cli/*cov*.out
 cli/*cov*.html
 cli/cmd/ao/.tmp
+MEMORY.md

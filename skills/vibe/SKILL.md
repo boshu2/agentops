@@ -178,6 +178,40 @@ Skip silently if no patterns match. This step runs in both `--quick` and full mo
 
 **Steps 2.4-2f, 2h, 3-3.6 (Deep Checks & Pre-Council Prep):** Read `references/deep-checks.md` for compiled prevention, prior findings, pre-council deep analysis checks, product context, spec loading, suppressions, pre-mortem correlation, and model cost tiers. Loaded automatically unless `--quick` mode is set. In `--quick` mode, skip directly to Step 2g.
 
+**Compiled prevention inputs:** Load `.agents/pre-mortem-checks/` and `.agents/planning-rules/` when available. These compiled artifacts contain known_risks from prior findings that inform the review — carry matched finding IDs into council context so judges can assess whether the flywheel prevented rediscovery.
+
+### Step 2a: Prior Findings Check
+
+**Skip if `--quick`.** Load prior findings from `.agents/findings/registry.jsonl`.
+
+### Step 2b: Constraint Tests
+
+**Skip if `--quick`.** Run compiled constraint tests from `.agents/constraints/`.
+
+### Step 2c: Metadata Checks
+
+**Skip if `--quick`.** Verify file metadata consistency.
+
+### Step 2.5: OL Validation
+
+**Skip if `--quick`.** Run organizational-lint checks.
+
+### Step 2d: Knowledge Search
+
+**Skip if `--quick`.** Search for relevant prior learnings via `ao lookup`.
+
+### Step 2e: Bug Hunt
+
+**Skip if `--quick`.** Run proactive bug-hunt audit on target files.
+
+### Step 2f: Codex Review
+
+**Skip if `--quick`.** When `--mixed` is passed and Codex CLI is available, send the first 2000 chars of the diff to Codex for a parallel review. Cap input at 2000 chars to stay within Codex context budgets.
+
+### Step 3: Product Context
+
+**Skip if `--quick`.** When PRODUCT.md exists, load it and add a DX (developer experience) judge: 2 independent + 1 DX judge (3 judges total). The DX judge evaluates whether the code aligns with the product's stated personas and value propositions.
+
 ### Step 2g: Test Pyramid Inventory (MANDATORY)
 
 Assess test coverage against the test pyramid standard (the test pyramid standard (loaded via `/standards`)).
