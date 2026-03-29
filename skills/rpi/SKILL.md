@@ -3,6 +3,13 @@ name: rpi
 description: 'Full RPI lifecycle orchestrator. Delegates to /discovery, /crank, /validation phase skills. One command, full lifecycle with complexity classification, --from routing, and optional loop. Triggers: "rpi", "full lifecycle", "research plan implement", "end to end".'
 skill_api_version: 1
 user-invocable: true
+context:
+  window: fork
+  intent:
+    mode: task
+  sections:
+    exclude: [HISTORY]
+  intel_scope: full
 metadata:
   tier: meta
   dependencies:

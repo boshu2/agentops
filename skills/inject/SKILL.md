@@ -3,6 +3,13 @@ name: inject
 description: 'Inject relevant knowledge into session context from .agents/ artifacts. Triggers: "inject knowledge", "recall context", SessionStart hook.'
 skill_api_version: 1
 user-invocable: false
+context:
+  window: fork
+  intent:
+    mode: inject
+  sections:
+    exclude: [TASK]
+  intel_scope: full
 metadata:
   tier: background
   dependencies: []
