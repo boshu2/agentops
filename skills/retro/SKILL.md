@@ -27,6 +27,7 @@ Given `/retro --quick "insight text"` or `/retro "insight text"`:
 type: learning
 source: retro-quick
 date: YYYY-MM-DD
+maturity: provisional
 ---
 
 # Learning: <Short Title>

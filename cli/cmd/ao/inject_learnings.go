@@ -130,7 +130,8 @@ func processLearningFile(file, queryLower string, now time.Time) (learning, bool
 		VerbosePrintf("Skipping superseded learning: %s\n", l.ID)
 		return l, false
 	}
-	if queryLower != "" && !strings.Contains(strings.ToLower(l.Title+" "+l.Summary), queryLower) {
+	if queryLower != "" && !strings.Contains(strings.ToLower(l.Title+" "+l.Summary), queryLower) &&
+		!strings.Contains(strings.ToLower(l.BodyText), queryLower) {
 		return l, false
 	}
 
@@ -159,12 +160,17 @@ func processLearningFile(file, queryLower string, now time.Time) (learning, bool
 
 // passesQualityGate returns true if a learning meets minimum injection standards.
 // Requires maturity >= provisional (provisional, candidate, or established) AND utility > 0.3.
+// Empty maturity defaults to provisional (legacy learnings lack metadata).
 func passesQualityGate(l learning) bool {
-	switch types.Maturity(l.Maturity) {
+	mat := types.Maturity(l.Maturity)
+	if mat == "" {
+		mat = types.MaturityProvisional
+	}
+	switch mat {
 	case types.MaturityProvisional, types.MaturityCandidate, types.MaturityEstablished:
 		// maturity OK
 	default:
-		// Empty maturity, "draft", or unknown → fail gate
+		// "draft" or unknown → fail gate
 		return false
 	}
 	return l.Utility > 0.3
@@ -556,6 +562,8 @@ func parseLearningFile(path string) (learning, error) {
 
 	parseLearningBody(lines, contentStart, &l)
 	l.Summary = extractSummary(lines, contentStart)
+	// Store full body text for search (used by lookup --query body matching)
+	l.BodyText = strings.Join(lines[contentStart:], "\n")
 
 	if l.Title == "" {
 		l.Title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
@@ -627,6 +635,10 @@ func parseLearningJSONL(path string) (learning, error) {
 	}
 
 	populateLearningFromJSON(data, &l)
+	// Populate body text from content field for search
+	if content, ok := data["content"].(string); ok {
+		l.BodyText = content
+	}
 	return l, nil
 }
 

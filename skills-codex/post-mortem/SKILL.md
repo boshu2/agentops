@@ -81,6 +81,7 @@ Create a slug from the content: first meaningful words, lowercase, hyphens, max 
 type: learning
 source: post-mortem-quick
 date: YYYY-MM-DD
+maturity: provisional
 ---
 
 # Learning: <Short Title>
@@ -360,6 +361,7 @@ type: learning
 date: YYYY-MM-DD
 category: <category>
 confidence: <high|medium|low>
+maturity: provisional
 ---
 
 # Learning: <Short Title>

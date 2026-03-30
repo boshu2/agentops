@@ -639,10 +639,55 @@ func TestInjectLearnings_processLearningFile_FiltersByQuery(t *testing.T) {
 		t.Error("expected ok=true for matching query")
 	}
 
-	// Non-matching query
+	// Non-matching query (not in title, summary, or body)
 	_, ok = processLearningFile(path, "kubernetes", time.Now())
 	if ok {
 		t.Error("expected ok=false for non-matching query")
+	}
+}
+
+func TestInjectLearnings_processLearningFile_BodyTextSearch(t *testing.T) {
+	tmp := t.TempDir()
+	// Title says "Auth Patterns" but body mentions "flywheel" — query should match body
+	content := "---\nmaturity: provisional\n---\n# Auth Patterns\n\nUse flywheel compounding for knowledge retention.\n"
+	path := filepath.Join(tmp, "auth.md")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Query matches body but not title/summary
+	l, ok := processLearningFile(path, "flywheel", time.Now())
+	if !ok {
+		t.Error("expected ok=true when query matches body text")
+	}
+	if l.BodyText == "" {
+		t.Error("expected BodyText to be populated")
+	}
+}
+
+func TestInjectLearnings_passesQualityGate_EmptyMaturityDefaultsProvisional(t *testing.T) {
+	// Empty maturity should default to provisional and pass the gate
+	l := learning{Maturity: "", Utility: 0.5}
+	if !passesQualityGate(l) {
+		t.Error("expected empty maturity to default to provisional and pass quality gate")
+	}
+
+	// Draft maturity should still fail
+	l.Maturity = "draft"
+	if passesQualityGate(l) {
+		t.Error("expected draft maturity to fail quality gate")
+	}
+
+	// Explicit provisional should still pass
+	l.Maturity = "provisional"
+	if !passesQualityGate(l) {
+		t.Error("expected provisional maturity to pass quality gate")
+	}
+
+	// Empty maturity with low utility should still fail (utility gate)
+	l = learning{Maturity: "", Utility: 0.1}
+	if passesQualityGate(l) {
+		t.Error("expected empty maturity with low utility to fail quality gate")
 	}
 }
 

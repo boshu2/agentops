@@ -670,7 +670,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "afce1fac76a1e506e9405b76886ecdf390c3eead5d863d82b8311286ad00d6a4",
-      "generated_hash": "7b7c87e92cf94f6cdbadab43cfa76bc99d458ff1f662dbe31cecfe909bee590a"
+      "generated_hash": "1ee0306558d1090a6feaf35636c69e9bfa8a42038e8ff1cd7897ce0506c58f0d"
     },
     {
       "name": "pr-implement",
@@ -778,7 +778,7 @@
       "name": "retro",
       "source_skill": "skills/retro",
       "source_hash": "4cf265d7ee5b71ac33e7039aeb58c899a02b8721b3a998e96151641d7e9b6d3c",
-      "generated_hash": "2d06536bda35f91707d7c6df27412c26c6e27a5681191121fe71e03dceb3da64"
+      "generated_hash": "37f6188b3c25a7c21109d38aa3ade6d5b233bf2834c240052d2814d455802d54"
     },
     {
       "name": "reverse-engineer-rpi",

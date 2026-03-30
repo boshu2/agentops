@@ -91,6 +91,7 @@ type learning struct {
 	CompositeScore float64 `json:"composite_score,omitempty"` // Two-Phase ranking score
 	Maturity       string  `json:"maturity,omitempty"`        // CASS maturity level
 	SessionType    string  `json:"session_type,omitempty"`    // career, research, debug, implement, brainstorm
+	BodyText       string  `json:"-"`                         // Full body text for search (populated on demand)
 	Superseded     bool    `json:"-"`                         // Internal flag - not serialized
 	Global         bool    `json:"-"`                         // Internal flag: from global dir
 }

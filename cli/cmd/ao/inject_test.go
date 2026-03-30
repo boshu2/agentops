@@ -897,7 +897,7 @@ func TestPassesQualityGate(t *testing.T) {
 		{"provisional with low utility", "provisional", 0.2, false},
 		{"provisional at boundary", "provisional", 0.3, false}, // 0.3 is NOT > 0.3
 		{"provisional just above", "provisional", 0.31, true},
-		{"empty maturity", "", 0.8, false},
+		{"empty maturity defaults provisional", "", 0.8, true},
 		{"draft maturity", "draft", 0.8, false},
 		{"unknown maturity", "foobar", 0.8, false},
 		{"empty maturity low utility", "", 0.1, false},
@@ -918,14 +918,14 @@ func TestPassesQualityGate(t *testing.T) {
 func TestProcessLearningFile_QualityGateFilters(t *testing.T) {
 	dir := t.TempDir()
 
-	// Learning with no maturity should be filtered out
+	// Learning with no maturity should now pass (empty defaults to provisional)
 	noMaturity := writeTestMDLearning(t, dir, "no-maturity.md", map[string]string{
 		"utility": "0.9",
 	}, "# Good content\nBut no maturity\n")
 
 	_, included := processLearningFile(noMaturity, "", time.Now())
-	if included {
-		t.Error("expected learning without maturity to be filtered by quality gate")
+	if !included {
+		t.Error("expected learning without maturity to pass quality gate (empty defaults to provisional)")
 	}
 
 	// Learning with provisional + good utility should pass
