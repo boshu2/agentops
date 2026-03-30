@@ -155,9 +155,72 @@ if [ "${AGENTOPS_GITIGNORE_AUTO:-1}" != "0" ] && [ -d "$ROOT/.git" ]; then
 fi
 if [ ! -f "$ROOT/.agents/.gitignore" ]; then
     cat > "$ROOT/.agents/.gitignore" 2>/dev/null <<'EOF'
+# Deny all by default — session artifacts must not leak to git.
 *
+
+# Allow this file and navigation signposts
 !.gitignore
 !README.md
+!AGENTS.md
+
+# Allow AGENTS.md signposts in subdirectories
+!council/
+council/*
+!council/AGENTS.md
+
+!defrag/
+defrag/*
+
+!evolve/
+evolve/*
+!evolve/cycle-history.jsonl
+!evolve/fitness-0-baseline.json
+!evolve/active-baseline.txt
+!evolve/baselines/
+evolve/baselines/*
+!evolve/baselines/index.jsonl
+!evolve/baselines/*.json
+
+!handoff/
+handoff/*
+!handoff/AGENTS.md
+
+!learnings/
+learnings/*
+!learnings/AGENTS.md
+
+!patterns/
+patterns/*
+!patterns/AGENTS.md
+
+!plans/
+plans/*
+!plans/AGENTS.md
+
+!plugins/
+plugins/*
+!plugins/marketplace.json
+
+!releases/
+releases/*
+!releases/*.md
+!releases/evidence-only-closures/
+releases/evidence-only-closures/*
+!releases/evidence-only-closures/*.json
+
+!research/
+research/*
+
+!retro/
+retro/*
+
+!retros/
+retros/*
+
+!rpi/
+rpi/*
+!rpi/AGENTS.md
+!rpi/next-work.schema.md
 EOF
 fi
 
