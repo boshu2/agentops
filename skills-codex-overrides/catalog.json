@@ -41,6 +41,12 @@
       "reason": "Issue routing and dependency edits are a core Codex workflow and need explicit runtime-facing operator guidance."
     },
     {
+      "name": "bootstrap",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
       "name": "brainstorm",
       "treatment": "bespoke",
       "wave": "analysis-authoring",
@@ -87,6 +93,12 @@
       "treatment": "parity_only",
       "wave": "backbone",
       "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
+    },
+    {
+      "name": "design",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "doc",
@@ -154,6 +166,12 @@
           "Do not leave the next session guessing what to do first."
         ]
       }
+    },
+    {
+      "name": "harvest",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "heal-skill",

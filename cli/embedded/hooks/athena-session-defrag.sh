@@ -73,7 +73,7 @@ scan_normalization_defects() {
         placeholders=$((placeholders + 1))
       fi
 
-      learning_headings=$(awk '/^#{1,3}[[:space:]]+Learning([[:space:]:-]|$)/{n++} END{print n+0}' "$file")
+      learning_headings=$(awk '/^##?#?[[:space:]]+Learning([[:space:]:-]|$)/{n++} END{print n+0}' "$file")
       if [ "$learning_headings" -gt 1 ]; then
         bundled=$((bundled + 1))
       fi

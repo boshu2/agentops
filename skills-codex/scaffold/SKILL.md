@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: 'Project scaffolding, component generation, and boilerplate setup. Triggers: "scaffold", "new project", "init project", "bootstrap", "create project", "generate component", "setup project", "starter", "boilerplate".'
+description: 'Project scaffolding, component generation, and boilerplate setup. Triggers: "scaffold", "new project", "init project", "create project", "generate component", "setup project", "starter", "boilerplate".'
 ---
 
 # Scaffold Skill

@@ -34,7 +34,7 @@ HAS_GOALS=$([[ -f GOALS.md ]] && echo true || echo false)
 HAS_PRODUCT=$([[ -f PRODUCT.md ]] && echo true || echo false)
 HAS_README=$([[ -f README.md ]] && echo true || echo false)
 HAS_AGENTS=$([[ -d .agents ]] && echo true || echo false)
-HAS_HOOKS=$(grep -q "agentops" .claude/settings.json 2>/dev/null && echo true || echo false)
+HAS_HOOKS=$(grep -rq "agentops" .git/hooks/ 2>/dev/null && echo true || echo false)
 HAS_AO=$(command -v ao >/dev/null && echo true || echo false)
 ```
 

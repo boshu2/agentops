@@ -1881,6 +1881,29 @@ ao forge transcript <path-or-glob> [flags]
 
 ---
 
+### `ao harvest`
+
+Walks all .agents/ directories across the workspace, extracts learnings,
+
+```
+ao harvest [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                   help for harvest
+      --include string         Artifact types to include (comma-separated) (default "learnings,patterns,research")
+      --max-file-size int      Skip files larger than this (bytes) (default 1048576)
+      --min-confidence float   Minimum confidence for promotion (default 0.5)
+      --output-dir string      Directory for harvest catalog output (default ".agents/harvest")
+      --promote-to string      Promotion destination for high-value artifacts (default "/Users/fullerbt/.agents/learnings")
+      --quiet                  Suppress progress output
+      --roots string           Base directories to scan (comma-separated) (default "/Users/fullerbt/gt")
+```
+
+---
+
 ### `ao inject`
 
 Inject searches and outputs relevant knowledge for session startup.
