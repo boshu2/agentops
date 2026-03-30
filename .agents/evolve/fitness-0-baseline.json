@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-02-25T13:38:33Z",
+  "git_sha": "cdf718d",
+  "goals": [
+    {
+      "goal_id": "go-cli-builds",
+      "result": "pass",
+      "duration_s": 1.27651075,
+      "weight": 8
+    },
+    {
+      "goal_id": "go-cli-tests",
+      "result": "pass",
+      "duration_s": 51.699251583,
+      "output": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao\t44.671s\n?   \tgithub.com/boshu2/agentops/cli/embedded\t[no test files]\nok  \tgithub.com/boshu2/agentops/cli/internal/config\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/context\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/formatter\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/goals\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/parser\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/pool\t(cached)\nok  \tgithub.com/boshu",
+      "weight": 8
+    },
+    {
+      "goal_id": "go-vet-clean",
+      "result": "pass",
+      "duration_s": 0.552108875,
+      "weight": 5
+    },
+    {
+      "goal_id": "hook-preflight",
+      "result": "pass",
+      "duration_s": 0.244122209,
+      "output": "\u001b[0;34mHook preflight checks\u001b[0m\n\u001b[0;32m✓\u001b[0m hooks/session-start.sh exists\n\u001b[0;32m✓\u001b[0m hooks/session-end-maintenance.sh exists\n\u001b[0;32m✓\u001b[0m hooks/precompact-snapshot.sh exists\n\u001b[0;32m✓\u001b[0m hooks/pending-cleaner.sh exists\n\u001b[0;32m✓\u001b[0m hooks/task-validation-gate.sh exists\n\u001b[0;32m✓\u001b[0m hooks/dangerous-git-guard.sh exists\n\u001b[0;32m✓\u001b[0m hooks/git-worker-guard.sh exists\n\u001b[0;32m✓\u001b[0m hooks/pre-mortem-gate.sh exists\n\u001b[0;32m✓\u001b[0m hooks/context-guard.sh exists\n\u001b[0;32m✓\u001b[0m hooks/prompt-nudge.sh exists\n\u001b[",
+      "weight": 6
+    },
+    {
+      "goal_id": "manifest-versions-match",
+      "result": "pass",
+      "duration_s": 0.013057084,
+      "weight": 5
+    },
+    {
+      "goal_id": "skill-frontmatter",
+      "result": "pass",
+      "duration_s": 0.390250708,
+      "weight": 5
+    },
+    {
+      "goal_id": "contract-compatibility",
+      "result": "pass",
+      "duration_s": 0.087735625,
+      "output": "=== Contract compatibility gate ===\n\n--- INDEX.md link resolution ---\n  OK: contracts/memrl-policy-integration.md\n  OK: contracts/memrl-policy.profile.example.json\n  OK: contracts/memrl-policy.schema.json\n  OK: contracts/rpi-phase-result.schema.json\n  OK: contracts/rpi-run-registry.md\n\n--- Bridge doc reference resolution ---\n  OK: docs/contracts/memrl-policy-integration.md\n  OK: docs/contracts/memrl-policy.profile.example.json\n  OK: docs/contracts/memrl-policy.schema.json\n\n--- Contract .md cross",
+      "weight": 5
+    },
+    {
+      "goal_id": "wiring-closure",
+      "result": "pass",
+      "duration_s": 0.696695666,
+      "output": "All wiring checks passed",
+      "weight": 7
+    },
+    {
+      "goal_id": "go-complexity-ceiling",
+      "result": "pass",
+      "duration_s": 0.0679475,
+      "output": "All functions in cli/ are below complexity 36.",
+      "weight": 6
+    },
+    {
+      "goal_id": "go-internal-complexity",
+      "result": "pass",
+      "duration_s": 0.02876725,
+      "output": "All functions in cli/internal/ are below complexity 28.",
+      "weight": 5
+    },
+    {
+      "goal_id": "go-coverage-floor",
+      "result": "pass",
+      "duration_s": 57.140353083,
+      "weight": 4
+    },
+    {
+      "goal_id": "cmd-ao-coverage-floor",
+      "result": "pass",
+      "duration_s": 0.907290667,
+      "output": "Running cmd/ao coverage gate (floor=62.0%, zero-max=961)...\nPASS: cmd/ao coverage 64.2% (zero-coverage functions: 272)",
+      "weight": 6
+    },
+    {
+      "goal_id": "security-gate",
+      "result": "pass",
+      "duration_s": 0.27472825,
+      "output": "================================\nTesting security-gate.sh\n================================\n\nPASS: security-gate.sh is executable\nPASS: --help works\nPASS: invalid mode fails\nPASS: JSON output is valid\nPASS: JSON output has required fields\nPASS: security-gate summary artifact created\n\n================================\nResults: 6 PASS, 0 FAIL\n================================",
+      "weight": 6
+    },
+    {
+      "goal_id": "goals-validate",
+      "result": "pass",
+      "duration_s": 1.6139459999999999,
+      "output": "true",
+      "weight": 5
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passing": 14,
+    "failing": 0,
+    "skipped": 0,
+    "score": 100
+  }
+}
