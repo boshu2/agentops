@@ -5,9 +5,9 @@
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 
-### Close the gaps between "agent wrote code" and "the system got smarter."
+### Your agents forget everything between sessions. AgentOps fixes that.
 
-AgentOps is the repo layer that makes **validation, learning, and loop closure** explicit around your coding agent — so shipped code comes with judgment, memory, and a concrete next step.
+The local DevOps layer for coding agents — validation, repo-native memory, and loop closure. Zero infrastructure. Zero telemetry.
 
 [Start Here](#start-here) · [Install](#install) · [See It Work](#see-it-work) · [Skills](#skills) · [CLI](#the-ao-cli) · [FAQ](#faq) · [Newcomer Guide](docs/newcomer-guide.md)
 
@@ -19,21 +19,21 @@ AgentOps is the repo layer that makes **validation, learning, and loop closure**
 
 ---
 
-## Why AgentOps Exists
+## Why Agents Keep Making the Same Mistakes
 
 Most coding-agent tools improve the prompt or the routing. The failure modes come after that — three gaps between "agent wrote code" and "the system got smarter":
 
-1. **Judgment validation** is missing, so agents ship without loading the risk context that would challenge the plan or the code.
-2. **Durable learning** is missing, so solved problems come back as if they were never solved.
-3. **Loop closure** is missing, so completed work does not reliably produce better next work, better rules, or better future context.
+1. **Judgment validation** is missing — agents ship without the risk context that would challenge the plan or the code.
+2. **Durable learning** is missing — solved problems come back as if they were never solved. Your agent is a temp that forgets everything when the session ends.
+3. **Loop closure** is missing — completed work does not reliably produce better next work, better rules, or better future context.
 
 AgentOps treats those three gaps as a [lifecycle contract](docs/context-lifecycle.md), not as separate features. Every skill, hook, and CLI command exists to close one of these gaps.
 
 | Gap | Without AgentOps | With AgentOps |
 |-----|------------------|---------------|
 | Judgment validation | Review after the fact | `/pre-mortem` before build, `/vibe` + `/council` before commit |
-| Durable learning | Partial memory each session | Repo-native memory via `.agents/` — extraction, freshness decay, injection |
-| Loop closure | Chat logs, untracked runs | Artifacts, issues, and next-work suggestions the next session can act on |
+| Durable learning | Session amnesia — same mistake, every time | Repo-native memory via `.agents/` — lessons compound across sessions |
+| Loop closure | Chat logs, untracked runs | Artifacts, issues, and next-work suggestions the next session acts on |
 
 ---
 
@@ -135,34 +135,38 @@ Each phase closes one or more of the three gaps — judgment, learning, loop clo
 
 That is the real architecture: a local operating layer around the agent, not just a prompt pack. See [Primitive Chains](docs/architecture/primitive-chains.md) for the audited map.
 
-### The Knowledge Flywheel
+### How Agent Memory Works Without Infrastructure
 
-Each session automatically extracts knowledge and feeds it back — making the next session smarter:
+Mistakes happen once. `.agents/` makes sure of it.
+
+`.agents/` is a directory in your repo that stores what your agents learned — as plain files. No vector database. No embeddings pipeline. No cloud dependency. Grep replaces RAG.
 
 ```
-┌───────────────────────────────────────────────────────────────────────┐
-│                     THE KNOWLEDGE FLYWHEEL                            │
-│                                                                       │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
-│  │  1. WORK   │─>│  2. FORGE  │─>│  3. POOL   │─>│ 4. PROMOTE │       │
-│  │  Session   │  │  Extract   │  │  Score &   │  │  Graduate  │       │
-│  │            │  │            │  │  Queue     │  │            │       │
-│  └────────────┘  └────────────┘  └────────────┘  └────────────┘       │
-│       ^                                                  │            │
-│       │         ┌────────────┐  ┌────────────┐           │            │
-│       └─────────│  6. INJECT │<─│5. LEARNINGS│<──────────┘            │
-│                 │  Surface   │  │  Permanent │                        │
-│                 │  & Cite    │  │  Knowledge │                        │
-│                 └────────────┘  └────────────┘                        │
-│                                                                       │
-│  Each citation feeds back: utility scores update, high-utility        │
-│  knowledge surfaces more often, low-utility decays. This is the       │
-│  compounding effect — sessions get smarter because the best           │
-│  knowledge rises and the noise sinks.                                 │
-└───────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│   Traditional Cache          .agents/ Knowledge Store                    │
+│  ┌────────────────────┐    ┌──────────────────────────────────────────┐  │
+│  │ Stores results     │    │ Stores extracted lessons                 │  │
+│  │ Hit = skip compute │    │ Hit = avoid repeating mistakes           │  │
+│  │ Flat key-value     │    │ Hierarchical: learning → pattern → rule  │  │
+│  │ Static after write │    │ Promotes through tiers over time         │  │
+│  │ One consumer       │    │ Any agent, any runtime, any session      │  │
+│  └────────────────────┘    └──────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Forge** extracts decisions, solutions, learnings, and failures from every session. **Pool** scores each on specificity, actionability, and novelty. **Promote** graduates the best after another session cites it. **Inject** surfaces the top knowledge at session start — each retrieval creates a citation that drives the feedback loop.
+**How it compounds:** Session 1, your agent hits a timeout bug and spends 2 hours debugging. `/retro` captures the lesson. `/athena` promotes it to a pattern. Session 15, a new agent greps "timeout" and finds the answer in 2 operations — skipping the 2-hour debugging entirely. Session 20, a planning rule gates plans that don't include timeout checks. That's not memory. That's institutional knowledge that survives agent death.
+
+```
+┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐
+│  1. WORK   │─>│  2. FORGE  │─>│  3. POOL   │─>│ 4. PROMOTE │
+│  Session   │  │  Extract   │  │  Score &   │  │  Graduate  │
+└────────────┘  └────────────┘  └────────────┘  └────────────┘
+     ^                                                │
+     │         ┌────────────┐  ┌────────────┐         │
+     └─────────│  6. INJECT │<─│5. LEARNINGS│<────────┘
+               │  Surface   │  │  Permanent │
+               └────────────┘  └────────────┘
+```
 
 ```text
 > /research "retry backoff strategies"
@@ -177,15 +181,21 @@ Each session automatically extracts knowledge and feeds it back — making the n
 
 Session 50 starts with 50 sessions of accumulated wisdom — not from scratch.
 Stale insights [decay automatically](docs/the-science.md). Useful ones
-compound. Measure it with `ao flywheel status`, which separates raw escape
-velocity from actual flywheel health.
+compound. Measure it with `ao flywheel status`.
+
+| What it looks like | What it actually does |
+|--------------------|----------------------|
+| Markdown files | Scored, decayed, and deduplicated knowledge with freshness semantics |
+| `grep` | Contextual retrieval with relevance scoring and phase-aware injection |
+| Git commits | Provenance tracking, audit trail, diffable knowledge evolution |
 
 Deep dive: [The Knowledge Flywheel](docs/knowledge-flywheel.md)
 
 ### Why engineers buy in
 
+- **Your agents are temps. Your repo remembers everything.** — Knowledge survives session resets, agent turnover, and runtime changes.
 - **Local-only** — no telemetry, no cloud, no accounts. Nothing phones home.
-- **Auditable** — plans, verdicts, learnings, and patterns are plain files on disk.
+- **Auditable** — plans, verdicts, learnings, and patterns are plain files on disk. Diff them. Grep them. Review them in PRs.
 - **Multi-runtime** — Claude Code and Codex CLI (first-class), Cursor and OpenCode (experimental).
 - **Harder to drift** — tracked issues and validation gates mean the repo is less dependent on agent mood or memory.
 

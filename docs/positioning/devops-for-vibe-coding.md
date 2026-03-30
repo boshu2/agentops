@@ -205,6 +205,25 @@ Single-Session          │   Agent SDKs
 
 ---
 
+## Messaging Hierarchy (Council-Validated 2026-03-30)
+
+Different surfaces need different messaging density. Match the message to the audience:
+
+| Surface | Message | Source |
+|---------|---------|--------|
+| **GitHub description** (< 100 chars) | Agent memory that compounds. Zero infrastructure. | Hybrid A+C |
+| **README hero** | Your agents forget everything between sessions. AgentOps fixes that. | A (emotional) |
+| **README subtitle** | Learnings, patterns, and decisions live as plain files in `.agents/` | C (mechanical) |
+| **Social / Twitter** | Mistakes happen once. `.agents/` makes sure of it. | A+C (outcome) |
+| **HN / technical blog** | Grep replaces RAG: permanent agent memory with plain files | C (provocative) |
+| **Conference talk** | Your agents are temps. Your repo remembers everything. | A (emotional) |
+| **Landing page (managers)** | Institutional memory for AI agents. Zero infrastructure. | A+C (balanced) |
+| **Competitive comparison** | Agent knowledge as files. Diffable. Greppable. No vendor lock-in. | C (mechanical) |
+
+**Category claim:** "Repo-native agent memory" — agent knowledge managed like code (version-controlled, reviewed, promoted, decayed), not stuffed into a vector database or a proprietary cloud store.
+
+**Strategic position:** Validation drives adoption. The flywheel drives retention. Loop closure drives lock-in. The flywheel is pillar 2 of 3, not the headline.
+
 ## Key Phrases Reference
 
 ### Use These
@@ -215,6 +234,10 @@ Single-Session          │   Agent SDKs
 - "Validation built in, not bolted on"
 - "Catch it before you ship it"
 - "Knowledge that compounds"
+- "Repo-native agent memory"
+- "Your agents are temps. Your repo remembers everything."
+- "Mistakes happen once. `.agents/` makes sure of it."
+- "Grep replaces RAG"
 - "The 40% rule" (context budget)
 - "Pre-mortem before implement"
 - "Vibe check before commit"
@@ -227,6 +250,8 @@ Single-Session          │   Agent SDKs
 - "AI-assisted development" (too generic, no validation emphasis)
 - "Autonomous agents" (not our focus)
 - "Just use Claude better" (undersells the framework)
+- "Compiler for agent experience" (metaphor breaks under scrutiny — council-killed)
+- "Institutional memory" without "zero infrastructure" (triggers enterprise anxiety alone)
 
 ---
 

@@ -15,7 +15,7 @@ Without AgentOps, every session starts from scratch. Your agent doesn't remember
 
 ## What data leaves my machine?
 
-AgentOps itself stores nothing externally — all state lives in `.agents/` (git-tracked, local). No telemetry, no cloud, no external services. Your coding agent's normal API traffic to its LLM provider still applies.
+AgentOps itself stores nothing externally — all state lives in `.agents/` (local, git-ignored by default). No telemetry, no cloud, no external services. Set `AGENTOPS_GITIGNORE_AUTO=0` to commit knowledge artifacts to your repo. Your coding agent's normal API traffic to its LLM provider still applies.
 
 ## Can I use this with other AI coding tools?
 

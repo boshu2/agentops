@@ -160,7 +160,7 @@ OUTPUT: LEARNINGS (feed your next spec)
   +------------------+-----------------+
                      |
                      v
-               .agents/  (git-tracked, compounds across sessions)
+               .agents/  (local, git-ignored by default, compounds across sessions)
                |-- learnings/
                |-- patterns/
                |-- plans/
