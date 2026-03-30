@@ -122,6 +122,10 @@ type PathsConfig struct {
 	// Applied AFTER composite scoring. Lower values make local results win more aggressively.
 	// Default: 0.8
 	GlobalWeight float64 `yaml:"global_weight" json:"global_weight"`
+
+	// HarvestRoots is the list of directories to scan for cross-rig knowledge harvest.
+	// Default: [~/gt]
+	HarvestRoots []string `yaml:"harvest_roots" json:"harvest_roots"`
 }
 
 // ModelsConfig holds model tier configuration.
@@ -249,6 +253,7 @@ func Default() *Config {
 			GlobalLearningsDir: filepath.Join(homeDir, ".agents", "learnings"),
 			GlobalPatternsDir:  filepath.Join(homeDir, ".agents", "patterns"),
 			GlobalWeight:       0.8,
+			HarvestRoots:       []string{filepath.Join(homeDir, "gt")},
 		},
 	}
 }
@@ -478,6 +483,9 @@ func mergePaths(dst, src *PathsConfig) {
 	mergeStr(&dst.GlobalPatternsDir, src.GlobalPatternsDir)
 	if src.GlobalWeight > 0 {
 		dst.GlobalWeight = src.GlobalWeight
+	}
+	if len(src.HarvestRoots) > 0 {
+		dst.HarvestRoots = src.HarvestRoots
 	}
 }
 

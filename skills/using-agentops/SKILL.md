@@ -122,6 +122,7 @@ These are the skills every user needs first. Everything else is available when y
 | Skill | Purpose |
 |-------|---------|
 | `/athena` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `/plan` | Epic decomposition into issues |

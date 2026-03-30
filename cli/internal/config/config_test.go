@@ -2078,3 +2078,31 @@ models:
 		t.Errorf("env override Models.SkillOverrides[council] = %q, want %q", cfg3.Models.SkillOverrides["council"], "budget")
 	}
 }
+
+func TestDefault_HarvestRoots(t *testing.T) {
+	cfg := Default()
+	home, _ := os.UserHomeDir()
+	wantRoot := filepath.Join(home, "gt")
+	if len(cfg.Paths.HarvestRoots) != 1 {
+		t.Fatalf("Default Paths.HarvestRoots length = %d, want 1", len(cfg.Paths.HarvestRoots))
+	}
+	if cfg.Paths.HarvestRoots[0] != wantRoot {
+		t.Errorf("Default Paths.HarvestRoots[0] = %q, want %q", cfg.Paths.HarvestRoots[0], wantRoot)
+	}
+}
+
+func TestMerge_HarvestRoots(t *testing.T) {
+	base := Default()
+	override := &Config{
+		Paths: PathsConfig{
+			HarvestRoots: []string{"/custom/root1", "/custom/root2"},
+		},
+	}
+	result := merge(base, override)
+	if len(result.Paths.HarvestRoots) != 2 {
+		t.Fatalf("merge HarvestRoots length = %d, want 2", len(result.Paths.HarvestRoots))
+	}
+	if result.Paths.HarvestRoots[0] != "/custom/root1" {
+		t.Errorf("merge HarvestRoots[0] = %q, want %q", result.Paths.HarvestRoots[0], "/custom/root1")
+	}
+}
