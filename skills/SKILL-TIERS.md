@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (52)
+### User-Facing Skills (54)
 
 **Judgment:**
 
@@ -231,6 +231,7 @@ These are how skills chain in practice:
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
 | **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |
+| **design** | judgment | Product validation gate — checks goal alignment, persona fit, competitive differentiation before discovery |
 
 **Execution:**
 
@@ -285,6 +286,7 @@ These are how skills chain in practice:
 | **recover** | session | Post-compaction context recovery |
 | **status** | session | Single-screen dashboard |
 | **quickstart** | session | Interactive onboarding |
+| **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
 
 **Upstream Contributions:**
 
@@ -363,6 +365,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **oss-docs** | doc | optional |
 | provenance | - | - |
 | **quickstart** | - | - (zero dependencies) |
+| **bootstrap** | goals, product, readme, shared | all optional (progressive — skips what exists) |
 | **discovery** | brainstorm, research, plan, pre-mortem, shared | brainstorm optional, rest required |
 | **validation** | vibe, post-mortem, retro, forge, shared | vibe+post-mortem required, retro+forge optional |
 | **rpi** | discovery, crank, validation, ratchet | all required |
@@ -385,6 +388,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | using-agentops | - | - |
 | **test** | standards, complexity | required, optional |
 | **review** | standards, council | required, optional |
+| **design** | council, shared | required, optional |
 | **refactor** | standards, complexity, beads | required, optional, optional |
 | **deps** | standards | optional |
 | **perf** | standards, complexity | optional, optional |

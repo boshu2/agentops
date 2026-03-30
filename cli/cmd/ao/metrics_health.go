@@ -61,9 +61,9 @@ var metricsHealthCmd = &cobra.Command{
 	Long: `Display flywheel health metrics including escape velocity status.
 
 Metrics:
-  sigma (retrieval effectiveness): cited learnings / injected in last 10 sessions
-  rho   (citation rate):           fraction of injected knowledge that influenced decisions
-  delta (decay):                   average age of active learnings in days
+  sigma (retrieval coverage):      surfaced retrievable artifacts / total retrievable artifacts
+  rho   (decision influence):      evidence-backed surfaced artifacts / surfaced artifacts
+  delta (avg age):                 average age of active learnings in days
   escape_velocity:                 sigma * rho > delta/100 (compounding vs decaying)
   knowledge_stock:                 total learnings, patterns, constraints
   loop_dominance:                  R1 (new/session) vs B1 (decayed/session)
@@ -124,12 +124,7 @@ func computeHealthMetrics(baseDir string) (*healthMetrics, error) {
 	hm.Delta = computeHealthDelta(baseDir)
 
 	// Escape velocity: sigma * rho > delta / 100
-	if hm.Delta > 0 {
-		hm.EscapeVelocity = hm.Sigma*hm.Rho > hm.Delta/100.0
-	} else {
-		// No learnings => no decay => compounding if any retrieval at all
-		hm.EscapeVelocity = hm.Sigma*hm.Rho > 0
-	}
+	hm.EscapeVelocity = hm.Sigma*hm.Rho > escapeVelocityThreshold(hm.Delta)
 
 	// Knowledge stock
 	hm.KnowledgeStock = computeKnowledgeStock(baseDir)
@@ -140,7 +135,7 @@ func computeHealthMetrics(baseDir string) (*healthMetrics, error) {
 	return hm, nil
 }
 
-// computeHealthSigmaRho computes sigma (retrieval effectiveness) and rho (citation rate)
+// computeHealthSigmaRho computes sigma (retrieval coverage) and rho (decision influence)
 // from citation data restricted to the last 10 unique sessions.
 func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sigma, rho float64) {
 	if len(citations) == 0 {
@@ -165,13 +160,17 @@ func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sig
 		}
 	}
 
-	// Count unique cited learnings (only retrievable artifacts)
+	// Count unique surfaced artifacts and which of those later had evidence-backed use.
 	citedUnique := make(map[string]bool)
-	citationCount := 0
+	evidenceUnique := make(map[string]bool)
 	for _, c := range filtered {
 		if isRetrievableArtifactPath(baseDir, c.ArtifactPath) {
-			citationCount++
-			citedUnique[normalizeArtifactPath(baseDir, c.ArtifactPath)] = true
+			artifactPath := normalizeArtifactPath(baseDir, c.ArtifactPath)
+			citedUnique[artifactPath] = true
+			switch effectiveCitationFeedbackType(c.CitationType) {
+			case "applied", "reference":
+				evidenceUnique[artifactPath] = true
+			}
 		}
 	}
 
@@ -180,20 +179,7 @@ func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sig
 		countFilesInDir(filepath.Join(baseDir, ".agents", "patterns")) +
 		countFilesInDir(filepath.Join(baseDir, ".agents", SectionFindings))
 
-	// sigma = unique cited / total retrievable
-	if totalRetrievable > 0 {
-		sigma = float64(len(citedUnique)) / float64(totalRetrievable)
-		if sigma > 1.0 {
-			sigma = 1.0
-		}
-	}
-
-	// rho = citation count / total retrievable (fraction that influenced decisions)
-	if totalRetrievable > 0 {
-		rho = float64(citationCount) / float64(totalRetrievable)
-	}
-
-	return sigma, rho
+	return computeOperationalSigmaRho(totalRetrievable, len(citedUnique), len(evidenceUnique))
 }
 
 // lastNSessions returns the last N unique session IDs from citations, ordered by most recent citation.
@@ -395,7 +381,7 @@ func printHealthTable(w io.Writer, hm *healthMetrics) {
 	// Core metrics
 	fmt.Fprintln(w, "RETRIEVAL:")
 	fmt.Fprintf(w, "  sigma (retrieval effectiveness): %.3f\n", hm.Sigma)
-	fmt.Fprintf(w, "  rho   (citation rate):           %.3f\n", hm.Rho)
+	fmt.Fprintf(w, "  rho   (decision influence):      %.3f\n", hm.Rho)
 	fmt.Fprintf(w, "  delta (avg learning age, days):   %.1f\n", hm.Delta)
 	fmt.Fprintln(w)
 
@@ -408,7 +394,7 @@ func printHealthTable(w io.Writer, hm *healthMetrics) {
 	}
 	fmt.Fprintln(w, "ESCAPE VELOCITY:")
 	fmt.Fprintf(w, "  sigma * rho = %.4f\n", hm.Sigma*hm.Rho)
-	fmt.Fprintf(w, "  delta / 100 = %.4f\n", hm.Delta/100.0)
+	fmt.Fprintf(w, "  delta / 100 = %.4f\n", escapeVelocityThreshold(hm.Delta))
 	fmt.Fprintf(w, "  status:       %s %s\n", escapeStatus, escapeIcon)
 	fmt.Fprintln(w)
 

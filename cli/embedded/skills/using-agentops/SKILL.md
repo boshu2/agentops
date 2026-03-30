@@ -115,7 +115,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/status` | Single-screen dashboard of current work and suggested next action |
 | `/goals` | Maintain GOALS.yaml fitness specification |
 | `/push` | Atomic test-commit-push workflow |
-| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ) |
+| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ/100) |
 
 ## Advanced Skills (when you need them)
 

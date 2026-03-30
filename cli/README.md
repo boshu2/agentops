@@ -84,7 +84,7 @@ dK/dt = I(t) - δ·K + σ·ρ·K
 ```
 
 - **δ = 0.17/week** - Knowledge decay rate (Darr et al.)
-- **σρ > δ** - Escape velocity for compounding knowledge
+- **σρ > δ/100** - Operational escape velocity for compounding knowledge
 
 See [docs/HOOKS.md](docs/HOOKS.md) for details.
 

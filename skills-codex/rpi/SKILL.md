@@ -74,9 +74,9 @@ STEP 2  -- if execution-packet has epic_id:
 
 STEP 3  -- if complexity != fast:
             if execution-packet has epic_id:
-              $validation <epic-id> --complexity=<level>
+              $validation <epic-id> --complexity=<level> [--strict-surfaces if --quality]
             else:
-              $validation --complexity=<level>
+              $validation --complexity=<level> [--strict-surfaces if --quality]
             FAIL? -> re-crank + re-validate (max 3 total), then stop
             DONE? -> ao ratchet record vibe 2>/dev/null || true
             Log: PHASE 3 COMPLETE ✓ (validation) — RPI DONE
@@ -168,6 +168,7 @@ rpi_state = {
 | `--no-test-first` | off | Opt out of strict-quality |
 | `--fast-path` | auto | Force fast complexity (skip STEP 3) |
 | `--deep` | auto | Force full complexity |
+| `--quality` | off | Pass `--strict-surfaces` to `$validation`, making all 4 surface failures blocking |
 | `--dry-run` | off | Report without mutating queue |
 | `--no-budget` | off | Disable phase time budgets |
 

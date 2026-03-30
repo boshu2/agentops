@@ -71,7 +71,7 @@ Each value proposition maps to one or more of the three gaps it closes:
 - **Hands-Free Execution** (loop closure) — `/evolve` and `/crank` spawn agents that work toward goals autonomously. Cycle state is disk-based (survives context compaction), regression gates are hard-gated, and every cycle writes a verifiable audit trail. Completed work produces better next work automatically.
 - **Compose What You Need** (all three gaps) — Skills are standalone building blocks. Use one (`/council validate this PR`), chain several (`/plan` -> `/pre-mortem` -> `/crank`), or run the full pipeline (`/rpi`). The same recursive shape — lead decomposes, workers execute, gates lock — repeats at every scale.
 - **Multi-Runtime, Multi-Model** (judgment validation) — Same skills work across Claude Code, Codex CLI, Cursor, and OpenCode. `/converter` exports to native formats. Mixed-vendor council judges (Claude + Codex) provide independent perspectives.
-- **Zero Setup, Zero Telemetry** (all three gaps) — All state lives in git-tracked `.agents/` directories with no cloud dependency. 61 skills, 3 hooks, and the knowledge flywheel work independently with no external daemon. Install is one command per runtime.
+- **Zero Setup, Zero Telemetry** (all three gaps) — All state lives in git-tracked `.agents/` directories with no cloud dependency. 63 skills, 3 hooks, and the knowledge flywheel work independently with no external daemon. Install is one command per runtime.
 
 ## Design Principles
 

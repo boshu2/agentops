@@ -16,7 +16,8 @@
 
 | Parameter | Value | Where defined |
 |-----------|-------|---------------|
-| Decay rate (delta) | 0.17/week | Darr (1995); used in `ao metrics health` (`cli/cmd/ao/metrics_health.go`) |
+| Literature decay constant | 0.17/week | Darr (1995); motivates the escape threshold |
+| Operational delta | avg_age_days / 100 | `ao metrics health` (`cli/cmd/ao/metrics_health.go`) |
 | Retrieval target (sigma) | 0.7 | `ao metrics health` escape velocity threshold |
 | Citation target (rho) | 0.3 | `ao metrics health` escape velocity threshold |
 | Context load ceiling | 40% of window | Hook enforcement (35% warn, 40% hard stop) |
@@ -300,7 +301,7 @@ The same shape at every scale (function, issue, epic, repository) means rules at
 - Weight determines severity. Higher weight = higher priority when multiple gates fail.
 - `ao goals measure` runs all gates, reports status, feeds `/evolve` cycle selection.
 - `ao goals steer add/remove/prioritize` manages directives.
-- The meta-goal `sigma * rho > delta` is the escape velocity condition — the system's implicit goal across all repos.
+- The meta-goal `sigma * rho > delta/100` is the operational escape velocity condition — the system's implicit goal across all repos.
 
 **The dormancy-is-success property:** A well-evolved system has all gates passing. `/evolve` finds nothing to fix. This is not stagnation — it is the designed end state. The system worked itself out of a job for the current goal set. New goals restart the cycle.
 

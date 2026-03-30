@@ -42,12 +42,15 @@ STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
                            (validation cannot fix code — caller decides retry)
 
-STEP 1.5 ── Four-Surface Closure (mandatory, WARN-only unless Code fails)
+STEP 1.5 ── Four-Surface Closure (mandatory)
               Read `skills/validation/references/four-surface-closure.md` for the mandatory four-surface closure check.
               Check all four surfaces: Code, Documentation, Examples, Proof.
               All 4 pass? → continue
-              Code passes, others fail? → WARN, continue
-              Code fails? → BLOCK, write summary, output <promise>FAIL</promise>, stop
+              if --strict-surfaces:
+                Any surface fails? → FAIL, write summary, output <promise>FAIL</promise>, stop
+              else (default):
+                Code passes, others fail? → WARN, continue
+                Code fails? → BLOCK, write summary, output <promise>FAIL</promise>, stop
 
 STEP 1.6 ── Test pyramid coverage audit (advisory, append to summary)
               Check L0-L3 + BF1/BF4 per modified file. WARN only, not FAIL.
@@ -109,6 +112,7 @@ validation_state = {
   complexity: <fast|standard|full>,
   no_retro: <true if --no-retro>,
   no_forge: <true if --no-forge>,
+  strict_surfaces: <true if --strict-surfaces>,
   vibe_verdict: null,
   post_mortem_verdict: null
 }
@@ -163,6 +167,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | `--no-retro` | off | Skip retro + forge steps |
 | `--no-forge` | off | Skip forge step only |
 | `--no-budget` | off | Disable phase time budgets |
+| `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `$rpi --quality`. |
 | `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
 ## Quick Start

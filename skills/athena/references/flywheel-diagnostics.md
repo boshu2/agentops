@@ -9,8 +9,8 @@
 ```
 
 Where:
-- **σ (sigma)** = Retrieval effectiveness — cited learnings / injected learnings (last 10 sessions), 0.0–1.0
-- **ρ (rho)** = Citation rate — fraction of injected knowledge that influenced a decision, 0.0–1.0
+- **σ (sigma)** = Retrieval coverage — unique surfaced retrievable artifacts / total retrievable artifacts (last 10 sessions), 0.0–1.0
+- **ρ (rho)** = Decision influence rate — surfaced artifacts later evidenced by `reference` or `applied` citations / surfaced artifacts, 0.0–1.0
 - **δ (delta)** = Knowledge age — average age of active learnings in days (normalized by /100 for escape velocity check)
 
 **Escape velocity** is achieved when `σ × ρ > δ/100` — knowledge compounds faster than it ages out.
@@ -56,8 +56,8 @@ cited=$(grep -rl "cited_by\|referenced_in" .agents/learnings/ | wc -l)
 echo "Uncited: $((total - cited)) / $total"
 
 # Check for broken references
-grep -r "\[.*\](.*\.md)" .agents/learnings/ | while read line; do
-  ref=$(echo "$line" | grep -oP '\(([^)]+\.md)\)' | tr -d '()')
+grep -rE '\[.+\]\(.+\.md\)' .agents/learnings/ | while read line; do
+  ref=$(echo "$line" | grep -oE '\([^)]+\.md\)' | tr -d '()')
   [ ! -f "$ref" ] && echo "BROKEN: $line"
 done
 
@@ -72,8 +72,8 @@ During Athena's Grow phase, compute and report:
 
 | Metric | Formula | Healthy | Warning | Critical |
 |--------|---------|---------|---------|----------|
-| σ (retrieval) | cited / injected (last 10 sessions) | > 0.5 | 0.2–0.5 | < 0.2 |
-| ρ (citation) | influenced / injected | > 0.3 | 0.1–0.3 | < 0.1 |
+| σ (retrieval) | surfaced / total retrievable | > 0.5 | 0.2–0.5 | < 0.2 |
+| ρ (influence) | evidenced / surfaced | > 0.3 | 0.1–0.3 | < 0.1 |
 | δ (age) | avg_age_days / 100 | < 0.3 | 0.3–0.6 | > 0.6 |
 | Escape velocity | σ × ρ > δ/100 | YES | MARGINAL | NO |
 | Production:extraction | learnings / patterns | < 10:1 | 10:1–20:1 | > 20:1 |

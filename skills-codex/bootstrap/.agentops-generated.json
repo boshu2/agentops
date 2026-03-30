@@ -1,0 +1,7 @@
+{
+  "generator": "scripts/sync-codex-native-skills.sh",
+  "source_skill": "skills/bootstrap",
+  "layout": "modular",
+  "source_hash": "",
+  "generated_hash": "8e7787f13c6527a759ad8ebf2f69e18377467cc546a59cdce480d9175afee645"
+}

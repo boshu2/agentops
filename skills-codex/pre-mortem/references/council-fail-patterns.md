@@ -84,16 +84,67 @@ Direction reverses mid-execution, doubling the mechanical cost of propagation.
 
 ---
 
+### 6. Dead Infrastructure Activation (8% of FAILs)
+
+Plan provisions infrastructure (VMs, clusters, services) without activation tests. Infrastructure exists on paper but has never handled real traffic or been validated under production conditions.
+
+**Signals:**
+- Provisioning issues with no corresponding smoke test or health check issue
+- "Deploy X" without "Verify X handles traffic"
+- Infrastructure created in earlier waves but first used in much later waves
+- No readiness probe or traffic test in acceptance criteria
+
+**Pre-mortem check:** For every provisioned resource, is there an activation/smoke test issue that proves it handles real traffic?
+
+**Example:** Bootstrap cluster provisioned but never validated under load — DNS and NIC mismatches only discovered during first real workload, causing multi-day debugging. *(Source: bootstrap-idempotent-design, core-hardening-postmortem)*
+
+---
+
+### 7. Missing Rollback/Rescue Map (6% of FAILs)
+
+Plan modifies production state (deployments, configs, data migrations) without specifying how to undo changes if something goes wrong.
+
+**Signals:**
+- Production-state changes with no rollback procedure
+- Data migrations without a reverse migration path
+- Config changes without a "revert to previous" step
+- Deployment plans without a rescue/rollback section
+
+**Pre-mortem check:** Does every production-state change have a documented rollback procedure? Can you undo each step independently?
+
+**Example:** Velero backup configuration deployed without specifying how to restore previous state if the new config broke DR workflows. *(Source: uds-velero-dr-session, zero-context-smoke-testing)*
+
+---
+
+### 8. Four-Surface Closure Gap (5% of FAILs)
+
+Implementation covers code but skips docs, examples, or proof surfaces. Incomplete closure causes downstream confusion and regression.
+
+**Signals:**
+- Code changes without corresponding doc updates
+- New features without usage examples
+- Missing proof artifacts (test results, benchmark data, demo output)
+- "Will update docs later" in issue descriptions
+
+**Pre-mortem check:** Does the plan address all 4 surfaces (Code, Docs, Examples, Proof) for every feature? Are doc/example/proof tasks explicitly tracked?
+
+**Example:** CLI namespace restructuring shipped code changes but skipped doc regeneration and example updates — downstream users hit stale references for weeks. *(Source: four-surface-closure pattern, repo-history-retro)*
+
+---
+
 ## Pre-Mortem Integration
 
-When running pre-mortem validation, each judge should evaluate the plan against these 5 patterns. Add to the judge prompt:
+When running pre-mortem validation, each judge should evaluate the plan against these 8 patterns. Add to the judge prompt:
 
-> Review this plan for the top 5 council FAIL patterns:
+> Review this plan for the top 8 council FAIL patterns:
 > 1. Missing mechanical verification — are all gates automated?
 > 2. Self-assessment — is validation external to the implementer?
 > 3. Context rot — are phase boundaries enforced with fresh sessions?
 > 4. Propagation blindness — is the full change surface enumerated?
 > 5. Plan oscillation — is direction validated before propagation?
+> 6. Dead infrastructure activation — does every provisioned resource have an activation test?
+> 7. Missing rollback map — does every production-state change have a rollback procedure?
+> 8. Four-surface closure — does the plan address Code + Docs + Examples + Proof?
 
 ## Severity Calibration
 
@@ -104,3 +155,6 @@ When running pre-mortem validation, each judge should evaluate the plan against 
 | Context rot | MEDIUM | HIGH (invisible until too late) | Enforce fresh sessions per phase |
 | Propagation blindness | HIGH | MEDIUM | Enumerate surface pre-implementation |
 | Plan oscillation | HIGH | LOW (visible in plan diff) | Council validate direction first |
+| Dead infrastructure activation | HIGH | MEDIUM | Require activation/smoke test issue for every provisioned resource |
+| Missing rollback/rescue map | HIGH | LOW | Require rollback procedure for any production-state change |
+| Four-surface closure gap | MEDIUM | LOW | Verify plan addresses all 4 surfaces (Code, Docs, Examples, Proof) |

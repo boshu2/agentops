@@ -25,7 +25,7 @@ var flywheelCmd = &cobra.Command{
 The flywheel equation:
   dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
 
-Escape velocity: σρ > δ → Knowledge compounds
+Operational escape velocity: σρ > δ/100 → Knowledge compounds
 
 Commands:
   status   Show comprehensive flywheel health
@@ -46,10 +46,10 @@ func init() {
 		Long: `Display comprehensive flywheel health status.
 
 Shows:
-  - Delta (δ): Knowledge decay rate
-  - Sigma (σ): Retrieval effectiveness
-  - Rho (ρ): Citation rate
-  - Velocity: σρ - δ (net growth rate)
+  - Delta (δ): Average age of active knowledge in days
+  - Sigma (σ): Retrieval coverage
+  - Rho (ρ): Decision influence among surfaced artifacts
+  - Velocity: σρ - δ/100 (net operational growth)
   - Status: COMPOUNDING / NEAR ESCAPE / DECAYING
 
 Examples:
@@ -163,36 +163,38 @@ func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics) {
 
 	// Core equation
 	fmt.Fprintln(w, "  EQUATION: dK/dt = I(t) - δ·K + σ·ρ·K")
+	fmt.Fprintln(w, "  Operational check: σ × ρ > δ/100")
 	fmt.Fprintln(w)
 
 	// Parameters
-	fmt.Fprintf(w, "  δ (decay):      %.2f/week\n", m.Delta)
-	fmt.Fprintf(w, "  σ (retrieval):  %.2f (%d%% of artifacts surfaced)\n", m.Sigma, int(m.Sigma*100))
-	fmt.Fprintf(w, "  ρ (citation):   %.2f refs/artifact/week\n", m.Rho)
+	fmt.Fprintf(w, "  δ (avg age):    %.1f days\n", m.Delta)
+	fmt.Fprintf(w, "  σ (retrieval):  %.2f (%d%% of retrievable artifacts surfaced)\n", m.Sigma, int(m.Sigma*100))
+	fmt.Fprintf(w, "  ρ (influence):  %.2f (%d%% of surfaced artifacts evidenced)\n", m.Rho, int(m.Rho*100))
 	fmt.Fprintln(w)
 
 	// Critical comparison
+	threshold := escapeVelocityThreshold(m.Delta)
 	fmt.Fprintln(w, "  ESCAPE VELOCITY CHECK:")
 	fmt.Fprintf(w, "    σ × ρ = %.3f\n", m.SigmaRho)
-	fmt.Fprintf(w, "    δ     = %.3f\n", m.Delta)
+	fmt.Fprintf(w, "    δ/100 = %.3f\n", threshold)
 	fmt.Fprintln(w, "    ───────────────")
 
 	switch {
 	case m.AboveEscapeVelocity:
-		fmt.Fprintf(w, "    σρ > δ ✓ (velocity: +%.3f/week)\n", m.Velocity)
+		fmt.Fprintf(w, "    σρ > δ/100 ✓ (velocity: +%.3f)\n", m.Velocity)
 		fmt.Fprintln(w, "    → Escape velocity is above threshold")
 	case m.Velocity > -0.05:
-		fmt.Fprintf(w, "    σρ ≈ δ (velocity: %.3f/week)\n", m.Velocity)
+		fmt.Fprintf(w, "    σρ ≈ δ/100 (velocity: %.3f)\n", m.Velocity)
 		fmt.Fprintln(w, "    → Escape velocity is near threshold")
 	default:
-		fmt.Fprintf(w, "    σρ < δ ✗ (velocity: %.3f/week)\n", m.Velocity)
+		fmt.Fprintf(w, "    σρ < δ/100 ✗ (velocity: %.3f)\n", m.Velocity)
 		fmt.Fprintln(w, "    → Escape velocity is below threshold")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  RECOMMENDATIONS:")
 		if m.Sigma < 0.3 {
 			fmt.Fprintln(w, "    • Improve retrieval: use 'ao lookup' for on-demand knowledge")
 		}
-		if m.Rho < 0.5 {
+		if m.Rho < 0.3 {
 			fmt.Fprintln(w, "    • Cite more learnings: reference artifacts in your work")
 		}
 		if m.StaleArtifacts > 5 {

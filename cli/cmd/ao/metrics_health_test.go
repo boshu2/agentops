@@ -131,8 +131,8 @@ func TestMetricsHealth_DirtyArtifactPaths(t *testing.T) {
 	if hm.Sigma < 0.99 || hm.Sigma > 1.01 {
 		t.Errorf("expected sigma~1.0 from retrievable citations, got %f", hm.Sigma)
 	}
-	if hm.Rho < 1.49 || hm.Rho > 1.51 {
-		t.Errorf("expected rho~1.5 with 3 retrievable citations over 2 total artifacts, got %f", hm.Rho)
+	if hm.Rho < 0.99 || hm.Rho > 1.01 {
+		t.Errorf("expected rho~1.0 with all surfaced artifacts evidenced, got %f", hm.Rho)
 	}
 }
 
@@ -210,9 +210,9 @@ func TestMetricsHealth_WithCitations(t *testing.T) {
 		t.Errorf("expected sigma~0.5, got %f", hm.Sigma)
 	}
 
-	// rho = citation count (3) / total retrievable (4) = 0.75
-	if hm.Rho < 0.74 || hm.Rho > 0.76 {
-		t.Errorf("expected rho~0.75, got %f", hm.Rho)
+	// rho = evidence-backed surfaced (a.md, b.md = 2) / surfaced (2) = 1.0
+	if hm.Rho < 0.99 || hm.Rho > 1.01 {
+		t.Errorf("expected rho~1.0, got %f", hm.Rho)
 	}
 
 	// Knowledge stock

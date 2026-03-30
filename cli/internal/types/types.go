@@ -589,7 +589,7 @@ func GetTierBehaviors() []TierBehavior {
 // --- Citation tracking (ol-a46 Phase 0) ---
 
 // CitationEvent records when an artifact is referenced in a session.
-// These events drive the knowledge flywheel: σρ > δ = escape velocity.
+// These events drive the knowledge flywheel: σρ > δ/100 = operational escape velocity.
 type CitationEvent struct {
 	// ArtifactPath is the absolute path to the cited artifact.
 	ArtifactPath string `json:"artifact_path"`
@@ -646,16 +646,19 @@ type FlywheelMetrics struct {
 
 	// --- Core Parameters ---
 
-	// Delta is the knowledge decay rate (literature default: 0.17/week).
-	// Represents natural knowledge depreciation over time.
+	// Delta is the average age in days of active knowledge.
+	// The literature decay constant (0.17/week) still informs the model, but
+	// operational flywheel checks compare sigma*rho against delta/100.
 	Delta float64 `json:"delta"`
 
-	// Sigma is the retrieval effectiveness (0-1).
-	// Measures what fraction of relevant artifacts are surfaced by search.
+	// Sigma is retrieval coverage (0-1).
+	// Measures what fraction of retrievable artifacts were surfaced in the
+	// measurement window.
 	Sigma float64 `json:"sigma"`
 
-	// Rho is the citation rate (citations per artifact per week).
-	// Measures how often retrieved knowledge is actually used.
+	// Rho is decision influence rate (0-1).
+	// Measures what fraction of surfaced artifacts later received evidence-backed
+	// use via "reference" or "applied" citations.
 	Rho float64 `json:"rho"`
 
 	// --- Derived Values ---
@@ -663,11 +666,11 @@ type FlywheelMetrics struct {
 	// SigmaRho is σ × ρ, the effective retrieval-application rate.
 	SigmaRho float64 `json:"sigma_rho"`
 
-	// Velocity is σρ - δ, the net knowledge growth rate.
+	// Velocity is σρ - δ/100, the net operational growth rate.
 	// Positive = compounding, Negative = decaying.
 	Velocity float64 `json:"velocity"`
 
-	// AboveEscapeVelocity indicates if σρ > δ (knowledge compounds).
+	// AboveEscapeVelocity indicates if σρ > δ/100 (knowledge compounds).
 	AboveEscapeVelocity bool `json:"above_escape_velocity"`
 
 	// --- Counts ---

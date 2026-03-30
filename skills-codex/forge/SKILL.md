@@ -169,12 +169,33 @@ else
 fi
 ```
 
-### Step 5: Report Results
+### Step 5: Update Capture Tracking
+
+After extracting learnings that match uncaptured lesson patterns (Step 2), record which patterns were captured. This state lives in `.agents/forge/capture-tracking.json` (a runtime artifact, never in `skills/`).
+
+```bash
+mkdir -p .agents/forge
+```
+
+1. Read `.agents/forge/capture-tracking.json` if it exists, otherwise start with `{}`
+2. For each matched pattern, add or update an entry keyed by pattern number:
+   ```json
+   {
+     "3": {"captured": true, "date": "2026-03-30", "learning_path": ".agents/learnings/tooling/use-bin-cp.md"},
+     "7": {"captured": true, "date": "2026-03-29", "learning_path": ".agents/learnings/operations/worktree-commit.md"}
+   }
+   ```
+3. Write the updated JSON back to `.agents/forge/capture-tracking.json`
+
+Pattern numbers correspond to the numbered headings in `references/uncaptured-lesson-patterns.md` (1-30, 26 total patterns).
+
+### Step 6: Report Results
 
 Tell the user:
 - Number of items extracted by type
 - Location of forge output
 - Candidates ready for promotion to learnings
+- **Capture progress:** "X/26 uncaptured lesson patterns captured" (read from `.agents/forge/capture-tracking.json`)
 
 ## The Quality Pool
 

@@ -32,12 +32,12 @@ The flywheel equation:
 Where:
   K     = Total knowledge artifacts
   I(t)  = New knowledge inflow
-  δ     = Decay rate (default: 0.17/week)
-  σ     = Retrieval effectiveness (0-1)
-  ρ     = Citation rate per artifact
+  δ     = Average age of active knowledge in days
+  σ     = Retrieval coverage (0-1)
+  ρ     = Decision influence rate among surfaced artifacts (0-1)
   B()   = Breakdown function at capacity
 
-Escape velocity: σ × ρ > δ → Knowledge compounds
+Operational escape velocity: σ × ρ > δ/100 → Knowledge compounds
 
 Commands:
   baseline   Capture current flywheel state
@@ -143,16 +143,21 @@ func isFindingArtifactPath(baseDir, artifactPath string) bool {
 	return strings.HasPrefix(p, findingsRoot)
 }
 
-func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (uniqueCount, citationCount int) {
+func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (uniqueCount, evidenceCount int) {
 	unique := make(map[string]bool)
+	evidence := make(map[string]bool)
 	for _, c := range citations {
 		if !isRetrievableArtifactPath(baseDir, c.ArtifactPath) {
 			continue
 		}
-		citationCount++
-		unique[normalizeArtifactPath(baseDir, c.ArtifactPath)] = true
+		artifactPath := normalizeArtifactPath(baseDir, c.ArtifactPath)
+		unique[artifactPath] = true
+		switch effectiveCitationFeedbackType(c.CitationType) {
+		case "applied", "reference":
+			evidence[artifactPath] = true
+		}
 	}
-	return len(unique), citationCount
+	return len(unique), len(evidence)
 }
 
 // filterCitationsForPeriod filters citations to a time period
@@ -169,16 +174,33 @@ func filterCitationsForPeriod(citations []types.CitationEvent, start, end time.T
 	return stats
 }
 
-// computeSigmaRho calculates retrieval effectiveness (σ) and citation rate (ρ)
-func computeSigmaRho(totalArtifacts, uniqueCited, citationCount, days int) (sigma, rho float64) {
+func computeOperationalSigmaRho(totalArtifacts, uniqueCited, evidenceBacked int) (sigma, rho float64) {
 	if totalArtifacts > 0 {
 		sigma = float64(uniqueCited) / float64(totalArtifacts)
+		if sigma > 1.0 {
+			sigma = 1.0
+		}
 	}
-	weeks := float64(days) / 7.0
-	if weeks > 0 && uniqueCited > 0 {
-		rho = float64(citationCount) / float64(uniqueCited) / weeks
+	if uniqueCited > 0 {
+		rho = float64(evidenceBacked) / float64(uniqueCited)
+		if rho > 1.0 {
+			rho = 1.0
+		}
 	}
 	return sigma, rho
+}
+
+// computeSigmaRho keeps the historical signature used in tests and callers,
+// but the operational semantics are retrieval coverage and evidence-backed use.
+func computeSigmaRho(totalArtifacts, uniqueCited, evidenceBacked, _ int) (sigma, rho float64) {
+	return computeOperationalSigmaRho(totalArtifacts, uniqueCited, evidenceBacked)
+}
+
+func escapeVelocityThreshold(delta float64) float64 {
+	if delta <= 0 {
+		return 0
+	}
+	return delta / 100.0
 }
 
 // countLoopMetrics counts learnings created vs found for loop closure
@@ -212,9 +234,11 @@ func computeMetrics(baseDir string, days int) (*types.FlywheelMetrics, error) {
 		Timestamp:   now,
 		PeriodStart: periodStart,
 		PeriodEnd:   now,
-		Delta:       types.DefaultDelta,
 		TierCounts:  make(map[string]int),
 	}
+
+	// Delta is tracked operationally as average age of active knowledge in days.
+	metrics.Delta = computeHealthDelta(baseDir)
 
 	// Count artifacts
 	totalArtifacts, tierCounts, err := countArtifacts(baseDir)
@@ -241,16 +265,14 @@ func computeMetrics(baseDir string, days int) (*types.FlywheelMetrics, error) {
 	// σ denominator: only count retrievable artifacts (learnings + patterns),
 	// not candidates, research, retros, or sessions which inject never retrieves.
 	retrievable := metrics.TierCounts["learning"] + metrics.TierCounts["pattern"]
-	retrievableUnique, retrievableCitations := retrievableCitationStats(baseDir, stats.citations)
+	retrievableUnique, retrievableEvidence := retrievableCitationStats(baseDir, stats.citations)
 	metrics.Sigma, metrics.Rho = computeSigmaRho(
-		retrievable, retrievableUnique, retrievableCitations, days,
+		retrievable, retrievableUnique, retrievableEvidence, days,
 	)
-	if metrics.Sigma > 1.0 {
-		metrics.Sigma = 1.0
-	}
 	metrics.SigmaRho = metrics.Sigma * metrics.Rho
-	metrics.Velocity = metrics.SigmaRho - metrics.Delta
-	metrics.AboveEscapeVelocity = metrics.SigmaRho > metrics.Delta
+	threshold := escapeVelocityThreshold(metrics.Delta)
+	metrics.Velocity = metrics.SigmaRho - threshold
+	metrics.AboveEscapeVelocity = metrics.SigmaRho > threshold
 
 	// Count new and stale artifacts
 	if newCount, err := countNewArtifacts(baseDir, periodStart); err == nil {
@@ -444,10 +466,10 @@ func countStaleArtifacts(baseDir string, citations []types.CitationEvent, staleD
 
 func printMetricsParameters(m *types.FlywheelMetrics) {
 	fmt.Println("PARAMETERS:")
-	fmt.Printf("  δ (decay rate):     %.2f/week (literature baseline)\n", m.Delta)
-	fmt.Printf("  σ (retrieval):      %.2f (%d%% relevant artifacts surfaced)\n",
+	fmt.Printf("  δ (avg age):        %.1f days active knowledge age\n", m.Delta)
+	fmt.Printf("  σ (retrieval):      %.2f (%d%% retrievable artifacts surfaced)\n",
 		m.Sigma, int(m.Sigma*100))
-	fmt.Printf("  ρ (citation rate):  %.2f refs/artifact/week\n", m.Rho)
+	fmt.Printf("  ρ (influence):      %.2f (%d%% of surfaced artifacts evidenced)\n", m.Rho, int(m.Rho*100))
 	fmt.Println()
 }
 
@@ -460,11 +482,12 @@ func printMetricsDerived(m *types.FlywheelMetrics) {
 	if m.AboveEscapeVelocity {
 		statusIndicator = "✓"
 	}
+	threshold := escapeVelocityThreshold(m.Delta)
 	fmt.Println("DERIVED:")
 	fmt.Printf("  σ × ρ = %.3f\n", m.SigmaRho)
-	fmt.Printf("  δ     = %.3f\n", m.Delta)
+	fmt.Printf("  δ/100 = %.3f\n", threshold)
 	fmt.Println("  ────────────────")
-	fmt.Printf("  VELOCITY: %s%.3f/week (escape=%s %s)\n", velocitySign, m.Velocity, m.EscapeVelocityStatus(), statusIndicator)
+	fmt.Printf("  VELOCITY: %s%.3f (escape=%s %s)\n", velocitySign, m.Velocity, m.EscapeVelocityStatus(), statusIndicator)
 	fmt.Printf("  HEALTH:   %s\n", m.HealthStatus())
 	fmt.Println()
 }

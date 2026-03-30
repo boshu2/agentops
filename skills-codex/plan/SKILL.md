@@ -265,6 +265,18 @@ Example from context orchestration (na-0v2):
 
 **Why:** Without explicit mapping tables, workers misinterpret data transformations. In na-0v2, section→field mapping ambiguity was caught only in pre-mortem. An explicit table prevents the concern entirely.
 
+### Anti-Pattern Pre-Flight
+
+Before finalizing issue decomposition, verify the plan avoids these confirmed failure modes:
+
+| Anti-Pattern | Detection Question | Gate |
+|---|---|---|
+| **Brainstorm masquerading as plan** | Does every issue have mechanically verifiable acceptance criteria? | FAIL if any issue lacks `files_exist`, `content_check`, `tests`, or `command` conformance checks |
+| **Dead infrastructure** | Does the plan provision anything without an activation test? | WARN if infrastructure is created without a corresponding smoke test issue |
+| **Propagation surface blindness** | Has the full propagation surface been enumerated for renames/refactors? | FAIL if structural changes lack a propagation surface table |
+| **40% context budget violation** | Will implementation sessions need to load >40% context window for knowledge? | WARN if injected knowledge exceeds estimated budget |
+| **Commit-per-session anti-pattern** | Does the wave structure enforce commit-per-wave? | WARN if no explicit commit cadence in execution order |
+
 ### Step 4: Decompose into Issues
 
 Analyze the goal and break it into discrete, implementable issues. For each issue define:
@@ -344,7 +356,25 @@ Group issues by dependencies for parallel execution:
 - **Wave 3**: Issues depending on Wave 2
 - Continue until all issues assigned
 
-**Planning Rules Gate:** Evaluate each wave against the 7 compiled planning rules (see `references/planning-rules.md`). For each rule's Detection Question, if the answer is "no" or "unclear," add a mitigation before proceeding. Read [references/planning-rules.md](references/planning-rules.md) for the full checklist.
+**Planning Rules Compliance (Mandatory Gate):** After computing waves, fill in the Planning Rules Compliance checklist. Read [references/planning-rules.md](references/planning-rules.md) for detection questions and evidence. Every rule MUST have an explicit justification or N/A rationale. Empty justification = INCOMPLETE plan.
+
+```markdown
+## Planning Rules Compliance
+
+| Rule | Status | Justification |
+|------|--------|---------------|
+| PR-001: Mechanical Enforcement | PASS / N-A | [every integration point has a mechanical gate, OR why N/A] |
+| PR-002: External Validation | PASS / N-A | [all validation gates are external, OR why N/A] |
+| PR-003: Feedback Loops | PASS / N-A | [each output has a named consumer, OR why N/A] |
+| PR-004: Separation Over Layering | PASS / N-A | [component boundaries are explicit contracts, OR why N/A] |
+| PR-005: Process Gates First | PASS / N-A | [process gates verified before tool changes, OR why N/A] |
+| PR-006: Cross-Layer Consistency | PASS / N-A | [all layers agree on shared parameters, OR why N/A] |
+| PR-007: Phased Rollout | PASS / N-A | [changes phased by risk with validation between waves, OR why N/A] |
+
+Unchecked rules: 0
+```
+
+If any rule row has an empty Justification column, mark the plan output as **INCOMPLETE** and do not proceed to Step 6 until all rows are filled.
 
 #### File-Level Dependency Matrix (Mandatory)
 
@@ -505,6 +535,20 @@ In `path/to/file.go`:
 **Wave 1** (parallel): Issue 1, Issue 3
 **Wave 2** (after Wave 1): Issue 2, Issue 4
 **Wave 3** (after Wave 2): Issue 5
+
+## Planning Rules Compliance
+
+| Rule | Status | Justification |
+|------|--------|---------------|
+| PR-001: Mechanical Enforcement | PASS / N-A | [justification] |
+| PR-002: External Validation | PASS / N-A | [justification] |
+| PR-003: Feedback Loops | PASS / N-A | [justification] |
+| PR-004: Separation Over Layering | PASS / N-A | [justification] |
+| PR-005: Process Gates First | PASS / N-A | [justification] |
+| PR-006: Cross-Layer Consistency | PASS / N-A | [justification] |
+| PR-007: Phased Rollout | PASS / N-A | [justification] |
+
+Unchecked rules: 0
 
 ## Post-Merge Cleanup
 

@@ -363,9 +363,55 @@ Read `skills/vibe/references/test-pyramid-weighting.md` for test pyramid weighti
 1. Identify changed modules from git diff
 2. Check L0-L3 coverage for each changed module
 3. Check BF4 (chaos) for boundary-touching code
-4. Include `test_pyramid` context in review output
+4. **Compute weighted pyramid score** for changed code paths:
 
-Missing L1 on feature code → WARN. Missing BF4 on boundary code → WARN.
+   **Formula:**
+   ```
+   weighted_score = (L0_count x 1 + L1_count x 1 + L2_count x 3 + L3_count x 5 + L4_count x 5) / max_possible
+   ```
+   Where `max_possible = total_test_count x 5` (the score if every test were L3+).
+
+   Count tests at each level for changed code paths:
+   - L0: Build/compile checks (weight 1)
+   - L1: Unit tests (weight 1)
+   - L2: Integration tests (weight 3)
+   - L3: E2E/system tests (weight 5)
+   - L4: Smoke/fresh-context tests (weight 5)
+
+   **Interpretation:**
+   - `weighted_score >= 0.6` — strong pyramid, L2+ tests present
+   - `0.3 <= weighted_score < 0.6` — acceptable, but recommend more integration tests
+   - `weighted_score < 0.3` AND all tests are L0-L1 only — **WARN: unit-only test coverage** (feeds into vibe verdict as a WARN signal, not a separate gate)
+
+   **Include in vibe report output:**
+   ```
+   ## Test Pyramid Score
+   | Level | Count | Weight | Contribution |
+   |-------|-------|--------|--------------|
+   | L0    | 2     | 1x     | 2            |
+   | L1    | 8     | 1x     | 8            |
+   | L2    | 0     | 3x     | 0            |
+   | L3    | 0     | 5x     | 0            |
+   | L4    | 0     | 5x     | 0            |
+   | **Total** | **10** | | **10 / 50 = 0.20** |
+   WARN: weighted_score 0.20 < 0.3 and all tests are L0-L1 only
+   ```
+
+5. Include `test_pyramid` context in review output with score data:
+   ```json
+   "test_pyramid": {
+     "weighted_score": 0.20,
+     "score_breakdown": {"L0": 2, "L1": 8, "L2": 0, "L3": 0, "L4": 0},
+     "max_possible": 50,
+     "warn_unit_only": true
+   }
+   ```
+
+**Verdict rules:**
+- `weighted_score < 0.3` AND all tests L0-L1 only — **WARN: unit-only coverage**
+- Missing L1 on feature code — **WARN**
+- Missing BF4 on boundary code — **WARN** (advisory, not blocking)
+- All levels covered with `weighted_score >= 0.6` — no mention needed
 
 When coverage gaps are found, run `$test <module>` to generate test candidates for uncovered code.
 

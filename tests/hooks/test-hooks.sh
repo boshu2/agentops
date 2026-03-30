@@ -1794,6 +1794,7 @@ echo "=== athena-session-defrag.sh ==="
 MOCK_ATHENA="$TMPDIR/mock-athena-defrag"
 setup_mock_repo "$MOCK_ATHENA"
 mkdir -p "$MOCK_ATHENA/bin"
+mkdir -p "$MOCK_ATHENA/.agents/patterns" "$MOCK_ATHENA/.agents/learnings" "$MOCK_ATHENA/.agents/athena"
 cat > "$MOCK_ATHENA/bin/ao" <<'EOF'
 #!/usr/bin/env bash
 if [ "${1:-}" = "defrag" ]; then
@@ -1802,9 +1803,49 @@ fi
 exit 1
 EOF
 chmod +x "$MOCK_ATHENA/bin/ao"
+cat > "$MOCK_ATHENA/.agents/patterns/placeholder.md" <<'EOF'
+---
+title: Placeholder Pattern
+---
+EOF
+cat > "$MOCK_ATHENA/.agents/learnings/stacked-frontmatter.md" <<'EOF'
+---
+title: First
+---
+# Learning: First
+---
+title: Second
+---
+EOF
+cat > "$MOCK_ATHENA/.agents/learnings/bundled.md" <<'EOF'
+# Learning: One
+
+## Learning: Two
+EOF
+cat > "$MOCK_ATHENA/.agents/learnings/duplicate-headings.md" <<'EOF'
+## Heading
+alpha
+
+## Heading
+beta
+EOF
+cat > "$MOCK_ATHENA/.agents/athena/2026-03-29-old-contradiction-report.md" <<'EOF'
+# Contradiction Report
+EOF
+cat > "$MOCK_ATHENA/.agents/athena/2026-03-30-extraction-complete.md" <<'EOF'
+# Extraction Complete
+EOF
+touch -t 202603290101 "$MOCK_ATHENA/.agents/athena/2026-03-29-old-contradiction-report.md"
+touch -t 202603300101 "$MOCK_ATHENA/.agents/athena/2026-03-30-extraction-complete.md"
 
 OUTPUT=$(cd "$MOCK_ATHENA" && PATH="$MOCK_ATHENA/bin:$PATH" bash "$HOOKS_DIR/athena-session-defrag.sh" 2>/dev/null || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.hookEventName == "SessionEnd" and (.hookSpecificOutput.additionalContext | test("Athena defrag completed"))' >/dev/null 2>&1; then
+if echo "$OUTPUT" | jq -e '.hookSpecificOutput.hookEventName == "SessionEnd"
+  and (.hookSpecificOutput.additionalContext | test("Athena defrag completed"))
+  and (.hookSpecificOutput.additionalContext | test("placeholders=1"))
+  and (.hookSpecificOutput.additionalContext | test("stacked_frontmatter=1"))
+  and (.hookSpecificOutput.additionalContext | test("bundled_multi_learning=1"))
+  and (.hookSpecificOutput.additionalContext | test("duplicate_headings=1"))
+  and (.hookSpecificOutput.additionalContext | test("stale_contradictions=1"))' >/dev/null 2>&1; then
     pass "athena-session-defrag emits SessionEnd JSON on success"
 else
     fail "athena-session-defrag emits SessionEnd JSON on success"

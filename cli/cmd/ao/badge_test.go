@@ -16,16 +16,16 @@ func TestBadge_GetEscapeStatus_Boundaries(t *testing.T) {
 		delta      float64
 		wantStatus string
 	}{
-		{"exact delta boundary", 0.17, 0.17, "APPROACHING"}, // not >, falls to 0.17 > 0.136 = true
-		{"just above delta", 0.18, 0.17, "ESCAPE VELOCITY"},
-		{"above 80% of delta", 0.14, 0.17, "APPROACHING"}, // 0.14 > 0.136
-		{"at 80% of delta", 0.136, 0.17, "BUILDING"},      // 0.136 ~= 0.136, not strictly >, falls through
-		{"below 80% above 50%", 0.10, 0.17, "BUILDING"},   // 0.10 > 0.085
-		{"at 50% of delta", 0.085, 0.17, "STARTING"},      // 0.085 ~= 0.085, not strictly >
-		{"just below 50%", 0.084, 0.17, "STARTING"},
-		{"zero sigmaRho", 0.0, 0.17, "STARTING"},
+		{"exact delta boundary", 0.17, 17.0, "APPROACHING"}, // not >, falls to 0.17 > 0.136 = true
+		{"just above delta", 0.18, 17.0, "ESCAPE VELOCITY"},
+		{"above 80% of delta", 0.14, 17.0, "APPROACHING"}, // 0.14 > 0.136
+		{"at 80% of delta", 0.136, 17.0, "BUILDING"},      // 0.136 ~= 0.136, not strictly >, falls through
+		{"below 80% above 50%", 0.10, 17.0, "BUILDING"},   // 0.10 > 0.085
+		{"at 50% of delta", 0.085, 17.0, "STARTING"},      // 0.085 ~= 0.085, not strictly >
+		{"just below 50%", 0.084, 17.0, "STARTING"},
+		{"zero sigmaRho", 0.0, 17.0, "STARTING"},
 		{"zero delta", 0.0, 0.0, "STARTING"},
-		{"both high", 5.0, 0.17, "ESCAPE VELOCITY"},
+		{"both high", 5.0, 17.0, "ESCAPE VELOCITY"},
 	}
 
 	for _, tt := range tests {
@@ -84,7 +84,7 @@ func TestBadge_PrintBadge_WithMetrics(t *testing.T) {
 	m := &FlywheelMetrics{
 		Sigma:               0.8,
 		Rho:                 1.5,
-		Delta:               types.DefaultDelta,
+		Delta:               types.DefaultDelta * 100,
 		SigmaRho:            1.2,
 		CitationsThisPeriod: 10,
 		TierCounts:          map[string]int{"learning": 5, "pattern": 3},
@@ -108,7 +108,7 @@ func TestBadge_PrintBadge_WithMetrics(t *testing.T) {
 
 func TestBadge_PrintBadge_BoxDrawingChars(t *testing.T) {
 	m := &FlywheelMetrics{
-		Delta:      types.DefaultDelta,
+		Delta:      types.DefaultDelta * 100,
 		TierCounts: map[string]int{},
 	}
 
@@ -132,7 +132,7 @@ func TestBadge_PrintBadge_ComparisonOperator(t *testing.T) {
 	t.Run("above delta shows >", func(t *testing.T) {
 		m := &FlywheelMetrics{
 			SigmaRho:   0.3,
-			Delta:      0.17,
+			Delta:      17.0,
 			TierCounts: map[string]int{},
 		}
 		stdout, err := captureStdout(t, func() error {

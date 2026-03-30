@@ -137,7 +137,7 @@ When `PRODUCT.md` does not exist: proceed to Step 2 unchanged.
 
 ### Step 1.7: Load Council FAIL Patterns (Mandatory)
 
-Read `skills/pre-mortem/references/council-fail-patterns.md` for the top 5 council FAIL patterns to check against.
+Read `skills/pre-mortem/references/council-fail-patterns.md` for the top 8 council FAIL patterns to check against.
 
 These patterns are derived from 124 analyzed FAIL verdicts across 946 council sessions. They apply to both `--quick` and `--deep` modes.
 
@@ -238,17 +238,20 @@ See `references/error-rescue-map-template.md` for the full template with worked 
 
 ### Step 2.6: Council FAIL Pattern Check (Mandatory)
 
-**Council FAIL Pattern Check:** Evaluate the plan against the top 5 council FAIL patterns (see [references/council-fail-patterns.md](references/council-fail-patterns.md)): missing mechanical verification, self-assessment, context rot, propagation blindness, and plan oscillation. Each pattern violation is a finding with severity based on the calibration table in the reference.
+**Council FAIL Pattern Check:** Evaluate the plan against the top 8 council FAIL patterns (see [references/council-fail-patterns.md](references/council-fail-patterns.md)): missing mechanical verification, self-assessment, context rot, propagation blindness, plan oscillation, dead infrastructure activation, missing rollback map, and four-surface closure gap. Each pattern violation is a finding with severity based on the calibration table in the reference.
 
 Add to each judge's prompt:
 
 ```
-COUNCIL FAIL PATTERN CHECK: Review this plan for the top 5 council FAIL patterns:
+COUNCIL FAIL PATTERN CHECK: Review this plan for the top 8 council FAIL patterns:
 1. Missing mechanical verification — are all gates automated?
 2. Self-assessment — is validation external to the implementer?
 3. Context rot — are phase boundaries enforced with fresh sessions?
 4. Propagation blindness — is the full change surface enumerated?
 5. Plan oscillation — is direction validated before propagation?
+6. Dead infrastructure activation — does the plan provision anything without activation tests?
+7. Missing rollback map — does any production-state change lack a rollback procedure?
+8. Four-surface closure — does the plan address Code + Docs + Examples + Proof for every feature?
 Report FAIL pattern findings in a "FAIL Pattern Risks" section.
 ```
 

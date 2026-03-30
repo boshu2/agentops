@@ -231,7 +231,41 @@ Read `skills/vibe/references/test-pyramid-weighting.md` for test pyramid weighti
    - BF4 (Chaos): Do external call sites have failure injection tests?
    - BF1 (Property): Do data transformations have property tests?
    - BF2 (Golden): Do output generators have golden file tests?
-4. **Build coverage table** and include in council packet as `context.test_pyramid`:
+4. **Compute weighted pyramid score** for changed code paths:
+
+   **Formula:**
+   ```
+   weighted_score = (L0_count x 1 + L1_count x 1 + L2_count x 3 + L3_count x 5 + L4_count x 5) / max_possible
+   ```
+   Where `max_possible = total_test_count x 5` (the score if every test were L3+).
+
+   Count tests at each level for changed code paths:
+   - L0: Build/compile checks (weight 1)
+   - L1: Unit tests (weight 1)
+   - L2: Integration tests (weight 3)
+   - L3: E2E/system tests (weight 5)
+   - L4: Smoke/fresh-context tests (weight 5)
+
+   **Interpretation:**
+   - `weighted_score >= 0.6` — strong pyramid, L2+ tests present
+   - `0.3 <= weighted_score < 0.6` — acceptable, but recommend more integration tests
+   - `weighted_score < 0.3` AND all tests are L0-L1 only — **WARN: unit-only test coverage** (feeds into vibe verdict as a WARN signal, not a separate gate)
+
+   **Include in council packet and vibe report output:**
+   ```
+   ## Test Pyramid Score
+   | Level | Count | Weight | Contribution |
+   |-------|-------|--------|--------------|
+   | L0    | 2     | 1x     | 2            |
+   | L1    | 8     | 1x     | 8            |
+   | L2    | 0     | 3x     | 0            |
+   | L3    | 0     | 5x     | 0            |
+   | L4    | 0     | 5x     | 0            |
+   | **Total** | **10** | | **10 / 50 = 0.20** |
+   WARN: weighted_score 0.20 < 0.3 and all tests are L0-L1 only
+   ```
+
+5. **Build coverage table** and include in council packet as `context.test_pyramid`:
 
 ```json
 "test_pyramid": {
@@ -244,15 +278,20 @@ Read `skills/vibe/references/test-pyramid-weighting.md` for test pyramid weighti
     "BF4_chaos": {"status": "gap", "reason": "external API calls without failure injection"},
     "BF1_property": {"status": "na", "reason": "no data transformations in scope"}
   },
-  "verdict": "WARN: L2 and BF4 gaps on boundary code"
+  "weighted_score": 0.20,
+  "score_breakdown": {"L0": 2, "L1": 8, "L2": 0, "L3": 0, "L4": 0},
+  "max_possible": 50,
+  "warn_unit_only": true,
+  "verdict": "WARN: weighted_score 0.20 < 0.3, all tests L0-L1 only"
 }
 ```
 
 **Verdict rules:**
-- Missing L1 on feature code → **WARN** (include in council findings)
-- Missing L0 on spec-changing code → **WARN**
-- Missing BF4 on boundary code → **WARN** (advisory, not blocking)
-- All levels covered → no mention needed
+- `weighted_score < 0.3` AND all tests L0-L1 only — **WARN: unit-only coverage** (include in council findings)
+- Missing L1 on feature code — **WARN** (include in council findings)
+- Missing L0 on spec-changing code — **WARN**
+- Missing BF4 on boundary code — **WARN** (advisory, not blocking)
+- All levels covered with `weighted_score >= 0.6` — no mention needed
 
 When coverage gaps are found, run `/test <module>` to generate test candidates for uncovered code.
 

@@ -33,7 +33,7 @@ When `--preset` or `--perspectives` is used, judges receive the perspective-labe
 
 Simple name-based:
 ```bash
-$council --perspectives="security,performance,ux" validate the API
+/council --perspectives="security,performance,ux" validate the API
 ```
 
 ## Built-in Presets
@@ -47,17 +47,17 @@ Use `--preset=<name>` for common persona configurations:
 | `architecture` | scalability, maintainability, simplicity | System design |
 | `research` | breadth, depth, contrarian | Deep investigation |
 | `ops` | reliability, observability, incident-response | Operations review |
-| `code-review` | error-paths, api-surface, spec-compliance | Code validation (used by $vibe) |
-| `plan-review` | missing-requirements, feasibility, scope, spec-completeness | Plan validation (used by $pre-mortem) |
+| `code-review` | error-paths, api-surface, spec-compliance | Code validation (used by /vibe) |
+| `plan-review` | missing-requirements, feasibility, scope, spec-completeness | Plan validation (used by /pre-mortem) |
 | `doc-review` | clarity-editor, accuracy-verifier, completeness-auditor, audience-advocate | Documentation quality review |
-| `retrospective` | plan-compliance, tech-debt, learnings | Post-implementation review (used by $post-mortem) |
-| `product` | user-value, adoption-barriers, competitive-position | Product-market fit review (used by $pre-mortem when PRODUCT.md exists) |
-| `developer-experience` | api-clarity, error-experience, discoverability | Developer UX review (used by $vibe when PRODUCT.md exists) |
+| `retrospective` | plan-compliance, tech-debt, learnings | Post-implementation review (used by /post-mortem) |
+| `product` | user-value, adoption-barriers, competitive-position, strategic-fit | Product-market fit review (used by /pre-mortem when PRODUCT.md exists) |
+| `developer-experience` | api-clarity, error-experience, discoverability | Developer UX review (used by /vibe when PRODUCT.md exists) |
 
 ```bash
-$council --preset=security-audit validate the auth system
-$council --preset=research --explorers=3 research upgrade automation
-$council --preset=architecture research microservices boundaries
+/council --preset=security-audit validate the auth system
+/council --preset=research --explorers=3 research upgrade automation
+/council --preset=architecture research microservices boundaries
 ```
 
 **Preset definitions** are built-in perspective configurations.
@@ -83,9 +83,10 @@ $council --preset=architecture research microservices boundaries
 | retrospective | **Compass** | plan-compliance |
 | retrospective | **Debt** | tech-debt |
 | retrospective | **Harvest** | learnings |
-| product | **User** | user-value |
-| product | **Friction** | adoption-barriers |
+| product | **Value** | user-value |
+| product | **Barriers** | adoption-barriers |
 | product | **Edge** | competitive-position |
+| product | **North** | strategic-fit |
 | developer-experience | **Signal** | api-clarity |
 | developer-experience | **SOS** | error-experience |
 | developer-experience | **Beacon** | discoverability |
@@ -143,9 +144,10 @@ retrospective:
   learnings:       {name: Harvest}  "What patterns emerged? What should be extracted as reusable knowledge?"
 
 product:
-  user-value:            {name: User}      "What user problem does this solve? Who benefits and how?"
-  adoption-barriers:     {name: Friction}  "What makes this hard to discover, learn, or use? What's the friction?"
-  competitive-position:  {name: Edge}      "How does this compare to alternatives? What's our differentiation?"
+  user-value:            {name: Value}     "Evaluate whether the target delivers meaningful value to defined personas. Check if it addresses stated user needs, solves real problems, and creates measurable benefit."
+  adoption-barriers:     {name: Barriers}  "Identify obstacles that could prevent users from adopting or benefiting from this. Consider onboarding friction, learning curve, prerequisite knowledge, and migration costs."
+  competitive-position:  {name: Edge}      "Assess how this strengthens or weakens competitive position. Check differentiation, parity gaps, and whether this creates defensible advantages."
+  strategic-fit:         {name: North}     "Evaluate alignment with stated product mission, goals, and roadmap. Flag scope creep or misalignment with strategic direction."
 
 doc-review:
   clarity-editor:       {name: Clarity}   "Is every sentence unambiguous? Can a reader understand without re-reading? Where's the jargon?"

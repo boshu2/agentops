@@ -45,7 +45,7 @@ metadata:
 ## Lifecycle Ownership
 
 Phase orchestrators own all sub-skill sequencing, retry gates, and phase budgets:
-- Phase 1: `/discovery` handles brainstorm → search → research → plan → pre-mortem and writes the execution packet.
+- Phase 1: `/discovery` handles brainstorm → design (when PRODUCT.md exists) → search → research → plan → pre-mortem and writes the execution packet.
 - Phase 2: `/crank` handles wave-based implementation plus implementation retries.
 - Phase 3: `/validation` handles vibe → post-mortem → retro → forge plus validation retries.
 
@@ -147,7 +147,7 @@ Log: `PHASE 2 COMPLETE ✓ (implementation) — proceeding to Phase 3`
 **MANDATORY for `standard` and `full` complexity.** This is not optional. `/validation` is the Phase 3 orchestrator — it wraps `/vibe` + `/post-mortem` + `/retro` + `/forge`. Do NOT call `/vibe` directly from `/rpi` — call `/validation` which handles the full sequence.
 
 ```
-Skill(skill="validation", args="<epic-id> --complexity=<level>")
+Skill(skill="validation", args="<epic-id> --complexity=<level> [--strict-surfaces if --quality]")
 ```
 
 **Validation-to-crank loop (max 3 total attempts):**
@@ -197,6 +197,7 @@ Read `references/error-handling.md` for failure semantics.
 | `--no-test-first` | off | Opt out of strict-quality |
 | `--fast-path` | auto | Force fast complexity |
 | `--deep` | auto | Force full complexity |
+| `--quality` | off | Pass `--strict-surfaces` to `/validation`, making all 4 surface failures blocking |
 | `--dry-run` | off | Report without mutating queue |
 | `--no-budget` | off | Disable phase time budgets (passed to phase skills) |
 

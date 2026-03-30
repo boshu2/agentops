@@ -64,11 +64,11 @@ func TestGetEscapeStatus(t *testing.T) {
 		wantText  string
 		wantEmoji string
 	}{
-		{"escape velocity", 0.6, 0.3, "ESCAPE VELOCITY", "🚀"},
-		{"approaching", 0.25, 0.3, "APPROACHING", "⚡"},
-		{"building", 0.2, 0.3, "BUILDING", "📈"},
-		{"starting", 0.05, 0.3, "STARTING", "🌱"},
-		{"zero values", 0, 0.3, "STARTING", "🌱"},
+		{"escape velocity", 0.6, 30.0, "ESCAPE VELOCITY", "🚀"},
+		{"approaching", 0.25, 30.0, "APPROACHING", "⚡"},
+		{"building", 0.2, 30.0, "BUILDING", "📈"},
+		{"starting", 0.05, 30.0, "STARTING", "🌱"},
+		{"zero values", 0, 30.0, "STARTING", "🌱"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,7 +113,7 @@ func TestPrintBadge(t *testing.T) {
 	})
 	t.Run("zero metrics", func(t *testing.T) {
 		printBadge(5, &FlywheelMetrics{
-			Delta:      types.DefaultDelta,
+			Delta:      types.DefaultDelta * 100,
 			TierCounts: map[string]int{"learning": 3, "pattern": 1},
 		})
 	})
@@ -121,7 +121,7 @@ func TestPrintBadge(t *testing.T) {
 		printBadge(10, &FlywheelMetrics{
 			Sigma:               0.8,
 			Rho:                 0.9,
-			Delta:               0.3,
+			Delta:               30.0,
 			SigmaRho:            0.72,
 			TierCounts:          map[string]int{"learning": 10, "pattern": 5},
 			CitationsThisPeriod: 3,

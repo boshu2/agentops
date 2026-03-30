@@ -100,9 +100,13 @@ Use this during plan review:
 | # | Rule | Detection Question |
 |---|------|--------------------|
 | 1 | Mechanical Enforcement | Does every integration point have a mechanical gate? |
+| 1b | Mechanical Enforcement | Does the plan include activation tests for any provisioned infrastructure? (Dead infrastructure = provisioned but never tested under real load) |
 | 2 | External Validation | Are all validation gates external (not self-reported)? |
 | 3 | Feedback Loops | Who consumes each output, and how? |
+| 3b | Feedback Loops | Does the plan specify who consumes each output artifact? (Capture without consumption is a knowledge cemetery) |
 | 4 | Separation Over Layering | Are component boundaries explicit contracts? |
 | 5 | Process Gates First | Could a process gate solve this instead of a tool change? |
+| 5b | Process Gates First | Does the plan enforce commit-per-wave and worktree-commit-before-exit? (Branch hygiene prevents merge conflict accumulation) |
 | 6 | Cross-Layer Consistency | Do all layers agree on shared parameters? |
 | 7 | Phased Rollout | Are changes phased by risk with validation between waves? |
+| 7b | Phased Rollout | Is the 40% context budget respected? (Sessions that load >40% context for knowledge leave insufficient room for implementation work) |

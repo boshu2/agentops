@@ -677,7 +677,7 @@ utility: 0.8
 ---
 # Escape velocity threshold for knowledge compounding
 
-Escape velocity (σρ > δ) is necessary but not sufficient for true compounding.
+Escape velocity (σρ > δ/100) is necessary but not sufficient for true compounding.
 Golden signals must also be healthy.`,
 
 		"2026-03-20-research-closure.md": `---

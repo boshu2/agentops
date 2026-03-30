@@ -119,10 +119,10 @@ func TestComputeSigmaRho(t *testing.T) {
 			name:           "14 days",
 			totalArtifacts: 100,
 			uniqueCited:    50,
-			citationCount:  100,
+			citationCount:  25,
 			days:           14,
 			wantSigma:      0.5,
-			wantRho:        1.0, // 100/50/2weeks = 1
+			wantRho:        0.5, // 25 evidenced / 50 surfaced
 		},
 	}
 
@@ -436,8 +436,8 @@ func TestParseUtilityFromJSONL(t *testing.T) {
 		}
 	})
 }
-// TestComputeSigmaRho — canonical version earlier in this file
 
+// TestComputeSigmaRho — canonical version earlier in this file
 
 func floatApprox(a, b, epsilon float64) bool {
 	diff := a - b
@@ -446,8 +446,8 @@ func floatApprox(a, b, epsilon float64) bool {
 	}
 	return diff <= epsilon
 }
-// TestFilterCitationsForPeriod — canonical version earlier in this file
 
+// TestFilterCitationsForPeriod — canonical version earlier in this file
 
 func TestFilterCitationsForPeriod_uniqueCited(t *testing.T) {
 	now := time.Now()
@@ -504,9 +504,9 @@ func TestRetrievableCitationStats(t *testing.T) {
 		{ArtifactPath: filepath.Join(baseDir, ".agents", "research", "d.md")}, // not retrievable
 	}
 
-	uniqueCount, citationCount := retrievableCitationStats(baseDir, citations)
-	if citationCount != 4 {
-		t.Errorf("citationCount = %d, want 4", citationCount)
+	uniqueCount, evidenceCount := retrievableCitationStats(baseDir, citations)
+	if evidenceCount != 3 {
+		t.Errorf("evidenceCount = %d, want 3", evidenceCount)
 	}
 	if uniqueCount != 3 {
 		t.Errorf("uniqueCount = %d, want 3", uniqueCount)
@@ -514,13 +514,13 @@ func TestRetrievableCitationStats(t *testing.T) {
 }
 
 func TestRetrievableCitationStats_empty(t *testing.T) {
-	uniqueCount, citationCount := retrievableCitationStats("/tmp", nil)
-	if uniqueCount != 0 || citationCount != 0 {
-		t.Errorf("expected 0/0 for empty citations, got %d/%d", uniqueCount, citationCount)
+	uniqueCount, evidenceCount := retrievableCitationStats("/tmp", nil)
+	if uniqueCount != 0 || evidenceCount != 0 {
+		t.Errorf("expected 0/0 for empty citations, got %d/%d", uniqueCount, evidenceCount)
 	}
 }
-// TestCountBypassCitations — canonical version earlier in this file
 
+// TestCountBypassCitations — canonical version earlier in this file
 
 func TestCountBypassCitations_none(t *testing.T) {
 	citations := []types.CitationEvent{
@@ -805,8 +805,8 @@ func TestCountStaleInDir_missingDir(t *testing.T) {
 		t.Errorf("expected 0 for missing dir, got %d", count)
 	}
 }
-// TestCountStaleArtifacts — canonical version earlier in this file
 
+// TestCountStaleArtifacts — canonical version earlier in this file
 
 // ---------------------------------------------------------------------------
 // retroHasLearnings
@@ -846,8 +846,8 @@ func TestRetroHasLearnings_missingFile(t *testing.T) {
 		t.Error("expected false for missing file")
 	}
 }
-// TestCountRetros — canonical version earlier in this file
 
+// TestCountRetros — canonical version earlier in this file
 
 // ---------------------------------------------------------------------------
 // computeUtilityStats
@@ -962,8 +962,8 @@ func TestParseUtilityFromMarkdown(t *testing.T) {
 		})
 	}
 }
-// TestParseUtilityFromJSONL — canonical version earlier in this file
 
+// TestParseUtilityFromJSONL — canonical version earlier in this file
 
 func TestParseUtilityFromJSONL_missingFile(t *testing.T) {
 	got := parseUtilityFromJSONL("/nonexistent/file.jsonl")
@@ -1003,12 +1003,12 @@ func TestParseUtilityFromFile_dispatch(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPrintMetricsParameters(t *testing.T) {
-	m := &types.FlywheelMetrics{Delta: 0.17, Sigma: 0.5, Rho: 1.0}
+	m := &types.FlywheelMetrics{Delta: 17.0, Sigma: 0.5, Rho: 1.0}
 	out, err := captureStdout(t, func() error { printMetricsParameters(m); return nil })
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"PARAMETERS:", "0.17", "0.50", "1.00"} {
+	for _, want := range []string{"PARAMETERS:", "17.0", "0.50", "1.00"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q:\n%s", want, out)
 		}
@@ -1021,8 +1021,8 @@ func TestPrintMetricsDerived(t *testing.T) {
 		m    *types.FlywheelMetrics
 		want []string
 	}{
-		{"positive velocity", &types.FlywheelMetrics{SigmaRho: 0.5, Delta: 0.17, Velocity: 0.33, AboveEscapeVelocity: true}, []string{"DERIVED:", "+0.33", "✓"}},
-		{"negative velocity", &types.FlywheelMetrics{SigmaRho: 0.05, Delta: 0.17, Velocity: -0.12, AboveEscapeVelocity: false}, []string{"DERIVED:", "-0.12", "✗"}},
+		{"positive velocity", &types.FlywheelMetrics{SigmaRho: 0.5, Delta: 17.0, Velocity: 0.33, AboveEscapeVelocity: true}, []string{"DERIVED:", "+0.33", "✓", "δ/100 = 0.170"}},
+		{"negative velocity", &types.FlywheelMetrics{SigmaRho: 0.05, Delta: 17.0, Velocity: -0.12, AboveEscapeVelocity: false}, []string{"DERIVED:", "-0.12", "✗", "δ/100 = 0.170"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1145,7 +1145,7 @@ func TestPrintMetricsTable(t *testing.T) {
 		Timestamp:            now,
 		PeriodStart:          now.AddDate(0, 0, -7),
 		PeriodEnd:            now,
-		Delta:                0.17,
+		Delta:                17.0,
 		Sigma:                0.5,
 		Rho:                  1.0,
 		SigmaRho:             0.5,

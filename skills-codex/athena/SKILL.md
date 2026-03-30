@@ -126,6 +126,46 @@ improved/fail for 3+ cycles).
 **Fallback:** `find .agents/learnings -name "*.md" -mtime +30` for stale files.
 Check `.agents/evolve/cycle-history.jsonl` for alternating result patterns.
 
+### Normalization Defect Scan
+
+During defrag, scan the learnings and patterns pool for structural defects that degrade flywheel quality:
+
+```bash
+# Placeholder patterns: files with only frontmatter, no content after closing ---
+for f in .agents/patterns/**/*.md .agents/learnings/**/*.md; do
+  [ -f "$f" ] || continue
+  content_after_frontmatter=$(awk '/^---$/{n++; if(n==2) found=1; next} found{print}' "$f" | grep -c '[^ ]')
+  [ "$content_after_frontmatter" -eq 0 ] && echo "PLACEHOLDER: $f"
+done
+
+# Stacked frontmatter: multiple --- delimiter pairs (>2 occurrences of ^---$)
+grep -rl '^---$' .agents/learnings/ .agents/patterns/ 2>/dev/null | while read f; do
+  count=$(grep -c '^---$' "$f")
+  [ "$count" -gt 2 ] && echo "STACKED_FRONTMATTER: $f ($count delimiters)"
+done
+
+# Bundled multi-learning files: more than one ## Learning heading
+grep -rl '^## Learning' .agents/learnings/ 2>/dev/null | while read f; do
+  count=$(grep -c '^## Learning' "$f")
+  [ "$count" -gt 1 ] && echo "BUNDLED: $f ($count learnings in one file)"
+done
+
+# Duplicated headings within a file
+for f in .agents/learnings/**/*.md .agents/patterns/**/*.md; do
+  [ -f "$f" ] || continue
+  dupes=$(grep '^## ' "$f" | sort | uniq -d)
+  [ -n "$dupes" ] && echo "DUPLICATE_HEADING: $f — $dupes"
+done
+```
+
+**Report normalization defects** in the defrag output. If any are found, list them with severity:
+- PLACEHOLDER → HIGH (empty knowledge pollutes retrieval)
+- STACKED_FRONTMATTER → MEDIUM (parsing errors, possible data loss)
+- BUNDLED → HIGH (breaks per-learning citation tracking)
+- DUPLICATE_HEADING → LOW (cosmetic, may confuse extraction)
+
+These defects should be flagged for manual review or automatic splitting during the next forge cycle.
+
 ### Step 4 — Report
 
 ```bash
@@ -196,6 +236,7 @@ For a full Mine → Grow → Defrag cycle, invoke `$athena` manually.
 
 - [references/confidence-scoring.md](references/confidence-scoring.md)
 - [references/flywheel-diagnostics.md](references/flywheel-diagnostics.md)
+- [references/knowledge-synthesis-patterns.md](references/knowledge-synthesis-patterns.md)
 
 ## Local Resources
 

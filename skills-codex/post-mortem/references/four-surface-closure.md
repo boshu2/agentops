@@ -71,3 +71,17 @@ Extract learnings from any surface gaps found:
 ### Phase 5 (Retirement)
 Retire learnings about surface gaps that now have mechanical enforcement:
 > If a CI check now catches the gap (e.g., doc-release-gate catches skill count drift), retire the learning and reference the gate.
+
+## Normalization Defect Check
+
+After verifying four-surface closure, check for normalization defects in any knowledge artifacts produced during the implementation:
+
+| Defect | Detection | Severity |
+|---|---|---|
+| Placeholder patterns | File has frontmatter but no content after closing `---` | HIGH — pollutes retrieval |
+| Stacked frontmatter | More than 2 `---` delimiters in a single file | MEDIUM — parsing errors |
+| Bundled learnings | Multiple `## Learning` headings in one file | HIGH — breaks citation tracking |
+| Duplicated headings | Identical `## ` headings within a file | LOW — confuses extraction |
+| Stale contradictions | Contradiction report predates latest extraction | MEDIUM — misleading evidence |
+
+Flag any defects found for the next forge/defrag cycle. Do not ship knowledge artifacts with HIGH-severity normalization defects.

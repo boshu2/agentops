@@ -235,13 +235,13 @@ This ensures all goroutines clean up properly on shutdown.
 		}
 
 		// Verify escape velocity formula components
-		// σ×ρ > δ means knowledge compounds
+		// σ×ρ > δ/100 means knowledge compounds
 		sigma := 0.5  // retrieval effectiveness (simulated)
 		rho := 0.3    // citation rate (simulated)
-		delta := 0.17 // decay rate
+		delta := 17.0 // avg age in days
 
 		sigmaRho := sigma * rho
-		escapingVelocity := sigmaRho > delta
+		escapingVelocity := sigmaRho > delta/100.0
 
 		t.Logf("Flywheel metrics: σ=%.2f, ρ=%.2f, δ=%.2f, σ×ρ=%.3f, escaping=%v",
 			sigma, rho, delta, sigmaRho, escapingVelocity)
@@ -305,22 +305,22 @@ This ensures all goroutines clean up properly on shutdown.
 	// ========================================
 	t.Run("Badge", func(t *testing.T) {
 		// Test badge helper functions
-		status, icon := getEscapeStatus(0.05, 0.17)
+		status, icon := getEscapeStatus(0.05, 17.0)
 		if status != "STARTING" || icon != "🌱" {
 			t.Errorf("Low velocity should be STARTING, got %s %s", icon, status)
 		}
 
-		status, _ = getEscapeStatus(0.10, 0.17)
+		status, _ = getEscapeStatus(0.10, 17.0)
 		if status != "BUILDING" {
 			t.Errorf("Medium velocity should be BUILDING, got %s", status)
 		}
 
-		status, _ = getEscapeStatus(0.15, 0.17)
+		status, _ = getEscapeStatus(0.15, 17.0)
 		if status != "APPROACHING" {
 			t.Errorf("High velocity should be APPROACHING, got %s", status)
 		}
 
-		status, icon = getEscapeStatus(0.20, 0.17)
+		status, icon = getEscapeStatus(0.20, 17.0)
 		if status != "ESCAPE VELOCITY" || icon != "🚀" {
 			t.Errorf("Above delta should be ESCAPE VELOCITY, got %s %s", icon, status)
 		}

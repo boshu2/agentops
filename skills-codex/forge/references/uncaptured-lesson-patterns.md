@@ -1,6 +1,6 @@
 # Uncaptured Lesson Patterns
 
-> 26 lessons identified from post-mortem and retro analysis across 14,753 sessions.
+> 30 lessons identified from post-mortem and retro analysis across 14,753 sessions.
 > These represent recurring failure modes that were experienced but never captured as learnings.
 > Forge should look for these patterns when mining transcripts.
 
@@ -10,7 +10,7 @@ During transcript mining, match session content against these 26 patterns. When 
 
 ---
 
-## Infrastructure & Tooling (7 lessons)
+## Infrastructure & Tooling (8 lessons)
 
 ### 1. Dead Infrastructure Activation
 **Pattern:** Enforcement tooling (git hooks, pre-commit, linters) exists but isn't activated by default. Manual config required = never runs.
@@ -93,7 +93,7 @@ During transcript mining, match session content against these 26 patterns. When 
 
 ---
 
-## Knowledge & Validation (6 lessons)
+## Knowledge & Validation (9 lessons)
 
 ### 16. Context Budget Rule: 40% Critical
 **Pattern:** Session context above 40% causes quality degradation. Above 60% = 99% information loss. Fresh sessions per phase.
@@ -125,6 +125,21 @@ During transcript mining, match session content against these 26 patterns. When 
 **Signal:** "This doesn't actually solve the problem", pivot after significant work
 **Category:** process | **Confidence:** 0.85
 
+### 27. Knowledge Normalization Defects
+**Pattern:** Learning files with stacked frontmatter, bundled multiple learnings per file, placeholder patterns with no content, or duplicated headings that break extraction and citation tracking.
+**Signal:** Frontmatter parse errors, multiple `## Learning` headings in one file, empty content after `---`, citation mismatches
+**Category:** knowledge | **Confidence:** 0.85
+
+### 28. Promotion Pipeline Bottleneck
+**Pattern:** High learning production (>100 learnings) with low pattern extraction (<5 patterns). The 1.2% promotion rate indicates a pipeline gap, not a production problem.
+**Signal:** Growing learning pool with stagnant pattern count, "we have lots of learnings but no patterns"
+**Category:** knowledge | **Confidence:** 0.80
+
+### 29. Three-Tier Taxonomy Violation
+**Pattern:** Treating learnings as universal principles or principles as local learnings. The taxonomy is: learning (local, one rig) → pattern (domain, transferable) → principle (universal, 3+ domains).
+**Signal:** Learnings applied cross-rig without validation, principles with single-rig evidence, "this learning applies everywhere"
+**Category:** knowledge | **Confidence:** 0.75
+
 ---
 
 ## Git & Operations (5 lessons)
@@ -154,6 +169,11 @@ During transcript mining, match session content against these 26 patterns. When 
 **Signal:** "What have you been working on?", surprise at end-of-sprint
 **Category:** process | **Confidence:** 0.80
 
+### 30. Stale Contradiction Reports
+**Pattern:** Contradiction findings that reference evidence from before the latest extraction pass. Later extractions may have resolved the contradiction, making the report misleading.
+**Signal:** Contradiction report cites old timestamps, "this was already fixed", evidence predates last defrag
+**Category:** knowledge | **Confidence:** 0.80
+
 ---
 
 ## Pattern Matching Guide
@@ -168,8 +188,8 @@ When mining a transcript, score matches as:
 
 ## Integration with Forge Workflow
 
-1. During transcript scan, check each significant event against all 26 patterns
+1. During transcript scan, check each significant event against all 30 patterns
 2. When a match is found, pre-fill the learning template with the pattern's category and base confidence
 3. Boost confidence by the match quality modifier
 4. Add the pattern number as a tag (e.g., `uncaptured-lesson-8` for plan oscillation)
-5. Track which patterns have been captured — goal is to capture all 26 within the knowledge base
+5. Track which patterns have been captured — goal is to capture all 30 within the knowledge base

@@ -86,8 +86,10 @@ dK/dt = I(t) - δ·K + σ·ρ·K
 | `dK/dt` | Rate of change | Is the pile growing or shrinking? | "+5 learnings this week" or "-10 lost to decay" |
 | `I(t)` | Input rate | New knowledge coming in | "Forged 3 sessions today" |
 | `δ` | Decay rate | How fast you forget (0.17/week) | "17% gone each week if unused" |
-| `σ` | Retrieval effectiveness | When you search, do you find it? | "Found relevant learning 70% of the time" |
-| `ρ` | Citation rate | Do you actually use what you find? | "Used 30% of retrieved knowledge" |
+| `σ` | Retrieval coverage | How much of the useful stock are you actually surfacing? | "Surfaced 70% of retrievable artifacts" |
+| `ρ` | Decision influence rate | Of what you surfaced, how much later had evidence-backed use? | "30% of surfaced artifacts were referenced or applied" |
+
+> **Implementation note:** In the CLI implementation (`metrics_health.go`), sigma measures unique surfaced retrievable artifacts / total retrievable artifacts over the last 10 sessions, rho measures the fraction of surfaced artifacts later evidenced by `reference` or `applied` citations, and delta measures average age of active learnings in days. The escape velocity check uses `σ × ρ > δ/100` to normalize delta to a ratio comparable with sigma and rho.
 
 ### Dimensional Check
 
@@ -140,10 +142,10 @@ Rearrange the equation at steady state:
 General growth condition:
 I(t) + K(σ·ρ - δ) > 0
 
-If I(t) ≈ 0 (self-sustaining mode): σ × ρ > δ
+Operational self-sustaining check: σ × ρ > δ/100
 
 With scale friction:
-ρ·σ(K,t) > δ + φ·K - I(t)/K
+ρ·σ(K,t) > δ/100 + φ·K - I(t)/K
 ```
 
 **Meaning:** early growth can be exponential, but long-run growth plateaus unless you actively prevent `σ` collapse and friction growth.
@@ -446,9 +448,9 @@ This is why progress can be made one-way at the artifact level, while system-lev
 │  THE GOAL (Escape Velocity)                                      │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │                                                          │   │
-│  │              σ × ρ > δ                                   │   │
+│  │              σ × ρ > δ/100                               │   │
 │  │                                                          │   │
-│  │    retrieval × usage > decay                            │    │
+│  │    retrieval × evidence-backed use > aging threshold    │    │
 │  │                                                          │   │
 │  │    When true: KNOWLEDGE COMPOUNDS                        │   │
 │  │                                                          │   │
@@ -552,8 +554,8 @@ If `health(t) <= 0`, growth has hit limits and controls must be tightened.
 Everything in AgentOps exists to achieve one thing:
 
 ```
-Short form (self-sustaining mode):
-σ × ρ > δ
+Operational check:
+σ × ρ > δ/100
 
 Scale-aware form:
 ρ·σ(K,t) > δ + φ·K - I(t)/K

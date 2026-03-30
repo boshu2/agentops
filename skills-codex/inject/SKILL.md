@@ -57,6 +57,9 @@ ao inject --context "<topic>" --format markdown --max-tokens 1000
 
 **Without ao CLI, search manually:**
 ```bash
+# Global operating memory
+sed -n '1,120p' ~/.agents/MEMORY.md 2>/dev/null
+
 # Recent learnings
 ls -lt .agents/learnings/ | head -5
 
@@ -83,6 +86,7 @@ Read the most relevant artifacts based on topic.
 ### Step 3: Summarize for Context
 
 Present the injected knowledge:
+- Global principles or constraints that apply everywhere
 - Key learnings relevant to current work
 - Patterns that may apply
 - Recent research on related topics
@@ -105,6 +109,7 @@ Citation tracking enables the feedback loop: learnings that are frequently cited
 
 | Source | Location | Priority | Weight |
 |--------|----------|----------|--------|
+| Global Memory | `~/.agents/MEMORY.md` | Highest | 1.0 |
 | Learnings | `.agents/learnings/` | High | 1.0 |
 | Patterns | `.agents/patterns/` | High | 1.0 |
 | Global Learnings | `~/.agents/learnings/` | High | 0.8 (configurable) |
@@ -168,4 +173,3 @@ Knowledge relevance decays over time (~17%/week). More recent learnings are weig
 ### scripts/
 
 - `scripts/validate.sh`
-

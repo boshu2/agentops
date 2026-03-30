@@ -474,7 +474,7 @@ dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
 ### Falsification Conditions
 
 The model is falsified if:
-1. K(t) shows ceiling despite σρ > δ
+1. K(t) shows ceiling despite σρ > δ/100
 2. Citations don't reduce decay
 3. B(K, K_crit) is unmeasurable
 4. δ_system > 20%/week consistently

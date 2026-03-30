@@ -23,10 +23,10 @@ The badge shows:
   - Escape velocity calculation and status
 
 Status levels:
-  🚀 ESCAPE VELOCITY  - σ×ρ > δ (knowledge compounds)
-  ⚡ APPROACHING      - σ×ρ > δ×0.8 (almost there)
-  📈 BUILDING         - σ×ρ > δ×0.5 (making progress)
-  🌱 STARTING         - σ×ρ ≤ δ×0.5 (early stage)
+  🚀 ESCAPE VELOCITY  - σ×ρ > δ/100 (knowledge compounds)
+  ⚡ APPROACHING      - σ×ρ > (δ/100)×0.8 (almost there)
+  📈 BUILDING         - σ×ρ > (δ/100)×0.5 (making progress)
+  🌱 STARTING         - σ×ρ ≤ (δ/100)×0.5 (early stage)
 
 Example:
   ao badge`,
@@ -71,7 +71,7 @@ func countSessions(baseDir string) int {
 // printBadge prints the visual badge.
 func printBadge(sessions int, m *FlywheelMetrics) {
 	if m == nil {
-		m = &FlywheelMetrics{Delta: types.DefaultDelta}
+		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
 	}
 
 	// Calculate status
@@ -80,7 +80,7 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 	// Progress bars (10 chars width)
 	sigmaBar := makeProgressBar(m.Sigma, 10)
 	rhoBar := makeProgressBar(m.Rho, 10)
-	deltaBar := makeProgressBar(m.Delta, 10)
+	deltaBar := makeProgressBar(escapeVelocityThreshold(m.Delta), 10)
 
 	// Learnings count (from tier counts)
 	learnings := m.TierCounts["learning"]
@@ -96,17 +96,18 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 	fmt.Printf("║  Citations         │  %-19d ║\n", m.CitationsThisPeriod)
 	fmt.Println("╠═══════════════════════════════════════════╣")
 	fmt.Printf("║  Retrieval (σ)     │  %.2f  %s ║\n", m.Sigma, sigmaBar)
-	fmt.Printf("║  Citation Rate (ρ) │  %.2f  %s ║\n", m.Rho, rhoBar)
-	fmt.Printf("║  Decay (δ)         │  %.2f  %s ║\n", m.Delta, deltaBar)
+	fmt.Printf("║  Influence (ρ)     │  %.2f  %s ║\n", m.Rho, rhoBar)
+	fmt.Printf("║  Age Days (δ)      │  %.1f  %s ║\n", m.Delta, deltaBar)
 	fmt.Println("╠═══════════════════════════════════════════╣")
 
 	// Final status line
 	sigmaRhoStr := fmt.Sprintf("%.2f", m.SigmaRho)
+	threshold := escapeVelocityThreshold(m.Delta)
 	comparison := ">"
-	if m.SigmaRho <= m.Delta {
+	if m.SigmaRho <= threshold {
 		comparison = "≤"
 	}
-	statusLine := fmt.Sprintf("σ×ρ = %s %s δ", sigmaRhoStr, comparison)
+	statusLine := fmt.Sprintf("σ×ρ = %s %s δ/100", sigmaRhoStr, comparison)
 	fmt.Printf("║  %-17s │  %s %-13s║\n", statusLine, statusIcon, status)
 	fmt.Println("╚═══════════════════════════════════════════╝")
 	fmt.Println()
@@ -114,13 +115,20 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 
 // getEscapeStatus returns status text and icon based on velocity.
 func getEscapeStatus(sigmaRho, delta float64) (string, string) {
-	if sigmaRho > delta {
+	threshold := escapeVelocityThreshold(delta)
+	if threshold <= 0 {
+		if sigmaRho > 0 {
+			return "ESCAPE VELOCITY", "🚀"
+		}
+		return "STARTING", "🌱"
+	}
+	if sigmaRho > threshold {
 		return "ESCAPE VELOCITY", "🚀"
 	}
-	if sigmaRho > delta*0.8 {
+	if sigmaRho > threshold*0.8 {
 		return "APPROACHING", "⚡"
 	}
-	if sigmaRho > delta*0.5 {
+	if sigmaRho > threshold*0.5 {
 		return "BUILDING", "📈"
 	}
 	return "STARTING", "🌱"

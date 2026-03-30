@@ -99,13 +99,14 @@ ao lookup --query "x"  # Search knowledge by relevance
 
 ## Available Skills
 
-## Start Here (11 starters)
+## Start Here (12 starters)
 
 These are the skills every user needs first. Everything else is available when you need it.
 
 | Skill | Purpose |
 |-------|---------|
 | `/quickstart` | Guided onboarding — run this first |
+| `/bootstrap` | One-command full AgentOps setup — fills gaps only |
 | `/research` | Deep codebase exploration |
 | `/council` | Multi-model consensus review + finding auto-extraction |
 | `/vibe` | Code validation (classification + suppression + domain checklists) |
@@ -115,7 +116,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/status` | Single-screen dashboard of current work and suggested next action |
 | `/goals` | Maintain GOALS.yaml fitness specification |
 | `/push` | Atomic test-commit-push workflow |
-| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ) |
+| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ/100) |
 
 ## Advanced Skills (when you need them)
 
@@ -126,6 +127,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `/plan` | Epic decomposition into issues |
+| `/design` | Product validation gate — goal alignment, persona fit, competitive differentiation |
 | `/pre-mortem` | Failure simulation (error/rescue, scope modes, temporal, predictions) |
 | `/post-mortem` | Validation + streak tracking + prediction accuracy + retro history |
 | `/bug-hunt` | Root cause analysis |

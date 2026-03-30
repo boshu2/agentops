@@ -35,6 +35,14 @@ STEP 1  ──  if not --skip-brainstorm AND goal is vague (<50 chars or vague k
               $brainstorm <goal>
               Use refined goal for subsequent steps if produced.
 
+STEP 1.5 ── if PRODUCT.md exists in repo root
+              AND goal appears to be a feature or capability
+              (not a bug fix, chore, or docs task — i.e., goal does NOT start with
+               "fix", "chore", "docs", "typo", "bump", "update dep", "lint", "format"):
+                $design <goal> [--quick]
+                FAIL verdict? → log warning, continue (design is advisory, not blocking).
+              Skip silently if PRODUCT.md does not exist or goal is non-feature.
+
 STEP 2  ──  if ao available:
               ao search "<goal keywords>" 2>/dev/null || true
               ao lookup --query "<goal keywords>" --limit 5 2>/dev/null || true
@@ -62,7 +70,7 @@ STEP 6  ──  Write execution-packet.json + phase summary to .agents/rpi/
               Output <promise>DONE</promise>
 ```
 
-**That's it.** Steps 1→2→3→4→5→6. No stopping between steps.
+**That's it.** Steps 1→1.5→2→3→4→5→6. No stopping between steps.
 
 ---
 
@@ -101,6 +109,8 @@ if command -v ao &>/dev/null; then AO_AVAILABLE=true; else AO_AVAILABLE=false; f
 ## Step Detail
 
 **STEP 1 (brainstorm):** Skip if `--skip-brainstorm`, or goal >50 chars with no vague keywords (`improve`, `better`, `something`, `somehow`, `maybe`), or brainstorm artifact already exists in `.agents/brainstorm/`.
+
+**STEP 1.5 (design gate):** Optional. Runs `$design` when PRODUCT.md exists at repo root and the goal is a feature or capability (not a bug fix, chore, or docs task). Design verdict FAIL logs a warning but does not block discovery. Skipped silently when PRODUCT.md is absent.
 
 **STEP 2 (search history):** Ranked packet assembly — match compiled planning rules, active findings from `.agents/findings/*.md`, and unconsumed high-severity items from `.agents/rpi/next-work.jsonl`. Rank by goal-text overlap → issue-type overlap → file-path overlap.
 
@@ -147,7 +157,7 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
 - [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
 
-**See also:** [brainstorm](../brainstorm/SKILL.md), [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md)
+**See also:** [brainstorm](../brainstorm/SKILL.md), [design](../design/SKILL.md), [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md)
 
 ## Local Resources
 

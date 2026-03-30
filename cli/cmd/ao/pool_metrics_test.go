@@ -1699,9 +1699,9 @@ func TestMetrics_retrievableCitationStats(t *testing.T) {
 		{ArtifactPath: ".agents/candidates/d.md"}, // not retrievable
 	}
 
-	unique, total := retrievableCitationStats(baseDir, citations)
-	if total != 3 {
-		t.Errorf("total = %d, want 3", total)
+	unique, evidenced := retrievableCitationStats(baseDir, citations)
+	if evidenced != 2 {
+		t.Errorf("evidenced = %d, want 2", evidenced)
 	}
 	if unique != 2 {
 		t.Errorf("unique = %d, want 2", unique)

@@ -117,10 +117,10 @@ The flywheel equation:
 dK/dt = I(t) - δ·K + σ·ρ·K
 ```
 
-- **δ** — Knowledge decay rate (0.17/week baseline)
-- **σ** — Retrieval effectiveness (what fraction of relevant knowledge is surfaced)
-- **ρ** — Citation rate (how often retrieved knowledge is actually used)
-- **Escape velocity:** When σρ > δ, knowledge is above the minimum reinforcement threshold
+- **σ** — Retrieval coverage: unique surfaced artifacts / total retrievable artifacts, scale 0.0–1.0
+- **ρ** — Decision influence rate: unique surfaced artifacts later evidenced by `reference` or `applied` citations / surfaced artifacts, scale 0.0–1.0
+- **δ** — Knowledge age: average age of active learnings in days. The theoretical decay rate (0.17/week from Darr 1995) motivates the metric, but the CLI implementation (`metrics_health.go`) measures delta as days, not a weekly rate.
+- **Escape velocity:** When `σ × ρ > δ/100`, knowledge compounds faster than it ages out. The `/100` normalizes delta (days) to a ratio comparable with sigma and rho.
 
 ### Golden Signals
 
