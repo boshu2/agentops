@@ -105,6 +105,57 @@ ao goals init --non-interactive
 
 Creates a new GOALS.md with mission, north/anti stars, first directive, and auto-detected gates. Error if file already exists.
 
+### Post-Init Enrichment
+
+After `ao goals init` creates the scaffold, enrich it with product-aware content that the CLI cannot auto-detect:
+
+#### Enrich North Stars with Outcomes
+
+Review the generated north stars. If they are all feature-focused (e.g., "skills work across 4 runtimes"), nudge toward outcome-focused stars:
+
+- **Feature-focused (weaker):** "Skills work across 4 runtimes"
+- **Outcome-focused (stronger):** "A new user goes from install to first validated workflow in under 5 minutes"
+
+Ask the user: "Your north stars describe features. What user outcome would tell you the product is actually working?" Add at least one outcome-focused star.
+
+#### Enrich Anti-Stars from Failure Modes
+
+Scan for proven failure patterns:
+1. Check `.agents/retros/` — extract failure themes from retrospectives
+2. Check `.agents/council/` or council index — look for FAIL verdicts and their root causes
+3. Check `.agents/learnings/` — look for learnings tagged as anti-patterns
+
+Convert the top 3 most common failure modes into anti-stars. Examples from real data:
+- "Product promises with no automated verification" (from council FAILs where claims had no gates)
+- "Goals that measure code metrics instead of user outcomes" (from retros where passing gates didn't improve product)
+- "Capture without compounding" (from flywheel analysis where knowledge was stored but never retrieved)
+
+If no `.agents/` data exists, use the defaults from `ao goals init`.
+
+#### Add Product Directives
+
+The CLI generates engineering-flavored directives (test coverage, complexity, lint). After init, also suggest product/growth directives by asking:
+
+1. "What's your biggest product gap right now?" → directive with `steer: decrease`
+2. "What user behavior do you want to increase?" → directive with `steer: increase`
+3. "What metric would tell you the product is working?" → directive with measurable target
+
+Product directives sit alongside engineering ones in the same `## Directives` section. See `references/generation-heuristics.md` for product directive patterns.
+
+#### Add Product Gates
+
+Check what product infrastructure exists and suggest appropriate gates:
+
+| Infrastructure | Suggested Gate |
+|---------------|----------------|
+| `.agents/learnings/` exists | `flywheel-compounding` — knowledge above escape velocity |
+| `skills/quickstart/` exists | `quickstart-under-5min` — onboarding time gate |
+| `docs/comparisons/` exists | `competitive-freshness` — comparison docs updated within 45 days |
+| `PRODUCT.md` exists | `product-gaps-tracked` — Known Gaps section has entries |
+| `ao flywheel status` works | `flywheel-promotion-rate` — learnings promoted above threshold |
+
+Only suggest gates for infrastructure that actually exists. Don't create gates for aspirational features.
+
 ## Steer Mode — Orient/Decide
 
 ### Step 1: Show Current State
@@ -117,6 +168,12 @@ Based on measurement:
 - If a directive is fully addressed → suggest removing or replacing
 - If fitness is declining → suggest new gates
 - If idle rate is high → suggest new directives
+
+**Product-aware steering:** Also check for product dimension gaps:
+- If all directives are engineering-flavored (test, lint, build, refactor) → suggest at least one product/growth directive
+- If no directive cites a specific metric → flag: "Vague directives are a smell. Can any of these reference a specific number?"
+- If `.agents/retros/` has new failure patterns not represented in anti-stars → suggest adding them
+- If PRODUCT.md has Known Gaps not covered by any directive → suggest a directive to close the gap
 
 ### Step 3: Execute Changes
 

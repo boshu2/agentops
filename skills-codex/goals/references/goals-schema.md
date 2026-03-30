@@ -100,30 +100,34 @@ GOALS.md extends the YAML format with strategic intent sections:
 ```markdown
 # Goals
 
-<Mission statement — one sentence>
+<Mission statement — one sentence. Describes outcomes, not features.>
 
 ## North Stars
 
-- <Aspiration 1>
-- <Aspiration 2>
+- <Outcome-focused aspiration — what improves for users if this is achieved>
+- <At least one star should describe a measurable user outcome>
 
 ## Anti Stars
 
-- <What we explicitly avoid>
+- <What we explicitly avoid — best when derived from proven failure modes>
+- <Each anti-star should reference a real failure pattern if .agents/ data exists>
 
 ## Directives
 
-### 1. <Title>
+### 1. <Title — evidence-grounded>
 
-<Description of the strategic intent>
+<Description citing specific metrics or findings that motivated this directive.
+ Good: "Close the multi-runtime promise gap — runtime-specific tests are quarantined (8 dirs in `tests/_quarantine/`)"
+ Bad: "Improve test coverage">
 
 **Steer:** increase | decrease | hold | explore
+<Steer target should name the specific metric being steered, e.g., "increase (install scripts with smoke tests)">
 
 ### 2. <Title>
 
-<Description>
+<Description — mix of engineering AND product/growth directives>
 
-**Steer:** <direction>
+**Steer:** <direction> (<metric being steered>)
 
 ## Gates
 
@@ -132,6 +136,29 @@ GOALS.md extends the YAML format with strategic intent sections:
 | build-passing | `cd cli && make build` | 8 | CLI builds without errors |
 | test-passing | `cd cli && make test` | 7 | All unit tests pass |
 ```
+
+### Directive Dimensions
+
+A healthy GOALS.md includes directives across multiple dimensions:
+
+| Dimension | Focus | Example |
+|-----------|-------|---------|
+| Engineering | Code quality, test coverage, complexity | "Keep complexity regressions at zero" |
+| Product | User experience, onboarding, gaps | "Gate the install path" |
+| Growth | Adoption, retention, community | "Restructure quickstart for under 5 min" |
+| Knowledge | Flywheel health, learning compounding | "Verify knowledge lifecycle end-to-end" |
+
+If all directives fall in one dimension, the goals file is incomplete.
+
+### Gate Dimensions
+
+Similarly, gates should cover both code health and product health:
+
+| Type | Examples |
+|------|----------|
+| Code health | `go-cli-builds`, `go-cli-tests`, `go-vet-clean`, `security-gate` |
+| Product health | `flywheel-compounding`, `quickstart-under-5min`, `competitive-freshness` |
+| Knowledge health | `athena-freshness`, `athena-no-oscillation`, `flywheel-proof` |
 
 ### Key Differences from YAML
 
