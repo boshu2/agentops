@@ -143,6 +143,7 @@ REQUIRED_REFS=(
   "skills/post-mortem/references/checkpoint-policy.md"
   "skills/post-mortem/references/metadata-verification.md"
   "skills/post-mortem/references/closure-integrity-audit.md"
+  "skills/post-mortem/references/four-surface-closure.md"
 )
 ```
 
@@ -281,6 +282,8 @@ Run `/council` with the **retrospective** preset and always 3 judges:
 - `learnings`: What patterns emerged? What should be extracted as reusable knowledge?
 
 Post-mortem always uses 3 judges (`--deep`) because completed work deserves thorough review.
+
+**Four-Surface Closure:** Validate all four surfaces -- Code, Documentation, Examples, and Proof. A PASS verdict requires all four surfaces addressed, not just code correctness. Read `skills/post-mortem/references/four-surface-closure.md` for the closure checklist and common gaps.
 
 **Timeout:** Post-mortem inherits council timeout settings. If judges time out,
 the council report will note partial results. Post-mortem treats a partial council
@@ -619,3 +622,4 @@ Ship it
 - [references/retro-history.md](references/retro-history.md)
 - [references/streak-tracking.md](references/streak-tracking.md)
 - [references/maintenance-phases.md](references/maintenance-phases.md)
+- [references/four-surface-closure.md](references/four-surface-closure.md)

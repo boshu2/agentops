@@ -1,9 +1,27 @@
 ---
 name: validation
 description: 'Full validation phase orchestrator. Vibe + post-mortem + retro + forge. Reviews implementation quality, extracts learnings, feeds the knowledge flywheel. Triggers: "validation", "validate", "validate work", "review and learn", "validation phase", "post-implementation review".'
+skill_api_version: 1
+user-invocable: true
+context:
+  window: fork
+  intent:
+    mode: task
+  sections:
+    exclude: [HISTORY]
+  intel_scope: full
+metadata:
+  tier: meta
+  dependencies:
+    - vibe        # required - code quality review
+    - post-mortem # required - retrospective analysis
+    - retro       # optional - quick learning capture
+    - forge       # optional - transcript mining
+    - shared      # optional - CLI fallback table
+output_contract: skills/council/schemas/verdict.json
 ---
 
-# $validation — Full Validation Phase Orchestrator
+# /validation — Full Validation Phase Orchestrator
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -18,31 +36,60 @@ detect ao CLI availability
 **Run every step in order. Do not stop between steps.**
 
 ```
-STEP 1  ──  $vibe recent [--quick]
+STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
               Use --quick for fast/standard. Full council for full.
               PASS/WARN? → continue
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
                            (validation cannot fix code — caller decides retry)
 
-STEP 1.5 ── Test pyramid coverage audit (advisory, append to summary)
+STEP 1.5 ── Four-Surface Closure (mandatory, WARN-only unless Code fails)
+              Read `skills/validation/references/four-surface-closure.md` for the mandatory four-surface closure check.
+              Check all four surfaces: Code, Documentation, Examples, Proof.
+              All 4 pass? → continue
+              Code passes, others fail? → WARN, continue
+              Code fails? → BLOCK, write summary, output <promise>FAIL</promise>, stop
+
+STEP 1.6 ── Test pyramid coverage audit (advisory, append to summary)
               Check L0-L3 + BF1/BF4 per modified file. WARN only, not FAIL.
 
+STEP 1.7 ── Lifecycle Checks (advisory, WARN-only, never FAIL)
+              Skip entire step if: --no-lifecycle flag.
+              Each sub-step uses --quick mode to limit context consumption.
+              On budget expiry: skip remaining sub-steps, write [TIME-BOXED].
+
+              a) if lifecycle tier >= minimal AND test_framework_detected:
+                   Skill(skill="test", args="coverage --quick")
+                   Append coverage delta to phase summary.
+
+              b) if lifecycle tier >= standard AND dependency_manifest_exists:
+                   Skill(skill="deps", args="vuln --quick")
+                   CRITICAL vulns (CVSS >= 9.0): **FAIL** (block shipping). Opt-out: `--allow-critical-deps` for acknowledged risk acceptance.
+                   Non-critical: advisory note only.
+
+              c) if lifecycle tier >= standard:
+                   Skill(skill="review", args="--diff --quick")
+                   Append review findings to summary as advisory.
+
+              d) if lifecycle tier == full AND modified_files_touch_hot_path:
+                   Skill(skill="perf", args="profile --quick")
+                   Append perf findings to summary as advisory.
+                   Hot path detection: modified files match benchmark files
+                   or patterns (handler, middleware, router, parser, engine,
+                   worker, pool, codec).
+
 STEP 2  ──  if epic_id:
-              $post-mortem <epic-id> [--quick]
+              Skill(skill="post-mortem", args="<epic-id> [--quick]")
               Use --quick for fast/standard. Full council for full.
 
 STEP 3  ──  if not --no-retro:
-              $retro
+              Skill(skill="retro")
 
 STEP 4  ──  if not --no-forge AND ao available:
-              if Codex hookless mode:
-                if epic_id:
-                  $post-mortem owns Codex closeout for this run; skip duplicate ao codex ensure-stop here
-                else:
-                  ao codex ensure-stop --auto-extract 2>/dev/null || true
-                  # ao codex ensure-stop is thread-idempotent; duplicate standalone validation calls are safe
-              else:
+              if [ -n "${CODEX_THREAD_ID:-}" ] || [ "${CODEX_INTERNAL_ORIGINATOR_OVERRIDE:-}" = "Codex Desktop" ]; then
+                ao codex stop --auto-extract 2>/dev/null || true
+              else
                 ao forge transcript --last-session --queue --quiet 2>/dev/null || true
+              fi
 
 STEP 5  ──  write phase summary to .agents/rpi/phase-3-summary-YYYY-MM-DD-<slug>.md
               ao ratchet record vibe 2>/dev/null || true
@@ -75,6 +122,8 @@ validation_state = {
 
 - **PASS/WARN:** Log verdict, continue to STEP 2.
 - **FAIL:** Extract findings from `ls -t .agents/council/*vibe*.md | head -1`, write phase summary with FAIL status, output `<promise>FAIL</promise>` with findings attached. Suggest: `"Vibe FAIL. Fix findings, then re-run $validation [epic-id]"`.
+
+**Why no internal retry:** Retries require re-implementation (`$crank`). The caller (`$rpi` or human) decides whether to loop back.
 
 ## Phase Summary Format
 
@@ -109,9 +158,12 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--complexity=<level>` | auto | Force complexity level (fast/standard/full) |
+| `--no-lifecycle` | off | Skip ALL lifecycle checks in STEP 1.6 (test, deps, review, perf) |
+| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps, +review), `full` (+perf) |
 | `--no-retro` | off | Skip retro + forge steps |
 | `--no-forge` | off | Skip forge step only |
 | `--no-budget` | off | Disable phase time budgets |
+| `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
 ## Quick Start
 
@@ -136,30 +188,26 @@ $validation --no-forge ag-5k2             # skip forge only
 |---------|-------|----------|
 | Vibe FAIL on first run | Implementation has quality issues | Fix findings via `$crank`, then re-run `$validation` |
 | Post-mortem skipped unexpectedly | No epic-id provided | Pass epic-id: `$validation ag-5k2` |
-| Codex closeout missing | Codex has no session-end hook surface | Standalone `$validation` ensures `ao codex ensure-stop` once per thread; epic validation defers Codex closeout to `$post-mortem`. Use `ao codex status` to confirm lifecycle state manually |
+| Codex closeout missing | Codex has no session-end hook surface | Let `$validation` run `ao codex stop`, or run `ao codex stop` manually before leaving the session |
 | Forge produces no output | No ao CLI or no transcript content | Install ao CLI or run `$retro` manually |
 | Stale execution-packet | Packet from a previous RPI cycle | Delete `.agents/rpi/execution-packet.json` and pass `--complexity` explicitly |
 
 ## Reference Documents
 
+- [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
 - [references/forge-scope.md](references/forge-scope.md) — forge session scoping and deduplication
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run behavior and standalone mode
 
 ## See Also
 
-- [../vibe/SKILL.md](../vibe/SKILL.md) — code quality review
-- [../post-mortem/SKILL.md](../post-mortem/SKILL.md) — retrospective analysis
-- [../retro/SKILL.md](../retro/SKILL.md) — quick learning capture
-- [../forge/SKILL.md](../forge/SKILL.md) — transcript mining
-- [../crank/SKILL.md](../crank/SKILL.md) — previous phase (implementation)
-- [../discovery/SKILL.md](../discovery/SKILL.md) — first phase (discovery)
-- [../rpi/SKILL.md](../rpi/SKILL.md) — full lifecycle orchestrator
-
-## Local Resources
-
-### references/
-
-- [references/forge-scope.md](references/forge-scope.md)
-- [references/idempotency-and-resume.md](references/idempotency-and-resume.md)
-
-<!-- Lifecycle integration wired: 2026-03-28. See skills/validation/SKILL.md for canonical -->
+- [skills/vibe/SKILL.md](../vibe/SKILL.md) — code quality review
+- [skills/post-mortem/SKILL.md](../post-mortem/SKILL.md) — retrospective analysis
+- [skills/retro/SKILL.md](../retro/SKILL.md) — quick learning capture
+- [skills/forge/SKILL.md](../forge/SKILL.md) — transcript mining
+- [skills/crank/SKILL.md](../crank/SKILL.md) — previous phase (implementation)
+- [skills/discovery/SKILL.md](../discovery/SKILL.md) — first phase (discovery)
+- [skills/rpi/SKILL.md](../rpi/SKILL.md) — full lifecycle orchestrator
+- [skills/test/SKILL.md](../test/SKILL.md) — test coverage (lifecycle STEP 1.6a)
+- [skills/deps/SKILL.md](../deps/SKILL.md) — dependency vuln scan (lifecycle STEP 1.6b)
+- [skills/review/SKILL.md](../review/SKILL.md) — structured review (lifecycle STEP 1.6c)
+- [skills/perf/SKILL.md](../perf/SKILL.md) — performance profiling (lifecycle STEP 1.6d)

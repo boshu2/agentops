@@ -324,6 +324,8 @@ If a worker stalls or is no longer needed, use `close_agent(id=...)`.
 
 ### Step 5: Verify and Sync
 
+**External Gate Enforcement:** After each worker completes, the orchestrator (not the worker) runs the gate command. Workers must not declare their own completion. See `references/external-gate-protocol.md`.
+
 For each completed worker:
 
 1. PASS -> close the issue.
@@ -502,6 +504,7 @@ fi
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md) - Ralph Wiggum loop contract
 - [references/taskcreate-examples.md](references/taskcreate-examples.md) - task creation examples
 - [references/team-coordination.md](references/team-coordination.md) - worker coordination details
+- [references/external-gate-protocol.md](references/external-gate-protocol.md) - external gate protocol for wave validation
 - [references/test-first-mode.md](references/test-first-mode.md) - test-first wave sequence
 - [references/troubleshooting.md](references/troubleshooting.md) - common issues and fixes
 - [references/uat-integration-wave.md](references/uat-integration-wave.md) - UAT integration wave patterns

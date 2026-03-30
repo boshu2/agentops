@@ -1,8 +1,20 @@
 ---
 name: forge
 description: 'Mine transcripts for knowledge - decisions, learnings, failures, patterns. Triggers: "forge insights", "mine transcripts", "extract knowledge".'
+skill_api_version: 1
+user-invocable: false
+context:
+  window: fork
+  intent:
+    mode: task
+  sections:
+    exclude: [TASK]
+  intel_scope: full
+metadata:
+  tier: background
+  dependencies: []
+  internal: true
 ---
-
 
 # Forge Skill
 
@@ -88,6 +100,8 @@ Look at recent conversation history and extract learnings manually.
 
 ### Step 2: Extract Knowledge Types
 
+Read `skills$forge/references/uncaptured-lesson-patterns.md` for signal patterns and the 26 known uncaptured lesson categories.
+
 Look for these patterns in the transcript:
 
 | Type | Signals | Weight |
@@ -97,9 +111,11 @@ Look for these patterns in the transcript:
 | **Failure** | "failed because", "broke when", "didn't work" | 1.0 |
 | **Pattern** | "always do X", "the trick is", "pattern:" | 0.7 |
 
+**Uncaptured Lesson Matching:** During transcript scanning, match events against the 26 known uncaptured lesson patterns (see `references/uncaptured-lesson-patterns.md`). Pre-fill learning templates with matched pattern metadata (category, base confidence, pattern number tag).
+
 ### Step 3: Write Candidates
 
-**Write to:** `.agents/forge/YYYY-MM-DD-forge.md`
+**Write to:** `.agents$forge/YYYY-MM-DD-forge.md`
 
 ```markdown
 # Forged: YYYY-MM-DD
@@ -129,11 +145,11 @@ Look for these patterns in the transcript:
 
 ```bash
 if command -v ao &>/dev/null; then
-  ao forge markdown .agents/forge/YYYY-MM-DD-forge.md 2>/dev/null
+  ao forge markdown .agents$forge/YYYY-MM-DD-forge.md 2>/dev/null
 else
   # Without ao CLI: auto-promote high-confidence candidates to learnings
   mkdir -p .agents/learnings .agents/ao
-  for f in .agents/forge/YYYY-MM-DD-*.md; do
+  for f in .agents$forge/YYYY-MM-DD-*.md; do
     [ -f "$f" ] || continue
     # Extract confidence (numeric or categorical)
     CONF=$(grep -i "confidence:" "$f" | head -1 | awk '{print $NF}')
@@ -164,7 +180,7 @@ Tell the user:
 
 Forged candidates enter at Tier 0:
 ```
-Transcript → $forge → .agents/forge/ (Tier 0)
+Transcript → $forge → .agents$forge/ (Tier 0)
                            ↓
                    Human review or 2+ citations
                    OR auto-promote (confidence >= 0.7, ao-free fallback)
@@ -201,7 +217,7 @@ Transcript → $forge → .agents/forge/ (Tier 0)
 1. Agent identifies transcript path or uses `ao forge transcript --last-session`
 2. Agent scans transcript for knowledge patterns (decisions, learnings, failures, patterns)
 3. Agent scores each extraction by confidence (0.0-1.0)
-4. Agent writes candidates to `.agents/forge/YYYY-MM-DD-forge.md`
+4. Agent writes candidates to `.agents$forge/YYYY-MM-DD-forge.md`
 5. Agent indexes forge output with `ao forge markdown`
 6. Agent reports extraction counts and candidate locations
 
@@ -216,10 +232,6 @@ Transcript → $forge → .agents/forge/ (Tier 0)
 | forge --queue fails | CLI not available or permission error | Manually append to `.agents/ao/pending.jsonl` with session metadata |
 | Duplicate forge outputs | Same session forged multiple times | Check forge filenames before writing; ao CLI handles dedup automatically |
 
-## Local Resources
+## Reference Documents
 
-### scripts/
-
-- `scripts/validate.sh`
-
-
+- [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for transcript mining

@@ -520,7 +520,7 @@ fi
 
 ### Step 5: Verify and Sync to Beads (MANDATORY)
 
-> Swarm executes per-task validation (see `skills/shared/validation-contract.md`). Crank trusts swarm validation and focuses on beads sync.
+**External Gate Enforcement:** After each worker completes, the orchestrator (not the worker) runs the gate command. Workers must not declare their own completion. See `references/external-gate-protocol.md`. Swarm executes per-task validation (see `skills/shared/validation-contract.md`); crank trusts swarm validation and focuses on beads sync.
 
 **For verification details, retry logic, and failure escalation, read `skills/crank/references/team-coordination.md` and `skills/crank/references/failure-recovery.md`.**
 
@@ -797,3 +797,4 @@ See `skills/crank/references/troubleshooting.md` for extended troubleshooting.
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
 - [references/wave-patterns.md](references/wave-patterns.md)
 - [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)
+- [references/external-gate-protocol.md](references/external-gate-protocol.md)

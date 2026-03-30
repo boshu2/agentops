@@ -216,6 +216,10 @@ Skip silently if no patterns match. This step runs in both `--quick` and full mo
 
 Assess test coverage against the test pyramid standard (the test pyramid standard (loaded via `/standards`)).
 
+Read `skills/vibe/references/test-pyramid-weighting.md` for test pyramid weighting — L3+ tests found all production bugs, weight them 5x.
+
+**Test Pyramid Weighting:** Weight test coverage by level: L0–L1 at 1x, L2 at 3x, L3+ at 5x. Unit-only coverage is a WARN signal, not a PASS. See `references/test-pyramid-weighting.md`.
+
 **Run even in `--quick` mode** — this is cheap (file existence checks) and high-signal.
 
 1. **Identify changed modules** from git diff or target scope
@@ -481,4 +485,5 @@ The hook is non-blocking (always exits 0) and outputs warnings via JSON. See [re
 - [references/typescript-standards.md](references/typescript-standards.md)
 - [references/vibe-coding.md](references/vibe-coding.md)
 - [references/vibe-suppressions.md](references/vibe-suppressions.md)
+- [references/test-pyramid-weighting.md](references/test-pyramid-weighting.md)
 - [references/yaml-standards.md](references/yaml-standards.md)

@@ -147,6 +147,12 @@ When `PRODUCT.md` does not exist: proceed to Step 2 unchanged.
 
 > **Tip:** Create `PRODUCT.md` from `docs/PRODUCT-TEMPLATE.md` to enable product-aware plan validation.
 
+### Step 1.7: Load Council FAIL Patterns (Mandatory)
+
+Read `skills/pre-mortem/references/council-fail-patterns.md` for the top 8 council FAIL patterns to check against.
+
+These patterns are derived from 124 analyzed FAIL verdicts across 946 council sessions. They apply to both `--quick` and `--deep` modes.
+
 ### Step 2: Run Council Validation
 
 **Default (inline, no spawning):**
@@ -242,7 +248,28 @@ Include in the council packet as `context.error_map`:
 
 See `references/error-rescue-map-template.md` for the full template with worked examples.
 
-### Step 2.6: Test Pyramid Coverage Check (Mandatory)
+### Step 2.6: Council FAIL Pattern Check (Mandatory)
+
+**Council FAIL Pattern Check:** Evaluate the plan against the top 8 council FAIL patterns (see [references/council-fail-patterns.md](references/council-fail-patterns.md)): missing mechanical verification, self-assessment, context rot, propagation blindness, plan oscillation, dead infrastructure activation, missing rollback map, and four-surface closure gap. Each pattern violation is a finding with severity based on the calibration table in the reference.
+
+Add to each judge's prompt:
+
+```
+COUNCIL FAIL PATTERN CHECK: Review this plan for the top 8 council FAIL patterns:
+1. Missing mechanical verification — are all gates automated?
+2. Self-assessment — is validation external to the implementer?
+3. Context rot — are phase boundaries enforced with fresh sessions?
+4. Propagation blindness — is the full change surface enumerated?
+5. Plan oscillation — is direction validated before propagation?
+6. Dead infrastructure activation — does the plan provision anything without activation tests?
+7. Missing rollback map — does any production-state change lack a rollback procedure?
+8. Four-surface closure — does the plan address Code + Docs + Examples + Proof for every feature?
+Report FAIL pattern findings in a "FAIL Pattern Risks" section.
+```
+
+**Auto-triggered** for all plans (both `--quick` and `--deep` modes).
+
+### Step 2.7: Test Pyramid Coverage Check (Mandatory)
 
 Validate that the plan includes appropriate test levels per the test pyramid standard (`test-pyramid.md` in the standards skill).
 
@@ -268,7 +295,7 @@ Report test pyramid findings in a "Test Coverage Gaps" section.
 
 **Auto-triggered** when any issue in the plan modifies source code files (`.go`, `.py`, `.ts`, `.rs`, `.js`).
 
-### Step 2.7: Input Validation Check (Mandatory for enum-like fields)
+### Step 2.8: Input Validation Check (Mandatory for enum-like fields)
 
 When the plan introduces or modifies fields with a bounded set of valid values (enums, tier names, mode strings, status codes), verify the plan includes validation logic.
 
@@ -488,6 +515,7 @@ Tell the user:
 
 ## Reference Documents
 
+- [references/council-fail-patterns.md](references/council-fail-patterns.md)
 - [references/enhancement-patterns.md](references/enhancement-patterns.md)
 - [references/error-rescue-map-template.md](references/error-rescue-map-template.md)
 - [references/failure-taxonomy.md](references/failure-taxonomy.md)

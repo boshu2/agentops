@@ -100,6 +100,8 @@ Look at recent conversation history and extract learnings manually.
 
 ### Step 2: Extract Knowledge Types
 
+Read `skills/forge/references/uncaptured-lesson-patterns.md` for signal patterns and the 26 known uncaptured lesson categories.
+
 Look for these patterns in the transcript:
 
 | Type | Signals | Weight |
@@ -108,6 +110,8 @@ Look for these patterns in the transcript:
 | **Learning** | "learned that", "discovered", "realized" | 0.9 |
 | **Failure** | "failed because", "broke when", "didn't work" | 1.0 |
 | **Pattern** | "always do X", "the trick is", "pattern:" | 0.7 |
+
+**Uncaptured Lesson Matching:** During transcript scanning, match events against the 26 known uncaptured lesson patterns (see `references/uncaptured-lesson-patterns.md`). Pre-fill learning templates with matched pattern metadata (category, base confidence, pattern number tag).
 
 ### Step 3: Write Candidates
 
@@ -227,3 +231,7 @@ Transcript → /forge → .agents/forge/ (Tier 0)
 | Low confidence scores | Weak signals or vague conversation | Focus sessions on concrete decisions and explicit learnings |
 | forge --queue fails | CLI not available or permission error | Manually append to `.agents/ao/pending.jsonl` with session metadata |
 | Duplicate forge outputs | Same session forged multiple times | Check forge filenames before writing; ao CLI handles dedup automatically |
+
+## Reference Documents
+
+- [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for transcript mining

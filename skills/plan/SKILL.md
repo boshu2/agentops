@@ -302,6 +302,18 @@ grep -rn "class <symbolName>" --include="*.py" . 2>/dev/null
 
 **Opt-out:** `--skip-symbol-check` flag (for greenfield plans where symbols don't yet exist).
 
+### Anti-Pattern Pre-Flight
+
+Before finalizing issue decomposition, verify the plan avoids these confirmed failure modes:
+
+| Anti-Pattern | Detection Question | Gate |
+|---|---|---|
+| **Brainstorm masquerading as plan** | Does every issue have mechanically verifiable acceptance criteria? | FAIL if any issue lacks `files_exist`, `content_check`, `tests`, or `command` conformance checks |
+| **Dead infrastructure** | Does the plan provision anything without an activation test? | WARN if infrastructure is created without a corresponding smoke test issue |
+| **Propagation surface blindness** | Has the full propagation surface been enumerated for renames/refactors? | FAIL if structural changes lack a propagation surface table |
+| **40% context budget violation** | Will implementation sessions need to load >40% context window for knowledge? | WARN if injected knowledge exceeds estimated budget |
+| **Commit-per-session anti-pattern** | Does the wave structure enforce commit-per-wave? | WARN if no explicit commit cadence in execution order |
+
 ### Step 4: Decompose into Issues
 
 Analyze the goal and break it into discrete, implementable issues. For each issue define:
@@ -380,6 +392,8 @@ Group issues by dependencies for parallel execution:
 - **Wave 2**: Issues depending only on Wave 1
 - **Wave 3**: Issues depending on Wave 2
 - Continue until all issues assigned
+
+**Planning Rules Gate:** Evaluate each wave against the 7 compiled planning rules (see `references/planning-rules.md`). For each rule's Detection Question, if the answer is "no" or "unclear," add a mitigation before proceeding. Read [references/planning-rules.md](references/planning-rules.md) for the full checklist.
 
 #### File-Level Dependency Matrix (Mandatory)
 
@@ -765,6 +779,7 @@ Tell the user:
 
 ## Reference Documents
 
+- [references/planning-rules.md](references/planning-rules.md) — seven compiled planning rules (mechanical enforcement, external validation, feedback loops, separation, process gates, cross-layer consistency, phased rollout).
 - [references/plan-mutations.md](references/plan-mutations.md)
 - [references/complexity-estimation.md](references/complexity-estimation.md)
 - [references/detail-templates.md](references/detail-templates.md)

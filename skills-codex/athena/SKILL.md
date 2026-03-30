@@ -71,6 +71,8 @@ observed_in:
 
 This is the reasoning phase. Perform each sub-step using tool calls.
 
+**Flywheel Health Diagnostic:** Compute σ (consistency), ρ (velocity), δ (decay) and report escape velocity status. See `references/flywheel-diagnostics.md` for measurement commands and remediation actions.
+
 **2a. Validate Top Learnings and Adjust Confidence**
 
 Select the 5 most recent files from `.agents/learnings/`. For each:
@@ -193,6 +195,7 @@ For a full Mine → Grow → Defrag cycle, invoke `$athena` manually.
 ## Reference Documents
 
 - [references/confidence-scoring.md](references/confidence-scoring.md)
+- [references/flywheel-diagnostics.md](references/flywheel-diagnostics.md)
 
 ## Local Resources
 

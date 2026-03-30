@@ -82,6 +82,8 @@ Inject the discovered file list back into the task manifest before spawning work
 
 ### Step 2: Pre-Spawn Conflict Check
 
+**Pre-Spawn Friction Gates:** Before spawning workers, execute all 5 friction gates (base sync, file manifest, dependency graph, misalignment breaker, wave cap). See `references/pre-spawn-friction-gates.md`.
+
 ```text
 wave_tasks = [tasks with status=pending and no blockers]
 all_files = {}
@@ -212,3 +214,4 @@ This is slower but functionally identical.
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
 - [references/validation-contract.md](references/validation-contract.md)
 - [references/worker-pitfalls.md](references/worker-pitfalls.md)
+- [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)

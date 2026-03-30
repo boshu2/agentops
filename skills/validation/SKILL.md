@@ -42,10 +42,17 @@ STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
                            (validation cannot fix code — caller decides retry)
 
-STEP 1.5 ── Test pyramid coverage audit (advisory, append to summary)
+STEP 1.5 ── Four-Surface Closure (mandatory, WARN-only unless Code fails)
+              Read `skills/validation/references/four-surface-closure.md` for the mandatory four-surface closure check.
+              Check all four surfaces: Code, Documentation, Examples, Proof.
+              All 4 pass? → continue
+              Code passes, others fail? → WARN, continue
+              Code fails? → BLOCK, write summary, output <promise>FAIL</promise>, stop
+
+STEP 1.6 ── Test pyramid coverage audit (advisory, append to summary)
               Check L0-L3 + BF1/BF4 per modified file. WARN only, not FAIL.
 
-STEP 1.6 ── Lifecycle Checks (advisory, WARN-only, never FAIL)
+STEP 1.7 ── Lifecycle Checks (advisory, WARN-only, never FAIL)
               Skip entire step if: --no-lifecycle flag.
               Each sub-step uses --quick mode to limit context consumption.
               On budget expiry: skip remaining sub-steps, write [TIME-BOXED].
@@ -187,6 +194,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 
 ## Reference Documents
 
+- [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
 - [references/forge-scope.md](references/forge-scope.md) — forge session scoping and deduplication
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run behavior and standalone mode
 

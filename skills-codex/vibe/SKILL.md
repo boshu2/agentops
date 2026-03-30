@@ -356,6 +356,10 @@ If bug-hunt produces findings, include them in the council packet as `context.bu
 
 Assess test coverage against the test pyramid standard (see the standards skill).
 
+Read `skills/vibe/references/test-pyramid-weighting.md` for test pyramid weighting — L3+ tests found all production bugs, weight them 5x.
+
+**Test Pyramid Weighting:** Weight test coverage by level: L0–L1 at 1x, L2 at 3x, L3+ at 5x. Unit-only coverage is a WARN signal, not a PASS. See `references/test-pyramid-weighting.md`.
+
 1. Identify changed modules from git diff
 2. Check L0-L3 coverage for each changed module
 3. Check BF4 (chaos) for boundary-touching code
@@ -712,6 +716,7 @@ See `references/examples.md` for additional examples: security audit with spec c
 - [references/shell-standards.md](references/shell-standards.md)
 - [references/typescript-standards.md](references/typescript-standards.md)
 - [references/vibe-coding.md](references/vibe-coding.md)
+- [references/test-pyramid-weighting.md](references/test-pyramid-weighting.md)
 - [references/vibe-suppressions.md](references/vibe-suppressions.md)
 - [references/yaml-standards.md](references/yaml-standards.md)
 
@@ -732,6 +737,7 @@ See `references/examples.md` for additional examples: security audit with spec c
 - [references/shell-standards.md](references/shell-standards.md)
 - [references/typescript-standards.md](references/typescript-standards.md)
 - [references/vibe-coding.md](references/vibe-coding.md)
+- [references/test-pyramid-weighting.md](references/test-pyramid-weighting.md)
 - [references/vibe-suppressions.md](references/vibe-suppressions.md)
 - [references/yaml-standards.md](references/yaml-standards.md)
 

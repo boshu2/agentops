@@ -143,6 +143,8 @@ Once all tasks have manifests, proceed to Step 2 where the Pre-Spawn Conflict Ch
 
 ### Step 2: Identify Wave
 
+**Pre-Spawn Friction Gates:** Before spawning workers, execute all 5 friction gates (base sync, file manifest, dependency graph, misalignment breaker, wave cap). See `references/pre-spawn-friction-gates.md`.
+
 Find tasks that are:
 - Status: `pending`
 - No blockedBy (or all blockers completed)
@@ -726,4 +728,5 @@ Solution: Check which spawn backend was selected (look for "Using: <backend>" me
 - [../shared/references/backend-codex-subagents.md](../shared/references/backend-codex-subagents.md)
 - [../shared/references/backend-inline.md](../shared/references/backend-inline.md)
 - [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
+- [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)

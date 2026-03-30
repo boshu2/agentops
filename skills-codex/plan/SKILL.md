@@ -344,6 +344,8 @@ Group issues by dependencies for parallel execution:
 - **Wave 3**: Issues depending on Wave 2
 - Continue until all issues assigned
 
+**Planning Rules Gate:** Evaluate each wave against the 7 compiled planning rules (see `references/planning-rules.md`). For each rule's Detection Question, if the answer is "no" or "unclear," add a mitigation before proceeding. Read [references/planning-rules.md](references/planning-rules.md) for the full checklist.
+
 #### File-Level Dependency Matrix (Mandatory)
 
 Before assigning issues to waves, build a file-conflict matrix. For EACH issue, list which files it modifies. If any file appears in 2+ same-wave issues, either:
@@ -714,6 +716,7 @@ Tell the user:
 
 ## Reference Documents
 
+- [references/planning-rules.md](references/planning-rules.md) — seven compiled planning rules (mechanical enforcement, external validation, feedback loops, separation, process gates, cross-layer consistency, phased rollout).
 - [references/plan-mutations.md](references/plan-mutations.md)
 - [references/complexity-estimation.md](references/complexity-estimation.md)
 - [references/detail-templates.md](references/detail-templates.md)
@@ -725,6 +728,7 @@ Tell the user:
 
 ### references/
 
+- [references/planning-rules.md](references/planning-rules.md)
 - [references/complexity-estimation.md](references/complexity-estimation.md)
 - [references/detail-templates.md](references/detail-templates.md)
 - [references/examples.md](references/examples.md)
