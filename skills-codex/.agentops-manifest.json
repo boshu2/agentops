@@ -520,7 +520,7 @@
       "name": "athena",
       "source_skill": "skills/athena",
       "source_hash": "16201db71f7c545f6169815d66606938bd8af90cc7b2d880cd53139e85a57fe5",
-      "generated_hash": "e6389fa0e5772a8d8cb944bbcf9b3c87731dbd6c0d97126b970a00166efa926a"
+      "generated_hash": "141eb7abf7963824fb2e79d5fdc2273b39313e4d692832a9c22927c388d964d4"
     },
     {
       "name": "beads",
@@ -604,7 +604,7 @@
       "name": "forge",
       "source_skill": "skills/forge",
       "source_hash": "286b17f44efe413b7b8514cefded51f7085e82bf9698cc41d0136337af66662d",
-      "generated_hash": "df951a3c0cd45690cb526f209aa0f5d5f2162d20053e7c6a520404efdebe1f62"
+      "generated_hash": "51eecb0166e8a52185ba4a1272c1d6d39892167413a0ee32e5767742ffaf420d"
     },
     {
       "name": "goals",
@@ -712,7 +712,7 @@
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
       "source_hash": "9ed2f0290ccc16ce45a79d0a22b2dae54f525875fa2a8375bf470de54c08912d",
-      "generated_hash": "88bd556f8200c2dd3adb63db3abf06a29168ba290dec1f6e02a427677594bf5b"
+      "generated_hash": "b1119d8dce1e33cf7ead78bbad6dc1a189baca2462d498d71b9415111b04d647"
     },
     {
       "name": "product",
@@ -862,7 +862,7 @@
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
       "source_hash": "7f5cc28fcf68821caddf4fbb323e630fc3be0c32ad46121086a7be3e2b5752b3",
-      "generated_hash": "618d1f75ce77c85e70cfd51a618998ac3351e96f98c467f2ab967e407687d9ad"
+      "generated_hash": "76ad1da6d553cb6de54fb555b5ca2d63c364a1149c5da101d7df4e2c2a664c15"
     },
     {
       "name": "validation",

@@ -6,7 +6,7 @@
 
 ## How to Use
 
-During transcript mining, match session content against these 26 patterns. When a match is found, extract it as a learning with the corresponding category and confidence score.
+During transcript mining, match session content against these 30 patterns. When a match is found, extract it as a learning with the corresponding category and confidence score.
 
 ---
 

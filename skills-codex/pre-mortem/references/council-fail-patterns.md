@@ -3,7 +3,7 @@
 > Compiled from 946 council verdicts across 14,753 production sessions. 124 FAIL verdicts analyzed for root causes.
 > The #1 failure mode is missing mechanical verification — plans that rely on human vigilance instead of automated gates.
 
-## Top 5 Failure Patterns (by frequency)
+## Top 8 Failure Patterns (by frequency)
 
 ### 1. Missing Mechanical Verification (38% of FAILs)
 

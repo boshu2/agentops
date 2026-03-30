@@ -74,7 +74,7 @@ During Athena's Grow phase, compute and report:
 |--------|---------|---------|---------|----------|
 | σ (retrieval) | surfaced / total retrievable | > 0.5 | 0.2–0.5 | < 0.2 |
 | ρ (influence) | evidenced / surfaced | > 0.3 | 0.1–0.3 | < 0.1 |
-| δ (age) | avg_age_days / 100 | < 0.3 | 0.3–0.6 | > 0.6 |
+| δ (age) | avg_age_days (raw) | < 30 | 30–60 | > 60 |
 | Escape velocity | σ × ρ > δ/100 | YES | MARGINAL | NO |
 | Production:extraction | learnings / patterns | < 10:1 | 10:1–20:1 | > 20:1 |
 
