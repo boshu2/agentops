@@ -95,7 +95,7 @@ func TestComputeSigmaRho(t *testing.T) {
 			citationCount:  100,
 			days:           7,
 			wantSigma:      0.5,
-			wantRho:        2.0, // 100/50/1week = 2
+			wantRho:        1.0, // 100/50 = 2.0 capped to 1.0
 		},
 		{
 			name:           "no artifacts",

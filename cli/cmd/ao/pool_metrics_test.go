@@ -1251,7 +1251,7 @@ func TestPoolMetrics_computeSigmaRho(t *testing.T) {
 		{
 			name:           "zero artifacts",
 			totalArtifacts: 0, uniqueCited: 5, citationCount: 10, days: 7,
-			wantSigma: 0, wantRho: 2.0,
+			wantSigma: 0, wantRho: 1.0, // 10/5 = 2.0 capped to 1.0
 		},
 		{
 			name:           "zero unique cited",
@@ -1261,7 +1261,7 @@ func TestPoolMetrics_computeSigmaRho(t *testing.T) {
 		{
 			name:           "normal case",
 			totalArtifacts: 100, uniqueCited: 20, citationCount: 40, days: 7,
-			wantSigma: 0.2, wantRho: 2.0,
+			wantSigma: 0.2, wantRho: 1.0, // 40/20 = 2.0 capped to 1.0
 		},
 		{
 			name:           "14 days period",
@@ -1271,7 +1271,7 @@ func TestPoolMetrics_computeSigmaRho(t *testing.T) {
 		{
 			name:           "zero days",
 			totalArtifacts: 10, uniqueCited: 5, citationCount: 10, days: 0,
-			wantSigma: 0.5, wantRho: 0,
+			wantSigma: 0.5, wantRho: 1.0, // 10/5 = 2.0 capped to 1.0; days param ignored
 		},
 	}
 
