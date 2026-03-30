@@ -80,3 +80,5 @@ CI catches codex drift at push time, but 40% of fix commits in the March 2026 in
 | athena-no-oscillation | `bash -c 'test -f .agents/defrag/latest.json && jq -e "(.oscillation.oscillating_goals // []) \| length == 0" .agents/defrag/latest.json'` | 4 | No evolve goals oscillating across consecutive cycles |
 | competitive-freshness | `bash scripts/check-competitive-freshness.sh` | 3 | Competitive analysis docs updated within 45 days |
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |
+| install-smoke | `timeout 30 bash tests/install/test-install-smoke.sh` | 5 | Install scripts pass syntax and structure validation |
+| flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |

@@ -1,7 +1,7 @@
-#!/bin/bash
-# Test: Schema validation for verdict.json
-# Validates verdict.json is well-formed with additionalProperties: false at all levels
-# ag-3b7.1
+#!/usr/bin/env bash
+# Test: Schema validation for verdict.json and MemRL policy schema
+# Validates JSON schemas are well-formed with correct structure and constraints
+# Promoted from _quarantine/codex/ — standalone, no runtime dependency
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
