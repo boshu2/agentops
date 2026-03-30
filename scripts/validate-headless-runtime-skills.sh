@@ -12,9 +12,12 @@ CODEX_PROFILE="${CODEX_VALIDATE_PROFILE:-}"
 SOURCE_CODEX_HOME="${HEADLESS_RUNTIME_SOURCE_CODEX_HOME:-$HOME/.codex}"
 TIMEOUT_SECONDS="${HEADLESS_RUNTIME_SKILL_TIMEOUT_SECONDS:-120}"
 MAX_BUDGET_USD="${HEADLESS_RUNTIME_SKILL_MAX_BUDGET_USD:-2.00}"
+INVENTORY_RETRIES="${HEADLESS_RUNTIME_SKILL_INVENTORY_RETRIES:-2}"
 SKIP_ENV="${AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS:-0}"
 CLAUDE_STRICT="${HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT:-0}"
 CODEX_STRICT="${HEADLESS_RUNTIME_SKILL_CODEX_STRICT:-0}"
+CLAUDE_USED_FALLBACK=0
+CODEX_USED_FALLBACK=0
 
 usage() {
     cat <<'EOF'
@@ -39,6 +42,7 @@ Environment:
   AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS=1  Skip the validation entirely
   HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT=1   Fail when Claude inventory cannot be collected
   HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1    Fail when Codex inventory cannot be collected
+  HEADLESS_RUNTIME_SKILL_INVENTORY_RETRIES Number of inventory compare attempts (default: 2)
   HEADLESS_RUNTIME_SOURCE_CODEX_HOME=/path Reuse auth.json from a real Codex home
 EOF
 }
@@ -378,6 +382,7 @@ claude_inventory_failed() {
             echo "FAIL: HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT=1 requires verified Claude inventory." >&2
             return 1
         fi
+        CLAUDE_USED_FALLBACK=1
         echo "claude: load-check fallback passed"
         return 0
     fi
@@ -407,6 +412,7 @@ codex_inventory_failed() {
             echo "FAIL: HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1 requires verified Codex inventory." >&2
             return 1
         fi
+        CODEX_USED_FALLBACK=1
         echo "codex: load-check fallback passed"
         return 0
     fi
@@ -415,13 +421,10 @@ codex_inventory_failed() {
     return 1
 }
 
-run_claude_validation() {
-    if ! command -v "$CLAUDE_BIN" >/dev/null 2>&1; then
-        echo "SKIP: Claude CLI not found in PATH"
-        return 0
-    fi
-
+collect_claude_inventory_once() {
     local raw_output="$TMP_DIR/claude-stream.jsonl"
+    CLAUDE_USED_FALLBACK=0
+
     if (
         cd "$REPO_ROOT"
         AGENTOPS_HOOKS_DISABLED=1 timeout "$TIMEOUT_SECONDS" \
@@ -479,14 +482,42 @@ PY
         claude_inventory_failed "assistant output was not a JSON array" "$TMP_DIR/claude-output.txt"
         return $?
     fi
-    local compare_output
-    if compare_output="$(compare_inventory "$EXPECTED_CLAUDE_JSON" "$ACTUAL_CLAUDE_JSON" "claude" "names-only-invocable" 2>&1)"; then
-        echo "claude: inventory verified"
-        printf '%s\n' "$compare_output"
+}
+
+run_claude_validation() {
+    if ! command -v "$CLAUDE_BIN" >/dev/null 2>&1; then
+        echo "SKIP: Claude CLI not found in PATH"
         return 0
     fi
-    printf '%s\n' "$compare_output" >&2
-    return 1
+
+    local compare_output
+    local attempt=1
+    while (( attempt <= INVENTORY_RETRIES )); do
+        if collect_claude_inventory_once; then
+            :
+        else
+            local rc=$?
+            return "$rc"
+        fi
+        if [[ "$CLAUDE_USED_FALLBACK" == "1" ]]; then
+            return 0
+        fi
+
+        if compare_output="$(compare_inventory "$EXPECTED_CLAUDE_JSON" "$ACTUAL_CLAUDE_JSON" "claude" "names-only-invocable" 2>&1)"; then
+            echo "claude: inventory verified"
+            printf '%s\n' "$compare_output"
+            return 0
+        fi
+
+        if (( attempt == INVENTORY_RETRIES )); then
+            printf '%s\n' "$compare_output" >&2
+            return 1
+        fi
+
+        echo "WARN: Claude inventory mismatch on attempt $attempt/$INVENTORY_RETRIES; retrying." >&2
+        printf '%s\n' "$compare_output" >&2
+        attempt=$((attempt + 1))
+    done
 }
 
 run_codex_validation() {
@@ -518,30 +549,35 @@ run_codex_validation() {
     fi
     codex_args+=("$CODEX_PROMPT")
 
-    if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
-        timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${codex_args[@]}" >"$CODEX_STREAM_JSON"; then
-        if [[ -n "$CODEX_PROFILE" ]] && grep -q "config profile .* not found" "$CODEX_STREAM_JSON" 2>/dev/null; then
-            echo "WARN: Codex profile '$CODEX_PROFILE' not found in isolated CODEX_HOME; retrying without --profile" >&2
-            local -a fallback_args=(
-                exec
-                --skip-git-repo-check
-                --sandbox read-only
-                --json
-                -C "$WORKDIR"
-                "$CODEX_PROMPT"
-            )
-            if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
-                timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${fallback_args[@]}" >"$CODEX_STREAM_JSON"; then
-                codex_inventory_failed "headless command exit after retry" "$CODEX_STREAM_JSON"
+    local compare_output
+    local attempt=1
+    while (( attempt <= INVENTORY_RETRIES )); do
+        CODEX_USED_FALLBACK=0
+
+        if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
+            timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${codex_args[@]}" >"$CODEX_STREAM_JSON"; then
+            if [[ -n "$CODEX_PROFILE" ]] && grep -q "config profile .* not found" "$CODEX_STREAM_JSON" 2>/dev/null; then
+                echo "WARN: Codex profile '$CODEX_PROFILE' not found in isolated CODEX_HOME; retrying without --profile" >&2
+                local -a fallback_args=(
+                    exec
+                    --skip-git-repo-check
+                    --sandbox read-only
+                    --json
+                    -C "$WORKDIR"
+                    "$CODEX_PROMPT"
+                )
+                if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
+                    timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${fallback_args[@]}" >"$CODEX_STREAM_JSON"; then
+                    codex_inventory_failed "headless command exit after retry" "$CODEX_STREAM_JSON"
+                    return $?
+                fi
+            else
+                codex_inventory_failed "headless command exit" "$CODEX_STREAM_JSON"
                 return $?
             fi
-        else
-            codex_inventory_failed "headless command exit" "$CODEX_STREAM_JSON"
-            return $?
         fi
-    fi
 
-    if ! python3 - "$CODEX_STREAM_JSON" "$TMP_DIR/codex-output.txt" <<'PY'
+        if ! python3 - "$CODEX_STREAM_JSON" "$TMP_DIR/codex-output.txt" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -567,25 +603,35 @@ if not messages:
 
 Path(sys.argv[2]).write_text(messages[-1] + "\n")
 PY
-    then
-        codex_inventory_failed "stream-json parse error" "$CODEX_STREAM_JSON"
-        return $?
-    fi
+        then
+            codex_inventory_failed "stream-json parse error" "$CODEX_STREAM_JSON"
+            return $?
+        fi
 
-    if ! extract_json_array "$TMP_DIR/codex-output.txt" "$ACTUAL_CODEX_JSON"; then
-        codex_inventory_failed "assistant output was not a JSON array" "$TMP_DIR/codex-output.txt"
-        return $?
-    fi
+        if ! extract_json_array "$TMP_DIR/codex-output.txt" "$ACTUAL_CODEX_JSON"; then
+            codex_inventory_failed "assistant output was not a JSON array" "$TMP_DIR/codex-output.txt"
+            return $?
+        fi
 
-    local compare_output
-    if compare_output="$(compare_inventory "$EXPECTED_CODEX_JSON" "$ACTUAL_CODEX_JSON" "codex" "names-only" 2>&1)"; then
-        echo "codex: inventory verified"
-        printf '%s\n' "$compare_output"
-        return 0
-    fi
+        if [[ "$CODEX_USED_FALLBACK" == "1" ]]; then
+            return 0
+        fi
 
-    printf '%s\n' "$compare_output" >&2
-    return 1
+        if compare_output="$(compare_inventory "$EXPECTED_CODEX_JSON" "$ACTUAL_CODEX_JSON" "codex" "names-only" 2>&1)"; then
+            echo "codex: inventory verified"
+            printf '%s\n' "$compare_output"
+            return 0
+        fi
+
+        if (( attempt == INVENTORY_RETRIES )); then
+            printf '%s\n' "$compare_output" >&2
+            return 1
+        fi
+
+        echo "WARN: Codex inventory mismatch on attempt $attempt/$INVENTORY_RETRIES; retrying." >&2
+        printf '%s\n' "$compare_output" >&2
+        attempt=$((attempt + 1))
+    done
 }
 
 case "$RUNTIME" in

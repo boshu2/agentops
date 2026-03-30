@@ -12,10 +12,26 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 AO_BIN="$REPO_ROOT/cli/bin/ao"
+TEMP_AO_BIN=""
+
+# shellcheck disable=SC2329  # Invoked via trap.
+cleanup() {
+    if [[ -n "$TEMP_AO_BIN" && -f "$TEMP_AO_BIN" ]]; then
+        rm -f "$TEMP_AO_BIN"
+    fi
+}
+trap cleanup EXIT
 
 if [[ ! -x "$AO_BIN" ]]; then
-    echo "ao binary not found at $AO_BIN — run 'cd cli && make build' first"
-    exit 1
+    TEMP_AO_BIN="$(mktemp "${TMPDIR:-/tmp}/ao-doctor.XXXXXX")"
+    if ! (
+        cd "$REPO_ROOT/cli"
+        go build -o "$TEMP_AO_BIN" ./cmd/ao
+    ); then
+        echo "ao binary not found at $AO_BIN and temporary build failed" >&2
+        exit 1
+    fi
+    AO_BIN="$TEMP_AO_BIN"
 fi
 
 # Run doctor in JSON mode for machine parsing

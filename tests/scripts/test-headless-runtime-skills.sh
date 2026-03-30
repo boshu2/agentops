@@ -116,6 +116,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 mode="__MODE__"
+state_file="__STATE_FILE__"
 if [[ "$saw_help" == "1" ]]; then
   echo "Claude help"
   exit 0
@@ -137,6 +138,18 @@ PY
 fi
 
 if [[ "$prompt" == *"compact JSON array of skill names"* ]]; then
+  text='["athena","research"]'
+  if [[ "$mode" == "retry-missing" ]]; then
+    count=0
+    if [[ -f "$state_file" ]]; then
+      count="$(cat "$state_file")"
+    fi
+    count=$((count + 1))
+    printf '%s' "$count" > "$state_file"
+    if [[ "$count" -eq 1 ]]; then
+      text='["athena"]'
+    fi
+  fi
   if [[ "$mode" == "malformed" ]]; then
     python3 - <<'PY'
 import json
@@ -149,11 +162,13 @@ for payload in (
 PY
     exit 0
   fi
-  python3 - <<'PY'
+  MOCK_CLAUDE_TEXT="$text" python3 - <<'PY'
 import json
+import os
 
+text = os.environ["MOCK_CLAUDE_TEXT"]
 for payload in (
-    {"type": "assistant", "message": {"content": [{"type": "text", "text": '["athena","research"]'}]}},
+    {"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}},
     {"type": "result"},
 ):
     print(json.dumps(payload))
@@ -164,13 +179,18 @@ fi
 echo "unexpected Claude prompt: $prompt" >&2
 exit 1
 EOF
-    python3 - <<'PY' "$bin_dir/claude" "$mode"
+    python3 - <<'PY' "$bin_dir/claude" "$mode" "$bin_dir/.claude-state"
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
 mode = sys.argv[2]
-path.write_text(path.read_text().replace("__MODE__", mode))
+state_file = sys.argv[3]
+path.write_text(
+    path.read_text()
+    .replace("__MODE__", mode)
+    .replace("__STATE_FILE__", state_file)
+)
 PY
     chmod +x "$bin_dir/claude"
 }
@@ -187,11 +207,22 @@ if [[ "\$1" != "exec" ]]; then
   exit 1
 fi
 
+state_file="$(dirname "$0")/.codex-state"
 python3 - <<'PY'
 import json
+from pathlib import Path
 
 mode = ${mode@Q}
-if mode == "missing":
+state_file = Path(${bin_dir@Q}) / ".codex-state"
+if mode == "retry-missing":
+    count = int(state_file.read_text().strip()) if state_file.exists() else 0
+    count += 1
+    state_file.write_text(str(count))
+    if count == 1:
+        text = '[{"name":"research","description":"Deep codebase exploration."}]'
+    else:
+        text = '[{"name":"athena","description":"Active knowledge intelligence. Runs Mine → Grow → Defrag cycle."},{"name":"research","description":"Deep codebase exploration."}]'
+elif mode == "missing":
     text = '[{"name":"research","description":"Deep codebase exploration."}]'
 else:
     text = '[{"name":"athena","description":"Active knowledge intelligence. Runs Mine → Grow → Defrag cycle."},{"name":"research","description":"Deep codebase exploration."}]'
@@ -242,6 +273,29 @@ test_fails_when_codex_inventory_is_missing_skill() {
     fi
 }
 
+test_retries_when_codex_inventory_omits_skill_once() {
+    local repo="$TMP_DIR/codex-retry-repo"
+    local bin_dir="$TMP_DIR/codex-retry-bin"
+    mkdir -p "$bin_dir"
+    make_fixture "$repo"
+    make_mock_claude "$bin_dir"
+    make_mock_codex "$bin_dir" retry-missing
+
+    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex --workdir "$TMP_DIR/workdir-codex-retry" \
+        >"$TMP_DIR/codex-retry.log" 2>&1; then
+        if rg -q 'Codex inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/codex-retry.log" && \
+            rg -q 'codex: inventory verified' "$TMP_DIR/codex-retry.log"; then
+            pass "retries when Codex inventory omits a skill once"
+        else
+            fail "retries when Codex inventory omits a skill once"
+            sed -n '1,80p' "$TMP_DIR/codex-retry.log" >&2
+        fi
+    else
+        fail "retries when Codex inventory omits a skill once"
+        sed -n '1,80p' "$TMP_DIR/codex-retry.log" >&2
+    fi
+}
+
 test_warns_and_passes_when_claude_inventory_falls_back_to_help() {
     local repo="$TMP_DIR/fallback-repo"
     local bin_dir="$TMP_DIR/fallback-bin"
@@ -283,6 +337,28 @@ test_warns_and_passes_when_claude_output_is_malformed() {
     fi
 }
 
+test_retries_when_claude_inventory_omits_skill_once() {
+    local repo="$TMP_DIR/retry-repo"
+    local bin_dir="$TMP_DIR/retry-bin"
+    mkdir -p "$bin_dir"
+    make_fixture "$repo"
+    make_mock_claude "$bin_dir" retry-missing
+
+    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-retry" \
+        >"$TMP_DIR/retry.log" 2>&1; then
+        if rg -q 'inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/retry.log" && \
+            rg -q 'claude: inventory verified' "$TMP_DIR/retry.log"; then
+            pass "retries when Claude inventory omits a skill once"
+        else
+            fail "retries when Claude inventory omits a skill once"
+            sed -n '1,80p' "$TMP_DIR/retry.log" >&2
+        fi
+    else
+        fail "retries when Claude inventory omits a skill once"
+        sed -n '1,80p' "$TMP_DIR/retry.log" >&2
+    fi
+}
+
 test_fails_in_strict_mode_when_claude_uses_load_check_fallback() {
     local repo="$TMP_DIR/strict-repo"
     local bin_dir="$TMP_DIR/strict-bin"
@@ -305,8 +381,10 @@ test_fails_in_strict_mode_when_claude_uses_load_check_fallback() {
 echo "== test-headless-runtime-skills =="
 test_passes_with_mocked_runtimes
 test_fails_when_codex_inventory_is_missing_skill
+test_retries_when_codex_inventory_omits_skill_once
 test_warns_and_passes_when_claude_inventory_falls_back_to_help
 test_warns_and_passes_when_claude_output_is_malformed
+test_retries_when_claude_inventory_omits_skill_once
 test_fails_in_strict_mode_when_claude_uses_load_check_fallback
 
 echo ""
