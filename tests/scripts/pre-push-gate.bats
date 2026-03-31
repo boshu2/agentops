@@ -50,6 +50,15 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-skill-schema.sh"
     make_stub "$FAKE_REPO/scripts/validate-manifests.sh"
     make_stub "$FAKE_REPO/scripts/generate-cli-reference.sh"
+    # Checks 25-33: shifted from CI-only
+    mkdir -p "$FAKE_REPO/tests/docs" "$FAKE_REPO/tests/hooks" \
+             "$FAKE_REPO/skills" "$FAKE_REPO/lib"
+    make_stub "$FAKE_REPO/tests/docs/validate-doc-release.sh"
+    make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
+    make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
+    make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
+    make_stub "$FAKE_REPO/scripts/validate-ci-policy-parity.sh"
+    make_stub "$FAKE_REPO/tests/hooks/test-orphan-hooks.sh"
 }
 
 teardown() {

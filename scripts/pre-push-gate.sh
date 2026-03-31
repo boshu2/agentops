@@ -732,9 +732,10 @@ if needs_check shell; then
                 done <<< "$changed_sh"
             fi
         else
-            # Full mode: check all scripts
+            # Full mode: check all scripts with shebangs
             while IFS= read -r f; do
                 [[ -f "$f" ]] || continue
+                head -1 "$f" | grep -q '^#!' || continue
                 if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
                     shell_errors=1
                     indent_output "$shellcheck_out"
