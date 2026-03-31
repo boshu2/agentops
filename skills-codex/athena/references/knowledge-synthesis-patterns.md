@@ -54,9 +54,9 @@ Group mine findings into themes using these heuristics:
 **Synthesis trigger**: When 2+ findings share a theme, write a synthesized pattern that captures the common principle. The synthesis should be more general than any individual finding.
 
 Example:
-- Finding 1: "TaskCreate must happen after TeamCreate"
-- Finding 2: "Workers can't see tasks created before their team existed"
-- Synthesis: "Claude Code task visibility is scoped to team creation time. Always create teams before tasks."
+- Finding 1: "Task tracking must happen after workspace setup"
+- Finding 2: "Workers can't see tasks created before their workspace existed"
+- Synthesis: "Task visibility is scoped to workspace creation time. Always set up workspaces before creating tasks."
 
 ### Gap Identification
 

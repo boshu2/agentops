@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-03-30
+
+### Added
+
+- **9 lifecycle skills** — bootstrap, deps, design, harvest, perf, refactor, review, scaffold, and test skills wired into RPI with auto-invocation and mechanical gates
+- **`ao harvest`** — cross-rig knowledge consolidation extracts and catalogs learnings from sibling crew workspaces
+- **`ao context packet`** — inspect stigmergic context packets for debugging inter-session handoff state
+- **Hook runtime contract** — formal Claude/Codex/manual event mapping with runtime-aware hook tooling
+- **Evidence-driven skill enrichment** — production meta-knowledge, anti-patterns, flywheel metrics, and normalization defect detection baked into 9 skill reference files
+- **Research provenance** — pending learnings now carry full research provenance for discoverability and citation tracking
+- **Context declarations** — inject, provenance, and rpi skills declare their context requirements explicitly
+- **Goals and product output templates** — `/goals` and `/product` produce evidence-backed structured output
+
+### Changed
+
+- **Three-gap context lifecycle contract** — README, PRODUCT.md, positioning docs, and operational guides reframed around the context lifecycle model
+- **Dual-runtime hook documentation** — runtime modes table and troubleshooting updated for Claude + Codex hook coexistence
+
+### Fixed
+
+- **CI reliability** — resolved 4 pre-existing CI failures, restored headless runtime preflight, repaired codex parity drift checks
+- **`ao lookup` retrieval** — fixed retrieval gaps that caused lookup to return no results
+- **Embedded sync** — using-agentops SKILL.md and `.agents/.gitignore` now written correctly on first session start
+- **Closure integrity** — 24h grace window for close-before-commit evidence, normalized file parsing
+- **Skill lint compliance** — vibe, post-mortem, crank, and plan skills trimmed or restructured to stay under 800-line limit
+- **Codex tool naming** — added CLAUDE_TOOL_NAMING rule and fixed 5 Claude-era tool references in codex skills
+- **ASCII diagram consistency** — aligned box-drawing characters across 23 documentation files
+- **Fork exhaustion prevention** — replaced jq with awk in validate-go-fast to prevent fork bombs on large repos
+
 ## [2.30.0] - 2026-03-24
 
 ### Added

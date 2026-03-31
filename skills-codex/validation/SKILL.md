@@ -1,24 +1,6 @@
 ---
 name: validation
 description: 'Full validation phase orchestrator. Vibe + post-mortem + retro + forge. Reviews implementation quality, extracts learnings, feeds the knowledge flywheel. Triggers: "validation", "validate", "validate work", "review and learn", "validation phase", "post-implementation review".'
-skill_api_version: 1
-user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
-  intel_scope: full
-metadata:
-  tier: meta
-  dependencies:
-    - vibe        # required - code quality review
-    - post-mortem # required - retrospective analysis
-    - retro       # optional - quick learning capture
-    - forge       # optional - transcript mining
-    - shared      # optional - CLI fallback table
-output_contract: skills/council/schemas/verdict.json
 ---
 
 # /validation — Full Validation Phase Orchestrator
