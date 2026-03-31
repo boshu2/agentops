@@ -1897,9 +1897,9 @@ ao harvest [flags]
       --max-file-size int      Skip files larger than this (bytes) (default 1048576)
       --min-confidence float   Minimum confidence for promotion (default 0.5)
       --output-dir string      Directory for harvest catalog output (default ".agents/harvest")
-      --promote-to string      Promotion destination for high-value artifacts (default "/Users/fullerbt/.agents/learnings")
+      --promote-to string      Promotion destination for high-value artifacts (default ~/.agents/learnings)
       --quiet                  Suppress progress output
-      --roots string           Base directories to scan (comma-separated) (default "/Users/fullerbt/gt")
+      --roots string           Base directories to scan (comma-separated) (default ~/gt)
 ```
 
 ---

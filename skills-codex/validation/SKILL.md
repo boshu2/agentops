@@ -71,7 +71,7 @@ STEP 3  ──  if not --no-retro:
 
 STEP 4  ──  if not --no-forge AND ao available:
               if [ -n "${CODEX_THREAD_ID:-}" ] || [ "${CODEX_INTERNAL_ORIGINATOR_OVERRIDE:-}" = "Codex Desktop" ]; then
-                ao codex stop --auto-extract 2>/dev/null || true
+                ao codex ensure-stop --auto-extract 2>/dev/null || true
               else
                 ao forge transcript --last-session --queue --quiet 2>/dev/null || true
               fi
@@ -175,7 +175,7 @@ $validation --no-forge ag-5k2             # skip forge only
 |---------|-------|----------|
 | Vibe FAIL on first run | Implementation has quality issues | Fix findings via `$crank`, then re-run `$validation` |
 | Post-mortem skipped unexpectedly | No epic-id provided | Pass epic-id: `$validation ag-5k2` |
-| Codex closeout missing | Codex has no session-end hook surface | Let `$validation` run `ao codex stop`, or run `ao codex stop` manually before leaving the session |
+| Codex closeout missing | Codex has no session-end hook surface | Let `$validation` run `ao codex ensure-stop`, or run `ao codex ensure-stop` manually before leaving the session |
 | Forge produces no output | No ao CLI or no transcript content | Install ao CLI or run `$retro` manually |
 | Stale execution-packet | Packet from a previous RPI cycle | Delete `.agents/rpi/execution-packet.json` and pass `--complexity` explicitly |
 

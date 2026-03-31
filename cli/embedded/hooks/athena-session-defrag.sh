@@ -14,7 +14,7 @@ repo_root() {
 }
 
 file_mtime() {
-  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || printf '0\n'
+  stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || printf '0\n'
 }
 
 is_placeholder_pattern() {

@@ -52,13 +52,13 @@ func TestHarvestCmd_Flags(t *testing.T) {
 		t.Errorf("quiet default = %q, want %q", f.DefValue, "false")
 	}
 
-	// Verify roots and promote-to resolve to absolute paths (no tilde).
-	home, _ := os.UserHomeDir()
-	if f := flags.Lookup("roots"); f.DefValue != filepath.Join(home, "gt") {
-		t.Errorf("roots default = %q, want %q", f.DefValue, filepath.Join(home, "gt"))
+	// Verify roots and promote-to use empty defaults (resolved at runtime to avoid
+	// embedding absolute home paths in generated docs).
+	if f := flags.Lookup("roots"); f.DefValue != "" {
+		t.Errorf("roots default = %q, want empty (resolved at runtime)", f.DefValue)
 	}
-	if f := flags.Lookup("promote-to"); f.DefValue != filepath.Join(home, ".agents", "learnings") {
-		t.Errorf("promote-to default = %q, want %q", f.DefValue, filepath.Join(home, ".agents", "learnings"))
+	if f := flags.Lookup("promote-to"); f.DefValue != "" {
+		t.Errorf("promote-to default = %q, want empty (resolved at runtime)", f.DefValue)
 	}
 }
 

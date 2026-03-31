@@ -35,16 +35,12 @@ func init() {
 	harvestCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(harvestCmd)
 
-	home, _ := os.UserHomeDir()
-	defaultRoots := filepath.Join(home, "gt")
-	defaultPromote := filepath.Join(home, ".agents", "learnings")
-
-	harvestCmd.Flags().StringVar(&harvestRootsFlag, "roots", defaultRoots,
-		"Base directories to scan (comma-separated)")
+	harvestCmd.Flags().StringVar(&harvestRootsFlag, "roots", "",
+		"Base directories to scan (comma-separated) (default ~/gt)")
 	harvestCmd.Flags().StringVar(&harvestOutputDir, "output-dir", ".agents/harvest",
 		"Directory for harvest catalog output")
-	harvestCmd.Flags().StringVar(&harvestPromoteTo, "promote-to", defaultPromote,
-		"Promotion destination for high-value artifacts")
+	harvestCmd.Flags().StringVar(&harvestPromoteTo, "promote-to", "",
+		"Promotion destination for high-value artifacts (default ~/.agents/learnings)")
 	harvestCmd.Flags().Float64Var(&harvestMinConfidence, "min-confidence", 0.5,
 		"Minimum confidence for promotion")
 	harvestCmd.Flags().StringVar(&harvestInclude, "include", "learnings,patterns,research",
@@ -55,6 +51,16 @@ func init() {
 }
 
 func runHarvest(cmd *cobra.Command, args []string) error {
+	// Resolve home-relative defaults at runtime so generated docs don't embed absolute paths.
+	if harvestRootsFlag == "" {
+		home, _ := os.UserHomeDir()
+		harvestRootsFlag = filepath.Join(home, "gt")
+	}
+	if harvestPromoteTo == "" {
+		home, _ := os.UserHomeDir()
+		harvestPromoteTo = filepath.Join(home, ".agents", "learnings")
+	}
+
 	roots := strings.Split(harvestRootsFlag, ",")
 	for i := range roots {
 		roots[i] = strings.TrimSpace(roots[i])
