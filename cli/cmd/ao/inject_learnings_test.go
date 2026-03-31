@@ -578,6 +578,10 @@ func TestInjectLearnings_writeDecayFields(t *testing.T) {
 
 func TestInjectLearnings_globLearningFiles(t *testing.T) {
 	tmp := t.TempDir()
+	nested := filepath.Join(tmp, "jren-platform")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create test files
 	for _, name := range []string{"a.md", "b.md", "c.jsonl", "d.txt"} {
@@ -585,10 +589,13 @@ func TestInjectLearnings_globLearningFiles(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if err := os.WriteFile(filepath.Join(nested, "nested.md"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files := globLearningFiles(tmp)
-	if len(files) != 3 { // a.md, b.md, c.jsonl — NOT d.txt
-		t.Errorf("expected 3 learning files, got %d: %v", len(files), files)
+	if len(files) != 4 { // a.md, b.md, c.jsonl, nested.md — NOT d.txt
+		t.Errorf("expected 4 learning files, got %d: %v", len(files), files)
 	}
 
 	for _, f := range files {
@@ -848,7 +855,11 @@ func TestInjectLearnings_collectLearnings_WithGlobalDir(t *testing.T) {
 
 	// Create global learnings in separate dir
 	globalDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(globalDir, "global.md"), []byte("---\nmaturity: provisional\n---\n# Global Learning\n\nGlobal content.\n"), 0644); err != nil {
+	globalNamespace := filepath.Join(globalDir, "jren-platform")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(globalNamespace, "global.md"), []byte("---\nmaturity: provisional\n---\n# Global Learning\n\nGlobal content.\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -891,7 +902,11 @@ func TestInjectLearnings_collectLearnings_GlobalWeightPenalty(t *testing.T) {
 	globalDir := t.TempDir()
 	globalData := map[string]any{"id": "global-1", "title": "Global", "summary": "Global learning", "utility": 0.8, "maturity": "provisional"}
 	bg, _ := json.Marshal(globalData)
-	if err := os.WriteFile(filepath.Join(globalDir, "global.jsonl"), bg, 0644); err != nil {
+	globalNamespace := filepath.Join(globalDir, "jren-platform")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(globalNamespace, "global.jsonl"), bg, 0644); err != nil {
 		t.Fatal(err)
 	}
 

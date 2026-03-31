@@ -121,7 +121,7 @@ func collectGlobalPatterns(globalDir string, localPaths map[string]bool, queryLo
 	if globalDir == "" {
 		return nil, nil
 	}
-	globalFiles, _ := filepath.Glob(filepath.Join(globalDir, "*.md"))
+	globalFiles := walkKnowledgeFiles(globalDir, ".md")
 	var result []pattern
 	for _, file := range globalFiles {
 		if abs, err := filepath.Abs(file); err == nil && localPaths[abs] {

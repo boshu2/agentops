@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/config"
 )
 
 func TestMatchesID_ExactMatch(t *testing.T) {
@@ -92,6 +94,85 @@ func TestLookupByID_NotFound(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "no artifact found") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestLookupByQuery_FindsNestedGlobalLearning(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".agents", "learnings"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	globalLearningsDir := t.TempDir()
+	globalNamespace := filepath.Join(globalLearningsDir, "jren-platform")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	content := `---
+maturity: provisional
+utility: 0.8
+---
+# Bootstrap lessons
+
+ArgoCD CMP timeouts need layered fixes.
+`
+	if err := os.WriteFile(filepath.Join(globalNamespace, "argocd-timeout.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Paths: config.PathsConfig{
+			GlobalLearningsDir: globalLearningsDir,
+			GlobalWeight:       1.0,
+		},
+	}
+
+	oldQuery := lookupQuery
+	oldLimit := lookupLimit
+	oldJSON := lookupJSON
+	oldNoCite := lookupNoCite
+	lookupQuery = "argocd"
+	lookupLimit = 5
+	lookupJSON = true
+	lookupNoCite = true
+	defer func() {
+		lookupQuery = oldQuery
+		lookupLimit = oldLimit
+		lookupJSON = oldJSON
+		lookupNoCite = oldNoCite
+	}()
+
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+
+	runErr := lookupByQuery(tmpDir, cfg)
+
+	w.Close()
+	os.Stdout = oldStdout
+	if runErr != nil {
+		t.Fatalf("lookupByQuery() error = %v", runErr)
+	}
+
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	r.Close()
+
+	var result struct {
+		Learnings []learning `json:"learnings"`
+	}
+	if err := json.Unmarshal(buf[:n], &result); err != nil {
+		t.Fatalf("json.Unmarshal(output) error = %v\n%s", err, string(buf[:n]))
+	}
+	if len(result.Learnings) != 1 {
+		t.Fatalf("expected 1 learning, got %d", len(result.Learnings))
+	}
+	if result.Learnings[0].Title != "Bootstrap lessons" {
+		t.Errorf("Title = %q, want %q", result.Learnings[0].Title, "Bootstrap lessons")
 	}
 }
 

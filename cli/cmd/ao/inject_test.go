@@ -764,7 +764,11 @@ func TestCollectPatternsGlobalDir(t *testing.T) {
 		_ = os.RemoveAll(globalDir) //nolint:errcheck // test cleanup
 	}()
 
-	if err := os.WriteFile(filepath.Join(globalDir, "global-pattern.md"), []byte("# Global Pattern\n\nCross-repo pattern.\n"), 0644); err != nil {
+	globalNamespace := filepath.Join(globalDir, "jren-platform")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(globalNamespace, "global-pattern.md"), []byte("# Global Pattern\n\nCross-repo pattern.\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1239,9 +1243,9 @@ func TestFilterMemoryDuplicates_RemovesDuplicates(t *testing.T) {
 	defer os.RemoveAll(filepath.Join(homeDir, ".claude", "projects", normalizedPath))
 
 	learnings := []learning{
-		{ID: "L42", Title: "Auth Caching Pattern"},   // ID matches MEMORY.md
-		{ID: "L99", Title: "auth-caching"},            // Title matches MEMORY.md
-		{ID: "L100", Title: "New Unique Knowledge"},   // Should pass through
+		{ID: "L42", Title: "Auth Caching Pattern"},  // ID matches MEMORY.md
+		{ID: "L99", Title: "auth-caching"},          // Title matches MEMORY.md
+		{ID: "L100", Title: "New Unique Knowledge"}, // Should pass through
 	}
 
 	result := filterMemoryDuplicates(tmpDir, learnings)

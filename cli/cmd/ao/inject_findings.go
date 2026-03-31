@@ -40,7 +40,7 @@ func collectFindingsWithOptions(cwd, query string, limit int, globalDir string, 
 
 	findings := append([]knowledgeFinding{}, local...)
 	if globalDir != "" {
-		globalFiles, _ := filepath.Glob(filepath.Join(globalDir, "*.md"))
+		globalFiles := walkKnowledgeFiles(globalDir, ".md")
 		for _, file := range globalFiles {
 			if abs, err := filepath.Abs(file); err == nil && localPaths[abs] {
 				continue

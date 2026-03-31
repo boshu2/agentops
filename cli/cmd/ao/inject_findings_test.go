@@ -245,3 +245,39 @@ Summary text.
 		t.Error("expected Global=true")
 	}
 }
+
+func TestCollectFindingsWithNestedGlobalDir(t *testing.T) {
+	localDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(localDir, ".agents", "findings"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	globalDir := t.TempDir()
+	globalNamespace := filepath.Join(globalDir, "jren-platform")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	content := `---
+title: ArgoCD Timeout Layers
+severity: high
+status: open
+---
+
+Nested global finding content.
+`
+	if err := os.WriteFile(filepath.Join(globalNamespace, "argocd-timeout.md"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := collectFindings(localDir, "argocd", 10, globalDir, 0.8)
+	if err != nil {
+		t.Fatalf("collectFindings() error = %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 global finding, got %d", len(results))
+	}
+	if !results[0].Global {
+		t.Error("expected nested global finding to be flagged as Global")
+	}
+}

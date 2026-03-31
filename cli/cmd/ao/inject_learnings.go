@@ -103,14 +103,10 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 	return learnings, nil
 }
 
-// globLearningFiles returns *.md and *.jsonl files in a single directory (no rig-root walk).
+// globLearningFiles returns *.md and *.jsonl files under dir, including
+// namespaced subdirectories used by global cross-repo stores.
 func globLearningFiles(dir string) []string {
-	var files []string
-	for _, ext := range []string{"*.md", "*.jsonl"} {
-		matches, _ := filepath.Glob(filepath.Join(dir, ext))
-		files = append(files, matches...)
-	}
-	return files
+	return walkKnowledgeFiles(dir, ".md", ".jsonl")
 }
 
 // findLearningFiles discovers .md and .jsonl files in the learnings directory.
