@@ -189,6 +189,7 @@ filter_constraint_target_files() {
             matched=0
             while IFS= read -r glob; do
                 [ -n "$glob" ] || continue
+                # shellcheck disable=SC2053
                 if [[ "$path_file" == $glob ]]; then
                     matched=1
                     break
@@ -290,9 +291,11 @@ run_constraint_paired_files() {
 
     while IFS= read -r rel_file; do
         [ -n "$rel_file" ] || continue
+        # shellcheck disable=SC2053
         if [[ "$rel_file" != $pattern ]]; then
             continue
         fi
+        # shellcheck disable=SC2053
         if [ -n "$exclude" ] && [[ "$rel_file" == $exclude ]]; then
             continue
         fi
@@ -619,9 +622,11 @@ if [ -n "$PAIRED_RULES" ] && [ "$PAIRED_RULES" != "null" ]; then
                 while IFS= read -r CHANGED_FILE; do
                     [ -n "$CHANGED_FILE" ] || continue
 
+                    # shellcheck disable=SC2053
                     if [[ "$CHANGED_FILE" != $RULE_PATTERN ]]; then
                         continue
                     fi
+                    # shellcheck disable=SC2053
                     if [ -n "$RULE_EXCLUDE" ] && [[ "$CHANGED_FILE" == $RULE_EXCLUDE ]]; then
                         continue
                     fi

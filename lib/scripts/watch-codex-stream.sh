@@ -24,7 +24,6 @@ input_tokens=0
 output_tokens=0
 start_time=$(date +%s)
 completed=false
-error_msg=""
 timeout_triggered=""
 
 # Write status file on exit
@@ -76,7 +75,6 @@ done
 # If read -t timed out, the loop exits with read returning > 128
 if [[ "$completed" != "true" && $events_count -eq 0 ]]; then
     # Empty stream — codex likely died immediately
-    error_msg="empty stream"
     write_status
 elif [[ "$completed" != "true" ]]; then
     # Timed out waiting for events

@@ -84,10 +84,10 @@ All pushes to `main` run `.github/workflows/validate.yml` (24 jobs). **Run check
 # Recommended: smart conditional gate (only checks relevant to changed files):
 scripts/pre-push-gate.sh --fast
 
-# Or minimum manual checks before any push:
-bash skills/heal-skill/scripts/heal.sh --strict   # Skill integrity
-./tests/docs/validate-doc-release.sh               # Skill counts + links
-./scripts/check-contract-compatibility.sh           # Contract refs + JSON validity
+# These checks are now included in the pre-push gate (no need to run separately):
+# bash skills/heal-skill/scripts/heal.sh --strict   # → check 12
+# ./tests/docs/validate-doc-release.sh               # → check 25
+# ./scripts/check-contract-compatibility.sh           # → check 26
 
 # If you changed Go code:
 cd cli && make build && make test
@@ -98,7 +98,7 @@ cd cli && make sync-hooks
 # If you changed skills-codex/ files:
 scripts/regen-codex-hashes.sh
 
-# Full gate (all 22 checks, ~3min):
+# Full gate (all 33 checks, ~3min):
 scripts/pre-push-gate.sh
 
 # Release gate (runs everything including security):

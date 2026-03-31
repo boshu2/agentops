@@ -10,12 +10,13 @@
 #   2. Go race tests on changed packages (via validate-go-fast.sh)
 #   3. Command/test pairing for cli/cmd/ao Go changes
 #   4. cmd/ao coverage floor gate
+#  4b. Per-package coverage ratchet (full mode only)
 #   5. Embedded hooks sync (cli/embedded/ matches hooks/)
 #   6. Skill count sync
 #   7. Worktree disposition
 #   8. Skill runtime/CLI parity
-#   9. Codex skill parity
-#  10. Codex install bundle parity
+#   9. Codex skill parity (skipped — manually maintained)
+#  10. Codex install bundle parity (skipped — manually maintained)
 #  11. Codex runtime section format
 #  12. Skill integrity (references/xrefs)
 #  13. Skill lint suite
@@ -29,7 +30,18 @@
 #  21. Codex RPI contract validation
 #  22. Codex lifecycle guard validation
 #  23. Skill CLI snippets
-#  24. Headless runtime skill smoke
+#  24. Headless runtime skill smoke (full mode only)
+#  24b. CLI docs parity
+#  --- shifted from CI-only (v2.32) ---
+#  25. Doc-release stabilization gate
+#  26. Contract compatibility
+#  27. Hook preflight
+#  28. Hooks/docs parity
+#  29. CI policy parity
+#  30. ShellCheck (fast: changed .sh only)
+#  31. Plugin load test (symlink rejection)
+#  32. Learning coherence
+#  33. BATS orphan hooks audit
 #
 # Usage:
 #   scripts/pre-push-gate.sh [--scope auto|upstream|staged|worktree|head]
@@ -149,6 +161,9 @@ collect_all_changed() {
 HAS_GO=1
 HAS_SKILL=1
 HAS_HOOK=1
+HAS_DOCS=1
+HAS_SHELL=1
+HAS_LEARNING=1
 
 if [[ "$FAST_MODE" == "true" ]]; then
     all_changed="$(collect_all_changed)"
@@ -167,6 +182,21 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_HOOK=0
     fi
+    if echo "$all_changed" | grep -qE '^docs/|^README\.md|^CHANGELOG|^PRODUCT\.md|^SKILL-TIERS\.md'; then
+        HAS_DOCS=1
+    else
+        HAS_DOCS=0
+    fi
+    if echo "$all_changed" | grep -qE '\.sh$'; then
+        HAS_SHELL=1
+    else
+        HAS_SHELL=0
+    fi
+    if echo "$all_changed" | grep -qE '^\.agents/learnings/'; then
+        HAS_LEARNING=1
+    else
+        HAS_LEARNING=0
+    fi
 fi
 
 needs_check() {
@@ -175,11 +205,14 @@ needs_check() {
         return 0
     fi
     case "$category" in
-        go)    [[ "$HAS_GO" -eq 1 ]] ;;
-        skill) [[ "$HAS_SKILL" -eq 1 ]] ;;
-        hook)  [[ "$HAS_HOOK" -eq 1 ]] ;;
-        always) return 0 ;;
-        *)     return 0 ;;
+        go)       [[ "$HAS_GO" -eq 1 ]] ;;
+        skill)    [[ "$HAS_SKILL" -eq 1 ]] ;;
+        hook)     [[ "$HAS_HOOK" -eq 1 ]] ;;
+        docs)     [[ "$HAS_DOCS" -eq 1 ]] ;;
+        shell)    [[ "$HAS_SHELL" -eq 1 ]] ;;
+        learning) [[ "$HAS_LEARNING" -eq 1 ]] ;;
+        always)   return 0 ;;
+        *)        return 0 ;;
     esac
 }
 
@@ -212,7 +245,7 @@ collect_go_changed() {
 
 if [[ "$FAST_MODE" == "true" ]]; then
     echo "pre-push gate (fast): validating changed files before push..."
-    echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK"
+    echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING"
 else
     echo "pre-push gate: validating before push..."
 fi
@@ -604,6 +637,189 @@ if needs_check go; then
     fi
 else
     skip "CLI docs parity"
+fi
+
+# --- 25. Doc-release stabilization gate ---
+if needs_check docs || needs_check skill; then
+    if [[ -x tests/docs/validate-doc-release.sh ]]; then
+        if doc_release_output="$(./tests/docs/validate-doc-release.sh 2>&1)"; then
+            pass "doc-release gate"
+        else
+            fail "doc-release gate (run: ./tests/docs/validate-doc-release.sh)"
+            indent_output "$doc_release_output"
+        fi
+    else
+        fail "missing executable: tests/docs/validate-doc-release.sh"
+    fi
+else
+    skip "doc-release gate"
+fi
+
+# --- 26. Contract compatibility ---
+if needs_check always; then
+    if [[ -x scripts/check-contract-compatibility.sh ]]; then
+        if contract_output="$(./scripts/check-contract-compatibility.sh 2>&1)"; then
+            pass "contract compatibility"
+        else
+            fail "contract compatibility (run: ./scripts/check-contract-compatibility.sh)"
+            indent_output "$contract_output"
+        fi
+    else
+        fail "missing executable: scripts/check-contract-compatibility.sh"
+    fi
+fi
+
+# --- 27. Hook preflight ---
+if needs_check hook; then
+    if [[ -x scripts/validate-hook-preflight.sh ]]; then
+        if hook_preflight_output="$(./scripts/validate-hook-preflight.sh 2>&1)"; then
+            pass "hook preflight"
+        else
+            fail "hook preflight"
+            indent_output "$hook_preflight_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-hook-preflight.sh"
+    fi
+else
+    skip "hook preflight"
+fi
+
+# --- 28. Hooks/docs parity ---
+if needs_check hook; then
+    if [[ -x scripts/validate-hooks-doc-parity.sh ]]; then
+        if hooks_doc_output="$(./scripts/validate-hooks-doc-parity.sh 2>&1)"; then
+            pass "hooks/docs parity"
+        else
+            fail "hooks/docs parity"
+            indent_output "$hooks_doc_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-hooks-doc-parity.sh"
+    fi
+else
+    skip "hooks/docs parity"
+fi
+
+# --- 29. CI policy parity ---
+if needs_check always; then
+    if [[ -x scripts/validate-ci-policy-parity.sh ]]; then
+        if ci_policy_output="$(./scripts/validate-ci-policy-parity.sh 2>&1)"; then
+            pass "CI policy parity"
+        else
+            fail "CI policy parity"
+            indent_output "$ci_policy_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-ci-policy-parity.sh"
+    fi
+fi
+
+# --- 30. ShellCheck on changed scripts ---
+if needs_check shell; then
+    if command -v shellcheck >/dev/null 2>&1; then
+        shell_errors=0
+        if [[ "$FAST_MODE" == "true" ]]; then
+            # Only check changed .sh files
+            changed_sh="$(echo "$all_changed" | grep '\.sh$' || true)"
+            if [[ -n "$changed_sh" ]]; then
+                while IFS= read -r f; do
+                    [[ -f "$f" ]] || continue
+                    if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
+                        shell_errors=1
+                        indent_output "$shellcheck_out"
+                    fi
+                done <<< "$changed_sh"
+            fi
+        else
+            # Full mode: check all scripts
+            while IFS= read -r f; do
+                [[ -f "$f" ]] || continue
+                if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
+                    shell_errors=1
+                    indent_output "$shellcheck_out"
+                fi
+            done < <(find scripts hooks lib bin -name '*.sh' -type f 2>/dev/null)
+        fi
+        if [[ "$shell_errors" -eq 0 ]]; then
+            pass "shellcheck"
+        else
+            fail "shellcheck"
+        fi
+    else
+        skip "shellcheck (not installed)"
+    fi
+else
+    skip "shellcheck"
+fi
+
+# --- 31. Plugin load test (symlinks + manifest) ---
+if needs_check always; then
+    symlink_found=0
+    while IFS= read -r _; do
+        symlink_found=1
+        break
+    done < <(find skills hooks lib scripts -type l 2>/dev/null)
+    if [[ "$symlink_found" -eq 0 ]]; then
+        pass "no symlinks"
+    else
+        fail "symlinks found (CI rejects all symlinks)"
+    fi
+fi
+
+# --- 32. Learning coherence ---
+if needs_check learning; then
+    if [[ -x tests/validate-learning-coherence.sh ]]; then
+        if learning_output="$(bash tests/validate-learning-coherence.sh 2>&1)"; then
+            pass "learning coherence"
+        else
+            fail "learning coherence"
+            indent_output "$learning_output"
+        fi
+    elif [[ -d .agents/learnings ]]; then
+        # Inline check: validate frontmatter on changed learnings
+        learning_errors=0
+        learn_files="$(find .agents/learnings -name '*.md' -type f 2>/dev/null)"
+        if [[ "$FAST_MODE" == "true" ]]; then
+            learn_files="$(echo "$all_changed" | grep '^\.agents/learnings/.*\.md$' || true)"
+        fi
+        for f in $learn_files; do
+            [[ -f "$f" ]] || continue
+            if ! head -1 "$f" | grep -q '^---'; then
+                echo "    missing frontmatter: $f"
+                learning_errors=1
+            fi
+        done
+        if [[ "$learning_errors" -eq 0 ]]; then
+            pass "learning coherence (inline)"
+        else
+            fail "learning coherence (missing frontmatter)"
+        fi
+    else
+        skip "learning coherence (no learnings dir)"
+    fi
+else
+    skip "learning coherence"
+fi
+
+# --- 33. BATS tests + orphan hooks ---
+if needs_check hook; then
+    if command -v bats >/dev/null 2>&1 && [[ -d tests/hooks ]]; then
+        if [[ -x tests/hooks/test-orphan-hooks.sh ]]; then
+            if orphan_output="$(bash tests/hooks/test-orphan-hooks.sh 2>&1)"; then
+                pass "orphan hooks audit"
+            else
+                fail "orphan hooks audit"
+                indent_output "$orphan_output"
+            fi
+        else
+            skip "orphan hooks (missing script)"
+        fi
+    else
+        skip "BATS/orphan hooks (bats not installed or no tests/hooks)"
+    fi
+else
+    skip "orphan hooks"
 fi
 
 # --- Summary ---
