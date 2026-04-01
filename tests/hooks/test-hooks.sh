@@ -1937,7 +1937,7 @@ MISSING_HOOKS=""
 for hook_file in "$HOOKS_DIR"/*.sh; do
     hook_name=$(basename "$hook_file" .sh)
     # Check if this hook name appears in any test file (this script or BATS tests)
-    if ! grep -q "$hook_name" "$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats" 2>/dev/null; then
+    if ! grep -rq "$hook_name" "$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats" "$SCRIPT_DIR/test-${hook_name}.sh" 2>/dev/null; then
         MISSING_HOOKS="$MISSING_HOOKS $hook_name"
     fi
 done

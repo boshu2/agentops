@@ -108,6 +108,30 @@ func TestInjectLearnings_parseFrontMatter(t *testing.T) {
 		}
 	})
 
+	t.Run("stability field", func(t *testing.T) {
+		lines := []string{"---", "stability: experimental", "---"}
+		fm, _ := parseFrontMatter(lines)
+		if fm.Stability != "experimental" {
+			t.Errorf("Stability = %q, want %q", fm.Stability, "experimental")
+		}
+	})
+
+	t.Run("stability stable", func(t *testing.T) {
+		lines := []string{"---", "stability: stable", "---"}
+		fm, _ := parseFrontMatter(lines)
+		if fm.Stability != "stable" {
+			t.Errorf("Stability = %q, want %q", fm.Stability, "stable")
+		}
+	})
+
+	t.Run("stability absent defaults empty", func(t *testing.T) {
+		lines := []string{"---", "utility: 0.5", "---"}
+		fm, _ := parseFrontMatter(lines)
+		if fm.Stability != "" {
+			t.Errorf("Stability = %q, want empty string for absent field", fm.Stability)
+		}
+	})
+
 	t.Run("promoted_to field", func(t *testing.T) {
 		lines := []string{"---", "promoted_to: ~/.agents/learnings/global.md", "---"}
 		fm, _ := parseFrontMatter(lines)

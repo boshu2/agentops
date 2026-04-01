@@ -798,4 +798,3 @@ See `skills/crank/references/troubleshooting.md` for extended troubleshooting.
 - [references/wave-patterns.md](references/wave-patterns.md)
 - [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)
 - [references/external-gate-protocol.md](references/external-gate-protocol.md)
-- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)

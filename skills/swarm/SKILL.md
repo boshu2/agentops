@@ -730,4 +730,3 @@ Solution: Check which spawn backend was selected (look for "Using: <backend>" me
 - [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)
-- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)

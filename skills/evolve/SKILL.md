@@ -484,4 +484,3 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/fitness-scoring.md](references/fitness-scoring.md)
 - [references/roadmap-queue-patterns.md](references/roadmap-queue-patterns.md)
 - [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md)
-- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)
