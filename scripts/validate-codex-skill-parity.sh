@@ -3,11 +3,17 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SYNC_SCRIPT="${REPO_ROOT}/scripts/sync-codex-native-skills.sh"
 CHECKED_IN_ROOT="${REPO_ROOT}/skills-codex"
+MANIFEST_SCRIPT="${REPO_ROOT}/scripts/validate-codex-generated-manifest.sh"
+ARTIFACT_SCRIPT="${REPO_ROOT}/scripts/validate-codex-generated-artifacts.sh"
 
-[[ -x "${SYNC_SCRIPT}" ]] || {
-  echo "Missing or non-executable sync script: ${SYNC_SCRIPT}" >&2
+[[ -x "${MANIFEST_SCRIPT}" ]] || {
+  echo "Missing or non-executable manifest validator: ${MANIFEST_SCRIPT}" >&2
+  exit 1
+}
+
+[[ -x "${ARTIFACT_SCRIPT}" ]] || {
+  echo "Missing or non-executable artifact validator: ${ARTIFACT_SCRIPT}" >&2
   exit 1
 }
 
@@ -16,21 +22,8 @@ CHECKED_IN_ROOT="${REPO_ROOT}/skills-codex"
   exit 1
 }
 
-tmpdir="$(mktemp -d)"
-cleanup() {
-  rm -rf "${tmpdir}"
-}
-trap cleanup EXIT
-
-generated_root="${tmpdir}/skills-codex"
-
-bash "${SYNC_SCRIPT}" --out "${generated_root}" >/dev/null
-
-if ! diff_output="$(diff -rq "${CHECKED_IN_ROOT}" "${generated_root}" 2>&1)"; then
-  echo "Codex skill parity check failed: checked-in skills-codex differs from regenerated output." >&2
-  echo "${diff_output}" | sed -n '1,120p' >&2
-  exit 1
-fi
+bash "${MANIFEST_SCRIPT}" "${CHECKED_IN_ROOT}" >/dev/null
+bash "${ARTIFACT_SCRIPT}" "${REPO_ROOT}" --scope head >/dev/null
 
 skill_count="$(find "${CHECKED_IN_ROOT}" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-echo "Codex skill parity check passed: ${skill_count} skill(s)."
+echo "Codex skill parity check passed: ${skill_count} skill(s) in the checked-in Codex bundle."

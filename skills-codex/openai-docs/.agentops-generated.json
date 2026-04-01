@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/openai-docs",
   "layout": "modular",
   "source_hash": "9758845e08c7a9f57f86bed457708bbcf206d042dcee20a4bcae3f47f3bedc10",

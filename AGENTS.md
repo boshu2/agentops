@@ -186,7 +186,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 |-----|-------------------|----------------|
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
-| **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces generated-artifact parity, backbone prompts, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
+| **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces Codex artifact metadata parity, backbone prompts, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
 | **contract-compatibility-gate** | INDEX.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/INDEX.md` or allowlist governance |
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, INDEX.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
@@ -225,7 +225,7 @@ This updates counts in SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, do
 
 **Every reference file must be linked.** If a file exists in a skill's `references/` directory, the skill's SKILL.md must link to it via markdown link or Read instruction. Run `heal.sh --strict` to check.
 
-**Codex checked-in artifacts are manually maintained, with legacy generated provenance metadata.** If `skills-codex/` still contains Claude-era primitives (`TaskCreate`, `TaskList`, `Tool: Task`), Claude backend refs, or duplicated runtime rewrites, run:
+**Codex checked-in artifacts are manually maintained, with manifest/marker provenance metadata used for validation.** If `skills-codex/` still contains Claude-era primitives (`TaskCreate`, `TaskList`, `Tool: Task`), Claude backend refs, or duplicated runtime rewrites, run:
 ```bash
 bash scripts/audit-codex-parity.sh --skill <name>
 ```

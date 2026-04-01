@@ -22,7 +22,7 @@
 #  13. Skill lint suite
 #  14. Skill schema validation
 #  15. Manifest schema validation
-#  16. Codex generated artifacts
+#  16. Codex artifact metadata
 #  17. Codex backbone prompts
 #  18. Codex override coverage
 #  19. Next-work contract parity
@@ -481,20 +481,20 @@ else
     skip "manifest schema validation"
 fi
 
-# --- 16. Codex generated artifacts ---
+# --- 16. Codex artifact metadata ---
 if needs_check skill; then
     if [[ -x scripts/validate-codex-generated-artifacts.sh ]]; then
         if codex_generated_output="$(scripts/validate-codex-generated-artifacts.sh --scope "$SCOPE" 2>&1)"; then
-            pass "codex generated artifacts"
+            pass "codex artifact metadata"
         else
-            fail "codex generated artifacts"
+            fail "codex artifact metadata"
             indent_output "$codex_generated_output"
         fi
     else
         fail "missing executable: scripts/validate-codex-generated-artifacts.sh"
     fi
 else
-    skip "codex generated artifacts"
+    skip "codex artifact metadata"
 fi
 
 # --- 17. Codex backbone prompts ---

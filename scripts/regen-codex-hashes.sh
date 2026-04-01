@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Regenerate generated_hash values in skills-codex manifest and markers.
-# Run after any change to skills-codex/ files to fix hash drift.
+# Run after any change to skills-codex/ files to fix artifact metadata drift.
 #
 # Usage:
 #   scripts/regen-codex-hashes.sh              # update all drifted hashes
@@ -47,7 +47,7 @@ manifest_path = skills_root / ".agentops-manifest.json"
 marker_name = ".agentops-generated.json"
 
 if not manifest_path.exists():
-    print(f"Codex generated manifest missing: {manifest_path}", file=sys.stderr)
+    print(f"Codex artifact manifest missing: {manifest_path}", file=sys.stderr)
     sys.exit(1)
 
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

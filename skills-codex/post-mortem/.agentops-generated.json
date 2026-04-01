@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/post-mortem",
   "layout": "modular",
   "source_hash": "afce1fac76a1e506e9405b76886ecdf390c3eead5d863d82b8311286ad00d6a4",

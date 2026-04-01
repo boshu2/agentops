@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/refactor",
   "layout": "modular",
   "source_hash": "3e4ba47f4ac566ef00dd1b40b7470d60d3227de9324eefab1efc3d54c203db87",

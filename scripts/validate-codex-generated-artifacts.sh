@@ -104,14 +104,14 @@ collect_changed_files() {
   esac
 }
 
-echo "=== Codex generated artifact validation ==="
+echo "=== Codex artifact metadata validation ==="
 
 [[ -d "$SKILLS_ROOT" ]] || {
   echo "Missing skills-codex root: $SKILLS_ROOT" >&2
   exit 1
 }
 [[ -f "$MANIFEST_FILE" ]] || {
-  echo "Missing generated manifest: $MANIFEST_FILE" >&2
+  echo "Missing Codex artifact manifest: $MANIFEST_FILE" >&2
   exit 1
 }
 if [[ -x "$MANIFEST_VALIDATOR" ]]; then
@@ -120,7 +120,7 @@ fi
 
 while IFS= read -r skill_dir; do
   [[ -f "$skill_dir/SKILL.md" ]] || continue
-  [[ -f "$skill_dir/$MARKER_FILE_NAME" ]] || fail "missing generated marker: ${skill_dir#"$ROOT"/}/$MARKER_FILE_NAME"
+  [[ -f "$skill_dir/$MARKER_FILE_NAME" ]] || fail "missing Codex artifact marker: ${skill_dir#"$ROOT"/}/$MARKER_FILE_NAME"
   if grep -qE "^description:[[:space:]]*['\"]?[>|]['\"]?[[:space:]]*$" "$skill_dir/SKILL.md"; then
     fail "malformed generated description frontmatter: ${skill_dir#"$ROOT"/}/SKILL.md"
   fi
@@ -195,14 +195,14 @@ if [[ -x "$AUDIT_SCRIPT" ]]; then
 fi
 
 if [[ "$warnings" -gt 0 ]]; then
-  echo "Codex generated artifact validation: $warnings warning(s)." >&2
+  echo "Codex artifact metadata validation: $warnings warning(s)." >&2
 fi
 
 if [[ "$failures" -gt 0 ]]; then
   echo "Repair flow: bash scripts/refresh-codex-artifacts.sh --scope $SCOPE" >&2
-  echo "Codex generated artifact validation FAILED ($failures finding(s))." >&2
+  echo "Codex artifact metadata validation FAILED ($failures finding(s))." >&2
   exit 1
 fi
 
-echo "Codex generated artifact validation passed."
+echo "Codex artifact metadata validation passed."
 exit 0

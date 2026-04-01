@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/status",
   "layout": "modular",
   "source_hash": "ca6e7bf7ef5c03f3cc4c7243ef89b2bb33599cea7f0d9fb14c781a7ff1b17d4a",

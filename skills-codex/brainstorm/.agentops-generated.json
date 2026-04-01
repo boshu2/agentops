@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/brainstorm",
   "layout": "modular",
   "source_hash": "f7f588fea249858f7c0b5f235946de5b663232ee3404041a774f1e697d269d52",

@@ -67,7 +67,7 @@ def hash_tree(root: Path) -> str:
 generated_hash = hash_tree(skill_dir)
 source_hash = sha256_bytes(b"fixture-source")
 marker = {
-    "generator": "scripts/sync-codex-native-skills.sh",
+    "generator": "manual-maintained",
     "source_skill": "skills/source-skill",
     "layout": "modular",
     "source_hash": source_hash,
@@ -75,7 +75,7 @@ marker = {
 }
 (skill_dir / ".agentops-generated.json").write_text(json.dumps(marker), encoding="utf-8")
 manifest = {
-    "generator": "scripts/sync-codex-native-skills.sh",
+    "generator": "manual-maintained",
     "source_root": "skills",
     "layout": "modular",
     "skills": [

@@ -27,7 +27,7 @@ manifest_path = skills_root / ".agentops-manifest.json"
 marker_name = ".agentops-generated.json"
 
 if not manifest_path.exists():
-    print(f"Codex generated manifest missing: {manifest_path}", file=sys.stderr)
+    print(f"Codex artifact manifest missing: {manifest_path}", file=sys.stderr)
     sys.exit(1)
 
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -61,20 +61,20 @@ for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
 
 if len(skill_dirs) != len(entry_by_name):
     failures.append(
-        f"Codex generated manifest drift detected: {len(skill_dirs)} skill directories, {len(entry_by_name)} manifest entries"
+        f"Codex artifact manifest drift detected: {len(skill_dirs)} skill directories, {len(entry_by_name)} manifest entries"
     )
 
 skill_names = {skill_dir.name for skill_dir in skill_dirs}
 manifest_names = set(entry_by_name)
 for missing in sorted(skill_names - manifest_names):
-    failures.append(f"Missing manifest entry for generated skill: {missing}")
+    failures.append(f"Missing manifest entry for Codex skill artifact: {missing}")
 for extra in sorted(manifest_names - skill_names):
-    failures.append(f"Manifest references unknown generated skill: {extra}")
+    failures.append(f"Manifest references unknown Codex skill artifact: {extra}")
 
 for skill_dir in skill_dirs:
     marker_path = skill_dir / marker_name
     if not marker_path.exists():
-        failures.append(f"Missing generated marker: {skill_dir.relative_to(skills_root).as_posix()}/{marker_name}")
+        failures.append(f"Missing Codex artifact marker: {skill_dir.relative_to(skills_root).as_posix()}/{marker_name}")
         continue
 
     entry = entry_by_name.get(skill_dir.name)
@@ -101,5 +101,5 @@ if failures:
         print(failure, file=sys.stderr)
     sys.exit(1)
 
-print(f"Codex generated manifest OK: {len(skill_dirs)} skill(s).")
+print(f"Codex artifact manifest OK: {len(skill_dirs)} skill(s).")
 PY

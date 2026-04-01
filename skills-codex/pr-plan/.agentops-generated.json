@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/pr-plan",
   "layout": "modular",
   "source_hash": "8d7ea619fb579ffaf9d9102bc971660cd51608360adf9de77da17292d201a361",

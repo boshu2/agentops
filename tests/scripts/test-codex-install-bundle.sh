@@ -20,17 +20,25 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local fixture="$1"
-  local archived_body="$2"
-  local generated_body="$3"
+  local skill_body="$2"
 
   mkdir -p \
     "$fixture/.codex-plugin" \
     "$fixture/.agents/plugins" \
     "$fixture/scripts" \
-    "$fixture/skills/source-skill" \
     "$fixture/skills-codex/source-skill"
 
   cp "$SCRIPT" "$fixture/scripts/validate-codex-install-bundle.sh"
+  cp "$ROOT/scripts/validate-codex-generated-manifest.sh" "$fixture/scripts/validate-codex-generated-manifest.sh"
+  cp "$ROOT/scripts/validate-codex-generated-artifacts.sh" "$fixture/scripts/validate-codex-generated-artifacts.sh"
+  cp "$ROOT/scripts/audit-codex-parity.sh" "$fixture/scripts/audit-codex-parity.sh"
+  cp "$ROOT/scripts/audit-codex-parity.py" "$fixture/scripts/audit-codex-parity.py"
+  chmod +x \
+    "$fixture/scripts/validate-codex-install-bundle.sh" \
+    "$fixture/scripts/validate-codex-generated-manifest.sh" \
+    "$fixture/scripts/validate-codex-generated-artifacts.sh" \
+    "$fixture/scripts/audit-codex-parity.sh" \
+    "$fixture/scripts/audit-codex-parity.py"
 
   cat > "$fixture/.codex-plugin/plugin.json" <<'EOF'
 {
@@ -54,39 +62,64 @@ EOF
 }
 EOF
 
-  cat > "$fixture/scripts/sync-codex-native-skills.sh" <<EOF
-#!/usr/bin/env bash
-set -euo pipefail
-OUT=""
-while [[ \$# -gt 0 ]]; do
-  case "\$1" in
-    --out)
-      OUT="\${2:-}"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
-  esac
-done
-[[ -n "\$OUT" ]] || exit 1
-mkdir -p "\$OUT/source-skill"
-cat > "\$OUT/source-skill/SKILL.md" <<'INNER'
-$generated_body
-INNER
-EOF
-  chmod +x "$fixture/scripts/sync-codex-native-skills.sh"
-
-  cat > "$fixture/skills/source-skill/SKILL.md" <<'EOF'
----
-name: source-skill
-description: fixture
----
-EOF
-
   cat > "$fixture/skills-codex/source-skill/SKILL.md" <<EOF
-$archived_body
+$skill_body
 EOF
+
+  export FIXTURE_ROOT="$fixture"
+  python3 - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
+
+fixture = Path(os.environ["FIXTURE_ROOT"])
+skills_root = fixture / "skills-codex"
+skill_dir = skills_root / "source-skill"
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+def sha256_file(path: Path) -> str:
+    return sha256_bytes(path.read_bytes())
+
+def hash_tree(root: Path) -> str:
+    rows = []
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        if path.name in {".agentops-manifest.json", ".agentops-generated.json", ".DS_Store"}:
+            continue
+        if "__pycache__" in path.parts:
+            continue
+        if path.suffix == ".pyc":
+            continue
+        rows.append(f"{path.relative_to(root).as_posix()}\t{sha256_file(path)}\n")
+    return sha256_bytes("".join(rows).encode("utf-8"))
+
+generated_hash = hash_tree(skill_dir)
+source_hash = sha256_bytes(b"fixture-source")
+marker = {
+    "generator": "manual-maintained",
+    "source_skill": "skills/source-skill",
+    "layout": "modular",
+    "source_hash": source_hash,
+    "generated_hash": generated_hash,
+}
+(skill_dir / ".agentops-generated.json").write_text(json.dumps(marker), encoding="utf-8")
+manifest = {
+    "generator": "manual-maintained",
+    "source_root": "skills",
+    "layout": "modular",
+    "skills": [
+        {
+            "name": "source-skill",
+            "source_skill": "skills/source-skill",
+            "source_hash": source_hash,
+            "generated_hash": generated_hash,
+        }
+    ],
+}
+(skills_root / ".agentops-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+PY
 
   (
     cd "$fixture"
@@ -108,7 +141,7 @@ run_fixture() {
   ) > "$out_file" 2>&1
 }
 
-test_pass_with_matching_bundle() {
+test_pass_with_consistent_bundle() {
   local fixture="$TMP_DIR/pass"
   local out="$fixture/out.txt"
   local body='---
@@ -118,56 +151,49 @@ description: generated
 
 # Source Skill
 
-Bundle matches generated output.'
+Bundle metadata and files are internally consistent.'
 
-  setup_fixture "$fixture" "$body" "$body"
+  setup_fixture "$fixture" "$body"
 
   if run_fixture "$fixture" "$out"; then
-    pass "passes when archived bundle matches regenerated output"
+    pass "passes when archived bundle is internally consistent"
   else
-    fail "should pass when archived bundle matches regenerated output"
+    fail "should pass when archived bundle is internally consistent"
     sed 's/^/  /' "$out"
   fi
 }
 
-test_fail_with_stale_bundle() {
+test_fail_with_manifest_drift() {
   local fixture="$TMP_DIR/fail"
   local out="$fixture/out.txt"
-  local archived_body='---
-name: source-skill
-description: stale
----
-
-# Source Skill
-
-This archive is stale.'
-  local generated_body='---
+  local body='---
 name: source-skill
 description: current
 ---
 
 # Source Skill
 
-This output is current.'
+This bundle starts consistent.'
 
-  setup_fixture "$fixture" "$archived_body" "$generated_body"
+  setup_fixture "$fixture" "$body"
+  echo "drift" >> "$fixture/skills-codex/source-skill/SKILL.md"
 
   if run_fixture "$fixture" "$out"; then
-    fail "should fail when archived bundle is stale"
+    fail "should fail when archived bundle metadata drifts"
     return
   fi
 
-  if grep -q "Codex install bundle drift detected" "$out"; then
-    pass "fails when archived bundle is stale"
+  if grep -q "generated_hash drift detected" "$out"; then
+    pass "fails when archived bundle metadata drifts"
   else
-    fail "missing stale bundle error"
+    fail "missing bundle drift error"
     sed 's/^/  /' "$out"
   fi
 }
 
 echo "== test-codex-install-bundle =="
-test_pass_with_matching_bundle
-test_fail_with_stale_bundle
+test_pass_with_consistent_bundle
+test_fail_with_manifest_drift
 
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"

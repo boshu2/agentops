@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# validate-codex-install-bundle.sh — ensure release archive ships current Codex skills
+# validate-codex-install-bundle.sh — ensure release archive ships a coherent
+# checked-in Codex bundle.
 #
-# Builds a git archive for the selected ref, regenerates skills-codex from the
-# archived sources, and fails if the archived skills-codex tree differs from the
-# regenerated output. This protects curl-based Codex installs from shipping a
-# stale prebuilt bundle.
+# Builds a git archive for the selected ref and validates the archived
+# `skills-codex/` tree with the same manifest/hash/audit validators used in the
+# repo. This protects curl-based Codex installs from shipping a stale or
+# internally inconsistent prebuilt bundle.
 
 set -euo pipefail
 
@@ -47,7 +48,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-for cmd in git tar diff mktemp; do
+for cmd in git tar mktemp bash; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "Missing required command: $cmd" >&2
         exit 1
@@ -60,7 +61,6 @@ git -C "$REPO_ROOT" rev-parse --show-toplevel >/dev/null 2>&1 || {
 }
 
 TMP_DIR="$(mktemp -d)"
-# shellcheck disable=SC2329
 cleanup() {
     local rc=$?
     if [[ "$KEEP_TMP" == "true" && "$rc" -ne 0 ]]; then
@@ -72,11 +72,9 @@ cleanup() {
 trap cleanup EXIT
 
 BUNDLE_DIR="$TMP_DIR/bundle"
-GENERATED_DIR="$TMP_DIR/generated"
 ARCHIVE_FILE="$TMP_DIR/release-bundle.tar"
-DIFF_FILE="$TMP_DIR/codex-bundle.diff"
 
-mkdir -p "$BUNDLE_DIR" "$GENERATED_DIR"
+mkdir -p "$BUNDLE_DIR"
 
 archive_label="working tree"
 if [[ -n "$REF" ]]; then
@@ -100,9 +98,11 @@ tar -xf "$ARCHIVE_FILE" -C "$BUNDLE_DIR"
 for required_path in \
     "$BUNDLE_DIR/.codex-plugin/plugin.json" \
     "$BUNDLE_DIR/.agents/plugins/marketplace.json" \
-    "$BUNDLE_DIR/skills" \
     "$BUNDLE_DIR/skills-codex" \
-    "$BUNDLE_DIR/scripts/sync-codex-native-skills.sh"
+    "$BUNDLE_DIR/scripts/validate-codex-generated-manifest.sh" \
+    "$BUNDLE_DIR/scripts/validate-codex-generated-artifacts.sh" \
+    "$BUNDLE_DIR/scripts/audit-codex-parity.sh" \
+    "$BUNDLE_DIR/scripts/audit-codex-parity.py"
 do
     if [[ ! -e "$required_path" ]]; then
         echo "Release bundle missing required path: ${required_path#"$BUNDLE_DIR"/}" >&2
@@ -112,17 +112,9 @@ done
 
 (
     cd "$BUNDLE_DIR"
-    bash scripts/sync-codex-native-skills.sh --out "$GENERATED_DIR" >/dev/null
+    bash scripts/validate-codex-generated-manifest.sh skills-codex >/dev/null
+    bash scripts/validate-codex-generated-artifacts.sh . --scope head >/dev/null
 )
 
-if diff -ruN "$BUNDLE_DIR/skills-codex" "$GENERATED_DIR" >"$DIFF_FILE"; then
-    skill_count="$(find "$BUNDLE_DIR/skills-codex" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')"
-    echo "Codex install bundle parity OK for $archive_label ($skill_count skill package(s))."
-    exit 0
-fi
-
-echo "Codex install bundle drift detected for $archive_label." >&2
-echo "Archived skills-codex does not match regenerated output from archived skills." >&2
-echo "Diff preview:" >&2
-sed -n '1,80p' "$DIFF_FILE" >&2
-exit 1
+skill_count="$(find "$BUNDLE_DIR/skills-codex" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')"
+echo "Codex install bundle validation OK for $archive_label ($skill_count skill package(s))."

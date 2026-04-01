@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/reverse-engineer-rpi",
   "layout": "modular",
   "source_hash": "85a6396670691224c0ee1ceacceaf84e44a58b0a9a8bed2a4db1d844ee0afe03",

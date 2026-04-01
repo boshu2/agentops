@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/ratchet",
   "layout": "modular",
   "source_hash": "17bd565760c3834d4b34736edf3a1aacd4643f3267f98e6c959b4657856b06fb",

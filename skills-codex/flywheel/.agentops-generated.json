@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/flywheel",
   "layout": "modular",
   "source_hash": "01f08265b10ec432c4044e0a0d68ec7bbd735f69ae86d01aa56c749e74ab148e",

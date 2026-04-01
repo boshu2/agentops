@@ -1,5 +1,5 @@
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/beads",
   "layout": "modular",
   "source_hash": "80a5b9fd59c945be2ea4f5b7f25f5439948b931d2ee15553568c1fe223b8d9cb",

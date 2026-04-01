@@ -105,7 +105,7 @@ EOF
 
   cat > "$fixture/skills-codex/source-skill/.agentops-generated.json" <<'EOF'
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_skill": "skills/source-skill",
   "layout": "modular",
   "source_hash": "fixture-source",
@@ -115,7 +115,7 @@ EOF
 
   cat > "$fixture/skills-codex/.agentops-manifest.json" <<'EOF'
 {
-  "generator": "scripts/sync-codex-native-skills.sh",
+  "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
   "skills": [
