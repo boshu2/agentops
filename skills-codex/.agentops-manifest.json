@@ -850,7 +850,7 @@
       "name": "status",
       "source_skill": "skills/status",
       "source_hash": "ca6e7bf7ef5c03f3cc4c7243ef89b2bb33599cea7f0d9fb14c781a7ff1b17d4a",
-      "generated_hash": "3e1315a55e8ec3cdd86c3a7e0ac5fb6897a2fc6c74a3f81fedde29881866b037"
+      "generated_hash": "fef9600b7cedba2e903da78c403ba2bf8c9054daec0c7259c09210ba155e63f4"
     },
     {
       "name": "swarm",

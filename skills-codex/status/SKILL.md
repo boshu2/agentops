@@ -120,6 +120,15 @@ else
 fi
 ```
 
+**Call 6 — Session Quality Signals:**
+```bash
+if [ -f .agents/signals/session-quality.jsonl ]; then
+  tail -10 .agents/signals/session-quality.jsonl
+else
+  echo "NO_SIGNALS"
+fi
+```
+
 ### Step 2: Render Dashboard
 
 Assemble gathered data into this format. Use Unicode indicators for visual clarity:
@@ -174,6 +183,13 @@ GIT STATE
 
 INBOX
   <message count or "No messages" or "gt not installed">
+
+SESSION QUALITY SIGNALS
+  <last 10 entries from .agents/signals/session-quality.jsonl as table>
+  | Timestamp | Signal | Detail | Session |
+  |-----------|--------|--------|---------|
+  <parsed from JSON lines: .timestamp, .signal, .detail, .session>
+  <or "No quality signals recorded." if file missing or empty>
 
 ──────────────────────────────────────────────────
 SUGGESTED NEXT ACTION
@@ -244,6 +260,9 @@ If the user passed `--json`, output all dashboard data as structured JSON instea
     "recent_commits": ["abc1234 fix: thing", "def5678 feat: other"]
   },
   "inbox": { "count": 0 },
+  "session_quality_signals": [
+    { "timestamp": "2026-03-31T14:22:00Z", "signal": "drift", "detail": "3 corrections in 5min", "session": "abc123" }
+  ],
   "suggestion": {
     "priority": 5,
     "message": "Continue working: $implement ag-042.2"

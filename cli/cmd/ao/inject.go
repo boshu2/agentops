@@ -92,6 +92,7 @@ type learning struct {
 	Maturity       string  `json:"maturity,omitempty"`        // CASS maturity level
 	SessionType    string  `json:"session_type,omitempty"`    // career, research, debug, implement, brainstorm
 	BodyText       string  `json:"-"`                         // Full body text for search (populated on demand)
+	Stability      string  `json:"-"`                         // "experimental" | "stable", default "stable"
 	Superseded     bool    `json:"-"`                         // Internal flag - not serialized
 	Global         bool    `json:"-"`                         // Internal flag: from global dir
 }

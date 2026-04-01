@@ -151,6 +151,10 @@ func processLearningFile(file, queryLower string, now time.Time) (learning, bool
 		l.Utility *= 0.3
 	}
 
+	if l.Stability == "experimental" {
+		fmt.Fprintf(os.Stderr, "WARNING: Skill %q is marked experimental — verify outputs carefully\n", l.Title)
+	}
+
 	return l, true
 }
 
@@ -416,6 +420,7 @@ type frontMatter struct {
 	SourceBead   string
 	SourcePhase  string
 	Maturity     string
+	Stability    string
 }
 
 // parseFrontMatter extracts YAML front matter from markdown content
@@ -455,6 +460,8 @@ func parseFrontMatterLine(line string, fm *frontMatter) {
 		fm.SourcePhase = strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
 	case strings.HasPrefix(line, "maturity:"):
 		fm.Maturity = strings.TrimSpace(strings.TrimPrefix(line, "maturity:"))
+	case strings.HasPrefix(line, "stability:"):
+		fm.Stability = strings.TrimSpace(strings.TrimPrefix(line, "stability:"))
 	}
 }
 
@@ -555,6 +562,7 @@ func parseLearningFile(path string) (learning, error) {
 	l.SourceBead = fm.SourceBead
 	l.SourcePhase = sanitizeSourcePhase(fm.SourcePhase)
 	l.Maturity = fm.Maturity
+	l.Stability = fm.Stability
 
 	parseLearningBody(lines, contentStart, &l)
 	l.Summary = extractSummary(lines, contentStart)
@@ -593,6 +601,9 @@ func populateLearningFromJSON(data map[string]any, l *learning) {
 	}
 	if m, ok := data["maturity"].(string); ok {
 		l.Maturity = m
+	}
+	if s, ok := data["stability"].(string); ok {
+		l.Stability = s
 	}
 }
 
