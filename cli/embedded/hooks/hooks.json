@@ -50,6 +50,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/intent-echo.sh",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/quality-signals.sh",
+            "timeout": 3
           }
         ]
       }

@@ -252,6 +252,12 @@ for skill_dir in "${TARGETS[@]}"; do
     report "MISSING_TIER" "$skill_dir" "No metadata.tier in frontmatter"
   fi
 
+  # Check 2c: Invalid metadata.stability
+  stability_val="$(awk '/^[[:space:]]*stability:/{sub(/^[[:space:]]*stability:[[:space:]]*/,""); gsub(/^["'"'"']|["'"'"']$/,""); print; exit}' "$skill_md" 2>/dev/null || true)"
+  if [[ -n "$stability_val" && "$stability_val" != "experimental" && "$stability_val" != "stable" ]]; then
+    report "H010" "$skill_dir" "Invalid metadata.stability '$stability_val' (must be 'experimental' or 'stable')"
+  fi
+
   # Check 3: Name mismatch
   if [[ -n "$name" && "$name" != "$dirname" ]]; then
     report "NAME_MISMATCH" "$skill_dir" "Frontmatter name '$name' != directory '$dirname'"

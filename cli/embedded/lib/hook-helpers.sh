@@ -9,6 +9,67 @@
 #   write_failure TYPE COMMAND EXIT_CODE DETAILS
 #     Writes structured JSON to $ROOT/.agents/ao/last-failure.json
 #     Callers should also echo human-readable message to stderr.
+#
+#   check_hook_failure_budget HOOK_NAME
+#     Tracks consecutive failures per hook. Returns 1 (skip hook) when
+#     MAX_CONSECUTIVE_HOOK_FAILURES (default 3, override via
+#     AGENTOPS_HOOK_FAILURE_CAP) is exceeded. Call record_hook_success
+#     on success to reset the counter.
+
+# --- Hook failure budget ---
+# Caps consecutive failures per hook to prevent runaway loops.
+# Inspired by Claude Code's MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES pattern.
+MAX_CONSECUTIVE_HOOK_FAILURES="${AGENTOPS_HOOK_FAILURE_CAP:-3}"
+
+# check_hook_failure_budget HOOK_NAME
+# Returns 0 if hook may run, 1 if budget exhausted (caller should skip).
+check_hook_failure_budget() {
+    local hook_name="$1"
+    # Don't count when hooks are globally disabled
+    [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && return 0
+
+    local state_dir="${ROOT:-.}/.agents/ao"
+    local counter_file="$state_dir/.hook-failures-${hook_name}"
+    mkdir -p "$state_dir" 2>/dev/null || return 0
+
+    local count=0
+    [ -f "$counter_file" ] && count=$(cat "$counter_file" 2>/dev/null || echo 0)
+
+    if [ "$count" -ge "$MAX_CONSECUTIVE_HOOK_FAILURES" ]; then
+        echo "HOOK DISABLED: $hook_name failed $count consecutive times (cap=$MAX_CONSECUTIVE_HOOK_FAILURES). Set AGENTOPS_HOOK_FAILURE_CAP to adjust." >&2
+        return 1
+    fi
+    return 0
+}
+
+# record_hook_failure HOOK_NAME
+# Increments the consecutive failure counter for a hook.
+record_hook_failure() {
+    local hook_name="$1"
+    [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && return 0
+
+    local state_dir="${ROOT:-.}/.agents/ao"
+    local counter_file="$state_dir/.hook-failures-${hook_name}"
+    mkdir -p "$state_dir" 2>/dev/null || return 0
+
+    local count=0
+    [ -f "$counter_file" ] && count=$(cat "$counter_file" 2>/dev/null || echo 0)
+    count=$((count + 1))
+    echo "$count" > "$counter_file" 2>/dev/null || true
+
+    if [ "$count" -ge "$MAX_CONSECUTIVE_HOOK_FAILURES" ]; then
+        echo "WARNING: $hook_name has failed $count consecutive times. Hook will be disabled on next invocation." >&2
+    fi
+}
+
+# record_hook_success HOOK_NAME
+# Resets the consecutive failure counter on success.
+record_hook_success() {
+    local hook_name="$1"
+    local state_dir="${ROOT:-.}/.agents/ao"
+    local counter_file="$state_dir/.hook-failures-${hook_name}"
+    rm -f "$counter_file" 2>/dev/null || true
+}
 
 # Guard: ROOT must be set
 if [ -z "${ROOT:-}" ]; then

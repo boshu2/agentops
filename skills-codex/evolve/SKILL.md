@@ -836,6 +836,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/quality-mode.md](references/quality-mode.md)
 - [references/pinned-queue.md](references/pinned-queue.md)
 - [references/teardown.md](references/teardown.md)
+- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)
 
 ## Local Resources
 

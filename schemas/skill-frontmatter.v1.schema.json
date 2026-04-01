@@ -17,7 +17,8 @@
         "version": { "type": "string" },
         "author": { "type": "string" },
         "triggers": { "type": "array", "items": { "type": "string" } },
-        "replaces": { "type": "string" }
+        "replaces": { "type": "string" },
+        "stability": { "type": "string", "enum": ["experimental", "stable"], "default": "stable" }
       }
     },
     "user-invocable": { "type": "boolean" },

@@ -242,3 +242,4 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/examples.md](references/examples.md)
 - [references/autonomous-execution.md](references/autonomous-execution.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)

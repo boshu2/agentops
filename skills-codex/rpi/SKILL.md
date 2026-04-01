@@ -222,6 +222,7 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/phase-data-contracts.md](references/phase-data-contracts.md)
 - [references/report-template.md](references/report-template.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)
 
 ## Local Resources
 

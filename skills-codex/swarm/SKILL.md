@@ -215,3 +215,4 @@ This is slower but functionally identical.
 - [references/validation-contract.md](references/validation-contract.md)
 - [references/worker-pitfalls.md](references/worker-pitfalls.md)
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
+- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)

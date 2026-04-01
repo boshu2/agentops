@@ -178,3 +178,4 @@ Skills that chain to other skills (e.g., `/rpi` calls `/research`, `/vibe` calls
 - [references/codex-cli-verified-commands.md](references/codex-cli-verified-commands.md)
 - [references/cli-command-failures-2026-02-26.md](references/cli-command-failures-2026-02-26.md)
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
+- [references/orchestration-as-prompt.md](references/orchestration-as-prompt.md)

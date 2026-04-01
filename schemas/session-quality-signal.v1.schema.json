@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Session Quality Signal",
+  "type": "object",
+  "required": ["timestamp", "signal_type", "detail", "session_id"],
+  "properties": {
+    "timestamp": { "type": "string", "format": "date-time" },
+    "signal_type": { "type": "string", "enum": ["repeated_prompt", "correction", "read_only_spiral"] },
+    "detail": { "type": "string" },
+    "session_id": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -511,5 +511,6 @@ fi
 - [references/wave-patterns.md](references/wave-patterns.md) - acceptance checks and checkpoints
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md) - Wave 1 spec consistency checklist
 - [references/worktree-per-worker.md](references/worktree-per-worker.md) - worktree isolation pattern
+- [../shared/references/orchestration-as-prompt.md](../shared/references/orchestration-as-prompt.md)
 
 <!-- Lifecycle integration wired: 2026-03-28. See skills/crank/SKILL.md for canonical -->
