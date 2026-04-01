@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 func TestParseServeRunTime(t *testing.T) {
@@ -270,7 +272,14 @@ func TestClassifyServeArg_EmptyArgs(t *testing.T) {
 
 func TestBuildServeEngineOptions(t *testing.T) {
 	cwd := t.TempDir()
-	opts := buildServeEngineOptions(cwd, "run-1234")
+	toolchain := cliRPI.Toolchain{
+		RuntimeMode:    "direct",
+		RuntimeCommand: "codex",
+		AOCommand:      "/tmp/ao",
+		BDCommand:      "/tmp/bd",
+		TmuxCommand:    "/tmp/tmux",
+	}
+	opts := buildServeEngineOptions(cwd, "run-1234", toolchain)
 
 	if opts.WorkingDir != cwd {
 		t.Errorf("WorkingDir = %q, want %q", opts.WorkingDir, cwd)
@@ -280,6 +289,33 @@ func TestBuildServeEngineOptions(t *testing.T) {
 	}
 	if !opts.NoDashboard {
 		t.Error("expected NoDashboard=true")
+	}
+	if opts.RuntimeMode != "direct" {
+		t.Errorf("RuntimeMode = %q, want %q", opts.RuntimeMode, "direct")
+	}
+	if opts.RuntimeCommand != "codex" {
+		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, "codex")
+	}
+	if opts.AOCommand != "/tmp/ao" {
+		t.Errorf("AOCommand = %q, want %q", opts.AOCommand, "/tmp/ao")
+	}
+	if opts.BDCommand != "/tmp/bd" {
+		t.Errorf("BDCommand = %q, want %q", opts.BDCommand, "/tmp/bd")
+	}
+	if opts.TmuxCommand != "/tmp/tmux" {
+		t.Errorf("TmuxCommand = %q, want %q", opts.TmuxCommand, "/tmp/tmux")
+	}
+}
+
+func TestBuildServeEngineOptions_DefaultsWithoutToolchainOverrides(t *testing.T) {
+	cwd := t.TempDir()
+	opts := buildServeEngineOptions(cwd, "run-default", cliRPI.Toolchain{})
+
+	if opts.RuntimeMode != "auto" {
+		t.Errorf("RuntimeMode = %q, want %q", opts.RuntimeMode, "auto")
+	}
+	if opts.RuntimeCommand != "claude" {
+		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, "claude")
 	}
 }
 

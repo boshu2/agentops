@@ -1360,12 +1360,14 @@ ao rpi serve [goal | run-id] [flags]
 **Flags:**
 
 ```
-  -h, --help            help for serve
-      --no-open         Do not open browser automatically
-      --open            Open browser automatically (default true)
-      --orchestrate     Treat first argument as a goal and run full RPI orchestration
-      --port int        Port to listen on (default 7799)
-      --run-id string   Run ID to watch explicitly (must match rpi-<8-12 hex> or <12 hex>)
+  -h, --help                 help for serve
+      --no-open              Do not open browser automatically
+      --open                 Open browser automatically (default true)
+      --orchestrate          Treat first argument as a goal and run full RPI orchestration
+      --port int             Port to listen on (default 7799)
+      --run-id string        Run ID to watch explicitly (must match rpi-<8-12 hex> or <12 hex>)
+      --runtime string       Phase runtime mode for orchestration: auto|direct|stream|tmux
+      --runtime-cmd string   Runtime command for orchestration phase prompts (Claude uses '-p'; Codex uses 'exec')
 ```
 
 #### `ao rpi status`

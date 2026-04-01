@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 //go:embed assets/watch.html
@@ -31,6 +33,8 @@ var (
 	rpiServeOpen        bool
 	rpiServeNoOpen      bool
 	rpiServeOrchestrate bool
+	rpiServeRuntimeMode string
+	rpiServeRuntimeCmd  string
 )
 
 // rpiRunIDPattern matches persisted run IDs: rpi-<8-12hex> or bare 12-hex.
@@ -101,6 +105,8 @@ The dashboard streams events via Server-Sent Events (SSE) and also polls
 	serveCmd.Flags().BoolVar(&rpiServeOpen, "open", true, "Open browser automatically")
 	serveCmd.Flags().BoolVar(&rpiServeNoOpen, "no-open", false, "Do not open browser automatically")
 	serveCmd.Flags().BoolVar(&rpiServeOrchestrate, "orchestrate", false, "Treat first argument as a goal and run full RPI orchestration")
+	serveCmd.Flags().StringVar(&rpiServeRuntimeMode, "runtime", "", "Phase runtime mode for orchestration: auto|direct|stream|tmux")
+	serveCmd.Flags().StringVar(&rpiServeRuntimeCmd, "runtime-cmd", "", "Runtime command for orchestration phase prompts (Claude uses '-p'; Codex uses 'exec')")
 	addRPISubcommand(serveCmd)
 }
 
@@ -135,7 +141,20 @@ func runRPIServe(cmd *cobra.Command, args []string) error {
 
 	// Orchestration mode: a goal was provided — run the full RPI lifecycle.
 	if goal != "" {
-		return runServeOrchestrate(cwd, goal)
+		toolchain, err := resolveRPIToolchain(
+			cliRPI.Toolchain{
+				RuntimeMode:    rpiServeRuntimeMode,
+				RuntimeCommand: rpiServeRuntimeCmd,
+			},
+			rpiToolchainFlagSet{
+				RuntimeMode:    cmd.Flags().Changed("runtime"),
+				RuntimeCommand: cmd.Flags().Changed("runtime-cmd"),
+			},
+		)
+		if err != nil {
+			return err
+		}
+		return runServeOrchestrate(cwd, goal, toolchain)
 	}
 
 	// Watch mode: observe an existing or upcoming run.
@@ -143,9 +162,9 @@ func runRPIServe(cmd *cobra.Command, args []string) error {
 }
 
 // runServeOrchestrate starts the phased engine with a live dashboard.
-func runServeOrchestrate(cwd, goal string) error {
+func runServeOrchestrate(cwd, goal string, toolchain cliRPI.Toolchain) error {
 	runID := generateRunID()
-	opts := buildServeEngineOptions(cwd, runID)
+	opts := buildServeEngineOptions(cwd, runID, toolchain)
 
 	addr := fmt.Sprintf("localhost:%d", rpiServePort)
 	dashURL := fmt.Sprintf("http://%s?run=%s", addr, runID)
@@ -204,11 +223,26 @@ func runServeOrchestrate(cwd, goal string) error {
 	return nil
 }
 
-func buildServeEngineOptions(cwd, runID string) phasedEngineOptions {
+func buildServeEngineOptions(cwd, runID string, toolchain cliRPI.Toolchain) phasedEngineOptions {
 	opts := defaultPhasedEngineOptions()
 	opts.WorkingDir = cwd
 	opts.RunID = runID
 	opts.NoDashboard = true // serve manages its own dashboard
+	if strings.TrimSpace(toolchain.RuntimeMode) != "" {
+		opts.RuntimeMode = toolchain.RuntimeMode
+	}
+	if strings.TrimSpace(toolchain.RuntimeCommand) != "" {
+		opts.RuntimeCommand = toolchain.RuntimeCommand
+	}
+	if strings.TrimSpace(toolchain.AOCommand) != "" {
+		opts.AOCommand = toolchain.AOCommand
+	}
+	if strings.TrimSpace(toolchain.BDCommand) != "" {
+		opts.BDCommand = toolchain.BDCommand
+	}
+	if strings.TrimSpace(toolchain.TmuxCommand) != "" {
+		opts.TmuxCommand = toolchain.TmuxCommand
+	}
 	return opts
 }
 
