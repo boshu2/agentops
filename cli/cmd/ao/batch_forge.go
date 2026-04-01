@@ -193,13 +193,14 @@ func forgeSingleTranscript(i, total int, t transcriptCandidate, fs *storage.File
 	}
 
 	provRecord := &storage.ProvenanceRecord{
-		ID:           fmt.Sprintf("prov-%s", session.ID[:7]),
-		ArtifactPath: sessionPath,
-		ArtifactType: "session",
-		SourcePath:   t.path,
-		SourceType:   "transcript",
-		SessionID:    session.ID,
-		CreatedAt:    time.Now(),
+		ID:            fmt.Sprintf("prov-%s", session.ID[:7]),
+		ArtifactPath:  sessionPath,
+		WorkspacePath: workspacePathFromAgentArtifactPath(sessionPath),
+		ArtifactType:  "session",
+		SourcePath:    t.path,
+		SourceType:    "transcript",
+		SessionID:     session.ID,
+		CreatedAt:     time.Now(),
 	}
 	if err := fs.WriteProvenance(provRecord); err != nil {
 		fmt.Fprintf(os.Stderr, "  Warning: failed to write provenance: %v\n", err)

@@ -136,7 +136,7 @@ func parseMarkdownSessionSummary(path string) (string, error) {
 
 // parseSessionFile extracts session summary from a file
 func parseSessionFile(path string) (session, error) {
-	s := session{}
+	s := session{Path: path}
 
 	info, err := os.Stat(path)
 	if err != nil {

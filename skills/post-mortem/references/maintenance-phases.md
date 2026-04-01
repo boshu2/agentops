@@ -445,7 +445,7 @@ else
     echo "Processing citation feedback (ao-free fallback)..."
     # Read cited learning files and boost confidence notation
     while IFS= read -r line; do
-      CITED_FILE=$(echo "$line" | grep -o '"learning_file":"[^"]*"' | cut -d'"' -f4)
+      CITED_FILE=$(echo "$line" | grep -o '"artifact_path":"[^"]*"' | cut -d'"' -f4)
       if [ -f "$CITED_FILE" ]; then
         # Note: confidence boost tracked via citation count, not file modification
         echo "Cited: $CITED_FILE"

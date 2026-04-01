@@ -22,6 +22,7 @@ import (
 type FeedbackEvent struct {
 	SessionID      string    `json:"session_id"`
 	ArtifactPath   string    `json:"artifact_path"`
+	WorkspacePath  string    `json:"workspace_path,omitempty"`
 	CitationType   string    `json:"citation_type,omitempty"`
 	Reward         float64   `json:"reward"`
 	UtilityBefore  float64   `json:"utility_before"`
@@ -209,6 +210,7 @@ func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []t
 		event := FeedbackEvent{
 			SessionID:      canonicalSessionID(sessionID),
 			ArtifactPath:   learningPath,
+			WorkspacePath:  canonicalWorkspacePath(cwd, cwd),
 			CitationType:   canonicalCitationType(citation.CitationType),
 			Decision:       "rewarded",
 			Reason:         "feedback-loop-manual",
@@ -363,6 +365,7 @@ func writeCitations(baseDir string, citations []types.CitationEvent) error {
 
 	enc := json.NewEncoder(f)
 	for _, citation := range citations {
+		citation = normalizeCitationEventForRuntime(baseDir, citation)
 		if err := enc.Encode(citation); err != nil {
 			_ = f.Close()
 			return fmt.Errorf("write citation event: %w", err)

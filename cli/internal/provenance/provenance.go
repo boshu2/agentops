@@ -23,6 +23,9 @@ type Record struct {
 	// ArtifactPath is the file that was produced.
 	ArtifactPath string `json:"artifact_path"`
 
+	// WorkspacePath is the workspace root that owns the artifact.
+	WorkspacePath string `json:"workspace_path,omitempty"`
+
 	// ArtifactType classifies the output (session, index, etc).
 	ArtifactType string `json:"artifact_type"`
 
@@ -174,10 +177,11 @@ func (g *Graph) FindBySource(sourcePath string) []Record {
 
 // Stats returns statistics about the provenance graph.
 type Stats struct {
-	TotalRecords   int            `json:"total_records"`
-	ArtifactTypes  map[string]int `json:"artifact_types"`
-	SourceTypes    map[string]int `json:"source_types"`
-	UniqueSessions int            `json:"unique_sessions"`
+	TotalRecords     int            `json:"total_records"`
+	ArtifactTypes    map[string]int `json:"artifact_types"`
+	SourceTypes      map[string]int `json:"source_types"`
+	UniqueSessions   int            `json:"unique_sessions"`
+	UniqueWorkspaces int            `json:"unique_workspaces"`
 }
 
 // GetStats returns statistics about the graph.
@@ -189,14 +193,19 @@ func (g *Graph) GetStats() *Stats {
 	}
 
 	sessions := make(map[string]bool)
+	workspaces := make(map[string]bool)
 	for _, record := range g.Records {
 		stats.ArtifactTypes[record.ArtifactType]++
 		stats.SourceTypes[record.SourceType]++
 		if record.SessionID != "" {
 			sessions[record.SessionID] = true
 		}
+		if record.WorkspacePath != "" {
+			workspaces[record.WorkspacePath] = true
+		}
 	}
 
 	stats.UniqueSessions = len(sessions)
+	stats.UniqueWorkspaces = len(workspaces)
 	return stats
 }

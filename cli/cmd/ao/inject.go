@@ -134,6 +134,7 @@ type knowledgeFinding struct {
 type session struct {
 	Date    string `json:"date"`
 	Summary string `json:"summary"`
+	Path    string `json:"path,omitempty"`
 }
 
 var injectCmd = &cobra.Command{

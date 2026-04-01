@@ -54,8 +54,9 @@ type sessionInfo struct {
 }
 
 type provStats struct {
-	TotalRecords   int `json:"total_records"`
-	UniqueSessions int `json:"unique_sessions"`
+	TotalRecords     int `json:"total_records"`
+	UniqueSessions   int `json:"unique_sessions"`
+	UniqueWorkspaces int `json:"unique_workspaces"`
 }
 
 type flywheelBrief struct {
@@ -156,8 +157,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if err == nil {
 		stats := graph.GetStats()
 		status.ProvenanceStats = &provStats{
-			TotalRecords:   stats.TotalRecords,
-			UniqueSessions: stats.UniqueSessions,
+			TotalRecords:     stats.TotalRecords,
+			UniqueSessions:   stats.UniqueSessions,
+			UniqueWorkspaces: stats.UniqueWorkspaces,
 		}
 	}
 
@@ -226,6 +228,9 @@ func outputStatus(status *statusOutput) error {
 		fmt.Println("\nProvenance:")
 		fmt.Printf("  Records: %d\n", status.ProvenanceStats.TotalRecords)
 		fmt.Printf("  Sessions: %d\n", status.ProvenanceStats.UniqueSessions)
+		if status.ProvenanceStats.UniqueWorkspaces > 0 {
+			fmt.Printf("  Workspaces: %d\n", status.ProvenanceStats.UniqueWorkspaces)
+		}
 	}
 
 	if status.Flywheel != nil {

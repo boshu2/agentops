@@ -49,7 +49,7 @@ score_learning() {
   # Citations (default = 1, +1 per explicit citation)
   local cite_count=1
   if [ -f .agents/ao/citations.jsonl ]; then
-    local explicit=$(grep -c "\"learning_file\":\"$file\"" .agents/ao/citations.jsonl 2>/dev/null || echo 0)
+    local explicit=$(grep -c "\"artifact_path\":\"$file\"" .agents/ao/citations.jsonl 2>/dev/null || echo 0)
     cite_count=$((cite_count + explicit))
   fi
   score=$((score + cite_count))
@@ -150,7 +150,7 @@ check_staleness() {
   # Citation check
   local citations=0
   if [ -f .agents/ao/citations.jsonl ]; then
-    citations=$(grep -c "\"learning_file\":\"$file\"" .agents/ao/citations.jsonl 2>/dev/null || echo 0)
+    citations=$(grep -c "\"artifact_path\":\"$file\"" .agents/ao/citations.jsonl 2>/dev/null || echo 0)
   fi
   if [ "$citations" -gt 0 ]; then
     echo "ACTIVE"
@@ -214,7 +214,7 @@ Citations record when a learning is referenced by other artifacts, providing the
 ### Line Format
 
 ```json
-{"learning_file": "<path>", "cited_by": "<session-or-file>", "timestamp": "<ISO8601>"}
+{"artifact_path": "<path>", "session_id": "<session-id>", "cited_at": "<ISO8601>", "workspace_path": "<absolute-workspace>"}
 ```
 
 ### Citation Counting
@@ -238,9 +238,9 @@ Citations are recorded by these entry points:
 ### Example
 
 ```jsonl
-{"learning_file":".agents/learnings/2026-02-28-crank-wave-isolation.md","cited_by":"session-ag-5k2","timestamp":"2026-03-01T10:15:00-05:00"}
-{"learning_file":".agents/learnings/2026-02-28-crank-wave-isolation.md","cited_by":".agents/council/2026-03-02-post-mortem-cli-refactor.md","timestamp":"2026-03-02T14:30:00-05:00"}
-{"learning_file":".agents/learnings/2026-03-01-codex-flag-divergence.md","cited_by":"session-ag-9zz","timestamp":"2026-03-03T09:00:00-05:00"}
+{"artifact_path":".agents/learnings/2026-02-28-crank-wave-isolation.md","session_id":"session-ag-5k2","cited_at":"2026-03-01T10:15:00-05:00","workspace_path":"/abs/workspace"}
+{"artifact_path":".agents/learnings/2026-02-28-crank-wave-isolation.md","session_id":"session-ag-7m1","cited_at":"2026-03-02T14:30:00-05:00","workspace_path":"/abs/workspace"}
+{"artifact_path":".agents/learnings/2026-03-01-codex-flag-divergence.md","session_id":"session-ag-9zz","cited_at":"2026-03-03T09:00:00-05:00","workspace_path":"/abs/workspace"}
 ```
 
 In this example, `crank-wave-isolation.md` has a total citation count of 3 (1 default + 2 explicit), while `codex-flag-divergence.md` has a total citation count of 2 (1 default + 1 explicit).

@@ -96,6 +96,7 @@ func runContextExplain(cmd *cobra.Command, args []string) error {
 }
 
 func buildContextExplainResult(cwd, repo, query, phase string, bundle rankedContextBundle) contextExplainResult {
+	bundle = rerankContextBundleForPhase(cwd, query, phase, bundle)
 	selected := collectContextExplainSelections(bundle, phase)
 	return contextExplainResult{
 		Query:      query,

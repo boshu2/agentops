@@ -594,6 +594,9 @@ type CitationEvent struct {
 	// ArtifactPath is the absolute path to the cited artifact.
 	ArtifactPath string `json:"artifact_path"`
 
+	// WorkspacePath is the absolute workspace root where the citation was recorded.
+	WorkspacePath string `json:"workspace_path,omitempty"`
+
 	// SessionID is the unique identifier for the session that cited the artifact.
 	SessionID string `json:"session_id"`
 

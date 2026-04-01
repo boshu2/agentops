@@ -99,7 +99,7 @@ After presenting injected knowledge, record which files were injected for the fe
 mkdir -p .agents/ao
 # Record each injected learning file as a citation
 for injected_file in <list of files that were read and presented>; do
-  echo "{\"learning_file\": \"$injected_file\", \"timestamp\": \"$(date -Iseconds)\", \"session\": \"$(date +%Y-%m-%d)\"}" >> .agents/ao/citations.jsonl
+  echo "{\"artifact_path\": \"$injected_file\", \"cited_at\": \"$(date -Iseconds)\", \"session_id\": \"$(date +%Y-%m-%d)\", \"workspace_path\": \"$PWD\"}" >> .agents/ao/citations.jsonl
 done
 ```
 

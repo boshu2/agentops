@@ -101,7 +101,7 @@ else
   # Citation tracking (if citations.jsonl exists)
   if [ -f .agents/ao/citations.jsonl ]; then
     CITATION_COUNT=$(wc -l < .agents/ao/citations.jsonl | tr -d ' ')
-    UNIQUE_CITED=$(grep -o '"learning_file":"[^"]*"' .agents/ao/citations.jsonl 2>/dev/null | sort -u | wc -l | tr -d ' ')
+    UNIQUE_CITED=$(grep -o '"artifact_path":"[^"]*"' .agents/ao/citations.jsonl 2>/dev/null | sort -u | wc -l | tr -d ' ')
     echo "Total citations: $CITATION_COUNT"
     echo "Unique learnings cited: $UNIQUE_CITED"
   else

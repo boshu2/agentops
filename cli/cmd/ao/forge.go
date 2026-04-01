@@ -245,12 +245,13 @@ func writeSessionIndex(fs *storage.FileStorage, session *storage.Session, sessio
 
 func writeSessionProvenance(fs *storage.FileStorage, sessionID, sessionPath, sourcePath, sourceType string, includeSessionID bool) error {
 	provRecord := &storage.ProvenanceRecord{
-		ID:           fmt.Sprintf("prov-%s", sessionID[:7]),
-		ArtifactPath: sessionPath,
-		ArtifactType: "session",
-		SourcePath:   sourcePath,
-		SourceType:   sourceType,
-		CreatedAt:    time.Now(),
+		ID:            fmt.Sprintf("prov-%s", sessionID[:7]),
+		ArtifactPath:  sessionPath,
+		WorkspacePath: workspacePathFromAgentArtifactPath(sessionPath),
+		ArtifactType:  "session",
+		SourcePath:    sourcePath,
+		SourceType:    sourceType,
+		CreatedAt:     time.Now(),
 	}
 	if includeSessionID {
 		provRecord.SessionID = sessionID

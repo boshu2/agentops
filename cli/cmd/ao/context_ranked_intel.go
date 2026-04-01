@@ -7,6 +7,8 @@ import (
 )
 
 type rankedContextBundle struct {
+	CWD            string
+	Query          string
 	Packet         StigmergicPacket
 	Learnings      []learning
 	Patterns       []pattern
@@ -71,6 +73,8 @@ func collectRankedContextBundle(cwd, query string, limit int) rankedContextBundl
 	nextWork, _ := readUnconsumedItems(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"), repo)
 
 	return rankedContextBundle{
+		CWD:            cwd,
+		Query:          query,
 		Packet:         packet,
 		Learnings:      limitLearnings(learnings, limit),
 		Patterns:       limitPatterns(patterns, limit),
@@ -95,6 +99,8 @@ func buildRankedContextBundle(cwd, query string, limit int, learnings []learning
 	})
 
 	return rankedContextBundle{
+		CWD:            cwd,
+		Query:          query,
 		Packet:         packet,
 		Learnings:      limitLearnings(learnings, limit),
 		Patterns:       limitPatterns(patterns, limit),
@@ -111,6 +117,7 @@ func renderRankedIntelSection(cwd, query, phase string, budget int) string {
 }
 
 func renderRankedIntelSectionFromBundle(bundle rankedContextBundle, phase string, budget int) string {
+	bundle = rerankContextBundleForPhase(bundle.CWD, bundle.Query, phase, bundle)
 	var sb strings.Builder
 	for _, section := range rankedIntelSections(bundle, phase) {
 		if len(section.Bullets) == 0 {

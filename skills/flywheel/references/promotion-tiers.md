@@ -43,7 +43,7 @@ When comparing confidence across formats:
 
 Citations are recorded in `.agents/ao/citations.jsonl`:
 ```json
-{"learning_file": ".agents/learnings/example.md", "timestamp": "2026-02-19T12:00:00Z", "session": "session-id"}
+{"artifact_path": ".agents/learnings/example.md", "cited_at": "2026-02-19T12:00:00Z", "session_id": "session-id", "workspace_path": "/abs/workspace"}
 ```
 
 The `/inject` skill records citations when knowledge is loaded into a session.

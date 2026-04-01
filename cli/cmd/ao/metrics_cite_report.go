@@ -44,8 +44,10 @@ Examples:
 // citeReportData holds the aggregated citation report.
 type citeReportData struct {
 	TotalCitations   int             `json:"total_citations"`
+	DedupedCitations int             `json:"deduped_citations"`
 	UniqueArtifacts  int             `json:"unique_artifacts"`
 	UniqueSessions   int             `json:"unique_sessions"`
+	UniqueWorkspaces int             `json:"unique_workspaces"`
 	HitRate          float64         `json:"hit_rate"`
 	HitCount         int             `json:"hit_count"`
 	TopArtifacts     []artifactCount `json:"top_artifacts"`
@@ -119,9 +121,12 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 		Staleness:      make(map[string]int),
 	}
 
-	artifactCounts, sessions, artifactSessions, feedbackTotal, feedbackGiven := buildCiteArtifactStats(filtered, baseDir)
+	aggregate := buildCitationAggregate(baseDir, filtered)
+	artifactCounts, sessions, workspaces, artifactSessions, feedbackTotal, feedbackGiven := buildCiteArtifactStats(filtered, baseDir)
+	report.DedupedCitations = aggregate.DedupedEvents
 	report.UniqueArtifacts = len(artifactCounts)
 	report.UniqueSessions = len(sessions)
+	report.UniqueWorkspaces = len(workspaces)
 	report.FeedbackTotal = feedbackTotal
 	report.FeedbackGiven = feedbackGiven
 
@@ -148,16 +153,22 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 func buildCiteArtifactStats(filtered []types.CitationEvent, baseDir string) (
 	artifactCounts map[string]int,
 	sessions map[string]bool,
+	workspaces map[string]bool,
 	artifactSessions map[string]map[string]bool,
 	feedbackTotal, feedbackGiven int,
 ) {
 	artifactCounts = make(map[string]int)
 	sessions = make(map[string]bool)
+	workspaces = make(map[string]bool)
 	artifactSessions = make(map[string]map[string]bool)
 	for _, c := range filtered {
+		c = normalizeCitationEventForRuntime(baseDir, c)
 		canonicalPath := canonicalArtifactPath(baseDir, c.ArtifactPath)
 		artifactCounts[canonicalPath]++
 		sessions[c.SessionID] = true
+		if c.WorkspacePath != "" {
+			workspaces[c.WorkspacePath] = true
+		}
 		if artifactSessions[canonicalPath] == nil {
 			artifactSessions[canonicalPath] = make(map[string]bool)
 		}
@@ -249,8 +260,10 @@ func printCiteReport(w io.Writer, r citeReportData) {
 
 	fmt.Fprintln(w, "SUMMARY:")
 	fmt.Fprintf(w, "  Total citations:     %d\n", r.TotalCitations)
+	fmt.Fprintf(w, "  Deduped citations:   %d\n", r.DedupedCitations)
 	fmt.Fprintf(w, "  Unique artifacts:    %d\n", r.UniqueArtifacts)
 	fmt.Fprintf(w, "  Unique sessions:     %d\n", r.UniqueSessions)
+	fmt.Fprintf(w, "  Unique workspaces:   %d\n", r.UniqueWorkspaces)
 	fmt.Fprintf(w, "  Hit rate (2+ sess):  %.0f%% (%d/%d)\n", r.HitRate*100, r.HitCount, r.UniqueArtifacts)
 	fmt.Fprintln(w)
 

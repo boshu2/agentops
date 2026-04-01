@@ -398,6 +398,11 @@ func TestRecordAndLoadCitations(t *testing.T) {
 	if len(citations) != 3 {
 		t.Errorf("expected 3 citations, got %d", len(citations))
 	}
+	for _, citation := range citations {
+		if got, want := citation.WorkspacePath, baseDir; got != want {
+			t.Fatalf("WorkspacePath = %q, want %q", got, want)
+		}
+	}
 
 	// Count for specific artifact
 	count, err := CountCitationsForArtifact(baseDir, "/path/to/artifact.md")
@@ -426,6 +431,35 @@ func TestLoadCitations_NoFile(t *testing.T) {
 	}
 	if citations != nil {
 		t.Errorf("expected nil citations for missing file, got %v", citations)
+	}
+}
+
+func TestLoadCitations_LegacyFields(t *testing.T) {
+	baseDir := t.TempDir()
+	citationsPath := filepath.Join(baseDir, CitationsFilePath)
+	if err := os.MkdirAll(filepath.Dir(citationsPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	line := `{"learning_file":".agents/learnings/legacy.md","timestamp":"2026-04-01T12:00:00Z","session":"legacy-session","workspace":"."}` + "\n"
+	if err := os.WriteFile(citationsPath, []byte(line), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	citations, err := LoadCitations(baseDir)
+	if err != nil {
+		t.Fatalf("LoadCitations failed: %v", err)
+	}
+	if len(citations) != 1 {
+		t.Fatalf("expected 1 citation, got %d", len(citations))
+	}
+	if got, want := citations[0].ArtifactPath, filepath.Join(baseDir, ".agents", "learnings", "legacy.md"); got != want {
+		t.Fatalf("ArtifactPath = %q, want %q", got, want)
+	}
+	if got, want := citations[0].WorkspacePath, baseDir; got != want {
+		t.Fatalf("WorkspacePath = %q, want %q", got, want)
+	}
+	if got, want := citations[0].SessionID, "legacy-session"; got != want {
+		t.Fatalf("SessionID = %q, want %q", got, want)
 	}
 }
 
@@ -2578,4 +2612,3 @@ func TestValidateCloseReason_TildeRelativePath(t *testing.T) {
 		t.Errorf("expected 'relative path' issue, got: %v", issues)
 	}
 }
-

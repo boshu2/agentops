@@ -803,6 +803,18 @@ func CanonicalArtifactPath(baseDir, artifactPath string) string {
 	return filepath.Clean(p)
 }
 
+// CanonicalWorkspacePath resolves a workspace root to a stable absolute form.
+func CanonicalWorkspacePath(baseDir, workspacePath string) string {
+	p := strings.TrimSpace(workspacePath)
+	if p == "" {
+		p = strings.TrimSpace(baseDir)
+	}
+	if p == "" {
+		return ""
+	}
+	return CanonicalArtifactPath(baseDir, p)
+}
+
 // RecordCitation appends a citation event to the citations log.
 // Creates the file and parent directories if they don't exist.
 func RecordCitation(baseDir string, event types.CitationEvent) error {
@@ -811,6 +823,7 @@ func RecordCitation(baseDir string, event types.CitationEvent) error {
 		event.CitedAt = time.Now()
 	}
 	event.ArtifactPath = CanonicalArtifactPath(baseDir, event.ArtifactPath)
+	event.WorkspacePath = CanonicalWorkspacePath(baseDir, event.WorkspacePath)
 
 	// Build full path
 	citationsPath := filepath.Join(baseDir, CitationsFilePath)
@@ -850,12 +863,81 @@ func parseCitationLine(line []byte, baseDir string) (types.CitationEvent, bool) 
 	if len(line) == 0 {
 		return types.CitationEvent{}, false
 	}
-	var event types.CitationEvent
-	if err := json.Unmarshal(line, &event); err != nil {
+	var raw map[string]any
+	if err := json.Unmarshal(line, &raw); err != nil {
 		return types.CitationEvent{}, false
 	}
+	event := types.CitationEvent{
+		ArtifactPath:   firstCitationString(raw, "artifact_path", "learning_file"),
+		WorkspacePath:  firstCitationString(raw, "workspace_path", "workspace"),
+		SessionID:      firstCitationString(raw, "session_id", "session", "cited_by"),
+		CitationType:   firstCitationString(raw, "citation_type", "type"),
+		Query:          firstCitationString(raw, "query"),
+		FeedbackGiven:  citationBool(raw, "feedback_given"),
+		FeedbackReward: citationFloat(raw, "feedback_reward"),
+		UtilityBefore:  citationFloat(raw, "utility_before"),
+		UtilityAfter:   citationFloat(raw, "utility_after"),
+	}
+	if citedAt, ok := citationTime(raw, "cited_at", "timestamp"); ok {
+		event.CitedAt = citedAt
+	}
+	if feedbackAt, ok := citationTime(raw, "feedback_at"); ok {
+		event.FeedbackAt = feedbackAt
+	}
 	event.ArtifactPath = CanonicalArtifactPath(baseDir, event.ArtifactPath)
+	event.WorkspacePath = CanonicalWorkspacePath(baseDir, event.WorkspacePath)
 	return event, true
+}
+
+func firstCitationString(raw map[string]any, keys ...string) string {
+	for _, key := range keys {
+		value, ok := raw[key]
+		if !ok {
+			continue
+		}
+		if s, ok := value.(string); ok {
+			if trimmed := strings.TrimSpace(s); trimmed != "" {
+				return trimmed
+			}
+		}
+	}
+	return ""
+}
+
+func citationBool(raw map[string]any, key string) bool {
+	value, ok := raw[key]
+	if !ok {
+		return false
+	}
+	b, ok := value.(bool)
+	return ok && b
+}
+
+func citationFloat(raw map[string]any, key string) float64 {
+	value, ok := raw[key]
+	if !ok {
+		return 0
+	}
+	f, ok := value.(float64)
+	if ok {
+		return f
+	}
+	return 0
+}
+
+func citationTime(raw map[string]any, keys ...string) (time.Time, bool) {
+	for _, key := range keys {
+		value := firstCitationString(raw, key)
+		if value == "" {
+			continue
+		}
+		for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02T15:04:05"} {
+			if parsed, err := time.Parse(layout, value); err == nil {
+				return parsed, true
+			}
+		}
+	}
+	return time.Time{}, false
 }
 
 // LoadCitations reads all citation events from the citations JSONL log.

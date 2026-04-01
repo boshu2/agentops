@@ -302,13 +302,14 @@ func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, erro
 
 	// Write provenance
 	provRecord := &storage.ProvenanceRecord{
-		ID:           fmt.Sprintf("prov-%s", session.ID[:7]),
-		ArtifactPath: sessionPath,
-		ArtifactType: "session",
-		SourcePath:   transcriptPath,
-		SourceType:   "transcript",
-		SessionID:    session.ID,
-		CreatedAt:    time.Now(),
+		ID:            fmt.Sprintf("prov-%s", session.ID[:7]),
+		ArtifactPath:  sessionPath,
+		WorkspacePath: canonicalWorkspacePath(cwd, cwd),
+		ArtifactType:  "session",
+		SourcePath:    transcriptPath,
+		SourceType:    "transcript",
+		SessionID:     session.ID,
+		CreatedAt:     time.Now(),
 	}
 	if err := fs.WriteProvenance(provRecord); err != nil {
 		VerbosePrintf("Warning: failed to write provenance: %v\n", err)

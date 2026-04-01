@@ -33,10 +33,10 @@ func writeCitationsJSONL(t *testing.T, dir string, events []types.CitationEvent)
 
 func sampleCitations(now time.Time) []types.CitationEvent {
 	return []types.CitationEvent{
-		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", SessionID: "s1", CitedAt: now.AddDate(0, 0, -5), FeedbackGiven: true},
-		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", SessionID: "s2", CitedAt: now.AddDate(0, 0, -3), FeedbackGiven: false},
-		{ArtifactPath: "/tmp/test/.agents/learnings/b.md", SessionID: "s1", CitedAt: now.AddDate(0, 0, -2), FeedbackGiven: true},
-		{ArtifactPath: "/tmp/test/.agents/patterns/c.md", SessionID: "s3", CitedAt: now.AddDate(0, 0, -1), FeedbackGiven: false},
+		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", WorkspacePath: "/tmp/test", SessionID: "s1", CitedAt: now.AddDate(0, 0, -5), FeedbackGiven: true},
+		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", WorkspacePath: "/tmp/test", SessionID: "s2", CitedAt: now.AddDate(0, 0, -3), FeedbackGiven: false},
+		{ArtifactPath: "/tmp/test/.agents/learnings/b.md", WorkspacePath: "/tmp/other", SessionID: "s1", CitedAt: now.AddDate(0, 0, -2), FeedbackGiven: true},
+		{ArtifactPath: "/tmp/test/.agents/patterns/c.md", WorkspacePath: "/tmp/test", SessionID: "s3", CitedAt: now.AddDate(0, 0, -1), FeedbackGiven: false},
 	}
 }
 
@@ -67,6 +67,12 @@ func TestCiteReportHumanOutput(t *testing.T) {
 	}
 	if report.UniqueSessions != 3 {
 		t.Errorf("expected 3 unique sessions, got %d", report.UniqueSessions)
+	}
+	if report.UniqueWorkspaces != 2 {
+		t.Errorf("expected 2 unique workspaces, got %d", report.UniqueWorkspaces)
+	}
+	if report.DedupedCitations != 4 {
+		t.Errorf("expected 4 deduped citations, got %d", report.DedupedCitations)
 	}
 	// a.md is cited by s1 and s2 => hit count = 1
 	if report.HitCount != 1 {

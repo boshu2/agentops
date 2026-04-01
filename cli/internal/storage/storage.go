@@ -77,6 +77,9 @@ type ProvenanceRecord struct {
 	// ArtifactPath is the file that was produced.
 	ArtifactPath string `json:"artifact_path"`
 
+	// WorkspacePath is the workspace root that owns the artifact.
+	WorkspacePath string `json:"workspace_path,omitempty"`
+
 	// ArtifactType classifies the output (session, index, etc).
 	ArtifactType string `json:"artifact_type"`
 

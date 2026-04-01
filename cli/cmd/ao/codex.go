@@ -132,12 +132,15 @@ type codexPromotionHealth struct {
 }
 
 type codexCitationHealth struct {
-	WindowDays      int `json:"window_days"`
-	Total           int `json:"total"`
-	UniqueArtifacts int `json:"unique_artifacts"`
-	Retrieved       int `json:"retrieved"`
-	Reference       int `json:"reference"`
-	Applied         int `json:"applied"`
+	WindowDays       int `json:"window_days"`
+	Total            int `json:"total"`
+	Deduped          int `json:"deduped"`
+	UniqueArtifacts  int `json:"unique_artifacts"`
+	UniqueSessions   int `json:"unique_sessions"`
+	UniqueWorkspaces int `json:"unique_workspaces"`
+	Retrieved        int `json:"retrieved"`
+	Reference        int `json:"reference"`
+	Applied          int `json:"applied"`
 }
 
 type codexStatusResult struct {
@@ -884,16 +887,17 @@ func collectCodexCitationHealth(cwd string, days int) codexCitationHealth {
 	}
 	end := time.Now()
 	start := end.AddDate(0, 0, -days)
-	unique := make(map[string]bool)
+	var filtered []types.CitationEvent
 	for _, citation := range citations {
+		citation = normalizeCitationEventForRuntime(cwd, citation)
 		if citation.CitedAt.Before(start) || citation.CitedAt.After(end) {
 			continue
 		}
 		if !isRetrievableArtifactPath(cwd, citation.ArtifactPath) {
 			continue
 		}
+		filtered = append(filtered, citation)
 		result.Total++
-		unique[canonicalArtifactKey(cwd, citation.ArtifactPath)] = true
 		switch canonicalCitationType(citation.CitationType) {
 		case "applied":
 			result.Applied++
@@ -903,7 +907,11 @@ func collectCodexCitationHealth(cwd string, days int) codexCitationHealth {
 			result.Retrieved++
 		}
 	}
-	result.UniqueArtifacts = len(unique)
+	aggregate := buildCitationAggregate(cwd, filtered)
+	result.Deduped = aggregate.DedupedEvents
+	result.UniqueArtifacts = aggregate.UniqueArtifacts
+	result.UniqueSessions = aggregate.UniqueSessions
+	result.UniqueWorkspaces = aggregate.UniqueWorkspaces
 	return result
 }
 

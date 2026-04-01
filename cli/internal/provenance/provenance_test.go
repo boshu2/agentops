@@ -178,10 +178,10 @@ func TestGraph_FindBySource(t *testing.T) {
 }
 
 func TestGraph_GetStats(t *testing.T) {
-	content := `{"id":"prov-1","artifact_path":"/out/1.md","artifact_type":"session","source_path":"/in/1.jsonl","source_type":"transcript","session_id":"sess-001"}
-{"id":"prov-2","artifact_path":"/out/2.jsonl","artifact_type":"index","source_path":"/in/1.jsonl","source_type":"transcript","session_id":"sess-001"}
-{"id":"prov-3","artifact_path":"/out/3.md","artifact_type":"session","source_path":"/in/2.jsonl","source_type":"transcript","session_id":"sess-002"}
-{"id":"prov-4","artifact_path":"/out/4.md","artifact_type":"learning","source_path":"/out/3.md","source_type":"session"}`
+	content := `{"id":"prov-1","artifact_path":"/out/1.md","workspace_path":"/work/a","artifact_type":"session","source_path":"/in/1.jsonl","source_type":"transcript","session_id":"sess-001"}
+{"id":"prov-2","artifact_path":"/out/2.jsonl","workspace_path":"/work/a","artifact_type":"index","source_path":"/in/1.jsonl","source_type":"transcript","session_id":"sess-001"}
+{"id":"prov-3","artifact_path":"/out/3.md","workspace_path":"/work/b","artifact_type":"session","source_path":"/in/2.jsonl","source_type":"transcript","session_id":"sess-002"}
+{"id":"prov-4","artifact_path":"/out/4.md","workspace_path":"/work/b","artifact_type":"learning","source_path":"/out/3.md","source_type":"session"}`
 	path := createTestProvFile(t, content)
 
 	g, err := NewGraph(path)
@@ -217,6 +217,9 @@ func TestGraph_GetStats(t *testing.T) {
 	// Check unique sessions
 	if stats.UniqueSessions != 2 {
 		t.Errorf("UniqueSessions = %d, want 2", stats.UniqueSessions)
+	}
+	if stats.UniqueWorkspaces != 2 {
+		t.Errorf("UniqueWorkspaces = %d, want 2", stats.UniqueWorkspaces)
 	}
 }
 
