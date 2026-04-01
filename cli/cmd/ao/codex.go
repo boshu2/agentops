@@ -802,6 +802,8 @@ func saveCodexLifecycleState(path string, state *codexLifecycleState) error {
 }
 
 func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query string, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef) (string, error) {
+	bundle := buildRankedContextBundle(cwd, query, codexStartLimit, learnings, patterns, findings, recentSessions, nextWork, research)
+
 	var sb strings.Builder
 	sb.WriteString("# Codex Startup Context\n\n")
 	sb.WriteString(fmt.Sprintf("- Runtime: %s\n", profile.Runtime))
@@ -812,53 +814,11 @@ func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query
 	if query != "" {
 		sb.WriteString(fmt.Sprintf("- Query: %s\n", query))
 	}
-	sb.WriteString("\n## Learnings\n")
-	if len(learnings) == 0 {
-		sb.WriteString("- None surfaced\n")
-	} else {
-		for _, item := range learnings {
-			sb.WriteString(fmt.Sprintf("- %s\n", firstLine(item.Title)))
-		}
-	}
-	sb.WriteString("\n## Patterns\n")
-	if len(patterns) == 0 {
-		sb.WriteString("- None surfaced\n")
-	} else {
-		for _, item := range patterns {
-			sb.WriteString(fmt.Sprintf("- %s\n", firstLine(item.Name)))
-		}
-	}
-	sb.WriteString("\n## Findings\n")
-	if len(findings) == 0 {
-		sb.WriteString("- None surfaced\n")
-	} else {
-		for _, item := range findings {
-			sb.WriteString(fmt.Sprintf("- %s\n", firstLine(item.Title)))
-		}
-	}
-	sb.WriteString("\n## Next Work\n")
-	if len(nextWork) == 0 {
-		sb.WriteString("- No queued next work\n")
-	} else {
-		for _, item := range nextWork {
-			sb.WriteString(fmt.Sprintf("- %s\n", firstLine(item.Title)))
-		}
-	}
-	sb.WriteString("\n## Recent Sessions\n")
-	if len(recentSessions) == 0 {
-		sb.WriteString("- No recent session summaries\n")
-	} else {
-		for _, item := range recentSessions {
-			sb.WriteString(fmt.Sprintf("- %s: %s\n", item.Date, firstLine(item.Summary)))
-		}
-	}
-	sb.WriteString("\n## Research\n")
-	if len(research) == 0 {
-		sb.WriteString("- No recent research surfaced\n")
-	} else {
-		for _, item := range research {
-			sb.WriteString(fmt.Sprintf("- %s\n", item.Title))
-		}
+	sb.WriteString("\n## Selected Context\n")
+	sb.WriteString(renderRankedIntelSectionFromBundle(bundle, "startup", 4000))
+	sb.WriteString("\n## Excluded By Default\n")
+	for _, bullet := range codexStartupExclusionBullets() {
+		sb.WriteString(fmt.Sprintf("- %s\n", bullet))
 	}
 
 	path := filepath.Join(cwd, ".agents", "ao", "codex", "startup-context.md")

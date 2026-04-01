@@ -66,6 +66,7 @@ const protocolTemplate = `## PROTOCOL
 
 var (
 	assembleTask     string
+	assemblePhase    string
 	assembleMaxChars int
 	assembleOutput   string
 )
@@ -86,6 +87,7 @@ Examples:
 		RunE: runContextAssemble,
 	}
 	assembleCmd.Flags().StringVar(&assembleTask, "task", "", "Task description (required)")
+	assembleCmd.Flags().StringVar(&assemblePhase, "phase", "task", "Context phase: task, startup, planning, pre-mortem, validation")
 	assembleCmd.Flags().IntVar(&assembleMaxChars, "max-chars", defaultAssembleMaxChars, "Total character budget")
 	assembleCmd.Flags().StringVar(&assembleOutput, "output-file", defaultAssembleOutput, "Output path for briefing")
 	_ = assembleCmd.MarkFlagRequired("task")
@@ -103,7 +105,7 @@ func runContextAssemble(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build sections.
-	sections := assembleSections(cwd, assembleTask, assembleMaxChars)
+	sections := assembleSectionsForPhase(cwd, assembleTask, assemblePhase, assembleMaxChars)
 
 	// Compose markdown.
 	md := composeBriefingMarkdown(sections)
@@ -145,6 +147,10 @@ type assembledSection struct {
 }
 
 func assembleSections(cwd, task string, maxChars int) []assembledSection {
+	return assembleSectionsForPhase(cwd, task, "task", maxChars)
+}
+
+func assembleSectionsForPhase(cwd, task, phase string, maxChars int) []assembledSection {
 	// Scale budgets proportionally if maxChars differs from default.
 	scale := float64(maxChars) / float64(defaultAssembleMaxChars)
 	bGoals := int(float64(budgetGoals) * scale)
@@ -176,7 +182,7 @@ func assembleSections(cwd, task string, maxChars int) []assembledSection {
 	})
 
 	// 3. INTEL
-	intelContent := gatherIntel(cwd, task, bIntel)
+	intelContent := gatherIntel(cwd, task, phase, bIntel)
 	intelContent, intelRedactions := redactContent(intelContent, cwd)
 	sections = append(sections, assembledSection{
 		Name:       sectionIntel,
@@ -362,58 +368,18 @@ func formatHistoryValue(value interface{}) interface{} {
 	}
 }
 
-func gatherIntel(cwd, task string, budget int) string {
+func gatherIntel(cwd, task, phase string, budget int) string {
 	var sb strings.Builder
 	sb.WriteString("## INTEL\n\n")
-
-	// Collect from .agents/learnings/ and .agents/patterns/ in one combined pass.
-	allEntries := collectIntelEntries(cwd)
-
-	if len(allEntries) == 0 {
-		sb.WriteString("_No learnings or patterns found._\n")
-		return truncateToCharBudget(sb.String(), budget)
-	}
-
-	// Filter by task relevance (simple substring match).
-	taskLower := strings.ToLower(task)
-	taskWords := strings.Fields(taskLower)
-
-	var relevant []intelEntry
-	var other []intelEntry
-	for _, e := range allEntries {
-		contentLower := strings.ToLower(e.title + " " + e.content)
-		matched := false
-		for _, word := range taskWords {
-			if len(word) > 3 && strings.Contains(contentLower, word) {
-				matched = true
-				break
-			}
-		}
-		if matched {
-			relevant = append(relevant, e)
-		} else {
-			other = append(other, e)
-		}
-	}
-
-	// Relevant entries first, then others to fill budget.
-	combined := append(relevant, other...)
-
-	for _, e := range combined {
-		entry := fmt.Sprintf("### %s (%s)\n%s\n\n", e.title, e.kind, e.content)
-		if sb.Len()+len(entry) > budget {
-			break
-		}
-		sb.WriteString(entry)
-	}
-
+	sb.WriteString(renderRankedIntelSection(cwd, task, phase, budget))
 	return truncateToCharBudget(sb.String(), budget)
 }
 
 type intelEntry struct {
-	title   string
-	content string
-	kind    string // "learning" or "pattern"
+	title      string
+	content    string
+	kind       string // "learning" or "pattern"
+	sourcePath string
 }
 
 func collectIntelEntries(cwd string) []intelEntry {
@@ -461,9 +427,10 @@ func readIntelDir(dir, kind string) []intelEntry {
 
 		title := strings.TrimSuffix(name, filepath.Ext(name))
 		result = append(result, intelEntry{
-			title:   title,
-			content: content,
-			kind:    kind,
+			title:      title,
+			content:    content,
+			kind:       kind,
+			sourcePath: filepath.Join(dir, name),
 		})
 	}
 	return result
@@ -622,6 +589,7 @@ type provenanceManifest struct {
 	Timestamp  string             `json:"timestamp"`
 	OutputPath string             `json:"output_path"`
 	Task       string             `json:"task"`
+	Phase      string             `json:"phase"`
 	MaxChars   int                `json:"max_chars"`
 	Sections   []assembledSection `json:"sections"`
 }
@@ -639,6 +607,7 @@ func writeProvenanceManifest(cwd, outPath string, sections []assembledSection) e
 		Timestamp:  time.Now().UTC().Format(time.RFC3339),
 		OutputPath: outPath,
 		Task:       assembleTask,
+		Phase:      normalizeAssemblePhase(assemblePhase),
 		MaxChars:   assembleMaxChars,
 		Sections:   sections,
 	}

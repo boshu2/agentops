@@ -222,6 +222,92 @@ Use ao codex start and ao codex stop when runtime hooks are unavailable.
 	}
 }
 
+func TestWriteCodexStartupContextUsesRankedSectionsAndPolicy(t *testing.T) {
+	repo := t.TempDir()
+	for _, rel := range []string{
+		filepath.Join(".agents", "findings"),
+		filepath.Join(".agents", "planning-rules"),
+		filepath.Join(".agents", "pre-mortem-checks"),
+		filepath.Join(".agents", "ao", "codex"),
+	} {
+		if err := os.MkdirAll(filepath.Join(repo, rel), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	finding := `---
+id: "f-startup-002"
+title: "Prefer startup packet over recency dump"
+status: "active"
+severity: "high"
+applicable_when: ["task","startup"]
+scope_tags: ["startup","context"]
+---
+# Finding
+
+Prefer startup packet over arbitrary recent artifacts.
+`
+	if err := os.WriteFile(filepath.Join(repo, ".agents", "findings", "f-startup-002.md"), []byte(finding), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rule := `---
+id: "f-startup-002"
+---
+# Planning Rule
+
+- Ask: Did startup context use ranked rules before recent documents?
+`
+	if err := os.WriteFile(filepath.Join(repo, ".agents", "planning-rules", "f-startup-002.md"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	check := `---
+id: "f-startup-002"
+---
+# Pre-Mortem Check
+
+- Ask: Did startup context exclude discovery-only notes?
+`
+	if err := os.WriteFile(filepath.Join(repo, ".agents", "pre-mortem-checks", "f-startup-002.md"), []byte(check), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	profile := lifecycleRuntimeProfile{Runtime: runtimeKindCodex, Mode: lifecycleModeCodexHookless, ThreadName: "startup"}
+	path, err := writeCodexStartupContext(
+		repo,
+		profile,
+		"startup packet",
+		[]learning{{Title: "Use ranked startup packet", Summary: "Prefer rules and findings over recency."}},
+		[]pattern{{Name: "Small startup payloads", Description: "Keep startup context concise and high trust."}},
+		[]knowledgeFinding{{ID: "f-startup-002", Title: "Prefer startup packet over recency dump", Summary: "Prefer ranked startup packet."}},
+		[]session{{Date: "2026-04-01", Summary: "Reworked startup context."}},
+		[]nextWorkItem{{Title: "Wire startup context to ranked packet", Severity: "high", Description: "Replace low-signal startup dump"}},
+		[]codexArtifactRef{{Title: "Session intelligence research", ModifiedAt: "2026-04-01T22:00:00Z"}},
+	)
+	if err != nil {
+		t.Fatalf("writeCodexStartupContext: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read startup context: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "## Selected Context") {
+		t.Fatalf("expected ranked startup heading, got:\n%s", content)
+	}
+	if !strings.Contains(content, "### Planning Rules") {
+		t.Fatalf("expected planning rules in startup context, got:\n%s", content)
+	}
+	if !strings.Contains(content, "## Excluded By Default") {
+		t.Fatalf("expected exclusion policy heading, got:\n%s", content)
+	}
+	if !strings.Contains(content, "Wire startup context to ranked packet") {
+		t.Fatalf("expected ranked next work in startup context, got:\n%s", content)
+	}
+}
+
 func TestCodexEnsureStartJSONSkipsDuplicateStartupForSameSession(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

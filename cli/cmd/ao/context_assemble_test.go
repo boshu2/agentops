@@ -17,6 +17,9 @@ func TestContextAssembleOutputFileFlag(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("context assemble command not found")
 	}
+	if phaseFlag := cmd.Flags().Lookup("phase"); phaseFlag == nil {
+		t.Fatal("expected --phase flag on context assemble, not found")
+	}
 	f := cmd.Flags().Lookup("output-file")
 	if f == nil {
 		t.Fatal("expected --output-file flag on context assemble, not found")
@@ -389,16 +392,19 @@ func TestContextAssemble_CommandWritesBriefingAndManifest(t *testing.T) {
 
 	outPath := filepath.Join(tmp, ".agents", "rpi", "smoke-briefing.md")
 	oldTask := assembleTask
+	oldPhase := assemblePhase
 	oldMax := assembleMaxChars
 	oldOutput := assembleOutput
 	oldMode := output
 
 	assembleTask = "Smoke task"
+	assemblePhase = "planning"
 	assembleMaxChars = 12000
 	assembleOutput = outPath
 	output = "table"
 	defer func() {
 		assembleTask = oldTask
+		assemblePhase = oldPhase
 		assembleMaxChars = oldMax
 		assembleOutput = oldOutput
 		output = oldMode
@@ -434,6 +440,90 @@ func TestContextAssemble_CommandWritesBriefingAndManifest(t *testing.T) {
 	}
 	if len(manifestEntries) == 0 {
 		t.Fatal("expected at least one provenance manifest file")
+	}
+
+	manifestPath := filepath.Join(injectDir, manifestEntries[0].Name())
+	manifestData, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read provenance manifest: %v", err)
+	}
+	var manifest provenanceManifest
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		t.Fatalf("parse provenance manifest: %v", err)
+	}
+	if manifest.Phase != "planning" {
+		t.Fatalf("manifest phase = %q, want planning", manifest.Phase)
+	}
+}
+
+func TestContextAssemble_IntelUsesRankedSignals(t *testing.T) {
+	tmp := t.TempDir()
+	for _, rel := range []string{
+		filepath.Join(".agents", "findings"),
+		filepath.Join(".agents", "planning-rules"),
+		filepath.Join(".agents", "pre-mortem-checks"),
+		filepath.Join(".agents", "rpi"),
+	} {
+		if err := os.MkdirAll(filepath.Join(tmp, rel), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	finding := `---
+id: "f-startup-001"
+title: "Rank startup context before recency"
+status: "active"
+severity: "high"
+applicable_when: ["task","startup"]
+scope_tags: ["startup","context"]
+---
+# Finding
+
+Use ranked startup context instead of arbitrary recent documents.
+`
+	if err := os.WriteFile(filepath.Join(tmp, ".agents", "findings", "f-startup-001.md"), []byte(finding), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rule := `---
+id: "f-startup-001"
+---
+# Planning Rule
+
+- Ask: Did startup context prefer ranked signals before recent artifacts?
+`
+	if err := os.WriteFile(filepath.Join(tmp, ".agents", "planning-rules", "f-startup-001.md"), []byte(rule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	check := `---
+id: "f-startup-001"
+---
+# Pre-Mortem Check
+
+- Ask: Did startup context avoid arbitrary recency?
+`
+	if err := os.WriteFile(filepath.Join(tmp, ".agents", "pre-mortem-checks", "f-startup-001.md"), []byte(check), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	queue := `{"source_epic":"ag-amg","timestamp":"2026-04-01T22:00:00Z","items":[{"title":"Wire startup context to ranked packet","type":"feature","severity":"high","source":"research","description":"Use packet-ranked startup payloads","target_repo":"` + detectRepoName(tmp) + `","consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
+`
+	if err := os.WriteFile(filepath.Join(tmp, ".agents", "rpi", "next-work.jsonl"), []byte(queue), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	sections := assembleSectionsForPhase(tmp, "rank startup context before falling back to recency", "startup", defaultAssembleMaxChars)
+	intelContent := sections[2].Content
+
+	if !strings.Contains(intelContent, "### Planning Rules") {
+		t.Fatalf("expected planning rules in ranked INTEL, got:\n%s", intelContent)
+	}
+	if !strings.Contains(intelContent, "### Relevant Next Work") {
+		t.Fatalf("expected ranked next work in INTEL, got:\n%s", intelContent)
+	}
+	if !strings.Contains(intelContent, "Wire startup context to ranked packet") {
+		t.Fatalf("expected ranked queue item in INTEL, got:\n%s", intelContent)
 	}
 }
 
