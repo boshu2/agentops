@@ -195,15 +195,6 @@ func rankedIntelSections(bundle rankedContextBundle, phase string) []intelSectio
 	return specs
 }
 
-func codexStartupExclusionBullets() []string {
-	return []string{
-		"Discovery-only notes, brainstorms, and pending knowledge stay out of startup context by default.",
-		"Thin packets, unhealthy packet surfaces, and archive-only artifacts stay out of default injection.",
-		"Arbitrary recency lists do not outrank repo-matched planning rules, findings, or ranked next work.",
-		"Raw transcripts and source manifests remain on-demand lookup surfaces rather than auto-injected startup payloads.",
-	}
-}
-
 func prioritizeFindings(findings []knowledgeFinding, preferredIDs []string, limit int) []knowledgeFinding {
 	if len(findings) == 0 {
 		return nil
