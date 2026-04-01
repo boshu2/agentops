@@ -2,5 +2,6 @@
 
 Start here: [Documentation Index](./INDEX.md).
 
-This repository also has additional top-level docs in the repo root (e.g. `README.md`, `CONTRIBUTING.md`, `SECURITY.md`).
-
+Most contributor, security, and reference docs live under `docs/`. The repo
+root carries only a small set of entrypoints such as `README.md` and
+`CHANGELOG.md`.

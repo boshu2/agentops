@@ -30,7 +30,7 @@ The Sisyphus Rule in `skills/crank/SKILL.md` uses prompt-embedded markers to enf
 
 ### Wave Orchestration (crank + swarm)
 
-`skills/crank/SKILL.md` defines the full wave loop — identify ready issues, bridge to TaskList, invoke `/swarm`, verify results, loop until epic closes. The LLM decides wave composition, conflict resolution strategy (serialize vs isolate), and when to stop. `skills/swarm/SKILL.md` defines the mayor-first architecture where the LLM auto-selects spawn backends (Claude teams, Codex sub-agents, inline fallback) based on runtime capability detection — no hardcoded tool names.
+`skills/crank/SKILL.md` defines the full wave loop — identify ready work, bridge tracker state into the current runtime's execution queue, invoke `/swarm`, verify results, and loop until the epic closes. The LLM decides wave composition, conflict resolution strategy (serialize vs isolate), and when to stop. `skills/swarm/SKILL.md` defines runtime-native spawn selection where the LLM chooses the available multi-agent backend, or inline fallback, from capability detection rather than hardcoded tool names.
 
 ### Work Selection Ladder (evolve)
 

@@ -144,7 +144,7 @@ Codex is a first-class runtime in this repo.
 - `skills/<name>/SKILL.md` is the canonical behavior contract.
 - `skills-codex-overrides/<name>/` is the Codex-specific tailoring layer.
 - `skills-codex-overrides/catalog.json` is the machine-readable treatment map for the full catalog.
-- `skills-codex/<name>/` is the checked-in Codex runtime artifact and is manually maintained.
+- `skills-codex/<name>/` is the checked-in Codex runtime artifact. It is manually maintained, while the legacy manifest/marker files remain part of the validation contract.
 
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
@@ -186,7 +186,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 |-----|-------------------|----------------|
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
-| **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces Codex skill parity, install-bundle parity, generated-artifact parity, backbone prompts, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
+| **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces generated-artifact parity, backbone prompts, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
 | **contract-compatibility-gate** | INDEX.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/INDEX.md` or allowlist governance |
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, INDEX.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
@@ -225,11 +225,11 @@ This updates counts in SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, do
 
 **Every reference file must be linked.** If a file exists in a skill's `references/` directory, the skill's SKILL.md must link to it via markdown link or Read instruction. Run `heal.sh --strict` to check.
 
-**Codex generated skills are audit-only, not hand-maintained.** If `skills-codex/` still contains Claude-era primitives (`TaskCreate`, `TaskList`, `Tool: Task`), Claude backend refs, or duplicated runtime rewrites after sync, run:
+**Codex checked-in artifacts are manually maintained, with legacy generated provenance metadata.** If `skills-codex/` still contains Claude-era primitives (`TaskCreate`, `TaskList`, `Tool: Task`), Claude backend refs, or duplicated runtime rewrites, run:
 ```bash
 bash scripts/audit-codex-parity.sh --skill <name>
 ```
-Then fix the canonical source and/or add a durable override under `skills-codex-overrides/<name>/`, regenerate, and re-run the audit. Do not patch `skills-codex/` directly.
+Then update the canonical source and, when the Codex runtime copy itself must change, patch `skills-codex/<name>/` and/or add a durable override under `skills-codex-overrides/<name>/`. Finish by running `bash scripts/refresh-codex-artifacts.sh --scope worktree` and re-running the audit. Do not use the deprecated `scripts/sync-codex-native-skills.sh` workflow.
 
 **Embedded hooks must stay in sync.** After editing anything in `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`, run:
 ```bash

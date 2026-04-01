@@ -23,7 +23,7 @@ See also:
 
 Think in five layers:
 
-1. **Product/docs layer** — `docs/` + root docs (`README.md`, `CONTRIBUTING.md`, etc.)
+1. **Product/docs layer** — `docs/` + selected repo-root entrypoints such as `README.md`, `CHANGELOG.md`, `GOALS.md`, and `PRODUCT.md`
 2. **Skills layer** — `skills/`, checked-in `skills-codex/`, and `skills-codex-overrides/` (`SKILL.md` contracts + per-skill scripts/references + Codex-only tailoring)
 3. **Hooks layer** — `hooks/` with active runtime manifest in `hooks/hooks.json`
 4. **CLI layer** — `cli/` (`cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`)
