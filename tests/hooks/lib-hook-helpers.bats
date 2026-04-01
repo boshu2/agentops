@@ -646,6 +646,45 @@ EOF
     [[ "$scoped_files" != *"SKILL.md"* ]]
 }
 
+@test "closure-integrity-audit.sh: parses plain repo-relative prose plus likely and primary file sections" {
+    local audit_repo="$TMP_TEST_DIR/audit-prose"
+    local child_description=""
+    local staged_child=""
+    local scoped_files=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p \
+        "$audit_repo/scripts" \
+        "$audit_repo/cli/cmd/ao" \
+        "$audit_repo/docs/contracts" \
+        "$audit_repo/docs"
+    printf 'script\n' > "$audit_repo/scripts/retag-release.sh"
+    mkdir -p "$audit_repo/cli/docs"
+    printf 'commands\n' > "$audit_repo/cli/docs/COMMANDS.md"
+    printf 'contract\n' > "$audit_repo/docs/contracts/codex-skill-api.md"
+    printf 'index\n' > "$audit_repo/docs/INDEX.md"
+    git -C "$audit_repo" add \
+        scripts/retag-release.sh \
+        cli/docs/COMMANDS.md \
+        docs/contracts/codex-skill-api.md \
+        docs/INDEX.md
+    child_description=$'scripts/retag-release.sh currently recreates tags as lightweight tags.\ncli/docs/COMMANDS.md embeds the current UTC date in its generated header.\n\nLikely files:\n- docs/contracts/codex-skill-api.md#frontmatter\n\nPrimary files:\n- docs/INDEX.md (update link)\n\nReference URL that should not be treated as a repo file: https://developers.openai.com/codex/skills/\n'
+    write_fake_bd_json "$audit_repo" "ag-prose" "ag-prose.1" "$child_description" \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope staged ag-prose' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    staged_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes.staged[0]')
+    [ "$staged_child" = "ag-prose.1" ]
+    scoped_files=$(printf '%s\n' "$output" | jq -r '.children[0].scoped_files | join("\n")')
+    [[ "$scoped_files" == *"scripts/retag-release.sh"* ]]
+    [[ "$scoped_files" == *"cli/docs/COMMANDS.md"* ]]
+    [[ "$scoped_files" == *"docs/contracts/codex-skill-api.md"* ]]
+    [[ "$scoped_files" == *"docs/INDEX.md"* ]]
+    [[ "$scoped_files" != *"developers.openai.com"* ]]
+}
+
 @test "closure-integrity-audit.sh: commit evidence does not regex-match similar child ids" {
     local audit_repo="$TMP_TEST_DIR/audit-regex"
     local failed_count=""
