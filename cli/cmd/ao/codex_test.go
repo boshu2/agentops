@@ -225,6 +225,7 @@ Use ao codex start and ao codex stop when runtime hooks are unavailable.
 func TestWriteCodexStartupContextUsesRankedSectionsAndPolicy(t *testing.T) {
 	repo := t.TempDir()
 	for _, rel := range []string{
+		filepath.Join(".agents", "briefings"),
 		filepath.Join(".agents", "findings"),
 		filepath.Join(".agents", "planning-rules"),
 		filepath.Join(".agents", "pre-mortem-checks"),
@@ -278,6 +279,7 @@ id: "f-startup-002"
 		repo,
 		profile,
 		"startup packet",
+		[]codexArtifactRef{{Title: "Startup briefing", ModifiedAt: "2026-04-01T21:00:00Z"}},
 		[]learning{{Title: "Use ranked startup packet", Summary: "Prefer rules and findings over recency."}},
 		[]pattern{{Name: "Small startup payloads", Description: "Keep startup context concise and high trust."}},
 		[]knowledgeFinding{{ID: "f-startup-002", Title: "Prefer startup packet over recency dump", Summary: "Prefer ranked startup packet."}},
@@ -294,6 +296,12 @@ id: "f-startup-002"
 		t.Fatalf("read startup context: %v", err)
 	}
 	content := string(data)
+	if !strings.Contains(content, "## Briefings") {
+		t.Fatalf("expected briefings heading, got:\n%s", content)
+	}
+	if !strings.Contains(content, "Startup briefing") {
+		t.Fatalf("expected startup briefing in startup context, got:\n%s", content)
+	}
 	if !strings.Contains(content, "## Selected Context") {
 		t.Fatalf("expected ranked startup heading, got:\n%s", content)
 	}
@@ -305,6 +313,78 @@ id: "f-startup-002"
 	}
 	if !strings.Contains(content, "Wire startup context to ranked packet") {
 		t.Fatalf("expected ranked next work in startup context, got:\n%s", content)
+	}
+}
+
+func TestCodexStartJSONSurfacesMatchingBriefings(t *testing.T) {
+	normalize := func(path string) string {
+		if resolved, err := filepath.EvalSymlinks(path); err == nil && resolved != "" {
+			return filepath.Clean(resolved)
+		}
+		if abs, err := filepath.Abs(path); err == nil {
+			return filepath.Clean(abs)
+		}
+		return filepath.Clean(path)
+	}
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_THREAD_ID", "019d1bf7-58ea-79e1-9f5d-02109d930081")
+	t.Setenv("CODEX_INTERNAL_ORIGINATOR_OVERRIDE", "Codex Desktop")
+
+	indexPath := filepath.Join(home, ".codex", "session_index.jsonl")
+	if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(indexPath, []byte(`{"id":"019d1bf7-58ea-79e1-9f5d-02109d930081","thread_name":"knowledge briefing startup","updated_at":"2026-03-23T12:00:00Z"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := t.TempDir()
+	briefingsDir := filepath.Join(repo, ".agents", "briefings")
+	if err := os.MkdirAll(briefingsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	briefingPath := filepath.Join(briefingsDir, "2026-04-01-fix-auth-startup.md")
+	if err := os.WriteFile(briefingPath, []byte("# Briefing: Fix auth startup\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(repo); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	out, err := executeCommand("codex", "start", "--json", "--no-maintenance", "--query", "fix auth startup")
+	if err != nil {
+		t.Fatalf("codex start --json: %v\noutput: %s", err, out)
+	}
+
+	var result codexStartResult
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &result); err != nil {
+		t.Fatalf("parse codex start json: %v\noutput: %s", err, out)
+	}
+	if len(result.Briefings) != 1 {
+		t.Fatalf("briefings = %+v, want exactly one matching briefing", result.Briefings)
+	}
+	if got, want := normalize(result.Briefings[0].Path), normalize(briefingPath); got != want {
+		t.Fatalf("briefing path = %q, want %q", got, want)
+	}
+
+	startupContext, err := os.ReadFile(result.StartupContextPath)
+	if err != nil {
+		t.Fatalf("read startup context: %v", err)
+	}
+	content := string(startupContext)
+	if !strings.Contains(content, "## Briefings") {
+		t.Fatalf("startup context missing briefings section:\n%s", content)
+	}
+	if !strings.Contains(content, "2026-04-01-fix-auth-startup") {
+		t.Fatalf("startup context missing matched briefing title:\n%s", content)
 	}
 }
 

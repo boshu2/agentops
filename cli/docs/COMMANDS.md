@@ -1935,6 +1935,79 @@ ao inject [context] [flags]
 
 ---
 
+### `ao knowledge`
+
+Knowledge turns a mature .agents corpus into operator-ready surfaces.
+
+```
+ao knowledge [command]
+```
+
+**Subcommands:**
+
+#### `ao knowledge activate`
+
+Run the full knowledge activation outer loop
+
+```
+ao knowledge activate [flags]
+```
+
+**Flags:**
+
+```
+      --goal string   Optional goal for briefing compilation during activation
+  -h, --help          help for activate
+```
+
+#### `ao knowledge beliefs`
+
+Refresh the belief book from promoted evidence
+
+```
+ao knowledge beliefs [flags]
+```
+
+#### `ao knowledge brief`
+
+Compile a goal-time briefing
+
+```
+ao knowledge brief [flags]
+```
+
+**Flags:**
+
+```
+      --goal string   Goal to compile into a briefing
+  -h, --help          help for brief
+```
+
+#### `ao knowledge gaps`
+
+Report thin topics, promotion gaps, and next mining work
+
+```
+ao knowledge gaps [flags]
+```
+
+#### `ao knowledge playbooks`
+
+Refresh playbook candidates from healthy topics
+
+```
+ao knowledge playbooks [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for playbooks
+      --include-thin   Include thin topics when building playbook candidates
+```
+
+---
+
 ### `ao lookup`
 
 Lookup retrieves full content of specific knowledge artifacts.

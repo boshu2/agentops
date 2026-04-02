@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 63 AgentOps skills (54 user-facing + 9 internal).
+Complete reference for all 64 AgentOps skills (55 user-facing + 9 internal).
 
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
 
@@ -46,6 +46,7 @@ What are you trying to do?
 │   └─ Generate ideas ────────────► /brainstorm
 │
 ├─ "Learn from past work"
+│   ├─ Turn the corpus into operator surfaces ─► /knowledge-activation
 │   ├─ What do we know about X? ──► /knowledge <query>
 │   ├─ Save this insight ─────────► /retro --quick "insight"
 │   └─ Full retrospective ────────► /post-mortem
@@ -295,6 +296,16 @@ Trace design decisions through knowledge artifacts.
 /trace "why did we choose Redis?"
 ```
 
+### /knowledge-activation
+
+Operationalize a mature `.agents` corpus into reusable belief, playbook, briefing, and gap surfaces.
+
+```bash
+/knowledge-activation
+ao knowledge activate --goal "productize knowledge activation"
+ao knowledge gaps
+```
+
 ### /recover
 
 Post-compaction context recovery. Detects in-progress RPI and evolve sessions, loads knowledge, shows recent work and pending tasks.
@@ -415,7 +426,7 @@ Capture lessons from accepted/rejected PR outcomes.
 Reinstall all AgentOps skills globally from the latest source.
 
 ```bash
-/update                      # Reinstall all 63 skills
+/update                      # Reinstall all 64 skills
 ```
 
 ---

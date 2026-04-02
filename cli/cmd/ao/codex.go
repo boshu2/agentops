@@ -65,6 +65,7 @@ type codexStartResult struct {
 	MemoryPath         string                   `json:"memory_path,omitempty"`
 	CloseLoop          *flywheelCloseLoopResult `json:"close_loop,omitempty"`
 	Flywheel           *flywheelBrief           `json:"flywheel,omitempty"`
+	Briefings          []codexArtifactRef       `json:"briefings,omitempty"`
 	Learnings          []learning               `json:"learnings,omitempty"`
 	Patterns           []pattern                `json:"patterns,omitempty"`
 	Findings           []knowledgeFinding       `json:"findings,omitempty"`
@@ -122,6 +123,7 @@ type codexRetrievalHealth struct {
 	Patterns  int `json:"patterns"`
 	Findings  int `json:"findings"`
 	NextWork  int `json:"next_work"`
+	Briefings int `json:"briefings"`
 	Research  int `json:"research"`
 }
 
@@ -334,7 +336,7 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 		closeLoop = &result
 	}
 
-	learnings, patterns, findings, recentSessions, nextWork, research := collectCodexStartupArtifacts(cwd, query, codexStartLimit)
+	briefings, learnings, patterns, findings, recentSessions, nextWork, research := collectCodexStartupArtifacts(cwd, query, codexStartLimit)
 	recordLookupCitations(cwd, learnings, patterns, findings, sessionID, query, "retrieved")
 
 	memoryPath, err := syncCodexMemory(cwd)
@@ -342,7 +344,7 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 		VerbosePrintf("Warning: codex memory sync: %v\n", err)
 	}
 
-	startupContextPath, err := writeCodexStartupContext(cwd, profile, query, learnings, patterns, findings, recentSessions, nextWork, research)
+	startupContextPath, err := writeCodexStartupContext(cwd, profile, query, briefings, learnings, patterns, findings, recentSessions, nextWork, research)
 	if err != nil {
 		return codexStartResult{}, fmt.Errorf("write codex startup context: %w", err)
 	}
@@ -374,6 +376,7 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 		MemoryPath:         memoryPath,
 		CloseLoop:          closeLoop,
 		Flywheel:           loadFlywheelBrief(cwd),
+		Briefings:          briefings,
 		Learnings:          learnings,
 		Patterns:           patterns,
 		Findings:           findings,
@@ -588,11 +591,12 @@ func runCodexStatus(cmd *cobra.Command, args []string) error {
 	return outputCodexStatusResult(result)
 }
 
-func collectCodexStartupArtifacts(cwd, query string, limit int) ([]learning, []pattern, []knowledgeFinding, []session, []nextWorkItem, []codexArtifactRef) {
+func collectCodexStartupArtifacts(cwd, query string, limit int) ([]codexArtifactRef, []learning, []pattern, []knowledgeFinding, []session, []nextWorkItem, []codexArtifactRef) {
 	if limit <= 0 {
 		limit = 3
 	}
 
+	briefings := collectRecentCodexArtifacts(filepath.Join(cwd, ".agents", "briefings"), query, limit)
 	learnings, _ := collectLearnings(cwd, query, limit, "", 0)
 	patterns, _ := collectPatterns(cwd, query, limit, "", 0)
 	findings, _ := collectFindings(cwd, query, limit, "", 0)
@@ -608,12 +612,15 @@ func collectCodexStartupArtifacts(cwd, query string, limit int) ([]learning, []p
 	}
 
 	research := collectRecentResearchArtifacts(cwd, query, limit)
-	return learnings, patterns, findings, recentSessions, nextWork, research
+	return briefings, learnings, patterns, findings, recentSessions, nextWork, research
 }
 
 func collectRecentResearchArtifacts(cwd, query string, limit int) []codexArtifactRef {
-	researchDir := filepath.Join(cwd, ".agents", SectionResearch)
-	entries, err := os.ReadDir(researchDir)
+	return collectRecentCodexArtifacts(filepath.Join(cwd, ".agents", SectionResearch), query, limit)
+}
+
+func collectRecentCodexArtifacts(dir, query string, limit int) []codexArtifactRef {
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil
 	}
@@ -632,7 +639,7 @@ func collectRecentResearchArtifacts(cwd, query string, limit int) []codexArtifac
 			continue
 		}
 		files = append(files, researchFile{
-			path:    filepath.Join(researchDir, entry.Name()),
+			path:    filepath.Join(dir, entry.Name()),
 			modTime: info.ModTime(),
 		})
 	}
@@ -804,9 +811,8 @@ func saveCodexLifecycleState(path string, state *codexLifecycleState) error {
 	return nil
 }
 
-func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query string, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef) (string, error) {
+func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query string, briefings []codexArtifactRef, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef) (string, error) {
 	bundle := buildRankedContextBundle(cwd, query, codexStartLimit, learnings, patterns, findings, recentSessions, nextWork, research)
-
 	var sb strings.Builder
 	sb.WriteString("# Codex Startup Context\n\n")
 	sb.WriteString(fmt.Sprintf("- Runtime: %s\n", profile.Runtime))
@@ -816,6 +822,14 @@ func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query
 	}
 	if query != "" {
 		sb.WriteString(fmt.Sprintf("- Query: %s\n", query))
+	}
+	sb.WriteString("\n## Briefings\n")
+	if len(briefings) == 0 {
+		sb.WriteString(fmt.Sprintf("- No recent knowledge briefing surfaced. Build one with `ao knowledge brief --goal %q` when workspace builders are available.\n", query))
+	} else {
+		for _, item := range briefings {
+			sb.WriteString(fmt.Sprintf("- %s\n", item.Title))
+		}
 	}
 	sb.WriteString("\n## Selected Context\n")
 	sb.WriteString(renderRankedIntelSectionFromBundle(bundle, "startup", 4000))
@@ -863,6 +877,7 @@ func collectCodexRetrievalHealth(cwd string) codexRetrievalHealth {
 		Patterns:  countGlobMatches(filepath.Join(cwd, ".agents", "patterns", "*.md")),
 		Findings:  countGlobMatches(filepath.Join(cwd, ".agents", SectionFindings, "*.md")),
 		NextWork:  len(nextWork),
+		Briefings: countGlobMatches(filepath.Join(cwd, ".agents", "briefings", "*.md")),
 		Research:  countGlobMatches(filepath.Join(cwd, ".agents", SectionResearch, "*.md")),
 	}
 }
@@ -937,10 +952,12 @@ func outputCodexStartResult(result codexStartResult) error {
 			result.CloseLoop.Ingest.Added, result.CloseLoop.AutoPromote.Promoted, result.CloseLoop.CitationFeedback.Rewarded)
 	}
 	fmt.Println()
+	printNamedItems("Briefings", result.Briefings, func(item codexArtifactRef) string { return firstLine(item.Title) })
 	printNamedItems("Learnings", result.Learnings, func(item learning) string { return firstLine(item.Title) })
 	printNamedItems("Patterns", result.Patterns, func(item pattern) string { return firstLine(item.Name) })
 	printNamedItems("Findings", result.Findings, func(item knowledgeFinding) string { return firstLine(item.Title) })
 	printNamedItems("Next Work", result.NextWork, func(item nextWorkItem) string { return firstLine(item.Title) })
+	printNamedItems("Research", result.Research, func(item codexArtifactRef) string { return firstLine(item.Title) })
 	return nil
 }
 
@@ -1057,8 +1074,8 @@ func outputCodexStatusResult(result codexStatusResult) error {
 	if result.Capture.LastForgeAge != "" {
 		fmt.Printf("Last forge: %s ago\n", result.Capture.LastForgeAge)
 	}
-	fmt.Printf("Retrieval: learnings=%d patterns=%d findings=%d next-work=%d research=%d\n",
-		result.Retrieval.Learnings, result.Retrieval.Patterns, result.Retrieval.Findings, result.Retrieval.NextWork, result.Retrieval.Research)
+	fmt.Printf("Retrieval: learnings=%d patterns=%d findings=%d next-work=%d briefings=%d research=%d\n",
+		result.Retrieval.Learnings, result.Retrieval.Patterns, result.Retrieval.Findings, result.Retrieval.NextWork, result.Retrieval.Briefings, result.Retrieval.Research)
 	fmt.Printf("Promotion: pending=%d staged=%d rejected=%d\n",
 		result.Promotion.PendingPool, result.Promotion.StagedPool, result.Promotion.RejectedPool)
 	fmt.Printf("Citations (%dd): total=%d unique=%d retrieved=%d reference=%d applied=%d\n",

@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (54)
+### User-Facing Skills (55)
 
 **Judgment:**
 
@@ -263,6 +263,7 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **athena** | advanced | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **harvest** | knowledge | Cross-rig knowledge consolidation — sweep, dedup, promote |
+| **knowledge-activation** | knowledge | Outer-loop corpus operationalization — beliefs, playbooks, briefings, and gap surfaces |
 | **retro** | knowledge | Quick-capture wrapper (full retro → /post-mortem) |
 | **trace** | knowledge | Trace design decisions through history |
 
@@ -337,6 +338,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|--------------|------|
 | **athena** | - | - (standalone, ao CLI optional) |
 | **harvest** | - | - (standalone, ao CLI required) |
+| **knowledge-activation** | athena, harvest, flywheel | optional, optional, optional |
 | **council** | - | - (core primitive) |
 | **vibe** | council, complexity, standards | required, optional (graceful skip), optional |
 | **pre-mortem** | council | required |

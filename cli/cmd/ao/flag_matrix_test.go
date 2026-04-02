@@ -45,6 +45,7 @@ func TestFlagMatrix_JSONOutput(t *testing.T) {
 		{"doctor", []string{"doctor", "--json"}},
 		{"metrics-report", []string{"metrics", "report", "--json"}},
 		{"vibe-check", []string{"vibe-check", "--json"}},
+		{"knowledge-gaps", []string{"knowledge", "gaps", "--json"}},
 		// NOTE: goals measure --json requires GOALS.md to exist; excluded from
 		// this matrix because it fails in repos without one.
 	}
@@ -124,6 +125,7 @@ func TestFlagMatrix_InvalidFlags(t *testing.T) {
 		{"doctor", []string{"doctor", "--nonexistent-flag"}},
 		{"search", []string{"search", "--nonexistent-flag"}},
 		{"inject", []string{"inject", "--nonexistent-flag"}},
+		{"knowledge", []string{"knowledge", "--nonexistent-flag"}},
 		{"badge", []string{"badge", "--nonexistent-flag"}},
 		{"ratchet-status", []string{"ratchet", "status", "--nonexistent-flag"}},
 		{"pool-list", []string{"pool", "list", "--nonexistent-flag"}},
@@ -178,6 +180,7 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"curate",
 		"dedup",
 		"lookup",
+		"knowledge",
 		"memory",
 		"notebook",
 		"metrics",

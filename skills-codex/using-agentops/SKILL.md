@@ -109,6 +109,7 @@ These are the skills every user needs first. Everything else is available when y
 | Skill | Purpose |
 |-------|---------|
 | `$athena` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| `$knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
 | `$brainstorm` | Structured idea exploration before planning |
 | `$discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `$plan` | Epic decomposition into issues |

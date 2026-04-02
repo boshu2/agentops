@@ -661,6 +661,12 @@
       "generated_hash": "8b64faf63a51b4fd3eedcafd600f4d55db97824e00b8cfbde2c881ef393c5cad"
     },
     {
+      "name": "knowledge-activation",
+      "source_skill": "skills/knowledge-activation",
+      "source_hash": "",
+      "generated_hash": "67c45d6a84917e6f7ca3035902d29ac7a51742ea364c9f0eb2c3fa6416baf1a6"
+    },
+    {
       "name": "openai-docs",
       "source_skill": "skills/openai-docs",
       "source_hash": "9758845e08c7a9f57f86bed457708bbcf206d042dcee20a4bcae3f47f3bedc10",
@@ -880,7 +886,7 @@
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
       "source_hash": "7f5cc28fcf68821caddf4fbb323e630fc3be0c32ad46121086a7be3e2b5752b3",
-      "generated_hash": "76ad1da6d553cb6de54fb555b5ca2d63c364a1149c5da101d7df4e2c2a664c15"
+      "generated_hash": "d33f0bf4d5e8546c95cc6a16dfa77a33cd309c8c2c7562746830d83bee736ce7"
     },
     {
       "name": "validation",
