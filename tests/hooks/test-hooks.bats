@@ -606,6 +606,24 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
+# quality-signals.sh
+# ═══════════════════════════════════════════════════════════════════════
+
+@test "quality-signals: repeated prompt writes advisory signal" {
+    local mock="$TMP_TEST_DIR/mock-quality-signals"
+    setup_mock_repo "$mock"
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | CLAUDE_SESSION_ID="bats-quality-1" bash "$3" 2>&1' \
+        -- "$mock" '{"prompt":"repeat this"}' "$HOOKS_DIR/quality-signals.sh"
+    [ "$status" -eq 0 ]
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | CLAUDE_SESSION_ID="bats-quality-1" bash "$3" 2>&1' \
+        -- "$mock" '{"prompt":"repeat this"}' "$HOOKS_DIR/quality-signals.sh"
+    [ "$status" -eq 0 ]
+    grep -q '"signal_type":"repeated_prompt"' "$mock/.agents/signals/session-quality.jsonl"
+}
+
+# ═══════════════════════════════════════════════════════════════════════
 # Coverage check
 # ═══════════════════════════════════════════════════════════════════════
 
