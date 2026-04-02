@@ -63,6 +63,7 @@ command -v bd >/dev/null 2>&1 || {
 }
 
 FILE_PATH_REGEX='([.[:alnum:]_-]+/)*[.[:alnum:]_-]+\.[[:alpha:]][[:alnum:]_-]*'
+GENERIC_REPO_PATH_REGEX='([.[:alnum:]_-]+/)+[.[:alnum:]_-]+\.[[:alpha:]][[:alnum:]_-]*'
 
 json_array_from_stream() {
   if ! sed '/^[[:space:]]*$/d' | sort -u | jq -R . | jq -s .; then
@@ -203,6 +204,8 @@ extract_files_section_from_text() {
   awk '
     tolower($0) ~ /^[[:space:]]*files:[[:space:]]*$/ { in_files = 1; next }
     tolower($0) ~ /^[[:space:]]*files likely owned:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*likely files:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*primary files:[[:space:]]*$/ { in_files = 1; next }
     in_files {
       if ($0 ~ /^[[:space:]]*$/ || $0 ~ /^```/) {
         exit
@@ -223,15 +226,25 @@ extract_labeled_files_from_text() {
   while IFS= read -r line; do
     candidate=""
 
-    if [[ "$line" =~ [Nn][Ee][Ww][[:space:]]+[Ff][Ii][Ll][Ee][Ss]?:[[:space:]]*(.*)$ ]]; then
-      candidate="${BASH_REMATCH[1]}"
-    elif [[ "$line" =~ [Ff][Ii][Ll][Ee]:[[:space:]]*(.*)$ ]]; then
-      candidate="${BASH_REMATCH[1]}"
+    if [[ "$line" =~ (^|[[:space:][:punct:]])New[[:space:]]+[Ff][Ii][Ll][Ee][Ss]?:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[2]}"
+    elif [[ "$line" =~ (^|[[:space:][:punct:]])File:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[2]}"
     fi
 
     if [[ -n "$candidate" ]]; then
       printf '%s\n' "$candidate" | extract_first_file_path_from_stream
     fi
+  done
+}
+
+extract_repo_relative_paths_from_text() {
+  local line=""
+
+  while IFS= read -r line; do
+    printf '%s\n' "$line" \
+      | sed -E 's@[[:alpha:]][[:alnum:]+.-]*://[^[:space:])>]+@@g' \
+      | grep -oE "$GENERIC_REPO_PATH_REGEX" || true
   done
 }
 
@@ -260,6 +273,7 @@ extract_scoped_files() {
     printf '%s\n' "$description" | extract_labeled_files_from_text
     printf '%s\n' "$description" | extract_files_section_from_text
     printf '%s\n' "$description" | extract_backticked_files_from_text
+    printf '%s\n' "$description" | extract_repo_relative_paths_from_text
   } | sed '/^[[:space:]]*$/d' | sort -u
 }
 
