@@ -610,7 +610,7 @@
       "name": "flywheel",
       "source_skill": "skills/flywheel",
       "source_hash": "01f08265b10ec432c4044e0a0d68ec7bbd735f69ae86d01aa56c749e74ab148e",
-      "generated_hash": "242a4752ac0561fd8dfc31c2fff097e847ee9902be4db6884714062f82014744"
+      "generated_hash": "34ea135da42c4aabd89225c2c9ff5ce03bd8e807d21e74ecd0859b97e2880dc6"
     },
     {
       "name": "forge",
@@ -658,7 +658,7 @@
       "name": "inject",
       "source_skill": "skills/inject",
       "source_hash": "7daf8be8d1534231a37139b921992038b36616d1feeb293eea32c44dc776ff8d",
-      "generated_hash": "8b64faf63a51b4fd3eedcafd600f4d55db97824e00b8cfbde2c881ef393c5cad"
+      "generated_hash": "221e6897a0b225437a8fbed866f040664d9325d588eb92ec8f8e0d2eb9d0748a"
     },
     {
       "name": "knowledge-activation",
@@ -694,7 +694,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "afce1fac76a1e506e9405b76886ecdf390c3eead5d863d82b8311286ad00d6a4",
-      "generated_hash": "1ee0306558d1090a6feaf35636c69e9bfa8a42038e8ff1cd7897ce0506c58f0d"
+      "generated_hash": "7db31bfe9021fcabdc8c91d819768ac430a60333fb1a239e7fd54c1b90585d4a"
     },
     {
       "name": "pr-implement",
