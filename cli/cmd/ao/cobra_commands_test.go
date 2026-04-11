@@ -301,14 +301,19 @@ func executeCommand(args ...string) (string, error) {
 	}
 	os.Stdout = w
 
+	var stdoutBuf bytes.Buffer
+	copyDone := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&stdoutBuf, r)
+		close(copyDone)
+	}()
+
 	err := rootCmd.Execute()
 
 	// Restore stdout and read captured output
 	w.Close()
 	os.Stdout = oldStdout
-
-	var stdoutBuf bytes.Buffer
-	_, _ = io.Copy(&stdoutBuf, r)
+	<-copyDone
 
 	rootCmd.SetOut(nil)
 	rootCmd.SetErr(nil)
@@ -2127,17 +2132,23 @@ func TestCobraShowConcepts(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
+	var buf bytes.Buffer
+	copyDone := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(copyDone)
+	}()
+
 	err := showConcepts()
 
 	w.Close()
 	os.Stdout = old
+	<-copyDone
 
 	if err != nil {
 		t.Fatalf("showConcepts failed: %v", err)
 	}
 
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 
 	if !strings.Contains(out, "KNOWLEDGE FLYWHEEL") {

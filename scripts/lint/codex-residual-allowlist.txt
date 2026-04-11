@@ -32,6 +32,9 @@
 
 # Intentional cross-runtime comparisons in codex skills
 [Cc]laude[^[:cntrl:]]*[Cc]odex|[Cc]odex[^[:cntrl:]]*[Cc]laude
+Codex CLI processes as background shell commands
+ao overnight setup --apply --runner codex --runner claude --at 01:30
+ao overnight start --goal "stabilize release follow-ups" --runner codex --runner claude --creative-lane
 
 # Explicit alternate-runtime backend references
 \bClaude teams\b
@@ -59,3 +62,6 @@ council/claude-\*
 \*llm\*
 \*prompt\*
 \*completion\*
+Manifest versions sync
+anthropic`, `openai` imports
+`anthropic`, `openai`, `google\.generativeai`

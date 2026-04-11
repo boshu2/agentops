@@ -216,6 +216,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
 brew install agentops
 
+# Windows PowerShell
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
+
 # Any OS with Go
 go install github.com/boshu2/agentops/cli/cmd/ao@latest
 

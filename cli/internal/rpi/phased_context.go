@@ -74,6 +74,7 @@ var PhasePrompts = map[int]string{
 - Keep worker outputs on disk and consume thin summaries only.
 
 {{end}}Run these skills IN SEQUENCE. Do not skip any step.
+NONINTERACTIVE FALLBACK: If this runtime cannot execute slash commands in print mode, perform the equivalent work directly. Still write research findings to .agents/research/, a markdown plan to .agents/plans/, a pre-mortem council report at .agents/council/rpi-pre-mortem.md containing a line exactly like "## Council Verdict: PASS" or "## Council Verdict: WARN", and the required phase summary file.
 
 STEP 1 — Research:
 {{if .SwarmFirst}}Prefer: execute this step via /swarm with research-focused workers.
@@ -99,7 +100,9 @@ If pre-mortem returns FAIL, re-run /plan with the findings and then /pre-mortem 
 - Run implementation with swarm-managed waves by default (lead + worker teams).
 - Prefer crank paths that delegate to /swarm for wave execution.
 
-{{end}}{{if .TasklistMode}}TASKLIST MODE: Tracker is unavailable or unhealthy. Use .agents/rpi/execution-packet.json as the objective spine instead of bd issue queries.
+{{end}}NONINTERACTIVE FALLBACK: If this runtime cannot execute /crank in print mode, implement the requested change directly from the referenced issue, plan, or execution packet. Run focused tests, write implementation notes to .agents/rpi/phase-2-summary.md, and keep edits scoped.
+
+{{if .TasklistMode}}TASKLIST MODE: Tracker is unavailable or unhealthy. Use .agents/rpi/execution-packet.json as the objective spine instead of bd issue queries.
 /crank .agents/rpi/execution-packet.json{{if .TestFirst}} --test-first{{end}}{{else if .PlanFileMode}}PLAN-FILE MODE: No beads epic exists. Use TaskList for issue tracking.
 /crank {{.PlanFilePath}}{{if .TestFirst}} --test-first{{end}}{{else}}/crank {{.EpicID}}{{if .TestFirst}} --test-first{{end}}{{end}}`,
 
@@ -108,6 +111,7 @@ If pre-mortem returns FAIL, re-run /plan with the findings and then /pre-mortem 
 - Keep validator and implementer contexts isolated; do not reuse implementation worker context.
 
 {{end}}Run these skills IN SEQUENCE. Do not skip any step.
+NONINTERACTIVE FALLBACK: If this runtime cannot execute slash commands in print mode, perform equivalent validation and post-mortem work directly. Run the relevant tests, write a vibe council report at .agents/council/rpi-vibe.md containing a line exactly like "## Council Verdict: PASS" or "## Council Verdict: WARN", write post-mortem notes under .agents/retros/, and write the required phase summary file.
 
 STEP 1 — Vibe:
 {{if .SwarmFirst}}Prefer: execute vibe using /swarm-driven validation workers.

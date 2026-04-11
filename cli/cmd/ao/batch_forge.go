@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -437,8 +438,7 @@ func appendForgedRecord(path string, record ForgedRecord) error {
 		return fmt.Errorf("create directory: %w", err)
 	}
 
-	// Open file for append with exclusive lock
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("open forged index: %w", err)
 	}
@@ -454,12 +454,14 @@ func appendForgedRecord(path string, record ForgedRecord) error {
 		_ = flockUnlock(f)
 	}()
 
-	// Marshal and write record
 	data, err := json.Marshal(record)
 	if err != nil {
 		return fmt.Errorf("marshal record: %w", err)
 	}
 
+	if _, err := f.Seek(0, io.SeekEnd); err != nil {
+		return fmt.Errorf("seek forged index: %w", err)
+	}
 	if _, err := f.Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("write record: %w", err)
 	}

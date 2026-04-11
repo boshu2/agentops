@@ -59,9 +59,16 @@ Nothing modifies your source code.
 Skills work standalone. The `ao` CLI adds bookkeeping automation, retrieval and injection, maturity scoring, goals, and terminal-native flows.
 
 ```bash
+# macOS
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
 brew install agentops
 which ao
+ao version
+```
+
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
 ao version
 ```
 
