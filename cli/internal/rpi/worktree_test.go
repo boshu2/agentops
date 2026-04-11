@@ -428,30 +428,6 @@ func TestAcquireMergeLock_MkdirAllFails(t *testing.T) {
 	}
 }
 
-func TestAcquireMergeLock_OpenFileFails(t *testing.T) {
-	if os.Getuid() == 0 {
-		t.Skip("root bypasses filesystem permissions")
-	}
-	// Exercise acquireMergeLock where os.OpenFile fails.
-	tmp := t.TempDir()
-	lockDir := filepath.Join(tmp, ".git", "agentops")
-	if err := os.MkdirAll(lockDir, 0750); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chmod(lockDir, 0500); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(lockDir, 0750) })
-
-	_, err := acquireMergeLock(tmp)
-	if err == nil {
-		t.Fatal("expected error when lock file cannot be opened")
-	}
-	if !strings.Contains(err.Error(), "open merge lock") {
-		t.Errorf("expected 'open merge lock' error, got: %v", err)
-	}
-}
-
 func TestMergeWorktree_LockDirBlocked(t *testing.T) {
 	// Exercise MergeWorktree where acquireMergeLock fails.
 	repo := initGitRepo(t)

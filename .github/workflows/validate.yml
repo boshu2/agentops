@@ -611,6 +611,21 @@ jobs:
           path: cli/coverage.out
           retention-days: 7
 
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+
+      - name: Run native Windows smoke tests
+        shell: pwsh
+        run: .\tests\windows\test-windows-smoke.ps1
+
   cli-integration:
     runs-on: ubuntu-latest
     steps:
@@ -784,7 +799,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -810,6 +825,7 @@ jobs:
           echo "memrl-health: ${{ needs.memrl-health.result }}"
           echo "plugin-load-test: ${{ needs.plugin-load-test.result }}"
           echo "go-build: ${{ needs.go-build.result }}"
+          echo "windows-smoke: ${{ needs.windows-smoke.result }}"
           echo "cli-integration: ${{ needs.cli-integration.result }}"
           echo "json-flag-consistency: ${{ needs.json-flag-consistency.result }}"
           echo "file-manifest-overlap: ${{ needs.file-manifest-overlap.result }}"
@@ -838,6 +854,7 @@ jobs:
              [[ "${{ needs.memrl-health.result }}" != "success" ]] || \
              [[ "${{ needs.plugin-load-test.result }}" != "success" ]] || \
              [[ "${{ needs.go-build.result }}" != "success" ]] || \
+             [[ "${{ needs.windows-smoke.result }}" != "success" ]] || \
              [[ "${{ needs.cli-integration.result }}" != "success" ]] || \
              [[ "${{ needs.json-flag-consistency.result }}" != "success" ]] || \
              [[ "${{ needs.file-manifest-overlap.result }}" != "success" ]] || \
