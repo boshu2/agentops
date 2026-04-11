@@ -87,7 +87,13 @@ expected_override_dirs_file="$tmpdir/expected-override-dirs.txt"
 contains_fixed() {
   local needle="$1"
   local path="$2"
-  rg -Fq -- "$needle" "$path"
+  grep -Fq -- "$needle" "$path"
+}
+
+contains_regex() {
+  local pattern="$1"
+  local path="$2"
+  grep -Eq -- "$pattern" "$path"
 }
 
 strip_generated_operator_contract_block() {
@@ -352,7 +358,7 @@ while IFS= read -r entry; do
         fi
         rm -f "$expected_prompt"
       else
-        if [[ -f "$override_prompt" ]] && ! rg -q '^## Codex Execution Profile$' "$override_prompt"; then
+        if [[ -f "$override_prompt" ]] && ! contains_regex '^## Codex Execution Profile$' "$override_prompt"; then
           fail "override prompt for $skill lacks '## Codex Execution Profile'"
         fi
         if [[ -f "$override_prompt" && -f "$generated_prompt" ]] && ! cmp -s "$override_prompt" "$generated_prompt"; then
