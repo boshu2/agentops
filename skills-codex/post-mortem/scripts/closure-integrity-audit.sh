@@ -63,6 +63,7 @@ command -v bd >/dev/null 2>&1 || {
 }
 
 FILE_PATH_REGEX='([.[:alnum:]_-]+/)*[.[:alnum:]_-]+\.[[:alpha:]][[:alnum:]_-]*'
+GENERIC_REPO_PATH_REGEX='([.[:alnum:]_-]+/)+[.[:alnum:]_-]+\.[[:alpha:]][[:alnum:]_-]*'
 
 json_array_from_stream() {
   if ! sed '/^[[:space:]]*$/d' | sort -u | jq -R . | jq -s .; then
@@ -195,6 +196,10 @@ extract_file_paths_from_stream() {
   grep -oE "$FILE_PATH_REGEX" || true
 }
 
+strip_urls_from_stream() {
+  sed -E 's@[[:alpha:]][[:alnum:]+.-]*://[^[:space:])>]+@@g'
+}
+
 extract_first_file_path_from_stream() {
   extract_file_paths_from_stream | head -n 1
 }
@@ -203,14 +208,20 @@ extract_files_section_from_text() {
   awk '
     tolower($0) ~ /^[[:space:]]*files:[[:space:]]*$/ { in_files = 1; next }
     tolower($0) ~ /^[[:space:]]*files likely owned:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*likely files:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*primary files:[[:space:]]*$/ { in_files = 1; next }
+    tolower($0) ~ /^[[:space:]]*scoped files:[[:space:]]*$/ { in_files = 1; next }
     in_files {
       if ($0 ~ /^[[:space:]]*$/ || $0 ~ /^```/) {
         exit
       }
-      if ($0 !~ /^[[:space:]]*-/) {
+      # Accept lines starting with - or * (bullet points)
+      if ($0 !~ /^[[:space:]]*[-*]/) {
         exit
       }
-      sub(/^[[:space:]]*-[[:space:]]*/, "", $0)
+      # Strip bullet prefix and backticks
+      sub(/^[[:space:]]*[-*][[:space:]]*/, "", $0)
+      gsub(/`/, "", $0)
       print
     }
   ' | extract_file_paths_from_stream
@@ -223,10 +234,10 @@ extract_labeled_files_from_text() {
   while IFS= read -r line; do
     candidate=""
 
-    if [[ "$line" =~ [Nn][Ee][Ww][[:space:]]+[Ff][Ii][Ll][Ee][Ss]?:[[:space:]]*(.*)$ ]]; then
-      candidate="${BASH_REMATCH[1]}"
-    elif [[ "$line" =~ [Ff][Ii][Ll][Ee]:[[:space:]]*(.*)$ ]]; then
-      candidate="${BASH_REMATCH[1]}"
+    if [[ "$line" =~ (^|[[:space:][:punct:]])New[[:space:]]+[Ff][Ii][Ll][Ee][Ss]?:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[2]}"
+    elif [[ "$line" =~ (^|[[:space:][:punct:]])File:[[:space:]]*(.*)$ ]]; then
+      candidate="${BASH_REMATCH[2]}"
     fi
 
     if [[ -n "$candidate" ]]; then
@@ -235,8 +246,122 @@ extract_labeled_files_from_text() {
   done
 }
 
+extract_repo_relative_paths_from_text() {
+  local line=""
+
+  while IFS= read -r line; do
+    printf '%s\n' "$line" \
+      | strip_urls_from_stream \
+      | grep -oE "$GENERIC_REPO_PATH_REGEX" || true
+  done
+}
+
+extract_prose_file_paths_from_text() {
+  strip_urls_from_stream | extract_file_paths_from_stream | grep -vx 'SKILL[.]md' || true
+}
+
+extract_validation_command_strings_from_block() {
+  local validation_block="$1"
+
+  [[ -n "$validation_block" ]] || return 0
+  printf '%s\n' "$validation_block" \
+    | jq -r '
+        def roots:
+          if type == "array" then .[]
+          else .
+          end;
+        roots |
+        (
+          .command?,
+          .commands[]?,
+          .test?,
+          .tests?,
+          .validation_command?,
+          .validation_commands[]?
+        )
+        | select(type == "string" and length > 0)
+      ' 2>/dev/null || true
+}
+
+normalize_command_path() {
+  local raw="$1"
+  local cd_dir="$2"
+  local path="$raw"
+
+  path="${path#./}"
+  path="${path%/}"
+  cd_dir="${cd_dir#./}"
+  cd_dir="${cd_dir%/}"
+
+  [[ -n "$path" ]] || return 0
+  if [[ -n "$cd_dir" && "$raw" == ./* ]]; then
+    printf '%s/%s\n' "$cd_dir" "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+extract_paths_from_command_string() {
+  local command_text="$1"
+  local cd_dir=""
+  local cd_regex='(^|[[:space:];|&])cd[[:space:]]+([^[:space:];|&]+)[[:space:]]*&&'
+  local raw_path=""
+
+  if [[ "$command_text" =~ $cd_regex ]]; then
+    cd_dir="${BASH_REMATCH[2]}"
+    cd_dir="${cd_dir%\"}"
+    cd_dir="${cd_dir#\"}"
+    cd_dir="${cd_dir%\'}"
+    cd_dir="${cd_dir#\'}"
+    normalize_command_path "$cd_dir" ""
+  fi
+
+  {
+    printf '%s\n' "$command_text" \
+      | strip_urls_from_stream \
+      | grep -oE '(\./)?([.[:alnum:]_-]+/)+[.[:alnum:]_-]+/?' || true
+    printf '%s\n' "$command_text" \
+      | strip_urls_from_stream \
+      | extract_file_paths_from_stream
+  } | while IFS= read -r raw_path; do
+    normalize_command_path "$raw_path" "$cd_dir"
+  done
+}
+
+extract_validation_command_paths_from_block() {
+  local validation_block="$1"
+  local command_text=""
+
+  extract_validation_command_strings_from_block "$validation_block" \
+    | while IFS= read -r command_text; do
+      extract_paths_from_command_string "$command_text"
+    done
+}
+
+expand_scoped_paths_from_stream() {
+  local path=""
+  local expanded=""
+
+  while IFS= read -r path; do
+    [[ -n "$path" ]] || continue
+    printf '%s\n' "$path"
+
+    if [[ "$path" != */* && "$path" == *.* ]]; then
+      expanded="$(run_git_clean ls-files --cached --others --exclude-standard -- "$path" ":(glob)**/$path" 2>/dev/null || true)"
+      [[ -n "$expanded" ]] && printf '%s\n' "$expanded"
+    fi
+  done
+}
+
 extract_backticked_files_from_text() {
-  grep -oE "\`$FILE_PATH_REGEX\`" | tr -d '`' || true
+  # Handle backticked filenames across multiple lines, including nested backticks
+  # and paths with spaces or special characters inside backticks
+  tr '\n' '\0' \
+    | grep -zoE "\`[^\`]+\`" \
+    | tr '\0' '\n' \
+    | tr -d '`' \
+    | grep -E "$FILE_PATH_REGEX" \
+    | grep -oE "$FILE_PATH_REGEX" || true
 }
 
 extract_scoped_files() {
@@ -257,10 +382,13 @@ extract_scoped_files() {
 
   {
     extract_validation_files_from_block "$validation_block"
+    extract_validation_command_paths_from_block "$validation_block"
     printf '%s\n' "$description" | extract_labeled_files_from_text
     printf '%s\n' "$description" | extract_files_section_from_text
     printf '%s\n' "$description" | extract_backticked_files_from_text
-  } | sed '/^[[:space:]]*$/d' | sort -u
+    printf '%s\n' "$description" | extract_repo_relative_paths_from_text
+    printf '%s\n' "$description" | extract_prose_file_paths_from_text
+  } | sed '/^[[:space:]]*$/d' | expand_scoped_paths_from_stream | sort -u
 }
 
 issue_timestamp() {
@@ -276,7 +404,7 @@ commit_ref_exists() {
 
   escaped_child="$(regex_escape_extended "$child")"
   pattern="(^|[^[:alnum:]_.-])${escaped_child}([^[:alnum:]_.-]|$)"
-  run_git_clean log --format='%H' --all --extended-regexp --grep="$pattern" 2>/dev/null | grep -q .
+  run_git_clean log -n 1 --format='%H' --all --extended-regexp --grep="$pattern" 2>/dev/null | grep -q .
 }
 
 commit_matches_json() {
@@ -285,7 +413,7 @@ commit_matches_json() {
   shift 2
   local file
   local -a matched_files=()
-  local -a git_args=(log --format=%H --all --diff-filter=ACMR)
+  local -a git_args=(log -n 1 --format=%H --all --diff-filter=ACMR)
 
   [[ -n "$since" ]] && git_args+=("--since=$since")
   [[ -n "$until" ]] && git_args+=("--until=$until")
@@ -337,18 +465,35 @@ child_is_closed() {
 add_grace_to_timestamp() {
   local ts="$1"
   local grace="$2"
+  local normalized_ts=""
+  local naive_ts=""
+  local epoch=""
+
   [[ -n "$ts" ]] || return 1
   if date -d "$ts + ${grace} seconds" -Iseconds 2>/dev/null; then
     return 0
   fi
-  # macOS date fallback: strip colon from timezone offset for %z parsing
-  local ts_nocolon="${ts%:*}${ts##*:}"
-  local epoch
-  epoch="$(date -jf '%Y-%m-%dT%H:%M:%S%z' "$ts_nocolon" '+%s' 2>/dev/null)" || {
+
+  # macOS date fallback: parse UTC Z or strip colon from timezone offset for %z.
+  if [[ "$ts" == *Z ]]; then
+    epoch="$(date -u -jf '%Y-%m-%dT%H:%M:%SZ' "$ts" '+%s' 2>/dev/null)" || true
+  fi
+
+  if [[ -z "$epoch" ]]; then
+    normalized_ts="$ts"
+    if [[ "$normalized_ts" =~ [+-][0-9]{2}:[0-9]{2}$ ]]; then
+      normalized_ts="${normalized_ts%:*}${normalized_ts##*:}"
+    fi
+    epoch="$(date -jf '%Y-%m-%dT%H:%M:%S%z' "$normalized_ts" '+%s' 2>/dev/null)" || true
+  fi
+
+  if [[ -z "$epoch" ]]; then
     # Last resort: parse date portion only (loses TZ accuracy, acceptable for grace)
-    epoch="$(date -jf '%Y-%m-%dT%H:%M:%S' "${ts%%[+-]*}" '+%s' 2>/dev/null)" || return 1
-  }
-  date -r $((epoch + grace)) '+%Y-%m-%dT%H:%M:%S+00:00' 2>/dev/null
+    naive_ts="$(printf '%s\n' "$ts" | sed -E 's/Z$//; s/[+-][0-9]{2}:?[0-9]{2}$//')"
+    epoch="$(date -jf '%Y-%m-%dT%H:%M:%S' "$naive_ts" '+%s' 2>/dev/null)" || return 1
+  fi
+
+  date -u -r $((epoch + grace)) '+%Y-%m-%dT%H:%M:%S+00:00' 2>/dev/null
 }
 
 packet_is_valid_for_child() {
@@ -462,14 +607,21 @@ classify_child() {
         if [[ -n "$grace_until" ]]; then
           commit_json="$(commit_matches_json "$created_at" "$grace_until" "${scoped_files[@]}")"
           if echo "$commit_json" | jq -e 'length > 0' >/dev/null 2>&1; then
-            build_child_result "$child" "$scoped_json" "commit" "matched scoped files in git history within grace window after close (close-before-commit)" "$commit_json" "pass"
+            build_child_result "$child" "$scoped_json" "grace-window" "matched scoped files in git history within grace window after close (close-before-commit)" "$commit_json" "pass"
             return 0
           fi
         fi
       fi
       if [[ "$SCOPE" == "commit" ]]; then
         if [[ "${#scoped_files[@]}" -eq 0 ]]; then
-          build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+          # Check evidence-only closure packets before declaring parser_miss
+          if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
+            packet_mode="$(packet_evidence_mode "$packet_path")"
+            packet_json="$(packet_matches_json "$packet_path")"
+            build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no scoped files)" "$packet_json" "pass"
+          else
+            build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+          fi
         else
           build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no commit evidence (checked grace window)" '[]' "fail"
         fi
@@ -479,7 +631,14 @@ classify_child() {
   esac
 
   if [[ "${#scoped_files[@]}" -eq 0 ]]; then
-    build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+    # Check evidence-only closure packets before declaring parser_miss
+    if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
+      packet_mode="$(packet_evidence_mode "$packet_path")"
+      packet_json="$(packet_matches_json "$packet_path")"
+      build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no scoped files)" "$packet_json" "pass"
+    else
+      build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+    fi
     return 0
   fi
 
@@ -568,7 +727,8 @@ jq -s \
         commit: ([.[] | select(.status == "pass" and .evidence_mode == "commit") | .child_id] | sort),
         staged: ([.[] | select(.status == "pass" and .evidence_mode == "staged") | .child_id] | sort),
         worktree: ([.[] | select(.status == "pass" and .evidence_mode == "worktree") | .child_id] | sort),
-        packet: ([.[] | select(.status == "pass" and (.evidence_mode | IN("commit","staged","worktree") | not)) | .child_id] | sort)
+        "evidence-only-packet": ([.[] | select(.status == "pass" and .evidence_mode == "evidence-only-packet") | .child_id] | sort),
+        "grace-window": ([.[] | select(.status == "pass" and .evidence_mode == "grace-window") | .child_id] | sort)
       }
     },
     children: .,
