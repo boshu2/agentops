@@ -685,6 +685,52 @@ EOF
     [[ "$scoped_files" != *"developers.openai.com"* ]]
 }
 
+@test "closure-integrity-audit.sh: parses cd-relative validation command scopes" {
+    local audit_repo="$TMP_TEST_DIR/audit-command-scope"
+    local child_description=""
+    local staged_child=""
+    local scoped_files=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p "$audit_repo/cli/cmd/ao"
+    printf 'command scope\n' > "$audit_repo/cli/cmd/ao/evolve_test.go"
+    git -C "$audit_repo" add cli/cmd/ao/evolve_test.go
+    child_description=$'Regression closes via command-only validation.\n\n```validation\n{"command":"cd cli && go test ./cmd/ao/ -count=1 -timeout 180s"}\n```'
+    write_fake_bd_json "$audit_repo" "ag-command" "ag-command.1" "$child_description" \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope staged ag-command' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    staged_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes.staged[0]')
+    [ "$staged_child" = "ag-command.1" ]
+    scoped_files=$(printf '%s\n' "$output" | jq -r '.children[0].scoped_files | join("\n")')
+    [[ "$scoped_files" == *"cli/cmd/ao"* ]]
+}
+
+@test "closure-integrity-audit.sh: expands bare filenames from prose to repo paths" {
+    local audit_repo="$TMP_TEST_DIR/audit-bare-filename"
+    local child_description=""
+    local staged_child=""
+    local scoped_files=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p "$audit_repo/cli/cmd/ao"
+    printf 'bare filename\n' > "$audit_repo/cli/cmd/ao/quickstart.go"
+    git -C "$audit_repo" add cli/cmd/ao/quickstart.go
+    child_description=$'Replace .agents/retros with .agents/retro in quickstart.go:97 and quickstart_test.go:204.'
+    write_fake_bd_json "$audit_repo" "ag-bare" "ag-bare.1" "$child_description" \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope staged ag-bare' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    staged_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes.staged[0]')
+    [ "$staged_child" = "ag-bare.1" ]
+    scoped_files=$(printf '%s\n' "$output" | jq -r '.children[0].scoped_files | join("\n")')
+    [[ "$scoped_files" == *"cli/cmd/ao/quickstart.go"* ]]
+}
+
 @test "closure-integrity-audit.sh: commit evidence does not regex-match similar child ids" {
     local audit_repo="$TMP_TEST_DIR/audit-regex"
     local failed_count=""
@@ -717,6 +763,59 @@ EOF
     [ "$status" -eq 0 ]
     failed_count=$(printf '%s\n' "$output" | jq -r '.summary.failed')
     [ "$failed_count" = "1" ]
+}
+
+@test "closure-integrity-audit.sh: parses Z timestamps for grace-window commits" {
+    local audit_repo="$TMP_TEST_DIR/audit-z-grace"
+    local passed_child=""
+    local detail=""
+    setup_audit_repo "$audit_repo"
+    printf 'z grace\n' > "$audit_repo/zed.md"
+    git -C "$audit_repo" add zed.md
+    GIT_AUTHOR_DATE="2030-01-01T01:00:00+00:00" \
+        GIT_COMMITTER_DATE="2030-01-01T01:00:00+00:00" \
+        git -C "$audit_repo" commit -q -m "fix: z grace evidence"
+    write_fake_bd_json "$audit_repo" "ag-z-grace" "ag-z-grace.1" $'Files:\n- zed.md' \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:30:00Z" "2030-01-01T00:30:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope commit ag-z-grace' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    passed_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes["grace-window"][0]')
+    [ "$passed_child" = "ag-z-grace.1" ]
+    detail=$(printf '%s\n' "$output" | jq -r '.children[0].detail')
+    [[ "$detail" == *"grace window"* ]]
+}
+
+@test "closure-integrity-audit.sh: directory command scopes pass with multiple commits" {
+    local audit_repo="$TMP_TEST_DIR/audit-dir-multi"
+    local passed_child=""
+    local matched_files=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p "$audit_repo/cli/cmd/ao"
+    printf 'first\n' > "$audit_repo/cli/cmd/ao/search_test.go"
+    git -C "$audit_repo" add cli/cmd/ao/search_test.go
+    GIT_AUTHOR_DATE="2030-01-01T01:00:00+00:00" \
+        GIT_COMMITTER_DATE="2030-01-01T01:00:00+00:00" \
+        git -C "$audit_repo" commit -q -m "fix: first directory evidence"
+    printf 'second\n' > "$audit_repo/cli/cmd/ao/quickstart_test.go"
+    git -C "$audit_repo" add cli/cmd/ao/quickstart_test.go
+    GIT_AUTHOR_DATE="2030-01-01T01:05:00+00:00" \
+        GIT_COMMITTER_DATE="2030-01-01T01:05:00+00:00" \
+        git -C "$audit_repo" commit -q -m "fix: second directory evidence"
+    write_fake_bd_json "$audit_repo" "ag-dir" "ag-dir.1" \
+        $'Fix command-scoped package evidence.\n\n```validation\n{"command":"cd cli && go test ./cmd/ao/ -count=1"}\n```' \
+        "2030-01-01T00:00:00Z" "2030-01-01T00:30:00Z" "2030-01-01T00:30:00Z"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope commit ag-dir' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    passed_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes["grace-window"][0]')
+    [ "$passed_child" = "ag-dir.1" ]
+    matched_files=$(printf '%s\n' "$output" | jq -r '.children[0].matched_files | join("\n")')
+    [[ "$matched_files" == *"cli/cmd/ao"* ]]
 }
 
 @test "closure-integrity-audit.sh: empty or failed child collection is a hard failure signal" {
