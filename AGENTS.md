@@ -214,6 +214,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **swarm-evidence** | Swarm evidence files and file manifests are valid | Missing or malformed swarm evidence artifacts |
 | **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
 | **validate-hooks-doc-parity** | Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json` | Runtime hook contract changed but docs were not updated |
+| **windows-smoke** | Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests | Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green |
 | **bats-tests** | BATS integration tests for shell scripts pass | Hook or script behavioral regression |
 | **check-test-staleness** | Detects stale/abandoned test files | Non-blocking (`continue-on-error: true`) |
 | **file-manifest-overlap** | No file path conflicts between workers/skills | Two skills claim the same output file |

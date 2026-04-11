@@ -1,12 +1,12 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs a 29-job validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs a 30-job validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (29 jobs) |
+| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (30 jobs) |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
@@ -30,13 +30,13 @@ and scheduling semantics.
 
 ## validate.yml Architecture
 
-The validate workflow runs **29 jobs** across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
+The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
 
 ### Job Dependency Graph
 
 ```text
                     ┌───────────────────────────────────────────────┐
-                    │         25 independent parallel jobs          │
+                    │         26 independent parallel jobs          │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
                     │  hook-preflight      validate-hooks-doc-parity│
@@ -49,7 +49,8 @@ The validate workflow runs **29 jobs** across 4 tiers of parallelism. Most jobs 
                     │  skill-dependency-check                       │
                     │  contract-compatibility-gate                  │
                     │  memrl-health        plugin-load-test         │
-                    │  go-build            cli-integration          │
+                    │  go-build            windows-smoke            │
+                    │  cli-integration                              │
                     │  file-manifest-overlap                        │
                     │  skill-lint          learning-coherence       │
                     │  bats-tests          check-test-staleness     │
@@ -66,7 +67,7 @@ The validate workflow runs **29 jobs** across 4 tiers of parallelism. Most jobs 
                       │            │              │
                     ┌─┴────────────┴──────────────┴─┐
                     │           summary             │
-                    │  (needs: ALL 28 jobs)         │
+                    │  (needs: ALL 29 jobs)         │
                     │  if: always()                 │
                     └───────────────────────────────┘
 ```
@@ -104,9 +105,10 @@ Consolidated checklist of rules enforced by the pipeline:
 5. **CLI docs must stay in sync.** After adding/changing CLI commands or flags: run `scripts/generate-cli-reference.sh`. Checked by `cli-docs-parity`.
 6. **Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/INDEX.md`. Checked by `contract-compatibility-gate`.
 7. **Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15). Checked by `go-build` via `check-go-complexity.sh`.
-8. **No TODOs in SKILL.md.** Use `bd` issue tracking instead. Checked by `skill-lint`.
-9. **No secrets in code.** `security-scan` greps for hardcoded passwords, API keys, and tokens in non-test files.
-10. **No dangerous shell patterns.** `security-scan` rejects `rm -rf /`, `curl | sh`, etc. in scripts (with explicit exceptions for installer scripts).
+8. **Windows installer smoke must pass.** PowerShell installers need to parse, temp installs need to work, and focused Windows-sensitive Go tests must pass on `windows-latest`. Checked by `windows-smoke`.
+9. **No TODOs in SKILL.md.** Use `bd` issue tracking instead. Checked by `skill-lint`.
+10. **No secrets in code.** `security-scan` greps for hardcoded passwords, API keys, and tokens in non-test files.
+11. **No dangerous shell patterns.** `security-scan` rejects `rm -rf /`, `curl | sh`, etc. in scripts (with explicit exceptions for installer scripts).
 
 ## Local CI Guide
 
@@ -144,6 +146,9 @@ bash skills/heal-skill/scripts/heal.sh --strict   # Skill integrity
 
 # If you changed Go code:
 cd cli && make build && make test
+
+# If you changed Windows installers, Codex install surfaces, or OS-specific file locking:
+powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1
 
 # If you changed hooks or lib/hook-helpers.sh:
 cd cli && make sync-hooks

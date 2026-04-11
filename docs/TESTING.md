@@ -9,6 +9,7 @@ Testing ensures AgentOps skills, hooks, and the `ao` CLI work correctly across c
 | Unit (Go) | `cli/**/*_test.go` | Go unit tests for CLI internals |
 | Integration | `tests/integration/` | Shell scripts testing CLI commands, skill invocation, hook chains |
 | Smoke | `tests/smoke-test.sh` | Quick sanity checks that the plugin loads correctly |
+| Windows smoke | `tests/windows/test-windows-smoke.ps1` | Native Windows smoke for PowerShell installers, Codex plugin staging, `ao doctor` hints, and focused Windows-sensitive Go tests |
 | Contract | `tests/hooks/*.bats`, `scripts/check-contract-compatibility.sh` | Schema and contract validation |
 | BATS | `tests/hooks/*.bats`, `tests/scripts/*.bats` | Unit tests for shell hooks and scripts using the BATS framework |
 | E2E | `tests/e2e/` | Full pipeline proof runs |
@@ -51,6 +52,7 @@ Run a specific tier:
 | Doc validation | `./tests/docs/validate-doc-release.sh` | ~10s |
 | Contract compatibility | `./scripts/check-contract-compatibility.sh` | ~10s |
 | Full CI gate (local) | `scripts/ci-local-release.sh` | 5-10 min |
+| Native Windows smoke | `powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1` | ~1-3 min |
 
 ## Writing New Tests
 
@@ -73,6 +75,7 @@ That activates `.githooks/pre-commit` and `.githooks/pre-push` for the current c
 | Script tests (BATS) | `tests/scripts/` |
 | Skill validation | `skills/<name>/scripts/validate.sh` |
 | Integration tests | `tests/integration/test-<name>.sh` |
+| Native Windows smoke | `tests/windows/` |
 | E2E proof runs | `tests/e2e/` |
 | Doc validation | `tests/docs/` |
 | Goal validation | `tests/goals/` |
@@ -215,6 +218,7 @@ Quarantined tests are excluded from the default `run-all.sh` tiers and CI. Stand
 | `tests/lint/` | Lint allowlists and code style checks |
 | `tests/explicit-skill-requests/` | Tests for explicit skill trigger patterns |
 | `tests/cli/` | CLI flag consistency and behavior tests |
+| `tests/windows/` | Native Windows installer, plugin staging, and focused CLI portability smoke tests |
 | `tests/e2e/` | End-to-end proof runs (full pipeline) |
 | `tests/docs/` | Documentation validation (links, skill counts, goal counts) |
 | `tests/scripts/` | BATS tests for repo scripts (`scripts/*.sh`) |
