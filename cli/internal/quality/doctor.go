@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -361,11 +362,25 @@ func CheckCLIDependencies(lookPath func(string) (string, error)) Check {
 	var missing, hints []string
 	if !gtOk {
 		missing = append(missing, "gt")
-		hints = append(hints, "install with 'brew install gastown'")
+		hints = append(hints, installHint("gt", "brew install gastown"))
 	}
 	if !bdOk {
 		missing = append(missing, "bd")
-		hints = append(hints, "install with 'brew install beads'")
+		hints = append(hints, installHint("bd", "brew install beads"))
 	}
 	return Check{Name: "CLI Dependencies", Status: "warn", Detail: fmt.Sprintf("%s not found \u2014 %s", strings.Join(missing, ", "), strings.Join(hints, "; ")), Required: false}
+}
+
+func installHint(command, unixHint string) string {
+	if runtime.GOOS != "windows" {
+		return "install with '" + unixHint + "'"
+	}
+	switch command {
+	case "gt":
+		return "install GasTown from its Windows release or use WSL/Homebrew"
+	case "bd":
+		return "install Beads from its Windows release or use WSL/Homebrew"
+	default:
+		return "install " + command + " for Windows or use WSL"
+	}
 }

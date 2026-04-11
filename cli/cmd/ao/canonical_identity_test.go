@@ -57,9 +57,9 @@ func TestSessionIDAliases(t *testing.T) {
 }
 
 func TestCanonicalArtifactPath(t *testing.T) {
-	baseDir := "/tmp/repo"
+	baseDir := filepath.Join(t.TempDir(), "repo")
 	rel := ".agents/learnings/L1.md"
-	absWant := filepath.Clean("/tmp/repo/.agents/learnings/L1.md")
+	absWant := filepath.Clean(filepath.Join(baseDir, ".agents", "learnings", "L1.md"))
 	if got := canonicalArtifactPath(baseDir, rel); got != absWant {
 		t.Fatalf("canonicalArtifactPath(%q) = %q, want %q", rel, got, absWant)
 	}

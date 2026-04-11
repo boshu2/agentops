@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -299,7 +300,7 @@ func CheckSkills() Check {
 	}
 
 	if primaryCount == 0 {
-		return Check{Name: "Plugin", Status: "warn", Detail: "no skills found — run 'bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)'", Required: false}
+		return Check{Name: "Plugin", Status: "warn", Detail: "no skills found — " + pluginInstallHint(), Required: false}
 	}
 
 	nativeNames := installedNames["~/.codex/plugins/cache/agentops-marketplace/agentops/local/skills-codex"]
@@ -339,6 +340,13 @@ func CheckSkills() Check {
 		Detail:   fmt.Sprintf("%d skills found in %s", primaryCount, primary),
 		Required: false,
 	}
+}
+
+func pluginInstallHint() string {
+	if runtime.GOOS == "windows" {
+		return "for Codex run 'irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex'; for Claude Code use 'claude plugin install agentops@agentops-marketplace'"
+	}
+	return "run 'bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)'"
 }
 
 func FindAgentOpsRepoRoot(start string) string {
