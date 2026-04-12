@@ -1,6 +1,6 @@
 # evolve
 
-Run `$evolve` as an always-on Codex loop over `$rpi`: keep selecting productive work, compound via harvested follow-ups, and only go dormant as a last resort.
+Run `$evolve` as the Codex-facing operator loop for `ao evolve`: post-mortem finished work, analyze repo state, select or create the next highest-value item, let `$rpi` plan/pre-mortem/implement/validate it, harvest follow-ups, and repeat until a real stop condition fires.
 
 ## Codex Execution Profile
 
@@ -9,6 +9,7 @@ Run `$evolve` as an always-on Codex loop over `$rpi`: keep selecting productive 
 3. Prefer Codex sub-agents for generator layers and sidecar audits when they can run in parallel without blocking the main loop.
 4. Persist loop state under `.agents/evolve/` and recover from disk instead of relying on live context.
 5. When `PROGRAM.md` or `AUTODEV.md` exists, treat it as the active execution layer: keep selection inside mutable scope, escalate immutable-scope work, and use its validation and decision policy in the cycle gate.
+6. Do not invent a new loop skill name when the user asks what this should be called; the v2 command is `ao evolve` and the skill remains `$evolve`.
 
 ## Guardrails
 

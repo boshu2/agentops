@@ -21,9 +21,15 @@ var evolveCmd = &cobra.Command{
 	Short: "Run the autonomous code-improvement loop",
 	Long: `Run the v2 autonomous improvement loop.
 
-This is the top-level operator surface for the old /evolve flow. It uses the
-same engine as "ao rpi loop" and defaults to supervisor mode so each cycle gets
-lease locking, compile producer cadence, quality gates, retries, and cleanup.
+This is the top-level operator surface for the old /evolve flow. The v2 name is
+still "evolve": it uses the same engine as "ao rpi loop" and defaults to
+supervisor mode so each cycle gets lease locking, compile producer cadence,
+quality gates, retries, and cleanup.
+
+Operator cadence:
+  post-mortem finished work, analyze repo state, select or create next work,
+  run RPI planning/pre-mortem/implementation/validation, harvest follow-ups,
+  and repeat until the queue is stable or a stop condition fires.
 
 Examples:
   ao evolve                          # run until queue stable or stopped

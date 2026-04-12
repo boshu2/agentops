@@ -50,6 +50,22 @@ func TestEvolveCommandReusesRPILoopFlags(t *testing.T) {
 	}
 }
 
+func TestEvolveHelpDescribesV2OperatorCadence(t *testing.T) {
+	help := evolveCmd.Long
+	for _, want := range []string{
+		`The v2 name is`,
+		`still "evolve"`,
+		"post-mortem finished work",
+		"analyze repo state",
+		"planning/pre-mortem/implementation/validation",
+		"harvest follow-ups",
+	} {
+		if !strings.Contains(help, want) {
+			t.Fatalf("evolve help missing %q:\n%s", want, help)
+		}
+	}
+}
+
 func TestApplyEvolveDefaultsEnablesSupervisor(t *testing.T) {
 	prev := snapshotLoopSupervisorGlobals()
 	defer restoreLoopSupervisorGlobals(prev)
