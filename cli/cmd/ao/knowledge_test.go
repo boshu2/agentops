@@ -179,6 +179,21 @@ func TestKnowledgeBriefJSONUsesNativeBuilderWithoutScripts(t *testing.T) {
 	}
 }
 
+func TestSelectKnowledgeBriefTopicsSuppressesThinCandidate(t *testing.T) {
+	topics := []knowledgeTopicDetail{
+		{TopicState: knowledgeTopicState{ID: "thin-topic", Title: "Thin Topic", Health: "thin"}},
+		{TopicState: knowledgeTopicState{ID: "healthy-topic", Title: "Healthy Topic", Health: "healthy"}},
+	}
+
+	selected, suppressed := selectKnowledgeBriefTopics("thin topic rollout", topics, t.TempDir())
+	if len(selected) != 1 || selected[0].ID != "healthy-topic" {
+		t.Fatalf("selected = %+v, want healthy-topic only", selected)
+	}
+	if len(suppressed) != 1 || suppressed[0] != "thin-topic" {
+		t.Fatalf("suppressed = %+v, want thin-topic", suppressed)
+	}
+}
+
 func TestKnowledgeGapsJSONSurfacesThinTopicsAndPromotionGaps(t *testing.T) {
 	repo := t.TempDir()
 	writeKnowledgeCorpusFixtures(t, repo)

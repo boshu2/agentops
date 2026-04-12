@@ -144,6 +144,29 @@ func buildKnowledgeBriefing(agentsRoot, goal string) (knowledgeNativeBuildResult
 		return knowledgeNativeBuildResult{}, fmt.Errorf("knowledge brief requires topic packets under %s", filepath.Join(agentsRoot, "topics"))
 	}
 
+	selected, suppressedThin := selectKnowledgeBriefTopics(goal, topics, agentsRoot)
+	if len(selected) == 0 {
+		return knowledgeNativeBuildResult{}, fmt.Errorf("knowledge brief could not select relevant topics for %q", goal)
+	}
+
+	coreBeliefs := collectKnowledgeBriefCoreBeliefs(topics, agentsRoot)
+	evidence := collectKnowledgeBriefEvidence(agentsRoot, selected, 6)
+	warnings := collectKnowledgeBriefWarnings(agentsRoot, suppressedThin)
+	sourceSurfaces, playbookPath := collectKnowledgeBriefSources(agentsRoot, selected)
+	outputPath := knowledgeBriefingOutputPath(agentsRoot, goal)
+	content := renderKnowledgeBriefing(goal, selected, coreBeliefs, evidence, warnings, sourceSurfaces, playbookPath, filepath.Join(agentsRoot, "knowledge", "operator-model.md"))
+	if err := writeKnowledgeOutput(outputPath, content); err != nil {
+		return knowledgeNativeBuildResult{}, err
+	}
+
+	return knowledgeNativeBuildResult{
+		OutputPath: outputPath,
+		Metadata:   map[string]string{"briefing": outputPath},
+		Output:     fmt.Sprintf("briefing=%s", outputPath),
+	}, nil
+}
+
+func selectKnowledgeBriefTopics(goal string, topics []knowledgeTopicDetail, agentsRoot string) ([]knowledgeTopicDetail, []string) {
 	candidates := selectRelevantKnowledgeTopics(goal, topics, agentsRoot, 6)
 	selected := make([]knowledgeTopicDetail, 0, 3)
 	suppressedThin := make([]string, 0, len(candidates))
@@ -158,27 +181,33 @@ func buildKnowledgeBriefing(agentsRoot, goal string) (knowledgeNativeBuildResult
 		}
 	}
 	if len(selected) == 0 {
-		for _, topic := range topics {
-			if topic.Health != "healthy" || containsKnowledgeTopic(selected, topic.ID) {
-				continue
-			}
-			selected = append(selected, topic)
-			if len(selected) == 3 {
-				break
-			}
+		selected = appendKnowledgeBriefFallbackTopics(selected, topics, 3)
+	}
+	return selected, suppressedThin
+}
+
+func appendKnowledgeBriefFallbackTopics(selected, topics []knowledgeTopicDetail, limit int) []knowledgeTopicDetail {
+	for _, topic := range topics {
+		if topic.Health != "healthy" || containsKnowledgeTopic(selected, topic.ID) {
+			continue
+		}
+		selected = append(selected, topic)
+		if len(selected) == limit {
+			break
 		}
 	}
-	if len(selected) == 0 {
-		return knowledgeNativeBuildResult{}, fmt.Errorf("knowledge brief could not select relevant topics for %q", goal)
-	}
+	return selected
+}
 
+func collectKnowledgeBriefCoreBeliefs(topics []knowledgeTopicDetail, agentsRoot string) []string {
 	coreBeliefs, _ := collectKnowledgeBeliefSections(topics, agentsRoot)
 	if len(coreBeliefs) > 3 {
-		coreBeliefs = coreBeliefs[:3]
+		return coreBeliefs[:3]
 	}
+	return coreBeliefs
+}
 
-	evidence := collectKnowledgeBriefEvidence(agentsRoot, selected, 6)
-	warnings := make([]string, 0, len(selected)+2)
+func collectKnowledgeBriefSources(agentsRoot string, selected []knowledgeTopicDetail) ([]string, string) {
 	sourceSurfaces := make([]string, 0, len(selected)*3)
 	playbookPath := ""
 	for _, topic := range selected {
@@ -197,36 +226,39 @@ func buildKnowledgeBriefing(agentsRoot, goal string) (knowledgeNativeBuildResult
 			sourceSurfaces = append(sourceSurfaces, playbookCandidate)
 		}
 	}
-	if knowledgePathExists(filepath.Join(agentsRoot, "knowledge", "operator-model.md")) {
-		sourceSurfaces = append(sourceSurfaces, filepath.Join(agentsRoot, "knowledge", "operator-model.md"))
+	sourceSurfaces = appendKnowledgeBriefKnowledgeSources(agentsRoot, sourceSurfaces)
+	return dedupeKnowledgeStrings(sourceSurfaces), playbookPath
+}
+
+func appendKnowledgeBriefKnowledgeSources(agentsRoot string, sourceSurfaces []string) []string {
+	operatorModel := filepath.Join(agentsRoot, "knowledge", "operator-model.md")
+	if knowledgePathExists(operatorModel) {
+		sourceSurfaces = append(sourceSurfaces, operatorModel)
 	}
-	if knowledgePathExists(filepath.Join(agentsRoot, "knowledge", "book-of-beliefs.md")) {
-		sourceSurfaces = append(sourceSurfaces, filepath.Join(agentsRoot, "knowledge", "book-of-beliefs.md"))
+	bookOfBeliefs := filepath.Join(agentsRoot, "knowledge", "book-of-beliefs.md")
+	if knowledgePathExists(bookOfBeliefs) {
+		sourceSurfaces = append(sourceSurfaces, bookOfBeliefs)
 	}
+	return sourceSurfaces
+}
+
+func collectKnowledgeBriefWarnings(agentsRoot string, suppressedThin []string) []string {
+	warnings := make([]string, 0, len(suppressedThin)+1)
 	for _, topicID := range dedupeKnowledgeStrings(suppressedThin) {
 		warnings = append(warnings, fmt.Sprintf("`%s` matched the goal but is still thin; it stays discovery-only and was not injected into the control plane.", topicID))
 	}
 	if warning := knowledgeSourceManifestWarning(agentsRoot); warning != "" {
 		warnings = append(warnings, warning)
 	}
-	sourceSurfaces = dedupeKnowledgeStrings(sourceSurfaces)
+	return warnings
+}
 
-	datePrefix := time.Now().Format("2006-01-02")
+func knowledgeBriefingOutputPath(agentsRoot, goal string) string {
 	slug := slugify(goal)
 	if slug == "" {
 		slug = "briefing"
 	}
-	outputPath := filepath.Join(agentsRoot, "briefings", fmt.Sprintf("%s-%s.md", datePrefix, slug))
-	content := renderKnowledgeBriefing(goal, selected, coreBeliefs, evidence, warnings, sourceSurfaces, playbookPath, filepath.Join(agentsRoot, "knowledge", "operator-model.md"))
-	if err := writeKnowledgeOutput(outputPath, content); err != nil {
-		return knowledgeNativeBuildResult{}, err
-	}
-
-	return knowledgeNativeBuildResult{
-		OutputPath: outputPath,
-		Metadata:   map[string]string{"briefing": outputPath},
-		Output:     fmt.Sprintf("briefing=%s", outputPath),
-	}, nil
+	return filepath.Join(agentsRoot, "briefings", fmt.Sprintf("%s-%s.md", time.Now().Format("2006-01-02"), slug))
 }
 
 func loadKnowledgeTopicDetails(agentsRoot string) []knowledgeTopicDetail {
