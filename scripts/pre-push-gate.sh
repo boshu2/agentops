@@ -26,6 +26,7 @@
 #  17. Codex backbone prompts
 #  18. Codex override coverage
 #  19. Next-work contract parity
+#  19b. Retrieval quality ratchet (warn-only until 500 indexed turns)
 #  20. Skill runtime formats
 #  21. Codex RPI contract validation
 #  22. Codex lifecycle guard validation
@@ -528,6 +529,25 @@ if [[ -x scripts/validate-next-work-contract-parity.sh ]]; then
     fi
 else
     fail "missing executable: scripts/validate-next-work-contract-parity.sh"
+fi
+
+# --- 19b. Retrieval quality ratchet ---
+if needs_check always; then
+    if [[ -x scripts/check-retrieval-quality-ratchet.sh ]]; then
+        if retrieval_quality_output="$(run_without_git_env scripts/check-retrieval-quality-ratchet.sh 2>&1)"; then
+            if grep -q '^WARN retrieval quality ratchet:' <<<"$retrieval_quality_output"; then
+                warn "retrieval quality ratchet"
+                indent_output "$retrieval_quality_output"
+            else
+                pass "retrieval quality ratchet"
+            fi
+        else
+            fail "retrieval quality ratchet"
+            indent_output "$retrieval_quality_output"
+        fi
+    else
+        fail "missing executable: scripts/check-retrieval-quality-ratchet.sh"
+    fi
 fi
 
 # --- 20. Skill runtime formats ---

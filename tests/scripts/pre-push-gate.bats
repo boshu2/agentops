@@ -40,6 +40,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-codex-backbone-prompts.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-override-coverage.sh"
     make_stub "$FAKE_REPO/scripts/validate-next-work-contract-parity.sh"
+    make_stub "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-runtime-formats.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-rpi-contract.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-lifecycle-guards.sh"
@@ -440,3 +441,26 @@ DOCS
     [[ "$output" == *"ok"*"CLI docs parity"* ]]
 }
 
+@test "pre-push-gate.sh treats retrieval ratchet warning as non-blocking" {
+    cat > "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh" <<'RATCHET'
+#!/usr/bin/env bash
+echo "WARN retrieval quality ratchet: any_relevant_at_k=0.40 threshold=0.60 indexed_turns=0 strict_after=500"
+exit 0
+RATCHET
+    chmod +x "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"*"retrieval quality ratchet"* ]]
+    [[ "$output" == *"pre-push gate (fast): passed"* ]]
+}
