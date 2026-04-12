@@ -14,11 +14,10 @@ Promoted: `ol-integration/` -> `tests/ol-integration/` (na-gtm.18,
 2026-04-12).
 Promoted: `team-runner/` -> `tests/team-runner/` (na-gtm.19, 2026-04-12).
 Promoted: `codex/` -> `tests/codex/integration/` (na-gtm.17, 2026-04-12).
-Remaining: **1 suite**.
+Promoted: `claude-code/` -> `tests/claude-code/` (na-gtm.20, 2026-04-12).
+Remaining: **0 suites**.
 
-| Suite | Status | Plan |
-|---|---|---|
-| `claude-code/` | PROMOTE — needs skip wrapper | Currently hard-exits if `claude` is missing. Add pre-flight skip-on-absent guard, then wire as optional job (Plan B). |
+No quarantined suites remain.
 
 ## Deletions performed
 
@@ -31,7 +30,7 @@ Remaining: **1 suite**.
 ## Running manually
 
 ```bash
-bash tests/_quarantine/claude-code/run-all.sh   # requires claude CLI
+bash tests/claude-code/run-all.sh               # promoted; skips if claude CLI missing
 bash tests/codex/integration/run-all.sh         # promoted; skips if codex CLI missing
 bash tests/ol-integration/vibe-ol-test.sh       # promoted, fixture-only
 bash tests/ol-integration/swarm-ol-test.sh      # promoted, fixture-only
@@ -50,15 +49,13 @@ is covered by the existing `tests/run-all.sh --tier=2` Codex integration hook.
 
 **Cost:** ~30 min. No code changes, CLI-skip behavior already correct.
 
-### Plan B — `claude-code/`
+### Plan B — `claude-code/` (done)
 
-1. Wrap `run-all.sh` pre-flight so missing `claude` CLI exits 0 with SKIPPED
-   (currently exits 1).
-2. `git mv tests/_quarantine/claude-code tests/claude-code`
-3. Optional job in validate.yml. Tests are budget-capped (`MAX_BUDGET_USD=1.00`)
-   and turn-capped (`MAX_TURNS=3`), so a nightly-only cadence is safest.
-4. Recreate `skill-triggering/prompts/` inside
-   `tests/claude-code/prompts/natural-language/` (recover from git history).
+Promoted by na-gtm.20 on 2026-04-12:
+`tests/_quarantine/claude-code` moved to `tests/claude-code`, missing `claude`
+now exits 0 with a `SKIPPED` message, and `tests/claude-code/README.md`
+documents the live-runtime cost guards. The suite is covered by the existing
+`tests/run-all.sh --tier=3` Claude Code hook.
 
 **Cost:** ~2 hours. Needs a runner that has `claude` available; document cost caps.
 
@@ -88,4 +85,4 @@ Codex CLIs.
 - **na-gtm.17** — CLOSED: promoted `codex/` (Plan A)
 - **na-gtm.18** — CLOSED: promoted `ol-integration/` (Plan C)
 - **na-gtm.19** — CLOSED: promoted `team-runner/` (Plan D)
-- **na-gtm.20** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)
+- **na-gtm.20** — CLOSED: promoted `claude-code` with skip-on-absent guard (Plan B)

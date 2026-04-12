@@ -12,15 +12,16 @@ echo "========================================"
 echo ""
 echo "Repository: $(cd ../.. && pwd)"
 echo "Test time: $(date)"
-echo "Claude version: $(claude --version 2>/dev/null || echo 'not found')"
 echo ""
 
 # Check if Claude Code is available
 if ! command -v claude &> /dev/null; then
-    echo "ERROR: Claude Code CLI not found"
+    echo "SKIPPED: Claude Code CLI not found"
     echo "Install Claude Code first: https://docs.anthropic.com/claude-code"
-    exit 1
+    exit 0
 fi
+echo "Claude version: $(claude --version 2>/dev/null || echo 'not found')"
+echo ""
 
 # Parse command line arguments
 VERBOSE=false
