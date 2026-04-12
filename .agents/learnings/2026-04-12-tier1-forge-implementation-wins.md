@@ -1,9 +1,6 @@
 ---
-id: learning-2026-04-12-tier1-forge-wins
-type: learning
 date: 2026-04-12
 category: architecture
-confidence: high
 maturity: provisional
 utility: 0.7
 ---
