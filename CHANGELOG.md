@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Native Windows smoke gate** — `tests/windows/test-windows-smoke.ps1` now exercises the PowerShell `ao` and Codex installers, local `ao doctor` Windows guidance, and focused Windows-sensitive Go tests, with a blocking `windows-smoke` job in `validate.yml`.
+
 ## [2.36.0] - 2026-04-11
 
 ### Added

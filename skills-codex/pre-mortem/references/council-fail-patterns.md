@@ -65,6 +65,15 @@ Changes to shared abstractions (namespaces, directories, CLI surfaces) miss down
 
 **Pre-mortem check:** For each structural change, is the full propagation surface enumerated? (Go source, tests, hooks, skills, docs, scripts, CI)
 
+**Contract-atomic namespace/refactor gate:** If the plan renames or flattens a
+CLI namespace, skill path, schema field, artifact directory, or other shared
+contract, require one atomic change set that includes:
+- an old->new mapping for every public name and artifact path
+- a full downstream inventory across code, tests, hooks, embedded artifacts,
+  skills, docs, scripts, CI, and generated files
+- an executable sweep or parity gate that fails on stale references
+- an explicit compatibility or rollback decision for old names
+
 **Example:** CLI namespace restructuring touched 182 files. Missed files caused silent breakage in hooks and embedded skills.
 
 ---
