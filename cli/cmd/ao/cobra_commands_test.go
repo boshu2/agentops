@@ -111,6 +111,18 @@ func executeCommand(args ...string) (string, error) {
 	origMaturityMigrateMd := maturityMigrateMd
 	origMaturityRecalibrate := maturityRecalibrate
 	origMaturityUncitedDays := maturityUncitedDays
+	origCompileSourcesDir := compileSourcesDir
+	origCompileOutputDir := compileOutputDir
+	origCompileSince := compileSince
+	origCompileRuntime := compileRuntime
+	origCompileIncremental := compileIncremental
+	origCompileForce := compileForce
+	origCompileOnly := compileOnly
+	origCompileLintOnly := compileLintOnly
+	origCompileDefragOnly := compileDefragOnly
+	origCompileMineOnly := compileMineOnly
+	origCompileFull := compileFull
+	origCompileQuiet := compileQuiet
 	defer func() {
 		dryRun = origDryRun
 		verbose = origVerbose
@@ -188,6 +200,18 @@ func executeCommand(args ...string) (string, error) {
 		maturityMigrateMd = origMaturityMigrateMd
 		maturityRecalibrate = origMaturityRecalibrate
 		maturityUncitedDays = origMaturityUncitedDays
+		compileSourcesDir = origCompileSourcesDir
+		compileOutputDir = origCompileOutputDir
+		compileSince = origCompileSince
+		compileRuntime = origCompileRuntime
+		compileIncremental = origCompileIncremental
+		compileForce = origCompileForce
+		compileOnly = origCompileOnly
+		compileLintOnly = origCompileLintOnly
+		compileDefragOnly = origCompileDefragOnly
+		compileMineOnly = origCompileMineOnly
+		compileFull = origCompileFull
+		compileQuiet = origCompileQuiet
 	}()
 
 	// Reset all command-local flags to defaults before execution.
@@ -258,6 +282,18 @@ func executeCommand(args ...string) (string, error) {
 	maturityMigrateMd = false
 	maturityRecalibrate = false
 	maturityUncitedDays = 0
+	compileSourcesDir = ".agents"
+	compileOutputDir = ".agents/compiled"
+	compileSince = "26h"
+	compileRuntime = ""
+	compileIncremental = true
+	compileForce = false
+	compileOnly = false
+	compileLintOnly = false
+	compileDefragOnly = false
+	compileMineOnly = false
+	compileFull = false
+	compileQuiet = false
 	contextPacketFlags = struct {
 		goal  string
 		epic  string
@@ -350,7 +386,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
 		"anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
-		"constraint", "context", "codex", "contradict", "corpus", "curate", "dedup",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
 		"defrag", "demo", "doctor", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
@@ -408,7 +444,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
 		"anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
-		"constraint", "context", "codex", "contradict", "corpus", "curate", "dedup",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
 		"defrag", "demo", "doctor", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",

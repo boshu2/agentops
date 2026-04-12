@@ -1976,6 +1976,34 @@ ao beads verify <bead-id> [flags]
 
 ---
 
+### `ao compile`
+
+Compile makes the existing AgentOps knowledge compiler available through the ao CLI.
+
+```
+ao compile [flags]
+```
+
+**Flags:**
+
+```
+      --compile-only        Skip mine and defrag; run compile plus lint
+      --defrag-only         Only run mechanical defrag cleanup
+      --force               Recompile all source artifacts regardless of hashes
+      --full                Run the full mine, compile, lint, and defrag cycle
+  -h, --help                help for compile
+      --incremental         Compile only changed source artifacts (default true)
+      --lint-only           Only lint the existing compiled wiki
+      --mine-only           Only mine new knowledge signal
+      --output-dir string   Compiled wiki output directory (default ".agents/compiled")
+      --quiet               Suppress human progress output
+      --runtime string      LLM runtime override for headless compilation (ollama, claude, openai)
+      --since string        Mine lookback window for full and mine-only modes (default "26h")
+      --sources string      Source .agents root to compile (default ".agents")
+```
+
+---
+
 ### `ao corpus`
 
 Commands that inspect the local .agents/ corpus quality.
@@ -2439,7 +2467,7 @@ ao search <query> [flags]
       --limit int        Maximum results to return (default 10)
       --local            Force repo-local AgentOps search only
       --session string   Session ID for citation tracking (defaults to the active runtime session)
-      --type string      Filter by type: session(s), learning(s), pattern(s), finding(s), research, decision(s), knowledge
+      --type string      Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, decision(s), knowledge
       --use-sc           Try Smart Connections semantic search first (requires Obsidian)
 ```
 

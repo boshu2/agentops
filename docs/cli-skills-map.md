@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-03. 53 CLI commands, 52 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-12. 54 CLI commands, 53 source skills, 7 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
 
@@ -12,7 +12,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| CLI commands with skill/hook callers | 31 |
+| CLI commands with skill/hook callers | 32 |
 | Orphan commands (user utilities, hidden, CI-only) | 19 |
 | Phantom subcommands (bugs) | 2 |
 
@@ -35,6 +35,7 @@ Every `ao` command that is actively called by at least one skill or hook.
 | `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops | session-start.sh |
 | `ao context` | crank, implement, swarm | context-guard.sh |
 | `ao codex` | brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation | — |
+| `ao compile` | compile | — |
 | `ao maturity` | flywheel | session-end-maintenance.sh |
 | `ao constraint` | flywheel, post-mortem, retro | — |
 | `ao badge` | flywheel, status | — |
@@ -65,6 +66,7 @@ Which `ao` commands each skill invokes.
 | Skill | ao Commands Used |
 |-------|-----------------|
 | **brainstorm** | `codex ensure-start` |
+| **compile** | `compile` |
 | **crank** | `codex ensure-start`, `context assemble`, `flywheel close-loop`, `flywheel status`, `forge transcript`, `inject`, `lookup`, `pool list`, `ratchet record`, `ratchet status`, `rpi phased`, `search` |
 | **discovery** | `codex ensure-start` |
 | **evolve** | `forge`, `goals measure`, `inject` |
@@ -92,7 +94,7 @@ Which `ao` commands each skill invokes.
 | council | `rpi phased` |
 | shared | `rpi phased` |
 
-Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, openai-docs, oss-docs, pr-implement, pr-plan, pr-prep, pr-research, pr-retro, pr-validate, product, readme, release, reverse-engineer-rpi, security, security-suite, standards, trace, update.
+Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, llm-wiki, openai-docs, oss-docs, pr-implement, pr-plan, pr-prep, pr-research, pr-retro, pr-validate, product, readme, release, reverse-engineer-rpi, security, security-suite, standards, trace, update.
 
 Conceptual slash commands such as `/knowledge` are documented elsewhere in the product docs, but they are not counted as source skill directories in this map.
 

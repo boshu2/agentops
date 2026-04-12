@@ -43,7 +43,7 @@ var searchCmd = &cobra.Command{
 By default, ao search brokers across two backends:
   1. upstream cass search --workspace <cwd> for session history when cass is available
   2. repo-local AgentOps artifacts such as .agents/ao/sessions/, learnings,
-     patterns, findings, and research when present
+     patterns, findings, research, and compiled synthesis when present
 
 Use --cass to require upstream cass only.
 Use --local to force repo-local AgentOps search only.
@@ -67,7 +67,7 @@ func init() {
 	searchCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(searchCmd)
 	searchCmd.Flags().IntVar(&searchLimit, "limit", 10, "Maximum results to return")
-	searchCmd.Flags().StringVar(&searchType, "type", "", "Filter by type: session(s), learning(s), pattern(s), finding(s), research, decision(s), knowledge")
+	searchCmd.Flags().StringVar(&searchType, "type", "", "Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, decision(s), knowledge")
 	searchCmd.Flags().StringVar(&searchCiteType, "cite", "", "Optional citation type to record for matching repo-local artifacts: retrieved, reference, applied")
 	searchCmd.Flags().StringVar(&searchSession, "session", "", "Session ID for citation tracking (defaults to the active runtime session)")
 	searchCmd.Flags().BoolVar(&searchUseSC, "use-sc", false, "Try Smart Connections semantic search first (requires Obsidian)")
@@ -543,6 +543,19 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 			researchResults[i].Type = "research"
 		}
 		results = append(results, researchResults...)
+	}
+
+	// Search compiled synthesis from ao compile.
+	compiledDir := filepath.Join(knowledgeRoot, "compiled")
+	if _, err := os.Stat(compiledDir); err == nil {
+		compiledResults, err := grepFiles(query, compiledDir, "*.md", limit)
+		if err != nil {
+			VerbosePrintf("CASS compiled search error: %v\n", err)
+		}
+		for i := range compiledResults {
+			compiledResults[i].Type = "compiled"
+		}
+		results = append(results, compiledResults...)
 	}
 
 	// Also search sessions for context

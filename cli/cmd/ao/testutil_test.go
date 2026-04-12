@@ -283,6 +283,18 @@ func resetCommandState(t *testing.T) {
 	origMaturityMigrateMd := maturityMigrateMd
 	origMaturityRecalibrate := maturityRecalibrate
 	origMaturityUncitedDays := maturityUncitedDays
+	origCompileSourcesDir := compileSourcesDir
+	origCompileOutputDir := compileOutputDir
+	origCompileSince := compileSince
+	origCompileRuntime := compileRuntime
+	origCompileIncremental := compileIncremental
+	origCompileForce := compileForce
+	origCompileOnly := compileOnly
+	origCompileLintOnly := compileLintOnly
+	origCompileDefragOnly := compileDefragOnly
+	origCompileMineOnly := compileMineOnly
+	origCompileFull := compileFull
+	origCompileQuiet := compileQuiet
 
 	t.Cleanup(func() {
 		dryRun = origDryRun
@@ -346,6 +358,18 @@ func resetCommandState(t *testing.T) {
 		maturityMigrateMd = origMaturityMigrateMd
 		maturityRecalibrate = origMaturityRecalibrate
 		maturityUncitedDays = origMaturityUncitedDays
+		compileSourcesDir = origCompileSourcesDir
+		compileOutputDir = origCompileOutputDir
+		compileSince = origCompileSince
+		compileRuntime = origCompileRuntime
+		compileIncremental = origCompileIncremental
+		compileForce = origCompileForce
+		compileOnly = origCompileOnly
+		compileLintOnly = origCompileLintOnly
+		compileDefragOnly = origCompileDefragOnly
+		compileMineOnly = origCompileMineOnly
+		compileFull = origCompileFull
+		compileQuiet = origCompileQuiet
 	})
 
 	// Reset to defaults.
@@ -404,6 +428,18 @@ func resetCommandState(t *testing.T) {
 	maturityMigrateMd = false
 	maturityRecalibrate = false
 	maturityUncitedDays = 0
+	compileSourcesDir = ".agents"
+	compileOutputDir = ".agents/compiled"
+	compileSince = "26h"
+	compileRuntime = ""
+	compileIncremental = true
+	compileForce = false
+	compileOnly = false
+	compileLintOnly = false
+	compileDefragOnly = false
+	compileMineOnly = false
+	compileFull = false
+	compileQuiet = false
 	contextPacketFlags = struct {
 		goal  string
 		epic  string
