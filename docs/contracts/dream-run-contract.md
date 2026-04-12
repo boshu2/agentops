@@ -35,6 +35,7 @@ Primary commands:
 - `ao overnight start`
 - `ao overnight run`
   `run` is an alias for `start`
+- `ao overnight curator status|diagnose|enqueue|compact|event`
 - `ao overnight report --from <dir-or-summary.json>`
 
 Required flags for `start`:
@@ -50,9 +51,17 @@ Required flags for `start`:
 Required flags for `setup`:
 
 - `--apply`
-- `--scheduler <manual|launchd|cron|systemd|auto>`
+- `--scheduler <manual|launchd|cron|systemd|task-scheduler|auto>`
 - `--at <HH:MM>`
 - `--runner <name>` (repeatable)
+
+Required surfaces for `curator`:
+
+- `status --json` reports configured local curator state, Ollama health, model availability, worker queue depth, status.json content, and Tier 2 runner discovery.
+- `diagnose` explains missing worker directories, missing vaults, wrong Ollama endpoint, absent models, stale worker PID when detectable, and unsupported OpenClaw/Morai bridge state.
+- `enqueue --kind <lint-wiki|dream-seed|ingest-claude-session>` writes only allowlisted knowledge jobs into the configured worker queue.
+- `compact --dry-run|--apply` wraps the existing pending-log compaction contract.
+- `event` writes a bounded needs-review event record with source, severity, desired action, escalation target, and event budget.
 
 ## Process Model
 
@@ -159,6 +168,28 @@ They may share primitive steps and report shapes, but they are not the same oper
 
 `ao overnight setup` helps persist `dream.*` config and generate host-specific
 assistance artifacts. The host scheduler still owns actual scheduling semantics.
+On Windows, setup may generate a reviewed Task Scheduler registration script
+under `.agentops/generated/dream/`; it must not silently register autonomous
+jobs.
+
+## Local Curator Contract
+
+`dream.local_curator.*` describes a Tier 1 local curator. V1 supports
+`engine: ollama` with a local Gemma model, a worker directory, a vault directory,
+an hourly cap, and an allowlist of job kinds. Autodetection may recognize a local
+prototype such as `D:\dream`, `D:\vault`, `http://127.0.0.1:11435`, and
+`gemma4:e4b`, but the CLI must continue to work when those machine-local paths
+are absent.
+
+The local curator is separate from Dream Council. Gemma can draft, lint, seed,
+compact audit logs, and emit needs-review events. Tier 2 runners such as Codex
+and Claude can review or synthesize those events. OpenClaw/Morai must remain
+unsupported on Windows until a real bridge command such as `openclaw` or
+`oc-ask` is discoverable from the AgentOps runtime.
+
+No trigger mesh may be unbounded. Every escalation record needs source, severity,
+desired action, escalation target, budget, and a ledger entry. A runner must not
+recursively invoke another runner without an explicit remaining budget.
 
 ## v2 - Iteration Loop (2026-04-09)
 

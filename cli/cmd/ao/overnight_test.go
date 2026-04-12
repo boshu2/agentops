@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 	v1reader "github.com/boshu2/agentops/cli/cmd/ao/testdata/v1_reader"
+	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 )
 
 func writeExecutable(t *testing.T, dir, name, body string) string {
@@ -21,6 +22,13 @@ func writeExecutable(t *testing.T, dir, name, body string) string {
 	path := filepath.Join(dir, name)
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatalf("write executable %s: %v", name, err)
+	}
+	if runtime.GOOS == "windows" {
+		cmdPath := filepath.Join(dir, name+".cmd")
+		cmdBody := "@echo off\r\nbash \"%~dp0" + name + "\" %*\r\n"
+		if err := os.WriteFile(cmdPath, []byte(cmdBody), 0o755); err != nil {
+			t.Fatalf("write executable shim %s: %v", name, err)
+		}
 	}
 	return path
 }
@@ -290,6 +298,9 @@ func TestRunOvernightSetupApplyWritesSchedulerArtifact(t *testing.T) {
 }
 
 func TestRunDreamCouncilWithMockRunners(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("mock shell runners rely on Unix argv quoting")
+	}
 	tmpDir := t.TempDir()
 	writeExecutable(t, tmpDir, "codex", `#!/bin/sh
 out=""

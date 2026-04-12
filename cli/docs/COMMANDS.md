@@ -1152,6 +1152,98 @@ ao overnight [command]
 
 **Subcommands:**
 
+#### `ao overnight curator`
+
+Inspect and operate a local Tier 1 Dream curator such as Ollama/Gemma.
+
+```
+ao overnight curator [command]
+```
+
+##### `ao overnight curator compact`
+
+Run the local curator pending-log compactor
+
+```
+ao overnight curator compact [flags]
+```
+
+**Flags:**
+
+```
+      --apply     Apply pending-log compaction
+      --dry-run   Preview pending-log compaction without writing
+  -h, --help      help for compact
+```
+
+##### `ao overnight curator diagnose`
+
+Explain local curator setup problems
+
+```
+ao overnight curator diagnose [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for diagnose
+      --json   Render curator diagnosis as JSON
+```
+
+##### `ao overnight curator enqueue`
+
+Enqueue an allowlisted local curator job
+
+```
+ao overnight curator enqueue [flags]
+```
+
+**Flags:**
+
+```
+      --chunk-end int     End chunk index for ingest-claude-session jobs
+      --chunk-start int   Start chunk index for ingest-claude-session jobs
+  -h, --help              help for enqueue
+      --kind string       Job kind to enqueue: ingest-claude-session, lint-wiki, or dream-seed
+      --source string     Source path for ingest-claude-session jobs
+```
+
+##### `ao overnight curator event`
+
+Write a bounded needs-review escalation event
+
+```
+ao overnight curator event [flags]
+```
+
+**Flags:**
+
+```
+      --budget int              Maximum downstream event budget (default 1)
+      --desired-action string   Requested bounded action for Tier 2 review
+  -h, --help                    help for event
+      --note string             Optional operator note
+      --severity string         Event severity: info, warn, high, or critical
+      --source string           Event source, for example gemma or local-soc
+      --target string           Escalation target (default "dream-council")
+```
+
+##### `ao overnight curator status`
+
+Report local curator queue, worker, and model health
+
+```
+ao overnight curator status [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for status
+      --json   Render curator status as JSON
+```
+
 #### `ao overnight report`
 
 Read a Dream report from summary.json and render it as JSON, YAML, or
@@ -1184,7 +1276,7 @@ ao overnight setup [flags]
       --keep-awake         Persist keep-awake on for Dream runs
       --no-keep-awake      Persist keep-awake off for Dream runs
       --runner strings     Dream runner to persist (repeatable: --runner codex --runner claude)
-      --scheduler string   Scheduler mode to persist (auto, manual, launchd, cron, systemd) (default "auto")
+      --scheduler string   Scheduler mode to persist (auto, manual, launchd, cron, systemd, task-scheduler) (default "auto")
 ```
 
 #### `ao overnight start`
@@ -2192,10 +2284,13 @@ ao forge transcript <path-or-glob> [flags]
 **Flags:**
 
 ```
-  -h, --help           help for transcript
-      --last-session   Process only the most recent transcript
-      --queue          Queue session for learning extraction at next session start
-      --quiet          Suppress all output (for hooks)
+  -h, --help                  help for transcript
+      --last-session          Process only the most recent transcript
+      --llm-endpoint string   Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --model string          LLM model tag for --tier=1 (e.g. gemma2:9b)
+      --queue                 Queue session for learning extraction at next session start
+      --quiet                 Suppress all output (for hooks)
+      --tier int              Tier 1 local-LLM summarization pipeline (requires --model, --llm-endpoint optional)
 ```
 
 ---

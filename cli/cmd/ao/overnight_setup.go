@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -55,19 +56,20 @@ type dreamHostProfile struct {
 }
 
 type dreamSetupSummary struct {
-	SchemaVersion  int                  `json:"schema_version" yaml:"schema_version"`
-	Mode           string               `json:"mode" yaml:"mode"`
-	Status         string               `json:"status" yaml:"status"`
-	Apply          bool                 `json:"apply" yaml:"apply"`
-	RepoRoot       string               `json:"repo_root" yaml:"repo_root"`
-	ConfigPath     string               `json:"config_path" yaml:"config_path"`
-	Host           dreamHostProfile     `json:"host" yaml:"host"`
-	Runtimes       []dreamRuntimeStatus `json:"runtimes" yaml:"runtimes"`
-	DreamConfig    config.DreamConfig   `json:"dream" yaml:"dream"`
-	GeneratedFiles map[string]string    `json:"generated_files,omitempty" yaml:"generated_files,omitempty"`
-	Warnings       []string             `json:"warnings,omitempty" yaml:"warnings,omitempty"`
-	Recommended    []string             `json:"recommended,omitempty" yaml:"recommended,omitempty"`
-	NextAction     string               `json:"next_action" yaml:"next_action"`
+	SchemaVersion  int                     `json:"schema_version" yaml:"schema_version"`
+	Mode           string                  `json:"mode" yaml:"mode"`
+	Status         string                  `json:"status" yaml:"status"`
+	Apply          bool                    `json:"apply" yaml:"apply"`
+	RepoRoot       string                  `json:"repo_root" yaml:"repo_root"`
+	ConfigPath     string                  `json:"config_path" yaml:"config_path"`
+	Host           dreamHostProfile        `json:"host" yaml:"host"`
+	Runtimes       []dreamRuntimeStatus    `json:"runtimes" yaml:"runtimes"`
+	LocalCurator   dreamLocalCuratorStatus `json:"local_curator" yaml:"local_curator"`
+	DreamConfig    config.DreamConfig      `json:"dream" yaml:"dream"`
+	GeneratedFiles map[string]string       `json:"generated_files,omitempty" yaml:"generated_files,omitempty"`
+	Warnings       []string                `json:"warnings,omitempty" yaml:"warnings,omitempty"`
+	Recommended    []string                `json:"recommended,omitempty" yaml:"recommended,omitempty"`
+	NextAction     string                  `json:"next_action" yaml:"next_action"`
 }
 
 var overnightSetupCmd = &cobra.Command{
@@ -88,7 +90,7 @@ This command is intentionally conservative:
 func init() {
 	overnightCmd.AddCommand(overnightSetupCmd)
 	overnightSetupCmd.Flags().BoolVar(&overnightSetupApply, "apply", false, "Persist the detected Dream config and generate scheduler assistance artifacts")
-	overnightSetupCmd.Flags().StringVar(&overnightSetupScheduler, "scheduler", "auto", "Scheduler mode to persist (auto, manual, launchd, cron, systemd)")
+	overnightSetupCmd.Flags().StringVar(&overnightSetupScheduler, "scheduler", "auto", "Scheduler mode to persist (auto, manual, launchd, cron, systemd, task-scheduler)")
 	overnightSetupCmd.Flags().StringVar(&overnightSetupAt, "at", "", "Preferred local Dream run time in HH:MM (used for scheduler assistance)")
 	overnightSetupCmd.Flags().StringSliceVar(&overnightSetupRunners, "runner", nil, "Dream runner to persist (repeatable: --runner codex --runner claude)")
 	overnightSetupCmd.Flags().BoolVar(&overnightSetupKeepAwake, "keep-awake", false, "Persist keep-awake on for Dream runs")
@@ -107,6 +109,8 @@ func runOvernightSetup(cmd *cobra.Command, args []string) error {
 
 	host := detectDreamHostProfile()
 	runtimes := detectDreamRuntimes()
+	localCuratorCfg := resolveDreamLocalCuratorConfig(cfg.Dream.LocalCurator, 400*time.Millisecond)
+	localCurator := buildDreamLocalCuratorStatus(localCuratorCfg, 400*time.Millisecond)
 	selectedRunners, warnings := selectDreamRunners(cfg.Dream, runtimes)
 	keepAwake, keepAwakeWarnings := resolveDreamSetupKeepAwake(cfg.Dream, host)
 	warnings = append(warnings, keepAwakeWarnings...)
@@ -145,6 +149,9 @@ func runOvernightSetup(cmd *cobra.Command, args []string) error {
 		ConsensusPolicy: consensusPolicy,
 		CreativeLane:    dreamBoolPtr(creativeLane),
 	}
+	if localCurator.Available || isDreamLocalCuratorConfigured(cfg.Dream.LocalCurator) {
+		dreamCfg.LocalCurator = localCuratorCfg
+	}
 	if dreamCfg.ReportDir == "" {
 		dreamCfg.ReportDir = ".agents/overnight/latest"
 	}
@@ -161,6 +168,7 @@ func runOvernightSetup(cmd *cobra.Command, args []string) error {
 		ConfigPath:    projectConfigPath(),
 		Host:          host,
 		Runtimes:      runtimes,
+		LocalCurator:  localCurator,
 		DreamConfig:   dreamCfg,
 		Warnings:      warnings,
 	}
@@ -244,6 +252,19 @@ func detectDreamHostProfile() dreamHostProfile {
 				host.Schedulers[2].Recommended = false
 			}
 		}
+	case "windows":
+		host.RecommendedMode = "task-scheduler"
+		host.Schedulers = append(host.Schedulers, dreamSchedulerStatus{
+			Mode:        "task-scheduler",
+			Available:   true,
+			Recommended: true,
+			Note:        "Generates a reviewed Windows Task Scheduler script; AgentOps does not register it without operator action.",
+		})
+		host.Schedulers = append(host.Schedulers, dreamSchedulerStatus{
+			Mode:      "manual",
+			Available: true,
+			Note:      "Honest fallback when you want to arm the bedtime run yourself.",
+		})
 	default:
 		host.Schedulers = append(host.Schedulers, dreamSchedulerStatus{
 			Mode:        "manual",
@@ -267,6 +288,8 @@ func detectDreamRuntimes() []dreamRuntimeStatus {
 		{name: "codex", command: "codex", supported: true},
 		{name: "claude", command: "claude", supported: true},
 		{name: "gemini", command: "gemini", supported: false, note: "Detected for future Dream integrations; overnight execution is not wired yet."},
+		{name: "openclaw", command: "openclaw", supported: false, note: "OpenClaw/Morai bridge must be discoverable before Dream Council can execute it."},
+		{name: "oc-ask", command: "oc-ask", supported: false, note: "OpenClaw/Morai bridge must be discoverable before Dream Council can execute it."},
 		{name: "opencode", command: "opencode", supported: false, note: "Detected locally, but Dream Council does not execute it yet."},
 	}
 	out := make([]dreamRuntimeStatus, 0, len(candidates))
@@ -362,9 +385,9 @@ func resolveDreamSchedulerMode(existing config.DreamConfig, host dreamHostProfil
 			mode = "manual"
 		}
 	}
-	valid := map[string]bool{"manual": true, "launchd": true, "cron": true, "systemd": true}
+	valid := map[string]bool{"manual": true, "launchd": true, "cron": true, "systemd": true, "task-scheduler": true}
 	if !valid[mode] {
-		return "", nil, fmt.Errorf("invalid scheduler mode %q: expected auto, manual, launchd, cron, or systemd", mode)
+		return "", nil, fmt.Errorf("invalid scheduler mode %q: expected auto, manual, launchd, cron, systemd, or task-scheduler", mode)
 	}
 	var warnings []string
 	switch mode {
@@ -392,6 +415,11 @@ func resolveDreamSchedulerMode(existing config.DreamConfig, host dreamHostProfil
 		if host.HasBattery {
 			warnings = append(warnings, "cron is best-effort on laptops that sleep")
 		}
+	case "task-scheduler":
+		if dreamOS != "windows" {
+			return "", nil, fmt.Errorf("task-scheduler scheduling is only valid on Windows")
+		}
+		warnings = append(warnings, "Windows Task Scheduler assistance will be generated for review; AgentOps will not register it automatically")
 	}
 	return mode, warnings, nil
 }
@@ -433,6 +461,12 @@ func maybeWriteDreamSchedulerArtifacts(cwd string, host dreamHostProfile, cfg co
 		}
 		generated["systemd_service"] = servicePath
 		generated["systemd_timer"] = timerPath
+	case "task-scheduler":
+		path := filepath.Join(baseDir, "register-dream-task.ps1")
+		if err := os.WriteFile(path, []byte(renderDreamWindowsTaskSchedulerScript(cwd, cfg.ScheduleAt)), 0o644); err != nil {
+			return nil, nil, fmt.Errorf("write Windows Task Scheduler artifact: %w", err)
+		}
+		generated["task_scheduler"] = path
 	}
 
 	var warnings []string
@@ -503,12 +537,28 @@ WantedBy=timers.target
 `, hour, minute)
 }
 
+func renderDreamWindowsTaskSchedulerScript(cwd, at string) string {
+	hour, minute := splitDailyTime(at)
+	taskTime := fmt.Sprintf("%s:%s", hour, minute)
+	logPath := filepath.Join(cwd, ".agents", "overnight", "task-scheduler.log")
+	return fmt.Sprintf(`# Review before running. This script registers the local AgentOps Dream task.
+$TaskName = "AgentOps Dream"
+$WorkingDirectory = %q
+$LogPath = %q
+$Command = "Set-Location -LiteralPath '$WorkingDirectory'; ao overnight start *>> '$LogPath'"
+$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -Command $Command"
+$Trigger = New-ScheduledTaskTrigger -Daily -At %q
+$Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries:$false -DisallowStartIfOnBatteries:$true
+Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Settings $Settings -Description "AgentOps Dream overnight knowledge compounding run"
+`, cwd, logPath, taskTime)
+}
+
 func recommendedDreamSetupCommands(summary dreamSetupSummary) []string {
 	cmds := []string{
 		`ao overnight start`,
 		`ao config --show --json`,
 	}
-	for _, path := range []string{summary.GeneratedFiles["launchd"], summary.GeneratedFiles["cron"], summary.GeneratedFiles["systemd_timer"]} {
+	for _, path := range []string{summary.GeneratedFiles["launchd"], summary.GeneratedFiles["cron"], summary.GeneratedFiles["systemd_timer"], summary.GeneratedFiles["task_scheduler"]} {
 		if path != "" {
 			cmds = append(cmds, fmt.Sprintf(`cat %q`, path))
 		}
@@ -544,6 +594,16 @@ func outputDreamSetupSummary(summary dreamSetupSummary) error {
 		fmt.Fprintf(&b, "- Config: `%s`\n", summary.ConfigPath)
 		fmt.Fprintf(&b, "- Host: `%s` / `%s`\n", summary.Host.OS, summary.Host.DeviceClass)
 		fmt.Fprintf(&b, "- Recommended mode: `%s`\n", summary.Host.RecommendedMode)
+		b.WriteString("\n## Local Curator\n\n")
+		fmt.Fprintf(&b, "- engine: `%s`\n", summary.LocalCurator.Engine)
+		fmt.Fprintf(&b, "- enabled: `%t`\n", summary.LocalCurator.Enabled)
+		fmt.Fprintf(&b, "- available: `%t`\n", summary.LocalCurator.Available)
+		if summary.LocalCurator.Model != "" {
+			fmt.Fprintf(&b, "- model: `%s`\n", summary.LocalCurator.Model)
+		}
+		if summary.LocalCurator.WorkerDir != "" {
+			fmt.Fprintf(&b, "- worker_dir: `%s`\n", summary.LocalCurator.WorkerDir)
+		}
 		b.WriteString("\n## Runtimes\n\n")
 		for _, rt := range summary.Runtimes {
 			fmt.Fprintf(&b, "- `%s`: available=%t supported=%t", rt.Name, rt.Available, rt.Supported)

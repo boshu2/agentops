@@ -170,6 +170,37 @@ type DreamConfig struct {
 	// CreativeLane controls whether Dream Council should request wildcard ideas.
 	// Nil means "not explicitly configured".
 	CreativeLane *bool `yaml:"creative_lane,omitempty" json:"creative_lane,omitempty"`
+
+	// LocalCurator configures a local Tier 1 curator such as Ollama/Gemma.
+	LocalCurator DreamLocalCuratorConfig `yaml:"local_curator,omitempty" json:"local_curator,omitempty"`
+}
+
+// DreamLocalCuratorConfig holds settings for a local Tier 1 Dream curator.
+type DreamLocalCuratorConfig struct {
+	// Enabled controls whether the local curator should be treated as active.
+	// Nil means "not explicitly configured".
+	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// Engine identifies the local engine. V1 supports "ollama".
+	Engine string `yaml:"engine,omitempty" json:"engine,omitempty"`
+
+	// OllamaURL is the Ollama API root used when Engine is "ollama".
+	OllamaURL string `yaml:"ollama_url,omitempty" json:"ollama_url,omitempty"`
+
+	// Model is the Tier 1 model name.
+	Model string `yaml:"model,omitempty" json:"model,omitempty"`
+
+	// WorkerDir is the local Dream worker directory.
+	WorkerDir string `yaml:"worker_dir,omitempty" json:"worker_dir,omitempty"`
+
+	// VaultDir is the local knowledge vault written by the worker.
+	VaultDir string `yaml:"vault_dir,omitempty" json:"vault_dir,omitempty"`
+
+	// HourlyCap is the worker's bounded autonomy limit.
+	HourlyCap int `yaml:"hourly_cap,omitempty" json:"hourly_cap,omitempty"`
+
+	// AllowedJobKinds is the local curator queue allowlist.
+	AllowedJobKinds []string `yaml:"allowed_job_kinds,omitempty" json:"allowed_job_kinds,omitempty"`
 }
 
 // TierConfig holds model names for a tier.
@@ -420,6 +451,14 @@ func applyEnv(cfg *Config) *Config {
 	if v, ok := getEnvBoolValue("AGENTOPS_DREAM_KEEP_AWAKE"); ok {
 		cfg.Dream.KeepAwake = boolPtr(v)
 	}
+	if v, ok := getEnvBoolValue("AGENTOPS_DREAM_CURATOR_ENABLED"); ok {
+		cfg.Dream.LocalCurator.Enabled = boolPtr(v)
+	}
+	applyEnvStr(&cfg.Dream.LocalCurator.Engine, "AGENTOPS_DREAM_CURATOR_ENGINE")
+	applyEnvStr(&cfg.Dream.LocalCurator.OllamaURL, "AGENTOPS_DREAM_CURATOR_OLLAMA_URL")
+	applyEnvStr(&cfg.Dream.LocalCurator.Model, "AGENTOPS_DREAM_CURATOR_MODEL")
+	applyEnvStr(&cfg.Dream.LocalCurator.WorkerDir, "AGENTOPS_DREAM_CURATOR_WORKER_DIR")
+	applyEnvStr(&cfg.Dream.LocalCurator.VaultDir, "AGENTOPS_DREAM_CURATOR_VAULT_DIR")
 	if v := os.Getenv("AGENTOPS_COUNCIL_MODEL_TIER"); v != "" {
 		if cfg.Models.SkillOverrides == nil {
 			cfg.Models.SkillOverrides = make(map[string]string)
@@ -530,6 +569,22 @@ func mergeDream(dst, src *DreamConfig) {
 	mergeStr(&dst.ConsensusPolicy, src.ConsensusPolicy)
 	if src.CreativeLane != nil {
 		dst.CreativeLane = boolPtr(*src.CreativeLane)
+	}
+	mergeDreamLocalCurator(&dst.LocalCurator, &src.LocalCurator)
+}
+
+func mergeDreamLocalCurator(dst, src *DreamLocalCuratorConfig) {
+	if src.Enabled != nil {
+		dst.Enabled = boolPtr(*src.Enabled)
+	}
+	mergeStr(&dst.Engine, src.Engine)
+	mergeStr(&dst.OllamaURL, src.OllamaURL)
+	mergeStr(&dst.Model, src.Model)
+	mergeStr(&dst.WorkerDir, src.WorkerDir)
+	mergeStr(&dst.VaultDir, src.VaultDir)
+	mergeInt(&dst.HourlyCap, src.HourlyCap)
+	if len(src.AllowedJobKinds) > 0 {
+		dst.AllowedJobKinds = append([]string{}, src.AllowedJobKinds...)
 	}
 }
 
@@ -677,24 +732,31 @@ func resolveStringSliceField(home, project []string, def []string) resolved {
 
 // ResolvedConfig shows config values with their sources.
 type ResolvedConfig struct {
-	Output            resolved `json:"output"`
-	BaseDir           resolved `json:"base_dir"`
-	Verbose           resolved `json:"verbose"`
-	RPIWorktreeMode   resolved `json:"rpi_worktree_mode"`
-	RPIRuntimeMode    resolved `json:"rpi_runtime_mode"`
-	RPIRuntimeCommand resolved `json:"rpi_runtime_command"`
-	RPIAOCommand      resolved `json:"rpi_ao_command"`
-	RPIBDCommand      resolved `json:"rpi_bd_command"`
-	RPITmuxCommand    resolved `json:"rpi_tmux_command"`
-	ModelsDefaultTier resolved `json:"models_default_tier"`
-	DreamReportDir    resolved `json:"dream_report_dir"`
-	DreamRunTimeout   resolved `json:"dream_run_timeout"`
-	DreamKeepAwake    resolved `json:"dream_keep_awake"`
-	DreamRunners      resolved `json:"dream_runners"`
-	DreamScheduler    resolved `json:"dream_scheduler_mode"`
-	DreamScheduleAt   resolved `json:"dream_schedule_at"`
-	DreamConsensus    resolved `json:"dream_consensus_policy"`
-	DreamCreativeLane resolved `json:"dream_creative_lane"`
+	Output                resolved `json:"output"`
+	BaseDir               resolved `json:"base_dir"`
+	Verbose               resolved `json:"verbose"`
+	RPIWorktreeMode       resolved `json:"rpi_worktree_mode"`
+	RPIRuntimeMode        resolved `json:"rpi_runtime_mode"`
+	RPIRuntimeCommand     resolved `json:"rpi_runtime_command"`
+	RPIAOCommand          resolved `json:"rpi_ao_command"`
+	RPIBDCommand          resolved `json:"rpi_bd_command"`
+	RPITmuxCommand        resolved `json:"rpi_tmux_command"`
+	ModelsDefaultTier     resolved `json:"models_default_tier"`
+	DreamReportDir        resolved `json:"dream_report_dir"`
+	DreamRunTimeout       resolved `json:"dream_run_timeout"`
+	DreamKeepAwake        resolved `json:"dream_keep_awake"`
+	DreamRunners          resolved `json:"dream_runners"`
+	DreamScheduler        resolved `json:"dream_scheduler_mode"`
+	DreamScheduleAt       resolved `json:"dream_schedule_at"`
+	DreamConsensus        resolved `json:"dream_consensus_policy"`
+	DreamCreativeLane     resolved `json:"dream_creative_lane"`
+	DreamCuratorEnabled   resolved `json:"dream_curator_enabled"`
+	DreamCuratorEngine    resolved `json:"dream_curator_engine"`
+	DreamCuratorOllamaURL resolved `json:"dream_curator_ollama_url"`
+	DreamCuratorModel     resolved `json:"dream_curator_model"`
+	DreamCuratorWorkerDir resolved `json:"dream_curator_worker_dir"`
+	DreamCuratorVaultDir  resolved `json:"dream_curator_vault_dir"`
+	DreamCuratorJobKinds  resolved `json:"dream_curator_allowed_job_kinds"`
 }
 
 type resolved struct {
@@ -719,6 +781,14 @@ type configFields struct {
 	dreamConsensusPolicy            string
 	dreamCreativeLane               bool
 	dreamCreativeLaneSet            bool
+	dreamCuratorEnabled             bool
+	dreamCuratorEnabledSet          bool
+	dreamCuratorEngine              string
+	dreamCuratorOllamaURL           string
+	dreamCuratorModel               string
+	dreamCuratorWorkerDir           string
+	dreamCuratorVaultDir            string
+	dreamCuratorJobKinds            []string
 }
 
 // extractFields pulls resolution-relevant fields from a Config.
@@ -728,26 +798,34 @@ func extractFields(cfg *Config) configFields {
 		return configFields{}
 	}
 	return configFields{
-		output:               cfg.Output,
-		baseDir:              cfg.BaseDir,
-		verbose:              cfg.Verbose,
-		rpiWorktreeMode:      cfg.RPI.WorktreeMode,
-		rpiRuntimeMode:       cfg.RPI.RuntimeMode,
-		rpiRuntimeCommand:    cfg.RPI.RuntimeCommand,
-		rpiAOCommand:         cfg.RPI.AOCommand,
-		rpiBDCommand:         cfg.RPI.BDCommand,
-		rpiTmuxCommand:       cfg.RPI.TmuxCommand,
-		modelsDefaultTier:    cfg.Models.DefaultTier,
-		dreamReportDir:       cfg.Dream.ReportDir,
-		dreamRunTimeout:      cfg.Dream.RunTimeout,
-		dreamKeepAwake:       cfg.Dream.KeepAwake != nil && *cfg.Dream.KeepAwake,
-		dreamKeepAwakeSet:    cfg.Dream.KeepAwake != nil,
-		dreamRunners:         append([]string{}, cfg.Dream.Runners...),
-		dreamSchedulerMode:   cfg.Dream.SchedulerMode,
-		dreamScheduleAt:      cfg.Dream.ScheduleAt,
-		dreamConsensusPolicy: cfg.Dream.ConsensusPolicy,
-		dreamCreativeLane:    cfg.Dream.CreativeLane != nil && *cfg.Dream.CreativeLane,
-		dreamCreativeLaneSet: cfg.Dream.CreativeLane != nil,
+		output:                 cfg.Output,
+		baseDir:                cfg.BaseDir,
+		verbose:                cfg.Verbose,
+		rpiWorktreeMode:        cfg.RPI.WorktreeMode,
+		rpiRuntimeMode:         cfg.RPI.RuntimeMode,
+		rpiRuntimeCommand:      cfg.RPI.RuntimeCommand,
+		rpiAOCommand:           cfg.RPI.AOCommand,
+		rpiBDCommand:           cfg.RPI.BDCommand,
+		rpiTmuxCommand:         cfg.RPI.TmuxCommand,
+		modelsDefaultTier:      cfg.Models.DefaultTier,
+		dreamReportDir:         cfg.Dream.ReportDir,
+		dreamRunTimeout:        cfg.Dream.RunTimeout,
+		dreamKeepAwake:         cfg.Dream.KeepAwake != nil && *cfg.Dream.KeepAwake,
+		dreamKeepAwakeSet:      cfg.Dream.KeepAwake != nil,
+		dreamRunners:           append([]string{}, cfg.Dream.Runners...),
+		dreamSchedulerMode:     cfg.Dream.SchedulerMode,
+		dreamScheduleAt:        cfg.Dream.ScheduleAt,
+		dreamConsensusPolicy:   cfg.Dream.ConsensusPolicy,
+		dreamCreativeLane:      cfg.Dream.CreativeLane != nil && *cfg.Dream.CreativeLane,
+		dreamCreativeLaneSet:   cfg.Dream.CreativeLane != nil,
+		dreamCuratorEnabled:    cfg.Dream.LocalCurator.Enabled != nil && *cfg.Dream.LocalCurator.Enabled,
+		dreamCuratorEnabledSet: cfg.Dream.LocalCurator.Enabled != nil,
+		dreamCuratorEngine:     cfg.Dream.LocalCurator.Engine,
+		dreamCuratorOllamaURL:  cfg.Dream.LocalCurator.OllamaURL,
+		dreamCuratorModel:      cfg.Dream.LocalCurator.Model,
+		dreamCuratorWorkerDir:  cfg.Dream.LocalCurator.WorkerDir,
+		dreamCuratorVaultDir:   cfg.Dream.LocalCurator.VaultDir,
+		dreamCuratorJobKinds:   append([]string{}, cfg.Dream.LocalCurator.AllowedJobKinds...),
 	}
 }
 
@@ -763,6 +841,13 @@ type envFields struct {
 	dreamReportDir, dreamRunTimeout string
 	dreamKeepAwake                  bool
 	dreamKeepAwakeSet               bool
+	dreamCuratorEnabled             bool
+	dreamCuratorEnabledSet          bool
+	dreamCuratorEngine              string
+	dreamCuratorOllamaURL           string
+	dreamCuratorModel               string
+	dreamCuratorWorkerDir           string
+	dreamCuratorVaultDir            string
 }
 
 // loadEnvFields reads all resolution-relevant environment variables.
@@ -784,6 +869,12 @@ func loadEnvFields() envFields {
 	ef.dreamReportDir, _ = getEnvString("AGENTOPS_DREAM_REPORT_DIR")
 	ef.dreamRunTimeout, _ = getEnvString("AGENTOPS_DREAM_RUN_TIMEOUT")
 	ef.dreamKeepAwake, ef.dreamKeepAwakeSet = getEnvBoolValue("AGENTOPS_DREAM_KEEP_AWAKE")
+	ef.dreamCuratorEnabled, ef.dreamCuratorEnabledSet = getEnvBoolValue("AGENTOPS_DREAM_CURATOR_ENABLED")
+	ef.dreamCuratorEngine, _ = getEnvString("AGENTOPS_DREAM_CURATOR_ENGINE")
+	ef.dreamCuratorOllamaURL, _ = getEnvString("AGENTOPS_DREAM_CURATOR_OLLAMA_URL")
+	ef.dreamCuratorModel, _ = getEnvString("AGENTOPS_DREAM_CURATOR_MODEL")
+	ef.dreamCuratorWorkerDir, _ = getEnvString("AGENTOPS_DREAM_CURATOR_WORKER_DIR")
+	ef.dreamCuratorVaultDir, _ = getEnvString("AGENTOPS_DREAM_CURATOR_VAULT_DIR")
 	return ef
 }
 
@@ -860,5 +951,17 @@ func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
 			false, false,
 			false,
 		),
+		DreamCuratorEnabled: resolveBoolField(
+			home.dreamCuratorEnabled, home.dreamCuratorEnabledSet,
+			project.dreamCuratorEnabled, project.dreamCuratorEnabledSet,
+			env.dreamCuratorEnabled, env.dreamCuratorEnabledSet,
+			false,
+		),
+		DreamCuratorEngine:    resolveStringField(home.dreamCuratorEngine, project.dreamCuratorEngine, env.dreamCuratorEngine, "", ""),
+		DreamCuratorOllamaURL: resolveStringField(home.dreamCuratorOllamaURL, project.dreamCuratorOllamaURL, env.dreamCuratorOllamaURL, "", ""),
+		DreamCuratorModel:     resolveStringField(home.dreamCuratorModel, project.dreamCuratorModel, env.dreamCuratorModel, "", ""),
+		DreamCuratorWorkerDir: resolveStringField(home.dreamCuratorWorkerDir, project.dreamCuratorWorkerDir, env.dreamCuratorWorkerDir, "", ""),
+		DreamCuratorVaultDir:  resolveStringField(home.dreamCuratorVaultDir, project.dreamCuratorVaultDir, env.dreamCuratorVaultDir, "", ""),
+		DreamCuratorJobKinds:  resolveStringSliceField(home.dreamCuratorJobKinds, project.dreamCuratorJobKinds, []string{}),
 	}
 }
