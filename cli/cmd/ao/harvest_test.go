@@ -65,6 +65,19 @@ func TestHarvestCmd_Flags(t *testing.T) {
 	}
 }
 
+func TestHarvestCSVListTrimsEntries(t *testing.T) {
+	got := harvestCSVList(" learnings, patterns ,research ")
+	want := []string{"learnings", "patterns", "research"}
+	if len(got) != len(want) {
+		t.Fatalf("harvestCSVList length = %d, want %d (%v)", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("harvestCSVList[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
 func TestRunHarvest_DryRun(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)

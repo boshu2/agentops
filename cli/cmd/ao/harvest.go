@@ -129,6 +129,43 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve home-relative defaults at runtime so generated docs don't embed absolute paths.
+	applyHarvestRuntimeDefaults()
+	roots := harvestCSVList(harvestRootsFlag)
+	includeDirs := harvestCSVList(harvestInclude)
+	opts := newHarvestWalkOptions(roots, includeDirs)
+
+	rigs, discoveryWarnings, err := harvest.DiscoverRigsWithWarnings(opts)
+	if err != nil {
+		return fmt.Errorf("discovering rigs: %w", err)
+	}
+
+	if !harvestQuiet {
+		fmt.Printf("Discovered %d rigs\n", len(rigs))
+	}
+
+	allArtifacts, warnings, totalCandidateFiles := collectHarvestArtifacts(rigs, opts, discoveryWarnings)
+	catalog := newHarvestCatalog(allArtifacts, rigs, warnings, roots, includeDirs, totalCandidateFiles)
+
+	if !harvestQuiet {
+		fmt.Printf("Extracted %d artifacts (%d unique, %d duplicate excess, %d promotion candidates, %d warnings)\n",
+			catalog.Summary.ArtifactsExtracted,
+			catalog.Summary.UniqueArtifacts,
+			catalog.Summary.DuplicateExcess,
+			catalog.Summary.PromotionCandidates,
+			catalog.Summary.WarningCount,
+		)
+	}
+
+	promoted, err := promoteHarvestCatalog(catalog)
+	if err != nil {
+		return err
+	}
+	catalog.PromotionCount = promoted
+
+	return outputHarvestCatalog(catalog, harvestOutputDir, promoted)
+}
+
+func applyHarvestRuntimeDefaults() {
 	if harvestRootsFlag == "" {
 		home, _ := os.UserHomeDir()
 		defaultRoots := []string{filepath.Join(home, "gt")}
@@ -143,33 +180,30 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 		home, _ := os.UserHomeDir()
 		harvestPromoteTo = filepath.Join(home, ".agents", "learnings")
 	}
+}
 
-	roots := strings.Split(harvestRootsFlag, ",")
-	for i := range roots {
-		roots[i] = strings.TrimSpace(roots[i])
+func harvestCSVList(value string) []string {
+	items := strings.Split(value, ",")
+	for i := range items {
+		items[i] = strings.TrimSpace(items[i])
 	}
+	return items
+}
 
-	includeDirs := strings.Split(harvestInclude, ",")
-	for i := range includeDirs {
-		includeDirs[i] = strings.TrimSpace(includeDirs[i])
-	}
-
-	opts := harvest.WalkOptions{
+func newHarvestWalkOptions(roots, includeDirs []string) harvest.WalkOptions {
+	return harvest.WalkOptions{
 		Roots:       roots,
 		MaxFileSize: harvestMaxFileSize,
 		SkipDirs:    harvest.DefaultWalkOptions().SkipDirs,
 		IncludeDirs: includeDirs,
 	}
+}
 
-	rigs, discoveryWarnings, err := harvest.DiscoverRigsWithWarnings(opts)
-	if err != nil {
-		return fmt.Errorf("discovering rigs: %w", err)
-	}
-
-	if !harvestQuiet {
-		fmt.Printf("Discovered %d rigs\n", len(rigs))
-	}
-
+func collectHarvestArtifacts(
+	rigs []harvest.RigInfo,
+	opts harvest.WalkOptions,
+	discoveryWarnings []harvest.HarvestWarning,
+) ([]harvest.Artifact, []harvest.HarvestWarning, int) {
 	var allArtifacts []harvest.Artifact
 	warnings := append([]harvest.HarvestWarning{}, discoveryWarnings...)
 	for _, warning := range discoveryWarnings {
@@ -180,15 +214,23 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 	for _, rig := range rigs {
 		result := harvest.ExtractArtifactsWithStats(rig, opts)
 		totalCandidateFiles += result.CandidateFiles
-		if len(result.Warnings) > 0 {
-			for _, warning := range result.Warnings {
-				printHarvestWarning(warning)
-			}
-			warnings = append(warnings, result.Warnings...)
+		for _, warning := range result.Warnings {
+			printHarvestWarning(warning)
 		}
+		warnings = append(warnings, result.Warnings...)
 		allArtifacts = append(allArtifacts, result.Artifacts...)
 	}
+	return allArtifacts, warnings, totalCandidateFiles
+}
 
+func newHarvestCatalog(
+	allArtifacts []harvest.Artifact,
+	rigs []harvest.RigInfo,
+	warnings []harvest.HarvestWarning,
+	roots []string,
+	includeDirs []string,
+	totalCandidateFiles int,
+) *harvest.Catalog {
 	catalog := harvest.BuildCatalog(allArtifacts, harvestMinConfidence)
 	catalog.Roots = append([]string{}, roots...)
 	catalog.IncludeDirs = append([]string{}, includeDirs...)
@@ -201,32 +243,24 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 	catalog.TotalFiles = totalCandidateFiles
 	catalog.Timestamp = time.Now().UTC()
 	catalog.Summary.WarningCount = len(catalog.Warnings)
+	return catalog
+}
 
-	if !harvestQuiet {
-		fmt.Printf("Extracted %d artifacts (%d unique, %d duplicate excess, %d promotion candidates, %d warnings)\n",
-			catalog.Summary.ArtifactsExtracted,
-			catalog.Summary.UniqueArtifacts,
-			catalog.Summary.DuplicateExcess,
-			catalog.Summary.PromotionCandidates,
-			catalog.Summary.WarningCount,
-		)
+func promoteHarvestCatalog(catalog *harvest.Catalog) (int, error) {
+	if GetDryRun() {
+		return 0, nil
 	}
-
-	promoted := 0
-	if !GetDryRun() {
-		var promoteErr error
-		promoted, promoteErr = harvest.Promote(catalog, harvestPromoteTo, false)
-		if promoteErr != nil {
-			return fmt.Errorf("promoting artifacts: %w", promoteErr)
-		}
+	promoted, err := harvest.Promote(catalog, harvestPromoteTo, false)
+	if err != nil {
+		return 0, fmt.Errorf("promoting artifacts: %w", err)
 	}
-	catalog.PromotionCount = promoted
+	return promoted, nil
+}
 
-	outputDir := harvestOutputDir
+func outputHarvestCatalog(catalog *harvest.Catalog, outputDir string, promoted int) error {
 	if err := harvest.WriteCatalog(outputDir, catalog); err != nil {
 		return fmt.Errorf("writing catalog: %w", err)
 	}
-
 	if GetOutput() == "json" {
 		data, marshalErr := json.MarshalIndent(catalog, "", "  ")
 		if marshalErr != nil {
@@ -235,18 +269,15 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 		fmt.Println(string(data))
 		return nil
 	}
-
 	if !harvestQuiet {
 		fmt.Printf("Catalog written to %s\n", outputDir)
-		if !GetDryRun() {
-			fmt.Printf("Promoted %d artifacts to %s\n", promoted, harvestPromoteTo)
-		} else {
+		if GetDryRun() {
 			fmt.Println("Dry run: no artifacts promoted")
+		} else {
+			fmt.Printf("Promoted %d artifacts to %s\n", promoted, harvestPromoteTo)
 		}
 	}
-
 	VerbosePrintf("Rigs scanned: %d, Total files: %d\n", catalog.RigsScanned, catalog.TotalFiles)
-
 	return nil
 }
 
