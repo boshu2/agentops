@@ -23,7 +23,8 @@ init_repo() {
     git -C "$root" config user.name "Codex"
     git -C "$root" config user.email "codex@example.com"
     printf '# test\n' >"$root/README.md"
-    git -C "$root" add README.md
+    printf 'regular\n' >"$root/regular.txt"
+    git -C "$root" add README.md regular.txt
     git -C "$root" commit -q -m "init"
 }
 
@@ -105,13 +106,29 @@ fi
 assert_contains "$detached_output" "is detached"
 git -C "$canonical" switch main >/dev/null 2>&1
 
-printf 'dirty\n' >>"$canonical/README.md"
+printf 'dirty\n' >>"$canonical/regular.txt"
 if dirty_output="$(run_gate "$feature" 2>&1)"; then
     echo "expected dirty canonical root to fail" >&2
     exit 1
 fi
 assert_contains "$dirty_output" "has uncommitted changes"
-git -C "$canonical" checkout -- README.md
+assert_contains "$dirty_output" "Dirty paths from git status --porcelain"
+assert_contains "$dirty_output" "Other dirty paths detected"
+assert_contains "$dirty_output" "regular.txt"
+git -C "$canonical" checkout -- regular.txt
+
+mkdir -p "$canonical/cli/docs"
+printf 'commands\n' >"$canonical/cli/docs/COMMANDS.md"
+git -C "$canonical" add cli/docs/COMMANDS.md
+git -C "$canonical" commit -q -m "add generated fixture"
+printf 'dirty\n' >>"$canonical/cli/docs/COMMANDS.md"
+if generated_dirty_output="$(run_gate "$feature" 2>&1)"; then
+    echo "expected generated dirty canonical root to fail" >&2
+    exit 1
+fi
+assert_contains "$generated_dirty_output" "Generated/gate-managed paths detected"
+assert_contains "$generated_dirty_output" "cli/docs/COMMANDS.md"
+git -C "$canonical" checkout -- cli/docs/COMMANDS.md
 
 git -C "$canonical" worktree add -q -b codex/foreign "$foreign" main
 if foreign_output="$(run_gate "$feature" 2>&1)"; then

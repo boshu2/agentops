@@ -2,7 +2,8 @@
 set -euo pipefail
 
 if [[ -n "${GIT_DIR:-}" && -z "${GIT_WORK_TREE:-}" ]]; then
-    export GIT_WORK_TREE="$(pwd -P)"
+    GIT_WORK_TREE="$(pwd -P)"
+    export GIT_WORK_TREE
 fi
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -19,6 +20,56 @@ run_git_external() {
     done < <(git rev-parse --local-env-vars)
 
     "${env_args[@]}" git -C "$target_root" "$@"
+}
+
+porcelain_path() {
+    local status_line="$1"
+    local path="${status_line:3}"
+    path="${path#* -> }"
+    printf '%s\n' "$path"
+}
+
+is_gate_managed_path() {
+    case "$1" in
+        cli/docs/COMMANDS.md|cli/embedded/*|docs/ARCHITECTURE.md|docs/SKILLS.md|docs/cli-skills-map.md|PRODUCT.md|README.md|SKILL-TIERS.md|skills-codex/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+print_dirty_diagnostics() {
+    local target_root="$1"
+    local dirty_status="$2"
+    local line
+    local path
+    local -a gate_managed_paths=()
+    local -a other_paths=()
+
+    echo "FAIL: canonical root $target_root has uncommitted changes" >&2
+    echo "Dirty paths from git status --porcelain:" >&2
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        printf '  %s\n' "$line" >&2
+        path="$(porcelain_path "$line")"
+        if is_gate_managed_path "$path"; then
+            gate_managed_paths+=("$path")
+        else
+            other_paths+=("$path")
+        fi
+    done <<<"$dirty_status"
+
+    if (( ${#gate_managed_paths[@]} > 0 )); then
+        echo "Generated/gate-managed paths detected:" >&2
+        printf '  - %s\n' "${gate_managed_paths[@]}" >&2
+    fi
+    if (( ${#other_paths[@]} > 0 )); then
+        echo "Other dirty paths detected:" >&2
+        printf '  - %s\n' "${other_paths[@]}" >&2
+    fi
+    echo "Commit intentional changes; if a validation command generated these files, rerun the matching generator or restore them before pushing." >&2
 }
 
 if [[ "$common_dir" != /* ]]; then
@@ -52,8 +103,9 @@ if [[ "$canonical_branch" != "main" ]]; then
     exit 1
 fi
 
-if [[ -n "$(run_git_external "$canonical_root" status --porcelain)" ]]; then
-    echo "FAIL: canonical root $canonical_root has uncommitted changes" >&2
+dirty_status="$(run_git_external "$canonical_root" status --porcelain --untracked-files=all)"
+if [[ -n "$dirty_status" ]]; then
+    print_dirty_diagnostics "$canonical_root" "$dirty_status"
     exit 1
 fi
 
