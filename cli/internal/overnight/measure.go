@@ -129,9 +129,9 @@ func RunMeasure(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Measu
 			// Invert: fewer unresolved findings is better, so the
 			// snapshot stores the negated count so delta arithmetic
 			// stays uniform (higher = better).
-			"unresolved_findings": -float64(vec.UnresolvedFindings),
-			"citation_coverage":   vec.CitationCoverage,
-			"inject_visibility":   vec.InjectVisibility,
+			"unresolved_findings":   -float64(vec.UnresolvedFindings),
+			"citation_coverage":     vec.CitationCoverage,
+			"inject_visibility":     vec.InjectVisibility,
 			"cross_rig_dedup_ratio": vec.CrossRigDedupRatio,
 		},
 		CapturedAt: capturedAt,
@@ -163,7 +163,7 @@ func RunMeasure(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Measu
 	result.Degraded = append(result.Degraded,
 		"findings-resolved: iteration baseline tracking deferred to follow-up")
 
-	result.Duration = time.Since(started)
+	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/measure: done in %s\n", result.Duration)
 	return result, nil
 }

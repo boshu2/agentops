@@ -228,7 +228,7 @@ func RunIngest(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Ingest
 			result.MineFindingsNew)
 	}
 
-	result.Duration = time.Since(started)
+	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/ingest: done in %s\n", result.Duration)
 	return result, nil
 }

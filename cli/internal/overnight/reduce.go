@@ -331,14 +331,14 @@ func RunReduce(
 
 	for _, stage := range stages {
 		if err := ctxCheck(ctx); err != nil {
-			result.Duration = time.Since(started)
+			result.Duration = stageDurationSince(started)
 			rollback(fmt.Sprintf("context cancelled at %s: %v", stage.name, err))
 			return result, err
 		}
 		fmt.Fprintf(log, "overnight/reduce: %s start\n", stage.name)
 		if err := stage.run(); err != nil {
 			result.StageFailures[stage.name] = err.Error()
-			result.Duration = time.Since(started)
+			result.Duration = stageDurationSince(started)
 			rollback(fmt.Sprintf("stage %s failed: %v", stage.name, err))
 			return result, fmt.Errorf("overnight/reduce: stage %s: %w", stage.name, err)
 		}
@@ -354,7 +354,7 @@ func RunReduce(
 	// out-of-band mutation. Wave 4 will add a post-commit verification
 	// pass once RunLoop is driving Commit.
 	if err := ctxCheck(ctx); err != nil {
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		rollback(fmt.Sprintf("context cancelled before integrity check: %v", err))
 		return result, err
 	}
@@ -362,12 +362,12 @@ func RunReduce(
 	if !result.MetadataIntegrity.Pass {
 		stripped := len(result.MetadataIntegrity.StrippedFields)
 		reason := fmt.Sprintf("metadata integrity failed: %d stripped field(s)", stripped)
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		rollback(reason)
 		return result, fmt.Errorf("overnight/reduce: %s", reason)
 	}
 
-	result.Duration = time.Since(started)
+	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/reduce: done in %s\n", result.Duration)
 	return result, nil
 }

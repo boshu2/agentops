@@ -97,7 +97,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 	}
 
 	if cwd == "" {
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		result.Method = "skipped"
 		result.ErrorMessage = "inject-refresh: empty cwd"
 		result.Degraded = append(result.Degraded,
@@ -107,7 +107,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 
 	agentsDir := filepath.Join(cwd, ".agents")
 	if _, err := os.Stat(agentsDir); err != nil {
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		result.Method = "skipped"
 		result.ErrorMessage = fmt.Sprintf("inject-refresh: .agents/ unavailable: %v", err)
 		result.Degraded = append(result.Degraded,
@@ -126,7 +126,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 	if err := refreshInProcess(agentsDir); err == nil {
 		result.Method = "in-process"
 		result.Succeeded = true
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		fmt.Fprintf(log, "overnight/inject-refresh: done in %s (in-process)\n",
 			result.Duration)
 		return result, nil
@@ -153,7 +153,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 	aoBin, lookErr := ExecLookPath("ao")
 	if lookErr != nil {
 		result.Method = "skipped"
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		result.ErrorMessage = fmt.Sprintf("inject-refresh: ao binary not on PATH: %v", lookErr)
 		result.Degraded = append(result.Degraded,
 			"inject-refresh: ao binary not on PATH, skipped subprocess fallback")
@@ -168,7 +168,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 	cmd.Stderr = log
 	if err := cmd.Run(); err != nil {
 		result.Method = "subprocess"
-		result.Duration = time.Since(started)
+		result.Duration = stageDurationSince(started)
 		result.ErrorMessage = fmt.Sprintf("inject-refresh: subprocess failed: %v", err)
 		result.Degraded = append(result.Degraded,
 			fmt.Sprintf("inject-refresh: subprocess failed: %v", err))
@@ -178,7 +178,7 @@ func RefreshInjectCache(ctx context.Context, cwd string, log io.Writer) (*Inject
 
 	result.Method = "subprocess"
 	result.Succeeded = true
-	result.Duration = time.Since(started)
+	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/inject-refresh: done in %s (subprocess)\n",
 		result.Duration)
 	return result, nil
