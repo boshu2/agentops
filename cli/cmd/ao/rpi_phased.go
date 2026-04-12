@@ -280,70 +280,123 @@ func initPhasedState(cwd string, opts phasedEngineOptions, args []string) (*phas
 	return state, startPhase, spawnCwd, nil
 }
 
+type phasedRunLifecycle struct {
+	cwd               string
+	spawnCwd          string
+	state             *phasedState
+	startPhase        int
+	preloadedArtifact *discoveryArtifact
+	cleanupWorktree   func(success bool, logPath string) error
+	logPath           string
+	statusPath        string
+	allPhases         []PhaseProgress
+}
+
 func runRPIPhasedWithOpts(ctx context.Context, opts phasedEngineOptions, args []string) (retErr error) {
-	cwd := strings.TrimSpace(opts.WorkingDir)
-	if cwd == "" {
-		var err error
-		cwd, err = os.Getwd()
-		if err != nil {
-			return fmt.Errorf("get working directory: %w", err)
-		}
-	}
-	if err := preflightOpts(&opts); err != nil {
-		return err
-	}
-	maybeAutoCleanStale(opts, cwd)
-
-	preloadedArtifact, args, err := preloadDiscoveryArtifact(opts.DiscoveryArtifact, args)
-	if err != nil {
-		return err
-	}
-
-	originalCwd := cwd
-	state, startPhase, spawnCwd, err := initPhasedState(cwd, opts, args)
+	run, err := preparePhasedRun(&opts, args)
 	if err != nil {
 		return err
 	}
 
 	cleanupSuccess := false
-	var logPath string
-	spawnCwd, cleanupWorktree, err := setupWorktreeLifecycle(spawnCwd, originalCwd, opts, state)
-	if err != nil {
-		return err
-	}
 	defer func() {
-		if cleanupErr := cleanupWorktree(cleanupSuccess, logPath); cleanupErr != nil && retErr == nil {
+		if cleanupErr := run.cleanupWorktree(cleanupSuccess, run.logPath); cleanupErr != nil && retErr == nil {
 			retErr = cleanupErr
 		}
 	}()
 
-	if opts.OnSpawnCwdReady != nil {
-		opts.OnSpawnCwdReady(spawnCwd)
+	if err := initializePhasedRun(run, opts); err != nil {
+		return err
 	}
 
-	ensureStateRunID(state)
-	state.OrchestratorPID = os.Getpid()
+	if dashSrv := startPhasedDashboardIfNeeded(run.spawnCwd, run.state, &opts); dashSrv != nil {
+		defer shutdownDashboard(dashSrv)
+	}
 
-	_, runLogPath, statusPath, allPhases, err := initializeRunArtifacts(spawnCwd, startPhase, state, opts)
+	runStart := time.Now()
+	if err := runPhaseLoopWithBudgets(ctx, run.cwd, run.spawnCwd, run.state, run.startPhase, opts, run.statusPath, run.allPhases, run.logPath); err != nil {
+		finalizeFailedPhasedRun(run.spawnCwd, run.state, runStart, err)
+		return err
+	}
+
+	finalizeSuccessfulPhasedRun(run.spawnCwd, run.state, runStart, run.logPath)
+	cleanupSuccess = true
+
+	return nil
+}
+
+func preparePhasedRun(opts *phasedEngineOptions, args []string) (*phasedRunLifecycle, error) {
+	cwd := strings.TrimSpace(opts.WorkingDir)
+	if cwd == "" {
+		var err error
+		cwd, err = os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("get working directory: %w", err)
+		}
+	}
+	if err := preflightOpts(opts); err != nil {
+		return nil, err
+	}
+	maybeAutoCleanStale(*opts, cwd)
+
+	preloadedArtifact, args, err := preloadDiscoveryArtifact(opts.DiscoveryArtifact, args)
+	if err != nil {
+		return nil, err
+	}
+
+	originalCwd := cwd
+	state, startPhase, spawnCwd, err := initPhasedState(cwd, *opts, args)
+	if err != nil {
+		return nil, err
+	}
+
+	spawnCwd, cleanupWorktree, err := setupWorktreeLifecycle(spawnCwd, originalCwd, *opts, state)
+	if err != nil {
+		return nil, err
+	}
+	return &phasedRunLifecycle{
+		cwd:               cwd,
+		spawnCwd:          spawnCwd,
+		state:             state,
+		startPhase:        startPhase,
+		preloadedArtifact: preloadedArtifact,
+		cleanupWorktree:   cleanupWorktree,
+	}, nil
+}
+
+func initializePhasedRun(run *phasedRunLifecycle, opts phasedEngineOptions) error {
+	if opts.OnSpawnCwdReady != nil {
+		opts.OnSpawnCwdReady(run.spawnCwd)
+	}
+
+	ensureStateRunID(run.state)
+	run.state.OrchestratorPID = os.Getpid()
+
+	_, runLogPath, statusPath, allPhases, err := initializeRunArtifacts(run.spawnCwd, run.startPhase, run.state, opts)
 	if err != nil {
 		return err
 	}
-	logPath = runLogPath
-	if err := writeExecutionPacketSeed(spawnCwd, state); err != nil {
+	run.logPath = runLogPath
+	run.statusPath = statusPath
+	run.allPhases = allPhases
+	if err := writeExecutionPacketSeed(run.spawnCwd, run.state); err != nil {
 		return err
 	}
-	if err := applyDiscoveryArtifactToPacket(spawnCwd, preloadedArtifact, startPhase, state.Goal); err != nil {
+	if err := applyDiscoveryArtifactToPacket(run.spawnCwd, run.preloadedArtifact, run.startPhase, run.state.Goal); err != nil {
 		return err
 	}
-	if err := updateExecutionPacketProof(spawnCwd, state); err != nil {
+	if err := updateExecutionPacketProof(run.spawnCwd, run.state); err != nil {
 		VerbosePrintf("Warning: could not initialize execution packet proof: %v\n", err)
 	}
 
-	logPhaseTransition(logPath, state.RunID, "start", fmt.Sprintf("goal=%q from=%s complexity=%s fast_path=%v", state.Goal, opts.From, state.Complexity, state.FastPath))
+	logPhaseTransition(run.logPath, run.state.RunID, "start", fmt.Sprintf("goal=%q from=%s complexity=%s fast_path=%v", run.state.Goal, opts.From, run.state.Complexity, run.state.FastPath))
 
-	_ = initExecutorAndPersist(spawnCwd, logPath, statusPath, allPhases, state, opts)
+	_ = initExecutorAndPersist(run.spawnCwd, run.logPath, run.statusPath, run.allPhases, run.state, opts)
+	emitRunStarted(run.spawnCwd, run.state)
+	return nil
+}
 
-	// Emit run.started event so the dashboard can display the goal.
+func emitRunStarted(spawnCwd string, state *phasedState) {
 	if _, evErr := appendRPIC2Event(spawnCwd, rpiC2EventInput{
 		RunID: state.RunID, Phase: 0, Backend: state.Backend, Source: "orchestrator",
 		Type: "run.started", Message: state.Goal,
@@ -351,47 +404,40 @@ func runRPIPhasedWithOpts(ctx context.Context, opts phasedEngineOptions, args []
 	}); evErr != nil {
 		VerbosePrintf("Warning: could not emit run.started event: %v\n", evErr)
 	}
+}
 
-	// Start embedded dashboard server (unless --no-dashboard, --dry-run, or pipe).
-	var dashSrv *http.Server
-	if !opts.NoDashboard && !GetDryRun() && isTerminal() {
-		srv, dashURL := startEmbeddedDashboard(spawnCwd, state.RunID, opts.NoDashboard)
-		if srv != nil {
-			dashSrv = srv
-			defer shutdownDashboard(dashSrv)
-			fmt.Printf("Mission control: %s\n", dashURL)
-		}
+func startPhasedDashboardIfNeeded(spawnCwd string, state *phasedState, opts *phasedEngineOptions) *http.Server {
+	if opts.NoDashboard || GetDryRun() || !isTerminal() {
+		return nil
 	}
+	srv, dashURL := startEmbeddedDashboard(spawnCwd, state.RunID, opts.NoDashboard)
+	if srv == nil {
+		return nil
+	}
+	fmt.Printf("Mission control: %s\n", dashURL)
 
 	// When dashboard is active, suppress raw Claude session output from executors.
 	// Orchestrator status lines (fmt.Printf) are unaffected — they go to os.Stdout directly.
-	if dashSrv != nil {
-		opts.StdoutWriter = io.Discard
+	opts.StdoutWriter = io.Discard
+	return srv
+}
+
+func finalizeFailedPhasedRun(spawnCwd string, state *phasedState, runStart time.Time, err error) {
+	saveTerminalState(spawnCwd, state, "failed", err.Error())
+	emitRunCompleted(spawnCwd, state, runStart)
+	if proofErr := updateExecutionPacketProof(spawnCwd, state); proofErr != nil {
+		VerbosePrintf("Warning: could not refresh failed-run proof artifact set: %v\n", proofErr)
 	}
+}
 
-	runStart := time.Now()
-
-	if err := runPhaseLoopWithBudgets(ctx, cwd, spawnCwd, state, startPhase, opts, statusPath, allPhases, logPath); err != nil {
-		saveTerminalState(spawnCwd, state, "failed", err.Error())
-		emitRunCompleted(spawnCwd, state, runStart)
-		if proofErr := updateExecutionPacketProof(spawnCwd, state); proofErr != nil {
-			VerbosePrintf("Warning: could not refresh failed-run proof artifact set: %v\n", proofErr)
-		}
-		return err
-	}
-
+func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart time.Time, logPath string) {
 	saveTerminalState(spawnCwd, state, "completed", "all phases completed")
 	emitRunCompleted(spawnCwd, state, runStart)
 	if err := updateExecutionPacketProof(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not refresh completed-run proof artifact set: %v\n", err)
 	}
 
-	// All phases completed — mark worktree for merge+cleanup.
-	cleanupSuccess = true
-
 	writeFinalPhasedReport(state, logPath)
-
-	return nil
 }
 
 func attachAutodevProgram(cwd string, state *phasedState) error {

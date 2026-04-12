@@ -78,6 +78,19 @@ func TestExtractCouncilVerdict(t *testing.T) {
 	}
 }
 
+func TestStartPhasedDashboardIfNeededHonorsNoDashboard(t *testing.T) {
+	var out strings.Builder
+	opts := phasedEngineOptions{NoDashboard: true, StdoutWriter: &out}
+	state := &phasedState{RunID: "run-test"}
+
+	if srv := startPhasedDashboardIfNeeded(t.TempDir(), state, &opts); srv != nil {
+		t.Fatalf("startPhasedDashboardIfNeeded returned server with NoDashboard=true")
+	}
+	if opts.StdoutWriter != &out {
+		t.Fatalf("StdoutWriter changed with NoDashboard=true")
+	}
+}
+
 func TestExtractCouncilFindings(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1515,7 +1528,7 @@ func TestRunPhasedEngine_DoesNotMutateProcessCWD(t *testing.T) {
 func writeFakeBDScript(t *testing.T, dir string) {
 	t.Helper()
 	script := filepath.Join(dir, "bd")
-content := `#!/usr/bin/env bash
+	content := `#!/usr/bin/env bash
 set -euo pipefail
 
 if [ "${1:-}" = "ready" ] && [ "${2:-}" = "--json" ]; then
