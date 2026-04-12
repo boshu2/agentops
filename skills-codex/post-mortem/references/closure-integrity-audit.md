@@ -16,8 +16,12 @@ Evidence strength is ordered. Closure integrity must always resolve on the stron
 1. `commit` — commit references or commit history touching the scoped files
 2. `staged` — index state proves the scoped files are queued for commit even if no commit exists yet
 3. `worktree` — unstaged or untracked scoped files prove active-session work exists when neither commit nor staged evidence is available
+4. `evidence-only-packet` — a durable closure proof packet exists at `.agents/releases/evidence-only-closures/<target-id>.json` or `.agents/council/evidence-only-closures/<target-id>.json`, used when no scoped files can be extracted but a valid schema-backed artifact proves the closure
+5. `grace-window` — commit evidence found within the configurable grace window (default 24h) after bead close, covering the close-before-commit pattern
 
 Only fall back to a weaker source when the stronger source has no qualifying evidence for that child. A dirty worktree must not downgrade a valid commit-backed closure.
+
+The allowed evidence modes in audit output are: `commit`, `staged`, `worktree`, `evidence-only-packet`, `grace-window`. No catch-all or wildcard modes are accepted.
 
 ## When to Run
 
@@ -97,6 +101,8 @@ When a child resolves on staged or worktree evidence instead of commit evidence,
 - `commit` — commit-backed evidence exists and wins
 - `staged` — no qualifying commit evidence exists, but the scoped files are staged
 - `worktree` — neither commit nor staged evidence exists, but the scoped files are present in unstaged or untracked working-tree state
+- `evidence-only-packet` — no scoped files extractable, but a valid durable closure proof packet exists
+- `grace-window` — commit evidence found within the grace window after bead close
 
 Use `auto` only for audit selection logic, never as the final reported evidence mode.
 

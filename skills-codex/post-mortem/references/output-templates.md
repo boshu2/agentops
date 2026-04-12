@@ -139,12 +139,13 @@ Notes:
 - Footgun entries are not optional flavor text. They are harvest inputs for `pattern-fix` items when the cycle discovered real operator/runtime gotchas.
 - Evidence-only or pre-commit closure packets must preserve the durable tracked copy at `.agents/releases/evidence-only-closures/<target-id>.json`. The writer also emits a local council copy at `.agents/council/evidence-only-closures/<target-id>.json`.
 
-Example evidence-only closure packet:
+Repo-state excerpt that every full evidence-only closure packet must include
+(the full schema-shaped template follows):
 
 ```json
 {
   "repo_state": {
-    "repo_root": "."
+    "repo_root": "<repo-root-or-.>"
   }
 }
 ```
