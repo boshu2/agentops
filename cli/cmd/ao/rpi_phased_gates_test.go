@@ -215,6 +215,15 @@ func TestShouldForceEscalation_AboveCeiling(t *testing.T) {
 	}
 }
 
+func TestDiscoveryCouncilEpicIDSkipsPlanFileEpics(t *testing.T) {
+	if got := discoveryCouncilEpicID(&phasedState{EpicID: "plan:/tmp/plan.md"}); got != "" {
+		t.Fatalf("discoveryCouncilEpicID(plan file) = %q, want empty", got)
+	}
+	if got := discoveryCouncilEpicID(&phasedState{EpicID: "na-123"}); got != "na-123" {
+		t.Fatalf("discoveryCouncilEpicID(normal epic) = %q, want na-123", got)
+	}
+}
+
 // --- C2 event emission tests ---
 
 func TestGateDiscoveryVerdictC2Event(t *testing.T) {

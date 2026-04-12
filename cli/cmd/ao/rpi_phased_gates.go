@@ -50,84 +50,115 @@ func processDiscoveryPhase(cwd string, state *phasedState, logPath string) error
 	state.TrackerMode = tracker.Mode
 	state.TrackerReason = tracker.Reason
 
-	var epicID string
-	var err error
-	if tracker.Healthy {
-		epicID, err = extractEpicID(state.Opts.BDCommand)
-	}
-	if !tracker.Healthy || err != nil {
-		if !tracker.Healthy {
-			fmt.Printf("Tracker degraded: %s (%s)\n", tracker.Reason, tracker.Error)
-			logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("tracker degraded: mode=%s reason=%s error=%s", tracker.Mode, tracker.Reason, tracker.Error))
-		}
-		// Fallback 1: discovery should preserve a file-backed objective when tracker health is degraded.
-		planPath, planErr := discoverPlanFile(cwd)
-		if planErr == nil {
-			epicID = ""
-			fmt.Printf("Tasklist fallback: using execution packet + plan %s\n", planPath)
-		} else if tracker.Healthy {
-			// Fallback 2: any open issue (handles small-scope tasks that aren't epics) only when tracker probes passed.
-			issueID, issueErr := extractAnyOpenIssueID(state.Opts.BDCommand)
-			if issueErr != nil {
-				return fmt.Errorf("discovery phase: could not find epic, plan file, or open issue: %w", err)
-			}
-			epicID = issueID
-			fmt.Printf("Single-issue fallback: using %s (not an epic)\n", epicID)
-		} else {
-			return fmt.Errorf("discovery phase: tracker degraded and no plan file found: %w", planErr)
-		}
+	epicID, err := resolveDiscoveryEpicID(cwd, state, tracker, logPath)
+	if err != nil {
+		return err
 	}
 	state.EpicID = epicID
-	if epicID != "" {
-		fmt.Printf("Epic ID: %s\n", epicID)
-		logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("extracted epic: %s", epicID))
-	} else {
-		fmt.Println("Epic ID: none (tasklist fallback)")
-		logPhaseTransition(logPath, state.RunID, "discovery", "extracted objective: tasklist fallback via execution packet")
-	}
+	recordDiscoveryEpicID(state, logPath)
 	if err := writeExecutionPacketSeed(cwd, state); err != nil {
 		return fmt.Errorf("refresh execution packet after discovery: %w", err)
 	}
 
-	if !state.Opts.FastPath && epicID != "" && !isPlanFileEpic(epicID) {
-		fast, err := detectFastPath(state.EpicID, state.Opts.BDCommand)
-		if err != nil {
-			VerbosePrintf("Warning: fast-path detection failed (continuing without): %v\n", err)
-		} else if fast {
-			state.FastPath = true
-			fmt.Println("Micro-epic detected — using fast path (--quick for gates)")
-		}
-	}
+	maybeEnableDiscoveryFastPath(state)
 
-	// For plan-file epics, don't try to match epic ID in council report filenames
-	councilEpicID := state.EpicID
-	if isPlanFileEpic(state.EpicID) {
-		councilEpicID = ""
-	}
-	report, err := findLatestCouncilReport(cwd, "pre-mortem", time.Time{}, councilEpicID)
+	report, err := findLatestCouncilReport(cwd, "pre-mortem", time.Time{}, discoveryCouncilEpicID(state))
 	if err != nil {
-		// Fail-closed: missing pre-mortem report defaults to LOCKED to prevent
-		// bypassing the gate by simply not running pre-mortem.
-		fmt.Printf("Pre-mortem verdict: LOCKED (report unavailable: %v)\n", err)
-		logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("pre-mortem verdict: LOCKED (report unavailable: %v)", err))
-		state.Verdicts["pre_mortem"] = "LOCKED"
-		return &gateFailError{Phase: 1, Verdict: "LOCKED", Findings: []finding{{
-			Description: "Pre-mortem council report not found — gate is locked",
-			Fix:         "Run the pre-mortem council before proceeding past discovery.",
-		}}, Report: "unavailable"}
+		return lockDiscoveryGateForMissingReport(state, logPath, err)
 	}
 	verdict, err := extractCouncilVerdict(report)
 	if err != nil {
-		// Fail-closed: unparseable report defaults to LOCKED.
-		fmt.Printf("Pre-mortem verdict: LOCKED (parse error: %v)\n", err)
-		logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("pre-mortem verdict: LOCKED (parse error: %v)", err))
-		state.Verdicts["pre_mortem"] = "LOCKED"
-		return &gateFailError{Phase: 1, Verdict: "LOCKED", Findings: []finding{{
-			Description: "Could not extract verdict from pre-mortem report",
-			Fix:         "Re-run the pre-mortem council to produce a valid report.",
-			Ref:         pathClean(report),
-		}}, Report: report}
+		return lockDiscoveryGateForParseError(state, logPath, report, err)
 	}
+	return recordDiscoveryVerdict(cwd, state, logPath, report, verdict)
+}
+
+func resolveDiscoveryEpicID(cwd string, state *phasedState, tracker trackerHealth, logPath string) (string, error) {
+	if tracker.Healthy {
+		if epicID, err := extractEpicID(state.Opts.BDCommand); err == nil {
+			return epicID, nil
+		} else {
+			return resolveDiscoveryFallback(cwd, state, tracker, logPath, err)
+		}
+	}
+	return resolveDiscoveryFallback(cwd, state, tracker, logPath, nil)
+}
+
+func resolveDiscoveryFallback(cwd string, state *phasedState, tracker trackerHealth, logPath string, epicErr error) (string, error) {
+	if !tracker.Healthy {
+		fmt.Printf("Tracker degraded: %s (%s)\n", tracker.Reason, tracker.Error)
+		logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("tracker degraded: mode=%s reason=%s error=%s", tracker.Mode, tracker.Reason, tracker.Error))
+	}
+	planPath, planErr := discoverPlanFile(cwd)
+	if planErr == nil {
+		fmt.Printf("Tasklist fallback: using execution packet + plan %s\n", planPath)
+		return "", nil
+	}
+	if tracker.Healthy {
+		issueID, issueErr := extractAnyOpenIssueID(state.Opts.BDCommand)
+		if issueErr != nil {
+			return "", fmt.Errorf("discovery phase: could not find epic, plan file, or open issue: %w", epicErr)
+		}
+		fmt.Printf("Single-issue fallback: using %s (not an epic)\n", issueID)
+		return issueID, nil
+	}
+	return "", fmt.Errorf("discovery phase: tracker degraded and no plan file found: %w", planErr)
+}
+
+func recordDiscoveryEpicID(state *phasedState, logPath string) {
+	if state.EpicID != "" {
+		fmt.Printf("Epic ID: %s\n", state.EpicID)
+		logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("extracted epic: %s", state.EpicID))
+		return
+	}
+	fmt.Println("Epic ID: none (tasklist fallback)")
+	logPhaseTransition(logPath, state.RunID, "discovery", "extracted objective: tasklist fallback via execution packet")
+}
+
+func maybeEnableDiscoveryFastPath(state *phasedState) {
+	if state.Opts.FastPath || state.EpicID == "" || isPlanFileEpic(state.EpicID) {
+		return
+	}
+	fast, err := detectFastPath(state.EpicID, state.Opts.BDCommand)
+	if err != nil {
+		VerbosePrintf("Warning: fast-path detection failed (continuing without): %v\n", err)
+		return
+	}
+	if fast {
+		state.FastPath = true
+		fmt.Println("Micro-epic detected — using fast path (--quick for gates)")
+	}
+}
+
+func discoveryCouncilEpicID(state *phasedState) string {
+	if isPlanFileEpic(state.EpicID) {
+		return ""
+	}
+	return state.EpicID
+}
+
+func lockDiscoveryGateForMissingReport(state *phasedState, logPath string, err error) error {
+	fmt.Printf("Pre-mortem verdict: LOCKED (report unavailable: %v)\n", err)
+	logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("pre-mortem verdict: LOCKED (report unavailable: %v)", err))
+	state.Verdicts["pre_mortem"] = "LOCKED"
+	return &gateFailError{Phase: 1, Verdict: "LOCKED", Findings: []finding{{
+		Description: "Pre-mortem council report not found — gate is locked",
+		Fix:         "Run the pre-mortem council before proceeding past discovery.",
+	}}, Report: "unavailable"}
+}
+
+func lockDiscoveryGateForParseError(state *phasedState, logPath, report string, err error) error {
+	fmt.Printf("Pre-mortem verdict: LOCKED (parse error: %v)\n", err)
+	logPhaseTransition(logPath, state.RunID, "discovery", fmt.Sprintf("pre-mortem verdict: LOCKED (parse error: %v)", err))
+	state.Verdicts["pre_mortem"] = "LOCKED"
+	return &gateFailError{Phase: 1, Verdict: "LOCKED", Findings: []finding{{
+		Description: "Could not extract verdict from pre-mortem report",
+		Fix:         "Re-run the pre-mortem council to produce a valid report.",
+		Ref:         pathClean(report),
+	}}, Report: report}
+}
+
+func recordDiscoveryVerdict(cwd string, state *phasedState, logPath, report, verdict string) error {
 	findings, _ := extractCouncilFindings(report, 5)
 	state.Verdicts["pre_mortem"] = verdict
 	fmt.Printf("Pre-mortem verdict: %s\n", verdict)
