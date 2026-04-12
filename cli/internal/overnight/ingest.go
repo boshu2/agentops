@@ -88,149 +88,188 @@ func RunIngest(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Ingest
 		log = io.Discard
 	}
 	started := time.Now()
-	result := &IngestResult{
-		StageFailures: map[string]string{},
-	}
-
-	if opts.Cwd == "" {
-		return result, fmt.Errorf("overnight: RunIngest requires RunLoopOptions.Cwd")
-	}
-
-	// Substage 1: harvest discovery + extract + BuildCatalog.
-	if err := ctxCheck(ctx); err != nil {
+	result := newIngestResult()
+	if err := validateIngestInputs(opts); err != nil {
 		return result, err
 	}
-	fmt.Fprintln(log, "overnight/ingest: harvest discovery start")
+
+	runner := &ingestRunner{ctx: ctx, opts: opts, log: log, result: result, started: started}
+	if err := runner.runHarvestCatalog(); err != nil {
+		return result, err
+	}
+	if err := runner.runHarvestPreview(); err != nil {
+		return result, err
+	}
+	if err := runner.runForgeMine(); err != nil {
+		return result, err
+	}
+	if err := runner.runProvenanceAudit(); err != nil {
+		return result, err
+	}
+	if err := runner.runMineFindings(); err != nil {
+		return result, err
+	}
+
+	result.Duration = stageDurationSince(started)
+	fmt.Fprintf(log, "overnight/ingest: done in %s\n", result.Duration)
+	return result, nil
+}
+
+type ingestRunner struct {
+	ctx     context.Context
+	opts    RunLoopOptions
+	log     io.Writer
+	result  *IngestResult
+	started time.Time
+}
+
+func newIngestResult() *IngestResult {
+	return &IngestResult{StageFailures: map[string]string{}}
+}
+
+func validateIngestInputs(opts RunLoopOptions) error {
+	if opts.Cwd == "" {
+		return fmt.Errorf("overnight: RunIngest requires RunLoopOptions.Cwd")
+	}
+	return nil
+}
+
+func (r *ingestRunner) runHarvestCatalog() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		return err
+	}
+	fmt.Fprintln(r.log, "overnight/ingest: harvest discovery start")
 	walkOpts := harvest.DefaultWalkOptions()
-	// Scope to this repo only — see 2026-04-09 dream-slice-substrate-before-surface
-	// learning. We must not eat the global workspace in the private lane.
-	walkOpts.Roots = []string{opts.Cwd}
-	// Private-lane hermeticity: skip the automatic ~/.agents/ global hub
-	// include so Dream's INGEST stage sees only this repo's corpus.
+	walkOpts.Roots = []string{r.opts.Cwd}
 	walkOpts.SkipGlobalHub = true
 
 	rigs, err := harvest.DiscoverRigs(walkOpts)
 	if err != nil {
-		return result, fmt.Errorf("overnight/ingest: discover rigs: %w", err)
+		return fmt.Errorf("overnight/ingest: discover rigs: %w", err)
 	}
+	allArtifacts, err := r.extractHarvestArtifacts(rigs, walkOpts)
+	if err != nil {
+		return err
+	}
+	catalog := harvest.BuildCatalog(allArtifacts, 0.5)
+	if catalog == nil {
+		return fmt.Errorf("overnight/ingest: BuildCatalog returned nil")
+	}
+	r.result.HarvestCatalog = catalog
+	fmt.Fprintf(r.log, "overnight/ingest: harvest catalog built: rigs=%d artifacts=%d promoted_candidates=%d\n",
+		len(rigs), catalog.Summary.ArtifactsExtracted, catalog.Summary.PromotionCandidates)
+	if catalog.Summary.ArtifactsExtracted == 0 {
+		r.result.Degraded = append(r.result.Degraded,
+			"harvest: empty corpus (no artifacts extracted from local .agents/)")
+	}
+	return nil
+}
 
+func (r *ingestRunner) extractHarvestArtifacts(
+	rigs []harvest.RigInfo,
+	walkOpts harvest.WalkOptions,
+) ([]harvest.Artifact, error) {
 	var allArtifacts []harvest.Artifact
 	for _, rig := range rigs {
-		if err := ctxCheck(ctx); err != nil {
-			return result, err
+		if err := ctxCheck(r.ctx); err != nil {
+			return nil, err
 		}
 		arts, warnings := harvest.ExtractArtifacts(rig, walkOpts)
 		allArtifacts = append(allArtifacts, arts...)
 		for _, w := range warnings {
-			result.Degraded = append(result.Degraded,
+			r.result.Degraded = append(r.result.Degraded,
 				fmt.Sprintf("harvest warning %s/%s: %s", w.Rig, w.Stage, w.Message))
 		}
 	}
+	return allArtifacts, nil
+}
 
-	catalog := harvest.BuildCatalog(allArtifacts, 0.5)
-	if catalog == nil {
-		return result, fmt.Errorf("overnight/ingest: BuildCatalog returned nil")
-	}
-	result.HarvestCatalog = catalog
-	fmt.Fprintf(log, "overnight/ingest: harvest catalog built: rigs=%d artifacts=%d promoted_candidates=%d\n",
-		len(rigs), catalog.Summary.ArtifactsExtracted, catalog.Summary.PromotionCandidates)
-
-	if catalog.Summary.ArtifactsExtracted == 0 {
-		result.Degraded = append(result.Degraded,
-			"harvest: empty corpus (no artifacts extracted from local .agents/)")
-	}
-
-	// Substage 2: dry-run Promote for preview count.
-	if err := ctxCheck(ctx); err != nil {
-		return result, err
+func (r *ingestRunner) runHarvestPreview() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		return err
 	}
 	home, _ := os.UserHomeDir()
 	promotionDest := filepath.Join(home, ".agents", "learnings")
-	// NOTE: destination is a stub default; Wave 4 wires a caller-supplied
-	// destination through RunLoopOptions.
-	previewCount, previewErr := harvest.Promote(catalog, promotionDest, true)
+	previewCount, previewErr := harvest.Promote(r.result.HarvestCatalog, promotionDest, true)
 	if previewErr != nil {
-		result.StageFailures["harvest-preview"] = previewErr.Error()
-		result.Degraded = append(result.Degraded,
+		r.result.StageFailures["harvest-preview"] = previewErr.Error()
+		r.result.Degraded = append(r.result.Degraded,
 			fmt.Sprintf("harvest-preview: dry-run promote soft-failed: %v", previewErr))
-	} else {
-		result.HarvestPreviewCount = previewCount
-		fmt.Fprintf(log, "overnight/ingest: harvest dry-run promote preview count=%d\n", previewCount)
+		return nil
 	}
+	r.result.HarvestPreviewCount = previewCount
+	fmt.Fprintf(r.log, "overnight/ingest: harvest dry-run promote preview count=%d\n", previewCount)
+	return nil
+}
 
-	// Substage 3: forge mine pass (Wave 2 Issue 5 wiring — replaces the
-	// Wave 3 stub that logged "deferred to follow-up"). Uses the
-	// in-process entry forge.RunMinePass added in Wave 1.
-	if err := ctxCheck(ctx); err != nil {
-		return result, err
+func (r *ingestRunner) runForgeMine() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		return err
 	}
 	forgeOpts := forge.MineOpts{
-		SessionsDir: filepath.Join(opts.Cwd, ".agents", "sessions"),
+		SessionsDir: filepath.Join(r.opts.Cwd, ".agents", "sessions"),
 		Quiet:       true,
 	}
-	minedReport, forgeErr := forge.RunMinePass(opts.Cwd, forgeOpts)
+	minedReport, forgeErr := forge.RunMinePass(r.opts.Cwd, forgeOpts)
 	if forgeErr != nil {
-		result.StageFailures["forge-mine"] = forgeErr.Error()
-		result.Degraded = append(result.Degraded,
-			fmt.Sprintf("forge-mine: %v", forgeErr))
-	} else if minedReport != nil {
-		result.ForgeArtifactsMined = len(minedReport.Learnings)
-		for _, d := range minedReport.Degraded {
-			result.Degraded = append(result.Degraded,
-				fmt.Sprintf("forge-mine: %s", d))
-		}
-		fmt.Fprintf(log, "overnight/ingest: forge-mine learnings=%d sessions_read=%d\n",
-			len(minedReport.Learnings), minedReport.SessionsRead)
+		r.result.StageFailures["forge-mine"] = forgeErr.Error()
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("forge-mine: %v", forgeErr))
+		return nil
 	}
+	if minedReport == nil {
+		return nil
+	}
+	r.result.ForgeArtifactsMined = len(minedReport.Learnings)
+	for _, d := range minedReport.Degraded {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("forge-mine: %s", d))
+	}
+	fmt.Fprintf(r.log, "overnight/ingest: forge-mine learnings=%d sessions_read=%d\n",
+		len(minedReport.Learnings), minedReport.SessionsRead)
+	return nil
+}
 
-	// Substage 4: provenance audit (Wave 2 Issue 5 wiring — replaces the
-	// Wave 3 stub). Uses provenance.Audit from Wave 1.
-	if err := ctxCheck(ctx); err != nil {
-		return result, err
+func (r *ingestRunner) runProvenanceAudit() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		return err
 	}
-	auditReport, auditErr := provenance.Audit(opts.Cwd)
+	auditReport, auditErr := provenance.Audit(r.opts.Cwd)
 	if auditErr != nil {
-		result.StageFailures["provenance-audit"] = auditErr.Error()
-		result.Degraded = append(result.Degraded,
-			fmt.Sprintf("provenance-audit: %v", auditErr))
-	} else if auditReport != nil {
-		result.ProvenanceAudited = auditReport.StaleCitations + auditReport.MissingSources
-		for _, d := range auditReport.Degraded {
-			result.Degraded = append(result.Degraded,
-				fmt.Sprintf("provenance-audit: %s", d))
-		}
-		fmt.Fprintf(log, "overnight/ingest: provenance-audit stale=%d missing=%d\n",
-			auditReport.StaleCitations, auditReport.MissingSources)
+		r.result.StageFailures["provenance-audit"] = auditErr.Error()
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("provenance-audit: %v", auditErr))
+		return nil
 	}
+	if auditReport == nil {
+		return nil
+	}
+	r.result.ProvenanceAudited = auditReport.StaleCitations + auditReport.MissingSources
+	for _, d := range auditReport.Degraded {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("provenance-audit: %s", d))
+	}
+	fmt.Fprintf(r.log, "overnight/ingest: provenance-audit stale=%d missing=%d\n",
+		auditReport.StaleCitations, auditReport.MissingSources)
+	return nil
+}
 
-	// Substage 5: ao mine drift/complexity (Wave 2 Issue 5 wiring —
-	// replaces the Wave 3 stub). Uses mine.Run from Wave 1 with
-	// DryRun=true so INGEST remains read-only (no dated report or
-	// work-item emission). MineEventsFn is nil — INGEST does not drive
-	// the events source; the nil callback is a silent no-op per Wave 1's
-	// dependency-injection contract.
-	if err := ctxCheck(ctx); err != nil {
-		return result, err
+func (r *ingestRunner) runMineFindings() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		return err
 	}
 	mineOpts := mine.RunOpts{
 		Sources: []string{"git", "agents", "code"},
 		Quiet:   true,
 		DryRun:  true,
 	}
-	mineReport, mineErr := mine.Run(opts.Cwd, mineOpts)
+	mineReport, mineErr := mine.Run(r.opts.Cwd, mineOpts)
 	if mineErr != nil {
-		result.StageFailures["mine-findings"] = mineErr.Error()
-		result.Degraded = append(result.Degraded,
-			fmt.Sprintf("mine-findings: %v", mineErr))
-	} else if mineReport != nil {
-		result.MineFindingsNew = countMineFindings(mineReport)
-		fmt.Fprintf(log, "overnight/ingest: mine-findings new=%d\n",
-			result.MineFindingsNew)
+		r.result.StageFailures["mine-findings"] = mineErr.Error()
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-findings: %v", mineErr))
+		return nil
 	}
-
-	result.Duration = stageDurationSince(started)
-	fmt.Fprintf(log, "overnight/ingest: done in %s\n", result.Duration)
-	return result, nil
+	if mineReport != nil {
+		r.result.MineFindingsNew = countMineFindings(mineReport)
+		fmt.Fprintf(r.log, "overnight/ingest: mine-findings new=%d\n", r.result.MineFindingsNew)
+	}
+	return nil
 }
 
 // ctxCheck returns ctx.Err() if ctx has been cancelled, or nil otherwise.
