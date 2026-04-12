@@ -28,15 +28,20 @@ type DreamSubCycleOptions struct {
 
 // DreamSubCycleResult is the return value from RunDreamSubCycle.
 type DreamSubCycleResult struct {
-	Iterations    int      `json:"iterations"`
-	PlateauReason string   `json:"plateau_reason,omitempty"`
-	Degraded      []string `json:"degraded,omitempty"`
+	Iterations    int                `json:"iterations"`
+	PlateauReason string             `json:"plateau_reason,omitempty"`
+	Degraded      []string           `json:"degraded,omitempty"`
 	Tier1Forge    *tier1ForgeSummary `json:"tier1_forge,omitempty"`
 }
 
 type tier1ForgeSummary struct {
-	FilesProcessed int `json:"files_processed"`
-	SessionsWrote  int `json:"sessions_wrote"`
+	FilesProcessed int    `json:"files_processed"`
+	FilesSkipped   int    `json:"files_skipped,omitempty"`
+	SessionsWrote  int    `json:"sessions_wrote"`
+	Errors         int    `json:"errors,omitempty"`
+	Mode           string `json:"mode,omitempty"`
+	Queued         int    `json:"queued,omitempty"`
+	QueueDir       string `json:"queue_dir,omitempty"`
 }
 
 // RunDreamSubCycle executes the Dream knowledge-compounding loop as a
@@ -110,23 +115,12 @@ func RunDreamSubCycle(ctx context.Context, opts DreamSubCycleOptions) (*DreamSub
 	}
 
 	// Post-loop: Tier 1 forge on recent sessions.
-	if os.Getenv(llm.KillSwitchEnv) != "1" {
-		sessions, err := collectRecentSessionJSONL(opts.Cwd)
-		if err == nil && len(sessions) > 0 {
-			outDir := filepath.Join(opts.Cwd, ".agents", "ao", "sessions")
-			t1Opts := resolveTier1Options(sessions, outDir, opts.Cwd)
-			if t1Opts != nil {
-				t1Result, t1Err := llm.RunForgeTier1(*t1Opts)
-				if t1Err != nil {
-					result.Degraded = append(result.Degraded, fmt.Sprintf("tier1-forge: %v", t1Err))
-				} else if t1Result != nil {
-					result.Tier1Forge = &tier1ForgeSummary{
-						FilesProcessed: t1Result.FilesProcessed,
-						SessionsWrote:  len(t1Result.SessionsWrote),
-					}
-				}
-			}
-		}
+	outDir := filepath.Join(opts.Cwd, ".agents", "ao", "sessions")
+	t1Summary, t1Err := runDreamTier1ForgePostLoop(opts.Cwd, outDir, "ao-evolve-dream-tier1")
+	if t1Err != nil {
+		result.Degraded = append(result.Degraded, fmt.Sprintf("tier1-forge: %v", t1Err))
+	} else if t1Summary != nil {
+		result.Tier1Forge = t1Summary
 	}
 
 	if !opts.Quiet {
@@ -135,6 +129,51 @@ func RunDreamSubCycle(ctx context.Context, opts DreamSubCycleOptions) (*DreamSub
 	}
 
 	return result, nil
+}
+
+func runDreamTier1ForgePostLoop(cwd, outDir, ingestedBy string) (*tier1ForgeSummary, error) {
+	if os.Getenv(llm.KillSwitchEnv) == "1" {
+		return nil, nil
+	}
+	sessions, err := collectRecentSessionJSONL(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("collect sessions: %w", err)
+	}
+	if len(sessions) == 0 {
+		return nil, nil
+	}
+
+	if queueResult, handled, err := enqueueForgeTier1ToCuratorQueue(sessions); handled {
+		if err != nil {
+			return nil, err
+		}
+		return &tier1ForgeSummary{
+			Mode:     "dream-worker-queue",
+			Queued:   queueResult.JobsQueued,
+			QueueDir: queueResult.QueueDir,
+		}, nil
+	}
+
+	t1Opts := resolveTier1Options(sessions, outDir, cwd)
+	if t1Opts == nil {
+		return nil, nil
+	}
+	t1Opts.IngestedBy = ingestedBy
+
+	t1Result, err := llm.RunForgeTier1(*t1Opts)
+	if err != nil {
+		return nil, err
+	}
+	if t1Result == nil {
+		return nil, nil
+	}
+	return &tier1ForgeSummary{
+		Mode:           "local-llm",
+		FilesProcessed: t1Result.FilesProcessed,
+		FilesSkipped:   t1Result.FilesSkipped,
+		SessionsWrote:  len(t1Result.SessionsWrote),
+		Errors:         len(t1Result.Errors),
+	}, nil
 }
 
 // resolveTier1Options builds Tier1Options from config, returning nil when

@@ -98,7 +98,11 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 				fmt.Fprintf(w, " (plateau: %s)", dreamResult.PlateauReason)
 			}
 			if dreamResult.Tier1Forge != nil {
-				fmt.Fprintf(w, ", tier1 forge: %d sessions", dreamResult.Tier1Forge.SessionsWrote)
+				if dreamResult.Tier1Forge.Queued > 0 {
+					fmt.Fprintf(w, ", tier1 forge: %d queued", dreamResult.Tier1Forge.Queued)
+				} else {
+					fmt.Fprintf(w, ", tier1 forge: %d sessions", dreamResult.Tier1Forge.SessionsWrote)
+				}
 			}
 			fmt.Fprintln(w)
 		}

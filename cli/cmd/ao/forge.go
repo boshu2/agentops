@@ -1022,13 +1022,32 @@ func runForgeTier1(w io.Writer, files []string) error {
 }
 
 func runForgeTier1ViaCuratorQueue(w io.Writer, files []string) (bool, error) {
+	result, handled, err := enqueueForgeTier1ToCuratorQueue(files)
+	if !handled || err != nil {
+		return handled, err
+	}
+	if w == nil {
+		w = io.Discard
+	}
+	if !forgeQuiet {
+		fmt.Fprintf(w, "Queued %d transcript file(s) for Dream curator Tier 1: %s\n", result.JobsQueued, result.QueueDir)
+	}
+	return true, nil
+}
+
+type curatorQueueEnqueueResult struct {
+	QueueDir   string
+	JobsQueued int
+}
+
+func enqueueForgeTier1ToCuratorQueue(files []string) (curatorQueueEnqueueResult, bool, error) {
 	workerDir := configuredDreamCuratorWorkerDir()
 	if workerDir == "" {
-		return false, nil
+		return curatorQueueEnqueueResult{}, false, nil
 	}
 	queueDir := filepath.Join(workerDir, "queue")
 	if err := os.MkdirAll(queueDir, 0o755); err != nil {
-		return true, fmt.Errorf("create Dream curator queue dir: %w", err)
+		return curatorQueueEnqueueResult{}, true, fmt.Errorf("create Dream curator queue dir: %w", err)
 	}
 
 	for _, sourcePath := range files {
@@ -1044,14 +1063,11 @@ func runForgeTier1ViaCuratorQueue(w io.Writer, files []string) (bool, error) {
 			},
 		}
 		if err := writeJSONAtomic(filepath.Join(queueDir, job.ID+".json"), job); err != nil {
-			return true, fmt.Errorf("enqueue Dream curator job for %s: %w", sourcePath, err)
+			return curatorQueueEnqueueResult{}, true, fmt.Errorf("enqueue Dream curator job for %s: %w", sourcePath, err)
 		}
 	}
 
-	if !forgeQuiet {
-		fmt.Fprintf(w, "Queued %d transcript file(s) for Dream curator Tier 1: %s\n", len(files), queueDir)
-	}
-	return true, nil
+	return curatorQueueEnqueueResult{QueueDir: queueDir, JobsQueued: len(files)}, true, nil
 }
 
 func configuredDreamCuratorWorkerDir() string {

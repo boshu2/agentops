@@ -19,7 +19,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/config"
-	"github.com/boshu2/agentops/cli/internal/llm"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 )
 
@@ -499,53 +498,41 @@ func appendOvernightIterationSteps(summary *overnightSummary, iterations []ovn.I
 	}
 }
 
-// runPostLoopTier1Forge runs the local-LLM session summarization pipeline
-// on recent Claude session transcripts after the Dream loop completes. It
-// uses the curator's model/endpoint config (AGENTOPS_DREAM_CURATOR_MODEL,
-// dream.local_curator.ollama_url). Degrades honestly: all errors land in
-// summary.Degraded; the Dream run never aborts on Tier 1 failure.
+// runPostLoopTier1Forge queues recent Claude session transcripts for the
+// Dream curator worker when configured. Without a worker queue, it falls back
+// to the local-LLM summarization pipeline using the curator's model/endpoint
+// config. Degrades honestly: all errors land in summary.Degraded; the Dream
+// run never aborts on Tier 1 failure.
 func runPostLoopTier1Forge(_ context.Context, cwd string, summary *overnightSummary, settings overnightSettings) {
-	if os.Getenv(llm.KillSwitchEnv) == "1" {
-		return
-	}
-	resolved := config.Resolve("", "", false)
-	model, _ := resolved.DreamCuratorModel.Value.(string)
-	endpoint, _ := resolved.DreamCuratorOllamaURL.Value.(string)
-	if model == "" {
-		// No curator model configured — skip silently (opt-in feature).
-		return
-	}
-
-	sessions, err := collectRecentSessionJSONL(cwd)
-	if err != nil || len(sessions) == 0 {
-		if err != nil {
-			summary.Degraded = append(summary.Degraded, fmt.Sprintf("tier1-forge: collect sessions: %v", err))
-		}
-		return
-	}
-
 	outDir := filepath.Join(cwd, ".agents", "ao", "sessions")
-	result, err := llm.RunForgeTier1(llm.Tier1Options{
-		SourcePaths: sessions,
-		OutputDir:   outDir,
-		Model:       model,
-		Endpoint:    endpoint,
-		Quiet:       true,
-		Workspace:   cwd,
-		IngestedBy:  "ao-dream-tier1",
-	})
+	result, err := runDreamTier1ForgePostLoop(cwd, outDir, "ao-dream-tier1")
 	if err != nil {
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("tier1-forge: %v", err))
+		return
+	}
+	if result == nil {
 		return
 	}
 	if summary.CloseLoop == nil {
 		summary.CloseLoop = make(map[string]any)
 	}
-	summary.CloseLoop["tier1_forge"] = map[string]any{
-		"files_processed": result.FilesProcessed,
-		"files_skipped":   result.FilesSkipped,
-		"sessions_wrote":  len(result.SessionsWrote),
-		"errors":          len(result.Errors),
+	summary.CloseLoop["tier1_forge"] = tier1ForgeSummaryMap(*result)
+}
+
+func tier1ForgeSummaryMap(summary tier1ForgeSummary) map[string]any {
+	if summary.Mode == "dream-worker-queue" {
+		return map[string]any{
+			"mode":      summary.Mode,
+			"queued":    summary.Queued,
+			"queue_dir": summary.QueueDir,
+		}
+	}
+	return map[string]any{
+		"mode":            summary.Mode,
+		"files_processed": summary.FilesProcessed,
+		"files_skipped":   summary.FilesSkipped,
+		"sessions_wrote":  summary.SessionsWrote,
+		"errors":          summary.Errors,
 	}
 }
 
