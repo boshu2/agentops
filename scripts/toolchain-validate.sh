@@ -280,25 +280,32 @@ run_golangci() {
         fi
     done <<< "$modules"
 
-    # Detect golangci-lint / Go version mismatch (e.g. linter built with Go 1.25
-    # but project targets Go 1.26). This is a toolchain gap, not a code finding.
+    local had_version_mismatch=false
     if grep -qE "Go language version .* is lower than the targeted Go version" "$output_file" 2>/dev/null; then
-        log "  [WARN] golangci-lint skipped: built with older Go than project target"
-        TOOL_STATUS["golangci-lint"]="skipped"
-        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
-        return 0
+        had_version_mismatch=true
+        log "  [WARN] golangci-lint: some modules skipped due to Go version mismatch"
     fi
 
     local issues
     issues=$(grep -cE "^[^:]+:[0-9]+:[0-9]+:" "$output_file" 2>/dev/null || true)
     issues=${issues:-0}
     issues=$(echo "$issues" | tr -d '[:space:]')
-    if [[ "$issues" -eq 0 ]] && [[ "$had_findings" == "false" ]]; then
+
+    if [[ "$issues" -gt 0 ]]; then
+        # Real lint findings from modules that ran successfully — count them
+        # even if other modules hit a version mismatch.
+        HIGH_COUNT=$((HIGH_COUNT + issues))
+        QUALITY_HIGH_COUNT=$((QUALITY_HIGH_COUNT + issues))
+        TOOL_STATUS["golangci-lint"]="findings"
+    elif [[ "$had_version_mismatch" == "true" ]]; then
+        # No real findings, but at least one module couldn't be linted.
+        TOOL_STATUS["golangci-lint"]="skipped"
+        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
+    elif [[ "$had_findings" == "false" ]]; then
         echo "CLEAN" > "$output_file"
         TOOL_STATUS["golangci-lint"]="pass"
     else
-        HIGH_COUNT=$((HIGH_COUNT + issues))
-        QUALITY_HIGH_COUNT=$((QUALITY_HIGH_COUNT + issues))
+        # Non-zero exit but no parseable findings (e.g. config error).
         TOOL_STATUS["golangci-lint"]="findings"
     fi
 }
