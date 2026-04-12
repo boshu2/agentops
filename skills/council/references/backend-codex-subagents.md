@@ -107,14 +107,14 @@ Bash(command='codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-sche
 
 All four spawn in the **same message** — maximum parallelism.
 
-**Mixed mode quorum:** At least 1 judge from each vendor should respond for cross-vendor consensus. If all judges from one vendor fail, proceed as single-vendor council and note the degradation in the report.
+**Mixed mode quorum:** At least 1 judge from each vendor must respond for cross-vendor consensus. If all judges from one vendor fail, return an error. `--mixed` is a strict cross-vendor contract, not a best-effort single-vendor review.
 
 ---
 
 ## Key Rules
 
 1. **Pre-flight check:** `which codex` before attempting Codex CLI spawning
-2. **Model availability:** `gpt-5.3-codex` requires API account — fall back to `gpt-4o` if unavailable
+2. **Model availability:** use the user's default Codex model unless `COUNCIL_CODEX_MODEL` is set. If the requested model is unavailable, hard-error and ask the operator to fix the model or unset the override.
 3. **Flag order matters** — agents copy examples exactly
 4. **`codex review` is a different command** with different flags — do not conflate with `codex exec`
 5. **No debate with Codex judges** — they produce one verdict, Codex CLI has no messaging

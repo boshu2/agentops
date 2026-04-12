@@ -24,10 +24,11 @@ $council --preset=security-audit validate the auth system      # preset personas
 | `--quick` | 0 (inline) | Self | Fast single-agent check, no spawning |
 | default | 2 | `spawn_agent` | Independent judges |
 | `--deep` | 3 | `spawn_agent` | Thorough review |
+| `--mixed` | 3+3 | `spawn_agent` + Codex CLI | Cross-vendor consensus |
 
 **Note:** `--debate` (multi-round adversarial) requires agent messaging. Use `spawn_agent` plus `send_input` for one-off follow-up only; do not rely on debate-style rounds.
 
-**Note:** `--mixed` (cross-vendor) is not applicable in Codex — all judges use the same runtime-native agent surface.
+**Note:** `--mixed` is strict. Pre-flight `codex` and `codex --version` before spawning any judges; if Codex CLI is missing or not runnable, hard-error and tell the operator to install/fix Codex CLI or drop `--mixed`. Never silently convert `--mixed` into runtime-native-only judging.
 
 **Note:** `--profile=<name>` follows the shared model-profile contract: `balanced`, `budget`, `fast`, `inherit`, `quality`, `thorough`. See `references/model-profiles.md`.
 
@@ -88,6 +89,8 @@ Context: ...
 Write your full analysis to .agents/council/judge-2.md and your verdict to the final paragraph.")
 ```
 
+With `--mixed`, spawn the runtime-native judges above plus 3 Codex CLI judges. Codex CLI judges write under `.agents/council/codex-{N}.json` when `--output-schema` is supported, or `.agents/council/codex-{N}.md` as an output-format fallback only. See `references/cli-spawning.md` for the strict pre-flight and command shape.
+
 ### Step 1b: Load Project Reviewer Config
 
 Check for project-level reviewer configuration before spawning judges:
@@ -127,6 +130,7 @@ The lead reads each judge's output file and synthesizes:
    - **PASS:** All judges PASS (or majority PASS, none FAIL)
    - **WARN:** Any judge WARN, none FAIL
    - **FAIL:** Any judge FAIL
+   - Core rules: All PASS -> PASS; Any FAIL -> FAIL; Mixed PASS/WARN -> WARN; cross-vendor disagreement -> DISAGREE.
 3. Identify shared findings across judges
 4. Surface disagreements with attribution
 5. Generate final report

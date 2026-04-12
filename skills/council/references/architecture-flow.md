@@ -117,9 +117,10 @@ For schema details and an example, see `reviewer-config-example.md`.
 | Failure | Behavior |
 |---------|----------|
 | 1 of N agents times out | Proceed with N-1, note in report |
-| All Codex CLI agents fail | Proceed with runtime-native judges only, note degradation |
+| Any Codex CLI pre-flight fails while `--mixed` is set | Hard error before spawning any judges; tell the operator to install/fix Codex CLI or drop `--mixed` |
+| All Codex CLI agents fail after a successful pre-flight | Return error; `--mixed` cannot silently degrade to single-vendor review |
 | All agents fail | Return error, suggest retry |
-| Codex CLI not installed | Skip Codex CLI judges, continue with runtime judges only (warn user) |
+| Codex CLI not installed while `--mixed` is set | Hard error before spawning any judges |
 | No multi-agent capability | Fall back to `--quick` (inline single-agent review) |
 | No agent messaging | `--debate` unavailable, single-round review only |
 | Output dir missing | Create `.agents/council/` automatically |
@@ -142,6 +143,6 @@ Use the effort command to optimize token spend per judge role:
 
 1. **Multi-agent capability:** Detect whether runtime supports spawning parallel subagents. If not, degrade to `--quick`.
 2. **Agent messaging:** Detect whether runtime supports agent-to-agent messaging. If not, disable `--debate`.
-3. **Codex CLI judges (--mixed only):** Check `which codex`, test model availability, test `--output-schema` support. Downgrade mixed mode when unavailable.
+3. **Codex CLI judges (--mixed only):** Check `which codex`, test model availability, test `--output-schema` support. Hard-error before spawning any judges when unavailable.
 4. **Agent count:** Verify `judges * (1 + explorers) <= MAX_AGENTS (12)`
 5. **Output dir:** `mkdir -p .agents/council`

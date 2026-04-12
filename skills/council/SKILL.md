@@ -139,6 +139,8 @@ See [references/consensus-and-output.md](references/consensus-and-output.md) for
 
 Consensus verdict combination rules, DISAGREE handling, and the finding-extraction flywheel protocol live in [references/consensus-and-output.md](references/consensus-and-output.md). Full report templates (validate, brainstorm, research) and debate-report additions live in [references/output-format.md](references/output-format.md). All reports write to `.agents/council/YYYY-MM-DD-<type>-<target>.md`. Findings extraction targets `.agents/council/extraction-candidates.jsonl`; see [references/finding-extraction.md](references/finding-extraction.md) for schema and classification heuristics.
 
+Core consensus rules: All PASS -> PASS; Any FAIL -> FAIL; Mixed PASS/WARN -> WARN; cross-vendor disagreement -> DISAGREE.
+
 ---
 
 ## Configuration
