@@ -22,58 +22,73 @@ func TestMaturity_readLearningData_Markdown(t *testing.T) {
 	tmp := t.TempDir()
 
 	t.Run("reads frontmatter fields from md", func(t *testing.T) {
-		path := filepath.Join(tmp, "learn.md")
-		content := "---\nutility: 0.7500\nconfidence: 0.6000\nmaturity: candidate\n---\n# Content\n"
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		data, ok := readLearningData(path)
-		if !ok {
-			t.Fatal("expected ok=true for valid md with frontmatter")
-		}
-
-		utility, ok := data["utility"].(float64)
-		if !ok || utility != 0.75 {
-			t.Errorf("utility = %v, want 0.75", data["utility"])
-		}
-
-		maturity, ok := data["maturity"].(string)
-		if !ok || maturity != "candidate" {
-			t.Errorf("maturity = %v, want 'candidate'", data["maturity"])
-		}
+		assertReadLearningDataMarkdownFrontmatter(t, tmp)
 	})
 
 	t.Run("returns false for md with no parseable fields", func(t *testing.T) {
-		path := filepath.Join(tmp, "plain.md")
-		content := "# Just a heading\nSome content\n"
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		_, ok := readLearningData(path)
-		if ok {
-			t.Error("expected ok=false for md file with no relevant frontmatter fields")
-		}
+		assertReadLearningDataPlainMarkdownIgnored(t, tmp)
 	})
 
 	t.Run("handles numeric strings as floats", func(t *testing.T) {
-		path := filepath.Join(tmp, "numeric.md")
-		content := "---\nutility: 0.4200\nreward_count: 5\n---\n# X\n"
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		data, ok := readLearningData(path)
-		if !ok {
-			t.Fatal("expected ok=true")
-		}
-
-		// reward_count should parse as float
-		if rc, ok := data["reward_count"].(float64); !ok || rc != 5 {
-			t.Errorf("reward_count = %v, want 5.0", data["reward_count"])
-		}
+		assertReadLearningDataNumericStrings(t, tmp)
 	})
+}
+
+func assertReadLearningDataMarkdownFrontmatter(t *testing.T, tmp string) {
+	t.Helper()
+	path := filepath.Join(tmp, "learn.md")
+	content := "---\nutility: 0.7500\nconfidence: 0.6000\nmaturity: candidate\n---\n# Content\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	data, ok := readLearningData(path)
+	if !ok {
+		t.Fatal("expected ok=true for valid md with frontmatter")
+	}
+
+	utility, ok := data["utility"].(float64)
+	if !ok || utility != 0.75 {
+		t.Errorf("utility = %v, want 0.75", data["utility"])
+	}
+
+	maturity, ok := data["maturity"].(string)
+	if !ok || maturity != "candidate" {
+		t.Errorf("maturity = %v, want 'candidate'", data["maturity"])
+	}
+}
+
+func assertReadLearningDataPlainMarkdownIgnored(t *testing.T, tmp string) {
+	t.Helper()
+	path := filepath.Join(tmp, "plain.md")
+	content := "# Just a heading\nSome content\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, ok := readLearningData(path)
+	if ok {
+		t.Error("expected ok=false for md file with no relevant frontmatter fields")
+	}
+}
+
+func assertReadLearningDataNumericStrings(t *testing.T, tmp string) {
+	t.Helper()
+	path := filepath.Join(tmp, "numeric.md")
+	content := "---\nutility: 0.4200\nreward_count: 5\n---\n# X\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	data, ok := readLearningData(path)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+
+	// reward_count should parse as float.
+	if rc, ok := data["reward_count"].(float64); !ok || rc != 5 {
+		t.Errorf("reward_count = %v, want 5.0", data["reward_count"])
+	}
 }
 
 func TestMaturity_readLearningData_JSONL(t *testing.T) {
