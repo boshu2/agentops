@@ -151,9 +151,35 @@ func resolveRetrievalBenchCorpus(cwd, provided string) (string, error) {
 }
 
 func buildBenchReport(cwd, corpusDir string, k int) (benchReport, error) {
-	queries, err := loadBenchCases(corpusDir)
+	queries, tmpDir, cleanup, err := prepareBenchWorkspace(corpusDir)
 	if err != nil {
 		return benchReport{}, err
+	}
+	defer cleanup()
+
+	report := newBenchReport(len(queries), k)
+
+	var sumPAtK, sumMRR float64
+	for _, q := range queries {
+		result, pAtK, mrr, err := buildBenchCaseResult(tmpDir, corpusDir, q, k, report.TargetPAtK, report.TargetMRR)
+		if err != nil {
+			return benchReport{}, err
+		}
+
+		report.Results = append(report.Results, result)
+		sumPAtK += pAtK
+		sumMRR += mrr
+		addBenchSplitResult(report.Splits, result)
+	}
+
+	finalizeBenchReport(&report, sumPAtK, sumMRR)
+	return report, nil
+}
+
+func prepareBenchWorkspace(corpusDir string) ([]benchCase, string, func(), error) {
+	queries, err := loadBenchCases(corpusDir)
+	if err != nil {
+		return nil, "", func() {}, err
 	}
 	if len(queries) == 0 {
 		queries = defaultBenchQueries()
@@ -161,93 +187,114 @@ func buildBenchReport(cwd, corpusDir string, k int) (benchReport, error) {
 
 	tmpDir, err := os.MkdirTemp("", "retrieval-bench-*")
 	if err != nil {
-		return benchReport{}, fmt.Errorf("creating temp dir: %w", err)
+		return nil, "", func() {}, fmt.Errorf("creating temp dir: %w", err)
 	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
+	cleanup := func() { _ = os.RemoveAll(tmpDir) }
 
 	learningsDir := filepath.Join(tmpDir, ".agents", "learnings")
 	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
-		return benchReport{}, fmt.Errorf("creating learnings dir: %w", err)
+		cleanup()
+		return nil, "", func() {}, fmt.Errorf("creating learnings dir: %w", err)
 	}
 	if err := copyBenchCorpusLearnings(corpusDir, learningsDir); err != nil {
-		return benchReport{}, err
+		cleanup()
+		return nil, "", func() {}, err
 	}
+	return queries, tmpDir, cleanup, nil
+}
 
-	report := benchReport{
-		Queries:    len(queries),
+func newBenchReport(queryCount, k int) benchReport {
+	return benchReport{
+		Queries:    queryCount,
 		K:          k,
 		TargetPAtK: 0.67,
 		TargetMRR:  0.50,
 		Splits:     make(map[string]benchSplitSummary),
 	}
+}
 
-	var sumPAtK, sumMRR float64
-	for _, q := range queries {
-		results, err := collectLearnings(tmpDir, q.Query, 10, "", 0)
-		if err != nil {
-			return benchReport{}, fmt.Errorf("collectLearnings(%q): %w", q.Query, err)
-		}
-
-		expectedSet := make(map[string]bool, len(q.Expected))
-		for _, id := range q.Expected {
-			expectedSet[id] = true
-		}
-
-		qK := k
-		if len(q.Expected) < qK {
-			qK = len(q.Expected)
-		}
-
-		pAtK, mrr := scoreBenchResults(results, expectedSet, q.BestID, qK)
-		sectionCandidates, sectionMRR, sectionHit := scoreBenchSections(corpusDir, q.Query, q.ExpectedSection)
-
-		ids := make([]string, 0, len(results))
-		for _, r := range results {
-			ids = append(ids, r.ID)
-		}
-
-		sectionIDs := make([]string, 0, len(sectionCandidates))
-		for _, s := range sectionCandidates {
-			sectionIDs = append(sectionIDs, s.ID)
-		}
-
-		result := benchResult{
-			Query:           q.Query,
-			Split:           normalizeBenchSplit(q.Split),
-			Labels:          append([]string(nil), q.Labels...),
-			ExpectedSection: q.ExpectedSection,
-			PAtK:            pAtK,
-			MRR:             mrr,
-			SectionMRR:      sectionMRR,
-			SectionHit:      sectionHit,
-			Pass:            pAtK >= report.TargetPAtK && mrr >= report.TargetMRR,
-			ResultIDs:       ids,
-			SectionIDs:      sectionIDs,
-		}
-		if q.ExpectedSection != "" {
-			result.Pass = result.Pass && sectionMRR > 0
-		}
-
-		report.Results = append(report.Results, result)
-		sumPAtK += pAtK
-		sumMRR += mrr
-
-		splitName := result.Split
-		if splitName == "" {
-			splitName = "holdout"
-		}
-		summary := report.Splits[splitName]
-		summary.Cases++
-		summary.Results = append(summary.Results, result)
-		summary.AvgPAtK += pAtK
-		summary.AvgMRR += mrr
-		if q.ExpectedSection != "" {
-			summary.SectionCases++
-			summary.AvgSectionMRR += sectionMRR
-		}
-		report.Splits[splitName] = summary
+func buildBenchCaseResult(tmpDir, corpusDir string, q benchCase, k int, targetPAtK, targetMRR float64) (benchResult, float64, float64, error) {
+	results, err := collectLearnings(tmpDir, q.Query, 10, "", 0)
+	if err != nil {
+		return benchResult{}, 0, 0, fmt.Errorf("collectLearnings(%q): %w", q.Query, err)
 	}
 
+	pAtK, mrr := scoreBenchResults(results, benchExpectedSet(q.Expected), q.BestID, benchCaseK(k, q.Expected))
+	sectionCandidates, sectionMRR, sectionHit := scoreBenchSections(corpusDir, q.Query, q.ExpectedSection)
+
+	result := benchResult{
+		Query:           q.Query,
+		Split:           normalizeBenchSplit(q.Split),
+		Labels:          append([]string(nil), q.Labels...),
+		ExpectedSection: q.ExpectedSection,
+		PAtK:            pAtK,
+		MRR:             mrr,
+		SectionMRR:      sectionMRR,
+		SectionHit:      sectionHit,
+		Pass:            benchCasePasses(q, pAtK, mrr, sectionMRR, targetPAtK, targetMRR),
+		ResultIDs:       benchLearningIDs(results),
+		SectionIDs:      benchSectionIDs(sectionCandidates),
+	}
+	return result, pAtK, mrr, nil
+}
+
+func benchExpectedSet(expected []string) map[string]bool {
+	expectedSet := make(map[string]bool, len(expected))
+	for _, id := range expected {
+		expectedSet[id] = true
+	}
+	return expectedSet
+}
+
+func benchCaseK(k int, expected []string) int {
+	if len(expected) < k {
+		return len(expected)
+	}
+	return k
+}
+
+func benchLearningIDs(results []learning) []string {
+	ids := make([]string, 0, len(results))
+	for _, r := range results {
+		ids = append(ids, r.ID)
+	}
+	return ids
+}
+
+func benchSectionIDs(sectionCandidates []sectionCandidate) []string {
+	sectionIDs := make([]string, 0, len(sectionCandidates))
+	for _, s := range sectionCandidates {
+		sectionIDs = append(sectionIDs, s.ID)
+	}
+	return sectionIDs
+}
+
+func benchCasePasses(q benchCase, pAtK, mrr, sectionMRR, targetPAtK, targetMRR float64) bool {
+	pass := pAtK >= targetPAtK && mrr >= targetMRR
+	if q.ExpectedSection != "" {
+		return pass && sectionMRR > 0
+	}
+	return pass
+}
+
+func addBenchSplitResult(splits map[string]benchSplitSummary, result benchResult) {
+	splitName := result.Split
+	if splitName == "" {
+		splitName = "holdout"
+	}
+	summary := splits[splitName]
+	summary.Cases++
+	summary.Results = append(summary.Results, result)
+	summary.AvgPAtK += result.PAtK
+	summary.AvgMRR += result.MRR
+	if result.ExpectedSection != "" {
+		summary.SectionCases++
+		summary.AvgSectionMRR += result.SectionMRR
+	}
+	splits[splitName] = summary
+}
+
+func finalizeBenchReport(report *benchReport, sumPAtK, sumMRR float64) {
 	if report.Queries > 0 {
 		report.AvgPAtK = sumPAtK / float64(report.Queries)
 		report.AvgMRR = sumMRR / float64(report.Queries)
@@ -270,8 +317,6 @@ func buildBenchReport(cwd, corpusDir string, k int) (benchReport, error) {
 		}
 		return report.Results[i].Query < report.Results[j].Query
 	})
-
-	return report, nil
 }
 
 func copyBenchCorpusLearnings(corpusDir, learningsDir string) error {

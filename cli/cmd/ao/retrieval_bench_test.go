@@ -103,6 +103,15 @@ func TestRetrievalBench_LoadManifestCases(t *testing.T) {
 	}
 }
 
+func TestBenchCaseKCapsAtExpectedCount(t *testing.T) {
+	if got := benchCaseK(5, []string{"a", "b"}); got != 2 {
+		t.Fatalf("benchCaseK with fewer expected ids = %d, want 2", got)
+	}
+	if got := benchCaseK(2, []string{"a", "b", "c"}); got != 2 {
+		t.Fatalf("benchCaseK with enough expected ids = %d, want 2", got)
+	}
+}
+
 func TestRetrievalBench_BuildReportTrainHoldoutAndSections(t *testing.T) {
 	corpusSource := filepath.Join("testdata", "retrieval-bench")
 	workspace := seedCorpus(t)
