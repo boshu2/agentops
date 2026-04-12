@@ -166,6 +166,10 @@ case "$RESULT" in
     ;;
 esac
 
+if [[ "$RESULT" == "unchanged" && "$TARGET" != "idle" ]]; then
+  die "unchanged results must use --target idle; attempted productive cycles should report their intended productive result and let the substantive-delta gate downgrade if needed"
+fi
+
 HISTORY_PATH="$(resolve_path "$REPO_ROOT" "$HISTORY")"
 mkdir -p "$(dirname "$HISTORY_PATH")"
 

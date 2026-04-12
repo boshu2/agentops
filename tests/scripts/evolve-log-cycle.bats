@@ -87,6 +87,49 @@ teardown() {
     [ "$output" = "false" ]
 }
 
+@test "evolve-log-cycle.sh requires idle target for direct unchanged cycles" {
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target flywheel-proof \
+        --result unchanged
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unchanged results must use --target idle"* ]]
+
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target idle \
+        --result unchanged \
+        --timestamp 2026-03-07T16:00:00Z
+
+    [ "$status" -eq 0 ]
+    run jq -r '.target' "$FAKE_REPO/.agents/evolve/cycle-history.jsonl"
+    [ "$status" -eq 0 ]
+    [ "$output" = "idle" ]
+}
+
+@test "evolve-log-cycle.sh rejects non-numeric productive goal counts" {
+    echo "real change" >> "$FAKE_REPO/README.md"
+    git -C "$FAKE_REPO" add README.md
+    git -C "$FAKE_REPO" commit -q -m "real change"
+    CANONICAL_SHA="$(git -C "$FAKE_REPO" rev-parse --short HEAD)"
+
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target cmd-ao-coverage-floor \
+        --result improved \
+        --canonical-sha "$CANONICAL_SHA" \
+        --cycle-start-sha "$BASE_SHA" \
+        --goals-passing null \
+        --goals-total 18
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--goals-passing must be numeric"* ]]
+}
+
 @test "evolve-log-cycle.sh rejects non-sequential cycle numbers" {
     echo "real change" >> "$FAKE_REPO/README.md"
     git -C "$FAKE_REPO" add README.md
