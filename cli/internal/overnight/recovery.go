@@ -50,20 +50,52 @@ func RecoverFromCrash(cwd string) ([]string, error) {
 		return nil, errors.New("overnight: RecoverFromCrash requires a non-empty cwd")
 	}
 
+	overnightDir, matches, err := recoveryMarkerPaths(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	recovery := newCrashRecovery(cwd, overnightDir)
+	for _, markerPath := range matches {
+		recovery.processMarker(markerPath)
+	}
+	return recovery.result()
+}
+
+type crashRecovery struct {
+	cwd          string
+	overnightDir string
+	liveDir      string
+	actions      []string
+	errs         []string
+}
+
+type crashMarker struct {
+	path        string
+	base        string
+	iterationID string
+	body        markerBody
+}
+
+func recoveryMarkerPaths(cwd string) (string, []string, error) {
 	overnightDir := filepath.Join(cwd, ".agents", "overnight")
 	if _, err := os.Stat(overnightDir); err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return overnightDir, nil, nil
 		}
-		return nil, fmt.Errorf("overnight: stat overnight dir: %w", err)
+		return overnightDir, nil, fmt.Errorf("overnight: stat overnight dir: %w", err)
 	}
-
 	pattern := filepath.Join(overnightDir, "COMMIT-MARKER.*")
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("overnight: glob commit markers: %w", err)
+		return overnightDir, nil, fmt.Errorf("overnight: glob commit markers: %w", err)
 	}
-	// Filter out marker temp files written by checkpoint.go's rename-from-temp.
+	matches = filterFinalMarkerPaths(matches)
+	sort.Strings(matches)
+	return overnightDir, matches, nil
+}
+
+func filterFinalMarkerPaths(matches []string) []string {
 	filtered := matches[:0]
 	for _, m := range matches {
 		if strings.HasSuffix(m, ".tmp") {
@@ -71,83 +103,100 @@ func RecoverFromCrash(cwd string) ([]string, error) {
 		}
 		filtered = append(filtered, m)
 	}
-	matches = filtered
-	sort.Strings(matches)
+	return filtered
+}
 
-	if len(matches) == 0 {
-		return nil, nil
+func newCrashRecovery(cwd, overnightDir string) *crashRecovery {
+	return &crashRecovery{
+		cwd:          cwd,
+		overnightDir: overnightDir,
+		liveDir:      filepath.Join(cwd, ".agents"),
 	}
+}
 
-	var actions []string
-	var errs []string
-
-	for _, markerPath := range matches {
-		base := filepath.Base(markerPath)
-		iterationID := strings.TrimPrefix(base, "COMMIT-MARKER.")
-		if err := sanitizeIterationID(iterationID); err != nil {
-			actions = append(actions, fmt.Sprintf("skipped malformed marker %s: %v", base, err))
-			continue
-		}
-
-		data, readErr := os.ReadFile(markerPath)
-		if readErr != nil {
-			errs = append(errs, fmt.Sprintf("read %s: %v", base, readErr))
-			actions = append(actions, fmt.Sprintf("skipped unreadable marker %s (manual review required)", base))
-			continue
-		}
-
-		var body markerBody
-		if jsonErr := json.Unmarshal(data, &body); jsonErr != nil {
-			errs = append(errs, fmt.Sprintf("parse %s: %v", base, jsonErr))
-			actions = append(actions, fmt.Sprintf("skipped malformed marker %s (manual review required)", base))
-			continue
-		}
-
-		stagingDir := filepath.Join(overnightDir, "staging", iterationID)
-		prevDir := filepath.Join(overnightDir, fmt.Sprintf("prev.%s", iterationID))
-		liveDir := filepath.Join(cwd, ".agents")
-
-		switch body.State {
-		case markerStateDone:
-			if rmErr := os.RemoveAll(stagingDir); rmErr != nil {
-				errs = append(errs, fmt.Sprintf("remove staging for %s: %v", base, rmErr))
-			}
-			if rmErr := os.RemoveAll(prevDir); rmErr != nil {
-				errs = append(errs, fmt.Sprintf("remove prev for %s: %v", base, rmErr))
-			}
-			if rmErr := os.Remove(markerPath); rmErr != nil && !os.IsNotExist(rmErr) {
-				errs = append(errs, fmt.Sprintf("remove marker %s: %v", base, rmErr))
-			}
-			actions = append(actions, fmt.Sprintf("cleaned up stale DONE marker %s", base))
-
-		case markerStateReady:
-			reversed, revErr := reverseReadySwap(prevDir, liveDir)
-			if revErr != nil {
-				errs = append(errs, fmt.Sprintf("reverse READY swap for %s: %v", base, revErr))
-				actions = append(actions, fmt.Sprintf("partial reversal of READY marker %s (manual review required)", base))
-				continue
-			}
-			if rmErr := os.RemoveAll(stagingDir); rmErr != nil {
-				errs = append(errs, fmt.Sprintf("remove staging for %s: %v", base, rmErr))
-			}
-			if rmErr := os.RemoveAll(prevDir); rmErr != nil {
-				errs = append(errs, fmt.Sprintf("remove prev for %s: %v", base, rmErr))
-			}
-			if rmErr := os.Remove(markerPath); rmErr != nil && !os.IsNotExist(rmErr) {
-				errs = append(errs, fmt.Sprintf("remove marker %s: %v", base, rmErr))
-			}
-			actions = append(actions, fmt.Sprintf("recovered from crash marker %s (state: READY, reversed %d subpaths)", base, reversed))
-
-		default:
-			errs = append(errs, fmt.Sprintf("unknown state %q in %s", body.State, base))
-			actions = append(actions, fmt.Sprintf("skipped marker %s with unknown state %q (manual review required)", base, body.State))
-		}
+func (r *crashRecovery) processMarker(markerPath string) {
+	marker, ok := r.readMarker(markerPath)
+	if !ok {
+		return
 	}
-
-	if len(errs) > 0 {
-		return actions, fmt.Errorf("overnight: RecoverFromCrash encountered %d issue(s) requiring investigation: %s", len(errs), strings.Join(errs, "; "))
+	switch marker.body.State {
+	case markerStateDone:
+		r.cleanupDoneMarker(marker)
+	case markerStateReady:
+		r.recoverReadyMarker(marker)
+	default:
+		r.errs = append(r.errs, fmt.Sprintf("unknown state %q in %s", marker.body.State, marker.base))
+		r.actions = append(r.actions,
+			fmt.Sprintf("skipped marker %s with unknown state %q (manual review required)", marker.base, marker.body.State))
 	}
-	return actions, nil
+}
+
+func (r *crashRecovery) readMarker(markerPath string) (crashMarker, bool) {
+	base := filepath.Base(markerPath)
+	iterationID := strings.TrimPrefix(base, "COMMIT-MARKER.")
+	if err := sanitizeIterationID(iterationID); err != nil {
+		r.actions = append(r.actions, fmt.Sprintf("skipped malformed marker %s: %v", base, err))
+		return crashMarker{}, false
+	}
+	data, readErr := os.ReadFile(markerPath)
+	if readErr != nil {
+		r.errs = append(r.errs, fmt.Sprintf("read %s: %v", base, readErr))
+		r.actions = append(r.actions, fmt.Sprintf("skipped unreadable marker %s (manual review required)", base))
+		return crashMarker{}, false
+	}
+	var body markerBody
+	if jsonErr := json.Unmarshal(data, &body); jsonErr != nil {
+		r.errs = append(r.errs, fmt.Sprintf("parse %s: %v", base, jsonErr))
+		r.actions = append(r.actions, fmt.Sprintf("skipped malformed marker %s (manual review required)", base))
+		return crashMarker{}, false
+	}
+	return crashMarker{path: markerPath, base: base, iterationID: iterationID, body: body}, true
+}
+
+func (r *crashRecovery) cleanupDoneMarker(marker crashMarker) {
+	r.removeMarkerArtifacts(marker)
+	r.actions = append(r.actions, fmt.Sprintf("cleaned up stale DONE marker %s", marker.base))
+}
+
+func (r *crashRecovery) recoverReadyMarker(marker crashMarker) {
+	reversed, revErr := reverseReadySwap(r.prevDir(marker.iterationID), r.liveDir)
+	if revErr != nil {
+		r.errs = append(r.errs, fmt.Sprintf("reverse READY swap for %s: %v", marker.base, revErr))
+		r.actions = append(r.actions, fmt.Sprintf("partial reversal of READY marker %s (manual review required)", marker.base))
+		return
+	}
+	r.removeMarkerArtifacts(marker)
+	r.actions = append(r.actions,
+		fmt.Sprintf("recovered from crash marker %s (state: READY, reversed %d subpaths)", marker.base, reversed))
+}
+
+func (r *crashRecovery) removeMarkerArtifacts(marker crashMarker) {
+	if rmErr := os.RemoveAll(r.stagingDir(marker.iterationID)); rmErr != nil {
+		r.errs = append(r.errs, fmt.Sprintf("remove staging for %s: %v", marker.base, rmErr))
+	}
+	if rmErr := os.RemoveAll(r.prevDir(marker.iterationID)); rmErr != nil {
+		r.errs = append(r.errs, fmt.Sprintf("remove prev for %s: %v", marker.base, rmErr))
+	}
+	if rmErr := os.Remove(marker.path); rmErr != nil && !os.IsNotExist(rmErr) {
+		r.errs = append(r.errs, fmt.Sprintf("remove marker %s: %v", marker.base, rmErr))
+	}
+}
+
+func (r *crashRecovery) stagingDir(iterID string) string {
+	return filepath.Join(r.overnightDir, "staging", iterID)
+}
+
+func (r *crashRecovery) prevDir(iterID string) string {
+	return filepath.Join(r.overnightDir, fmt.Sprintf("prev.%s", iterID))
+}
+
+func (r *crashRecovery) result() ([]string, error) {
+	if len(r.errs) == 0 {
+		return r.actions, nil
+	}
+	return r.actions, fmt.Errorf(
+		"overnight: RecoverFromCrash encountered %d issue(s) requiring investigation: %s",
+		len(r.errs), strings.Join(r.errs, "; "))
 }
 
 // reverseReadySwap walks CheckpointedSubpaths and, for any subpath that
