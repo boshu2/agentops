@@ -89,3 +89,21 @@ func TestCaptureStdoutRestoresStdoutAfterPanic(t *testing.T) {
 		panic("boom")
 	})
 }
+
+func TestCaptureJSONStdoutRestoresStdoutAfterPanic(t *testing.T) {
+	original := os.Stdout
+
+	defer func() {
+		if recovered := recover(); recovered == nil {
+			t.Fatal("expected panic from captureJSONStdout callback")
+		}
+		if os.Stdout != original {
+			t.Fatal("stdout was not restored after JSON capture panic")
+		}
+	}()
+
+	_ = captureJSONStdout(t, func() {
+		_, _ = fmt.Fprint(os.Stdout, `{"boom":true}`)
+		panic("boom")
+	})
+}
