@@ -3,6 +3,7 @@ package llm
 import (
 	"os"
 	"regexp"
+	"strings"
 )
 
 // secretPatterns are the prefix-match regular expressions applied to every
@@ -48,6 +49,9 @@ func Redact(s string) string {
 	}
 	if homePathPattern != nil {
 		s = homePathPattern.ReplaceAllString(s, "/FIXTURE")
+	}
+	if home := os.Getenv("HOME"); home != "" {
+		s = strings.ReplaceAll(s, home, "/FIXTURE")
 	}
 	return s
 }
