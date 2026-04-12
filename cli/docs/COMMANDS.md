@@ -2550,12 +2550,14 @@ ao retrieval-bench [flags]
 **Flags:**
 
 ```
-      --corpus string   Path to benchmark corpus directory
-      --global          Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
-  -h, --help            help for retrieval-bench
-      --json            JSON output
-      --k int           K for Precision@K (default 3)
-      --live            Benchmark against real .agents/learnings/ instead of synthetic corpus
+      --corpus string        Path to benchmark corpus directory
+      --global               Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
+  -h, --help                 help for retrieval-bench
+      --json                 JSON output
+      --k int                K for Precision@K (default 3)
+      --live                 Benchmark against real .agents/learnings/ instead of synthetic corpus
+      --search-eval string   Path to an ao-search eval manifest with queries and ground_truth paths
+      --search-root string   Repo root to search for --search-eval (defaults to current directory)
 ```
 
 ---

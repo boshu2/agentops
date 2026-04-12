@@ -14,11 +14,13 @@ import (
 )
 
 var (
-	benchCorpus string
-	benchJSON   bool
-	benchK      int
-	benchLive   bool
-	benchGlobal bool
+	benchCorpus     string
+	benchJSON       bool
+	benchK          int
+	benchLive       bool
+	benchGlobal     bool
+	benchSearchEval string
+	benchSearchRoot string
 )
 
 // benchCase defines a benchmark query and its labeled evaluation metadata.
@@ -615,6 +617,14 @@ violation and must be reverted or reseeded to preserve plateau
 detection.`,
 	GroupID: "knowledge",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if strings.TrimSpace(benchSearchEval) != "" {
+			k := benchK
+			if !cmd.Flags().Changed("k") {
+				k = defaultSearchEvalK
+			}
+			return runSearchEval(k, benchJSON, benchSearchRoot, benchSearchEval)
+		}
+
 		if benchLive {
 			return runLiveBench(benchK, benchJSON, benchGlobal, benchCorpus)
 		}
@@ -686,4 +696,6 @@ func init() {
 	retrievalBenchCmd.Flags().IntVar(&benchK, "k", 3, "K for Precision@K")
 	retrievalBenchCmd.Flags().BoolVar(&benchLive, "live", false, "Benchmark against real .agents/learnings/ instead of synthetic corpus")
 	retrievalBenchCmd.Flags().BoolVar(&benchGlobal, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
+	retrievalBenchCmd.Flags().StringVar(&benchSearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
+	retrievalBenchCmd.Flags().StringVar(&benchSearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
 }
