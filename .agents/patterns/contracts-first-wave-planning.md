@@ -1,14 +1,6 @@
 ---
-utility: 0.6368
-last_reward: 0.80
-reward_count: 3
-last_reward_at: 2026-04-11T20:02:42-04:00
-confidence: 0.3713
-last_decay_at: 2026-04-12T12:33:50-04:00
-helpful_count: 2
 maturity: candidate
-maturity_changed_at: 2026-04-11T20:02:42-04:00
-maturity_reason: utility 0.64 >= 0.55 and reward_count 3 >= 3
+utility: 0.64
 ---
 
 # Contracts-First Wave Planning

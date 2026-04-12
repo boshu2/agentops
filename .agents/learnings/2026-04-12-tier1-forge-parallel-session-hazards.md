@@ -1,9 +1,6 @@
 ---
-id: learning-2026-04-12-parallel-worktree-isolation
-type: learning
 date: 2026-04-12
 category: process
-confidence: high
 maturity: provisional
 utility: 0.8
 ---
