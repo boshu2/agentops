@@ -1641,6 +1641,50 @@ func TestSearchRepoLocalKnowledgeIncludesCompiledDir(t *testing.T) {
 	}
 }
 
+func TestSearchRepoLocalKnowledgeIncludesConfiguredDreamVaultSources(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	vaultDir := filepath.Join(tmp, "vault")
+	sourceDir := filepath.Join(vaultDir, "wiki", "sources")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	sourcePath := filepath.Join(sourceDir, "bushido-bridge.md")
+	if err := os.WriteFile(sourcePath, []byte("Existing bushido queue bridge source for Dream knowledge."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(tmp, "missing-config.yaml"))
+	t.Setenv("AGENTOPS_DREAM_CURATOR_VAULT_DIR", vaultDir)
+
+	if !searchDataExists(sessionsDir) {
+		t.Fatal("expected configured Dream vault sources to count as local search data")
+	}
+
+	results, err := searchRepoLocalKnowledge("bushido queue bridge", sessionsDir, 10)
+	if err != nil {
+		t.Fatalf("searchRepoLocalKnowledge() error = %v", err)
+	}
+	found := false
+	for _, result := range results {
+		if result.Path == sourcePath && result.Type == "vault-source" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected vault-source result for %s, got %+v", sourcePath, results)
+	}
+
+	filtered := filterByType(results, "vault-sources")
+	if len(filtered) == 0 {
+		t.Fatalf("expected vault-sources type filter to match, got %+v", filtered)
+	}
+}
+
 func TestSearchRepoLocalKnowledgeTokenFallbackFindsMultiTokenNonPhrase(t *testing.T) {
 	tmp := t.TempDir()
 	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")

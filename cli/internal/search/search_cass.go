@@ -397,6 +397,8 @@ func NormalizeSearchType(filterType string) string {
 		return "finding"
 	case "compiled", "synthesis", "syntheses":
 		return "compiled"
+	case "vault-source", "vault-sources", "sources":
+		return "vault-source"
 	case "decisions":
 		return "decision"
 	case "retros":
@@ -427,6 +429,9 @@ func ClassifyResultType(path string) string {
 	}
 	if strings.Contains(pathLower, "/compiled/") {
 		return "compiled"
+	}
+	if strings.Contains(pathLower, "/wiki/sources/") {
+		return "vault-source"
 	}
 	if strings.Contains(pathLower, "/sessions/") {
 		return "session"

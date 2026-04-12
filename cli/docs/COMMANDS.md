@@ -2586,7 +2586,7 @@ ao search <query> [flags]
       --limit int        Maximum results to return (default 10)
       --local            Force repo-local AgentOps search only
       --session string   Session ID for citation tracking (defaults to the active runtime session)
-      --type string      Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, decision(s), knowledge
+      --type string      Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, vault-source(s), decision(s), knowledge
       --use-sc           Try Smart Connections semantic search first (requires Obsidian)
 ```
 

@@ -18,6 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -43,7 +44,8 @@ var searchCmd = &cobra.Command{
 By default, ao search brokers across two backends:
   1. upstream cass search --workspace <cwd> for session history when cass is available
   2. repo-local AgentOps artifacts such as .agents/ao/sessions/, learnings,
-     patterns, findings, research, and compiled synthesis when present
+     patterns, findings, research, compiled synthesis, and configured Dream
+     curator vault/wiki/sources pages when present
 
 Use --cass to require upstream cass only.
 Use --local to force repo-local AgentOps search only.
@@ -67,7 +69,7 @@ func init() {
 	searchCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(searchCmd)
 	searchCmd.Flags().IntVar(&searchLimit, "limit", 10, "Maximum results to return")
-	searchCmd.Flags().StringVar(&searchType, "type", "", "Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, decision(s), knowledge")
+	searchCmd.Flags().StringVar(&searchType, "type", "", "Filter by type: session(s), learning(s), pattern(s), finding(s), research, compiled, vault-source(s), decision(s), knowledge")
 	searchCmd.Flags().StringVar(&searchCiteType, "cite", "", "Optional citation type to record for matching repo-local artifacts: retrieved, reference, applied")
 	searchCmd.Flags().StringVar(&searchSession, "session", "", "Session ID for citation tracking (defaults to the active runtime session)")
 	searchCmd.Flags().BoolVar(&searchUseSC, "use-sc", false, "Try Smart Connections semantic search first (requires Obsidian)")
@@ -301,7 +303,7 @@ func normalizeSearchResults(results []searchResult, limit int) []searchResult {
 }
 
 func searchDataExists(sessionsDir string) bool {
-	return search.SearchDataExists(sessionsDir)
+	return search.SearchDataExists(sessionsDir) || len(configuredDreamVaultSourceRoots()) > 0
 }
 
 func knowledgeRootFromSessions(sessionsDir string) string {
@@ -501,6 +503,7 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "findings", "finding", "findings", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "research", "research", "research", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "compiled", "compiled", "compiled", limit)
+	results = appendDreamVaultSourceSearch(results, query, limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "plans", "plan", "plans", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "brainstorm", "brainstorm", "brainstorm", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "council", "council", "council", limit)
@@ -537,6 +540,53 @@ func appendKnowledgeMarkdownSearch(results []searchResult, query, knowledgeRoot,
 	}
 	found = append(found, searchMarkdownFilesByTokens(query, dir, resultType, limit)...)
 	return append(results, found...)
+}
+
+func appendDreamVaultSourceSearch(results []searchResult, query string, limit int) []searchResult {
+	for _, dir := range configuredDreamVaultSourceRoots() {
+		found, err := grepFiles(query, dir, "*.md", limit)
+		if err != nil {
+			VerbosePrintf("Dream vault source search error: %v\n", err)
+		}
+		for i := range found {
+			found[i].Type = "vault-source"
+		}
+		found = append(found, searchMarkdownFilesByTokens(query, dir, "vault-source", limit)...)
+		results = append(results, found...)
+	}
+	return results
+}
+
+func configuredDreamVaultSourceRoots() []string {
+	resolved := config.Resolve("", "", false)
+	vaultDir, _ := resolved.DreamCuratorVaultDir.Value.(string)
+	vaultDir = expandConfiguredSearchPath(vaultDir)
+	if vaultDir == "" {
+		return nil
+	}
+	sourceDir := filepath.Join(vaultDir, "wiki", "sources")
+	if info, err := os.Stat(sourceDir); err == nil && info.IsDir() {
+		return []string{sourceDir}
+	}
+	return nil
+}
+
+func expandConfiguredSearchPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if path == "~" {
+		if home, err := os.UserHomeDir(); err == nil {
+			return home
+		}
+	}
+	if strings.HasPrefix(path, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
 }
 
 func appendSessionSearchResults(results []searchResult, query, dir string, limit int) []searchResult {
