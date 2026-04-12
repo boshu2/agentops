@@ -501,6 +501,10 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "findings", "finding", "findings", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "research", "research", "research", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "compiled", "compiled", "compiled", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "plans", "plan", "plans", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "brainstorm", "brainstorm", "brainstorm", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "council", "council", "council", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "design", "design", "design", limit)
 	results = appendSessionSearchResults(results, query, dir, limit)
 
 	return rankUniqueSearchResults(results, limit), nil
@@ -514,8 +518,8 @@ func appendLearningSearchResults(results []searchResult, query, knowledgeRoot st
 	learningResults, err := searchLearningsWithMaturity(query, learningsDir, limit)
 	if err != nil {
 		VerbosePrintf("CASS learnings search error: %v\n", err)
-		return results
 	}
+	learningResults = append(learningResults, searchMarkdownFilesByTokens(query, learningsDir, "learning", limit)...)
 	return append(results, learningResults...)
 }
 
@@ -527,11 +531,11 @@ func appendKnowledgeMarkdownSearch(results []searchResult, query, knowledgeRoot,
 	found, err := grepFiles(query, dir, "*.md", limit)
 	if err != nil {
 		VerbosePrintf("CASS %s search error: %v\n", label, err)
-		return results
 	}
 	for i := range found {
 		found[i].Type = resultType
 	}
+	found = append(found, searchMarkdownFilesByTokens(query, dir, resultType, limit)...)
 	return append(results, found...)
 }
 
@@ -547,9 +551,112 @@ func appendSessionSearchResults(results []searchResult, query, dir string, limit
 	return append(results, sessionResults...)
 }
 
+func searchMarkdownFilesByTokens(query, dir, resultType string, limit int) []searchResult {
+	tokens := searchFallbackTokens(query)
+	if len(tokens) == 0 {
+		return nil
+	}
+	minMatches := searchFallbackMinMatches(len(tokens))
+
+	results := make([]searchResult, 0)
+	if err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		content := strings.ToLower(string(data))
+		searchable := content + " " + strings.ToLower(filepath.Base(path))
+		matches := 0
+		for _, token := range tokens {
+			if strings.Contains(searchable, token) {
+				matches++
+			}
+		}
+		if matches < minMatches {
+			return nil
+		}
+		results = append(results, searchResult{
+			Path:    path,
+			Score:   float64(matches) / float64(len(tokens)),
+			Context: searchFallbackContext(string(data), tokens),
+			Type:    resultType,
+		})
+		return nil
+	}); err != nil {
+		VerbosePrintf("token fallback search error for %s: %v\n", dir, err)
+		return nil
+	}
+
+	slices.SortFunc(results, func(a, b searchResult) int {
+		if cmp := cmp.Compare(b.Score, a.Score); cmp != 0 {
+			return cmp
+		}
+		return strings.Compare(a.Path, b.Path)
+	})
+	if limit > 0 && len(results) > limit {
+		return results[:limit]
+	}
+	return results
+}
+
+func searchFallbackTokens(query string) []string {
+	fields := strings.FieldsFunc(strings.ToLower(query), func(r rune) bool {
+		return !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'))
+	})
+	seen := make(map[string]bool, len(fields))
+	tokens := make([]string, 0, len(fields))
+	for _, field := range fields {
+		if len(field) < 2 || seen[field] {
+			continue
+		}
+		seen[field] = true
+		tokens = append(tokens, field)
+	}
+	return tokens
+}
+
+func searchFallbackMinMatches(tokenCount int) int {
+	if tokenCount <= 1 {
+		return 1
+	}
+	minMatches := (tokenCount + 1) / 2
+	if minMatches < 2 {
+		return 2
+	}
+	return minMatches
+}
+
+func searchFallbackContext(content string, tokens []string) string {
+	context := make([]string, 0, search.MaxContextLines)
+	for _, line := range strings.Split(content, "\n") {
+		lineLower := strings.ToLower(line)
+		for _, token := range tokens {
+			if !strings.Contains(lineLower, token) {
+				continue
+			}
+			trimmed := strings.TrimSpace(line)
+			if len(trimmed) > search.ContextLineMaxLength {
+				trimmed = trimmed[:search.ContextLineMaxLength] + "..."
+			}
+			context = append(context, trimmed)
+			break
+		}
+		if len(context) >= search.MaxContextLines {
+			break
+		}
+	}
+	return strings.Join(context, "\n")
+}
+
 func rankUniqueSearchResults(results []searchResult, limit int) []searchResult {
 	slices.SortFunc(results, func(a, b searchResult) int {
-		return cmp.Compare(b.Score, a.Score)
+		if cmp := cmp.Compare(b.Score, a.Score); cmp != 0 {
+			return cmp
+		}
+		return strings.Compare(a.Path, b.Path)
 	})
 
 	seen := make(map[string]bool, len(results))

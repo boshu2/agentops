@@ -1641,6 +1641,141 @@ func TestSearchRepoLocalKnowledgeIncludesCompiledDir(t *testing.T) {
 	}
 }
 
+func TestSearchRepoLocalKnowledgeTokenFallbackFindsMultiTokenNonPhrase(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	researchDir := filepath.Join(tmp, ".agents", "research")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(researchDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	researchPath := filepath.Join(researchDir, "ao-session-mining.md")
+	content := "Research note: AO session mining can reuse the existing inverted index instead of a new pipeline."
+	if err := os.WriteFile(researchPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := searchRepoLocalKnowledge("ao session mining research inverted index existing", sessionsDir, 10)
+	if err != nil {
+		t.Fatalf("searchRepoLocalKnowledge() error = %v", err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected token fallback result, got none")
+	}
+	if results[0].Path != researchPath {
+		t.Fatalf("top result path = %q, want %q; results=%+v", results[0].Path, researchPath, results)
+	}
+	if results[0].Type != "research" {
+		t.Fatalf("result type = %q, want research", results[0].Type)
+	}
+	if results[0].Score <= 0 {
+		t.Fatalf("result score = %.2f, want positive token fallback score", results[0].Score)
+	}
+}
+
+func TestSearchRepoLocalKnowledgeIncludesPlanningSurfaces(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	fixtures := map[string]string{
+		"plans":      "plan",
+		"brainstorm": "brainstorm",
+		"council":    "council",
+		"design":     "design",
+	}
+	for dirName, wantType := range fixtures {
+		dir := filepath.Join(tmp, ".agents", dirName)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(dir, wantType+".md")
+		if err := os.WriteFile(path, []byte("unique "+wantType+" surface retrieval marker"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		results, err := searchRepoLocalKnowledge("unique "+wantType+" surface retrieval marker", sessionsDir, 10)
+		if err != nil {
+			t.Fatalf("%s searchRepoLocalKnowledge() error = %v", wantType, err)
+		}
+		found := false
+		for _, result := range results {
+			if result.Path == path && result.Type == wantType {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected %s result for %s, got %+v", wantType, path, results)
+		}
+	}
+}
+
+func TestSearchRepoLocalKnowledgeFindsMarkdownLearningTokenFallback(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(learningsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	learningPath := filepath.Join(learningsDir, "flywheel-quality.md")
+	if err := os.WriteFile(learningPath, []byte("The flywheel corpus quality bottleneck was retrieval precision, not storage."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := searchRepoLocalKnowledge("flywheel corpus quality retrieval precision bottleneck", sessionsDir, 10)
+	if err != nil {
+		t.Fatalf("searchRepoLocalKnowledge() error = %v", err)
+	}
+	found := false
+	for _, result := range results {
+		if result.Path == learningPath && result.Type == "learning" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected markdown learning result for %s, got %+v", learningPath, results)
+	}
+}
+
+func TestSearchRepoLocalKnowledgeTokenFallbackUsesPathTokens(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	patternsDir := filepath.Join(tmp, ".agents", "patterns")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(patternsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	patternPath := filepath.Join(patternsDir, "contracts-first-wave-planning.md")
+	if err := os.WriteFile(patternPath, []byte("---\ntype: pattern\n---\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := searchRepoLocalKnowledge("contracts first wave planning interface boundary", sessionsDir, 10)
+	if err != nil {
+		t.Fatalf("searchRepoLocalKnowledge() error = %v", err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected path-token fallback result, got none")
+	}
+	if results[0].Path != patternPath {
+		t.Fatalf("top result path = %q, want %q; results=%+v", results[0].Path, patternPath, results)
+	}
+}
+
 func TestRankUniqueSearchResultsSortsDedupesAndLimits(t *testing.T) {
 	results := rankUniqueSearchResults([]searchResult{
 		{Path: "low.md", Score: 0.1},
