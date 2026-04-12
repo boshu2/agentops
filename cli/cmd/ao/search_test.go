@@ -1640,3 +1640,19 @@ func TestSearchRepoLocalKnowledgeIncludesCompiledDir(t *testing.T) {
 		t.Fatalf("result type = %q, want compiled", results[0].Type)
 	}
 }
+
+func TestRankUniqueSearchResultsSortsDedupesAndLimits(t *testing.T) {
+	results := rankUniqueSearchResults([]searchResult{
+		{Path: "low.md", Score: 0.1},
+		{Path: "dup.md", Score: 0.2},
+		{Path: "high.md", Score: 0.9},
+		{Path: "dup.md", Score: 0.8},
+	}, 2)
+
+	if len(results) != 2 {
+		t.Fatalf("results = %d, want 2: %+v", len(results), results)
+	}
+	if results[0].Path != "high.md" || results[1].Path != "dup.md" {
+		t.Fatalf("ordered unique paths = %+v, want high.md then dup.md", results)
+	}
+}

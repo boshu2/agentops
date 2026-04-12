@@ -496,79 +496,58 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	var results []searchResult
 	knowledgeRoot := knowledgeRootFromSessions(dir)
 
-	// Search learnings with maturity weighting
+	results = appendLearningSearchResults(results, query, knowledgeRoot, limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "patterns", "pattern", "patterns", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "findings", "finding", "findings", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "research", "research", "research", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "compiled", "compiled", "compiled", limit)
+	results = appendSessionSearchResults(results, query, dir, limit)
+
+	return rankUniqueSearchResults(results, limit), nil
+}
+
+func appendLearningSearchResults(results []searchResult, query, knowledgeRoot string, limit int) []searchResult {
 	learningsDir := filepath.Join(knowledgeRoot, "learnings")
-	if _, err := os.Stat(learningsDir); err == nil {
-		learningResults, err := searchLearningsWithMaturity(query, learningsDir, limit)
-		if err != nil {
-			VerbosePrintf("CASS learnings search error: %v\n", err)
-		}
-		results = append(results, learningResults...)
+	if _, err := os.Stat(learningsDir); err != nil {
+		return results
 	}
-
-	// Search patterns (established knowledge)
-	patternsDir := filepath.Join(knowledgeRoot, "patterns")
-	if _, err := os.Stat(patternsDir); err == nil {
-		patternResults, err := grepFiles(query, patternsDir, "*.md", limit)
-		if err != nil {
-			VerbosePrintf("CASS patterns search error: %v\n", err)
-		}
-		// Mark patterns as established maturity
-		for i := range patternResults {
-			patternResults[i].Type = "pattern"
-		}
-		results = append(results, patternResults...)
+	learningResults, err := searchLearningsWithMaturity(query, learningsDir, limit)
+	if err != nil {
+		VerbosePrintf("CASS learnings search error: %v\n", err)
+		return results
 	}
+	return append(results, learningResults...)
+}
 
-	findingsDir := filepath.Join(knowledgeRoot, "findings")
-	if _, err := os.Stat(findingsDir); err == nil {
-		findingResults, err := grepFiles(query, findingsDir, "*.md", limit)
-		if err != nil {
-			VerbosePrintf("CASS findings search error: %v\n", err)
-		}
-		for i := range findingResults {
-			findingResults[i].Type = "finding"
-		}
-		results = append(results, findingResults...)
+func appendKnowledgeMarkdownSearch(results []searchResult, query, knowledgeRoot, subdir, resultType, label string, limit int) []searchResult {
+	dir := filepath.Join(knowledgeRoot, subdir)
+	if _, err := os.Stat(dir); err != nil {
+		return results
 	}
-
-	// Search research files (orphaned research becomes discoverable)
-	researchDir := filepath.Join(knowledgeRoot, "research")
-	if _, err := os.Stat(researchDir); err == nil {
-		researchResults, err := grepFiles(query, researchDir, "*.md", limit)
-		if err != nil {
-			VerbosePrintf("CASS research search error: %v\n", err)
-		}
-		for i := range researchResults {
-			researchResults[i].Type = "research"
-		}
-		results = append(results, researchResults...)
+	found, err := grepFiles(query, dir, "*.md", limit)
+	if err != nil {
+		VerbosePrintf("CASS %s search error: %v\n", label, err)
+		return results
 	}
-
-	// Search compiled synthesis from ao compile.
-	compiledDir := filepath.Join(knowledgeRoot, "compiled")
-	if _, err := os.Stat(compiledDir); err == nil {
-		compiledResults, err := grepFiles(query, compiledDir, "*.md", limit)
-		if err != nil {
-			VerbosePrintf("CASS compiled search error: %v\n", err)
-		}
-		for i := range compiledResults {
-			compiledResults[i].Type = "compiled"
-		}
-		results = append(results, compiledResults...)
+	for i := range found {
+		found[i].Type = resultType
 	}
+	return append(results, found...)
+}
 
-	// Also search sessions for context
-	if _, err := os.Stat(dir); err == nil {
-		sessionResults, err := searchFiles(query, dir, limit)
-		if err != nil {
-			VerbosePrintf("CASS sessions search error: %v\n", err)
-		} else {
-			results = append(results, sessionResults...)
-		}
+func appendSessionSearchResults(results []searchResult, query, dir string, limit int) []searchResult {
+	if _, err := os.Stat(dir); err != nil {
+		return results
 	}
+	sessionResults, err := searchFiles(query, dir, limit)
+	if err != nil {
+		VerbosePrintf("CASS sessions search error: %v\n", err)
+		return results
+	}
+	return append(results, sessionResults...)
+}
 
-	// Sort by score (maturity-weighted)
+func rankUniqueSearchResults(results []searchResult, limit int) []searchResult {
 	slices.SortFunc(results, func(a, b searchResult) int {
 		return cmp.Compare(b.Score, a.Score)
 	})
@@ -587,8 +566,7 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	if limit > 0 && len(unique) > limit {
 		unique = unique[:limit]
 	}
-
-	return unique, nil
+	return unique
 }
 
 func searchCASS(query, dir string, limit int) ([]searchResult, error) {
