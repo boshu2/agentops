@@ -274,10 +274,19 @@ type CycleRecord struct {
 // goals whose result alternates between "improved" and non-"improved" >=3 times.
 func SweepOscillatingGoals(cwd string) (*OscillationResult, error) {
 	histPath := filepath.Join(cwd, ".agents", "evolve", "cycle-history.jsonl")
+	targetRecords, err := collectCycleRecordsByTarget(histPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildOscillationResult(targetRecords), nil
+}
+
+func collectCycleRecordsByTarget(histPath string) (map[string][]CycleRecord, error) {
 	f, err := os.Open(histPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &OscillationResult{}, nil
+			return map[string][]CycleRecord{}, nil
 		}
 		return nil, fmt.Errorf("open cycle history: %w", err)
 	}
@@ -286,45 +295,61 @@ func SweepOscillatingGoals(cwd string) (*OscillationResult, error) {
 	targetRecords := make(map[string][]CycleRecord)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
+		rec, ok := parseCycleRecordLine(scanner.Text())
+		if ok {
+			targetRecords[rec.Target] = append(targetRecords[rec.Target], rec)
 		}
-		var rec CycleRecord
-		if err := json.Unmarshal([]byte(line), &rec); err != nil {
-			continue
-		}
-		if rec.Target == "" {
-			continue
-		}
-		targetRecords[rec.Target] = append(targetRecords[rec.Target], rec)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scan cycle history: %w", err)
 	}
+	return targetRecords, nil
+}
 
+func parseCycleRecordLine(line string) (CycleRecord, bool) {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return CycleRecord{}, false
+	}
+	var rec CycleRecord
+	if err := json.Unmarshal([]byte(line), &rec); err != nil {
+		return CycleRecord{}, false
+	}
+	return rec, rec.Target != ""
+}
+
+func buildOscillationResult(targetRecords map[string][]CycleRecord) *OscillationResult {
 	result := &OscillationResult{}
 
+	for _, target := range sortedCycleTargets(targetRecords) {
+		if goal, ok := oscillatingGoalForTarget(target, targetRecords[target]); ok {
+			result.OscillatingGoals = append(result.OscillatingGoals, goal)
+		}
+	}
+
+	return result
+}
+
+func sortedCycleTargets(targetRecords map[string][]CycleRecord) []string {
 	targets := make([]string, 0, len(targetRecords))
 	for t := range targetRecords {
 		targets = append(targets, t)
 	}
 	sort.Strings(targets)
+	return targets
+}
 
-	for _, target := range targets {
-		records := targetRecords[target]
-		alternations := CountAlternations(records)
-		if alternations >= 3 {
-			lastCycle := records[len(records)-1].Cycle
-			result.OscillatingGoals = append(result.OscillatingGoals, OscillatingGoal{
-				Target:           target,
-				AlternationCount: alternations,
-				LastCycle:        lastCycle,
-			})
-		}
+func oscillatingGoalForTarget(target string, records []CycleRecord) (OscillatingGoal, bool) {
+	alternations := CountAlternations(records)
+	if alternations < 3 {
+		return OscillatingGoal{}, false
 	}
-
-	return result, nil
+	lastCycle := records[len(records)-1].Cycle
+	return OscillatingGoal{
+		Target:           target,
+		AlternationCount: alternations,
+		LastCycle:        lastCycle,
+	}, true
 }
 
 // CountAlternations counts how many times the result alternates between
