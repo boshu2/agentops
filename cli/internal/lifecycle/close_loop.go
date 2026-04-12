@@ -165,26 +165,8 @@ type MaturityTransitionSummary struct {
 // ProcessCitationFeedback, PromoteCitedLearnings, PromoteToMemory,
 // FindLearningFile.
 func ExecuteCloseLoop(cwd string, opts CloseLoopOpts) (*CloseLoopResult, error) {
-	if opts.ResolveIngestFiles == nil {
-		return nil, fmt.Errorf("close-loop: ResolveIngestFiles callback is required")
-	}
-	if opts.IngestFilesToPool == nil {
-		return nil, fmt.Errorf("close-loop: IngestFilesToPool callback is required")
-	}
-	if opts.AutoPromoteFn == nil {
-		return nil, fmt.Errorf("close-loop: AutoPromoteFn callback is required")
-	}
-	if opts.ProcessCitationFeedback == nil {
-		return nil, fmt.Errorf("close-loop: ProcessCitationFeedback callback is required")
-	}
-	if opts.PromoteCitedLearnings == nil {
-		return nil, fmt.Errorf("close-loop: PromoteCitedLearnings callback is required")
-	}
-	if opts.PromoteToMemory == nil {
-		return nil, fmt.Errorf("close-loop: PromoteToMemory callback is required")
-	}
-	if opts.ApplyMaturityFn == nil && opts.FindLearningFile == nil {
-		return nil, fmt.Errorf("close-loop: either ApplyMaturityFn or FindLearningFile is required")
+	if err := validateCloseLoopOpts(opts); err != nil {
+		return nil, err
 	}
 
 	result := &CloseLoopResult{}
@@ -263,6 +245,29 @@ func ExecuteCloseLoop(cwd string, opts CloseLoopOpts) (*CloseLoopResult, error) 
 	}
 
 	return result, nil
+}
+
+func validateCloseLoopOpts(opts CloseLoopOpts) error {
+	requiredCallbacks := []struct {
+		name    string
+		missing bool
+	}{
+		{name: "ResolveIngestFiles", missing: opts.ResolveIngestFiles == nil},
+		{name: "IngestFilesToPool", missing: opts.IngestFilesToPool == nil},
+		{name: "AutoPromoteFn", missing: opts.AutoPromoteFn == nil},
+		{name: "ProcessCitationFeedback", missing: opts.ProcessCitationFeedback == nil},
+		{name: "PromoteCitedLearnings", missing: opts.PromoteCitedLearnings == nil},
+		{name: "PromoteToMemory", missing: opts.PromoteToMemory == nil},
+	}
+	for _, callback := range requiredCallbacks {
+		if callback.missing {
+			return fmt.Errorf("close-loop: %s callback is required", callback.name)
+		}
+	}
+	if opts.ApplyMaturityFn == nil && opts.FindLearningFile == nil {
+		return fmt.Errorf("close-loop: either ApplyMaturityFn or FindLearningFile is required")
+	}
+	return nil
 }
 
 // applyAllMaturityTransitionsInternal scans .agents/learnings and
