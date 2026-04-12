@@ -168,6 +168,7 @@ for extra_test in \
     "$SCRIPT_DIR/test-tuning-defaults.sh" \
     "$SCRIPT_DIR/test-first-smoke.sh" \
     "$SCRIPT_DIR/test-codex-override-coverage.sh" \
+    "$SCRIPT_DIR/test-crank-wave-checkpoint.sh" \
     "$SCRIPT_DIR/test-repo-native-orchestration.sh" \
     "$SCRIPT_DIR/test-evolve-autonomy.sh"; do
     if [ -f "$extra_test" ]; then

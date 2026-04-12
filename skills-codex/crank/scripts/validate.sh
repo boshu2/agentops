@@ -14,6 +14,8 @@ check "SKILL.md mentions worker concept" "grep -qi 'worker' '$SKILL_DIR/SKILL.md
 check "SKILL.md requires metadata.issue_type" "grep -q 'metadata.issue_type' '$SKILL_DIR/SKILL.md'"
 check "Lead-only commit pattern documented" "grep -rqi 'lead.*commit\|lead-only' '$SKILL_DIR/'"
 check "FIRE loop documented" "grep -q 'FIRE' '$SKILL_DIR/SKILL.md'"
+check "wave checkpoint validator exists" "[ -x '$SKILL_DIR/scripts/validate-wave-checkpoint.sh' ]"
+check "SKILL.md runs wave checkpoint validator" "grep -q 'validate-wave-checkpoint.sh' '$SKILL_DIR/SKILL.md'"
 check "No phantom bd cook refs" "! grep -q 'bd cook' '$SKILL_DIR/SKILL.md'"
 check "No phantom gt convoy refs" "! grep -q 'gt convoy' '$SKILL_DIR/SKILL.md'"
 
