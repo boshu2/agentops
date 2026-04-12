@@ -23,6 +23,7 @@ check "SKILL.md mentions default mode" "grep -q 'default' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions --deep mode" "grep -q '\-\-deep' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions --mixed mode" "grep -q '\-\-mixed' '$SKILL_DIR/SKILL.md'"
 check "Output directory pattern documented" "grep -q '\.agents/council/' '$SKILL_DIR/SKILL.md'"
+check "mocked --mixed artifact smoke reads 3 runtime-native + 3 Codex outputs" "bash '$SKILL_DIR/scripts/validate-mixed-artifacts.sh'"
 # Behavioral contracts: verify key features remain documented
 check "SKILL.md mentions --debate mode" "grep -q '\-\-debate' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions --quick mode" "grep -q '\-\-quick' '$SKILL_DIR/SKILL.md'"
