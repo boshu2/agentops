@@ -30,7 +30,7 @@ skills:
 commands:
   - /research
   - /research-multi
-  - /learn
+  - /forge
   - /retro
   - /update-docs
   - /create-architecture-documentation
