@@ -865,6 +865,9 @@ ao evolve [goal] [flags]
       --cycle-retries int                 Automatic retry count per cycle after a failed attempt
       --detached-branch-prefix string     Branch prefix used by detached HEAD self-heal (default "codex/auto-rpi")
       --detached-heal                     Auto-create/switch to a named branch when HEAD is detached
+      --dream-first                       Run Dream knowledge sub-cycle before code cycles
+      --dream-only                        Knowledge compounding only, no code cycles
+      --dream-timeout string              Timeout for the Dream sub-cycle (default "30m")
       --ensure-cleanup                    Run stale-run cleanup after each cycle (cleanup guarantee)
       --failure-policy string             Cycle failure policy: stop|continue (default "stop")
       --gate-fast-script string           Fast validation gate script path (default "scripts/validate-go-fast.sh")
