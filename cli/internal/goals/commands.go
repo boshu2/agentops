@@ -197,6 +197,16 @@ func RunValidate(opts ValidateOptions) error {
 	result.Format = gf.Format
 	result.Directives = len(gf.Directives)
 
+	appendGoalDirectiveWarnings(&result, gf)
+	appendGoalValidationErrors(&result, gf)
+	appendUnwiredScriptWarnings(&result, gf)
+	appendMissingGoalScriptErrors(&result, gf)
+
+	result.Valid = len(result.Errors) == 0
+	return OutputValidateResult(opts.Stdout, opts.JSON, result)
+}
+
+func appendGoalDirectiveWarnings(result *ValidateResult, gf *GoalFile) {
 	if gf.Format == "md" && gf.Mission == "" {
 		result.Warnings = append(result.Warnings, "empty mission")
 	}
@@ -208,41 +218,54 @@ func RunValidate(opts ValidateOptions) error {
 			result.Warnings = append(result.Warnings, fmt.Sprintf("directive %d %q: missing steer", d.Number, d.Title))
 		}
 	}
+}
 
-	if errs := ValidateGoals(gf); len(errs) > 0 {
-		for _, e := range errs {
-			result.Errors = append(result.Errors, e.Error())
-		}
+func appendGoalValidationErrors(result *ValidateResult, gf *GoalFile) {
+	for _, err := range ValidateGoals(gf) {
+		result.Errors = append(result.Errors, err.Error())
 	}
+}
 
+func appendUnwiredScriptWarnings(result *ValidateResult, gf *GoalFile) {
 	scriptFiles, _ := filepath.Glob("scripts/check-*.sh")
 	for _, sf := range scriptFiles {
 		base := filepath.Base(sf)
-		found := false
-		for _, g := range gf.Goals {
-			if strings.Contains(g.Check, base) {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !goalsReferenceScript(gf.Goals, base) {
 			result.Warnings = append(result.Warnings, fmt.Sprintf("script %s not wired to any goal", base))
 		}
 	}
+}
 
-	for _, g := range gf.Goals {
-		if strings.HasPrefix(g.Check, "scripts/") {
-			parts := strings.Fields(g.Check)
-			if len(parts) > 0 {
-				if _, err := os.Stat(parts[0]); os.IsNotExist(err) {
-					result.Errors = append(result.Errors, fmt.Sprintf("goal %s: script %s does not exist", g.ID, parts[0]))
-				}
-			}
+func goalsReferenceScript(goals []Goal, scriptBase string) bool {
+	for _, g := range goals {
+		if strings.Contains(g.Check, scriptBase) {
+			return true
 		}
 	}
+	return false
+}
 
-	result.Valid = len(result.Errors) == 0
-	return OutputValidateResult(opts.Stdout, opts.JSON, result)
+func appendMissingGoalScriptErrors(result *ValidateResult, gf *GoalFile) {
+	for _, g := range gf.Goals {
+		scriptPath, ok := goalScriptPath(g.Check)
+		if !ok {
+			continue
+		}
+		if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
+			result.Errors = append(result.Errors, fmt.Sprintf("goal %s: script %s does not exist", g.ID, scriptPath))
+		}
+	}
+}
+
+func goalScriptPath(check string) (string, bool) {
+	if !strings.HasPrefix(check, "scripts/") {
+		return "", false
+	}
+	parts := strings.Fields(check)
+	if len(parts) == 0 {
+		return "", false
+	}
+	return parts[0], true
 }
 
 // OutputValidateResult formats and writes a ValidateResult.
