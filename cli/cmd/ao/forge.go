@@ -855,7 +855,7 @@ func runMinePassAdapter(cwd string, sessionsDir string, sinceTime time.Time, qui
 }
 
 // runForgeTier1 dispatches --tier=1 to the local-LLM summarization pipeline.
-// Thin cobra wiring — all logic lives in internal/llm/forge_tier1.go.
+// Thin cobra wiring: all pipeline logic lives in cli/internal/llm.
 func runForgeTier1(w io.Writer, files []string) error {
 	if forgeTier1Model == "" {
 		return fmt.Errorf("--tier=1 requires --model (e.g. --model=gemma2:9b)")
