@@ -88,11 +88,15 @@ func NewSummarizer(llm Generator) *Summarizer {
 	return &Summarizer{llm: llm}
 }
 
+func renderPrompt(template, input string) string {
+	return strings.Replace(template, "%s", input, 1)
+}
+
 // SummarizeChunk renders the chunk into PromptTemplate, calls the LLM once,
 // tolerates a wrapping ```markdown fence, and parses the result into a
 // ChunkNote. Returns an error if any of the required sections are missing.
 func (s *Summarizer) SummarizeChunk(chunk TurnChunk) (ChunkNote, error) {
-	prompt := fmt.Sprintf(PromptTemplate, chunk.Prompt())
+	prompt := renderPrompt(PromptTemplate, chunk.Prompt())
 	raw, err := s.llm.Generate(prompt)
 	if err != nil {
 		return ChunkNote{}, fmt.Errorf("llm generate chunk %d: %w", chunk.Index, err)

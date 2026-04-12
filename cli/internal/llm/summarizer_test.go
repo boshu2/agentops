@@ -139,6 +139,25 @@ func TestSummarizer_PromptContainsSpikeTemplate(t *testing.T) {
 	}
 }
 
+func TestRenderPrompt_AllowsLiteralPercentSigns(t *testing.T) {
+	template := "Progress: 100% complete\n\nINPUT:\n%s"
+	input := "USER:\ncoverage is 99.5%\nASSISTANT:\nship it"
+	got := renderPrompt(template, input)
+
+	for _, want := range []string{
+		"Progress: 100% complete",
+		"coverage is 99.5%",
+		"ASSISTANT:\nship it",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("rendered prompt missing %q\nfull prompt:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "%!") {
+		t.Fatalf("rendered prompt contains fmt interpolation artifact: %s", got)
+	}
+}
+
 func TestParseEntities_HandlesWikilinks(t *testing.T) {
 	body := `- [[file:/foo/bar.go]]
 - [[bead:na-123]]
