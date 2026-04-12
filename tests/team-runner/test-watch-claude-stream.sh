@@ -58,6 +58,14 @@ assert_eq "exit code 1" "1" "$T4_EXIT"
 assert_eq "status error" "error" "$(jq -r '.status' "$TMPDIR/t4-status.json")"
 assert_eq "output absent" "false" "$(test -f "$TMPDIR/t4-output.json" && echo true || echo false)"
 
+# Test 5: Event then EOF → exit 1, status=eof, not timeout
+echo "Test 5: Event then EOF"
+echo '{"type":"system","subtype":"init"}' | bash "$WATCHER" "$TMPDIR/t5-status.json" "$TMPDIR/t5-output.json"
+T5_EXIT=$?
+assert_eq "exit code 1" "1" "$T5_EXIT"
+assert_eq "status eof" "eof" "$(jq -r '.status' "$TMPDIR/t5-status.json")"
+assert_eq "events count 1" "1" "$(jq -r '.events_count' "$TMPDIR/t5-status.json")"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

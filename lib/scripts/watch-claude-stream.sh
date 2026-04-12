@@ -7,7 +7,7 @@
 #
 # Exit codes:
 #   0 = completed (result success with structured_output received)
-#   1 = error (stream error, missing structured_output, or no events received)
+#   1 = error (stream error, EOF before result, missing structured_output, or no events received)
 #   2 = timeout (no events for CLAUDE_IDLE_TIMEOUT seconds)
 #
 # Environment:
@@ -25,6 +25,7 @@ output_tokens=0
 start_time=$(date +%s)
 completed=false
 timeout_triggered=""
+eof_triggered=""
 
 write_status() {
     local end_time
@@ -39,6 +40,8 @@ write_status() {
     elif [[ -n "$timeout_triggered" ]]; then
         status="timeout"
         exit_code=2
+    elif [[ -n "$eof_triggered" ]]; then
+        status="eof"
     fi
 
     cat > "$STATUS_FILE" <<STATUSEOF
@@ -48,7 +51,15 @@ STATUSEOF
     exit "$exit_code"
 }
 
-while IFS= read -r -t "$IDLE_TIMEOUT" line; do
+read_status=0
+while true; do
+    if IFS= read -r -t "$IDLE_TIMEOUT" line; then
+        :
+    else
+        read_status=$?
+        break
+    fi
+
     [[ -z "$line" ]] && continue
     events_count=$((events_count + 1))
 
@@ -85,8 +96,11 @@ done
 
 if [[ "$completed" != "true" && $events_count -eq 0 ]]; then
     write_status
-elif [[ "$completed" != "true" ]]; then
+elif [[ "$completed" != "true" && $read_status -gt 128 ]]; then
     timeout_triggered="true"
+    write_status
+elif [[ "$completed" != "true" ]]; then
+    eof_triggered="true"
     write_status
 fi
 

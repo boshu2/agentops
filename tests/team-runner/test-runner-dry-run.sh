@@ -12,7 +12,8 @@ TMPDIR=$(mktemp -d)
 cleanup() {
     rm -rf "$TMPDIR" \
         "$REPO_ROOT/.agents/teams/test-run-001" \
-        "$REPO_ROOT/.agents/teams/test-run-claude-001"
+        "$REPO_ROOT/.agents/teams/test-run-claude-001" \
+        "$REPO_ROOT/.agents/teams/test-run-claude-crash"
 }
 trap cleanup EXIT
 
@@ -80,6 +81,40 @@ assert_contains "shows json-schema" "json-schema" "$CLAUDE_OUTPUT"
 assert_contains "claude uses full skill permissions" "dangerously-skip-permissions" "$CLAUDE_OUTPUT"
 assert_contains "shows claude runtime" "Runtime: claude" "$CLAUDE_OUTPUT"
 assert_contains "shows claude agent name" "claude-agent-1" "$CLAUDE_OUTPUT"
+
+# Test 6: Claude subprocess crash is reported before watcher EOF
+echo "Test 6: Claude process crash reporting"
+mkdir -p "$TMPDIR/bin"
+cat > "$TMPDIR/bin/claude" <<'CLAUDEEOF'
+#!/usr/bin/env bash
+printf '%s\n' '{"type":"system","subtype":"init"}'
+exit 42
+CLAUDEEOF
+chmod +x "$TMPDIR/bin/claude"
+
+cat > "$TMPDIR/sample-team-spec-claude-crash.json" <<'JSON'
+{
+  "team_id": "test-run-claude-crash",
+  "runtime": "claude",
+  "repo_path": ".",
+  "agents": [
+    {
+      "name": "claude-crash-agent",
+      "prompt": "Crash after one event",
+      "files": ["claude-output.txt"],
+      "output_file": "result.json",
+      "sandbox_level": "workspace-write",
+      "timeout_ms": 30000
+    }
+  ]
+}
+JSON
+
+CLAUDE_CRASH_OUTPUT=$(cd "$REPO_ROOT" && PATH="$TMPDIR/bin:$PATH" bash "$RUNNER" "$TMPDIR/sample-team-spec-claude-crash.json" 2>&1)
+CLAUDE_CRASH_EXIT=$?
+assert_eq "claude crash exit code 1" "1" "$CLAUDE_CRASH_EXIT"
+assert_contains "reports claude exit" "FAIL:claude_exit_42" "$CLAUDE_CRASH_OUTPUT"
+assert_contains "report shows eof" "| claude-crash-agent | eof |" "$(cat "$REPO_ROOT/.agents/teams/test-run-claude-crash/team-report.md")"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

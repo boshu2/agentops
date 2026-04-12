@@ -257,6 +257,17 @@ validate_agent() {
     local watcher_status
     watcher_status=$(jq -r '.status' "$status_file" 2>/dev/null)
 
+    # Check runtime exit code before generic watcher status so a subprocess
+    # crash is not masked as EOF/timeout after partial JSONL output.
+    if [[ -f "$process_exit" ]]; then
+        local exit_code
+        exit_code=$(cat "$process_exit")
+        if [[ "$exit_code" != "0" ]]; then
+            echo "FAIL:${PROCESS_LABEL}_exit_${exit_code}"
+            return 1
+        fi
+    fi
+
     if [[ "$watcher_status" == "timeout" ]]; then
         echo "FAIL:timeout"
         return 1
@@ -265,16 +276,6 @@ validate_agent() {
     if [[ "$watcher_status" != "completed" ]]; then
         echo "FAIL:watcher_${watcher_status}"
         return 1
-    fi
-
-    # Check runtime exit code
-    if [[ -f "$process_exit" ]]; then
-        local exit_code
-        exit_code=$(cat "$process_exit")
-        if [[ "$exit_code" != "0" ]]; then
-            echo "FAIL:${PROCESS_LABEL}_exit_${exit_code}"
-            return 1
-        fi
     fi
 
     # Check output file exists and is valid JSON
