@@ -15,6 +15,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/forge"
 	"github.com/boshu2/agentops/cli/internal/formatter"
+	"github.com/boshu2/agentops/cli/internal/llm"
 	"github.com/boshu2/agentops/cli/internal/parser"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -27,6 +28,9 @@ var (
 	forgeQueue       bool
 	forgeMdQuiet     bool
 	forgeMdQueue     bool
+	forgeTier        int
+	forgeTier1Model  string
+	forgeLLMEndpoint string
 )
 
 const (
@@ -119,6 +123,9 @@ func init() {
 	forgeTranscriptCmd.Flags().BoolVar(&forgeLastSession, "last-session", false, "Process only the most recent transcript")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQuiet, "quiet", false, "Suppress all output (for hooks)")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQueue, "queue", false, "Queue session for learning extraction at next session start")
+	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 local-LLM summarization pipeline (requires --model, --llm-endpoint optional)")
+	forgeTranscriptCmd.Flags().StringVar(&forgeTier1Model, "model", "", "LLM model tag for --tier=1 (e.g. gemma2:9b)")
+	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
 
 	// Markdown flags
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQuiet, "quiet", false, "Suppress all output (for hooks)")
@@ -258,6 +265,10 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 
 	if len(files) == 0 {
 		return noFilesError(forgeQuiet, "no files found matching patterns")
+	}
+
+	if forgeTier == 1 {
+		return runForgeTier1(w, files)
 	}
 
 	if !forgeQuiet {
@@ -804,4 +815,24 @@ func runMinePassAdapter(cwd string, sessionsDir string, sinceTime time.Time, qui
 		SinceTime:   sinceTime,
 		Quiet:       quiet,
 	})
+}
+
+// runForgeTier1 dispatches --tier=1 to the local-LLM summarization pipeline.
+// Thin cobra wiring — all logic lives in internal/llm/forge_tier1.go.
+func runForgeTier1(w io.Writer, files []string) error {
+	if forgeTier1Model == "" {
+		return fmt.Errorf("--tier=1 requires --model (e.g. --model=gemma2:9b)")
+	}
+	cwd, _ := os.Getwd()
+	outDir := filepath.Join(cwd, ".agents", "ao", "sessions")
+	_, err := llm.RunForgeTier1(llm.Tier1Options{
+		SourcePaths: files,
+		OutputDir:   outDir,
+		Model:       forgeTier1Model,
+		Endpoint:    forgeLLMEndpoint,
+		Quiet:       forgeQuiet,
+		Writer:      w,
+		Workspace:   cwd,
+	})
+	return err
 }
