@@ -893,6 +893,55 @@ func TestForge_queueForExtraction(t *testing.T) {
 	}
 }
 
+func TestRunForgeTier1_EnqueuesDreamCuratorJobWhenWorkerConfigured(t *testing.T) {
+	tmp := t.TempDir()
+	workerDir := filepath.Join(tmp, "dream-worker")
+	sourcePath := filepath.Join(tmp, "session.jsonl")
+	if err := os.WriteFile(sourcePath, []byte(`{"type":"message","role":"user","content":"summarize me"}`+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(tmp, "missing-config.yaml"))
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", workerDir)
+
+	origQuiet := forgeQuiet
+	origModel := forgeTier1Model
+	defer func() {
+		forgeQuiet = origQuiet
+		forgeTier1Model = origModel
+	}()
+	forgeQuiet = true
+	forgeTier1Model = ""
+
+	if err := runForgeTier1(io.Discard, []string{sourcePath}); err != nil {
+		t.Fatalf("runForgeTier1: %v", err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(workerDir, "queue"))
+	if err != nil {
+		t.Fatalf("read queue: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("queue entries = %d, want 1", len(entries))
+	}
+	data, err := os.ReadFile(filepath.Join(workerDir, "queue", entries[0].Name()))
+	if err != nil {
+		t.Fatalf("read job: %v", err)
+	}
+	var job curatorJob
+	if err := json.Unmarshal(data, &job); err != nil {
+		t.Fatalf("parse job: %v\n%s", err, string(data))
+	}
+	if job.Kind != "ingest-claude-session" {
+		t.Fatalf("job kind = %q, want ingest-claude-session", job.Kind)
+	}
+	if job.Source == nil || job.Source.Path != sourcePath {
+		t.Fatalf("job source = %+v, want path %q", job.Source, sourcePath)
+	}
+	if job.Source.ChunkStart != 0 || job.Source.ChunkEnd != 1 {
+		t.Fatalf("job chunk = %d..%d, want 0..1", job.Source.ChunkStart, job.Source.ChunkEnd)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // finalizeTranscriptSession
 // ---------------------------------------------------------------------------

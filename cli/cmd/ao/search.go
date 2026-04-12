@@ -560,7 +560,7 @@ func appendDreamVaultSourceSearch(results []searchResult, query string, limit in
 func configuredDreamVaultSourceRoots() []string {
 	resolved := config.Resolve("", "", false)
 	vaultDir, _ := resolved.DreamCuratorVaultDir.Value.(string)
-	vaultDir = expandConfiguredSearchPath(vaultDir)
+	vaultDir = expandConfiguredPath(vaultDir)
 	if vaultDir == "" {
 		return nil
 	}
@@ -571,7 +571,7 @@ func configuredDreamVaultSourceRoots() []string {
 	return nil
 }
 
-func expandConfiguredSearchPath(path string) string {
+func expandConfiguredPath(path string) string {
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return ""

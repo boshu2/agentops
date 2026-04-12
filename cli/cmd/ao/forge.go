@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/forge"
 	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/llm"
@@ -157,7 +158,7 @@ func init() {
 	forgeTranscriptCmd.Flags().BoolVar(&forgeLastSession, "last-session", false, "Process only the most recent transcript")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQuiet, "quiet", false, "Suppress all output (for hooks)")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQueue, "queue", false, "Queue session for learning extraction at next session start")
-	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 local-LLM summarization pipeline (requires --model, --llm-endpoint optional)")
+	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 transcript processing: enqueue to configured Dream worker, otherwise use local LLM with --model")
 	forgeTranscriptCmd.Flags().StringVar(&forgeTier1Model, "model", "", "LLM model tag for --tier=1 (e.g. gemma2:9b)")
 	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
 
@@ -997,9 +998,12 @@ func runMinePassAdapter(cwd string, sessionsDir string, sinceTime time.Time, qui
 	})
 }
 
-// runForgeTier1 dispatches --tier=1 to the local-LLM summarization pipeline.
-// Thin cobra wiring: all pipeline logic lives in cli/internal/llm.
+// runForgeTier1 dispatches --tier=1. A configured Dream worker queue wins; when
+// absent, the local-LLM fallback remains available through cli/internal/llm.
 func runForgeTier1(w io.Writer, files []string) error {
+	if handled, err := runForgeTier1ViaCuratorQueue(w, files); handled || err != nil {
+		return err
+	}
 	if forgeTier1Model == "" {
 		return fmt.Errorf("--tier=1 requires --model (e.g. --model=gemma2:9b)")
 	}
@@ -1015,4 +1019,43 @@ func runForgeTier1(w io.Writer, files []string) error {
 		Workspace:   cwd,
 	})
 	return err
+}
+
+func runForgeTier1ViaCuratorQueue(w io.Writer, files []string) (bool, error) {
+	workerDir := configuredDreamCuratorWorkerDir()
+	if workerDir == "" {
+		return false, nil
+	}
+	queueDir := filepath.Join(workerDir, "queue")
+	if err := os.MkdirAll(queueDir, 0o755); err != nil {
+		return true, fmt.Errorf("create Dream curator queue dir: %w", err)
+	}
+
+	for _, sourcePath := range files {
+		job := curatorJob{
+			ID:         buildCuratorID("ingest-claude-session"),
+			Kind:       "ingest-claude-session",
+			CreatedAt:  time.Now().UTC().Format(time.RFC3339),
+			MaxRetries: 1,
+			Source: &curatorJobSource{
+				Path:       sourcePath,
+				ChunkStart: 0,
+				ChunkEnd:   1,
+			},
+		}
+		if err := writeJSONAtomic(filepath.Join(queueDir, job.ID+".json"), job); err != nil {
+			return true, fmt.Errorf("enqueue Dream curator job for %s: %w", sourcePath, err)
+		}
+	}
+
+	if !forgeQuiet {
+		fmt.Fprintf(w, "Queued %d transcript file(s) for Dream curator Tier 1: %s\n", len(files), queueDir)
+	}
+	return true, nil
+}
+
+func configuredDreamCuratorWorkerDir() string {
+	resolved := config.Resolve("", "", false)
+	workerDir, _ := resolved.DreamCuratorWorkerDir.Value.(string)
+	return expandConfiguredPath(workerDir)
 }

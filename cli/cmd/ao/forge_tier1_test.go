@@ -15,6 +15,9 @@ func TestForgeTranscriptTier1FlagsRegistered(t *testing.T) {
 }
 
 func TestRunForgeTier1RequiresModel(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
+
 	oldModel := forgeTier1Model
 	oldEndpoint := forgeLLMEndpoint
 	oldQuiet := forgeQuiet

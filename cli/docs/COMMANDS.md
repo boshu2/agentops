@@ -2312,7 +2312,7 @@ ao forge transcript <path-or-glob> [flags]
       --model string          LLM model tag for --tier=1 (e.g. gemma2:9b)
       --queue                 Queue session for learning extraction at next session start
       --quiet                 Suppress all output (for hooks)
-      --tier int              Tier 1 local-LLM summarization pipeline (requires --model, --llm-endpoint optional)
+      --tier int              Tier 1 transcript processing: enqueue to configured Dream worker, otherwise use local LLM with --model
 ```
 
 ---
