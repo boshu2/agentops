@@ -3,8 +3,8 @@ utility: 0.7952
 last_reward: 0.80
 reward_count: 132
 last_reward_at: 2026-04-11T20:02:42-04:00
-confidence: 0.9618
-last_decay_at: 2026-04-11T23:02:47-04:00
+confidence: 0.9541
+last_decay_at: 2026-04-12T12:33:50-04:00
 helpful_count: 131
 maturity: established
 maturity_changed_at: 2026-03-05T15:24:08-05:00
