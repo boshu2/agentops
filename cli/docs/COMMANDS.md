@@ -2284,10 +2284,12 @@ ao forge review [flags]
 **Flags:**
 
 ```
-      --dry-run               Show what would be promoted without writing
-      --eval string           Evaluate review decisions against a labeled JSON manifest without writing
-  -h, --help                  help for review
-      --sessions-dir string   Directory containing session pages (default: .agents/ao/sessions)
+      --dry-run                    Show what would be promoted without writing
+      --eval string                Evaluate review decisions against a labeled JSON manifest without writing
+  -h, --help                       help for review
+      --reviewer-endpoint string   Ollama HTTP endpoint for --reviewer-model (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --reviewer-model string      LLM model tag for Tier 2 reviewer decisions (e.g. gemma2:9b)
+      --sessions-dir string        Directory containing session pages (default: .agents/ao/sessions)
 ```
 
 #### `ao forge transcript`

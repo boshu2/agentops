@@ -113,9 +113,13 @@ Pass --eval to dry-run the same structural gate against a labeled JSON
 manifest without mutating session pages. Eval case expected values are
 "promote" or "skip".
 
+Pass --reviewer-model to add a configured local LLM reviewer after the
+structural gate. The reviewer uses the same Ollama readiness checks as Tier 1.
+
 Examples:
   ao forge review
   ao forge review --dry-run
+  ao forge review --reviewer-model gemma2:9b
   ao forge review --eval .agents/rpi/forge-review-eval.json --json`,
 	RunE: runForgeReview,
 }
@@ -145,6 +149,8 @@ func init() {
 	forgeCmd.AddCommand(forgeReviewCmd)
 	forgeReviewCmd.Flags().BoolVar(&forgeReviewDryRun, "dry-run", false, "Show what would be promoted without writing")
 	forgeReviewCmd.Flags().String("eval", "", "Evaluate review decisions against a labeled JSON manifest without writing")
+	forgeReviewCmd.Flags().String("reviewer-endpoint", "", "Ollama HTTP endpoint for --reviewer-model (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
+	forgeReviewCmd.Flags().String("reviewer-model", "", "LLM model tag for Tier 2 reviewer decisions (e.g. gemma2:9b)")
 	forgeReviewCmd.Flags().String("sessions-dir", "", "Directory containing session pages (default: .agents/ao/sessions)")
 
 	// Transcript flags
@@ -169,6 +175,10 @@ func runForgeReview(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	reviewer, err := resolveForgeReviewReviewer(cmd)
+	if err != nil {
+		return err
+	}
 	evalPath, err := cmd.Flags().GetString("eval")
 	if err != nil {
 		return err
@@ -177,6 +187,7 @@ func runForgeReview(cmd *cobra.Command, args []string) error {
 		report, err := llm.EvaluateReviewDraftSessions(llm.ReviewEvalOptions{
 			SessionsDir:  sessionsDir,
 			ManifestPath: evalPath,
+			Reviewer:     reviewer,
 		})
 		if err != nil {
 			return err
@@ -188,14 +199,13 @@ func runForgeReview(cmd *cobra.Command, args []string) error {
 		SessionsDir: sessionsDir,
 		DryRun:      forgeReviewDryRun,
 		Quiet:       forgeQuiet,
+		Reviewer:    reviewer,
 	})
 	if err != nil {
 		return err
 	}
 	if !forgeQuiet {
-		w := cmd.OutOrStdout()
-		fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
-			result.Reviewed, result.Skipped, len(result.Errors))
+		return writeForgeReviewResult(cmd.OutOrStdout(), result)
 	}
 	return nil
 }
@@ -212,6 +222,61 @@ func resolveForgeReviewSessionsDir(cmd *cobra.Command, cwd string) (string, erro
 		return filepath.Clean(sessionsDir), nil
 	}
 	return filepath.Clean(filepath.Join(cwd, sessionsDir)), nil
+}
+
+func resolveForgeReviewReviewer(cmd *cobra.Command) (llm.PageReviewer, error) {
+	model, err := cmd.Flags().GetString("reviewer-model")
+	if err != nil {
+		return nil, err
+	}
+	endpoint, err := cmd.Flags().GetString("reviewer-endpoint")
+	if err != nil {
+		return nil, err
+	}
+	model = strings.TrimSpace(model)
+	endpoint = strings.TrimSpace(endpoint)
+	if model == "" {
+		if endpoint != "" {
+			return nil, fmt.Errorf("--reviewer-endpoint requires --reviewer-model")
+		}
+		return nil, nil
+	}
+
+	gen, err := llm.NewOllamaClient(llm.OllamaOptions{
+		Endpoint: endpoint,
+		Model:    model,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("build Tier 2 reviewer: %w", err)
+	}
+	return llm.NewGeneratorReviewer(gen), nil
+}
+
+type forgeReviewJSONResult struct {
+	Reviewed      int      `json:"reviewed"`
+	Skipped       int      `json:"skipped"`
+	Errors        int      `json:"errors"`
+	ErrorMessages []string `json:"error_messages,omitempty"`
+}
+
+func writeForgeReviewResult(w io.Writer, result *llm.ReviewResult) error {
+	if GetOutput() == "json" {
+		out := forgeReviewJSONResult{
+			Reviewed: result.Reviewed,
+			Skipped:  result.Skipped,
+			Errors:   len(result.Errors),
+		}
+		for _, err := range result.Errors {
+			out.ErrorMessages = append(out.ErrorMessages, err.Error())
+		}
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(out)
+	}
+
+	fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
+		result.Reviewed, result.Skipped, len(result.Errors))
+	return nil
 }
 
 func writeForgeReviewEvalReport(w io.Writer, report *llm.ReviewEvalReport) error {

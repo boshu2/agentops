@@ -20,6 +20,10 @@ type ReviewOptions struct {
 
 	// Quiet suppresses progress output.
 	Quiet bool
+
+	// Reviewer optionally makes the final promote/skip decision after the
+	// structural quality gate passes.
+	Reviewer PageReviewer
 }
 
 // ReviewResult summarizes one Tier 2 review pass.
@@ -33,6 +37,7 @@ type ReviewResult struct {
 type ReviewEvalOptions struct {
 	SessionsDir  string
 	ManifestPath string
+	Reviewer     PageReviewer
 }
 
 // ReviewEvalManifest labels session pages with the expected review decision.
@@ -74,10 +79,72 @@ type ReviewEvalResult struct {
 	ErrorMessage string `json:"error,omitempty"`
 }
 
+// ReviewDecision is a parsed Tier 2 reviewer verdict.
+type ReviewDecision struct {
+	Promote bool
+	Reason  string
+}
+
+// PageReviewer makes a Tier 2 promote/skip decision for one draft session page.
+type PageReviewer interface {
+	ReviewPage(page string) (ReviewDecision, error)
+	ReviewerID() string
+}
+
+// GeneratorReviewer adapts a Generator into a page reviewer.
+type GeneratorReviewer struct {
+	gen Generator
+}
+
+const reviewPromptTemplate = `You are a Tier 2 reviewer for an AgentOps session wiki page.
+
+Decide whether this draft page should be promoted to status:reviewed.
+
+Promote only if the page has a clear intent, useful summary, relevant entities,
+and a concrete assistant summary. Skip pages that are empty, low-signal,
+unsafe, malformed, mostly tool noise, or not useful as durable knowledge.
+
+Return exactly two lines:
+DECISION: promote|skip
+REASON: <one concise sentence>
+
+PAGE:
+%s`
+
+const reviewPromptPageMaxChars = 6000
+
+// NewGeneratorReviewer returns a reviewer that asks the configured Generator for
+// a strict promote/skip decision.
+func NewGeneratorReviewer(gen Generator) *GeneratorReviewer {
+	return &GeneratorReviewer{gen: gen}
+}
+
+// ReviewerID identifies the backend in reviewed_by frontmatter.
+func (r *GeneratorReviewer) ReviewerID() string {
+	if r == nil || r.gen == nil {
+		return "ao-forge-tier2-llm"
+	}
+	return safeReviewMetadata("ao-forge-tier2-llm-" + r.gen.ModelName())
+}
+
+// ReviewPage sends one page through the generator and parses its strict verdict.
+func (r *GeneratorReviewer) ReviewPage(page string) (ReviewDecision, error) {
+	if r == nil || r.gen == nil {
+		return ReviewDecision{}, fmt.Errorf("reviewer: generator is required")
+	}
+	promptPage := truncate(page, reviewPromptPageMaxChars)
+	raw, err := r.gen.Generate(fmt.Sprintf(reviewPromptTemplate, promptPage))
+	if err != nil {
+		return ReviewDecision{}, fmt.Errorf("reviewer generate: %w", err)
+	}
+	return parseReviewDecision(raw)
+}
+
 // ReviewDraftSessions scans SessionsDir for pages with status:draft and
 // promotes them to status:reviewed by rewriting the frontmatter in place.
 // v1 uses a simple structural check (required sections present, confidence >=
-// 0.5) rather than a full Claude/Codex re-review.
+// 0.5). When Reviewer is set, the structural pass is followed by a configured
+// LLM-backed final decision.
 func ReviewDraftSessions(opts ReviewOptions) (*ReviewResult, error) {
 	if opts.SessionsDir == "" {
 		return nil, fmt.Errorf("review: SessionsDir is required")
@@ -96,7 +163,10 @@ func ReviewDraftSessions(opts ReviewOptions) (*ReviewResult, error) {
 			continue
 		}
 		path := filepath.Join(opts.SessionsDir, e.Name())
-		promoted, err := reviewOnePage(path, opts.DryRun)
+		promoted, err := reviewOnePageWithOptions(path, reviewPageOptions{
+			DryRun:   opts.DryRun,
+			Reviewer: opts.Reviewer,
+		})
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Errorf("%s: %w", e.Name(), err))
 			result.Skipped++
@@ -144,7 +214,7 @@ func EvaluateReviewDraftSessions(opts ReviewEvalOptions) (*ReviewEvalReport, err
 	}
 
 	for _, evalCase := range manifest.Cases {
-		result := evaluateReviewEvalCase(sessionsDir, evalCase)
+		result := evaluateReviewEvalCase(sessionsDir, evalCase, opts.Reviewer)
 		report.Results = append(report.Results, result)
 		if result.Passed {
 			report.Passed++
@@ -193,9 +263,12 @@ func LoadReviewEvalManifest(path string) (ReviewEvalManifest, error) {
 	return manifest, nil
 }
 
-func evaluateReviewEvalCase(sessionsDir string, evalCase ReviewEvalCase) ReviewEvalResult {
+func evaluateReviewEvalCase(sessionsDir string, evalCase ReviewEvalCase, reviewer PageReviewer) ReviewEvalResult {
 	path := resolveReviewEvalCasePath(sessionsDir, evalCase.Path)
-	promoted, err := reviewOnePage(path, true)
+	promoted, err := reviewOnePageWithOptions(path, reviewPageOptions{
+		DryRun:   true,
+		Reviewer: reviewer,
+	})
 	actual := "skip"
 	if promoted {
 		actual = "promote"
@@ -236,10 +309,20 @@ func validReviewEvalDecision(decision string) bool {
 	return decision == "promote" || decision == "skip"
 }
 
+type reviewPageOptions struct {
+	DryRun     bool
+	Reviewer   PageReviewer
+	ReviewedBy string
+}
+
 // reviewOnePage reads a session page, checks if it's status:draft with
 // passing structural quality, and promotes to status:reviewed. Returns
 // true if the page was promoted.
 func reviewOnePage(path string, dryRun bool) (bool, error) {
+	return reviewOnePageWithOptions(path, reviewPageOptions{DryRun: dryRun})
+}
+
+func reviewOnePageWithOptions(path string, opts reviewPageOptions) (bool, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
@@ -251,20 +334,23 @@ func reviewOnePage(path string, dryRun bool) (bool, error) {
 		return false, nil
 	}
 
-	// Structural quality gate: all 4 section headers must be present, and
+	// Structural quality gate: required section markers must be present, and
 	// confidence must be >= 0.5 (not an all-skipped session).
-	requiredSections := []string{"### ", "**Entities:**", "**Assistant:**"}
-	for _, s := range requiredSections {
-		if !strings.Contains(content, s) {
-			return false, nil
-		}
-	}
-	// Check confidence (simple substring match — not full YAML parse).
-	if strings.Contains(content, "confidence: 0.0") || strings.Contains(content, "confidence: 0.01") {
+	if !structuralReviewPasses(content) {
 		return false, nil
 	}
 
-	if dryRun {
+	if opts.Reviewer != nil {
+		decision, err := opts.Reviewer.ReviewPage(content)
+		if err != nil {
+			return false, err
+		}
+		if !decision.Promote {
+			return false, nil
+		}
+	}
+
+	if opts.DryRun {
 		return true, nil
 	}
 
@@ -272,9 +358,16 @@ func reviewOnePage(path string, dryRun bool) (bool, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	promoted := strings.Replace(content, "status: draft", "status: reviewed", 1)
 	// Insert reviewed_at and reviewed_by after the status line.
+	reviewedBy := opts.ReviewedBy
+	if reviewedBy == "" {
+		reviewedBy = "ao-forge-tier2-structural"
+		if opts.Reviewer != nil {
+			reviewedBy = opts.Reviewer.ReviewerID()
+		}
+	}
 	promoted = strings.Replace(promoted,
 		"status: reviewed\n",
-		fmt.Sprintf("status: reviewed\nreviewed_at: %s\nreviewed_by: ao-forge-tier2-structural\n", now),
+		fmt.Sprintf("status: reviewed\nreviewed_at: %s\nreviewed_by: %s\n", now, safeReviewMetadata(reviewedBy)),
 		1)
 
 	// Atomic write: temp file + rename.
@@ -294,4 +387,78 @@ func reviewOnePage(path string, dryRun bool) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func structuralReviewPasses(content string) bool {
+	requiredSections := []string{"### ", "**Entities:**", "**Assistant:**"}
+	for _, s := range requiredSections {
+		if !strings.Contains(content, s) {
+			return false
+		}
+	}
+	// Check confidence (simple substring match — not full YAML parse).
+	return !strings.Contains(content, "confidence: 0.0") && !strings.Contains(content, "confidence: 0.01")
+}
+
+func parseReviewDecision(raw string) (ReviewDecision, error) {
+	body := stripCodeFence(strings.TrimSpace(raw))
+	if body == "" {
+		return ReviewDecision{}, fmt.Errorf("reviewer output is empty")
+	}
+	if decision, ok := parseBareReviewDecision(body); ok {
+		return decision, nil
+	}
+
+	var decisionValue string
+	var reason string
+	for _, line := range strings.Split(body, "\n") {
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		switch strings.ToLower(strings.TrimSpace(key)) {
+		case "decision":
+			decisionValue = strings.ToLower(strings.TrimSpace(value))
+		case "reason":
+			reason = strings.TrimSpace(value)
+		}
+	}
+	switch decisionValue {
+	case "promote":
+		return ReviewDecision{Promote: true, Reason: reason}, nil
+	case "skip":
+		return ReviewDecision{Promote: false, Reason: reason}, nil
+	default:
+		return ReviewDecision{}, fmt.Errorf("reviewer output missing DECISION: promote|skip")
+	}
+}
+
+func parseBareReviewDecision(body string) (ReviewDecision, bool) {
+	switch strings.ToLower(strings.TrimSpace(body)) {
+	case "promote":
+		return ReviewDecision{Promote: true}, true
+	case "skip":
+		return ReviewDecision{Promote: false}, true
+	default:
+		return ReviewDecision{}, false
+	}
+}
+
+func safeReviewMetadata(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "ao-forge-tier2"
+	}
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-', r == '_', r == '.', r == ':':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('-')
+		}
+	}
+	return b.String()
 }

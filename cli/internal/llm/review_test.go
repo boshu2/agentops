@@ -138,6 +138,54 @@ func TestReviewDraftSessions_DryRun(t *testing.T) {
 	}
 }
 
+func TestReviewDraftSessions_ReviewerPromotesDraft(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "s1.md"), []byte(draftPage), 0644); err != nil {
+		t.Fatal(err)
+	}
+	reviewer := &fakePageReviewer{id: "ao-forge-tier2-llm-test", decision: ReviewDecision{Promote: true, Reason: "good"}}
+	result, err := ReviewDraftSessions(ReviewOptions{SessionsDir: dir, Reviewer: reviewer})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Reviewed != 1 || reviewer.calls != 1 {
+		t.Fatalf("Reviewed=%d reviewer calls=%d", result.Reviewed, reviewer.calls)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "s1.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(b)
+	if !strings.Contains(body, "status: reviewed") {
+		t.Fatalf("page not promoted:\n%s", body)
+	}
+	if !strings.Contains(body, "reviewed_by: ao-forge-tier2-llm-test") {
+		t.Fatalf("missing reviewer id:\n%s", body)
+	}
+}
+
+func TestReviewDraftSessions_ReviewerSkipsStructurallyValidDraft(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "s1.md"), []byte(draftPage), 0644); err != nil {
+		t.Fatal(err)
+	}
+	reviewer := &fakePageReviewer{id: "ao-forge-tier2-llm-test", decision: ReviewDecision{Promote: false, Reason: "too vague"}}
+	result, err := ReviewDraftSessions(ReviewOptions{SessionsDir: dir, Reviewer: reviewer})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Reviewed != 0 || result.Skipped != 1 || reviewer.calls != 1 {
+		t.Fatalf("Reviewed=%d Skipped=%d reviewer calls=%d", result.Reviewed, result.Skipped, reviewer.calls)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "s1.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "status: reviewed") {
+		t.Fatalf("reviewer skip mutated page:\n%s", string(b))
+	}
+}
+
 func TestReviewDraftSessions_EmptyDir(t *testing.T) {
 	result, err := ReviewDraftSessions(ReviewOptions{SessionsDir: t.TempDir()})
 	if err != nil {
@@ -232,6 +280,31 @@ func TestEvaluateReviewDraftSessions_RecordsMissingCaseAsFailure(t *testing.T) {
 	}
 }
 
+func TestEvaluateReviewDraftSessions_UsesReviewer(t *testing.T) {
+	dir := t.TempDir()
+	writeReviewTestFile(t, dir, "skip-by-reviewer.md", draftPage)
+	manifestPath := filepath.Join(t.TempDir(), "review-eval.json")
+	writeReviewEvalManifest(t, manifestPath, ReviewEvalManifest{
+		ID: "reviewer-eval",
+		Cases: []ReviewEvalCase{
+			{ID: "skip-by-reviewer", Path: "skip-by-reviewer.md", Expected: "skip"},
+		},
+	})
+	reviewer := &fakePageReviewer{id: "ao-forge-tier2-llm-test", decision: ReviewDecision{Promote: false, Reason: "too vague"}}
+
+	report, err := EvaluateReviewDraftSessions(ReviewEvalOptions{
+		SessionsDir:  dir,
+		ManifestPath: manifestPath,
+		Reviewer:     reviewer,
+	})
+	if err != nil {
+		t.Fatalf("EvaluateReviewDraftSessions: %v", err)
+	}
+	if report.Passed != 1 || reviewer.calls != 1 {
+		t.Fatalf("Passed=%d reviewer calls=%d report=%+v", report.Passed, reviewer.calls, report)
+	}
+}
+
 func TestLoadReviewEvalManifest_RequiresExpectedDecision(t *testing.T) {
 	manifestPath := filepath.Join(t.TempDir(), "review-eval.json")
 	writeReviewEvalManifest(t, manifestPath, ReviewEvalManifest{
@@ -244,6 +317,56 @@ func TestLoadReviewEvalManifest_RequiresExpectedDecision(t *testing.T) {
 	if _, err := LoadReviewEvalManifest(manifestPath); err == nil {
 		t.Fatal("LoadReviewEvalManifest succeeded, want missing expected decision error")
 	}
+}
+
+func TestGeneratorReviewer_ParsesStrictDecision(t *testing.T) {
+	gen := &fakeLLM{responses: []string{"DECISION: promote\nREASON: useful session page"}}
+	reviewer := NewGeneratorReviewer(gen)
+
+	decision, err := reviewer.ReviewPage(draftPage)
+	if err != nil {
+		t.Fatalf("ReviewPage: %v", err)
+	}
+	if !decision.Promote || decision.Reason != "useful session page" {
+		t.Fatalf("decision = %+v", decision)
+	}
+	if gen.calls != 1 {
+		t.Fatalf("generator calls = %d, want 1", gen.calls)
+	}
+	if !strings.Contains(gen.prompts[0], "DECISION: promote|skip") {
+		t.Fatalf("prompt missing strict contract:\n%s", gen.prompts[0])
+	}
+}
+
+func TestGeneratorReviewer_RejectsMalformedDecision(t *testing.T) {
+	gen := &fakeLLM{responses: []string{"looks fine to me"}}
+	reviewer := NewGeneratorReviewer(gen)
+
+	if _, err := reviewer.ReviewPage(draftPage); err == nil {
+		t.Fatal("ReviewPage succeeded, want malformed decision error")
+	}
+}
+
+type fakePageReviewer struct {
+	id       string
+	decision ReviewDecision
+	err      error
+	calls    int
+}
+
+func (f *fakePageReviewer) ReviewPage(string) (ReviewDecision, error) {
+	f.calls++
+	if f.err != nil {
+		return ReviewDecision{}, f.err
+	}
+	return f.decision, nil
+}
+
+func (f *fakePageReviewer) ReviewerID() string {
+	if f.id == "" {
+		return "fake-reviewer"
+	}
+	return f.id
 }
 
 func writeReviewTestFile(t *testing.T, dir, name, content string) {
