@@ -35,6 +35,12 @@
       "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
     },
     {
+      "name": "llm-wiki",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "The proposal is a procedural external-knowledge workflow with no Codex-only runtime divergence yet."
+    },
+    {
       "name": "autodev",
       "treatment": "parity_only",
       "wave": "catalog-parity",

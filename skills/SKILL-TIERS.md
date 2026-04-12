@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (59)
+### User-Facing Skills (60)
 
 **Judgment:**
 

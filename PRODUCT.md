@@ -86,7 +86,7 @@ The public value proposition should now map to the category we are actually sell
 - **Primitives + Flows** — Skills are standalone building blocks. Use one (`/council validate this PR`), compose several (`/research` → `/plan` → `/council validate`), or run the full lifecycle (`/rpi`). The same recursive shape repeats at every scale.
 - **Hands-Free Execution** — `/evolve` and `/crank` spawn agents that work toward goals autonomously. Cycle state is disk-based, regression gates are hard-gated, and every cycle writes a verifiable audit trail.
 - **Multi-Runtime, Multi-Model** — Same skills work across Claude Code, Codex CLI, Cursor, and OpenCode. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives.
-- **Zero Setup, Zero Telemetry** — All state lives in local `.agents/` directories (git-ignored by default; opt in to commit with `AGENTOPS_GITIGNORE_AUTO=0`) with no cloud dependency. 68 skills, 3 hooks, and the flywheel can operate with no external daemon.
+- **Zero Setup, Zero Telemetry** — All state lives in local `.agents/` directories (git-ignored by default; opt in to commit with `AGENTOPS_GITIGNORE_AUTO=0`) with no cloud dependency. 69 skills, 3 hooks, and the flywheel can operate with no external daemon.
 
 ## Strategic Bet
 

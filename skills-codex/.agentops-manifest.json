@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "4f3d6ac8b7fde04eb029383f34281f78e9b2783c4d5d06b7f3ca61f4fbcb8906",
+  "codex_override_catalog_hash": "ab4d30f0f4ad0f4b1b2423148d7e0361aac9d5a76ba730144eee6c04b01c9d41",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -38,6 +38,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
+      },
+      {
+        "name": "llm-wiki",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "The proposal is a procedural external-knowledge workflow with no Codex-only runtime divergence yet."
       },
       {
         "name": "autodev",
@@ -617,16 +623,22 @@
   },
   "skills": [
     {
+      "name": "compile",
+      "source_skill": "skills/compile",
+      "source_hash": "16201db71f7c545f6169815d66606938bd8af90cc7b2d880cd53139e85a57fe5",
+      "generated_hash": "52b5540197bb609decbedbbe92d9fb73846478c545778a9b14928bb2f2fbba9b"
+    },
+    {
+      "name": "llm-wiki",
+      "source_skill": "skills/llm-wiki",
+      "source_hash": "ce0067cba434406745d88c8e5909c812bd56efe519775c063588b68566593e5e",
+      "generated_hash": "86df32eebb25cb8d3f114604f346449b545ab75683745d5b6e49ff5f1aa4d4d0"
+    },
+    {
       "name": "autodev",
       "source_skill": "skills/autodev",
       "source_hash": "2219fe4be60a7750d5523ee3c7fb78d70db5d24d514db5c0a830760c8e6e8b93",
       "generated_hash": "42d10a3187cddf954a9f925949e495020c0e00fef7bcfe2d720f048e0a74c499"
-    },
-    {
-      "name": "compile",
-      "source_skill": "skills/compile",
-      "source_hash": "16201db71f7c545f6169815d66606938bd8af90cc7b2d880cd53139e85a57fe5",
-      "generated_hash": "2bb182847ccdcede34fb73b62b2c5e0d713d7f093b015b1918bbe2da2649da37"
     },
     {
       "name": "beads",
