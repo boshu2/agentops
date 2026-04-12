@@ -547,11 +547,8 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 			fmt.Fprintf(log, "overnight: iteration %d commit failed: %v\n", iterIndex, commitErr)
 			return result, fmt.Errorf("overnight: iteration %d commit: %w", iterIndex, commitErr)
 		}
-		if injector := getTestPostCommitFaultInjector(); injector != nil {
-			if err := injector(iterIndex, opts.Cwd); err != nil {
-				result.Degraded = append(result.Degraded,
-					fmt.Sprintf("iter-%d post-commit fault injection: %v", iterIndex, err))
-			}
+		if msg := runTestPostCommitFaultInjector(iterIndex, opts.Cwd); msg != "" {
+			result.Degraded = append(result.Degraded, msg)
 		}
 
 		// Post-commit metadata integrity check (ratchet-forward per pm-V7).
@@ -605,6 +602,15 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 			panic(fmt.Sprintf("overnight: test fault injection at iter %d", iterIndex))
 		}
 	}
+}
+
+func runTestPostCommitFaultInjector(iterIndex int, cwd string) string {
+	if injector := getTestPostCommitFaultInjector(); injector != nil {
+		if err := injector(iterIndex, cwd); err != nil {
+			return fmt.Sprintf("iter-%d post-commit fault injection: %v", iterIndex, err)
+		}
+	}
+	return ""
 }
 
 // ingestSummary marshals an IngestResult into the opaque map the
