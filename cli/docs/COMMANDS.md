@@ -2192,10 +2192,13 @@ ao forge transcript <path-or-glob> [flags]
 **Flags:**
 
 ```
-  -h, --help           help for transcript
-      --last-session   Process only the most recent transcript
-      --queue          Queue session for learning extraction at next session start
-      --quiet          Suppress all output (for hooks)
+  -h, --help                  help for transcript
+      --last-session          Process only the most recent transcript
+      --llm-endpoint string   Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --model string          LLM model tag for --tier=1 (e.g. gemma2:9b)
+      --queue                 Queue session for learning extraction at next session start
+      --quiet                 Suppress all output (for hooks)
+      --tier int              Tier 1 local-LLM summarization pipeline (requires --model, --llm-endpoint optional)
 ```
 
 ---
