@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-12
 ---
 
 # PRODUCT.md
@@ -24,7 +24,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
-| **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule) | Shipped. On-demand today; dream cycle (automated nightly consolidation) is the next step. |
+| **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
 | **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 68 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Shipped. Manual authoring today; pattern-to-skill pipeline is the next step. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 
@@ -112,7 +112,7 @@ As of 2026-04-09:
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| Full dream-cycle automation is incomplete | The product promise says compounding should happen between sessions, but nightly automation does not yet run the full harvest -> forge -> inject -> report loop. | open |
+| Dream autonomy is still maturing | The private local Dream lane now runs through `/dream` and `ao overnight`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish rather than the existence of the overnight engine. | in-progress |
 | Pattern-to-skill pipeline is not built | The strongest differentiation thesis, self-programming compounding, is still manual at the last mile. | open |
 | Multi-runtime proof is still partial | README and PRODUCT promise parity across Claude Code, Codex, Cursor, and OpenCode, but live runtime verification and Codex parity still cost ongoing maintenance. | in-progress |
 | Messaging is not yet fully unified | Public surfaces should now converge on "operational layer," while technical docs still need a clean split between the public category and the internal "context compiler" framing. | open |
