@@ -99,6 +99,52 @@ func TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults(t *testing.T) {
 	}
 }
 
+func TestResolveLoopSupervisorConfig_SupervisorNilCommandUsesDefaults(t *testing.T) {
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_AO_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_BD_COMMAND", "")
+	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "")
+	prev := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prev)
+
+	rpiSupervisor = true
+	rpiFailurePolicy = "stop"
+	rpiCycleRetries = 0
+	rpiCycleDelay = 0
+	rpiCompile = false
+	rpiCompileInterval = 0
+	rpiCompileSince = ""
+	rpiCompileDefrag = false
+	rpiLease = false
+	rpiDetachedHeal = false
+	rpiAutoClean = false
+	rpiEnsureCleanup = false
+	rpiCleanupPruneBranches = false
+	rpiGatePolicy = "off"
+	rpiLandingPolicy = "off"
+	rpiLandingLockPath = ""
+	rpiBDSyncPolicy = "auto"
+	rpiLeaseTTL = 2 * time.Minute
+	rpiAutoCleanStaleAfter = 24 * time.Hour
+	rpiLeasePath = ".agents/rpi/supervisor.lock"
+
+	cfg, err := resolveLoopSupervisorConfig(nil, t.TempDir())
+	if err != nil {
+		t.Fatalf("resolveLoopSupervisorConfig nil command: %v", err)
+	}
+	if cfg.FailurePolicy != loopFailurePolicyContinue {
+		t.Fatalf("failure policy: got %q, want %q", cfg.FailurePolicy, loopFailurePolicyContinue)
+	}
+	if !cfg.CompileEnabled || !cfg.CompileDefrag {
+		t.Fatalf("expected compile defaults with nil command; got compile=%v defrag=%v", cfg.CompileEnabled, cfg.CompileDefrag)
+	}
+	if !cfg.LeaseEnabled || !cfg.AutoClean || !cfg.EnsureCleanup {
+		t.Fatalf("expected lease/auto-clean/ensure-cleanup defaults with nil command; got lease=%v auto=%v ensure=%v", cfg.LeaseEnabled, cfg.AutoClean, cfg.EnsureCleanup)
+	}
+}
+
 func TestRPILoop_ResolveLoopSupervisorConfig_RalphPreset(t *testing.T) {
 	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
 	t.Setenv("AGENTOPS_RPI_RUNTIME_MODE", "")
@@ -728,10 +774,10 @@ type loopSupervisorGlobals struct {
 	rpiCycleRetries          int
 	rpiRetryBackoff          time.Duration
 	rpiCycleDelay            time.Duration
-	rpiCompile                bool
-	rpiCompileInterval        time.Duration
-	rpiCompileSince           string
-	rpiCompileDefrag          bool
+	rpiCompile               bool
+	rpiCompileInterval       time.Duration
+	rpiCompileSince          string
+	rpiCompileDefrag         bool
 	rpiLease                 bool
 	rpiLeasePath             string
 	rpiLeaseTTL              time.Duration
@@ -762,10 +808,10 @@ func snapshotLoopSupervisorGlobals() loopSupervisorGlobals {
 		rpiCycleRetries:          rpiCycleRetries,
 		rpiRetryBackoff:          rpiRetryBackoff,
 		rpiCycleDelay:            rpiCycleDelay,
-		rpiCompile:                rpiCompile,
-		rpiCompileInterval:        rpiCompileInterval,
-		rpiCompileSince:           rpiCompileSince,
-		rpiCompileDefrag:          rpiCompileDefrag,
+		rpiCompile:               rpiCompile,
+		rpiCompileInterval:       rpiCompileInterval,
+		rpiCompileSince:          rpiCompileSince,
+		rpiCompileDefrag:         rpiCompileDefrag,
 		rpiLease:                 rpiLease,
 		rpiLeasePath:             rpiLeasePath,
 		rpiLeaseTTL:              rpiLeaseTTL,
@@ -1060,9 +1106,9 @@ func TestSyncRebaseAndPush_Success(t *testing.T) {
 
 func TestBuildCycleEngineOptions_NoDashboard(t *testing.T) {
 	cfg := rpiLoopSupervisorConfig{
-		AutoClean:          true,
+		AutoClean:           true,
 		AutoCleanStaleAfter: 48 * time.Hour,
-		RuntimeMode:        "direct",
+		RuntimeMode:         "direct",
 	}
 	opts := buildCycleEngineOptions(t.TempDir(), cfg)
 	if !opts.NoDashboard {

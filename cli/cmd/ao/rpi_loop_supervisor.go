@@ -151,31 +151,31 @@ func buildBaseLoopConfig() rpiLoopSupervisorConfig {
 // applyRalphDefaults overlays operator-safe nonstop defaults for external loop
 // supervision while preserving explicit CLI flag precedence.
 func applyRalphDefaults(cmd *cobra.Command, cfg *rpiLoopSupervisorConfig) {
-	if !cmd.Flags().Changed("lease") {
+	if !loopFlagChanged(cmd, "lease") {
 		cfg.LeaseEnabled = true
 	}
-	if !cmd.Flags().Changed("detached-heal") {
+	if !loopFlagChanged(cmd, "detached-heal") {
 		cfg.DetachedHeal = true
 	}
-	if !cmd.Flags().Changed("auto-clean") {
+	if !loopFlagChanged(cmd, "auto-clean") {
 		cfg.AutoClean = true
 	}
-	if !cmd.Flags().Changed("ensure-cleanup") {
+	if !loopFlagChanged(cmd, "ensure-cleanup") {
 		cfg.EnsureCleanup = true
 	}
-	if !cmd.Flags().Changed("cleanup-prune-branches") {
+	if !loopFlagChanged(cmd, "cleanup-prune-branches") {
 		cfg.CleanupPruneBranches = true
 	}
-	if !cmd.Flags().Changed("failure-policy") {
+	if !loopFlagChanged(cmd, "failure-policy") {
 		cfg.FailurePolicy = loopFailurePolicyContinue
 	}
-	if !cmd.Flags().Changed("cycle-retries") {
+	if !loopFlagChanged(cmd, "cycle-retries") {
 		cfg.CycleRetries = 1
 	}
-	if !cmd.Flags().Changed("cycle-delay") {
+	if !loopFlagChanged(cmd, "cycle-delay") {
 		cfg.CycleDelay = 2 * time.Minute
 	}
-	if !cmd.Flags().Changed("gate-policy") {
+	if !loopFlagChanged(cmd, "gate-policy") {
 		cfg.GatePolicy = loopGatePolicyRequired
 	}
 }
@@ -187,47 +187,51 @@ func applySupervisorDefaults(cmd *cobra.Command, cfg *rpiLoopSupervisorConfig) {
 	applySupervisorPolicyDefaults(cmd, cfg)
 }
 
+func loopFlagChanged(cmd *cobra.Command, name string) bool {
+	return cmd != nil && cmd.Flags().Changed(name)
+}
+
 func applySupervisorBoolDefaults(cmd *cobra.Command, cfg *rpiLoopSupervisorConfig) {
-	if !cmd.Flags().Changed("compile") {
+	if !loopFlagChanged(cmd, "compile") {
 		cfg.CompileEnabled = true
 	}
-	if !cmd.Flags().Changed("compile-defrag") {
+	if !loopFlagChanged(cmd, "compile-defrag") {
 		cfg.CompileDefrag = true
 	}
-	if !cmd.Flags().Changed("lease") {
+	if !loopFlagChanged(cmd, "lease") {
 		cfg.LeaseEnabled = true
 	}
-	if !cmd.Flags().Changed("detached-heal") {
+	if !loopFlagChanged(cmd, "detached-heal") {
 		cfg.DetachedHeal = false
 	}
-	if !cmd.Flags().Changed("auto-clean") {
+	if !loopFlagChanged(cmd, "auto-clean") {
 		cfg.AutoClean = true
 	}
-	if !cmd.Flags().Changed("ensure-cleanup") {
+	if !loopFlagChanged(cmd, "ensure-cleanup") {
 		cfg.EnsureCleanup = true
 	}
-	if !cmd.Flags().Changed("cleanup-prune-branches") {
+	if !loopFlagChanged(cmd, "cleanup-prune-branches") {
 		cfg.CleanupPruneBranches = true
 	}
 }
 
 func applySupervisorPolicyDefaults(cmd *cobra.Command, cfg *rpiLoopSupervisorConfig) {
-	if !cmd.Flags().Changed("compile-interval") {
+	if !loopFlagChanged(cmd, "compile-interval") {
 		cfg.CompileInterval = 30 * time.Minute
 	}
-	if !cmd.Flags().Changed("compile-since") {
+	if !loopFlagChanged(cmd, "compile-since") {
 		cfg.CompileSince = "26h"
 	}
-	if !cmd.Flags().Changed("failure-policy") {
+	if !loopFlagChanged(cmd, "failure-policy") {
 		cfg.FailurePolicy = loopFailurePolicyContinue
 	}
-	if !cmd.Flags().Changed("cycle-retries") {
+	if !loopFlagChanged(cmd, "cycle-retries") {
 		cfg.CycleRetries = 1
 	}
-	if !cmd.Flags().Changed("cycle-delay") {
+	if !loopFlagChanged(cmd, "cycle-delay") {
 		cfg.CycleDelay = 5 * time.Minute
 	}
-	if !cmd.Flags().Changed("gate-policy") {
+	if !loopFlagChanged(cmd, "gate-policy") {
 		cfg.GatePolicy = loopGatePolicyRequired
 	}
 }
@@ -272,7 +276,7 @@ func applyLoopTimingDefaults(cfg *rpiLoopSupervisorConfig, cmd *cobra.Command) {
 	if cfg.AutoCleanStaleAfter <= 0 {
 		cfg.AutoCleanStaleAfter = 24 * time.Hour
 	}
-	if rpiSupervisor && cmd != nil && !cmd.Flags().Changed("auto-clean-stale-after") {
+	if rpiSupervisor && !loopFlagChanged(cmd, "auto-clean-stale-after") {
 		cfg.AutoCleanStaleAfter = 0
 	}
 }
