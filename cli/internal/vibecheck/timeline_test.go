@@ -2,6 +2,7 @@ package vibecheck
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -179,6 +180,33 @@ func TestParseGitLog_MalformedNumstat(t *testing.T) {
 	}
 	if events[0].FilesChanged != 0 {
 		t.Errorf("expected 0 files changed (malformed numstat ignored), got %d", events[0].FilesChanged)
+	}
+}
+
+func TestParseTimeline_IgnoresPollutedGitDiscoveryEnv(t *testing.T) {
+	repo := t.TempDir()
+	if err := initGitRepo(repo); err != nil {
+		t.Fatalf("failed to init git repo: %v", err)
+	}
+
+	commitTime := time.Now().Add(-1 * time.Hour)
+	if err := createTestCommit(repo, "fixture.txt", "feat: add fixture", commitTime); err != nil {
+		t.Fatalf("failed to create fixture commit: %v", err)
+	}
+
+	t.Setenv("GIT_DIR", filepath.Join(t.TempDir(), "wrong.git"))
+	t.Setenv("GIT_WORK_TREE", t.TempDir())
+	t.Setenv("GIT_COMMON_DIR", filepath.Join(t.TempDir(), "common"))
+
+	events, err := ParseTimeline(repo, commitTime.Add(-1*time.Minute))
+	if err != nil {
+		t.Fatalf("ParseTimeline returned error with polluted git env: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].Message != "feat: add fixture" {
+		t.Fatalf("expected fixture commit, got %q", events[0].Message)
 	}
 }
 
