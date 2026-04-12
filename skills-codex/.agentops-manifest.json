@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "38570a2c4c74b32011f37aafbd7b363cbda05385dd2c283c4216082267394a1e",
+  "codex_override_catalog_hash": "4f3d6ac8b7fde04eb029383f34281f78e9b2783c4d5d06b7f3ca61f4fbcb8906",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -40,10 +40,22 @@
         "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
       },
       {
+        "name": "autodev",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Thin operator layer over the shipped ao autodev, ao evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
+      },
+      {
         "name": "beads",
         "treatment": "bespoke",
         "wave": "backbone",
         "reason": "Issue routing and dependency edits are a core Codex workflow and need explicit runtime-facing operator guidance."
+      },
+      {
+        "name": "bootstrap",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
       },
       {
         "name": "brainstorm",
@@ -92,6 +104,18 @@
         "treatment": "parity_only",
         "wave": "backbone",
         "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
+      },
+      {
+        "name": "dream",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "The first Dream skill is a thin interactive layer over the shipped ao overnight contracts, so converter parity is sufficient."
+      },
+      {
+        "name": "design",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
       },
       {
         "name": "doc",
@@ -155,9 +179,22 @@
           "required_markers": [
             "Capture the current objective, completed work, unresolved blockers, and the next command or file to inspect.",
             "Prefer durable paths, issue ids, and validation evidence over conversational summaries.",
+            "Finish handoff-driven session closeout by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.",
             "Do not leave the next session guessing what to do first."
           ]
         }
+      },
+      {
+        "name": "harvest",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "knowledge-activation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "The canonical outer-loop contract is already Codex-ready for the first productized rollout."
       },
       {
         "name": "heal-skill",
@@ -177,6 +214,7 @@
             "## Guardrails"
           ],
           "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start` before implementation begins; the CLI records startup once per thread and skips duplicates automatically.",
             "Work one claimed issue to completion with acceptance criteria, touched files, and validation steps kept explicit.",
             "Prefer TDD or the smallest proving test first when behavior changes, then widen validation only as needed.",
             "Do not widen scope beyond the claimed issue without creating a beads follow-up."
@@ -231,9 +269,11 @@
             "## Guardrails"
           ],
           "required_markers": [
-            "write learnings and harvested work to disk",
-            ".agents/rpi/next-work.jsonl",
-            "claim/release/consume through the queue lifecycle"
+            "Treat `skills/post-mortem/SKILL.md` as the canonical close-out contract and `skills-codex/post-mortem/SKILL.md` as the Codex-facing artifact.",
+            "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
+            "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
+            "Own Codex closeout during the post-mortem flywheel phase by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.",
+            "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
           ]
         }
       },
@@ -305,6 +345,7 @@
           "required_markers": [
             "relevant tests first, commit second, push third, remote verification last",
             "branch is synced with origin at the end",
+            "Do not run `ao codex stop` after the remote push; finish session closeout before `$push` if the session is ending.",
             "If push fails, stay in recovery mode until it succeeds or a real blocker is identified"
           ]
         }
@@ -328,6 +369,12 @@
         "reason": "README generation benefits from Codex-specific interview brevity, artifact output, and validation focus."
       },
       {
+        "name": "red-team",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New adversarial validation skill; converter parity is acceptable."
+      },
+      {
         "name": "recover",
         "treatment": "bespoke",
         "wave": "core-execution",
@@ -339,8 +386,10 @@
             "## Guardrails"
           ],
           "required_markers": [
+            "Treat `skills/recover/SKILL.md` as the canonical recovery contract and `skills-codex/recover/SKILL.md` as the Codex-facing artifact.",
             "Rebuild state from files, issues, generated artifacts, and git state before trusting chat memory.",
             "Return recovery output in this order: `Resume Target`, `Evidence`, `Gaps or Conflicts`, `Next Step`.",
+            "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
             "Make the `Next Step` directly executable by the current Codex session."
           ]
         }
@@ -359,6 +408,7 @@
           "required_markers": [
             "Keep the release boundary explicit: everything up to the tag, with validations and changelog evidence called out.",
             "Prefer deterministic command sequences and clear rollback points over narrative release notes during execution.",
+            "Do not run `ao codex stop` after the release commit/tag boundary; finish Codex closeout before `$release` if those artifacts must be part of the release boundary.",
             "Do not blur preparation work with post-tag publishing tasks."
           ]
         }
@@ -375,9 +425,10 @@
             "## Guardrails"
           ],
           "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start` before research; the CLI records startup once per thread and skips duplicates automatically.",
             "Prefer `spawn_agent` / `send_input` / `wait` for parallel exploration.",
             "Write findings to `.agents/research/` with file-level references and concrete evidence.",
-            "Keep backend fallback logic explicit: codex sub-agents, then inline."
+            "Keep backend fallback logic explicit: codex sub-agents, then background-task-fallback, then inline."
           ]
         }
       },
@@ -405,9 +456,15 @@
             "## Guardrails"
           ],
           "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start` before phase orchestration; the CLI records startup once per thread and skips duplicates automatically.",
+            "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
+            "Keep a single lifecycle objective spine across discovery, crank, and validation. Never replace it with a child issue ID or one ready slice from `bd ready`, `bd show`, or `.agents/rpi/next-work.jsonl`.",
+            "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validation` instead of inventing one.",
+            "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
             "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
             "claim, release, and consume semantics exactly",
-            "claim before work, consume on success, release on failure or interruption"
+            "claim before work, consume on success, release on failure or interruption",
+            "Do not stop after a partial phase result; only stop on `<promise>BLOCKED</promise>`, retry-budget exhaustion, or final completion."
           ]
         }
       },
@@ -447,6 +504,7 @@
             "## Guardrails"
           ],
           "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start` before gathering dashboard state; the CLI records startup once per thread and skips duplicates automatically.",
             "Default to a one-screen layout with three blocks in this order: `Current Work`, `Latest Gates`, `Next Action`.",
             "Use exact issue ids, branch/worktree state, and file-backed artifacts instead of conversational summaries.",
             "Keep the output resumable after compaction."
@@ -512,10 +570,58 @@
             "lead with defects, risks, and verification gaps"
           ]
         }
+      },
+      {
+        "name": "deps",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "perf",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "refactor",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "review",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "scaffold",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "test",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "scenario",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Stage 4 behavioral validation skill; converter parity is acceptable."
       }
     ]
   },
   "skills": [
+    {
+      "name": "autodev",
+      "source_skill": "skills/autodev",
+      "source_hash": "2219fe4be60a7750d5523ee3c7fb78d70db5d24d514db5c0a830760c8e6e8b93",
+      "generated_hash": "42d10a3187cddf954a9f925949e495020c0e00fef7bcfe2d720f048e0a74c499"
+    },
     {
       "name": "compile",
       "source_skill": "skills/compile",
@@ -903,8 +1009,8 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "7f5cc28fcf68821caddf4fbb323e630fc3be0c32ad46121086a7be3e2b5752b3",
-      "generated_hash": "9d39642abf0f0a1f9c783edb3b5ca073fb17640946ff52a3712930a15ddcd754"
+      "source_hash": "3bd9f321938894b24fe718defc99b65939d52a0ca42ad422e003004a39fbbe6c",
+      "generated_hash": "f4cd8f27c5b3ff1c92f77961b54312c0d2d2e3c47ded9701d62baf82d6a82490"
     },
     {
       "name": "validation",

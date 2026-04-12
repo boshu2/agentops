@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (58)
+### User-Facing Skills (59)
 
 **Judgment:**
 
@@ -249,6 +249,7 @@ These are how skills chain in practice:
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
+| **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
 | **bug-hunt** | execution | Investigate bugs with git archaeology |
 | **complexity** | execution | Cyclomatic complexity analysis |
 | **grafana-platform-dashboard** | execution | Build and validate platform operations dashboards with critical-first layout and PromQL gates |
@@ -377,6 +378,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **validation** | vibe, post-mortem, retro, forge, shared | vibe+post-mortem required, retro+forge optional |
 | **rpi** | discovery, crank, validation, ratchet | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
+| **autodev** | evolve, rpi | required |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
 | **security-suite** | - | - (standalone) |

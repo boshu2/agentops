@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-03. 53 CLI commands, 52 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-03; targeted `autodev` update 2026-04-12. 53 CLI commands, 68 source skills, 7 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
 
@@ -12,7 +12,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| CLI commands with skill/hook callers | 31 |
+| CLI commands with skill/hook callers | 33 |
 | Orphan commands (user utilities, hidden, CI-only) | 19 |
 | Phantom subcommands (bugs) | 2 |
 
@@ -29,12 +29,14 @@ Every `ao` command that is actively called by at least one skill or hook.
 | `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, prompt-nudge.sh, precompact-snapshot.sh |
 | `ao goals` | goals, evolve | — |
 | `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe | session-start.sh |
-| `ao rpi` | council, crank, plan, quickstart, research, rpi, shared, swarm | — |
+| `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm | — |
+| `ao autodev` | autodev | — |
+| `ao evolve` | autodev, evolve | — |
 | `ao flywheel` | crank, evolve, flywheel, post-mortem, quickstart, retro, status | ao-flywheel-close.sh, session-end-maintenance.sh |
 | `ao pool` | crank, status | session-end-maintenance.sh |
 | `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops | session-start.sh |
 | `ao context` | crank, implement, swarm | context-guard.sh |
-| `ao codex` | brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation | — |
+| `ao codex` | autodev, brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation | — |
 | `ao maturity` | flywheel | session-end-maintenance.sh |
 | `ao constraint` | flywheel, post-mortem, retro | — |
 | `ao badge` | flywheel, status | — |
@@ -64,6 +66,7 @@ Which `ao` commands each skill invokes.
 
 | Skill | ao Commands Used |
 |-------|-----------------|
+| **autodev** | `autodev init`, `autodev validate`, `codex ensure-start`, `evolve`, `rpi` |
 | **brainstorm** | `codex ensure-start` |
 | **crank** | `codex ensure-start`, `context assemble`, `flywheel close-loop`, `flywheel status`, `forge transcript`, `inject`, `lookup`, `pool list`, `ratchet record`, `ratchet status`, `rpi phased`, `search` |
 | **discovery** | `codex ensure-start` |

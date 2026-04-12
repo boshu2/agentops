@@ -35,6 +35,12 @@
       "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
     },
     {
+      "name": "autodev",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Thin operator layer over the shipped ao autodev, ao evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
+    },
+    {
       "name": "beads",
       "treatment": "bespoke",
       "wave": "backbone",
