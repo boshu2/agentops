@@ -40,12 +40,21 @@ Examples:
 	RunE: runEvolve,
 }
 
+var (
+	evolveDreamFirst   bool
+	evolveDreamOnly    bool
+	evolveDreamTimeout string
+)
+
 func init() {
 	evolveCmd.GroupID = "workflow"
 	addRPILoopFlags(evolveCmd)
 	if flag := evolveCmd.Flags().Lookup("supervisor"); flag != nil {
 		flag.DefValue = "true"
 	}
+	evolveCmd.Flags().BoolVar(&evolveDreamFirst, "dream-first", false, "Run Dream knowledge sub-cycle before code cycles")
+	evolveCmd.Flags().BoolVar(&evolveDreamOnly, "dream-only", false, "Knowledge compounding only, no code cycles")
+	evolveCmd.Flags().StringVar(&evolveDreamTimeout, "dream-timeout", "30m", "Timeout for the Dream sub-cycle")
 	rootCmd.AddCommand(evolveCmd)
 }
 
@@ -61,6 +70,46 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 	if err := ensureEvolveEraBaseline(cwd); err != nil {
 		return err
 	}
+
+	w := cmd.OutOrStdout()
+
+	// Phase 1: Dream sub-cycle (knowledge compounding).
+	if evolveDreamFirst || evolveDreamOnly {
+		dreamTimeout, err := time.ParseDuration(evolveDreamTimeout)
+		if err != nil {
+			return fmt.Errorf("evolve: parse --dream-timeout: %w", err)
+		}
+		runID := time.Now().UTC().Format("20060102T150405Z")
+		fmt.Fprintf(w, "=== Dream sub-cycle (timeout %s) ===\n", dreamTimeout)
+
+		dreamResult, dreamErr := RunDreamSubCycle(cmd.Context(), DreamSubCycleOptions{
+			Cwd:           cwd,
+			OutputDir:     filepath.Join(cwd, ".agents", "evolve", "dream-"+runID),
+			RunID:         "dream-" + runID,
+			RunTimeout:    dreamTimeout,
+			MaxIterations: 10,
+			LogWriter:     w,
+		})
+		if dreamErr != nil {
+			fmt.Fprintf(w, "Dream sub-cycle failed (degraded): %v\n", dreamErr)
+		} else {
+			fmt.Fprintf(w, "Dream: %d iterations", dreamResult.Iterations)
+			if dreamResult.PlateauReason != "" {
+				fmt.Fprintf(w, " (plateau: %s)", dreamResult.PlateauReason)
+			}
+			if dreamResult.Tier1Forge != nil {
+				fmt.Fprintf(w, ", tier1 forge: %d sessions", dreamResult.Tier1Forge.SessionsWrote)
+			}
+			fmt.Fprintln(w)
+		}
+	}
+
+	if evolveDreamOnly {
+		fmt.Fprintf(w, "=== Dream-only mode, skipping code cycles ===\n")
+		return nil
+	}
+
+	// Phase 2: Daytime code cycles via the RPI loop.
 	return runRPILoop(cmd, args)
 }
 
