@@ -129,6 +129,22 @@ else
     skip "Artifact consistency behavior tests (script not found)"
 fi
 
+# Validate OL integration fixture-only scripts (static, no real ol binary needed)
+if [[ -d "$SCRIPT_DIR/ol-integration" ]]; then
+    for ol_test in "$SCRIPT_DIR"/ol-integration/*-ol-test.sh; do
+        [[ ! -f "$ol_test" ]] && continue
+        ol_name="$(basename "$ol_test" .sh)"
+        if bash "$ol_test" > "/tmp/${ol_name}.log" 2>&1; then
+            pass "$ol_name"
+        else
+            fail "$ol_name"
+            tail -20 "/tmp/${ol_name}.log" | sed 's/^/    /'
+        fi
+    done
+else
+    skip "OL integration tests (directory not found)"
+fi
+
 echo ""
 
 # =============================================================================

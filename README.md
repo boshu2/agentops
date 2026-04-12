@@ -128,7 +128,7 @@ Consensus: WARN — add rate limiting to /login before shipping
 ```text
 > /evolve
 
-[evolve] GOALS.md: 18 gates loaded, score 77.0% (14/18 passing)
+[evolve] GOALS.md: 19 gates loaded, score recalculated
 
 [cycle-1]     Worst: wiring-closure (weight 6) + 3 more
               /rpi "Fix failing goals" → score 93.3% (25/28) ✓

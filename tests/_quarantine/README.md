@@ -10,13 +10,14 @@ below — this is staging, not a graveyard.
 Starting point: 7 suites + 2 top-level scripts.
 Removed: `opencode/`, `rpi-e2e/`, `skill-triggering/`, `e2e-install-test.sh`,
 `marketplace-e2e-test.sh`.
-Remaining: **4 suites**.
+Promoted: `ol-integration/` -> `tests/ol-integration/` (na-gtm.18,
+2026-04-12).
+Remaining: **3 suites**.
 
 | Suite | Status | Plan |
 |---|---|---|
 | `codex/` | PROMOTE — ready | Wire into `validate.yml` as optional job; skips cleanly if `codex` CLI absent (see Plan A). |
 | `claude-code/` | PROMOTE — needs skip wrapper | Currently hard-exits if `claude` is missing. Add pre-flight skip-on-absent guard, then wire as optional job (Plan B). |
-| `ol-integration/` | PROMOTE — needs path fix | Both fixture tests compute `REPO_ROOT` as `../../` assuming old `tests/ol-integration/` location. Fix to `../../../` (now under `_quarantine/`) or move out of quarantine first (Plan C). |
 | `team-runner/` | PROMOTE — needs path fix | `run-all.sh` computes `REPO_ROOT` as `../../../` (correct for `tests/team-runner/`, wrong under `_quarantine/`). Schemas it tests (`lib/schemas/team-spec.json`, `worker-output.json`) and scripts it tests (`lib/scripts/team-runner.sh`, `watch-claude-stream.sh`) still exist (Plan D). |
 
 ## Deletions performed
@@ -32,8 +33,9 @@ Remaining: **4 suites**.
 ```bash
 bash tests/_quarantine/claude-code/run-all.sh   # requires claude CLI
 bash tests/_quarantine/codex/run-all.sh         # skips if codex CLI missing
-bash tests/_quarantine/ol-integration/vibe-ol-test.sh   # broken path, see Plan C
 bash tests/_quarantine/team-runner/run-all.sh   # broken path, see Plan D
+bash tests/ol-integration/vibe-ol-test.sh       # promoted, fixture-only
+bash tests/ol-integration/swarm-ol-test.sh      # promoted, fixture-only
 ```
 
 ## Promotion plans
@@ -61,14 +63,13 @@ bash tests/_quarantine/team-runner/run-all.sh   # broken path, see Plan D
 
 **Cost:** ~2 hours. Needs a runner that has `claude` available; document cost caps.
 
-### Plan C — `ol-integration/`
+### Plan C — `ol-integration/` (done)
 
-1. Fix `REPO_ROOT` computation in `vibe-ol-test.sh` and `swarm-ol-test.sh`:
-   change `"$SCRIPT_DIR/../.."` to `"$SCRIPT_DIR/../../.."` while under
-   `_quarantine/`, OR fix to `../..` after moving out.
-2. `git mv tests/_quarantine/ol-integration tests/ol-integration`
-3. No external `ol` binary required — fixture-only; wire into the default
-   `tests/run-all.sh` lane.
+Promoted by na-gtm.18 on 2026-04-12:
+`tests/_quarantine/ol-integration` moved to `tests/ol-integration`, where the
+existing `"$SCRIPT_DIR/../.."` root calculation resolves correctly. No external
+`ol` binary is required; the fixture-only scripts now run in the default
+`tests/run-all.sh` lane.
 
 **Cost:** ~15 min. Lowest-risk promotion.
 
@@ -87,6 +88,6 @@ bash tests/_quarantine/team-runner/run-all.sh   # broken path, see Plan D
 ## Follow-up issues
 
 - **na-gtm.17** — Promote `codex/` (Plan A)
-- **na-gtm.18** — Promote `ol-integration/` (Plan C - lowest risk, do first)
+- **na-gtm.18** — CLOSED: promoted `ol-integration/` (Plan C)
 - **na-gtm.19** — Promote `team-runner/` (Plan D)
 - **na-gtm.20** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)
