@@ -2273,6 +2273,21 @@ ao forge markdown <path-or-glob> [flags]
       --quiet   Suppress all output (for hooks)
 ```
 
+#### `ao forge review`
+
+Review draft session pages in .agents/ao/sessions/ and promote
+
+```
+ao forge review [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Show what would be promoted without writing
+  -h, --help      help for review
+```
+
 #### `ao forge transcript`
 
 Parse Claude Code JSONL transcript files and extract knowledge candidates.
