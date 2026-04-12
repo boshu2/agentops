@@ -188,10 +188,10 @@ if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "
     fi
 
     # Run Codex integration tests (requires Codex CLI)
-    if [[ -f "$SCRIPT_DIR/codex/run-all.sh" ]]; then
+    if [[ -f "$SCRIPT_DIR/codex/integration/run-all.sh" ]]; then
         if command -v codex &>/dev/null; then
             log "  Running Codex integration tests..."
-            if bash "$SCRIPT_DIR/codex/run-all.sh" > /tmp/codex-tests.log 2>&1; then
+            if bash "$SCRIPT_DIR/codex/integration/run-all.sh" > /tmp/codex-tests.log 2>&1; then
                 pass "Codex integration tests"
             else
                 fail "Codex integration tests"

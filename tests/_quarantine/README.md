@@ -13,11 +13,11 @@ Removed: `opencode/`, `rpi-e2e/`, `skill-triggering/`, `e2e-install-test.sh`,
 Promoted: `ol-integration/` -> `tests/ol-integration/` (na-gtm.18,
 2026-04-12).
 Promoted: `team-runner/` -> `tests/team-runner/` (na-gtm.19, 2026-04-12).
-Remaining: **2 suites**.
+Promoted: `codex/` -> `tests/codex/integration/` (na-gtm.17, 2026-04-12).
+Remaining: **1 suite**.
 
 | Suite | Status | Plan |
 |---|---|---|
-| `codex/` | PROMOTE — ready | Wire into `validate.yml` as optional job; skips cleanly if `codex` CLI absent (see Plan A). |
 | `claude-code/` | PROMOTE — needs skip wrapper | Currently hard-exits if `claude` is missing. Add pre-flight skip-on-absent guard, then wire as optional job (Plan B). |
 
 ## Deletions performed
@@ -32,7 +32,7 @@ Remaining: **2 suites**.
 
 ```bash
 bash tests/_quarantine/claude-code/run-all.sh   # requires claude CLI
-bash tests/_quarantine/codex/run-all.sh         # skips if codex CLI missing
+bash tests/codex/integration/run-all.sh         # promoted; skips if codex CLI missing
 bash tests/ol-integration/vibe-ol-test.sh       # promoted, fixture-only
 bash tests/ol-integration/swarm-ol-test.sh      # promoted, fixture-only
 bash tests/team-runner/run-all.sh               # promoted, fixture-only
@@ -40,14 +40,13 @@ bash tests/team-runner/run-all.sh               # promoted, fixture-only
 
 ## Promotion plans
 
-### Plan A — `codex/` (lowest friction)
+### Plan A — `codex/` (done)
 
-1. `git mv tests/_quarantine/codex tests/codex`
-2. Add a job to `.github/workflows/validate.yml` that runs `bash tests/codex/run-all.sh`
-   on a matrix entry that installs Codex (or makes the job `continue-on-error: true`).
-   Tests already skip cleanly when `codex` is absent.
-3. Add a short section to `tests/codex/README.md` documenting env vars
-   (`CODEX_MODEL`, default `gpt-5.3-codex`).
+Promoted by na-gtm.17 on 2026-04-12:
+`tests/_quarantine/codex` moved to `tests/codex/integration`, the wrapper now
+reports Codex-absent child tests as skipped instead of failed, and
+`tests/codex/README.md` documents `CODEX_MODEL` and live-runtime cost. The suite
+is covered by the existing `tests/run-all.sh --tier=2` Codex integration hook.
 
 **Cost:** ~30 min. No code changes, CLI-skip behavior already correct.
 
@@ -86,7 +85,7 @@ Codex CLIs.
 
 ## Follow-up issues
 
-- **na-gtm.17** — Promote `codex/` (Plan A)
+- **na-gtm.17** — CLOSED: promoted `codex/` (Plan A)
 - **na-gtm.18** — CLOSED: promoted `ol-integration/` (Plan C)
 - **na-gtm.19** — CLOSED: promoted `team-runner/` (Plan D)
 - **na-gtm.20** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)

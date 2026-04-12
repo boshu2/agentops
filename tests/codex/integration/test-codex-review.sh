@@ -23,7 +23,9 @@ skip() { echo -e "${YELLOW}  ⊘${NC} $1"; ((skipped++)) || true; }
 TEST_DIR=""
 cleanup() {
     rm -f "$OUTPUT"
-    [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]] && rm -rf "$TEST_DIR"
+    if [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]]; then
+        rm -rf "$TEST_DIR"
+    fi
 }
 trap cleanup EXIT
 

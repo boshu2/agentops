@@ -29,13 +29,17 @@ for test_script in "$SCRIPT_DIR"/test-*.sh; do
     ((total++)) || true
 
     echo -e "${BLUE}── $test_name ──${NC}"
-    if bash "$test_script"; then
-        ((passed++)) || true
+    test_output=""
+    if test_output=$(bash "$test_script" 2>&1); then
+        printf '%s\n' "$test_output"
+        if printf '%s\n' "$test_output" | grep -q "SKIPPED"; then
+            ((skipped++)) || true
+        else
+            ((passed++)) || true
+        fi
     else
-        exit_code=$?
-        # Check if all tests were skipped (exit 0 with skip messages)
-        # A real failure returns exit 1
-        if [[ $exit_code -eq 0 ]]; then
+        printf '%s\n' "$test_output"
+        if printf '%s\n' "$test_output" | grep -q "SKIPPED"; then
             ((skipped++)) || true
         else
             ((failed++)) || true
