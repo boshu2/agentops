@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -108,27 +109,15 @@ qualifying pages to status:reviewed. Uses structural quality checks
 (section presence, confidence threshold) in v1; LLM-based review
 is planned for v2.
 
+Pass --eval to dry-run the same structural gate against a labeled JSON
+manifest without mutating session pages. Eval case expected values are
+"promote" or "skip".
+
 Examples:
   ao forge review
-  ao forge review --dry-run`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, _ := os.Getwd()
-		sessionsDir := filepath.Join(cwd, ".agents", "ao", "sessions")
-		result, err := llm.ReviewDraftSessions(llm.ReviewOptions{
-			SessionsDir: sessionsDir,
-			DryRun:      forgeReviewDryRun,
-			Quiet:       forgeQuiet,
-		})
-		if err != nil {
-			return err
-		}
-		if !forgeQuiet {
-			w := cmd.OutOrStdout()
-			fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
-				result.Reviewed, result.Skipped, len(result.Errors))
-		}
-		return nil
-	},
+  ao forge review --dry-run
+  ao forge review --eval .agents/rpi/forge-review-eval.json --json`,
+	RunE: runForgeReview,
 }
 
 var forgeMarkdownCmd = &cobra.Command{
@@ -155,6 +144,8 @@ func init() {
 	forgeCmd.AddCommand(forgeMarkdownCmd)
 	forgeCmd.AddCommand(forgeReviewCmd)
 	forgeReviewCmd.Flags().BoolVar(&forgeReviewDryRun, "dry-run", false, "Show what would be promoted without writing")
+	forgeReviewCmd.Flags().String("eval", "", "Evaluate review decisions against a labeled JSON manifest without writing")
+	forgeReviewCmd.Flags().String("sessions-dir", "", "Directory containing session pages (default: .agents/ao/sessions)")
 
 	// Transcript flags
 	forgeTranscriptCmd.Flags().BoolVar(&forgeLastSession, "last-session", false, "Process only the most recent transcript")
@@ -167,6 +158,93 @@ func init() {
 	// Markdown flags
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQuiet, "quiet", false, "Suppress all output (for hooks)")
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQueue, "queue", false, "Queue for learning extraction at next session start")
+}
+
+func runForgeReview(cmd *cobra.Command, args []string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	sessionsDir, err := resolveForgeReviewSessionsDir(cmd, cwd)
+	if err != nil {
+		return err
+	}
+	evalPath, err := cmd.Flags().GetString("eval")
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(evalPath) != "" {
+		report, err := llm.EvaluateReviewDraftSessions(llm.ReviewEvalOptions{
+			SessionsDir:  sessionsDir,
+			ManifestPath: evalPath,
+		})
+		if err != nil {
+			return err
+		}
+		return writeForgeReviewEvalReport(cmd.OutOrStdout(), report)
+	}
+
+	result, err := llm.ReviewDraftSessions(llm.ReviewOptions{
+		SessionsDir: sessionsDir,
+		DryRun:      forgeReviewDryRun,
+		Quiet:       forgeQuiet,
+	})
+	if err != nil {
+		return err
+	}
+	if !forgeQuiet {
+		w := cmd.OutOrStdout()
+		fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
+			result.Reviewed, result.Skipped, len(result.Errors))
+	}
+	return nil
+}
+
+func resolveForgeReviewSessionsDir(cmd *cobra.Command, cwd string) (string, error) {
+	sessionsDir, err := cmd.Flags().GetString("sessions-dir")
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(sessionsDir) == "" {
+		sessionsDir = filepath.Join(cwd, ".agents", "ao", "sessions")
+	}
+	if filepath.IsAbs(sessionsDir) {
+		return filepath.Clean(sessionsDir), nil
+	}
+	return filepath.Clean(filepath.Join(cwd, sessionsDir)), nil
+}
+
+func writeForgeReviewEvalReport(w io.Writer, report *llm.ReviewEvalReport) error {
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(report)
+	}
+
+	fmt.Fprintln(w, "AO Forge Review Eval")
+	fmt.Fprintln(w, "====================")
+	fmt.Fprintf(w, "Eval set:     %s\n", report.ID)
+	fmt.Fprintf(w, "Manifest:     %s\n", report.ManifestPath)
+	fmt.Fprintf(w, "Sessions dir: %s\n", report.SessionsDir)
+	fmt.Fprintf(w, "Cases:        %d\n", report.Cases)
+	fmt.Fprintf(w, "Passed:       %d\n", report.Passed)
+	fmt.Fprintf(w, "Failed:       %d\n", report.Failed)
+	if report.Errors > 0 {
+		fmt.Fprintf(w, "Errors:       %d\n", report.Errors)
+	}
+	fmt.Fprintf(w, "Accuracy:     %.0f%%\n", report.Accuracy*100)
+	for _, result := range report.Results {
+		status := "PASS"
+		if !result.Passed {
+			status = "FAIL"
+		}
+		fmt.Fprintf(w, "  %-5s %s expected=%s actual=%s path=%s\n",
+			result.ID, status, result.Expected, result.Actual, result.Path)
+		if result.ErrorMessage != "" {
+			fmt.Fprintf(w, "        error=%s\n", result.ErrorMessage)
+		}
+	}
+	return nil
 }
 
 func resolveTranscriptFiles(args []string, quiet bool) ([]string, error) {
