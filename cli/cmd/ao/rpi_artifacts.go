@@ -252,70 +252,14 @@ func updatePhaseResultArtifacts(cwd string, state *phasedState, phaseNum int, ex
 }
 
 func updateExecutionPacketProof(cwd string, state *phasedState) error {
-	packetPath := filepath.Join(cwd, ".agents", "rpi", executionPacketFile)
-	packet := make(map[string]any)
-
-	data, err := os.ReadFile(packetPath)
+	packet, err := loadExecutionPacketForProof(cwd, state)
 	if err != nil {
-		if state == nil {
-			return fmt.Errorf("read execution packet: %w", err)
-		}
-		if err := writeExecutionPacketSeed(cwd, state); err != nil {
-			return err
-		}
-		data, err = os.ReadFile(packetPath)
-		if err != nil {
-			return fmt.Errorf("read execution packet after seed write: %w", err)
-		}
-	}
-	if err := json.Unmarshal(data, &packet); err != nil {
-		return fmt.Errorf("parse execution packet: %w", err)
+		return err
 	}
 
-	if _, ok := packet["schema_version"]; !ok {
-		packet["schema_version"] = 1
-	}
-	if state != nil {
-		if strings.TrimSpace(state.Goal) != "" && packet["objective"] == nil {
-			packet["objective"] = state.Goal
-		}
-		if strings.TrimSpace(state.EpicID) != "" {
-			packet["epic_id"] = state.EpicID
-		}
-		if strings.TrimSpace(state.RunID) != "" {
-			packet["run_id"] = state.RunID
-		}
-		if strings.TrimSpace(state.TrackerMode) != "" {
-			packet["tracker_mode"] = state.TrackerMode
-		}
-		if strings.TrimSpace(string(state.Complexity)) != "" {
-			packet["complexity"] = string(state.Complexity)
-		}
-	}
-
-	runID := ""
-	if state != nil {
-		runID = state.RunID
-	} else if raw, ok := packet["run_id"].(string); ok {
-		runID = raw
-	}
-
-	artifacts := collectRunArtifacts(cwd, runID)
-	if len(artifacts) > 0 {
-		paths := make([]string, 0, len(artifacts))
-		evaluatorArtifacts := make(map[string]string)
-		for _, ref := range artifacts {
-			paths = append(paths, ref.Path)
-			if ref.Kind == "phase_evaluator" && ref.Phase > 0 {
-				evaluatorArtifacts[fmt.Sprintf("phase_%d", ref.Phase)] = ref.Path
-			}
-		}
-		packet["proof_artifacts"] = paths
-		if len(evaluatorArtifacts) > 0 {
-			packet["evaluator_artifacts"] = evaluatorArtifacts
-		}
-		packet["proof_updated_at"] = time.Now().UTC().Format(time.RFC3339)
-	}
+	applyExecutionPacketProofState(packet, state)
+	runID := executionPacketProofRunID(packet, state)
+	attachExecutionPacketProofArtifacts(packet, collectRunArtifacts(cwd, runID))
 
 	updated, err := json.MarshalIndent(packet, "", "  ")
 	if err != nil {
@@ -326,4 +270,93 @@ func updateExecutionPacketProof(cwd string, state *phasedState) error {
 		return fmt.Errorf("write execution packet proof: %w", err)
 	}
 	return nil
+}
+
+func loadExecutionPacketForProof(cwd string, state *phasedState) (map[string]any, error) {
+	data, err := readExecutionPacketForProof(cwd, state)
+	if err != nil {
+		return nil, err
+	}
+	packet := make(map[string]any)
+	if err := json.Unmarshal(data, &packet); err != nil {
+		return nil, fmt.Errorf("parse execution packet: %w", err)
+	}
+	return packet, nil
+}
+
+func readExecutionPacketForProof(cwd string, state *phasedState) ([]byte, error) {
+	packetPath := filepath.Join(cwd, ".agents", "rpi", executionPacketFile)
+	data, err := os.ReadFile(packetPath)
+	if err == nil {
+		return data, nil
+	}
+	if state == nil {
+		return nil, fmt.Errorf("read execution packet: %w", err)
+	}
+	if err := writeExecutionPacketSeed(cwd, state); err != nil {
+		return nil, err
+	}
+	data, err = os.ReadFile(packetPath)
+	if err != nil {
+		return nil, fmt.Errorf("read execution packet after seed write: %w", err)
+	}
+	return data, nil
+}
+
+func applyExecutionPacketProofState(packet map[string]any, state *phasedState) {
+	if _, ok := packet["schema_version"]; !ok {
+		packet["schema_version"] = 1
+	}
+	if state == nil {
+		return
+	}
+	if strings.TrimSpace(state.Goal) != "" && packet["objective"] == nil {
+		packet["objective"] = state.Goal
+	}
+	if strings.TrimSpace(state.EpicID) != "" {
+		packet["epic_id"] = state.EpicID
+	}
+	if strings.TrimSpace(state.RunID) != "" {
+		packet["run_id"] = state.RunID
+	}
+	if strings.TrimSpace(state.TrackerMode) != "" {
+		packet["tracker_mode"] = state.TrackerMode
+	}
+	if strings.TrimSpace(string(state.Complexity)) != "" {
+		packet["complexity"] = string(state.Complexity)
+	}
+}
+
+func executionPacketProofRunID(packet map[string]any, state *phasedState) string {
+	if state != nil {
+		return state.RunID
+	}
+	if raw, ok := packet["run_id"].(string); ok {
+		return raw
+	}
+	return ""
+}
+
+func attachExecutionPacketProofArtifacts(packet map[string]any, artifacts []rpiArtifactRef) {
+	if len(artifacts) == 0 {
+		return
+	}
+	paths, evaluatorArtifacts := executionPacketProofArtifactMaps(artifacts)
+	packet["proof_artifacts"] = paths
+	if len(evaluatorArtifacts) > 0 {
+		packet["evaluator_artifacts"] = evaluatorArtifacts
+	}
+	packet["proof_updated_at"] = time.Now().UTC().Format(time.RFC3339)
+}
+
+func executionPacketProofArtifactMaps(artifacts []rpiArtifactRef) ([]string, map[string]string) {
+	paths := make([]string, 0, len(artifacts))
+	evaluatorArtifacts := make(map[string]string)
+	for _, ref := range artifacts {
+		paths = append(paths, ref.Path)
+		if ref.Kind == "phase_evaluator" && ref.Phase > 0 {
+			evaluatorArtifacts[fmt.Sprintf("phase_%d", ref.Phase)] = ref.Path
+		}
+	}
+	return paths, evaluatorArtifacts
 }
