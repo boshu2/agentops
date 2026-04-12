@@ -2589,6 +2589,34 @@ ao search <query> [flags]
 
 ---
 
+### `ao sessions`
+
+Manage derived session pages under .agents/ao/sessions without touching source transcripts.
+
+```
+ao sessions [command]
+```
+
+**Subcommands:**
+
+#### `ao sessions index`
+
+Maintain derived session pages under .agents/ao/sessions.
+
+```
+ao sessions index [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                  help for index
+      --prune-orphans         Delete derived session pages whose source_jsonl no longer exists
+      --sessions-dir string   Directory containing derived session pages (default: .agents/ao/sessions)
+```
+
+---
+
 ### `ao trace`
 
 Trace the provenance of an artifact back to its source transcript.
