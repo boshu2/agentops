@@ -74,7 +74,7 @@ func SearchDataExists(sessionsDir string) bool {
 	}
 
 	root := KnowledgeRootFromSessions(sessionsDir)
-	for _, name := range []string{"learnings", "patterns", "findings", "research"} {
+	for _, name := range []string{"learnings", "patterns", "findings", "research", "compiled"} {
 		if _, err := os.Stat(filepath.Join(root, name)); err == nil {
 			return true
 		}
@@ -395,6 +395,8 @@ func NormalizeSearchType(filterType string) string {
 		return "pattern"
 	case "findings":
 		return "finding"
+	case "compiled", "synthesis", "syntheses":
+		return "compiled"
 	case "decisions":
 		return "decision"
 	case "retros":
@@ -406,7 +408,7 @@ func NormalizeSearchType(filterType string) string {
 
 // ClassifyResultType determines the knowledge type based on file path.
 func ClassifyResultType(path string) string {
-	pathLower := strings.ToLower(path)
+	pathLower := strings.ReplaceAll(strings.ToLower(path), "\\", "/")
 
 	if strings.Contains(pathLower, "/learnings/") {
 		return "learning"
@@ -422,6 +424,9 @@ func ClassifyResultType(path string) string {
 	}
 	if strings.Contains(pathLower, "/research/") {
 		return "research"
+	}
+	if strings.Contains(pathLower, "/compiled/") {
+		return "compiled"
 	}
 	if strings.Contains(pathLower, "/sessions/") {
 		return "session"

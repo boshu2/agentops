@@ -25,7 +25,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule) | Shipped. On-demand today; dream cycle (automated nightly consolidation) is the next step. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 67 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Shipped. Manual authoring today; pattern-to-skill pipeline is the next step. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 68 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Shipped. Manual authoring today; pattern-to-skill pipeline is the next step. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 
 The gap between "architecture exists for compound growth" (what others describe) and "compound growth is actually happening" (what AgentOps delivers with harvest/forge/evolve) is the moat.
@@ -51,7 +51,7 @@ The gap between "architecture exists for compound growth" (what others describe)
 
 AgentOps has three layers:
 
-### 1. Skills (67 skills across 4 runtimes)
+### 1. Skills (68 skills across 4 runtimes)
 
 Markdown-defined primitives and flows that agents load and execute:
 

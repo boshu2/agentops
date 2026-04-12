@@ -212,6 +212,18 @@ Query knowledge artifacts across locations.
 
 **Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`
 
+### /llm-wiki
+
+Maintain a compounding wiki for external reading material.
+
+```bash
+/llm-wiki ingest raw/articles/example.md
+/llm-wiki query "what do we know about this topic?"
+/llm-wiki lint
+```
+
+**Status:** Proposal skill for external `raw/` to `wiki/` knowledge, separate from the internal `.agents/` compiler.
+
 ### /complexity
 
 Code complexity analysis using radon (Python) or gocyclo (Go).

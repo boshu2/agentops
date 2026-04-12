@@ -59,6 +59,8 @@ func TestClassifyResultType(t *testing.T) {
 		{"patterns path", "/foo/.agents/patterns/mutex.md", "pattern"},
 		{"retros path", "/foo/.agents/retro/2026-01.md", "retro"},
 		{"research path", "/foo/.agents/research/auth.md", "research"},
+		{"compiled path", "/foo/.agents/compiled/testing-strategy.md", "compiled"},
+		{"windows compiled path", `C:\repo\.agents\compiled\testing-strategy.md`, "compiled"},
 		{"sessions path", "/foo/.agents/ao/sessions/s1.md", "session"},
 		{"decisions path", "/foo/.agents/decisions/use-go.md", "decision"},
 		{"unknown path", "/foo/bar/baz.md", "knowledge"},
@@ -117,6 +119,8 @@ func TestNormalizeSearchType(t *testing.T) {
 		"decisions": "decision",
 		"retros":    "retro",
 		"research":  "research",
+		"compiled":  "compiled",
+		"synthesis": "compiled",
 	}
 
 	for input, want := range tests {
@@ -1603,5 +1607,36 @@ func TestSelectAndSearch_IncludesResearchDir(t *testing.T) {
 	}
 	if !foundResearch {
 		t.Error("expected research file in search results, but none found")
+	}
+}
+
+func TestSearchRepoLocalKnowledgeIncludesCompiledDir(t *testing.T) {
+	tmp := t.TempDir()
+	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
+	compiledDir := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(compiledDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	compiledPath := filepath.Join(compiledDir, "testing-strategy.md")
+	if err := os.WriteFile(compiledPath, []byte("Compiled synthesis about deterministic testing strategy."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := searchRepoLocalKnowledge("deterministic testing", sessionsDir, 10)
+	if err != nil {
+		t.Fatalf("searchRepoLocalKnowledge() error = %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d: %+v", len(results), results)
+	}
+	if results[0].Path != compiledPath {
+		t.Fatalf("result path = %q, want %q", results[0].Path, compiledPath)
+	}
+	if results[0].Type != "compiled" {
+		t.Fatalf("result type = %q, want compiled", results[0].Type)
 	}
 }

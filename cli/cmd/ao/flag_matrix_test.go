@@ -131,6 +131,7 @@ func TestFlagMatrix_InvalidFlags(t *testing.T) {
 		{"pool-list", []string{"pool", "list", "--nonexistent-flag"}},
 		{"flywheel-status", []string{"flywheel", "status", "--nonexistent-flag"}},
 		{"metrics-report", []string{"metrics", "report", "--nonexistent-flag"}},
+		{"compile", []string{"compile", "--nonexistent-flag"}},
 	}
 
 	for _, tt := range tests {
@@ -175,6 +176,7 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"search",
 		"inject",
 		"badge",
+		"compile",
 		"constraint",
 		"contradict",
 		"curate",
