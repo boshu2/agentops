@@ -120,30 +120,31 @@ func TestRunOvernightStartDryRunJSON(t *testing.T) {
 // TestRunOvernight_RunLoopOptionsReceivesRunID is the Micro-epic 2 (C1)
 // regression guard for the one-line wire-in in runOvernightStart.
 //
-// The unit test directly constructs an ovn.RunLoopOptions literal with
-// the same shape the command-layer code uses and asserts that setting
-// RunID on a dummy overnightSummary propagates through to the literal.
+// The unit test uses the same summary and RunLoopOptions helpers as the
+// command-layer code and asserts that setting RunID on an overnightSummary
+// propagates through to the loop options.
 // If a future refactor drops the RunID assignment, this test catches it.
 func TestRunOvernight_RunLoopOptionsReceivesRunID(t *testing.T) {
-	// Simulate the minimal summary shape runOvernightStart builds.
-	summary := overnightSummary{
-		RunID:     "run-test-12345",
-		OutputDir: "/tmp/fake-overnight",
-	}
+	oldGoal := overnightGoal
+	defer func() { overnightGoal = oldGoal }()
+	overnightGoal = ""
 
-	// Mirror the literal in runOvernightStart. If the wire-in is removed,
-	// this literal loses RunID and the assertion below fails.
-	runOpts := ovn.RunLoopOptions{
-		Cwd:       "/tmp/fake-cwd",
-		OutputDir: summary.OutputDir,
-		RunID:     summary.RunID,
+	settings := overnightSettings{
+		OutputDir:  "/tmp/fake-overnight",
+		RunTimeout: time.Hour,
 	}
+	startedAt := time.Date(2026, 4, 12, 7, 30, 0, 0, time.UTC)
+	summary := newOvernightStartSummary("/tmp/fake-cwd", settings, startedAt)
+	runOpts := newOvernightRunLoopOptions("/tmp/fake-cwd", settings, summary, nil)
 
-	if runOpts.RunID != "run-test-12345" {
-		t.Fatalf("RunLoopOptions.RunID = %q, want %q", runOpts.RunID, "run-test-12345")
+	if runOpts.RunID != "20260412T073000Z" {
+		t.Fatalf("RunLoopOptions.RunID = %q, want %q", runOpts.RunID, "20260412T073000Z")
 	}
 	if runOpts.OutputDir != "/tmp/fake-overnight" {
 		t.Fatalf("RunLoopOptions.OutputDir = %q, want %q", runOpts.OutputDir, "/tmp/fake-overnight")
+	}
+	if runOpts.Cwd != "/tmp/fake-cwd" {
+		t.Fatalf("RunLoopOptions.Cwd = %q, want %q", runOpts.Cwd, "/tmp/fake-cwd")
 	}
 }
 

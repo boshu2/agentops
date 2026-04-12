@@ -246,6 +246,88 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 	}
 
 	startedAt := time.Now().UTC()
+	summary := newOvernightStartSummary(cwd, settings, startedAt)
+
+	if GetDryRun() {
+		return finishDryRunOvernightSummary(&summary, startedAt)
+	}
+
+	if _, err := os.Stat(filepath.Join(cwd, ".agents")); err != nil {
+		return fmt.Errorf("dream run requires a local .agents corpus at %s", filepath.Join(cwd, ".agents"))
+	}
+
+	// Crash recovery pass (pm-MISS-01) BEFORE we acquire the lock. Any
+	// stale two-phase commit markers from an interrupted previous run are
+	// either cleaned up (DONE state) or reversed (READY state) so live
+	// .agents/ returns to a consistent shape.
+	recoverOvernightStart(cwd, &summary)
+
+	lockFile, err := prepareOvernightLock(&summary)
+	if err != nil {
+		return err
+	}
+	defer releaseOvernightLock(lockFile)
+
+	if err := os.MkdirAll(summary.OutputDir, 0o755); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
+	}
+
+	logFile, err := openOvernightLog(&summary)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = logFile.Close() }()
+
+	stopKeepAwake, mode, note := startKeepAwakeHelper(logFile, settings.KeepAwake)
+	defer stopKeepAwake()
+	summary.Runtime.KeepAwakeMode = mode
+	if note != "" {
+		summary.Runtime.KeepAwakeNote = note
+		summary.Degraded = append(summary.Degraded, note)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), settings.RunTimeout)
+	defer cancel()
+
+	// Schema v2 path: replace the old 5-step linear script with a single
+	// call into the bounded INGEST → REDUCE → MEASURE compounder loop.
+	// Rollback is `git revert`; there is no --legacy-preview fallback.
+	runOpts := newOvernightRunLoopOptions(cwd, settings, summary, logFile)
+
+	// Micro-epic 4 (C3): wire the warn-only ratchet from disk. Only
+	// active in warn-only mode — strict mode never consumes rescues
+	// because every regression/plateau is a hard halt anyway. ReadBudget
+	// implements the rescue matrix (missing/corrupt/out-of-range) and
+	// returns a default state rather than erroring, so a broken budget
+	// file cannot wedge Dream.
+	configureOvernightWarnOnlyBudget(cwd, &summary, &runOpts)
+
+	loopResult, loopErr := ovn.RunLoop(ctx, runOpts)
+	if loopResult != nil {
+		applyOvernightLoopResult(&summary, loopResult)
+	}
+	if loopErr != nil {
+		summary.Status = "failed"
+		_ = finalizeOvernightSummary(&summary, startedAt)
+		return fmt.Errorf("dream run loop failed: %w", loopErr)
+	}
+
+	// Post-loop: Tier 1 local-LLM forge on recent sessions.
+	// Degrades honestly — errors append to summary.Degraded, never abort.
+	runPostLoopTier1Forge(ctx, cwd, &summary, settings)
+
+	if err := runDreamCouncil(ctx, cwd, logFile, &summary, settings); err != nil {
+		return err
+	}
+
+	summary.Status = "done"
+	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
+		return err
+	}
+	return outputOvernightSummary(summary)
+}
+
+func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt time.Time) overnightSummary {
 	summary := overnightSummary{
 		SchemaVersion: 2,
 		Mode:          "dream.local-bedtime",
@@ -272,6 +354,14 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 			{Name: "metrics-health", Status: "pending", Command: "ao metrics health --json"},
 			{Name: "retrieval-live", Status: "pending", Command: "ao retrieval-bench --live --json"},
 		},
+		Artifacts: map[string]string{
+			"close_loop":       filepath.Join(settings.OutputDir, "close-loop.json"),
+			"defrag_report":    filepath.Join(settings.OutputDir, "defrag", "latest.json"),
+			"metrics_health":   filepath.Join(settings.OutputDir, "metrics-health.json"),
+			"retrieval_live":   filepath.Join(settings.OutputDir, "retrieval-bench.json"),
+			"summary_json":     filepath.Join(settings.OutputDir, "summary.json"),
+			"summary_markdown": filepath.Join(settings.OutputDir, "summary.md"),
+		},
 	}
 	if summary.Goal != "" {
 		summary.Steps = append(summary.Steps, overnightStepSummary{
@@ -279,99 +369,65 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 			Status:  "pending",
 			Command: fmt.Sprintf("ao knowledge brief --goal %q --json", summary.Goal),
 		})
+		summary.Artifacts["briefing"] = filepath.Join(settings.OutputDir, "briefing.json")
 	}
-
-	baseArtifacts := map[string]string{
-		"close_loop":       filepath.Join(summary.OutputDir, "close-loop.json"),
-		"defrag_report":    filepath.Join(summary.OutputDir, "defrag", "latest.json"),
-		"metrics_health":   filepath.Join(summary.OutputDir, "metrics-health.json"),
-		"retrieval_live":   filepath.Join(summary.OutputDir, "retrieval-bench.json"),
-		"summary_json":     filepath.Join(summary.OutputDir, "summary.json"),
-		"summary_markdown": filepath.Join(summary.OutputDir, "summary.md"),
-	}
-	if summary.Goal != "" {
-		baseArtifacts["briefing"] = filepath.Join(summary.OutputDir, "briefing.json")
-	}
-	summary.Artifacts = baseArtifacts
 	appendDreamCouncilPlan(&summary, settings)
+	return summary
+}
 
-	if GetDryRun() {
-		summary.Status = "dry-run"
-		summary.FinishedAt = time.Now().UTC().Format(time.RFC3339)
-		summary.Duration = time.Since(startedAt).Round(time.Millisecond).String()
-		ensureOvernightDerivedViews(&summary)
-		summary.Recommended = recommendedDreamCommands(summary)
-		summary.NextAction = deriveDreamNextAction(summary)
-		return outputOvernightSummary(summary)
-	}
+func finishDryRunOvernightSummary(summary *overnightSummary, startedAt time.Time) error {
+	summary.Status = "dry-run"
+	summary.FinishedAt = time.Now().UTC().Format(time.RFC3339)
+	summary.Duration = time.Since(startedAt).Round(time.Millisecond).String()
+	ensureOvernightDerivedViews(summary)
+	summary.Recommended = recommendedDreamCommands(*summary)
+	summary.NextAction = deriveDreamNextAction(*summary)
+	return outputOvernightSummary(*summary)
+}
 
-	if _, err := os.Stat(filepath.Join(cwd, ".agents")); err != nil {
-		return fmt.Errorf("dream run requires a local .agents corpus at %s", filepath.Join(cwd, ".agents"))
-	}
-
-	// Crash recovery pass (pm-MISS-01) BEFORE we acquire the lock. Any
-	// stale two-phase commit markers from an interrupted previous run are
-	// either cleaned up (DONE state) or reversed (READY state) so live
-	// .agents/ returns to a consistent shape.
-	if recoveryActions, recErr := ovn.RecoverFromCrash(cwd); recErr != nil {
+func recoverOvernightStart(cwd string, summary *overnightSummary) {
+	recoveryActions, recErr := ovn.RecoverFromCrash(cwd)
+	if recErr != nil {
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("startup recovery: %v", recErr))
-		for _, action := range recoveryActions {
-			summary.Degraded = append(summary.Degraded, "recovery: "+action)
-		}
-	} else {
-		for _, action := range recoveryActions {
-			summary.Degraded = append(summary.Degraded, "recovery: "+action)
-		}
 	}
+	for _, action := range recoveryActions {
+		summary.Degraded = append(summary.Degraded, "recovery: "+action)
+	}
+}
 
+func prepareOvernightLock(summary *overnightSummary) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(summary.Runtime.LockPath), 0o755); err != nil {
-		return fmt.Errorf("create dream lock dir: %w", err)
+		return nil, fmt.Errorf("create dream lock dir: %w", err)
 	}
-
-	// Stale-lock reclaim (pm-MISS-01): if the previous run crashed without
-	// releasing the lock and the holding PID is gone, remove the lock file
-	// before attempting to acquire it. 12h matches the documented
+	// Stale-lock reclaim (pm-MISS-01): 12h matches the documented
 	// LockStaleAfter default in internal/overnight.
 	if stale, _ := ovn.LockIsStale(summary.Runtime.LockPath, 12*time.Hour); stale {
 		_ = os.Remove(summary.Runtime.LockPath)
 		summary.Degraded = append(summary.Degraded, "reclaimed stale overnight lock")
 	}
-
 	lockFile, err := acquireOvernightLock(summary.Runtime.LockPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer releaseOvernightLock(lockFile)
-
-	// Record our PID inside the lock file so future stale-lock checks can
-	// tell whether the holder is still alive.
 	_ = ovn.WriteLockPID(summary.Runtime.LockPath)
+	return lockFile, nil
+}
 
-	if err := os.MkdirAll(summary.OutputDir, 0o755); err != nil {
-		return fmt.Errorf("create output dir: %w", err)
-	}
-
+func openOvernightLog(summary *overnightSummary) (*os.File, error) {
 	logFile, err := os.OpenFile(summary.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
-		return fmt.Errorf("open dream log: %w", err)
+		return nil, fmt.Errorf("open dream log: %w", err)
 	}
-	defer func() { _ = logFile.Close() }()
+	return logFile, nil
+}
 
-	stopKeepAwake, mode, note := startKeepAwakeHelper(logFile, settings.KeepAwake)
-	defer stopKeepAwake()
-	summary.Runtime.KeepAwakeMode = mode
-	if note != "" {
-		summary.Runtime.KeepAwakeNote = note
-		summary.Degraded = append(summary.Degraded, note)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), settings.RunTimeout)
-	defer cancel()
-
-	// Schema v2 path: replace the old 5-step linear script with a single
-	// call into the bounded INGEST → REDUCE → MEASURE compounder loop.
-	// Rollback is `git revert`; there is no --legacy-preview fallback.
-	runOpts := ovn.RunLoopOptions{
+func newOvernightRunLoopOptions(
+	cwd string,
+	settings overnightSettings,
+	summary overnightSummary,
+	logWriter io.Writer,
+) ovn.RunLoopOptions {
+	return ovn.RunLoopOptions{
 		Cwd:                cwd,
 		OutputDir:          summary.OutputDir,
 		RunID:              summary.RunID, // required; namespaces iter-*.json persistence
@@ -382,90 +438,55 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 		WarnOnly:           overnightWarnOnly,
 		QueuePath:          overnightQueue,
 		CheckpointMaxBytes: overnightCheckpointMaxMB * 1024 * 1024,
-		LogWriter:          logFile,
+		LogWriter:          logWriter,
 	}
+}
 
-	// Micro-epic 4 (C3): wire the warn-only ratchet from disk. Only
-	// active in warn-only mode — strict mode never consumes rescues
-	// because every regression/plateau is a hard halt anyway. ReadBudget
-	// implements the rescue matrix (missing/corrupt/out-of-range) and
-	// returns a default state rather than erroring, so a broken budget
-	// file cannot wedge Dream.
-	if overnightWarnOnly {
-		budgetState, rescueReason := ovn.ReadBudget(cwd)
-		if rescueReason != "" {
-			summary.Degraded = append(summary.Degraded, rescueReason)
-		}
-		runOpts.WarnOnlyBudget = &ovn.WarnOnlyRatchet{
-			Initial:   budgetState.InitialBudget,
-			Remaining: budgetState.Remaining,
-			OnConsume: func(newRemaining int) error {
-				// Persist via full Decrement round-trip so LastDecrementAt
-				// is stamped atomically. The loop already decremented its
-				// in-memory Remaining before calling OnConsume, so we do
-				// not re-decrement here — we simply write the authoritative
-				// updated state.
-				state, _ := ovn.ReadBudget(cwd)
-				state.Remaining = newRemaining
-				state.LastDecrementAt = time.Now().UTC().Format(time.RFC3339)
-				return ovn.WriteBudget(cwd, state)
-			},
-		}
-		summary.WarnOnlyBudgetInitial = budgetState.InitialBudget
-		summary.WarnOnlyRemaining = budgetState.Remaining
+func configureOvernightWarnOnlyBudget(cwd string, summary *overnightSummary, runOpts *ovn.RunLoopOptions) {
+	if !overnightWarnOnly {
+		return
 	}
-
-	loopResult, loopErr := ovn.RunLoop(ctx, runOpts)
-	if loopResult != nil {
-		summary.Iterations = loopResult.Iterations
-		summary.FitnessDelta = loopResult.FitnessDelta
-		summary.PlateauReason = loopResult.PlateauReason
-		summary.RegressionReason = loopResult.RegressionReason
-		summary.Degraded = append(summary.Degraded, loopResult.Degraded...)
-		// Copy the final warn-only budget counter into the morning report.
-		// When the ratchet was disabled (strict mode) both values stay at
-		// zero and the omitempty JSON tag keeps the counter hidden.
-		if loopResult.WarnOnlyBudgetInitial > 0 {
-			summary.WarnOnlyBudgetInitial = loopResult.WarnOnlyBudgetInitial
-			summary.WarnOnlyRemaining = loopResult.WarnOnlyBudgetRemaining
-		}
-		// Micro-epic 5 (C4): propagate the MEASURE-failure halt signal.
-		// When the loop halted because of repeated MEASURE failures the
-		// morning report renderer uses MeasureFailureHalt to surface a
-		// "systemic MEASURE breakage" diagnosis instead of reading the
-		// absence of a plateau/regression halt as "everything is fine".
-		summary.MeasureFailureHalt = loopResult.MeasureFailureHalt
-		summary.FailureReason = loopResult.FailureReason
-
-		// Populate the v1 Steps[] field with one synthesized entry per
-		// iteration so legacy readers of summary.json still see a
-		// non-empty steps list.
-		for i, iter := range loopResult.Iterations {
-			summary.Steps = append(summary.Steps, overnightStepSummary{
-				Name:   fmt.Sprintf("iteration-%d", i+1),
-				Status: string(iter.Status),
-			})
-		}
+	budgetState, rescueReason := ovn.ReadBudget(cwd)
+	if rescueReason != "" {
+		summary.Degraded = append(summary.Degraded, rescueReason)
 	}
-	if loopErr != nil {
-		summary.Status = "failed"
-		_ = finalizeOvernightSummary(&summary, startedAt)
-		return fmt.Errorf("dream run loop failed: %w", loopErr)
+	runOpts.WarnOnlyBudget = &ovn.WarnOnlyRatchet{
+		Initial:   budgetState.InitialBudget,
+		Remaining: budgetState.Remaining,
+		OnConsume: func(newRemaining int) error {
+			// Persist via full state write so LastDecrementAt is stamped atomically.
+			state, _ := ovn.ReadBudget(cwd)
+			state.Remaining = newRemaining
+			state.LastDecrementAt = time.Now().UTC().Format(time.RFC3339)
+			return ovn.WriteBudget(cwd, state)
+		},
 	}
+	summary.WarnOnlyBudgetInitial = budgetState.InitialBudget
+	summary.WarnOnlyRemaining = budgetState.Remaining
+}
 
-	// Post-loop: Tier 1 local-LLM forge on recent sessions.
-	// Degrades honestly — errors append to summary.Degraded, never abort.
-	runPostLoopTier1Forge(ctx, cwd, &summary, settings)
-
-	if err := runDreamCouncil(ctx, cwd, logFile, &summary, settings); err != nil {
-		return err
+func applyOvernightLoopResult(summary *overnightSummary, loopResult *ovn.RunLoopResult) {
+	summary.Iterations = loopResult.Iterations
+	summary.FitnessDelta = loopResult.FitnessDelta
+	summary.PlateauReason = loopResult.PlateauReason
+	summary.RegressionReason = loopResult.RegressionReason
+	summary.Degraded = append(summary.Degraded, loopResult.Degraded...)
+	if loopResult.WarnOnlyBudgetInitial > 0 {
+		summary.WarnOnlyBudgetInitial = loopResult.WarnOnlyBudgetInitial
+		summary.WarnOnlyRemaining = loopResult.WarnOnlyBudgetRemaining
 	}
+	summary.MeasureFailureHalt = loopResult.MeasureFailureHalt
+	summary.FailureReason = loopResult.FailureReason
+	appendOvernightIterationSteps(summary, loopResult.Iterations)
+}
 
-	summary.Status = "done"
-	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
-		return err
+func appendOvernightIterationSteps(summary *overnightSummary, iterations []ovn.IterationSummary) {
+	for i, iter := range iterations {
+		summary.Steps = append(summary.Steps, overnightStepSummary{
+			Name:   fmt.Sprintf("iteration-%d", i+1),
+			Status: string(iter.Status),
+		})
 	}
-	return outputOvernightSummary(summary)
 }
 
 // runPostLoopTier1Forge runs the local-LLM session summarization pipeline
