@@ -559,11 +559,22 @@ func searchMarkdownFilesByTokens(query, dir, resultType string, limit int) []sea
 	minMatches := searchFallbackMinMatches(len(tokens))
 
 	results := make([]searchResult, 0)
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		VerbosePrintf("token fallback search root error for %s: %v\n", dir, err)
+		return nil
+	}
+	defer root.Close()
+
 	if err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil || entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil || relPath == "." || relPath == ".." || strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
+			return nil
+		}
+		data, err := root.ReadFile(relPath)
 		if err != nil {
 			return nil
 		}
