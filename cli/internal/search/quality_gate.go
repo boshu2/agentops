@@ -90,8 +90,17 @@ func AssessLearningFile(path string) (hasSource bool, isStale bool, err error) {
 	staleThreshold := time.Now().Add(-staleDays * 24 * time.Hour)
 	mtimeStale := info.ModTime().Before(staleThreshold)
 
+	hasSource, lastRewardAt, err := scanLearningFrontMatter(f)
+	if err != nil {
+		return hasSource, false, err
+	}
+	return hasSource, learningIsStale(mtimeStale, lastRewardAt, staleThreshold), nil
+}
+
+func scanLearningFrontMatter(f *os.File) (bool, time.Time, error) {
 	scanner := bufio.NewScanner(f)
 	inFrontMatter := false
+	hasSource := false
 	var lastRewardAt time.Time
 
 	for scanner.Scan() {
@@ -110,31 +119,36 @@ func AssessLearningFile(path string) (hasSource bool, isStale bool, err error) {
 			continue
 		}
 
-		if strings.HasPrefix(line, "source_bead:") || strings.HasPrefix(line, "source-bead:") {
-			val := strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
-			if val != "" && val != "null" && val != "~" {
-				hasSource = true
-			}
+		if frontMatterHasValue(line, "source_bead:", "source-bead:") {
+			hasSource = true
 		}
 
-		if strings.HasPrefix(line, "last_reward_at:") || strings.HasPrefix(line, "last-reward-at:") {
-			val := strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
+		if val, ok := frontMatterValue(line, "last_reward_at:", "last-reward-at:"); ok {
 			if t, parseErr := time.Parse(time.RFC3339, val); parseErr == nil {
 				lastRewardAt = t
 			}
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return hasSource, false, err
-	}
+	return hasSource, lastRewardAt, scanner.Err()
+}
 
-	// Stale = mtime old AND no recent reward
-	if mtimeStale {
-		if lastRewardAt.IsZero() || lastRewardAt.Before(staleThreshold) {
-			isStale = true
+func frontMatterHasValue(line string, prefixes ...string) bool {
+	val, ok := frontMatterValue(line, prefixes...)
+	return ok && val != "" && val != "null" && val != "~"
+}
+
+func frontMatterValue(line string, prefixes ...string) (string, bool) {
+	for _, prefix := range prefixes {
+		if !strings.HasPrefix(line, prefix) {
+			continue
 		}
+		_, val, ok := strings.Cut(line, ":")
+		return strings.TrimSpace(val), ok
 	}
+	return "", false
+}
 
-	return hasSource, isStale, nil
+func learningIsStale(mtimeStale bool, lastRewardAt time.Time, staleThreshold time.Time) bool {
+	return mtimeStale && (lastRewardAt.IsZero() || lastRewardAt.Before(staleThreshold))
 }
