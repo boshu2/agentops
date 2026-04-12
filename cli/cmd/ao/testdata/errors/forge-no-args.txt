@@ -14,6 +14,7 @@ Usage:
 Available Commands:
   batch       Process multiple transcripts at once
   markdown    Extract knowledge from markdown files
+  review      Tier 2 structural review of draft session pages
   transcript  Extract knowledge from Claude Code transcripts
 
 Flags:
