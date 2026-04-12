@@ -42,6 +42,17 @@ func TestResolveDreamLocalCuratorConfigDetectsOllamaModel(t *testing.T) {
 	}
 }
 
+func TestDefaultCuratorAllowedJobKindsReturnsCopy(t *testing.T) {
+	got := defaultCuratorAllowedJobKinds()
+	if len(got) == 0 {
+		t.Fatal("defaultCuratorAllowedJobKinds returned empty slice")
+	}
+	got[0] = "mutated"
+	if defaultCuratorJobKinds[0] == "mutated" {
+		t.Fatal("defaultCuratorAllowedJobKinds exposed defaultCuratorJobKinds backing array")
+	}
+}
+
 func TestRunCuratorEnqueueWritesValidatedJob(t *testing.T) {
 	server := fakeOllamaServer(t, []string{"gemma4:e4b"})
 	workerDir := t.TempDir()

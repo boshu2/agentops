@@ -222,57 +222,71 @@ func resolveDreamLocalCuratorConfig(cfg config.DreamLocalCuratorConfig, timeout 
 	if resolved.Engine == "" {
 		resolved.Engine = defaultCuratorEngine
 	}
+	applyCuratorDirectoryDefaults(&resolved)
+	if resolved.OllamaURL == "" {
+		resolved.OllamaURL = resolveCuratorOllamaURL(timeout)
+	}
+	if resolved.Model == "" {
+		resolved.Model = resolveCuratorModel(resolved.OllamaURL, timeout)
+	}
+	if resolved.HourlyCap == 0 {
+		resolved.HourlyCap = defaultCuratorHourlyCap
+	}
+	if len(resolved.AllowedJobKinds) == 0 {
+		resolved.AllowedJobKinds = defaultCuratorAllowedJobKinds()
+	}
+	if resolved.Enabled == nil {
+		resolved.Enabled = resolveCuratorEnabled(resolved, timeout)
+	}
+	return resolved
+}
+
+func applyCuratorDirectoryDefaults(resolved *config.DreamLocalCuratorConfig) {
 	if resolved.WorkerDir == "" && curatorDirExists(`D:\dream`) {
 		resolved.WorkerDir = `D:\dream`
 	}
 	if resolved.VaultDir == "" && curatorDirExists(`D:\vault`) {
 		resolved.VaultDir = `D:\vault`
 	}
-	if resolved.OllamaURL == "" {
-		fallbackEndpoint := ""
-		for _, endpoint := range []string{defaultCuratorOllamaURL, "http://127.0.0.1:11434"} {
-			probe := probeOllama(endpoint, timeout)
-			if !probe.Reachable {
-				continue
-			}
-			if fallbackEndpoint == "" {
-				fallbackEndpoint = endpoint
-			}
-			if containsString(probe.Models, defaultCuratorModel) {
-				resolved.OllamaURL = endpoint
-				break
-			}
+}
+
+func resolveCuratorOllamaURL(timeout time.Duration) string {
+	fallbackEndpoint := ""
+	for _, endpoint := range []string{defaultCuratorOllamaURL, "http://127.0.0.1:11434"} {
+		probe := probeOllama(endpoint, timeout)
+		if !probe.Reachable {
+			continue
 		}
-		if resolved.OllamaURL == "" {
-			resolved.OllamaURL = fallbackEndpoint
+		if fallbackEndpoint == "" {
+			fallbackEndpoint = endpoint
 		}
-		if resolved.OllamaURL == "" {
-			resolved.OllamaURL = defaultCuratorOllamaURL
+		if containsString(probe.Models, defaultCuratorModel) {
+			return endpoint
 		}
 	}
-	if resolved.Model == "" {
-		probe := probeOllama(resolved.OllamaURL, timeout)
-		for _, candidate := range []string{defaultCuratorModel, "gemma4:latest", "gemma4:26b"} {
-			if containsString(probe.Models, candidate) {
-				resolved.Model = candidate
-				break
-			}
+	if fallbackEndpoint != "" {
+		return fallbackEndpoint
+	}
+	return defaultCuratorOllamaURL
+}
+
+func resolveCuratorModel(ollamaURL string, timeout time.Duration) string {
+	probe := probeOllama(ollamaURL, timeout)
+	for _, candidate := range []string{defaultCuratorModel, "gemma4:latest", "gemma4:26b"} {
+		if containsString(probe.Models, candidate) {
+			return candidate
 		}
-		if resolved.Model == "" {
-			resolved.Model = defaultCuratorModel
-		}
 	}
-	if resolved.HourlyCap == 0 {
-		resolved.HourlyCap = defaultCuratorHourlyCap
-	}
-	if len(resolved.AllowedJobKinds) == 0 {
-		resolved.AllowedJobKinds = append([]string{}, defaultCuratorJobKinds...)
-	}
-	if resolved.Enabled == nil {
-		enabled := resolved.WorkerDir != "" || containsString(probeOllama(resolved.OllamaURL, timeout).Models, resolved.Model)
-		resolved.Enabled = &enabled
-	}
-	return resolved
+	return defaultCuratorModel
+}
+
+func defaultCuratorAllowedJobKinds() []string {
+	return append([]string{}, defaultCuratorJobKinds...)
+}
+
+func resolveCuratorEnabled(resolved config.DreamLocalCuratorConfig, timeout time.Duration) *bool {
+	enabled := resolved.WorkerDir != "" || containsString(probeOllama(resolved.OllamaURL, timeout).Models, resolved.Model)
+	return &enabled
 }
 
 func buildDreamLocalCuratorStatus(curator config.DreamLocalCuratorConfig, timeout time.Duration) dreamLocalCuratorStatus {
