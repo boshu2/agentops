@@ -974,6 +974,22 @@ func TestInjectLearnings_rankLearnings(t *testing.T) {
 // collectLearnings with global dir
 // ---------------------------------------------------------------------------
 
+func TestLocalLearningDedupeSetsTracksAbsPathsAndLowerTitles(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "learning.md")
+	paths, titles := localLearningDedupeSets([]string{file}, []learning{{Title: "Case Sensitive Title"}})
+
+	abs, err := filepath.Abs(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !paths[abs] {
+		t.Fatalf("local path %q was not tracked: %#v", abs, paths)
+	}
+	if !titles["case sensitive title"] {
+		t.Fatalf("lowercase title was not tracked: %#v", titles)
+	}
+}
+
 func TestInjectLearnings_collectLearnings_WithGlobalDir(t *testing.T) {
 	// Create local learnings
 	localDir := t.TempDir()

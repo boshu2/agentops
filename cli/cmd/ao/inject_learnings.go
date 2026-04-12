@@ -55,8 +55,25 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 
 	now := nowFunc()
 	tokens := queryTokens(strings.ToLower(query))
-	learnings := make([]learning, 0, len(files))
+	learnings := collectLocalLearnings(files, tokens, now)
 
+	if globalDir != "" {
+		localPaths, localTitles := localLearningDedupeSets(files, learnings)
+		learnings = appendGlobalLearnings(learnings, globalDir, localPaths, localTitles, tokens, now)
+	}
+
+	if len(learnings) == 0 {
+		return nil, nil
+	}
+
+	rankLearnings(learnings)
+	applyGlobalLearningWeight(learnings, globalWeight)
+
+	return limitCollectedLearnings(learnings, limit), nil
+}
+
+func collectLocalLearnings(files []string, tokens []string, now time.Time) []learning {
+	learnings := make([]learning, 0, len(files))
 	for _, file := range files {
 		l, ok := processLearningFile(file, tokens, now)
 		if !ok {
@@ -64,8 +81,10 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 		}
 		learnings = append(learnings, l)
 	}
+	return learnings
+}
 
-	// Build dedup sets: by path (same file) and by title (promoted copy of same learning)
+func localLearningDedupeSets(files []string, learnings []learning) (map[string]bool, map[string]bool) {
 	localPaths := make(map[string]bool, len(files))
 	localTitles := make(map[string]bool, len(learnings))
 	for _, f := range files {
@@ -78,35 +97,34 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 			localTitles[strings.ToLower(l.Title)] = true
 		}
 	}
+	return localPaths, localTitles
+}
 
-	// Collect global learnings (cross-repo knowledge)
-	if globalDir != "" {
-		globalFiles := globLearningFiles(globalDir)
-		for _, file := range globalFiles {
-			// Skip if same absolute path as a local file
-			if abs, err := filepath.Abs(file); err == nil && localPaths[abs] {
-				continue
-			}
-			l, ok := processLearningFile(file, tokens, now)
-			if !ok {
-				continue
-			}
-			// Skip if title matches a local learning (promoted copy of same content)
-			if l.Title != "" && localTitles[strings.ToLower(l.Title)] {
-				continue
-			}
-			l.Global = true
-			learnings = append(learnings, l)
+func appendGlobalLearnings(learnings []learning, globalDir string, localPaths, localTitles map[string]bool, tokens []string, now time.Time) []learning {
+	globalFiles := globLearningFiles(globalDir)
+	for _, file := range globalFiles {
+		if globalLearningDuplicate(file, localPaths) {
+			continue
 		}
+		l, ok := processLearningFile(file, tokens, now)
+		if !ok {
+			continue
+		}
+		if l.Title != "" && localTitles[strings.ToLower(l.Title)] {
+			continue
+		}
+		l.Global = true
+		learnings = append(learnings, l)
 	}
+	return learnings
+}
 
-	if len(learnings) == 0 {
-		return nil, nil
-	}
+func globalLearningDuplicate(file string, localPaths map[string]bool) bool {
+	abs, err := filepath.Abs(file)
+	return err == nil && localPaths[abs]
+}
 
-	rankLearnings(learnings)
-
-	// Apply global weight penalty post-scoring
+func applyGlobalLearningWeight(learnings []learning, globalWeight float64) {
 	if globalWeight > 0 && globalWeight < 1.0 {
 		for i := range learnings {
 			if learnings[i].Global {
@@ -118,11 +136,13 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 			return cmp.Compare(b.CompositeScore, a.CompositeScore)
 		})
 	}
+}
 
+func limitCollectedLearnings(learnings []learning, limit int) []learning {
 	if len(learnings) > limit {
-		learnings = learnings[:limit]
+		return learnings[:limit]
 	}
-	return learnings, nil
+	return learnings
 }
 
 // globLearningFiles returns *.md and *.jsonl files under dir, including
@@ -138,9 +158,13 @@ func findLearningFiles(cwd string) ([]string, error) {
 }
 
 // Thin wrappers — canonical definitions in internal/search/learnings.go.
-func queryTokens(queryLower string) []string                          { return search.QueryTokens(queryLower) }
-func matchesQuery(tokens []string, title, summary, body string) bool  { return search.MatchesQuery(tokens, title, summary, body) }
-func matchRatio(tokens []string, title, summary, body string) float64 { return search.MatchRatio(tokens, title, summary, body) }
+func queryTokens(queryLower string) []string { return search.QueryTokens(queryLower) }
+func matchesQuery(tokens []string, title, summary, body string) bool {
+	return search.MatchesQuery(tokens, title, summary, body)
+}
+func matchRatio(tokens []string, title, summary, body string) float64 {
+	return search.MatchRatio(tokens, title, summary, body)
+}
 
 const (
 	sectionCoverageBonusCap    = search.SectionCoverageBonusCap
@@ -484,15 +508,19 @@ func writeDecayFields(data map[string]any, newConfidence float64, now time.Time)
 // Type alias + thin wrappers — canonical definitions in internal/search/learnings.go.
 type frontMatter = search.FrontMatter
 
-func parseFrontMatter(lines []string) (frontMatter, int)    { return search.ParseFrontMatter(lines) }
-func parseFrontMatterLine(line string, fm *frontMatter)      { search.ParseFrontMatterLine(line, fm) }
-func isInlineMetadata(line string) bool                      { return search.IsInlineMetadata(line) }
-func extractSummary(lines []string, startIdx int) string     { return search.ExtractSummary(lines, startIdx) }
-func isSuperseded(fm frontMatter) bool                       { return search.IsSuperseded(fm) }
-func isPromoted(fm frontMatter) bool                         { return search.IsPromoted(fm) }
+func parseFrontMatter(lines []string) (frontMatter, int) { return search.ParseFrontMatter(lines) }
+func parseFrontMatterLine(line string, fm *frontMatter)  { search.ParseFrontMatterLine(line, fm) }
+func isInlineMetadata(line string) bool                  { return search.IsInlineMetadata(line) }
+func extractSummary(lines []string, startIdx int) string {
+	return search.ExtractSummary(lines, startIdx)
+}
+func isSuperseded(fm frontMatter) bool { return search.IsSuperseded(fm) }
+func isPromoted(fm frontMatter) bool   { return search.IsPromoted(fm) }
 
-func parseLearningBody(lines []string, start int, l *learning) { search.ParseLearningBody(lines, start, l) }
-func parseLearningFile(path string) (learning, error)         { return search.ParseLearningFile(path) }
+func parseLearningBody(lines []string, start int, l *learning) {
+	search.ParseLearningBody(lines, start, l)
+}
+func parseLearningFile(path string) (learning, error) { return search.ParseLearningFile(path) }
 func populateLearningFromJSON(data map[string]any, l *learning) {
 	search.PopulateLearningFromJSON(data, l)
 }
