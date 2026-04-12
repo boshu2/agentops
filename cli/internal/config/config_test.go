@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -1964,6 +1965,12 @@ func TestApplyEnv_DreamOverrides(t *testing.T) {
 	t.Setenv("AGENTOPS_DREAM_REPORT_DIR", "/tmp/dream")
 	t.Setenv("AGENTOPS_DREAM_RUN_TIMEOUT", "10h")
 	t.Setenv("AGENTOPS_DREAM_KEEP_AWAKE", "false")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_ENABLED", "true")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "ollama")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_OLLAMA_URL", "http://127.0.0.1:11435")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "gemma4:e4b")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "D:\\dream")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_VAULT_DIR", "D:\\vault")
 
 	got := applyEnv(cfg)
 	if got.Dream.ReportDir != "/tmp/dream" {
@@ -1974,6 +1981,54 @@ func TestApplyEnv_DreamOverrides(t *testing.T) {
 	}
 	if got.Dream.KeepAwake == nil || *got.Dream.KeepAwake != false {
 		t.Fatalf("Dream.KeepAwake = %#v, want false", got.Dream.KeepAwake)
+	}
+	if got.Dream.LocalCurator.Enabled == nil || *got.Dream.LocalCurator.Enabled != true {
+		t.Fatalf("Dream.LocalCurator.Enabled = %#v, want true", got.Dream.LocalCurator.Enabled)
+	}
+	if got.Dream.LocalCurator.Engine != "ollama" {
+		t.Fatalf("Dream.LocalCurator.Engine = %q, want ollama", got.Dream.LocalCurator.Engine)
+	}
+	if got.Dream.LocalCurator.OllamaURL != "http://127.0.0.1:11435" {
+		t.Fatalf("Dream.LocalCurator.OllamaURL = %q, want http://127.0.0.1:11435", got.Dream.LocalCurator.OllamaURL)
+	}
+	if got.Dream.LocalCurator.Model != "gemma4:e4b" {
+		t.Fatalf("Dream.LocalCurator.Model = %q, want gemma4:e4b", got.Dream.LocalCurator.Model)
+	}
+	if got.Dream.LocalCurator.WorkerDir != "D:\\dream" {
+		t.Fatalf("Dream.LocalCurator.WorkerDir = %q, want D:\\dream", got.Dream.LocalCurator.WorkerDir)
+	}
+	if got.Dream.LocalCurator.VaultDir != "D:\\vault" {
+		t.Fatalf("Dream.LocalCurator.VaultDir = %q, want D:\\vault", got.Dream.LocalCurator.VaultDir)
+	}
+}
+
+func TestResolve_DreamLocalCuratorEnv(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_ENABLED", "true")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "ollama")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_OLLAMA_URL", "http://127.0.0.1:11435")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "gemma4:e4b")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "D:\\dream")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_VAULT_DIR", "D:\\vault")
+
+	rc := Resolve("", "", false)
+	if rc.DreamCuratorEnabled.Value != true || rc.DreamCuratorEnabled.Source != SourceEnv {
+		t.Fatalf("DreamCuratorEnabled = (%v, %v), want (true, %v)", rc.DreamCuratorEnabled.Value, rc.DreamCuratorEnabled.Source, SourceEnv)
+	}
+	if rc.DreamCuratorEngine.Value != "ollama" || rc.DreamCuratorEngine.Source != SourceEnv {
+		t.Fatalf("DreamCuratorEngine = (%v, %v), want (ollama, %v)", rc.DreamCuratorEngine.Value, rc.DreamCuratorEngine.Source, SourceEnv)
+	}
+	if rc.DreamCuratorOllamaURL.Value != "http://127.0.0.1:11435" || rc.DreamCuratorOllamaURL.Source != SourceEnv {
+		t.Fatalf("DreamCuratorOllamaURL = (%v, %v), want env URL", rc.DreamCuratorOllamaURL.Value, rc.DreamCuratorOllamaURL.Source)
+	}
+	if rc.DreamCuratorModel.Value != "gemma4:e4b" || rc.DreamCuratorModel.Source != SourceEnv {
+		t.Fatalf("DreamCuratorModel = (%v, %v), want env model", rc.DreamCuratorModel.Value, rc.DreamCuratorModel.Source)
+	}
+	if rc.DreamCuratorWorkerDir.Value != "D:\\dream" || rc.DreamCuratorWorkerDir.Source != SourceEnv {
+		t.Fatalf("DreamCuratorWorkerDir = (%v, %v), want env worker", rc.DreamCuratorWorkerDir.Value, rc.DreamCuratorWorkerDir.Source)
+	}
+	if rc.DreamCuratorVaultDir.Value != "D:\\vault" || rc.DreamCuratorVaultDir.Source != SourceEnv {
+		t.Fatalf("DreamCuratorVaultDir = (%v, %v), want env vault", rc.DreamCuratorVaultDir.Value, rc.DreamCuratorVaultDir.Source)
 	}
 }
 
@@ -1986,6 +2041,16 @@ func TestMergeDream_ExtendedFields(t *testing.T) {
 			ScheduleAt:      "01:30",
 			ConsensusPolicy: "majority",
 			CreativeLane:    boolPtr(true),
+			LocalCurator: DreamLocalCuratorConfig{
+				Enabled:         boolPtr(true),
+				Engine:          "ollama",
+				OllamaURL:       "http://127.0.0.1:11435",
+				Model:           "gemma4:e4b",
+				WorkerDir:       "D:\\dream",
+				VaultDir:        "D:\\vault",
+				HourlyCap:       20,
+				AllowedJobKinds: []string{"ingest-claude-session", "lint-wiki", "dream-seed"},
+			},
 		},
 	}
 
@@ -2004,6 +2069,18 @@ func TestMergeDream_ExtendedFields(t *testing.T) {
 	}
 	if got.Dream.CreativeLane == nil || !*got.Dream.CreativeLane {
 		t.Fatalf("Dream.CreativeLane = %#v, want true", got.Dream.CreativeLane)
+	}
+	if got.Dream.LocalCurator.Enabled == nil || !*got.Dream.LocalCurator.Enabled {
+		t.Fatalf("Dream.LocalCurator.Enabled = %#v, want true", got.Dream.LocalCurator.Enabled)
+	}
+	if got.Dream.LocalCurator.Model != "gemma4:e4b" {
+		t.Fatalf("Dream.LocalCurator.Model = %q, want gemma4:e4b", got.Dream.LocalCurator.Model)
+	}
+	if got.Dream.LocalCurator.HourlyCap != 20 {
+		t.Fatalf("Dream.LocalCurator.HourlyCap = %d, want 20", got.Dream.LocalCurator.HourlyCap)
+	}
+	if got := strings.Join(got.Dream.LocalCurator.AllowedJobKinds, ","); got != "ingest-claude-session,lint-wiki,dream-seed" {
+		t.Fatalf("Dream.LocalCurator.AllowedJobKinds = %q", got)
 	}
 }
 
