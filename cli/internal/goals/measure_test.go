@@ -208,10 +208,10 @@ func TestMeasure_SkippedGoalsExcludedFromScore(t *testing.T) {
 		Version: 2,
 		Goals: []Goal{
 			{ID: "pass-1", Check: "exit 0", Weight: 5, Type: GoalTypeHealth},
-			{ID: "skip-1", Check: "sleep 10", Weight: 10, Type: GoalTypeHealth},
+			{ID: "skip-1", Check: "sleep 5", Weight: 10, Type: GoalTypeHealth},
 		},
 	}
-	snap := Measure(gf, 50*time.Millisecond)
+	snap := Measure(gf, 2*time.Second)
 	if snap.Summary.Skipped != 1 {
 		t.Errorf("Skipped = %d, want 1", snap.Summary.Skipped)
 	}

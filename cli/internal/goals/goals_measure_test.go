@@ -422,11 +422,11 @@ func TestGoalsMeasure_SkippedGoals(t *testing.T) {
 		Version: 2,
 		Goals: []goals.Goal{
 			{ID: "pass-1", Check: "exit 0", Weight: 5, Type: goals.GoalTypeHealth},
-			{ID: "timeout-1", Check: "sleep 10", Weight: 10, Type: goals.GoalTypeHealth},
+			{ID: "timeout-1", Check: "sleep 5", Weight: 10, Type: goals.GoalTypeHealth},
 		},
 	}
-	// Very short timeout to force skip
-	snap := goals.Measure(gf, 50*time.Millisecond)
+	// Timeout remains shorter than the slow goal without racing shell startup.
+	snap := goals.Measure(gf, 2*time.Second)
 
 	if snap.Summary.Skipped != 1 {
 		t.Errorf("Skipped = %d, want 1", snap.Summary.Skipped)
