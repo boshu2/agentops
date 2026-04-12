@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -305,6 +306,9 @@ func ProcessAlive(pid int) bool {
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		return false
+	}
+	if runtime.GOOS == "windows" {
+		return true
 	}
 	// signal(0) returns nil if the process exists and the caller has
 	// permission to signal it. ESRCH (or os.ErrProcessDone on Darwin /
