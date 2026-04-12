@@ -76,6 +76,25 @@ func TestOllamaClient_Generate_SendsStreamFalse(t *testing.T) {
 	if model, _ := captured["model"].(string); model != "gemma2:9b" {
 		t.Errorf("model: want gemma2:9b, got %v", captured["model"])
 	}
+	if format, _ := captured["format"].(string); format != "json" {
+		t.Errorf("format: want json, got %v", captured["format"])
+	}
+	if keepAlive, _ := captured["keep_alive"].(string); keepAlive != "30m" {
+		t.Errorf("keep_alive: want 30m, got %v", captured["keep_alive"])
+	}
+	options, ok := captured["options"].(map[string]any)
+	if !ok {
+		t.Fatalf("options: got %T", captured["options"])
+	}
+	if temperature, _ := options["temperature"].(float64); temperature != 0.2 {
+		t.Errorf("temperature: want 0.2, got %v", options["temperature"])
+	}
+	if numPredict, _ := options["num_predict"].(float64); numPredict != 800 {
+		t.Errorf("num_predict: want 800, got %v", options["num_predict"])
+	}
+	if numCtx, _ := options["num_ctx"].(float64); numCtx != 4096 {
+		t.Errorf("num_ctx: want 4096, got %v", options["num_ctx"])
+	}
 }
 
 func TestOllamaClient_Init_ErrModelNotInstalled(t *testing.T) {

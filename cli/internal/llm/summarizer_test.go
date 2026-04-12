@@ -30,9 +30,20 @@ func (f *fakeLLM) Generate(prompt string) (string, error) {
 
 func (f *fakeLLM) Digest() string     { return "sha256:fake-digest-1234" }
 func (f *fakeLLM) ContextBudget() int { return 8192 }
-func (f *fakeLLM) ModelName() string  { return "gemma2:9b" }
+func (f *fakeLLM) ModelName() string  { return "gemma4:e4b" }
 
-// A realistic gemma output that the spike validated on real chunks.
+// validJSONOutput matches what the proven JS worker prompt produces.
+const validJSONOutput = `{
+  "title": "Worktree isolation prevents parallel session file loss",
+  "summary": "The session discovered that parallel Claude Code sessions in a shared worktree destroy untracked files during branch switches. Git worktree add was the fix.",
+  "entities": ["cli/internal/llm/chunker.go", "feat/ao-forge-tiered"],
+  "concepts": ["worktree isolation", "parallel session hazard"],
+  "decisions": ["chose git worktree over single-branch commits because parallel session kept flipping HEAD"],
+  "open_questions": ["Does the parallel session have a branch-switch hook?"],
+  "work_phase": "implement"
+}`
+
+// validSpikeOutput is the legacy strict-markdown format (gemma2:9b fallback).
 const validSpikeOutput = `### Intent
 Run vibe command
 
@@ -45,28 +56,46 @@ The assistant will run the vibe command in quick mode to analyze recent changes.
 ### Assistant condensed
 The assistant will execute the vibe command with the --quick flag.`
 
-func TestSummarizer_SummarizeChunk_ParsesStrictMarkdown(t *testing.T) {
-	f := &fakeLLM{responses: []string{validSpikeOutput}}
+func TestSummarizer_SummarizeChunk_ParsesJSON(t *testing.T) {
+	f := &fakeLLM{responses: []string{validJSONOutput}}
 	s := NewSummarizer(f)
 	chunk := TurnChunk{Index: 0, UserText: "u", AssistantText: "a"}
 	note, err := s.SummarizeChunk(chunk)
 	if err != nil {
 		t.Fatalf("SummarizeChunk: %v", err)
 	}
-	if note.Intent != "Run vibe command" {
+	if !strings.Contains(note.Intent, "Worktree isolation") {
 		t.Errorf("Intent: got %q", note.Intent)
 	}
-	if !strings.Contains(note.Summary, "vibe command") {
+	if !strings.Contains(note.Summary, "parallel Claude Code sessions") {
 		t.Errorf("Summary: got %q", note.Summary)
 	}
-	if len(note.Entities) == 0 {
-		t.Errorf("Entities: want at least 1, got 0")
+	if len(note.Entities) != 2 {
+		t.Errorf("Entities: want 2, got %d: %v", len(note.Entities), note.Entities)
 	}
-	if !strings.Contains(note.AssistantCondensed, "--quick") {
-		t.Errorf("AssistantCondensed: got %q", note.AssistantCondensed)
+	if len(note.Concepts) != 2 {
+		t.Errorf("Concepts: want 2, got %v", note.Concepts)
+	}
+	if len(note.Decisions) != 1 {
+		t.Errorf("Decisions: want 1, got %v", note.Decisions)
+	}
+	if note.WorkPhase != "implement" {
+		t.Errorf("WorkPhase: got %q", note.WorkPhase)
 	}
 	if note.Skipped {
 		t.Errorf("should not be Skipped")
+	}
+}
+
+func TestSummarizer_SummarizeChunk_FallbackMarkdown(t *testing.T) {
+	f := &fakeLLM{responses: []string{validSpikeOutput}}
+	s := NewSummarizer(f)
+	note, err := s.SummarizeChunk(TurnChunk{})
+	if err != nil {
+		t.Fatalf("SummarizeChunk: %v", err)
+	}
+	if note.Intent != "Run vibe command" {
+		t.Errorf("Intent: got %q", note.Intent)
 	}
 }
 
@@ -82,25 +111,27 @@ func TestSummarizer_SummarizeChunk_SkipOutput(t *testing.T) {
 	}
 }
 
-func TestSummarizer_SummarizeChunk_CodeFenceTolerance(t *testing.T) {
-	// Tolerate ```markdown fences wrapping the whole output (per spike scoring).
-	f := &fakeLLM{responses: []string{"```markdown\n" + validSpikeOutput + "\n```"}}
+func TestSummarizer_SummarizeChunk_EmptyJSONSkip(t *testing.T) {
+	f := &fakeLLM{responses: []string{`{"title":"","summary":""}`}}
 	s := NewSummarizer(f)
 	note, err := s.SummarizeChunk(TurnChunk{})
 	if err != nil {
-		t.Fatalf("SummarizeChunk with fence: %v", err)
+		t.Fatalf("SummarizeChunk: %v", err)
 	}
-	if note.Intent == "" {
-		t.Errorf("code-fence tolerance failed, Intent empty")
+	if !note.Skipped {
+		t.Errorf("empty title+summary should be Skipped")
 	}
 }
 
-func TestSummarizer_SummarizeChunk_MissingSectionErrors(t *testing.T) {
-	f := &fakeLLM{responses: []string{"### Intent\nfoo\n### Summary\nbar"}}
+func TestSummarizer_SummarizeChunk_JSONSkipObject(t *testing.T) {
+	f := &fakeLLM{responses: []string{`{"skip":true}`}}
 	s := NewSummarizer(f)
-	_, err := s.SummarizeChunk(TurnChunk{})
-	if err == nil {
-		t.Fatal("want error on missing Entities/Assistant condensed")
+	note, err := s.SummarizeChunk(TurnChunk{})
+	if err != nil {
+		t.Fatalf("SummarizeChunk: %v", err)
+	}
+	if !note.Skipped {
+		t.Errorf("{skip:true} should be Skipped")
 	}
 }
 
@@ -113,8 +144,8 @@ func TestSummarizer_SummarizeChunk_LLMErrorPropagates(t *testing.T) {
 	}
 }
 
-func TestSummarizer_PromptContainsSpikeTemplate(t *testing.T) {
-	f := &fakeLLM{responses: []string{validSpikeOutput}}
+func TestSummarizer_PromptContainsTranscriptDelimiters(t *testing.T) {
+	f := &fakeLLM{responses: []string{validJSONOutput}}
 	s := NewSummarizer(f)
 	chunk := TurnChunk{UserText: "hello", AssistantText: "world"}
 	_, _ = s.SummarizeChunk(chunk)
@@ -122,43 +153,20 @@ func TestSummarizer_PromptContainsSpikeTemplate(t *testing.T) {
 		t.Fatalf("want 1 prompt, got %d", len(f.prompts))
 	}
 	p := f.prompts[0]
-	// Verbatim tags from the W0-6 spike PROMPT_TEMPLATE.
 	for _, want := range []string{
-		"strict markdown, no JSON",
-		"### Intent",
-		"### Summary",
-		"### Entities",
-		"### Assistant condensed",
-		`If the turn has no substantive content, output exactly "SKIP"`,
+		"=== BEGIN TRANSCRIPT ===",
+		"=== END TRANSCRIPT ===",
+		"Return ONLY a JSON object",
 		"USER:\nhello",
 		"ASSISTANT:\nworld",
 	} {
 		if !strings.Contains(p, want) {
-			t.Errorf("prompt missing %q\nfull prompt:\n%s", want, p)
+			t.Errorf("prompt missing %q", want)
 		}
 	}
 }
 
-func TestRenderPrompt_AllowsLiteralPercentSigns(t *testing.T) {
-	template := "Progress: 100% complete\n\nINPUT:\n%s"
-	input := "USER:\ncoverage is 99.5%\nASSISTANT:\nship it"
-	got := renderPrompt(template, input)
-
-	for _, want := range []string{
-		"Progress: 100% complete",
-		"coverage is 99.5%",
-		"ASSISTANT:\nship it",
-	} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("rendered prompt missing %q\nfull prompt:\n%s", want, got)
-		}
-	}
-	if strings.Contains(got, "%!") {
-		t.Fatalf("rendered prompt contains fmt interpolation artifact: %s", got)
-	}
-}
-
-func TestParseEntities_HandlesWikilinks(t *testing.T) {
+func TestParseEntityList_HandlesWikilinks(t *testing.T) {
 	body := `- [[file:/foo/bar.go]]
 - [[bead:na-123]]
 - [[concept:noise-filter]]`

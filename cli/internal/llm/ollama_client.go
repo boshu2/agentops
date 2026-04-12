@@ -76,10 +76,12 @@ type showResponse struct {
 }
 
 type generateRequest struct {
-	Model   string                 `json:"model"`
-	Prompt  string                 `json:"prompt"`
-	Stream  bool                   `json:"stream"`
-	Options map[string]interface{} `json:"options,omitempty"`
+	Model     string                 `json:"model"`
+	Prompt    string                 `json:"prompt"`
+	Stream    bool                   `json:"stream"`
+	Format    string                 `json:"format,omitempty"`
+	Options   map[string]interface{} `json:"options,omitempty"`
+	KeepAlive string                 `json:"keep_alive,omitempty"`
 }
 
 type generateResponse struct {
@@ -163,9 +165,15 @@ func (c *OllamaClient) Generate(prompt string) (string, error) {
 		// CRITICAL: stream:false. Ollama's default is true which would break
 		// single-shot JSON decode. Asserted by TestOllamaClient_Generate_SendsStreamFalse.
 		Stream: false,
+		// format:json forces ollama's structured output mode. gemma4:e4b
+		// returns empty responses without this; the JS worker on bushido
+		// uses it for all 9K+ successful ingests.
+		Format:    "json",
+		KeepAlive: "30m",
 		Options: map[string]interface{}{
-			"temperature": 0.3,
-			"num_predict": 500,
+			"temperature": 0.2,
+			"num_predict": 800,
+			"num_ctx":     4096,
 		},
 	}
 	raw, err := json.Marshal(body)
