@@ -27,6 +27,19 @@ var SessionUUIDPattern = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a
 // SessionClaudeTranscriptPattern matches Claude session IDs like "ses_abc".
 var SessionClaudeTranscriptPattern = regexp.MustCompile(`(ses_[A-Za-z0-9]+)`)
 
+type sessionTypeRule struct {
+	sessionType string
+	keywords    []string
+}
+
+var sessionTypeRules = []sessionTypeRule{
+	{sessionType: "career", keywords: []string{"career", "interview", "resume", "salary"}},
+	{sessionType: "debug", keywords: []string{"debug", "stack trace", "broken", "error log"}},
+	{sessionType: "brainstorm", keywords: []string{"brainstorm", "what if", "option a vs"}},
+	{sessionType: "research", keywords: []string{"research", "explore"}},
+	{sessionType: "implement", keywords: []string{"go test", "git commit", "implement", "feat("}},
+}
+
 // CollectFilesFromPatterns expands glob patterns into a file list, optionally filtered.
 func CollectFilesFromPatterns(patterns []string, matchFilter func(string) bool) ([]string, error) {
 	var files []string
@@ -61,31 +74,36 @@ func (e *PatternError) Unwrap() error { return e.Err }
 
 // DetectSessionTypeFromContent infers session type from forged content.
 func DetectSessionTypeFromContent(summary string, knowledge, decisions []string) string {
-	combined := strings.ToLower(summary)
-	for _, k := range knowledge {
-		combined += " " + strings.ToLower(k)
+	combined := combinedSessionContent(summary, knowledge, decisions)
+	for _, rule := range sessionTypeRules {
+		if containsAnyPhrase(combined, rule.keywords) {
+			return rule.sessionType
+		}
 	}
-	for _, d := range decisions {
-		combined += " " + strings.ToLower(d)
+	return "general"
+}
+
+func combinedSessionContent(summary string, knowledge, decisions []string) string {
+	var combined strings.Builder
+	combined.WriteString(summary)
+	for _, text := range knowledge {
+		combined.WriteString(" ")
+		combined.WriteString(text)
 	}
-	switch {
-	case strings.Contains(combined, "career") || strings.Contains(combined, "interview") ||
-		strings.Contains(combined, "resume") || strings.Contains(combined, "salary"):
-		return "career"
-	case strings.Contains(combined, "debug") || strings.Contains(combined, "stack trace") ||
-		strings.Contains(combined, "broken") || strings.Contains(combined, "error log"):
-		return "debug"
-	case strings.Contains(combined, "brainstorm") || strings.Contains(combined, "what if") ||
-		strings.Contains(combined, "option a vs"):
-		return "brainstorm"
-	case strings.Contains(combined, "research") || strings.Contains(combined, "explore"):
-		return "research"
-	case strings.Contains(combined, "go test") || strings.Contains(combined, "git commit") ||
-		strings.Contains(combined, "implement") || strings.Contains(combined, "feat("):
-		return "implement"
-	default:
-		return "general"
+	for _, text := range decisions {
+		combined.WriteString(" ")
+		combined.WriteString(text)
 	}
+	return strings.ToLower(combined.String())
+}
+
+func containsAnyPhrase(content string, phrases []string) bool {
+	for _, phrase := range phrases {
+		if strings.Contains(content, phrase) {
+			return true
+		}
+	}
+	return false
 }
 
 // InferSessionIDFromPath extracts a session ID from a transcript file path.
