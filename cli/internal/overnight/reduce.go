@@ -147,229 +147,227 @@ func RunReduce(
 		log = io.Discard
 	}
 	started := time.Now()
-
-	result := &ReduceResult{
-		StageFailures: map[string]string{},
-	}
-	if cp != nil {
-		result.CheckpointPath = cp.StagingDir
-	}
-
-	if opts.Cwd == "" {
-		return result, fmt.Errorf("overnight: RunReduce requires RunLoopOptions.Cwd")
-	}
-	if cp == nil {
-		return result, fmt.Errorf("overnight: RunReduce requires a non-nil Checkpoint")
-	}
-
-	// rollback is a helper closure that drives Rollback and records the
-	// reason onto result. It never shadows the primary error; the caller
-	// still gets the original failure back.
-	rollback := func(reason string) {
-		result.RolledBack = true
-		result.RollbackReason = reason
-		if rbErr := cp.Rollback(); rbErr != nil {
-			result.Degraded = append(result.Degraded,
-				fmt.Sprintf("rollback failed: %v", rbErr))
-		}
-		fmt.Fprintf(log, "overnight/reduce: rolled back (%s)\n", reason)
-	}
-
-	closeLoopWired := closeLoopCallbacksPresent(closeLoopCallbacks)
-
-	// stagingCwd is the pseudo-cwd every mutative stage targets. The
-	// checkpoint lays out its staging tree so that StagingDir/.agents/<sub>
-	// mirrors opts.Cwd/.agents/<sub>; passing StagingDir as the cwd to
-	// lifecycle.* and RouteFindings routes every mutation into the
-	// checkpoint's staging copy, where it can be rolled back or committed
-	// atomically. Mutating opts.Cwd directly (the pre-Wave-4 bug caught in
-	// vibe finding V1) would invert the Commit semantics and destroy the
-	// corpus on first successful commit.
-	stagingCwd := cp.StagingDir
-
-	stages := []reduceStage{
-		{
-			name: "harvest-promote",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("harvest-promote")
-				}
-				if ingest == nil || ingest.HarvestCatalog == nil {
-					result.Degraded = append(result.Degraded,
-						"harvest-promote: no catalog from INGEST, skipped")
-					return nil
-				}
-				// Promote INTO the staging copy of .agents/learnings so
-				// the cross-rig consolidated artifacts land inside the
-				// checkpoint boundary and are subject to Commit/Rollback.
-				// Writing to ~/.agents/learnings from inside REDUCE would
-				// leak outside the checkpoint (vibe finding V2).
-				dest := filepath.Join(stagingCwd, ".agents", "learnings")
-				count, err := harvest.Promote(ingest.HarvestCatalog, dest, false)
-				result.HarvestPromoted = count
-				return err
-			},
-		},
-		{
-			name: "dedup",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("dedup")
-				}
-				dr, err := lifecycle.ExecuteDedup(stagingCwd, false)
-				if err != nil {
-					return err
-				}
-				if dr != nil {
-					result.DedupMerged = len(dr.Deleted)
-				}
-				return nil
-			},
-		},
-		{
-			name: "maturity-temper",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("maturity-temper")
-				}
-				result.Degraded = append(result.Degraded,
-					"maturity-temper: in-process entry deferred to follow-up")
-				return nil
-			},
-		},
-		{
-			name: "defrag-prune",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("defrag-prune")
-				}
-				pr, err := lifecycle.ExecutePrune(stagingCwd, false, 30)
-				if err != nil {
-					return err
-				}
-				if pr != nil {
-					result.DefragPruned = len(pr.Deleted)
-				}
-				return nil
-			},
-		},
-		{
-			name: "close-loop",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("close-loop")
-				}
-				if !closeLoopWired {
-					result.Degraded = append(result.Degraded,
-						"close-loop: callbacks not wired")
-					return nil
-				}
-				clr, err := lifecycle.ExecuteCloseLoop(stagingCwd, closeLoopCallbacks)
-				if err != nil {
-					return err
-				}
-				if clr != nil {
-					result.CloseLoopPromoted = clr.AutoPromote.Promoted
-				}
-				return nil
-			},
-		},
-		{
-			name: "findings-router",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("findings-router")
-				}
-				routed, degraded, err := RouteFindings(stagingCwd)
-				if err != nil {
-					return err
-				}
-				result.FindingsRouted = routed
-				for _, d := range degraded {
-					result.Degraded = append(result.Degraded,
-						fmt.Sprintf("findings-router: %s", d))
-				}
-				return nil
-			},
-		},
-		{
-			// inject-refresh is best-effort: an error here is captured
-			// as a degraded note and does NOT trigger a rollback. A
-			// stale inject cache is strictly less bad than discarding
-			// the compounded corpus landed in stages 1-6. See pm-006
-			// in the Wave 4 pre-mortem and PRODUCT.md Gap #1.
-			//
-			// Targets stagingCwd so the cache rebuilt pre-commit reflects
-			// the staged corpus; Commit promotes the rebuilt cache along
-			// with the compounded corpus in one atomic swap.
-			name: "inject-refresh",
-			run: func() error {
-				if reduceStageRecorder != nil {
-					reduceStageRecorder("inject-refresh")
-				}
-				ir, err := refreshInjectCacheFn(ctx, stagingCwd, log)
-				if ir != nil {
-					result.InjectRefreshResult = ir
-					result.InjectRefreshed = ir.Succeeded
-					for _, d := range ir.Degraded {
-						result.Degraded = append(result.Degraded,
-							fmt.Sprintf("inject-refresh: %s", d))
-					}
-				}
-				if err != nil {
-					// Capture as a soft failure: record the error
-					// string on Degraded so the morning report can
-					// surface it, but return nil so the stage loop
-					// does not roll back the iteration.
-					result.Degraded = append(result.Degraded,
-						fmt.Sprintf("inject-refresh: soft-failed: %v", err))
-				}
-				return nil
-			},
-		},
-	}
-
-	for _, stage := range stages {
-		if err := ctxCheck(ctx); err != nil {
-			result.Duration = stageDurationSince(started)
-			rollback(fmt.Sprintf("context cancelled at %s: %v", stage.name, err))
-			return result, err
-		}
-		fmt.Fprintf(log, "overnight/reduce: %s start\n", stage.name)
-		if err := stage.run(); err != nil {
-			result.StageFailures[stage.name] = err.Error()
-			result.Duration = stageDurationSince(started)
-			rollback(fmt.Sprintf("stage %s failed: %v", stage.name, err))
-			return result, fmt.Errorf("overnight/reduce: stage %s: %w", stage.name, err)
-		}
-		fmt.Fprintf(log, "overnight/reduce: %s done\n", stage.name)
-	}
-
-	// Stage 8: metadata integrity check. The round-trip guard compares
-	// frontmatter keys in the staging snapshot against the live tree —
-	// but REDUCE hasn't run cp.Commit() yet, so the live tree still
-	// holds the pre-REDUCE state. VerifyMetadataRoundTrip is still
-	// meaningful here: we confirm that any learning that existed at
-	// staging time has not been stripped from the live tree by an
-	// out-of-band mutation. Wave 4 will add a post-commit verification
-	// pass once RunLoop is driving Commit.
-	if err := ctxCheck(ctx); err != nil {
-		result.Duration = stageDurationSince(started)
-		rollback(fmt.Sprintf("context cancelled before integrity check: %v", err))
+	result := newReduceResult(cp)
+	if err := validateReduceInputs(opts, cp); err != nil {
 		return result, err
 	}
-	result.MetadataIntegrity = VerifyMetadataRoundTrip(cp)
-	if !result.MetadataIntegrity.Pass {
-		stripped := len(result.MetadataIntegrity.StrippedFields)
-		reason := fmt.Sprintf("metadata integrity failed: %d stripped field(s)", stripped)
-		result.Duration = stageDurationSince(started)
-		rollback(reason)
-		return result, fmt.Errorf("overnight/reduce: %s", reason)
+
+	runner := newReduceRunner(ctx, opts, ingest, cp, closeLoopCallbacks, log, result, started)
+	if err := runner.runStages(); err != nil {
+		return result, err
+	}
+	if err := runner.verifyMetadataIntegrity(); err != nil {
+		return result, err
 	}
 
 	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/reduce: done in %s\n", result.Duration)
 	return result, nil
+}
+
+type reduceRunner struct {
+	ctx                context.Context
+	opts               RunLoopOptions
+	ingest             *IngestResult
+	cp                 *Checkpoint
+	closeLoopCallbacks lifecycle.CloseLoopOpts
+	closeLoopWired     bool
+	log                io.Writer
+	result             *ReduceResult
+	started            time.Time
+	stagingCwd         string
+}
+
+func newReduceResult(cp *Checkpoint) *ReduceResult {
+	result := &ReduceResult{StageFailures: map[string]string{}}
+	if cp != nil {
+		result.CheckpointPath = cp.StagingDir
+	}
+	return result
+}
+
+func validateReduceInputs(opts RunLoopOptions, cp *Checkpoint) error {
+	if opts.Cwd == "" {
+		return fmt.Errorf("overnight: RunReduce requires RunLoopOptions.Cwd")
+	}
+	if cp == nil {
+		return fmt.Errorf("overnight: RunReduce requires a non-nil Checkpoint")
+	}
+	return nil
+}
+
+func newReduceRunner(
+	ctx context.Context,
+	opts RunLoopOptions,
+	ingest *IngestResult,
+	cp *Checkpoint,
+	closeLoopCallbacks lifecycle.CloseLoopOpts,
+	log io.Writer,
+	result *ReduceResult,
+	started time.Time,
+) *reduceRunner {
+	return &reduceRunner{
+		ctx:                ctx,
+		opts:               opts,
+		ingest:             ingest,
+		cp:                 cp,
+		closeLoopCallbacks: closeLoopCallbacks,
+		closeLoopWired:     closeLoopCallbacksPresent(closeLoopCallbacks),
+		log:                log,
+		result:             result,
+		started:            started,
+		stagingCwd:         cp.StagingDir,
+	}
+}
+
+func (r *reduceRunner) stages() []reduceStage {
+	return []reduceStage{
+		{name: "harvest-promote", run: r.runHarvestPromote},
+		{name: "dedup", run: r.runDedup},
+		{name: "maturity-temper", run: r.runMaturityTemper},
+		{name: "defrag-prune", run: r.runDefragPrune},
+		{name: "close-loop", run: r.runCloseLoop},
+		{name: "findings-router", run: r.runFindingsRouter},
+		{name: "inject-refresh", run: r.runInjectRefresh},
+	}
+}
+
+func (r *reduceRunner) runStages() error {
+	for _, stage := range r.stages() {
+		if err := ctxCheck(r.ctx); err != nil {
+			r.result.Duration = stageDurationSince(r.started)
+			r.rollback(fmt.Sprintf("context cancelled at %s: %v", stage.name, err))
+			return err
+		}
+		fmt.Fprintf(r.log, "overnight/reduce: %s start\n", stage.name)
+		if err := stage.run(); err != nil {
+			r.result.StageFailures[stage.name] = err.Error()
+			r.result.Duration = stageDurationSince(r.started)
+			r.rollback(fmt.Sprintf("stage %s failed: %v", stage.name, err))
+			return fmt.Errorf("overnight/reduce: stage %s: %w", stage.name, err)
+		}
+		fmt.Fprintf(r.log, "overnight/reduce: %s done\n", stage.name)
+	}
+	return nil
+}
+
+func (r *reduceRunner) rollback(reason string) {
+	r.result.RolledBack = true
+	r.result.RollbackReason = reason
+	if rbErr := r.cp.Rollback(); rbErr != nil {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("rollback failed: %v", rbErr))
+	}
+	fmt.Fprintf(r.log, "overnight/reduce: rolled back (%s)\n", reason)
+}
+
+func (r *reduceRunner) recordStage(stageName string) {
+	if reduceStageRecorder != nil {
+		reduceStageRecorder(stageName)
+	}
+}
+
+func (r *reduceRunner) runHarvestPromote() error {
+	r.recordStage("harvest-promote")
+	if r.ingest == nil || r.ingest.HarvestCatalog == nil {
+		r.result.Degraded = append(r.result.Degraded, "harvest-promote: no catalog from INGEST, skipped")
+		return nil
+	}
+	dest := filepath.Join(r.stagingCwd, ".agents", "learnings")
+	count, err := harvest.Promote(r.ingest.HarvestCatalog, dest, false)
+	r.result.HarvestPromoted = count
+	return err
+}
+
+func (r *reduceRunner) runDedup() error {
+	r.recordStage("dedup")
+	dr, err := lifecycle.ExecuteDedup(r.stagingCwd, false)
+	if err != nil {
+		return err
+	}
+	if dr != nil {
+		r.result.DedupMerged = len(dr.Deleted)
+	}
+	return nil
+}
+
+func (r *reduceRunner) runMaturityTemper() error {
+	r.recordStage("maturity-temper")
+	r.result.Degraded = append(r.result.Degraded, "maturity-temper: in-process entry deferred to follow-up")
+	return nil
+}
+
+func (r *reduceRunner) runDefragPrune() error {
+	r.recordStage("defrag-prune")
+	pr, err := lifecycle.ExecutePrune(r.stagingCwd, false, 30)
+	if err != nil {
+		return err
+	}
+	if pr != nil {
+		r.result.DefragPruned = len(pr.Deleted)
+	}
+	return nil
+}
+
+func (r *reduceRunner) runCloseLoop() error {
+	r.recordStage("close-loop")
+	if !r.closeLoopWired {
+		r.result.Degraded = append(r.result.Degraded, "close-loop: callbacks not wired")
+		return nil
+	}
+	clr, err := lifecycle.ExecuteCloseLoop(r.stagingCwd, r.closeLoopCallbacks)
+	if err != nil {
+		return err
+	}
+	if clr != nil {
+		r.result.CloseLoopPromoted = clr.AutoPromote.Promoted
+	}
+	return nil
+}
+
+func (r *reduceRunner) runFindingsRouter() error {
+	r.recordStage("findings-router")
+	routed, degraded, err := RouteFindings(r.stagingCwd)
+	if err != nil {
+		return err
+	}
+	r.result.FindingsRouted = routed
+	for _, d := range degraded {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("findings-router: %s", d))
+	}
+	return nil
+}
+
+func (r *reduceRunner) runInjectRefresh() error {
+	r.recordStage("inject-refresh")
+	ir, err := refreshInjectCacheFn(r.ctx, r.stagingCwd, r.log)
+	if ir != nil {
+		r.result.InjectRefreshResult = ir
+		r.result.InjectRefreshed = ir.Succeeded
+		for _, d := range ir.Degraded {
+			r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("inject-refresh: %s", d))
+		}
+	}
+	if err != nil {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("inject-refresh: soft-failed: %v", err))
+	}
+	return nil
+}
+
+func (r *reduceRunner) verifyMetadataIntegrity() error {
+	if err := ctxCheck(r.ctx); err != nil {
+		r.result.Duration = stageDurationSince(r.started)
+		r.rollback(fmt.Sprintf("context cancelled before integrity check: %v", err))
+		return err
+	}
+	r.result.MetadataIntegrity = VerifyMetadataRoundTrip(r.cp)
+	if r.result.MetadataIntegrity.Pass {
+		return nil
+	}
+	stripped := len(r.result.MetadataIntegrity.StrippedFields)
+	reason := fmt.Sprintf("metadata integrity failed: %d stripped field(s)", stripped)
+	r.result.Duration = stageDurationSince(r.started)
+	r.rollback(reason)
+	return fmt.Errorf("overnight/reduce: %s", reason)
 }
 
 // closeLoopCallbacksPresent reports whether the caller has wired enough
