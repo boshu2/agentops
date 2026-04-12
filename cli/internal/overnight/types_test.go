@@ -31,17 +31,17 @@ func TestIterationStatus_Validate(t *testing.T) {
 	}
 }
 
-// TestIterationStatus_IsCorpusCompounded locks the truth table: done,
-// degraded, and halted-on-regression-post-commit all have corpus on
-// disk; pre-commit rollback and failed do not. This is the rehydration
-// predicate; if it drifts, resume semantics break.
+// TestIterationStatus_IsCorpusCompounded locks the truth table: done and
+// halted-on-regression-post-commit have corpus on disk; degraded,
+// pre-commit rollback, and failed do not. This is the rehydration predicate;
+// if it drifts, resume semantics break.
 func TestIterationStatus_IsCorpusCompounded(t *testing.T) {
 	cases := []struct {
 		s    IterationStatus
 		want bool
 	}{
 		{StatusDone, true},
-		{StatusDegraded, true},
+		{StatusDegraded, false},
 		{StatusHaltedOnRegressionPostCommit, true},
 		{StatusRolledBackPreCommit, false},
 		{StatusFailed, false},

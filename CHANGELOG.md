@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Native Windows smoke gate** — `tests/windows/test-windows-smoke.ps1` now exercises the PowerShell `ao` and Codex installers, local `ao doctor` Windows guidance, and focused Windows-sensitive Go tests, with a blocking `windows-smoke` job in `validate.yml`.
 
+### Fixed
+
+- **Dream RunLoop status invariants** — live-tree hash coverage now exercises every terminal RunLoop status, and `degraded` reflects the current pre-commit MEASURE rollback semantics.
+
 ## [2.36.0] - 2026-04-11
 
 ### Added
@@ -19,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Autodev program contract** — root `PROGRAM.md` gives evolve/autodev a repo-local operating contract with mutable and immutable scope, validation commands, escalation policy, and stop conditions.
 - **Beads stale-scope tooling** — `ao beads verify|lint|harvest` adds first-class stale-citation checks for bead-driven planning and RPI recovery.
 - **RPI discovery artifacts** — RPI can now persist and consume discovery artifacts, with tests and docs covering the `--discovery-artifact` path.
-- **Dream RunLoop invariant coverage** — `TestRunLoop_LiveTreeHashInvariant_AllStatuses` locks the `IsCorpusCompounded()` and live-tree mutation invariant across deterministically reproducible terminal statuses, with remaining fixture statuses tracked in `na-1iv`.
+- **Dream RunLoop invariant coverage** — `TestRunLoop_LiveTreeHashInvariant_AllStatuses` locks the `IsCorpusCompounded()` and live-tree mutation invariant across deterministically reproducible terminal statuses.
 - **Dream failed-summary contract coverage** — regression tests now lock the `finalizeOvernightSummary` contract for MEASURE consecutive-failure halts and persisted iteration history.
 - **Dream operator mode** — `ao overnight start|run|report|setup` adds a private overnight lane with shared `dream.*` config, keep-awake defaults, scheduler/bootstrap guidance, council-ready runner packets, and DreamScape-style morning summaries
 - **Nightly live retrieval proof** — the dream-cycle now runs `ao retrieval-bench --live --json`, emits retrieval proof in nightly summaries, and keeps a visible artifact trail for flywheel health

@@ -23,9 +23,8 @@ const (
 	// mode). The iteration contributed forward progress.
 	StatusDone IterationStatus = "done"
 
-	// StatusDegraded: MEASURE failed post-commit. The corpus IS
-	// compounded on disk (commit already happened), but we could not
-	// compute a fitness delta for this iteration. The loop continues
+	// StatusDegraded: MEASURE failed before commit. The checkpoint is
+	// rolled back and the live tree is unchanged. The loop continues
 	// with a stale prevSnapshot from the last fully-done iteration.
 	StatusDegraded IterationStatus = "degraded"
 
@@ -100,18 +99,18 @@ func (s IterationStatus) Validate() error {
 }
 
 // IsCorpusCompounded reports whether the iteration's corpus mutation
-// landed on disk. True for StatusDone, StatusDegraded, and
-// StatusHaltedOnRegressionPostCommit — all three represent states where
+// landed on disk. True for StatusDone and
+// StatusHaltedOnRegressionPostCommit — both represent states where
 // cp.Commit() succeeded before the iteration terminated. False for
-// StatusRolledBackPreCommit (no mutation happened) and StatusFailed
-// (may have partial state; RecoverFromCrash handles).
+// StatusDegraded and StatusRolledBackPreCommit (no mutation happened),
+// and StatusFailed (may have partial state; RecoverFromCrash handles).
 //
 // This is the single source of truth for rehydration logic: an iteration
 // with IsCorpusCompounded() == true is a valid prevSnapshot baseline
 // regardless of whether the loop then halted.
 func (s IterationStatus) IsCorpusCompounded() bool {
 	switch s {
-	case StatusDone, StatusDegraded, StatusHaltedOnRegressionPostCommit:
+	case StatusDone, StatusHaltedOnRegressionPostCommit:
 		return true
 	}
 	return false

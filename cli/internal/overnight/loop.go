@@ -262,7 +262,13 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 		}
 
 		// --- INGEST ---
-		ingest, ingestErr := RunIngest(loopCtx, opts, log)
+		var ingest *IngestResult
+		var ingestErr error
+		if injector := getTestIngestFaultInjector(); injector != nil {
+			ingestErr = injector(iterIndex)
+		} else {
+			ingest, ingestErr = RunIngest(loopCtx, opts, log)
+		}
 		if ingestErr != nil {
 			iter.Status = StatusFailed
 			iter.Error = fmt.Sprintf("ingest: %v", ingestErr)
@@ -541,6 +547,12 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 			fmt.Fprintf(log, "overnight: iteration %d commit failed: %v\n", iterIndex, commitErr)
 			return result, fmt.Errorf("overnight: iteration %d commit: %w", iterIndex, commitErr)
 		}
+		if injector := getTestPostCommitFaultInjector(); injector != nil {
+			if err := injector(iterIndex, opts.Cwd); err != nil {
+				result.Degraded = append(result.Degraded,
+					fmt.Sprintf("iter-%d post-commit fault injection: %v", iterIndex, err))
+			}
+		}
 
 		// Post-commit metadata integrity check (ratchet-forward per pm-V7).
 		// Cannot unwind a successful commit; record a findings entry and
@@ -550,6 +562,7 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 		// stage defect (not a fitness regression).
 		if postReport := VerifyMetadataRoundTripPostCommit(cp); !postReport.Pass {
 			msg := fmt.Sprintf("post-commit metadata integrity: %d stripped field(s)", len(postReport.StrippedFields))
+			iter.Status = StatusHaltedOnRegressionPostCommit
 			iter.Degraded = append(iter.Degraded, msg)
 			fmt.Fprintf(log, "overnight: iteration %d %s\n", iterIndex, msg)
 			// Log a structured finding the router will intentionally skip

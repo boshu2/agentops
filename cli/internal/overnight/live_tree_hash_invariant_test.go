@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,8 +21,8 @@ import (
 //
 // Micro-epic 3 landed TestRunLoop_LiveTreeHashInvariant in loop_resume_test.go
 // with only the StatusDone happy-path case implemented. na-1iv asks for
-// coverage of the remaining 4 IterationStatus values. This file extends that
-// coverage via a table-driven L2 test that forces RunLoop into each status
+// coverage of the other terminal IterationStatus values. This file extends
+// that coverage via a table-driven L2 test that forces RunLoop into each status
 // deterministically (using SetTestFitnessInjector for fitness-driven paths)
 // and asserts the core invariant:
 //
@@ -35,39 +36,20 @@ import (
 // file's helper declaration order.
 //
 // Semantic notes (from the M8 Option A consolidation council):
-//   StatusDone                           -> corpus compounded (live tree mutated)
-//   StatusDegraded                       -> legacy meaning: post-commit MEASURE
-//                                          failure. Under M8 Option A the MEASURE
-//                                          moved pre-commit, so StatusDegraded now
-//                                          fires PRE-commit and rollback runs;
-//                                          the live tree is NOT mutated. This
-//                                          creates tension with the legacy
-//                                          IsCorpusCompounded() == true mapping
-//                                          in types.go - that predicate is
-//                                          preserved for backward compatibility
-//                                          with persisted pre-M8 iterations. We
-//                                          therefore t.Skip the StatusDegraded
-//                                          case with a pointer to this comment.
-//   StatusHaltedOnRegressionPostCommit   -> legacy post-M8 path only reachable via
-//                                          pm-V7 late-stage metadata integrity
-//                                          checks; no deterministic fault
-//                                          injector exists for that path from
-//                                          tests. t.Skip with the reason.
-//   StatusRolledBackPreCommit            -> REDUCE stage failure. Requires
-//                                          injecting a failure into RunReduce;
-//                                          no test hook exists yet. t.Skip.
-//   StatusHaltedOnRegressionPreCommit    -> strict-mode fitness regression.
-//                                          Reproducible via the M8 pattern from
-//                                          loop_fitness_injection_test.go.
-//                                          Tested directly.
-//   StatusFailed                         -> INGEST/CHECKPOINT/COMMIT error. No
-//                                          deterministic injector from the test
-//                                          side; t.Skip.
+//   StatusDone                         -> corpus compounded (live tree mutated)
+//   StatusDegraded                     -> MEASURE failed pre-commit; rollback
+//                                        ran, live tree unchanged.
+//   StatusHaltedOnRegressionPostCommit -> commit succeeded, then late metadata
+//                                        integrity caught post-commit drift.
+//   StatusRolledBackPreCommit          -> REDUCE stage failure; rollback ran.
+//   StatusHaltedOnRegressionPreCommit  -> strict-mode fitness regression before
+//                                        commit; rollback ran.
+//   StatusFailed                       -> unrecoverable INGEST/CHECKPOINT/COMMIT
+//                                        error path.
 //
-// Net result: this file locks two additional statuses beyond the pre-existing
-// StatusDone case - StatusHaltedOnRegressionPreCommit (the Option A strict
-// regression path) - with a table scaffold that documents what's pending so
-// future contributors can plug new injectors in under a single entry-point.
+// This file locks all statuses RunLoop can emit today. Rows use narrow,
+// test-only hooks where needed so production options stay free of artificial
+// fault-injection knobs.
 
 // liveTreeHashInvariantCase describes a single row of the table test.
 type liveTreeHashInvariantCase struct {
@@ -83,9 +65,12 @@ type liveTreeHashInvariantCase struct {
 	// buildOpts returns the RunLoopOptions for the case. cwd and outputDir
 	// are pre-filled by the driver.
 	buildOpts func(cwd, outputDir, runID string) RunLoopOptions
-	// skipReason, when non-empty, causes the case to t.Skip before any
-	// work is done. Used to document non-reproducible statuses.
-	skipReason string
+	// seedPriorDone writes a prior done iteration so the next RunLoop call
+	// can produce a regression status as its first new iteration.
+	seedPriorDone bool
+	// wantErr is true for RunLoop paths that intentionally return an error
+	// after appending the terminal iteration to result.Iterations.
+	wantErr bool
 }
 
 // TestRunLoop_LiveTreeHashInvariant_AllStatuses drives the live-tree hash
@@ -121,12 +106,14 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 			},
 		},
 		{
-			name:       "StatusHaltedOnRegressionPreCommit_StrictRegression",
-			wantStatus: StatusHaltedOnRegressionPreCommit,
+			name:          "StatusHaltedOnRegressionPreCommit_StrictRegression",
+			wantStatus:    StatusHaltedOnRegressionPreCommit,
+			seedPriorDone: true,
 			setup: func(t *testing.T) func() {
-				// iter 1 commits at 0.9 (no prev baseline), iter 2
-				// drops to 0.1 -> strict regression -> pre-commit halt.
-				SetTestFitnessInjector(injectRegressionOnSecondIteration(0.9, 0.1))
+				// A prior persisted StatusDone iteration supplies the 0.9
+				// baseline; the first new live iteration reports 0.1 and
+				// trips the strict pre-commit regression halt.
+				SetTestFitnessInjector(injectConstantFitness(0.1))
 				return func() { SetTestFitnessInjector(nil) }
 			},
 			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
@@ -135,7 +122,7 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 					OutputDir:       outputDir,
 					RunID:           runID,
 					RunTimeout:      30 * time.Second,
-					MaxIterations:   5,
+					MaxIterations:   2,
 					PlateauEpsilon:  0.01,
 					PlateauWindowK:  2,
 					RegressionFloor: 0.05,
@@ -147,52 +134,126 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 		{
 			name:       "StatusDegraded_MeasureFailurePreCommit",
 			wantStatus: StatusDegraded,
-			skipReason: "M8 Option A moved MEASURE pre-commit, so a measure failure " +
-				"now triggers Rollback() and leaves the live tree unchanged. " +
-				"IsCorpusCompounded() still maps StatusDegraded->true for backward " +
-				"compat with persisted pre-M8 iterations, but live runs break " +
-				"the hash-equals-compounded invariant. Semantic tension tracked " +
-				"in types.go docstring. Deferring behavioural coverage to a " +
-				"separate invariant that distinguishes legacy vs. live iterations.",
+			setup: func(t *testing.T) func() {
+				SetTestFitnessInjector(func(int) (FitnessSnapshot, error) {
+					return FitnessSnapshot{}, errors.New("synthetic measure failure")
+				})
+				return func() { SetTestFitnessInjector(nil) }
+			},
+			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
+				return RunLoopOptions{
+					Cwd:            cwd,
+					OutputDir:      outputDir,
+					RunID:          runID,
+					RunTimeout:     30 * time.Second,
+					MaxIterations:  1,
+					PlateauEpsilon: 0.01,
+					PlateauWindowK: 2,
+					WarnOnly:       true,
+					LogWriter:      io.Discard,
+				}
+			},
 		},
 		{
 			name:       "StatusHaltedOnRegressionPostCommit_LegacyPath",
 			wantStatus: StatusHaltedOnRegressionPostCommit,
-			skipReason: "Legacy post-commit halt only reachable via pm-V7 late-stage " +
-				"metadata-integrity checks under warn-only rescue paths. No " +
-				"deterministic test injector exists for that path; it requires " +
-				"planting a corrupt metadata artifact inside the staging tree " +
-				"after commit. Follow-up fixture engineering needed.",
+			setup: func(t *testing.T) func() {
+				SetTestFitnessInjector(injectConstantFitness(0.8))
+				SetTestPostCommitFaultInjector(func(_ int, cwd string) error {
+					path := filepath.Join(cwd, ".agents", "learnings", "learning-000.md")
+					return os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644)
+				})
+				return func() {
+					SetTestFitnessInjector(nil)
+					SetTestPostCommitFaultInjector(nil)
+				}
+			},
+			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
+				return RunLoopOptions{
+					Cwd:            cwd,
+					OutputDir:      outputDir,
+					RunID:          runID,
+					RunTimeout:     30 * time.Second,
+					MaxIterations:  1,
+					PlateauEpsilon: 0.01,
+					PlateauWindowK: 2,
+					WarnOnly:       false,
+					LogWriter:      io.Discard,
+				}
+			},
 		},
 		{
 			name:       "StatusRolledBackPreCommit_ReduceFailure",
 			wantStatus: StatusRolledBackPreCommit,
-			skipReason: "REDUCE-stage failure injection requires a new test hook " +
-				"(analogous to testFitnessInjector) in reduce.go. Out of scope " +
-				"for this bead; tracked for W1h fixture work.",
+			setup: func(t *testing.T) func() {
+				prev := refreshInjectCacheFn
+				refreshInjectCacheFn = func(_ context.Context, stagingCwd string, _ io.Writer) (*InjectRefreshResult, error) {
+					path := filepath.Join(stagingCwd, ".agents", "learnings", "learning-000.md")
+					if err := os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644); err != nil {
+						return nil, err
+					}
+					return &InjectRefreshResult{
+						Attempted: true,
+						Succeeded: true,
+						Method:    "in-process",
+						Duration:  time.Millisecond,
+					}, nil
+				}
+				return func() { refreshInjectCacheFn = prev }
+			},
+			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
+				return RunLoopOptions{
+					Cwd:            cwd,
+					OutputDir:      outputDir,
+					RunID:          runID,
+					RunTimeout:     30 * time.Second,
+					MaxIterations:  1,
+					PlateauEpsilon: 0.01,
+					PlateauWindowK: 2,
+					WarnOnly:       false,
+					LogWriter:      io.Discard,
+				}
+			},
+			wantErr: true,
 		},
 		{
 			name:       "StatusFailed_IngestOrCheckpointError",
 			wantStatus: StatusFailed,
-			skipReason: "INGEST/CHECKPOINT/COMMIT error injection requires a new " +
-				"test hook in ingest.go or checkpoint.go. No deterministic " +
-				"reproducer from the test side today.",
+			setup: func(t *testing.T) func() {
+				SetTestIngestFaultInjector(func(int) error {
+					return errors.New("synthetic ingest failure")
+				})
+				return func() { SetTestIngestFaultInjector(nil) }
+			},
+			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
+				return RunLoopOptions{
+					Cwd:            cwd,
+					OutputDir:      outputDir,
+					RunID:          runID,
+					RunTimeout:     30 * time.Second,
+					MaxIterations:  1,
+					PlateauEpsilon: 0.01,
+					PlateauWindowK: 2,
+					WarnOnly:       false,
+					LogWriter:      io.Discard,
+				}
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.skipReason != "" {
-				t.Skip(tc.skipReason)
-			}
 			t.Setenv("HOME", t.TempDir())
 			restore := stubInjectRefresh(t)
 			defer restore()
 
 			if tc.setup != nil {
 				cleanup := tc.setup(t)
-				t.Cleanup(cleanup)
+				if cleanup != nil {
+					defer cleanup()
+				}
 			}
 
 			dir := t.TempDir()
@@ -203,30 +264,31 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 			agentsDir := filepath.Join(dir, ".agents")
 			runID := "hash-invariant-" + sanitizeRunID(tc.name)
 			outputDir := filepath.Join(dir, ".agents", "overnight", runID)
+			priorCount := 0
+			if tc.seedPriorDone {
+				seedPriorDoneIteration(t, outputDir, runID)
+				priorCount = 1
+			}
 
 			opts := tc.buildOpts(dir, outputDir, runID)
 
-			// Capture the baseline hash BEFORE RunLoop executes. Then, after
-			// RunLoop returns, walk the iteration list and assert:
-			//   IsCorpusCompounded(lastIter) == (hashAfter != hashBefore)
-			//
-			// We assert on the LAST iteration only because intermediate
-			// iterations cannot be observed without snapshotting between
-			// them (RunLoop is a single call). For the single-iter cases
-			// (StatusDone, StatusHaltedOnRegressionPreCommit via iter 2
-			// halt) this is the only iter that matters; for longer loops
-			// the invariant on the tail iter is what proves the predicate
-			// aligns with disk state at the termination point.
+			// Capture the baseline hash BEFORE RunLoop executes. Then compare
+			// it to the hash after the newly emitted terminal iteration. Prior
+			// seeded history, when present, is already included in the baseline.
 			hashBefore, err := liveTreeHash(agentsDir)
 			if err != nil {
 				t.Fatalf("hashBefore: %v", err)
 			}
 
 			result, err := RunLoop(context.Background(), opts)
-			if err != nil {
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("RunLoop err=nil, want error for %s", tc.wantStatus)
+				}
+			} else if err != nil {
 				t.Fatalf("RunLoop: %v", err)
 			}
-			if result == nil || len(result.Iterations) == 0 {
+			if result == nil || len(result.Iterations) <= priorCount {
 				t.Fatalf("result has no iterations: result=%+v", result)
 			}
 
@@ -235,31 +297,23 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 				t.Fatalf("hashAfter: %v", err)
 			}
 
-			lastIter := result.Iterations[len(result.Iterations)-1]
+			newIters := result.Iterations[priorCount:]
+			if len(newIters) != 1 {
+				t.Fatalf("new iteration count = %d, want 1; statuses=%s",
+					len(newIters), iterStatusSummary(result.Iterations))
+			}
+			lastIter := newIters[len(newIters)-1]
 			if tc.wantStatus != "" && lastIter.Status != tc.wantStatus {
 				t.Fatalf("last iter status = %q, want %q", lastIter.Status, tc.wantStatus)
 			}
 
-			// Core invariant for the terminal iteration. For multi-iter
-			// cases where an earlier iter compounded and a later iter
-			// halted pre-commit (e.g. iter 1 StatusDone + iter 2
-			// StatusHaltedOnRegressionPreCommit), the live tree HAS been
-			// mutated by iter 1 - so hashAfter != hashBefore even though
-			// lastIter.IsCorpusCompounded() == false. We therefore assert
-			// the stronger invariant: there exists at least one compounded
-			// iter iff the tree changed.
-			anyCompounded := false
-			for _, it := range result.Iterations {
-				if it.Status.IsCorpusCompounded() {
-					anyCompounded = true
-					break
-				}
-			}
+			// Core invariant for the newly emitted terminal iteration.
 			treeChanged := hashBefore != hashAfter
-			if anyCompounded != treeChanged {
-				t.Fatalf("invariant broken: anyCompounded=%v treeChanged=%v "+
+			if lastIter.Status.IsCorpusCompounded() != treeChanged {
+				t.Fatalf("invariant broken: status=%s compounded=%v treeChanged=%v "+
 					"(hashBefore=%s hashAfter=%s). Iterations: %s",
-					anyCompounded, treeChanged, hashBefore, hashAfter,
+					lastIter.Status, lastIter.Status.IsCorpusCompounded(), treeChanged,
+					hashBefore, hashAfter,
 					iterStatusSummary(result.Iterations))
 			}
 
@@ -276,12 +330,24 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 				if lastIter.Status.IsCorpusCompounded() {
 					t.Fatalf("StatusHaltedOnRegressionPreCommit.IsCorpusCompounded()=true; want false")
 				}
-				// Pre-commit halt must leave iter 2's staging discarded.
-				// The earlier iter 1 (StatusDone) DID mutate the live tree,
-				// so hashBefore != hashAfter is expected here - that's the
-				// anyCompounded branch above. No additional hash check.
+				if hashBefore != hashAfter {
+					t.Fatalf("StatusHaltedOnRegressionPreCommit mutated the live tree")
+				}
 			}
 		})
+	}
+}
+
+func seedPriorDoneIteration(t *testing.T, outputDir, runID string) {
+	t.Helper()
+	iterDir := filepath.Join(outputDir, runID, "iterations")
+	if err := writeIterationAtomic(iterDir, IterationSummary{
+		ID:           IterationID(runID + "-iter-1"),
+		Index:        1,
+		Status:       StatusDone,
+		FitnessAfter: map[string]any{"composite": 0.9},
+	}); err != nil {
+		t.Fatalf("seed prior iteration: %v", err)
 	}
 }
 

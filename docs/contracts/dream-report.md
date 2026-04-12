@@ -147,17 +147,18 @@ Schema v2 (2026-04-09) introduces the compounding iteration loop. It is **additi
 
 ### Status Precedence Truth Table
 
-The `IterationSummary.Status` field uses an exhaustive five-value enum. Each value has distinct semantics that downstream consumers (morning report, rehydration logic, invariant tests) depend on.
+The `IterationSummary.Status` field uses an exhaustive enum. Each value has distinct semantics that downstream consumers (morning report, rehydration logic, invariant tests) depend on.
 
 | Status | Commit succeeded? | Corpus on disk? | Rehydration baseline? | Typical trigger |
 |---|---|---|---|---|
 | `done` | yes | yes | yes | Happy path — all stages succeeded, fitness delta non-regressing |
-| `degraded` | yes | yes | yes | MEASURE failed post-commit; no fitness delta available but corpus compounded |
+| `degraded` | no | no (unchanged) | no | MEASURE failed pre-commit; checkpoint rolled back before the live corpus changed |
 | `rolled-back-pre-commit` | no | no (unchanged) | no | REDUCE failed before commit; checkpoint was rolled back |
 | `halted-on-regression-post-commit` | yes | yes | yes | Post-commit regression check fired; corpus is in live tree but loop halted |
+| `halted-on-regression-pre-commit` | no | no (unchanged) | no | Fitness regression or plateau halt fired before commit; checkpoint was rolled back |
 | `failed` | partial/no | indeterminate | no | Unrecoverable error in INGEST/CHECKPOINT/COMMIT; RecoverFromCrash handles partial state on restart |
 
-**Invariant:** an iteration with `status ∈ {done, degraded, halted-on-regression-post-commit}` is a valid rehydration baseline for `prevSnapshot` on resume, because the compounded corpus is on disk. Statuses `rolled-back-pre-commit` and `failed` are NOT valid baselines — rehydration walks past them.
+**Invariant:** an iteration with `status ∈ {done, halted-on-regression-post-commit}` is a valid rehydration baseline for `prevSnapshot` on resume, because the compounded corpus is on disk. Statuses `degraded`, `rolled-back-pre-commit`, `halted-on-regression-pre-commit`, and `failed` are NOT valid baselines — rehydration walks past them.
 
 **Companion marker file:** when an iteration has `status = halted-on-regression-post-commit`, Dream writes a sentinel file `committed-but-flagged.iter-<N>.marker` in the same `<outputDir>/<runID>/iterations/` directory. Operators can find flagged iterations via directory listing without parsing every iter-<N>.json.
 

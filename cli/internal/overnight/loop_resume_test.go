@@ -335,13 +335,11 @@ func TestRunLoop_PostCommitHalt_RehydratesAsBaseline(t *testing.T) {
 // iteration whose IsCorpusCompounded() is false MUST NOT have
 // mutated it.
 //
-// Scope excision: the full 5-status fixture engineering is tracked
-// as na-1iv. This test currently covers the StatusDone happy-path
-// case directly and documents the remaining 4 cases as pending
-// fixtures. The predicate logic is exhaustively unit-tested by
-// TestIterationStatus_IsCorpusCompounded in types_test.go; this L2
-// test proves the predicate aligns with real-world on-disk mutation
-// for the case we can deterministically produce.
+// Historical scope: this test covers the StatusDone happy-path shape that
+// originally exposed the invariant. TestRunLoop_LiveTreeHashInvariant_AllStatuses
+// covers every deterministic terminal status. The predicate logic is
+// exhaustively unit-tested by TestIterationStatus_IsCorpusCompounded in
+// types_test.go.
 func TestRunLoop_LiveTreeHashInvariant(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	restore := stubInjectRefresh(t)
@@ -396,13 +394,7 @@ func TestRunLoop_LiveTreeHashInvariant(t *testing.T) {
 			hashBefore, hashAfter)
 	}
 
-	// Pending cases (tracked in bd issue na-1iv):
-	//   StatusDegraded                       → hash changed
-	//   StatusHaltedOnRegressionPostCommit   → hash changed
-	//   StatusRolledBackPreCommit            → hash UNCHANGED
-	//   StatusFailed (ingest/checkpoint)     → hash UNCHANGED
-	t.Log("Partial coverage: StatusDone case locked. " +
-		"Remaining 4 status cases tracked in bd issue na-1iv.")
+	// Non-StatusDone cases are covered in live_tree_hash_invariant_test.go.
 }
 
 // agentsHash returns a deterministic SHA-256 over every regular file

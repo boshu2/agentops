@@ -68,3 +68,43 @@ func getTestFitnessInjector() func(iterIndex int) (FitnessSnapshot, error) {
 	defer testFitnessInjectorMu.RUnlock()
 	return testFitnessInjector
 }
+
+var (
+	testIngestFaultInjectorMu sync.RWMutex
+	testIngestFaultInjector   func(iterIndex int) error
+
+	testPostCommitFaultInjectorMu sync.RWMutex
+	testPostCommitFaultInjector   func(iterIndex int, cwd string) error
+)
+
+// SetTestIngestFaultInjector installs a deterministic INGEST failure hook for
+// RunLoop tests. It is intentionally narrower than RunIngest itself: tests use
+// it to exercise RunLoop's StatusFailed bookkeeping without corrupting the
+// fixture directory or depending on filesystem timing.
+func SetTestIngestFaultInjector(f func(iterIndex int) error) {
+	testIngestFaultInjectorMu.Lock()
+	defer testIngestFaultInjectorMu.Unlock()
+	testIngestFaultInjector = f
+}
+
+func getTestIngestFaultInjector() func(iterIndex int) error {
+	testIngestFaultInjectorMu.RLock()
+	defer testIngestFaultInjectorMu.RUnlock()
+	return testIngestFaultInjector
+}
+
+// SetTestPostCommitFaultInjector installs a deterministic hook that runs after
+// Commit succeeds and before the post-commit metadata verification pass. Tests
+// use it to exercise StatusHaltedOnRegressionPostCommit without changing the
+// Checkpoint implementation or relying on nondeterministic disk faults.
+func SetTestPostCommitFaultInjector(f func(iterIndex int, cwd string) error) {
+	testPostCommitFaultInjectorMu.Lock()
+	defer testPostCommitFaultInjectorMu.Unlock()
+	testPostCommitFaultInjector = f
+}
+
+func getTestPostCommitFaultInjector() func(iterIndex int, cwd string) error {
+	testPostCommitFaultInjectorMu.RLock()
+	defer testPostCommitFaultInjectorMu.RUnlock()
+	return testPostCommitFaultInjector
+}
