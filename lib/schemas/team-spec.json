@@ -39,7 +39,7 @@
           "sandbox_level": {
             "type": "string",
             "enum": ["read-only", "workspace-write", "danger-full-access"],
-            "description": "Codex sandbox level for this agent"
+            "description": "Codex sandbox level for this agent. Claude runtime ignores this field and uses the Claude team-runner permission contract."
           },
           "timeout_ms": {
             "type": "integer",

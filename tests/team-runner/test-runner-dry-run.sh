@@ -77,6 +77,7 @@ assert_eq "claude exit code 0" "0" "$?"
 assert_contains "shows claude command" "claude -p" "$CLAUDE_OUTPUT"
 assert_contains "shows stream-json" "stream-json" "$CLAUDE_OUTPUT"
 assert_contains "shows json-schema" "json-schema" "$CLAUDE_OUTPUT"
+assert_contains "claude uses full skill permissions" "dangerously-skip-permissions" "$CLAUDE_OUTPUT"
 assert_contains "shows claude runtime" "Runtime: claude" "$CLAUDE_OUTPUT"
 assert_contains "shows claude agent name" "claude-agent-1" "$CLAUDE_OUTPUT"
 

@@ -105,6 +105,9 @@ Reference shape:
 `watch-claude-stream.sh` must treat the final `type=="result"` success event as
 the completion signal and write `.structured_output` to `output.json`.
 
+`sandbox_level` in `lib/schemas/team-spec.json` is a Codex worker control. Claude
+team-runner workers ignore it and use the full-permission contract above.
+
 ## Session Chaining
 
 For multi-phase workflows, use filesystem artifacts instead of session resumption:
