@@ -119,6 +119,7 @@ These are the skills every user needs first. Everything else is available when y
 | Skill | Purpose |
 |-------|---------|
 | `/compile` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
 | `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
 | `/brainstorm` | Structured idea exploration before planning |

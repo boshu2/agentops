@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (58)
+### User-Facing Skills (59)
 
 **Judgment:**
 
@@ -264,9 +264,10 @@ These are how skills chain in practice:
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **compile** | advanced | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| **compile** | knowledge | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **harvest** | knowledge | Cross-rig knowledge consolidation — sweep, dedup, promote |
 | **knowledge-activation** | knowledge | Outer-loop corpus operationalization — beliefs, playbooks, briefings, and gap surfaces |
+| **llm-wiki** | knowledge | External-knowledge wiki proposal — raw sources to compiled wiki |
 | **retro** | knowledge | Quick-capture wrapper (full retro → /post-mortem) |
 | **trace** | knowledge | Trace design decisions through history |
 

@@ -3,7 +3,7 @@ name: llm-wiki
 description: 'Build and maintain a compounding external-knowledge wiki from clipped articles, papers, and transcripts. Triggers: "llm wiki", "ingest this", "second brain", "compile my reading", "wiki lint", "what do we know about <topic>". Based on Andrej Karpathy''s LLM Wiki pattern (April 2026).'
 skill_api_version: 1
 metadata:
-  tier: synthesis
+  tier: knowledge
   status: proposal
   dependencies:
     - compile       # existing AgentOps internal-artifact compiler (structurally similar)
@@ -21,7 +21,7 @@ context:
 
 # LLM Wiki Skill (proposal)
 
-> **Purpose:** Keep a compounding markdown wiki of **external knowledge** (articles, papers, transcripts, clipped web content) maintained by an LLM so the bookkeeping is free and the knowledge accumulates. Based on Andrej Karpathy's "LLM Wiki" pattern published April 2026. See `references/architecture.md` for the full design rationale and how it interoperates with existing AgentOps skills.
+> **Purpose:** Keep a compounding markdown wiki of **external knowledge** (articles, papers, transcripts, clipped web content) maintained by an LLM so the bookkeeping is free and the knowledge accumulates. Based on Andrej Karpathy's "LLM Wiki" pattern published April 2026. See [references/architecture.md](references/architecture.md) for the full design rationale and how it interoperates with existing AgentOps skills.
 >
 > **Status:** PROPOSAL — not yet merged. Opened 2026-04-11 for council review. See `.agents/research/2026-04-11-karpathy-llm-wiki-integration.md` for the research that motivated this skill.
 
@@ -208,7 +208,8 @@ See `references/architecture.md` for the full tier model and scheduling recommen
 ## References
 
 - `.agents/research/2026-04-11-karpathy-llm-wiki-integration.md` — the research artifact that motivated this skill
-- `skills/llm-wiki/references/architecture.md` — full design rationale, tier model, interop details, anti-patterns
+- [references/architecture.md](references/architecture.md) — full design rationale, tier model, interop details, anti-patterns
+- [references/research.md](references/research.md) — external-source research summary and synthesis
 - [Karpathy's original LLM Wiki gist (April 2026)](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 - Community implementations: [NicholasSpisak/second-brain](https://github.com/NicholasSpisak/second-brain), [eugeniughelbur/obsidian-second-brain](https://github.com/eugeniughelbur/obsidian-second-brain)
 

@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 67 AgentOps skills (58 user-facing + 9 internal).
+Complete reference for all 68 AgentOps skills (59 user-facing + 9 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -211,6 +211,18 @@ Query knowledge artifacts across locations.
 ```
 
 **Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`
+
+### /llm-wiki
+
+Maintain a compounding wiki for external reading material.
+
+```bash
+/llm-wiki ingest raw/articles/example.md
+/llm-wiki query "what do we know about this topic?"
+/llm-wiki lint
+```
+
+**Status:** Proposal skill for external `raw/` to `wiki/` knowledge, separate from the internal `.agents/` compiler.
 
 ### /complexity
 
@@ -456,7 +468,7 @@ Capture lessons from accepted/rejected PR outcomes.
 Reinstall all AgentOps skills globally from the latest source.
 
 ```bash
-/update                      # Reinstall all 67 skills
+/update                      # Reinstall all 68 skills
 ```
 
 ---
