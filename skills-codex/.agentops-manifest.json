@@ -610,7 +610,7 @@
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "d6f47f2fe5d384d3c94143e120a056699c29a548bd391d93aa01d20b9a94dd6c",
-      "generated_hash": "f7c88bc2baa3281a13c31a87f832295078faa5a3335ebdaf2034d3aa11214ef3"
+      "generated_hash": "7b16fc22742ea7b632a7acb1ab6d74c01bcdc63040e303c543e8fb5b56d784b7"
     },
     {
       "name": "flywheel",
@@ -628,7 +628,7 @@
       "name": "goals",
       "source_skill": "skills/goals",
       "source_hash": "3a2b714569c2378c300658f7796125275b18204a91d8e8eee252507f7c7caf91",
-      "generated_hash": "1f411f787f113f8381165ee5c14ac97a3f1e84ab3672a596f08ee555b7c45f60"
+      "generated_hash": "5a997da0b63a96a1bd8b2e4a4200228bd7b893d63a897f275c149247e4545b2b"
     },
     {
       "name": "grafana-platform-dashboard",

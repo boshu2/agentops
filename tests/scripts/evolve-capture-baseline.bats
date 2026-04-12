@@ -48,18 +48,35 @@ JSON'
         --timeout 45
 
     [ "$status" -eq 0 ]
-    [ -f "$FAKE_REPO/.agents/evolve/baselines/era-001.json" ]
-    [ -f "$FAKE_REPO/.agents/evolve/baselines/index.jsonl" ]
-    [ -f "$FAKE_REPO/.agents/evolve/active-baseline.txt" ]
-    [ -f "$FAKE_REPO/.agents/evolve/fitness-0-baseline.json" ]
+    baseline_file="$(find "$FAKE_REPO/.agents/evolve/fitness-baselines/era-001" -maxdepth 1 -type f -name '*.json' -print -quit)"
+    [ -n "$baseline_file" ]
+    [[ "$output" == ".agents/evolve/fitness-baselines/era-001/"*.json ]]
+    [ ! -f "$FAKE_REPO/.agents/evolve/baselines/index.jsonl" ]
+    [ ! -f "$FAKE_REPO/.agents/evolve/active-baseline.txt" ]
+    [ ! -f "$FAKE_REPO/.agents/evolve/fitness-0-baseline.json" ]
+}
+
+@test "evolve-capture-baseline.sh can write legacy compatibility artifacts when requested" {
+    write_mock_ao 'cat <<'"'"'JSON'"'"'
+{"goals":[{"id":"one","result":"pass"},{"id":"two","result":"fail"}]}
+JSON'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/evolve-capture-baseline.sh" \
+        --repo-root "$FAKE_REPO" \
+        --label era-compat \
+        --legacy-path .agents/evolve/fitness-0-baseline.json \
+        --active-path .agents/evolve/active-baseline.txt \
+        --index-path .agents/evolve/fitness-baselines/index.jsonl
+    [ "$status" -eq 0 ]
 
     run cat "$FAKE_REPO/.agents/evolve/active-baseline.txt"
     [ "$status" -eq 0 ]
-    [ "$output" = ".agents/evolve/baselines/era-001.json" ]
+    [[ "$output" == ".agents/evolve/fitness-baselines/era-compat/"*.json ]]
+    [ -f "$FAKE_REPO/.agents/evolve/fitness-0-baseline.json" ]
 
-    run jq -r '.label + ":" + (.goals_total|tostring)' "$FAKE_REPO/.agents/evolve/baselines/index.jsonl"
+    run jq -r '.label + ":" + (.goals_total|tostring)' "$FAKE_REPO/.agents/evolve/fitness-baselines/index.jsonl"
     [ "$status" -eq 0 ]
-    [ "$output" = "era-001:2" ]
+    [ "$output" = "era-compat:2" ]
 }
 
 @test "evolve-capture-baseline.sh refuses to overwrite labels without force" {
@@ -89,5 +106,5 @@ JSON'
 
     [ "$status" -eq 1 ]
     [[ "$output" == *"not valid goals JSON"* ]]
-    [ ! -f "$FAKE_REPO/.agents/evolve/baselines/era-bad.json" ]
+    [ ! -d "$FAKE_REPO/.agents/evolve/fitness-baselines/era-bad" ] || [ -z "$(find "$FAKE_REPO/.agents/evolve/fitness-baselines/era-bad" -maxdepth 1 -type f -name '*.json' -print -quit)" ]
 }

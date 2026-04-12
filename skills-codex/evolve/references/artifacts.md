@@ -5,10 +5,7 @@
 | File | Purpose |
 |------|---------|
 | `GOALS.yaml` | Fitness goals (repo root) |
-| `.agents/evolve/fitness-0-baseline.json` | Compatibility mirror of the active era baseline |
-| `.agents/evolve/active-baseline.txt` | Path to the active era baseline |
-| `.agents/evolve/baselines/index.jsonl` | Immutable baseline archive index |
-| `.agents/evolve/baselines/*.json` | Immutable era-scoped baseline snapshots |
+| `.agents/evolve/fitness-baselines/goals-<hash>/*.json` | Immutable baseline snapshots, one directory per GOALS.md/GOALS.yaml content hash |
 | `.agents/evolve/cycle-history.jsonl` | Cycle outcomes log (includes commit SHAs) |
 
 ## Local Only (gitignored)
@@ -32,5 +29,9 @@ These files are no longer generated. Older repos may have them in git history:
 | `.agents/evolve/fitness-{N}-pre.json` | `fitness-latest.json` (rolling) |
 | `.agents/evolve/fitness-{N}-post.json` | `fitness-latest-post.json` (rolling) |
 | `.agents/evolve/cycle-0-report.md` | Inlined into session-summary.md |
-| `.agents/evolve/last-sweep-date` | No longer needed (baseline gate uses active-baseline.txt) |
+| `.agents/evolve/fitness-0-baseline.json` | `.agents/evolve/fitness-baselines/goals-<hash>/*.json` |
+| `.agents/evolve/active-baseline.txt` | Current GOALS.md/GOALS.yaml hash resolves the active era directory |
+| `.agents/evolve/baselines/index.jsonl` | No longer needed by the v2 era-hash baseline gate |
+| `.agents/evolve/baselines/*.json` | `.agents/evolve/fitness-baselines/goals-<hash>/*.json` |
+| `.agents/evolve/last-sweep-date` | No longer needed by the baseline gate |
 | `.agents/evolve/KILLED.json` | Kill switch acknowledgment removed (STOP file is sufficient) |

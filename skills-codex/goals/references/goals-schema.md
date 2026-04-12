@@ -57,7 +57,7 @@ Post-cycle snapshot: `fitness-latest-post.json` (rolling, for regression compari
 
 ## Cycle-0 Baseline
 
-Before the first improvement cycle runs, the system captures a baseline fitness snapshot (`fitness-0-baseline.json`). This serves as the comparison anchor for measuring session-wide progress.
+Before the first improvement cycle in a goal era runs, evolve captures a baseline fitness snapshot under `.agents/evolve/fitness-baselines/goals-<hash>/`, where `<hash>` is derived from the active GOALS.md or GOALS.yaml content. This serves as the comparison anchor for measuring session-wide progress.
 
 The baseline includes:
 - **All goals** from GOALS.yaml, measured in their initial state

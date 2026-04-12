@@ -169,7 +169,7 @@ On session restart or after compaction:
 1. Read `.agents/evolve/cycle-history.jsonl` to find last completed cycle number
 2. Set `evolve_state.cycle` to last cycle + 1
 3. Resume from Step 1 (kill switch check)
-4. The active baseline pointer (`active-baseline.txt`) is preserved -- do not regenerate the current era baseline
+4. Preserve existing `.agents/evolve/fitness-baselines/goals-<hash>/` directories; do not regenerate the current era baseline if its directory already contains a JSON snapshot
 
 ## Kill Switch
 

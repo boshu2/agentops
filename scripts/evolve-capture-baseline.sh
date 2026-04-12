@@ -6,18 +6,20 @@ usage() {
 Usage: scripts/evolve-capture-baseline.sh --label <slug> [options]
 
 Capture an immutable evolve baseline snapshot for the current goal era.
+By default this writes:
+  .agents/evolve/fitness-baselines/<label>/<timestamp>.json
 
 Required:
   --label <slug>              Baseline label (letters, numbers, ., _, -)
 
 Options:
   --repo-root <path>          Repo root (default: current directory)
-  --output-dir <path>         Baseline directory (default: .agents/evolve/baselines)
-  --legacy-path <path>        Compatibility mirror path (default: .agents/evolve/fitness-0-baseline.json)
-  --active-path <path>        Active baseline pointer (default: .agents/evolve/active-baseline.txt)
-  --index-path <path>         Baseline index path (default: .agents/evolve/baselines/index.jsonl)
+  --output-dir <path>         Baseline root directory (default: .agents/evolve/fitness-baselines)
+  --legacy-path <path>        Optional compatibility mirror path
+  --active-path <path>        Optional active baseline pointer path
+  --index-path <path>         Optional baseline index path
   --timeout <seconds>         ao goals measure timeout (default: 60)
-  --force                     Overwrite an existing label
+  --force                     Allow another snapshot in an existing label directory
   -h, --help                  Show help
 EOF
 }
@@ -33,6 +35,10 @@ require_cmd() {
 
 iso_timestamp() {
   date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -Iseconds
+}
+
+snapshot_timestamp() {
+  date -u +"%Y-%m-%dT%H-%M-%S.000"
 }
 
 resolve_path() {
@@ -60,10 +66,10 @@ relative_to_repo() {
 
 LABEL=""
 REPO_ROOT="$(pwd)"
-OUTPUT_DIR=".agents/evolve/baselines"
-LEGACY_PATH=".agents/evolve/fitness-0-baseline.json"
-ACTIVE_PATH=".agents/evolve/active-baseline.txt"
-INDEX_PATH=".agents/evolve/baselines/index.jsonl"
+OUTPUT_DIR=".agents/evolve/fitness-baselines"
+LEGACY_PATH=""
+ACTIVE_PATH=""
+INDEX_PATH=""
 TIMEOUT="60"
 FORCE=false
 
@@ -112,24 +118,49 @@ while [[ $# -gt 0 ]]; do
 done
 
 require_cmd ao
-require_cmd git
 require_cmd jq
 
 [[ -n "$LABEL" ]] || die "--label is required"
 [[ "$LABEL" =~ ^[A-Za-z0-9._-]+$ ]] || die "--label must contain only letters, numbers, ., _, or -"
 [[ "$TIMEOUT" =~ ^[0-9]+$ ]] || die "--timeout must be numeric"
+if [[ -n "$INDEX_PATH" ]]; then
+  require_cmd git
+fi
 
 OUTPUT_DIR_PATH="$(resolve_path "$REPO_ROOT" "$OUTPUT_DIR")"
-LEGACY_PATH_ABS="$(resolve_path "$REPO_ROOT" "$LEGACY_PATH")"
-ACTIVE_PATH_ABS="$(resolve_path "$REPO_ROOT" "$ACTIVE_PATH")"
-INDEX_PATH_ABS="$(resolve_path "$REPO_ROOT" "$INDEX_PATH")"
-OUTPUT_PATH="${OUTPUT_DIR_PATH}/${LABEL}.json"
+ERA_DIR_PATH="${OUTPUT_DIR_PATH}/${LABEL}"
+SNAPSHOT_STEM="$(snapshot_timestamp)"
+OUTPUT_PATH="${ERA_DIR_PATH}/${SNAPSHOT_STEM}.json"
 
-mkdir -p "$OUTPUT_DIR_PATH" "$(dirname "$LEGACY_PATH_ABS")" "$(dirname "$ACTIVE_PATH_ABS")" "$(dirname "$INDEX_PATH_ABS")"
+mkdir -p "$ERA_DIR_PATH"
 
-if [[ -f "$OUTPUT_PATH" && "$FORCE" != true ]]; then
+if [[ -n "$LEGACY_PATH" ]]; then
+  LEGACY_PATH_ABS="$(resolve_path "$REPO_ROOT" "$LEGACY_PATH")"
+  mkdir -p "$(dirname "$LEGACY_PATH_ABS")"
+fi
+if [[ -n "$ACTIVE_PATH" ]]; then
+  ACTIVE_PATH_ABS="$(resolve_path "$REPO_ROOT" "$ACTIVE_PATH")"
+  mkdir -p "$(dirname "$ACTIVE_PATH_ABS")"
+fi
+if [[ -n "$INDEX_PATH" ]]; then
+  INDEX_PATH_ABS="$(resolve_path "$REPO_ROOT" "$INDEX_PATH")"
+  mkdir -p "$(dirname "$INDEX_PATH_ABS")"
+fi
+
+if [[ -d "$ERA_DIR_PATH" && "$FORCE" != true ]]; then
+  EXISTING_SNAPSHOT="$(find "$ERA_DIR_PATH" -maxdepth 1 -type f -name '*.json' -print -quit)"
+else
+  EXISTING_SNAPSHOT=""
+fi
+if [[ -n "$EXISTING_SNAPSHOT" ]]; then
   die "baseline already exists for label: $LABEL"
 fi
+
+SNAPSHOT_SUFFIX=1
+while [[ -f "$OUTPUT_PATH" ]]; do
+  OUTPUT_PATH="${ERA_DIR_PATH}/${SNAPSHOT_STEM}-${SNAPSHOT_SUFFIX}.json"
+  SNAPSHOT_SUFFIX=$((SNAPSHOT_SUFFIX + 1))
+done
 
 TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/evolve-baseline.XXXXXX")"
 trap 'rm -f "$TMP_FILE"' EXIT
@@ -148,23 +179,30 @@ RELATIVE_OUTPUT="$(relative_to_repo "$REPO_ROOT" "$OUTPUT_PATH")"
 
 mv "$TMP_FILE" "$OUTPUT_PATH"
 trap - EXIT
-cp "$OUTPUT_PATH" "$LEGACY_PATH_ABS"
-printf '%s\n' "$RELATIVE_OUTPUT" > "$ACTIVE_PATH_ABS"
+if [[ -n "$LEGACY_PATH" ]]; then
+  cp "$OUTPUT_PATH" "$LEGACY_PATH_ABS"
+fi
+if [[ -n "$ACTIVE_PATH" ]]; then
+  printf '%s\n' "$RELATIVE_OUTPUT" > "$ACTIVE_PATH_ABS"
+fi
 
-INDEX_ENTRY="$(
-  jq -cn \
-    --arg label "$LABEL" \
-    --arg path "$RELATIVE_OUTPUT" \
-    --arg captured_at "$TIMESTAMP" \
-    --arg sha "$HEAD_SHA" \
-    --argjson goals_total "$GOALS_TOTAL" \
-    '{
-      label: $label,
-      path: $path,
-      captured_at: $captured_at,
-      sha: $sha,
-      goals_total: $goals_total
-    }'
-)"
-printf '%s\n' "$INDEX_ENTRY" >> "$INDEX_PATH_ABS"
+if [[ -n "$INDEX_PATH" ]]; then
+  HEAD_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
+  INDEX_ENTRY="$(
+    jq -cn \
+      --arg label "$LABEL" \
+      --arg path "$RELATIVE_OUTPUT" \
+      --arg captured_at "$TIMESTAMP" \
+      --arg sha "$HEAD_SHA" \
+      --argjson goals_total "$GOALS_TOTAL" \
+      '{
+        label: $label,
+        path: $path,
+        captured_at: $captured_at,
+        sha: $sha,
+        goals_total: $goals_total
+      }'
+  )"
+  printf '%s\n' "$INDEX_ENTRY" >> "$INDEX_PATH_ABS"
+fi
 printf '%s\n' "$RELATIVE_OUTPUT"

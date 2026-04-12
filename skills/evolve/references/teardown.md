@@ -11,9 +11,21 @@ This captures learnings from the ENTIRE evolution run (all cycles, all /rpi invo
 **Compute session fitness trajectory:**
 
 ```bash
-# Check if both baseline and final snapshot exist
-ACTIVE_BASELINE_PATH="$(cat .agents/evolve/active-baseline.txt 2>/dev/null || echo .agents/evolve/fitness-0-baseline.json)"
-if [ -f "$ACTIVE_BASELINE_PATH" ] && [ -f .agents/evolve/fitness-latest.json ]; then
+# Check if both current-era baseline and final snapshot exist
+GOALS_FILE=""
+if [ -f GOALS.md ]; then
+  GOALS_FILE="GOALS.md"
+elif [ -f GOALS.yaml ]; then
+  GOALS_FILE="GOALS.yaml"
+fi
+
+ACTIVE_BASELINE_PATH=""
+if [ -n "$GOALS_FILE" ]; then
+  ERA_ID="goals-$(shasum -a 256 "$GOALS_FILE" | awk '{print substr($1, 1, 12)}')"
+  ACTIVE_BASELINE_PATH="$(ls -t ".agents/evolve/fitness-baselines/$ERA_ID"/*.json 2>/dev/null | head -1 || true)"
+fi
+
+if [ -n "$ACTIVE_BASELINE_PATH" ] && [ -f "$ACTIVE_BASELINE_PATH" ] && [ -f .agents/evolve/fitness-latest.json ]; then
   baseline = load("$ACTIVE_BASELINE_PATH")
   final = load(".agents/evolve/fitness-latest.json")
 

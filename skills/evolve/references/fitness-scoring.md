@@ -15,14 +15,30 @@ bash scripts/evolve-measure-fitness.sh \
 
 This writes a fitness snapshot to `.agents/evolve/` atomically via a temp file plus JSON validation. The AgentOps CLI is required for fitness measurement because the wrapper shells out to `ao goals measure`. If measurement exceeds the whole-command bound or returns invalid JSON, the wrapper fails without clobbering the previous rolling snapshot.
 
-## Baseline Capture (First Run Only)
+## Era Baseline Capture (First Run Only)
 
 Skip if `--skip-baseline` or `--beads-only` or baseline already exists.
 
+`ao evolve` captures this automatically before entering the RPI loop. It hashes
+the active GOALS.md or GOALS.yaml file to an era ID, then writes a snapshot
+under `.agents/evolve/fitness-baselines/goals-<hash>/` if that era directory
+does not already contain a JSON snapshot.
+
+For manual recovery or one-off capture, compute the same era ID and use the
+helper script:
+
 ```bash
-if [ ! -f .agents/evolve/fitness-0-baseline.json ]; then
+GOALS_FILE=""
+if [ -f GOALS.md ]; then
+  GOALS_FILE="GOALS.md"
+elif [ -f GOALS.yaml ]; then
+  GOALS_FILE="GOALS.yaml"
+fi
+
+if [ -n "$GOALS_FILE" ]; then
+  ERA_ID="goals-$(shasum -a 256 "$GOALS_FILE" | awk '{print substr($1, 1, 12)}')"
   bash scripts/evolve-capture-baseline.sh \
-    --label "era-$(date -u +%Y%m%dT%H%M%SZ)" \
+    --label "$ERA_ID" \
     --timeout 60
 fi
 ```
