@@ -12,13 +12,13 @@ Removed: `opencode/`, `rpi-e2e/`, `skill-triggering/`, `e2e-install-test.sh`,
 `marketplace-e2e-test.sh`.
 Promoted: `ol-integration/` -> `tests/ol-integration/` (na-gtm.18,
 2026-04-12).
-Remaining: **3 suites**.
+Promoted: `team-runner/` -> `tests/team-runner/` (na-gtm.19, 2026-04-12).
+Remaining: **2 suites**.
 
 | Suite | Status | Plan |
 |---|---|---|
 | `codex/` | PROMOTE — ready | Wire into `validate.yml` as optional job; skips cleanly if `codex` CLI absent (see Plan A). |
 | `claude-code/` | PROMOTE — needs skip wrapper | Currently hard-exits if `claude` is missing. Add pre-flight skip-on-absent guard, then wire as optional job (Plan B). |
-| `team-runner/` | PROMOTE — needs path fix | `run-all.sh` computes `REPO_ROOT` as `../../../` (correct for `tests/team-runner/`, wrong under `_quarantine/`). Schemas it tests (`lib/schemas/team-spec.json`, `worker-output.json`) and scripts it tests (`lib/scripts/team-runner.sh`, `watch-claude-stream.sh`) still exist (Plan D). |
 
 ## Deletions performed
 
@@ -33,9 +33,9 @@ Remaining: **3 suites**.
 ```bash
 bash tests/_quarantine/claude-code/run-all.sh   # requires claude CLI
 bash tests/_quarantine/codex/run-all.sh         # skips if codex CLI missing
-bash tests/_quarantine/team-runner/run-all.sh   # broken path, see Plan D
 bash tests/ol-integration/vibe-ol-test.sh       # promoted, fixture-only
 bash tests/ol-integration/swarm-ol-test.sh      # promoted, fixture-only
+bash tests/team-runner/run-all.sh               # promoted, fixture-only
 ```
 
 ## Promotion plans
@@ -73,15 +73,14 @@ existing `"$SCRIPT_DIR/../.."` root calculation resolves correctly. No external
 
 **Cost:** ~15 min. Lowest-risk promotion.
 
-### Plan D — `team-runner/`
+### Plan D — `team-runner/` (done)
 
-1. Fix `REPO_ROOT` path in `run-all.sh` and `test-schemas.sh`
-   (`../../../` → `../../` after move).
-2. Verify fixtures in `team-runner/fixtures/` still match current schemas.
-3. `git mv tests/_quarantine/team-runner tests/team-runner`
-4. Wire `test-schemas.sh` and `test-runner-dry-run.sh` into the default lane.
-   The `test-watch-*-stream.sh` tests may need Claude/gc; gate them behind
-   runtime-present checks.
+Promoted by na-gtm.19 on 2026-04-12:
+`tests/_quarantine/team-runner` moved to `tests/team-runner`, root path
+calculation changed from `../../../` to `../../`, and the fixture-only suite now
+runs in the default `tests/run-all.sh` lane. The stream watcher tests replay
+JSONL fixtures through local watcher scripts and do not require live Claude or
+Codex CLIs.
 
 **Cost:** ~1 hour. Schemas and scripts still live, so ROI is good.
 
@@ -89,5 +88,5 @@ existing `"$SCRIPT_DIR/../.."` root calculation resolves correctly. No external
 
 - **na-gtm.17** — Promote `codex/` (Plan A)
 - **na-gtm.18** — CLOSED: promoted `ol-integration/` (Plan C)
-- **na-gtm.19** — Promote `team-runner/` (Plan D)
+- **na-gtm.19** — CLOSED: promoted `team-runner/` (Plan D)
 - **na-gtm.20** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)

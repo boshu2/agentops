@@ -145,6 +145,18 @@ else
     skip "OL integration tests (directory not found)"
 fi
 
+# Validate team-runner fixture scripts (static, no live runtime needed)
+if [[ -d "$SCRIPT_DIR/team-runner" ]]; then
+    if bash "$SCRIPT_DIR/team-runner/run-all.sh" > /tmp/team-runner-tests.log 2>&1; then
+        pass "Team runner fixture tests"
+    else
+        fail "Team runner fixture tests"
+        tail -20 /tmp/team-runner-tests.log | sed 's/^/    /'
+    fi
+else
+    skip "Team runner tests (directory not found)"
+fi
+
 echo ""
 
 # =============================================================================

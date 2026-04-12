@@ -4,7 +4,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 WATCHER="${REPO_ROOT}/lib/scripts/watch-claude-stream.sh"
 FIXTURES="${SCRIPT_DIR}/fixtures"
 TMPDIR=$(mktemp -d)
