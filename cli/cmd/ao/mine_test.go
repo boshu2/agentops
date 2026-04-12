@@ -191,6 +191,42 @@ func TestPrintMineDryRun(t *testing.T) {
 	}
 }
 
+func TestMineCommandJSONSuppressesHumanSummary(t *testing.T) {
+	dir := t.TempDir()
+	chdirTo(t, dir)
+	outputDir := filepath.Join(dir, "mine-output")
+
+	out, err := executeCommand("mine", "--json", "--sources", "agents", "--output-dir", outputDir)
+	if err != nil {
+		t.Fatalf("mine --json: %v\noutput:\n%s", err, out)
+	}
+	if strings.Contains(out, "Mine complete.") {
+		t.Fatalf("json stdout included human summary:\n%s", out)
+	}
+
+	var report MineReport
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatalf("mine --json stdout is not a single JSON document: %v\noutput:\n%s", err, out)
+	}
+	if len(report.Sources) != 1 || report.Sources[0] != "agents" {
+		t.Fatalf("sources = %v, want [agents]", report.Sources)
+	}
+	if report.Agents == nil {
+		t.Fatal("agents findings missing from report")
+	}
+
+	if _, err := os.Stat(filepath.Join(outputDir, "latest.json")); err != nil {
+		t.Fatalf("latest mine report missing: %v", err)
+	}
+	matches, err := filepath.Glob(filepath.Join(outputDir, "????-??-??-??.json"))
+	if err != nil {
+		t.Fatalf("glob dated mine report: %v", err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("dated mine reports = %d, want 1 (%v)", len(matches), matches)
+	}
+}
+
 func TestCollectMineWorkItems_Empty(t *testing.T) {
 	r := &MineReport{}
 	items := collectMineWorkItems(r)
@@ -575,7 +611,7 @@ func TestParseMineWindow(t *testing.T) {
 		{"-1h", 0, true},
 		{"abc", 0, true},
 		{"10x", 0, true},
-		{"d", 0, true},   // no number
+		{"d", 0, true},    // no number
 		{"3.5d", 0, true}, // non-integer
 	}
 	for _, tt := range tests {
