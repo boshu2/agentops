@@ -280,16 +280,32 @@ run_golangci() {
         fi
     done <<< "$modules"
 
+    local had_version_mismatch=false
+    if grep -qE "Go language version .* is lower than the targeted Go version" "$output_file" 2>/dev/null; then
+        had_version_mismatch=true
+        log "  [WARN] golangci-lint: some modules skipped due to Go version mismatch"
+    fi
+
     local issues
     issues=$(grep -cE "^[^:]+:[0-9]+:[0-9]+:" "$output_file" 2>/dev/null || true)
     issues=${issues:-0}
     issues=$(echo "$issues" | tr -d '[:space:]')
-    if [[ "$issues" -eq 0 ]] && [[ "$had_findings" == "false" ]]; then
+
+    if [[ "$issues" -gt 0 ]]; then
+        # Real lint findings from modules that ran successfully — count them
+        # even if other modules hit a version mismatch.
+        HIGH_COUNT=$((HIGH_COUNT + issues))
+        QUALITY_HIGH_COUNT=$((QUALITY_HIGH_COUNT + issues))
+        TOOL_STATUS["golangci-lint"]="findings"
+    elif [[ "$had_version_mismatch" == "true" ]]; then
+        # No real findings, but at least one module couldn't be linted.
+        TOOL_STATUS["golangci-lint"]="skipped"
+        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
+    elif [[ "$had_findings" == "false" ]]; then
         echo "CLEAN" > "$output_file"
         TOOL_STATUS["golangci-lint"]="pass"
     else
-        HIGH_COUNT=$((HIGH_COUNT + issues))
-        QUALITY_HIGH_COUNT=$((QUALITY_HIGH_COUNT + issues))
+        # Non-zero exit but no parseable findings (e.g. config error).
         TOOL_STATUS["golangci-lint"]="findings"
     fi
 }
@@ -789,14 +805,25 @@ run_gosec() {
         return 0
     fi
 
-    # Count issues across combined JSON blocks (best-effort)
-    local issues
-    issues=$(grep -c '"severity":' "$output_file" 2>/dev/null || true)
-    issues=${issues:-0}
-    issues=$(echo "$issues" | tr -d '[:space:]')
-    if [[ "$issues" -gt 0 ]]; then
-        HIGH_COUNT=$((HIGH_COUNT + issues))
-        SECURITY_HIGH_COUNT=$((SECURITY_HIGH_COUNT + issues))
+    # Count issues by severity across combined JSON blocks (best-effort).
+    # gosec JSON uses "severity": "HIGH"|"MEDIUM"|"LOW" per finding.
+    # Only HIGH findings should contribute to the security gate.
+    local high_issues medium_issues low_issues
+    high_issues=$(grep -c '"severity": "HIGH"' "$output_file" 2>/dev/null || true)
+    high_issues=${high_issues:-0}
+    high_issues=$(echo "$high_issues" | tr -d '[:space:]')
+    medium_issues=$(grep -c '"severity": "MEDIUM"' "$output_file" 2>/dev/null || true)
+    medium_issues=${medium_issues:-0}
+    medium_issues=$(echo "$medium_issues" | tr -d '[:space:]')
+    low_issues=$(grep -c '"severity": "LOW"' "$output_file" 2>/dev/null || true)
+    low_issues=${low_issues:-0}
+    low_issues=$(echo "$low_issues" | tr -d '[:space:]')
+    local total_issues=$((high_issues + medium_issues + low_issues))
+    if [[ "$total_issues" -gt 0 ]]; then
+        HIGH_COUNT=$((HIGH_COUNT + high_issues))
+        SECURITY_HIGH_COUNT=$((SECURITY_HIGH_COUNT + high_issues))
+        MEDIUM_COUNT=$((MEDIUM_COUNT + medium_issues))
+        LOW_COUNT=$((LOW_COUNT + low_issues))
         TOOL_STATUS["gosec"]="findings"
     else
         TOOL_STATUS["gosec"]="pass"

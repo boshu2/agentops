@@ -437,6 +437,12 @@ func TestHarvest_LockFileCorrupted_ProceedsWithWarning(t *testing.T) {
 }
 
 func TestRunHarvest_PersistsDiscoveryWarnings(t *testing.T) {
+	// Root bypasses filesystem permission checks, so the chmod(0)
+	// trick below cannot trigger a permission-denied warning.
+	if os.Getuid() == 0 {
+		t.Skip("test requires non-root to enforce directory permissions")
+	}
+
 	tmp := t.TempDir()
 	t.Setenv("HOME", filepath.Join(tmp, "home"))
 
