@@ -390,8 +390,18 @@ func recoverOvernightStart(cwd string, summary *overnightSummary) {
 	if recErr != nil {
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("startup recovery: %v", recErr))
 	}
-	for _, action := range recoveryActions {
-		summary.Degraded = append(summary.Degraded, "recovery: "+action)
+	// Batch recovery actions: if there are many (e.g. 22K stale commit
+	// markers from a runaway run), summarize as a single degraded entry
+	// instead of spamming one entry per action.
+	const batchThreshold = 20
+	if len(recoveryActions) > batchThreshold {
+		summary.Degraded = append(summary.Degraded,
+			fmt.Sprintf("recovery: cleaned up %d stale items (first: %s)",
+				len(recoveryActions), recoveryActions[0]))
+	} else {
+		for _, action := range recoveryActions {
+			summary.Degraded = append(summary.Degraded, "recovery: "+action)
+		}
 	}
 }
 

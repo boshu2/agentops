@@ -300,6 +300,14 @@ func (s *runLoopState) shouldStop(loopCtx context.Context, iterIndex int) bool {
 		fmt.Fprintf(s.log, "overnight: RunLoop halted — max iterations (%d) reached\n", s.opts.MaxIterations)
 		return true
 	}
+	// Hard safety cap: even when MaxIterations=0 (budget-bounded), never
+	// exceed 100 iterations. A prior runaway run (20260411T031037Z) created
+	// 10K+ commit markers when the budget/timeout check failed to fire.
+	const hardCap = 100
+	if iterIndex >= hardCap {
+		fmt.Fprintf(s.log, "overnight: RunLoop halted — hard safety cap (%d) reached\n", hardCap)
+		return true
+	}
 	return false
 }
 
