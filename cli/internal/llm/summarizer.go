@@ -136,9 +136,9 @@ var sectionSplitRe = regexp.MustCompile(`(?m)^###\s+`)
 // the note. Returns an error if any required section is missing.
 func parseStrictMarkdown(body string, note *ChunkNote) error {
 	required := map[string]bool{
-		"Intent":             false,
-		"Summary":            false,
-		"Entities":           false,
+		"Intent":              false,
+		"Summary":             false,
+		"Entities":            false,
 		"Assistant condensed": false,
 	}
 	parts := sectionSplitRe.Split(body, -1)

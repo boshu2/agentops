@@ -8,180 +8,186 @@ import (
 	"time"
 )
 
-// SessionFrontmatter is the 17-field frontmatter schema for session pages,
-// enumerated in the jsonl-to-llm-wiki plan (council S6 / ARCH-3).
-//
-// Required fields are marshaled unconditionally; optional fields
-// (ParentSession, ReviewedAt, ReviewedBy) are omitted when empty.
-type SessionFrontmatter struct {
-	// Required
-	Type         string    // always "session"
-	SessionID    string    // source .jsonl session ID
-	SourceJSONL  string    // absolute path to source file
-	Workspace    string    // cwd captured from session
-	StartedAt    time.Time // first message timestamp
-	EndedAt      time.Time // last message timestamp
-	Turns        int       // number of user→assistant pairs
-	TokensIn     int       // sum of input tokens across assistant messages
-	TokensOut    int       // sum of output tokens
-	ModelPrimary string    // claude model used in the source session
-	Status       string    // "draft" | "reviewed" | "promoted"
-	Tier         int       // 1 = local LLM, 2 = Claude/Codex, 3 = human
-	Model        string    // LLM that produced these notes (e.g. gemma2:9b)
-	ModelDigest  string    // ollama digest of that model
-	Confidence   float64   // 0.0-1.0
-	IngestedAt   time.Time // when this page was written
-	IngestedBy   string    // "ao-forge-tier1"
-	FirstSeen    time.Time // same as IngestedAt on first pass
-
-	// Optional
-	ParentSession string    // set when this page supersedes another
-	ReviewedAt    time.Time // set when Tier 2/3 reviewer touches it
-	ReviewedBy    string    // reviewer identity
+// SessionMeta is the pipeline input used to build a session markdown page.
+type SessionMeta struct {
+	SessionID     string
+	SourceJSONL   string
+	Workspace     string
+	StartedAt     time.Time
+	EndedAt       time.Time
+	Turns         int
+	TokensIn      int
+	TokensOut     int
+	ModelPrimary  string
+	Status        string
+	Tier          int
+	Model         string
+	ModelDigest   string
+	Confidence    float64
+	IngestedAt    time.Time
+	IngestedBy    string
+	ParentSession string
+	FirstSeen     time.Time
+	ReviewedAt    time.Time
+	ReviewedBy    string
 }
 
-// SessionPage is a rendered session markdown file: frontmatter + body notes.
+// SessionFrontmatter is the YAML contract for .agents/ao/sessions/*.md files.
+// Required fields are marshaled unconditionally; optional fields are omitted
+// when empty.
+type SessionFrontmatter struct {
+	Type          string
+	SessionID     string
+	SourceJSONL   string
+	Workspace     string
+	StartedAt     time.Time
+	EndedAt       time.Time
+	Turns         int
+	TokensIn      int
+	TokensOut     int
+	ModelPrimary  string
+	Status        string
+	Tier          int
+	Model         string
+	ModelDigest   string
+	Confidence    float64
+	IngestedAt    time.Time
+	IngestedBy    string
+	ParentSession string
+	FirstSeen     time.Time
+	ReviewedAt    time.Time
+	ReviewedBy    string
+}
+
+// SessionPage is the rendered markdown artifact for one summarized session.
 type SessionPage struct {
 	Frontmatter SessionFrontmatter
 	Notes       []ChunkNote
 }
 
-// SessionMeta is the subset of per-session metadata that BuildPage needs;
-// the caller fills it from the parser output and runtime context.
-type SessionMeta struct {
-	SessionID    string
-	SourceJSONL  string
-	Workspace    string
-	StartedAt    time.Time
-	EndedAt      time.Time
-	Turns        int
-	TokensIn     int
-	TokensOut    int
-	ModelPrimary string
-	Model        string
-	ModelDigest  string
-	IngestedBy   string
-}
-
-// BuildPage assembles a SessionPage from a SessionMeta + slice of ChunkNotes,
-// filling defaults (status=draft, tier=1, ingested_at=now) and computing a
-// confidence score based on the skip ratio.
+// BuildPage applies v1 defaults and packages notes into a markdown page.
 func BuildPage(meta SessionMeta, notes []ChunkNote) SessionPage {
 	now := time.Now().UTC()
-	skipped := 0
-	for _, n := range notes {
-		if n.Skipped {
-			skipped++
-		}
+	if meta.Status == "" {
+		meta.Status = "draft"
 	}
-	var confidence float64
-	if len(notes) > 0 {
-		confidence = float64(len(notes)-skipped) / float64(len(notes))
+	if meta.Tier == 0 {
+		meta.Tier = 1
 	}
-	if confidence == 0 && len(notes) > 0 {
-		// All-skipped sessions still get a minimum nonzero confidence so the
-		// page is not silently discarded downstream.
-		confidence = 0.01
+	if meta.IngestedAt.IsZero() {
+		meta.IngestedAt = now
 	}
-	if len(notes) == 0 {
-		confidence = 0.01
+	if meta.FirstSeen.IsZero() {
+		meta.FirstSeen = meta.IngestedAt
 	}
+	if meta.Confidence <= 0 {
+		meta.Confidence = noteConfidence(notes)
+	}
+
 	return SessionPage{
 		Frontmatter: SessionFrontmatter{
-			Type:         "session",
-			SessionID:    meta.SessionID,
-			SourceJSONL:  meta.SourceJSONL,
-			Workspace:    meta.Workspace,
-			StartedAt:    meta.StartedAt,
-			EndedAt:      meta.EndedAt,
-			Turns:        meta.Turns,
-			TokensIn:     meta.TokensIn,
-			TokensOut:    meta.TokensOut,
-			ModelPrimary: meta.ModelPrimary,
-			Status:       "draft",
-			Tier:         1,
-			Model:        meta.Model,
-			ModelDigest:  meta.ModelDigest,
-			Confidence:   confidence,
-			IngestedAt:   now,
-			IngestedBy:   meta.IngestedBy,
-			FirstSeen:    now,
+			Type:          "session",
+			SessionID:     meta.SessionID,
+			SourceJSONL:   meta.SourceJSONL,
+			Workspace:     meta.Workspace,
+			StartedAt:     meta.StartedAt,
+			EndedAt:       meta.EndedAt,
+			Turns:         meta.Turns,
+			TokensIn:      meta.TokensIn,
+			TokensOut:     meta.TokensOut,
+			ModelPrimary:  meta.ModelPrimary,
+			Status:        meta.Status,
+			Tier:          meta.Tier,
+			Model:         meta.Model,
+			ModelDigest:   meta.ModelDigest,
+			Confidence:    meta.Confidence,
+			IngestedAt:    meta.IngestedAt,
+			IngestedBy:    meta.IngestedBy,
+			ParentSession: meta.ParentSession,
+			FirstSeen:     meta.FirstSeen,
+			ReviewedAt:    meta.ReviewedAt,
+			ReviewedBy:    meta.ReviewedBy,
 		},
 		Notes: notes,
 	}
 }
 
-// Render returns the markdown serialization of a SessionPage: YAML frontmatter
-// followed by one H3 section per non-skipped chunk note.
+// Render returns the full markdown page with YAML frontmatter and wikilinked notes.
 func (p SessionPage) Render() string {
 	var b strings.Builder
-	b.WriteString("---\n")
-	writeKV(&b, "type", p.Frontmatter.Type)
-	writeKV(&b, "session_id", p.Frontmatter.SessionID)
-	writeKV(&b, "source_jsonl", p.Frontmatter.SourceJSONL)
-	writeKV(&b, "workspace", p.Frontmatter.Workspace)
-	writeKV(&b, "started_at", p.Frontmatter.StartedAt.UTC().Format(time.RFC3339))
-	writeKV(&b, "ended_at", p.Frontmatter.EndedAt.UTC().Format(time.RFC3339))
-	writeKV(&b, "turns", fmt.Sprintf("%d", p.Frontmatter.Turns))
-	writeKV(&b, "tokens_in", fmt.Sprintf("%d", p.Frontmatter.TokensIn))
-	writeKV(&b, "tokens_out", fmt.Sprintf("%d", p.Frontmatter.TokensOut))
-	writeKV(&b, "model_primary", p.Frontmatter.ModelPrimary)
-	writeKV(&b, "status", p.Frontmatter.Status)
-	writeKV(&b, "tier", fmt.Sprintf("%d", p.Frontmatter.Tier))
-	writeKV(&b, "model", p.Frontmatter.Model)
-	writeKV(&b, "model_digest", p.Frontmatter.ModelDigest)
-	writeKV(&b, "confidence", fmt.Sprintf("%.2f", p.Frontmatter.Confidence))
-	writeKV(&b, "ingested_at", p.Frontmatter.IngestedAt.UTC().Format(time.RFC3339))
-	writeKV(&b, "ingested_by", p.Frontmatter.IngestedBy)
-	writeKV(&b, "first_seen", p.Frontmatter.FirstSeen.UTC().Format(time.RFC3339))
-	// Optional fields — omit when empty.
-	if p.Frontmatter.ParentSession != "" {
-		writeKV(&b, "parent_session", p.Frontmatter.ParentSession)
-	}
-	if !p.Frontmatter.ReviewedAt.IsZero() {
-		writeKV(&b, "reviewed_at", p.Frontmatter.ReviewedAt.UTC().Format(time.RFC3339))
-	}
-	if p.Frontmatter.ReviewedBy != "" {
-		writeKV(&b, "reviewed_by", p.Frontmatter.ReviewedBy)
-	}
-	b.WriteString("---\n\n")
-
-	// Body: one H3 per chunk note. Skipped notes render as a compact line.
-	b.WriteString("# Session notes\n\n")
+	p.renderFrontmatter(&b)
+	fmt.Fprintf(&b, "# Session %s\n\n", p.Frontmatter.SessionID)
 	for _, note := range p.Notes {
-		if note.Skipped {
-			fmt.Fprintf(&b, "### Chunk %d — SKIP\n\n", note.Index)
-			continue
-		}
-		fmt.Fprintf(&b, "### %s\n\n", note.Intent)
-		if note.Summary != "" {
-			b.WriteString(note.Summary)
-			b.WriteString("\n\n")
-		}
-		if len(note.Entities) > 0 {
-			b.WriteString("**Entities:**\n")
-			for _, e := range note.Entities {
-				fmt.Fprintf(&b, "- [[%s]]\n", e)
-			}
-			b.WriteString("\n")
-		}
-		if note.AssistantCondensed != "" {
-			b.WriteString("**Assistant:** ")
-			b.WriteString(note.AssistantCondensed)
-			b.WriteString("\n\n")
-		}
+		p.renderNote(&b, note)
 	}
 	return b.String()
 }
 
-// WriteSessionPage writes a rendered page to path atomically: the content is
-// written to a sibling tempfile and os.Rename'd into place. Never leaves a
-// partial file on failure (per pre-mortem F2).
+func (p SessionPage) renderFrontmatter(b *strings.Builder) {
+	fm := p.Frontmatter
+	b.WriteString("---\n")
+	requiredStringField(b, "type", fm.Type)
+	requiredStringField(b, "session_id", fm.SessionID)
+	requiredStringField(b, "source_jsonl", fm.SourceJSONL)
+	requiredStringField(b, "workspace", fm.Workspace)
+	requiredTimeField(b, "started_at", fm.StartedAt)
+	requiredTimeField(b, "ended_at", fm.EndedAt)
+	requiredIntField(b, "turns", fm.Turns)
+	requiredIntField(b, "tokens_in", fm.TokensIn)
+	requiredIntField(b, "tokens_out", fm.TokensOut)
+	requiredStringField(b, "model_primary", fm.ModelPrimary)
+	requiredStringField(b, "status", fm.Status)
+	requiredIntField(b, "tier", fm.Tier)
+	requiredStringField(b, "model", fm.Model)
+	requiredStringField(b, "model_digest", fm.ModelDigest)
+	requiredFloatField(b, "confidence", fm.Confidence)
+	requiredTimeField(b, "ingested_at", fm.IngestedAt)
+	requiredStringField(b, "ingested_by", fm.IngestedBy)
+	optionalStringField(b, "parent_session", fm.ParentSession)
+	requiredTimeField(b, "first_seen", fm.FirstSeen)
+	optionalTimeField(b, "reviewed_at", fm.ReviewedAt)
+	optionalStringField(b, "reviewed_by", fm.ReviewedBy)
+	b.WriteString("---\n\n")
+}
+
+func (p SessionPage) renderNote(b *strings.Builder, note ChunkNote) {
+	if note.Skipped {
+		fmt.Fprintf(b, "### Turn %d skipped\n\n", note.Index)
+		return
+	}
+	heading := strings.TrimSpace(note.Intent)
+	if heading == "" {
+		heading = fmt.Sprintf("Turn %d", note.Index)
+	}
+	fmt.Fprintf(b, "### %s\n\n", heading)
+	if summary := strings.TrimSpace(note.Summary); summary != "" {
+		b.WriteString(summary)
+		b.WriteString("\n\n")
+	}
+	if assistant := strings.TrimSpace(note.AssistantCondensed); assistant != "" {
+		b.WriteString("**Assistant condensed:** ")
+		b.WriteString(assistant)
+		b.WriteString("\n\n")
+	}
+	if len(note.Entities) > 0 {
+		b.WriteString("**Entities:**\n")
+		for _, entity := range note.Entities {
+			entity = strings.TrimSpace(entity)
+			if entity == "" {
+				continue
+			}
+			fmt.Fprintf(b, "- [[%s]]\n", entity)
+		}
+		b.WriteString("\n")
+	}
+}
+
+// WriteSessionPage writes a page through a temp file in the destination
+// directory, then renames it into place.
 func WriteSessionPage(path string, page SessionPage) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(path), err)
 	}
-	content := page.Render()
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".tmp-session-*.md")
 	if err != nil {
 		return fmt.Errorf("create tempfile: %w", err)
@@ -189,7 +195,7 @@ func WriteSessionPage(path string, page SessionPage) error {
 	tmpPath := tmp.Name()
 	cleanup := func() { _ = os.Remove(tmpPath) }
 
-	if _, err := tmp.WriteString(content); err != nil {
+	if _, err := tmp.WriteString(page.Render()); err != nil {
 		tmp.Close()
 		cleanup()
 		return fmt.Errorf("write tempfile: %w", err)
@@ -205,14 +211,60 @@ func WriteSessionPage(path string, page SessionPage) error {
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
 		cleanup()
-		return fmt.Errorf("atomic rename %s → %s: %w", tmpPath, path, err)
+		return fmt.Errorf("atomic rename %s -> %s: %w", tmpPath, path, err)
 	}
 	return nil
 }
 
-func writeKV(b *strings.Builder, key, value string) {
-	// Simple scalar serialization: no quoting unless the value contains a
-	// character that YAML would interpret. For our fields (paths, IDs,
-	// timestamps) plain scalars are safe.
-	fmt.Fprintf(b, "%s: %s\n", key, value)
+func requiredStringField(b *strings.Builder, key, value string) {
+	fmt.Fprintf(b, "%s: %s\n", key, cleanScalar(strings.TrimSpace(value)))
+}
+
+func optionalStringField(b *strings.Builder, key, value string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return
+	}
+	fmt.Fprintf(b, "%s: %s\n", key, cleanScalar(value))
+}
+
+func requiredTimeField(b *strings.Builder, key string, value time.Time) {
+	fmt.Fprintf(b, "%s: %s\n", key, value.UTC().Format(time.RFC3339))
+}
+
+func optionalTimeField(b *strings.Builder, key string, value time.Time) {
+	if value.IsZero() {
+		return
+	}
+	fmt.Fprintf(b, "%s: %s\n", key, value.UTC().Format(time.RFC3339))
+}
+
+func requiredIntField(b *strings.Builder, key string, value int) {
+	fmt.Fprintf(b, "%s: %d\n", key, value)
+}
+
+func requiredFloatField(b *strings.Builder, key string, value float64) {
+	fmt.Fprintf(b, "%s: %g\n", key, value)
+}
+
+func cleanScalar(value string) string {
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	return value
+}
+
+func noteConfidence(notes []ChunkNote) float64 {
+	if len(notes) == 0 {
+		return 0.01
+	}
+	var kept int
+	for _, note := range notes {
+		if !note.Skipped {
+			kept++
+		}
+	}
+	if kept == 0 {
+		return 0.01
+	}
+	return float64(kept) / float64(len(notes))
 }

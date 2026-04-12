@@ -28,9 +28,9 @@ func (f *fakeLLM) Generate(prompt string) (string, error) {
 	return "", errors.New("fakeLLM: out of responses")
 }
 
-func (f *fakeLLM) Digest() string        { return "sha256:fake-digest-1234" }
-func (f *fakeLLM) ContextBudget() int    { return 8192 }
-func (f *fakeLLM) ModelName() string     { return "gemma2:9b" }
+func (f *fakeLLM) Digest() string     { return "sha256:fake-digest-1234" }
+func (f *fakeLLM) ContextBudget() int { return 8192 }
+func (f *fakeLLM) ModelName() string  { return "gemma2:9b" }
 
 // A realistic gemma output that the spike validated on real chunks.
 const validSpikeOutput = `### Intent
