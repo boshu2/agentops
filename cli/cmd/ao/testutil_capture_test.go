@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCaptureStdoutRestoresStdoutAfterReturn(t *testing.T) {
@@ -56,20 +57,44 @@ func TestCaptureStdoutHandlesLargeOutputWithoutDeadlock(t *testing.T) {
 	}
 }
 
-func TestBeginStdoutCaptureSessionRejectsNestedUse(t *testing.T) {
+func TestBeginStdoutCaptureSessionSerializesConcurrentUse(t *testing.T) {
 	session, err := beginStdoutCaptureSession()
 	if err != nil {
 		t.Fatalf("beginStdoutCaptureSession returned error: %v", err)
 	}
-	defer session.closeAndRestore()
 
-	_, err = beginStdoutCaptureSession()
-	if err == nil {
-		t.Fatal("expected nested stdout capture to fail")
+	secondReady := make(chan struct{})
+	secondSession := make(chan *stdoutCaptureSession, 1)
+	secondErr := make(chan error, 1)
+
+	go func() {
+		close(secondReady)
+		session, err := beginStdoutCaptureSession()
+		secondSession <- session
+		secondErr <- err
+	}()
+
+	<-secondReady
+	select {
+	case session := <-secondSession:
+		if session != nil {
+			session.closeAndRestore()
+		}
+		t.Fatal("second stdout capture started before the first restored stdout")
+	case <-time.After(50 * time.Millisecond):
+		// Expected: the second session is waiting on stdoutCaptureMu.
 	}
-	if !strings.Contains(err.Error(), "nested stdout capture") {
-		t.Fatalf("expected nested capture error, got: %v", err)
+
+	session.closeAndRestore()
+
+	session = <-secondSession
+	if err := <-secondErr; err != nil {
+		t.Fatalf("second stdout capture returned error: %v", err)
 	}
+	if session == nil {
+		t.Fatal("second stdout capture returned nil session")
+	}
+	session.closeAndRestore()
 }
 
 func TestCaptureStdoutRestoresStdoutAfterPanic(t *testing.T) {

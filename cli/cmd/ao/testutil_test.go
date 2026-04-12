@@ -35,19 +35,14 @@ func init() {
 // ---------------------------------------------------------------------------
 // Stdout capture helpers
 //
-// WARNING: These helpers redirect the global os.Stdout, which means they are
-// NOT safe for use in parallel tests (t.Parallel()). The mutex prevents
-// concurrent capture sessions from interleaving, but two parallel tests that
-// both need stdout capture will serialize on the lock. If you need parallel
+// WARNING: These helpers redirect the global os.Stdout, so concurrent capture
+// sessions serialize on a package-level mutex. If you need truly parallel
 // stdout capture, refactor the code under test to accept an io.Writer instead.
 // ---------------------------------------------------------------------------
 
-// stdoutCaptureState guards against nested capture sessions. Only one capture
-// may be active at a time because os.Stdout is a process-global resource.
-var stdoutCaptureState struct {
-	mu     sync.Mutex
-	active bool
-}
+// stdoutCaptureMu guards the process-global os.Stdout redirect for the full
+// capture session.
+var stdoutCaptureMu sync.Mutex
 
 // stdoutCaptureSession holds the state for one capture: the saved os.Stdout
 // and the pipe endpoints used to intercept writes.
@@ -55,6 +50,7 @@ type stdoutCaptureSession struct {
 	oldStdout *os.File
 	reader    *os.File
 	writer    *os.File
+	restore   sync.Once
 }
 
 // stdoutCaptureResult pairs the captured output with any read error.
@@ -64,17 +60,13 @@ type stdoutCaptureResult struct {
 }
 
 // beginStdoutCaptureSession opens a pipe, redirects os.Stdout to the write
-// end, and returns a session that must be closed via closeAndRestore. Returns
-// an error if a capture is already active (nesting is not supported).
+// end, and returns a session that must be closed via closeAndRestore.
 func beginStdoutCaptureSession() (*stdoutCaptureSession, error) {
-	stdoutCaptureState.mu.Lock()
-	defer stdoutCaptureState.mu.Unlock()
-	if stdoutCaptureState.active {
-		return nil, fmt.Errorf("nested stdout capture is not supported")
-	}
+	stdoutCaptureMu.Lock()
 
 	reader, writer, err := os.Pipe()
 	if err != nil {
+		stdoutCaptureMu.Unlock()
 		return nil, err
 	}
 
@@ -83,7 +75,6 @@ func beginStdoutCaptureSession() (*stdoutCaptureSession, error) {
 		reader:    reader,
 		writer:    writer,
 	}
-	stdoutCaptureState.active = true
 	os.Stdout = writer
 	return session, nil
 }
@@ -94,18 +85,20 @@ func (session *stdoutCaptureSession) closeAndRestore() {
 	if session == nil {
 		return
 	}
-	if session.writer != nil {
-		_ = session.writer.Close()
-		session.writer = nil
-	}
-	if session.oldStdout != nil {
-		os.Stdout = session.oldStdout
-	}
-	stdoutCaptureState.mu.Lock()
-	defer stdoutCaptureState.mu.Unlock()
-	if stdoutCaptureState.active {
-		stdoutCaptureState.active = false
-	}
+	session.restore.Do(func() {
+		if session.writer != nil {
+			_ = session.writer.Close()
+			session.writer = nil
+		}
+		if session.reader != nil {
+			_ = session.reader.Close()
+			session.reader = nil
+		}
+		if session.oldStdout != nil {
+			os.Stdout = session.oldStdout
+		}
+		stdoutCaptureMu.Unlock()
+	})
 }
 
 // startReader spawns a goroutine that drains the read end of the pipe and
