@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -102,9 +105,45 @@ func TestUATSmoke_DefragDedup(t *testing.T) {
 	tmp := chdirTemp(t)
 	setupAgentsDir(t, tmp)
 
+	duplicateContent := `# Duplicate learning
+
+This learning captures how defrag dedup should remove hash-named duplicate
+files while preserving named learnings across the UAT smoke path.
+`
+	hashNamed := filepath.Join(tmp, ".agents", "learnings", "2026-03-01-a1b2c3d4.md")
+	named := filepath.Join(tmp, ".agents", "learnings", "2026-03-01-defrag-dedup.md")
+	writeFile(t, hashNamed, duplicateContent)
+	writeFile(t, named, duplicateContent)
+
 	out, err := executeCommand("defrag", "--dedup", "--quiet")
 	if err != nil {
 		t.Fatalf("defrag --dedup failed: %v\noutput: %s", err, out)
+	}
+
+	if _, err := os.Stat(hashNamed); !os.IsNotExist(err) {
+		t.Fatalf("hash-named duplicate should have been deleted, stat err: %v", err)
+	}
+	if _, err := os.Stat(named); err != nil {
+		t.Fatalf("named learning should have been preserved: %v", err)
+	}
+
+	reportPath := filepath.Join(tmp, ".agents", "defrag", "latest.json")
+	data, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatalf("read defrag latest report: %v", err)
+	}
+	var report DefragReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatalf("parse defrag latest report: %v\n%s", err, string(data))
+	}
+	if report.Dedup == nil {
+		t.Fatal("expected dedup report")
+	}
+	if report.Dedup.Checked != 2 {
+		t.Fatalf("dedup checked = %d, want 2", report.Dedup.Checked)
+	}
+	if !slices.Contains(report.Dedup.Deleted, filepath.Base(hashNamed)) {
+		t.Fatalf("dedup deleted = %v, want %s", report.Dedup.Deleted, filepath.Base(hashNamed))
 	}
 }
 
