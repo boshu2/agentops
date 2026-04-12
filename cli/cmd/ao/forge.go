@@ -96,6 +96,41 @@ Examples:
 	RunE: runForgeTranscript,
 }
 
+var (
+	forgeReviewDryRun bool
+)
+
+var forgeReviewCmd = &cobra.Command{
+	Use:   "review",
+	Short: "Tier 2 structural review of draft session pages",
+	Long: `Review draft session pages in .agents/ao/sessions/ and promote
+qualifying pages to status:reviewed. Uses structural quality checks
+(section presence, confidence threshold) in v1; LLM-based review
+is planned for v2.
+
+Examples:
+  ao forge review
+  ao forge review --dry-run`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cwd, _ := os.Getwd()
+		sessionsDir := filepath.Join(cwd, ".agents", "ao", "sessions")
+		result, err := llm.ReviewDraftSessions(llm.ReviewOptions{
+			SessionsDir: sessionsDir,
+			DryRun:      forgeReviewDryRun,
+			Quiet:       forgeQuiet,
+		})
+		if err != nil {
+			return err
+		}
+		if !forgeQuiet {
+			w := cmd.OutOrStdout()
+			fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
+				result.Reviewed, result.Skipped, len(result.Errors))
+		}
+		return nil
+	},
+}
+
 var forgeMarkdownCmd = &cobra.Command{
 	Use:   "markdown <path-or-glob>",
 	Short: "Extract knowledge from markdown files",
@@ -118,6 +153,8 @@ func init() {
 	rootCmd.AddCommand(forgeCmd)
 	forgeCmd.AddCommand(forgeTranscriptCmd)
 	forgeCmd.AddCommand(forgeMarkdownCmd)
+	forgeCmd.AddCommand(forgeReviewCmd)
+	forgeReviewCmd.Flags().BoolVar(&forgeReviewDryRun, "dry-run", false, "Show what would be promoted without writing")
 
 	// Transcript flags
 	forgeTranscriptCmd.Flags().BoolVar(&forgeLastSession, "last-session", false, "Process only the most recent transcript")
