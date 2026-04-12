@@ -853,58 +853,108 @@ func saveCodexLifecycleState(path string, state *codexLifecycleState) error {
 func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query string, briefings []codexArtifactRef, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef, showNewUserWelcome bool) (string, error) {
 	bundle := buildRankedContextBundle(cwd, query, codexStartLimit, learnings, patterns, findings, recentSessions, nextWork, research)
 	agentsRoot := knowledgeAgentsRoot(cwd)
+	beliefs := codexStartupBeliefs(bundle)
+	playbooks := codexStartupPlaybooks(bundle)
+	warnings := codexStartupWarnings(bundle, agentsRoot)
+	sourceLinks := codexStartupSourceLinks(cwd, agentsRoot, briefings, playbooks)
+	content := renderCodexStartupContext(cwd, agentsRoot, profile, query, briefings, beliefs, playbooks, warnings, sourceLinks, showNewUserWelcome)
+	return writeCodexStartupContextFile(cwd, content)
+}
+
+func codexStartupBeliefs(bundle rankedContextBundle) []string {
 	beliefs := append([]string(nil), bundle.Beliefs...)
 	if len(beliefs) > 3 {
 		beliefs = beliefs[:3]
 	}
+	return beliefs
+}
+
+func codexStartupPlaybooks(bundle rankedContextBundle) []knowledgeContextPlaybook {
 	playbooks := append([]knowledgeContextPlaybook(nil), bundle.Playbooks...)
 	if len(playbooks) > 1 {
 		playbooks = playbooks[:1]
 	}
-	warnings := codexStartupWarnings(bundle, agentsRoot)
-	sourceLinks := codexStartupSourceLinks(cwd, agentsRoot, briefings, playbooks)
+	return playbooks
+}
+
+func renderCodexStartupContext(cwd, agentsRoot string, profile lifecycleRuntimeProfile, query string, briefings []codexArtifactRef, beliefs []string, playbooks []knowledgeContextPlaybook, warnings, sourceLinks []string, showNewUserWelcome bool) string {
 	var sb strings.Builder
+	writeCodexStartupHeader(&sb, profile, query)
+	if showNewUserWelcome {
+		writeCodexStartupNewUserWelcome(&sb)
+	}
+	writeCodexStartupBriefings(&sb, query, briefings)
+	writeCodexStartupOperatorModel(&sb, cwd, agentsRoot)
+	writeCodexStartupSlots(&sb, cwd, beliefs, playbooks, warnings, sourceLinks)
+	writeCodexStartupDegradedMode(&sb)
+	writeCodexStartupExcludedByDefault(&sb)
+	return sb.String()
+}
+
+func writeCodexStartupHeader(sb *strings.Builder, profile lifecycleRuntimeProfile, query string) {
 	sb.WriteString("# Codex Startup Context\n\n")
-	fmt.Fprintf(&sb, "- Runtime: %s\n", profile.Runtime)
-	fmt.Fprintf(&sb, "- Lifecycle mode: %s\n", profile.Mode)
+	fmt.Fprintf(sb, "- Runtime: %s\n", profile.Runtime)
+	fmt.Fprintf(sb, "- Lifecycle mode: %s\n", profile.Mode)
 	if profile.ThreadName != "" {
-		fmt.Fprintf(&sb, "- Thread: %s\n", profile.ThreadName)
+		fmt.Fprintf(sb, "- Thread: %s\n", profile.ThreadName)
 	}
 	if query != "" {
-		fmt.Fprintf(&sb, "- Query: %s\n", query)
+		fmt.Fprintf(sb, "- Query: %s\n", query)
 	}
-	if showNewUserWelcome {
-		sb.WriteString("\n## New Here?\n")
-		sb.WriteString("- `$research \"how does auth work\"` to understand the repo before changing it\n")
-		sb.WriteString("- `$implement \"fix the login bug\"` to run one scoped task end to end\n")
-		sb.WriteString("- `$council validate this plan` to pressure-test a plan, PR, or direction before shipping\n")
-	}
+}
+
+func writeCodexStartupNewUserWelcome(sb *strings.Builder) {
+	sb.WriteString("\n## New Here?\n")
+	sb.WriteString("- `$research \"how does auth work\"` to understand the repo before changing it\n")
+	sb.WriteString("- `$implement \"fix the login bug\"` to run one scoped task end to end\n")
+	sb.WriteString("- `$council validate this plan` to pressure-test a plan, PR, or direction before shipping\n")
+}
+
+func writeCodexStartupBriefings(sb *strings.Builder, query string, briefings []codexArtifactRef) {
 	sb.WriteString("\n## Briefings\n")
 	if len(briefings) == 0 {
-		fmt.Fprintf(&sb, "- No recent knowledge briefing surfaced. Build one with `ao knowledge brief --goal %q` when workspace builders are available.\n", query)
+		fmt.Fprintf(sb, "- No recent knowledge briefing surfaced. Build one with `ao knowledge brief --goal %q` when workspace builders are available.\n", query)
 	} else {
 		sb.WriteString("- Treat matched knowledge briefings as the primary dynamic surface for this thread; use the ranked context below as supporting operator state.\n")
 		for _, item := range briefings {
-			fmt.Fprintf(&sb, "- %s\n", item.Title)
+			fmt.Fprintf(sb, "- %s\n", item.Title)
 		}
 	}
+}
+
+func writeCodexStartupOperatorModel(sb *strings.Builder, cwd, agentsRoot string) {
 	sb.WriteString("\n## Operator Model\n")
 	sb.WriteString("- Canonical primitives: `fitness gradient`, `stateful environment`, `replaceable actors`, `stigmergic traces`, `selection gates`, `evolutionary promotion`, `governance`\n")
 	sb.WriteString("- Treat the control plane as the product; actors are replaceable executors and the environment carries memory, coordination, trust, and adaptation.\n")
 	operatorModelPath := filepath.Join(agentsRoot, "knowledge", "operator-model.md")
 	if fileExists(operatorModelPath) {
-		fmt.Fprintf(&sb, "- Doctrine: `%s`\n", displayKnowledgeContextPath(cwd, operatorModelPath))
+		fmt.Fprintf(sb, "- Doctrine: `%s`\n", displayKnowledgeContextPath(cwd, operatorModelPath))
 	}
+}
+
+func writeCodexStartupSlots(sb *strings.Builder, cwd string, beliefs []string, playbooks []knowledgeContextPlaybook, warnings, sourceLinks []string) {
 	sb.WriteString("\n## Startup Slots\n")
 	sb.WriteString("This startup surface is fixed-slot and file-backed: a few beliefs, one healthy playbook, concrete blockers, and source links.\n\n")
-	sb.WriteString("### Core Beliefs\n")
-	if len(beliefs) == 0 {
-		sb.WriteString("- No stable beliefs surfaced yet.\n")
-	} else {
-		for _, belief := range beliefs {
-			fmt.Fprintf(&sb, "- %s\n", belief)
-		}
+	writeCodexStartupStringSection(sb, "Core Beliefs", "- No stable beliefs surfaced yet.", beliefs)
+	writeCodexStartupPlaybookSection(sb, cwd, playbooks)
+	writeCodexStartupStringSection(sb, "Warnings / Blockers", "- No high-signal blockers surfaced from current operator artifacts.", warnings)
+	sb.WriteString("\n")
+	writeCodexStartupStringSection(sb, "Source Links", "- No source links surfaced.", sourceLinks)
+}
+
+func writeCodexStartupStringSection(sb *strings.Builder, title, emptyLine string, items []string) {
+	fmt.Fprintf(sb, "### %s\n", title)
+	if len(items) == 0 {
+		sb.WriteString(emptyLine)
+		sb.WriteString("\n")
+		return
 	}
+	for _, item := range items {
+		fmt.Fprintf(sb, "- %s\n", item)
+	}
+}
+
+func writeCodexStartupPlaybookSection(sb *strings.Builder, cwd string, playbooks []knowledgeContextPlaybook) {
 	sb.WriteString("\n### Relevant Playbook\n")
 	if len(playbooks) == 0 {
 		sb.WriteString("- No healthy playbook matched this thread yet.\n")
@@ -914,38 +964,31 @@ func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query
 			if summary == "" {
 				summary = "Use the healthy operator playbook for bounded execution."
 			}
-			fmt.Fprintf(&sb, "- %s: %s (`%s`)\n", playbook.Title, summary, displayKnowledgeContextPath(cwd, playbook.Path))
+			fmt.Fprintf(sb, "- %s: %s (`%s`)\n", playbook.Title, summary, displayKnowledgeContextPath(cwd, playbook.Path))
 		}
 	}
-	sb.WriteString("\n### Warnings / Blockers\n")
-	if len(warnings) == 0 {
-		sb.WriteString("- No high-signal blockers surfaced from current operator artifacts.\n")
-	} else {
-		for _, warning := range warnings {
-			fmt.Fprintf(&sb, "- %s\n", warning)
-		}
-	}
-	sb.WriteString("\n### Source Links\n")
-	if len(sourceLinks) == 0 {
-		sb.WriteString("- No source links surfaced.\n")
-	} else {
-		for _, source := range sourceLinks {
-			fmt.Fprintf(&sb, "- %s\n", source)
-		}
-	}
+	sb.WriteString("\n")
+}
+
+func writeCodexStartupDegradedMode(sb *strings.Builder) {
 	sb.WriteString("\n## Degraded Mode\n")
 	sb.WriteString("- When CAS freshness is unhealthy, file-backed artifacts and lexical probes remain authoritative.\n")
 	sb.WriteString("- Startup context assembly stays file-backed and does not silently depend on a healthy CAS index.\n")
+}
+
+func writeCodexStartupExcludedByDefault(sb *strings.Builder) {
 	sb.WriteString("\n## Excluded By Default\n")
 	for _, bullet := range codexStartupExclusionBullets() {
-		fmt.Fprintf(&sb, "- %s\n", bullet)
+		fmt.Fprintf(sb, "- %s\n", bullet)
 	}
+}
 
+func writeCodexStartupContextFile(cwd, content string) (string, error) {
 	path := filepath.Join(cwd, ".agents", "ao", "codex", "startup-context.md")
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return "", fmt.Errorf("create codex startup context dir: %w", err)
 	}
-	if err := atomicWriteFile(path, []byte(sb.String()), 0o600); err != nil {
+	if err := atomicWriteFile(path, []byte(content), 0o600); err != nil {
 		return "", err
 	}
 	return path, nil

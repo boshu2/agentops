@@ -342,6 +342,41 @@ id: "f-startup-002"
 	}
 }
 
+func TestCodexStartupBeliefsAndPlaybooksAreCapped(t *testing.T) {
+	bundle := rankedContextBundle{
+		Beliefs: []string{"one", "two", "three", "four"},
+		Playbooks: []knowledgeContextPlaybook{
+			{Title: "first", Summary: "first summary", Path: "first.md"},
+			{Title: "second", Summary: "second summary", Path: "second.md"},
+		},
+	}
+
+	beliefs := codexStartupBeliefs(bundle)
+	playbooks := codexStartupPlaybooks(bundle)
+
+	if len(beliefs) != 3 {
+		t.Fatalf("belief count = %d, want 3", len(beliefs))
+	}
+	if beliefs[2] != "three" {
+		t.Fatalf("belief cap kept %q as third item, want three", beliefs[2])
+	}
+	if len(playbooks) != 1 {
+		t.Fatalf("playbook count = %d, want 1", len(playbooks))
+	}
+	if playbooks[0].Title != "first" {
+		t.Fatalf("playbook cap kept %q, want first", playbooks[0].Title)
+	}
+
+	beliefs[0] = "mutated"
+	playbooks[0].Title = "mutated"
+	if bundle.Beliefs[0] == "mutated" {
+		t.Fatal("belief cap result aliases bundle beliefs")
+	}
+	if bundle.Playbooks[0].Title == "mutated" {
+		t.Fatal("playbook cap result aliases bundle playbooks")
+	}
+}
+
 func TestWriteCodexStartupContextIncludesNewUserWelcome(t *testing.T) {
 	repo := t.TempDir()
 	profile := lifecycleRuntimeProfile{Runtime: runtimeKindCodex, Mode: lifecycleModeCodexHookless, ThreadName: "startup"}
@@ -1195,10 +1230,10 @@ func TestOutputCodexStopResult_Human(t *testing.T) {
 		TranscriptSource:    "archived",
 		SyntheticTranscript: true,
 		Session: SessionCloseResult{
-			SessionID:           "sess-1",
-			LearningsExtracted:  3,
-			LearningsRejected:   1,
-			HandoffWritten:      "/tmp/handoff.md",
+			SessionID:          "sess-1",
+			LearningsExtracted: 3,
+			LearningsRejected:  1,
+			HandoffWritten:     "/tmp/handoff.md",
 		},
 	}
 
