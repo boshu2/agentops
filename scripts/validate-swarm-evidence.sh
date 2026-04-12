@@ -20,9 +20,19 @@ if [[ -z "$RESULT_FILE" ]]; then
         exit 0
     fi
     EVIDENCE_FILES=()
-    while IFS= read -r -d '' f; do
-        EVIDENCE_FILES+=("$f")
-    done < <(find "$EVIDENCE_DIR" -maxdepth 1 -name '*.json' -type f -print0 2>/dev/null)
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        while IFS= read -r -d '' f; do
+            [[ "$f" == *.json ]] && EVIDENCE_FILES+=("$f")
+        done < <(git ls-files -z -- "$EVIDENCE_DIR" 2>/dev/null || true)
+        if [[ ${#EVIDENCE_FILES[@]} -eq 0 ]]; then
+            echo "SKIP: no tracked evidence files in $EVIDENCE_DIR — nothing to validate"
+            exit 0
+        fi
+    else
+        while IFS= read -r -d '' f; do
+            EVIDENCE_FILES+=("$f")
+        done < <(find "$EVIDENCE_DIR" -maxdepth 1 -name '*.json' -type f -print0 2>/dev/null)
+    fi
     if [[ ${#EVIDENCE_FILES[@]} -eq 0 ]]; then
         echo "SKIP: no evidence files in $EVIDENCE_DIR — nothing to validate"
         exit 0
