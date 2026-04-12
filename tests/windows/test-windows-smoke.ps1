@@ -127,5 +127,6 @@ Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/quality")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./cmd/ao", "-run", "^(TestBatchForge_appendForgedRecord|TestAppendForgedRecord|TestBatchForgeSkipsAlreadyForged|TestLoadAndFilterTranscripts_RespectsForgedIndex|TestCanonicalArtifactPath|TestCobraDemoConceptsCommand|TestCobraDemoQuickCommand|TestCobraShowConcepts)$")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/storage", "-run", "^TestWithLockedFile_")
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/rpi", "-run", "^TestAcquireMergeLock")
+Invoke-GoTest -TestArgs @("-timeout", "5m", "./internal/overnight")
 
 Write-Host "Windows smoke tests passed"
