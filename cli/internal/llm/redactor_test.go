@@ -52,6 +52,18 @@ more log`
 	}
 }
 
+func TestRedact_HomePathScrubbing(t *testing.T) {
+	t.Setenv("HOME", "/Users/fullerbt")
+	in := "see /Users/fullerbt/gt/agentops/crew/nami/cli/forge.go for details"
+	out := Redact(in)
+	if strings.Contains(out, "/Users/fullerbt") {
+		t.Errorf("home path leaked: %q", out)
+	}
+	if !strings.Contains(out, "forge.go") {
+		t.Errorf("non-sensitive path suffix lost: %q", out)
+	}
+}
+
 func TestRedact_KeepsNonSensitiveContent(t *testing.T) {
 	in := "the assistant suggested running make build and then make test for the cli package"
 	out := Redact(in)
