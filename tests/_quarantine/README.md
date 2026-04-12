@@ -84,9 +84,9 @@ bash tests/_quarantine/team-runner/run-all.sh   # broken path, see Plan D
 
 **Cost:** ~1 hour. Schemas and scripts still live, so ROI is good.
 
-## Follow-up issues to file
+## Follow-up issues
 
-- **na-gtm.8a** — Promote `codex/` (Plan A)
-- **na-gtm.8b** — Promote `ol-integration/` (Plan C — lowest risk, do first)
-- **na-gtm.8c** — Promote `team-runner/` (Plan D)
-- **na-gtm.8d** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)
+- **na-gtm.17** — Promote `codex/` (Plan A)
+- **na-gtm.18** — Promote `ol-integration/` (Plan C - lowest risk, do first)
+- **na-gtm.19** — Promote `team-runner/` (Plan D)
+- **na-gtm.20** — Promote `claude-code/` with skip-on-absent guard + optional CI job (Plan B)
