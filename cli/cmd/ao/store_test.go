@@ -214,66 +214,23 @@ func TestExtractKeywords(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestStoreCoverage_CreateIndexEntry(t *testing.T) {
-	tmp := t.TempDir()
+	fixture := newStoreCoverageCreateIndexEntryFixture(t)
 
 	t.Run("basic markdown file", func(t *testing.T) {
 		content := "# Test Document\n\nSome content with pattern: stuff.\n"
-		path := filepath.Join(tmp, "doc.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		entry, err := createIndexEntry(path, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if entry.Path != path {
-			t.Errorf("Path = %q, want %q", entry.Path, path)
-		}
-		if entry.ID != "doc.md" {
-			t.Errorf("ID = %q, want %q", entry.ID, "doc.md")
-		}
-		if entry.Title != "Test Document" {
-			t.Errorf("Title = %q, want %q", entry.Title, "Test Document")
-		}
-		if entry.Content != content {
-			t.Errorf("Content mismatch")
-		}
-		if entry.IndexedAt.IsZero() {
-			t.Error("IndexedAt should not be zero")
-		}
-		if entry.ModifiedAt.IsZero() {
-			t.Error("ModifiedAt should not be zero")
-		}
+		entry := fixture.createEntry(t, "doc.md", content, false)
+		assertStoreCoverageBasicIndexEntry(t, entry, fixture.path("doc.md"), content)
 	})
 
 	t.Run("with categorize", func(t *testing.T) {
 		content := "---\ncategory: testing\ntags: [go, unit]\n---\n# Title\n\nContent.\n"
-		path := filepath.Join(tmp, "categorized.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		entry, err := createIndexEntry(path, true)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if entry.Category != "testing" {
-			t.Errorf("Category = %q, want %q", entry.Category, "testing")
-		}
-		if len(entry.Tags) == 0 {
-			t.Error("expected tags to be populated")
-		}
+		entry := fixture.createEntry(t, "categorized.md", content, true)
+		assertStoreCoverageCategorizedIndexEntry(t, entry)
 	})
 
 	t.Run("without categorize has no category", func(t *testing.T) {
 		content := "---\ncategory: testing\n---\n# Title\n"
-		path := filepath.Join(tmp, "nocat.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		entry, err := createIndexEntry(path, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		entry := fixture.createEntry(t, "nocat.md", content, false)
 		if entry.Category != "" {
 			t.Errorf("Category = %q, want empty when categorize=false", entry.Category)
 		}
@@ -281,46 +238,105 @@ func TestStoreCoverage_CreateIndexEntry(t *testing.T) {
 
 	t.Run("with utility and maturity", func(t *testing.T) {
 		content := "# Doc\n\n**Utility**: 0.8\n**Maturity**: established\n"
-		path := filepath.Join(tmp, "meta.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		entry, err := createIndexEntry(path, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if entry.Utility < 0.79 || entry.Utility > 0.81 {
-			t.Errorf("Utility = %v, want ~0.8", entry.Utility)
-		}
-		if entry.Maturity != "established" {
-			t.Errorf("Maturity = %q, want %q", entry.Maturity, "established")
-		}
+		entry := fixture.createEntry(t, "meta.md", content, false)
+		assertStoreCoverageUtilityMetadata(t, entry)
 	})
 
 	t.Run("type from path", func(t *testing.T) {
-		dir := filepath.Join(tmp, "learnings")
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		path := filepath.Join(dir, "lesson.md")
-		if err := os.WriteFile(path, []byte("# Lesson\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		entry, err := createIndexEntry(path, false)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+		entry := fixture.createEntry(t, "learnings/lesson.md", "# Lesson\n", false)
 		if entry.Type != "learning" {
 			t.Errorf("Type = %q, want %q", entry.Type, "learning")
 		}
 	})
 
 	t.Run("nonexistent file returns error", func(t *testing.T) {
-		_, err := createIndexEntry(filepath.Join(tmp, "nope.md"), false)
-		if err == nil {
-			t.Error("expected error for nonexistent file")
-		}
+		fixture.assertCreateEntryError(t, "nope.md", false)
 	})
+}
+
+type storeCoverageCreateIndexEntryFixture struct {
+	root string
+}
+
+func newStoreCoverageCreateIndexEntryFixture(t *testing.T) storeCoverageCreateIndexEntryFixture {
+	t.Helper()
+	return storeCoverageCreateIndexEntryFixture{root: t.TempDir()}
+}
+
+func (f storeCoverageCreateIndexEntryFixture) createEntry(t *testing.T, relPath, content string, categorize bool) *IndexEntry {
+	t.Helper()
+	path := f.writeFile(t, relPath, content)
+	entry, err := createIndexEntry(path, categorize)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	return entry
+}
+
+func (f storeCoverageCreateIndexEntryFixture) writeFile(t *testing.T, relPath, content string) string {
+	t.Helper()
+	path := f.path(relPath)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func (f storeCoverageCreateIndexEntryFixture) path(relPath string) string {
+	return filepath.Join(f.root, filepath.FromSlash(relPath))
+}
+
+func (f storeCoverageCreateIndexEntryFixture) assertCreateEntryError(t *testing.T, relPath string, categorize bool) {
+	t.Helper()
+	_, err := createIndexEntry(f.path(relPath), categorize)
+	if err == nil {
+		t.Error("expected error for nonexistent file")
+	}
+}
+
+func assertStoreCoverageBasicIndexEntry(t *testing.T, entry *IndexEntry, wantPath, wantContent string) {
+	t.Helper()
+	if entry.Path != wantPath {
+		t.Errorf("Path = %q, want %q", entry.Path, wantPath)
+	}
+	if entry.ID != "doc.md" {
+		t.Errorf("ID = %q, want %q", entry.ID, "doc.md")
+	}
+	if entry.Title != "Test Document" {
+		t.Errorf("Title = %q, want %q", entry.Title, "Test Document")
+	}
+	if entry.Content != wantContent {
+		t.Errorf("Content mismatch")
+	}
+	if entry.IndexedAt.IsZero() {
+		t.Error("IndexedAt should not be zero")
+	}
+	if entry.ModifiedAt.IsZero() {
+		t.Error("ModifiedAt should not be zero")
+	}
+}
+
+func assertStoreCoverageCategorizedIndexEntry(t *testing.T, entry *IndexEntry) {
+	t.Helper()
+	if entry.Category != "testing" {
+		t.Errorf("Category = %q, want %q", entry.Category, "testing")
+	}
+	if len(entry.Tags) == 0 {
+		t.Error("expected tags to be populated")
+	}
+}
+
+func assertStoreCoverageUtilityMetadata(t *testing.T, entry *IndexEntry) {
+	t.Helper()
+	if entry.Utility < 0.79 || entry.Utility > 0.81 {
+		t.Errorf("Utility = %v, want ~0.8", entry.Utility)
+	}
+	if entry.Maturity != "established" {
+		t.Errorf("Maturity = %q, want %q", entry.Maturity, "established")
+	}
 }
 
 // ---------------------------------------------------------------------------
