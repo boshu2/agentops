@@ -130,6 +130,25 @@ assert_contains "$generated_dirty_output" "Generated/gate-managed paths detected
 assert_contains "$generated_dirty_output" "cli/docs/COMMANDS.md"
 git -C "$canonical" checkout -- cli/docs/COMMANDS.md
 
+git -C "$canonical" branch codex/preserve-missing main
+if preserved_missing_output="$(run_gate "$feature" 2>&1)"; then
+    echo "expected unregistered preserved ref to fail" >&2
+    exit 1
+fi
+assert_contains "$preserved_missing_output" "preserved refs"
+assert_contains "$preserved_missing_output" "codex/preserve-missing"
+
+mkdir -p "$canonical/docs"
+{
+    printf '# ref\towner\tretirement_rule\treason\n'
+    printf 'codex/preserve-missing\tCodex Test\tRetire after fixture validation\tTest fixture\n'
+} >"$canonical/docs/preserved-refs.tsv"
+git -C "$canonical" add docs/preserved-refs.tsv
+git -C "$canonical" commit -q -m "add preserved refs manifest"
+
+preserved_registered_output="$(run_gate "$feature")"
+assert_contains "$preserved_registered_output" "PASS: canonical root"
+
 git -C "$canonical" worktree add -q -b codex/foreign "$foreign" main
 if foreign_output="$(run_gate "$feature" 2>&1)"; then
     echo "expected foreign branch-attached worktree to fail" >&2

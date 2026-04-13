@@ -184,6 +184,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 - Create task branches in linked worktrees and do the actual edits there.
 - Every foreign worktree must end the session as `merged`, `preserved`, `exported`, or `deleted`.
 - Preserve unfinished branch work on `codex/preserve-*` when it is not ready to merge.
+- Every surviving `codex/preserve-*` ref must have an entry in `docs/preserved-refs.tsv` with owner and retirement rule.
 - Run `bash scripts/check-worktree-disposition.sh` before push and session close.
 
 ### CI Jobs and What They Check

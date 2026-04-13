@@ -1,0 +1,4 @@
+# ref	owner	retirement_rule	reason
+codex/preserve-evolve-umbrella-dream-subcycle-20260412	Boden Fuller	Retire when the Dream/evolve subcycle scaffold is either ported to current main or superseded by a closed bead that explicitly rejects the scaffold.	Preserved WIP branch from 2026-04-12 with Dream/evolve subcycle scaffold experiments.
+codex/preserve-sessions-tool-noise-filter	Boden Fuller	Retire when the sessions tool-noise filter draft is reconciled with current sessions/forge implementation or superseded by a closed bead.	Preserved WIP branch from 2026-04-11 with the original sessions tool-noise filter draft.
+codex/preserve-sessions-tool-noise-filter-compact	Boden Fuller	Retire when the compact sessions tool-noise filter spec is reconciled with the current implementation or superseded by a closed bead.	Preserved WIP branch from 2026-04-11 with the compact sessions tool-noise spec.
