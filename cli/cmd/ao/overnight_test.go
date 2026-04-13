@@ -441,6 +441,30 @@ func TestRunOvernightReportReadsSummaryJSON(t *testing.T) {
 // helper) so the test is hermetic and does not require a real
 // .agents/ corpus or lock acquisition.
 func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
+	fixture := newOvernightHardFailSummaryFixture(t)
+
+	if err := finalizeOvernightSummary(&fixture.summary, fixture.startedAt); err != nil {
+		t.Fatalf("finalizeOvernightSummary on hard-fail path: %v", err)
+	}
+
+	persisted := readOvernightHardFailSummaryJSON(t, fixture.summaryJSONPath)
+	assertOvernightHardFailSummaryMarkdown(t, fixture.summaryMDPath)
+	assertOvernightHardFailStatus(t, persisted)
+	assertOvernightHardFailSteps(t, persisted)
+	assertOvernightHardFailArtifacts(t, persisted, fixture)
+	assertOvernightHardFailFinalized(t, persisted)
+}
+
+type overnightHardFailSummaryFixture struct {
+	summary         overnightSummary
+	startedAt       time.Time
+	summaryJSONPath string
+	summaryMDPath   string
+}
+
+func newOvernightHardFailSummaryFixture(t *testing.T) overnightHardFailSummaryFixture {
+	t.Helper()
+
 	tmpDir := t.TempDir()
 	outputDir := filepath.Join(tmpDir, "overnight", "latest")
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
@@ -494,16 +518,21 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 		Degraded: []string{"metrics-health: hard-fail simulated for regression test"},
 	}
 
-	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
-		t.Fatalf("finalizeOvernightSummary on hard-fail path: %v", err)
+	return overnightHardFailSummaryFixture{
+		summary:         summary,
+		startedAt:       startedAt,
+		summaryJSONPath: filepath.Join(outputDir, "summary.json"),
+		summaryMDPath:   filepath.Join(outputDir, "summary.md"),
 	}
+}
 
-	// Assert 1: summary.json exists and parses with status == "failed".
-	summaryJSONPath := filepath.Join(outputDir, "summary.json")
-	if _, err := os.Stat(summaryJSONPath); err != nil {
-		t.Fatalf("expected summary.json at %s: %v", summaryJSONPath, err)
+func readOvernightHardFailSummaryJSON(t *testing.T, path string) overnightSummary {
+	t.Helper()
+
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected summary.json at %s: %v", path, err)
 	}
-	jsonBytes, err := os.ReadFile(summaryJSONPath)
+	jsonBytes, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read summary.json: %v", err)
 	}
@@ -511,13 +540,13 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 	if err := json.Unmarshal(jsonBytes, &persisted); err != nil {
 		t.Fatalf("parse summary.json: %v\npayload=%s", err, string(jsonBytes))
 	}
-	if persisted.Status != "failed" {
-		t.Errorf("summary.json status = %q, want %q", persisted.Status, "failed")
-	}
+	return persisted
+}
 
-	// Assert 2: summary.md exists and records the failed status.
-	summaryMDPath := filepath.Join(outputDir, "summary.md")
-	mdBytes, err := os.ReadFile(summaryMDPath)
+func assertOvernightHardFailSummaryMarkdown(t *testing.T, path string) {
+	t.Helper()
+
+	mdBytes, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read summary.md: %v", err)
 	}
@@ -525,22 +554,24 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 	if !strings.Contains(md, "- Status: `failed`") {
 		t.Errorf("summary.md missing failed status line\npayload=%s", md)
 	}
+}
 
-	// Assert 3: the LAST completed step (close-loop) is preserved
-	// verbatim alongside the failed hard-fail step.
+func assertOvernightHardFailStatus(t *testing.T, persisted overnightSummary) {
+	t.Helper()
+
+	if persisted.Status != "failed" {
+		t.Errorf("summary.json status = %q, want %q", persisted.Status, "failed")
+	}
+}
+
+func assertOvernightHardFailSteps(t *testing.T, persisted overnightSummary) {
+	t.Helper()
+
 	if len(persisted.Steps) < 2 {
 		t.Fatalf("persisted Steps length = %d, want >= 2", len(persisted.Steps))
 	}
-	var lastDone, hardFail *overnightStepSummary
-	for i := range persisted.Steps {
-		step := &persisted.Steps[i]
-		switch step.Name {
-		case "close-loop":
-			lastDone = step
-		case "metrics-health":
-			hardFail = step
-		}
-	}
+	lastDone := findOvernightHardFailStep(persisted.Steps, "close-loop")
+	hardFail := findOvernightHardFailStep(persisted.Steps, "metrics-health")
 	if lastDone == nil {
 		t.Fatal("expected last-completed step close-loop in persisted summary")
 	}
@@ -556,8 +587,20 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 	if hardFail.Status != "failed" {
 		t.Errorf("metrics-health status = %q, want %q", hardFail.Status, "failed")
 	}
+}
 
-	// Assert 4: degraded notes and the artifacts map are preserved.
+func findOvernightHardFailStep(steps []overnightStepSummary, name string) *overnightStepSummary {
+	for i := range steps {
+		if steps[i].Name == name {
+			return &steps[i]
+		}
+	}
+	return nil
+}
+
+func assertOvernightHardFailArtifacts(t *testing.T, persisted overnightSummary, fixture overnightHardFailSummaryFixture) {
+	t.Helper()
+
 	if len(persisted.Degraded) == 0 {
 		t.Error("persisted Degraded unexpectedly empty on hard-fail summary")
 	}
@@ -571,18 +614,20 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 	if !foundDegraded {
 		t.Errorf("persisted Degraded missing metrics-health entry: %#v", persisted.Degraded)
 	}
-	if got := persisted.Artifacts["summary_json"]; got != summaryJSONPath {
-		t.Errorf("artifacts[summary_json] = %q, want %q", got, summaryJSONPath)
+	if got := persisted.Artifacts["summary_json"]; got != fixture.summaryJSONPath {
+		t.Errorf("artifacts[summary_json] = %q, want %q", got, fixture.summaryJSONPath)
 	}
-	if got := persisted.Artifacts["summary_markdown"]; got != summaryMDPath {
-		t.Errorf("artifacts[summary_markdown] = %q, want %q", got, summaryMDPath)
+	if got := persisted.Artifacts["summary_markdown"]; got != fixture.summaryMDPath {
+		t.Errorf("artifacts[summary_markdown] = %q, want %q", got, fixture.summaryMDPath)
 	}
 	if got := persisted.Artifacts["close_loop"]; got == "" {
 		t.Error("artifacts[close_loop] unexpectedly empty on hard-fail summary")
 	}
+}
 
-	// Assert 5: finalize populates FinishedAt/Duration so the report
-	// is well-formed even on the failure path.
+func assertOvernightHardFailFinalized(t *testing.T, persisted overnightSummary) {
+	t.Helper()
+
 	if persisted.FinishedAt == "" {
 		t.Error("persisted FinishedAt unexpectedly empty on hard-fail summary")
 	}
