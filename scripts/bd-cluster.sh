@@ -91,6 +91,12 @@ declare -A BEAD_BODY
 declare -A BEAD_LABELS
 declare -A BEAD_IS_EPIC
 
+show_jq() {
+  local filter="$1"
+  local file="$2"
+  jq -r "(if type == \"array\" then .[0] // {} else . end) | ${filter}" "$file" 2>/dev/null || true
+}
+
 for id in "${BEAD_IDS[@]}"; do
   SHOW_FILE="$TMPDIR_CACHE/show_${id}.json"
   if ! bd show "$id" --json >"$SHOW_FILE" 2>/dev/null; then
@@ -104,11 +110,11 @@ for id in "${BEAD_IDS[@]}"; do
     continue
   fi
 
-  BEAD_TITLE["$id"]="$(jq -r '.title // .subject // ""' "$SHOW_FILE")"
-  BEAD_BODY["$id"]="$(jq -r '.body // .description // ""' "$SHOW_FILE")"
-  BEAD_LABELS["$id"]="$(jq -r '(.labels // []) | join(" ")' "$SHOW_FILE")"
+  BEAD_TITLE["$id"]="$(show_jq '.title // .subject // ""' "$SHOW_FILE")"
+  BEAD_BODY["$id"]="$(show_jq '.body // .description // ""' "$SHOW_FILE")"
+  BEAD_LABELS["$id"]="$(show_jq '(.labels // []) | join(" ")' "$SHOW_FILE")"
   # Treat as epic if type/kind field says so, or if it has children
-  IS_EPIC="$(jq -r 'if (.type=="epic" or .kind=="epic" or ((.children // []) | length > 0)) then "1" else "0" end' "$SHOW_FILE")"
+  IS_EPIC="$(show_jq 'if (.type=="epic" or .kind=="epic" or .issue_type=="epic" or ((.children // []) | length > 0)) then "1" else "0" end' "$SHOW_FILE")"
   BEAD_IS_EPIC["$id"]="$IS_EPIC"
 done
 
