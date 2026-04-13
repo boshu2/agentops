@@ -477,6 +477,34 @@ jobs:
           echo ""
           echo "✅ Plugin structure valid"
 
+  retrieval-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+
+      - name: Build ao CLI
+        run: cd cli && go build -o /tmp/ao-test ./cmd/ao
+
+      - name: Run retrieval bench (offline corpus)
+        run: |
+          cd cli
+          /tmp/ao-test retrieval-bench --json | tee /tmp/retrieval-report.json
+          PRECISION=$(python3 -c "import json; r=json.load(open('/tmp/retrieval-report.json')); print(r.get('avg_precision_at_k', r.get('avg_p_at_k', 0)))")
+          echo "Precision@K: $PRECISION"
+          # Warn-then-fail ratchet: advisory only in v1 (exit 0 always).
+          # Flip to blocking once baseline stabilizes above 0.3.
+          if python3 -c "exit(0 if float('$PRECISION') >= 0.1 else 1)" 2>/dev/null; then
+            echo "✅ Retrieval quality above minimum threshold"
+          else
+            echo "⚠️ WARN: Retrieval precision below 0.1 — flywheel may be degraded"
+          fi
+
   go-build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
