@@ -1,114 +1,98 @@
-# Philosophy
-
-> Five months of building with coding agents taught us that agents are not the product. The system around them is.
-
+---
+last_reviewed: 2026-04-12
 ---
 
-## The Core Thesis
+# AgentOps Philosophy
 
-Treat coding agents as fast, stateless workers inside a disciplined operating
-system — not as magical coworkers with reliable bookkeeping or self-validation.
+## The Problem
 
-Good agent work comes from **context, boundaries, validation, and reusable lessons** — not from hoping the agent "just gets it."
+Coding agents are good at thinking. They are bad at bookkeeping.
 
----
+Every session starts cold. The agent that spent two hours debugging a timeout bug last Tuesday has no memory of it. The pattern you hard-won in session 3 is gone by session 15. The planning rule that would have prevented a regression sits buried in a transcript no one reads.
 
-## Five Principles (Validated by Evidence)
+This is not a model problem. It is an environment problem. The model is capable. The environment around it does not compound.
 
-These are not opinions. Each principle was learned through failure, refined
-through iteration, and validated against five months of production use: 1,083
-commits, 66 skills, 33 CI gates, and hundreds of agent sessions across multiple
-runtimes.
+## What AgentOps Is
 
-### 1. Context Timing Beats Context Volume
+AgentOps is a context compiler.
 
-The instinct is to front-load everything into the system prompt — codebase maps, full histories, all known patterns. This fails. Agents drown in irrelevant context, hallucinate connections between unrelated information, and waste their context window before the real work starts.
+The compiler analogy is exact: raw session signal (decisions, failures, patterns, warnings) is processed through extraction, scoring, curation, and promotion into reusable artifacts — learnings, findings, planning rules, enforcement gates. The next session runs against a richer environment than the last. The model stays the same. The environment gets smarter.
 
-**What works:** Deliver the right context at the right time. Lazy-load domain knowledge when a skill triggers, not at session start. Inject learnings relevant to the current task, not every learning ever captured.
+This maps directly to what Andrej Karpathy observed about knowledge work: the tedious part is not the thinking, it is the bookkeeping. Organizing, surfacing, routing, and keeping knowledge fresh. AgentOps automates that layer.
 
-**Evidence:** AgentOps evolved from monolithic CLAUDE.md files (everything front-loaded) to skill-scoped references, inject hooks, and session intelligence packets (context assembled per-task). Sessions became more focused, agents made fewer irrelevant connections, and new knowledge could be added without bloating every session.
-
-### 2. Raw Chat History Is Not Knowledge
-
-Transcript logs and session histories are write-only unless processed. Organizations that archive agent conversations without extraction get zero compounding — every session starts from scratch regardless of how many came before.
-
-**What works:** Force transformation. The flywheel pipeline — forge, retro, post-mortem — exists to close this gap: raw events become learnings, learnings become rules and playbooks, rules feed back into the next session as actionable context.
-
-**Evidence:** AgentOps maintains 80+ extracted learnings, compiled planning rules, and pre-mortem checks — all derived from post-mortem extraction, not from raw transcripts. The compounding effect is measurable: later sessions resolve problems in 2 operations that earlier sessions spent hours debugging, because the extracted insight was waiting in `.agents/` for `grep` to find.
-
-### 3. Never Trust Self-Reported Success
-
-Agents will claim success without running tests. They will report "all passing" after partial runs. They will mark tasks complete based on intent rather than evidence. This is not malice — it is the predictable behavior of a system optimized for helpfulness over accuracy.
-
-**What works:** External validation at every stage. CI gates that run mechanically. Council reviews where independent judges evaluate without anchoring to the author's claims. Ratchet chains that prevent regression. Verification-before-completion as a hard gate, not a suggestion.
-
-**Evidence:** The 3-5x overhead of pre-mortem + vibe relative to implementation time felt expensive at first. It prevents bug rework that costs 10x. The 33 CI checks in AgentOps exist because every one was added after a failure that self-reported success would have hidden.
-
-### 4. Parallel Agents Need Ownership Boundaries
-
-File collisions are the number one swarm failure mode. When two agents touch the same file, one silently overwrites the other's work. The temptation to "just let agents figure it out" fails every time.
-
-**What works:** Define non-overlapping file ownership upfront. Verify no overlap before dispatching. Execute in dependency-ordered waves. Merge only after all workers complete and tests pass.
-
-**Evidence:** Early AgentOps parallel runs without ownership boundaries had roughly 40% failure rates from merge conflicts and silent overwrites. The swarm skill's pre-flight file-overlap check and wave-based execution were built specifically to address this. Failure rates dropped to near zero with boundaries enforced.
-
-### 5. The Flywheel Is the Product
-
-The compounding effect is not "the model gets smarter." It is "your environment gets smarter." Models improve externally on someone else's schedule. What you control is the harness: context injection, task boundaries, validation gates, and knowledge promotion. When a better model ships, a good harness makes it immediately more effective without rework.
-
-**What works:** Invest in the operating system around the agent, not in prompt engineering or model-specific optimizations. Every feature decision should pass one test: "Does this make the flywheel spin faster or more reliably?" If not, it is noise.
-
-**Evidence:** The AgentOps git history tells this story directly. Early commits (Nov-Dec 2025) are mostly skill scaffolding — building the raw capabilities. Later commits (Mar-Apr 2026) are increasingly about meta-capabilities: session intelligence, quality signals, closure integrity audits, prediction tracking. The system spends more time improving itself and less time on raw features. That is the flywheel working.
-
----
-
-## The Self-Evolving Operating System
-
-AgentOps started as a collection of skills. It became an operating system that improves itself.
-
-The difference matters:
-
-- **A toolkit is static.** You add skills, they stay the same. Users get what you shipped.
-- **An operating system evolves.** Post-mortems feed learnings. Learnings become planning rules. Planning rules prevent rediscovery. The whole system gets tighter every cycle — without anyone shipping new code.
-
-The formula:
+## The Flywheel
 
 ```
-Capture what happened (post-mortem, forge, retro)
-    → Extract what mattered (learnings, findings, patterns)
-    → Promote into beliefs, playbooks, and checks
-    → Feed back into the next task (inject, session intelligence)
-    → Repeat
+Sessions → Bookkeeping → Learnings → Findings → Planning Rules → Gates
+    ↑                                                                 │
+    └─────────────────────── Better next session ─────────────────────┘
 ```
 
-This is not a feature. It is the architecture. Every skill, hook, and CLI command exists to serve one step of this cycle. The value is not in any individual skill — it is in the fact that the cycle turns, and that each turn leaves the system slightly better than before.
+Each phase is deliberate:
 
----
+- **Sessions** produce signal: commits, decisions, failures, retros.
+- **Bookkeeping** (`/retro`, `/forge`, `ao harvest`) extracts and scores that signal. Scores on specificity, actionability, novelty, and confidence filter noise.
+- **Learnings** are the raw output — scored, attributed, timestamped.
+- **Findings** are promoted learnings: higher confidence, cross-session validation, broader applicability.
+- **Planning rules** are enforcement-level knowledge: if a finding is violated, the pre-mortem blocks the plan.
+- **Gates** are automated checks in `/pre-mortem`, `/vibe`, and `/council` that prevent known failure modes before they ship.
 
-## Complexity and Tuning
+The loop closes. The system does not just capture knowledge — it enforces it.
 
-An honest philosophy acknowledges its failure modes.
+## The Data Format
 
-AgentOps has 66 skills, 33 CI gates, and a 6-phase post-mortem. The operating
-system itself can become the bottleneck. Every validation gate that prevents a
-bug also adds latency. Every knowledge extraction step that feeds the flywheel
-also adds ceremony.
+`.agents/` is the universal data format.
 
-The discipline is tuning, not adding:
+Plain markdown files, versioned in git, readable by any LLM, browsable in Obsidian, diffable in any editor. No embeddings, no vector database, no proprietary store.
 
-- **`--fast` gates** exist because not every change needs full council review.
-- **Tiered loading** exists because not every session needs every learning.
-- **Complexity classification** exists because a typo fix should not trigger the same pipeline as a system redesign.
+This is a deliberate bet against the current tooling consensus. Vector databases optimize for semantic recall at scale. `.agents/` optimizes for editorial control, freshness management, and human legibility. For a codebase knowledge base where:
 
-The right question is never "should we add another check?" It is "does the existing system correctly scale its ceremony to the risk of the change?"
+- Volume is bounded (one project, not the internet)
+- Freshness matters more than recall breadth (stale knowledge is worse than no knowledge)
+- Human curation is the highest-leverage action
+- Portability is required (no cloud dependency, works air-gapped)
 
-When in doubt, remove. A system that does fewer things reliably compounds faster than one that does many things partially.
+...markdown + wikilinks outperforms embeddings. The agent can grep it, the human can read it, and `ao defrag` can maintain it.
 
----
+## The Tiered Model
 
-## See Also
+Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 
-- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, context windowing
-- [The Science](the-science.md) — Research foundations: MemRL, cache eviction, freshness decay
-- [Knowledge Flywheel](knowledge-flywheel.md) — The extraction and compounding pipeline
-- [Context Lifecycle](context-lifecycle.md) — The internal proof contract behind bookkeeping, validation, primitives, and flows
+| Tier | When | Why |
+|------|------|-----|
+| Local 8B (ollama, etc.) | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. |
+| Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
+| Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
+
+`/dream` and `ao overnight` use the local tier for continuous compounding. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
+
+The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
+
+## The Ratchet
+
+AgentOps adopts the Brownian Ratchet as a first principle: embrace agent variance, filter aggressively, and make progress one-way.
+
+Agents produce noisy output. Some sessions are brilliant; some are catastrophic. The naive response is to constrain the agent. The AgentOps response is to ratchet: let variance happen, filter at gates (`/pre-mortem` blocks bad plans, `/vibe` blocks bad code, `/council` blocks bad decisions), and only let good output advance. The gate is asymmetric — easy to pass in the forward direction, impossible to pass backward.
+
+This is why validation gates are blocking, not advisory. An advisory gate with no enforcement is not a ratchet. It is a suggestion.
+
+## What This Is Not
+
+AgentOps is not a chatbot wrapper. It does not make prompts bigger. It does not add more agents to the same problem.
+
+It is not trying to replace thinking. The model thinks. AgentOps manages what the model knows when it thinks.
+
+It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the hooks. That environment is yours to own, version-control, and take with you.
+
+## The Validated Thesis
+
+As of April 2026, the flywheel thesis is empirically confirmed on a single production repo (this one):
+
+- 163 learnings extracted, scored, and curated
+- 13 planning rules enforced at pre-mortem gates
+- 12 patterns promoted from repeated findings
+- 10/12 `ao doctor` checks passing with full 7/7 hook coverage
+
+The compound growth is measurable. Session 1 started cold. Session 100+ starts with a knowledge corpus that catches known failure modes before implementation begins.
+
+That is the point. Not a bigger prompt. A repo that remembers.
