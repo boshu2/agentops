@@ -1339,6 +1339,21 @@ func TestCobraOutputValidateResult(t *testing.T) {
 
 // TestCobraDoctorHelpers exercises doctor helper functions.
 func TestCobraDoctorHelpers(t *testing.T) {
+	assertDoctorStatusIcons(t)
+	assertDoctorRequiredFailure(t)
+	assertDoctorStatusCounts(t)
+	assertDoctorSummaries(t)
+	assertDoctorResults(t)
+	assertDoctorTableRendering(t)
+	assertDoctorFormatNumbers(t)
+	assertDoctorFormatDurations(t)
+	assertDoctorFileLineCounts(t)
+	assertDoctorHealFindingCounts(t)
+}
+
+func assertDoctorStatusIcons(t *testing.T) {
+	t.Helper()
+
 	t.Run("doctorStatusIcon", func(t *testing.T) {
 		cases := []struct {
 			status string
@@ -1356,6 +1371,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			}
 		}
 	})
+}
+
+func assertDoctorRequiredFailure(t *testing.T) {
+	t.Helper()
 
 	t.Run("hasRequiredFailure", func(t *testing.T) {
 		checks := []doctorCheck{
@@ -1371,6 +1390,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			t.Error("expected required failure")
 		}
 	})
+}
+
+func assertDoctorStatusCounts(t *testing.T) {
+	t.Helper()
 
 	t.Run("countCheckStatuses", func(t *testing.T) {
 		checks := []doctorCheck{
@@ -1381,43 +1404,57 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			t.Errorf("countCheckStatuses = (%d, %d, %d), want (2, 1, 1)", p, f, w)
 		}
 	})
+}
+
+func assertDoctorSummaries(t *testing.T) {
+	t.Helper()
 
 	t.Run("buildDoctorSummary", func(t *testing.T) {
-		s := buildDoctorSummary(5, 0, 0, 5)
-		if s != "5/5 checks passed" {
-			t.Errorf("got %q", s)
-		}
-
-		s = buildDoctorSummary(4, 0, 1, 5)
-		if !strings.Contains(s, "1 warning") {
-			t.Errorf("expected '1 warning', got %q", s)
-		}
-
-		s = buildDoctorSummary(3, 1, 1, 5)
-		if !strings.Contains(s, "1 failed") {
-			t.Errorf("expected '1 failed', got %q", s)
-		}
+		assertDoctorSummaryEquals(t, buildDoctorSummary(5, 0, 0, 5), "5/5 checks passed")
+		assertDoctorSummaryContains(t, buildDoctorSummary(4, 0, 1, 5), "1 warning")
+		assertDoctorSummaryContains(t, buildDoctorSummary(3, 1, 1, 5), "1 failed")
 	})
+}
+
+func assertDoctorSummaryEquals(t *testing.T, got string, want string) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("got %q", got)
+	}
+}
+
+func assertDoctorSummaryContains(t *testing.T, got string, want string) {
+	t.Helper()
+
+	if !strings.Contains(got, want) {
+		t.Errorf("expected %q, got %q", want, got)
+	}
+}
+
+func assertDoctorResults(t *testing.T) {
+	t.Helper()
 
 	t.Run("computeResult", func(t *testing.T) {
-		checks := []doctorCheck{{Status: "pass"}}
-		result := computeResult(checks)
-		if result.Result != "HEALTHY" {
-			t.Errorf("expected HEALTHY, got %s", result.Result)
+		cases := []struct {
+			checks []doctorCheck
+			want   string
+		}{
+			{checks: []doctorCheck{{Status: "pass"}}, want: "HEALTHY"},
+			{checks: []doctorCheck{{Status: "warn"}}, want: "DEGRADED"},
+			{checks: []doctorCheck{{Status: "fail"}}, want: "UNHEALTHY"},
 		}
-
-		checks = []doctorCheck{{Status: "warn"}}
-		result = computeResult(checks)
-		if result.Result != "DEGRADED" {
-			t.Errorf("expected DEGRADED, got %s", result.Result)
-		}
-
-		checks = []doctorCheck{{Status: "fail"}}
-		result = computeResult(checks)
-		if result.Result != "UNHEALTHY" {
-			t.Errorf("expected UNHEALTHY, got %s", result.Result)
+		for _, tc := range cases {
+			result := computeResult(tc.checks)
+			if result.Result != tc.want {
+				t.Errorf("expected %s, got %s", tc.want, result.Result)
+			}
 		}
 	})
+}
+
+func assertDoctorTableRendering(t *testing.T) {
+	t.Helper()
 
 	t.Run("renderDoctorTable", func(t *testing.T) {
 		buf := new(bytes.Buffer)
@@ -1434,6 +1471,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			t.Errorf("renderDoctorTable output missing expected content: %s", s)
 		}
 	})
+}
+
+func assertDoctorFormatNumbers(t *testing.T) {
+	t.Helper()
 
 	t.Run("formatNumber", func(t *testing.T) {
 		cases := []struct {
@@ -1454,6 +1495,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			}
 		}
 	})
+}
+
+func assertDoctorFormatDurations(t *testing.T) {
+	t.Helper()
 
 	t.Run("formatDuration", func(t *testing.T) {
 		cases := []struct {
@@ -1472,6 +1517,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			}
 		}
 	})
+}
+
+func assertDoctorFileLineCounts(t *testing.T) {
+	t.Helper()
 
 	t.Run("countFileLines", func(t *testing.T) {
 		tmp := t.TempDir()
@@ -1492,6 +1541,10 @@ func TestCobraDoctorHelpers(t *testing.T) {
 			t.Errorf("countFileLines(nonexistent) = %d, want 0", got)
 		}
 	})
+}
+
+func assertDoctorHealFindingCounts(t *testing.T) {
+	t.Helper()
 
 	t.Run("countHealFindings", func(t *testing.T) {
 		output := "[CODE] path/to/file: finding 1\n[CODE] other/file: finding 2\nSummary line\n"
