@@ -853,23 +853,36 @@ let me force the revert because the goals agent is still running and re-wrote it
 }
 
 func TestCodexStatusJSONReflectsHooklessHealthAndSearchCitations(t *testing.T) {
+	fixture := setupCodexStatusJSONFixture(t)
+
+	startCodexStatusJSONLifecycle(t)
+	recordSearchCitations(fixture.cwd, []searchResult{{Path: fixture.searchableLearningPath}}, resolveSessionID(""), "codex lifecycle status", "applied")
+	assertCodexStatusJSONCitationLog(t, fixture)
+
+	result := runCodexStatusJSON(t)
+	assertCodexStatusJSONResult(t, result)
+}
+
+type codexStatusJSONFixture struct {
+	repo                   string
+	cwd                    string
+	searchableLearningPath string
+	sessionID              string
+}
+
+func setupCodexStatusJSONFixture(t *testing.T) codexStatusJSONFixture {
+	t.Helper()
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("CODEX_THREAD_ID", "019d1bf7-58ea-79e1-9f5d-02109d930081")
+	sessionID := "019d1bf7-58ea-79e1-9f5d-02109d930081"
+	t.Setenv("CODEX_THREAD_ID", sessionID)
 	t.Setenv("CODEX_INTERNAL_ORIGINATOR_OVERRIDE", "Codex Desktop")
 
 	indexPath := filepath.Join(home, ".codex", "session_index.jsonl")
-	if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(indexPath, []byte(`{"id":"019d1bf7-58ea-79e1-9f5d-02109d930081","thread_name":"Codex lifecycle status","updated_at":"2026-03-23T12:00:00Z"}`+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeCodexStatusJSONFile(t, indexPath, `{"id":"`+sessionID+`","thread_name":"Codex lifecycle status","updated_at":"2026-03-23T12:00:00Z"}`+"\n")
 
 	repo := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(repo, ".agents", "learnings"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	learningPath := filepath.Join(repo, ".agents", "learnings", "codex-status.md")
 	learning := `---
 id: codex-status
@@ -884,26 +897,12 @@ utility: 0.9
 
 Use ao codex start, ao search --cite applied, and ao codex stop when runtime hooks are unavailable.
 `
-	if err := os.WriteFile(learningPath, []byte(learning), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeCodexStatusJSONFile(t, learningPath, learning)
 	searchableLearningPath := filepath.Join(repo, ".agents", "learnings", "codex-status.jsonl")
 	searchableLearning := `{"summary":"codex lifecycle status from explicit search citation","utility":0.8,"maturity":"provisional"}`
-	if err := os.WriteFile(searchableLearningPath, []byte(searchableLearning+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(repo, ".agents", "knowledge", "pending"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, ".agents", "knowledge", "pending", "queued-learning.md"), []byte("# queued\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(repo, ".agents", "knowledge", "pending", ".quarantine"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, ".agents", "knowledge", "pending", ".quarantine", "truncated-learning.md"), []byte("# quarantined\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeCodexStatusJSONFile(t, searchableLearningPath, searchableLearning+"\n")
+	writeCodexStatusJSONFile(t, filepath.Join(repo, ".agents", "knowledge", "pending", "queued-learning.md"), "# queued\n")
+	writeCodexStatusJSONFile(t, filepath.Join(repo, ".agents", "knowledge", "pending", ".quarantine", "truncated-learning.md"), "# quarantined\n")
 
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -912,30 +911,58 @@ Use ao codex start, ao search --cite applied, and ao codex stop when runtime hoo
 	if err := os.Chdir(repo); err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	return codexStatusJSONFixture{
+		repo:                   repo,
+		cwd:                    cwd,
+		searchableLearningPath: filepath.Join(cwd, ".agents", "learnings", "codex-status.jsonl"),
+		sessionID:              sessionID,
+	}
+}
+
+func writeCodexStatusJSONFile(t *testing.T, path string, content string) {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func startCodexStatusJSONLifecycle(t *testing.T) {
+	t.Helper()
+
 	if out, err := executeCommand("codex", "start", "--json", "--no-maintenance", "--query", "codex lifecycle status"); err != nil {
 		t.Fatalf("codex start --json: %v\noutput: %s", err, out)
 	}
+}
 
-	recordSearchCitations(cwd, []searchResult{{Path: filepath.Join(cwd, ".agents", "learnings", "codex-status.jsonl")}}, resolveSessionID(""), "codex lifecycle status", "applied")
+func assertCodexStatusJSONCitationLog(t *testing.T, fixture codexStatusJSONFixture) {
+	t.Helper()
 
-	citationsPath := filepath.Join(repo, ".agents", "ao", "citations.jsonl")
+	citationsPath := filepath.Join(fixture.repo, ".agents", "ao", "citations.jsonl")
 	citations, err := os.ReadFile(citationsPath)
 	if err != nil {
 		t.Fatalf("read citations: %v", err)
 	}
 	citationsText := string(citations)
-	if !strings.Contains(citationsText, `"session_id":"019d1bf7-58ea-79e1-9f5d-02109d930081"`) {
+	if !strings.Contains(citationsText, `"session_id":"`+fixture.sessionID+`"`) {
 		t.Fatalf("expected Codex session ID in citations: %s", citationsText)
 	}
 	if !strings.Contains(citationsText, `"citation_type":"applied"`) {
 		t.Fatalf("expected applied citation in %s", citationsText)
 	}
+}
+
+func runCodexStatusJSON(t *testing.T) codexStatusResult {
+	t.Helper()
 
 	out, err := executeCommand("codex", "status", "--json", "--days", "30")
 	if err != nil {
@@ -946,6 +973,12 @@ Use ao codex start, ao search --cite applied, and ao codex stop when runtime hoo
 	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &result); err != nil {
 		t.Fatalf("parse codex status json: %v\noutput: %s", err, out)
 	}
+	return result
+}
+
+func assertCodexStatusJSONResult(t *testing.T, result codexStatusResult) {
+	t.Helper()
+
 	if result.Runtime.Mode != lifecycleModeCodexHookless {
 		t.Fatalf("runtime mode = %q, want %q", result.Runtime.Mode, lifecycleModeCodexHookless)
 	}
