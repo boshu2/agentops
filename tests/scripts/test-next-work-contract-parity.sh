@@ -262,6 +262,33 @@ EOF
     "next-work.jsonl has aggregate lifecycle self drift"
 }
 
+test_active_item_enum_drift_fails() {
+  local fixture
+  fixture="$(create_fixture "active-enum-drift")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-enum-drift","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Write docs","type":"docs","severity":"moderate","source":"post-mortem","description":"Active item with legacy enum values","target_repo":"agentops","consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
+EOF
+
+  assert_gate_fails_with \
+    "active item enum drift fails parity gate" \
+    "$fixture" \
+    "next-work.jsonl has active item enum drift"
+}
+
+test_consumed_legacy_enum_drift_passes() {
+  local fixture
+  fixture="$(create_fixture "consumed-legacy-enum-drift")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-consumed-legacy","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Historical finding","type":"finding","severity":"moderate","source":"finding-router","description":"Consumed historical item with legacy enum values","target_repo":"agentops"}],"consumed":true,"claim_status":"consumed","claimed_by":null,"claimed_at":null,"consumed_by":"test","consumed_at":"2026-04-13T00:01:00Z"}
+EOF
+
+  assert_gate_passes \
+    "consumed legacy enum drift passes parity gate" \
+    "$fixture"
+}
+
 test_legacy_aggregate_only_consumed_queue_passes() {
   local fixture
   fixture="$(create_fixture "legacy-aggregate-only")"
@@ -289,6 +316,8 @@ test_source_skill_legacy_example_fails
 test_codex_skill_legacy_example_fails
 test_explicit_item_lifecycle_drift_fails
 test_aggregate_self_drift_fails
+test_active_item_enum_drift_fails
+test_consumed_legacy_enum_drift_passes
 test_legacy_aggregate_only_consumed_queue_passes
 
 echo ""

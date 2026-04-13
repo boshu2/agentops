@@ -339,6 +339,54 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
     fail "next-work.jsonl has aggregate lifecycle self drift: $(printf '%s\n' "$aggregate_self_drift" | head -1)"
   fi
 
+  enum_drift="$(
+    jq -s -r '
+      def item_status:
+        if .claim_status == "in_progress" then "in_progress"
+        elif ((.consumed // false) == true) or (.claim_status == "consumed") then "consumed"
+        else "available"
+        end;
+      def explicit_lifecycle:
+        has("claim_status") or
+        ((.consumed // false) == true) or
+        has("claimed_by") or
+        has("claimed_at") or
+        has("consumed_by") or
+        has("consumed_at") or
+        has("failed_at");
+      def aggregate_status:
+        if ((.consumed // false) == true) or (.claim_status == "consumed") then "consumed"
+        elif .claim_status == "in_progress" then "in_progress"
+        else "available"
+        end;
+      def active_item($entry):
+        if explicit_lifecycle then item_status != "consumed"
+        else ($entry | aggregate_status) != "consumed"
+        end;
+      def valid_type:
+        . == "tech-debt" or . == "improvement" or . == "pattern-fix" or
+        . == "process-improvement" or . == "feature" or . == "bug" or . == "task";
+      def valid_severity:
+        . == "high" or . == "medium" or . == "low";
+      def valid_source:
+        . == "council-finding" or . == "retro-learning" or . == "retro-pattern" or
+        . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing";
+      to_entries[] as $line |
+      select(($line.value.items? | type) == "array") |
+      ($line.value.items | to_entries[]) as $item |
+      select($item.value | active_item($line.value)) |
+      select(
+        (($item.value.type | valid_type | not) or
+        ($item.value.severity | valid_severity | not) or
+        ($item.value.source | valid_source | not))
+      ) |
+      "line \($line.key + 1) source_epic=\($line.value.source_epic // "<missing>") item=\($item.key + 1) type=\($item.value.type // "<missing>") severity=\($item.value.severity // "<missing>") source=\($item.value.source // "<missing>")"
+    ' "$LIVE_QUEUE" 2>/dev/null || true
+  )"
+  if [[ -n "$enum_drift" ]]; then
+    fail "next-work.jsonl has active item enum drift: $(printf '%s\n' "$enum_drift" | head -1)"
+  fi
+
   lifecycle_drift="$(
     jq -s -r '
       def item_status:
