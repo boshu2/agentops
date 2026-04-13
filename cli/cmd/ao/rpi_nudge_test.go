@@ -115,23 +115,85 @@ func TestAppendRPINudgeAudit(t *testing.T) {
 }
 
 func TestRPINudgeCommand_E2EAllWorkers(t *testing.T) {
+	fixture := setupRPINudgeE2EWorkers(t)
+
+	chdirRPINudgeE2EWorkdir(t, fixture.tmp)
+
+	if _, err := executeCommand(
+		"rpi",
+		"nudge",
+		"--run-id", fixture.runID,
+		"--phase", "1",
+		"--all-workers",
+		"--message", "change-direction now",
+	); err != nil {
+		t.Fatalf("execute ao rpi nudge: %v", err)
+	}
+
+	waitForRPINudgeE2ELog(
+		t,
+		fixture.logPath,
+		10*time.Second,
+		"did not observe nudges in both workers log",
+		"in:1:change-direction now",
+		"in:2:change-direction now",
+	)
+	assertRPINudgeE2EAudit(t, fixture.tmp, fixture.runID)
+	stopRPINudgeE2EWorkers(fixture)
+}
+
+type rpiNudgeE2EFixture struct {
+	tmuxBin string
+	tmp     string
+	runID   string
+	phase   int
+	worker1 string
+	worker2 string
+	logPath string
+}
+
+func setupRPINudgeE2EWorkers(t *testing.T) rpiNudgeE2EFixture {
+	t.Helper()
+
 	tmuxBin, err := defaultLookPath(nil)("tmux")
 	if err != nil {
 		t.Skipf("tmux not available: %v", err)
 	}
 
+	fixture := newRPINudgeE2EFixture(t, tmuxBin)
+	t.Cleanup(func() {
+		_ = exec.Command(fixture.tmuxBin, "kill-session", "-t", fixture.worker1).Run()
+		_ = exec.Command(fixture.tmuxBin, "kill-session", "-t", fixture.worker2).Run()
+	})
+
+	writeRPINudgeE2EState(t, fixture.tmp, fixture.runID, fixture.phase)
+	workerScriptPath := writeRPINudgeE2EWorkerScript(t, fixture.tmp)
+	startRPINudgeE2EWorker(t, fixture, fixture.worker1, "1", workerScriptPath)
+	startRPINudgeE2EWorker(t, fixture, fixture.worker2, "2", workerScriptPath)
+	waitForRPINudgeE2ELog(t, fixture.logPath, 5*time.Second, "workers did not become ready", "ready:1", "ready:2")
+	return fixture
+}
+
+func newRPINudgeE2EFixture(t *testing.T, tmuxBin string) rpiNudgeE2EFixture {
+	t.Helper()
+
 	tmp := t.TempDir()
 	runID := "nudge-e2e-01"
 	phase := 1
 	baseSession := tmuxSessionName(runID, phase)
-	worker1 := baseSession + "-w1"
-	worker2 := baseSession + "-w2"
-	logPath := filepath.Join(tmp, "nudge-e2e.log")
+	return rpiNudgeE2EFixture{
+		tmuxBin: tmuxBin,
+		tmp:     tmp,
+		runID:   runID,
+		phase:   phase,
+		worker1: baseSession + "-w1",
+		worker2: baseSession + "-w2",
+		logPath: filepath.Join(tmp, "nudge-e2e.log"),
+	}
+}
 
-	t.Cleanup(func() {
-		_ = exec.Command(tmuxBin, "kill-session", "-t", worker1).Run()
-		_ = exec.Command(tmuxBin, "kill-session", "-t", worker2).Run()
-	})
+func writeRPINudgeE2EState(t *testing.T, tmp string, runID string, phase int) {
+	t.Helper()
 
 	statePath := filepath.Join(tmp, ".agents", "rpi", "runs", runID, phasedStateFile)
 	if err := os.MkdirAll(filepath.Dir(statePath), 0o755); err != nil {
@@ -150,6 +212,10 @@ func TestRPINudgeCommand_E2EAllWorkers(t *testing.T) {
 	if err := os.WriteFile(statePath, data, 0o644); err != nil {
 		t.Fatalf("write state: %v", err)
 	}
+}
+
+func writeRPINudgeE2EWorkerScript(t *testing.T, tmp string) string {
+	t.Helper()
 
 	workerScriptPath := filepath.Join(tmp, "worker.sh")
 	workerScript := `#!/usr/bin/env bash
@@ -171,26 +237,46 @@ done
 	if err := os.WriteFile(workerScriptPath, []byte(workerScript), 0o700); err != nil {
 		t.Fatalf("write worker script: %v", err)
 	}
+	return workerScriptPath
+}
 
-	if err := exec.Command(tmuxBin, "new-session", "-d", "-s", worker1, "-c", tmp, workerScriptPath, "1", logPath).Run(); err != nil {
-		t.Fatalf("spawn worker1: %v", err)
-	}
-	if err := exec.Command(tmuxBin, "new-session", "-d", "-s", worker2, "-c", tmp, workerScriptPath, "2", logPath).Run(); err != nil {
-		t.Fatalf("spawn worker2: %v", err)
-	}
+func startRPINudgeE2EWorker(t *testing.T, fixture rpiNudgeE2EFixture, workerSession string, workerID string, workerScriptPath string) {
+	t.Helper()
 
-	readyDeadline := time.Now().Add(5 * time.Second)
+	err := exec.Command(fixture.tmuxBin, "new-session", "-d", "-s", workerSession, "-c", fixture.tmp, workerScriptPath, workerID, fixture.logPath).Run()
+	if err != nil {
+		t.Fatalf("spawn worker%s: %v", workerID, err)
+	}
+}
+
+func waitForRPINudgeE2ELog(t *testing.T, logPath string, timeout time.Duration, failure string, want ...string) {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
 	for {
 		raw, _ := os.ReadFile(logPath)
 		log := string(raw)
-		if strings.Contains(log, "ready:1") && strings.Contains(log, "ready:2") {
-			break
+		if rpiNudgeE2ELogContainsAll(log, want) {
+			return
 		}
-		if time.Now().After(readyDeadline) {
-			t.Fatalf("workers did not become ready:\n%s", log)
+		if time.Now().After(deadline) {
+			t.Fatalf("%s:\n%s", failure, log)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func rpiNudgeE2ELogContainsAll(log string, want []string) bool {
+	for _, entry := range want {
+		if !strings.Contains(log, entry) {
+			return false
+		}
+	}
+	return true
+}
+
+func chdirRPINudgeE2EWorkdir(t *testing.T, tmp string) {
+	t.Helper()
 
 	oldCwd, err := os.Getwd()
 	if err != nil {
@@ -202,30 +288,10 @@ done
 	t.Cleanup(func() {
 		_ = os.Chdir(oldCwd)
 	})
+}
 
-	if _, err := executeCommand(
-		"rpi",
-		"nudge",
-		"--run-id", runID,
-		"--phase", "1",
-		"--all-workers",
-		"--message", "change-direction now",
-	); err != nil {
-		t.Fatalf("execute ao rpi nudge: %v", err)
-	}
-
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		raw, _ := os.ReadFile(logPath)
-		log := string(raw)
-		if strings.Contains(log, "in:1:change-direction now") && strings.Contains(log, "in:2:change-direction now") {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("did not observe nudges in both workers log:\n%s", log)
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
+func assertRPINudgeE2EAudit(t *testing.T, tmp string, runID string) {
+	t.Helper()
 
 	commands, err := loadRPIC2Commands(tmp, runID)
 	if err != nil {
@@ -255,7 +321,9 @@ done
 	if ackCount < 2 {
 		t.Fatalf("expected >=2 ack events for command %s, got %d", commandID, ackCount)
 	}
+}
 
-	_ = sendTmuxNudge(tmuxBin, worker1, "stop-now")
-	_ = sendTmuxNudge(tmuxBin, worker2, "stop-now")
+func stopRPINudgeE2EWorkers(fixture rpiNudgeE2EFixture) {
+	_ = sendTmuxNudge(fixture.tmuxBin, fixture.worker1, "stop-now")
+	_ = sendTmuxNudge(fixture.tmuxBin, fixture.worker2, "stop-now")
 }
