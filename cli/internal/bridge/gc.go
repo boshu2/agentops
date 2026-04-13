@@ -81,6 +81,16 @@ func GCBridgeCompatible(version string) bool {
 
 // ParseGCStatus parses the JSON output of `gc status --json`.
 func ParseGCStatus(data []byte) (GCStatus, error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return GCStatus{}, fmt.Errorf("parse gc status: %w", err)
+	}
+	for _, field := range []string{"controller", "agents", "summary"} {
+		if missingJSONField(raw[field]) {
+			return GCStatus{}, fmt.Errorf("parse gc status: missing required field %q", field)
+		}
+	}
+
 	var status GCStatus
 	if err := json.Unmarshal(data, &status); err != nil {
 		return GCStatus{}, fmt.Errorf("parse gc status: %w", err)
@@ -90,11 +100,28 @@ func ParseGCStatus(data []byte) (GCStatus, error) {
 
 // ParseGCSessions parses the JSON output of `gc session list --json`.
 func ParseGCSessions(data []byte) ([]GCSession, error) {
+	var raw []map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("parse gc sessions: %w", err)
+	}
+	for i, entry := range raw {
+		for _, field := range []string{"alias", "state"} {
+			if missingJSONField(entry[field]) {
+				return nil, fmt.Errorf("parse gc sessions: entry %d missing required field %q", i, field)
+			}
+		}
+	}
+
 	var sessions []GCSession
 	if err := json.Unmarshal(data, &sessions); err != nil {
 		return nil, fmt.Errorf("parse gc sessions: %w", err)
 	}
 	return sessions, nil
+}
+
+func missingJSONField(raw json.RawMessage) bool {
+	trimmed := strings.TrimSpace(string(raw))
+	return trimmed == "" || trimmed == "null"
 }
 
 // GCNudgeArgs returns the command arguments for `gc session nudge`.

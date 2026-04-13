@@ -189,6 +189,24 @@ func TestGCExecutor_CheckSessionDone_Mocked_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestGCExecutor_CheckSessionDone_Mocked_SchemaDriftMissingAlias(t *testing.T) {
+	mock := newGCMock()
+	mock.on("session list --json", gcMockHandler{Stdout: `[{"id":"s1","state":"active","template":"worker"}]`})
+	mock.install(t)
+
+	e := &gcExecutor{execCommand: mock.execCommand, lookPath: mock.lookPathFn}
+	done, err := e.checkSessionDone("/city", "rpi-run1-p1")
+	if err == nil {
+		t.Fatal("checkSessionDone should return error when session JSON is missing alias")
+	}
+	if done {
+		t.Fatal("checkSessionDone should not treat schema drift as complete")
+	}
+	if !strings.Contains(err.Error(), `missing required field "alias"`) {
+		t.Errorf("error should mention missing alias field, got: %v", err)
+	}
+}
+
 func TestGCExecutor_CheckSessionDone_Mocked_MultipleSessions(t *testing.T) {
 	mock := newGCMock()
 	sessionsJSON := `[

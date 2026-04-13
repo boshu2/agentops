@@ -158,15 +158,12 @@ func TestParseGCStatus_InvalidJSON(t *testing.T) {
 }
 
 func TestParseGCStatus_EmptyObject(t *testing.T) {
-	status, err := parseGCStatus([]byte(`{}`))
-	if err != nil {
-		t.Fatalf("parseGCStatus error on empty object: %v", err)
+	_, err := parseGCStatus([]byte(`{}`))
+	if err == nil {
+		t.Fatal("parseGCStatus should reject empty object")
 	}
-	if status.City != "" {
-		t.Errorf("City = %q, want empty", status.City)
-	}
-	if status.Controller.Running {
-		t.Errorf("Controller.Running = %v, want false for empty object", status.Controller.Running)
+	if !strings.Contains(err.Error(), `missing required field "controller"`) {
+		t.Errorf("error should mention missing controller field, got: %v", err)
 	}
 }
 
@@ -185,6 +182,21 @@ func TestParseGCStatus_ExtraFields(t *testing.T) {
 	}
 	if status.City != "test" {
 		t.Errorf("City = %q, want %q", status.City, "test")
+	}
+}
+
+func TestParseGCStatus_MissingRequiredField(t *testing.T) {
+	jsonOutput := `{
+		"city": "test",
+		"controller": {"running": true, "pid": 1},
+		"summary": {"running": 0, "stopped": 0, "total": 0}
+	}`
+	_, err := parseGCStatus([]byte(jsonOutput))
+	if err == nil {
+		t.Fatal("parseGCStatus should reject missing agents field")
+	}
+	if !strings.Contains(err.Error(), `missing required field "agents"`) {
+		t.Errorf("error should mention missing agents field, got: %v", err)
 	}
 }
 
@@ -228,6 +240,16 @@ func TestParseGCSessions_InvalidJSON(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "parse gc sessions") {
 		t.Errorf("error should wrap with context, got: %v", err)
+	}
+}
+
+func TestParseGCSessions_MissingRequiredField(t *testing.T) {
+	_, err := parseGCSessions([]byte(`[{"id":"sess-1","state":"active","template":"worker"}]`))
+	if err == nil {
+		t.Fatal("parseGCSessions should reject session entries missing alias")
+	}
+	if !strings.Contains(err.Error(), `missing required field "alias"`) {
+		t.Errorf("error should mention missing alias field, got: %v", err)
 	}
 }
 
