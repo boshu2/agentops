@@ -1,0 +1,102 @@
+[
+  {
+    "query": "Why do agents generate outdated Go code even when they know about newer features?",
+    "relevant": ["learnings/2026-02-22-go-modern-standards.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "How should version-specific language features be documented in coding standards?",
+    "relevant": ["learnings/2026-02-22-go-modern-standards.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "What pattern prevents two parallel Claude sessions from corrupting each other's file changes?",
+    "relevant": ["learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"],
+    "category": "process"
+  },
+  {
+    "query": "My files keep disappearing when I have multiple sessions running. What is happening?",
+    "relevant": ["learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"],
+    "category": "debugging"
+  },
+  {
+    "query": "How do you safely commit work when another agent might be switching branches concurrently?",
+    "relevant": ["learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"],
+    "category": "process"
+  },
+  {
+    "query": "When should you bridge to an existing system versus building a new implementation?",
+    "relevant": ["learnings/2026-04-12-yagni-bridge-not-clone.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "We already have a JS worker that does this. Should I write a Go version from scratch?",
+    "relevant": ["learnings/2026-04-12-yagni-bridge-not-clone.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "How can a --json output flag accidentally break command correctness?",
+    "relevant": ["learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md"],
+    "category": "testing"
+  },
+  {
+    "query": "What rule governs how output format flags like --json should interact with side effects?",
+    "relevant": ["learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md"],
+    "category": "testing"
+  },
+  {
+    "query": "How do you run 14 parallel workers without getting merge conflicts?",
+    "relevant": ["learnings/2026-02-23-tdd-five-by-five.md"],
+    "category": "process"
+  },
+  {
+    "query": "Why should TDD be applied to validators rather than just features?",
+    "relevant": ["learnings/2026-02-23-tdd-five-by-five.md"],
+    "category": "testing"
+  },
+  {
+    "query": "What is the Brownian Ratchet pattern and how does it enable aggressive refactoring?",
+    "relevant": ["learnings/2026-02-22-evolve-release-learnings.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "How do you force error-path coverage in Go tests without mocking the filesystem?",
+    "relevant": ["learnings/2026-02-22-evolve-release-learnings.md"],
+    "category": "testing"
+  },
+  {
+    "query": "What happened when hardcoded reward values were used in the MemRL feedback loop?",
+    "relevant": ["learnings/2026-02-24-memrl-feedback-loop-fix.md"],
+    "category": "debugging"
+  },
+  {
+    "query": "How does pre-reading source files during parallel agent execution save time?",
+    "relevant": ["learnings/2026-02-24-memrl-feedback-loop-fix.md"],
+    "category": "process"
+  },
+  {
+    "query": "What is needed beyond creating a source skill file to make CI stay green?",
+    "relevant": ["learnings/2026-04-12-llm-wiki-generated-artifact-drift.md"],
+    "category": "tooling"
+  },
+  {
+    "query": "Why should autodev and evolve remain separate commands in v2?",
+    "relevant": ["learnings/2026-04-11-autodev-v2-command-split.md"],
+    "category": "architecture"
+  },
+  {
+    "query": "What is the best way to monitor CPU usage trends across a Kubernetes cluster?",
+    "relevant": [],
+    "category": "tooling"
+  },
+  {
+    "query": "How do I configure TLS certificates for an ingress controller in OpenShift?",
+    "relevant": [],
+    "category": "security"
+  },
+  {
+    "query": "What is the recommended way to handle database connection pooling in a microservice?",
+    "relevant": [],
+    "category": "architecture"
+  }
+]
