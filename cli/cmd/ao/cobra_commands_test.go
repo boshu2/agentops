@@ -1744,188 +1744,181 @@ func TestCobraIndexHelpers(t *testing.T) {
 	})
 }
 
-// TestCobraFeedbackHelpers exercises feedback helper functions.
-func TestCobraFeedbackHelpers(t *testing.T) {
-	t.Run("resolveReward", func(t *testing.T) {
-		reward, err := resolveReward(true, false, -1, 0.1)
-		if err != nil || reward != 1.0 {
-			t.Errorf("resolveReward(helpful) = (%v, %v)", reward, err)
-		}
+// TestCobraFeedbackResolveReward exercises reward flag resolution helpers.
+func TestCobraFeedbackResolveReward(t *testing.T) {
+	reward, err := resolveReward(true, false, -1, 0.1)
+	if err != nil || reward != 1.0 {
+		t.Errorf("resolveReward(helpful) = (%v, %v)", reward, err)
+	}
 
-		reward, err = resolveReward(false, true, -1, 0.1)
-		if err != nil || reward != 0.0 {
-			t.Errorf("resolveReward(harmful) = (%v, %v)", reward, err)
-		}
+	reward, err = resolveReward(false, true, -1, 0.1)
+	if err != nil || reward != 0.0 {
+		t.Errorf("resolveReward(harmful) = (%v, %v)", reward, err)
+	}
 
-		_, err = resolveReward(true, true, -1, 0.1)
-		if err == nil {
-			t.Error("expected error for both helpful and harmful")
-		}
+	_, err = resolveReward(true, true, -1, 0.1)
+	if err == nil {
+		t.Error("expected error for both helpful and harmful")
+	}
 
-		_, err = resolveReward(false, false, -1, 0.1)
-		if err == nil {
-			t.Error("expected error when no reward specified")
-		}
+	_, err = resolveReward(false, false, -1, 0.1)
+	if err == nil {
+		t.Error("expected error when no reward specified")
+	}
 
-		_, err = resolveReward(false, false, 1.5, 0.1)
-		if err == nil {
-			t.Error("expected error for reward > 1")
-		}
+	_, err = resolveReward(false, false, 1.5, 0.1)
+	if err == nil {
+		t.Error("expected error for reward > 1")
+	}
 
-		_, err = resolveReward(false, false, 0.5, 0.0)
-		if err == nil {
-			t.Error("expected error for alpha = 0")
-		}
-	})
+	_, err = resolveReward(false, false, 0.5, 0.0)
+	if err == nil {
+		t.Error("expected error for alpha = 0")
+	}
+}
 
-	t.Run("classifyFeedbackType", func(t *testing.T) {
-		if got := classifyFeedbackType(true, false); got != "helpful" {
-			t.Errorf("got %q, want 'helpful'", got)
-		}
-		if got := classifyFeedbackType(false, true); got != "harmful" {
-			t.Errorf("got %q, want 'harmful'", got)
-		}
-		if got := classifyFeedbackType(false, false); got != "custom" {
-			t.Errorf("got %q, want 'custom'", got)
-		}
-	})
+// TestCobraFeedbackClassifyFeedbackType exercises feedback label classification.
+func TestCobraFeedbackClassifyFeedbackType(t *testing.T) {
+	if got := classifyFeedbackType(true, false); got != "helpful" {
+		t.Errorf("got %q, want 'helpful'", got)
+	}
+	if got := classifyFeedbackType(false, true); got != "harmful" {
+		t.Errorf("got %q, want 'harmful'", got)
+	}
+	if got := classifyFeedbackType(false, false); got != "custom" {
+		t.Errorf("got %q, want 'custom'", got)
+	}
+}
 
-	t.Run("counterDirectionFromFeedback", func(t *testing.T) {
-		helpful, harmful := counterDirectionFromFeedback(1.0, true, false)
-		if !helpful || harmful {
-			t.Error("expected helpful=true, harmful=false")
-		}
+// TestCobraFeedbackCounterDirectionFromFeedback exercises derived feedback counters.
+func TestCobraFeedbackCounterDirectionFromFeedback(t *testing.T) {
+	helpful, harmful := counterDirectionFromFeedback(1.0, true, false)
+	if !helpful || harmful {
+		t.Error("expected helpful=true, harmful=false")
+	}
 
-		helpful, harmful = counterDirectionFromFeedback(0.0, false, true)
-		if helpful || !harmful {
-			t.Error("expected helpful=false, harmful=true")
-		}
+	helpful, harmful = counterDirectionFromFeedback(0.0, false, true)
+	if helpful || !harmful {
+		t.Error("expected helpful=false, harmful=true")
+	}
 
-		helpful, harmful = counterDirectionFromFeedback(0.9, false, false)
-		if !helpful || harmful {
-			t.Error("expected implied helpful for reward >= 0.8")
-		}
+	helpful, harmful = counterDirectionFromFeedback(0.9, false, false)
+	if !helpful || harmful {
+		t.Error("expected implied helpful for reward >= 0.8")
+	}
 
-		helpful, harmful = counterDirectionFromFeedback(0.1, false, false)
-		if helpful || !harmful {
-			t.Error("expected implied harmful for reward <= 0.2")
-		}
+	helpful, harmful = counterDirectionFromFeedback(0.1, false, false)
+	if helpful || !harmful {
+		t.Error("expected implied harmful for reward <= 0.2")
+	}
 
-		helpful, harmful = counterDirectionFromFeedback(0.5, false, false)
-		if helpful || harmful {
-			t.Error("expected neither for reward = 0.5")
-		}
-	})
+	helpful, harmful = counterDirectionFromFeedback(0.5, false, false)
+	if helpful || harmful {
+		t.Error("expected neither for reward = 0.5")
+	}
+}
 
-	t.Run("parseFrontMatterUtility", func(t *testing.T) {
-		lines := []string{
-			"---", // line 0 is the opening ---
-			"utility: 0.7500",
-			"reward_count: 3",
-			"---",
-		}
-		endIdx, utility, err := parseFrontMatterUtility(lines)
-		if err != nil {
-			t.Fatalf("parseFrontMatterUtility error: %v", err)
-		}
-		if endIdx != 3 {
-			t.Errorf("endIdx = %d, want 3", endIdx)
-		}
-		if utility != 0.75 {
-			t.Errorf("utility = %f, want 0.75", utility)
-		}
-	})
+// TestCobraFeedbackParseFrontMatterUtility exercises feedback utility parsing.
+func TestCobraFeedbackParseFrontMatterUtility(t *testing.T) {
+	lines := []string{
+		"---", // line 0 is the opening ---
+		"utility: 0.7500",
+		"reward_count: 3",
+		"---",
+	}
+	endIdx, utility, err := parseFrontMatterUtility(lines)
+	if err != nil {
+		t.Fatalf("parseFrontMatterUtility error: %v", err)
+	}
+	if endIdx != 3 {
+		t.Errorf("endIdx = %d, want 3", endIdx)
+	}
+	if utility != 0.75 {
+		t.Errorf("utility = %f, want 0.75", utility)
+	}
+}
 
-	t.Run("parseFrontMatterUtility_malformed", func(t *testing.T) {
-		lines := []string{"---", "utility: 0.5", "no closing"}
-		_, _, err := parseFrontMatterUtility(lines)
-		if err == nil {
-			t.Error("expected error for malformed front matter")
-		}
-	})
+// TestCobraFeedbackParseFrontMatterUtilityMalformed exercises malformed frontmatter handling.
+func TestCobraFeedbackParseFrontMatterUtilityMalformed(t *testing.T) {
+	lines := []string{"---", "utility: 0.5", "no closing"}
+	_, _, err := parseFrontMatterUtility(lines)
+	if err == nil {
+		t.Error("expected error for malformed front matter")
+	}
+}
 
-	t.Run("updateFrontMatterFields", func(t *testing.T) {
-		lines := []string{"utility: 0.5", "tags: test"}
-		fields := map[string]string{"utility": "0.75", "new_field": "value"}
-		result := updateFrontMatterFields(lines, fields)
-		found := false
-		for _, line := range result {
-			if strings.HasPrefix(line, "utility: 0.75") {
-				found = true
-			}
+// TestCobraFeedbackUpdateFrontMatterFields exercises feedback frontmatter updates.
+func TestCobraFeedbackUpdateFrontMatterFields(t *testing.T) {
+	lines := []string{"utility: 0.5", "tags: test"}
+	fields := map[string]string{"utility": "0.75", "new_field": "value"}
+	result := updateFrontMatterFields(lines, fields)
+	found := false
+	for _, line := range result {
+		if strings.HasPrefix(line, "utility: 0.75") {
+			found = true
 		}
-		if !found {
-			t.Errorf("expected updated utility in result: %v", result)
-		}
-	})
+	}
+	if !found {
+		t.Errorf("expected updated utility in result: %v", result)
+	}
+}
 
-	t.Run("incrementRewardCount", func(t *testing.T) {
-		lines := []string{"reward_count: 5"}
-		got := incrementRewardCount(lines)
-		if got != "6" {
-			t.Errorf("incrementRewardCount = %q, want '6'", got)
-		}
-	})
+// TestCobraFeedbackFrontMatterCounters exercises feedback frontmatter counter helpers.
+func TestCobraFeedbackFrontMatterCounters(t *testing.T) {
+	if got := incrementRewardCount([]string{"reward_count: 5"}); got != "6" {
+		t.Errorf("incrementRewardCount = %q, want '6'", got)
+	}
+	if got := parseFrontMatterInt([]string{"helpful_count: 3"}, "helpful_count"); got != 3 {
+		t.Errorf("parseFrontMatterInt = %d, want 3", got)
+	}
+	if got := incrementFMCount([]string{"harmful_count: 2"}, "harmful_count"); got != "3" {
+		t.Errorf("incrementFMCount = %q, want '3'", got)
+	}
+}
 
-	t.Run("parseFrontMatterInt", func(t *testing.T) {
-		lines := []string{"helpful_count: 3"}
-		got := parseFrontMatterInt(lines, "helpful_count")
-		if got != 3 {
-			t.Errorf("parseFrontMatterInt = %d, want 3", got)
-		}
-	})
+// TestCobraFeedbackRebuildWithFrontMatter exercises feedback frontmatter reconstruction.
+func TestCobraFeedbackRebuildWithFrontMatter(t *testing.T) {
+	fm := []string{"utility: 0.5", "tags: test"}
+	body := []string{"# Title", "Content"}
+	got := rebuildWithFrontMatter(fm, body)
+	if !strings.HasPrefix(got, "---\n") {
+		t.Errorf("expected --- prefix, got: %s", got)
+	}
+	if !strings.Contains(got, "# Title") {
+		t.Errorf("expected body in output, got: %s", got)
+	}
+}
 
-	t.Run("incrementFMCount", func(t *testing.T) {
-		lines := []string{"harmful_count: 2"}
-		got := incrementFMCount(lines, "harmful_count")
-		if got != "3" {
-			t.Errorf("incrementFMCount = %q, want '3'", got)
-		}
-	})
+// TestCobraFeedbackMigrateJSONLFiles exercises feedback JSONL migration counting.
+func TestCobraFeedbackMigrateJSONLFiles(t *testing.T) {
+	tmp := t.TempDir()
+	f1 := filepath.Join(tmp, "a.jsonl")
+	if err := os.WriteFile(f1, []byte(`{"summary":"test"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f2 := filepath.Join(tmp, "b.jsonl")
+	if err := os.WriteFile(f2, []byte(`{"summary":"test","utility":0.5}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
-	t.Run("rebuildWithFrontMatter", func(t *testing.T) {
-		fm := []string{"utility: 0.5", "tags: test"}
-		body := []string{"# Title", "Content"}
-		got := rebuildWithFrontMatter(fm, body)
-		if !strings.HasPrefix(got, "---\n") {
-			t.Errorf("expected --- prefix, got: %s", got)
-		}
-		if !strings.Contains(got, "# Title") {
-			t.Errorf("expected body in output, got: %s", got)
-		}
-	})
+	migrated, skipped := migrateJSONLFiles([]string{f1, f2}, false)
+	if migrated != 1 || skipped != 1 {
+		t.Errorf("migrateJSONLFiles = (%d, %d), want (1, 1)", migrated, skipped)
+	}
+}
 
-	t.Run("migrateJSONLFiles", func(t *testing.T) {
-		tmp := t.TempDir()
-		// File that needs migration
-		f1 := filepath.Join(tmp, "a.jsonl")
-		if err := os.WriteFile(f1, []byte(`{"summary":"test"}`+"\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		// File that doesn't need migration
-		f2 := filepath.Join(tmp, "b.jsonl")
-		if err := os.WriteFile(f2, []byte(`{"summary":"test","utility":0.5}`+"\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
+// TestCobraFeedbackMigrateJSONLFilesDryRun exercises dry-run feedback JSONL migration counting.
+func TestCobraFeedbackMigrateJSONLFilesDryRun(t *testing.T) {
+	tmp := t.TempDir()
+	f1 := filepath.Join(tmp, "a.jsonl")
+	if err := os.WriteFile(f1, []byte(`{"summary":"test"}`+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
-		migrated, skipped := migrateJSONLFiles([]string{f1, f2}, false)
-		if migrated != 1 || skipped != 1 {
-			t.Errorf("migrateJSONLFiles = (%d, %d), want (1, 1)", migrated, skipped)
-		}
-	})
-
-	t.Run("migrateJSONLFiles_dryRun", func(t *testing.T) {
-		tmp := t.TempDir()
-		f1 := filepath.Join(tmp, "a.jsonl")
-		if err := os.WriteFile(f1, []byte(`{"summary":"test"}`+"\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		migrated, _ := migrateJSONLFiles([]string{f1}, true)
-		if migrated != 1 {
-			t.Errorf("migrateJSONLFiles (dry-run) migrated = %d, want 1", migrated)
-		}
-	})
+	migrated, _ := migrateJSONLFiles([]string{f1}, true)
+	if migrated != 1 {
+		t.Errorf("migrateJSONLFiles (dry-run) migrated = %d, want 1", migrated)
+	}
 }
 
 // TestCobraTraceHelpers exercises trace helper functions.
