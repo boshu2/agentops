@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-1f0d",
+  "target_id": "na-1f0d",
+  "target_type": "issue",
+  "created_at": "2026-04-13T04:15:12Z",
+  "producer": "post-mortem",
+  "evidence_mode": "staged",
+  "validation_commands": [
+    "env -u AGENTOPS_RPI_RUNTIME ao context packet-status --json --limit 10 | jq -e '.rollout.stage == \"experimental\" and .metrics.startup_fill_rate == 1 and .metrics.packet_reuse_artifacts == 0'",
+    "env -u AGENTOPS_RPI_RUNTIME ao metrics cite-report --json | jq -e '.total_citations >= 4988 and .feedback_rate > 0.99 and .unique_sessions >= 232'",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-manifests.sh --repo-root .",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-next-work-contract-parity.sh",
+    "git diff --cached --check",
+    "git diff --check",
+    "jq empty .agents/rpi/next-work.jsonl .agents/releases/evidence-only-closures/na-1f0d.json",
+    "markdownlint .agents/research/2026-04-13-session-intelligence-adoption-readout.md"
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": true,
+    "head_sha": "a0c7785a8f08f8dff2b0ee60bb370a7fb9b689fc",
+    "modified_files": [
+      ".agents/releases/evidence-only-closures/na-1f0d.json",
+      ".agents/research/2026-04-13-session-intelligence-adoption-readout.md",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "staged_files": [
+      ".agents/releases/evidence-only-closures/na-1f0d.json",
+      ".agents/research/2026-04-13-session-intelligence-adoption-readout.md",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "unstaged_files": [],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Session Intelligence adoption readout captured post-merge startup fill, packet rollout stage, citation reuse, and feedback; decision: keep packet families behind the health gate.",
+    "artifacts": [
+      ".agents/releases/evidence-only-closures/na-1f0d.json",
+      ".agents/research/2026-04-13-session-intelligence-adoption-readout.md",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "notes": [
+      "Source next-work item ag-amg consumed by na-1f0d after proof artifact was written."
+    ]
+  }
+}
