@@ -53,6 +53,27 @@ If a `feature`/`bug`/`task` TaskCreate is missing required test or structural ch
 If a TaskCreate is missing `metadata.issue_type`, do not dispatch it once active constraints are in play; task validation cannot apply issue-scoped prevention safely without it.
 Treat this as part of the closed flywheel, not extra metadata ceremony: a finding only shifts left into deterministic validation when applicability can be resolved without guessing.
 
+### Active Compiled Constraint Runtime
+
+Active compiled constraints execute through `hooks/task-validation-gate.sh`. The hook reads `.agents/constraints/index.json` as the only executable surface; `.agents/constraints/<id>.sh` files are human-reviewable companion artifacts and must not be executed directly.
+
+Plans that add or depend on active constraints must name these detector kinds explicitly:
+
+- `content_pattern` - literal must-contain or must-not-contain checks over normalized target files.
+- `paired_files` - companion-file checks derived from normalized changed files.
+- `restricted_command` - bare-name commands that pass `validate_restricted_cmd` before execution.
+
+Applicability is resolved from concrete task and repository inputs:
+
+- `metadata.issue_type`, matched against `applies_to.issue_types`.
+- `metadata.files`.
+- `metadata.validation.files_exist`.
+- `metadata.validation.content_check[].file`.
+- staged, unstaged, and untracked git changed files.
+- `applies_to.path_globs` and `applies_to.languages`, applied to the normalized target-file set.
+
+If any active constraint declares issue-type applicability, the task payload must include `metadata.issue_type`; do not infer it from prose.
+
 ### Validation Types
 
 | Type | Schema | Description |

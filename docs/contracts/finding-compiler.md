@@ -91,6 +91,21 @@ Illustrative shape:
 }
 ```
 
+## Applicability Inputs
+
+Active constraint applicability is resolved from concrete runtime inputs, not abstract scope tags.
+
+The runtime executor is `hooks/task-validation-gate.sh`. It reads active entries from `.agents/constraints/index.json`, then filters them with these inputs:
+
+- `metadata.issue_type` from the task payload, matched against `applies_to.issue_types`.
+- normalized target files from `metadata.files`.
+- normalized validation files from `metadata.validation.files_exist`.
+- normalized validation files from `metadata.validation.content_check[].file`.
+- normalized changed files from staged, unstaged, and untracked git state.
+- `applies_to.path_globs` and `applies_to.languages`, applied to the normalized target-file set.
+
+If any active constraint declares `applies_to.issue_types`, task validation requires an issue type in the payload before evaluating the constraint set. This prevents issue-scoped prevention rules from silently guessing applicability.
+
 ## Supported Detector Kinds
 
 The v2 compiler contract only recognizes detector kinds that fit the existing hook safety model:
