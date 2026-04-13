@@ -218,3 +218,117 @@ func TestPrintFlywheelHealth_IncludesBacklogLine(t *testing.T) {
 		t.Fatalf("expected backlog line, got: %q", got)
 	}
 }
+
+func TestLoadQualitySignals_ReturnsRecentValidEntries(t *testing.T) {
+	tmp := t.TempDir()
+	signalsDir := filepath.Join(tmp, ".agents", "signals")
+	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	jsonl := strings.Join([]string{
+		`{"timestamp":"2026-04-13T01:00:00Z","signal_type":"repeated_prompt","detail":"first","session_id":"s1"}`,
+		`not-json`,
+		`{"timestamp":"2026-04-13T01:01:00Z","signal_type":"correction","detail":"second","session_id":"s2"}`,
+		`{"timestamp":"2026-04-13T01:02:00Z","signal_type":"repeated_prompt","detail":"third","session_id":"s3"}`,
+		"",
+	}, "\n")
+	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(jsonl), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := loadQualitySignals(filepath.Join(tmp, ".agents"), 2)
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2: %+v", len(got), got)
+	}
+	if got[0].Detail != "second" || got[1].Detail != "third" {
+		t.Fatalf("details = %q, %q; want second, third", got[0].Detail, got[1].Detail)
+	}
+	if got[1].SessionID != "s3" || got[1].SignalType != "repeated_prompt" {
+		t.Fatalf("last signal = %+v, want session s3 repeated_prompt", got[1])
+	}
+}
+
+func TestLoadQualitySignals_MissingFileReturnsNil(t *testing.T) {
+	got := loadQualitySignals(filepath.Join(t.TempDir(), ".agents"), 10)
+	if got != nil {
+		t.Fatalf("got %+v, want nil", got)
+	}
+}
+
+func TestRunStatus_LoadsQualitySignalsFromAgentsRoot(t *testing.T) {
+	resetCommandState(t)
+
+	tmp := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmp, ".agents", "ao"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	signalsDir := filepath.Join(tmp, ".agents", "signals")
+	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	jsonl := `{"timestamp":"2026-04-13T01:02:00Z","signal_type":"correction","detail":"status should read agents root","session_id":"s1"}`
+	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(jsonl+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWd)
+	})
+
+	got, err := captureStdout(t, func() error {
+		return runStatus(statusCmd, nil)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "Session Quality Signals") {
+		t.Fatalf("expected quality signal section, got: %q", got)
+	}
+	if !strings.Contains(got, "status should read agents root") {
+		t.Fatalf("expected signal from .agents/signals, got: %q", got)
+	}
+}
+
+func TestOutputStatus_IncludesQualitySignalsHuman(t *testing.T) {
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
+
+	err = outputStatus(&statusOutput{
+		Initialized:  true,
+		BaseDir:      filepath.Join(t.TempDir(), ".agents"),
+		SessionCount: 0,
+		QualitySignals: []qualitySignalInfo{{
+			Timestamp:  "2026-04-13T01:02:00Z",
+			SignalType: "correction",
+			Detail:     "Prompt starts with correction pattern",
+			SessionID:  "s1",
+		}},
+	})
+	_ = w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	if !strings.Contains(got, "Session Quality Signals") {
+		t.Fatalf("expected quality signal section, got: %q", got)
+	}
+	if !strings.Contains(got, "correction") || !strings.Contains(got, "Prompt starts with correction pattern") {
+		t.Fatalf("expected rendered quality signal, got: %q", got)
+	}
+}

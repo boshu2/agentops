@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -38,12 +39,13 @@ func init() {
 }
 
 type statusOutput struct {
-	Initialized     bool           `json:"initialized"`
-	BaseDir         string         `json:"base_dir"`
-	SessionCount    int            `json:"session_count"`
-	RecentSessions  []sessionInfo  `json:"recent_sessions,omitempty"`
-	ProvenanceStats *provStats     `json:"provenance_stats,omitempty"`
-	Flywheel        *flywheelBrief `json:"flywheel,omitempty"`
+	Initialized     bool                `json:"initialized"`
+	BaseDir         string              `json:"base_dir"`
+	SessionCount    int                 `json:"session_count"`
+	RecentSessions  []sessionInfo       `json:"recent_sessions,omitempty"`
+	ProvenanceStats *provStats          `json:"provenance_stats,omitempty"`
+	Flywheel        *flywheelBrief      `json:"flywheel,omitempty"`
+	QualitySignals  []qualitySignalInfo `json:"quality_signals,omitempty"`
 }
 
 type sessionInfo struct {
@@ -72,6 +74,13 @@ type flywheelBrief struct {
 	HighSeverityUnconsumed int     `json:"high_severity_unconsumed,omitempty"`
 	LastForgeAge           string  `json:"last_forge_age,omitempty"`
 	LastForgeTime          string  `json:"last_forge_time,omitempty"`
+}
+
+type qualitySignalInfo struct {
+	Timestamp  string `json:"timestamp"`
+	SignalType string `json:"signal_type"`
+	Detail     string `json:"detail"`
+	SessionID  string `json:"session_id,omitempty"`
 }
 
 // loadRecentSessions populates status with session count and recent sessions.
@@ -133,6 +142,38 @@ func loadFlywheelBrief(cwd string) *flywheelBrief {
 	return brief
 }
 
+func loadQualitySignals(agentsDir string, limit int) []qualitySignalInfo {
+	if limit <= 0 {
+		return nil
+	}
+	path := filepath.Join(agentsDir, "signals", "session-quality.jsonl")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(string(data), "\n")
+	signals := make([]qualitySignalInfo, 0, limit)
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var signal qualitySignalInfo
+		if err := json.Unmarshal([]byte(line), &signal); err != nil {
+			continue
+		}
+		if signal.Timestamp == "" && signal.SignalType == "" && signal.Detail == "" {
+			continue
+		}
+		signals = append(signals, signal)
+	}
+	if len(signals) <= limit {
+		return signals
+	}
+	return signals[len(signals)-limit:]
+}
+
 func runStatus(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -164,6 +205,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	status.Flywheel = loadFlywheelBrief(cwd)
+	status.QualitySignals = loadQualitySignals(filepath.Dir(baseDir), 10)
 
 	return outputStatus(status)
 }
@@ -235,6 +277,17 @@ func outputStatus(status *statusOutput) error {
 
 	if status.Flywheel != nil {
 		printFlywheelHealth(status.Flywheel)
+	}
+
+	if len(status.QualitySignals) > 0 {
+		fmt.Println("\nSession Quality Signals")
+		fmt.Println("───────────────────────")
+		for _, signal := range status.QualitySignals {
+			fmt.Printf("  %s  %s  %s\n",
+				truncateStatus(signal.Timestamp, 20),
+				truncateStatus(signal.SignalType, 24),
+				truncateStatus(signal.Detail, 80))
+		}
 	}
 
 	fmt.Println("\nCommands:")
