@@ -324,6 +324,21 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
     fail "next-work.jsonl has $drift_count entries not conforming to v1.3 schema (missing source_epic, items, or claim_status)"
   fi
 
+  aggregate_self_drift="$(
+    jq -s -r '
+      to_entries[] as $line |
+      select(($line.value.items? | type) == "array") |
+      select(
+        (((($line.value.consumed // false) == true) and ($line.value.claim_status != "consumed")) or
+        ((($line.value.consumed // false) != true) and ($line.value.claim_status == "consumed")))
+      ) |
+      "line \($line.key + 1) source_epic=\($line.value.source_epic // "<missing>") consumed=\($line.value.consumed // false) claim_status=\($line.value.claim_status // "<missing>")"
+    ' "$LIVE_QUEUE" 2>/dev/null || true
+  )"
+  if [[ -n "$aggregate_self_drift" ]]; then
+    fail "next-work.jsonl has aggregate lifecycle self drift: $(printf '%s\n' "$aggregate_self_drift" | head -1)"
+  fi
+
   lifecycle_drift="$(
     jq -s -r '
       def item_status:

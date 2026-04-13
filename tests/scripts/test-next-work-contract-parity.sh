@@ -248,6 +248,20 @@ EOF
     "next-work.jsonl has aggregate/item lifecycle drift"
 }
 
+test_aggregate_self_drift_fails() {
+  local fixture
+  fixture="$(create_fixture "aggregate-self-drift")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-self-drift","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Legacy item","type":"task","severity":"medium","source":"retro-learning","description":"Legacy item with no per-item lifecycle","target_repo":"agentops"}],"consumed":true,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":"test","consumed_at":"2026-04-13T00:01:00Z"}
+EOF
+
+  assert_gate_fails_with \
+    "aggregate self drift fails parity gate" \
+    "$fixture" \
+    "next-work.jsonl has aggregate lifecycle self drift"
+}
+
 test_legacy_aggregate_only_consumed_queue_passes() {
   local fixture
   fixture="$(create_fixture "legacy-aggregate-only")"
@@ -274,6 +288,7 @@ test_runtime_pattern_fix_rank_fails
 test_source_skill_legacy_example_fails
 test_codex_skill_legacy_example_fails
 test_explicit_item_lifecycle_drift_fails
+test_aggregate_self_drift_fails
 test_legacy_aggregate_only_consumed_queue_passes
 
 echo ""
