@@ -976,7 +976,9 @@ func TestInjectLearnings_rankLearnings(t *testing.T) {
 
 func TestLocalLearningDedupeSetsTracksAbsPathsAndLowerTitles(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "learning.md")
-	paths, titles := localLearningDedupeSets([]string{file}, []learning{{Title: "Case Sensitive Title"}})
+	paths, titles, contentHashes := localLearningDedupeSets([]string{file}, []learning{
+		{Title: "Case Sensitive Title", BodyText: "# Different Title\n\nShared body text used for content hashing."},
+	})
 
 	abs, err := filepath.Abs(file)
 	if err != nil {
@@ -987,6 +989,9 @@ func TestLocalLearningDedupeSetsTracksAbsPathsAndLowerTitles(t *testing.T) {
 	}
 	if !titles["case sensitive title"] {
 		t.Fatalf("lowercase title was not tracked: %#v", titles)
+	}
+	if len(contentHashes) != 1 {
+		t.Fatalf("content hash was not tracked: %#v", contentHashes)
 	}
 }
 
@@ -1029,6 +1034,52 @@ func TestInjectLearnings_collectLearnings_WithGlobalDir(t *testing.T) {
 	}
 	if !hasGlobal {
 		t.Error("expected at least one global learning")
+	}
+}
+
+func TestInjectLearnings_collectLearnings_DedupesGlobalByContentHash(t *testing.T) {
+	localDir := t.TempDir()
+	localLearnings := filepath.Join(localDir, ".agents", "learnings")
+	if err := os.MkdirAll(localLearnings, 0755); err != nil {
+		t.Fatal(err)
+	}
+	sharedBody := "This shared body explains retrieval quality dedupe across local and global knowledge stores. It is intentionally long enough for the quality gate."
+	localContent := "---\nmaturity: provisional\nsource_bead: na-we7\n---\n# Local Title\n\n" + sharedBody + "\n"
+	if err := os.WriteFile(filepath.Join(localLearnings, "local.md"), []byte(localContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	globalDir := t.TempDir()
+	globalNamespace := filepath.Join(globalDir, "other-rig")
+	if err := os.MkdirAll(globalNamespace, 0755); err != nil {
+		t.Fatal(err)
+	}
+	duplicateGlobal := "---\nmaturity: provisional\nsource_bead: na-we7\n---\n# Different Global Title\n\n" + sharedBody + "\n"
+	if err := os.WriteFile(filepath.Join(globalNamespace, "duplicate.md"), []byte(duplicateGlobal), 0644); err != nil {
+		t.Fatal(err)
+	}
+	uniqueGlobal := "---\nmaturity: provisional\nsource_bead: na-we7\n---\n# Unique Global\n\nThis global learning is distinct and should survive content deduplication across knowledge stores.\n"
+	if err := os.WriteFile(filepath.Join(globalNamespace, "unique.md"), []byte(uniqueGlobal), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	learnings, err := collectLearnings(localDir, "", 10, globalDir, 1.0)
+	if err != nil {
+		t.Fatalf("collectLearnings: %v", err)
+	}
+
+	seen := make(map[string]bool, len(learnings))
+	for _, l := range learnings {
+		seen[l.ID] = true
+	}
+	if !seen["local.md"] {
+		t.Fatalf("local learning should survive: %+v", learnings)
+	}
+	if seen["duplicate.md"] {
+		t.Fatalf("global duplicate with different title should be content-hash deduped: %+v", learnings)
+	}
+	if !seen["unique.md"] {
+		t.Fatalf("unique global learning should survive: %+v", learnings)
 	}
 }
 

@@ -32,6 +32,16 @@ func MaturityWeight(maturity string) float64 {
 	return 1.0
 }
 
+// StabilityWeight returns the scoring multiplier for learning stability.
+func StabilityWeight(stability string) float64 {
+	switch strings.ToLower(strings.TrimSpace(stability)) {
+	case "experimental":
+		return 0.7
+	default:
+		return 1.0
+	}
+}
+
 // FreshnessScore calculates decay-adjusted score: exp(-ageWeeks * decayRate)
 // Based on knowledge decay rate δ = 0.17/week (Darr et al.)
 func FreshnessScore(ageWeeks float64) float64 {

@@ -58,8 +58,8 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 	learnings := collectLocalLearnings(files, tokens, now)
 
 	if globalDir != "" {
-		localPaths, localTitles := localLearningDedupeSets(files, learnings)
-		learnings = appendGlobalLearnings(learnings, globalDir, localPaths, localTitles, tokens, now)
+		localPaths, localTitles, localContentHashes := localLearningDedupeSets(files, learnings)
+		learnings = appendGlobalLearnings(learnings, globalDir, localPaths, localTitles, localContentHashes, tokens, now)
 	}
 
 	if len(learnings) == 0 {
@@ -84,9 +84,10 @@ func collectLocalLearnings(files []string, tokens []string, now time.Time) []lea
 	return learnings
 }
 
-func localLearningDedupeSets(files []string, learnings []learning) (map[string]bool, map[string]bool) {
+func localLearningDedupeSets(files []string, learnings []learning) (map[string]bool, map[string]bool, map[string]bool) {
 	localPaths := make(map[string]bool, len(files))
 	localTitles := make(map[string]bool, len(learnings))
+	localContentHashes := make(map[string]bool, len(learnings))
 	for _, f := range files {
 		if abs, err := filepath.Abs(f); err == nil {
 			localPaths[abs] = true
@@ -96,11 +97,14 @@ func localLearningDedupeSets(files []string, learnings []learning) (map[string]b
 		if l.Title != "" {
 			localTitles[strings.ToLower(l.Title)] = true
 		}
+		if hash := learningDedupContentHash(l); hash != "" {
+			localContentHashes[hash] = true
+		}
 	}
-	return localPaths, localTitles
+	return localPaths, localTitles, localContentHashes
 }
 
-func appendGlobalLearnings(learnings []learning, globalDir string, localPaths, localTitles map[string]bool, tokens []string, now time.Time) []learning {
+func appendGlobalLearnings(learnings []learning, globalDir string, localPaths, localTitles, localContentHashes map[string]bool, tokens []string, now time.Time) []learning {
 	globalFiles := globLearningFiles(globalDir)
 	for _, file := range globalFiles {
 		if globalLearningDuplicate(file, localPaths) {
@@ -113,6 +117,13 @@ func appendGlobalLearnings(learnings []learning, globalDir string, localPaths, l
 		if l.Title != "" && localTitles[strings.ToLower(l.Title)] {
 			continue
 		}
+		contentHash := learningDedupContentHash(l)
+		if contentHash != "" && localContentHashes[contentHash] {
+			continue
+		}
+		if contentHash != "" {
+			localContentHashes[contentHash] = true
+		}
 		l.Global = true
 		learnings = append(learnings, l)
 	}
@@ -122,6 +133,37 @@ func appendGlobalLearnings(learnings []learning, globalDir string, localPaths, l
 func globalLearningDuplicate(file string, localPaths map[string]bool) bool {
 	abs, err := filepath.Abs(file)
 	return err == nil && localPaths[abs]
+}
+
+func learningDedupContentHash(l learning) string {
+	content := strings.TrimSpace(learningDedupContent(l))
+	if content == "" {
+		return ""
+	}
+	return contentHash(content)
+}
+
+func learningDedupContent(l learning) string {
+	body := strings.TrimSpace(l.BodyText)
+	if body == "" {
+		body = strings.TrimSpace(l.Summary)
+	}
+	if body == "" {
+		return ""
+	}
+
+	lines := strings.Split(body, "\n")
+	kept := make([]string, 0, len(lines))
+	skippedHeading := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !skippedHeading && strings.HasPrefix(trimmed, "# ") {
+			skippedHeading = true
+			continue
+		}
+		kept = append(kept, trimmed)
+	}
+	return strings.Join(strings.Fields(strings.Join(kept, " ")), " ")
 }
 
 func applyGlobalLearningWeight(learnings []learning, globalWeight float64) {
@@ -335,11 +377,10 @@ func processLearningFile(file string, queryTokensList []string, now time.Time) (
 
 	// Stability weighting: experimental learnings are less trusted.
 	// Missing or "stable" → 1.0x, "experimental" → 0.7x.
-	switch l.Stability {
-	case "experimental":
+	stabilityMultiplier := stabilityWeight(l.Stability)
+	l.Utility *= stabilityMultiplier
+	if stabilityMultiplier < 1.0 {
 		fmt.Fprintf(os.Stderr, "WARNING: Skill %q is marked experimental — verify outputs carefully\n", l.Title)
-		l.Utility *= 0.7
-	// "stable" and unset both use 1.0x (no change)
 	}
 
 	return l, true

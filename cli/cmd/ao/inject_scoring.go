@@ -18,9 +18,10 @@ type scorable = search.Scorable
 var injectMaturityWeights = search.InjectMaturityWeights
 
 // Thin wrappers — delegate to search package, kept for test compatibility.
-func maturityWeight(maturity string) float64 { return search.MaturityWeight(maturity) }
-func freshnessScore(ageWeeks float64) float64 { return search.FreshnessScore(ageWeeks) }
-func tokenizeWords(text string) []string      { return search.TokenizeWords(text) }
+func maturityWeight(maturity string) float64   { return search.MaturityWeight(maturity) }
+func stabilityWeight(stability string) float64 { return search.StabilityWeight(stability) }
+func freshnessScore(ageWeeks float64) float64  { return search.FreshnessScore(ageWeeks) }
+func tokenizeWords(text string) []string       { return search.TokenizeWords(text) }
 
 func computeAdjacency(tokens []string, words []string) float64 {
 	return search.ComputeAdjacency(tokens, words)
