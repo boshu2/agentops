@@ -166,7 +166,7 @@ While AgentOps has maturity scoring and decay, Compound Engineer's `/ce:compound
 
 | Feature | Compound Engineer | AgentOps | Winner |
 |---------|:-----------------:|:--------:|:------:|
-| Cross-runtime support | ✅ 10 targets + sync | ⚠️ Claude Code primary | CE |
+| Cross-runtime support | ✅ 10 targets + sync | ⚠️ 4 supported runtime paths, no 10-target converter | CE |
 | Configurable review agents | ✅ 15 agents, per-project | ⚠️ Fixed pipeline | CE |
 | Ideation + adversarial filtering | ✅ Structured pipeline | ⚠️ Brainstorm skill | CE |
 | Knowledge maintenance | ✅ compound-refresh (investigative) | ✅ Maturity + decay (automated) | Tie |
@@ -261,7 +261,7 @@ The knowledge systems are complementary: CE's `docs/solutions/` captures explici
 | **Optimizes** | Workflow breadth (ideation to maintenance) | Repo intelligence (learning to injection) |
 | **Knowledge model** | Capture → document → refresh | Extract → score → inject → decay |
 | **Review model** | 15 configurable agents per project | Fixed gates (pre-mortem, council, vibe) |
-| **Runtime reach** | 10 targets + plugin marketplace | Claude Code primary |
+| **Runtime reach** | 10 targets + plugin marketplace | 4 supported runtime paths, no 10-target converter |
 | **Best fit** | Teams wanting portable, structured workflow | Long-running codebases needing accumulated intelligence |
 
 **Compound Engineer is the closest philosophical neighbor in this comparison set.** Both believe in knowledge compounding. The difference: CE compounds through workflow discipline and explicit documentation. AgentOps compounds through automated extraction, scoring, and mechanical injection.

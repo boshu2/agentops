@@ -22,6 +22,9 @@ The AI coding agent ecosystem has exploded. Here's how the major players stack u
 | [GSD](vs-gsd.md) | Spec-driven execution | 53 commands, 7 runtimes, advisor mode | Planning persistence, limited governed memory |
 | [Compound Engineer](vs-compound-engineer.md) | Plan/work/review/compound | Stack-aware routing, 10 runtimes | Manual/doc-solution compounding, no validation gates |
 
+For the operator-facing readout across all competitors, see the
+[Competitive Radar](competitive-radar.md).
+
 ---
 
 ## The Core Insight
@@ -86,9 +89,9 @@ Compound Engineer is the exception in this set: it also aims at compounding, but
 - Documentation is your primary artifact
 
 ### Use GSD if:
-- You want minimal overhead
-- You're prototyping or shipping fast
-- You don't need persistence
+- You want fresh-context execution for each worker
+- You want model/cost tiers and task-repair loops
+- You're doing spec-driven phased work that does not need a knowledge flywheel
 
 ### Use Compound Engineer if:
 - You want a clean `Plan -> Work -> Review -> Compound` loop
@@ -140,8 +143,9 @@ By session 100:
 - [vs. Superpowers](vs-superpowers.md) — The TDD powerhouse
 - [vs. Claude-Flow / Ruflo](vs-claude-flow.md) — The swarm orchestrator
 - [vs. SDD Tools](vs-sdd.md) — The spec-driven approach
-- [vs. GSD](vs-gsd.md) — The lightweight shipper
+- [vs. GSD](vs-gsd.md) — The fresh-context execution framework
 - [vs. Compound Engineer](vs-compound-engineer.md) — The closest philosophical neighbor
+- [Competitive Radar](competitive-radar.md) — The current market read and next-move pressure
 
 ---
 
@@ -154,7 +158,7 @@ By session 100:
 | AgentOps + Superpowers | ⚠️ | Overlapping planning; pick one |
 | AgentOps + Claude-Flow | ✅ | Claude-Flow for orchestration, AgentOps for memory |
 | AgentOps + SDD | ✅ | SDD for specs, AgentOps captures learnings |
-| AgentOps + GSD | ⚠️ | GSD is lightweight; AgentOps adds overhead |
+| AgentOps + GSD | ⚠️ | Both manage workflow state; use GSD for greenfield phased execution and AgentOps for long-lived compounding |
 | AgentOps + Compound Engineer | ✅ | Compound Engineer for workflow shell, AgentOps for memory and validation |
 
 The key: AgentOps' value is in the **knowledge layer**. If another tool handles execution better for your use case, AgentOps can still capture and compound the learnings.
