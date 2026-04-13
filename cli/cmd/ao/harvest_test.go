@@ -256,6 +256,131 @@ func TestRunHarvest_JSONOutput(t *testing.T) {
 	}
 }
 
+func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+
+	rigDir := filepath.Join(tmp, "proj", ".agents", "learnings")
+	if err := os.MkdirAll(rigDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	sourceName := "2026-04-10-json-promote.md"
+	valid := "---\ntitle: JSON Promote\nconfidence: 0.9\nmaturity: provisional\nutility: 0.8\n---\n\n# JSON Promote\n\nContent.\n"
+	if err := os.WriteFile(filepath.Join(rigDir, sourceName), []byte(valid), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	invalid := "---\ntitle: Broken: value\nbad: still: broken\n---\n"
+	if err := os.WriteFile(filepath.Join(rigDir, "2026-04-10-bad.md"), []byte(invalid), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	origRoots := harvestRootsFlag
+	origOutput := output
+	origJsonFlag := jsonFlag
+	origQuiet := harvestQuiet
+	origDryRun := dryRun
+	origMinConf := harvestMinConfidence
+	origInclude := harvestInclude
+	origMaxSize := harvestMaxFileSize
+	origOutputDir := harvestOutputDir
+	origPromote := harvestPromoteTo
+	t.Cleanup(func() {
+		harvestRootsFlag = origRoots
+		output = origOutput
+		jsonFlag = origJsonFlag
+		harvestQuiet = origQuiet
+		dryRun = origDryRun
+		harvestMinConfidence = origMinConf
+		harvestInclude = origInclude
+		harvestMaxFileSize = origMaxSize
+		harvestOutputDir = origOutputDir
+		harvestPromoteTo = origPromote
+	})
+
+	harvestRootsFlag = tmp
+	output = "json"
+	jsonFlag = false
+	harvestQuiet = true
+	dryRun = false
+	harvestMinConfidence = 0.5
+	harvestInclude = "learnings"
+	harvestMaxFileSize = 1048576
+	harvestOutputDir = filepath.Join(tmp, "out")
+	harvestPromoteTo = filepath.Join(tmp, "promoted")
+
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+
+	runErr := runHarvest(harvestCmd, nil)
+
+	w.Close()
+	os.Stdout = origStdout
+
+	captured, _ := io.ReadAll(r)
+
+	if runErr != nil {
+		t.Fatalf("runHarvest returned error: %v", runErr)
+	}
+
+	var cat harvest.Catalog
+	if err := json.Unmarshal(captured, &cat); err != nil {
+		t.Fatalf("stdout is not valid JSON: %v\nGot: %s", err, string(captured))
+	}
+	if cat.DryRun {
+		t.Fatal("JSON output should reflect non-dry-run execution")
+	}
+	if cat.PromotionCount != 1 {
+		t.Fatalf("JSON output promotion_count = %d, want 1", cat.PromotionCount)
+	}
+	if cat.Summary.PromotionWrites != 1 {
+		t.Fatalf("JSON output summary.promotion_writes = %d, want 1", cat.Summary.PromotionWrites)
+	}
+	if cat.Summary.WarningCount != 1 {
+		t.Fatalf("JSON output summary.warning_count = %d, want 1", cat.Summary.WarningCount)
+	}
+	if len(cat.Warnings) != 1 || cat.Warnings[0].Stage != "parse_frontmatter" {
+		t.Fatalf("JSON output warnings = %#v, want one parse_frontmatter warning", cat.Warnings)
+	}
+	if len(cat.Promoted) != 1 {
+		t.Fatalf("JSON output promoted artifacts = %d, want 1", len(cat.Promoted))
+	}
+
+	latestPath := filepath.Join(harvestOutputDir, "latest.json")
+	data, err := os.ReadFile(latestPath)
+	if err != nil {
+		t.Fatalf("expected latest.json to be written in JSON mode: %v", err)
+	}
+	var persisted harvest.Catalog
+	if err := json.Unmarshal(data, &persisted); err != nil {
+		t.Fatalf("latest.json is not valid JSON: %v", err)
+	}
+	if persisted.PromotionCount != 1 || persisted.Summary.PromotionWrites != 1 {
+		t.Fatalf("persisted promotion counts = %d/%d, want 1/1",
+			persisted.PromotionCount, persisted.Summary.PromotionWrites)
+	}
+	if persisted.Summary.WarningCount != 1 {
+		t.Fatalf("persisted summary.warning_count = %d, want 1", persisted.Summary.WarningCount)
+	}
+
+	promotedPath := filepath.Join(harvestPromoteTo, "learning", cat.Promoted[0].SourceRig+"-"+sourceName)
+	promoted, err := os.ReadFile(promotedPath)
+	if err != nil {
+		t.Fatalf("expected JSON mode to promote artifact %s: %v", promotedPath, err)
+	}
+	promotedText := string(promoted)
+	if !strings.Contains(promotedText, `promoted_from: "proj-proj"`) {
+		t.Fatalf("promoted artifact missing provenance header:\n%s", promotedText)
+	}
+	if !strings.Contains(promotedText, "# JSON Promote") {
+		t.Fatalf("promoted artifact missing body:\n%s", promotedText)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // duplicateArtifactCount
 // ---------------------------------------------------------------------------
