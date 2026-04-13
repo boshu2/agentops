@@ -13,351 +13,315 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
+type knowledgeLoopFixture struct {
+	tempDir        string
+	learningPath   string
+	transcriptPath string
+}
+
 // TestKnowledgeLoopE2E tests the full knowledge loop:
 // FORGE → STORE → RECALL → APPLY → FEEDBACK → (compounds)
 func TestKnowledgeLoopE2E(t *testing.T) {
-	// ========================================
-	// Phase 1: Setup - Create isolated test environment
-	// ========================================
-	tempDir := t.TempDir()
+	fixture := setupKnowledgeLoopFixture(t)
 
-	// Create directory structure
-	dirs := []string{
+	t.Run("Forge", fixture.runForgePhase)
+	t.Run("Inject", fixture.runInjectPhase)
+	t.Run("Citation", fixture.runCitationPhase)
+	t.Run("Feedback", fixture.runFeedbackPhase)
+	t.Run("Metrics", fixture.runMetricsPhase)
+	t.Run("SecondCycle", fixture.runSecondCyclePhase)
+	t.Run("Badge", fixture.runBadgePhase)
+}
+
+func setupKnowledgeLoopFixture(t *testing.T) knowledgeLoopFixture {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	for _, dir := range []string{
 		filepath.Join(tempDir, ".agents", "ao", "sessions"),
 		filepath.Join(tempDir, ".agents", "ao", "index"),
 		filepath.Join(tempDir, ".agents", "learnings"),
 		filepath.Join(tempDir, ".agents", "patterns"),
-	}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+	} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("create directory %s: %v", dir, err)
 		}
 	}
 
-	// Create test learning (will be recalled during inject)
 	learningPath := filepath.Join(tempDir, ".agents", "learnings", "test-learning.jsonl")
 	learningContent := `{"id":"L-TEST-001","title":"Context Cancellation Pattern","content":"Use context.WithCancel for graceful shutdown in Go services","utility":0.5,"maturity":"provisional","created_at":"2026-01-25T10:00:00Z"}`
-	if err := os.WriteFile(learningPath, []byte(learningContent), 0644); err != nil {
+	if err := os.WriteFile(learningPath, []byte(learningContent), 0o644); err != nil {
 		t.Fatalf("create test learning: %v", err)
 	}
 
-	// Create test pattern
 	patternPath := filepath.Join(tempDir, ".agents", "patterns", "graceful-shutdown.md")
 	patternContent := `# Graceful Shutdown Pattern
 
 Always use context.WithCancel to propagate cancellation signals.
 This ensures all goroutines clean up properly on shutdown.
 `
-	if err := os.WriteFile(patternPath, []byte(patternContent), 0644); err != nil {
+	if err := os.WriteFile(patternPath, []byte(patternContent), 0o644); err != nil {
 		t.Fatalf("create test pattern: %v", err)
 	}
 
-	// Copy test transcript
 	transcriptSrc := filepath.Join("testdata", "transcripts", "simple-decision.jsonl")
-	transcriptDst := filepath.Join(tempDir, "test-transcript.jsonl")
-	if err := copyFile(transcriptSrc, transcriptDst); err != nil {
-		// If fixture doesn't exist, create a minimal one
+	transcriptPath := filepath.Join(tempDir, "test-transcript.jsonl")
+	if err := copyFile(transcriptSrc, transcriptPath); err != nil {
 		minimalTranscript := createMinimalTranscript()
-		if err := os.WriteFile(transcriptDst, []byte(minimalTranscript), 0644); err != nil {
+		if err := os.WriteFile(transcriptPath, []byte(minimalTranscript), 0o644); err != nil {
 			t.Fatalf("create test transcript: %v", err)
 		}
 	}
 
-	// ========================================
-	// Phase 2: FORGE - Process transcript
-	// ========================================
-	t.Run("Forge", func(t *testing.T) {
-		// Simulate forge by creating session output
-		sessionID := "test-session-001"
-		session := &storage.Session{
-			ID:      sessionID,
-			Date:    time.Now(),
-			Summary: "Test session for e2e validation",
-			Decisions: []string{
-				"Use context.WithCancel for shutdown",
-			},
-			Knowledge: []string{
-				"Graceful shutdown requires context propagation",
-			},
-			FilesChanged:   []string{"cmd/main.go"},
-			TranscriptPath: transcriptDst,
+	return knowledgeLoopFixture{
+		tempDir:        tempDir,
+		learningPath:   learningPath,
+		transcriptPath: transcriptPath,
+	}
+}
+
+func (f knowledgeLoopFixture) runForgePhase(t *testing.T) {
+	sessionID := "test-session-001"
+	session := &storage.Session{
+		ID:      sessionID,
+		Date:    time.Now(),
+		Summary: "Test session for e2e validation",
+		Decisions: []string{
+			"Use context.WithCancel for shutdown",
+		},
+		Knowledge: []string{
+			"Graceful shutdown requires context propagation",
+		},
+		FilesChanged:   []string{"cmd/main.go"},
+		TranscriptPath: f.transcriptPath,
+	}
+
+	sessionPath := filepath.Join(f.tempDir, ".agents", "ao", "sessions", sessionID+".jsonl")
+	sessionData, err := json.Marshal(session)
+	if err != nil {
+		t.Fatalf("marshal session: %v", err)
+	}
+	if err := os.WriteFile(sessionPath, sessionData, 0o644); err != nil {
+		t.Fatalf("write session: %v", err)
+	}
+
+	indexPath := filepath.Join(f.tempDir, ".agents", "ao", "index", "sessions.jsonl")
+	indexEntry := map[string]any{
+		"session_id": sessionID,
+		"date":       session.Date.Format(time.RFC3339),
+		"summary":    session.Summary,
+		"path":       sessionPath,
+	}
+	indexData, err := json.Marshal(indexEntry)
+	if err != nil {
+		t.Fatalf("marshal index entry: %v", err)
+	}
+	if err := os.WriteFile(indexPath, append(indexData, '\n'), 0o644); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+
+	assertFileExists(t, sessionPath)
+	assertFileExists(t, indexPath)
+}
+
+func (f knowledgeLoopFixture) runInjectPhase(t *testing.T) {
+	learnings, err := collectLearnings(f.tempDir, "context", 10, "", 0)
+	if err != nil {
+		t.Fatalf("collectLearnings: %v", err)
+	}
+	if len(learnings) == 0 {
+		t.Fatal("Expected to find at least 1 learning")
+	}
+
+	found := false
+	for _, l := range learnings {
+		if strings.Contains(l.Title, "Context") || strings.Contains(l.ID, "TEST") {
+			found = true
+			break
 		}
+	}
+	if !found {
+		t.Errorf("Expected to find 'Context Cancellation Pattern' learning, got: %+v", learnings)
+	}
 
-		// Write session JSONL
-		sessionPath := filepath.Join(tempDir, ".agents", "ao", "sessions", sessionID+".jsonl")
-		sessionData, err := json.Marshal(session)
-		if err != nil {
-			t.Fatalf("marshal session: %v", err)
-		}
-		if err := os.WriteFile(sessionPath, sessionData, 0644); err != nil {
-			t.Fatalf("write session: %v", err)
-		}
+	patterns, err := collectPatterns(f.tempDir, "shutdown", 5, "", 0)
+	if err != nil {
+		t.Fatalf("collectPatterns: %v", err)
+	}
+	if len(patterns) == 0 {
+		t.Error("Expected to find at least 1 pattern")
+	}
+}
 
-		// Update index
-		indexPath := filepath.Join(tempDir, ".agents", "ao", "index", "sessions.jsonl")
-		indexEntry := map[string]any{
-			"session_id": sessionID,
-			"date":       session.Date.Format(time.RFC3339),
-			"summary":    session.Summary,
-			"path":       sessionPath,
-		}
-		indexData, _ := json.Marshal(indexEntry)
-		if err := os.WriteFile(indexPath, append(indexData, '\n'), 0644); err != nil {
-			t.Fatalf("write index: %v", err)
-		}
+func (f knowledgeLoopFixture) runCitationPhase(t *testing.T) {
+	sessionID := "session-20260125-120000"
+	event := types.CitationEvent{
+		ArtifactPath: f.learningPath,
+		SessionID:    sessionID,
+		CitedAt:      time.Now(),
+		CitationType: "retrieved",
+		Query:        "context cancellation",
+	}
+	if err := ratchet.RecordCitation(f.tempDir, event); err != nil {
+		t.Fatalf("RecordCitation: %v", err)
+	}
 
-		// Verify session was created
-		assertFileExists(t, sessionPath)
-		assertFileExists(t, indexPath)
-	})
+	citationsPath := filepath.Join(f.tempDir, ".agents", "ao", "citations.jsonl")
+	assertFileExists(t, citationsPath)
+	data, err := os.ReadFile(citationsPath)
+	if err != nil {
+		t.Fatalf("read citations: %v", err)
+	}
+	if !strings.Contains(string(data), sessionID) {
+		t.Errorf("Citations file should contain session ID %s", sessionID)
+	}
+	if !strings.Contains(string(data), "retrieved") {
+		t.Error("Citations file should contain citation type 'retrieved'")
+	}
+}
 
-	// ========================================
-	// Phase 3: INJECT - Recall knowledge
-	// ========================================
-	t.Run("Inject", func(t *testing.T) {
-		// Test collectLearnings function
-		learnings, err := collectLearnings(tempDir, "context", 10, "", 0)
-		if err != nil {
-			t.Fatalf("collectLearnings: %v", err)
-		}
+func (f knowledgeLoopFixture) runFeedbackPhase(t *testing.T) {
+	originalLearning, err := parseLearningJSONL(f.learningPath)
+	if err != nil {
+		t.Fatalf("parse original learning: %v", err)
+	}
 
-		// Should find our test learning
-		if len(learnings) == 0 {
-			t.Error("Expected to find at least 1 learning")
-		} else {
-			found := false
-			for _, l := range learnings {
-				if strings.Contains(l.Title, "Context") || strings.Contains(l.ID, "TEST") {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected to find 'Context Cancellation Pattern' learning, got: %+v", learnings)
-			}
-		}
+	originalUtility := originalLearning.Utility
+	newUtility := updateUtility(originalUtility, 1.0, types.DefaultAlpha)
+	if newUtility <= originalUtility {
+		t.Errorf("Utility should increase after positive feedback: original=%.3f, new=%.3f",
+			originalUtility, newUtility)
+	}
+	if newUtility < 0 || newUtility > 1 {
+		t.Errorf("Utility should be in [0,1]: got %.3f", newUtility)
+	}
+}
 
-		// Test collectPatterns function
-		patterns, err := collectPatterns(tempDir, "shutdown", 5, "", 0)
-		if err != nil {
-			t.Fatalf("collectPatterns: %v", err)
-		}
+func (f knowledgeLoopFixture) runMetricsPhase(t *testing.T) {
+	sessionCount, err := countKnowledgeLoopSessions(f.tempDir)
+	if err != nil {
+		t.Fatalf("count sessions: %v", err)
+	}
+	if sessionCount == 0 {
+		t.Error("Expected at least 1 session")
+	}
 
-		if len(patterns) == 0 {
-			t.Error("Expected to find at least 1 pattern")
-		}
-	})
+	citations, err := ratchet.LoadCitations(f.tempDir)
+	if err != nil {
+		t.Fatalf("LoadCitations: %v", err)
+	}
+	if len(citations) == 0 {
+		t.Error("Expected at least 1 citation")
+	}
 
-	// ========================================
-	// Phase 4: CITATION - Track usage
-	// ========================================
-	t.Run("Citation", func(t *testing.T) {
-		// Record a citation
-		sessionID := "session-20260125-120000"
-		event := types.CitationEvent{
-			ArtifactPath: learningPath,
-			SessionID:    sessionID,
-			CitedAt:      time.Now(),
-			CitationType: "retrieved",
-			Query:        "context cancellation",
-		}
+	sigma := 0.5  // retrieval effectiveness (simulated)
+	rho := 0.3    // citation rate (simulated)
+	delta := 17.0 // avg age in days
+	sigmaRho := sigma * rho
+	escapingVelocity := sigmaRho > delta/100.0
+	t.Logf("Flywheel metrics: σ=%.2f, ρ=%.2f, δ=%.2f, σ×ρ=%.3f, escaping=%v",
+		sigma, rho, delta, sigmaRho, escapingVelocity)
+	if sigmaRho >= 1 {
+		t.Error("σ×ρ should be < 1 for valid probability")
+	}
+}
 
-		if err := ratchet.RecordCitation(tempDir, event); err != nil {
-			t.Fatalf("RecordCitation: %v", err)
-		}
+func (f knowledgeLoopFixture) runSecondCyclePhase(t *testing.T) {
+	session2 := &storage.Session{
+		ID:      "test-session-002",
+		Date:    time.Now(),
+		Summary: "Second test session",
+		Decisions: []string{
+			"Add retry logic to HTTP client",
+		},
+	}
 
-		// Verify citation was recorded
-		citationsPath := filepath.Join(tempDir, ".agents", "ao", "citations.jsonl")
-		assertFileExists(t, citationsPath)
+	session2Path := filepath.Join(f.tempDir, ".agents", "ao", "sessions", "test-session-002.jsonl")
+	data, err := json.Marshal(session2)
+	if err != nil {
+		t.Fatalf("marshal session 2: %v", err)
+	}
+	if err := os.WriteFile(session2Path, data, 0o644); err != nil {
+		t.Fatalf("write session 2: %v", err)
+	}
 
-		// Read and verify citation content
-		data, err := os.ReadFile(citationsPath)
-		if err != nil {
-			t.Fatalf("read citations: %v", err)
-		}
+	sessionCount, err := countKnowledgeLoopSessions(f.tempDir)
+	if err != nil {
+		t.Fatalf("count sessions: %v", err)
+	}
+	if sessionCount != 2 {
+		t.Errorf("Expected 2 sessions, got %d", sessionCount)
+	}
 
-		if !strings.Contains(string(data), sessionID) {
-			t.Errorf("Citations file should contain session ID %s", sessionID)
-		}
-		if !strings.Contains(string(data), "retrieved") {
-			t.Error("Citations file should contain citation type 'retrieved'")
-		}
-	})
+	event := types.CitationEvent{
+		ArtifactPath: f.learningPath,
+		SessionID:    "session-20260125-130000",
+		CitedAt:      time.Now(),
+		CitationType: "applied", // upgraded from retrieved
+		Query:        "graceful shutdown",
+	}
+	if err := ratchet.RecordCitation(f.tempDir, event); err != nil {
+		t.Fatalf("RecordCitation 2: %v", err)
+	}
 
-	// ========================================
-	// Phase 5: FEEDBACK - Update utility
-	// ========================================
-	t.Run("Feedback", func(t *testing.T) {
-		// Read original utility
-		originalLearning, err := parseLearningJSONL(learningPath)
-		if err != nil {
-			t.Fatalf("parse original learning: %v", err)
-		}
-		originalUtility := originalLearning.Utility
+	citations, err := ratchet.LoadCitations(f.tempDir)
+	if err != nil {
+		t.Fatalf("LoadCitations: %v", err)
+	}
+	if len(citations) < 2 {
+		t.Errorf("Expected at least 2 citations, got %d", len(citations))
+	}
+}
 
-		// Apply feedback (simulate successful usage)
-		reward := 1.0 // success
-		newUtility := updateUtility(originalUtility, reward, types.DefaultAlpha)
+func (f knowledgeLoopFixture) runBadgePhase(t *testing.T) {
+	status, icon := getEscapeStatus(0.05, 17.0)
+	if status != "STARTING" || icon != "🌱" {
+		t.Errorf("Low velocity should be STARTING, got %s %s", icon, status)
+	}
+	status, _ = getEscapeStatus(0.10, 17.0)
+	if status != "BUILDING" {
+		t.Errorf("Medium velocity should be BUILDING, got %s", status)
+	}
+	status, _ = getEscapeStatus(0.15, 17.0)
+	if status != "APPROACHING" {
+		t.Errorf("High velocity should be APPROACHING, got %s", status)
+	}
+	status, icon = getEscapeStatus(0.20, 17.0)
+	if status != "ESCAPE VELOCITY" || icon != "🚀" {
+		t.Errorf("Above delta should be ESCAPE VELOCITY, got %s %s", icon, status)
+	}
 
-		// Verify utility increased
-		if newUtility <= originalUtility {
-			t.Errorf("Utility should increase after positive feedback: original=%.3f, new=%.3f",
-				originalUtility, newUtility)
-		}
+	bar := makeProgressBar(0.5, 10)
+	if runeCount := len([]rune(bar)); runeCount != 10 {
+		t.Errorf("Progress bar should be 10 runes, got %d", runeCount)
+	}
+	if !strings.Contains(bar, "█") || !strings.Contains(bar, "░") {
+		t.Errorf("Progress bar should have filled and empty segments: %s", bar)
+	}
 
-		// Verify utility is bounded
-		if newUtility < 0 || newUtility > 1 {
-			t.Errorf("Utility should be in [0,1]: got %.3f", newUtility)
-		}
-	})
+	barEmpty := makeProgressBar(0, 10)
+	if strings.Contains(barEmpty, "█") {
+		t.Error("Empty progress bar should have no filled segments")
+	}
+	barFull := makeProgressBar(1, 10)
+	if strings.Contains(barFull, "░") {
+		t.Error("Full progress bar should have no empty segments")
+	}
+	if barOver := makeProgressBar(1.5, 10); barOver != barFull {
+		t.Error("Value > 1 should clamp to full bar")
+	}
+	if barUnder := makeProgressBar(-0.5, 10); barUnder != barEmpty {
+		t.Error("Value < 0 should clamp to empty bar")
+	}
+}
 
-	// ========================================
-	// Phase 6: METRICS - Compute flywheel health
-	// ========================================
-	t.Run("Metrics", func(t *testing.T) {
-		// Count sessions
-		sessionsDir := filepath.Join(tempDir, ".agents", "ao", "sessions")
-		files, _ := filepath.Glob(filepath.Join(sessionsDir, "*.jsonl"))
-		sessionCount := len(files)
-
-		if sessionCount == 0 {
-			t.Error("Expected at least 1 session")
-		}
-
-		// Load citations
-		citations, err := ratchet.LoadCitations(tempDir)
-		if err != nil {
-			t.Fatalf("LoadCitations: %v", err)
-		}
-
-		if len(citations) == 0 {
-			t.Error("Expected at least 1 citation")
-		}
-
-		// Verify escape velocity formula components
-		// σ×ρ > δ/100 means knowledge compounds
-		sigma := 0.5  // retrieval effectiveness (simulated)
-		rho := 0.3    // citation rate (simulated)
-		delta := 17.0 // avg age in days
-
-		sigmaRho := sigma * rho
-		escapingVelocity := sigmaRho > delta/100.0
-
-		t.Logf("Flywheel metrics: σ=%.2f, ρ=%.2f, δ=%.2f, σ×ρ=%.3f, escaping=%v",
-			sigma, rho, delta, sigmaRho, escapingVelocity)
-
-		// At this early stage, we're not at escape velocity (expected)
-		// The test verifies the formula works correctly
-		if sigmaRho >= 1 {
-			t.Error("σ×ρ should be < 1 for valid probability")
-		}
-	})
-
-	// ========================================
-	// Phase 7: SECOND CYCLE - Verify accumulation
-	// ========================================
-	t.Run("SecondCycle", func(t *testing.T) {
-		// Add a second session
-		session2 := &storage.Session{
-			ID:      "test-session-002",
-			Date:    time.Now(),
-			Summary: "Second test session",
-			Decisions: []string{
-				"Add retry logic to HTTP client",
-			},
-		}
-
-		session2Path := filepath.Join(tempDir, ".agents", "ao", "sessions", "test-session-002.jsonl")
-		data, _ := json.Marshal(session2)
-		if err := os.WriteFile(session2Path, data, 0644); err != nil {
-			t.Fatalf("write session 2: %v", err)
-		}
-
-		// Verify sessions count increased
-		sessionsDir := filepath.Join(tempDir, ".agents", "ao", "sessions")
-		files, _ := filepath.Glob(filepath.Join(sessionsDir, "*.jsonl"))
-
-		if len(files) != 2 {
-			t.Errorf("Expected 2 sessions, got %d", len(files))
-		}
-
-		// Add another citation
-		event := types.CitationEvent{
-			ArtifactPath: learningPath,
-			SessionID:    "session-20260125-130000",
-			CitedAt:      time.Now(),
-			CitationType: "applied", // upgraded from retrieved
-			Query:        "graceful shutdown",
-		}
-		if err := ratchet.RecordCitation(tempDir, event); err != nil {
-			t.Fatalf("RecordCitation 2: %v", err)
-		}
-
-		// Verify citations accumulated
-		citations, _ := ratchet.LoadCitations(tempDir)
-		if len(citations) < 2 {
-			t.Errorf("Expected at least 2 citations, got %d", len(citations))
-		}
-	})
-
-	// ========================================
-	// Phase 8: BADGE - Visual health check
-	// ========================================
-	t.Run("Badge", func(t *testing.T) {
-		// Test badge helper functions
-		status, icon := getEscapeStatus(0.05, 17.0)
-		if status != "STARTING" || icon != "🌱" {
-			t.Errorf("Low velocity should be STARTING, got %s %s", icon, status)
-		}
-
-		status, _ = getEscapeStatus(0.10, 17.0)
-		if status != "BUILDING" {
-			t.Errorf("Medium velocity should be BUILDING, got %s", status)
-		}
-
-		status, _ = getEscapeStatus(0.15, 17.0)
-		if status != "APPROACHING" {
-			t.Errorf("High velocity should be APPROACHING, got %s", status)
-		}
-
-		status, icon = getEscapeStatus(0.20, 17.0)
-		if status != "ESCAPE VELOCITY" || icon != "🚀" {
-			t.Errorf("Above delta should be ESCAPE VELOCITY, got %s %s", icon, status)
-		}
-
-		// Test progress bar
-		bar := makeProgressBar(0.5, 10)
-		// Unicode chars are 3 bytes each, so 10 chars = 30 bytes
-		runeCount := len([]rune(bar))
-		if runeCount != 10 {
-			t.Errorf("Progress bar should be 10 runes, got %d", runeCount)
-		}
-		if !strings.Contains(bar, "█") || !strings.Contains(bar, "░") {
-			t.Errorf("Progress bar should have filled and empty segments: %s", bar)
-		}
-
-		// Test edge cases
-		barEmpty := makeProgressBar(0, 10)
-		if strings.Contains(barEmpty, "█") {
-			t.Error("Empty progress bar should have no filled segments")
-		}
-
-		barFull := makeProgressBar(1, 10)
-		if strings.Contains(barFull, "░") {
-			t.Error("Full progress bar should have no empty segments")
-		}
-
-		// Test clamping
-		barOver := makeProgressBar(1.5, 10)
-		if barOver != barFull {
-			t.Error("Value > 1 should clamp to full bar")
-		}
-
-		barUnder := makeProgressBar(-0.5, 10)
-		if barUnder != barEmpty {
-			t.Error("Value < 0 should clamp to empty bar")
-		}
-	})
+func countKnowledgeLoopSessions(tempDir string) (int, error) {
+	sessionsDir := filepath.Join(tempDir, ".agents", "ao", "sessions")
+	files, err := filepath.Glob(filepath.Join(sessionsDir, "*.jsonl"))
+	if err != nil {
+		return 0, err
+	}
+	return len(files), nil
 }
 
 // TestKnowledgeLoopCompositeScoring tests the Two-Phase retrieval scoring
