@@ -400,79 +400,46 @@ func TestRunGateScript(t *testing.T) {
 	}
 }
 
+type supervisorLandingSyncPushFailureCase struct {
+	failingRunnerCall string
+	runnerErr         error
+	expectedError     string
+	rebaseAbortOutput string
+	rebaseAbortErr    error
+}
+
+type supervisorLandingCommandCalls struct {
+	runner []string
+	output []string
+}
+
 func TestRunSupervisorLanding_SyncPush_RebaseFailureAborts(t *testing.T) {
-	prevRunner := loopCommandRunner
-	prevOutputRunner := loopCommandOutputRunner
-	defer func() {
-		loopCommandRunner = prevRunner
-		loopCommandOutputRunner = prevOutputRunner
-	}()
-
-	var runnerCalls []string
-	var outputCalls []string
-	loopCommandRunner = func(_ string, _ time.Duration, name string, args ...string) error {
-		runnerCalls = append(runnerCalls, name+" "+strings.Join(args, " "))
-		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "origin/main" {
-			return fmt.Errorf("simulated rebase conflict")
-		}
-		return nil
-	}
-	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
-		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
-		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
-			return " M somefile.go\n", nil
-		}
-		if name == "git" && len(args) >= 2 && args[0] == "diff" && args[1] == "--name-only" {
-			return "somefile.go\n", nil
-		}
-		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
-			return "origin/main", nil
-		}
-		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "--abort" {
-			return "", nil
-		}
-		return "", nil
-	}
-
-	cfg := rpiLoopSupervisorConfig{
-		LandingPolicy:  loopLandingPolicySyncPush,
-		BDSyncPolicy:   loopBDSyncPolicyNever,
-		CommandTimeout: time.Minute,
-	}
-	err := runSupervisorLanding(t.TempDir(), cfg, 1, 1, "ship", &landingScope{
-		baselineDirtyPaths: map[string]struct{}{},
+	calls := runSupervisorLandingSyncPushFailure(t, supervisorLandingSyncPushFailureCase{
+		failingRunnerCall: "git rebase origin/main",
+		runnerErr:         fmt.Errorf("simulated rebase conflict"),
+		expectedError:     "landing rebase failed",
 	})
-	if err == nil || !strings.Contains(err.Error(), "landing rebase failed") {
-		t.Fatalf("expected rebase failure, got: %v", err)
-	}
-	if !strings.Contains(err.Error(), "state recovered") {
-		t.Fatalf("expected state recovery details in error, got: %v", err)
-	}
 
-	foundAbort := false
-	for _, call := range outputCalls {
-		if call == "git rebase --abort" {
-			foundAbort = true
-			break
-		}
-	}
-	if !foundAbort {
-		t.Fatalf("expected git rebase --abort call, got output calls: %v", outputCalls)
-	}
-
-	foundStatus := false
-	for _, call := range runnerCalls {
-		if call == "git status -sb" {
-			foundStatus = true
-			break
-		}
-	}
-	if !foundStatus {
-		t.Fatalf("expected git status -sb recovery call, got runner calls: %v", runnerCalls)
-	}
+	assertSupervisorLandingContainsCall(t, calls.output, "git rebase --abort")
+	assertSupervisorLandingContainsCall(t, calls.runner, "git status -sb")
 }
 
 func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) {
+	calls := runSupervisorLandingSyncPushFailure(t, supervisorLandingSyncPushFailureCase{
+		failingRunnerCall: "git fetch origin main",
+		runnerErr:         fmt.Errorf("simulated fetch outage"),
+		expectedError:     "landing fetch failed",
+		rebaseAbortOutput: "fatal: No rebase in progress?",
+		rebaseAbortErr:    fmt.Errorf("exit status 128"),
+	})
+
+	assertSupervisorLandingContainsCall(t, calls.output, "git rebase --abort")
+	assertSupervisorLandingContainsCall(t, calls.runner, "git status -sb")
+}
+
+func runSupervisorLandingSyncPushFailure(t *testing.T, tc supervisorLandingSyncPushFailureCase) supervisorLandingCommandCalls {
+	t.Helper()
+
 	prevRunner := loopCommandRunner
 	prevOutputRunner := loopCommandOutputRunner
 	defer func() {
@@ -480,30 +447,30 @@ func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) 
 		loopCommandOutputRunner = prevOutputRunner
 	}()
 
-	var runnerCalls []string
-	var outputCalls []string
+	calls := supervisorLandingCommandCalls{}
 	loopCommandRunner = func(_ string, _ time.Duration, name string, args ...string) error {
-		runnerCalls = append(runnerCalls, name+" "+strings.Join(args, " "))
-		if name == "git" && len(args) >= 3 && args[0] == "fetch" && args[1] == "origin" && args[2] == "main" {
-			return fmt.Errorf("simulated fetch outage")
+		call := supervisorLandingCommandCall(name, args)
+		calls.runner = append(calls.runner, call)
+		if call == tc.failingRunnerCall {
+			return tc.runnerErr
 		}
 		return nil
 	}
 	loopCommandOutputRunner = func(_ string, _ time.Duration, name string, args ...string) (string, error) {
-		outputCalls = append(outputCalls, name+" "+strings.Join(args, " "))
-		if name == "git" && len(args) >= 2 && args[0] == "status" && args[1] == "--porcelain" {
+		call := supervisorLandingCommandCall(name, args)
+		calls.output = append(calls.output, call)
+		switch call {
+		case "git status --porcelain":
 			return " M somefile.go\n", nil
-		}
-		if name == "git" && len(args) >= 2 && args[0] == "diff" && args[1] == "--name-only" {
+		case "git diff --name-only HEAD --":
 			return "somefile.go\n", nil
-		}
-		if name == "git" && len(args) > 0 && args[0] == "symbolic-ref" {
+		case "git symbolic-ref --quiet --short refs/remotes/origin/HEAD":
 			return "origin/main", nil
+		case "git rebase --abort":
+			return tc.rebaseAbortOutput, tc.rebaseAbortErr
+		default:
+			return "", nil
 		}
-		if name == "git" && len(args) >= 2 && args[0] == "rebase" && args[1] == "--abort" {
-			return "fatal: No rebase in progress?", fmt.Errorf("exit status 128")
-		}
-		return "", nil
 	}
 
 	cfg := rpiLoopSupervisorConfig{
@@ -514,34 +481,32 @@ func TestRunSupervisorLanding_SyncPush_FetchFailure_RecoversState(t *testing.T) 
 	err := runSupervisorLanding(t.TempDir(), cfg, 1, 1, "ship", &landingScope{
 		baselineDirtyPaths: map[string]struct{}{},
 	})
-	if err == nil || !strings.Contains(err.Error(), "landing fetch failed") {
-		t.Fatalf("expected fetch failure, got: %v", err)
+	if err == nil || !strings.Contains(err.Error(), tc.expectedError) {
+		t.Fatalf("expected %s, got: %v", tc.expectedError, err)
 	}
 	if !strings.Contains(err.Error(), "state recovered") {
 		t.Fatalf("expected state recovery details in error, got: %v", err)
 	}
 
-	foundAbort := false
-	for _, call := range outputCalls {
-		if call == "git rebase --abort" {
-			foundAbort = true
-			break
-		}
-	}
-	if !foundAbort {
-		t.Fatalf("expected git rebase --abort call, got output calls: %v", outputCalls)
-	}
+	return calls
+}
 
-	foundStatus := false
-	for _, call := range runnerCalls {
-		if call == "git status -sb" {
-			foundStatus = true
-			break
+func supervisorLandingCommandCall(name string, args []string) string {
+	if len(args) == 0 {
+		return name
+	}
+	return name + " " + strings.Join(args, " ")
+}
+
+func assertSupervisorLandingContainsCall(t *testing.T, calls []string, want string) {
+	t.Helper()
+
+	for _, call := range calls {
+		if call == want {
+			return
 		}
 	}
-	if !foundStatus {
-		t.Fatalf("expected git status -sb recovery call, got runner calls: %v", runnerCalls)
-	}
+	t.Fatalf("expected %s call, got calls: %v", want, calls)
 }
 
 func TestRunSupervisorLanding_CommitPolicy_RespectsLandingLock(t *testing.T) {
