@@ -55,6 +55,7 @@ setup() {
     mkdir -p "$FAKE_REPO/tests/docs" "$FAKE_REPO/tests/hooks" \
              "$FAKE_REPO/skills" "$FAKE_REPO/lib"
     make_stub "$FAKE_REPO/tests/docs/validate-doc-release.sh"
+    make_stub "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
     make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
     make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
     make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
