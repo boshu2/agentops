@@ -501,9 +501,13 @@ packet_is_valid_for_child() {
   local child="$2"
 
   [[ -f "$packet_path" ]] || return 1
+  # Accept any packet whose target_id matches and has at least one artifact.
+  # The packet's evidence_mode field describes what was happening in the repo at
+  # write time (commit/staged/worktree/auto); it does NOT determine whether the
+  # packet itself is valid closure proof.  The file's presence at the
+  # evidence-only-closures path is the proof — do not gatekeep on evidence_mode.
   jq -e --arg child "$child" '
     .target_id == $child and
-    (.evidence_mode | IN("commit", "staged", "worktree")) and
     (.evidence.artifacts | type == "array" and length > 0)
   ' "$packet_path" >/dev/null 2>&1
 }
@@ -613,15 +617,18 @@ classify_child() {
         fi
       fi
       if [[ "$SCOPE" == "commit" ]]; then
-        if [[ "${#scoped_files[@]}" -eq 0 ]]; then
-          # Check evidence-only closure packets before declaring parser_miss
-          if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
-            packet_mode="$(packet_evidence_mode "$packet_path")"
-            packet_json="$(packet_matches_json "$packet_path")"
+        # Check evidence-only closure packets before declaring any miss.
+        # Maintenance epics that close via proof packets instead of code commits
+        # are valid regardless of whether scoped files were found.
+        if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
+          packet_json="$(packet_matches_json "$packet_path")"
+          if [[ "${#scoped_files[@]}" -eq 0 ]]; then
             build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no scoped files)" "$packet_json" "pass"
           else
-            build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+            build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no commit evidence for scoped files)" "$packet_json" "pass"
           fi
+        elif [[ "${#scoped_files[@]}" -eq 0 ]]; then
+          build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
         else
           build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no commit evidence (checked grace window)" '[]' "fail"
         fi
