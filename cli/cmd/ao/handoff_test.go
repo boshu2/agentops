@@ -239,7 +239,23 @@ func TestRunHandoff_SchemaVersion(t *testing.T) {
 }
 
 func TestHandoffArtifact_JSONRoundTrip(t *testing.T) {
-	original := handoffArtifact{
+	original := handoffJSONRoundTripArtifact()
+
+	data, err := json.MarshalIndent(original, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+
+	var roundTripped handoffArtifact
+	if err := json.Unmarshal(data, &roundTripped); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	assertHandoffArtifactRoundTrip(t, roundTripped, original)
+}
+
+func handoffJSONRoundTripArtifact() handoffArtifact {
+	return handoffArtifact{
 		SchemaVersion: 1,
 		ID:            "handoff-20260303T191026Z",
 		CreatedAt:     "2026-03-03T19:10:26Z",
@@ -272,95 +288,81 @@ func TestHandoffArtifact_JSONRoundTrip(t *testing.T) {
 		ConsumedAt: nil,
 		ConsumedBy: nil,
 	}
+}
 
-	data, err := json.MarshalIndent(original, "", "  ")
-	if err != nil {
-		t.Fatalf("marshal failed: %v", err)
-	}
+func assertHandoffArtifactRoundTrip(t *testing.T, got, want handoffArtifact) {
+	t.Helper()
 
-	var roundTripped handoffArtifact
-	if err := json.Unmarshal(data, &roundTripped); err != nil {
-		t.Fatalf("unmarshal failed: %v", err)
-	}
+	assertHandoffArtifactScalars(t, got, want)
+	assertHandoffArtifactListLengths(t, got, want)
+	assertHandoffRPIRoundTrip(t, got.RPI, want.RPI)
+	assertHandoffStateRoundTrip(t, got.State, want.State)
+	assertHandoffEqual(t, "consumed", got.Consumed, want.Consumed)
+	assertHandoffNilPointer(t, "consumed_at", got.ConsumedAt)
+	assertHandoffNilPointer(t, "consumed_by", got.ConsumedBy)
+}
 
-	// Verify all fields survive roundtrip
-	if roundTripped.SchemaVersion != original.SchemaVersion {
-		t.Errorf("schema_version: got %d, want %d", roundTripped.SchemaVersion, original.SchemaVersion)
-	}
-	if roundTripped.ID != original.ID {
-		t.Errorf("id: got %q, want %q", roundTripped.ID, original.ID)
-	}
-	if roundTripped.CreatedAt != original.CreatedAt {
-		t.Errorf("created_at: got %q, want %q", roundTripped.CreatedAt, original.CreatedAt)
-	}
-	if roundTripped.Type != original.Type {
-		t.Errorf("type: got %q, want %q", roundTripped.Type, original.Type)
-	}
-	if roundTripped.Goal != original.Goal {
-		t.Errorf("goal: got %q, want %q", roundTripped.Goal, original.Goal)
-	}
-	if roundTripped.Summary != original.Summary {
-		t.Errorf("summary: got %q, want %q", roundTripped.Summary, original.Summary)
-	}
-	if roundTripped.Continuation != original.Continuation {
-		t.Errorf("continuation: got %q, want %q", roundTripped.Continuation, original.Continuation)
-	}
-	if len(roundTripped.ArtifactsProduced) != len(original.ArtifactsProduced) {
-		t.Errorf("artifacts_produced: got %d items, want %d", len(roundTripped.ArtifactsProduced), len(original.ArtifactsProduced))
-	}
-	if len(roundTripped.DecisionsMade) != len(original.DecisionsMade) {
-		t.Errorf("decisions_made: got %d items, want %d", len(roundTripped.DecisionsMade), len(original.DecisionsMade))
-	}
-	if len(roundTripped.OpenRisks) != len(original.OpenRisks) {
-		t.Errorf("open_risks: got %d items, want %d", len(roundTripped.OpenRisks), len(original.OpenRisks))
-	}
-	if roundTripped.RPI == nil {
+func assertHandoffArtifactScalars(t *testing.T, got, want handoffArtifact) {
+	t.Helper()
+
+	assertHandoffEqual(t, "schema_version", got.SchemaVersion, want.SchemaVersion)
+	assertHandoffEqual(t, "id", got.ID, want.ID)
+	assertHandoffEqual(t, "created_at", got.CreatedAt, want.CreatedAt)
+	assertHandoffEqual(t, "type", got.Type, want.Type)
+	assertHandoffEqual(t, "goal", got.Goal, want.Goal)
+	assertHandoffEqual(t, "summary", got.Summary, want.Summary)
+	assertHandoffEqual(t, "continuation", got.Continuation, want.Continuation)
+}
+
+func assertHandoffArtifactListLengths(t *testing.T, got, want handoffArtifact) {
+	t.Helper()
+
+	assertHandoffEqual(t, "artifacts_produced", len(got.ArtifactsProduced), len(want.ArtifactsProduced))
+	assertHandoffEqual(t, "decisions_made", len(got.DecisionsMade), len(want.DecisionsMade))
+	assertHandoffEqual(t, "open_risks", len(got.OpenRisks), len(want.OpenRisks))
+}
+
+func assertHandoffRPIRoundTrip(t *testing.T, got, want *handoffRPI) {
+	t.Helper()
+
+	if got == nil {
 		t.Fatal("rpi: got nil, want non-nil")
 	}
-	if roundTripped.RPI.Phase != original.RPI.Phase {
-		t.Errorf("rpi.phase: got %d, want %d", roundTripped.RPI.Phase, original.RPI.Phase)
-	}
-	if roundTripped.RPI.PhaseName != original.RPI.PhaseName {
-		t.Errorf("rpi.phase_name: got %q, want %q", roundTripped.RPI.PhaseName, original.RPI.PhaseName)
-	}
-	if roundTripped.RPI.EpicID != original.RPI.EpicID {
-		t.Errorf("rpi.epic_id: got %q, want %q", roundTripped.RPI.EpicID, original.RPI.EpicID)
-	}
-	if roundTripped.RPI.RunID != original.RPI.RunID {
-		t.Errorf("rpi.run_id: got %q, want %q", roundTripped.RPI.RunID, original.RPI.RunID)
-	}
-	if len(roundTripped.RPI.Verdicts) != len(original.RPI.Verdicts) {
-		t.Errorf("rpi.verdicts: got %d entries, want %d", len(roundTripped.RPI.Verdicts), len(original.RPI.Verdicts))
-	}
-	if roundTripped.State == nil {
+	assertHandoffEqual(t, "rpi.phase", got.Phase, want.Phase)
+	assertHandoffEqual(t, "rpi.phase_name", got.PhaseName, want.PhaseName)
+	assertHandoffEqual(t, "rpi.epic_id", got.EpicID, want.EpicID)
+	assertHandoffEqual(t, "rpi.run_id", got.RunID, want.RunID)
+	assertHandoffEqual(t, "rpi.verdicts", len(got.Verdicts), len(want.Verdicts))
+}
+
+func assertHandoffStateRoundTrip(t *testing.T, got, want *handoffState) {
+	t.Helper()
+
+	if got == nil {
 		t.Fatal("state: got nil, want non-nil")
 	}
-	if roundTripped.State.GitBranch != original.State.GitBranch {
-		t.Errorf("state.git_branch: got %q, want %q", roundTripped.State.GitBranch, original.State.GitBranch)
+
+	assertHandoffEqual(t, "state.git_branch", got.GitBranch, want.GitBranch)
+	assertHandoffEqual(t, "state.git_dirty", got.GitDirty, want.GitDirty)
+	assertHandoffEqual(t, "state.modified_files", len(got.ModifiedFiles), len(want.ModifiedFiles))
+	assertHandoffEqual(t, "state.active_bead", got.ActiveBead, want.ActiveBead)
+	assertHandoffEqual(t, "state.open_beads_count", got.OpenBeadsCount, want.OpenBeadsCount)
+	assertHandoffEqual(t, "state.recent_commits", len(got.RecentCommits), len(want.RecentCommits))
+}
+
+func assertHandoffEqual[T comparable](t *testing.T, label string, got, want T) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("%s: got %v, want %v", label, got, want)
 	}
-	if roundTripped.State.GitDirty != original.State.GitDirty {
-		t.Errorf("state.git_dirty: got %v, want %v", roundTripped.State.GitDirty, original.State.GitDirty)
-	}
-	if len(roundTripped.State.ModifiedFiles) != len(original.State.ModifiedFiles) {
-		t.Errorf("state.modified_files: got %d, want %d", len(roundTripped.State.ModifiedFiles), len(original.State.ModifiedFiles))
-	}
-	if roundTripped.State.ActiveBead != original.State.ActiveBead {
-		t.Errorf("state.active_bead: got %q, want %q", roundTripped.State.ActiveBead, original.State.ActiveBead)
-	}
-	if roundTripped.State.OpenBeadsCount != original.State.OpenBeadsCount {
-		t.Errorf("state.open_beads_count: got %d, want %d", roundTripped.State.OpenBeadsCount, original.State.OpenBeadsCount)
-	}
-	if len(roundTripped.State.RecentCommits) != len(original.State.RecentCommits) {
-		t.Errorf("state.recent_commits: got %d, want %d", len(roundTripped.State.RecentCommits), len(original.State.RecentCommits))
-	}
-	if roundTripped.Consumed != original.Consumed {
-		t.Errorf("consumed: got %v, want %v", roundTripped.Consumed, original.Consumed)
-	}
-	if roundTripped.ConsumedAt != nil {
-		t.Error("consumed_at: got non-nil, want nil")
-	}
-	if roundTripped.ConsumedBy != nil {
-		t.Error("consumed_by: got non-nil, want nil")
+}
+
+func assertHandoffNilPointer[T any](t *testing.T, label string, got *T) {
+	t.Helper()
+
+	if got != nil {
+		t.Errorf("%s: got non-nil, want nil", label)
 	}
 }
 
