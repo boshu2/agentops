@@ -450,6 +450,43 @@ func TestClassifyNextWorkCompletionProof_UsesProofRefBeforeTextFallback(t *testi
 	}
 }
 
+func TestClassifyNextWorkCompletionProof_UsesExecutionPacketPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	relPacketPath := filepath.Join(".agents", "rpi", "runs", "run-path", "execution-packet.json")
+	absPacketPath := filepath.Join(tmpDir, relPacketPath)
+	if err := os.MkdirAll(filepath.Dir(absPacketPath), 0o755); err != nil {
+		t.Fatalf("mkdir execution packet dir: %v", err)
+	}
+	packet := map[string]any{
+		"objective": "consume proof-backed next-work item",
+	}
+	data, err := json.Marshal(packet)
+	if err != nil {
+		t.Fatalf("marshal execution packet: %v", err)
+	}
+	if err := os.WriteFile(absPacketPath, data, 0o644); err != nil {
+		t.Fatalf("write execution packet: %v", err)
+	}
+
+	proof := classifyNextWorkCompletionProof(tmpDir, "ag-parent", nextWorkItem{
+		Title: "Consume stale execution packet item",
+		ProofRef: &nextWorkProofRef{
+			Kind:  "execution_packet",
+			RunID: "run-path",
+			Path:  relPacketPath,
+		},
+	})
+	if !proof.Complete {
+		t.Fatal("expected execution packet path proof to classify the item as complete")
+	}
+	if proof.Source != "execution_packet" {
+		t.Fatalf("unexpected proof source: %+v", proof)
+	}
+	if proof.Detail != "run-path" {
+		t.Fatalf("proof detail = %q, want run-path", proof.Detail)
+	}
+}
+
 func TestPreflightQueueSelection_DoesNotConsumeWithoutExplicitProof(t *testing.T) {
 	decision, err := preflightQueueSelection(t.TempDir(), &queueSelection{
 		Item: nextWorkItem{
@@ -3390,4 +3427,3 @@ func TestEntryConsumedTime_InvalidFormat(t *testing.T) {
 		t.Errorf("entryConsumedTime with invalid format = %v, want zero", got)
 	}
 }
-

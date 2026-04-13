@@ -434,6 +434,24 @@ func classifyNextWorkCompletionProof(cwd string, sourceEpic string, item nextWor
 				return nextWorkProofDecision{Complete: true, Source: "completed_run", Detail: run.RunID}
 			}
 		case "execution_packet":
+			// Prefer proof_ref.path: if the artifact file exists and is a
+			// non-empty JSON object, that is sufficient proof regardless of
+			// whether we can correlate a run ID in the registry.
+			if packetPath := strings.TrimSpace(item.ProofRef.Path); packetPath != "" {
+				absPath := packetPath
+				if !filepath.IsAbs(absPath) {
+					absPath = filepath.Join(cwd, absPath)
+				}
+				if executionPacketPathIsValid(absPath) {
+					detail := packetPath
+					if item.ProofRef.RunID != "" {
+						detail = item.ProofRef.RunID
+					}
+					return nextWorkProofDecision{Complete: true, Source: "execution_packet", Detail: detail}
+				}
+			}
+			// Fall back to run-registry lookup when no path is set or the
+			// file does not yet exist.
 			if run := findCompletedRunByID(cwd, item.ProofRef.RunID); run != nil {
 				return nextWorkProofDecision{Complete: true, Source: "execution_packet", Detail: run.RunID}
 			}
@@ -565,6 +583,26 @@ func findValidEvidenceOnlyClosurePacket(cwd, targetID string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// executionPacketPathIsValid returns true when the given path resolves to a
+// readable, non-empty JSON object that carries an "objective" or "run_id"
+// field; the minimum proof that a real execution packet was written there.
+// It intentionally avoids full schema validation so it stays tolerant of
+// minor version drift.
+func executionPacketPathIsValid(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var packet struct {
+		Objective string `json:"objective"`
+		RunID     string `json:"run_id"`
+	}
+	if err := json.Unmarshal(data, &packet); err != nil {
+		return false
+	}
+	return strings.TrimSpace(packet.Objective) != "" || strings.TrimSpace(packet.RunID) != ""
 }
 
 func packetIsValidForTarget(packetPath, targetID string) bool {
