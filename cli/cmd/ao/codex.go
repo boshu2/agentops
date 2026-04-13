@@ -822,21 +822,29 @@ func validateCodexLifecycleState(state *codexLifecycleState) error {
 	}
 
 	// If both start and stop exist for the SAME session with timestamps,
-	// stop must not precede start. For an active session, last_stop refers
-	// to a prior (older) session and will legitimately be before last_start;
-	// that shape is allowed.
+	// stop must not precede start unless the stop event has durable closeout
+	// evidence. Codex can resume the same thread after explicit closeout, so
+	// last_stop may describe the prior closeout for the same thread before a
+	// newer last_start.
 	if state.LastStart != nil && state.LastStop != nil &&
 		state.LastStart.Timestamp != "" && state.LastStop.Timestamp != "" &&
 		strings.TrimSpace(state.LastStart.SessionID) != "" &&
 		strings.TrimSpace(state.LastStart.SessionID) == strings.TrimSpace(state.LastStop.SessionID) {
 		startT, err1 := time.Parse(time.RFC3339, state.LastStart.Timestamp)
 		stopT, err2 := time.Parse(time.RFC3339, state.LastStop.Timestamp)
-		if err1 == nil && err2 == nil && stopT.Before(startT) {
+		if err1 == nil && err2 == nil && stopT.Before(startT) && !codexStopHasCloseoutEvidence(state.LastStop) {
 			return fmt.Errorf("last_stop (%s) is before last_start (%s)", state.LastStop.Timestamp, state.LastStart.Timestamp)
 		}
 	}
 
 	return nil
+}
+
+func codexStopHasCloseoutEvidence(event *codexLifecycleEvent) bool {
+	if event == nil {
+		return false
+	}
+	return strings.TrimSpace(event.TranscriptPath) != "" || strings.TrimSpace(event.HandoffPath) != ""
 }
 
 func saveCodexLifecycleState(path string, state *codexLifecycleState) error {

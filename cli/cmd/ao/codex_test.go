@@ -1043,6 +1043,25 @@ func TestCodexValidateState_StopBeforeStart(t *testing.T) {
 	}
 }
 
+func TestCodexValidateState_StopBeforeStartSameSessionWithCloseoutEvidence(t *testing.T) {
+	state := &codexLifecycleState{
+		SchemaVersion: 1,
+		LastStart: &codexLifecycleEvent{
+			SessionID: "019d7cd3-d88a-7e80-b6fc-e0de3cf6f0fc",
+			Timestamp: "2026-04-12T02:48:28Z",
+		},
+		LastStop: &codexLifecycleEvent{
+			SessionID:      "019d7cd3-d88a-7e80-b6fc-e0de3cf6f0fc",
+			Timestamp:      "2026-04-11T21:08:43Z",
+			TranscriptPath: ".agents/ao/codex/transcripts/history-019d7cd3-d88a-7e80-b6fc-e0de3cf6f0fc.jsonl",
+			HandoffPath:    ".agents/handoff/auto-019d7cd.json",
+		},
+	}
+	if err := validateCodexLifecycleState(state); err != nil {
+		t.Fatalf("expected no error for same-session restarted-thread closeout shape, got: %v", err)
+	}
+}
+
 // TestCodexValidateState_ActiveSession_StopBeforeStartDifferentSession is the
 // na-khx regression: during an active session, last_stop records the PREVIOUS
 // (older) session and last_start records the CURRENT (newer) session. That
