@@ -124,6 +124,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Verify CLI docs are up to date
         run: |
@@ -252,6 +253,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -487,6 +489,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
         run: cd cli && go build -o /tmp/ao-test ./cmd/ao
@@ -517,6 +520,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
         run: |
@@ -649,6 +653,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Run native Windows smoke tests
         shell: pwsh
@@ -665,6 +670,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
         run: cd cli && make build
@@ -697,6 +703,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
         run: cd cli && make build
@@ -737,6 +744,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
         run: cd cli && go build -o /tmp/ao-test ./cmd/ao
