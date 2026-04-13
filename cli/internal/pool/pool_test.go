@@ -621,115 +621,142 @@ func TestValidateCandidateID(t *testing.T) {
 }
 
 func TestGetChain(t *testing.T) {
-	t.Run("no chain file returns empty", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		p := NewPool(tmpDir)
-		if err := p.Init(); err != nil {
-			t.Fatalf("Init failed: %v", err)
-		}
+	t.Run("no chain file returns empty", assertGetChainNoChainFile)
+	t.Run("chain records add and stage events", assertGetChainRecordsAddAndStageEvents)
+	t.Run("chain records reject event", assertGetChainRecordsRejectEvent)
+	t.Run("chain handles malformed lines", assertGetChainHandlesMalformedLines)
+}
 
-		events, err := p.GetChain()
-		if err != nil {
-			t.Fatalf("GetChain failed: %v", err)
-		}
-		if len(events) != 0 {
-			t.Errorf("expected 0 events, got %d", len(events))
-		}
+func assertGetChainNoChainFile(t *testing.T) {
+	t.Helper()
+	p := newInitializedChainTestPool(t)
+
+	events := mustGetChain(t, p)
+	if len(events) != 0 {
+		t.Errorf("expected 0 events, got %d", len(events))
+	}
+}
+
+func assertGetChainRecordsAddAndStageEvents(t *testing.T) {
+	t.Helper()
+	p := newChainTestPool(t)
+
+	mustAddChainCandidate(t, p, types.Candidate{
+		ID:      "chain-test",
+		Tier:    types.TierSilver,
+		Content: "Chain test content",
 	})
+	if err := p.Stage("chain-test", types.TierBronze); err != nil {
+		t.Fatalf("Stage failed: %v", err)
+	}
 
-	t.Run("chain records add and stage events", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		p := NewPool(tmpDir)
+	events := mustGetChain(t, p)
+	assertChainOperations(t, events, []string{"add", "stage"})
+}
 
-		candidate := types.Candidate{
-			ID:      "chain-test",
-			Tier:    types.TierSilver,
-			Content: "Chain test content",
-		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
-			t.Fatalf("Add failed: %v", err)
-		}
-		if err := p.Stage("chain-test", types.TierBronze); err != nil {
-			t.Fatalf("Stage failed: %v", err)
-		}
+func assertGetChainRecordsRejectEvent(t *testing.T) {
+	t.Helper()
+	p := newChainTestPool(t)
 
-		events, err := p.GetChain()
-		if err != nil {
-			t.Fatalf("GetChain failed: %v", err)
-		}
-		if len(events) < 2 {
-			t.Fatalf("expected at least 2 events, got %d", len(events))
-		}
-		if events[0].Operation != "add" {
-			t.Errorf("expected first event operation 'add', got %q", events[0].Operation)
-		}
-		if events[1].Operation != "stage" {
-			t.Errorf("expected second event operation 'stage', got %q", events[1].Operation)
-		}
+	mustAddChainCandidate(t, p, types.Candidate{
+		ID:      "chain-reject",
+		Tier:    types.TierBronze,
+		Content: "Chain reject content",
 	})
+	if err := p.Reject("chain-reject", "bad", "reviewer"); err != nil {
+		t.Fatalf("Reject failed: %v", err)
+	}
 
-	t.Run("chain records reject event", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		p := NewPool(tmpDir)
+	events := mustGetChain(t, p)
+	assertRejectChainEvent(t, events, "chain-reject", "bad", "reviewer")
+}
 
-		candidate := types.Candidate{
-			ID:      "chain-reject",
-			Tier:    types.TierBronze,
-			Content: "Chain reject content",
-		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
-			t.Fatalf("Add failed: %v", err)
-		}
-		if err := p.Reject("chain-reject", "bad", "reviewer"); err != nil {
-			t.Fatalf("Reject failed: %v", err)
-		}
+func assertGetChainHandlesMalformedLines(t *testing.T) {
+	t.Helper()
+	p := newInitializedChainTestPool(t)
+	writeMalformedChainFixture(t, p)
 
-		events, err := p.GetChain()
-		if err != nil {
-			t.Fatalf("GetChain failed: %v", err)
-		}
+	events := mustGetChain(t, p)
+	if len(events) != 1 {
+		t.Errorf("expected 1 valid event (skipping malformed), got %d", len(events))
+	}
+}
 
-		found := false
-		for _, e := range events {
-			if e.Operation == "reject" && e.CandidateID == "chain-reject" {
-				found = true
-				if e.Reason != "bad" {
-					t.Errorf("expected reason 'bad', got %q", e.Reason)
-				}
-				if e.Reviewer != "reviewer" {
-					t.Errorf("expected reviewer 'reviewer', got %q", e.Reviewer)
-				}
-			}
-		}
-		if !found {
-			t.Error("reject event not found in chain")
-		}
-	})
+func newChainTestPool(t *testing.T) *Pool {
+	t.Helper()
+	return NewPool(t.TempDir())
+}
 
-	t.Run("chain handles malformed lines", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		p := NewPool(tmpDir)
-		if err := p.Init(); err != nil {
-			t.Fatalf("Init failed: %v", err)
-		}
+func newInitializedChainTestPool(t *testing.T) *Pool {
+	t.Helper()
+	p := newChainTestPool(t)
+	if err := p.Init(); err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+	return p
+}
 
-		// Write a chain file with one good and one bad line
-		chainPath := filepath.Join(p.PoolPath, ChainFile)
-		good := ChainEvent{Operation: "add", CandidateID: "test-1"}
-		goodJSON, _ := json.Marshal(good)
-		content := string(goodJSON) + "\n{bad json\n"
-		if err := os.WriteFile(chainPath, []byte(content), 0600); err != nil {
-			t.Fatalf("WriteFile failed: %v", err)
-		}
+func mustAddChainCandidate(t *testing.T, p *Pool, candidate types.Candidate) {
+	t.Helper()
+	if err := p.Add(candidate, types.Scoring{}); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+}
 
-		events, err := p.GetChain()
-		if err != nil {
-			t.Fatalf("GetChain failed: %v", err)
+func mustGetChain(t *testing.T, p *Pool) []ChainEvent {
+	t.Helper()
+	events, err := p.GetChain()
+	if err != nil {
+		t.Fatalf("GetChain failed: %v", err)
+	}
+	return events
+}
+
+func assertChainOperations(t *testing.T, events []ChainEvent, want []string) {
+	t.Helper()
+	if len(events) < len(want) {
+		t.Fatalf("expected at least %d events, got %d", len(want), len(events))
+	}
+	for i, wantOperation := range want {
+		if events[i].Operation != wantOperation {
+			t.Errorf("expected event %d operation %q, got %q", i, wantOperation, events[i].Operation)
 		}
-		if len(events) != 1 {
-			t.Errorf("expected 1 valid event (skipping malformed), got %d", len(events))
+	}
+}
+
+func assertRejectChainEvent(t *testing.T, events []ChainEvent, candidateID, reason, reviewer string) {
+	t.Helper()
+	event, found := findChainEvent(events, "reject", candidateID)
+	if !found {
+		t.Error("reject event not found in chain")
+		return
+	}
+	if event.Reason != reason {
+		t.Errorf("expected reason %q, got %q", reason, event.Reason)
+	}
+	if event.Reviewer != reviewer {
+		t.Errorf("expected reviewer %q, got %q", reviewer, event.Reviewer)
+	}
+}
+
+func findChainEvent(events []ChainEvent, operation, candidateID string) (ChainEvent, bool) {
+	for _, event := range events {
+		if event.Operation == operation && event.CandidateID == candidateID {
+			return event, true
 		}
-	})
+	}
+	return ChainEvent{}, false
+}
+
+func writeMalformedChainFixture(t *testing.T, p *Pool) {
+	t.Helper()
+	chainPath := filepath.Join(p.PoolPath, ChainFile)
+	good := ChainEvent{Operation: "add", CandidateID: "test-1"}
+	goodJSON, _ := json.Marshal(good)
+	content := string(goodJSON) + "\n{bad json\n"
+	if err := os.WriteFile(chainPath, []byte(content), 0600); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
 }
 
 func TestPoolAddInvalidID(t *testing.T) {
