@@ -303,6 +303,78 @@ func TestCheckpoint_HandlesMissingOptionalSubpath(t *testing.T) {
 	}
 }
 
+func TestCopyFile_UsesCloneStrategy(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src.txt")
+	dst := filepath.Join(dir, "dst.txt")
+	mustWrite(t, src, "byte-copy input")
+
+	previous := checkpointCloneFile
+	t.Cleanup(func() { checkpointCloneFile = previous })
+
+	called := false
+	checkpointCloneFile = func(gotSrc, gotDst string, mode os.FileMode) (int64, bool, error) {
+		called = true
+		if gotSrc != src {
+			t.Fatalf("clone src = %q, want %q", gotSrc, src)
+		}
+		if gotDst != dst {
+			t.Fatalf("clone dst = %q, want %q", gotDst, dst)
+		}
+		if mode.Perm() != 0o600 {
+			t.Fatalf("clone mode = %v, want 0600", mode.Perm())
+		}
+		if err := os.WriteFile(gotDst, []byte("clone fast path"), mode.Perm()); err != nil {
+			return 0, true, err
+		}
+		return int64(len("clone fast path")), true, nil
+	}
+
+	n, err := copyFile(src, dst, 0o600)
+	if err != nil {
+		t.Fatalf("copyFile: %v", err)
+	}
+	if !called {
+		t.Fatal("expected clone strategy to be called")
+	}
+	if n != int64(len("clone fast path")) {
+		t.Fatalf("copyFile bytes = %d, want %d", n, len("clone fast path"))
+	}
+	if got := mustRead(t, dst); got != "clone fast path" {
+		t.Fatalf("dst content = %q", got)
+	}
+}
+
+func TestCopyFile_FallsBackWhenCloneUnavailable(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src.txt")
+	dst := filepath.Join(dir, "dst.txt")
+	mustWrite(t, src, "portable fallback")
+
+	previous := checkpointCloneFile
+	t.Cleanup(func() { checkpointCloneFile = previous })
+
+	calls := 0
+	checkpointCloneFile = func(string, string, os.FileMode) (int64, bool, error) {
+		calls++
+		return 0, false, nil
+	}
+
+	n, err := copyFile(src, dst, 0o640)
+	if err != nil {
+		t.Fatalf("copyFile: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("clone strategy calls = %d, want 1", calls)
+	}
+	if n != int64(len("portable fallback")) {
+		t.Fatalf("copyFile bytes = %d, want %d", n, len("portable fallback"))
+	}
+	if got := mustRead(t, dst); got != "portable fallback" {
+		t.Fatalf("dst content = %q", got)
+	}
+}
+
 func equalSnapshots(a, b map[string]string) bool {
 	if len(a) != len(b) {
 		return false

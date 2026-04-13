@@ -150,9 +150,6 @@ type StrippedField struct {
 // leaves disk pressure behind. Missing optional subpaths are tolerated:
 // if .agents/findings/ doesn't exist, the checkpoint still succeeds and
 // the staging tree simply won't contain a findings subtree.
-//
-// TODO(pm-FEAS-05): macOS can hard-link subtrees with clonefile(2) for
-// near-free snapshots. First slice uses a portable filepath.Walk copy.
 func NewCheckpoint(cwd, iterationID string, maxBytes int64) (*Checkpoint, error) {
 	if cwd == "" {
 		return nil, errors.New("overnight: NewCheckpoint requires a non-empty cwd")
@@ -493,8 +490,19 @@ func copyPath(src, dst string, srcInfo os.FileInfo, budget int64) (int64, error)
 	return total, err
 }
 
+type checkpointCloneFileFunc func(src, dst string, mode os.FileMode) (bytesWritten int64, cloned bool, err error)
+
+var checkpointCloneFile checkpointCloneFileFunc = cloneFileForCheckpoint
+
 // copyFile copies a single file, preserving mode. Returns bytes written.
 func copyFile(src, dst string, mode os.FileMode) (int64, error) {
+	if n, cloned, err := checkpointCloneFile(src, dst, mode); cloned || err != nil {
+		return n, err
+	}
+	return copyFileBytes(src, dst, mode)
+}
+
+func copyFileBytes(src, dst string, mode os.FileMode) (int64, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return 0, err
