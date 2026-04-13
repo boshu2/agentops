@@ -238,18 +238,18 @@ func TestVerifyFileCitation_StripsLineSuffix(t *testing.T) {
 
 func TestIsClosedStatus_RecognisesCommonSpellings(t *testing.T) {
 	cases := map[string]bool{
-		"CLOSED":            true,
-		"closed":            true,
-		"DONE":              true,
-		"RESOLVED":          true,
-		" closed  ":         true,
-		"● P2 · CLOSED":     true, // real bd status field shape
-		"CLOSED P1 task":    true, // substring match at start
-		"resolved in 2026":  true, // substring anywhere
-		"OPEN":              false,
-		"in-progress":       false,
-		"":                  false,
-		"disclosed secret":  true, // known false positive; substring match is the trade-off
+		"CLOSED":           true,
+		"closed":           true,
+		"DONE":             true,
+		"RESOLVED":         true,
+		" closed  ":        true,
+		"● P2 · CLOSED":    true, // real bd status field shape
+		"CLOSED P1 task":   true, // substring match at start
+		"resolved in 2026": true, // substring anywhere
+		"OPEN":             false,
+		"in-progress":      false,
+		"":                 false,
+		"disclosed secret": true, // known false positive; substring match is the trade-off
 	}
 	for in, want := range cases {
 		if got := isClosedStatus(in); got != want {
@@ -302,6 +302,127 @@ func TestVerifyBead_DegradesWhenBDAbsent(t *testing.T) {
 	}
 	if report.StaleCount != 0 {
 		t.Fatalf("StaleCount should be 0 when bd absent, got %d", report.StaleCount)
+	}
+}
+
+func TestAuditBeads_DegradesWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	report, err := auditBeads(false)
+	if err != nil {
+		t.Fatalf("auditBeads should not error when bd absent: %v", err)
+	}
+	if report.BDAvailable {
+		t.Fatalf("BDAvailable should be false")
+	}
+	if report.Error == "" {
+		t.Fatalf("expected missing-bd error message")
+	}
+}
+
+func TestAuditBeads_ClassifiesStaleAndConsolidatable(t *testing.T) {
+	origBD, origAvail := execBD, bdAvailable
+	origGit, origPattern := execGitLog, repoPatternExists
+	defer func() {
+		execBD, bdAvailable = origBD, origAvail
+		execGitLog, repoPatternExists = origGit, origPattern
+	}()
+
+	bdAvailable = func() bool { return true }
+	execBD = func(args ...string) ([]byte, error) {
+		if len(args) >= 4 && args[0] == "list" && args[3] == "--json" {
+			switch args[2] {
+			case "open":
+				return []byte(`[
+{"id":"na-audit1","title":"Audit docs","description":"Update skills/swarm/SKILL.md and ` + "`MissingSymbolOne`" + `","created_at":"2026-04-01T00:00:00Z"},
+{"id":"na-audit2","title":"Audit runtime","description":"Update skills/swarm/SKILL.md and ` + "`MissingSymbolTwo`" + `","created_at":"2026-04-01T00:00:00Z"}
+]`), nil
+			case "in_progress":
+				return []byte(`[]`), nil
+			}
+		}
+		return []byte(`[]`), nil
+	}
+	execGitLog = func(args ...string) (string, error) {
+		return "", nil
+	}
+	repoPatternExists = func(pattern string) bool {
+		return false
+	}
+
+	report, err := auditBeads(false)
+	if err != nil {
+		t.Fatalf("auditBeads: %v", err)
+	}
+	if report.Summary.Total != 2 {
+		t.Fatalf("Total = %d, want 2", report.Summary.Total)
+	}
+	if report.Summary.LikelyStale != 2 {
+		t.Fatalf("LikelyStale = %d, want 2", report.Summary.LikelyStale)
+	}
+	if report.Summary.Consolidatable != 2 {
+		t.Fatalf("Consolidatable = %d, want 2", report.Summary.Consolidatable)
+	}
+	if len(report.Consolidatable) != 1 || report.Consolidatable[0].File != "skills/swarm/SKILL.md" {
+		t.Fatalf("unexpected consolidation report: %+v", report.Consolidatable)
+	}
+}
+
+func TestClusterBeads_DegradesWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	report, err := clusterBeads(false)
+	if err != nil {
+		t.Fatalf("clusterBeads should not error when bd absent: %v", err)
+	}
+	if report.BDAvailable {
+		t.Fatalf("BDAvailable should be false")
+	}
+	if report.Error == "" {
+		t.Fatalf("expected missing-bd error message")
+	}
+}
+
+func TestClusterBeadRecords_GroupsSharedPathAndPrefersEpic(t *testing.T) {
+	records := []beadRecord{
+		{
+			ID:          "na-epic",
+			Title:       "Swarm cluster epic",
+			Description: "Update skills/swarm/SKILL.md",
+			IssueType:   "epic",
+			Labels:      []string{"skill:swarm"},
+		},
+		{
+			ID:          "na-task",
+			Title:       "Swarm cluster task",
+			Description: "Update skills/swarm/SKILL.md",
+			IssueType:   "task",
+			Labels:      []string{"skill:swarm"},
+		},
+		{
+			ID:          "na-other",
+			Title:       "Release note cleanup",
+			Description: "Update docs/CHANGELOG.md",
+			IssueType:   "task",
+		},
+	}
+
+	clusters, unclustered := clusterBeadRecords(records)
+	if len(clusters) != 1 {
+		t.Fatalf("clusters = %+v, want exactly one", clusters)
+	}
+	if clusters[0].Representative != "na-epic" {
+		t.Fatalf("Representative = %q, want na-epic", clusters[0].Representative)
+	}
+	if len(clusters[0].Beads) != 2 {
+		t.Fatalf("cluster bead count = %d, want 2", len(clusters[0].Beads))
+	}
+	if len(unclustered) != 1 || unclustered[0].ID != "na-other" {
+		t.Fatalf("unclustered = %+v, want na-other", unclustered)
 	}
 }
 

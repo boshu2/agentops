@@ -7,6 +7,8 @@
 //
 // Subcommands:
 //
+//	ao beads audit           — backlog hygiene audit for open/in-progress beads
+//	ao beads cluster         — consolidation suggestions for overlapping open beads
 //	ao beads verify <id>     — stale-citation detector for a single bead
 //	ao beads lint            — batch-verify every open bead
 //	ao beads harvest <id>    — materialize a closed bead's reason into a learning

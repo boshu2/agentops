@@ -2021,6 +2021,39 @@ ao beads [command]
 
 **Subcommands:**
 
+#### `ao beads audit`
+
+Audits open and in-progress beads for backlog hygiene issues.
+
+```
+ao beads audit [flags]
+```
+
+**Flags:**
+
+```
+      --auto-close   Close likely-fixed beads when commit or file-change evidence is found
+  -h, --help         help for audit
+      --json         Emit audit report as JSON
+      --strict       Exit 1 when any likely-fixed, likely-stale, or consolidatable bead is found
+```
+
+#### `ao beads cluster`
+
+Analyzes open beads for domain overlap and suggests consolidation groups.
+
+```
+ao beads cluster [flags]
+```
+
+**Flags:**
+
+```
+      --apply   Reparent non-representative beads under the cluster representative
+  -h, --help    help for cluster
+      --json    Emit cluster report as JSON
+```
+
 #### `ao beads harvest`
 
 Reads a closed bead via 'bd show <id>' and writes its closure reason
