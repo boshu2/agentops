@@ -38,6 +38,20 @@ fi
 
 echo "==> Retag release: $TAG"
 
+verify_annotated_tag() {
+  local tag="$1"
+  local context="$2"
+  local tag_type
+
+  tag_type="$(git cat-file -t "refs/tags/$tag" 2>/dev/null || true)"
+  if [[ "$tag_type" != "tag" ]]; then
+    echo "ERROR: $context left $tag as ${tag_type:-missing}; expected annotated tag object."
+    exit 1
+  fi
+
+  echo "==> Verified annotated tag object for $tag ($context)"
+}
+
 # Clean working tree
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "ERROR: Working tree is not clean. Commit or stash changes first."
@@ -51,28 +65,38 @@ if ! git rev-parse "$TAG" >/dev/null 2>&1; then
 fi
 
 # Idempotency guard: if the tag already points at HEAD, skip
+TAG_TYPE=$(git cat-file -t "refs/tags/$TAG")
 TAG_SHA=$(git rev-parse "$TAG^{commit}" 2>/dev/null)
 HEAD_SHA_CHECK=$(git rev-parse HEAD 2>/dev/null)
-if [[ "$TAG_SHA" == "$HEAD_SHA_CHECK" ]]; then
+if [[ "$TAG_SHA" == "$HEAD_SHA_CHECK" && "$TAG_TYPE" == "tag" ]]; then
+  verify_annotated_tag "$TAG" "idempotency check"
   echo "Tag $TAG already points at HEAD ($HEAD_SHA_CHECK) — nothing to retag."
   exit 0
 fi
 
-# There must be commits after the tag
-COMMITS_AFTER=$(git log --oneline "$TAG..HEAD" | wc -l | tr -d ' ')
-if [[ "$COMMITS_AFTER" == "0" ]]; then
-  echo "ERROR: No commits after $TAG — nothing to retag."
-  exit 1
-fi
+if [[ "$TAG_SHA" == "$HEAD_SHA_CHECK" ]]; then
+  echo "Tag $TAG points at HEAD but is a $TAG_TYPE object; recreating annotated tag."
+else
+  # There must be commits after the tag
+  COMMITS_AFTER=$(git log --oneline "$TAG..HEAD" | wc -l | tr -d ' ')
+  if [[ "$COMMITS_AFTER" == "0" ]]; then
+    echo "ERROR: No commits after $TAG — nothing to retag."
+    exit 1
+  fi
 
-echo "  $COMMITS_AFTER commit(s) after $TAG will be included."
+  echo "  $COMMITS_AFTER commit(s) after $TAG will be included."
+fi
 
 # --- Move tag ---
 
 OLD_SHA=$(git rev-parse --short "$TAG^{commit}")
-TAG_TYPE=$(git cat-file -t "$TAG")
-TAG_MESSAGE="$(git tag -l "$TAG" --format='%(contents)')"
-TAGGER_DATE="$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/$TAG")"
+if [[ "$TAG_TYPE" == "tag" ]]; then
+  TAG_MESSAGE="$(git tag -l "$TAG" --format='%(contents)')"
+  TAGGER_DATE="$(git for-each-ref --format='%(taggerdate:iso-strict)' "refs/tags/$TAG")"
+else
+  TAG_MESSAGE="Release $TAG"
+  TAGGER_DATE=""
+fi
 
 if [[ -z "$TAG_MESSAGE" ]]; then
   TAG_MESSAGE="Release $TAG"
@@ -83,6 +107,7 @@ if [[ "$TAG_TYPE" == "tag" && -n "$TAGGER_DATE" ]]; then
 else
   git tag -a -f "$TAG" -F - HEAD <<<"$TAG_MESSAGE"
 fi
+verify_annotated_tag "$TAG" "retag"
 
 NEW_SHA=$(git rev-parse --short "$TAG^{commit}")
 echo "==> Tag moved: $OLD_SHA -> $NEW_SHA (annotated)"

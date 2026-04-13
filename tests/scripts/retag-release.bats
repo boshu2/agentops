@@ -85,6 +85,7 @@ teardown() {
         bash -c "cd '$WORK_REPO' && bash scripts/retag-release.sh v1.0.0 owner/repo"
     [ "$status" -eq 0 ]
     [[ "$output" == *"Release workflow succeeded."* ]]
+    [[ "$output" == *"Verified annotated tag object for v1.0.0 (retag)"* ]]
 
     run git -C "$WORK_REPO" cat-file -t v1.0.0
     [ "$status" -eq 0 ]
@@ -107,4 +108,33 @@ teardown() {
 
     run grep -F "workflow run" "$GH_LOG"
     [ "$status" -eq 1 ]
+}
+
+@test "retag-release recreates a lightweight tag at HEAD as annotated" {
+    git -C "$WORK_REPO" tag -f v1.0.0 HEAD >/dev/null 2>&1
+
+    run env PATH="$STUB_BIN:$PATH" GH_LOG="$GH_LOG" \
+        bash -c "cd '$WORK_REPO' && bash scripts/retag-release.sh v1.0.0 owner/repo"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"points at HEAD but is a commit object; recreating annotated tag."* ]]
+    [[ "$output" == *"Verified annotated tag object for v1.0.0 (retag)"* ]]
+
+    run git -C "$WORK_REPO" cat-file -t refs/tags/v1.0.0
+    [ "$status" -eq 0 ]
+    [ "$output" = "tag" ]
+
+    run git -C "$WORK_REPO" rev-parse v1.0.0^{}
+    [ "$status" -eq 0 ]
+    tagged_commit="$output"
+    run git -C "$WORK_REPO" rev-parse HEAD
+    [ "$status" -eq 0 ]
+    [ "$tagged_commit" = "$output" ]
+
+    run git -C "$WORK_REPO" tag -l v1.0.0 --format='%(contents)'
+    [ "$status" -eq 0 ]
+    [ "$output" = "Release v1.0.0" ]
+
+    run git --git-dir="$REMOTE_REPO" cat-file -t refs/tags/v1.0.0
+    [ "$status" -eq 0 ]
+    [ "$output" = "tag" ]
 }
