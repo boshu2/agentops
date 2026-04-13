@@ -2342,6 +2342,7 @@ ao forge transcript <path-or-glob> [flags]
   -h, --help                  help for transcript
       --last-session          Process only the most recent transcript
       --llm-endpoint string   Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --max-chars int         Per-chunk character budget for --tier=1 local LLM mode (default: conservative built-in budget)
       --model string          LLM model tag for --tier=1 (e.g. gemma2:9b)
       --queue                 Queue session for learning extraction at next session start
       --quiet                 Suppress all output (for hooks)

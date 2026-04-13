@@ -25,14 +25,15 @@ import (
 )
 
 var (
-	forgeLastSession bool
-	forgeQuiet       bool
-	forgeQueue       bool
-	forgeMdQuiet     bool
-	forgeMdQueue     bool
-	forgeTier        int
-	forgeTier1Model  string
-	forgeLLMEndpoint string
+	forgeLastSession   bool
+	forgeQuiet         bool
+	forgeQueue         bool
+	forgeMdQuiet       bool
+	forgeMdQueue       bool
+	forgeTier          int
+	forgeTier1Model    string
+	forgeLLMEndpoint   string
+	forgeTier1MaxChars int
 )
 
 const (
@@ -161,6 +162,7 @@ func init() {
 	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 transcript processing: enqueue to configured Dream worker, otherwise use local LLM with --model")
 	forgeTranscriptCmd.Flags().StringVar(&forgeTier1Model, "model", "", "LLM model tag for --tier=1 (e.g. gemma2:9b)")
 	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
+	forgeTranscriptCmd.Flags().IntVar(&forgeTier1MaxChars, "max-chars", 0, "Per-chunk character budget for --tier=1 local LLM mode (default: conservative built-in budget)")
 
 	// Markdown flags
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQuiet, "quiet", false, "Suppress all output (for hooks)")
@@ -1014,6 +1016,7 @@ func runForgeTier1(w io.Writer, files []string) error {
 		OutputDir:   outDir,
 		Model:       forgeTier1Model,
 		Endpoint:    forgeLLMEndpoint,
+		MaxChars:    forgeTier1MaxChars,
 		Quiet:       forgeQuiet,
 		Writer:      w,
 		Workspace:   cwd,
