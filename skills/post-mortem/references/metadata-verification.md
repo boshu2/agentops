@@ -8,7 +8,7 @@ METADATA_FAILURES=""
 # 1. Plan vs actual file list — did we deliver what we said we would?
 if [ -n "$PLAN_DOC" ] && [ -f "$PLAN_DOC" ]; then
   # Extract file paths mentioned in plan
-  for planned_file in $(grep -oP '`([^`]+\.(go|py|ts|js|md|yaml|yml|sh))`' "$PLAN_DOC" 2>/dev/null | tr -d '`' | sort -u); do
+  for planned_file in $(grep -oE '`[^`]+\.(go|py|ts|js|md|yaml|yml|sh)`' "$PLAN_DOC" 2>/dev/null | tr -d '`' | sort -u); do
     if [ ! -f "$planned_file" ]; then
       METADATA_FAILURES="${METADATA_FAILURES}\n- PLANNED BUT MISSING: $planned_file (in plan but not on disk)"
     fi
@@ -30,14 +30,49 @@ for f in $(git diff --name-only HEAD~10 2>/dev/null | sort -u); do
 done
 
 # 4. Cross-references in delivered docs
+declare -A METADATA_LINK_ALLOWLIST=()
+if [ -f tests/docs/broken-links-allowlist.txt ]; then
+  while IFS= read -r allowlisted_link; do
+    [[ -z "$allowlisted_link" || "$allowlisted_link" == \#* ]] && continue
+    METADATA_LINK_ALLOWLIST["$allowlisted_link"]=1
+  done < tests/docs/broken-links-allowlist.txt
+fi
+
+is_illustrative_metadata_path() {
+  local ref_path="$1"
+  case "$ref_path" in
+    url|./path/to/*|../path/to/*|*/path/to/*|/Users/me/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 for f in $(git diff --name-only HEAD~10 2>/dev/null | grep -E '\.(md|txt)$'); do
   if [ -f "$f" ]; then
-    for ref in $(grep -oP '\[.*?\]\(((?!http)[^)]+)\)' "$f" 2>/dev/null | grep -oP '\(([^)]+)\)' | tr -d '()'); do
+    while IFS= read -r ref; do
+      [[ -z "$ref" ]] && continue
+      [[ "$ref" == http://* || "$ref" == https://* ]] && continue
+      [[ "$ref" == mailto:* ]] && continue
+      [[ "$ref" == \#* ]] && continue
+
+      ref="${ref%%#*}"
+      ref="${ref%% *}"
+      [[ -z "$ref" ]] && continue
+      is_illustrative_metadata_path "$ref" && continue
+
       ref_dir=$(dirname "$f")
+      allowlist_key="${f}:${ref}"
+      [[ -n "${METADATA_LINK_ALLOWLIST[$allowlist_key]+x}" ]] && continue
+
       if [ ! -f "$ref_dir/$ref" ] && [ ! -f "$ref" ]; then
         METADATA_FAILURES="${METADATA_FAILURES}\n- BROKEN LINK: $f references $ref (not found)"
       fi
-    done
+    done < <(
+      grep -oE '\]\([^)]+\)' "$f" 2>/dev/null |
+        cut -c3- |
+        sed 's/)$//'
+    )
   fi
 done
 
