@@ -12,8 +12,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/overnight/fixture"
 )
 
 // ==========================================================================
@@ -257,9 +255,7 @@ func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 			}
 
 			dir := t.TempDir()
-			if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-				t.Fatalf("GenerateFixture: %v", err)
-			}
+			generateStateMachineFixture(t, dir)
 
 			agentsDir := filepath.Join(dir, ".agents")
 			runID := "hash-invariant-" + sanitizeRunID(tc.name)

@@ -10,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/overnight/fixture"
 )
 
 // ==========================================================================
@@ -84,9 +82,7 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	runID := "na-cdn-failed-summary"
 	outputDir := filepath.Join(dir, ".agents", "overnight", runID)
@@ -222,9 +218,7 @@ func TestDreamFailedSummary_DegradedNotesPreserved(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	runID := "na-cdn-degraded-preserved"
 	outputDir := filepath.Join(dir, ".agents", "overnight", runID)

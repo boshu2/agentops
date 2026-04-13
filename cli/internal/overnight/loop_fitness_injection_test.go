@@ -13,6 +13,22 @@ import (
 	"github.com/boshu2/agentops/cli/internal/overnight/fixture"
 )
 
+// generateStateMachineFixture creates a small non-empty .agents corpus for
+// RunLoop state-machine tests whose fitness path is injected. The dedicated
+// L2 cliff tests in overnight_e2e_test.go keep fixture.DefaultOpts() to retain
+// the 150-learning coverage required by pm-015.
+func generateStateMachineFixture(t *testing.T, dir string) {
+	t.Helper()
+	opts := fixture.DefaultOpts()
+	opts.LearningCount = 12
+	opts.FindingCount = 4
+	opts.PatternCount = 1
+	opts.KnowledgeCount = 1
+	if err := fixture.GenerateFixture(dir, opts); err != nil {
+		t.Fatalf("GenerateFixture: %v", err)
+	}
+}
+
 // Micro-epic 6 (C5) — deterministic RunLoop L2 tests.
 //
 // These tests exercise the full INGEST → REDUCE → COMMIT → MEASURE pipeline
@@ -75,9 +91,7 @@ func TestRunLoop_PlateauHaltStrict(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:            dir,
@@ -126,9 +140,7 @@ func TestRunLoop_RegressionHaltStrict(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:             dir,
@@ -182,9 +194,7 @@ func TestRunLoop_RegressionIgnoredWarnOnly(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:             dir,
@@ -286,9 +296,7 @@ func TestRunLoop_WarnOnlyBudgetExhausted(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	const initialBudget = 2
 	opts := RunLoopOptions{
@@ -406,9 +414,7 @@ func TestM8_StrictRegression_HaltsPreCommit(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:             dir,
@@ -465,9 +471,7 @@ func TestM8_StagingDiscardedOnPreCommitHalt(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	runID := "m8-staging-discarded"
 	opts := RunLoopOptions{
@@ -515,9 +519,7 @@ func TestM8_HappyPath_CommitsNormally(t *testing.T) {
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:            dir,

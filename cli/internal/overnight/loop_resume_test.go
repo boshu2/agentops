@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/overnight/fixture"
 )
 
 // TestRunLoop_CrashAtIter2_ResumeRehydrates exercises the Micro-epic 2
@@ -28,18 +26,16 @@ import (
 //     result.Iterations contains all 5 iterations in ascending index
 //     order with RunID-prefixed IDs.
 //
-// The fixture is the shared GenerateFixture(DefaultOpts()) used by the
-// existing L2 test. HOME is isolated so harvest.Promote does not touch
-// the real hub.
+// The fixture is a small non-empty state-machine corpus. The 150-learning
+// L2 fixture remains covered by TestRunLoop_L2_FullIteration_CorpusQualityMoves.
+// HOME is isolated so harvest.Promote does not touch the real hub.
 func TestRunLoop_CrashAtIter2_ResumeRehydrates(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	restore := stubInjectRefresh(t)
 	defer restore()
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	outputDir := filepath.Join(dir, ".agents", "overnight", "crash-test")
 	runID := "test-run-crash-1"
@@ -119,9 +115,7 @@ func TestRunLoop_IterationID_UsesRunIDPrefix(t *testing.T) {
 	defer restore()
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	opts := RunLoopOptions{
 		Cwd:            dir,
@@ -196,9 +190,7 @@ func TestRunLoop_PostCommitHalt_RehydratesAsBaseline(t *testing.T) {
 	defer restore()
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	outputDir := filepath.Join(dir, ".agents", "overnight", "postcommit-halt")
 	runID := "test-run-postcommit"
@@ -346,9 +338,7 @@ func TestRunLoop_LiveTreeHashInvariant(t *testing.T) {
 	defer restore()
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	agentsDir := filepath.Join(dir, ".agents")
 	hashBefore, err := agentsHash(agentsDir)
@@ -456,9 +446,7 @@ func TestRunLoop_RehydrationSkipsPreCommitRollback(t *testing.T) {
 	defer restore()
 
 	dir := t.TempDir()
-	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
-		t.Fatalf("GenerateFixture: %v", err)
-	}
+	generateStateMachineFixture(t, dir)
 
 	outputDir := filepath.Join(dir, ".agents", "overnight", "precommit-skip")
 	runID := "test-run-precommit-skip"
