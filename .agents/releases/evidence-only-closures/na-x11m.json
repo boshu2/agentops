@@ -1,0 +1,43 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-x11m",
+  "target_id": "na-x11m",
+  "target_type": "task",
+  "created_at": "2026-04-13T12:23:57Z",
+  "producer": "evolve",
+  "evidence_mode": "worktree",
+  "validation_commands": [
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/bd-audit.sh --json",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-manifests.sh --repo-root .",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-next-work-contract-parity.sh",
+    "jq empty .agents/rpi/next-work.jsonl .agents/releases/evidence-only-closures/na-x11m.json",
+    "markdownlint .agents/research/2026-04-13-crank-bd-audit-preflight-verification.md"
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": true,
+    "head_sha": "bf07f2ae6e01958f26a9a271a190cff1b9097e1c",
+    "modified_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "staged_files": [],
+    "unstaged_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Crank bd-audit pre-flight next-work item was already satisfied; consumed stale queue item with source and live audit proof.",
+    "artifacts": [
+      ".agents/releases/evidence-only-closures/na-x11m.json",
+      ".agents/research/2026-04-13-crank-bd-audit-preflight-verification.md",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "notes": [
+      "skills-codex/crank/SKILL.md Step 3a mirrors the pre-flight audit for Codex runtime.",
+      "skills/crank/SKILL.md Step 3a.2 already defines the bd-audit WARNING gate before wave execution."
+    ]
+  }
+}
