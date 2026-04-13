@@ -1,0 +1,44 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-0vyc",
+  "target_id": "na-0vyc",
+  "target_type": "issue",
+  "created_at": "2026-04-13T16:44:21Z",
+  "producer": "rpi",
+  "evidence_mode": "worktree",
+  "validation_commands": [
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/check-retrieval-quality-ratchet.sh",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-manifests.sh --repo-root .",
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-next-work-contract-parity.sh"
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": true,
+    "head_sha": "e680f596475d3b188a4d0f99446187d3f2cb1a4e",
+    "modified_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "staged_files": [],
+    "unstaged_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Verified the Option D turn-level writer condition is unmet: retrieval ratchet and CI retrieval-quality pass, live-local overnight bench has full coverage, and the D-MIN decision defers W1 code until measurement proves inadequacy. Consumed the conditional next-work item without runtime changes.",
+    "artifacts": [
+      ".agents/council/2026-04-11-phase2-decision-inline.md",
+      ".agents/overnight/latest/retrieval-bench.json",
+      ".agents/releases/evidence-only-closures/na-0vyc.json",
+      ".agents/research/2026-04-13-option-d-conditional-turn-writer-normalization.md",
+      ".agents/rpi/baseline-precision.json",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "notes": [
+      "Do not build the parked turn-level writer until a retrieval measurement fails or identifies a specific inadequacy.",
+      "The referenced tool-noise spec is preserved WIP, not present on current main."
+    ]
+  }
+}
