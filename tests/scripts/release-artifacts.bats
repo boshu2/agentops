@@ -3,12 +3,27 @@
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SCRIPT="$REPO_ROOT/scripts/resolve-release-artifacts.sh"
+    AUDIT_SCRIPT="$REPO_ROOT/scripts/validate-release-audit-artifacts.sh"
 
     TMP_DIR="$(mktemp -d)"
     FAKE_REPO="$TMP_DIR/repo"
     mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/.agents/releases/local-ci"
     cp "$SCRIPT" "$FAKE_REPO/scripts/resolve-release-artifacts.sh"
+    cp "$AUDIT_SCRIPT" "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
     chmod +x "$FAKE_REPO/scripts/resolve-release-artifacts.sh"
+    chmod +x "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+}
+
+write_audit() {
+    local version="$1"
+    local run_id="$2"
+    local dir="$FAKE_REPO/docs/releases"
+    mkdir -p "$dir"
+    cat > "$dir/2026-03-22-v${version}-audit.md" <<EOF
+# Release v${version} - Audit
+
+**Local CI Artifacts:** \`.agents/releases/local-ci/$run_id/\`
+EOF
 }
 
 teardown() {
@@ -77,4 +92,34 @@ write_artifact_files() {
     run "$FAKE_REPO/scripts/resolve-release-artifacts.sh" "2.29.0"
     [ "$status" -eq 1 ]
     [[ "$output" == *"no full local CI artifacts found for release version 2.29.0"* ]]
+}
+
+@test "validate-release-audit-artifacts accepts matching manifest versions" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"release audit artifact validation passed"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects mismatched manifest versions" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.30.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"manifest release_version=2.29.0, expected 2.30.0"* ]]
+}
+
+@test "validate-release-audit-artifacts accepts legacy versioned artifact dirs" {
+    mkdir -p "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z"
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"release audit artifact validation passed"* ]]
 }

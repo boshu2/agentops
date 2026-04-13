@@ -35,6 +35,7 @@
 #  24b. CLI docs parity
 #  --- shifted from CI-only (v2.32) ---
 #  25. Doc-release stabilization gate
+#  25b. Release audit artifact refs
 #  26. Contract compatibility
 #  27. Hook preflight
 #  28. Hooks/docs parity
@@ -669,6 +670,22 @@ if needs_check docs || needs_check skill; then
     fi
 else
     skip "doc-release gate"
+fi
+
+# --- 25b. Release audit artifact refs ---
+if needs_check docs || [[ "${all_changed:-}" == *"scripts/validate-release-audit-artifacts.sh"* ]]; then
+    if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then
+        if release_audit_artifacts_output="$(scripts/validate-release-audit-artifacts.sh 2>&1)"; then
+            pass "release audit artifacts"
+        else
+            fail "release audit artifacts"
+            indent_output "$release_audit_artifacts_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-release-audit-artifacts.sh"
+    fi
+else
+    skip "release audit artifacts"
 fi
 
 # --- 26. Contract compatibility ---
