@@ -3,6 +3,10 @@ date: 2026-04-12
 category: architecture
 maturity: provisional
 utility: 0.8
+confidence: 0.0000
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: INDEX.md is the cheapest high-leverage addition to any .agents/ directory

@@ -3,6 +3,10 @@ date: 2026-04-12
 category: architecture
 maturity: provisional
 utility: 0.7
+helpful_count: 0
+harmful_count: 0
+confidence: 0.0000
+reward_count: 0
 ---
 
 # Learning: Spike-validated prompt templates should be copied verbatim

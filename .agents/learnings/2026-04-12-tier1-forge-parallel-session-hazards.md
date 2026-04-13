@@ -3,6 +3,10 @@ date: 2026-04-12
 category: process
 maturity: provisional
 utility: 0.8
+harmful_count: 0
+confidence: 0.0000
+reward_count: 0
+helpful_count: 0
 ---
 
 # Learning: Parallel sessions in a shared worktree destroy untracked files
