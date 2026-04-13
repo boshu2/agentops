@@ -287,10 +287,13 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 
 | Tool | What it does well | What AgentOps adds |
 |------|-------------------|--------------------|
-| **[GSD](https://github.com/glittercowboy/get-shit-done)** | Clean subagent spawning, fights context rot | Cross-session bookkeeping and validation gates |
-| **[Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin)** | Knowledge compounding, structured loop | Multi-runtime skills, council validation, and repo-native `ao` workflows |
+| **[GSD](https://github.com/glittercowboy/get-shit-done)** | Fresh-context phased execution, recovery loops, runtime breadth | Cross-session bookkeeping, pre-build validation, and the knowledge flywheel |
+| **[Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin)** | Ideation, configurable reviewers, cross-runtime conversion | Automatic capture/scoring/injection, council validation, and repo-native `ao` workflows |
+| **[Spec Kit](https://github.com/github/spec-kit) / [Kiro](https://kiro.dev/)** | Spec-driven development and executable planning artifacts | Learning beyond specs: failures, decisions, retros, and prevention rules |
+| **[Superpowers](https://github.com/obra/superpowers)** | TDD discipline and autonomous work patterns | Memory, pre-mortems, and validation across repeated sessions |
+| **[Ruflo / Claude-Flow](https://github.com/ruvnet/ruflo)** | High-scale swarm orchestration and MCP-heavy coordination | Local, auditable compounding around whatever executes the work |
 
-[Detailed comparisons](docs/comparisons/)
+[Detailed comparisons](docs/comparisons/) · [Competitive radar](docs/comparisons/competitive-radar.md)
 
 ---
 

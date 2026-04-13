@@ -136,7 +136,7 @@ GSD's review command supports cross-AI peer review (Gemini, Claude, Codex), but 
 
 | Feature | GSD | AgentOps | Winner |
 |---------|:---:|:--------:|:------:|
-| Multi-runtime support | ✅ 7 runtimes | ⚠️ Claude Code primary | GSD |
+| Multi-runtime support | ✅ 7 runtimes | ⚠️ 4 supported runtime paths, less broad than GSD | GSD |
 | Fresh context per agent | ✅ Core design | ⚠️ Swarm workers | GSD |
 | Model cost tiers | ✅ 4 profiles | ❌ Not yet | GSD |
 | Auto-repair on failure | ✅ RETRY/DECOMPOSE/PRUNE | ⚠️ Crank retries | GSD |

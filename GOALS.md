@@ -56,7 +56,7 @@ CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to 
 
 ### 6. Maintain competitive awareness
 
-Competitive analysis docs (`docs/comparisons/vs-*.md`) must stay fresh. GSD, Compound Engineer, and sdd are actively iterating — stale analysis means blind spots. Refresh comparisons within 45 days of last update. `/evolve` picks this up automatically when other goals pass.
+Competitive analysis docs (`docs/comparisons/vs-*.md` and `docs/comparisons/competitive-radar.md`) must stay fresh. GSD, Compound Engineer, and sdd are actively iterating — stale analysis means blind spots. Refresh comparisons within 45 days of last update. `/evolve` picks this up automatically when other goals pass.
 
 **Steer:** decrease (stale comparison doc count)
 

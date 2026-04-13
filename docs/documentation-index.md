@@ -152,6 +152,7 @@
 - [vs Superpowers](comparisons/vs-superpowers.md) — AgentOps vs Superpowers plugin
 - [vs Claude-Flow](comparisons/vs-claude-flow.md) — AgentOps vs Claude-Flow orchestration
 - [vs Compound Engineer](comparisons/vs-compound-engineer.md) — AgentOps vs Compound Engineering plugin
+- [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
 
 ## Positioning
 
