@@ -1675,126 +1675,147 @@ func TestCobraStatusHelpers(t *testing.T) {
 
 // TestCobraIndexHelpers exercises index helper functions.
 func TestCobraIndexHelpers(t *testing.T) {
-	t.Run("extractDateFromFilename", func(t *testing.T) {
-		cases := []struct {
-			filename string
-			want     string
-		}{
-			{"2026-01-15-my-learning.md", "2026-01-15"},
-			{"no-date.md", "unknown"},
-			{"2026-12-31.md", "2026-12-31"},
-		}
-		for _, tc := range cases {
-			got := extractDateFromFilename(tc.filename)
-			if got != tc.want {
-				t.Errorf("extractDateFromFilename(%q) = %q, want %q", tc.filename, got, tc.want)
-			}
-		}
-	})
+	t.Run("extractDateFromFilename", assertCobraIndexExtractDateFromFilename)
+	t.Run("summaryFromFilename", assertCobraIndexSummaryFromFilename)
+	t.Run("extractH1", assertCobraIndexExtractH1)
+	t.Run("cleanForTable", assertCobraIndexCleanForTable)
+	t.Run("titleCase", assertCobraIndexTitleCase)
+	t.Run("parseFrontmatter", assertCobraIndexParseFrontmatter)
+	t.Run("extractTagsFromFrontmatter", assertCobraIndexExtractTagsFromFrontmatter)
+	t.Run("diffFileSets", assertCobraIndexDiffFileSets)
+	t.Run("buildExpectedFileSet", assertCobraIndexBuildExpectedFileSet)
+	t.Run("parseIndexTableRows", assertCobraIndexParseIndexTableRows)
+}
 
-	t.Run("summaryFromFilename", func(t *testing.T) {
-		got := summaryFromFilename("2026-01-15-my-cool-learning.md")
-		if got != "my-cool-learning" {
-			t.Errorf("summaryFromFilename = %q, want 'my-cool-learning'", got)
+func assertCobraIndexExtractDateFromFilename(t *testing.T) {
+	t.Helper()
+	cases := []struct {
+		filename string
+		want     string
+	}{
+		{"2026-01-15-my-learning.md", "2026-01-15"},
+		{"no-date.md", "unknown"},
+		{"2026-12-31.md", "2026-12-31"},
+	}
+	for _, tc := range cases {
+		got := extractDateFromFilename(tc.filename)
+		if got != tc.want {
+			t.Errorf("extractDateFromFilename(%q) = %q, want %q", tc.filename, got, tc.want)
 		}
+	}
+}
 
-		got = summaryFromFilename("no-date-prefix.md")
-		if got != "no-date-prefix" {
-			t.Errorf("summaryFromFilename = %q, want 'no-date-prefix'", got)
-		}
-	})
+func assertCobraIndexSummaryFromFilename(t *testing.T) {
+	t.Helper()
+	got := summaryFromFilename("2026-01-15-my-cool-learning.md")
+	if got != "my-cool-learning" {
+		t.Errorf("summaryFromFilename = %q, want 'my-cool-learning'", got)
+	}
 
-	t.Run("extractH1", func(t *testing.T) {
-		content := "some text\n# My Title\nmore text"
-		got := extractH1(content)
-		if got != "My Title" {
-			t.Errorf("extractH1 = %q, want 'My Title'", got)
-		}
+	got = summaryFromFilename("no-date-prefix.md")
+	if got != "no-date-prefix" {
+		t.Errorf("summaryFromFilename = %q, want 'no-date-prefix'", got)
+	}
+}
 
-		got = extractH1("no heading here")
-		if got != "" {
-			t.Errorf("extractH1 = %q, want empty", got)
-		}
-	})
+func assertCobraIndexExtractH1(t *testing.T) {
+	t.Helper()
+	content := "some text\n# My Title\nmore text"
+	got := extractH1(content)
+	if got != "My Title" {
+		t.Errorf("extractH1 = %q, want 'My Title'", got)
+	}
 
-	t.Run("cleanForTable", func(t *testing.T) {
-		got := cleanForTable("has | pipe\nand  newline")
-		if strings.Contains(got, "|") && !strings.Contains(got, "\\|") {
-			t.Errorf("cleanForTable should escape pipes: %q", got)
-		}
-		if strings.Contains(got, "\n") {
-			t.Errorf("cleanForTable should remove newlines: %q", got)
-		}
-	})
+	got = extractH1("no heading here")
+	if got != "" {
+		t.Errorf("extractH1 = %q, want empty", got)
+	}
+}
 
-	t.Run("titleCase", func(t *testing.T) {
-		if got := titleCase("hello"); got != "Hello" {
-			t.Errorf("titleCase('hello') = %q", got)
-		}
-		if got := titleCase(""); got != "" {
-			t.Errorf("titleCase('') = %q", got)
-		}
-	})
+func assertCobraIndexCleanForTable(t *testing.T) {
+	t.Helper()
+	got := cleanForTable("has | pipe\nand  newline")
+	if strings.Contains(got, "|") && !strings.Contains(got, "\\|") {
+		t.Errorf("cleanForTable should escape pipes: %q", got)
+	}
+	if strings.Contains(got, "\n") {
+		t.Errorf("cleanForTable should remove newlines: %q", got)
+	}
+}
 
-	t.Run("parseFrontmatter", func(t *testing.T) {
-		content := "---\ntitle: My Title\ndate: 2026-01-01\ntags: [a, b]\n---\n# Body\n"
-		fm := parseFrontmatter(content)
-		if fm["title"] != "My Title" {
-			t.Errorf("parseFrontmatter title = %v", fm["title"])
-		}
-	})
+func assertCobraIndexTitleCase(t *testing.T) {
+	t.Helper()
+	if got := titleCase("hello"); got != "Hello" {
+		t.Errorf("titleCase('hello') = %q", got)
+	}
+	if got := titleCase(""); got != "" {
+		t.Errorf("titleCase('') = %q", got)
+	}
+}
 
-	t.Run("extractTagsFromFrontmatter", func(t *testing.T) {
-		fm := map[string]any{"tags": []any{"go", "testing"}}
-		got := extractTagsFromFrontmatter(fm)
-		if got != "go testing" {
-			t.Errorf("extractTagsFromFrontmatter = %q, want 'go testing'", got)
-		}
+func assertCobraIndexParseFrontmatter(t *testing.T) {
+	t.Helper()
+	content := "---\ntitle: My Title\ndate: 2026-01-01\ntags: [a, b]\n---\n# Body\n"
+	fm := parseFrontmatter(content)
+	if fm["title"] != "My Title" {
+		t.Errorf("parseFrontmatter title = %v", fm["title"])
+	}
+}
 
-		fm = map[string]any{"tags": "[go, testing]"}
-		got = extractTagsFromFrontmatter(fm)
-		if got != "go testing" {
-			t.Errorf("extractTagsFromFrontmatter (string) = %q, want 'go testing'", got)
-		}
+func assertCobraIndexExtractTagsFromFrontmatter(t *testing.T) {
+	t.Helper()
+	fm := map[string]any{"tags": []any{"go", "testing"}}
+	got := extractTagsFromFrontmatter(fm)
+	if got != "go testing" {
+		t.Errorf("extractTagsFromFrontmatter = %q, want 'go testing'", got)
+	}
 
-		fm = map[string]any{}
-		got = extractTagsFromFrontmatter(fm)
-		if got != "" {
-			t.Errorf("extractTagsFromFrontmatter (empty) = %q, want ''", got)
-		}
-	})
+	fm = map[string]any{"tags": "[go, testing]"}
+	got = extractTagsFromFrontmatter(fm)
+	if got != "go testing" {
+		t.Errorf("extractTagsFromFrontmatter (string) = %q, want 'go testing'", got)
+	}
 
-	t.Run("diffFileSets", func(t *testing.T) {
-		expected := map[string]bool{"a.md": true, "b.md": true}
-		existing := map[string]bool{"b.md": true, "c.md": true}
-		missing, extra := diffFileSets(expected, existing)
-		if len(missing) != 1 || missing[0] != "a.md" {
-			t.Errorf("missing = %v, want [a.md]", missing)
-		}
-		if len(extra) != 1 || extra[0] != "c.md" {
-			t.Errorf("extra = %v, want [c.md]", extra)
-		}
-	})
+	fm = map[string]any{}
+	got = extractTagsFromFrontmatter(fm)
+	if got != "" {
+		t.Errorf("extractTagsFromFrontmatter (empty) = %q, want ''", got)
+	}
+}
 
-	t.Run("buildExpectedFileSet", func(t *testing.T) {
-		entries := []indexEntry{{Filename: "a.md"}, {Filename: "b.md"}}
-		got := buildExpectedFileSet(entries)
-		if !got["a.md"] || !got["b.md"] {
-			t.Errorf("buildExpectedFileSet = %v", got)
-		}
-	})
+func assertCobraIndexDiffFileSets(t *testing.T) {
+	t.Helper()
+	expected := map[string]bool{"a.md": true, "b.md": true}
+	existing := map[string]bool{"b.md": true, "c.md": true}
+	missing, extra := diffFileSets(expected, existing)
+	if len(missing) != 1 || missing[0] != "a.md" {
+		t.Errorf("missing = %v, want [a.md]", missing)
+	}
+	if len(extra) != 1 || extra[0] != "c.md" {
+		t.Errorf("extra = %v, want [c.md]", extra)
+	}
+}
 
-	t.Run("parseIndexTableRows", func(t *testing.T) {
-		content := `| File | Date | Summary | Tags |
+func assertCobraIndexBuildExpectedFileSet(t *testing.T) {
+	t.Helper()
+	entries := []indexEntry{{Filename: "a.md"}, {Filename: "b.md"}}
+	got := buildExpectedFileSet(entries)
+	if !got["a.md"] || !got["b.md"] {
+		t.Errorf("buildExpectedFileSet = %v", got)
+	}
+}
+
+func assertCobraIndexParseIndexTableRows(t *testing.T) {
+	t.Helper()
+	content := `| File | Date | Summary | Tags |
 |------|------|---------|------|
 | a.md | 2026-01-01 | summary | tag |
 | b.md | 2026-01-02 | summary2 | tag2 |
 `
-		got := parseIndexTableRows([]byte(content))
-		if !got["a.md"] || !got["b.md"] {
-			t.Errorf("parseIndexTableRows = %v", got)
-		}
-	})
+	got := parseIndexTableRows([]byte(content))
+	if !got["a.md"] || !got["b.md"] {
+		t.Errorf("parseIndexTableRows = %v", got)
+	}
 }
 
 // TestCobraFeedbackResolveReward exercises reward flag resolution helpers.
