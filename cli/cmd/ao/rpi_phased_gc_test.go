@@ -301,10 +301,12 @@ func TestGCExecutorAvailable_Mocked_AllGood(t *testing.T) {
 	cityDir := setupCityDir(t, "avail-test")
 	mock := newGCMock()
 	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"avail-test","controller":{"running":true,"pid":7},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
 	mock.install(t)
 
 	if !gcExecutorAvailable(cityDir, mock.execCommand, mock.lookPathFn) {
-		t.Error("gcExecutorAvailable should be true when binary compatible and city.toml exists")
+		t.Error("gcExecutorAvailable should be true when the bridge is ready")
 	}
 }
 
@@ -346,6 +348,19 @@ func TestGCExecutorAvailable_Mocked_VersionCheckFails(t *testing.T) {
 
 	if gcExecutorAvailable(cityDir, mock.execCommand, mock.lookPathFn) {
 		t.Error("gcExecutorAvailable should be false when version check fails")
+	}
+}
+
+func TestGCExecutorAvailable_Mocked_ControllerStopped(t *testing.T) {
+	cityDir := setupCityDir(t, "controller-stopped")
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"controller-stopped","controller":{"running":false,"pid":0},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+	mock.install(t)
+
+	if gcExecutorAvailable(cityDir, mock.execCommand, mock.lookPathFn) {
+		t.Error("gcExecutorAvailable should be false when the controller is stopped")
 	}
 }
 
@@ -400,11 +415,11 @@ func TestValidateRuntimeMode_GC(t *testing.T) {
 
 func TestGCCityPathFromOpts(t *testing.T) {
 	tests := []struct {
-		name       string
-		gcPath     string
-		workingDir string
+		name        string
+		gcPath      string
+		workingDir  string
 		hasCityToml bool
-		want       string
+		want        string
 	}{
 		{"explicit path", "/explicit/path", "", false, "/explicit/path"},
 		{"whitespace-only explicit", "  ", "", false, ""},
@@ -599,9 +614,12 @@ func TestGCExecutorAvailable_Live(t *testing.T) {
 	if cityPath == "" {
 		t.Skip("no city.toml found")
 	}
+	if ready, reason := gcBridgeReady(cityPath, nil, nil); !ready {
+		t.Skipf("gc bridge not ready: %s", reason)
+	}
 
 	if !gcExecutorAvailable(cwd, nil, nil) {
-		t.Errorf("gcExecutorAvailable should be true when gc binary is compatible and city.toml exists")
+		t.Errorf("gcExecutorAvailable should be true when the gc bridge is ready")
 	}
 }
 

@@ -19,17 +19,17 @@ func TestGCBridgeCompatible(t *testing.T) {
 		version    string
 		compatible bool
 	}{
-		{"0.13.0", true},   // exact minimum
-		{"0.13.5", true},   // above minimum
-		{"0.14.0", true},   // minor bump
-		{"1.0.0", true},    // major bump
-		{"0.12.9", false},  // below minimum
-		{"0.1.0", false},   // way below
-		{"0.0.1", false},   // tiny
-		{"99.0.0", true},   // large major
-		{"0.13", true},     // missing patch
-		{"v0.13.0", true},  // v-prefix
-		{"0.13.0-rc1", true}, // pre-release on minimum
+		{"0.13.0", true},       // exact minimum
+		{"0.13.5", true},       // above minimum
+		{"0.14.0", true},       // minor bump
+		{"1.0.0", true},        // major bump
+		{"0.12.9", false},      // below minimum
+		{"0.1.0", false},       // way below
+		{"0.0.1", false},       // tiny
+		{"99.0.0", true},       // large major
+		{"0.13", true},         // missing patch
+		{"v0.13.0", true},      // v-prefix
+		{"0.13.0-rc1", true},   // pre-release on minimum
 		{"0.12.5-beta", false}, // pre-release below min
 	}
 	for _, tt := range tests {
@@ -55,13 +55,13 @@ func TestCompareSemver(t *testing.T) {
 		{"0.13.1", "0.13.0", 1},
 		{"0.13.0", "0.13.1", -1},
 		{"2.0.0", "1.99.99", 1},
-		{"0.13", "0.13.0", 0},    // missing patch = 0
-		{"0.13.0", "0.13", 0},    // symmetric
-		{"v0.14.0", "0.14.0", 0}, // v-prefix
-		{"1.0.0-rc1", "1.0.0", 0}, // pre-release stripped
-		{"", "0.0.0", 0},          // empty = 0.0.0
-		{"0.0.0", "", 0},          // symmetric empty
-		{"v1.2.3", "v1.2.3", 0},  // both v-prefixed
+		{"0.13", "0.13.0", 0},       // missing patch = 0
+		{"0.13.0", "0.13", 0},       // symmetric
+		{"v0.14.0", "0.14.0", 0},    // v-prefix
+		{"1.0.0-rc1", "1.0.0", 0},   // pre-release stripped
+		{"", "0.0.0", 0},            // empty = 0.0.0
+		{"0.0.0", "", 0},            // symmetric empty
+		{"v1.2.3", "v1.2.3", 0},     // both v-prefixed
 		{"10.20.30", "10.20.29", 1}, // multi-digit
 	}
 	for _, tt := range tests {
@@ -839,11 +839,13 @@ func TestGCBridge_ExecutorAvailable_Live(t *testing.T) {
 	if cityPath == "" {
 		t.Skip("no city.toml found")
 	}
+	if ready, reason := gcBridgeReady(cityPath, nil, nil); !ready {
+		t.Skipf("gc bridge not ready: %s", reason)
+	}
 
 	avail := gcExecutorAvailable(cwd, nil, nil)
 	t.Logf("gcExecutorAvailable(cwd=%q) = %v", cwd, avail)
-	// gc is on PATH and city.toml exists — executor should be available
 	if !avail {
-		t.Errorf("gcExecutorAvailable should be true when gc binary is compatible and city.toml exists")
+		t.Errorf("gcExecutorAvailable should be true when the gc bridge is ready")
 	}
 }

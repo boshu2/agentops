@@ -132,18 +132,12 @@ func gcRunCommand(execCommand gcExecFn, cityPath string, args ...string) error {
 // gcExecutorAvailable returns true if gc bridge is ready for use as a phase executor.
 // This is used by selectExecutorFromCaps to determine if the gc backend should be offered.
 func gcExecutorAvailable(cwd string, execCommand gcExecFn, lookPath gcLookFn) bool {
-	if !gcBridgeAvailable(lookPath) {
-		return false
-	}
 	cityPath := gcBridgeCityPath(cwd)
 	if cityPath == "" {
 		return false
 	}
-	v, err := gcBridgeVersion(execCommand)
-	if err != nil {
-		return false
-	}
-	return gcBridgeCompatible(v)
+	ready, _ := gcBridgeReady(cityPath, execCommand, lookPath)
+	return ready
 }
 
 // gcCityPathFromOpts extracts the city path from opts or discovers it from cwd.
