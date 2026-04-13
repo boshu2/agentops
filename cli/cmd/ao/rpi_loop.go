@@ -827,12 +827,15 @@ func readQueueEntries(path string) ([]nextWorkEntry, error) {
 		parseableIndex++
 		entry.QueueIndex = parseableIndex
 
+		if len(entry.Items) == 0 {
+			continue
+		}
+		if entryHasExplicitItemLifecycle(entry) {
+			recomputeEntryLifecycle(&entry)
+		}
 		// Skip entries that are already consumed. Legacy failed_at remains retry
 		// metadata; proof-backed preflight decides whether stale work is satisfied.
 		if entry.Consumed || normalizeClaimStatus(entry.Consumed, entry.ClaimStatus) == "consumed" {
-			continue
-		}
-		if len(entry.Items) == 0 {
 			continue
 		}
 		// Skip entries where all items are either consumed or currently claimed.
@@ -873,6 +876,15 @@ func isQueueItemSelectable(item nextWorkItem) bool {
 
 func hasQueueItemLifecycleMetadata(item nextWorkItem) bool {
 	return rpi.HasQueueItemLifecycleMetadata(item)
+}
+
+func entryHasExplicitItemLifecycle(entry nextWorkEntry) bool {
+	for _, item := range entry.Items {
+		if item.Consumed || hasQueueItemLifecycleMetadata(item) {
+			return true
+		}
+	}
+	return false
 }
 
 func shouldSkipLegacyFailedEntry(entry nextWorkEntry) bool {

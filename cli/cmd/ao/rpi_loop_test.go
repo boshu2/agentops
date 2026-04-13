@@ -1487,6 +1487,47 @@ func TestReadQueueEntries_SkipsConsumed(t *testing.T) {
 	}
 }
 
+func TestReadQueueEntries_RecomputesExplicitItemLifecycle(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "next-work.jsonl")
+
+	entries := []nextWorkEntry{
+		{
+			SourceEpic:  "ag-drift",
+			Consumed:    true,
+			ClaimStatus: "consumed",
+			Items: []nextWorkItem{
+				{Title: "Already done", Consumed: true, ClaimStatus: "consumed"},
+				{Title: "Still available", ClaimStatus: "available"},
+			},
+		},
+		{
+			SourceEpic:  "ag-legacy",
+			Consumed:    true,
+			ClaimStatus: "consumed",
+			Items:       []nextWorkItem{{Title: "Legacy aggregate-only item"}},
+		},
+	}
+	writeJSONL(t, path, entries)
+
+	got, err := readQueueEntries(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(got))
+	}
+	if got[0].SourceEpic != "ag-drift" {
+		t.Fatalf("expected ag-drift, got %q", got[0].SourceEpic)
+	}
+	if got[0].Consumed {
+		t.Fatal("explicit item lifecycle should recompute aggregate consumed=false")
+	}
+	if got[0].ClaimStatus != "available" {
+		t.Fatalf("claim_status = %q, want available", got[0].ClaimStatus)
+	}
+}
+
 func TestReadQueueEntries_KeepsLegacyFailedEntriesSelectable(t *testing.T) {
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "next-work.jsonl")

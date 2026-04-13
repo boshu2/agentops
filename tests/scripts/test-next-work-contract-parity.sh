@@ -42,6 +42,8 @@ create_fixture() {
   copy_target "$fixture" "skills/rpi/references/phase-data-contracts.md"
   copy_target "$fixture" "skills/rpi/references/gate4-loop-and-spawn.md"
   copy_target "$fixture" "cli/cmd/ao/rpi_loop.go"
+  copy_target "$fixture" "cli/internal/rpi/types.go"
+  copy_target "$fixture" "cli/internal/rpi/helpers.go"
   copy_target "$fixture" "tests/smoke-test.sh"
 
   echo "$fixture"
@@ -150,7 +152,7 @@ PY
 test_runtime_pattern_fix_rank_fails() {
   local fixture
   fixture="$(create_fixture "pattern-fix-rank")"
-  python3 - <<'PY' "$fixture/cli/cmd/ao/rpi_loop.go"
+  python3 - <<'PY' "$fixture/cli/internal/rpi/helpers.go"
 from pathlib import Path
 path = Path(__import__("sys").argv[1])
 text = path.read_text()
@@ -232,6 +234,33 @@ PY
     "skills-codex/post-mortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
 }
 
+test_explicit_item_lifecycle_drift_fails() {
+  local fixture
+  fixture="$(create_fixture "explicit-lifecycle-drift")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-drift","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Already done","type":"task","severity":"medium","source":"retro-learning","description":"Done item","target_repo":"agentops","consumed":true,"claim_status":"consumed"},{"title":"Still available","type":"task","severity":"medium","source":"retro-learning","description":"Available item","target_repo":"agentops","claim_status":"available"}],"consumed":true,"claim_status":"consumed","claimed_by":null,"claimed_at":null,"consumed_by":"test","consumed_at":"2026-04-13T00:01:00Z"}
+EOF
+
+  assert_gate_fails_with \
+    "explicit item lifecycle drift fails parity gate" \
+    "$fixture" \
+    "next-work.jsonl has aggregate/item lifecycle drift"
+}
+
+test_legacy_aggregate_only_consumed_queue_passes() {
+  local fixture
+  fixture="$(create_fixture "legacy-aggregate-only")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-legacy","timestamp":"2026-03-01T00:00:00Z","items":[{"title":"Legacy item","type":"task","severity":"medium","source":"retro-learning","description":"Legacy item with no per-item lifecycle","target_repo":"agentops"}],"consumed":true,"claim_status":"consumed","claimed_by":null,"claimed_at":null,"consumed_by":"legacy","consumed_at":"2026-03-01T00:01:00Z"}
+EOF
+
+  assert_gate_passes \
+    "legacy aggregate-only consumed queue passes parity gate" \
+    "$fixture"
+}
+
 echo "================================"
 echo "Testing next-work contract parity gate"
 echo "================================"
@@ -244,6 +273,8 @@ test_schema_version_drift_fails
 test_runtime_pattern_fix_rank_fails
 test_source_skill_legacy_example_fails
 test_codex_skill_legacy_example_fails
+test_explicit_item_lifecycle_drift_fails
+test_legacy_aggregate_only_consumed_queue_passes
 
 echo ""
 echo "================================"

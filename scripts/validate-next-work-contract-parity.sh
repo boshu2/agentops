@@ -323,6 +323,46 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
   if [[ "$drift_count" -gt 0 ]]; then
     fail "next-work.jsonl has $drift_count entries not conforming to v1.3 schema (missing source_epic, items, or claim_status)"
   fi
+
+  lifecycle_drift="$(
+    jq -s -r '
+      def item_status:
+        if .claim_status == "in_progress" then "in_progress"
+        elif ((.consumed // false) == true) or (.claim_status == "consumed") then "consumed"
+        else "available"
+        end;
+      def explicit_lifecycle:
+        has("claim_status") or
+        ((.consumed // false) == true) or
+        has("claimed_by") or
+        has("claimed_at") or
+        has("consumed_by") or
+        has("consumed_at") or
+        has("failed_at");
+      def aggregate_status:
+        if ((.consumed // false) == true) or (.claim_status == "consumed") then "consumed"
+        elif .claim_status == "in_progress" then "in_progress"
+        else "available"
+        end;
+      def expected_status($statuses):
+        if all($statuses[]; . == "consumed") then "consumed"
+        elif any($statuses[]; . == "in_progress") then "in_progress"
+        else "available"
+        end;
+      to_entries[] as $line |
+      select(($line.value.items? | type) == "array") |
+      ($line.value.items | map(select(explicit_lifecycle))) as $explicit |
+      select(($explicit | length) > 0) |
+      ($line.value.items | map(item_status)) as $statuses |
+      expected_status($statuses) as $want |
+      ($line.value | aggregate_status) as $got |
+      select($want != $got) |
+      "line \($line.key + 1) source_epic=\($line.value.source_epic // "<missing>") aggregate=\($got) items=\($want)"
+    ' "$LIVE_QUEUE" 2>/dev/null || true
+  )"
+  if [[ -n "$lifecycle_drift" ]]; then
+    fail "next-work.jsonl has aggregate/item lifecycle drift: $(printf '%s\n' "$lifecycle_drift" | head -1)"
+  fi
 fi
 
 if [[ "$failures" -gt 0 ]]; then
