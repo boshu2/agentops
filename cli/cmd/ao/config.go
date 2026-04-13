@@ -18,6 +18,12 @@ var (
 	modelsSetSkill string
 )
 
+type configModelsWriteResult struct {
+	Updated        bool              `json:"updated"`
+	DefaultTier    string            `json:"default_tier,omitempty"`
+	SkillOverrides map[string]string `json:"skill_overrides,omitempty"`
+}
+
 var configModelsCmd = &cobra.Command{
 	Use:   "models",
 	Short: "Show model cost tier configuration",
@@ -265,6 +271,7 @@ func runConfigModels(_ *cobra.Command, _ []string) error {
 
 func handleModelsWrite() error {
 	saveCfg := &config.Config{}
+	result := configModelsWriteResult{Updated: true}
 
 	if modelsSetTier != "" {
 		if modelsSetTier == "inherit" {
@@ -274,6 +281,7 @@ func handleModelsWrite() error {
 			return fmt.Errorf("invalid tier %q: must be one of quality, balanced, budget", modelsSetTier)
 		}
 		saveCfg.Models.DefaultTier = modelsSetTier
+		result.DefaultTier = modelsSetTier
 	}
 
 	if modelsSetSkill != "" {
@@ -286,10 +294,20 @@ func handleModelsWrite() error {
 			return fmt.Errorf("invalid tier %q for skill %q: must be one of quality, balanced, budget, inherit", tier, skill)
 		}
 		saveCfg.Models.SkillOverrides = map[string]string{skill: tier}
+		result.SkillOverrides = map[string]string{skill: tier}
 	}
 
 	if err := config.Save(saveCfg); err != nil {
 		return fmt.Errorf("saving config: %w", err)
+	}
+
+	if GetOutput() == "json" {
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal models write result: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
 	}
 
 	if modelsSetTier != "" {

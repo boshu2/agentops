@@ -352,6 +352,67 @@ func TestConfigModels_SetSkill(t *testing.T) {
 	}
 }
 
+func TestConfigModels_SetTierAndSkill_JSON(t *testing.T) {
+	dir := t.TempDir()
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+
+	t.Setenv("AGENTOPS_CONFIG", "")
+
+	oldOutput := output
+	oldSetTier := modelsSetTier
+	oldSetSkill := modelsSetSkill
+	output = "json"
+	modelsSetTier = "budget"
+	modelsSetSkill = "council=quality"
+	defer func() {
+		output = oldOutput
+		modelsSetTier = oldSetTier
+		modelsSetSkill = oldSetSkill
+	}()
+
+	stdout, err := captureStdout(t, func() error {
+		return runConfigModels(&cobra.Command{}, nil)
+	})
+	if err != nil {
+		t.Fatalf("runConfigModels --set-tier --set-skill --json: %v", err)
+	}
+	if strings.Contains(stdout, "Set default model tier") || strings.Contains(stdout, "Set skill") {
+		t.Fatalf("expected JSON-only output, got human text: %q", stdout)
+	}
+
+	var parsed configModelsWriteResult
+	if err := json.Unmarshal([]byte(stdout), &parsed); err != nil {
+		t.Fatalf("expected valid JSON, got: %q (%v)", stdout, err)
+	}
+	if !parsed.Updated {
+		t.Fatal("expected updated=true")
+	}
+	if parsed.DefaultTier != "budget" {
+		t.Errorf("default_tier = %q, want %q", parsed.DefaultTier, "budget")
+	}
+	if parsed.SkillOverrides["council"] != "quality" {
+		t.Errorf("skill_overrides[council] = %q, want %q", parsed.SkillOverrides["council"], "quality")
+	}
+
+	cfg, loadErr := config.Load(nil)
+	if loadErr != nil {
+		t.Fatalf("Load after JSON write: %v", loadErr)
+	}
+	if cfg.Models.DefaultTier != "budget" {
+		t.Errorf("saved DefaultTier = %q, want %q", cfg.Models.DefaultTier, "budget")
+	}
+	if cfg.Models.SkillOverrides["council"] != "quality" {
+		t.Errorf("saved SkillOverrides[council] = %q, want %q", cfg.Models.SkillOverrides["council"], "quality")
+	}
+}
+
 func TestConfigModels_SetTier_InvalidTier(t *testing.T) {
 	oldSetTier := modelsSetTier
 	oldSetSkill := modelsSetSkill
