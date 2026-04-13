@@ -18,6 +18,7 @@ check "SKILL.md requires applied finding IDs in plan context" "grep -q 'Applied 
 check "SKILL.md mentions waves" "grep -qi 'wave' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions dependencies" "grep -qi 'dependencies\|depend' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md requires Codex companion scope" "grep -q 'Generated Artifact Companion Scope' '$SKILL_DIR/SKILL.md' && grep -q 'refresh-codex-artifacts.sh --scope worktree' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md requires full touched-file inventory" "grep -q 'list every touched file' '$SKILL_DIR/SKILL.md' && grep -q 'tests, docs, schemas, fixtures' '$SKILL_DIR/SKILL.md' && grep -q 'parity manifests, hash markers' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions bd for issue tracking" "grep -q 'bd ' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions task tracking" "grep -qi 'task\|tracking\|bd ' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions conformance checks" "grep -qi 'conformance' '$SKILL_DIR/SKILL.md'"
