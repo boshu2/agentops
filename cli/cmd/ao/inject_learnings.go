@@ -333,8 +333,13 @@ func processLearningFile(file string, queryTokensList []string, now time.Time) (
 		l.Utility *= 0.7
 	}
 
-	if l.Stability == "experimental" {
+	// Stability weighting: experimental learnings are less trusted.
+	// Missing or "stable" → 1.0x, "experimental" → 0.7x.
+	switch l.Stability {
+	case "experimental":
 		fmt.Fprintf(os.Stderr, "WARNING: Skill %q is marked experimental — verify outputs carefully\n", l.Title)
+		l.Utility *= 0.7
+	// "stable" and unset both use 1.0x (no change)
 	}
 
 	return l, true

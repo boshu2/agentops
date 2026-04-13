@@ -1,6 +1,12 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/search"
+)
 
 func TestMaturityWeight_KnownLevels(t *testing.T) {
 	tests := []struct {
@@ -271,5 +277,151 @@ func TestApplyCompositeScoring_GlobalWeightPenalty(t *testing.T) {
 	if nonGlobal.CompositeScore != global.CompositeScore {
 		t.Errorf("applyCompositeScoringTo should ignore Global field: nonGlobal=%v global=%v",
 			nonGlobal.CompositeScore, global.CompositeScore)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestInjectScoring_ContentHashDedup
+// ---------------------------------------------------------------------------
+
+func TestInjectScoring_ContentHashDedup(t *testing.T) {
+	sharedContent := "This is identical content for deduplication testing purposes. It has more than 50 chars."
+
+	itemA := &learning{
+		Title:          "Title A",
+		FreshnessScore: 0.9,
+		Utility:        0.8,
+		BodyText:       sharedContent,
+	}
+	itemB := &learning{
+		Title:          "Title B — different title, same content",
+		FreshnessScore: 0.7,
+		Utility:        0.6,
+		BodyText:       sharedContent,
+	}
+	itemC := &learning{
+		Title:          "Title C — unique content",
+		FreshnessScore: 0.5,
+		Utility:        0.4,
+		BodyText:       "Completely different content that is unique to this item.",
+	}
+
+	items := []search.Scorable{itemA, itemB, itemC}
+	result := deduplicateByContentHash(items, func(s search.Scorable) string {
+		if l, ok := s.(*learning); ok {
+			return l.BodyText
+		}
+		return ""
+	})
+
+	// itemA and itemB share content — only itemA (first) should survive.
+	// itemC has unique content and should survive.
+	if len(result) != 2 {
+		t.Errorf("expected 2 items after dedup, got %d", len(result))
+	}
+	if result[0] != itemA {
+		t.Errorf("first surviving item should be itemA (first seen with that content hash)")
+	}
+	if result[1] != itemC {
+		t.Errorf("second surviving item should be itemC (unique content)")
+	}
+}
+
+func TestInjectScoring_ContentHashDedup_EmptyContentNotDeduped(t *testing.T) {
+	// Items with empty content should never be de-duped against each other.
+	itemA := &learning{Title: "A", BodyText: ""}
+	itemB := &learning{Title: "B", BodyText: ""}
+
+	items := []search.Scorable{itemA, itemB}
+	result := deduplicateByContentHash(items, func(s search.Scorable) string {
+		if l, ok := s.(*learning); ok {
+			return l.BodyText
+		}
+		return ""
+	})
+
+	if len(result) != 2 {
+		t.Errorf("empty-content items should both survive: got %d items", len(result))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestInjectScoring_IndexMdBoost
+// ---------------------------------------------------------------------------
+
+func TestInjectScoring_IndexMdBoost(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create .agents/INDEX.md with a wikilink to learnings/test-a.
+	agentsDir := filepath.Join(dir, ".agents")
+	if err := os.MkdirAll(agentsDir, 0755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	indexContent := `# Knowledge Index
+
+## Learnings
+- [[learnings/test-a]] — important learning
+- [[patterns/core-pattern]] — core pattern
+
+## Other
+Some other content.
+`
+	if err := os.WriteFile(filepath.Join(agentsDir, "INDEX.md"), []byte(indexContent), 0600); err != nil {
+		t.Fatalf("write INDEX.md: %v", err)
+	}
+
+	// Parse INDEX.md wikilinks.
+	links := indexMdWikilinks(dir)
+	if len(links) == 0 {
+		t.Fatal("expected wikilinks from INDEX.md, got none")
+	}
+	if !links["learnings/test-a"] {
+		t.Errorf("expected link 'learnings/test-a' in parsed links, got: %v", links)
+	}
+
+	// Build two learnings: test-a (linked) and test-b (not linked).
+	baseScore := 1.0
+	learningA := learning{
+		Title:          "Test A",
+		Source:         filepath.Join(dir, ".agents", "learnings", "test-a.md"),
+		CompositeScore: baseScore,
+	}
+	learningB := learning{
+		Title:          "Test B",
+		Source:         filepath.Join(dir, ".agents", "learnings", "test-b.md"),
+		CompositeScore: baseScore,
+	}
+
+	learnings := []learning{learningA, learningB}
+	applyIndexMdBoostToLearnings(learnings, links, 1.5)
+
+	if learnings[0].CompositeScore <= learnings[1].CompositeScore {
+		t.Errorf("test-a (INDEX.md linked) score %v should exceed test-b (unlinked) score %v",
+			learnings[0].CompositeScore, learnings[1].CompositeScore)
+	}
+
+	expectedBoosted := baseScore * 1.5
+	if learnings[0].CompositeScore != expectedBoosted {
+		t.Errorf("test-a CompositeScore = %v, want %v (1.5x boost)", learnings[0].CompositeScore, expectedBoosted)
+	}
+	if learnings[1].CompositeScore != baseScore {
+		t.Errorf("test-b CompositeScore = %v, want %v (no boost)", learnings[1].CompositeScore, baseScore)
+	}
+}
+
+func TestInjectScoring_IndexMdBoost_MissingFile(t *testing.T) {
+	// When INDEX.md doesn't exist, indexMdWikilinks returns nil and
+	// applyIndexMdBoostToLearnings is a no-op.
+	links := indexMdWikilinks("/nonexistent/path")
+	if len(links) != 0 {
+		t.Errorf("expected empty links for missing INDEX.md, got %v", links)
+	}
+
+	l := learning{Title: "X", CompositeScore: 1.0}
+	learnings := []learning{l}
+	applyIndexMdBoostToLearnings(learnings, links, 1.5)
+
+	if learnings[0].CompositeScore != 1.0 {
+		t.Errorf("score should be unchanged with no links, got %v", learnings[0].CompositeScore)
 	}
 }

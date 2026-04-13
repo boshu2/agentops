@@ -1179,3 +1179,64 @@ func TestInjectLearnings_extractSummary_LongParagraph(t *testing.T) {
 		t.Errorf("summary too long: %d chars", len(got))
 	}
 }
+
+// ---------------------------------------------------------------------------
+// TestInjectLearnings_StabilityWeight
+// ---------------------------------------------------------------------------
+
+func TestInjectLearnings_StabilityWeight(t *testing.T) {
+	dir := t.TempDir()
+
+	writeFile := func(name, content string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(content), 0600); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+		return p
+	}
+
+	// Experimental learning — same base utility but marked experimental.
+	expPath := writeFile("experimental.md", `---
+title: Experimental Learning
+utility: 0.8
+stability: experimental
+---
+# Experimental Learning
+
+This is a test learning with experimental stability.
+`)
+
+	// Stable learning — same base utility, default stability.
+	stablePath := writeFile("stable.md", `---
+title: Stable Learning
+utility: 0.8
+stability: stable
+---
+# Stable Learning
+
+This is a test learning with stable stability.
+`)
+
+	now := time.Now()
+	tokens := queryTokens("learning")
+
+	expL, ok := processLearningFile(expPath, tokens, now)
+	if !ok {
+		t.Fatalf("processLearningFile(%s) returned ok=false", expPath)
+	}
+	stableL, ok := processLearningFile(stablePath, tokens, now)
+	if !ok {
+		t.Fatalf("processLearningFile(%s) returned ok=false", stablePath)
+	}
+
+	// Experimental should have lower utility than stable (0.7x multiplier).
+	if expL.Utility >= stableL.Utility {
+		t.Errorf("experimental utility (%v) should be < stable utility (%v)", expL.Utility, stableL.Utility)
+	}
+
+	// Verify the ratio is approximately 0.7.
+	ratio := expL.Utility / stableL.Utility
+	if ratio < 0.65 || ratio > 0.75 {
+		t.Errorf("utility ratio = %v, want ~0.7 (experimental vs stable)", ratio)
+	}
+}
