@@ -1,0 +1,42 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-xsr2",
+  "target_id": "na-xsr2",
+  "target_type": "task",
+  "created_at": "2026-04-13T12:39:46Z",
+  "producer": "evolve",
+  "evidence_mode": "worktree",
+  "validation_commands": [
+    "env -u AGENTOPS_RPI_RUNTIME bash scripts/validate-next-work-contract-parity.sh",
+    "jq empty .agents/rpi/next-work.jsonl .agents/releases/evidence-only-closures/na-xsr2.json",
+    "markdownlint .agents/research/2026-04-13-ag-yeg-directive-gap-verification.md",
+    "timeout 30s env -u AGENTOPS_RPI_RUNTIME ./cli/bin/ao goals measure --json --timeout 1"
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": true,
+    "head_sha": "2e45a6a5702b4017123f7fec7cf5c39437627e1b",
+    "modified_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "staged_files": [],
+    "unstaged_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Stale ag-yeg directive-gap queue item consumed after live bd absence plus GOALS.md and bounded goals-measure proof.",
+    "artifacts": [
+      ".agents/releases/evidence-only-closures/na-xsr2.json",
+      ".agents/research/2026-04-13-ag-yeg-directive-gap-verification.md",
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "notes": [
+      "GOALS.md records directive 1 runtime smoke/headless coverage, directive 2 install-smoke coverage, and directive 4 flywheel-lifecycle citation gating.",
+      "bd show ag-yeg --json returns no issue."
+    ]
+  }
+}
