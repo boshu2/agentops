@@ -14,8 +14,11 @@ concurrency:
   # Normalize both tag-push and workflow_dispatch reruns onto the same
   # refs/tags/vX.Y.Z key so a manual rerun cannot publish in parallel with the
   # original tag-triggered workflow for that same version.
+  # cancel-in-progress: true ensures that a retag (which deletes + repushes the
+  # same tag) does not queue a second redundant run — the newer push cancels any
+  # still-running workflow for the same version key.
   group: release-${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', startsWith(github.event.inputs.tag, 'v') && github.event.inputs.tag || format('v{0}', github.event.inputs.tag)) || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
