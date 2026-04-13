@@ -1843,9 +1843,17 @@ func TestRPILoop_DryRun_EmptyQueue(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	err := runRPILoop(nil, nil)
+	out, err := captureStdout(t, func() error {
+		return runRPILoop(nil, nil)
+	})
 	if err != nil {
 		t.Errorf("expected nil error for empty queue, got: %v", err)
+	}
+	if !strings.Contains(out, "No unconsumed work in queue. Flywheel stable.") {
+		t.Fatalf("expected queue-only empty state message, got:\n%s", out)
+	}
+	if strings.Contains(out, "Evolve generator fallback") {
+		t.Fatalf("rpi loop should not print evolve generator fallback guidance:\n%s", out)
 	}
 }
 

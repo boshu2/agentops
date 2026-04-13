@@ -184,6 +184,30 @@ func TestRunEvolveDoesNotWriteBaselineWhenToolchainInvalid(t *testing.T) {
 	}
 }
 
+func TestEvolveDryRunEmptyQueueShowsGeneratorFallback(t *testing.T) {
+	clearRPIEnv(t)
+	prevGlobals := snapshotLoopSupervisorGlobals()
+	defer restoreLoopSupervisorGlobals(prevGlobals)
+
+	dir := chdirTemp(t)
+	out, err := executeCommand("--dry-run", "evolve", "--max-cycles", "1")
+	if err != nil {
+		t.Fatalf("ao evolve --dry-run failed: %v\noutput: %s", err, out)
+	}
+	if !strings.Contains(out, "No unconsumed work in next-work queue.") {
+		t.Fatalf("dry-run output missing empty next-work queue summary:\n%s", out)
+	}
+	if !strings.Contains(out, "Evolve generator fallback would inspect bd ready, ao goals measure") {
+		t.Fatalf("dry-run output missing generator fallback guidance:\n%s", out)
+	}
+	if strings.Contains(out, "Flywheel stable") {
+		t.Fatalf("dry-run output should not report false Flywheel stable state:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".agents", "evolve", "fitness-baselines")); !os.IsNotExist(err) {
+		t.Fatalf("dry-run baseline dir stat err = %v, want not exist", err)
+	}
+}
+
 func evolveBaselineTestGoals(id, description string) string {
 	return `# Goals
 

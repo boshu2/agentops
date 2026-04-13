@@ -350,7 +350,7 @@ func resolveLoopGoal(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSupervis
 			}
 			sel = selectHighestSeverityEntry(entries, rpiRepoFilter)
 			if sel == nil {
-				fmt.Println("No unconsumed work in queue. Flywheel stable.")
+				printEmptyQueueMessage(cfg)
 				return "", nil, loopBreak, nil
 			}
 			if GetDryRun() {
@@ -395,6 +395,19 @@ func resolveLoopGoal(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSupervis
 	}
 
 	return goal, sel, loopContinue, nil
+}
+
+func printEmptyQueueMessage(cfg rpiLoopSupervisorConfig) {
+	if cfg.Surface != loopSurfaceEvolve {
+		fmt.Println("No unconsumed work in queue. Flywheel stable.")
+		return
+	}
+	fmt.Println("No unconsumed work in next-work queue.")
+	if GetDryRun() {
+		fmt.Println("[dry-run] Evolve generator fallback would inspect bd ready, ao goals measure, testing improvements, validation/bug-hunt passes, drift cleanup, and feature suggestions before dormancy.")
+		return
+	}
+	fmt.Println("Evolve queue stable. Generator fallback layers must be exhausted before treating this as dormancy.")
 }
 
 func preflightQueueSelection(cwd string, sel *queueSelection, cfg rpiLoopSupervisorConfig) (queuePreflightDecision, error) {

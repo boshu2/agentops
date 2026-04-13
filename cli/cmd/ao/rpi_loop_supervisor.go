@@ -23,6 +23,9 @@ const (
 	loopFailurePolicyStop     = "stop"
 	loopFailurePolicyContinue = "continue"
 
+	loopSurfaceRPI    = "rpi"
+	loopSurfaceEvolve = "evolve"
+
 	loopGatePolicyOff        = "off"
 	loopGatePolicyBestEffort = "best-effort"
 	loopGatePolicyRequired   = "required"
@@ -46,6 +49,7 @@ var (
 )
 
 type rpiLoopSupervisorConfig struct {
+	Surface               string
 	RalphPreset           bool
 	FailurePolicy         string
 	CycleRetries          int
@@ -84,6 +88,9 @@ type rpiLoopSupervisorConfig struct {
 
 func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervisorConfig, error) {
 	cfg := buildBaseLoopConfig()
+	if cmd != nil && cmd.Name() == "evolve" {
+		cfg.Surface = loopSurfaceEvolve
+	}
 
 	if rpiSupervisor || rpiRalph {
 		applySupervisorDefaults(cmd, &cfg)
@@ -116,6 +123,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 // buildBaseLoopConfig creates an rpiLoopSupervisorConfig from global flag values.
 func buildBaseLoopConfig() rpiLoopSupervisorConfig {
 	return rpiLoopSupervisorConfig{
+		Surface:               loopSurfaceRPI,
 		RalphPreset:           rpiRalph,
 		FailurePolicy:         strings.ToLower(strings.TrimSpace(rpiFailurePolicy)),
 		CycleRetries:          rpiCycleRetries,
