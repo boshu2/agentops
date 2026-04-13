@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -114,7 +115,7 @@ func (b beadRecord) isEpic() bool {
 var execGitLog = func(args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd := exec.CommandContext(ctx, "git", args...) // #nosec G204 -- fixed git binary; args are read-only log queries built from local bead metadata.
 	out, err := cmd.Output()
 	if ctx.Err() != nil {
 		return "", ctx.Err()
@@ -418,35 +419,37 @@ func patternExistsInRepo(pattern string) bool {
 	}
 	roots := []string{"cli", "skills", "skills-codex", "scripts", "docs", "tests"}
 	for _, root := range roots {
-		if _, err := os.Stat(root); err != nil {
+		openRoot, err := os.OpenRoot(root)
+		if err != nil {
 			continue
 		}
 		found := false
-		_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		_ = fs.WalkDir(openRoot.FS(), ".", func(walkPath string, d fs.DirEntry, err error) error {
 			if err != nil || found {
 				return nil
 			}
 			if d.IsDir() {
-				base := filepath.Base(path)
+				base := path.Base(walkPath)
 				switch base {
 				case ".git", ".beads", ".agents", "node_modules", "vendor", "testdata":
-					return filepath.SkipDir
+					return fs.SkipDir
 				}
 				return nil
 			}
-			if !isAuditSearchFile(path) {
+			if !isAuditSearchFile(walkPath) {
 				return nil
 			}
 			info, statErr := d.Info()
 			if statErr != nil || info.Size() > 1_000_000 {
 				return nil
 			}
-			content, readErr := os.ReadFile(path)
+			content, readErr := openRoot.ReadFile(walkPath)
 			if readErr == nil && strings.Contains(string(content), pattern) {
 				found = true
 			}
 			return nil
 		})
+		_ = openRoot.Close()
 		if found {
 			return true
 		}
@@ -617,8 +620,7 @@ func clusterBeadRecords(records []beadRecord) ([]BeadCluster, []ClusterBead) {
 		}
 		return i
 	}
-	var union func(int, int)
-	union = func(a, b int) {
+	union := func(a, b int) {
 		ra, rb := find(a), find(b)
 		if ra != rb {
 			parent[rb] = ra

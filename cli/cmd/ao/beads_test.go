@@ -370,6 +370,31 @@ func TestAuditBeads_ClassifiesStaleAndConsolidatable(t *testing.T) {
 	}
 }
 
+func TestPatternExistsInRepoSearchesScopedRoots(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+
+	if err := os.MkdirAll(filepath.Join("cli", "cmd"), 0o755); err != nil {
+		t.Fatalf("mkdir cli/cmd: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join("cli", "cmd", "sample.go"), []byte("package main\nconst auditToken = \"needle-root\"\n"), 0o644); err != nil {
+		t.Fatalf("write searchable file: %v", err)
+	}
+	if !patternExistsInRepo("needle-root") {
+		t.Fatalf("patternExistsInRepo should find literal patterns under scoped roots")
+	}
+
+	if err := os.MkdirAll(filepath.Join("scripts", "testdata"), 0o755); err != nil {
+		t.Fatalf("mkdir scripts/testdata: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join("scripts", "testdata", "ignored.sh"), []byte("ignored-needle\n"), 0o644); err != nil {
+		t.Fatalf("write ignored testdata file: %v", err)
+	}
+	if patternExistsInRepo("ignored-needle") {
+		t.Fatalf("patternExistsInRepo should skip ignored traversal directories")
+	}
+}
+
 func TestClusterBeads_DegradesWhenBDAbsent(t *testing.T) {
 	origAvail := bdAvailable
 	defer func() { bdAvailable = origAvail }()
