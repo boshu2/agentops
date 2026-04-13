@@ -207,3 +207,33 @@ func TestCollectPatterns(t *testing.T) {
 		}
 	})
 }
+
+func TestCollectPatterns_DeduplicatesGlobalLocalPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	patternsDir := filepath.Join(tmpDir, ".agents", "patterns")
+	if err := os.MkdirAll(patternsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(
+		filepath.Join(patternsDir, "dedupe.md"),
+		[]byte("# Dedupe Pattern\n\nUse one copy when local and global roots overlap."),
+		0644,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := collectPatterns(tmpDir, "dedupe", 10, patternsDir, 0.8)
+	if err != nil {
+		t.Fatalf("collectPatterns: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d patterns, want 1: %#v", len(got), got)
+	}
+	if got[0].Global {
+		t.Fatalf("overlapping local/global pattern was marked global: %#v", got[0])
+	}
+	if got[0].Name != "Dedupe Pattern" {
+		t.Fatalf("Name = %q, want Dedupe Pattern", got[0].Name)
+	}
+}

@@ -247,6 +247,56 @@ func TestCtx_BuildPromptForPhase_Phase3(t *testing.T) {
 	}
 }
 
+func TestCtx_BuildPromptForPhase_MixedModeFlag(t *testing.T) {
+	opts := defaultPhasedEngineOptions()
+	opts.Mixed = true
+
+	tests := []struct {
+		name     string
+		phaseNum int
+		state    *phasedState
+		want     []string
+	}{
+		{
+			name:     "discovery",
+			phaseNum: 1,
+			state: &phasedState{
+				Goal:       "mixed discovery",
+				TestFirst:  true,
+				SwarmFirst: true,
+				Opts:       opts,
+			},
+			want: []string{"/pre-mortem --mixed"},
+		},
+		{
+			name:     "validation",
+			phaseNum: 3,
+			state: &phasedState{
+				Goal:       "mixed validation",
+				EpicID:     "ag-mixed",
+				TestFirst:  true,
+				SwarmFirst: true,
+				Opts:       opts,
+			},
+			want: []string{"/vibe --mixed recent", "/post-mortem --mixed ag-mixed"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prompt, err := buildPromptForPhase("", tt.phaseNum, tt.state, nil)
+			if err != nil {
+				t.Fatalf("buildPromptForPhase(%d): %v", tt.phaseNum, err)
+			}
+			for _, want := range tt.want {
+				if !strings.Contains(prompt, want) {
+					t.Fatalf("prompt missing %q:\n%s", want, prompt)
+				}
+			}
+		})
+	}
+}
+
 func TestCtx_BuildPromptForPhase_TasklistModeUsesExecutionPacket(t *testing.T) {
 	state := &phasedState{
 		Goal:        "run Codex no-beads lifecycle",

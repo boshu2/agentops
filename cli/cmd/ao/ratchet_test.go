@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -27,6 +28,15 @@ func TestStatusIcon(t *testing.T) {
 				t.Errorf("statusIcon(%q) = %q, want %q", tt.status, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRatchetHelpDescribesPhasedRPIWorkflow(t *testing.T) {
+	if !strings.Contains(ratchetCmd.Long, "phased RPI workflow") {
+		t.Fatalf("ratchet help missing phased RPI wording:\n%s", ratchetCmd.Long)
+	}
+	if strings.Contains(ratchetCmd.Long, "Research-Plan-Implement") {
+		t.Fatalf("ratchet help still contains stale expanded RPI wording:\n%s", ratchetCmd.Long)
 	}
 }
 
