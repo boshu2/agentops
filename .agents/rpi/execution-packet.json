@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "run_id": "20260412T200500Z",
+  "generated_at": "2026-04-12",
+  "phase": "implementation",
+  "phase_verdict": "READY",
+  "goal": "Formalize .agents/ as Karpathy-style wiki with INDEX.md, LOG.md, and wiki/ directory",
+  "goal_slug": "agents-wiki-formalization",
+  "complexity": "standard",
+  "test_first": false,
+  "tracking_mode": "tasklist",
+  "plan_path": ".agents/plans/2026-04-12-agents-wiki-formalization.md",
+  "research_path": ".agents/research/2026-04-12-agents-wiki-architecture-synthesis.md",
+  "pre_mortem_path": ".agents/council/2026-04-12-pre-mortem-wiki-formalization.md",
+  "pre_mortem_verdict": "WARN",
+  "pre_mortem_fixes_applied": true,
+  "pre_mortem_fixes_list": [
+    "pm-20260412-001: Add overnight.go + dream_subcycle.go output path to wiki/sources/",
+    "pm-20260412-003: Add inline INDEX.md append to AppendToLog helper"
+  ],
+  "contract_surfaces": [
+    ".agents/INDEX.md (NEW — canonical catalog)",
+    ".agents/LOG.md (NEW — append-only operation log)",
+    ".agents/wiki/ (NEW — sources/, synthesis/, concepts/, entities/)",
+    "cli/cmd/ao/search.go (extended — wiki scan paths)",
+    "cli/cmd/ao/forge.go (modified — output path ao/sessions → wiki/sources)",
+    "cli/cmd/ao/overnight.go (modified — output path ao/sessions → wiki/sources)",
+    "scripts/generate-index.sh (NEW — INDEX.md generator)"
+  ],
+  "waves": [
+    {"id": "W1", "name": "wiki dirs + LOG.md seed", "depends_on": [], "status": "pending"},
+    {"id": "W2", "name": "INDEX.md + search paths + forge output path", "depends_on": ["W1"], "status": "pending"},
+    {"id": "W3", "name": "LOG.md integration in forge pipeline", "depends_on": ["W2"], "status": "pending"}
+  ],
+  "done_criteria": [
+    ".agents/wiki/{sources,synthesis,concepts,entities}/ exist",
+    ".agents/INDEX.md exists with wikilinked catalog of learnings, plans, research",
+    ".agents/LOG.md exists with seed entry",
+    "ao search finds content in .agents/wiki/sources/",
+    "ao forge transcript --tier=1 writes to .agents/wiki/sources/ not ao/sessions/",
+    "go build ./... clean, go test ./internal/llm/ ./cmd/ao/ pass"
+  ],
+  "crank_instructions": {
+    "wave_order": "W1 → W2 → W3",
+    "commit_strategy": "per-wave commits on main",
+    "validation_per_wave": "go build ./... && go test ./cmd/ao/ ./internal/llm/"
+  }
+}

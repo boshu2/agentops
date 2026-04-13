@@ -115,7 +115,7 @@ func RunDreamSubCycle(ctx context.Context, opts DreamSubCycleOptions) (*DreamSub
 	}
 
 	// Post-loop: Tier 1 forge on recent sessions.
-	outDir := filepath.Join(opts.Cwd, ".agents", "ao", "sessions")
+	outDir := filepath.Join(opts.Cwd, ".agents", "wiki", "sources")
 	t1Summary, t1Err := runDreamTier1ForgePostLoop(opts.Cwd, outDir, "ao-evolve-dream-tier1")
 	if t1Err != nil {
 		result.Degraded = append(result.Degraded, fmt.Sprintf("tier1-forge: %v", t1Err))

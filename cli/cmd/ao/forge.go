@@ -1008,7 +1008,7 @@ func runForgeTier1(w io.Writer, files []string) error {
 		return fmt.Errorf("--tier=1 requires --model (e.g. --model=gemma2:9b)")
 	}
 	cwd, _ := os.Getwd()
-	outDir := filepath.Join(cwd, ".agents", "ao", "sessions")
+	outDir := filepath.Join(cwd, ".agents", "wiki", "sources")
 	_, err := llm.RunForgeTier1(llm.Tier1Options{
 		SourcePaths: files,
 		OutputDir:   outDir,

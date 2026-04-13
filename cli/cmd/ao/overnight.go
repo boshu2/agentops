@@ -504,7 +504,7 @@ func appendOvernightIterationSteps(summary *overnightSummary, iterations []ovn.I
 // config. Degrades honestly: all errors land in summary.Degraded; the Dream
 // run never aborts on Tier 1 failure.
 func runPostLoopTier1Forge(_ context.Context, cwd string, summary *overnightSummary, settings overnightSettings) {
-	outDir := filepath.Join(cwd, ".agents", "ao", "sessions")
+	outDir := filepath.Join(cwd, ".agents", "wiki", "sources")
 	result, err := runDreamTier1ForgePostLoop(cwd, outDir, "ao-dream-tier1")
 	if err != nil {
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("tier1-forge: %v", err))

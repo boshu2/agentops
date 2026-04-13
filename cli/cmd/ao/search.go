@@ -508,6 +508,9 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "brainstorm", "brainstorm", "brainstorm", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "council", "council", "council", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "design", "design", "design", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/sources", "wiki-source", "wiki-sources", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/synthesis", "wiki-synthesis", "wiki-synthesis", limit)
+	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/concepts", "wiki-concept", "wiki-concepts", limit)
 	results = appendSessionSearchResults(results, query, dir, limit)
 
 	return rankUniqueSearchResults(results, limit), nil

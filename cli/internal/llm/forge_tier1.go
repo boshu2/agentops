@@ -191,6 +191,17 @@ func processOneSession(path string, opts Tier1Options, p *parser.Parser, s *Summ
 	if err := WriteSessionPage(outPath, page); err != nil {
 		return "", fmt.Errorf("write: %w", err)
 	}
+
+	// Append to LOG.md and INDEX.md (non-fatal — don't fail the session on log errors).
+	agentsDir := filepath.Dir(filepath.Dir(opts.OutputDir)) // wiki/sources → .agents/
+	title := meta.SessionID
+	if len(notes) > 0 && !notes[0].Skipped && notes[0].Intent != "" {
+		title = notes[0].Intent
+	}
+	relPath := filepath.Join("wiki", "sources", sanitizeSessionID(meta.SessionID))
+	_ = AppendToLog(agentsDir, opts.IngestedBy, "INGEST", title, relPath)
+	_ = AppendToIndex(agentsDir, "Wiki Sources", relPath, title)
+
 	return outPath, nil
 }
 
