@@ -955,7 +955,7 @@ ao goals [command]
       --file string   Path to goals file (auto-detects GOALS.md then GOALS.yaml)
   -h, --help          help for goals
       --json          Output as JSON
-      --timeout int   Check timeout in seconds (default 120)
+      --timeout int   Check timeout in seconds (default 240)
 ```
 
 **Subcommands:**

@@ -70,6 +70,19 @@ func TestGoalsCmd_PersistentFlags(t *testing.T) {
 	}
 }
 
+func TestGoalsCmd_DefaultTimeoutCoversRepoRaceGate(t *testing.T) {
+	flag := goalsCmd.PersistentFlags().Lookup("timeout")
+	if flag == nil {
+		t.Fatal("missing persistent flag \"timeout\"")
+	}
+	if flag.DefValue != "240" {
+		t.Fatalf("timeout default = %q, want 240", flag.DefValue)
+	}
+	if defaultGoalsTimeoutSeconds != 240 {
+		t.Fatalf("defaultGoalsTimeoutSeconds = %d, want 240", defaultGoalsTimeoutSeconds)
+	}
+}
+
 func TestResolveGoalsFile_ExplicitPath(t *testing.T) {
 	// When goalsFile is set explicitly, it should be returned as-is.
 	old := goalsFile

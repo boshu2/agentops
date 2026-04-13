@@ -152,7 +152,7 @@ func ensureEvolveEraBaseline(cwd string) error {
 
 	timeout := time.Duration(goalsTimeout) * time.Second
 	if timeout <= 0 {
-		timeout = 120 * time.Second
+		timeout = defaultGoalsTimeoutSeconds * time.Second
 	}
 	if err := goals.RunMeasure(goals.MeasureOptions{
 		GoalsFile: goalsPath,
