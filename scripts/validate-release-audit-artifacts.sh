@@ -29,18 +29,40 @@ validate_manifest_artifacts() {
     local version="$2"
     local artifact_dir="$3"
     local manifest="$4"
+    local schema_version
     local release_version
+    local manifest_artifact_dir
+    local fast_mode
     local sbom_cyclonedx
     local sbom_spdx
     local security_report
 
+    schema_version="$(jq -r '.schema_version // empty' "$manifest")"
     release_version="$(jq -r '.release_version // empty' "$manifest")"
+    manifest_artifact_dir="$(jq -r '.artifact_dir // empty' "$manifest")"
+    fast_mode="$(jq -r 'if has("fast_mode") then .fast_mode else empty end' "$manifest")"
     sbom_cyclonedx="$(jq -r '.sbom_cyclonedx // empty' "$manifest")"
     sbom_spdx="$(jq -r '.sbom_spdx // empty' "$manifest")"
     security_report="$(jq -r '.security_report // empty' "$manifest")"
+    manifest_artifact_dir="${manifest_artifact_dir%/}"
+
+    if [[ "$schema_version" != "1" ]]; then
+        printf '%s: manifest schema_version=%s, expected 1\n' "$audit" "${schema_version:-<blank>}"
+        return 1
+    fi
 
     if [[ "$release_version" != "$version" ]]; then
         printf '%s: manifest release_version=%s, expected %s\n' "$audit" "$release_version" "$version"
+        return 1
+    fi
+
+    if [[ "$manifest_artifact_dir" != "$artifact_dir" ]]; then
+        printf '%s: manifest artifact_dir=%s, expected %s\n' "$audit" "${manifest_artifact_dir:-<blank>}" "$artifact_dir"
+        return 1
+    fi
+
+    if [[ "$fast_mode" != "false" ]]; then
+        printf '%s: manifest fast_mode=%s, expected false\n' "$audit" "${fast_mode:-<blank>}"
         return 1
     fi
 

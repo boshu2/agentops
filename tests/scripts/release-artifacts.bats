@@ -34,15 +34,17 @@ write_manifest() {
     local run_id="$1"
     local version="$2"
     local fast_mode="$3"
+    local artifact_dir="${4:-.agents/releases/local-ci/$run_id}"
+    local schema_version="${5:-1}"
     local dir="$FAKE_REPO/.agents/releases/local-ci/$run_id"
     mkdir -p "$dir"
 
     cat > "$dir/release-artifacts.json" <<EOF
 {
-  "schema_version": 1,
+  "schema_version": $schema_version,
   "run_id": "$run_id",
   "generated_at": "2026-03-22T21:22:22Z",
-  "artifact_dir": ".agents/releases/local-ci/$run_id",
+  "artifact_dir": "$artifact_dir",
   "release_version": "$version",
   "repo_version": "$version",
   "fast_mode": $fast_mode,
@@ -112,6 +114,36 @@ write_artifact_files() {
     run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"manifest release_version=2.29.0, expected 2.30.0"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects manifest directories that do not match the audit" {
+    write_manifest "20260322T212222Z" "2.29.0" false ".agents/releases/local-ci/20260322T204431Z"
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"manifest artifact_dir=.agents/releases/local-ci/20260322T204431Z, expected .agents/releases/local-ci/20260322T212222Z"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects fast-mode manifest artifacts" {
+    write_manifest "20260322T212222Z" "2.29.0" true
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"manifest fast_mode=true, expected false"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects unsupported manifest schemas" {
+    write_manifest "20260322T212222Z" "2.29.0" false ".agents/releases/local-ci/20260322T212222Z" 2
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"manifest schema_version=2, expected 1"* ]]
 }
 
 @test "validate-release-audit-artifacts accepts legacy versioned artifact dirs" {
