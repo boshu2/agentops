@@ -75,7 +75,7 @@ bd create "Refresh tracked issues.jsonl after tracker mutations" -t task -p 1 --
 # or: bd dep add <child-id> --type parent-child --blocked-by pl-vnu.5
 bd update <child-id> --status in_progress
 # execute work against child
-bd close <child-id> --reason "Export hygiene documented and validated"
+bd close <child-id> --reason "files: .beads/issues.jsonl export guidance; validation: bd export -o .beads/issues.jsonl; parent: pl-vnu.5 still has Dolt remote handling gap"
 bd update pl-vnu.5 --notes "Remaining gap is now narrowed to Dolt remote handling"
 ```
 
@@ -312,7 +312,7 @@ Before closing, verify:
 
 **Minimal closure** (simple tasks):
 ```bash
-bd close task-123 --reason "Implemented feature X"
+bd close task-123 --reason "files: path/to/file; validation: command-that-passed; parent: none"
 ```
 
 **Detailed closure** (complex work):
@@ -324,12 +324,12 @@ TESTS: 12 tests passing (auth, rotation, expiry, errors)
 FOLLOW-UP: Filed perf-99 for token cleanup job"
 
 # Close with summary
-bd close task-123 --reason "Implemented OAuth refresh token rotation with rate limiting. All security guidelines met. Tests passing."
+bd close task-123 --reason "files: auth/refresh.go, auth/refresh_test.go; validation: go test ./auth; parent: reconciled"
 ```
 
 **If the issue was a child bead**:
 ```bash
-bd close <child-id> --reason "Closed concrete remaining gap"
+bd close <child-id> --reason "files: path/to/changed-file; validation: command-that-passed; parent: <parent-id> reconciled"
 bd show <parent-id>
 bd update <parent-id> --notes "Remaining gap now ..."   # or close parent if nothing remains
 ```
