@@ -391,6 +391,25 @@ extract_scoped_files() {
   } | sed '/^[[:space:]]*$/d' | expand_scoped_paths_from_stream | sort -u
 }
 
+description_has_file_patterns() {
+  # Returns 0 (true) if the bead's description mentions file-like patterns
+  # (contains "/" or ".go" or ".sh" or ".md"). Used to distinguish a genuine
+  # parser miss from a bead that simply has no file scope at all.
+  local child="$1"
+  local description=""
+  local child_json=""
+  local human_output=""
+
+  if child_json="$(bd_show_json "$child" 2>/dev/null)"; then
+    description="$(printf '%s\n' "$child_json" | jq -r '.description // ""')"
+  else
+    human_output="$(bd show "$child" 2>/dev/null || true)"
+    description="$(printf '%s\n' "$human_output" | extract_description_from_show_text)"
+  fi
+
+  printf '%s\n' "$description" | grep -qE '/|\.go|\.sh|\.md'
+}
+
 issue_timestamp() {
   local child_json="$1"
   local field="$2"
@@ -628,7 +647,11 @@ classify_child() {
             build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no commit evidence for scoped files)" "$packet_json" "pass"
           fi
         elif [[ "${#scoped_files[@]}" -eq 0 ]]; then
-          build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+          if description_has_file_patterns "$child"; then
+            build_child_result "$child" "$scoped_json" "none" "parser_miss: description mentions file-like paths but extraction found 0 scoped files — manual review recommended" '[]' "warn"
+          else
+            build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+          fi
         else
           build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no commit evidence (checked grace window)" '[]' "fail"
         fi
@@ -644,7 +667,11 @@ classify_child() {
       packet_json="$(packet_matches_json "$packet_path")"
       build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no scoped files)" "$packet_json" "pass"
     else
-      build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+      if description_has_file_patterns "$child"; then
+        build_child_result "$child" "$scoped_json" "none" "parser_miss: description mentions file-like paths but extraction found 0 scoped files — manual review recommended" '[]' "warn"
+      else
+        build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
+      fi
     fi
     return 0
   fi
