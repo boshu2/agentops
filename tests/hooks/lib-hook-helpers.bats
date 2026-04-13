@@ -933,10 +933,11 @@ EOF
     [ "$checked_children" = "0" ]
 }
 
-@test "closure-integrity-audit.sh: uses durable closure packet when commit proof lands after close" {
+@test "closure-integrity-audit.sh: reports durable closure packet in explicit packet bucket" {
     local audit_repo="$TMP_TEST_DIR/audit-durable"
     local durable_packet="$TMP_TEST_DIR/durable-packet.json"
-    local staged_child=""
+    local packet_child=""
+    local child_mode=""
     setup_audit_repo "$audit_repo"
     mkdir -p "$audit_repo/.agents/releases/evidence-only-closures"
     printf 'legacy\n' > "$audit_repo/proof.md"
@@ -951,7 +952,7 @@ EOF
         target_type: "issue",
         created_at: "2026-03-09T10:05:00Z",
         producer: "bats",
-        evidence_mode: "staged",
+        evidence_mode: "future_packet_mode",
         validation_commands: ["bash tests/hooks/lib-hook-helpers.bats"],
         repo_state: {
             repo_root: ".",
@@ -977,8 +978,10 @@ EOF
     run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope auto ag-durable' -- \
         "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
     [ "$status" -eq 0 ]
-    staged_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes.staged[0]')
-    [ "$staged_child" = "ag-durable.1" ]
+    packet_child=$(printf '%s\n' "$output" | jq -r '.summary.evidence_modes["evidence-only-packet"][0]')
+    [ "$packet_child" = "ag-durable.1" ]
+    child_mode=$(printf '%s\n' "$output" | jq -r '.children[0].evidence_mode')
+    [ "$child_mode" = "evidence-only-packet" ]
 }
 
 # NOTE: "accepts durable closure packet without scoped files" test removed —

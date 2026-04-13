@@ -546,11 +546,6 @@ durable_packet_path_for_child() {
   return 1
 }
 
-packet_evidence_mode() {
-  local packet_path="$1"
-  jq -r '.evidence_mode' "$packet_path"
-}
-
 packet_matches_json() {
   local packet_path="$1"
 
@@ -589,7 +584,6 @@ classify_child() {
   local created_at=""
   local closed_at=""
   local packet_path=""
-  local packet_mode=""
   local scoped_json commit_json staged_json worktree_json packet_json
   local -a scoped_files=()
 
@@ -663,7 +657,6 @@ classify_child() {
   if [[ "${#scoped_files[@]}" -eq 0 ]]; then
     # Check evidence-only closure packets before declaring parser_miss
     if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
-      packet_mode="$(packet_evidence_mode "$packet_path")"
       packet_json="$(packet_matches_json "$packet_path")"
       build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet (no scoped files)" "$packet_json" "pass"
     else
@@ -701,9 +694,8 @@ classify_child() {
   esac
 
   if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
-    packet_mode="$(packet_evidence_mode "$packet_path")"
     packet_json="$(packet_matches_json "$packet_path")"
-    build_child_result "$child" "$scoped_json" "$packet_mode" "matched durable closure proof packet" "$packet_json" "pass"
+    build_child_result "$child" "$scoped_json" "evidence-only-packet" "matched durable closure proof packet" "$packet_json" "pass"
     return 0
   fi
 
