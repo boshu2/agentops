@@ -10,7 +10,14 @@ import (
 
 func TestWritePhaseHandoff_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	h := &phaseHandoff{
+	h := testPhaseHandoffRoundTripFixture()
+	got := writeAndReadPhaseHandoff(t, dir, h, 1)
+
+	assertPhaseHandoffRoundTrip(t, got, h)
+}
+
+func testPhaseHandoffRoundTripFixture() *phaseHandoff {
+	return &phaseHandoff{
 		SchemaVersion:     1,
 		RunID:             "test-run",
 		Phase:             1,
@@ -30,60 +37,73 @@ func TestWritePhaseHandoff_RoundTrip(t *testing.T) {
 		Narrative:         "Discovery completed successfully.",
 		CompletedAt:       "2026-03-02T12:00:00Z",
 	}
+}
 
+func writeAndReadPhaseHandoff(t *testing.T, dir string, h *phaseHandoff, phase int) *phaseHandoff {
+	t.Helper()
 	if err := writePhaseHandoff(dir, h); err != nil {
 		t.Fatalf("writePhaseHandoff: %v", err)
 	}
 
-	got, err := readPhaseHandoff(dir, 1)
+	got, err := readPhaseHandoff(dir, phase)
 	if err != nil {
 		t.Fatalf("readPhaseHandoff: %v", err)
 	}
+	return got
+}
 
-	if got.RunID != h.RunID {
-		t.Errorf("RunID = %q, want %q", got.RunID, h.RunID)
-	}
-	if got.Goal != h.Goal {
-		t.Errorf("Goal = %q, want %q", got.Goal, h.Goal)
-	}
-	if got.EpicID != h.EpicID {
-		t.Errorf("EpicID = %q, want %q", got.EpicID, h.EpicID)
-	}
-	if got.Status != h.Status {
-		t.Errorf("Status = %q, want %q", got.Status, h.Status)
-	}
-	if got.DurationSeconds != h.DurationSeconds {
-		t.Errorf("DurationSeconds = %f, want %f", got.DurationSeconds, h.DurationSeconds)
-	}
+func assertPhaseHandoffRoundTrip(t *testing.T, got, want *phaseHandoff) {
+	t.Helper()
+	assertPhaseHandoffScalarFields(t, got, want)
 	if v, ok := got.Verdicts["pre_mortem"]; !ok || v != "PASS" {
 		t.Errorf("Verdicts[pre_mortem] = %q, want PASS", v)
 	}
-	if len(got.ArtifactsProduced) != 1 || got.ArtifactsProduced[0] != "plan.md" {
-		t.Errorf("ArtifactsProduced = %v, want [plan.md]", got.ArtifactsProduced)
+	assertStringSliceField(t, "ArtifactsProduced", got.ArtifactsProduced, want.ArtifactsProduced)
+	assertStringSliceField(t, "DecisionsMade", got.DecisionsMade, want.DecisionsMade)
+	assertStringSliceField(t, "OpenRisks", got.OpenRisks, want.OpenRisks)
+	assertStringSliceField(t, "AppliedFindings", got.AppliedFindings, want.AppliedFindings)
+	assertStringSliceField(t, "PlanningRules", got.PlanningRules, want.PlanningRules)
+	assertStringSliceField(t, "KnownRisks", got.KnownRisks, want.KnownRisks)
+}
+
+func assertPhaseHandoffScalarFields(t *testing.T, got, want *phaseHandoff) {
+	t.Helper()
+	fields := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{name: "RunID", got: got.RunID, want: want.RunID},
+		{name: "Goal", got: got.Goal, want: want.Goal},
+		{name: "EpicID", got: got.EpicID, want: want.EpicID},
+		{name: "Status", got: got.Status, want: want.Status},
+		{name: "Narrative", got: got.Narrative, want: want.Narrative},
+		{name: "CompletedAt", got: got.CompletedAt, want: want.CompletedAt},
 	}
-	if len(got.DecisionsMade) != 1 || got.DecisionsMade[0] != "use JWT" {
-		t.Errorf("DecisionsMade = %v, want [use JWT]", got.DecisionsMade)
+	for _, field := range fields {
+		if field.got != field.want {
+			t.Errorf("%s = %q, want %q", field.name, field.got, field.want)
+		}
 	}
-	if len(got.OpenRisks) != 1 || got.OpenRisks[0] != "migration downtime" {
-		t.Errorf("OpenRisks = %v, want [migration downtime]", got.OpenRisks)
+	if got.DurationSeconds != want.DurationSeconds {
+		t.Errorf("DurationSeconds = %f, want %f", got.DurationSeconds, want.DurationSeconds)
 	}
-	if len(got.AppliedFindings) != 1 || got.AppliedFindings[0] != "f-2026-03-09-001" {
-		t.Errorf("AppliedFindings = %v, want [f-2026-03-09-001]", got.AppliedFindings)
+	if got.ToolCalls != want.ToolCalls {
+		t.Errorf("ToolCalls = %d, want %d", got.ToolCalls, want.ToolCalls)
 	}
-	if len(got.PlanningRules) != 1 || got.PlanningRules[0] != "f-2026-03-09-001 — Do not skip prevention context" {
-		t.Errorf("PlanningRules = %v, want planning rule", got.PlanningRules)
+}
+
+func assertStringSliceField(t *testing.T, name string, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Errorf("%s = %v, want %v", name, got, want)
+		return
 	}
-	if len(got.KnownRisks) != 1 || got.KnownRisks[0] != "f-2026-03-09-001 — Validate before implementation" {
-		t.Errorf("KnownRisks = %v, want known risk", got.KnownRisks)
-	}
-	if got.ToolCalls != h.ToolCalls {
-		t.Errorf("ToolCalls = %d, want %d", got.ToolCalls, h.ToolCalls)
-	}
-	if got.Narrative != h.Narrative {
-		t.Errorf("Narrative = %q, want %q", got.Narrative, h.Narrative)
-	}
-	if got.CompletedAt != h.CompletedAt {
-		t.Errorf("CompletedAt = %q, want %q", got.CompletedAt, h.CompletedAt)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("%s = %v, want %v", name, got, want)
+			return
+		}
 	}
 }
 
