@@ -8,11 +8,16 @@
 param(
   [string]$Version = "latest",
   [string]$InstallDir = (Join-Path $HOME "bin"),
+  [string]$GithubToken = $env:GITHUB_TOKEN,
   [switch]$NoPathUpdate
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+
+if ([string]::IsNullOrWhiteSpace($GithubToken) -and -not [string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+  $GithubToken = $env:GH_TOKEN
+}
 
 function Write-Info {
   param([string]$Message)
@@ -33,15 +38,28 @@ function Get-AOArch {
   }
 }
 
+function Get-GitHubHeaders {
+  $headers = @{
+    "Accept" = "application/vnd.github+json"
+    "X-GitHub-Api-Version" = "2022-11-28"
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($GithubToken)) {
+    $headers["Authorization"] = "Bearer $GithubToken"
+  }
+
+  return $headers
+}
+
 function Resolve-Release {
   param([string]$RequestedVersion)
 
   if ($RequestedVersion -eq "latest") {
-    return Invoke-RestMethod -Uri "https://api.github.com/repos/boshu2/agentops/releases/latest" -Headers @{ "Accept" = "application/vnd.github+json" }
+    return Invoke-RestMethod -Uri "https://api.github.com/repos/boshu2/agentops/releases/latest" -Headers (Get-GitHubHeaders)
   }
 
   $tag = [Uri]::EscapeDataString($RequestedVersion)
-  return Invoke-RestMethod -Uri "https://api.github.com/repos/boshu2/agentops/releases/tags/$tag" -Headers @{ "Accept" = "application/vnd.github+json" }
+  return Invoke-RestMethod -Uri "https://api.github.com/repos/boshu2/agentops/releases/tags/$tag" -Headers (Get-GitHubHeaders)
 }
 
 function Get-ReleaseAsset {

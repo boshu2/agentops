@@ -652,6 +652,8 @@ jobs:
 
       - name: Run native Windows smoke tests
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .\tests\windows\test-windows-smoke.ps1
 
   cli-integration:
