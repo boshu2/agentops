@@ -1852,6 +1852,12 @@ func TestRPILoop_DryRun_EmptyQueue(t *testing.T) {
 	if !strings.Contains(out, "No unconsumed work in queue. Flywheel stable.") {
 		t.Fatalf("expected queue-only empty state message, got:\n%s", out)
 	}
+	if !strings.Contains(out, "=== RPI Loop: Cycle 1 ===") {
+		t.Fatalf("expected RPI loop label, got:\n%s", out)
+	}
+	if !strings.Contains(out, "RPI loop finished after 0 cycle(s).") {
+		t.Fatalf("expected RPI completion label, got:\n%s", out)
+	}
 	if strings.Contains(out, "Evolve generator fallback") {
 		t.Fatalf("rpi loop should not print evolve generator fallback guidance:\n%s", out)
 	}

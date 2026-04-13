@@ -197,6 +197,15 @@ func TestEvolveDryRunEmptyQueueShowsGeneratorFallback(t *testing.T) {
 	if !strings.Contains(out, "No unconsumed work in next-work queue.") {
 		t.Fatalf("dry-run output missing empty next-work queue summary:\n%s", out)
 	}
+	if !strings.Contains(out, "=== Evolve Loop: Cycle 1 ===") {
+		t.Fatalf("dry-run output missing evolve loop label:\n%s", out)
+	}
+	if !strings.Contains(out, "Evolve loop finished after 0 cycle(s).") {
+		t.Fatalf("dry-run output missing evolve completion label:\n%s", out)
+	}
+	if strings.Contains(out, "RPI Loop") || strings.Contains(out, "RPI loop finished") {
+		t.Fatalf("dry-run output should not use RPI loop labels:\n%s", out)
+	}
 	if !strings.Contains(out, "Evolve generator fallback would inspect bd ready, ao goals measure") {
 		t.Fatalf("dry-run output missing generator fallback guidance:\n%s", out)
 	}

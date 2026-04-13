@@ -226,7 +226,8 @@ func executeLoopCycles(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSuperv
 			break
 		}
 
-		fmt.Printf("\n=== RPI Loop: Cycle %d ===\n", cycle)
+		loopLabel := loopSurfaceDisplayName(cfg)
+		fmt.Printf("\n=== %s Loop: Cycle %d ===\n", loopLabel, cycle)
 		if err := maybeRunCompileProducerCadence(cwd, explicitGoal, cfg, &compileState); err != nil {
 			return err
 		}
@@ -251,8 +252,15 @@ func executeLoopCycles(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSuperv
 		}
 	}
 
-	fmt.Printf("\nRPI loop finished after %d cycle(s).\n", executedCycles)
+	fmt.Printf("\n%s loop finished after %d cycle(s).\n", loopSurfaceDisplayName(cfg), executedCycles)
 	return nil
+}
+
+func loopSurfaceDisplayName(cfg rpiLoopSupervisorConfig) string {
+	if cfg.Surface == loopSurfaceEvolve {
+		return "Evolve"
+	}
+	return "RPI"
 }
 
 func maybeRunCompileProducerCadence(cwd, explicitGoal string, cfg rpiLoopSupervisorConfig, state *compileProducerState) error {
