@@ -21,6 +21,19 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	prev := snapshotLoopSupervisorGlobals()
 	defer restoreLoopSupervisorGlobals(prev)
 
+	configureBaseLoopConfigGlobals()
+	cfg := buildBaseLoopConfig()
+
+	assertBaseLoopRetryConfig(t, cfg)
+	assertBaseLoopCompileConfig(t, cfg)
+	assertBaseLoopLeaseConfig(t, cfg)
+	assertBaseLoopCleanupConfig(t, cfg)
+	assertBaseLoopGateConfig(t, cfg)
+	assertBaseLoopLandingConfig(t, cfg)
+	assertBaseLoopCommandConfig(t, cfg)
+}
+
+func configureBaseLoopConfigGlobals() {
 	rpiFailurePolicy = "continue"
 	rpiCycleRetries = 5
 	rpiRetryBackoff = 30 * time.Second
@@ -49,9 +62,10 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	rpiBDSyncPolicy = "always"
 	rpiCommandTimeout = 30 * time.Minute
 	rpiKillSwitchPath = "/tmp/KILL"
+}
 
-	cfg := buildBaseLoopConfig()
-
+func assertBaseLoopRetryConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if cfg.FailurePolicy != "continue" {
 		t.Errorf("FailurePolicy = %q, want continue", cfg.FailurePolicy)
 	}
@@ -64,6 +78,10 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	if cfg.CycleDelay != 10*time.Minute {
 		t.Errorf("CycleDelay = %v, want 10m", cfg.CycleDelay)
 	}
+}
+
+func assertBaseLoopCompileConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if !cfg.CompileEnabled {
 		t.Error("expected CompileEnabled=true")
 	}
@@ -76,6 +94,10 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	if !cfg.CompileDefrag {
 		t.Error("expected CompileDefrag=true")
 	}
+}
+
+func assertBaseLoopLeaseConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if !cfg.LeaseEnabled {
 		t.Error("expected LeaseEnabled=true")
 	}
@@ -91,12 +113,20 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	if cfg.DetachedBranchPrefix != "rpi-" {
 		t.Errorf("DetachedBranchPrefix = %q", cfg.DetachedBranchPrefix)
 	}
+}
+
+func assertBaseLoopCleanupConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if !cfg.AutoClean {
 		t.Error("expected AutoClean=true")
 	}
 	if cfg.AutoCleanStaleAfter != 48*time.Hour {
 		t.Errorf("AutoCleanStaleAfter = %v", cfg.AutoCleanStaleAfter)
 	}
+}
+
+func assertBaseLoopGateConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if cfg.GatePolicy != "best-effort" {
 		t.Errorf("GatePolicy = %q", cfg.GatePolicy)
 	}
@@ -106,6 +136,10 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	if cfg.SecurityGateScript != "security.sh" {
 		t.Errorf("SecurityGateScript = %q", cfg.SecurityGateScript)
 	}
+}
+
+func assertBaseLoopLandingConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if cfg.LandingPolicy != "commit" {
 		t.Errorf("LandingPolicy = %q", cfg.LandingPolicy)
 	}
@@ -118,6 +152,10 @@ func TestBuildBaseLoopConfig(t *testing.T) {
 	if cfg.BDSyncPolicy != "always" {
 		t.Errorf("BDSyncPolicy = %q", cfg.BDSyncPolicy)
 	}
+}
+
+func assertBaseLoopCommandConfig(t *testing.T, cfg rpiLoopSupervisorConfig) {
+	t.Helper()
 	if cfg.CommandTimeout != 30*time.Minute {
 		t.Errorf("CommandTimeout = %v", cfg.CommandTimeout)
 	}
