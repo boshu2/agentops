@@ -498,137 +498,175 @@ func TestPoolIngestCoverage_RubricWeightedSum(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPoolIngestCoverage_BuildCandidateFromLearningBlock(t *testing.T) {
-	fileDate := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
+	fixture := newPoolIngestCandidateFixture()
 
 	t.Run("valid block produces candidate", func(t *testing.T) {
-		b := learningBlock{
+		block := learningBlock{
 			Title:      "Test Learning",
 			ID:         "L1",
 			Category:   "process",
 			Confidence: "high",
 			Body:       "## What We Learned\n\nRun go test before commit.\n",
 		}
-		cand, scoring, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if !ok {
-			t.Fatal("expected ok=true")
-		}
-		if cand.ID == "" {
-			t.Error("expected non-empty ID")
-		}
-		if cand.Type != types.KnowledgeTypeLearning {
-			t.Errorf("Type = %q, want %q", cand.Type, types.KnowledgeTypeLearning)
-		}
-		if cand.RawScore <= 0 || cand.RawScore > 1.0 {
-			t.Errorf("RawScore = %v, want (0, 1]", cand.RawScore)
-		}
-		if scoring.RawScore != cand.RawScore {
-			t.Errorf("scoring.RawScore = %v, want %v", scoring.RawScore, cand.RawScore)
-		}
-		if scoring.GateRequired && cand.Tier == "" {
-			t.Error("if gate required, tier should be set")
-		}
-		if cand.Maturity != types.MaturityProvisional {
-			t.Errorf("Maturity = %q, want %q", cand.Maturity, types.MaturityProvisional)
-		}
-		if cand.ExtractedAt != fileDate {
-			t.Errorf("ExtractedAt = %v, want %v", cand.ExtractedAt, fileDate)
-		}
+		cand, scoring := fixture.mustBuildCandidate(t, block)
+		fixture.assertValidLearningCandidate(t, cand, scoring)
 	})
 
 	t.Run("empty title returns not ok", func(t *testing.T) {
-		b := learningBlock{Title: "", Body: "some body"}
-		_, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if ok {
-			t.Error("expected ok=false for empty title")
-		}
+		fixture.assertRejected(t, learningBlock{Title: "", Body: "some body"}, "empty title")
 	})
 
 	t.Run("empty body returns not ok", func(t *testing.T) {
-		b := learningBlock{Title: "Title", Body: ""}
-		_, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if ok {
-			t.Error("expected ok=false for empty body")
-		}
+		fixture.assertRejected(t, learningBlock{Title: "Title", Body: ""}, "empty body")
 	})
 
 	t.Run("whitespace-only title returns not ok", func(t *testing.T) {
-		b := learningBlock{Title: "   ", Body: "some body"}
-		_, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if ok {
-			t.Error("expected ok=false for whitespace-only title")
-		}
+		fixture.assertRejected(t, learningBlock{Title: "   ", Body: "some body"}, "whitespace-only title")
 	})
 
 	t.Run("stub 'no significant learnings' body returns not ok", func(t *testing.T) {
-		b := learningBlock{
+		block := learningBlock{
 			Title: "Session Summary",
 			ID:    "L-stub",
 			Body:  "No significant learnings from this session.",
 		}
-		_, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if ok {
-			t.Error("expected ok=false for stub 'no significant learnings' body")
-		}
+		fixture.assertRejected(t, block, "stub 'no significant learnings' body")
 	})
 
 	t.Run("decision category sets KnowledgeTypeDecision", func(t *testing.T) {
-		b := learningBlock{
+		block := learningBlock{
 			Title:      "Always Use Conventional Commits",
 			ID:         "L-dec",
 			Category:   "decision",
 			Confidence: "high",
 			Body:       "We decided to always use conventional commits for consistency.",
 		}
-		cand, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if !ok {
-			t.Fatal("expected ok=true")
-		}
-		if cand.Type != types.KnowledgeTypeDecision {
-			t.Errorf("Type = %q, want %q", cand.Type, types.KnowledgeTypeDecision)
-		}
+		cand, _ := fixture.mustBuildCandidate(t, block)
+		assertCandidateType(t, cand, types.KnowledgeTypeDecision)
 	})
 
 	t.Run("high confidence boosts raw score", func(t *testing.T) {
-		bHigh := learningBlock{Title: "Test", ID: "L1", Confidence: "high", Body: "Some body content here."}
-		bLow := learningBlock{Title: "Test", ID: "L2", Confidence: "low", Body: "Some body content here."}
-		candHigh, _, _ := buildCandidateFromLearningBlock(bHigh, "/test/file.md", fileDate, "ag-xyz")
-		candLow, _, _ := buildCandidateFromLearningBlock(bLow, "/test/file.md", fileDate, "ag-xyz")
-		if candHigh.RawScore <= candLow.RawScore {
-			t.Errorf("high confidence score %v should be > low confidence score %v", candHigh.RawScore, candLow.RawScore)
-		}
+		high := learningBlock{Title: "Test", ID: "L1", Confidence: "high", Body: "Some body content here."}
+		low := learningBlock{Title: "Test", ID: "L2", Confidence: "low", Body: "Some body content here."}
+		candHigh, _ := fixture.mustBuildCandidate(t, high)
+		candLow, _ := fixture.mustBuildCandidate(t, low)
+		assertRawScoreGreater(t, candHigh, candLow)
 	})
 
 	t.Run("long ID gets truncated with hash", func(t *testing.T) {
 		longID := strings.Repeat("x", 200)
-		b := learningBlock{Title: "Test", ID: longID, Confidence: "medium", Body: "Some learning body."}
-		cand, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if !ok {
-			t.Fatal("expected ok=true")
-		}
-		if len(cand.ID) > 120 {
-			t.Errorf("ID length = %d, want <= 120", len(cand.ID))
-		}
+		block := learningBlock{Title: "Test", ID: longID, Confidence: "medium", Body: "Some learning body."}
+		cand, _ := fixture.mustBuildCandidate(t, block)
+		assertCandidateIDMaxLength(t, cand, 120)
 	})
 
 	t.Run("metadata populated", func(t *testing.T) {
-		b := learningBlock{Title: "Test", ID: "L1", Category: "process", Confidence: "high", Body: "Body text."}
-		cand, _, ok := buildCandidateFromLearningBlock(b, "/test/file.md", fileDate, "ag-xyz")
-		if !ok {
-			t.Fatal("expected ok=true")
-		}
-		if cand.Metadata == nil {
-			t.Fatal("expected non-nil Metadata")
-		}
-		if cand.Metadata["pending_category"] != "process" {
-			t.Errorf("pending_category = %v, want %q", cand.Metadata["pending_category"], "process")
-		}
-		if cand.Metadata["pending_confidence"] != "high" {
-			t.Errorf("pending_confidence = %v, want %q", cand.Metadata["pending_confidence"], "high")
-		}
-		if cand.Metadata["pending_title"] != "Test" {
-			t.Errorf("pending_title = %v, want %q", cand.Metadata["pending_title"], "Test")
-		}
+		block := learningBlock{Title: "Test", ID: "L1", Category: "process", Confidence: "high", Body: "Body text."}
+		cand, _ := fixture.mustBuildCandidate(t, block)
+		assertCandidateMetadata(t, cand, map[string]string{
+			"pending_category":   "process",
+			"pending_confidence": "high",
+			"pending_title":      "Test",
+		})
 	})
+}
+
+type poolIngestCandidateFixture struct {
+	fileDate    time.Time
+	srcPath     string
+	sessionHint string
+}
+
+func newPoolIngestCandidateFixture() poolIngestCandidateFixture {
+	return poolIngestCandidateFixture{
+		fileDate:    time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC),
+		srcPath:     "/test/file.md",
+		sessionHint: "ag-xyz",
+	}
+}
+
+func (f poolIngestCandidateFixture) build(block learningBlock) (types.Candidate, types.Scoring, bool) {
+	return buildCandidateFromLearningBlock(block, f.srcPath, f.fileDate, f.sessionHint)
+}
+
+func (f poolIngestCandidateFixture) mustBuildCandidate(t *testing.T, block learningBlock) (types.Candidate, types.Scoring) {
+	t.Helper()
+
+	cand, scoring, ok := f.build(block)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	return cand, scoring
+}
+
+func (f poolIngestCandidateFixture) assertRejected(t *testing.T, block learningBlock, reason string) {
+	t.Helper()
+
+	_, _, ok := f.build(block)
+	if ok {
+		t.Fatalf("expected ok=false for %s", reason)
+	}
+}
+
+func (f poolIngestCandidateFixture) assertValidLearningCandidate(t *testing.T, cand types.Candidate, scoring types.Scoring) {
+	t.Helper()
+
+	if cand.ID == "" {
+		t.Error("expected non-empty ID")
+	}
+	assertCandidateType(t, cand, types.KnowledgeTypeLearning)
+	if cand.RawScore <= 0 || cand.RawScore > 1.0 {
+		t.Errorf("RawScore = %v, want (0, 1]", cand.RawScore)
+	}
+	if scoring.RawScore != cand.RawScore {
+		t.Errorf("scoring.RawScore = %v, want %v", scoring.RawScore, cand.RawScore)
+	}
+	if scoring.GateRequired && cand.Tier == "" {
+		t.Error("if gate required, tier should be set")
+	}
+	if cand.Maturity != types.MaturityProvisional {
+		t.Errorf("Maturity = %q, want %q", cand.Maturity, types.MaturityProvisional)
+	}
+	if cand.ExtractedAt != f.fileDate {
+		t.Errorf("ExtractedAt = %v, want %v", cand.ExtractedAt, f.fileDate)
+	}
+}
+
+func assertCandidateType(t *testing.T, cand types.Candidate, want types.KnowledgeType) {
+	t.Helper()
+
+	if cand.Type != want {
+		t.Errorf("Type = %q, want %q", cand.Type, want)
+	}
+}
+
+func assertRawScoreGreater(t *testing.T, high types.Candidate, low types.Candidate) {
+	t.Helper()
+
+	if high.RawScore <= low.RawScore {
+		t.Errorf("high confidence score %v should be > low confidence score %v", high.RawScore, low.RawScore)
+	}
+}
+
+func assertCandidateIDMaxLength(t *testing.T, cand types.Candidate, maxLen int) {
+	t.Helper()
+
+	if len(cand.ID) > maxLen {
+		t.Errorf("ID length = %d, want <= %d", len(cand.ID), maxLen)
+	}
+}
+
+func assertCandidateMetadata(t *testing.T, cand types.Candidate, want map[string]string) {
+	t.Helper()
+
+	if cand.Metadata == nil {
+		t.Fatal("expected non-nil Metadata")
+	}
+	for key, wantValue := range want {
+		if cand.Metadata[key] != wantValue {
+			t.Errorf("%s = %v, want %q", key, cand.Metadata[key], wantValue)
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
