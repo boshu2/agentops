@@ -258,6 +258,7 @@ func updateExecutionPacketProof(cwd string, state *phasedState) error {
 	}
 
 	applyExecutionPacketProofState(packet, state)
+	applyExecutionPacketMixedProvenance(packet, state, cwd)
 	runID := executionPacketProofRunID(packet, state)
 	attachExecutionPacketProofArtifacts(packet, collectRunArtifacts(cwd, runID))
 
@@ -325,6 +326,51 @@ func applyExecutionPacketProofState(packet map[string]any, state *phasedState) {
 	if strings.TrimSpace(string(state.Complexity)) != "" {
 		packet["complexity"] = string(state.Complexity)
 	}
+}
+
+func applyExecutionPacketMixedProvenance(packet map[string]any, state *phasedState, cwd string) {
+	if state == nil || !state.Opts.Mixed {
+		return
+	}
+	packet["mixed_mode_requested"] = true
+
+	prov, ok := latestMixedModeProvenanceFromHandoffs(cwd)
+	if !ok {
+		return
+	}
+	packet["mixed_mode_effective"] = prov.Effective
+	setPacketString(packet, "planner_vendor", prov.PlannerVendor)
+	setPacketString(packet, "reviewer_vendor", prov.ReviewerVendor)
+	setPacketString(packet, "mixed_mode_degraded_reason", prov.DegradedReason)
+}
+
+func latestMixedModeProvenanceFromHandoffs(cwd string) (mixedModeProvenance, bool) {
+	handoffs, err := readAllHandoffs(cwd, 4)
+	if err != nil {
+		return mixedModeProvenance{}, false
+	}
+	for i := len(handoffs) - 1; i >= 0; i-- {
+		h := handoffs[i]
+		if h == nil || !h.MixedModeRequested {
+			continue
+		}
+		return mixedModeProvenance{
+			Requested:      h.MixedModeRequested,
+			Effective:      h.MixedModeEffective,
+			PlannerVendor:  h.PlannerVendor,
+			ReviewerVendor: h.ReviewerVendor,
+			DegradedReason: h.MixedModeDegradedReason,
+		}, true
+	}
+	return mixedModeProvenance{}, false
+}
+
+func setPacketString(packet map[string]any, key, value string) {
+	if strings.TrimSpace(value) == "" {
+		delete(packet, key)
+		return
+	}
+	packet[key] = value
 }
 
 func executionPacketProofRunID(packet map[string]any, state *phasedState) string {

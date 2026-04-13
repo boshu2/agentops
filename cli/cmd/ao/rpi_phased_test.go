@@ -175,6 +175,12 @@ func TestBuildPromptForPhase(t *testing.T) {
 			contains: "--quick",
 		},
 		{
+			name:     "discovery mixed mode reaches pre-mortem",
+			phase:    1,
+			state:    &phasedState{Goal: "add auth", Opts: phasedEngineOptions{Mixed: true}},
+			contains: "/pre-mortem --mixed",
+		},
+		{
 			name:     "implementation with epic",
 			phase:    2,
 			state:    &phasedState{EpicID: "ag-5k2"},
@@ -203,6 +209,18 @@ func TestBuildPromptForPhase(t *testing.T) {
 			phase:    3,
 			state:    &phasedState{EpicID: "ag-5k2", FastPath: true},
 			contains: "/vibe --quick recent",
+		},
+		{
+			name:     "validation mixed mode reaches vibe",
+			phase:    3,
+			state:    &phasedState{EpicID: "ag-5k2", Opts: phasedEngineOptions{Mixed: true}},
+			contains: "/vibe --mixed recent",
+		},
+		{
+			name:     "validation mixed mode reaches post-mortem",
+			phase:    3,
+			state:    &phasedState{EpicID: "ag-5k2", Opts: phasedEngineOptions{Mixed: true}},
+			contains: "/post-mortem --mixed ag-5k2",
 		},
 	}
 

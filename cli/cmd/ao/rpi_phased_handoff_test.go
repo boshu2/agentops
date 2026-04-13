@@ -96,6 +96,56 @@ func TestReadPhaseHandoff_MissingSummary(t *testing.T) {
 	}
 }
 
+func TestBuildPhaseHandoffFromState_MixedModeProvenance(t *testing.T) {
+	dir := t.TempDir()
+	state := newTestPhasedState().
+		WithGoal("mixed rpi").
+		WithRunID("mixed-run").
+		WithOpts(phasedEngineOptions{Mixed: true, RuntimeCommand: "claude --model sonnet"})
+
+	h := buildPhaseHandoffFromState(state, 1, dir)
+	if !h.MixedModeRequested {
+		t.Fatal("MixedModeRequested = false, want true")
+	}
+	if !h.MixedModeEffective {
+		t.Fatal("MixedModeEffective = false, want true")
+	}
+	if h.PlannerVendor != "claude" {
+		t.Fatalf("PlannerVendor = %q, want claude", h.PlannerVendor)
+	}
+	if h.ReviewerVendor != "codex" {
+		t.Fatalf("ReviewerVendor = %q, want codex", h.ReviewerVendor)
+	}
+	if h.MixedModeDegradedReason != "" {
+		t.Fatalf("MixedModeDegradedReason = %q, want empty", h.MixedModeDegradedReason)
+	}
+}
+
+func TestBuildPhaseHandoffFromState_MixedCodexRuntimeDegraded(t *testing.T) {
+	dir := t.TempDir()
+	state := newTestPhasedState().
+		WithGoal("mixed rpi").
+		WithRunID("mixed-run").
+		WithOpts(phasedEngineOptions{Mixed: true, RuntimeCommand: "codex --profile ci"})
+
+	h := buildPhaseHandoffFromState(state, 1, dir)
+	if !h.MixedModeRequested {
+		t.Fatal("MixedModeRequested = false, want true")
+	}
+	if h.MixedModeEffective {
+		t.Fatal("MixedModeEffective = true, want false")
+	}
+	if h.PlannerVendor != "codex" {
+		t.Fatalf("PlannerVendor = %q, want codex", h.PlannerVendor)
+	}
+	if h.ReviewerVendor != "codex" {
+		t.Fatalf("ReviewerVendor = %q, want codex", h.ReviewerVendor)
+	}
+	if !strings.Contains(h.MixedModeDegradedReason, "no distinct reviewer vendor") {
+		t.Fatalf("MixedModeDegradedReason = %q, want distinct vendor reason", h.MixedModeDegradedReason)
+	}
+}
+
 func TestReadAllHandoffs_Mixed(t *testing.T) {
 	dir := t.TempDir()
 	rpiDir := filepath.Join(dir, ".agents", "rpi")

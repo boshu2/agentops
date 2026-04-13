@@ -230,6 +230,7 @@ func buildPromptForPhase(cwd string, phaseNum int, state *phasedState, _ *retryC
 		TestFirst     bool
 		SwarmFirst    bool
 		Interactive   bool
+		Mixed         bool
 		PhaseNum      int
 		ContextBudget string
 		ProgramPath   string
@@ -243,6 +244,7 @@ func buildPromptForPhase(cwd string, phaseNum int, state *phasedState, _ *retryC
 		TestFirst:     state.TestFirst,
 		SwarmFirst:    state.SwarmFirst,
 		Interactive:   state.Opts.Interactive,
+		Mixed:         state.Opts.Mixed,
 		PhaseNum:      phaseNum,
 		ContextBudget: phaseContextBudgets[phaseNum],
 		ProgramPath:   state.ProgramPath,

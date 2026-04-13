@@ -131,6 +131,50 @@ func TestRPIExecutionPacketProofPreservesExistingFields(t *testing.T) {
 	}
 }
 
+func TestRPIExecutionPacketProofPopulatesMixedModeProvenance(t *testing.T) {
+	root := t.TempDir()
+	runID := "mixed-proof"
+	state := newTestPhasedState().
+		WithGoal("mixed provenance").
+		WithRunID(runID).
+		WithOpts(phasedEngineOptions{Mixed: true, RuntimeCommand: "claude"})
+
+	if err := writeExecutionPacketSeed(root, state); err != nil {
+		t.Fatalf("writeExecutionPacketSeed: %v", err)
+	}
+	handoff := buildPhaseHandoffFromState(state, 1, root)
+	if err := writePhaseHandoff(root, handoff); err != nil {
+		t.Fatalf("writePhaseHandoff: %v", err)
+	}
+	if err := updateExecutionPacketProof(root, state); err != nil {
+		t.Fatalf("updateExecutionPacketProof: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(root, ".agents", "rpi", "execution-packet.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if parsed["mixed_mode_requested"] != true {
+		t.Fatalf("mixed_mode_requested = %#v, want true", parsed["mixed_mode_requested"])
+	}
+	if parsed["mixed_mode_effective"] != true {
+		t.Fatalf("mixed_mode_effective = %#v, want true", parsed["mixed_mode_effective"])
+	}
+	if parsed["planner_vendor"] != "claude" {
+		t.Fatalf("planner_vendor = %#v, want claude", parsed["planner_vendor"])
+	}
+	if parsed["reviewer_vendor"] != "codex" {
+		t.Fatalf("reviewer_vendor = %#v, want codex", parsed["reviewer_vendor"])
+	}
+	if _, ok := parsed["mixed_mode_degraded_reason"]; ok {
+		t.Fatalf("mixed_mode_degraded_reason unexpectedly set: %#v", parsed["mixed_mode_degraded_reason"])
+	}
+}
+
 func TestRPIExecutionPacketProofUsesPacketRunIDWhenStateNil(t *testing.T) {
 	root := t.TempDir()
 	rpiDir := filepath.Join(root, ".agents", "rpi")

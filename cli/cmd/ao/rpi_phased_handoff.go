@@ -408,18 +408,23 @@ func renderDegradationWarnings(sb *strings.Builder, handoffs []*phaseHandoff) {
 // buildPhaseHandoffFromState constructs a handoff from existing state + phase result + summary.
 func buildPhaseHandoffFromState(state *phasedState, phaseNum int, cwd string) *phaseHandoff {
 	phaseNames := map[int]string{1: "discovery", 2: "implementation", 3: "validation"}
+	prov := mixedModeProvenanceFromOpts(state.Opts)
 
 	h := &phaseHandoff{
-		SchemaVersion:      1,
-		RunID:              state.RunID,
-		Phase:              phaseNum,
-		PhaseName:          phaseNames[phaseNum],
-		Status:             "completed",
-		Goal:               state.Goal,
-		EpicID:             state.EpicID,
-		Verdicts:           make(map[string]string),
-		MixedModeRequested: state.Opts.Mixed,
-		CompletedAt:        time.Now().UTC().Format(time.RFC3339),
+		SchemaVersion:           1,
+		RunID:                   state.RunID,
+		Phase:                   phaseNum,
+		PhaseName:               phaseNames[phaseNum],
+		Status:                  "completed",
+		Goal:                    state.Goal,
+		EpicID:                  state.EpicID,
+		Verdicts:                make(map[string]string),
+		MixedModeRequested:      prov.Requested,
+		MixedModeEffective:      prov.Effective,
+		PlannerVendor:           prov.PlannerVendor,
+		ReviewerVendor:          prov.ReviewerVendor,
+		MixedModeDegradedReason: prov.DegradedReason,
+		CompletedAt:             time.Now().UTC().Format(time.RFC3339),
 	}
 
 	// Copy accumulated verdicts

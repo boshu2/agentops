@@ -91,7 +91,7 @@ STEP 3 — Pre-mortem:
 After plan completes, run:
 {{if .SwarmFirst}}Prefer: execute this step via /swarm (including council/critique workers when available).
 Fallback direct command:
-{{end}}/pre-mortem{{if .FastPath}} --quick{{end}}
+{{end}}/pre-mortem{{if .FastPath}} --quick{{end}}{{if .Mixed}} --mixed{{end}}
 
 If pre-mortem returns FAIL, re-run /plan with the findings and then /pre-mortem again. Max 3 total attempts. If still FAIL after 3 attempts, stop and report.
 	If pre-mortem returns PASS or WARN, proceed.`,
@@ -116,7 +116,7 @@ NONINTERACTIVE FALLBACK: If this runtime cannot execute slash commands in print 
 STEP 1 — Vibe:
 {{if .SwarmFirst}}Prefer: execute vibe using /swarm-driven validation workers.
 Fallback direct command:
-{{end}}/vibe{{if .FastPath}} --quick{{end}} recent
+{{end}}/vibe{{if .FastPath}} --quick{{end}}{{if .Mixed}} --mixed{{end}} recent
 
 If vibe returns FAIL, STOP and report the findings. Do NOT proceed to post-mortem.
 If vibe returns PASS or WARN, proceed.
@@ -124,7 +124,7 @@ If vibe returns PASS or WARN, proceed.
 STEP 2 — Post-mortem:
 {{if .SwarmFirst}}Prefer: execute post-mortem using /swarm-driven retro workers.
 Fallback direct command:
-{{end}}{{if or .TasklistMode .PlanFileMode}}/post-mortem --quick recent{{else}}/post-mortem{{if .FastPath}} --quick{{end}} {{.EpicID}}{{end}}`,
+{{end}}{{if or .TasklistMode .PlanFileMode}}/post-mortem --quick{{if .Mixed}} --mixed{{end}} recent{{else}}/post-mortem{{if .FastPath}} --quick{{end}}{{if .Mixed}} --mixed{{end}} {{.EpicID}}{{end}}`,
 }
 
 // RetryPrompts defines templates for retry invocations with feedback context.
