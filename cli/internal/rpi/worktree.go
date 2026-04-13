@@ -286,8 +286,23 @@ func MergeWorktree(repoRoot, worktreePath, runID string, timeout time.Duration, 
 	return performMerge(repoRoot, runID, mergeSource, timeout)
 }
 
+const mergeCleanRetryDelayEnv = "AGENTOPS_RPI_MERGE_RETRY_DELAY"
+
+func mergeCleanRetryDelay() time.Duration {
+	raw := strings.TrimSpace(os.Getenv(mergeCleanRetryDelayEnv))
+	if raw == "" {
+		return 2 * time.Second
+	}
+	delay, err := time.ParseDuration(raw)
+	if err != nil || delay < 0 {
+		return 2 * time.Second
+	}
+	return delay
+}
+
 // waitForCleanRepo polls the repo until it has no uncommitted changes, retrying up to 5 times.
 func waitForCleanRepo(repoRoot string, timeout time.Duration, verbosef func(string, ...any)) error {
+	retryDelay := mergeCleanRetryDelay()
 	for attempt := 0; attempt < 5; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		checkCmd := exec.CommandContext(ctx, "git", "status", "--porcelain", "--untracked-files=all")
@@ -303,9 +318,9 @@ func waitForCleanRepo(repoRoot string, timeout time.Duration, verbosef func(stri
 		}
 		if attempt < 4 {
 			if verbosef != nil {
-				verbosef("Repo dirty (another merge in progress?), retrying in 2s (%d/5)\n", attempt+1)
+				verbosef("Repo dirty (another merge in progress?), retrying in %s (%d/5)\n", retryDelay, attempt+1)
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(retryDelay)
 		}
 	}
 	return ErrRepoUnclean

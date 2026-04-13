@@ -713,6 +713,7 @@ func TestMergeWorktree_MissingBothPathAndRunID(t *testing.T) {
 }
 
 func TestMergeWorktree_DirtyRepo(t *testing.T) {
+	t.Setenv(mergeCleanRetryDelayEnv, "1ms")
 	repo := initGitRepo(t)
 
 	dirtyFile := filepath.Join(repo, "uncommitted.txt")
@@ -728,6 +729,7 @@ func TestMergeWorktree_DirtyRepo(t *testing.T) {
 }
 
 func TestMergeWorktree_UntrackedFileDirtyRepo(t *testing.T) {
+	t.Setenv(mergeCleanRetryDelayEnv, "1ms")
 	repo := initGitRepo(t)
 
 	dirtyFile := filepath.Join(repo, "untracked.txt")
@@ -738,6 +740,18 @@ func TestMergeWorktree_UntrackedFileDirtyRepo(t *testing.T) {
 	err := MergeWorktree(repo, "/fake/path", "fakerunid", 5*time.Second, nil)
 	if !errors.Is(err, ErrRepoUnclean) {
 		t.Fatalf("expected ErrRepoUnclean for untracked file, got: %v", err)
+	}
+}
+
+func TestMergeCleanRetryDelayEnv(t *testing.T) {
+	t.Setenv(mergeCleanRetryDelayEnv, "3ms")
+	if got := mergeCleanRetryDelay(); got != 3*time.Millisecond {
+		t.Fatalf("mergeCleanRetryDelay() = %s, want 3ms", got)
+	}
+
+	t.Setenv(mergeCleanRetryDelayEnv, "not-a-duration")
+	if got := mergeCleanRetryDelay(); got != 2*time.Second {
+		t.Fatalf("invalid mergeCleanRetryDelay() = %s, want default 2s", got)
 	}
 }
 
@@ -944,6 +958,7 @@ func TestRemoveWorktree_PathMismatch(t *testing.T) {
 }
 
 func TestMergeWorktree_DirtyRepoRetryVerbose(t *testing.T) {
+	t.Setenv(mergeCleanRetryDelayEnv, "1ms")
 	repo := initGitRepo(t)
 
 	dirtyFile := filepath.Join(repo, "dirty.txt")

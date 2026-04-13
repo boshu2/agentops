@@ -304,6 +304,7 @@ func TestMergeWorktree_Conflict(t *testing.T) {
 }
 
 func TestMergeWorktree_DirtyRepo(t *testing.T) {
+	t.Setenv("AGENTOPS_RPI_MERGE_RETRY_DELAY", "1ms")
 	repo := initTestRepo(t)
 
 	origDir, _ := os.Getwd()

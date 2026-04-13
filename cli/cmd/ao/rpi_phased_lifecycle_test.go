@@ -12,6 +12,7 @@ import (
 // non-zero command results (non-nil error). Uses a real git repo to test the
 // dirty-repo rejection path which is the most deterministic failure mode.
 func TestMergeFailurePropagation(t *testing.T) {
+	t.Setenv("AGENTOPS_RPI_MERGE_RETRY_DELAY", "1ms")
 	repo := initTestRepo(t)
 
 	origDir, _ := os.Getwd()

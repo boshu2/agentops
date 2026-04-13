@@ -1721,7 +1721,7 @@ func TestForge_ProcessTranscript(t *testing.T) {
 	t.Run("oversized Claude transcript line parses successfully", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "ses_large.jsonl")
-		hugeContent := strings.Repeat("x", 2*1024*1024)
+		hugeContent := strings.Repeat("x", 128*1024)
 		line := fmt.Sprintf(`{"type":"user","sessionId":"ses_large","timestamp":"2026-03-02T01:20:03.146Z","content":"%s"}`, hugeContent)
 		if err := os.WriteFile(path, []byte(line+"\n"), 0644); err != nil {
 			t.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -56,6 +57,16 @@ func (m *gcMock) execCommand(name string, args ...string) *exec.Cmd {
 	handler, ok := m.handlers[key]
 	if !ok {
 		handler = gcMockHandler{ExitCode: 0}
+	}
+
+	if runtime.GOOS != "windows" {
+		cmd := exec.Command("/bin/sh", "-c", `printf "%s" "$GC_MOCK_STDOUT"; printf "%s" "$GC_MOCK_STDERR" >&2; exit "$GC_MOCK_EXIT"`)
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("GC_MOCK_EXIT=%d", handler.ExitCode),
+			"GC_MOCK_STDOUT="+handler.Stdout,
+			"GC_MOCK_STDERR="+handler.Stderr,
+		)
+		return cmd
 	}
 
 	cs := []string{"-test.run=TestGCHelperProcess", "--", fmt.Sprintf("exit=%d", handler.ExitCode), fmt.Sprintf("stdout=%s", handler.Stdout), fmt.Sprintf("stderr=%s", handler.Stderr)}
