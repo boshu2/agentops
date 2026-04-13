@@ -1,0 +1,44 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-jlmm",
+  "target_id": "na-jlmm",
+  "target_type": "task",
+  "created_at": "2026-04-13T16:16:50Z",
+  "producer": "evolve",
+  "evidence_mode": "worktree",
+  "validation_commands": [
+    "bash -n skills/post-mortem/scripts/closure-integrity-audit.sh skills/post-mortem/scripts/write-evidence-only-closure.sh",
+    "bash skills/post-mortem/scripts/closure-integrity-audit.sh --scope auto na-uuy | jq '{summary}'",
+    "bats --filter 'closure-integrity-audit.sh: reports durable closure packet in explicit packet bucket' tests/hooks/lib-hook-helpers.bats",
+    "markdownlint .agents/research/2026-04-13-evidence-only-closure-audit-normalization.md"
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": true,
+    "head_sha": "fd52245b6181a087e49d39aa28b99675651e7a89",
+    "modified_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "staged_files": [],
+    "unstaged_files": [
+      ".agents/rpi/next-work.jsonl"
+    ],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Stale f-2026-04-03-001 router queue item consumed after proving evidence-only closure audit support already exists on current main.",
+    "artifacts": [
+      ".agents/releases/evidence-only-closures/na-jlmm.json",
+      ".agents/research/2026-04-13-evidence-only-closure-audit-normalization.md",
+      ".agents/rpi/next-work.jsonl",
+      "skills/post-mortem/scripts/closure-integrity-audit.sh",
+      "tests/hooks/lib-hook-helpers.bats"
+    ],
+    "notes": [
+      "Adjacent finding f-2026-04-03-002 remains unconsumed for a separate proof-backed suppression cycle.",
+      "Closed bead na-uuy.3 records the canonical implementation and validation proof."
+    ]
+  }
+}
