@@ -48,130 +48,177 @@ func TestInjectLearnings_sanitizeSourcePhase(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInjectLearnings_parseFrontMatter(t *testing.T) {
-	t.Run("basic frontmatter", func(t *testing.T) {
-		lines := []string{
-			"---",
-			"superseded_by: L99",
-			"utility: 0.7",
-			"source_bead: ag-abc",
-			"source_phase: plan",
-			"---",
-			"# Content",
-		}
-		fm, endIdx := parseFrontMatter(lines)
-		if fm.SupersededBy != "L99" {
-			t.Errorf("SupersededBy = %q, want %q", fm.SupersededBy, "L99")
-		}
-		if fm.Utility != 0.7 {
-			t.Errorf("Utility = %f, want 0.7", fm.Utility)
-		}
-		if !fm.HasUtility {
-			t.Error("expected HasUtility = true")
-		}
-		if fm.SourceBead != "ag-abc" {
-			t.Errorf("SourceBead = %q, want %q", fm.SourceBead, "ag-abc")
-		}
-		if fm.SourcePhase != "plan" {
-			t.Errorf("SourcePhase = %q, want %q", fm.SourcePhase, "plan")
-		}
-		if endIdx != 6 {
-			t.Errorf("endIdx = %d, want 6", endIdx)
-		}
-	})
+	for _, tc := range parseFrontMatterCases() {
+		t.Run(tc.name, tc.run)
+	}
+}
 
-	t.Run("no frontmatter", func(t *testing.T) {
-		lines := []string{"# Just content", "Some text"}
-		fm, endIdx := parseFrontMatter(lines)
-		if endIdx != 0 {
-			t.Errorf("endIdx = %d, want 0", endIdx)
-		}
-		if fm.HasUtility {
-			t.Error("expected HasUtility = false")
-		}
-	})
+type parseFrontMatterCase struct {
+	name string
+	run  func(t *testing.T)
+}
 
-	t.Run("empty lines", func(t *testing.T) {
-		fm, endIdx := parseFrontMatter(nil)
-		if endIdx != 0 {
-			t.Errorf("endIdx = %d, want 0", endIdx)
-		}
-		if fm.HasUtility {
-			t.Error("expected HasUtility = false")
-		}
-	})
+func parseFrontMatterCases() []parseFrontMatterCase {
+	return []parseFrontMatterCase{
+		{name: "basic frontmatter", run: assertBasicFrontMatter},
+		{name: "no frontmatter", run: assertNoFrontMatter},
+		{name: "empty lines", run: assertEmptyFrontMatterLines},
+		{name: "unclosed frontmatter returns 0", run: assertUnclosedFrontMatterReturnsZero},
+		{name: "stability field", run: assertFrontMatterStabilityField},
+		{name: "stability stable", run: assertFrontMatterStableStability},
+		{name: "stability absent defaults empty", run: assertFrontMatterStabilityAbsent},
+		{name: "promoted_to field", run: assertFrontMatterPromotedToField},
+		{name: "hyphenated field names", run: assertFrontMatterHyphenatedFieldNames},
+		{name: "invalid utility is not set", run: assertInvalidFrontMatterUtilityUnset},
+		{name: "zero utility is not set", run: assertZeroFrontMatterUtilityUnset},
+	}
+}
 
-	t.Run("unclosed frontmatter returns 0", func(t *testing.T) {
-		lines := []string{"---", "title: Test", "no closing"}
-		_, endIdx := parseFrontMatter(lines)
-		if endIdx != 0 {
-			t.Errorf("endIdx = %d, want 0 for unclosed frontmatter", endIdx)
-		}
-	})
+func assertBasicFrontMatter(t *testing.T) {
+	t.Helper()
 
-	t.Run("stability field", func(t *testing.T) {
-		lines := []string{"---", "stability: experimental", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.Stability != "experimental" {
-			t.Errorf("Stability = %q, want %q", fm.Stability, "experimental")
-		}
-	})
+	lines := []string{
+		"---",
+		"superseded_by: L99",
+		"utility: 0.7",
+		"source_bead: ag-abc",
+		"source_phase: plan",
+		"---",
+		"# Content",
+	}
+	fm, endIdx := parseFrontMatter(lines)
+	if fm.SupersededBy != "L99" {
+		t.Errorf("SupersededBy = %q, want %q", fm.SupersededBy, "L99")
+	}
+	if fm.Utility != 0.7 {
+		t.Errorf("Utility = %f, want 0.7", fm.Utility)
+	}
+	if !fm.HasUtility {
+		t.Error("expected HasUtility = true")
+	}
+	if fm.SourceBead != "ag-abc" {
+		t.Errorf("SourceBead = %q, want %q", fm.SourceBead, "ag-abc")
+	}
+	if fm.SourcePhase != "plan" {
+		t.Errorf("SourcePhase = %q, want %q", fm.SourcePhase, "plan")
+	}
+	if endIdx != 6 {
+		t.Errorf("endIdx = %d, want 6", endIdx)
+	}
+}
 
-	t.Run("stability stable", func(t *testing.T) {
-		lines := []string{"---", "stability: stable", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.Stability != "stable" {
-			t.Errorf("Stability = %q, want %q", fm.Stability, "stable")
-		}
-	})
+func assertNoFrontMatter(t *testing.T) {
+	t.Helper()
 
-	t.Run("stability absent defaults empty", func(t *testing.T) {
-		lines := []string{"---", "utility: 0.5", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.Stability != "" {
-			t.Errorf("Stability = %q, want empty string for absent field", fm.Stability)
-		}
-	})
+	lines := []string{"# Just content", "Some text"}
+	fm, endIdx := parseFrontMatter(lines)
+	if endIdx != 0 {
+		t.Errorf("endIdx = %d, want 0", endIdx)
+	}
+	if fm.HasUtility {
+		t.Error("expected HasUtility = false")
+	}
+}
 
-	t.Run("promoted_to field", func(t *testing.T) {
-		lines := []string{"---", "promoted_to: ~/.agents/learnings/global.md", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.PromotedTo != "~/.agents/learnings/global.md" {
-			t.Errorf("PromotedTo = %q, want path", fm.PromotedTo)
-		}
-	})
+func assertEmptyFrontMatterLines(t *testing.T) {
+	t.Helper()
 
-	t.Run("hyphenated field names", func(t *testing.T) {
-		lines := []string{"---", "superseded-by: L88", "promoted-to: global", "source-bead: xx-123", "source-phase: research", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.SupersededBy != "L88" {
-			t.Errorf("SupersededBy = %q, want L88", fm.SupersededBy)
-		}
-		if fm.PromotedTo != "global" {
-			t.Errorf("PromotedTo = %q, want global", fm.PromotedTo)
-		}
-		if fm.SourceBead != "xx-123" {
-			t.Errorf("SourceBead = %q, want xx-123", fm.SourceBead)
-		}
-		if fm.SourcePhase != "research" {
-			t.Errorf("SourcePhase = %q, want research", fm.SourcePhase)
-		}
-	})
+	fm, endIdx := parseFrontMatter(nil)
+	if endIdx != 0 {
+		t.Errorf("endIdx = %d, want 0", endIdx)
+	}
+	if fm.HasUtility {
+		t.Error("expected HasUtility = false")
+	}
+}
 
-	t.Run("invalid utility is not set", func(t *testing.T) {
-		lines := []string{"---", "utility: not-a-number", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.HasUtility {
-			t.Error("expected HasUtility = false for non-numeric utility")
-		}
-	})
+func assertUnclosedFrontMatterReturnsZero(t *testing.T) {
+	t.Helper()
 
-	t.Run("zero utility is not set", func(t *testing.T) {
-		lines := []string{"---", "utility: 0", "---"}
-		fm, _ := parseFrontMatter(lines)
-		if fm.HasUtility {
-			t.Error("expected HasUtility = false for zero utility")
-		}
-	})
+	lines := []string{"---", "title: Test", "no closing"}
+	_, endIdx := parseFrontMatter(lines)
+	if endIdx != 0 {
+		t.Errorf("endIdx = %d, want 0 for unclosed frontmatter", endIdx)
+	}
+}
+
+func assertFrontMatterStabilityField(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "stability: experimental", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.Stability != "experimental" {
+		t.Errorf("Stability = %q, want %q", fm.Stability, "experimental")
+	}
+}
+
+func assertFrontMatterStableStability(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "stability: stable", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.Stability != "stable" {
+		t.Errorf("Stability = %q, want %q", fm.Stability, "stable")
+	}
+}
+
+func assertFrontMatterStabilityAbsent(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "utility: 0.5", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.Stability != "" {
+		t.Errorf("Stability = %q, want empty string for absent field", fm.Stability)
+	}
+}
+
+func assertFrontMatterPromotedToField(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "promoted_to: ~/.agents/learnings/global.md", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.PromotedTo != "~/.agents/learnings/global.md" {
+		t.Errorf("PromotedTo = %q, want path", fm.PromotedTo)
+	}
+}
+
+func assertFrontMatterHyphenatedFieldNames(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "superseded-by: L88", "promoted-to: global", "source-bead: xx-123", "source-phase: research", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.SupersededBy != "L88" {
+		t.Errorf("SupersededBy = %q, want L88", fm.SupersededBy)
+	}
+	if fm.PromotedTo != "global" {
+		t.Errorf("PromotedTo = %q, want global", fm.PromotedTo)
+	}
+	if fm.SourceBead != "xx-123" {
+		t.Errorf("SourceBead = %q, want xx-123", fm.SourceBead)
+	}
+	if fm.SourcePhase != "research" {
+		t.Errorf("SourcePhase = %q, want research", fm.SourcePhase)
+	}
+}
+
+func assertInvalidFrontMatterUtilityUnset(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "utility: not-a-number", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.HasUtility {
+		t.Error("expected HasUtility = false for non-numeric utility")
+	}
+}
+
+func assertZeroFrontMatterUtilityUnset(t *testing.T) {
+	t.Helper()
+
+	lines := []string{"---", "utility: 0", "---"}
+	fm, _ := parseFrontMatter(lines)
+	if fm.HasUtility {
+		t.Error("expected HasUtility = false for zero utility")
+	}
 }
 
 // ---------------------------------------------------------------------------
