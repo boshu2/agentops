@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -145,6 +146,232 @@ func TestRunOvernight_RunLoopOptionsReceivesRunID(t *testing.T) {
 	}
 	if runOpts.Cwd != "/tmp/fake-cwd" {
 		t.Fatalf("RunLoopOptions.Cwd = %q, want %q", runOpts.Cwd, "/tmp/fake-cwd")
+	}
+}
+
+func TestNewOvernightRunLoopOptions_WiresCloseLoopCallbacks(t *testing.T) {
+	settings := overnightSettings{
+		OutputDir:  "/tmp/fake-overnight",
+		RunTimeout: time.Hour,
+	}
+	startedAt := time.Date(2026, 4, 12, 7, 30, 0, 0, time.UTC)
+	summary := newOvernightStartSummary("/tmp/fake-cwd", settings, startedAt)
+	runOpts := newOvernightRunLoopOptions("/tmp/fake-cwd", settings, summary, nil)
+
+	if runOpts.CloseLoopCallbacks.ResolveIngestFiles == nil {
+		t.Fatal("ResolveIngestFiles callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.IngestFilesToPool == nil {
+		t.Fatal("IngestFilesToPool callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.AutoPromoteFn == nil {
+		t.Fatal("AutoPromoteFn callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.ProcessCitationFeedback == nil {
+		t.Fatal("ProcessCitationFeedback callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.PromoteCitedLearnings == nil {
+		t.Fatal("PromoteCitedLearnings callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.PromoteToMemory == nil {
+		t.Fatal("PromoteToMemory callback not wired")
+	}
+	if runOpts.CloseLoopCallbacks.ApplyMaturityFn == nil {
+		t.Fatal("ApplyMaturityFn callback not wired")
+	}
+}
+
+func TestExecuteOvernightReportSurfaces_MarksRealStatuses(t *testing.T) {
+	tmpDir := t.TempDir()
+	summary := overnightSummary{
+		RunID:     "dream-run-1",
+		Goal:      "repair dream cycle",
+		OutputDir: tmpDir,
+		Steps: []overnightStepSummary{
+			{Name: "close-loop", Status: "pending"},
+			{Name: "defrag-preview", Status: "pending"},
+			{Name: "metrics-health", Status: "pending"},
+			{Name: "retrieval-live", Status: "pending"},
+			{Name: "knowledge-brief", Status: "pending"},
+		},
+		Artifacts: map[string]string{
+			"close_loop":     filepath.Join(tmpDir, "close-loop.json"),
+			"defrag_report":  filepath.Join(tmpDir, "defrag", "latest.json"),
+			"metrics_health": filepath.Join(tmpDir, "metrics-health.json"),
+			"retrieval_live": filepath.Join(tmpDir, "retrieval-bench.json"),
+			"briefing":       filepath.Join(tmpDir, "briefing.json"),
+		},
+		Iterations: []ovn.IterationSummary{
+			{
+				ID:     "dream-run-1-iter-1",
+				Index:  1,
+				Status: ovn.StatusDone,
+				Reduce: map[string]any{
+					"close_loop_promoted": 2,
+					"findings_routed":     1,
+				},
+			},
+		},
+	}
+
+	origCloseLoop := writeDreamCloseLoopArtifact
+	origDefrag := runDreamDefragPreviewFn
+	origMetrics := runDreamMetricsHealthFn
+	origRetrieval := runDreamRetrievalLiveFn
+	origBrief := runDreamKnowledgeBriefFn
+	defer func() {
+		writeDreamCloseLoopArtifact = origCloseLoop
+		runDreamDefragPreviewFn = origDefrag
+		runDreamMetricsHealthFn = origMetrics
+		runDreamRetrievalLiveFn = origRetrieval
+		runDreamKnowledgeBriefFn = origBrief
+	}()
+
+	writeDreamCloseLoopArtifact = writeDreamLoopCloseLoopArtifact
+	runDreamDefragPreviewFn = func(cwd, artifactPath string) error {
+		return writeJSONFile(artifactPath, map[string]any{"mode": "dry-run"})
+	}
+	runDreamMetricsHealthFn = func(cwd, artifactPath string) error {
+		return writeJSONFile(artifactPath, map[string]any{"escape_velocity": true})
+	}
+	runDreamRetrievalLiveFn = func(cwd, artifactPath string) error {
+		return writeJSONFile(artifactPath, map[string]any{"coverage": 1.0})
+	}
+	runDreamKnowledgeBriefFn = func(cwd, goal, artifactPath string) error {
+		return writeJSONFile(artifactPath, map[string]any{"output_path": filepath.Join(cwd, ".agents", "briefings", "dream.md")})
+	}
+
+	if err := executeOvernightReportSurfaces(tmpDir, &summary); err != nil {
+		t.Fatalf("executeOvernightReportSurfaces: %v", err)
+	}
+
+	for _, stepName := range []string{"close-loop", "defrag-preview", "metrics-health", "retrieval-live", "knowledge-brief"} {
+		step := findOvernightHardFailStep(summary.Steps, stepName)
+		if step == nil {
+			t.Fatalf("missing step %q after report surface execution", stepName)
+		}
+		if step.Status != "done" {
+			t.Fatalf("step %q status = %q, want done", stepName, step.Status)
+		}
+	}
+
+	data, err := os.ReadFile(summary.Artifacts["close_loop"])
+	if err != nil {
+		t.Fatalf("read close-loop artifact: %v", err)
+	}
+	var artifact map[string]any
+	if err := json.Unmarshal(data, &artifact); err != nil {
+		t.Fatalf("parse close-loop artifact: %v", err)
+	}
+	if got := artifact["iteration_id"]; got != "dream-run-1-iter-1" {
+		t.Fatalf("iteration_id = %#v, want dream-run-1-iter-1", got)
+	}
+	if got := artifact["source"]; got != "dream-loop" {
+		t.Fatalf("source = %#v, want dream-loop", got)
+	}
+}
+
+func TestRunDreamCouncilRunner_TimesOutAndLeavesNoArtifact(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "council", "claude.json")
+
+	origTimeout := dreamCouncilRunnerTimeout
+	origClaude := dreamRunClaudeCouncilFn
+	defer func() {
+		dreamCouncilRunnerTimeout = origTimeout
+		dreamRunClaudeCouncilFn = origClaude
+	}()
+
+	dreamCouncilRunnerTimeout = 20 * time.Millisecond
+	dreamRunClaudeCouncilFn = func(ctx context.Context, cwd, model, schemaPath, prompt, outputPath string, log io.Writer) error {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+
+	_, err := runDreamCouncilRunner(
+		context.Background(),
+		tmpDir,
+		io.Discard,
+		"claude",
+		"",
+		filepath.Join(tmpDir, "schema.json"),
+		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
+		outputPath,
+		false,
+	)
+	if err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("runDreamCouncilRunner error = %v, want timeout", err)
+	}
+	if _, statErr := os.Stat(outputPath); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no final artifact after timeout, stat err=%v", statErr)
+	}
+}
+
+func TestRunDreamCouncilRunner_RejectsEmptyOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "council", "claude.json")
+
+	origClaude := dreamRunClaudeCouncilFn
+	defer func() {
+		dreamRunClaudeCouncilFn = origClaude
+	}()
+
+	dreamRunClaudeCouncilFn = func(ctx context.Context, cwd, model, schemaPath, prompt, outputPath string, log io.Writer) error {
+		return nil
+	}
+
+	_, err := runDreamCouncilRunner(
+		context.Background(),
+		tmpDir,
+		io.Discard,
+		"claude",
+		"",
+		filepath.Join(tmpDir, "schema.json"),
+		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
+		outputPath,
+		false,
+	)
+	if err == nil || !strings.Contains(err.Error(), "output was empty") {
+		t.Fatalf("runDreamCouncilRunner error = %v, want empty-output failure", err)
+	}
+	if _, statErr := os.Stat(outputPath); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no final artifact after empty output, stat err=%v", statErr)
+	}
+}
+
+func TestWriteDreamCouncilSchema_RequiresAllProperties(t *testing.T) {
+	tmpDir := t.TempDir()
+	schemaPath := filepath.Join(tmpDir, "report-schema.json")
+	if err := writeDreamCouncilSchema(schemaPath); err != nil {
+		t.Fatalf("writeDreamCouncilSchema: %v", err)
+	}
+
+	data, err := os.ReadFile(schemaPath)
+	if err != nil {
+		t.Fatalf("read schema: %v", err)
+	}
+
+	var schema struct {
+		Properties map[string]json.RawMessage `json:"properties"`
+		Required   []string                   `json:"required"`
+	}
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("parse schema: %v", err)
+	}
+
+	if len(schema.Properties) == 0 {
+		t.Fatal("schema properties unexpectedly empty")
+	}
+
+	required := make(map[string]struct{}, len(schema.Required))
+	for _, key := range schema.Required {
+		required[key] = struct{}{}
+	}
+
+	for key := range schema.Properties {
+		if _, ok := required[key]; !ok {
+			t.Fatalf("schema required list missing property %q", key)
+		}
 	}
 }
 
@@ -346,12 +573,12 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 cat > "$out" <<'JSON'
-{"runner":"codex","headline":"Codex says validate","recommended_kind":"validate","recommended_first_action":"Review the overnight council synthesis before shipping.","risks":["retrieval drift"],"opportunities":["promote learnings"],"confidence":"high","wildcard_idea":"Explore a speculative promotion lane."}
+{"runner":"codex-dream-council","headline":"Codex says validate","recommended_kind":"validate","recommended_first_action":"Review the overnight council synthesis before shipping.","risks":["retrieval drift"],"opportunities":["promote learnings"],"confidence":"high","wildcard_idea":"Explore a speculative promotion lane."}
 JSON
 `)
 	writeExecutable(t, tmpDir, "claude", `#!/bin/sh
 cat <<'JSON'
-{"runner":"claude","headline":"Claude agrees","recommended_kind":"validate","recommended_first_action":"Review the overnight council synthesis before shipping.","risks":["low retrieval coverage"],"opportunities":["tighten report copy"],"confidence":"high"}
+{"runner":"claude","headline":"Claude agrees","recommended_kind":"validate","recommended_first_action":"Review the overnight council synthesis before shipping.","risks":["low retrieval coverage"],"opportunities":["tighten report copy"],"confidence":"high","wildcard_idea":""}
 JSON
 `)
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -388,6 +615,17 @@ JSON
 	}
 	if got := strings.Join(summary.Council.CompletedRunners, ","); got != "claude,codex" {
 		t.Fatalf("completed_runners = %q, want claude,codex\ndegraded=%v\nfailed=%v\nlog=%s", got, summary.Degraded, summary.Council.FailedRunners, log.String())
+	}
+	codexArtifact, err := os.ReadFile(summary.Artifacts["council_codex"])
+	if err != nil {
+		t.Fatalf("read codex council artifact: %v", err)
+	}
+	var codexReport overnightCouncilRunnerReport
+	if err := json.Unmarshal(codexArtifact, &codexReport); err != nil {
+		t.Fatalf("parse codex council artifact: %v", err)
+	}
+	if codexReport.Runner != "codex" {
+		t.Fatalf("codex council artifact runner = %q, want codex", codexReport.Runner)
 	}
 	if summary.Council.RecommendedFirstAction != "Review the overnight council synthesis before shipping." {
 		t.Fatalf("recommended_first_action = %q", summary.Council.RecommendedFirstAction)

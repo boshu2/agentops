@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,8 +11,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+)
+
+var (
+	dreamCouncilRunnerTimeout = 90 * time.Second
+	dreamRunCodexCouncilFn    = dreamRunCodexCouncil
+	dreamRunClaudeCouncilFn   = dreamRunClaudeCouncil
 )
 
 type overnightCouncilRunnerReport struct {
@@ -22,7 +30,7 @@ type overnightCouncilRunnerReport struct {
 	Risks                  []string `json:"risks" yaml:"risks"`
 	Opportunities          []string `json:"opportunities" yaml:"opportunities"`
 	Confidence             string   `json:"confidence" yaml:"confidence"`
-	WildcardIdea           string   `json:"wildcard_idea,omitempty" yaml:"wildcard_idea,omitempty"`
+	WildcardIdea           string   `json:"wildcard_idea" yaml:"wildcard_idea"`
 }
 
 type overnightCouncilSummary struct {
@@ -227,33 +235,138 @@ func runDreamCouncilRunner(
 		return overnightCouncilRunnerReport{}, fmt.Errorf("marshal council packet: %w", err)
 	}
 	prompt := buildDreamCouncilPrompt(runner, string(promptBytes), creative)
+	runnerCtx, cancel, runnerTimeout := withDreamCouncilRunnerTimeout(ctx)
+	defer cancel()
+	tempOutputPath, cleanup, err := newDreamCouncilOutputTempFile(outputPath)
+	if err != nil {
+		return overnightCouncilRunnerReport{}, fmt.Errorf("prepare %s output path: %w", runner, err)
+	}
+	defer cleanup()
 	switch runner {
 	case "codex":
-		if err := dreamRunCodexCouncil(ctx, cwd, model, schemaPath, prompt, outputPath, log); err != nil {
-			return overnightCouncilRunnerReport{}, err
+		if err := dreamRunCodexCouncilFn(runnerCtx, cwd, model, schemaPath, prompt, tempOutputPath, log); err != nil {
+			return overnightCouncilRunnerReport{}, normalizeDreamCouncilRunnerError(runner, runnerTimeout, runnerCtx, err)
 		}
 	case "claude":
-		if err := dreamRunClaudeCouncil(ctx, cwd, model, schemaPath, prompt, outputPath, log); err != nil {
-			return overnightCouncilRunnerReport{}, err
+		if err := dreamRunClaudeCouncilFn(runnerCtx, cwd, model, schemaPath, prompt, tempOutputPath, log); err != nil {
+			return overnightCouncilRunnerReport{}, normalizeDreamCouncilRunnerError(runner, runnerTimeout, runnerCtx, err)
 		}
 	default:
 		return overnightCouncilRunnerReport{}, fmt.Errorf("unsupported Dream Council runner %q", runner)
 	}
-	var report overnightCouncilRunnerReport
-	data, err := os.ReadFile(outputPath)
+	report, data, err := loadDreamCouncilRunnerReport(tempOutputPath, runner)
 	if err != nil {
-		return overnightCouncilRunnerReport{}, fmt.Errorf("read %s output: %w", runner, err)
+		return overnightCouncilRunnerReport{}, err
 	}
-	if err := json.Unmarshal(data, &report); err != nil {
-		return overnightCouncilRunnerReport{}, fmt.Errorf("parse %s output: %w", runner, err)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return overnightCouncilRunnerReport{}, fmt.Errorf("prepare %s artifact dir: %w", runner, err)
+	}
+	if err := os.WriteFile(outputPath, data, 0o644); err != nil {
+		return overnightCouncilRunnerReport{}, fmt.Errorf("write %s output: %w", runner, err)
 	}
 	return report, nil
 }
 
+func withDreamCouncilRunnerTimeout(parent context.Context) (context.Context, context.CancelFunc, time.Duration) {
+	timeout := dreamCouncilRunnerTimeout
+	if deadline, ok := parent.Deadline(); ok {
+		if remaining := time.Until(deadline); remaining > 0 && remaining < timeout {
+			timeout = remaining
+		}
+	}
+	if timeout <= 0 {
+		timeout = time.Second
+	}
+	ctx, cancel := context.WithTimeout(parent, timeout)
+	return ctx, cancel, timeout
+}
+
+func newDreamCouncilOutputTempFile(outputPath string) (string, func(), error) {
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return "", func() {}, err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(outputPath), filepath.Base(outputPath)+".*.tmp")
+	if err != nil {
+		return "", func() {}, err
+	}
+	path := tmp.Name()
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", func() {}, err
+	}
+	cleanup := func() { _ = os.Remove(path) }
+	return path, cleanup, nil
+}
+
+func normalizeDreamCouncilRunnerError(runner string, timeout time.Duration, runnerCtx context.Context, err error) error {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(runnerCtx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("%s council timed out after %s", runner, timeout.Round(time.Second))
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(runnerCtx.Err(), context.Canceled) {
+		return fmt.Errorf("%s council canceled", runner)
+	}
+	return err
+}
+
+func loadDreamCouncilRunnerReport(path, runner string) (overnightCouncilRunnerReport, []byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("read %s output: %w", runner, err)
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("%s output was empty", runner)
+	}
+	var report overnightCouncilRunnerReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("parse %s output: %w", runner, err)
+	}
+	if err := validateDreamCouncilRunnerReport(runner, report); err != nil {
+		return overnightCouncilRunnerReport{}, nil, err
+	}
+	report.Runner = runner
+	normalized, err := json.Marshal(report)
+	if err != nil {
+		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("rewrite %s output: %w", runner, err)
+	}
+	return report, normalized, nil
+}
+
+func validateDreamCouncilRunnerReport(expectedRunner string, report overnightCouncilRunnerReport) error {
+	switch {
+	case strings.TrimSpace(report.Runner) == "":
+		return fmt.Errorf("%s output missing runner field", expectedRunner)
+	case !dreamCouncilRunnerMatches(expectedRunner, report.Runner):
+		return fmt.Errorf("%s output runner mismatch: got %q", expectedRunner, report.Runner)
+	case strings.TrimSpace(report.Headline) == "":
+		return fmt.Errorf("%s output missing headline", expectedRunner)
+	case strings.TrimSpace(report.RecommendedKind) == "":
+		return fmt.Errorf("%s output missing recommended_kind", expectedRunner)
+	case strings.TrimSpace(report.RecommendedFirstAction) == "":
+		return fmt.Errorf("%s output missing recommended_first_action", expectedRunner)
+	case strings.TrimSpace(report.Confidence) == "":
+		return fmt.Errorf("%s output missing confidence", expectedRunner)
+	default:
+		return nil
+	}
+}
+
+func dreamCouncilRunnerMatches(expectedRunner, actualRunner string) bool {
+	expected := normalizeDreamCouncilRunnerLabel(expectedRunner)
+	actual := normalizeDreamCouncilRunnerLabel(actualRunner)
+	return actual == expected || actual == expected+"-dream-council"
+}
+
+func normalizeDreamCouncilRunnerLabel(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	replacer := strings.NewReplacer("_", "-", " ", "-")
+	normalized = replacer.Replace(normalized)
+	return strings.Trim(normalized, "-")
+}
+
 func buildDreamCouncilPrompt(runner, packet string, creative bool) string {
-	wildcard := "Do not invent a wildcard idea."
+	wildcard := "Return wildcard_idea as an empty string when you do not have a useful wildcard idea."
 	if creative {
-		wildcard = "Include one bounded wildcard idea in wildcard_idea when you see a genuinely useful creative branch."
+		wildcard = "Include one bounded wildcard idea in wildcard_idea when you see a genuinely useful creative branch; otherwise return wildcard_idea as an empty string."
 	}
 	return fmt.Sprintf(`You are the %s Dream Council runner.
 
@@ -262,14 +375,16 @@ Analyze the bedtime packet below and return JSON that matches the provided schem
 Rules:
 - do not use tools
 - stay grounded in the packet
+- set runner exactly to "%s"
 - choose one recommended_kind from the schema enum
 - make recommended_first_action concrete and immediately actionable
 - keep risks/opportunities short
+- always include wildcard_idea as a string
 - %s
 
 Bedtime packet:
 %s
-`, runner, wildcard, packet)
+`, runner, runner, wildcard, packet)
 }
 
 func writeDreamCouncilSchema(path string) error {
@@ -297,6 +412,7 @@ func writeDreamCouncilSchema(path string) error {
 			"risks",
 			"opportunities",
 			"confidence",
+			"wildcard_idea",
 		},
 	}
 	return writeJSONFile(path, schema)

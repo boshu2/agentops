@@ -19,7 +19,9 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
+	"github.com/boshu2/agentops/cli/internal/pool"
 )
 
 var (
@@ -40,6 +42,15 @@ var (
 	overnightPlateauWindowK  int
 	overnightWarnOnly        bool
 	overnightCheckpointMaxMB int64
+)
+
+var (
+	runOvernightLoopFn          = ovn.RunLoop
+	writeDreamCloseLoopArtifact = writeDreamLoopCloseLoopArtifact
+	runDreamDefragPreviewFn     = runDreamDefragPreview
+	runDreamMetricsHealthFn     = runDreamMetricsHealth
+	runDreamRetrievalLiveFn     = runDreamRetrievalLive
+	runDreamKnowledgeBriefFn    = runDreamKnowledgeBrief
 )
 
 type overnightSettings struct {
@@ -301,7 +312,7 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 	// file cannot wedge Dream.
 	configureOvernightWarnOnlyBudget(cwd, &summary, &runOpts)
 
-	loopResult, loopErr := ovn.RunLoop(ctx, runOpts)
+	loopResult, loopErr := runOvernightLoopFn(ctx, runOpts)
 	if loopResult != nil {
 		applyOvernightLoopResult(&summary, loopResult)
 	}
@@ -309,6 +320,12 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 		summary.Status = "failed"
 		_ = finalizeOvernightSummary(&summary, startedAt)
 		return fmt.Errorf("dream run loop failed: %w", loopErr)
+	}
+
+	if err := executeOvernightReportSurfaces(cwd, &summary); err != nil {
+		summary.Status = "failed"
+		_ = finalizeOvernightSummary(&summary, startedAt)
+		return err
 	}
 
 	// Post-loop: Tier 1 local-LLM forge on recent sessions.
@@ -446,9 +463,182 @@ func newOvernightRunLoopOptions(
 		PlateauWindowK:     overnightPlateauWindowK,
 		WarnOnly:           overnightWarnOnly,
 		QueuePath:          overnightQueue,
+		CloseLoopCallbacks: newDreamCloseLoopCallbacks(),
 		CheckpointMaxBytes: overnightCheckpointMaxMB * 1024 * 1024,
 		LogWriter:          logWriter,
 	}
+}
+
+func newDreamCloseLoopCallbacks() lifecycle.CloseLoopOpts {
+	return lifecycle.CloseLoopOpts{
+		PendingDir:         filepath.Join(".agents", "knowledge", "pending"),
+		Threshold:          0,
+		Quiet:              true,
+		DryRun:             GetDryRun(),
+		IncludeGold:        true,
+		ResolveIngestFiles: resolveIngestFiles,
+		IngestFilesToPool: func(cwd string, files []string) (lifecycle.CloseLoopIngestResult, error) {
+			raw, err := ingestPendingFilesToPool(cwd, files)
+			return lifecycle.CloseLoopIngestResult(raw), err
+		},
+		AutoPromoteFn: func(p *pool.Pool, th time.Duration, includeGold bool) (lifecycle.CloseLoopAutoPromoteResult, error) {
+			raw, err := autoPromoteAndPromoteToArtifacts(p, th, includeGold)
+			return lifecycle.CloseLoopAutoPromoteResult(raw), err
+		},
+		ProcessCitationFeedback: processCitationFeedback,
+		PromoteCitedLearnings:   promoteCitedLearnings,
+		PromoteToMemory:         promoteToMemory,
+		StoreIndexUpsertFn:      storeIndexUpsert,
+		ApplyMaturityFn: func(cwd string) (lifecycle.MaturityTransitionSummary, error) {
+			s, err := applyAllMaturityTransitions(cwd)
+			return lifecycle.MaturityTransitionSummary{
+				Total:        s.Total,
+				Applied:      s.Applied,
+				ChangedPaths: s.ChangedPaths,
+			}, err
+		},
+	}
+}
+
+func executeOvernightReportSurfaces(cwd string, summary *overnightSummary) error {
+	closeLoopArtifact := summary.Artifacts["close_loop"]
+	if err := writeDreamCloseLoopArtifact(summary); err != nil {
+		setOvernightStepStatus(summary, "close-loop", "failed", closeLoopArtifact, err.Error())
+		summary.Degraded = append(summary.Degraded, fmt.Sprintf("close-loop: %v", err))
+		return fmt.Errorf("dream close-loop artifact: %w", err)
+	}
+	setOvernightStepStatus(summary, "close-loop", "done", closeLoopArtifact, "executed inside Dream REDUCE")
+
+	defragArtifact := summary.Artifacts["defrag_report"]
+	if err := runDreamDefragPreviewFn(cwd, defragArtifact); err != nil {
+		setOvernightStepStatus(summary, "defrag-preview", "soft-fail", defragArtifact, err.Error())
+		summary.Degraded = append(summary.Degraded, fmt.Sprintf("defrag-preview: %v", err))
+	} else {
+		setOvernightStepStatus(summary, "defrag-preview", "done", defragArtifact, "")
+	}
+
+	metricsArtifact := summary.Artifacts["metrics_health"]
+	if err := runDreamMetricsHealthFn(cwd, metricsArtifact); err != nil {
+		setOvernightStepStatus(summary, "metrics-health", "failed", metricsArtifact, err.Error())
+		summary.Degraded = append(summary.Degraded, fmt.Sprintf("metrics-health: %v", err))
+		return fmt.Errorf("dream metrics health: %w", err)
+	}
+	setOvernightStepStatus(summary, "metrics-health", "done", metricsArtifact, "")
+
+	retrievalArtifact := summary.Artifacts["retrieval_live"]
+	if err := runDreamRetrievalLiveFn(cwd, retrievalArtifact); err != nil {
+		setOvernightStepStatus(summary, "retrieval-live", "soft-fail", retrievalArtifact, err.Error())
+		summary.Degraded = append(summary.Degraded, fmt.Sprintf("retrieval-live: %v", err))
+	} else {
+		setOvernightStepStatus(summary, "retrieval-live", "done", retrievalArtifact, "")
+	}
+
+	if summary.Goal != "" {
+		briefingArtifact := summary.Artifacts["briefing"]
+		if err := runDreamKnowledgeBriefFn(cwd, summary.Goal, briefingArtifact); err != nil {
+			setOvernightStepStatus(summary, "knowledge-brief", "soft-fail", briefingArtifact, err.Error())
+			summary.Degraded = append(summary.Degraded, fmt.Sprintf("knowledge-brief: %v", err))
+		} else {
+			setOvernightStepStatus(summary, "knowledge-brief", "done", briefingArtifact, "")
+		}
+	}
+
+	return nil
+}
+
+func writeDreamLoopCloseLoopArtifact(summary *overnightSummary) error {
+	artifact := buildDreamLoopCloseLoopArtifact(summary.Iterations)
+	if artifact == nil {
+		return fmt.Errorf("no compounded Dream iteration produced a REDUCE summary")
+	}
+	return writeJSONFile(summary.Artifacts["close_loop"], artifact)
+}
+
+func buildDreamLoopCloseLoopArtifact(iterations []ovn.IterationSummary) map[string]any {
+	for i := len(iterations) - 1; i >= 0; i-- {
+		iter := iterations[i]
+		if !iter.Status.IsCorpusCompounded() || len(iter.Reduce) == 0 {
+			continue
+		}
+		artifact := make(map[string]any, len(iter.Reduce)+4)
+		for key, value := range iter.Reduce {
+			artifact[key] = value
+		}
+		artifact["source"] = "dream-loop"
+		artifact["iteration_id"] = string(iter.ID)
+		artifact["iteration_index"] = iter.Index
+		artifact["iteration_status"] = string(iter.Status)
+		return artifact
+	}
+	return nil
+}
+
+func runDreamDefragPreview(cwd, artifactPath string) error {
+	prevPrune := defragPrune
+	prevDedup := defragDedup
+	prevOscillation := defragOscillationSweep
+	prevOutputDir := defragOutputDir
+	prevQuiet := defragQuiet
+	defer func() {
+		defragPrune = prevPrune
+		defragDedup = prevDedup
+		defragOscillationSweep = prevOscillation
+		defragOutputDir = prevOutputDir
+		defragQuiet = prevQuiet
+	}()
+
+	defragPrune = true
+	defragDedup = true
+	defragOscillationSweep = true
+	defragOutputDir = filepath.Dir(artifactPath)
+	defragQuiet = true
+
+	report := &DefragReport{
+		Timestamp: time.Now().UTC(),
+		DryRun:    true,
+	}
+	if err := runDefragPhases(cwd, true, report); err != nil {
+		return err
+	}
+	return writeDefragReport(defragOutputDir, report, io.Discard)
+}
+
+func runDreamMetricsHealth(cwd, artifactPath string) error {
+	metrics, err := computeHealthMetrics(cwd)
+	if err != nil {
+		return err
+	}
+	return writeJSONFile(artifactPath, metrics)
+}
+
+func runDreamRetrievalLive(cwd, artifactPath string) error {
+	report, err := buildLiveReport(cwd, "", "live-local", 3)
+	if err != nil {
+		return err
+	}
+	return writeJSONFile(artifactPath, report)
+}
+
+func runDreamKnowledgeBrief(cwd, goal, artifactPath string) error {
+	agentsRoot := filepath.Join(cwd, ".agents")
+	run, err := runKnowledgeNativeBuilder(cwd, agentsRoot, knowledgeBuilderInvocation{
+		Step:           "briefing",
+		Implementation: knowledgeBuilderImplementationAONative,
+		Args:           []string{"--goal", strings.TrimSpace(goal)},
+	})
+	if err != nil {
+		return err
+	}
+	result := knowledgeBuilderResult{
+		Workspace:  cwd,
+		AgentsRoot: agentsRoot,
+		Step:       run,
+		OutputPath: firstNonEmptyTrimmed(run.Metadata["briefing"], latestKnowledgeBriefing(agentsRoot)),
+	}
+	if result.OutputPath == "" {
+		return fmt.Errorf("briefing builder completed but no briefing output was detected")
+	}
+	return writeJSONFile(artifactPath, result)
 }
 
 func configureOvernightWarnOnlyBudget(cwd string, summary *overnightSummary, runOpts *ovn.RunLoopOptions) {

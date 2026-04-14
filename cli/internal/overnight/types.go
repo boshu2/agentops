@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/lifecycle"
 )
 
 // IterationID is the stable identifier for a single iteration inside a
@@ -207,6 +209,13 @@ type RunLoopOptions struct {
 	// to fitness-driven work selection. Reuses the evolve pinned-queue
 	// format; see skills/evolve/references/pinned-queue.md.
 	QueuePath string
+
+	// CloseLoopCallbacks optionally wires the in-process flywheel
+	// close-loop helpers into REDUCE so Dream can execute the real
+	// maintenance path instead of degrading with "callbacks not wired".
+	// Leaving this zero-valued preserves the previous "skip close-loop"
+	// behavior for callers that do not need the mutation.
+	CloseLoopCallbacks lifecycle.CloseLoopOpts
 
 	// CheckpointMaxBytes caps disk usage across all concurrent checkpoint
 	// snapshots in a single run. Default: 512 MB. On exceed, NewCheckpoint

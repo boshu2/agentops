@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/lifecycle"
 )
 
 // IterationSummary is one pass of the INGEST → REDUCE → MEASURE wave.
@@ -393,8 +391,7 @@ func (s *runLoopState) runReduceStage(
 	iterStart time.Time,
 	iterIndex int,
 ) error {
-	var emptyCloseLoop lifecycle.CloseLoopOpts
-	reduce, reduceErr := RunReduce(loopCtx, s.opts, ingest, cp, emptyCloseLoop, s.log)
+	reduce, reduceErr := RunReduce(loopCtx, s.opts, ingest, cp, s.opts.CloseLoopCallbacks, s.log)
 	if reduceErr != nil {
 		iter.Status = StatusRolledBackPreCommit
 		iter.Error = fmt.Sprintf("reduce: %v", reduceErr)
