@@ -369,6 +369,20 @@ func resolveDreamSetupKeepAwake(existing config.DreamConfig, host dreamHostProfi
 }
 
 func resolveDreamSchedulerMode(existing config.DreamConfig, host dreamHostProfile) (string, []string, error) {
+	mode := resolveDreamSchedulerModeBase(existing, host)
+	mode = resolveDreamSchedulerModeFlagOverride(mode, host)
+
+	if !isDreamSchedulerModeValid(mode) {
+		return "", nil, fmt.Errorf("invalid scheduler mode %q: expected auto, manual, launchd, cron, systemd, or task-scheduler", mode)
+	}
+	warnings, err := resolveDreamSchedulerModeWarnings(mode, host)
+	if err != nil {
+		return "", nil, err
+	}
+	return mode, warnings, nil
+}
+
+func resolveDreamSchedulerModeBase(existing config.DreamConfig, host dreamHostProfile) string {
 	mode := strings.TrimSpace(existing.SchedulerMode)
 	if mode == "" {
 		mode = host.RecommendedMode
@@ -376,52 +390,87 @@ func resolveDreamSchedulerMode(existing config.DreamConfig, host dreamHostProfil
 	if mode == "" {
 		mode = "manual"
 	}
+	return mode
+}
+
+func resolveDreamSchedulerModeFlagOverride(mode string, host dreamHostProfile) string {
 	if cmdMode := strings.TrimSpace(overnightSetupScheduler); cmdMode != "" && cmdMode != "auto" {
-		mode = cmdMode
+		return cmdMode
 	}
 	if overnightSetupScheduler == "auto" {
-		mode = host.RecommendedMode
-		if mode == "" {
-			mode = "manual"
+		if host.RecommendedMode != "" {
+			return host.RecommendedMode
 		}
+		return "manual"
 	}
-	valid := map[string]bool{"manual": true, "launchd": true, "cron": true, "systemd": true, "task-scheduler": true}
-	if !valid[mode] {
-		return "", nil, fmt.Errorf("invalid scheduler mode %q: expected auto, manual, launchd, cron, systemd, or task-scheduler", mode)
+	return mode
+}
+
+func isDreamSchedulerModeValid(mode string) bool {
+	switch mode {
+	case "manual", "launchd", "cron", "systemd", "task-scheduler":
+		return true
+	default:
+		return false
 	}
-	var warnings []string
+}
+
+func resolveDreamSchedulerModeWarnings(mode string, host dreamHostProfile) ([]string, error) {
 	switch mode {
 	case "launchd":
-		if dreamOS != "darwin" {
-			return "", nil, fmt.Errorf("launchd scheduling is only valid on macOS")
-		}
-		if host.HasBattery {
-			warnings = append(warnings, "launchd is available, but laptop sleep or lid-close behavior can still suppress overnight runs")
-		}
+		return dreamLaunchdSchedulerWarnings(host)
 	case "systemd":
-		if dreamOS != "linux" {
-			return "", nil, fmt.Errorf("systemd scheduling is only valid on Linux")
-		}
-		if dreamLookPath("systemctl") != nil {
-			return "", nil, fmt.Errorf("systemd scheduling requested, but systemctl is unavailable")
-		}
-		if host.HasBattery {
-			warnings = append(warnings, "systemd timers are best-effort on battery-powered laptops that may sleep")
-		}
+		return dreamSystemdSchedulerWarnings(host)
 	case "cron":
-		if dreamLookPath("crontab") != nil {
-			return "", nil, fmt.Errorf("cron scheduling requested, but crontab is unavailable")
-		}
-		if host.HasBattery {
-			warnings = append(warnings, "cron is best-effort on laptops that sleep")
-		}
+		return dreamCronSchedulerWarnings(host)
 	case "task-scheduler":
-		if dreamOS != "windows" {
-			return "", nil, fmt.Errorf("task-scheduler scheduling is only valid on Windows")
-		}
-		warnings = append(warnings, "Windows Task Scheduler assistance will be generated for review; AgentOps will not register it automatically")
+		return dreamTaskSchedulerWarnings()
+	default:
+		return nil, nil
 	}
-	return mode, warnings, nil
+}
+
+func dreamLaunchdSchedulerWarnings(host dreamHostProfile) ([]string, error) {
+	if dreamOS != "darwin" {
+		return nil, fmt.Errorf("launchd scheduling is only valid on macOS")
+	}
+	warnings := []string{}
+	if host.HasBattery {
+		warnings = append(warnings, "launchd is available, but laptop sleep or lid-close behavior can still suppress overnight runs")
+	}
+	return warnings, nil
+}
+
+func dreamSystemdSchedulerWarnings(host dreamHostProfile) ([]string, error) {
+	if dreamOS != "linux" {
+		return nil, fmt.Errorf("systemd scheduling is only valid on Linux")
+	}
+	if dreamLookPath("systemctl") != nil {
+		return nil, fmt.Errorf("systemd scheduling requested, but systemctl is unavailable")
+	}
+	warnings := []string{}
+	if host.HasBattery {
+		warnings = append(warnings, "systemd timers are best-effort on battery-powered laptops that may sleep")
+	}
+	return warnings, nil
+}
+
+func dreamCronSchedulerWarnings(host dreamHostProfile) ([]string, error) {
+	if dreamLookPath("crontab") != nil {
+		return nil, fmt.Errorf("cron scheduling requested, but crontab is unavailable")
+	}
+	warnings := []string{}
+	if host.HasBattery {
+		warnings = append(warnings, "cron is best-effort on laptops that sleep")
+	}
+	return warnings, nil
+}
+
+func dreamTaskSchedulerWarnings() ([]string, error) {
+	if dreamOS != "windows" {
+		return nil, fmt.Errorf("task-scheduler scheduling is only valid on Windows")
+	}
+	return []string{"Windows Task Scheduler assistance will be generated for review; AgentOps will not register it automatically"}, nil
 }
 
 func maybeWriteDreamSchedulerArtifacts(cwd string, host dreamHostProfile, cfg config.DreamConfig) (map[string]string, []string, error) {

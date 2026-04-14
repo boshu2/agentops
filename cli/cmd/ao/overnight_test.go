@@ -298,6 +298,39 @@ func TestRunOvernightSetupApplyWritesSchedulerArtifact(t *testing.T) {
 	}
 }
 
+func TestResolveDreamSchedulerModeFlagOverride(t *testing.T) {
+	oldSetupScheduler := overnightSetupScheduler
+	defer func() { overnightSetupScheduler = oldSetupScheduler }()
+
+	host := dreamHostProfile{RecommendedMode: "cron"}
+
+	tests := []struct {
+		name string
+		flag string
+		base string
+		want string
+	}{
+		{name: "empty flag keeps base", flag: "", base: "manual", want: "manual"},
+		{name: "explicit flag wins", flag: "launchd", base: "manual", want: "launchd"},
+		{name: "auto prefers host recommendation", flag: "auto", base: "manual", want: "cron"},
+		{name: "auto falls back to manual", flag: "auto", base: "systemd", want: "manual"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			overnightSetupScheduler = tt.flag
+			testHost := host
+			if tt.name == "auto falls back to manual" {
+				testHost.RecommendedMode = ""
+			}
+
+			if got := resolveDreamSchedulerModeFlagOverride(tt.base, testHost); got != tt.want {
+				t.Fatalf("resolveDreamSchedulerModeFlagOverride(%q) = %q, want %q", tt.base, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRunDreamCouncilWithMockRunners(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("mock shell runners rely on Unix argv quoting")

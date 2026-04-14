@@ -705,6 +705,39 @@ func TestRunCurateStatus_JSON(t *testing.T) {
 	}
 }
 
+func TestCurateStatusLastVerifyAt_LatestJSONOnly(t *testing.T) {
+	dir := t.TempDir()
+	older := time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC)
+	newer := time.Date(2026, 4, 2, 9, 30, 0, 0, time.UTC)
+
+	oldPath := filepath.Join(dir, "old.json")
+	newPath := filepath.Join(dir, "new.json")
+	ignoredPath := filepath.Join(dir, "notes.txt")
+	for _, path := range []string{oldPath, newPath, ignoredPath} {
+		if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	if err := os.Chtimes(oldPath, older, older); err != nil {
+		t.Fatalf("chtimes old.json: %v", err)
+	}
+	if err := os.Chtimes(newPath, newer, newer); err != nil {
+		t.Fatalf("chtimes new.json: %v", err)
+	}
+	if err := os.Chtimes(ignoredPath, newer.Add(time.Hour), newer.Add(time.Hour)); err != nil {
+		t.Fatalf("chtimes notes.txt: %v", err)
+	}
+
+	got := curateStatusLastVerifyAt(dir)
+	parsed, err := time.Parse(time.RFC3339, got)
+	if err != nil {
+		t.Fatalf("parse last verify timestamp %q: %v", got, err)
+	}
+	if !parsed.Equal(newer) {
+		t.Fatalf("curateStatusLastVerifyAt() = %v, want %v", parsed, newer)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // detectVerifyRegressions
 // ---------------------------------------------------------------------------

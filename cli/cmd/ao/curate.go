@@ -312,12 +312,21 @@ func detectVerifyRegressions(baselineDir string, snap *goals.Snapshot) ([]string
 }
 
 func runCurateStatus(cmd *cobra.Command, args []string) error {
-	result := curateStatusResult{}
+	return emitCurateStatus(cmd, curateStatusSnapshot())
+}
 
-	// Count artifacts by type in .agents/learnings/
+func curateStatusSnapshot() curateStatusResult {
 	learningsDir := ".agents/learnings"
 	patternsDir := ".agents/patterns"
 
+	result := curateStatusResult{}
+	curateStatusCounts(&result, learningsDir, patternsDir)
+	result.LastVerifyAt = curateStatusLastVerifyAt(".agents/ao/baselines")
+	result.PendingVerify = curateStatusPendingVerify(result.Total, result.LastVerifyAt, result.LastCatalogAt, learningsDir, patternsDir)
+	return result
+}
+
+func curateStatusCounts(result *curateStatusResult, learningsDir, patternsDir string) {
 	var latestCatalog time.Time
 
 	learningsCounts, learningsLatest := countArtifactsInDir(learningsDir)
@@ -335,43 +344,50 @@ func runCurateStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	result.Total = result.Learnings + result.Decisions + result.Failures + result.Patterns
-
 	if !latestCatalog.IsZero() {
 		result.LastCatalogAt = latestCatalog.Format(time.RFC3339)
 	}
+}
 
-	// Check last verify timestamp from baselines
-	baselineDir := ".agents/ao/baselines"
-	if entries, err := os.ReadDir(baselineDir); err == nil {
-		var latest time.Time
-		for _, e := range entries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
-				info, infoErr := e.Info()
-				if infoErr == nil {
-					if info.ModTime().After(latest) {
-						latest = info.ModTime()
-					}
-				}
+func curateStatusLastVerifyAt(baselineDir string) string {
+	entries, err := os.ReadDir(baselineDir)
+	if err != nil {
+		return ""
+	}
+
+	var latest time.Time
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+			info, infoErr := e.Info()
+			if infoErr == nil && info.ModTime().After(latest) {
+				latest = info.ModTime()
 			}
 		}
-		if !latest.IsZero() {
-			result.LastVerifyAt = latest.Format(time.RFC3339)
-		}
 	}
+	if latest.IsZero() {
+		return ""
+	}
+	return latest.Format(time.RFC3339)
+}
 
-	// Pending: artifacts cataloged after last verify
-	if result.LastVerifyAt != "" && result.LastCatalogAt != "" {
-		verifyTime, _ := time.Parse(time.RFC3339, result.LastVerifyAt)
-		catalogTime, _ := time.Parse(time.RFC3339, result.LastCatalogAt)
+func curateStatusPendingVerify(total int, lastVerifyAt, lastCatalogAt string, learningsDir, patternsDir string) int {
+	if lastVerifyAt != "" && lastCatalogAt != "" {
+		verifyTime, _ := time.Parse(time.RFC3339, lastVerifyAt)
+		catalogTime, _ := time.Parse(time.RFC3339, lastCatalogAt)
 		if catalogTime.After(verifyTime) {
-			result.PendingVerify = countArtifactsSince(learningsDir, patternsDir, verifyTime)
+			return countArtifactsSince(learningsDir, patternsDir, verifyTime)
 		}
-	} else if result.Total > 0 && result.LastVerifyAt == "" {
-		// Never verified — all are pending
-		result.PendingVerify = result.Total
+		return 0
 	}
 
-	// Output
+	if total > 0 && lastVerifyAt == "" {
+		return total
+	}
+
+	return 0
+}
+
+func emitCurateStatus(cmd *cobra.Command, result curateStatusResult) error {
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(curateOutWriter(cmd))
 		enc.SetIndent("", "  ")
