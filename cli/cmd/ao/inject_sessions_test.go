@@ -10,123 +10,152 @@ import (
 func TestParseSessionFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	t.Run("JSONL session", func(t *testing.T) {
-		data := map[string]any{
-			"summary": "Worked on authentication module",
-		}
-		line, _ := json.Marshal(data)
-		path := filepath.Join(tmpDir, "session1.jsonl")
-		if err := os.WriteFile(path, line, 0644); err != nil {
-			t.Fatal(err)
-		}
+	for _, tc := range parseSessionFileCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.run(t, tmpDir)
+		})
+	}
+}
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if s.Summary != "Worked on authentication module" {
-			t.Errorf("Summary = %q, want %q", s.Summary, "Worked on authentication module")
-		}
-		if s.Date == "" {
-			t.Error("expected non-empty Date")
-		}
-	})
+type parseSessionFileCase struct {
+	name string
+	run  func(t *testing.T, tmpDir string)
+}
 
-	t.Run("markdown session", func(t *testing.T) {
-		content := `# Session Summary
+func parseSessionFileCases() []parseSessionFileCase {
+	return []parseSessionFileCase{
+		{name: "JSONL session", run: assertParseSessionJSONL},
+		{name: "markdown session", run: assertParseSessionMarkdown},
+		{name: "markdown with YAML frontmatter", run: assertParseSessionMarkdownFrontmatter},
+		{name: "empty markdown", run: assertParseSessionEmptyMarkdown},
+		{name: "nonexistent file", run: assertParseSessionNonexistentFile},
+		{name: "invalid JSONL", run: assertParseSessionInvalidJSONL},
+		{name: "long summary truncated", run: assertParseSessionLongSummaryTruncated},
+	}
+}
+
+func assertParseSessionJSONL(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	data := map[string]any{
+		"summary": "Worked on authentication module",
+	}
+	line, _ := json.Marshal(data)
+	path := writeParseSessionFixture(t, tmpDir, "session1.jsonl", line)
+
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Summary != "Worked on authentication module" {
+		t.Errorf("Summary = %q, want %q", s.Summary, "Worked on authentication module")
+	}
+	if s.Date == "" {
+		t.Error("expected non-empty Date")
+	}
+}
+
+func assertParseSessionMarkdown(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	content := `# Session Summary
 
 Implemented new database migration system.
 `
-		path := filepath.Join(tmpDir, "session2.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+	path := writeParseSessionFixture(t, tmpDir, "session2.md", []byte(content))
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if s.Summary != "Implemented new database migration system." {
-			t.Errorf("Summary = %q, want %q", s.Summary, "Implemented new database migration system.")
-		}
-	})
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Summary != "Implemented new database migration system." {
+		t.Errorf("Summary = %q, want %q", s.Summary, "Implemented new database migration system.")
+	}
+}
 
-	t.Run("markdown with YAML frontmatter", func(t *testing.T) {
-		content := "---\nutility: 0.50\nlast_reward: 0.35\nreward_count: 1\n---\n\n# Session\n\nActual session content here.\n"
-		path := filepath.Join(tmpDir, "frontmatter.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+func assertParseSessionMarkdownFrontmatter(t *testing.T, tmpDir string) {
+	t.Helper()
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if s.Summary != "Actual session content here." {
-			t.Errorf("Summary = %q, want %q (should skip frontmatter)", s.Summary, "Actual session content here.")
-		}
-	})
+	content := "---\nutility: 0.50\nlast_reward: 0.35\nreward_count: 1\n---\n\n# Session\n\nActual session content here.\n"
+	path := writeParseSessionFixture(t, tmpDir, "frontmatter.md", []byte(content))
 
-	t.Run("empty markdown", func(t *testing.T) {
-		path := filepath.Join(tmpDir, "empty.md")
-		if err := os.WriteFile(path, []byte("# Title\n---\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Summary != "Actual session content here." {
+		t.Errorf("Summary = %q, want %q (should skip frontmatter)", s.Summary, "Actual session content here.")
+	}
+}
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if s.Summary != "" {
-			t.Errorf("Summary = %q, want empty (only headings and separators)", s.Summary)
-		}
-	})
+func assertParseSessionEmptyMarkdown(t *testing.T, tmpDir string) {
+	t.Helper()
 
-	t.Run("nonexistent file", func(t *testing.T) {
-		_, err := parseSessionFile(filepath.Join(tmpDir, "nope.jsonl"))
-		if err == nil {
-			t.Error("expected error for nonexistent file")
-		}
-	})
+	path := writeParseSessionFixture(t, tmpDir, "empty.md", []byte("# Title\n---\n"))
 
-	t.Run("invalid JSONL", func(t *testing.T) {
-		path := filepath.Join(tmpDir, "bad.jsonl")
-		if err := os.WriteFile(path, []byte("not json"), 0644); err != nil {
-			t.Fatal(err)
-		}
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Summary != "" {
+		t.Errorf("Summary = %q, want empty (only headings and separators)", s.Summary)
+	}
+}
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		// Invalid JSON should result in empty summary
-		if s.Summary != "" {
-			t.Errorf("Summary = %q, want empty for invalid JSON", s.Summary)
-		}
-	})
+func assertParseSessionNonexistentFile(t *testing.T, tmpDir string) {
+	t.Helper()
 
-	t.Run("long summary truncated", func(t *testing.T) {
-		longSummary := make([]byte, 200)
-		for i := range longSummary {
-			longSummary[i] = 'a'
-		}
-		data := map[string]any{
-			"summary": string(longSummary),
-		}
-		line, _ := json.Marshal(data)
-		path := filepath.Join(tmpDir, "long.jsonl")
-		if err := os.WriteFile(path, line, 0644); err != nil {
-			t.Fatal(err)
-		}
+	_, err := parseSessionFile(filepath.Join(tmpDir, "nope.jsonl"))
+	if err == nil {
+		t.Error("expected error for nonexistent file")
+	}
+}
 
-		s, err := parseSessionFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(s.Summary) > 153 { // 150 + "..."
-			t.Errorf("Summary length = %d, want at most 153 (truncated)", len(s.Summary))
-		}
-	})
+func assertParseSessionInvalidJSONL(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	path := writeParseSessionFixture(t, tmpDir, "bad.jsonl", []byte("not json"))
+
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Invalid JSON should result in empty summary
+	if s.Summary != "" {
+		t.Errorf("Summary = %q, want empty for invalid JSON", s.Summary)
+	}
+}
+
+func assertParseSessionLongSummaryTruncated(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	longSummary := make([]byte, 200)
+	for i := range longSummary {
+		longSummary[i] = 'a'
+	}
+	data := map[string]any{
+		"summary": string(longSummary),
+	}
+	line, _ := json.Marshal(data)
+	path := writeParseSessionFixture(t, tmpDir, "long.jsonl", line)
+
+	s, err := parseSessionFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(s.Summary) > 153 { // 150 + "..."
+		t.Errorf("Summary length = %d, want at most 153 (truncated)", len(s.Summary))
+	}
+}
+
+func writeParseSessionFixture(t *testing.T, tmpDir, name string, content []byte) string {
+	t.Helper()
+
+	path := filepath.Join(tmpDir, name)
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestCollectSessionFiles_DeduplicatesPairs(t *testing.T) {
