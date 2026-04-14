@@ -351,52 +351,93 @@ func TestProcessCitationFeedback_ShadowNamespaceAuditOnly(t *testing.T) {
 }
 
 func TestProcessCitationFeedback_WritesFeedbackEvents(t *testing.T) {
-	// Verify that processCitationFeedback writes FeedbackEvent entries to feedback.jsonl.
-	tmp := t.TempDir()
+	fixture := setupCitationFeedbackEventsFixture(t)
+	assertCitationFeedbackProcessCounts(t, fixture.tmp)
+	event := readCitationFeedbackEvent(t, fixture.feedbackPath)
+	assertCitationFeedbackEvent(t, event)
+}
 
-	// Isolate from real transcripts by overriding HOME
+type citationFeedbackEventsFixture struct {
+	tmp          string
+	feedbackPath string
+}
+
+func setupCitationFeedbackEventsFixture(t *testing.T) citationFeedbackEventsFixture {
+	t.Helper()
+
+	tmp := t.TempDir()
+	setupCitationFeedbackFakeHome(t, tmp)
+
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	mkdirCitationFeedbackDir(t, aoDir)
+	mkdirCitationFeedbackDir(t, learningsDir)
+
+	writeCitationFeedbackLearning(t, learningsDir)
+	writeCitationFeedbackCitation(t, aoDir)
+
+	return citationFeedbackEventsFixture{
+		tmp:          tmp,
+		feedbackPath: filepath.Join(aoDir, "feedback.jsonl"),
+	}
+}
+
+func setupCitationFeedbackFakeHome(t *testing.T, tmp string) {
+	t.Helper()
+
 	fakeHome := filepath.Join(tmp, "fakehome")
 	if err := os.MkdirAll(fakeHome, 0755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", fakeHome)
+}
 
-	// Create .agents/ao/ for citations
-	aoDir := filepath.Join(tmp, ".agents", "ao")
-	if err := os.MkdirAll(aoDir, 0755); err != nil {
+func mkdirCitationFeedbackDir(t *testing.T, dir string) {
+	t.Helper()
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
+}
 
-	// Create a learning file
-	learningsDir := filepath.Join(tmp, ".agents", "learnings")
-	if err := os.MkdirAll(learningsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+func writeCitationFeedbackLearning(t *testing.T, learningsDir string) {
+	t.Helper()
+
 	learningPath := filepath.Join(learningsDir, "fb-test.jsonl")
 	if err := os.WriteFile(learningPath, []byte(`{"id":"fb-test","title":"Feedback Test","utility":0.6}`), 0644); err != nil {
 		t.Fatal(err)
 	}
+}
 
-	// Write an unprocessed citation
-	citations := []types.CitationEvent{
-		{ArtifactPath: ".agents/learnings/fb-test.jsonl", CitationType: "applied", FeedbackGiven: false},
+func writeCitationFeedbackCitation(t *testing.T, aoDir string) {
+	t.Helper()
+
+	citation := types.CitationEvent{
+		ArtifactPath:  ".agents/learnings/fb-test.jsonl",
+		CitationType:  "applied",
+		FeedbackGiven: false,
 	}
-	var citationLines []string
-	for _, c := range citations {
-		data, _ := json.Marshal(c)
-		citationLines = append(citationLines, string(data))
-	}
-	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), []byte(strings.Join(citationLines, "\n")+"\n"), 0600); err != nil {
+	data, err := json.Marshal(citation)
+	if err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), append(data, '\n'), 0600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertCitationFeedbackProcessCounts(t *testing.T, tmp string) {
+	t.Helper()
 
 	total, rewarded, _ := processCitationFeedback(tmp)
 	if total != 1 || rewarded != 1 {
 		t.Fatalf("expected (1,1,_), got (%d,%d,_)", total, rewarded)
 	}
+}
 
-	// Verify feedback.jsonl was written
-	feedbackPath := filepath.Join(tmp, ".agents", "ao", "feedback.jsonl")
+func readCitationFeedbackEvent(t *testing.T, feedbackPath string) FeedbackEvent {
+	t.Helper()
+
 	feedbackData, err := os.ReadFile(feedbackPath)
 	if err != nil {
 		t.Fatalf("feedback.jsonl not created: %v", err)
@@ -411,6 +452,11 @@ func TestProcessCitationFeedback_WritesFeedbackEvents(t *testing.T) {
 	if err := json.Unmarshal([]byte(feedbackLines[0]), &event); err != nil {
 		t.Fatalf("failed to parse FeedbackEvent: %v", err)
 	}
+	return event
+}
+
+func assertCitationFeedbackEvent(t *testing.T, event FeedbackEvent) {
+	t.Helper()
 
 	if event.SessionID == "" {
 		t.Error("FeedbackEvent.SessionID is empty")
@@ -521,11 +567,11 @@ func _removedTestProcessCitationFeedback_LowConfidenceReferenceIsSkipped(t *test
 	}
 
 	citation := types.CitationEvent{
-		ArtifactPath:     ".agents/learnings/low-confidence-reference.jsonl",
-		CitationType:     "reference",
-		MatchConfidence:  0.5,
-		MatchProvenance:  "lookup:query",
-		FeedbackGiven:    false,
+		ArtifactPath:    ".agents/learnings/low-confidence-reference.jsonl",
+		CitationType:    "reference",
+		MatchConfidence: 0.5,
+		MatchProvenance: "lookup:query",
+		FeedbackGiven:   false,
 	}
 	data, err := json.Marshal(citation)
 	if err != nil {
