@@ -76,17 +76,44 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 	restore := stubInjectRefresh(t)
 	defer restore()
 
-	// Two back-to-back MEASURE failures will trip the cap. Fail from iter 1
-	// so every iteration fails; with cap=2 the loop halts on iter 2.
-	SetTestFitnessInjector(injectMeasureErrorFromIter(0.8, 1))
+	dir := setupDreamFailedSummaryFixture(t, 1)
+	runID := "na-cdn-failed-summary"
+	outputDir := filepath.Join(dir, ".agents", "overnight", runID)
+	result := runDreamFailedSummaryLoop(t, dir, outputDir, runID)
+
+	assertDreamFailedSummaryHalt(t, result)
+	assertDreamFailedSummaryIterations(t, result)
+	diskByIndex := assertDreamFailedSummaryDiskRoundTrip(t, outputDir, runID, result)
+	assertDreamFailedSummaryTailPreserved(t, diskByIndex, result)
+	assertDreamFailedSummaryIndicesContiguous(t, result)
+}
+
+func setupDreamFailedSummaryFixture(t *testing.T, failFromIter int) string {
+	t.Helper()
+
+	SetTestFitnessInjector(injectMeasureErrorFromIter(0.8, failFromIter))
 	t.Cleanup(func() { SetTestFitnessInjector(nil) })
 
 	dir := t.TempDir()
 	generateStateMachineFixture(t, dir)
+	return dir
+}
 
-	runID := "na-cdn-failed-summary"
-	outputDir := filepath.Join(dir, ".agents", "overnight", runID)
-	opts := RunLoopOptions{
+func runDreamFailedSummaryLoop(t *testing.T, dir, outputDir, runID string) *RunLoopResult {
+	t.Helper()
+
+	result, err := RunLoop(context.Background(), dreamFailedSummaryLoopOptions(dir, outputDir, runID))
+	if err != nil {
+		t.Fatalf("RunLoop: %v", err)
+	}
+	if result == nil {
+		t.Fatal("result == nil")
+	}
+	return result
+}
+
+func dreamFailedSummaryLoopOptions(dir, outputDir, runID string) RunLoopOptions {
+	return RunLoopOptions{
 		Cwd:            dir,
 		OutputDir:      outputDir,
 		RunID:          runID,
@@ -97,32 +124,25 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 		WarnOnly:       true,
 		LogWriter:      io.Discard,
 	}.WithMeasureFailureCap(2)
+}
 
-	result, err := RunLoop(context.Background(), opts)
-	if err != nil {
-		t.Fatalf("RunLoop: %v", err)
-	}
-	if result == nil {
-		t.Fatal("result == nil")
-	}
+func assertDreamFailedSummaryHalt(t *testing.T, result *RunLoopResult) {
+	t.Helper()
 
-	// Assertion 1: MeasureFailureHalt must be set so the cmd-layer summary
-	// writer routes to the failed path.
 	if !result.MeasureFailureHalt {
 		t.Fatalf("result.MeasureFailureHalt=false; want true (cap should have tripped)")
 	}
-
-	// Assertion 2: FailureReason must be populated and include the failure
-	// cap context. finalizeOvernightSummary copies this into summary.md as
-	// the human-readable failure reason.
 	if result.FailureReason == "" {
 		t.Fatalf("result.FailureReason is empty; want non-empty with failure cap context")
 	}
 	if !strings.Contains(strings.ToLower(result.FailureReason), "measure") {
 		t.Fatalf("result.FailureReason = %q; want mention of 'measure' failure", result.FailureReason)
 	}
+}
 
-	// Assertion 3: at least 2 iterations (the cap) and every iter is degraded.
+func assertDreamFailedSummaryIterations(t *testing.T, result *RunLoopResult) {
+	t.Helper()
+
 	if len(result.Iterations) < 2 {
 		t.Fatalf("len(result.Iterations) = %d; want >= 2 (cap=2 consecutive failures)",
 			len(result.Iterations))
@@ -136,10 +156,16 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 			t.Fatalf("result.Iterations[%d].Error is empty; want measure-failure note", i)
 		}
 	}
+}
 
-	// Assertion 4: per-iter files on disk round-trip. finalizeOvernightSummary
-	// reads from <outputDir>/<runID>/iterations/iter-*.json so this is the
-	// exact contract surface the cmd-layer summary writer consumes.
+func assertDreamFailedSummaryDiskRoundTrip(
+	t *testing.T,
+	outputDir string,
+	runID string,
+	result *RunLoopResult,
+) map[int]IterationSummary {
+	t.Helper()
+
 	iterDir := filepath.Join(outputDir, runID, "iterations")
 	entries, err := os.ReadDir(iterDir)
 	if err != nil {
@@ -174,9 +200,16 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 				it.Index, onDisk.Status, it.Status)
 		}
 	}
+	return diskByIndex
+}
 
-	// Assertion 5: the tail iter is preserved - "last completed step" per
-	// the bead scope. Index must match the loop's view.
+func assertDreamFailedSummaryTailPreserved(
+	t *testing.T,
+	diskByIndex map[int]IterationSummary,
+	result *RunLoopResult,
+) {
+	t.Helper()
+
 	lastInMem := result.Iterations[len(result.Iterations)-1]
 	lastOnDisk, ok := diskByIndex[lastInMem.Index]
 	if !ok {
@@ -185,8 +218,11 @@ func TestDreamFailedSummary_InternalContract(t *testing.T) {
 	if lastOnDisk.ID != lastInMem.ID {
 		t.Fatalf("last iter ID mismatch: disk=%q memory=%q", lastOnDisk.ID, lastInMem.ID)
 	}
+}
 
-	// Sanity: the iter index must be 1-based contiguous from 1.
+func assertDreamFailedSummaryIndicesContiguous(t *testing.T, result *RunLoopResult) {
+	t.Helper()
+
 	for i, it := range result.Iterations {
 		wantIndex := i + 1
 		if it.Index != wantIndex {
