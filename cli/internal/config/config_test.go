@@ -1064,10 +1064,7 @@ func TestProjectConfigPath_GetwdError(t *testing.T) {
 }
 
 func TestResolve_WithProjectConfig(t *testing.T) {
-	// Create a project config file and point AGENTOPS_CONFIG at it
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	content := `
+	configPath := writeTestProjectConfig(t, `
 output: yaml
 base_dir: /project/base
 verbose: true
@@ -1078,55 +1075,11 @@ rpi:
   ao_command: custom-ao
   bd_command: custom-bd
   tmux_command: custom-tmux
-`
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Set project config path
-	t.Setenv("AGENTOPS_CONFIG", configPath)
-	// Clear all env overrides so project config values shine through
-	for _, key := range []string{
-		"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE",
-		"AGENTOPS_NO_SC",
-		"AGENTOPS_RPI_WORKTREE_MODE", "AGENTOPS_RPI_RUNTIME",
-		"AGENTOPS_RPI_RUNTIME_MODE", "AGENTOPS_RPI_RUNTIME_COMMAND",
-		"AGENTOPS_RPI_AO_COMMAND", "AGENTOPS_RPI_BD_COMMAND",
-		"AGENTOPS_RPI_TMUX_COMMAND",
-		"AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD",
-	} {
-		t.Setenv(key, "")
-	}
+`)
+	clearConfigResolutionEnv(t, configPath)
 
 	rc := Resolve("", "", false)
-
-	if rc.Output.Value != "yaml" || rc.Output.Source != SourceProject {
-		t.Errorf("Output = (%v, %v), want (yaml, %v)", rc.Output.Value, rc.Output.Source, SourceProject)
-	}
-	if rc.BaseDir.Value != "/project/base" || rc.BaseDir.Source != SourceProject {
-		t.Errorf("BaseDir = (%v, %v), want (/project/base, %v)", rc.BaseDir.Value, rc.BaseDir.Source, SourceProject)
-	}
-	if rc.Verbose.Value != true || rc.Verbose.Source != SourceProject {
-		t.Errorf("Verbose = (%v, %v), want (true, %v)", rc.Verbose.Value, rc.Verbose.Source, SourceProject)
-	}
-	if rc.RPIWorktreeMode.Value != "never" || rc.RPIWorktreeMode.Source != SourceProject {
-		t.Errorf("RPIWorktreeMode = (%v, %v), want (never, %v)", rc.RPIWorktreeMode.Value, rc.RPIWorktreeMode.Source, SourceProject)
-	}
-	if rc.RPIRuntimeMode.Value != "direct" || rc.RPIRuntimeMode.Source != SourceProject {
-		t.Errorf("RPIRuntimeMode = (%v, %v), want (direct, %v)", rc.RPIRuntimeMode.Value, rc.RPIRuntimeMode.Source, SourceProject)
-	}
-	if rc.RPIRuntimeCommand.Value != "custom-claude" || rc.RPIRuntimeCommand.Source != SourceProject {
-		t.Errorf("RPIRuntimeCommand = (%v, %v), want (custom-claude, %v)", rc.RPIRuntimeCommand.Value, rc.RPIRuntimeCommand.Source, SourceProject)
-	}
-	if rc.RPIAOCommand.Value != "custom-ao" || rc.RPIAOCommand.Source != SourceProject {
-		t.Errorf("RPIAOCommand = (%v, %v), want (custom-ao, %v)", rc.RPIAOCommand.Value, rc.RPIAOCommand.Source, SourceProject)
-	}
-	if rc.RPIBDCommand.Value != "custom-bd" || rc.RPIBDCommand.Source != SourceProject {
-		t.Errorf("RPIBDCommand = (%v, %v), want (custom-bd, %v)", rc.RPIBDCommand.Value, rc.RPIBDCommand.Source, SourceProject)
-	}
-	if rc.RPITmuxCommand.Value != "custom-tmux" || rc.RPITmuxCommand.Source != SourceProject {
-		t.Errorf("RPITmuxCommand = (%v, %v), want (custom-tmux, %v)", rc.RPITmuxCommand.Value, rc.RPITmuxCommand.Source, SourceProject)
-	}
+	assertResolvedProjectConfig(t, rc)
 }
 
 func TestResolve_FlagOverridesProjectConfig(t *testing.T) {
@@ -1431,6 +1384,16 @@ rpi:
 	assertResolvedHomeConfig(t, rc)
 }
 
+func writeTestProjectConfig(t *testing.T, content string) string {
+	t.Helper()
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	return configPath
+}
+
 func writeTestHomeConfig(t *testing.T, content string) {
 	t.Helper()
 
@@ -1480,7 +1443,7 @@ func clearConfigResolutionEnv(t *testing.T, projectConfigPath string) {
 
 func assertResolvedHomeConfig(t *testing.T, rc *ResolvedConfig) {
 	t.Helper()
-	assertResolvedValues(t, []resolvedFieldExpectation{
+	assertResolvedValues(t, "Resolve with home config", []resolvedFieldExpectation{
 		{name: "Output", got: rc.Output, want: "markdown", source: SourceHome},
 		{name: "BaseDir", got: rc.BaseDir, want: "/home-resolve", source: SourceHome},
 		{name: "Verbose", got: rc.Verbose, want: true, source: SourceHome},
@@ -1493,6 +1456,21 @@ func assertResolvedHomeConfig(t *testing.T, rc *ResolvedConfig) {
 	})
 }
 
+func assertResolvedProjectConfig(t *testing.T, rc *ResolvedConfig) {
+	t.Helper()
+	assertResolvedValues(t, "Resolve with project config", []resolvedFieldExpectation{
+		{name: "Output", got: rc.Output, want: "yaml", source: SourceProject},
+		{name: "BaseDir", got: rc.BaseDir, want: "/project/base", source: SourceProject},
+		{name: "Verbose", got: rc.Verbose, want: true, source: SourceProject},
+		{name: "RPIWorktreeMode", got: rc.RPIWorktreeMode, want: "never", source: SourceProject},
+		{name: "RPIRuntimeMode", got: rc.RPIRuntimeMode, want: "direct", source: SourceProject},
+		{name: "RPIRuntimeCommand", got: rc.RPIRuntimeCommand, want: "custom-claude", source: SourceProject},
+		{name: "RPIAOCommand", got: rc.RPIAOCommand, want: "custom-ao", source: SourceProject},
+		{name: "RPIBDCommand", got: rc.RPIBDCommand, want: "custom-bd", source: SourceProject},
+		{name: "RPITmuxCommand", got: rc.RPITmuxCommand, want: "custom-tmux", source: SourceProject},
+	})
+}
+
 type resolvedFieldExpectation struct {
 	name   string
 	got    resolved
@@ -1500,12 +1478,12 @@ type resolvedFieldExpectation struct {
 	source Source
 }
 
-func assertResolvedValues(t *testing.T, fields []resolvedFieldExpectation) {
+func assertResolvedValues(t *testing.T, context string, fields []resolvedFieldExpectation) {
 	t.Helper()
 	for _, field := range fields {
 		if !reflect.DeepEqual(field.got.Value, field.want) || field.got.Source != field.source {
-			t.Errorf("Resolve with home config: %s = (%v, %v), want (%v, %v)",
-				field.name, field.got.Value, field.got.Source, field.want, field.source)
+			t.Errorf("%s: %s = (%v, %v), want (%v, %v)",
+				context, field.name, field.got.Value, field.got.Source, field.want, field.source)
 		}
 	}
 }
