@@ -1321,86 +1321,123 @@ func TestParser_ParseClaudeToolResultFallbacks(t *testing.T) {
 func TestParser_ParseCodexEventAndResponseItemEdges(t *testing.T) {
 	p := NewParser()
 
-	t.Run("unsupported event type is skipped", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"event_msg","payload":{"type":"task_started","message":"ignore"}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg != nil {
-			t.Fatalf("expected nil message, got %+v", msg)
-		}
-	})
+	for _, tc := range codexEventAndResponseItemEdgeCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.run(t, p)
+		})
+	}
+}
 
-	t.Run("invalid event payload returns error", func(t *testing.T) {
-		_, err := p.parseLine([]byte(`{"type":"event_msg","payload":"bad"}`), 1)
-		if err == nil {
-			t.Fatal("expected error for invalid event payload")
-		}
-	})
+type codexEventAndResponseItemEdgeCase struct {
+	name string
+	run  func(t *testing.T, p *Parser)
+}
 
-	t.Run("assistant response_item message parses", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"response_item","timestamp":"2026-03-05T20:20:54.239Z","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg == nil || msg.Content != "done" || msg.Role != "assistant" {
-			t.Fatalf("unexpected message: %+v", msg)
-		}
-	})
+func codexEventAndResponseItemEdgeCases() []codexEventAndResponseItemEdgeCase {
+	return []codexEventAndResponseItemEdgeCase{
+		{"unsupported event type is skipped", assertUnsupportedCodexEventTypeSkipped},
+		{"invalid event payload returns error", assertInvalidCodexEventPayloadErrors},
+		{"assistant response_item message parses", assertAssistantResponseItemMessageParses},
+		{"developer response_item message is skipped", assertDeveloperResponseItemMessageSkipped},
+		{"custom tool call parses invalid arguments as raw", assertCustomToolCallInvalidArgumentsRaw},
+		{"custom tool call output parses", assertCustomToolCallOutputParses},
+		{"invalid response_item payload returns error", assertInvalidResponseItemPayloadErrors},
+		{"invalid session_meta payload returns error", assertInvalidSessionMetaPayloadErrors},
+		{"unsupported response_item type is skipped", assertUnsupportedResponseItemTypeSkipped},
+	}
+}
 
-	t.Run("developer response_item message is skipped", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"ignore"}]}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg != nil {
-			t.Fatalf("expected nil message, got %+v", msg)
-		}
-	})
+func parseCodexEdgeLine(t *testing.T, p *Parser, jsonl string) *types.TranscriptMessage {
+	t.Helper()
 
-	t.Run("custom tool call parses invalid arguments as raw", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"response_item","timestamp":"2026-03-05T20:20:54.282Z","payload":{"type":"custom_tool_call","name":"my_tool","arguments":"not-json"}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg == nil || len(msg.Tools) != 1 || msg.Tools[0].Input["raw"] != "not-json" {
-			t.Fatalf("unexpected tool call: %+v", msg)
-		}
-	})
+	msg, err := p.parseLine([]byte(jsonl), 1)
+	if err != nil {
+		t.Fatalf("parseLine failed: %v", err)
+	}
+	return msg
+}
 
-	t.Run("custom tool call output parses", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"response_item","timestamp":"2026-03-05T20:20:54.381Z","payload":{"type":"custom_tool_call_output","output":"tool output"}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg == nil || len(msg.Tools) != 1 || msg.Tools[0].Output != "tool output" {
-			t.Fatalf("unexpected tool output message: %+v", msg)
-		}
-	})
+func parseCodexEdgeError(p *Parser, jsonl string) error {
+	_, err := p.parseLine([]byte(jsonl), 1)
+	return err
+}
 
-	t.Run("invalid response_item payload returns error", func(t *testing.T) {
-		_, err := p.parseLine([]byte(`{"type":"response_item","payload":"bad"}`), 1)
-		if err == nil {
-			t.Fatal("expected error for invalid response_item payload")
-		}
-	})
+func assertUnsupportedCodexEventTypeSkipped(t *testing.T, p *Parser) {
+	t.Helper()
 
-	t.Run("invalid session_meta payload returns error", func(t *testing.T) {
-		_, err := p.parseLine([]byte(`{"type":"session_meta","payload":"bad"}`), 1)
-		if err == nil {
-			t.Fatal("expected error for invalid session_meta payload")
-		}
-	})
+	msg := parseCodexEdgeLine(t, p, `{"type":"event_msg","payload":{"type":"task_started","message":"ignore"}}`)
+	if msg != nil {
+		t.Fatalf("expected nil message, got %+v", msg)
+	}
+}
 
-	t.Run("unsupported response_item type is skipped", func(t *testing.T) {
-		msg, err := p.parseLine([]byte(`{"type":"response_item","payload":{"type":"reasoning"}}`), 1)
-		if err != nil {
-			t.Fatalf("parseLine failed: %v", err)
-		}
-		if msg != nil {
-			t.Fatalf("expected nil message, got %+v", msg)
-		}
-	})
+func assertInvalidCodexEventPayloadErrors(t *testing.T, p *Parser) {
+	t.Helper()
+
+	if err := parseCodexEdgeError(p, `{"type":"event_msg","payload":"bad"}`); err == nil {
+		t.Fatal("expected error for invalid event payload")
+	}
+}
+
+func assertAssistantResponseItemMessageParses(t *testing.T, p *Parser) {
+	t.Helper()
+
+	msg := parseCodexEdgeLine(t, p, `{"type":"response_item","timestamp":"2026-03-05T20:20:54.239Z","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"done"}]}}`)
+	if msg == nil || msg.Content != "done" || msg.Role != "assistant" {
+		t.Fatalf("unexpected message: %+v", msg)
+	}
+}
+
+func assertDeveloperResponseItemMessageSkipped(t *testing.T, p *Parser) {
+	t.Helper()
+
+	msg := parseCodexEdgeLine(t, p, `{"type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"ignore"}]}}`)
+	if msg != nil {
+		t.Fatalf("expected nil message, got %+v", msg)
+	}
+}
+
+func assertCustomToolCallInvalidArgumentsRaw(t *testing.T, p *Parser) {
+	t.Helper()
+
+	msg := parseCodexEdgeLine(t, p, `{"type":"response_item","timestamp":"2026-03-05T20:20:54.282Z","payload":{"type":"custom_tool_call","name":"my_tool","arguments":"not-json"}}`)
+	if msg == nil || len(msg.Tools) != 1 || msg.Tools[0].Input["raw"] != "not-json" {
+		t.Fatalf("unexpected tool call: %+v", msg)
+	}
+}
+
+func assertCustomToolCallOutputParses(t *testing.T, p *Parser) {
+	t.Helper()
+
+	msg := parseCodexEdgeLine(t, p, `{"type":"response_item","timestamp":"2026-03-05T20:20:54.381Z","payload":{"type":"custom_tool_call_output","output":"tool output"}}`)
+	if msg == nil || len(msg.Tools) != 1 || msg.Tools[0].Output != "tool output" {
+		t.Fatalf("unexpected tool output message: %+v", msg)
+	}
+}
+
+func assertInvalidResponseItemPayloadErrors(t *testing.T, p *Parser) {
+	t.Helper()
+
+	if err := parseCodexEdgeError(p, `{"type":"response_item","payload":"bad"}`); err == nil {
+		t.Fatal("expected error for invalid response_item payload")
+	}
+}
+
+func assertInvalidSessionMetaPayloadErrors(t *testing.T, p *Parser) {
+	t.Helper()
+
+	if err := parseCodexEdgeError(p, `{"type":"session_meta","payload":"bad"}`); err == nil {
+		t.Fatal("expected error for invalid session_meta payload")
+	}
+}
+
+func assertUnsupportedResponseItemTypeSkipped(t *testing.T, p *Parser) {
+	t.Helper()
+
+	msg := parseCodexEdgeLine(t, p, `{"type":"response_item","payload":{"type":"reasoning"}}`)
+	if msg != nil {
+		t.Fatalf("expected nil message, got %+v", msg)
+	}
 }
 
 func TestParser_HelperCoverage(t *testing.T) {
