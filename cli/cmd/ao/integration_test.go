@@ -277,17 +277,49 @@ func TestIntegration_RatchetNextProgressiveRecording(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_ForgeBatchPipeline(t *testing.T) {
+	fixture := setupForgeBatchPipelineFixture(t)
+	assertForgeBatchEmptyIndex(t, fixture.indexPath)
+
+	transcriptPaths := writeForgeBatchTranscriptCandidates(t, fixture.tmpDir)
+	appendForgeBatchInitialRecords(t, fixture.indexPath, transcriptPaths[:2])
+
+	forgedSet := loadForgeBatchIndex(t, fixture.indexPath, "reload index")
+	if len(forgedSet) != 2 {
+		t.Fatalf("expected 2 forged entries, got %d", len(forgedSet))
+	}
+
+	unforged := filterForgeBatchUnforged(t, forgedSet, transcriptPaths)
+	assertForgeBatchUnforgedTranscript(t, unforged, transcriptPaths[2])
+
+	appendForgeBatchRecord(t, fixture.indexPath, transcriptPaths[2], "session-ccc", "append final forged record")
+	forgedSet = loadForgeBatchIndex(t, fixture.indexPath, "final reload")
+	assertForgeBatchAllForged(t, forgedSet, transcriptPaths)
+}
+
+type forgeBatchPipelineFixture struct {
+	tmpDir    string
+	indexPath string
+}
+
+func setupForgeBatchPipelineFixture(t *testing.T) forgeBatchPipelineFixture {
+	t.Helper()
+
 	tmpDir := t.TempDir()
 
-	// Create the .agents/ao directory for the forged index
 	aoDir := filepath.Join(tmpDir, storage.DefaultBaseDir)
 	if err := os.MkdirAll(aoDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
-	indexPath := filepath.Join(aoDir, "forged.jsonl")
+	return forgeBatchPipelineFixture{
+		tmpDir:    tmpDir,
+		indexPath: filepath.Join(aoDir, "forged.jsonl"),
+	}
+}
 
-	// Phase 1: Empty index, no transcripts forged yet
+func assertForgeBatchEmptyIndex(t *testing.T, indexPath string) {
+	t.Helper()
+
 	forgedSet, err := loadForgedIndex(indexPath)
 	if err != nil {
 		t.Fatalf("load empty index: %v", err)
@@ -295,8 +327,11 @@ func TestIntegration_ForgeBatchPipeline(t *testing.T) {
 	if len(forgedSet) != 0 {
 		t.Fatalf("expected empty forged set, got %d", len(forgedSet))
 	}
+}
 
-	// Phase 2: Create some transcript candidates (simulating discovered files)
+func writeForgeBatchTranscriptCandidates(t *testing.T, tmpDir string) []string {
+	t.Helper()
+
 	transcriptDir := filepath.Join(tmpDir, "transcripts")
 	if err := os.MkdirAll(transcriptDir, 0755); err != nil {
 		t.Fatal(err)
@@ -315,32 +350,40 @@ func TestIntegration_ForgeBatchPipeline(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	return transcriptPaths
+}
 
-	// Phase 3: "Forge" the first two transcripts (record in index)
+func appendForgeBatchInitialRecords(t *testing.T, indexPath string, transcriptPaths []string) {
+	t.Helper()
+
 	for _, p := range transcriptPaths[:2] {
-		record := ForgedRecord{
-			Path:     p,
-			ForgedAt: time.Now(),
-			Session:  "session-" + filepath.Base(p),
-		}
-		if err := appendForgedRecord(indexPath, record); err != nil {
-			t.Fatalf("append forged record: %v", err)
-		}
+		appendForgeBatchRecord(t, indexPath, p, "session-"+filepath.Base(p), "append forged record")
 	}
+}
 
-	// Phase 4: Reload index and filter
-	forgedSet, err = loadForgedIndex(indexPath)
+func loadForgeBatchIndex(t *testing.T, indexPath string, label string) map[string]bool {
+	t.Helper()
+
+	forgedSet, err := loadForgedIndex(indexPath)
 	if err != nil {
-		t.Fatalf("reload index: %v", err)
+		t.Fatalf("%s: %v", label, err)
 	}
-	if len(forgedSet) != 2 {
-		t.Fatalf("expected 2 forged entries, got %d", len(forgedSet))
-	}
+	return forgedSet
+}
 
-	// Simulate candidate filtering (as runForgeBatch does)
+func filterForgeBatchUnforged(
+	t *testing.T,
+	forgedSet map[string]bool,
+	transcriptPaths []string,
+) []transcriptCandidate {
+	t.Helper()
+
 	candidates := make([]transcriptCandidate, 0, len(transcriptPaths))
 	for _, p := range transcriptPaths {
-		info, _ := os.Stat(p)
+		info, err := os.Stat(p)
+		if err != nil {
+			t.Fatal(err)
+		}
 		candidates = append(candidates, transcriptCandidate{
 			path:    p,
 			modTime: info.ModTime(),
@@ -354,29 +397,46 @@ func TestIntegration_ForgeBatchPipeline(t *testing.T) {
 			unforged = append(unforged, c)
 		}
 	}
+	return unforged
+}
+
+func assertForgeBatchUnforgedTranscript(
+	t *testing.T,
+	unforged []transcriptCandidate,
+	wantPath string,
+) {
+	t.Helper()
 
 	if len(unforged) != 1 {
 		t.Fatalf("expected 1 unforged transcript, got %d", len(unforged))
 	}
-	if unforged[0].path != transcriptPaths[2] {
-		t.Errorf("expected %s, got %s", transcriptPaths[2], unforged[0].path)
+	if unforged[0].path != wantPath {
+		t.Errorf("expected %s, got %s", wantPath, unforged[0].path)
 	}
+}
 
-	// Phase 5: Forge the remaining transcript
+func appendForgeBatchRecord(
+	t *testing.T,
+	indexPath string,
+	path string,
+	session string,
+	label string,
+) {
+	t.Helper()
+
 	record := ForgedRecord{
-		Path:     transcriptPaths[2],
+		Path:     path,
 		ForgedAt: time.Now(),
-		Session:  "session-ccc",
+		Session:  session,
 	}
 	if err := appendForgedRecord(indexPath, record); err != nil {
-		t.Fatalf("append final forged record: %v", err)
+		t.Fatalf("%s: %v", label, err)
 	}
+}
 
-	// Phase 6: Verify all 3 are now in the index
-	forgedSet, err = loadForgedIndex(indexPath)
-	if err != nil {
-		t.Fatalf("final reload: %v", err)
-	}
+func assertForgeBatchAllForged(t *testing.T, forgedSet map[string]bool, transcriptPaths []string) {
+	t.Helper()
+
 	if len(forgedSet) != 3 {
 		t.Fatalf("expected 3 forged entries, got %d", len(forgedSet))
 	}
