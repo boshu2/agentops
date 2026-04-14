@@ -223,6 +223,14 @@ Use ao codex start and ao codex stop when runtime hooks are unavailable.
 }
 
 func TestWriteCodexStartupContextUsesRankedSectionsAndPolicy(t *testing.T) {
+	repo := setupCodexStartupPolicyRepo(t)
+	path := writeCodexStartupPolicyContext(t, repo)
+	assertCodexStartupPolicyContext(t, path)
+}
+
+func setupCodexStartupPolicyRepo(t *testing.T) string {
+	t.Helper()
+
 	repo := t.TempDir()
 	for _, rel := range []string{
 		filepath.Join(".agents", "briefings"),
@@ -236,7 +244,28 @@ func TestWriteCodexStartupContextUsesRankedSectionsAndPolicy(t *testing.T) {
 		}
 	}
 
-	finding := `---
+	writeCodexStartupPolicyArtifacts(t, repo)
+	writeKnowledgeCorpusFixtures(t, repo)
+	if _, err := buildKnowledgeBeliefBook(filepath.Join(repo, ".agents")); err != nil {
+		t.Fatalf("buildKnowledgeBeliefBook: %v", err)
+	}
+	if _, err := buildKnowledgePlaybooks(filepath.Join(repo, ".agents"), false); err != nil {
+		t.Fatalf("buildKnowledgePlaybooks: %v", err)
+	}
+
+	return repo
+}
+
+func writeCodexStartupPolicyArtifacts(t *testing.T, repo string) {
+	t.Helper()
+
+	artifacts := []struct {
+		rel     string
+		content string
+	}{
+		{
+			rel: filepath.Join(".agents", "findings", "f-startup-002.md"),
+			content: `---
 id: "f-startup-002"
 title: "Prefer startup packet over recency dump"
 status: "active"
@@ -247,39 +276,39 @@ scope_tags: ["startup","context"]
 # Finding
 
 Prefer startup packet over arbitrary recent artifacts.
-`
-	if err := os.WriteFile(filepath.Join(repo, ".agents", "findings", "f-startup-002.md"), []byte(finding), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	rule := `---
+`,
+		},
+		{
+			rel: filepath.Join(".agents", "planning-rules", "f-startup-002.md"),
+			content: `---
 id: "f-startup-002"
 ---
 # Planning Rule
 
 - Ask: Did startup context use ranked rules before recent documents?
-`
-	if err := os.WriteFile(filepath.Join(repo, ".agents", "planning-rules", "f-startup-002.md"), []byte(rule), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	check := `---
+`,
+		},
+		{
+			rel: filepath.Join(".agents", "pre-mortem-checks", "f-startup-002.md"),
+			content: `---
 id: "f-startup-002"
 ---
 # Pre-Mortem Check
 
 - Ask: Did startup context exclude discovery-only notes?
-`
-	if err := os.WriteFile(filepath.Join(repo, ".agents", "pre-mortem-checks", "f-startup-002.md"), []byte(check), 0o644); err != nil {
-		t.Fatal(err)
+`,
+		},
 	}
-	writeKnowledgeCorpusFixtures(t, repo)
-	if _, err := buildKnowledgeBeliefBook(filepath.Join(repo, ".agents")); err != nil {
-		t.Fatalf("buildKnowledgeBeliefBook: %v", err)
+
+	for _, artifact := range artifacts {
+		if err := os.WriteFile(filepath.Join(repo, artifact.rel), []byte(artifact.content), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if _, err := buildKnowledgePlaybooks(filepath.Join(repo, ".agents"), false); err != nil {
-		t.Fatalf("buildKnowledgePlaybooks: %v", err)
-	}
+}
+
+func writeCodexStartupPolicyContext(t *testing.T, repo string) string {
+	t.Helper()
 
 	profile := lifecycleRuntimeProfile{Runtime: runtimeKindCodex, Mode: lifecycleModeCodexHookless, ThreadName: "startup"}
 	path, err := writeCodexStartupContext(
@@ -299,46 +328,38 @@ id: "f-startup-002"
 		t.Fatalf("writeCodexStartupContext: %v", err)
 	}
 
+	return path
+}
+
+func assertCodexStartupPolicyContext(t *testing.T, path string) {
+	t.Helper()
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read startup context: %v", err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "## Briefings") {
-		t.Fatalf("expected briefings heading, got:\n%s", content)
-	}
-	if !strings.Contains(content, "Startup briefing") {
-		t.Fatalf("expected startup briefing in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "## Operator Model") {
-		t.Fatalf("expected operator model heading, got:\n%s", content)
-	}
-	if !strings.Contains(content, "## Startup Slots") {
-		t.Fatalf("expected startup slots heading, got:\n%s", content)
-	}
-	if !strings.Contains(content, "### Core Beliefs") {
-		t.Fatalf("expected core beliefs in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "### Relevant Playbook") {
-		t.Fatalf("expected relevant playbook in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "### Warnings / Blockers") {
-		t.Fatalf("expected warnings section in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "### Source Links") {
-		t.Fatalf("expected source links in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "## Degraded Mode") {
-		t.Fatalf("expected degraded mode section in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "## Excluded By Default") {
-		t.Fatalf("expected exclusion policy heading, got:\n%s", content)
-	}
-	if !strings.Contains(content, "Wire startup context to ranked packet") {
-		t.Fatalf("expected ranked next work in startup context, got:\n%s", content)
-	}
-	if !strings.Contains(content, "primary dynamic surface") {
-		t.Fatalf("expected briefing-first guidance in startup context, got:\n%s", content)
+
+	for _, expected := range []struct {
+		needle  string
+		failure string
+	}{
+		{needle: "## Briefings", failure: "expected briefings heading"},
+		{needle: "Startup briefing", failure: "expected startup briefing in startup context"},
+		{needle: "## Operator Model", failure: "expected operator model heading"},
+		{needle: "## Startup Slots", failure: "expected startup slots heading"},
+		{needle: "### Core Beliefs", failure: "expected core beliefs in startup context"},
+		{needle: "### Relevant Playbook", failure: "expected relevant playbook in startup context"},
+		{needle: "### Warnings / Blockers", failure: "expected warnings section in startup context"},
+		{needle: "### Source Links", failure: "expected source links in startup context"},
+		{needle: "## Degraded Mode", failure: "expected degraded mode section in startup context"},
+		{needle: "## Excluded By Default", failure: "expected exclusion policy heading"},
+		{needle: "Wire startup context to ranked packet", failure: "expected ranked next work in startup context"},
+		{needle: "primary dynamic surface", failure: "expected briefing-first guidance in startup context"},
+	} {
+		if !strings.Contains(content, expected.needle) {
+			t.Fatalf("%s, got:\n%s", expected.failure, content)
+		}
 	}
 }
 
