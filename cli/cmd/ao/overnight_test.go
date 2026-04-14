@@ -647,7 +647,16 @@ func assertOvernightHardFailFinalized(t *testing.T, persisted overnightSummary) 
 // point is that a strict v1 consumer never sees them yet still reads
 // every field it does know about.
 func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
-	v2 := overnightSummary{
+	v1 := decodeSchemaV2SummaryWithV1Reader(t, newSchemaV2CompatSummary())
+
+	assertSchemaV2CompatCoreFields(t, v1)
+	assertSchemaV2CompatRuntime(t, v1)
+	assertSchemaV2CompatSteps(t, v1)
+	assertSchemaV2CompatCollections(t, v1)
+}
+
+func newSchemaV2CompatSummary() overnightSummary {
+	return overnightSummary{
 		SchemaVersion: 2,
 		Mode:          "dream.local-bedtime",
 		RunID:         "compat-run-2026-04-09",
@@ -707,6 +716,10 @@ func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
 		PlateauReason:    "",
 		RegressionReason: "",
 	}
+}
+
+func decodeSchemaV2SummaryWithV1Reader(t *testing.T, v2 overnightSummary) v1reader.OvernightSummaryV1 {
+	t.Helper()
 
 	data, err := json.Marshal(v2)
 	if err != nil {
@@ -717,6 +730,11 @@ func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
 	if err := json.Unmarshal(data, &v1); err != nil {
 		t.Fatalf("unmarshal v2 JSON into v1 reader: %v", err)
 	}
+	return v1
+}
+
+func assertSchemaV2CompatCoreFields(t *testing.T, v1 v1reader.OvernightSummaryV1) {
+	t.Helper()
 
 	if v1.SchemaVersion != 2 {
 		t.Errorf("SchemaVersion: got %d, want 2", v1.SchemaVersion)
@@ -748,6 +766,11 @@ func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
 	if v1.Duration == "" {
 		t.Error("Duration: unexpectedly empty")
 	}
+}
+
+func assertSchemaV2CompatRuntime(t *testing.T, v1 v1reader.OvernightSummaryV1) {
+	t.Helper()
+
 	if v1.Runtime.KeepAwakeMode != "caffeinate" {
 		t.Errorf("Runtime.KeepAwakeMode: got %q, want caffeinate", v1.Runtime.KeepAwakeMode)
 	}
@@ -757,6 +780,11 @@ func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
 	if v1.Runtime.ProcessContractDoc == "" {
 		t.Error("Runtime.ProcessContractDoc: unexpectedly empty")
 	}
+}
+
+func assertSchemaV2CompatSteps(t *testing.T, v1 v1reader.OvernightSummaryV1) {
+	t.Helper()
+
 	if len(v1.Steps) != 2 {
 		t.Fatalf("Steps: got %d, want 2", len(v1.Steps))
 	}
@@ -766,6 +794,11 @@ func TestRunOvernight_SchemaV2IsV1BackwardCompatible(t *testing.T) {
 	if v1.Steps[0].Status != "done" {
 		t.Errorf("Steps[0].Status: got %q", v1.Steps[0].Status)
 	}
+}
+
+func assertSchemaV2CompatCollections(t *testing.T, v1 v1reader.OvernightSummaryV1) {
+	t.Helper()
+
 	if len(v1.Artifacts) != 1 {
 		t.Errorf("Artifacts: got %d entries, want 1", len(v1.Artifacts))
 	}
