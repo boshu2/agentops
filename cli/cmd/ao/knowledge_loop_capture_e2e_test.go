@@ -12,6 +12,25 @@ import (
 )
 
 func TestLegacyCaptureToInjectAndFeedbackE2E(t *testing.T) {
+	fixture := setupLegacyCaptureKnowledgeLoopFixture(t)
+	p, pendingPath := migrateAndIngestLegacyCapture(t, fixture)
+	recordLegacyCapturePromotionCitation(t, fixture.tmp, pendingPath)
+	artifactPath := autoPromoteLegacyCaptureArtifact(t, p)
+
+	assertLegacyCaptureLearningRetrievable(t, fixture.tmp)
+	processLegacyCaptureFeedback(t, fixture.tmp, artifactPath)
+	assertLegacyCaptureUtilityUpdated(t, artifactPath)
+}
+
+type legacyCaptureKnowledgeLoopFixture struct {
+	tmp        string
+	sourceDir  string
+	pendingDir string
+}
+
+func setupLegacyCaptureKnowledgeLoopFixture(t *testing.T) legacyCaptureKnowledgeLoopFixture {
+	t.Helper()
+
 	tmp := t.TempDir()
 	sourceDir := filepath.Join(tmp, ".agents", "knowledge")
 	pendingDir := filepath.Join(sourceDir, "pending")
@@ -35,7 +54,17 @@ Use command -v before assuming a binary is missing from PATH.
 		t.Fatalf("write legacy: %v", err)
 	}
 
-	migrateRes, err := migrateLegacyKnowledgeFiles(sourceDir, pendingDir)
+	return legacyCaptureKnowledgeLoopFixture{
+		tmp:        tmp,
+		sourceDir:  sourceDir,
+		pendingDir: pendingDir,
+	}
+}
+
+func migrateAndIngestLegacyCapture(t *testing.T, fixture legacyCaptureKnowledgeLoopFixture) (*pool.Pool, string) {
+	t.Helper()
+
+	migrateRes, err := migrateLegacyKnowledgeFiles(fixture.sourceDir, fixture.pendingDir)
 	if err != nil {
 		t.Fatalf("migrate legacy captures: %v", err)
 	}
@@ -43,7 +72,7 @@ Use command -v before assuming a binary is missing from PATH.
 		t.Fatalf("unexpected migrate result: %+v", migrateRes)
 	}
 
-	ingestRes, err := ingestPendingFilesToPool(tmp, []string{migrateRes.Moves[0].To})
+	ingestRes, err := ingestPendingFilesToPool(fixture.tmp, []string{migrateRes.Moves[0].To})
 	if err != nil {
 		t.Fatalf("ingest pending: %v", err)
 	}
@@ -51,7 +80,7 @@ Use command -v before assuming a binary is missing from PATH.
 		t.Fatalf("expected one candidate ingested, got %+v", ingestRes)
 	}
 
-	p := pool.NewPool(tmp)
+	p := pool.NewPool(fixture.tmp)
 	entries, err := p.List(pool.ListOptions{Status: types.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("list pending: %v", err)
@@ -60,9 +89,15 @@ Use command -v before assuming a binary is missing from PATH.
 		t.Fatalf("expected one pending candidate, got %d", len(entries))
 	}
 
+	return p, entries[0].FilePath
+}
+
+func recordLegacyCapturePromotionCitation(t *testing.T, tmp, pendingPath string) {
+	t.Helper()
+
 	// Promotion gates require citation evidence.
 	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
-		ArtifactPath: entries[0].FilePath,
+		ArtifactPath: pendingPath,
 		SessionID:    "session-capture-promotion",
 		CitedAt:      time.Now(),
 		CitationType: "retrieved",
@@ -70,6 +105,10 @@ Use command -v before assuming a binary is missing from PATH.
 	}); err != nil {
 		t.Fatalf("record promotion citation: %v", err)
 	}
+}
+
+func autoPromoteLegacyCaptureArtifact(t *testing.T, p *pool.Pool) string {
+	t.Helper()
 
 	autoRes, err := autoPromoteAndPromoteToArtifacts(p, time.Hour, true)
 	if err != nil {
@@ -78,7 +117,12 @@ Use command -v before assuming a binary is missing from PATH.
 	if autoRes.Promoted != 1 || len(autoRes.Artifacts) != 1 {
 		t.Fatalf("unexpected auto-promote result: %+v", autoRes)
 	}
-	artifactPath := autoRes.Artifacts[0]
+
+	return autoRes.Artifacts[0]
+}
+
+func assertLegacyCaptureLearningRetrievable(t *testing.T, tmp string) {
+	t.Helper()
 
 	learnings, err := collectLearnings(tmp, "tool", 10, "", 0)
 	if err != nil {
@@ -87,6 +131,10 @@ Use command -v before assuming a binary is missing from PATH.
 	if len(learnings) == 0 {
 		t.Fatal("expected promoted learning to be retrievable")
 	}
+}
+
+func processLegacyCaptureFeedback(t *testing.T, tmp, artifactPath string) {
+	t.Helper()
 
 	citation := types.CitationEvent{
 		ArtifactPath: artifactPath,
@@ -110,6 +158,10 @@ Use command -v before assuming a binary is missing from PATH.
 	if events[0].UtilityAfter <= events[0].UtilityBefore {
 		t.Fatalf("utility should increase after positive feedback: before=%.3f after=%.3f", events[0].UtilityBefore, events[0].UtilityAfter)
 	}
+}
+
+func assertLegacyCaptureUtilityUpdated(t *testing.T, artifactPath string) {
+	t.Helper()
 
 	updatedLearning, err := parseLearningFile(artifactPath)
 	if err != nil {
