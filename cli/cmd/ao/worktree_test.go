@@ -991,83 +991,143 @@ func TestWorktree_findStaleRPISiblingWorktrees_AllBranches(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not available")
 	}
+	fixture := newStaleRPIWorktreeFixture(t)
+
+	// 1. Active run — skipped
+	createRPIWorktreeDir(t, fixture.parent, "active")
+	activeRuns := map[string]bool{"active": true}
+
+	// 2. Too recent — skipped
+	createRPIWorktreeDir(t, fixture.parent, "recent")
+
+	// 3. Stale and clean — candidate
+	createStaleGitRPIWorktree(t, fixture.parent, "staleclean", fixture.oldTime, false)
+
+	// 4. Stale and dirty — skipped (includeDirty=false)
+	createStaleGitRPIWorktree(t, fixture.parent, "staledirty", fixture.oldTime, true)
+
+	candidates, liveRuns, skippedDirty, err := findStaleRPISiblingWorktrees(
+		fixture.repoRoot,
+		fixture.now,
+		fixture.staleAfter,
+		activeRuns,
+		false,
+	)
+	if err != nil {
+		t.Fatalf("findStaleRPISiblingWorktrees: %v", err)
+	}
+	assertStaleRPIWorktreeLiveRuns(t, liveRuns, "active", "recent", "staleclean", "staledirty")
+	assertStaleRPIWorktreeCandidates(t, candidates, "staleclean")
+	assertStaleRPIWorktreeSkippedDirty(t, skippedDirty, "staledirty")
+}
+
+type staleRPIWorktreeFixture struct {
+	parent     string
+	repoRoot   string
+	now        time.Time
+	staleAfter time.Duration
+	oldTime    time.Time
+}
+
+func newStaleRPIWorktreeFixture(t *testing.T) staleRPIWorktreeFixture {
+	t.Helper()
+
 	parent := t.TempDir()
 	repoRoot := filepath.Join(parent, "myproject")
 	if err := os.MkdirAll(repoRoot, 0755); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	staleAfter := 1 * time.Hour
+	return staleRPIWorktreeFixture{
+		parent:     parent,
+		repoRoot:   repoRoot,
+		now:        now,
+		staleAfter: time.Hour,
+		oldTime:    now.Add(-2 * time.Hour),
+	}
+}
 
-	// 1. Active run — skipped
-	if err := os.MkdirAll(filepath.Join(parent, "myproject-rpi-active"), 0755); err != nil {
+func createRPIWorktreeDir(t *testing.T, parent, runID string) string {
+	t.Helper()
+
+	path := filepath.Join(parent, "myproject-rpi-"+runID)
+	if err := os.MkdirAll(path, 0755); err != nil {
 		t.Fatal(err)
 	}
-	activeRuns := map[string]bool{"active": true}
+	return path
+}
 
-	// 2. Too recent — skipped
-	if err := os.MkdirAll(filepath.Join(parent, "myproject-rpi-recent"), 0755); err != nil {
-		t.Fatal(err)
-	}
+func createStaleGitRPIWorktree(
+	t *testing.T,
+	parent string,
+	runID string,
+	oldTime time.Time,
+	dirty bool,
+) string {
+	t.Helper()
 
-	// 3. Stale and clean — candidate
-	staleCleanWt := filepath.Join(parent, "myproject-rpi-staleclean")
-	if err := exec.Command("git", "init", staleCleanWt).Run(); err != nil {
-		t.Fatalf("git init stale clean: %v", err)
-	}
-	for _, args := range [][]string{{"-C", staleCleanWt, "config", "user.email", "test@test.com"}, {"-C", staleCleanWt, "config", "user.name", "Test"}} {
-		if err := exec.Command("git", args...).Run(); err != nil {
-			t.Fatalf("git config: %v", err)
+	path := filepath.Join(parent, "myproject-rpi-"+runID)
+	runGitForWorktreeTest(t, "git init "+runID, "init", path)
+	configureWorktreeTestGitRepo(t, path)
+	if dirty {
+		if err := os.WriteFile(filepath.Join(path, "dirty.txt"), []byte("dirty"), 0644); err != nil {
+			t.Fatal(err)
 		}
 	}
-	exec.Command("git", "-C", staleCleanWt, "config", "commit.gpgsign", "false").Run()
-	if err := exec.Command("git", "-C", staleCleanWt, "commit", "--allow-empty", "-m", "init").Run(); err != nil {
-		t.Fatalf("git commit: %v", err)
-	}
-	oldTime := now.Add(-2 * time.Hour)
-	if err := os.Chtimes(staleCleanWt, oldTime, oldTime); err != nil {
+	if err := os.Chtimes(path, oldTime, oldTime); err != nil {
 		t.Fatal(err)
 	}
+	return path
+}
 
-	// 4. Stale and dirty — skipped (includeDirty=false)
-	staleDirtyWt := filepath.Join(parent, "myproject-rpi-staledirty")
-	if err := exec.Command("git", "init", staleDirtyWt).Run(); err != nil {
-		t.Fatalf("git init stale dirty: %v", err)
-	}
-	for _, args := range [][]string{{"-C", staleDirtyWt, "config", "user.email", "test@test.com"}, {"-C", staleDirtyWt, "config", "user.name", "Test"}} {
-		if err := exec.Command("git", args...).Run(); err != nil {
-			t.Fatalf("git config: %v", err)
-		}
-	}
-	exec.Command("git", "-C", staleDirtyWt, "config", "commit.gpgsign", "false").Run()
-	if err := exec.Command("git", "-C", staleDirtyWt, "commit", "--allow-empty", "-m", "init").Run(); err != nil {
-		t.Fatalf("git commit: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(staleDirtyWt, "dirty.txt"), []byte("dirty"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chtimes(staleDirtyWt, oldTime, oldTime); err != nil {
-		t.Fatal(err)
-	}
+func configureWorktreeTestGitRepo(t *testing.T, path string) {
+	t.Helper()
 
-	candidates, liveRuns, skippedDirty, err := findStaleRPISiblingWorktrees(repoRoot, now, staleAfter, activeRuns, false)
-	if err != nil {
-		t.Fatalf("findStaleRPISiblingWorktrees: %v", err)
+	for _, args := range [][]string{
+		{"-C", path, "config", "user.email", "test@test.com"},
+		{"-C", path, "config", "user.name", "Test"},
+	} {
+		runGitForWorktreeTest(t, "git config", args...)
 	}
-	for _, runID := range []string{"active", "recent", "staleclean", "staledirty"} {
+	_ = exec.Command("git", "-C", path, "config", "commit.gpgsign", "false").Run()
+	runGitForWorktreeTest(t, "git commit", "-C", path, "commit", "--allow-empty", "-m", "init")
+}
+
+func runGitForWorktreeTest(t *testing.T, context string, args ...string) {
+	t.Helper()
+
+	if err := exec.Command("git", args...).Run(); err != nil {
+		t.Fatalf("%s: %v", context, err)
+	}
+}
+
+func assertStaleRPIWorktreeLiveRuns(t *testing.T, liveRuns map[string]bool, wantRunIDs ...string) {
+	t.Helper()
+
+	for _, runID := range wantRunIDs {
 		if !liveRuns[runID] {
 			t.Errorf("expected %q in liveRuns", runID)
 		}
 	}
+}
+
+func assertStaleRPIWorktreeCandidates(t *testing.T, candidates []worktreeGCCandidate, wantRunID string) {
+	t.Helper()
+
 	if len(candidates) != 1 {
 		t.Errorf("expected 1 candidate, got %d", len(candidates))
-	} else if candidates[0].RunID != "staleclean" {
-		t.Errorf("expected runID=staleclean, got %s", candidates[0].RunID)
+	} else if candidates[0].RunID != wantRunID {
+		t.Errorf("expected runID=%s, got %s", wantRunID, candidates[0].RunID)
 	}
+}
+
+func assertStaleRPIWorktreeSkippedDirty(t *testing.T, skippedDirty []string, wantSubstring string) {
+	t.Helper()
+
 	if len(skippedDirty) != 1 {
 		t.Errorf("expected 1 skipped dirty, got %d", len(skippedDirty))
-	} else if !strings.Contains(skippedDirty[0], "staledirty") {
-		t.Errorf("expected 'staledirty' in skipped, got %s", skippedDirty[0])
+	} else if !strings.Contains(skippedDirty[0], wantSubstring) {
+		t.Errorf("expected %q in skipped, got %s", wantSubstring, skippedDirty[0])
 	}
 }
 
