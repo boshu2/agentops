@@ -7,13 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.37.0] - 2026-04-14
+
 ### Added
 
-- **Native Windows smoke gate** — `tests/windows/test-windows-smoke.ps1` now exercises the PowerShell `ao` and Codex installers, local `ao doctor` Windows guidance, and focused Windows-sensitive Go tests, with a blocking `windows-smoke` job in `validate.yml`.
+- **Windows install and smoke coverage** — `scripts/install-ao.ps1` adds a first-class Windows install path, and the blocking `windows-smoke` gate exercises PowerShell install, local `ao doctor`, and Windows-sensitive Go packages.
+- **Compile command** — `ao compile` makes knowledge compilation a first-class CLI surface with docs and tests.
+- **Local LLM forge pipeline** — `ao forge` can now redact, summarize, structurally review, and queue transcript-derived wiki pages with Dream worker integration.
+- **Dream curator and evolve sub-cycle** — Dream gained a local curator adapter plus `ao evolve --dream-first|--dream-only`, allowing overnight knowledge passes to feed the daytime improvement loop.
+- **`.agents` wiki surfaces** — INDEX, LOG, wiki directories, and search integration formalize `.agents/` as a Karpathy-style knowledge wiki with index-first navigation.
+- **Operational quality surfaces** — beads audit/cluster commands, swarm preflight advice, status quality signals, retrieval eval queries, and a retrieval-quality CI ratchet broaden release-time proof.
+
+### Changed
+
+- **Knowledge scoring and search behavior** — inject now deduplicates by content hash, boosts indexed pages, weights stability, and search can pull Dream vault and wiki sources with stronger local recall.
+- **Overnight and RPI internals** — overnight, lifecycle, search, inject, harvest, and RPI flows were decomposed into smaller helpers while tightening proof paths, mixed-mode provenance, and worktree cleanup.
+- **Public framing and contributor docs** — README, philosophy, planning/post-mortem docs, and reference surfaces now better match the context-compiler and operational-layer story.
 
 ### Fixed
 
-- **Dream RunLoop status invariants** — live-tree hash coverage now exercises every terminal RunLoop status, and `degraded` reflects the current pre-commit MEASURE rollback semantics.
+- **Windows overnight liveness** — Windows process checks no longer rely on Unix `signal(0)` semantics.
+- **Dream RunLoop status invariants** — live-tree hash coverage now exercises every terminal RunLoop status, and `degraded` reflects the current rollback semantics.
+- **Release retag safety** — release tooling now preserves annotated tags, validates audit artifact manifests and refs, and cancels stale reruns before duplicate publish attempts.
+- **Post-mortem and closure audits** — metadata links, evidence-only closure packets, parser-path handling, and closure packet evidence modes were normalized.
+- **Codex and runtime reliability** — same-thread lifecycle restart, root-scoped fallback reads, JSON config writes, bridge contract validation, and next-work proof-path handling were hardened.
 
 ## [2.36.0] - 2026-04-11
 

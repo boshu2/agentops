@@ -19,7 +19,7 @@ permalink: /comparisons/agentops-vs-compound-engineer
 | **Philosophy** | "Each unit of engineering work should make subsequent units easier" | "Operational layer for coding agents; technically a context compiler" |
 | **Core strength** | Full ideate-to-compound loop, cross-runtime portability, configurable review agents | Git-tracked memory, validation gates, knowledge flywheel with scoring |
 | **GitHub** | EveryInc/compound-engineering-plugin | boshu2/agentops |
-| **Latest** | Active development (April 2026) | v2.36.0 (April 2026) |
+| **Latest** | Active development (April 2026) | v2.37.0 (April 2026) |
 | **Scale** | 45+ skills, 25+ agents, 10 runtime targets | 50+ skills, compiled CLI, hooks, schemas |
 | **Primary use** | Standardized engineering workflow with knowledge capture | Ongoing codebase work with persistent memory and validation |
 

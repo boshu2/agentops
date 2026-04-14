@@ -19,7 +19,7 @@ permalink: /comparisons/agentops-vs-gsd
 | **Philosophy** | "Ship fast — fresh context per agent" | "Operational layer for coding agents; technically a context compiler" |
 | **Core strength** | Multi-agent orchestration with context isolation, multi-runtime support | Cross-session memory, validation gates, knowledge flywheel |
 | **GitHub** | glittercowboy/get-shit-done | boshu2/agentops |
-| **Latest** | v1.34.2 (April 2026) | v2.36.0 (April 2026) |
+| **Latest** | v1.34.2 (April 2026) | v2.37.0 (April 2026) |
 | **Scale** | 53 commands, 46 workflows, 16 agents | 50+ skills, compiled CLI, hooks, schemas |
 | **Primary use** | Spec-driven development with phased execution | Ongoing codebase work with persistent memory |
 

@@ -1,6 +1,6 @@
 {
   "name": "agentops",
-  "version": "2.36.0",
+  "version": "2.37.0",
   "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
   "author": {
     "name": "Boden Fuller",
