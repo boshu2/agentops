@@ -109,6 +109,28 @@ func TestTmuxHelpers_FilterWorkers(t *testing.T) {
 }
 
 func TestTmuxExecutorE2ENudgeTwoWorkers(t *testing.T) {
+	fixture := setupTmuxNudgeE2EFixture(t)
+	done := startTmuxNudgeE2E(t, fixture)
+
+	waitForTmuxNudgeWorkers(t, fixture)
+	sendTmuxNudgeSequence(t, fixture)
+	assertTmuxNudgeE2EComplete(t, done)
+	assertTmuxNudgeLog(t, fixture)
+}
+
+type tmuxNudgeE2EFixture struct {
+	tmuxBin  string
+	tmpDir   string
+	logPath  string
+	runID    string
+	workerA  string
+	workerB  string
+	executor *tmuxExecutor
+}
+
+func setupTmuxNudgeE2EFixture(t *testing.T) tmuxNudgeE2EFixture {
+	t.Helper()
+
 	tmuxBin, err := defaultLookPath(nil)("tmux")
 	if err != nil {
 		t.Skipf("tmux not available: %v", err)
@@ -137,61 +159,83 @@ done
 		t.Fatalf("write runtime script: %v", err)
 	}
 
-	execTmux := &tmuxExecutor{
-		tmuxCommand:    tmuxBin,
-		runtimeCommand: runtimePath,
-		phaseTimeout:   20 * time.Second,
-		pollInterval:   200 * time.Millisecond,
-		workerCount:    2,
-	}
-
 	runID := "nudge1234"
+	baseSession := tmuxSessionName(runID, 1)
+	return tmuxNudgeE2EFixture{
+		tmuxBin: tmuxBin,
+		tmpDir:  tmp,
+		logPath: logPath,
+		runID:   runID,
+		workerA: baseSession + "-w1",
+		workerB: baseSession + "-w2",
+		executor: &tmuxExecutor{
+			tmuxCommand:    tmuxBin,
+			runtimeCommand: runtimePath,
+			phaseTimeout:   20 * time.Second,
+			pollInterval:   200 * time.Millisecond,
+			workerCount:    2,
+		},
+	}
+}
+
+func startTmuxNudgeE2E(t *testing.T, fixture tmuxNudgeE2EFixture) <-chan error {
+	t.Helper()
+
 	done := make(chan error, 1)
 	go func() {
-		done <- execTmux.Execute(context.Background(), "test prompt", tmp, runID, 1)
+		done <- fixture.executor.Execute(context.Background(), "test prompt", fixture.tmpDir, fixture.runID, 1)
 	}()
+	return done
+}
 
-	baseSession := tmuxSessionName(runID, 1)
-	workerA := baseSession + "-w1"
-	workerB := baseSession + "-w2"
+func waitForTmuxNudgeWorkers(t *testing.T, fixture tmuxNudgeE2EFixture) {
+	t.Helper()
 
-	// Wait for worker sessions to appear.
 	deadline := time.Now().Add(8 * time.Second)
 	for {
-		sessions, err := listTmuxSessions(tmuxBin)
-		if err == nil {
-			seenA := false
-			seenB := false
-			for _, s := range sessions {
-				if s == workerA {
-					seenA = true
-				}
-				if s == workerB {
-					seenB = true
-				}
-			}
-			if seenA && seenB {
-				break
-			}
+		sessions, err := listTmuxSessions(fixture.tmuxBin)
+		if err == nil && tmuxNudgeWorkersReady(sessions, fixture) {
+			return
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("workers not ready before deadline")
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
 
-	if err := sendTmuxNudge(tmuxBin, workerA, "change-direction worker-a"); err != nil {
-		t.Fatalf("nudge workerA: %v", err)
+func tmuxNudgeWorkersReady(sessions []string, fixture tmuxNudgeE2EFixture) bool {
+	seen := map[string]bool{}
+	for _, session := range sessions {
+		if session == fixture.workerA || session == fixture.workerB {
+			seen[session] = true
+		}
 	}
-	if err := sendTmuxNudge(tmuxBin, workerB, "change-direction worker-b"); err != nil {
-		t.Fatalf("nudge workerB: %v", err)
+	return seen[fixture.workerA] && seen[fixture.workerB]
+}
+
+func sendTmuxNudgeSequence(t *testing.T, fixture tmuxNudgeE2EFixture) {
+	t.Helper()
+
+	nudges := []struct {
+		label   string
+		worker  string
+		message string
+	}{
+		{"nudge workerA", fixture.workerA, "change-direction worker-a"},
+		{"nudge workerB", fixture.workerB, "change-direction worker-b"},
+		{"complete workerA", fixture.workerA, "complete-now"},
+		{"complete workerB", fixture.workerB, "complete-now"},
 	}
-	if err := sendTmuxNudge(tmuxBin, workerA, "complete-now"); err != nil {
-		t.Fatalf("complete workerA: %v", err)
+	for _, nudge := range nudges {
+		if err := sendTmuxNudge(fixture.tmuxBin, nudge.worker, nudge.message); err != nil {
+			t.Fatalf("%s: %v", nudge.label, err)
+		}
 	}
-	if err := sendTmuxNudge(tmuxBin, workerB, "complete-now"); err != nil {
-		t.Fatalf("complete workerB: %v", err)
-	}
+}
+
+func assertTmuxNudgeE2EComplete(t *testing.T, done <-chan error) {
+	t.Helper()
 
 	select {
 	case err := <-done:
@@ -201,8 +245,12 @@ done
 	case <-time.After(12 * time.Second):
 		t.Fatal("timeout waiting for tmux executor completion")
 	}
+}
 
-	data, err := os.ReadFile(logPath)
+func assertTmuxNudgeLog(t *testing.T, fixture tmuxNudgeE2EFixture) {
+	t.Helper()
+
+	data, err := os.ReadFile(fixture.logPath)
 	if err != nil {
 		t.Fatalf("read log: %v", err)
 	}
