@@ -1122,100 +1122,110 @@ func TestGetMetrics(t *testing.T) {
 func TestValidateForPromotion(t *testing.T) {
 	v, tmpDir := helperNewValidator(t)
 
-	t.Run("missing artifact", func(t *testing.T) {
-		result, err := v.ValidateForPromotion("/nonexistent.md", TierLearning)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.Valid {
-			t.Error("expected valid=false for missing artifact")
-		}
-	})
+	for _, tc := range validateForPromotionCases() {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			tc.run(t, v, tmpDir)
+		})
+	}
+}
 
-	t.Run("promotion to learning needs citations", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "learning-candidate.md")
-		if err := os.WriteFile(artifact, []byte("Some content."), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierLearning)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.Valid {
-			t.Error("expected valid=false (no citations)")
-		}
-	})
+type validateForPromotionCase struct {
+	name string
+	run  func(t *testing.T, v *Validator, tmpDir string)
+}
 
-	t.Run("promotion to pattern needs sessions", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "pattern-candidate.md")
-		if err := os.WriteFile(artifact, []byte("Some content."), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierPattern)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.Valid {
-			t.Error("expected valid=false (no session refs)")
-		}
-	})
+func validateForPromotionCases() []validateForPromotionCase {
+	return []validateForPromotionCase{
+		{"missing artifact", validateMissingPromotionArtifact},
+		{"promotion to learning needs citations", validateLearningPromotionNeedsCitations},
+		{"promotion to pattern needs sessions", validatePatternPromotionNeedsSessions},
+		{"promotion to skill needs format", validateSkillPromotionNeedsFormat},
+		{"promotion to skill passes with format", validateSkillPromotionPassesWithFormat},
+		{"promotion to core warns", validateCorePromotionWarns},
+		{"promotion step is set", validatePromotionStepIsSet},
+	}
+}
 
-	t.Run("promotion to skill needs format", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "skill-candidate.md")
-		if err := os.WriteFile(artifact, []byte("No skill format."), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierSkill)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.Valid {
-			t.Error("expected valid=false (no skill format)")
-		}
-	})
+func validateMissingPromotionArtifact(t *testing.T, v *Validator, _ string) {
+	t.Helper()
+	result := validatePromotionArtifact(t, v, "/nonexistent.md", TierLearning)
+	if result.Valid {
+		t.Error("expected valid=false for missing artifact")
+	}
+}
 
-	t.Run("promotion to skill passes with format", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "skill-valid.md")
-		content := "## Description\nA skill.\n## Triggers\n/test\n## Instructions\nDo stuff.\n"
-		if err := os.WriteFile(artifact, []byte(content), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierSkill)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !result.Valid {
-			t.Errorf("expected valid=true, issues=%v", result.Issues)
-		}
-	})
+func validateLearningPromotionNeedsCitations(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	artifact := writePromotionArtifact(t, tmpDir, "learning-candidate.md", "Some content.")
+	result := validatePromotionArtifact(t, v, artifact, TierLearning)
+	if result.Valid {
+		t.Error("expected valid=false (no citations)")
+	}
+}
 
-	t.Run("promotion to core warns", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "core-candidate.md")
-		if err := os.WriteFile(artifact, []byte("Content."), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierCore)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(result.Warnings) == 0 {
-			t.Error("expected warning about manual review for core promotion")
-		}
-	})
+func validatePatternPromotionNeedsSessions(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	artifact := writePromotionArtifact(t, tmpDir, "pattern-candidate.md", "Some content.")
+	result := validatePromotionArtifact(t, v, artifact, TierPattern)
+	if result.Valid {
+		t.Error("expected valid=false (no session refs)")
+	}
+}
 
-	t.Run("promotion step is set", func(t *testing.T) {
-		artifact := filepath.Join(tmpDir, "promo-step.md")
-		if err := os.WriteFile(artifact, []byte("Content."), 0600); err != nil {
-			t.Fatal(err)
-		}
-		result, err := v.ValidateForPromotion(artifact, TierCore)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if result.Step != Step("promotion") {
-			t.Errorf("expected step='promotion', got %q", result.Step)
-		}
-	})
+func validateSkillPromotionNeedsFormat(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	artifact := writePromotionArtifact(t, tmpDir, "skill-candidate.md", "No skill format.")
+	result := validatePromotionArtifact(t, v, artifact, TierSkill)
+	if result.Valid {
+		t.Error("expected valid=false (no skill format)")
+	}
+}
+
+func validateSkillPromotionPassesWithFormat(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	content := "## Description\nA skill.\n## Triggers\n/test\n## Instructions\nDo stuff.\n"
+	artifact := writePromotionArtifact(t, tmpDir, "skill-valid.md", content)
+	result := validatePromotionArtifact(t, v, artifact, TierSkill)
+	if !result.Valid {
+		t.Errorf("expected valid=true, issues=%v", result.Issues)
+	}
+}
+
+func validateCorePromotionWarns(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	artifact := writePromotionArtifact(t, tmpDir, "core-candidate.md", "Content.")
+	result := validatePromotionArtifact(t, v, artifact, TierCore)
+	if len(result.Warnings) == 0 {
+		t.Error("expected warning about manual review for core promotion")
+	}
+}
+
+func validatePromotionStepIsSet(t *testing.T, v *Validator, tmpDir string) {
+	t.Helper()
+	artifact := writePromotionArtifact(t, tmpDir, "promo-step.md", "Content.")
+	result := validatePromotionArtifact(t, v, artifact, TierCore)
+	if result.Step != Step("promotion") {
+		t.Errorf("expected step='promotion', got %q", result.Step)
+	}
+}
+
+func writePromotionArtifact(t *testing.T, tmpDir, name, content string) string {
+	t.Helper()
+	artifact := filepath.Join(tmpDir, name)
+	if err := os.WriteFile(artifact, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	return artifact
+}
+
+func validatePromotionArtifact(t *testing.T, v *Validator, artifact string, tier Tier) *ValidationResult {
+	t.Helper()
+	result, err := v.ValidateForPromotion(artifact, tier)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
 }
 
 // --- hasSchemaVersion ---
