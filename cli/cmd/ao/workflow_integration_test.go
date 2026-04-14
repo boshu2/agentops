@@ -149,138 +149,184 @@ func TestWorkflow_RPIRatchetProgression(t *testing.T) {
 // =============================================================================
 
 func TestWorkflow_SessionToMemory(t *testing.T) {
-	tmpDir := t.TempDir()
+	fixture := setupSessionToMemoryFixture(t)
+	sessions := defaultSessionToMemorySessions()
+	fixture.writeSessions(t, sessions)
 
-	// Create sessions directory with realistic JSONL session files
+	content := fixture.syncAndReadMemory(t, "first sync")
+	assertSessionToMemoryInitialSync(t, content, sessions)
+
+	content = fixture.syncAndReadMemory(t, "second sync")
+	assertSessionToMemoryDeduped(t, content, sessions, "second sync")
+
+	newSession := sessionToMemorySession{
+		id:      "sess-ddd3456",
+		date:    time.Date(2026, 2, 25, 16, 0, 0, 0, time.UTC),
+		summary: "New session added after initial sync",
+		name:    "2026-02-25-test-sess-ddd3456.jsonl",
+	}
+	fixture.writeSession(t, newSession)
+	content = fixture.syncAndReadMemory(t, "third sync")
+	assertSessionToMemoryThirdSync(t, content, newSession, sessions)
+}
+
+type sessionToMemorySession struct {
+	id        string
+	date      time.Time
+	summary   string
+	name      string
+	decisions []string
+	knowledge []string
+}
+
+type sessionToMemoryFixture struct {
+	tmpDir      string
+	sessionsDir string
+	outputPath  string
+}
+
+func setupSessionToMemoryFixture(t *testing.T) sessionToMemoryFixture {
+	t.Helper()
+
+	tmpDir := t.TempDir()
 	sessionsDir := filepath.Join(tmpDir, ".agents", "ao", "sessions")
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
-	// Create 3 session files (as forge would produce)
-	sessions := []struct {
-		id      string
-		date    time.Time
-		summary string
-		name    string
-	}{
+	return sessionToMemoryFixture{
+		tmpDir:      tmpDir,
+		sessionsDir: sessionsDir,
+		outputPath:  filepath.Join(tmpDir, "MEMORY.md"),
+	}
+}
+
+func defaultSessionToMemorySessions() []sessionToMemorySession {
+	return []sessionToMemorySession{
 		{
-			id:      "sess-aaa1234",
-			date:    time.Date(2026, 2, 23, 10, 0, 0, 0, time.UTC),
-			summary: "Implemented pool ingest command with rubric scoring",
-			name:    "2026-02-23-test-sess-aaa1234.jsonl",
+			id:        "sess-aaa1234",
+			date:      time.Date(2026, 2, 23, 10, 0, 0, 0, time.UTC),
+			summary:   "Implemented pool ingest command with rubric scoring",
+			name:      "2026-02-23-test-sess-aaa1234.jsonl",
+			decisions: []string{"Decision for sess-aaa1234"},
+			knowledge: []string{"Knowledge from sess-aaa1234"},
 		},
 		{
-			id:      "sess-bbb5678",
-			date:    time.Date(2026, 2, 24, 14, 0, 0, 0, time.UTC),
-			summary: "Fixed ratchet chain migration from YAML to JSONL",
-			name:    "2026-02-24-test-sess-bbb5678.jsonl",
+			id:        "sess-bbb5678",
+			date:      time.Date(2026, 2, 24, 14, 0, 0, 0, time.UTC),
+			summary:   "Fixed ratchet chain migration from YAML to JSONL",
+			name:      "2026-02-24-test-sess-bbb5678.jsonl",
+			decisions: []string{"Decision for sess-bbb5678"},
+			knowledge: []string{"Knowledge from sess-bbb5678"},
 		},
 		{
-			id:      "sess-ccc9012",
-			date:    time.Date(2026, 2, 25, 9, 0, 0, 0, time.UTC),
-			summary: "Added notebook update with pruning and cursor dedup",
-			name:    "2026-02-25-test-sess-ccc9012.jsonl",
+			id:        "sess-ccc9012",
+			date:      time.Date(2026, 2, 25, 9, 0, 0, 0, time.UTC),
+			summary:   "Added notebook update with pruning and cursor dedup",
+			name:      "2026-02-25-test-sess-ccc9012.jsonl",
+			decisions: []string{"Decision for sess-ccc9012"},
+			knowledge: []string{"Knowledge from sess-ccc9012"},
 		},
 	}
+}
 
-	for _, s := range sessions {
-		entry := map[string]any{
-			"session_id": s.id,
-			"date":       s.date.Format(time.RFC3339),
-			"summary":    s.summary,
-			"decisions":  []string{"Decision for " + s.id},
-			"knowledge":  []string{"Knowledge from " + s.id},
-		}
-		data, err := json.Marshal(entry)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(sessionsDir, s.name), data, 0644); err != nil {
-			t.Fatal(err)
-		}
+func (f sessionToMemoryFixture) writeSessions(t *testing.T, sessions []sessionToMemorySession) {
+	t.Helper()
+
+	for _, session := range sessions {
+		f.writeSession(t, session)
+	}
+}
+
+func (f sessionToMemoryFixture) writeSession(t *testing.T, session sessionToMemorySession) {
+	t.Helper()
+
+	entry := map[string]any{
+		"session_id": session.id,
+		"date":       session.date.Format(time.RFC3339),
+		"summary":    session.summary,
+	}
+	if len(session.decisions) > 0 {
+		entry["decisions"] = session.decisions
+	}
+	if len(session.knowledge) > 0 {
+		entry["knowledge"] = session.knowledge
 	}
 
-	outputPath := filepath.Join(tmpDir, "MEMORY.md")
-
-	// ---- Phase 1: First sync should create MEMORY.md with all sessions ----
-	if err := syncMemory(tmpDir, outputPath, 10, true); err != nil {
-		t.Fatalf("first sync: %v", err)
-	}
-
-	data, err := os.ReadFile(outputPath)
+	data, err := json.Marshal(entry)
 	if err != nil {
-		t.Fatalf("read after first sync: %v", err)
+		t.Fatal(err)
 	}
-	content := string(data)
+	if err := os.WriteFile(filepath.Join(f.sessionsDir, session.name), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
 
-	// Verify all sessions are present
-	for _, s := range sessions {
-		shortID := s.id[:7]
+func (f sessionToMemoryFixture) syncAndReadMemory(t *testing.T, phase string) string {
+	t.Helper()
+
+	if err := syncMemory(f.tmpDir, f.outputPath, 10, true); err != nil {
+		t.Fatalf("%s: %v", phase, err)
+	}
+
+	data, err := os.ReadFile(f.outputPath)
+	if err != nil {
+		t.Fatalf("read after %s: %v", phase, err)
+	}
+	return string(data)
+}
+
+func assertSessionToMemoryInitialSync(t *testing.T, content string, sessions []sessionToMemorySession) {
+	t.Helper()
+
+	for _, session := range sessions {
+		shortID := sessionToMemoryShortID(session)
 		if !strings.Contains(content, shortID) {
-			t.Errorf("first sync: missing session %s (short ID: %s)", s.id, shortID)
+			t.Errorf("first sync: missing session %s (short ID: %s)", session.id, shortID)
 		}
 	}
 
-	// Verify managed block markers exist
 	if !strings.Contains(content, memoryBlockStart) {
 		t.Error("first sync: missing managed block start marker")
 	}
 	if !strings.Contains(content, memoryBlockEnd) {
 		t.Error("first sync: missing managed block end marker")
 	}
+}
 
-	// ---- Phase 2: Second sync should NOT duplicate entries ----
-	if err := syncMemory(tmpDir, outputPath, 10, true); err != nil {
-		t.Fatalf("second sync: %v", err)
-	}
+func assertSessionToMemoryDeduped(t *testing.T, content string, sessions []sessionToMemorySession, phase string) {
+	t.Helper()
 
-	data2, err := os.ReadFile(outputPath)
-	if err != nil {
-		t.Fatalf("read after second sync: %v", err)
-	}
-	content2 := string(data2)
-
-	for _, s := range sessions {
-		shortID := s.id[:7]
-		count := strings.Count(content2, shortID)
+	for _, session := range sessions {
+		shortID := sessionToMemoryShortID(session)
+		count := strings.Count(content, shortID)
 		if count != 1 {
-			t.Errorf("second sync: session %s appears %d times (expected 1, dedup failed)", shortID, count)
+			t.Errorf("%s: session %s appears %d times (expected 1, dedup failed)", phase, shortID, count)
 		}
 	}
+}
 
-	// ---- Phase 3: Add a new session and sync again ----
-	newSession := map[string]any{
-		"session_id": "sess-ddd3456",
-		"date":       time.Date(2026, 2, 25, 16, 0, 0, 0, time.UTC).Format(time.RFC3339),
-		"summary":    "New session added after initial sync",
-	}
-	newData, _ := json.Marshal(newSession)
-	if err := os.WriteFile(filepath.Join(sessionsDir, "2026-02-25-test-sess-ddd3456.jsonl"), newData, 0644); err != nil {
-		t.Fatal(err)
-	}
+func assertSessionToMemoryThirdSync(
+	t *testing.T,
+	content string,
+	newSession sessionToMemorySession,
+	previousSessions []sessionToMemorySession,
+) {
+	t.Helper()
 
-	if err := syncMemory(tmpDir, outputPath, 10, true); err != nil {
-		t.Fatalf("third sync: %v", err)
-	}
-
-	data3, err := os.ReadFile(outputPath)
-	if err != nil {
-		t.Fatalf("read after third sync: %v", err)
-	}
-	content3 := string(data3)
-
-	// New session should appear exactly once
-	if count := strings.Count(content3, "sess-dd"); count != 1 {
+	if count := strings.Count(content, sessionToMemoryShortID(newSession)); count != 1 {
 		t.Errorf("third sync: new session appears %d times (expected 1)", count)
 	}
-	// Old sessions still appear exactly once
-	for _, s := range sessions {
-		shortID := s.id[:7]
-		if count := strings.Count(content3, shortID); count != 1 {
+	for _, session := range previousSessions {
+		shortID := sessionToMemoryShortID(session)
+		if count := strings.Count(content, shortID); count != 1 {
 			t.Errorf("third sync: old session %s appears %d times (expected 1)", shortID, count)
 		}
 	}
+}
+
+func sessionToMemoryShortID(session sessionToMemorySession) string {
+	return session.id[:7]
 }
 
 // =============================================================================
