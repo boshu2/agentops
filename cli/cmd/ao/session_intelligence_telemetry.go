@@ -54,97 +54,140 @@ func loadCitationAggregate(baseDir string) citationAggregate {
 	return buildCitationAggregate(baseDir, citations)
 }
 
+type dedupedCitationEvent struct {
+	artifactKey string
+	event       types.CitationEvent
+}
+
+type citationAggregateBuilder struct {
+	agg              citationAggregate
+	deduped          map[string]dedupedCitationEvent
+	uniqueSessions   map[string]struct{}
+	uniqueWorkspaces map[string]struct{}
+}
+
+type artifactSignalBuilder struct {
+	signal        artifactUsageSignal
+	sessionKeys   map[string]struct{}
+	workspaceKeys map[string]struct{}
+}
+
+func newCitationAggregateBuilder(totalEvents int) *citationAggregateBuilder {
+	return &citationAggregateBuilder{
+		agg: citationAggregate{
+			TotalEvents: totalEvents,
+			ByArtifact:  make(map[string]artifactUsageSignal),
+		},
+		deduped:          make(map[string]dedupedCitationEvent),
+		uniqueSessions:   make(map[string]struct{}),
+		uniqueWorkspaces: make(map[string]struct{}),
+	}
+}
+
 func buildCitationAggregate(baseDir string, citations []types.CitationEvent) citationAggregate {
-	agg := citationAggregate{
-		TotalEvents: len(citations),
-		ByArtifact:  make(map[string]artifactUsageSignal),
-	}
-
-	type dedupeRecord struct {
-		artifactKey string
-		event       types.CitationEvent
-	}
-
-	deduped := make(map[string]dedupeRecord)
-	uniqueSessions := make(map[string]bool)
-	uniqueWorkspaces := make(map[string]bool)
-
+	builder := newCitationAggregateBuilder(len(citations))
 	for _, raw := range citations {
-		event := normalizeCitationEventForRuntime(baseDir, raw)
-		artifactKey := canonicalArtifactKey(baseDir, event.ArtifactPath)
-		if artifactKey == "" {
-			continue
-		}
-
-		if event.SessionID != "" {
-			uniqueSessions[event.SessionID] = true
-		}
-		if event.WorkspacePath != "" {
-			uniqueWorkspaces[event.WorkspacePath] = true
-		}
-
-		dedupeKey := artifactKey + "|" + event.SessionID + "|" + filepath.ToSlash(event.WorkspacePath) + "|" + event.CitationType
-		current, ok := deduped[dedupeKey]
-		if !ok || event.CitedAt.After(current.event.CitedAt) {
-			deduped[dedupeKey] = dedupeRecord{artifactKey: artifactKey, event: event}
-		}
+		builder.ingest(baseDir, raw)
 	}
 
-	for _, record := range deduped {
-		signal := agg.ByArtifact[record.artifactKey]
-		signal.ArtifactPath = record.artifactKey
-		signal.Citations++
-		if record.event.CitedAt.After(signal.LastCited) {
-			signal.LastCited = record.event.CitedAt
-		}
-		switch record.event.CitationType {
-		case "applied":
-			signal.AppliedCount++
-		case "reference":
-			signal.ReferenceCount++
-		default:
-			signal.RetrievedCount++
-		}
-		if record.event.FeedbackGiven {
-			signal.FeedbackCount++
-			signal.MeanReward += record.event.FeedbackReward
-		}
-		agg.ByArtifact[record.artifactKey] = signal
+	return builder.finish()
+}
+
+func (b *citationAggregateBuilder) ingest(baseDir string, raw types.CitationEvent) {
+	event := normalizeCitationEventForRuntime(baseDir, raw)
+	artifactKey := canonicalArtifactKey(baseDir, event.ArtifactPath)
+	if artifactKey == "" {
+		return
 	}
 
-	for key, signal := range agg.ByArtifact {
-		sessionSet := make(map[string]bool)
-		workspaceSet := make(map[string]bool)
-		for _, record := range deduped {
-			if record.artifactKey != key {
-				continue
-			}
-			if record.event.SessionID != "" {
-				sessionSet[record.event.SessionID] = true
-			}
-			if record.event.WorkspacePath != "" {
-				workspaceSet[record.event.WorkspacePath] = true
-			}
+	b.recordUniqueSignals(event)
+	b.recordDedupedEvent(artifactKey, event)
+}
+
+func (b *citationAggregateBuilder) recordUniqueSignals(event types.CitationEvent) {
+	if event.SessionID != "" {
+		b.uniqueSessions[event.SessionID] = struct{}{}
+	}
+	if event.WorkspacePath != "" {
+		b.uniqueWorkspaces[event.WorkspacePath] = struct{}{}
+	}
+}
+
+func (b *citationAggregateBuilder) recordDedupedEvent(artifactKey string, event types.CitationEvent) {
+	dedupeKey := artifactKey + "|" + event.SessionID + "|" + filepath.ToSlash(event.WorkspacePath) + "|" + event.CitationType
+	current, ok := b.deduped[dedupeKey]
+	if !ok || event.CitedAt.After(current.event.CitedAt) {
+		b.deduped[dedupeKey] = dedupedCitationEvent{artifactKey: artifactKey, event: event}
+	}
+}
+
+func (b *citationAggregateBuilder) finish() citationAggregate {
+	artifactSignals := make(map[string]*artifactSignalBuilder)
+	for _, record := range b.deduped {
+		builder := artifactSignals[record.artifactKey]
+		if builder == nil {
+			builder = &artifactSignalBuilder{}
+			artifactSignals[record.artifactKey] = builder
 		}
-		signal.UniqueSessions = len(sessionSet)
-		signal.UniqueWorkspaces = len(workspaceSet)
-		for sessionID := range sessionSet {
-			signal.sessionKeys = append(signal.sessionKeys, sessionID)
-		}
-		for workspacePath := range workspaceSet {
-			signal.workspaceKeys = append(signal.workspaceKeys, workspacePath)
-		}
-		if signal.FeedbackCount > 0 {
-			signal.MeanReward /= float64(signal.FeedbackCount)
-		}
-		agg.ByArtifact[key] = signal
+		builder.accumulate(record.event)
 	}
 
-	agg.DedupedEvents = len(deduped)
-	agg.UniqueArtifacts = len(agg.ByArtifact)
-	agg.UniqueSessions = len(uniqueSessions)
-	agg.UniqueWorkspaces = len(uniqueWorkspaces)
-	return agg
+	for key, builder := range artifactSignals {
+		b.agg.ByArtifact[key] = builder.finalize(key)
+	}
+
+	b.agg.DedupedEvents = len(b.deduped)
+	b.agg.UniqueArtifacts = len(b.agg.ByArtifact)
+	b.agg.UniqueSessions = len(b.uniqueSessions)
+	b.agg.UniqueWorkspaces = len(b.uniqueWorkspaces)
+	return b.agg
+}
+
+func (b *artifactSignalBuilder) accumulate(event types.CitationEvent) {
+	b.signal.Citations++
+	if event.CitedAt.After(b.signal.LastCited) {
+		b.signal.LastCited = event.CitedAt
+	}
+	switch event.CitationType {
+	case "applied":
+		b.signal.AppliedCount++
+	case "reference":
+		b.signal.ReferenceCount++
+	default:
+		b.signal.RetrievedCount++
+	}
+	if event.FeedbackGiven {
+		b.signal.FeedbackCount++
+		b.signal.MeanReward += event.FeedbackReward
+	}
+	if event.SessionID != "" {
+		if b.sessionKeys == nil {
+			b.sessionKeys = make(map[string]struct{})
+		}
+		b.sessionKeys[event.SessionID] = struct{}{}
+	}
+	if event.WorkspacePath != "" {
+		if b.workspaceKeys == nil {
+			b.workspaceKeys = make(map[string]struct{})
+		}
+		b.workspaceKeys[event.WorkspacePath] = struct{}{}
+	}
+}
+
+func (b *artifactSignalBuilder) finalize(artifactKey string) artifactUsageSignal {
+	b.signal.ArtifactPath = artifactKey
+	b.signal.UniqueSessions = len(b.sessionKeys)
+	b.signal.UniqueWorkspaces = len(b.workspaceKeys)
+	for sessionID := range b.sessionKeys {
+		b.signal.sessionKeys = append(b.signal.sessionKeys, sessionID)
+	}
+	for workspacePath := range b.workspaceKeys {
+		b.signal.workspaceKeys = append(b.signal.workspaceKeys, workspacePath)
+	}
+	if b.signal.FeedbackCount > 0 {
+		b.signal.MeanReward /= float64(b.signal.FeedbackCount)
+	}
+	return b.signal
 }
 
 func usageSignalForArtifact(baseDir, artifactPath string, agg citationAggregate) artifactUsageSignal {

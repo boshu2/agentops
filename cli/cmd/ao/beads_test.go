@@ -370,6 +370,51 @@ func TestAuditBeads_ClassifiesStaleAndConsolidatable(t *testing.T) {
 	}
 }
 
+func TestFinalizeAuditReport_SortsConsolidationsAndSummarizesCounts(t *testing.T) {
+	report := &AuditReport{
+		LikelyFixed: []AuditFinding{{ID: "na-a"}},
+		LikelyStale: []AuditFinding{{ID: "na-c"}},
+		Summary:     AuditSummary{Total: 4},
+	}
+	fileToBeads := map[string]map[string]bool{
+		"z-last.go": {
+			"na-a": true,
+			"na-b": true,
+		},
+		"a-first.go": {
+			"na-c": true,
+			"na-b": true,
+		},
+	}
+	consolidatableIDs := make(map[string]bool)
+
+	finalizeAuditReport(report, fileToBeads, consolidatableIDs)
+
+	if got := report.Summary.LikelyFixed; got != 1 {
+		t.Fatalf("LikelyFixed = %d, want 1", got)
+	}
+	if got := report.Summary.LikelyStale; got != 1 {
+		t.Fatalf("LikelyStale = %d, want 1", got)
+	}
+	if got := report.Summary.Consolidatable; got != 3 {
+		t.Fatalf("Consolidatable = %d, want 3", got)
+	}
+	if got := report.Summary.FlaggedPct; got != 125 {
+		t.Fatalf("FlaggedPct = %d, want 125", got)
+	}
+	if len(report.Consolidatable) != 2 {
+		t.Fatalf("Consolidatable entries = %d, want 2", len(report.Consolidatable))
+	}
+	if report.Consolidatable[0].File != "a-first.go" || report.Consolidatable[1].File != "z-last.go" {
+		t.Fatalf("consolidations not sorted: %+v", report.Consolidatable)
+	}
+	for _, id := range []string{"na-a", "na-b", "na-c"} {
+		if !consolidatableIDs[id] {
+			t.Fatalf("missing consolidatable id %q in %+v", id, consolidatableIDs)
+		}
+	}
+}
+
 func TestPatternExistsInRepoSearchesScopedRoots(t *testing.T) {
 	tmp := t.TempDir()
 	t.Chdir(tmp)

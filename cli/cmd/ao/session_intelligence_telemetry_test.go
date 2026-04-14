@@ -27,6 +27,9 @@ func TestBuildCitationAggregate_DedupesRepeatedSignals(t *testing.T) {
 	if signal.UniqueSessions != 2 {
 		t.Fatalf("UniqueSessions = %d, want 2", signal.UniqueSessions)
 	}
+	if signal.UniqueWorkspaces != 1 {
+		t.Fatalf("UniqueWorkspaces = %d, want 1", signal.UniqueWorkspaces)
+	}
 	if signal.AppliedCount != 1 || signal.RetrievedCount != 1 {
 		t.Fatalf("counts = retrieved:%d applied:%d, want 1/1", signal.RetrievedCount, signal.AppliedCount)
 	}

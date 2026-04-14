@@ -211,52 +211,78 @@ func auditBeads(autoClose bool) (*AuditReport, error) {
 		if bead.ID == "" {
 			continue
 		}
-		if evidence := firstGitLogLines("--all", "--oneline", "--grep="+bead.ID); evidence != "" {
+		if recordAuditBeadFlow(report, bead, autoClose, fileToBeads) {
+			continue
+		}
+		recordAuditBeadPaths(fileToBeads, bead.ID, extractAuditFilePaths(bead.textBody(), 10))
+		recordAuditStaleFinding(report, bead)
+	}
+
+	finalizeAuditReport(report, fileToBeads, consolidatableIDs)
+	return report, nil
+}
+
+func recordAuditBeadFlow(report *AuditReport, bead beadRecord, autoClose bool, fileToBeads map[string]map[string]bool) bool {
+	desc := bead.textBody()
+	if recordLikelyFixedAuditFinding(report, bead, desc, autoClose) {
+		return true
+	}
+	recordAuditBeadPaths(fileToBeads, bead.ID, extractAuditFilePaths(desc, 10))
+	return false
+}
+
+func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc string, autoClose bool) bool {
+	if evidence := firstGitLogLines("--all", "--oneline", "--grep="+bead.ID); evidence != "" {
+		report.LikelyFixed = append(report.LikelyFixed, AuditFinding{
+			ID:       bead.ID,
+			Title:    bead.displayTitle(),
+			Reason:   "commit_match",
+			Evidence: evidence,
+		})
+		if autoClose {
+			autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence)
+		}
+		return true
+	}
+	paths := extractAuditFilePaths(desc, 10)
+	if bead.CreatedAt != "" && len(paths) > 0 {
+		if evidence := fileChangesSince(bead.CreatedAt, paths); evidence != "" {
 			report.LikelyFixed = append(report.LikelyFixed, AuditFinding{
 				ID:       bead.ID,
 				Title:    bead.displayTitle(),
-				Reason:   "commit_match",
+				Reason:   "file_modified_since_creation",
 				Evidence: evidence,
 			})
 			if autoClose {
-				autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence)
+				autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: mentioned files modified since creation.")
 			}
-			continue
-		}
-
-		desc := bead.textBody()
-		paths := extractAuditFilePaths(desc, 10)
-		for _, path := range paths {
-			if fileToBeads[path] == nil {
-				fileToBeads[path] = make(map[string]bool)
-			}
-			fileToBeads[path][bead.ID] = true
-		}
-		if bead.CreatedAt != "" && len(paths) > 0 {
-			if evidence := fileChangesSince(bead.CreatedAt, paths); evidence != "" {
-				report.LikelyFixed = append(report.LikelyFixed, AuditFinding{
-					ID:       bead.ID,
-					Title:    bead.displayTitle(),
-					Reason:   "file_modified_since_creation",
-					Evidence: evidence,
-				})
-				if autoClose {
-					autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: mentioned files modified since creation.")
-				}
-				continue
-			}
-		}
-
-		patterns := extractAuditPatterns(desc, 10)
-		if len(patterns) > 0 && !anyPatternExists(patterns) {
-			report.LikelyStale = append(report.LikelyStale, AuditFinding{
-				ID:     bead.ID,
-				Title:  bead.displayTitle(),
-				Reason: "referenced_patterns_not_found",
-			})
+			return true
 		}
 	}
+	return false
+}
 
+func recordAuditStaleFinding(report *AuditReport, bead beadRecord) {
+	patterns := extractAuditPatterns(bead.textBody(), 10)
+	if len(patterns) > 0 && !anyPatternExists(patterns) {
+		report.LikelyStale = append(report.LikelyStale, AuditFinding{
+			ID:     bead.ID,
+			Title:  bead.displayTitle(),
+			Reason: "referenced_patterns_not_found",
+		})
+	}
+}
+
+func recordAuditBeadPaths(fileToBeads map[string]map[string]bool, beadID string, paths []string) {
+	for _, path := range paths {
+		if fileToBeads[path] == nil {
+			fileToBeads[path] = make(map[string]bool)
+		}
+		fileToBeads[path][beadID] = true
+	}
+}
+
+func finalizeAuditReport(report *AuditReport, fileToBeads map[string]map[string]bool, consolidatableIDs map[string]bool) {
 	for path, ids := range fileToBeads {
 		if len(ids) < 2 {
 			continue
@@ -281,7 +307,6 @@ func auditBeads(autoClose bool) (*AuditReport, error) {
 	if report.Summary.Total > 0 {
 		report.Summary.FlaggedPct = flagged * 100 / report.Summary.Total
 	}
-	return report, nil
 }
 
 func collectAuditBeads() ([]beadRecord, error) {
