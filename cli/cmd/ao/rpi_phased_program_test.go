@@ -187,128 +187,199 @@ func TestWriteExecutionPacketSeed_UsesProgramContract(t *testing.T) {
 }
 
 func TestRunPhasedEngine_DryRunUsesResolvedProgramContract(t *testing.T) {
-	cases := []struct {
-		name         string
-		setupFiles   func(t *testing.T, dir string)
-		wantPath     string
-		wantContains string
-	}{
+	for _, tc := range dryRunProgramContractCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			assertDryRunUsesResolvedProgramContract(t, tc)
+		})
+	}
+}
+
+type dryRunProgramContractCase struct {
+	name                  string
+	setupFiles            func(t *testing.T, dir string)
+	wantPath              string
+	wantValidationCommand string
+}
+
+type dryRunProgramContractPacket struct {
+	ContractSurfaces []string `json:"contract_surfaces"`
+	AutodevProgram   struct {
+		Path               string   `json:"path"`
+		ValidationCommands []string `json:"validation_commands"`
+	} `json:"autodev_program"`
+}
+
+func dryRunProgramContractCases() []dryRunProgramContractCase {
+	return []dryRunProgramContractCase{
 		{
-			name: "PROGRAM preferred when both exist",
-			setupFiles: func(t *testing.T, dir string) {
-				t.Helper()
-				programText := strings.Replace(rpiProgramMarkdown, "cd cli && go test ./cmd/ao/... ./internal/autodev/...", "echo program-preferred", 1)
-				autodevText := strings.Replace(rpiProgramMarkdown, "cd cli && go test ./cmd/ao/... ./internal/autodev/...", "echo autodev-fallback", 1)
-				if err := os.WriteFile(filepath.Join(dir, "PROGRAM.md"), []byte(programText), 0o644); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(dir, "AUTODEV.md"), []byte(autodevText), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantPath:     "PROGRAM.md",
-			wantContains: "echo program-preferred",
+			name:                  "PROGRAM preferred when both exist",
+			setupFiles:            setupProgramPreferredContractFiles,
+			wantPath:              "PROGRAM.md",
+			wantValidationCommand: "echo program-preferred",
 		},
 		{
-			name: "AUTODEV fallback when PROGRAM missing",
-			setupFiles: func(t *testing.T, dir string) {
-				t.Helper()
-				autodevText := strings.Replace(rpiProgramMarkdown, "cd cli && go test ./cmd/ao/... ./internal/autodev/...", "echo autodev-fallback", 1)
-				if err := os.WriteFile(filepath.Join(dir, "AUTODEV.md"), []byte(autodevText), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantPath:     "AUTODEV.md",
-			wantContains: "echo autodev-fallback",
+			name:                  "AUTODEV fallback when PROGRAM missing",
+			setupFiles:            setupAutodevFallbackContractFiles,
+			wantPath:              "AUTODEV.md",
+			wantValidationCommand: "echo autodev-fallback",
 		},
 	}
+}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			if err := os.MkdirAll(filepath.Join(tmpDir, "docs", "contracts"), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(tmpDir, "docs", "contracts", "repo-execution-profile.md"), []byte("# Repo Execution Profile\n"), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			tc.setupFiles(t, tmpDir)
+func assertDryRunUsesResolvedProgramContract(t *testing.T, tc dryRunProgramContractCase) {
+	t.Helper()
 
-			prevDryRun := dryRun
-			dryRun = true
-			t.Cleanup(func() { dryRun = prevDryRun })
+	tmpDir := setupDryRunProgramContractWorkspace(t, tc)
+	state := runDryRunPhasedEngine(t, tmpDir)
+	assertDryRunProgramPath(t, state, tc.wantPath)
 
-			opts := defaultPhasedEngineOptions()
-			opts.NoWorktree = true
-			opts.SwarmFirst = false
+	packetData := readDryRunExecutionPacket(t, tmpDir, state.RunID)
+	packet := decodeDryRunProgramContractPacket(t, packetData)
+	assertDryRunProgramContractPacket(t, packet, tc)
+	assertDryRunOrchestrationLog(t, tmpDir)
+}
 
-			if err := runPhasedEngine(context.Background(), tmpDir, "drive bounded autodev experiments", opts); err != nil {
-				t.Fatalf("runPhasedEngine() error = %v", err)
-			}
+func setupDryRunProgramContractWorkspace(t *testing.T, tc dryRunProgramContractCase) string {
+	t.Helper()
 
-			statePath := filepath.Join(tmpDir, ".agents", "rpi", phasedStateFile)
-			stateData, err := os.ReadFile(statePath)
-			if err != nil {
-				t.Fatalf("read phased state: %v", err)
-			}
-			var state phasedState
-			if err := json.Unmarshal(stateData, &state); err != nil {
-				t.Fatalf("unmarshal phased state: %v", err)
-			}
-			if state.ProgramPath != tc.wantPath {
-				t.Fatalf("ProgramPath = %q, want %q", state.ProgramPath, tc.wantPath)
-			}
+	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, "docs", "contracts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "docs", "contracts", "repo-execution-profile.md"), []byte("# Repo Execution Profile\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tc.setupFiles(t, tmpDir)
+	return tmpDir
+}
 
-			packetPath := filepath.Join(tmpDir, ".agents", "rpi", "execution-packet.json")
-			packetData, err := os.ReadFile(packetPath)
-			if err != nil {
-				t.Fatalf("read execution packet: %v", err)
-			}
-			archivedPacketData, err := os.ReadFile(filepath.Join(tmpDir, ".agents", "rpi", "runs", state.RunID, executionPacketFile))
-			if err != nil {
-				t.Fatalf("read archived execution packet: %v", err)
-			}
-			if string(archivedPacketData) != string(packetData) {
-				t.Fatalf("archived execution packet does not match latest alias:\nlatest:\n%s\narchived:\n%s", packetData, archivedPacketData)
-			}
-			var packet struct {
-				ContractSurfaces []string `json:"contract_surfaces"`
-				AutodevProgram   struct {
-					Path               string   `json:"path"`
-					ValidationCommands []string `json:"validation_commands"`
-				} `json:"autodev_program"`
-			}
-			if err := json.Unmarshal(packetData, &packet); err != nil {
-				t.Fatalf("unmarshal execution packet: %v", err)
-			}
-			if packet.AutodevProgram.Path != tc.wantPath {
-				t.Fatalf("packet autodev_program.path = %q, want %q", packet.AutodevProgram.Path, tc.wantPath)
-			}
-			if len(packet.AutodevProgram.ValidationCommands) == 0 {
-				t.Fatalf("packet validation_commands empty: %+v", packet.AutodevProgram)
-			}
-			if packet.AutodevProgram.ValidationCommands[0] != tc.wantContains {
-				t.Fatalf("packet validation command = %q, want %q", packet.AutodevProgram.ValidationCommands[0], tc.wantContains)
-			}
-			if !containsProgramContract(packet.ContractSurfaces, "docs/contracts/repo-execution-profile.md") {
-				t.Fatalf("contract_surfaces = %#v, want repo execution profile", packet.ContractSurfaces)
-			}
-			if !containsProgramContract(packet.ContractSurfaces, tc.wantPath) {
-				t.Fatalf("contract_surfaces = %#v, want %s", packet.ContractSurfaces, tc.wantPath)
-			}
+func setupProgramPreferredContractFiles(t *testing.T, dir string) {
+	t.Helper()
 
-			logPath := filepath.Join(tmpDir, ".agents", "rpi", "phased-orchestration.log")
-			logData, err := os.ReadFile(logPath)
-			if err != nil {
-				t.Fatalf("read orchestration log: %v", err)
-			}
-			logText := string(logData)
-			for _, phaseName := range []string{"discovery", "implementation", "validation"} {
-				if !strings.Contains(logText, phaseName) {
-					t.Fatalf("expected orchestration log to mention %s, got: %s", phaseName, logText)
-				}
-			}
-		})
+	writeProgramContractVariant(t, dir, "PROGRAM.md", "echo program-preferred")
+	writeProgramContractVariant(t, dir, "AUTODEV.md", "echo autodev-fallback")
+}
+
+func setupAutodevFallbackContractFiles(t *testing.T, dir string) {
+	t.Helper()
+
+	writeProgramContractVariant(t, dir, "AUTODEV.md", "echo autodev-fallback")
+}
+
+func writeProgramContractVariant(t *testing.T, dir, name, validationCommand string) {
+	t.Helper()
+
+	text := strings.Replace(rpiProgramMarkdown, "cd cli && go test ./cmd/ao/... ./internal/autodev/...", validationCommand, 1)
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func runDryRunPhasedEngine(t *testing.T, tmpDir string) phasedState {
+	t.Helper()
+
+	prevDryRun := dryRun
+	dryRun = true
+	t.Cleanup(func() { dryRun = prevDryRun })
+
+	opts := defaultPhasedEngineOptions()
+	opts.NoWorktree = true
+	opts.SwarmFirst = false
+
+	if err := runPhasedEngine(context.Background(), tmpDir, "drive bounded autodev experiments", opts); err != nil {
+		t.Fatalf("runPhasedEngine() error = %v", err)
+	}
+	return readDryRunPhasedState(t, tmpDir)
+}
+
+func readDryRunPhasedState(t *testing.T, tmpDir string) phasedState {
+	t.Helper()
+
+	statePath := filepath.Join(tmpDir, ".agents", "rpi", phasedStateFile)
+	stateData, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatalf("read phased state: %v", err)
+	}
+	var state phasedState
+	if err := json.Unmarshal(stateData, &state); err != nil {
+		t.Fatalf("unmarshal phased state: %v", err)
+	}
+	return state
+}
+
+func assertDryRunProgramPath(t *testing.T, state phasedState, wantPath string) {
+	t.Helper()
+
+	if state.ProgramPath != wantPath {
+		t.Fatalf("ProgramPath = %q, want %q", state.ProgramPath, wantPath)
+	}
+}
+
+func readDryRunExecutionPacket(t *testing.T, tmpDir, runID string) []byte {
+	t.Helper()
+
+	packetPath := filepath.Join(tmpDir, ".agents", "rpi", "execution-packet.json")
+	packetData, err := os.ReadFile(packetPath)
+	if err != nil {
+		t.Fatalf("read execution packet: %v", err)
+	}
+	archivedPacketData, err := os.ReadFile(filepath.Join(tmpDir, ".agents", "rpi", "runs", runID, executionPacketFile))
+	if err != nil {
+		t.Fatalf("read archived execution packet: %v", err)
+	}
+	if string(archivedPacketData) != string(packetData) {
+		t.Fatalf("archived execution packet does not match latest alias:\nlatest:\n%s\narchived:\n%s", packetData, archivedPacketData)
+	}
+	return packetData
+}
+
+func decodeDryRunProgramContractPacket(t *testing.T, packetData []byte) dryRunProgramContractPacket {
+	t.Helper()
+
+	var packet dryRunProgramContractPacket
+	if err := json.Unmarshal(packetData, &packet); err != nil {
+		t.Fatalf("unmarshal execution packet: %v", err)
+	}
+	return packet
+}
+
+func assertDryRunProgramContractPacket(
+	t *testing.T,
+	packet dryRunProgramContractPacket,
+	tc dryRunProgramContractCase,
+) {
+	t.Helper()
+
+	if packet.AutodevProgram.Path != tc.wantPath {
+		t.Fatalf("packet autodev_program.path = %q, want %q", packet.AutodevProgram.Path, tc.wantPath)
+	}
+	if len(packet.AutodevProgram.ValidationCommands) == 0 {
+		t.Fatalf("packet validation_commands empty: %+v", packet.AutodevProgram)
+	}
+	if packet.AutodevProgram.ValidationCommands[0] != tc.wantValidationCommand {
+		t.Fatalf("packet validation command = %q, want %q", packet.AutodevProgram.ValidationCommands[0], tc.wantValidationCommand)
+	}
+	if !containsProgramContract(packet.ContractSurfaces, "docs/contracts/repo-execution-profile.md") {
+		t.Fatalf("contract_surfaces = %#v, want repo execution profile", packet.ContractSurfaces)
+	}
+	if !containsProgramContract(packet.ContractSurfaces, tc.wantPath) {
+		t.Fatalf("contract_surfaces = %#v, want %s", packet.ContractSurfaces, tc.wantPath)
+	}
+}
+
+func assertDryRunOrchestrationLog(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	logPath := filepath.Join(tmpDir, ".agents", "rpi", "phased-orchestration.log")
+	logData, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read orchestration log: %v", err)
+	}
+	logText := string(logData)
+	for _, phaseName := range []string{"discovery", "implementation", "validation"} {
+		if !strings.Contains(logText, phaseName) {
+			t.Fatalf("expected orchestration log to mention %s, got: %s", phaseName, logText)
+		}
 	}
 }
 
