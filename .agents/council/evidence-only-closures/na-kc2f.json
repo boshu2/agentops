@@ -1,0 +1,35 @@
+{
+  "$schema": "../../../schemas/evidence-only-closure.v1.schema.json",
+  "schema_version": 1,
+  "artifact_id": "evidence-only-closure-na-kc2f",
+  "target_id": "na-kc2f",
+  "target_type": "issue",
+  "created_at": "2026-04-14T11:49:31Z",
+  "producer": "rpi",
+  "evidence_mode": "commit",
+  "validation_commands": [
+    "cd cli && AGENTOPS_RPI_RUNTIME=bushido go test -count=1 ./internal/rpi",
+    "cd cli && AGENTOPS_RPI_RUNTIME=bushido go test -count=1 ./..."
+  ],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": false,
+    "head_sha": "5aeee8622c7b01f727d736d020758c421274a2bf",
+    "modified_files": [],
+    "staged_files": [],
+    "unstaged_files": [],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Current main already contains the internal/rpi TestMain env scrub from 3af559d5, and uncached package/full-suite repros both pass with AGENTOPS_RPI_RUNTIME=bushido.",
+    "artifacts": [
+      ".agents/council/evidence-only-closures/na-kc2f.json",
+      ".agents/releases/evidence-only-closures/na-kc2f.json"
+    ],
+    "notes": [
+      "Discovery result: na-kc2f is stale on current main; no code change required.",
+      "git blame shows the internal/rpi TestMain AGENTOPS_RPI_* scrub landed in 3af559d5 on 2026-04-11."
+    ]
+  }
+}
