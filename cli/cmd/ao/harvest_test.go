@@ -257,6 +257,26 @@ func TestRunHarvest_JSONOutput(t *testing.T) {
 }
 
 func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
+	fixture := setupHarvestJSONSideEffectsFixture(t)
+	configureHarvestJSONSideEffectsFlags(t, fixture)
+	captured := runHarvestWithCapturedStdout(t)
+	cat := parseHarvestJSONCatalog(t, captured)
+
+	assertHarvestJSONSideEffectCatalog(t, cat)
+	assertHarvestJSONSideEffectPersistence(t, fixture)
+	assertHarvestJSONSideEffectPromotion(t, fixture, cat)
+}
+
+type harvestJSONSideEffectsFixture struct {
+	tmp        string
+	sourceName string
+	outputDir  string
+	promoteTo  string
+}
+
+func setupHarvestJSONSideEffectsFixture(t *testing.T) harvestJSONSideEffectsFixture {
+	t.Helper()
+
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 
@@ -274,6 +294,17 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(rigDir, "2026-04-10-bad.md"), []byte(invalid), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
+	return harvestJSONSideEffectsFixture{
+		tmp:        tmp,
+		sourceName: sourceName,
+		outputDir:  filepath.Join(tmp, "out"),
+		promoteTo:  filepath.Join(tmp, "promoted"),
+	}
+}
+
+func configureHarvestJSONSideEffectsFlags(t *testing.T, fixture harvestJSONSideEffectsFixture) {
+	t.Helper()
 
 	origRoots := harvestRootsFlag
 	origOutput := output
@@ -298,7 +329,7 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 		harvestPromoteTo = origPromote
 	})
 
-	harvestRootsFlag = tmp
+	harvestRootsFlag = fixture.tmp
 	output = "json"
 	jsonFlag = false
 	harvestQuiet = true
@@ -306,8 +337,12 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 	harvestMinConfidence = 0.5
 	harvestInclude = "learnings"
 	harvestMaxFileSize = 1048576
-	harvestOutputDir = filepath.Join(tmp, "out")
-	harvestPromoteTo = filepath.Join(tmp, "promoted")
+	harvestOutputDir = fixture.outputDir
+	harvestPromoteTo = fixture.promoteTo
+}
+
+func runHarvestWithCapturedStdout(t *testing.T) []byte {
+	t.Helper()
 
 	origStdout := os.Stdout
 	r, w, err := os.Pipe()
@@ -315,11 +350,13 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 		t.Fatal(err)
 	}
 	os.Stdout = w
+	defer func() {
+		os.Stdout = origStdout
+	}()
 
 	runErr := runHarvest(harvestCmd, nil)
 
 	w.Close()
-	os.Stdout = origStdout
 
 	captured, _ := io.ReadAll(r)
 
@@ -327,10 +364,23 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 		t.Fatalf("runHarvest returned error: %v", runErr)
 	}
 
+	return captured
+}
+
+func parseHarvestJSONCatalog(t *testing.T, captured []byte) harvest.Catalog {
+	t.Helper()
+
 	var cat harvest.Catalog
 	if err := json.Unmarshal(captured, &cat); err != nil {
 		t.Fatalf("stdout is not valid JSON: %v\nGot: %s", err, string(captured))
 	}
+
+	return cat
+}
+
+func assertHarvestJSONSideEffectCatalog(t *testing.T, cat harvest.Catalog) {
+	t.Helper()
+
 	if cat.DryRun {
 		t.Fatal("JSON output should reflect non-dry-run execution")
 	}
@@ -349,8 +399,12 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 	if len(cat.Promoted) != 1 {
 		t.Fatalf("JSON output promoted artifacts = %d, want 1", len(cat.Promoted))
 	}
+}
 
-	latestPath := filepath.Join(harvestOutputDir, "latest.json")
+func assertHarvestJSONSideEffectPersistence(t *testing.T, fixture harvestJSONSideEffectsFixture) {
+	t.Helper()
+
+	latestPath := filepath.Join(fixture.outputDir, "latest.json")
 	data, err := os.ReadFile(latestPath)
 	if err != nil {
 		t.Fatalf("expected latest.json to be written in JSON mode: %v", err)
@@ -366,8 +420,12 @@ func TestRunHarvest_JSONOutputPreservesSideEffects(t *testing.T) {
 	if persisted.Summary.WarningCount != 1 {
 		t.Fatalf("persisted summary.warning_count = %d, want 1", persisted.Summary.WarningCount)
 	}
+}
 
-	promotedPath := filepath.Join(harvestPromoteTo, "learning", cat.Promoted[0].SourceRig+"-"+sourceName)
+func assertHarvestJSONSideEffectPromotion(t *testing.T, fixture harvestJSONSideEffectsFixture, cat harvest.Catalog) {
+	t.Helper()
+
+	promotedPath := filepath.Join(fixture.promoteTo, "learning", cat.Promoted[0].SourceRig+"-"+fixture.sourceName)
 	promoted, err := os.ReadFile(promotedPath)
 	if err != nil {
 		t.Fatalf("expected JSON mode to promote artifact %s: %v", promotedPath, err)
