@@ -15,8 +15,26 @@ import (
 // TestFlywheelE2E_CreateHarvestPromoteRetrieveInject validates the full flywheel loop:
 // create learning → harvest extract → catalog + promote → retrieve → quality gate.
 func TestFlywheelE2E_CreateHarvestPromoteRetrieveInject(t *testing.T) {
+	fixture := setupFlywheelE2ECanary(t)
+	artifacts := extractFlywheelE2ECanaryArtifacts(t, fixture)
+	assertFlywheelE2ECanaryArtifact(t, artifacts[0])
+	promotedPath := promoteFlywheelE2ECanaryArtifact(t, fixture, artifacts)
+
+	assertFlywheelE2EPromotedMetadata(t, promotedPath)
+	assertFlywheelE2EOriginalLearningRetrievable(t, fixture.learningFile)
+	assertFlywheelE2EQualityGate(t, fixture.learningFile)
+}
+
+type flywheelE2ECanaryFixture struct {
+	rigBase      string
+	learningFile string
+	promoteDir   string
+}
+
+func setupFlywheelE2ECanary(t *testing.T) flywheelE2ECanaryFixture {
+	t.Helper()
+
 	t.Setenv("HOME", t.TempDir()) // isolate HOME per Wave 1 check-home-isolation gate
-	// Stage 1: Create a learning with proper metadata in a temp rig structure
 	tmpDir := t.TempDir()
 	rigBase := filepath.Join(tmpDir, "testproject", "crew", "testcrew")
 	learningsDir := filepath.Join(rigBase, ".agents", "learnings")
@@ -43,9 +61,18 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 		t.Fatalf("writing learning file: %v", err)
 	}
 
-	// Stage 2: Harvest — extract artifacts from the test rig
+	return flywheelE2ECanaryFixture{
+		rigBase:      rigBase,
+		learningFile: learningFile,
+		promoteDir:   filepath.Join(tmpDir, "global-learnings"),
+	}
+}
+
+func extractFlywheelE2ECanaryArtifacts(t *testing.T, fixture flywheelE2ECanaryFixture) []harvest.Artifact {
+	t.Helper()
+
 	rig := harvest.RigInfo{
-		Path:    filepath.Join(rigBase, ".agents"),
+		Path:    filepath.Join(fixture.rigBase, ".agents"),
 		Project: "testproject",
 		Crew:    "testcrew",
 		Rig:     "testproject-testcrew",
@@ -63,7 +90,12 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 		t.Fatalf("expected 1 artifact, got %d", len(artifacts))
 	}
 
-	art := artifacts[0]
+	return artifacts
+}
+
+func assertFlywheelE2ECanaryArtifact(t *testing.T, art harvest.Artifact) {
+	t.Helper()
+
 	if art.Type != "learning" {
 		t.Errorf("expected type=learning, got %q", art.Type)
 	}
@@ -74,19 +106,21 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 	if art.SourceRig != "testproject-testcrew" {
 		t.Errorf("expected source_rig=testproject-testcrew, got %q", art.SourceRig)
 	}
+}
 
-	// Stage 3: Catalog + Promote
+func promoteFlywheelE2ECanaryArtifact(t *testing.T, fixture flywheelE2ECanaryFixture, artifacts []harvest.Artifact) string {
+	t.Helper()
+
 	catalog := harvest.BuildCatalog(artifacts, 0.5)
 	if len(catalog.Promoted) != 1 {
 		t.Fatalf("expected 1 promoted artifact, got %d", len(catalog.Promoted))
 	}
 
-	promoteDir := filepath.Join(tmpDir, "global-learnings")
-	if err := os.MkdirAll(promoteDir, 0o755); err != nil {
+	if err := os.MkdirAll(fixture.promoteDir, 0o755); err != nil {
 		t.Fatalf("creating promotion dir: %v", err)
 	}
 
-	promoted, err := harvest.Promote(catalog, promoteDir, false)
+	promoted, err := harvest.Promote(catalog, fixture.promoteDir, false)
 	if err != nil {
 		t.Fatalf("Promote: %v", err)
 	}
@@ -95,12 +129,18 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 	}
 
 	// Find the promoted file
-	promotedFiles, err := filepath.Glob(filepath.Join(promoteDir, "learning", "*.md"))
+	promotedFiles, err := filepath.Glob(filepath.Join(fixture.promoteDir, "learning", "*.md"))
 	if err != nil || len(promotedFiles) == 0 {
-		t.Fatalf("no promoted files found in %s/learning/", promoteDir)
+		t.Fatalf("no promoted files found in %s/learning/", fixture.promoteDir)
 	}
 
-	promotedContent, err := os.ReadFile(promotedFiles[0])
+	return promotedFiles[0]
+}
+
+func assertFlywheelE2EPromotedMetadata(t *testing.T, promotedPath string) {
+	t.Helper()
+
+	promotedContent, err := os.ReadFile(promotedPath)
 	if err != nil {
 		t.Fatalf("reading promoted file: %v", err)
 	}
@@ -116,8 +156,11 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 	if !strings.Contains(pc, "utility: 0.8") {
 		t.Error("promoted file lost utility metadata")
 	}
+}
 
-	// Stage 4: Retrieve — verify the ORIGINAL learning is findable via processLearningFile.
+func assertFlywheelE2EOriginalLearningRetrievable(t *testing.T, learningFile string) {
+	t.Helper()
+
 	// Note: promoted files are intentionally skipped by inject (isPromoted → Superseded=true)
 	// to avoid double-counting. The inject pipeline reads local .agents/learnings/, not the
 	// global promoted store. So we validate retrieval against the original source file.
@@ -131,8 +174,11 @@ The content is long enough to pass the quality gate minimum of 50 characters.
 	if l.Title == "" {
 		t.Error("parsed learning has empty title")
 	}
+}
 
-	// Stage 5: Quality gate — verify the learning passes injection quality standards.
+func assertFlywheelE2EQualityGate(t *testing.T, learningFile string) {
+	t.Helper()
+
 	// Note: learnings without source_bead get a 0.3x utility penalty in processLearningFile,
 	// so we check the gate BEFORE that penalty (which is applied during scoring, not parsing).
 	// The quality gate itself checks the raw parsed values.
