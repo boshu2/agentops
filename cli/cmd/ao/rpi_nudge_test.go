@@ -81,6 +81,56 @@ func TestResolveNudgePhase(t *testing.T) {
 	}
 }
 
+func TestValidateRPINudgeTargetSelection(t *testing.T) {
+	origAllWorkers := rpiNudgeAllWorkers
+	origWorker := rpiNudgeWorker
+	t.Cleanup(func() {
+		rpiNudgeAllWorkers = origAllWorkers
+		rpiNudgeWorker = origWorker
+	})
+
+	rpiNudgeAllWorkers = true
+	rpiNudgeWorker = 1
+	if err := validateRPINudgeTargetSelection(); err == nil {
+		t.Fatal("expected selection conflict error")
+	}
+
+	rpiNudgeAllWorkers = false
+	rpiNudgeWorker = 1
+	if err := validateRPINudgeTargetSelection(); err != nil {
+		t.Fatalf("expected worker-only selection to pass, got: %v", err)
+	}
+}
+
+func TestResolveRPINudgeMessage(t *testing.T) {
+	origMessage := rpiNudgeMessage
+	t.Cleanup(func() {
+		rpiNudgeMessage = origMessage
+	})
+
+	rpiNudgeMessage = "  from-flag  "
+	got, err := resolveRPINudgeMessage([]string{"ignored", "args"})
+	if err != nil {
+		t.Fatalf("resolveRPINudgeMessage(flag): %v", err)
+	}
+	if got != "from-flag" {
+		t.Fatalf("resolveRPINudgeMessage(flag) = %q, want %q", got, "from-flag")
+	}
+
+	rpiNudgeMessage = ""
+	got, err = resolveRPINudgeMessage([]string{"  from", "args  "})
+	if err != nil {
+		t.Fatalf("resolveRPINudgeMessage(args): %v", err)
+	}
+	if got != "from args" {
+		t.Fatalf("resolveRPINudgeMessage(args) = %q, want %q", got, "from args")
+	}
+
+	if _, err := resolveRPINudgeMessage(nil); err == nil {
+		t.Fatal("expected empty message error")
+	}
+}
+
 func TestAppendRPINudgeAudit(t *testing.T) {
 	root := t.TempDir()
 	runID := "audit-run-1"

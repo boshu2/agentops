@@ -40,34 +40,89 @@ worker session for a phase (--all-workers).`,
 // rpiNudgeRecord is a thin alias for the internal NudgeRecord type.
 type rpiNudgeRecord = cliRPI.NudgeRecord
 
+type rpiNudgeContext struct {
+	runID        string
+	phase        int
+	root         string
+	tmuxBin      string
+	phaseSession string
+	targets      []string
+}
+
 func runRPINudge(cmd *cobra.Command, args []string) error {
+	if err := validateRPINudgeTargetSelection(); err != nil {
+		return err
+	}
+	message, err := resolveRPINudgeMessage(args)
+	if err != nil {
+		return err
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	nudgeCtx, err := prepareRPINudgeContext(cwd)
+	if err != nil {
+		return err
+	}
+	if err := executeRPINudge(nudgeCtx, message); err != nil {
+		return err
+	}
+	fmt.Printf("Nudged %d session(s): %s\n", len(nudgeCtx.targets), strings.Join(nudgeCtx.targets, ", "))
+	return nil
+}
+
+func validateRPINudgeTargetSelection() error {
 	if rpiNudgeAllWorkers && rpiNudgeWorker > 0 {
 		return fmt.Errorf("use either --all-workers or --worker, not both")
 	}
+	return nil
+}
 
+func resolveRPINudgeMessage(args []string) (string, error) {
 	message := strings.TrimSpace(rpiNudgeMessage)
 	if message == "" && len(args) > 0 {
 		message = strings.TrimSpace(strings.Join(args, " "))
 	}
 	if message == "" {
-		return fmt.Errorf("provide a nudge message via --message or positional text")
+		return "", fmt.Errorf("provide a nudge message via --message or positional text")
 	}
+	return message, nil
+}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("get working directory: %w", err)
-	}
-
+func prepareRPINudgeContext(cwd string) (rpiNudgeContext, error) {
 	runID, state, root, err := resolveNudgeRun(cwd, strings.TrimSpace(rpiNudgeRunID))
 	if err != nil {
-		return err
+		return rpiNudgeContext{}, err
 	}
-
 	phase, err := resolveNudgePhase(state, rpiNudgePhase)
 	if err != nil {
-		return err
+		return rpiNudgeContext{}, err
 	}
+	tmuxBin, err := resolveRPINudgeTmuxBinary()
+	if err != nil {
+		return rpiNudgeContext{}, err
+	}
+	phaseSession := tmuxSessionName(runID, phase)
+	sessions, err := listTmuxSessions(tmuxBin)
+	if err != nil {
+		return rpiNudgeContext{}, fmt.Errorf("list tmux sessions: %w", err)
+	}
+	targets, err := resolveNudgeTargets(sessions, phaseSession, rpiNudgeAllWorkers, rpiNudgeWorker)
+	if err != nil {
+		return rpiNudgeContext{}, err
+	}
+	return rpiNudgeContext{
+		runID:        runID,
+		phase:        phase,
+		root:         root,
+		tmuxBin:      tmuxBin,
+		phaseSession: phaseSession,
+		targets:      targets,
+	}, nil
+}
 
+func resolveRPINudgeTmuxBinary() (string, error) {
 	toolchain, tcErr := resolveRPIToolchainDefaults()
 	tmuxCommand := "tmux"
 	if tcErr == nil && strings.TrimSpace(toolchain.TmuxCommand) != "" {
@@ -75,28 +130,21 @@ func runRPINudge(cmd *cobra.Command, args []string) error {
 	}
 	tmuxBin, err := defaultLookPath(nil)(tmuxCommand)
 	if err != nil {
-		return fmt.Errorf("tmux binary %q not found: %w", tmuxCommand, err)
+		return "", fmt.Errorf("tmux binary %q not found: %w", tmuxCommand, err)
 	}
+	return tmuxBin, nil
+}
 
-	phaseSession := tmuxSessionName(runID, phase)
-	sessions, err := listTmuxSessions(tmuxBin)
-	if err != nil {
-		return fmt.Errorf("list tmux sessions: %w", err)
-	}
-	targets, err := resolveNudgeTargets(sessions, phaseSession, rpiNudgeAllWorkers, rpiNudgeWorker)
-	if err != nil {
-		return err
-	}
-
-	commandRecord, err := appendRPIC2Command(root, rpiC2CommandInput{
-		RunID:    runID,
-		Phase:    phase,
+func executeRPINudge(nudgeCtx rpiNudgeContext, message string) error {
+	commandRecord, err := appendRPIC2Command(nudgeCtx.root, rpiC2CommandInput{
+		RunID:    nudgeCtx.runID,
+		Phase:    nudgeCtx.phase,
 		Kind:     "nudge",
-		Targets:  append([]string(nil), targets...),
+		Targets:  append([]string(nil), nudgeCtx.targets...),
 		Message:  message,
 		Deadline: time.Now().UTC().Add(30 * time.Second),
 		Metadata: map[string]any{
-			"phase_session": phaseSession,
+			"phase_session": nudgeCtx.phaseSession,
 			"all_workers":   rpiNudgeAllWorkers,
 			"worker":        rpiNudgeWorker,
 		},
@@ -104,33 +152,35 @@ func runRPINudge(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("append command log: %w", err)
 	}
-	commandID := commandRecord.CommandID
+	if err := deliverRPINudges(nudgeCtx, message, commandRecord.CommandID); err != nil {
+		return err
+	}
+	record := rpiNudgeRecord{
+		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
+		RunID:     nudgeCtx.runID,
+		Phase:     nudgeCtx.phase,
+		Targets:   append([]string(nil), nudgeCtx.targets...),
+		Message:   message,
+	}
+	if err := appendRPINudgeAudit(nudgeCtx.root, nudgeCtx.runID, record); err != nil {
+		VerbosePrintf("Warning: could not write nudge audit: %v\n", err)
+	}
+	return nil
+}
 
-	for _, target := range targets {
-		if err := sendTmuxNudge(tmuxBin, target, message); err != nil {
-			emitErr := appendRPINudgeC2Event(root, runID, phase, commandID, target, "failed", err.Error())
+func deliverRPINudges(nudgeCtx rpiNudgeContext, message, commandID string) error {
+	for _, target := range nudgeCtx.targets {
+		if err := sendTmuxNudge(nudgeCtx.tmuxBin, target, message); err != nil {
+			emitErr := appendRPINudgeC2Event(nudgeCtx.root, nudgeCtx.runID, nudgeCtx.phase, commandID, target, "failed", err.Error())
 			if emitErr != nil {
 				VerbosePrintf("Warning: could not append failed nudge event: %v\n", emitErr)
 			}
 			return err
 		}
-		if err := appendRPINudgeC2Event(root, runID, phase, commandID, target, "ack", "nudge delivered"); err != nil {
+		if err := appendRPINudgeC2Event(nudgeCtx.root, nudgeCtx.runID, nudgeCtx.phase, commandID, target, "ack", "nudge delivered"); err != nil {
 			VerbosePrintf("Warning: could not append ack nudge event: %v\n", err)
 		}
 	}
-
-	record := rpiNudgeRecord{
-		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
-		RunID:     runID,
-		Phase:     phase,
-		Targets:   append([]string(nil), targets...),
-		Message:   message,
-	}
-	if err := appendRPINudgeAudit(root, runID, record); err != nil {
-		VerbosePrintf("Warning: could not write nudge audit: %v\n", err)
-	}
-
-	fmt.Printf("Nudged %d session(s): %s\n", len(targets), strings.Join(targets, ", "))
 	return nil
 }
 
