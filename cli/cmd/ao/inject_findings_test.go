@@ -281,3 +281,38 @@ Nested global finding content.
 		t.Error("expected nested global finding to be flagged as Global")
 	}
 }
+
+func TestResolveFindingsDirAndIndexFindingPaths(t *testing.T) {
+	root := t.TempDir()
+	findingsDir := filepath.Join(root, ".agents", "findings")
+	if err := os.MkdirAll(findingsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(findingsDir, "alpha.md")
+	if err := os.WriteFile(path, []byte("# Alpha\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	gotDir := resolveFindingsDir(root)
+	if gotDir != findingsDir {
+		t.Fatalf("resolveFindingsDir() = %q, want %q", gotDir, findingsDir)
+	}
+
+	paths := indexFindingPaths(findingsDir)
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !paths[abs] {
+		t.Fatalf("indexFindingPaths() missing %q", abs)
+	}
+
+	local := []knowledgeFinding{{CompositeScore: 2.0}, {Global: true, CompositeScore: 4.0}}
+	applyGlobalFindingWeight(local, 0.5)
+	if local[0].CompositeScore != 2.0 {
+		t.Fatalf("local score changed unexpectedly: got %v", local[0].CompositeScore)
+	}
+	if local[1].CompositeScore != 2.0 {
+		t.Fatalf("global score = %v, want 2.0 after weight", local[1].CompositeScore)
+	}
+}

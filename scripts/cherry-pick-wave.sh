@@ -40,13 +40,9 @@ remove_worktrees() {
   echo "Cleaning up worktrees..."
   for i in "${!WT_NAMES[@]}"; do
     local wt="${WORKTREES[$i]}" name="${WT_NAMES[$i]}" c="${WT_COMMITS[$i]}"
-    git -C "$REPO_ROOT" worktree remove --force "$wt" 2>/dev/null || {
-        # Safety: only remove if path is under WT_BASE
-        case "$wt" in
-            "$WT_BASE"/*) rm -rf "$wt" ;;
-            *) echo "WARN: refusing to remove $wt (not under $WT_BASE)" >&2 ;;
-        esac
-    }
+    if ! git -C "$REPO_ROOT" worktree remove --force "$wt" 2>/dev/null; then
+        echo "WARN: git worktree remove failed for $wt; leaving path in place" >&2
+    fi
     [[ "$c" -gt 0 ]] && echo "  Removed $name" || echo "  Removed $name (no changes)"
   done
   git -C "$REPO_ROOT" worktree prune 2>/dev/null || true
