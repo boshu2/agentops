@@ -799,44 +799,64 @@ const expectedCodexSchemaVersion = 1
 // validateCodexLifecycleState checks invariants on a deserialized lifecycle state:
 // schema version, timestamp format (RFC3339), and temporal ordering.
 func validateCodexLifecycleState(state *codexLifecycleState) error {
-	if state.SchemaVersion != expectedCodexSchemaVersion {
-		return fmt.Errorf("unsupported schema_version %d (expected %d)", state.SchemaVersion, expectedCodexSchemaVersion)
+	if err := validateCodexLifecycleSchemaVersion(state.SchemaVersion); err != nil {
+		return err
 	}
-
-	if state.UpdatedAt != "" {
-		if _, err := time.Parse(time.RFC3339, state.UpdatedAt); err != nil {
-			return fmt.Errorf("invalid updated_at timestamp %q: %w", state.UpdatedAt, err)
-		}
+	if _, _, err := validateCodexLifecycleTimestamp("updated_at", state.UpdatedAt); err != nil {
+		return err
 	}
-
-	if state.LastStart != nil && state.LastStart.Timestamp != "" {
-		if _, err := time.Parse(time.RFC3339, state.LastStart.Timestamp); err != nil {
-			return fmt.Errorf("invalid last_start timestamp %q: %w", state.LastStart.Timestamp, err)
-		}
+	startTime, startOK, err := validateCodexLifecycleEventTimestamp("last_start", state.LastStart)
+	if err != nil {
+		return err
 	}
-
-	if state.LastStop != nil && state.LastStop.Timestamp != "" {
-		if _, err := time.Parse(time.RFC3339, state.LastStop.Timestamp); err != nil {
-			return fmt.Errorf("invalid last_stop timestamp %q: %w", state.LastStop.Timestamp, err)
-		}
+	stopTime, stopOK, err := validateCodexLifecycleEventTimestamp("last_stop", state.LastStop)
+	if err != nil {
+		return err
 	}
+	return validateCodexLifecycleEventOrdering(state.LastStart, state.LastStop, startTime, startOK, stopTime, stopOK)
+}
 
+func validateCodexLifecycleSchemaVersion(schemaVersion int) error {
+	if schemaVersion != expectedCodexSchemaVersion {
+		return fmt.Errorf("unsupported schema_version %d (expected %d)", schemaVersion, expectedCodexSchemaVersion)
+	}
+	return nil
+}
+
+func validateCodexLifecycleTimestamp(field, value string) (time.Time, bool, error) {
+	if strings.TrimSpace(value) == "" {
+		return time.Time{}, false, nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("invalid %s timestamp %q: %w", field, value, err)
+	}
+	return parsed, true, nil
+}
+
+func validateCodexLifecycleEventTimestamp(field string, event *codexLifecycleEvent) (time.Time, bool, error) {
+	if event == nil {
+		return time.Time{}, false, nil
+	}
+	return validateCodexLifecycleTimestamp(field, event.Timestamp)
+}
+
+func validateCodexLifecycleEventOrdering(lastStart, lastStop *codexLifecycleEvent, startTime time.Time, startOK bool, stopTime time.Time, stopOK bool) error {
 	// If both start and stop exist for the SAME session with timestamps,
 	// stop must not precede start unless the stop event has durable closeout
 	// evidence. Codex can resume the same thread after explicit closeout, so
 	// last_stop may describe the prior closeout for the same thread before a
 	// newer last_start.
-	if state.LastStart != nil && state.LastStop != nil &&
-		state.LastStart.Timestamp != "" && state.LastStop.Timestamp != "" &&
-		strings.TrimSpace(state.LastStart.SessionID) != "" &&
-		strings.TrimSpace(state.LastStart.SessionID) == strings.TrimSpace(state.LastStop.SessionID) {
-		startT, err1 := time.Parse(time.RFC3339, state.LastStart.Timestamp)
-		stopT, err2 := time.Parse(time.RFC3339, state.LastStop.Timestamp)
-		if err1 == nil && err2 == nil && stopT.Before(startT) && !codexStopHasCloseoutEvidence(state.LastStop) {
-			return fmt.Errorf("last_stop (%s) is before last_start (%s)", state.LastStop.Timestamp, state.LastStart.Timestamp)
-		}
+	if !startOK || !stopOK || lastStart == nil || lastStop == nil {
+		return nil
 	}
-
+	startSessionID := strings.TrimSpace(lastStart.SessionID)
+	if startSessionID == "" || startSessionID != strings.TrimSpace(lastStop.SessionID) {
+		return nil
+	}
+	if stopTime.Before(startTime) && !codexStopHasCloseoutEvidence(lastStop) {
+		return fmt.Errorf("last_stop (%s) is before last_start (%s)", lastStop.Timestamp, lastStart.Timestamp)
+	}
 	return nil
 }
 

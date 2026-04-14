@@ -1172,6 +1172,36 @@ func TestCodexValidateState_FullValidState(t *testing.T) {
 	}
 }
 
+func TestValidateCodexLifecycleTimestamp_EmptyAllowed(t *testing.T) {
+	parsed, ok, err := validateCodexLifecycleTimestamp("updated_at", "   ")
+	if err != nil {
+		t.Fatalf("expected no error for blank timestamp, got: %v", err)
+	}
+	if ok {
+		t.Fatal("expected blank timestamp to report ok=false")
+	}
+	if !parsed.IsZero() {
+		t.Fatalf("expected zero time for blank timestamp, got: %v", parsed)
+	}
+}
+
+func TestValidateCodexLifecycleEventOrdering_DifferentSessionsIgnored(t *testing.T) {
+	startTime := time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC)
+	stopTime := startTime.Add(-time.Hour)
+
+	err := validateCodexLifecycleEventOrdering(
+		&codexLifecycleEvent{SessionID: "sess-start", Timestamp: startTime.Format(time.RFC3339)},
+		&codexLifecycleEvent{SessionID: "sess-stop", Timestamp: stopTime.Format(time.RFC3339)},
+		startTime,
+		true,
+		stopTime,
+		true,
+	)
+	if err != nil {
+		t.Fatalf("expected no error for different sessions, got: %v", err)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // printNamedItems
 // ---------------------------------------------------------------------------
