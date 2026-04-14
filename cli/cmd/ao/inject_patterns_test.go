@@ -9,8 +9,33 @@ import (
 func TestParsePatternFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	t.Run("full pattern file", func(t *testing.T) {
-		content := `# Mutex Guard Pattern
+	for _, tc := range parsePatternFileCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.run(t, tmpDir)
+		})
+	}
+}
+
+type parsePatternFileCase struct {
+	name string
+	run  func(t *testing.T, tmpDir string)
+}
+
+func parsePatternFileCases() []parsePatternFileCase {
+	return []parsePatternFileCase{
+		{name: "full pattern file", run: assertParseFullPatternFile},
+		{name: "front matter utility is parsed and skipped in description", run: assertParsePatternFrontMatterUtility},
+		{name: "no title uses filename", run: assertParsePatternNoTitleUsesFilename},
+		{name: "empty file", run: assertParsePatternEmptyFile},
+		{name: "title with description below", run: assertParsePatternTitleWithDescription},
+		{name: "nonexistent file", run: assertParsePatternNonexistentFile},
+	}
+}
+
+func assertParseFullPatternFile(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	content := `# Mutex Guard Pattern
 
 Always acquire mutex before accessing shared state.
 Release in defer to prevent deadlocks.
@@ -18,114 +43,118 @@ Release in defer to prevent deadlocks.
 ## Example
 ...
 `
-		path := filepath.Join(tmpDir, "mutex-guard.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+	path := writeParsePatternFixture(t, tmpDir, "mutex-guard.md", []byte(content))
 
-		p, err := parsePatternFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if p.Name != "Mutex Guard Pattern" {
-			t.Errorf("Name = %q, want %q", p.Name, "Mutex Guard Pattern")
-		}
-		if p.Description == "" {
-			t.Error("expected non-empty description")
-		}
-		if p.FilePath != path {
-			t.Errorf("FilePath = %q, want %q", p.FilePath, path)
-		}
-	})
+	p, err := parsePatternFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Name != "Mutex Guard Pattern" {
+		t.Errorf("Name = %q, want %q", p.Name, "Mutex Guard Pattern")
+	}
+	if p.Description == "" {
+		t.Error("expected non-empty description")
+	}
+	if p.FilePath != path {
+		t.Errorf("FilePath = %q, want %q", p.FilePath, path)
+	}
+}
 
-	t.Run("front matter utility is parsed and skipped in description", func(t *testing.T) {
-		content := `---
+func assertParsePatternFrontMatterUtility(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	content := `---
 utility: 0.92
 ---
 # High Utility Pattern
 
 Use this pattern first.
 `
-		path := filepath.Join(tmpDir, "high-utility.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+	path := writeParsePatternFixture(t, tmpDir, "high-utility.md", []byte(content))
 
-		p, err := parsePatternFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if p.Utility != 0.92 {
-			t.Errorf("Utility = %f, want 0.92", p.Utility)
-		}
-		if p.Description == "utility: 0.92" {
-			t.Error("front matter leaked into description")
-		}
-	})
+	p, err := parsePatternFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Utility != 0.92 {
+		t.Errorf("Utility = %f, want 0.92", p.Utility)
+	}
+	if p.Description == "utility: 0.92" {
+		t.Error("front matter leaked into description")
+	}
+}
 
-	t.Run("no title uses filename", func(t *testing.T) {
-		content := `Some description without a heading.
+func assertParsePatternNoTitleUsesFilename(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	content := `Some description without a heading.
 `
-		path := filepath.Join(tmpDir, "no-title.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+	path := writeParsePatternFixture(t, tmpDir, "no-title.md", []byte(content))
 
-		p, err := parsePatternFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if p.Name != "no-title" {
-			t.Errorf("Name = %q, want %q", p.Name, "no-title")
-		}
-	})
+	p, err := parsePatternFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Name != "no-title" {
+		t.Errorf("Name = %q, want %q", p.Name, "no-title")
+	}
+}
 
-	t.Run("empty file", func(t *testing.T) {
-		path := filepath.Join(tmpDir, "empty.md")
-		if err := os.WriteFile(path, []byte(""), 0644); err != nil {
-			t.Fatal(err)
-		}
+func assertParsePatternEmptyFile(t *testing.T, tmpDir string) {
+	t.Helper()
 
-		p, err := parsePatternFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if p.Name != "empty" {
-			t.Errorf("Name = %q, want %q", p.Name, "empty")
-		}
-		if p.Description != "" {
-			t.Errorf("Description = %q, want empty", p.Description)
-		}
-	})
+	path := writeParsePatternFixture(t, tmpDir, "empty.md", []byte(""))
 
-	t.Run("title with description below", func(t *testing.T) {
-		content := `# My Pattern
+	p, err := parsePatternFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Name != "empty" {
+		t.Errorf("Name = %q, want %q", p.Name, "empty")
+	}
+	if p.Description != "" {
+		t.Errorf("Description = %q, want empty", p.Description)
+	}
+}
+
+func assertParsePatternTitleWithDescription(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	content := `# My Pattern
 
 The actual description starts here.
 `
-		path := filepath.Join(tmpDir, "titled.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
+	path := writeParsePatternFixture(t, tmpDir, "titled.md", []byte(content))
 
-		p, err := parsePatternFile(path)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if p.Name != "My Pattern" {
-			t.Errorf("Name = %q, want %q", p.Name, "My Pattern")
-		}
-		if p.Description == "" {
-			t.Error("expected non-empty description")
-		}
-	})
+	p, err := parsePatternFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Name != "My Pattern" {
+		t.Errorf("Name = %q, want %q", p.Name, "My Pattern")
+	}
+	if p.Description == "" {
+		t.Error("expected non-empty description")
+	}
+}
 
-	t.Run("nonexistent file", func(t *testing.T) {
-		_, err := parsePatternFile(filepath.Join(tmpDir, "nope.md"))
-		if err == nil {
-			t.Error("expected error for nonexistent file")
-		}
-	})
+func assertParsePatternNonexistentFile(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	_, err := parsePatternFile(filepath.Join(tmpDir, "nope.md"))
+	if err == nil {
+		t.Error("expected error for nonexistent file")
+	}
+}
+
+func writeParsePatternFixture(t *testing.T, tmpDir, name string, content []byte) string {
+	t.Helper()
+
+	path := filepath.Join(tmpDir, name)
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestCollectPatterns(t *testing.T) {
