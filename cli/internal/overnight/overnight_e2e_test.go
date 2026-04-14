@@ -160,12 +160,34 @@ func TestRunLoop_L2_FullIteration_CorpusQualityMoves(t *testing.T) {
 	restore := stubInjectRefresh(t)
 	defer restore()
 
+	dir := generateCorpusQualityFixture(t)
+	assertCorpusQualityBaseline(t, dir)
+
+	before := snapshotCorpusQualityFrontmatter(t, dir)
+	result := runCorpusQualityLoop(t, dir)
+
+	assertCorpusQualityIterations(t, result)
+	assertCorpusQualityFindingsRouted(t, dir, result)
+	assertCorpusQualityFitnessCaptured(t, result)
+	assertCorpusQualityFrontmatterPreserved(t, dir, before)
+}
+
+type corpusQualityFrontmatterSnapshot struct {
+	keys   map[string]map[string]bool
+	digest string
+}
+
+func generateCorpusQualityFixture(t *testing.T) string {
+	t.Helper()
 	dir := t.TempDir()
 	if err := fixture.GenerateFixture(dir, fixture.DefaultOpts()); err != nil {
 		t.Fatalf("GenerateFixture: %v", err)
 	}
+	return dir
+}
 
-	// Baseline fitness.
+func assertCorpusQualityBaseline(t *testing.T, dir string) {
+	t.Helper()
 	baseline, _, err := corpus.Compute(dir)
 	if err != nil {
 		t.Fatalf("corpus.Compute baseline: %v", err)
@@ -173,55 +195,70 @@ func TestRunLoop_L2_FullIteration_CorpusQualityMoves(t *testing.T) {
 	if baseline == nil {
 		t.Fatal("baseline FitnessVector is nil")
 	}
+}
 
-	// --- Real RunLoop end-to-end -----------------------------------
-	// Snapshot frontmatter before RunLoop mutates anything.
-	beforeFM := frontmatterKeys(t, dir)
-	beforeDigest := frontmatterDigest(beforeFM)
-	if len(beforeFM) < 150 {
-		t.Fatalf("expected >= 150 learnings in fixture, got %d", len(beforeFM))
+func snapshotCorpusQualityFrontmatter(t *testing.T, dir string) corpusQualityFrontmatterSnapshot {
+	t.Helper()
+	keys := frontmatterKeys(t, dir)
+	if len(keys) < 150 {
+		t.Fatalf("expected >= 150 learnings in fixture, got %d", len(keys))
 	}
+	return corpusQualityFrontmatterSnapshot{
+		keys:   keys,
+		digest: frontmatterDigest(keys),
+	}
+}
 
-	opts := RunLoopOptions{
-		Cwd:            dir,
-		OutputDir:      filepath.Join(dir, ".agents", "overnight", "test-run"),
-		RunID:          "test-run",
-		RunTimeout:     30 * time.Second,
-		MaxIterations:  2,
-		WarnOnly:       true, // tolerate plateau/regression while exercising the loop
-		LogWriter:      io.Discard,
-	}
-	result, err := RunLoop(context.Background(), opts)
+func runCorpusQualityLoop(t *testing.T, dir string) *RunLoopResult {
+	t.Helper()
+	result, err := RunLoop(context.Background(), corpusQualityLoopOptions(dir))
 	if err != nil {
 		t.Fatalf("RunLoop: %v", err)
 	}
 	if result == nil {
 		t.Fatal("RunLoop returned nil result")
 	}
+	return result
+}
 
-	// Post-V3 fix: RunLoop actually runs iterations instead of a
-	// skeleton no-op. Assert the loop hit MaxIterations and surfaced
-	// iteration sub-summaries.
+func corpusQualityLoopOptions(dir string) RunLoopOptions {
+	return RunLoopOptions{
+		Cwd:           dir,
+		OutputDir:     filepath.Join(dir, ".agents", "overnight", "test-run"),
+		RunID:         "test-run",
+		RunTimeout:    30 * time.Second,
+		MaxIterations: 2,
+		WarnOnly:      true, // tolerate plateau/regression while exercising the loop
+		LogWriter:     io.Discard,
+	}
+}
+
+func assertCorpusQualityIterations(t *testing.T, result *RunLoopResult) {
+	t.Helper()
 	if len(result.Iterations) != 2 {
 		t.Fatalf("expected 2 iterations from RunLoop, got %d (degraded=%v)",
 			len(result.Iterations), result.Degraded)
 	}
 	for i, iter := range result.Iterations {
-		if iter.Status == StatusRolledBackPreCommit || iter.Status == StatusFailed {
-			t.Errorf("iteration %d ended in status %q (error=%s)", i+1, iter.Status, iter.Error)
-		}
-		if iter.Reduce == nil {
-			t.Errorf("iteration %d missing Reduce sub-summary", i+1)
-		}
-		if iter.Measure == nil {
-			t.Errorf("iteration %d missing Measure sub-summary", i+1)
-		}
+		assertCorpusQualityIteration(t, i, iter)
 	}
+}
 
-	// Iteration 1 MUST have routed findings (the fixture seeds ~10
-	// unresolved findings that are brand-new to next-work.jsonl).
-	// Iteration 2 may route 0 because iteration 1 already persisted
-	// them via Commit; the dedup is working as intended.
+func assertCorpusQualityIteration(t *testing.T, index int, iter IterationSummary) {
+	t.Helper()
+	if iter.Status == StatusRolledBackPreCommit || iter.Status == StatusFailed {
+		t.Errorf("iteration %d ended in status %q (error=%s)", index+1, iter.Status, iter.Error)
+	}
+	if iter.Reduce == nil {
+		t.Errorf("iteration %d missing Reduce sub-summary", index+1)
+	}
+	if iter.Measure == nil {
+		t.Errorf("iteration %d missing Measure sub-summary", index+1)
+	}
+}
+
+func assertCorpusQualityFindingsRouted(t *testing.T, dir string, result *RunLoopResult) {
+	t.Helper()
 	iter1Reduce := result.Iterations[0].Reduce
 	if iter1Reduce == nil {
 		t.Fatal("iteration 1 Reduce summary is nil")
@@ -231,16 +268,15 @@ func TestRunLoop_L2_FullIteration_CorpusQualityMoves(t *testing.T) {
 		t.Errorf("expected iteration 1 to route >0 findings, got %d (reduce=%v)", routed, iter1Reduce)
 	}
 
-	// Post-commit live check: next-work.jsonl should have >0 lines
-	// after the first committed iteration.
 	liveNextWork := filepath.Join(dir, ".agents", "rpi", "next-work.jsonl")
-	if countLines(t, liveNextWork) <= 0 {
-		t.Errorf("expected live next-work.jsonl to contain >0 routed lines after RunLoop, got %d",
-			countLines(t, liveNextWork))
+	routedLines := countLines(t, liveNextWork)
+	if routedLines <= 0 {
+		t.Errorf("expected live next-work.jsonl to contain >0 routed lines after RunLoop, got %d", routedLines)
 	}
+}
 
-	// Fitness metrics check: iteration 1 should have captured a
-	// non-nil fitness snapshot via MEASURE.
+func assertCorpusQualityFitnessCaptured(t *testing.T, result *RunLoopResult) {
+	t.Helper()
 	iter1Measure := result.Iterations[0].Measure
 	if iter1Measure == nil {
 		t.Fatal("iteration 1 Measure summary is nil")
@@ -249,18 +285,23 @@ func TestRunLoop_L2_FullIteration_CorpusQualityMoves(t *testing.T) {
 	if !ok || fitness == nil {
 		t.Errorf("expected iteration 1 measure.fitness to be non-nil, got %v", iter1Measure)
 	}
+}
 
-	// Metadata round-trip assertion: no frontmatter key disappeared.
-	afterFM := frontmatterKeys(t, dir)
-	afterDigest := frontmatterDigest(afterFM)
-	if afterDigest != beforeDigest {
-		// Narrow down: which file/key was dropped?
-		for file, beforeKeys := range beforeFM {
-			afterKeys := afterFM[file]
-			for k := range beforeKeys {
-				if !afterKeys[k] {
-					t.Errorf("frontmatter key %q dropped from %s", k, file)
-				}
+func assertCorpusQualityFrontmatterPreserved(
+	t *testing.T,
+	dir string,
+	before corpusQualityFrontmatterSnapshot,
+) {
+	t.Helper()
+	after := frontmatterKeys(t, dir)
+	if frontmatterDigest(after) == before.digest {
+		return
+	}
+	for file, beforeKeys := range before.keys {
+		afterKeys := after[file]
+		for k := range beforeKeys {
+			if !afterKeys[k] {
+				t.Errorf("frontmatter key %q dropped from %s", k, file)
 			}
 		}
 	}
