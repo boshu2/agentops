@@ -119,6 +119,28 @@ func TestResolveIngestFilesDefaultIncludesLegacyKnowledge(t *testing.T) {
 }
 
 func TestIngestAutoPromoteAndIndex(t *testing.T) {
+	fixture := setupIngestAutoPromoteFixture(t)
+	assertIngestPendingAdded(t, fixture.tmp, fixture.pendingFile)
+
+	p := pool.NewPool(fixture.tmp)
+	entries := listIngestPendingEntries(t, p)
+	recordIngestCitation(t, fixture.tmp, entries[0].FilePath)
+
+	autoRes := runIngestAutoPromote(t, p)
+	assertIngestPromotedArtifact(t, autoRes)
+
+	indexPath := storeIngestIndex(t, fixture.tmp, autoRes.Artifacts)
+	assertIngestIndexCategory(t, indexPath, "process")
+}
+
+type ingestAutoPromoteFixture struct {
+	tmp         string
+	pendingFile string
+}
+
+func setupIngestAutoPromoteFixture(t *testing.T) ingestAutoPromoteFixture {
+	t.Helper()
+
 	tmp := t.TempDir()
 	prev, _ := os.Getwd()
 	t.Cleanup(func() { _ = os.Chdir(prev) })
@@ -132,6 +154,16 @@ func TestIngestAutoPromoteAndIndex(t *testing.T) {
 	}
 
 	pendingFile := filepath.Join(pendingDir, "2026-01-01-ag-xyz-learnings.md")
+	writeIngestPendingLearning(t, pendingFile)
+	return ingestAutoPromoteFixture{
+		tmp:         tmp,
+		pendingFile: pendingFile,
+	}
+}
+
+func writeIngestPendingLearning(t *testing.T, pendingFile string) {
+	t.Helper()
+
 	if err := os.WriteFile(pendingFile, []byte(`# Learnings: ag-xyz — Something
 
 **Date:** 2026-01-01
@@ -152,6 +184,10 @@ Session: ag-xyz
 `), 0600); err != nil {
 		t.Fatalf("write pending: %v", err)
 	}
+}
+
+func assertIngestPendingAdded(t *testing.T, tmp string, pendingFile string) {
+	t.Helper()
 
 	ingRes, err := ingestPendingFilesToPool(tmp, []string{pendingFile})
 	if err != nil {
@@ -160,8 +196,11 @@ Session: ag-xyz
 	if ingRes.Added != 1 {
 		t.Fatalf("added=%d, want 1 (res=%+v)", ingRes.Added, ingRes)
 	}
+}
 
-	p := pool.NewPool(tmp)
+func listIngestPendingEntries(t *testing.T, p *pool.Pool) []pool.PoolEntry {
+	t.Helper()
+
 	entries, err := p.List(pool.ListOptions{Status: types.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("list pool: %v", err)
@@ -169,10 +208,14 @@ Session: ag-xyz
 	if len(entries) != 1 {
 		t.Fatalf("pool entries=%d, want 1", len(entries))
 	}
+	return entries
+}
 
-	// Auto-promotion now requires citation evidence.
+func recordIngestCitation(t *testing.T, tmp string, artifactPath string) {
+	t.Helper()
+
 	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
-		ArtifactPath: entries[0].FilePath,
+		ArtifactPath: artifactPath,
 		SessionID:    "session-ingest-test",
 		CitedAt:      time.Now(),
 		CitationType: "retrieved",
@@ -180,8 +223,11 @@ Session: ag-xyz
 	}); err != nil {
 		t.Fatalf("record citation: %v", err)
 	}
+}
 
-	// With a 1h threshold, a 2026-01-01 AddedAt should be eligible.
+func runIngestAutoPromote(t *testing.T, p *pool.Pool) poolAutoPromotePromoteResult {
+	t.Helper()
+
 	autoRes, err := autoPromoteAndPromoteToArtifacts(p, time.Hour, true)
 	if err != nil {
 		t.Fatalf("auto-promote: %v", err)
@@ -189,17 +235,25 @@ Session: ag-xyz
 	if autoRes.Promoted != 1 || len(autoRes.Artifacts) != 1 {
 		t.Fatalf("autoRes=%+v", autoRes)
 	}
+	return autoRes
+}
+
+func assertIngestPromotedArtifact(t *testing.T, autoRes poolAutoPromotePromoteResult) {
+	t.Helper()
 
 	if _, err := os.Stat(autoRes.Artifacts[0]); err != nil {
 		t.Fatalf("artifact missing: %v", err)
 	}
 
-	// Ensure artifact landed in .agents/learnings.
 	if filepath.Base(filepath.Dir(autoRes.Artifacts[0])) != "learnings" {
 		t.Fatalf("artifact dir=%s, want learnings", filepath.Dir(autoRes.Artifacts[0]))
 	}
+}
 
-	indexed, indexPath, err := storeIndexUpsert(tmp, autoRes.Artifacts, true)
+func storeIngestIndex(t *testing.T, tmp string, artifacts []string) string {
+	t.Helper()
+
+	indexed, indexPath, err := storeIndexUpsert(tmp, artifacts, true)
 	if err != nil {
 		t.Fatalf("store index: %v", err)
 	}
@@ -209,6 +263,11 @@ Session: ag-xyz
 	if _, err := os.Stat(indexPath); err != nil {
 		t.Fatalf("index missing: %v", err)
 	}
+	return indexPath
+}
+
+func assertIngestIndexCategory(t *testing.T, indexPath string, wantCategory string) {
+	t.Helper()
 
 	f, err := os.Open(indexPath)
 	if err != nil {
@@ -223,8 +282,8 @@ Session: ag-xyz
 	if err := json.Unmarshal(sc.Bytes(), &ie); err != nil {
 		t.Fatalf("unmarshal index: %v", err)
 	}
-	if ie.Category != "process" {
-		t.Fatalf("index category=%q, want %q", ie.Category, "process")
+	if ie.Category != wantCategory {
+		t.Fatalf("index category=%q, want %q", ie.Category, wantCategory)
 	}
 }
 
