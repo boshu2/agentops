@@ -942,152 +942,209 @@ func TestCreateSearchSnippet(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAccumulateEntryStats(t *testing.T) {
-	t.Run("single entry updates all fields", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
+	now := time.Date(2026, 2, 22, 10, 0, 0, 0, time.UTC)
+	t1 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	t3 := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	later := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	earlier := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	zeroUtilityAt := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
+	negativeUtilityAt := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	emptyTypeAt := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 
-		now := time.Date(2026, 2, 22, 10, 0, 0, 0, time.UTC)
-		entry := IndexEntry{
-			Type:      "learning",
-			Utility:   0.8,
-			IndexedAt: now,
-		}
+	tests := []accumulateEntryStatsCase{
+		{
+			name: "single entry updates all fields",
+			entries: []IndexEntry{
+				{Type: "learning", Utility: 0.8, IndexedAt: now},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 1,
+					byType:       map[string]int{"learning": 1},
+					totalUtility: 0.8,
+					utilityCount: 1,
+					oldestEntry:  now,
+					newestEntry:  now,
+				},
+			},
+		},
+		{
+			name: "multiple entries track oldest and newest",
+			entries: []IndexEntry{
+				{Type: "learning", Utility: 0.5, IndexedAt: t2},
+				{Type: "pattern", Utility: 0.9, IndexedAt: t1},
+				{Type: "learning", Utility: 0.7, IndexedAt: t3},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 3,
+					byType:       map[string]int{"learning": 2, "pattern": 1},
+					totalUtility: 0.5 + 0.9 + 0.7,
+					utilityCount: 3,
+					oldestEntry:  t1,
+					newestEntry:  t3,
+				},
+			},
+		},
+		{
+			name: "zero utility not counted",
+			entries: []IndexEntry{
+				{Type: "retro", Utility: 0.0, IndexedAt: zeroUtilityAt},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 1,
+					byType:       map[string]int{"retro": 1},
+					totalUtility: 0.0,
+					utilityCount: 0,
+					oldestEntry:  zeroUtilityAt,
+					newestEntry:  zeroUtilityAt,
+				},
+			},
+		},
+		{
+			name: "negative utility not counted",
+			entries: []IndexEntry{
+				{Type: "research", Utility: -0.1, IndexedAt: negativeUtilityAt},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 1,
+					byType:       map[string]int{"research": 1},
+					totalUtility: 0.0,
+					utilityCount: 0,
+					oldestEntry:  negativeUtilityAt,
+					newestEntry:  negativeUtilityAt,
+				},
+			},
+		},
+		{
+			name: "oldest set on first entry then replaced by earlier",
+			entries: []IndexEntry{
+				{Type: "a", IndexedAt: later},
+				{Type: "a", IndexedAt: earlier},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 1,
+					byType:       map[string]int{"a": 1},
+					totalUtility: 0.0,
+					utilityCount: 0,
+					oldestEntry:  later,
+					newestEntry:  later,
+				},
+				{
+					totalEntries: 2,
+					byType:       map[string]int{"a": 2},
+					totalUtility: 0.0,
+					utilityCount: 0,
+					oldestEntry:  earlier,
+					newestEntry:  later,
+				},
+			},
+		},
+		{
+			name: "empty type counted",
+			entries: []IndexEntry{
+				{Type: "", IndexedAt: emptyTypeAt},
+			},
+			checkpoints: []accumulateEntryStatsExpectation{
+				{
+					totalEntries: 1,
+					byType:       map[string]int{"": 1},
+					totalUtility: 0.0,
+					utilityCount: 0,
+					oldestEntry:  emptyTypeAt,
+					newestEntry:  emptyTypeAt,
+				},
+			},
+		},
+	}
 
-		accumulateEntryStats(stats, entry, &totalUtility, &utilityCount)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runAccumulateEntryStatsCase(t, tt)
+		})
+	}
+}
 
-		if stats.TotalEntries != 1 {
-			t.Errorf("TotalEntries = %d, want 1", stats.TotalEntries)
-		}
-		if stats.ByType["learning"] != 1 {
-			t.Errorf("ByType[learning] = %d, want 1", stats.ByType["learning"])
-		}
-		if math.Abs(totalUtility-0.8) > 1e-9 {
-			t.Errorf("totalUtility = %f, want 0.8", totalUtility)
-		}
-		if utilityCount != 1 {
-			t.Errorf("utilityCount = %d, want 1", utilityCount)
-		}
-		if !stats.OldestEntry.Equal(now) {
-			t.Errorf("OldestEntry = %v, want %v", stats.OldestEntry, now)
-		}
-		if !stats.NewestEntry.Equal(now) {
-			t.Errorf("NewestEntry = %v, want %v", stats.NewestEntry, now)
-		}
-	})
+type accumulateEntryStatsCase struct {
+	name        string
+	entries     []IndexEntry
+	checkpoints []accumulateEntryStatsExpectation
+}
 
-	t.Run("multiple entries track oldest and newest", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
+type accumulateEntryStatsExpectation struct {
+	totalEntries int
+	byType       map[string]int
+	totalUtility float64
+	utilityCount int
+	oldestEntry  time.Time
+	newestEntry  time.Time
+}
 
-		t1 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-		t2 := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
-		t3 := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+type accumulateEntryStatsFixture struct {
+	stats        *IndexStats
+	totalUtility float64
+	utilityCount int
+}
 
-		entries := []IndexEntry{
-			{Type: "learning", Utility: 0.5, IndexedAt: t2},
-			{Type: "pattern", Utility: 0.9, IndexedAt: t1},
-			{Type: "learning", Utility: 0.7, IndexedAt: t3},
+func runAccumulateEntryStatsCase(t *testing.T, tc accumulateEntryStatsCase) {
+	t.Helper()
+
+	fixture := newAccumulateEntryStatsFixture()
+	if len(tc.checkpoints) != 1 && len(tc.checkpoints) != len(tc.entries) {
+		t.Fatalf("checkpoints = %d, want 1 or %d", len(tc.checkpoints), len(tc.entries))
+	}
+
+	for i, entry := range tc.entries {
+		accumulateEntryStats(fixture.stats, entry, &fixture.totalUtility, &fixture.utilityCount)
+		if len(tc.checkpoints) == len(tc.entries) {
+			assertAccumulateEntryStatsExpectation(t, fixture, tc.checkpointAt(i))
 		}
+	}
+	if len(tc.checkpoints) == 1 {
+		assertAccumulateEntryStatsExpectation(t, fixture, tc.checkpoints[0])
+	}
+}
 
-		for _, e := range entries {
-			accumulateEntryStats(stats, e, &totalUtility, &utilityCount)
+func (tc accumulateEntryStatsCase) checkpointAt(index int) accumulateEntryStatsExpectation {
+	if len(tc.checkpoints) == 1 {
+		return tc.checkpoints[0]
+	}
+	return tc.checkpoints[index]
+}
+
+func newAccumulateEntryStatsFixture() *accumulateEntryStatsFixture {
+	return &accumulateEntryStatsFixture{
+		stats: &IndexStats{ByType: make(map[string]int)},
+	}
+}
+
+func assertAccumulateEntryStatsExpectation(t *testing.T, fixture *accumulateEntryStatsFixture, want accumulateEntryStatsExpectation) {
+	t.Helper()
+
+	if fixture.stats.TotalEntries != want.totalEntries {
+		t.Errorf("TotalEntries = %d, want %d", fixture.stats.TotalEntries, want.totalEntries)
+	}
+	for key, value := range want.byType {
+		if fixture.stats.ByType[key] != value {
+			t.Errorf("ByType[%q] = %d, want %d", key, fixture.stats.ByType[key], value)
 		}
-
-		if stats.TotalEntries != 3 {
-			t.Errorf("TotalEntries = %d, want 3", stats.TotalEntries)
-		}
-		if stats.ByType["learning"] != 2 {
-			t.Errorf("ByType[learning] = %d, want 2", stats.ByType["learning"])
-		}
-		if stats.ByType["pattern"] != 1 {
-			t.Errorf("ByType[pattern] = %d, want 1", stats.ByType["pattern"])
-		}
-		if !stats.OldestEntry.Equal(t1) {
-			t.Errorf("OldestEntry = %v, want %v", stats.OldestEntry, t1)
-		}
-		if !stats.NewestEntry.Equal(t3) {
-			t.Errorf("NewestEntry = %v, want %v", stats.NewestEntry, t3)
-		}
-		wantUtility := 0.5 + 0.9 + 0.7
-		if math.Abs(totalUtility-wantUtility) > 1e-9 {
-			t.Errorf("totalUtility = %f, want %f", totalUtility, wantUtility)
-		}
-		if utilityCount != 3 {
-			t.Errorf("utilityCount = %d, want 3", utilityCount)
-		}
-	})
-
-	t.Run("zero utility not counted", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
-
-		entry := IndexEntry{
-			Type:      "retro",
-			Utility:   0.0,
-			IndexedAt: time.Now(),
-		}
-
-		accumulateEntryStats(stats, entry, &totalUtility, &utilityCount)
-
-		if utilityCount != 0 {
-			t.Errorf("utilityCount = %d, want 0 (zero utility should not count)", utilityCount)
-		}
-		if totalUtility != 0.0 {
-			t.Errorf("totalUtility = %f, want 0.0", totalUtility)
-		}
-	})
-
-	t.Run("negative utility not counted", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
-
-		entry := IndexEntry{
-			Type:      "research",
-			Utility:   -0.1,
-			IndexedAt: time.Now(),
-		}
-
-		accumulateEntryStats(stats, entry, &totalUtility, &utilityCount)
-
-		if utilityCount != 0 {
-			t.Errorf("utilityCount = %d, want 0 (negative utility should not count)", utilityCount)
-		}
-	})
-
-	t.Run("oldest set on first entry then replaced by earlier", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
-
-		later := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-		earlier := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-
-		accumulateEntryStats(stats, IndexEntry{Type: "a", IndexedAt: later}, &totalUtility, &utilityCount)
-		if !stats.OldestEntry.Equal(later) {
-			t.Fatalf("after first entry, OldestEntry = %v, want %v", stats.OldestEntry, later)
-		}
-
-		accumulateEntryStats(stats, IndexEntry{Type: "a", IndexedAt: earlier}, &totalUtility, &utilityCount)
-		if !stats.OldestEntry.Equal(earlier) {
-			t.Errorf("after second entry, OldestEntry = %v, want %v", stats.OldestEntry, earlier)
-		}
-	})
-
-	t.Run("empty type counted", func(t *testing.T) {
-		stats := &IndexStats{ByType: make(map[string]int)}
-		var totalUtility float64
-		var utilityCount int
-
-		accumulateEntryStats(stats, IndexEntry{Type: "", IndexedAt: time.Now()}, &totalUtility, &utilityCount)
-
-		if stats.ByType[""] != 1 {
-			t.Errorf("ByType[''] = %d, want 1", stats.ByType[""])
-		}
-	})
+	}
+	if math.Abs(fixture.totalUtility-want.totalUtility) > 1e-9 {
+		t.Errorf("totalUtility = %f, want %f", fixture.totalUtility, want.totalUtility)
+	}
+	if fixture.utilityCount != want.utilityCount {
+		t.Errorf("utilityCount = %d, want %d", fixture.utilityCount, want.utilityCount)
+	}
+	if !fixture.stats.OldestEntry.Equal(want.oldestEntry) {
+		t.Errorf("OldestEntry = %v, want %v", fixture.stats.OldestEntry, want.oldestEntry)
+	}
+	if !fixture.stats.NewestEntry.Equal(want.newestEntry) {
+		t.Errorf("NewestEntry = %v, want %v", fixture.stats.NewestEntry, want.newestEntry)
+	}
 }
 
 // ---------------------------------------------------------------------------
