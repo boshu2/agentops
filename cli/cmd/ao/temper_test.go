@@ -448,74 +448,87 @@ func TestTemperCoverage_ValidateTemperFiles(t *testing.T) {
 func TestTemperCoverage_ValidateArtifact(t *testing.T) {
 	tmp := t.TempDir()
 
-	t.Run("missing feedback count", func(t *testing.T) {
-		content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.8\n"
-		path := filepath.Join(tmp, "no-feedback.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		result := validateArtifact(path, "provisional", 0.5, 3)
-		if result.Valid {
-			t.Error("expected invalid when feedback count < minimum")
-		}
-		found := false
-		for _, issue := range result.Issues {
-			if len(issue) > 0 {
-				found = true
-			}
-		}
-		if !found {
-			t.Error("expected at least one issue message")
-		}
-	})
+	for _, tc := range temperValidateArtifactCases() {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			tc.run(t, tmp)
+		})
+	}
+}
 
-	t.Run("established maturity passes candidate requirement", func(t *testing.T) {
-		content := "# Test\n\n**ID**: L1\n**Maturity**: established\n**Utility**: 0.8\n"
-		path := filepath.Join(tmp, "established.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		result := validateArtifact(path, "candidate", 0.5, 0)
-		if !result.Valid {
-			t.Errorf("expected valid for established maturity, issues: %v", result.Issues)
-		}
-	})
+type temperValidateArtifactCase struct {
+	name string
+	run  func(t *testing.T, tmp string)
+}
 
-	t.Run("missing schema version generates warning", func(t *testing.T) {
-		content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.8\n"
-		path := filepath.Join(tmp, "no-schema.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		result := validateArtifact(path, "provisional", 0.5, 0)
-		if len(result.Warnings) == 0 {
-			t.Error("expected warning for missing schema_version")
-		}
-	})
+func temperValidateArtifactCases() []temperValidateArtifactCase {
+	return []temperValidateArtifactCase{
+		{"missing feedback count", validateTemperArtifactMissingFeedbackCount},
+		{"established maturity passes candidate requirement", validateTemperArtifactEstablishedMaturity},
+		{"missing schema version generates warning", validateTemperArtifactMissingSchemaVersion},
+		{"maturity fields populated", validateTemperArtifactFieldsPopulated},
+		{"frontmatter metadata satisfies schema and feedback checks", validateTemperArtifactFrontmatterMetadata},
+	}
+}
 
-	t.Run("maturity fields populated", func(t *testing.T) {
-		content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.7\n**Confidence**: 0.85\n"
-		path := filepath.Join(tmp, "fields.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		result := validateArtifact(path, "provisional", 0.5, 0)
-		if result.Maturity != types.MaturityCandidate {
-			t.Errorf("Maturity = %q, want %q", result.Maturity, types.MaturityCandidate)
-		}
-		if result.Utility < 0.69 || result.Utility > 0.71 {
-			t.Errorf("Utility = %v, want ~0.7", result.Utility)
-		}
-		if result.Confidence < 0.84 || result.Confidence > 0.86 {
-			t.Errorf("Confidence = %v, want ~0.85", result.Confidence)
-		}
-		if result.ValidatedAt.IsZero() {
-			t.Error("ValidatedAt should not be zero")
-		}
-	})
+func validateTemperArtifactMissingFeedbackCount(t *testing.T, tmp string) {
+	t.Helper()
 
-	t.Run("frontmatter metadata satisfies schema and feedback checks", func(t *testing.T) {
-		content := `---
+	content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.8\n"
+	path := writeTemperArtifact(t, tmp, "no-feedback.md", content)
+	result := validateArtifact(path, "provisional", 0.5, 3)
+	if result.Valid {
+		t.Error("expected invalid when feedback count < minimum")
+	}
+	assertTemperArtifactHasIssue(t, result)
+}
+
+func validateTemperArtifactEstablishedMaturity(t *testing.T, tmp string) {
+	t.Helper()
+
+	content := "# Test\n\n**ID**: L1\n**Maturity**: established\n**Utility**: 0.8\n"
+	path := writeTemperArtifact(t, tmp, "established.md", content)
+	result := validateArtifact(path, "candidate", 0.5, 0)
+	if !result.Valid {
+		t.Errorf("expected valid for established maturity, issues: %v", result.Issues)
+	}
+}
+
+func validateTemperArtifactMissingSchemaVersion(t *testing.T, tmp string) {
+	t.Helper()
+
+	content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.8\n"
+	path := writeTemperArtifact(t, tmp, "no-schema.md", content)
+	result := validateArtifact(path, "provisional", 0.5, 0)
+	if len(result.Warnings) == 0 {
+		t.Error("expected warning for missing schema_version")
+	}
+}
+
+func validateTemperArtifactFieldsPopulated(t *testing.T, tmp string) {
+	t.Helper()
+
+	content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.7\n**Confidence**: 0.85\n"
+	path := writeTemperArtifact(t, tmp, "fields.md", content)
+	result := validateArtifact(path, "provisional", 0.5, 0)
+	if result.Maturity != types.MaturityCandidate {
+		t.Errorf("Maturity = %q, want %q", result.Maturity, types.MaturityCandidate)
+	}
+	if result.Utility < 0.69 || result.Utility > 0.71 {
+		t.Errorf("Utility = %v, want ~0.7", result.Utility)
+	}
+	if result.Confidence < 0.84 || result.Confidence > 0.86 {
+		t.Errorf("Confidence = %v, want ~0.85", result.Confidence)
+	}
+	if result.ValidatedAt.IsZero() {
+		t.Error("ValidatedAt should not be zero")
+	}
+}
+
+func validateTemperArtifactFrontmatterMetadata(t *testing.T, tmp string) {
+	t.Helper()
+
+	content := `---
 id: L1
 maturity: candidate
 utility: 0.8
@@ -525,21 +538,38 @@ schema_version: 1
 ---
 # Test
 `
-		path := filepath.Join(tmp, "frontmatter.md")
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
+	path := writeTemperArtifact(t, tmp, "frontmatter.md", content)
+	result := validateArtifact(path, "provisional", 0.5, 1)
+	if !result.Valid {
+		t.Errorf("expected valid, issues: %v", result.Issues)
+	}
+	if len(result.Warnings) != 0 {
+		t.Errorf("expected no warnings, got %v", result.Warnings)
+	}
+	if result.FeedbackCount != 3 {
+		t.Errorf("FeedbackCount = %d, want 3", result.FeedbackCount)
+	}
+}
+
+func writeTemperArtifact(t *testing.T, tmp, name, content string) string {
+	t.Helper()
+
+	path := filepath.Join(tmp, name)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func assertTemperArtifactHasIssue(t *testing.T, result TemperResult) {
+	t.Helper()
+
+	for _, issue := range result.Issues {
+		if len(issue) > 0 {
+			return
 		}
-		result := validateArtifact(path, "provisional", 0.5, 1)
-		if !result.Valid {
-			t.Errorf("expected valid, issues: %v", result.Issues)
-		}
-		if len(result.Warnings) != 0 {
-			t.Errorf("expected no warnings, got %v", result.Warnings)
-		}
-		if result.FeedbackCount != 3 {
-			t.Errorf("FeedbackCount = %d, want 3", result.FeedbackCount)
-		}
-	})
+	}
+	t.Error("expected at least one issue message")
 }
 
 // ---------------------------------------------------------------------------
