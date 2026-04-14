@@ -78,259 +78,321 @@ type liveTreeHashInvariantCase struct {
 // loop_resume_test.go is retained for its historical scope comment and as
 // regression coverage of the single-case shape.
 func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
-	cases := []liveTreeHashInvariantCase{
-		{
-			name:       "StatusDone_HappyPath",
-			wantStatus: StatusDone,
-			setup: func(t *testing.T) func() {
-				// Constant high fitness, single iter -> no regression,
-				// no plateau window possible. iter 1 commits and the
-				// live tree mutates.
-				SetTestFitnessInjector(injectConstantFitness(0.8))
-				return func() { SetTestFitnessInjector(nil) }
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:            cwd,
-					OutputDir:      outputDir,
-					RunID:          runID,
-					RunTimeout:     30 * time.Second,
-					MaxIterations:  1,
-					PlateauEpsilon: 0.01,
-					PlateauWindowK: 2,
-					WarnOnly:       false,
-					LogWriter:      io.Discard,
-				}
-			},
-		},
-		{
-			name:          "StatusHaltedOnRegressionPreCommit_StrictRegression",
-			wantStatus:    StatusHaltedOnRegressionPreCommit,
-			seedPriorDone: true,
-			setup: func(t *testing.T) func() {
-				// A prior persisted StatusDone iteration supplies the 0.9
-				// baseline; the first new live iteration reports 0.1 and
-				// trips the strict pre-commit regression halt.
-				SetTestFitnessInjector(injectConstantFitness(0.1))
-				return func() { SetTestFitnessInjector(nil) }
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:             cwd,
-					OutputDir:       outputDir,
-					RunID:           runID,
-					RunTimeout:      30 * time.Second,
-					MaxIterations:   2,
-					PlateauEpsilon:  0.01,
-					PlateauWindowK:  2,
-					RegressionFloor: 0.05,
-					WarnOnly:        false,
-					LogWriter:       io.Discard,
-				}
-			},
-		},
-		{
-			name:       "StatusDegraded_MeasureFailurePreCommit",
-			wantStatus: StatusDegraded,
-			setup: func(t *testing.T) func() {
-				SetTestFitnessInjector(func(int) (FitnessSnapshot, error) {
-					return FitnessSnapshot{}, errors.New("synthetic measure failure")
-				})
-				return func() { SetTestFitnessInjector(nil) }
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:            cwd,
-					OutputDir:      outputDir,
-					RunID:          runID,
-					RunTimeout:     30 * time.Second,
-					MaxIterations:  1,
-					PlateauEpsilon: 0.01,
-					PlateauWindowK: 2,
-					WarnOnly:       true,
-					LogWriter:      io.Discard,
-				}
-			},
-		},
-		{
-			name:       "StatusHaltedOnRegressionPostCommit_LegacyPath",
-			wantStatus: StatusHaltedOnRegressionPostCommit,
-			setup: func(t *testing.T) func() {
-				SetTestFitnessInjector(injectConstantFitness(0.8))
-				SetTestPostCommitFaultInjector(func(_ int, cwd string) error {
-					path := filepath.Join(cwd, ".agents", "learnings", "learning-000.md")
-					return os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644)
-				})
-				return func() {
-					SetTestFitnessInjector(nil)
-					SetTestPostCommitFaultInjector(nil)
-				}
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:            cwd,
-					OutputDir:      outputDir,
-					RunID:          runID,
-					RunTimeout:     30 * time.Second,
-					MaxIterations:  1,
-					PlateauEpsilon: 0.01,
-					PlateauWindowK: 2,
-					WarnOnly:       false,
-					LogWriter:      io.Discard,
-				}
-			},
-		},
-		{
-			name:       "StatusRolledBackPreCommit_ReduceFailure",
-			wantStatus: StatusRolledBackPreCommit,
-			setup: func(t *testing.T) func() {
-				prev := refreshInjectCacheFn
-				refreshInjectCacheFn = func(_ context.Context, stagingCwd string, _ io.Writer) (*InjectRefreshResult, error) {
-					path := filepath.Join(stagingCwd, ".agents", "learnings", "learning-000.md")
-					if err := os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644); err != nil {
-						return nil, err
-					}
-					return &InjectRefreshResult{
-						Attempted: true,
-						Succeeded: true,
-						Method:    "in-process",
-						Duration:  time.Millisecond,
-					}, nil
-				}
-				return func() { refreshInjectCacheFn = prev }
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:            cwd,
-					OutputDir:      outputDir,
-					RunID:          runID,
-					RunTimeout:     30 * time.Second,
-					MaxIterations:  1,
-					PlateauEpsilon: 0.01,
-					PlateauWindowK: 2,
-					WarnOnly:       false,
-					LogWriter:      io.Discard,
-				}
-			},
-			wantErr: true,
-		},
-		{
-			name:       "StatusFailed_IngestOrCheckpointError",
-			wantStatus: StatusFailed,
-			setup: func(t *testing.T) func() {
-				SetTestIngestFaultInjector(func(int) error {
-					return errors.New("synthetic ingest failure")
-				})
-				return func() { SetTestIngestFaultInjector(nil) }
-			},
-			buildOpts: func(cwd, outputDir, runID string) RunLoopOptions {
-				return RunLoopOptions{
-					Cwd:            cwd,
-					OutputDir:      outputDir,
-					RunID:          runID,
-					RunTimeout:     30 * time.Second,
-					MaxIterations:  1,
-					PlateauEpsilon: 0.01,
-					PlateauWindowK: 2,
-					WarnOnly:       false,
-					LogWriter:      io.Discard,
-				}
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tc := range cases {
+	for _, tc := range liveTreeHashInvariantCases() {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("HOME", t.TempDir())
-			restore := stubInjectRefresh(t)
-			defer restore()
-
-			if tc.setup != nil {
-				cleanup := tc.setup(t)
-				if cleanup != nil {
-					defer cleanup()
-				}
-			}
-
-			dir := t.TempDir()
-			generateStateMachineFixture(t, dir)
-
-			agentsDir := filepath.Join(dir, ".agents")
-			runID := "hash-invariant-" + sanitizeRunID(tc.name)
-			outputDir := filepath.Join(dir, ".agents", "overnight", runID)
-			priorCount := 0
-			if tc.seedPriorDone {
-				seedPriorDoneIteration(t, outputDir, runID)
-				priorCount = 1
-			}
-
-			opts := tc.buildOpts(dir, outputDir, runID)
-
-			// Capture the baseline hash BEFORE RunLoop executes. Then compare
-			// it to the hash after the newly emitted terminal iteration. Prior
-			// seeded history, when present, is already included in the baseline.
-			hashBefore, err := liveTreeHash(agentsDir)
-			if err != nil {
-				t.Fatalf("hashBefore: %v", err)
-			}
-
-			result, err := RunLoop(context.Background(), opts)
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("RunLoop err=nil, want error for %s", tc.wantStatus)
-				}
-			} else if err != nil {
-				t.Fatalf("RunLoop: %v", err)
-			}
-			if result == nil || len(result.Iterations) <= priorCount {
-				t.Fatalf("result has no iterations: result=%+v", result)
-			}
-
-			hashAfter, err := liveTreeHash(agentsDir)
-			if err != nil {
-				t.Fatalf("hashAfter: %v", err)
-			}
-
-			newIters := result.Iterations[priorCount:]
-			if len(newIters) != 1 {
-				t.Fatalf("new iteration count = %d, want 1; statuses=%s",
-					len(newIters), iterStatusSummary(result.Iterations))
-			}
-			lastIter := newIters[len(newIters)-1]
-			if tc.wantStatus != "" && lastIter.Status != tc.wantStatus {
-				t.Fatalf("last iter status = %q, want %q", lastIter.Status, tc.wantStatus)
-			}
-
-			// Core invariant for the newly emitted terminal iteration.
-			treeChanged := hashBefore != hashAfter
-			if lastIter.Status.IsCorpusCompounded() != treeChanged {
-				t.Fatalf("invariant broken: status=%s compounded=%v treeChanged=%v "+
-					"(hashBefore=%s hashAfter=%s). Iterations: %s",
-					lastIter.Status, lastIter.Status.IsCorpusCompounded(), treeChanged,
-					hashBefore, hashAfter,
-					iterStatusSummary(result.Iterations))
-			}
-
-			// Additional case-specific assertions.
-			switch tc.wantStatus {
-			case StatusDone:
-				if !lastIter.Status.IsCorpusCompounded() {
-					t.Fatalf("StatusDone.IsCorpusCompounded()=false; want true")
-				}
-				if hashBefore == hashAfter {
-					t.Fatalf("StatusDone did not mutate the live tree (hash unchanged)")
-				}
-			case StatusHaltedOnRegressionPreCommit:
-				if lastIter.Status.IsCorpusCompounded() {
-					t.Fatalf("StatusHaltedOnRegressionPreCommit.IsCorpusCompounded()=true; want false")
-				}
-				if hashBefore != hashAfter {
-					t.Fatalf("StatusHaltedOnRegressionPreCommit mutated the live tree")
-				}
-			}
+			runLiveTreeHashInvariantCase(t, tc)
 		})
+	}
+}
+
+func liveTreeHashInvariantCases() []liveTreeHashInvariantCase {
+	return []liveTreeHashInvariantCase{
+		liveTreeHashInvariantDoneCase(),
+		liveTreeHashInvariantPreCommitRegressionCase(),
+		liveTreeHashInvariantMeasureFailureCase(),
+		liveTreeHashInvariantPostCommitRegressionCase(),
+		liveTreeHashInvariantReduceFailureCase(),
+		liveTreeHashInvariantIngestFailureCase(),
+	}
+}
+
+func liveTreeHashInvariantDoneCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:       "StatusDone_HappyPath",
+		wantStatus: StatusDone,
+		setup:      setupLiveTreeHashConstantFitness(0.8),
+		buildOpts:  liveTreeHashInvariantDefaultOpts,
+	}
+}
+
+func liveTreeHashInvariantPreCommitRegressionCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:          "StatusHaltedOnRegressionPreCommit_StrictRegression",
+		wantStatus:    StatusHaltedOnRegressionPreCommit,
+		seedPriorDone: true,
+		setup:         setupLiveTreeHashConstantFitness(0.1),
+		buildOpts:     liveTreeHashInvariantRegressionOpts,
+	}
+}
+
+func liveTreeHashInvariantMeasureFailureCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:       "StatusDegraded_MeasureFailurePreCommit",
+		wantStatus: StatusDegraded,
+		setup:      setupLiveTreeHashMeasureFailure,
+		buildOpts:  liveTreeHashInvariantWarnOnlyOpts,
+	}
+}
+
+func liveTreeHashInvariantPostCommitRegressionCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:       "StatusHaltedOnRegressionPostCommit_LegacyPath",
+		wantStatus: StatusHaltedOnRegressionPostCommit,
+		setup:      setupLiveTreeHashPostCommitFault,
+		buildOpts:  liveTreeHashInvariantDefaultOpts,
+	}
+}
+
+func liveTreeHashInvariantReduceFailureCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:       "StatusRolledBackPreCommit_ReduceFailure",
+		wantStatus: StatusRolledBackPreCommit,
+		setup:      setupLiveTreeHashReduceFailure,
+		buildOpts:  liveTreeHashInvariantDefaultOpts,
+		wantErr:    true,
+	}
+}
+
+func liveTreeHashInvariantIngestFailureCase() liveTreeHashInvariantCase {
+	return liveTreeHashInvariantCase{
+		name:       "StatusFailed_IngestOrCheckpointError",
+		wantStatus: StatusFailed,
+		setup:      setupLiveTreeHashIngestFailure,
+		buildOpts:  liveTreeHashInvariantDefaultOpts,
+		wantErr:    true,
+	}
+}
+
+func setupLiveTreeHashConstantFitness(score float64) func(*testing.T) func() {
+	return func(t *testing.T) func() {
+		t.Helper()
+		SetTestFitnessInjector(injectConstantFitness(score))
+		return func() { SetTestFitnessInjector(nil) }
+	}
+}
+
+func setupLiveTreeHashMeasureFailure(t *testing.T) func() {
+	t.Helper()
+	SetTestFitnessInjector(func(int) (FitnessSnapshot, error) {
+		return FitnessSnapshot{}, errors.New("synthetic measure failure")
+	})
+	return func() { SetTestFitnessInjector(nil) }
+}
+
+func setupLiveTreeHashPostCommitFault(t *testing.T) func() {
+	t.Helper()
+	SetTestFitnessInjector(injectConstantFitness(0.8))
+	SetTestPostCommitFaultInjector(func(_ int, cwd string) error {
+		path := filepath.Join(cwd, ".agents", "learnings", "learning-000.md")
+		return os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644)
+	})
+	return func() {
+		SetTestFitnessInjector(nil)
+		SetTestPostCommitFaultInjector(nil)
+	}
+}
+
+func setupLiveTreeHashReduceFailure(t *testing.T) func() {
+	t.Helper()
+	prev := refreshInjectCacheFn
+	refreshInjectCacheFn = func(_ context.Context, stagingCwd string, _ io.Writer) (*InjectRefreshResult, error) {
+		path := filepath.Join(stagingCwd, ".agents", "learnings", "learning-000.md")
+		if err := os.WriteFile(path, []byte("# Fixture\n\nNo frontmatter here.\n"), 0o644); err != nil {
+			return nil, err
+		}
+		return &InjectRefreshResult{
+			Attempted: true,
+			Succeeded: true,
+			Method:    "in-process",
+			Duration:  time.Millisecond,
+		}, nil
+	}
+	return func() { refreshInjectCacheFn = prev }
+}
+
+func setupLiveTreeHashIngestFailure(t *testing.T) func() {
+	t.Helper()
+	SetTestIngestFaultInjector(func(int) error {
+		return errors.New("synthetic ingest failure")
+	})
+	return func() { SetTestIngestFaultInjector(nil) }
+}
+
+func liveTreeHashInvariantDefaultOpts(cwd, outputDir, runID string) RunLoopOptions {
+	return liveTreeHashInvariantBaseOpts(cwd, outputDir, runID)
+}
+
+func liveTreeHashInvariantWarnOnlyOpts(cwd, outputDir, runID string) RunLoopOptions {
+	opts := liveTreeHashInvariantBaseOpts(cwd, outputDir, runID)
+	opts.WarnOnly = true
+	return opts
+}
+
+func liveTreeHashInvariantRegressionOpts(cwd, outputDir, runID string) RunLoopOptions {
+	opts := liveTreeHashInvariantBaseOpts(cwd, outputDir, runID)
+	opts.MaxIterations = 2
+	opts.RegressionFloor = 0.05
+	return opts
+}
+
+func liveTreeHashInvariantBaseOpts(cwd, outputDir, runID string) RunLoopOptions {
+	return RunLoopOptions{
+		Cwd:            cwd,
+		OutputDir:      outputDir,
+		RunID:          runID,
+		RunTimeout:     30 * time.Second,
+		MaxIterations:  1,
+		PlateauEpsilon: 0.01,
+		PlateauWindowK: 2,
+		WarnOnly:       false,
+		LogWriter:      io.Discard,
+	}
+}
+
+func runLiveTreeHashInvariantCase(t *testing.T, tc liveTreeHashInvariantCase) {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	restore := stubInjectRefresh(t)
+	defer restore()
+	cleanup := installLiveTreeHashInvariantSetup(t, tc)
+	defer cleanup()
+
+	dir, agentsDir, outputDir, runID, priorCount := prepareLiveTreeHashInvariantFixture(t, tc)
+
+	// Capture the baseline hash BEFORE RunLoop executes. Then compare it to
+	// the hash after the newly emitted terminal iteration. Prior seeded
+	// history, when present, is already included in the baseline.
+	hashBefore := mustLiveTreeHash(t, "hashBefore", agentsDir)
+	result := mustRunLiveTreeHashInvariantLoop(t, tc, dir, outputDir, runID)
+	hashAfter := mustLiveTreeHash(t, "hashAfter", agentsDir)
+
+	lastIter := assertSingleLiveTreeHashInvariantIteration(t, tc, result, priorCount)
+	assertLiveTreeHashInvariant(t, lastIter, hashBefore, hashAfter, result.Iterations)
+	assertLiveTreeHashStatusExpectations(t, lastIter, hashBefore, hashAfter)
+}
+
+func installLiveTreeHashInvariantSetup(t *testing.T, tc liveTreeHashInvariantCase) func() {
+	t.Helper()
+	if tc.setup == nil {
+		return func() {}
+	}
+	cleanup := tc.setup(t)
+	if cleanup == nil {
+		return func() {}
+	}
+	return cleanup
+}
+
+func prepareLiveTreeHashInvariantFixture(t *testing.T, tc liveTreeHashInvariantCase) (string, string, string, string, int) {
+	t.Helper()
+	dir := t.TempDir()
+	generateStateMachineFixture(t, dir)
+
+	agentsDir := filepath.Join(dir, ".agents")
+	runID := "hash-invariant-" + sanitizeRunID(tc.name)
+	outputDir := filepath.Join(dir, ".agents", "overnight", runID)
+	priorCount := 0
+	if tc.seedPriorDone {
+		seedPriorDoneIteration(t, outputDir, runID)
+		priorCount = 1
+	}
+	return dir, agentsDir, outputDir, runID, priorCount
+}
+
+func mustLiveTreeHash(t *testing.T, label, agentsDir string) string {
+	t.Helper()
+	hash, err := liveTreeHash(agentsDir)
+	if err != nil {
+		t.Fatalf("%s: %v", label, err)
+	}
+	return hash
+}
+
+func mustRunLiveTreeHashInvariantLoop(
+	t *testing.T,
+	tc liveTreeHashInvariantCase,
+	dir string,
+	outputDir string,
+	runID string,
+) *RunLoopResult {
+	t.Helper()
+	opts := tc.buildOpts(dir, outputDir, runID)
+	result, err := RunLoop(context.Background(), opts)
+	if tc.wantErr {
+		if err == nil {
+			t.Fatalf("RunLoop err=nil, want error for %s", tc.wantStatus)
+		}
+	} else if err != nil {
+		t.Fatalf("RunLoop: %v", err)
+	}
+	return result
+}
+
+func assertSingleLiveTreeHashInvariantIteration(
+	t *testing.T,
+	tc liveTreeHashInvariantCase,
+	result *RunLoopResult,
+	priorCount int,
+) IterationSummary {
+	t.Helper()
+	if result == nil || len(result.Iterations) <= priorCount {
+		t.Fatalf("result has no iterations: result=%+v", result)
+	}
+	newIters := result.Iterations[priorCount:]
+	if len(newIters) != 1 {
+		t.Fatalf("new iteration count = %d, want 1; statuses=%s",
+			len(newIters), iterStatusSummary(result.Iterations))
+	}
+	lastIter := newIters[len(newIters)-1]
+	if tc.wantStatus != "" && lastIter.Status != tc.wantStatus {
+		t.Fatalf("last iter status = %q, want %q", lastIter.Status, tc.wantStatus)
+	}
+	return lastIter
+}
+
+func assertLiveTreeHashInvariant(
+	t *testing.T,
+	lastIter IterationSummary,
+	hashBefore string,
+	hashAfter string,
+	iterations []IterationSummary,
+) {
+	t.Helper()
+	treeChanged := hashBefore != hashAfter
+	if lastIter.Status.IsCorpusCompounded() != treeChanged {
+		t.Fatalf("invariant broken: status=%s compounded=%v treeChanged=%v "+
+			"(hashBefore=%s hashAfter=%s). Iterations: %s",
+			lastIter.Status, lastIter.Status.IsCorpusCompounded(), treeChanged,
+			hashBefore, hashAfter,
+			iterStatusSummary(iterations))
+	}
+}
+
+func assertLiveTreeHashStatusExpectations(
+	t *testing.T,
+	lastIter IterationSummary,
+	hashBefore string,
+	hashAfter string,
+) {
+	t.Helper()
+	switch lastIter.Status {
+	case StatusDone:
+		assertStatusDoneLiveTreeMutation(t, hashBefore, hashAfter)
+	case StatusHaltedOnRegressionPreCommit:
+		assertStatusHaltedPreCommitLiveTreeRollback(t, lastIter, hashBefore, hashAfter)
+	}
+}
+
+func assertStatusDoneLiveTreeMutation(t *testing.T, hashBefore, hashAfter string) {
+	t.Helper()
+	if hashBefore == hashAfter {
+		t.Fatalf("StatusDone did not mutate the live tree (hash unchanged)")
+	}
+}
+
+func assertStatusHaltedPreCommitLiveTreeRollback(
+	t *testing.T,
+	lastIter IterationSummary,
+	hashBefore string,
+	hashAfter string,
+) {
+	t.Helper()
+	if lastIter.Status.IsCorpusCompounded() {
+		t.Fatalf("StatusHaltedOnRegressionPreCommit.IsCorpusCompounded()=true; want false")
+	}
+	if hashBefore != hashAfter {
+		t.Fatalf("StatusHaltedOnRegressionPreCommit mutated the live tree")
 	}
 }
 
