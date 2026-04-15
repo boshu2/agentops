@@ -1,39 +1,49 @@
 {
-  "schema_version": 2,
-  "run_id": "20260412T213000Z",
-  "generated_at": "2026-04-12",
-  "phase": "implementation",
-  "phase_verdict": "READY",
-  "goal": "Retrieval quality epic — eval harness, inject quality, closure polish",
-  "goal_slug": "retrieval-quality-epic",
-  "complexity": "standard",
-  "test_first": false,
-  "tracking_mode": "tasklist",
-  "plan_path": ".agents/plans/2026-04-12-retrieval-quality-epic.md",
-  "research_path": ".agents/research/2026-04-12-next-work-consolidation.md",
-  "pre_mortem_verdict": "PASS",
+  "schema_version": 1,
+  "run_id": "discovery-20260414-dream-long-haul-value",
+  "objective": "Add an opt-in Dream long-haul mode that only extends runtime when yield metrics and deeper probes improve morning packets over the short path.",
+  "epic_id": "na-22xi",
+  "plan_path": ".agents/plans/2026-04-14-dream-long-haul-value.md",
   "contract_surfaces": [
-    "cli/cmd/ao/testdata/retrieval-bench/eval-queries.json (NEW)",
-    "cli/cmd/ao/retrieval_bench.go (extended — --eval flag)",
-    "cli/cmd/ao/retrieval_bench_test.go (extended)",
-    ".github/workflows/validate.yml (extended — nightly eval job)",
-    "cli/cmd/ao/inject_scoring.go (extended — content-hash dedup + INDEX.md boost)",
-    "cli/cmd/ao/inject_learnings.go (extended — stability weighting)",
-    "skills/post-mortem/scripts/closure-integrity-audit.sh (hardened)"
+    "docs/contracts/repo-execution-profile.md",
+    "docs/contracts/dream-run-contract.md",
+    "docs/contracts/dream-report.md"
   ],
-  "waves": [
-    {"id": "W1", "name": "eval fixtures + inject quality + closure polish", "depends_on": [], "issues": [1, 4, 5]},
-    {"id": "W2", "name": "--eval flag on retrieval-bench", "depends_on": ["W1"], "issues": [2]},
-    {"id": "W3", "name": "CI nightly eval + ratchet", "depends_on": ["W2"], "issues": [3]}
+  "validation_commands": [
+    "cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./cmd/ao ./internal/overnight -timeout 3m",
+    "scripts/generate-cli-reference.sh",
+    "bash scripts/audit-codex-parity.sh --skill dream",
+    "bash scripts/validate-codex-generated-artifacts.sh --scope worktree",
+    "bash tests/docs/validate-doc-release.sh",
+    "scripts/pre-push-gate.sh --fast"
   ],
+  "tracker_mode": "beads",
+  "tracker_health": {
+    "healthy": true,
+    "mode": "beads",
+    "reason": "bd probes succeeded and discovery created epic na-22xi with four child issues."
+  },
   "done_criteria": [
-    "eval-queries.json exists with 20 labeled queries",
-    "ao retrieval-bench --eval --json outputs precision@5",
-    "validate.yml has retrieval-eval nightly job",
-    "inject content-hash dedup test passes",
-    "inject INDEX.md boost test passes",
-    "inject stability weight test passes",
-    "closure-integrity bash -n passes",
-    "go build ./... clean"
-  ]
+    "Default Dream behavior remains the current short path unless long-haul is explicitly enabled.",
+    "Dream summary artifacts explain long-haul trigger reason, probe results, and early-exit reason.",
+    "Long-haul mode uses measurable yield gates instead of raw wall-clock as success criteria.",
+    "At least one bounded read-only probe lane improves morning-packet evidence over the short path.",
+    "Council participation is readiness-checked, bounded, and does not silently dominate long-haul cost.",
+    "CLI docs, Dream skill docs, and Codex Dream artifacts stay in sync with the shipped behavior."
+  ],
+  "complexity": "standard",
+  "pre_mortem_verdict": "WARN",
+  "test_levels": {
+    "required": [
+      "L0",
+      "L1",
+      "L2"
+    ],
+    "recommended": [
+      "L3"
+    ],
+    "rationale": "The work spans contracts, command orchestration, and overnight replay behavior. Unit and command tests are required, and at least one end-to-end Dream replay must prove the long-haul decision path."
+  },
+  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "discovery_timestamp": "2026-04-15T02:18:00Z"
 }
