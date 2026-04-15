@@ -788,7 +788,7 @@
       "name": "knowledge-activation",
       "source_skill": "skills/knowledge-activation",
       "source_hash": "",
-      "generated_hash": "3f6838853e34e874ae9d2554d71450e6f0ab36d9f98c1357bc8ca6f86ca3f621"
+      "generated_hash": "3cb0d3fb524870c59498a45b2ded287acba88a5e33e7a50cdb7edcf8b56be040"
     },
     {
       "name": "openai-docs",
