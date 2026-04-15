@@ -144,6 +144,121 @@ func TestBuildCatalog_TracksExcludedCandidates(t *testing.T) {
 	}
 }
 
+// TestBuildCatalog_ExcludedCandidatesAreSlim verifies the schema-v2 change:
+// ExcludedCandidates is now emitted as a slim projection (id/title/confidence)
+// so a large exclusion list doesn't balloon the JSON with Frontmatter,
+// SourcePath, ContentHash, etc. Guards against regression back to []Artifact.
+func TestBuildCatalog_ExcludedCandidatesAreSlim(t *testing.T) {
+	arts := []Artifact{
+		{
+			ID:          "near-a",
+			Title:       "Near miss A",
+			ContentHash: "h1",
+			SourcePath:  "/tmp/fake/a.md",
+			Confidence:  0.48,
+			Date:        "2026-03-01",
+			Type:        "learning",
+			SourceRig:   "rig-a",
+			Scope:       "project:x",
+			Summary:     "should not leak",
+			Frontmatter: map[string]any{
+				"noise":   "should not serialize",
+				"heavy":   []string{"a", "b", "c"},
+				"deep":    map[string]any{"nested": "data"},
+				"custom":  42,
+				"secrets": "redacted",
+			},
+		},
+		{
+			ID:          "far-low",
+			Title:       "Far low",
+			ContentHash: "h2",
+			SourcePath:  "/tmp/fake/b.md",
+			Confidence:  0.1,
+			Date:        "2026-03-02",
+			Type:        "pattern",
+			SourceRig:   "rig-b",
+			Frontmatter: map[string]any{"huge": "payload"},
+		},
+	}
+
+	cat := BuildCatalog(arts, 0.5)
+
+	if cat.SchemaVersion != 2 {
+		t.Errorf("SchemaVersion = %d, want 2", cat.SchemaVersion)
+	}
+	if len(cat.ExcludedCandidates) != 2 {
+		t.Fatalf("ExcludedCandidates len = %d, want 2", len(cat.ExcludedCandidates))
+	}
+
+	// Slim struct must carry exactly id, title, confidence.
+	first := cat.ExcludedCandidates[0]
+	if first.ID != "near-a" {
+		t.Errorf("first.ID = %q, want near-a", first.ID)
+	}
+	if first.Title != "Near miss A" {
+		t.Errorf("first.Title = %q, want %q", first.Title, "Near miss A")
+	}
+	if first.Confidence != 0.48 {
+		t.Errorf("first.Confidence = %v, want 0.48", first.Confidence)
+	}
+
+	// Marshal the catalog and assert the JSON payload of excluded_candidates
+	// contains ONLY id/title/confidence — no Frontmatter, SourcePath, etc.
+	data, err := json.Marshal(cat)
+	if err != nil {
+		t.Fatalf("marshal catalog: %v", err)
+	}
+
+	// Decode into a generic map and drill into excluded_candidates.
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("unmarshal catalog: %v", err)
+	}
+
+	excluded, ok := raw["excluded_candidates"].([]any)
+	if !ok {
+		t.Fatalf("excluded_candidates missing or wrong type: %T", raw["excluded_candidates"])
+	}
+	if len(excluded) != 2 {
+		t.Fatalf("excluded_candidates len = %d, want 2", len(excluded))
+	}
+
+	allowed := map[string]bool{"id": true, "title": true, "confidence": true}
+	forbidden := []string{
+		"frontmatter",
+		"source_path",
+		"content_hash",
+		"source_rig",
+		"scope",
+		"date",
+		"type",
+		"summary",
+	}
+
+	for i, item := range excluded {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			t.Fatalf("excluded[%d] not object: %T", i, item)
+		}
+		for k := range entry {
+			if !allowed[k] {
+				t.Errorf("excluded[%d] has unexpected field %q; slim form allows only id/title/confidence", i, k)
+			}
+		}
+		for _, f := range forbidden {
+			if _, leaked := entry[f]; leaked {
+				t.Errorf("excluded[%d] leaked %q into slim JSON", i, f)
+			}
+		}
+	}
+
+	// schema_version must appear in the JSON too (not just the Go field).
+	if v, ok := raw["schema_version"].(float64); !ok || int(v) != 2 {
+		t.Errorf("schema_version in JSON = %v, want 2", raw["schema_version"])
+	}
+}
+
 func TestPromote_CopiesWithProvenance(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()

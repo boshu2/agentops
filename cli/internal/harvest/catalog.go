@@ -10,27 +10,62 @@ import (
 	"time"
 )
 
+// CatalogSchemaVersion identifies the JSON schema version for the Catalog
+// output. Bump this when making breaking changes to the serialized shape so
+// downstream consumers can detect incompatibilities.
+//
+// Version history:
+//   - 2: ExcludedCandidates slimmed from []Artifact to []ExcludedArtifactMeta
+//     (id, title, confidence only). Introduced SchemaVersion field.
+const CatalogSchemaVersion = 2
+
+// ExcludedArtifactMeta is the slim representation of a below-threshold
+// candidate emitted into the catalog JSON. The full Artifact (with
+// Frontmatter, SourcePath, ContentHash, etc.) balloons the catalog when
+// the exclusion list grows past ~100, so JSON output carries only the
+// fields operators actually inspect: ID, Title, and Confidence.
+type ExcludedArtifactMeta struct {
+	ID         string  `json:"id"`
+	Title      string  `json:"title"`
+	Confidence float64 `json:"confidence"`
+}
+
+// toExcludedMeta projects an Artifact down to the slim JSON-facing
+// representation used for Catalog.ExcludedCandidates.
+func toExcludedMeta(a Artifact) ExcludedArtifactMeta {
+	return ExcludedArtifactMeta{
+		ID:         a.ID,
+		Title:      a.Title,
+		Confidence: a.Confidence,
+	}
+}
+
 // Catalog holds the results of a cross-rig harvest.
 type Catalog struct {
-	Timestamp      time.Time        `json:"timestamp"`
-	RigsScanned    int              `json:"rigs_scanned"`
-	TotalFiles     int              `json:"total_files"` // Candidate files seen across included dirs; BuildCatalog falls back to len(artifacts)
-	Roots          []string         `json:"roots,omitempty"`
-	IncludeDirs    []string         `json:"include_dirs,omitempty"`
-	PromoteTo      string           `json:"promote_to,omitempty"`
-	MinConfidence  float64          `json:"min_confidence,omitempty"`
-	DryRun         bool             `json:"dry_run,omitempty"`
-	Rigs           []RigInfo        `json:"rigs,omitempty"`
-	Warnings       []HarvestWarning `json:"warnings,omitempty"`
-	Artifacts      []Artifact       `json:"artifacts"`
-	Duplicates     []DuplicateGroup `json:"duplicates"`
-	Promoted       []Artifact       `json:"promoted"`
+	SchemaVersion int              `json:"schema_version"`
+	Timestamp     time.Time        `json:"timestamp"`
+	RigsScanned   int              `json:"rigs_scanned"`
+	TotalFiles    int              `json:"total_files"` // Candidate files seen across included dirs; BuildCatalog falls back to len(artifacts)
+	Roots         []string         `json:"roots,omitempty"`
+	IncludeDirs   []string         `json:"include_dirs,omitempty"`
+	PromoteTo     string           `json:"promote_to,omitempty"`
+	MinConfidence float64          `json:"min_confidence,omitempty"`
+	DryRun        bool             `json:"dry_run,omitempty"`
+	Rigs          []RigInfo        `json:"rigs,omitempty"`
+	Warnings      []HarvestWarning `json:"warnings,omitempty"`
+	Artifacts     []Artifact       `json:"artifacts"`
+	Duplicates    []DuplicateGroup `json:"duplicates"`
+	Promoted      []Artifact       `json:"promoted"`
 	// ExcludedCandidates are winners (deduped artifacts) that did not meet
 	// MinConfidence. Tracked so operators can see how much signal the
-	// threshold is dropping and decide whether to tune it.
-	ExcludedCandidates []Artifact     `json:"excluded_candidates,omitempty"`
-	PromotionCount     int            `json:"promotion_count,omitempty"`
-	Summary            CatalogSummary `json:"summary"`
+	// threshold is dropping and decide whether to tune it. Serialized as
+	// a slim projection (id, title, confidence) to keep the JSON compact.
+	ExcludedCandidates []ExcludedArtifactMeta `json:"excluded_candidates,omitempty"`
+	// excludedFull retains the full Artifact values for internal use
+	// (e.g., TopExcludedNearMiss). It is not serialized to JSON.
+	excludedFull   []Artifact     `json:"-"`
+	PromotionCount int            `json:"promotion_count,omitempty"`
+	Summary        CatalogSummary `json:"summary"`
 }
 
 // DuplicateGroup represents artifacts with identical content across rigs.
@@ -59,9 +94,10 @@ type CatalogSummary struct {
 // confidence, and identifies promotion candidates above minConfidence.
 func BuildCatalog(artifacts []Artifact, minConfidence float64) *Catalog {
 	cat := &Catalog{
-		Timestamp:  time.Now().UTC(),
-		TotalFiles: len(artifacts),
-		Artifacts:  artifacts,
+		SchemaVersion: CatalogSchemaVersion,
+		Timestamp:     time.Now().UTC(),
+		TotalFiles:    len(artifacts),
+		Artifacts:     artifacts,
 	}
 
 	// Group by ContentHash.
@@ -110,18 +146,29 @@ func BuildCatalog(artifacts []Artifact, minConfidence float64) *Catalog {
 	}
 
 	// Promote winners above threshold; track exclusions below it so the
-	// operator can see what the threshold dropped.
+	// operator can see what the threshold dropped. We keep full Artifact
+	// values in excludedFull for internal use (TopExcludedNearMiss) and
+	// emit a slim projection via ExcludedCandidates for JSON output.
 	for _, w := range winners {
 		if w.Confidence >= minConfidence {
 			cat.Promoted = append(cat.Promoted, w)
 		} else {
-			cat.ExcludedCandidates = append(cat.ExcludedCandidates, w)
+			cat.excludedFull = append(cat.excludedFull, w)
 		}
 	}
 	// Sort exclusions by confidence descending so near-misses come first.
-	sort.Slice(cat.ExcludedCandidates, func(i, j int) bool {
-		return cat.ExcludedCandidates[i].Confidence > cat.ExcludedCandidates[j].Confidence
+	sort.Slice(cat.excludedFull, func(i, j int) bool {
+		return cat.excludedFull[i].Confidence > cat.excludedFull[j].Confidence
 	})
+	cat.ExcludedCandidates = make([]ExcludedArtifactMeta, 0, len(cat.excludedFull))
+	for _, a := range cat.excludedFull {
+		cat.ExcludedCandidates = append(cat.ExcludedCandidates, toExcludedMeta(a))
+	}
+	if len(cat.ExcludedCandidates) == 0 {
+		// Preserve `omitempty` behavior: an empty slice still serializes
+		// as `[]`, which differs from the previous nil-slice output.
+		cat.ExcludedCandidates = nil
+	}
 	cat.refreshSummary()
 
 	return cat
@@ -130,15 +177,19 @@ func BuildCatalog(artifacts []Artifact, minConfidence float64) *Catalog {
 // TopExcludedNearMiss returns up to n excluded candidates with the highest
 // confidence, so the operator can preview what is sitting just below the
 // min-confidence threshold and decide whether to lower it.
+//
+// Returns full Artifact values for internal callers (CLI output uses
+// Title/Type/Confidence). The JSON-serialized ExcludedCandidates field
+// is slimmed separately.
 func (c *Catalog) TopExcludedNearMiss(n int) []Artifact {
-	if n <= 0 || len(c.ExcludedCandidates) == 0 {
+	if n <= 0 || len(c.excludedFull) == 0 {
 		return nil
 	}
-	if n > len(c.ExcludedCandidates) {
-		n = len(c.ExcludedCandidates)
+	if n > len(c.excludedFull) {
+		n = len(c.excludedFull)
 	}
 	out := make([]Artifact, n)
-	copy(out, c.ExcludedCandidates[:n])
+	copy(out, c.excludedFull[:n])
 	return out
 }
 
@@ -276,6 +327,9 @@ func stripFrontmatter(content string) string {
 // WriteCatalog writes the catalog as indented JSON to both a dated file
 // and a latest.json symlink-free copy.
 func WriteCatalog(dir string, cat *Catalog) error {
+	if cat.SchemaVersion == 0 {
+		cat.SchemaVersion = CatalogSchemaVersion
+	}
 	cat.refreshSummary()
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
