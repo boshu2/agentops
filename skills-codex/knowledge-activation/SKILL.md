@@ -30,13 +30,9 @@ Use the skills in order:
 
 ## Which skill do I need?
 
-| I want to… | Use |
-|------------|-----|
-| Consolidate artifacts from many repos into one place | `$harvest` (writes `~/.agents/learnings/`) |
-| Synthesize the raw corpus into an interlinked wiki | `$compile` (writes `.agents/compiled/`) |
-| Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` (this skill) |
-| Overnight compounding + fitness-driven corpus improvement | `$dream` |
-| Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
+See [docs/skills-decision-tree.md](../../docs/skills-decision-tree.md) for
+the full "which skill next?" decision table covering harvest, compile,
+dream, knowledge-activation, and quickstart.
 
 ## Preconditions
 

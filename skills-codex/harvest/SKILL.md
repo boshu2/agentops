@@ -22,12 +22,9 @@ knowledge hub (`~/.agents/learnings/`).
 
 ## Which skill do I need?
 
-| I want to… | Use |
-|------------|-----|
-| Consolidate artifacts from many repos into one place | `$harvest` (writes `~/.agents/learnings/`) |
-| Synthesize the raw corpus into an interlinked wiki | `$compile` (writes `.agents/compiled/`) |
-| Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` |
-| Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
+See [docs/skills-decision-tree.md](../../docs/skills-decision-tree.md) for
+the full "which skill next?" decision table covering harvest, compile,
+dream, knowledge-activation, and quickstart.
 
 ## What This Skill Does
 

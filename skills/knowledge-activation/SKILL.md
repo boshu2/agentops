@@ -34,6 +34,22 @@ Use this skill when the problem is no longer "capture more knowledge," but:
 
 `$compile` remains the hygiene loop. `knowledge-activation` owns corpus operationalization.
 
+## Where this sits in the flywheel
+
+Knowledge activation is the **fourth step** in the global-corpus workflow:
+
+1. `$harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
+2. `$compile` — synthesize raw artifacts into `.agents/compiled/`
+3. _(optional)_ `$dream` overnight — bounded compounding loop
+4. `$knowledge-activation` — lift compiled knowledge into playbooks,
+   beliefs, and runtime briefings
+
+## Which skill do I need?
+
+See [docs/skills-decision-tree.md](../../docs/skills-decision-tree.md) for
+the full "which skill next?" decision table covering harvest, compile,
+dream, knowledge-activation, and quickstart.
+
 ## Preconditions
 
 This skill assumes the current workspace already has:
