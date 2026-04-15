@@ -96,6 +96,54 @@ func TestBuildCatalog_PromotionThreshold(t *testing.T) {
 	}
 }
 
+// TestBuildCatalog_TracksExcludedCandidates guards na-pmx1.10:
+// below-threshold winners must be recorded (sorted by confidence desc) so
+// the CLI can surface top-N near-misses and the exclusion count.
+func TestBuildCatalog_TracksExcludedCandidates(t *testing.T) {
+	arts := []Artifact{
+		{ID: "far-low", Title: "far low", ContentHash: "h1", Confidence: 0.1, Date: "2026-03-01", Type: "learning"},
+		{ID: "near-miss-a", Title: "near miss a", ContentHash: "h2", Confidence: 0.48, Date: "2026-03-02", Type: "pattern"},
+		{ID: "near-miss-b", Title: "near miss b", ContentHash: "h3", Confidence: 0.45, Date: "2026-03-03", Type: "learning"},
+		{ID: "promoted", Title: "promoted", ContentHash: "h4", Confidence: 0.7, Date: "2026-03-04", Type: "learning"},
+	}
+
+	cat := BuildCatalog(arts, 0.5)
+
+	if len(cat.ExcludedCandidates) != 3 {
+		t.Fatalf("expected 3 excluded, got %d", len(cat.ExcludedCandidates))
+	}
+	// First excluded must be the highest-confidence near-miss.
+	if cat.ExcludedCandidates[0].ID != "near-miss-a" {
+		t.Errorf("top excluded = %q, want near-miss-a", cat.ExcludedCandidates[0].ID)
+	}
+	// Ordering: 0.48 > 0.45 > 0.1
+	if cat.ExcludedCandidates[1].ID != "near-miss-b" {
+		t.Errorf("second excluded = %q, want near-miss-b", cat.ExcludedCandidates[1].ID)
+	}
+	if cat.ExcludedCandidates[2].ID != "far-low" {
+		t.Errorf("third excluded = %q, want far-low", cat.ExcludedCandidates[2].ID)
+	}
+
+	top := cat.TopExcludedNearMiss(2)
+	if len(top) != 2 {
+		t.Fatalf("TopExcludedNearMiss(2) returned %d", len(top))
+	}
+	if top[0].ID != "near-miss-a" || top[1].ID != "near-miss-b" {
+		t.Errorf("top-2 = %q,%q want near-miss-a,near-miss-b", top[0].ID, top[1].ID)
+	}
+
+	// n bigger than set returns everything available, not a panic.
+	allTop := cat.TopExcludedNearMiss(100)
+	if len(allTop) != 3 {
+		t.Errorf("TopExcludedNearMiss(100) returned %d, want 3", len(allTop))
+	}
+
+	// n <= 0 returns nil.
+	if got := cat.TopExcludedNearMiss(0); got != nil {
+		t.Errorf("TopExcludedNearMiss(0) = %v, want nil", got)
+	}
+}
+
 func TestPromote_CopiesWithProvenance(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()

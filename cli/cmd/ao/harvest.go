@@ -276,9 +276,34 @@ func outputHarvestCatalog(catalog *harvest.Catalog, outputDir string, promoted i
 		} else {
 			fmt.Printf("Promoted %d artifacts to %s\n", promoted, harvestPromoteTo)
 		}
+		printExclusionReport(catalog)
 	}
 	VerbosePrintf("Rigs scanned: %d, Total files: %d\n", catalog.RigsScanned, catalog.TotalFiles)
 	return nil
+}
+
+// printExclusionReport surfaces the count of artifacts that cleared dedup
+// but did NOT make the confidence threshold, plus the top-5 near-misses.
+// This replaces silent drops with actionable visibility so the user can
+// decide whether to lower --min-confidence.
+func printExclusionReport(catalog *harvest.Catalog) {
+	excluded := len(catalog.ExcludedCandidates)
+	if excluded == 0 {
+		return
+	}
+	fmt.Printf("Excluded %d candidate(s) under confidence threshold %.2f\n", excluded, catalog.MinConfidence)
+	near := catalog.TopExcludedNearMiss(5)
+	if len(near) == 0 {
+		return
+	}
+	fmt.Println("  Top near-miss candidates (closest to threshold):")
+	for _, a := range near {
+		title := a.Title
+		if title == "" {
+			title = a.ID
+		}
+		fmt.Printf("    %.2f  %s  (%s)\n", a.Confidence, title, a.Type)
+	}
 }
 
 func printHarvestWarning(warning harvest.HarvestWarning) {

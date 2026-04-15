@@ -25,8 +25,12 @@ type Catalog struct {
 	Artifacts      []Artifact       `json:"artifacts"`
 	Duplicates     []DuplicateGroup `json:"duplicates"`
 	Promoted       []Artifact       `json:"promoted"`
-	PromotionCount int              `json:"promotion_count,omitempty"`
-	Summary        CatalogSummary   `json:"summary"`
+	// ExcludedCandidates are winners (deduped artifacts) that did not meet
+	// MinConfidence. Tracked so operators can see how much signal the
+	// threshold is dropping and decide whether to tune it.
+	ExcludedCandidates []Artifact     `json:"excluded_candidates,omitempty"`
+	PromotionCount     int            `json:"promotion_count,omitempty"`
+	Summary            CatalogSummary `json:"summary"`
 }
 
 // DuplicateGroup represents artifacts with identical content across rigs.
@@ -105,15 +109,37 @@ func BuildCatalog(artifacts []Artifact, minConfidence float64) *Catalog {
 		})
 	}
 
-	// Promote winners above threshold.
+	// Promote winners above threshold; track exclusions below it so the
+	// operator can see what the threshold dropped.
 	for _, w := range winners {
 		if w.Confidence >= minConfidence {
 			cat.Promoted = append(cat.Promoted, w)
+		} else {
+			cat.ExcludedCandidates = append(cat.ExcludedCandidates, w)
 		}
 	}
+	// Sort exclusions by confidence descending so near-misses come first.
+	sort.Slice(cat.ExcludedCandidates, func(i, j int) bool {
+		return cat.ExcludedCandidates[i].Confidence > cat.ExcludedCandidates[j].Confidence
+	})
 	cat.refreshSummary()
 
 	return cat
+}
+
+// TopExcludedNearMiss returns up to n excluded candidates with the highest
+// confidence, so the operator can preview what is sitting just below the
+// min-confidence threshold and decide whether to lower it.
+func (c *Catalog) TopExcludedNearMiss(n int) []Artifact {
+	if n <= 0 || len(c.ExcludedCandidates) == 0 {
+		return nil
+	}
+	if n > len(c.ExcludedCandidates) {
+		n = len(c.ExcludedCandidates)
+	}
+	out := make([]Artifact, n)
+	copy(out, c.ExcludedCandidates[:n])
+	return out
 }
 
 // Promote copies promoted artifacts to destDir with provenance headers.
