@@ -729,10 +729,8 @@ EOF
     MISSING_HOOKS=""
     for hook_file in "$HOOKS_DIR"/*.sh; do
         hook_name=$(basename "$hook_file" .sh)
-        # Check if hook name appears in either this bats file OR the stdin contracts file
-        if ! grep -q "$hook_name" "$BATS_TEST_DIRNAME/test-hooks.bats" 2>/dev/null \
-           && ! grep -q "$hook_name" "$BATS_TEST_DIRNAME/hook-stdin-contracts.bats" 2>/dev/null \
-           && ! grep -q "$hook_name" "$BATS_TEST_DIRNAME/test-hooks.sh" 2>/dev/null; then
+        # Count any explicit coverage in the hooks test suite, including dedicated per-hook tests.
+        if ! rg -F -q "$hook_name" "$BATS_TEST_DIRNAME"/*.bats "$BATS_TEST_DIRNAME"/*.sh 2>/dev/null; then
             MISSING_HOOKS="$MISSING_HOOKS $hook_name"
         fi
     done

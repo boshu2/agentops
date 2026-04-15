@@ -57,6 +57,7 @@ setup() {
     make_stub "$FAKE_REPO/tests/docs/validate-doc-release.sh"
     make_stub "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
     make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
+    make_stub "$FAKE_REPO/scripts/validate-swarm-evidence.sh"
     make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
     make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-ci-policy-parity.sh"

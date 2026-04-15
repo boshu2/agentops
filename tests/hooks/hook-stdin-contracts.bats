@@ -403,10 +403,11 @@ AOEOF
     [ "$status" -eq 0 ]
 }
 
-@test "pre-mortem-gate: crank with no epic ID fail-open" {
+@test "pre-mortem-gate: crank with no epic ID blocks in strict mode" {
     run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
         -- '{"tool_name":"Skill","tool_input":{"skill":"crank","args":""}}' "$HOOKS_DIR/pre-mortem-gate.sh"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"could not parse an epic-id"* ]]
 }
 
 @test "pre-mortem-gate: kill switch allows crank" {
