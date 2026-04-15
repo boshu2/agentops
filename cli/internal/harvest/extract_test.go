@@ -385,6 +385,96 @@ func TestNormalizeFrontmatter_StandardizesFields(t *testing.T) {
 	}
 }
 
+// TestParseFrontmatter_SalvagesMidValueColons guards the 2026-04-15
+// regression: authoring mistake of an unquoted scalar whose value contains
+// ": " (colon-space) causes yaml to read the second key as a nested
+// mapping. Harvest must salvage by quoting the scalar and retrying.
+func TestParseFrontmatter_SalvagesMidValueColons(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		wantKey string
+		wantVal string
+	}{
+		{
+			name: "description with Solution: mid-value",
+			content: `---
+name: geoint-edge — bake GDIT CA into mountpoint-s3 image
+description: On edge the CSI driver can't mount https://s3.gdit.demo. Solution: layer the CA into the trust store.
+---
+
+Body here.`,
+			wantKey: "description",
+			wantVal: "On edge the CSI driver can't mount https://s3.gdit.demo. Solution: layer the CA into the trust store.",
+		},
+		{
+			name: "name with em-dash and mid-value colon",
+			content: `---
+name: foo bar — Note: this is a name
+description: short
+---
+
+Body.`,
+			wantKey: "name",
+			wantVal: "foo bar — Note: this is a name",
+		},
+		{
+			name: "multiple lines with embedded colons",
+			content: `---
+name: a: b
+description: c: d
+---
+
+Body.`,
+			wantKey: "name",
+			wantVal: "a: b",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fm, _, err := parseFrontmatter(tc.content)
+			if err != nil {
+				t.Fatalf("parseFrontmatter unexpected error: %v", err)
+			}
+			got, ok := fm[tc.wantKey].(string)
+			if !ok {
+				t.Fatalf("key %q missing or not string in %+v", tc.wantKey, fm)
+			}
+			if got != tc.wantVal {
+				t.Errorf("fm[%q] = %q, want %q", tc.wantKey, got, tc.wantVal)
+			}
+		})
+	}
+}
+
+// TestParseFrontmatter_ValidDocIsUnchanged ensures the salvage pass does
+// not rewrite a document that already parses cleanly (false-positive guard).
+func TestParseFrontmatter_ValidDocIsUnchanged(t *testing.T) {
+	content := `---
+name: "already quoted: good"
+description: plain scalar no colon
+tags:
+  - one
+  - two
+---
+
+Body.`
+	fm, _, err := parseFrontmatter(content)
+	if err != nil {
+		t.Fatalf("parseFrontmatter: %v", err)
+	}
+	if fm["name"] != "already quoted: good" {
+		t.Errorf("name = %v, want 'already quoted: good'", fm["name"])
+	}
+	if fm["description"] != "plain scalar no colon" {
+		t.Errorf("description = %v", fm["description"])
+	}
+	tags, ok := fm["tags"].([]any)
+	if !ok || len(tags) != 2 {
+		t.Errorf("tags not preserved: %v", fm["tags"])
+	}
+}
+
 func TestParseFrontmatter_NoDelimiters(t *testing.T) {
 	content := "Just plain markdown\nWith no frontmatter."
 	fm, body, err := parseFrontmatter(content)

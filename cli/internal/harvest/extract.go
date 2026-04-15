@@ -179,7 +179,19 @@ func parseFrontmatter(content string) (map[string]any, string, error) {
 	body := rest[second+3:]
 
 	var fm map[string]any
-	if err := yaml.Unmarshal([]byte(fmRaw), &fm); err != nil {
+	err := yaml.Unmarshal([]byte(fmRaw), &fm)
+	if err != nil {
+		// Salvage pass: the common authoring mistake is an unquoted scalar
+		// whose value contains a literal ":" followed by a space (e.g.
+		// `description: On edge. Solution: layer the CA bundle`). YAML reads
+		// "Solution:" as the start of a nested mapping and errors. Quote
+		// every top-level scalar value and retry before giving up.
+		if serr := yaml.Unmarshal([]byte(salvageFrontmatterYAML(fmRaw)), &fm); serr == nil {
+			if fm == nil {
+				fm = map[string]any{}
+			}
+			return fm, body, nil
+		}
 		return nil, "", fmt.Errorf("unmarshaling frontmatter: %w", err)
 	}
 	if fm == nil {
@@ -187,6 +199,56 @@ func parseFrontmatter(content string) (map[string]any, string, error) {
 	}
 
 	return fm, body, nil
+}
+
+// salvageFrontmatterYAML rewrites a fragment of YAML that failed to parse so
+// that any top-level scalar value is double-quoted. It only touches lines
+// that look like `key: value` where value is a plain scalar (not a list,
+// map, or already-quoted string). This fixes the common mid-value-colon bug
+// without changing the semantics of valid documents.
+func salvageFrontmatterYAML(fmRaw string) string {
+	lines := strings.Split(fmRaw, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			out = append(out, line)
+			continue
+		}
+		// Only rewrite lines that start at column 0 — we do not try to
+		// salvage nested structures. "Top-level scalar" is conservative on
+		// purpose; false positives would break valid documents.
+		if line != trimmed {
+			out = append(out, line)
+			continue
+		}
+		idx := strings.Index(trimmed, ":")
+		if idx < 0 {
+			out = append(out, line)
+			continue
+		}
+		key := trimmed[:idx]
+		val := strings.TrimSpace(trimmed[idx+1:])
+		if val == "" || val == ">" || val == "|" {
+			// block-scalar header; leave as-is
+			out = append(out, line)
+			continue
+		}
+		if strings.HasPrefix(val, "\"") || strings.HasPrefix(val, "'") {
+			out = append(out, line)
+			continue
+		}
+		if strings.HasPrefix(val, "[") || strings.HasPrefix(val, "{") || strings.HasPrefix(val, "-") {
+			// list / map / sequence marker; leave alone
+			out = append(out, line)
+			continue
+		}
+		// Scalar boolean / null / number pass-through — quoting them is
+		// harmless for our downstream consumers (string-or-any map).
+		quoted := strings.ReplaceAll(val, `"`, `\"`)
+		out = append(out, fmt.Sprintf(`%s: "%s"`, key, quoted))
+	}
+	return strings.Join(out, "\n")
 }
 
 // NormalizeFrontmatter standardizes field names in a frontmatter map.
