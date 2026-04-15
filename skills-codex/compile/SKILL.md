@@ -32,13 +32,11 @@ Set `AGENTOPS_COMPILE_RUNTIME` to pick the LLM backend:
 
 | Value | Backend | Notes |
 |-------|---------|-------|
-| `claude-cli` | Local `claude` binary | Zero-config. No API key — inherits Claude Code auth. Auto-selected when `claude` is on PATH. |
 | `ollama` | Ollama API | Needs `OLLAMA_HOST` (default `http://localhost:11434`). |
-| `claude` | Anthropic HTTP API | Needs `ANTHROPIC_API_KEY`. |
 | `openai` | OpenAI-compatible | Needs `OPENAI_API_KEY`. |
 
-When unset, `ao compile` auto-detects a local `claude` binary. If that is
-also absent, headless compile fails fast with an actionable error.
+When unset, `ao compile` attempts to auto-detect a local CLI backend. If none
+is available, headless compile fails fast with an actionable error.
 
 ### Large-corpus batching
 
