@@ -197,6 +197,7 @@ func TestPrintMineDryRun(t *testing.T) {
 // consumers (`jq`, scripts, tests) require a single parseable document.
 func TestMineCommandJSON_ExactlyOnePayloadOnStdout(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("HOME", dir)
 	chdirTo(t, dir)
 	outputDir := filepath.Join(dir, "mine-output")
 
@@ -232,6 +233,7 @@ func TestMineCommandJSON_ExactlyOnePayloadOnStdout(t *testing.T) {
 // not a human-readable text block, and definitely not both.
 func TestMineCommandJSON_DryRunEmitsSingleJSONDocument(t *testing.T) {
 	dir := t.TempDir()
+	t.Setenv("HOME", dir)
 	chdirTo(t, dir)
 
 	out, err := executeCommand("mine", "--json", "--dry-run", "--sources", "git")
