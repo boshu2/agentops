@@ -16,6 +16,10 @@
 #     AGENTOPS_HOOK_FAILURE_CAP) is exceeded. Call record_hook_success
 #     on success to reset the counter.
 
+# BEADS_DOLT_SERVER_PORT default — allows bd invocations to find the Dolt server without manual export
+# Override per-shell with `export BEADS_DOLT_SERVER_PORT=<port>` before invoking hooks/scripts.
+export BEADS_DOLT_SERVER_PORT="${BEADS_DOLT_SERVER_PORT:-3307}"
+
 # --- Hook failure budget ---
 # Caps consecutive failures per hook to prevent runaway loops.
 # Inspired by Claude Code's MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES pattern.

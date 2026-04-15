@@ -8,6 +8,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# BEADS_DOLT_SERVER_PORT default — allows bd invocations to find the Dolt server without manual export
+export BEADS_DOLT_SERVER_PORT="${BEADS_DOLT_SERVER_PORT:-3307}"
+
 # Flags
 AUTO_CLOSE=false
 JSON_OUTPUT=false

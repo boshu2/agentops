@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# BEADS_DOLT_SERVER_PORT default — allows bd invocations to find the Dolt server without manual export
+export BEADS_DOLT_SERVER_PORT="${BEADS_DOLT_SERVER_PORT:-3307}"
+
 # bd-cluster.sh — Analyze open beads for domain overlap and suggest consolidation groups.
 #
 # Usage: scripts/bd-cluster.sh [--json] [--apply]
