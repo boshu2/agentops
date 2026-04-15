@@ -61,4 +61,4 @@ UNPUSHED=$(git log origin/main..HEAD --oneline 2>/dev/null | wc -l)
 [ "$UNPUSHED" -gt 0 ] && git push
 ```
 
-4. Report summary: cycles, productive/regressed/idle counts, stop reason. Quality mode adds quality score + remaining findings. Pinned queue mode adds queue progress + escalated items.
+4. Report summary: cycles, productive/regressed/idle counts, stop reason. Quality mode adds quality score + remaining findings.
