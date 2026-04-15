@@ -370,6 +370,7 @@ For unattended runs, `bash skills-codex/compile/scripts/compile.sh` supports:
 
 ## Reference Documents
 
+- [references/phases.md](references/phases.md) — full per-phase procedure (mine → grow → compile → lint → defrag → report)
 - [references/confidence-scoring.md](references/confidence-scoring.md)
 - [references/flywheel-diagnostics.md](references/flywheel-diagnostics.md)
 - [references/knowledge-synthesis-patterns.md](references/knowledge-synthesis-patterns.md)
