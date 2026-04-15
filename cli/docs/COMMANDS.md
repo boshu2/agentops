@@ -2129,6 +2129,8 @@ ao compile [flags]
       --mine-only           Only mine new knowledge signal
       --output-dir string   Compiled wiki output directory (default ".agents/compiled")
       --quiet               Suppress human progress output
+      --repair              Remove orphaned fallback stubs from .agents/compiled/ (files with no inbound wikilink traffic)
+      --reset               Delete .agents/compiled/ and .hashes.json before compiling (force full rebuild)
       --runtime string      LLM runtime override for headless compilation (ollama, claude, openai)
       --since string        Mine lookback window for full and mine-only modes (default "26h")
       --sources string      Source .agents root to compile (default ".agents")

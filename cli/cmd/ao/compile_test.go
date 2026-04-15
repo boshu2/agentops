@@ -369,6 +369,89 @@ func TestCompileScriptOptionsPassesBatchFlags(t *testing.T) {
 	}
 }
 
+// TestResetCompileOutput_RemovesDirectory drops a seeded .agents/compiled
+// tree and asserts the directory is gone. Standalone --reset is a complete
+// action (no LLM involved); this test proves that.
+func TestResetCompileOutput_RemovesDirectory(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+	compiled := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(compiled, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"index.md", "auth.md", ".hashes.json"} {
+		if err := os.WriteFile(filepath.Join(compiled, f), []byte("stale"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var out bytes.Buffer
+	if err := resetCompileOutput(tmp, ".agents/compiled", &out); err != nil {
+		t.Fatalf("resetCompileOutput: %v", err)
+	}
+	if _, err := os.Stat(compiled); !os.IsNotExist(err) {
+		t.Errorf("compiled dir should be removed, got err=%v", err)
+	}
+	if !strings.Contains(out.String(), "Compile reset:") {
+		t.Errorf("expected Compile reset message, got %q", out.String())
+	}
+}
+
+// TestResetCompileOutput_IdempotentOnMissingDir guards that --reset does
+// not error when no compiled output exists yet.
+func TestResetCompileOutput_IdempotentOnMissingDir(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+	var out bytes.Buffer
+	if err := resetCompileOutput(tmp, ".agents/compiled", &out); err != nil {
+		t.Fatalf("resetCompileOutput on missing dir should be idempotent: %v", err)
+	}
+}
+
+// TestRepairCompileOutput_RemovesOrphansOnly asserts that --repair removes
+// articles with zero inbound [[wikilinks]] but leaves linked articles and
+// infrastructure files (index/log/lint-report) alone.
+func TestRepairCompileOutput_RemovesOrphansOnly(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+	compiled := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(compiled, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"auth.md":        "# Auth\n\nSee [[rate-limits]] and [[retry-backoff]].",
+		"rate-limits.md": "# Rate Limits\n\nBased on [[auth]].",
+		"orphan.md":      "# Orphan\n\nNo inbound links.",
+		"retry-backoff.md": "# Retry Backoff\n\nTalks about [[auth]].",
+		"index.md":       "Index stub (infrastructure — must stay).",
+		"log.md":         "Log stub (infrastructure).",
+		"lint-report.md": "Lint stub (infrastructure).",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(compiled, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var out bytes.Buffer
+	if err := repairCompileOutput(tmp, ".agents/compiled", &out); err != nil {
+		t.Fatalf("repairCompileOutput: %v", err)
+	}
+	// orphan.md must be gone
+	if _, err := os.Stat(filepath.Join(compiled, "orphan.md")); !os.IsNotExist(err) {
+		t.Errorf("orphan.md should have been removed, got err=%v", err)
+	}
+	// Linked articles + infrastructure must remain
+	for _, name := range []string{"auth.md", "rate-limits.md", "retry-backoff.md", "index.md", "log.md", "lint-report.md"} {
+		if _, err := os.Stat(filepath.Join(compiled, name)); err != nil {
+			t.Errorf("%s should have been preserved, got err=%v", name, err)
+		}
+	}
+	if !strings.Contains(out.String(), "removed 1 orphan") {
+		t.Errorf("expected 'removed 1 orphan' in output, got %q", out.String())
+	}
+}
+
 // ensure unused imports stay referenced if tests shrink
 var _ = json.NewEncoder
 

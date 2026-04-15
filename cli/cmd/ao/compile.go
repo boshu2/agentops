@@ -33,6 +33,8 @@ var (
 	compileQuiet       bool
 	compileBatchSize   int
 	compileMaxBatches  int
+	compileReset       bool
+	compileRepair      bool
 )
 
 var (
@@ -108,12 +110,35 @@ func init() {
 	compileCmd.Flags().BoolVar(&compileQuiet, "quiet", false, "Suppress human progress output")
 	compileCmd.Flags().IntVar(&compileBatchSize, "batch-size", 25, "Max changed files per LLM prompt (prevents single-giant-prompt on large corpora)")
 	compileCmd.Flags().IntVar(&compileMaxBatches, "max-batches", 0, "Cap number of compile batches per invocation (0 = unlimited)")
+	compileCmd.Flags().BoolVar(&compileReset, "reset", false, "Delete .agents/compiled/ and .hashes.json before compiling (force full rebuild)")
+	compileCmd.Flags().BoolVar(&compileRepair, "repair", false, "Remove orphaned fallback stubs from .agents/compiled/ (files with no inbound wikilink traffic)")
 }
 
 func runCompile(cmd *cobra.Command, _ []string) error {
 	cwd, err := resolveProjectDir()
 	if err != nil {
 		return err
+	}
+
+	// --reset and --repair run BEFORE mode resolution so they work
+	// standalone (no LLM runtime needed) and compose with other flags
+	// (e.g. --reset --full rebuilds from scratch).
+	if compileReset {
+		if err := resetCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return fmt.Errorf("compile reset: %w", err)
+		}
+		if !compileFull && !compileOnly && !compileRepair {
+			// standalone --reset is a complete action
+			return nil
+		}
+	}
+	if compileRepair {
+		if err := repairCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return fmt.Errorf("compile repair: %w", err)
+		}
+		if !compileFull && !compileOnly {
+			return nil
+		}
 	}
 
 	mode, err := resolveCompileMode()
@@ -381,6 +406,127 @@ func loadCompileScript(cwd string) ([]byte, error) {
 
 func normalizeShellScript(data []byte) []byte {
 	return []byte(strings.ReplaceAll(string(data), "\r\n", "\n"))
+}
+
+// resetCompileOutput removes the compiled wiki directory and the incremental
+// hash file so the next compile run starts from scratch. Safe to call when
+// the dir does not exist.
+func resetCompileOutput(cwd, outputDir string, stdout io.Writer) error {
+	target := outputDir
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(cwd, target)
+	}
+	if GetDryRun() {
+		fmt.Fprintf(stdout, "[dry-run] would rm -rf %s\n", target)
+		return nil
+	}
+	removed := 0
+	info, err := os.Stat(target)
+	if err == nil && info.IsDir() {
+		entries, _ := os.ReadDir(target)
+		removed = len(entries)
+		if err := os.RemoveAll(target); err != nil {
+			return fmt.Errorf("remove %s: %w", target, err)
+		}
+	} else if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("stat %s: %w", target, err)
+	}
+	if !compileQuiet {
+		fmt.Fprintf(stdout, "Compile reset: removed %s (%d entries)\n", target, removed)
+	}
+	return nil
+}
+
+// repairCompileOutput removes orphaned fallback stubs from the compiled
+// wiki. An orphan is an article file with zero inbound [[wikilinks]] from
+// any other article AND no matching source .md file in .agents/*/. Today's
+// fallback stubs (index.md, log.md, lint-report.md from a failed run) are
+// always preserved — removing those would delete the user's history.
+// Returns the number of files removed.
+func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
+	target := outputDir
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(cwd, target)
+	}
+	entries, err := os.ReadDir(target)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if !compileQuiet {
+				fmt.Fprintf(stdout, "Compile repair: %s does not exist, nothing to do\n", target)
+			}
+			return nil
+		}
+		return fmt.Errorf("read %s: %w", target, err)
+	}
+
+	// Collect candidate articles (skip infrastructure files we never remove).
+	preserved := map[string]bool{
+		"index.md":        true,
+		"log.md":          true,
+		"lint-report.md":  true,
+		".hashes.json":    true,
+	}
+	type article struct {
+		name     string
+		slug     string
+		content  string
+		fullPath string
+	}
+	var articles []article
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		if preserved[e.Name()] {
+			continue
+		}
+		full := filepath.Join(target, e.Name())
+		data, err := os.ReadFile(full)
+		if err != nil {
+			continue
+		}
+		articles = append(articles, article{
+			name:     e.Name(),
+			slug:     strings.TrimSuffix(e.Name(), ".md"),
+			content:  string(data),
+			fullPath: full,
+		})
+	}
+
+	// Build the set of all inbound [[wikilinks]] across the compiled set.
+	inboundCount := make(map[string]int)
+	for _, a := range articles {
+		for _, b := range articles {
+			if a.slug == b.slug {
+				continue
+			}
+			if strings.Contains(b.content, "[["+a.slug+"]]") {
+				inboundCount[a.slug]++
+			}
+		}
+	}
+
+	removed := 0
+	dryRun := GetDryRun()
+	for _, a := range articles {
+		if inboundCount[a.slug] > 0 {
+			continue
+		}
+		if dryRun {
+			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.name)
+			removed++
+			continue
+		}
+		if err := os.Remove(a.fullPath); err != nil {
+			return fmt.Errorf("remove orphan %s: %w", a.name, err)
+		}
+		removed++
+	}
+
+	if !compileQuiet {
+		fmt.Fprintf(stdout, "Compile repair: scanned %d article(s), removed %d orphan(s)\n", len(articles), removed)
+	}
+	return nil
 }
 
 // resolveCompileRuntime picks the LLM runtime for headless compilation in this
