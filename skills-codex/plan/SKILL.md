@@ -412,7 +412,7 @@ If any rule row has an empty Justification column, mark the plan output as **INC
 
 ### Step 5.5: File Dependency Matrix (MANDATORY)
 
-Before writing the plan document, produce an explicit file-level dependency matrix mapping each task to every file it reads or writes. This matrix is the input to the swarm pre-spawn conflict check — without it, handoff to `/swarm` is blocked.
+Before writing the plan document, produce an explicit file-level dependency matrix mapping each task to every file it reads or writes. This matrix is the input to the swarm pre-spawn conflict check — without it, handoff to `$swarm` is blocked.
 
 | Task | File | Access | Notes |
 |------|------|--------|-------|
