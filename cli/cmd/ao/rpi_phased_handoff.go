@@ -351,38 +351,89 @@ func resolveNarrativeCap(manifest phaseManifest) int {
 }
 
 // renderHandoffEntry writes a single phase handoff block to the builder.
+// Each field-specific sub-section is delegated to a dedicated renderer so this
+// function stays a straight-line composition (see .agents/plans/2026-04-15-context-handoff-extract.md).
 func renderHandoffEntry(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest, narrativeCap int) {
+	renderHandoffHeader(sb, h)
+	renderVerdictsSection(sb, h, manifest)
+	renderEpicSection(sb, h, manifest)
+	renderArtifactsSection(sb, h, manifest)
+	renderAppliedFindingsSection(sb, h, manifest)
+	renderPlanningRulesSection(sb, h, manifest)
+	renderKnownRisksSection(sb, h, manifest)
+	renderDecisionsSection(sb, h, manifest)
+	renderOpenRisksSection(sb, h, manifest)
+	renderNarrativeSection(sb, h, narrativeCap)
+	sb.WriteString("\n")
+}
+
+// renderHandoffHeader writes the "[Phase N: name — status (source: ...) in Ns]" line.
+func renderHandoffHeader(sb *strings.Builder, h *phaseHandoff) {
 	fmt.Fprintf(sb, "[Phase %d: %s — %s (source: phase-%d-handoff.json)", h.Phase, h.PhaseName, h.Status, h.Phase)
 	if h.DurationSeconds > 0 {
 		fmt.Fprintf(sb, " in %.0fs", h.DurationSeconds)
 	}
 	sb.WriteString("]\n")
+}
 
+// renderVerdictsSection writes the formatted verdicts map if the "verdicts" field is allowed.
+func renderVerdictsSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "verdicts") {
 		sb.WriteString(formatVerdicts(h.Verdicts))
 	}
+}
+
+// renderEpicSection writes the "Epic: ..." line if the "epic_id" field is allowed.
+func renderEpicSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "epic_id") {
 		sb.WriteString(renderHandoffField("Epic", h.EpicID))
 	}
+}
+
+// renderArtifactsSection writes the "Artifacts: ..." line if the "artifacts_produced" field is allowed.
+func renderArtifactsSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "artifacts_produced") {
 		sb.WriteString(renderHandoffField("Artifacts", h.ArtifactsProduced))
 	}
+}
+
+// renderAppliedFindingsSection writes the "Applied findings: ..." line if the "applied_findings" field is allowed.
+func renderAppliedFindingsSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "applied_findings") {
 		sb.WriteString(renderHandoffField("Applied findings", h.AppliedFindings))
 	}
+}
+
+// renderPlanningRulesSection writes the "Planning rules: ..." line if the "planning_rules" field is allowed.
+func renderPlanningRulesSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "planning_rules") {
 		sb.WriteString(renderHandoffField("Planning rules", h.PlanningRules))
 	}
+}
+
+// renderKnownRisksSection writes the "Known risks: ..." line if the "known_risks" field is allowed.
+func renderKnownRisksSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "known_risks") {
 		sb.WriteString(renderHandoffField("Known risks", h.KnownRisks))
 	}
+}
+
+// renderDecisionsSection writes the "Decisions: ..." line if the "decisions_made" field is allowed.
+func renderDecisionsSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "decisions_made") {
 		sb.WriteString(renderHandoffField("Decisions", h.DecisionsMade))
 	}
+}
+
+// renderOpenRisksSection writes the "Risks: ..." line if the "open_risks" field is allowed.
+func renderOpenRisksSection(sb *strings.Builder, h *phaseHandoff, manifest phaseManifest) {
 	if fieldAllowed(manifest, "open_risks") {
 		sb.WriteString(renderHandoffField("Risks", h.OpenRisks))
 	}
+}
 
+// renderNarrativeSection writes the truncated phase narrative if narrativeCap > 0 and content is present.
+func renderNarrativeSection(sb *strings.Builder, h *phaseHandoff, narrativeCap int) {
 	if narrativeCap > 0 && h.Narrative != "" {
 		narrative := h.Narrative
 		if len(narrative) > narrativeCap {
@@ -390,8 +441,6 @@ func renderHandoffEntry(sb *strings.Builder, h *phaseHandoff, manifest phaseMani
 		}
 		fmt.Fprintf(sb, "Narrative (from phase-%d-summary): %s\n", h.Phase, narrative)
 	}
-
-	sb.WriteString("\n")
 }
 
 // renderDegradationWarnings writes context degradation warnings for handoffs with context loss.
