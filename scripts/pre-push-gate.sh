@@ -702,6 +702,20 @@ if needs_check always; then
     fi
 fi
 
+# --- 26b. Swarm evidence schema validation ---
+if needs_check always; then
+    if [[ -x scripts/validate-swarm-evidence.sh ]]; then
+        if swarm_evidence_output="$(./scripts/validate-swarm-evidence.sh 2>&1)"; then
+            pass "swarm evidence schema"
+        else
+            fail "swarm evidence schema (run: ./scripts/validate-swarm-evidence.sh)"
+            indent_output "$swarm_evidence_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-swarm-evidence.sh"
+    fi
+fi
+
 # --- 27. Hook preflight ---
 if needs_check hook; then
     if [[ -x scripts/validate-hook-preflight.sh ]]; then

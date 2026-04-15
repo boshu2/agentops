@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/boshu2/agentops/schemas/swarm-evidence.schema.json",
+  "title": "Swarm Worker Evidence Result",
+  "description": "Schema for files written by swarm workers to .agents/swarm/results/<task>.json. Workers spawned via /swarm or /crank emit one of these per task. The shape is intentionally permissive: historical results vary widely, and task-specific extension fields are allowed via additionalProperties.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["status"],
+  "properties": {
+    "task": {
+      "type": "string",
+      "description": "Task identifier — usually an issue ID, epic-task slug, or short slug. Either 'task' or 'task_id' is required."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Alternative task identifier field (older convention)."
+    },
+    "issue_id": {
+      "type": "string",
+      "description": "Bead/issue identifier (used by /crank workers spawned per issue)."
+    },
+    "epic": {
+      "type": "string",
+      "description": "Epic identifier (used by epic-level swarm rollups)."
+    },
+    "worker": {
+      "type": "string",
+      "description": "Worker name (used by named-worker results that don't carry a task ID)."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "done",
+        "complete",
+        "completed",
+        "pass",
+        "partial",
+        "failed",
+        "fail",
+        "blocked",
+        "not-applicable",
+        "already-implemented",
+        "research-only",
+        "skipped"
+      ],
+      "description": "Outcome of the task. 'done' and 'pass' indicate full success; 'partial' indicates incomplete; 'failed'/'fail' indicates worker error; 'blocked' indicates upstream dependency missing."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["completion", "blocked", "research", "preflight"],
+      "description": "Optional taxonomy used by /crank for routing. Most workers omit this."
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Repo-relative paths of files the worker created or modified."
+    },
+    "files_created": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Repo-relative paths of files the worker created (subset of files_changed when both present)."
+    },
+    "tests": {
+      "oneOf": [
+        {"type": "string", "enum": ["pass", "fail", "skipped", "skip", "n/a"]},
+        {"type": "object"}
+      ],
+      "description": "Test outcome. Either a short status string or a structured object with details."
+    },
+    "gate": {
+      "type": "string",
+      "enum": ["pass", "fail", "skipped", "skip", "n/a"],
+      "description": "Pre-push gate status (if the worker ran one)."
+    },
+    "before_failures": {"type": "number"},
+    "after_failures": {"type": "number"},
+    "evidence": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "object"}
+      ],
+      "description": "Either a freeform string description of evidence, or a structured object containing required_checks (array) and checks (object map of check_name -> {verdict: PASS|FAIL|SKIP, ...})."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Paths to artifacts produced (plans, reports, generated files)."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Freeform narrative explaining what was done, why, and any caveats."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short one-line summary of outcome (alternative to notes for terse results)."
+    }
+  }
+}

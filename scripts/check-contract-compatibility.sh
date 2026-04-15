@@ -182,8 +182,8 @@ for md in "$CONTRACTS_DIR"/*.md; do
   basename="$(basename "$md")"
   while IFS= read -r ref; do
     [[ -z "$ref" ]] && continue
-    # Try resolving relative to contracts dir, then relative to docs/, then repo root
-    if [[ -f "$CONTRACTS_DIR/$ref" ]] || [[ -f "$ROOT/docs/$ref" ]] || [[ -f "$ROOT/$ref" ]]; then
+    # Try resolving relative to contracts dir, then docs/, repo root, then schemas/
+    if [[ -f "$CONTRACTS_DIR/$ref" ]] || [[ -f "$ROOT/docs/$ref" ]] || [[ -f "$ROOT/$ref" ]] || [[ -f "$ROOT/schemas/$ref" ]]; then
       pass "$basename -> $ref"
     else
       fail "$basename references $ref but file not found"

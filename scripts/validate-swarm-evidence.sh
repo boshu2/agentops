@@ -90,6 +90,53 @@ fi
 ERRORS=0
 WARNINGS=0
 
+# ---------------------------------------------------------------------------
+# Schema shape validation (schemas/swarm-evidence.schema.json)
+# Applies to ALL result files (not just completion-typed). Required fields:
+#   - status (one of the documented enum values)
+#   - task OR task_id (at least one)
+# Optional ajv validation runs if ajv is installed; jq fallback otherwise.
+# ---------------------------------------------------------------------------
+
+# Verify file is valid JSON
+if ! jq empty "$RESULT_FILE" >/dev/null 2>&1; then
+    echo "FAIL: $RESULT_FILE is not valid JSON"
+    exit 1
+fi
+
+# Recommended (warn-only): at least one identifier field. Filename is the
+# canonical identifier so missing in-file ID is a soft failure to preserve
+# historical evidence. New workers should set 'task'.
+HAS_TASK=$(jq -e 'has("task") or has("task_id") or has("issue_id") or has("epic") or has("worker") or has("name")' "$RESULT_FILE" >/dev/null 2>&1 && echo "yes" || echo "no")
+if [[ "$HAS_TASK" == "no" ]]; then
+    echo "WARN: no identifier field (task/task_id/issue_id/epic/worker/name) — filename serves as ID"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# Required: status with valid enum
+RAW_STATUS=$(jq -r '.status // ""' "$RESULT_FILE")
+if [[ -z "$RAW_STATUS" ]]; then
+    echo "FAIL: missing required field 'status'"
+    ERRORS=$((ERRORS + 1))
+else
+    case "$RAW_STATUS" in
+        done|complete|completed|pass|partial|failed|fail|blocked|not-applicable|already-implemented|research-only|skipped) ;;
+        *)
+            echo "FAIL: status '$RAW_STATUS' not in allowed enum (done|complete|completed|pass|partial|failed|fail|blocked|not-applicable|already-implemented|research-only|skipped)"
+            ERRORS=$((ERRORS + 1))
+            ;;
+    esac
+fi
+
+# Optional ajv-based full schema check (graceful fallback)
+SCHEMA_PATH="$(dirname "$0")/../schemas/swarm-evidence.schema.json"
+if [[ -f "$SCHEMA_PATH" ]] && command -v ajv >/dev/null 2>&1; then
+    if ! ajv validate -s "$SCHEMA_PATH" -d "$RESULT_FILE" >/dev/null 2>&1; then
+        echo "WARN: ajv schema validation failed for $RESULT_FILE (run 'ajv validate -s $SCHEMA_PATH -d $RESULT_FILE' for details)"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+fi
+
 # Parse result
 TYPE=$(jq -r '.type // "unknown"' "$RESULT_FILE")
 STATUS=$(jq -r '.status // "unknown"' "$RESULT_FILE")
