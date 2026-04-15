@@ -5,6 +5,12 @@
 > `skills/knowledge-activation/SKILL.md`, `skills/quickstart/SKILL.md`,
 > and their `skills-codex/` mirrors.
 
+## Decision-Tree Naming Convention
+
+Decision-tree docs follow `{subject}-decision-tree.md` (e.g., `skills-decision-tree.md`, `workflow-decision-tree.md`).
+
+Rationale: groups by subject alphabetically in file listings; matches the existing `docs/skills-decision-tree.md`; keeps `decision-tree` as a suffix tag rather than a noisy prefix duplicated across many files.
+
 ## Global corpus flow (new users with `~/.agents/`)
 
 1. **`$harvest`** — gather artifacts from many `.agents/` directories
