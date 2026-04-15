@@ -559,6 +559,14 @@ jobs:
           go tool cover -func=coverage.out | tail -1
           echo "✅ Go tests passed"
 
+      - name: Enforce cmd/ao coverage floor
+        run: |
+          echo "=== Enforcing cli/cmd/ao coverage floor ==="
+          # Ratchet target: 85% (source epic evolve-cycle-6-coverage-85pct).
+          # Current floor is set in scripts/check-cmd-ao-coverage.sh; bump it
+          # one whole percent each time real coverage rises.
+          bash scripts/check-cmd-ao-coverage.sh --profile cli/coverage.out
+
       - name: Diff post-test ~/.agents content hash snapshot
         if: always()
         run: |
