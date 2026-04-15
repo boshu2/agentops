@@ -269,6 +269,7 @@ func ParseNextWorkEntryLine(line string) (NextWorkEntry, error) {
 
 	if len(entry.Items) == 0 && HasLegacyFlatNextWorkItem(entry) {
 		entry.Items = []NextWorkItem{{
+			ID:          entry.LegacyID,
 			Title:       entry.Title,
 			Type:        entry.Type,
 			Severity:    entry.Severity,
@@ -330,4 +331,3 @@ func QueueProofTargetIDs(sel *QueueSelection) []string {
 
 	return candidates
 }
-

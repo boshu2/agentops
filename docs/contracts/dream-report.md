@@ -68,6 +68,7 @@ These may be embedded when available:
 - `metrics_health`
 - `retrieval_live`
 - `briefing`
+- `morning_packets`
 - `council`
 - `dreamscape`
 - `degraded`
@@ -91,6 +92,7 @@ Minimum sections:
 - DreamScape, when available
 - terrain or health section
 - what ran
+- morning packets, when available
 - Dream Council, when available
 - degraded, when applicable
 - first move
@@ -104,6 +106,7 @@ Future consumers of this contract:
 - Dream Setup validation
 - Dream Council synthesis
 - DreamScape terrain visualization
+- morning queue/bead handoff layers
 
 Those layers must extend the report additively instead of replacing these fields.
 
@@ -125,6 +128,25 @@ Schema v2 (2026-04-09) introduces the compounding iteration loop. It is **additi
 | `fitness_delta` | object | `{"composite": 0.042, "retrieval_bench": 0.018}` | Composite delta across all iterations (final minus initial) |
 | `plateau_reason` | string | `"2 consecutive iterations below epsilon 0.01"` | Present iff halted on plateau |
 | `regression_reason` | string | `"retrieval_bench dropped 0.08 below floor 0.05"` | Present iff halted on regression |
+| `morning_packets` | array of MorningPacket | `[{...}, {...}]` | Ranked executable morning work packets emitted from Dream's queue/fallback synthesis |
+
+### MorningPacket Shape
+
+| Field | Type | Example | Meaning |
+|-------|------|---------|---------|
+| `id` | string | `"dream-0d9fa4d5f2e0d7a1"` | Stable packet ID for queue and bead dedupe |
+| `rank` | int | `1` | 1-based priority rank within this Dream run |
+| `title` | string | `"Repair Dream retrieval coverage"` | Human title for the packet |
+| `type` | string | `"bug"` | Queue/work type used for morning routing |
+| `severity` | string | `"high"` | Priority signal reused from next-work semantics |
+| `confidence` | string | `"high"` | Dream's confidence in the packet |
+| `why_now` | string | `"Dream ranked this..."` | Short reason this packet surfaced now |
+| `evidence` | array of strings | `["retrieval coverage=0.33"]` | Concrete supporting evidence |
+| `target_files` | array of strings | `["cli/cmd/ao/overnight.go"]` | Candidate files to inspect first |
+| `likely_tests` | array of strings | `["cli/cmd/ao/overnight_test.go"]` | Likely tests to run or extend |
+| `morning_command` | string | `"ao rpi phased \"Repair Dream retrieval coverage\""` | Exact morning execution command |
+| `bead_id` | string | `"na-1234"` | Linked bead when bd sync succeeds |
+| `artifact_path` | string | `".../morning-packets/01-....json"` | Per-packet artifact path |
 
 ### IterationSummary Shape
 

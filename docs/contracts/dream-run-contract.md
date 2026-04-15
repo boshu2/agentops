@@ -15,6 +15,7 @@ V1 covers:
 - local setup guidance with honest scheduler assistance artifacts
 - local-first overnight runs against the real repo-local `.agents` corpus
 - machine-readable and markdown morning summaries
+- ranked executable morning packets synced into next-work and beads when possible
 - optional multimodel Dream Council synthesis over bounded runner reports
 - built-in DreamScape terrain rendering inside the report
 - explicit process supervision and lock behavior
@@ -97,6 +98,8 @@ The first slice runs these steps in order:
 6. optional: Dream Council packet generation
 7. optional: one bounded runner pass per configured Dream runner
 8. optional: Dream Council synthesis
+9. Dream morning packet synthesis
+10. best-effort bead sync for emitted packets
 
 Hard-fail steps:
 
@@ -110,6 +113,7 @@ Soft-fail steps:
 - knowledge brief
 - Dream Council runner execution
 - Dream Council synthesis when no runner completes
+- bead sync when `bd` is unavailable or a packet update fails
 
 Soft failures must degrade the report, not delete it.
 
@@ -151,6 +155,9 @@ Required artifacts:
 - `<output-dir>/metrics-health.json`
 - `<output-dir>/retrieval-bench.json` when live retrieval succeeds
 - `<output-dir>/briefing.json` when a goal briefing succeeds
+- `<output-dir>/morning-packets/index.json`
+- `<output-dir>/morning-packets/index.md`
+- `<output-dir>/morning-packets/<rank>-<slug>-<id>.json` for each emitted packet
 - `<output-dir>/council/packet.json` when Dream Council is configured
 - `<output-dir>/council/<runner>.json` for each successful Dream Council runner
 - `<output-dir>/council/synthesis.json` when Dream Council synthesis succeeds

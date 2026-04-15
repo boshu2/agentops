@@ -52,6 +52,7 @@ type NextWorkProofRef struct {
 
 // NextWorkItem represents a single harvested work item.
 type NextWorkItem struct {
+	ID          string            `json:"id,omitempty"`
 	Title       string            `json:"title"`
 	Type        string            `json:"type"`
 	Severity    string            `json:"severity"`
@@ -59,7 +60,17 @@ type NextWorkItem struct {
 	Description string            `json:"description"`
 	Evidence    string            `json:"evidence,omitempty"`
 	TargetRepo  string            `json:"target_repo,omitempty"`
+	File        string            `json:"file,omitempty"`
+	Func        string            `json:"func,omitempty"`
+	SourcePath  string            `json:"source_path,omitempty"`
 	ProofRef    *NextWorkProofRef `json:"proof_ref,omitempty"`
+	Confidence  string            `json:"confidence,omitempty"`
+	WhyNow      string            `json:"why_now,omitempty"`
+	TargetFiles []string          `json:"target_files,omitempty"`
+	LikelyTests []string          `json:"likely_tests,omitempty"`
+	MorningCmd  string            `json:"morning_command,omitempty"`
+	PacketPath  string            `json:"packet_path,omitempty"`
+	BeadID      string            `json:"bead_id,omitempty"`
 	Consumed    bool              `json:"consumed,omitempty"`
 	ClaimStatus string            `json:"claim_status,omitempty"`
 	ClaimedBy   *string           `json:"claimed_by,omitempty"`

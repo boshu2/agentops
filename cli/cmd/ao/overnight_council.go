@@ -533,7 +533,7 @@ func buildDreamscape(summary overnightSummary) overnightDreamscape {
 		case len(summary.Council.CompletedRunners) > 0:
 			scape.Council = "single-voice"
 		}
-		if summary.Council.RecommendedFirstAction != "" {
+		if summary.Council.RecommendedFirstAction != "" && len(summary.MorningPackets) == 0 {
 			scape.FirstMove = summary.Council.RecommendedFirstAction
 		}
 	}

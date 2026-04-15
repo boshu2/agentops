@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -85,29 +84,30 @@ type overnightStepSummary struct {
 }
 
 type overnightSummary struct {
-	SchemaVersion int                      `json:"schema_version" yaml:"schema_version"`
-	Mode          string                   `json:"mode" yaml:"mode"`
-	RunID         string                   `json:"run_id" yaml:"run_id"`
-	Goal          string                   `json:"goal,omitempty" yaml:"goal,omitempty"`
-	RepoRoot      string                   `json:"repo_root" yaml:"repo_root"`
-	OutputDir     string                   `json:"output_dir" yaml:"output_dir"`
-	Status        string                   `json:"status" yaml:"status"`
-	DryRun        bool                     `json:"dry_run" yaml:"dry_run"`
-	StartedAt     string                   `json:"started_at" yaml:"started_at"`
-	FinishedAt    string                   `json:"finished_at,omitempty" yaml:"finished_at,omitempty"`
-	Duration      string                   `json:"duration,omitempty" yaml:"duration,omitempty"`
-	Runtime       overnightRuntimeSummary  `json:"runtime" yaml:"runtime"`
-	Steps         []overnightStepSummary   `json:"steps" yaml:"steps"`
-	Artifacts     map[string]string        `json:"artifacts,omitempty" yaml:"artifacts,omitempty"`
-	MetricsHealth map[string]any           `json:"metrics_health,omitempty" yaml:"metrics_health,omitempty"`
-	RetrievalLive map[string]any           `json:"retrieval_live,omitempty" yaml:"retrieval_live,omitempty"`
-	CloseLoop     map[string]any           `json:"close_loop,omitempty" yaml:"close_loop,omitempty"`
-	Briefing      map[string]any           `json:"briefing,omitempty" yaml:"briefing,omitempty"`
-	Council       *overnightCouncilSummary `json:"council,omitempty" yaml:"council,omitempty"`
-	Dreamscape    *overnightDreamscape     `json:"dreamscape,omitempty" yaml:"dreamscape,omitempty"`
-	Degraded      []string                 `json:"degraded,omitempty" yaml:"degraded,omitempty"`
-	Recommended   []string                 `json:"recommended,omitempty" yaml:"recommended,omitempty"`
-	NextAction    string                   `json:"next_action,omitempty" yaml:"next_action,omitempty"`
+	SchemaVersion  int                      `json:"schema_version" yaml:"schema_version"`
+	Mode           string                   `json:"mode" yaml:"mode"`
+	RunID          string                   `json:"run_id" yaml:"run_id"`
+	Goal           string                   `json:"goal,omitempty" yaml:"goal,omitempty"`
+	RepoRoot       string                   `json:"repo_root" yaml:"repo_root"`
+	OutputDir      string                   `json:"output_dir" yaml:"output_dir"`
+	Status         string                   `json:"status" yaml:"status"`
+	DryRun         bool                     `json:"dry_run" yaml:"dry_run"`
+	StartedAt      string                   `json:"started_at" yaml:"started_at"`
+	FinishedAt     string                   `json:"finished_at,omitempty" yaml:"finished_at,omitempty"`
+	Duration       string                   `json:"duration,omitempty" yaml:"duration,omitempty"`
+	Runtime        overnightRuntimeSummary  `json:"runtime" yaml:"runtime"`
+	Steps          []overnightStepSummary   `json:"steps" yaml:"steps"`
+	Artifacts      map[string]string        `json:"artifacts,omitempty" yaml:"artifacts,omitempty"`
+	MetricsHealth  map[string]any           `json:"metrics_health,omitempty" yaml:"metrics_health,omitempty"`
+	RetrievalLive  map[string]any           `json:"retrieval_live,omitempty" yaml:"retrieval_live,omitempty"`
+	CloseLoop      map[string]any           `json:"close_loop,omitempty" yaml:"close_loop,omitempty"`
+	Briefing       map[string]any           `json:"briefing,omitempty" yaml:"briefing,omitempty"`
+	Council        *overnightCouncilSummary `json:"council,omitempty" yaml:"council,omitempty"`
+	Dreamscape     *overnightDreamscape     `json:"dreamscape,omitempty" yaml:"dreamscape,omitempty"`
+	MorningPackets []overnightMorningPacket `json:"morning_packets,omitempty" yaml:"morning_packets,omitempty"`
+	Degraded       []string                 `json:"degraded,omitempty" yaml:"degraded,omitempty"`
+	Recommended    []string                 `json:"recommended,omitempty" yaml:"recommended,omitempty"`
+	NextAction     string                   `json:"next_action,omitempty" yaml:"next_action,omitempty"`
 
 	// Dream-report schema v2 fields. These are populated by the nightly
 	// compounder RunLoop (cli/internal/overnight) when v2 mode is active.
@@ -335,6 +335,7 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 	if err := runDreamCouncil(ctx, cwd, logFile, &summary, settings); err != nil {
 		return err
 	}
+	executeDreamMorningPackets(cwd, &summary)
 
 	summary.Status = "done"
 	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
@@ -371,12 +372,14 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 			{Name: "retrieval-live", Status: "pending", Command: "ao retrieval-bench --live --json"},
 		},
 		Artifacts: map[string]string{
-			"close_loop":       filepath.Join(settings.OutputDir, "close-loop.json"),
-			"defrag_report":    filepath.Join(settings.OutputDir, "defrag", "latest.json"),
-			"metrics_health":   filepath.Join(settings.OutputDir, "metrics-health.json"),
-			"retrieval_live":   filepath.Join(settings.OutputDir, "retrieval-bench.json"),
-			"summary_json":     filepath.Join(settings.OutputDir, "summary.json"),
-			"summary_markdown": filepath.Join(settings.OutputDir, "summary.md"),
+			"close_loop":               filepath.Join(settings.OutputDir, "close-loop.json"),
+			"defrag_report":            filepath.Join(settings.OutputDir, "defrag", "latest.json"),
+			"metrics_health":           filepath.Join(settings.OutputDir, "metrics-health.json"),
+			"retrieval_live":           filepath.Join(settings.OutputDir, "retrieval-bench.json"),
+			"morning_packets_json":     filepath.Join(settings.OutputDir, "morning-packets", "index.json"),
+			"morning_packets_markdown": filepath.Join(settings.OutputDir, "morning-packets", "index.md"),
+			"summary_json":             filepath.Join(settings.OutputDir, "summary.json"),
+			"summary_markdown":         filepath.Join(settings.OutputDir, "summary.md"),
 		},
 	}
 	if summary.Goal != "" {
@@ -387,6 +390,19 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 		})
 		summary.Artifacts["briefing"] = filepath.Join(settings.OutputDir, "briefing.json")
 	}
+	summary.Steps = append(summary.Steps,
+		overnightStepSummary{
+			Name:     "morning-packets",
+			Status:   "pending",
+			Command:  "Dream morning packet synthesis",
+			Artifact: summary.Artifacts["morning_packets_json"],
+		},
+		overnightStepSummary{
+			Name:    "bead-sync",
+			Status:  "pending",
+			Command: "bd create/update linked Dream morning packets",
+		},
+	)
 	appendDreamCouncilPlan(&summary, settings)
 	return summary
 }
@@ -1017,6 +1033,7 @@ func renderOvernightSummaryMarkdown(summary overnightSummary) string {
 	appendDreamscapeSection(&b, summary.Dreamscape)
 	appendDreamTerrainSection(&b, summary)
 	appendDreamStepsSection(&b, summary.Steps)
+	appendDreamMorningPacketsSection(&b, summary.MorningPackets)
 	appendDreamCouncilSection(&b, summary.Council)
 	appendDreamListSection(&b, "Degraded", summary.Degraded, false)
 	appendDreamListSection(&b, "First Move", nonEmptySlice(summary.NextAction), false)
@@ -1152,22 +1169,45 @@ func nonEmptySlice(value string) []string {
 }
 
 func recommendedDreamCommands(summary overnightSummary) []string {
-	recommended := []string{
-		fmt.Sprintf("ao overnight report --from %q", summary.OutputDir),
+	recommended := make([]string, 0, len(summary.MorningPackets)+3)
+	appendUnique := func(value string) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return
+		}
+		for _, existing := range recommended {
+			if existing == value {
+				return
+			}
+		}
+		recommended = append(recommended, value)
 	}
+	for _, packet := range summary.MorningPackets {
+		appendUnique(packet.MorningCommand)
+		if packet.BeadID != "" {
+			appendUnique(fmt.Sprintf("bd show %s", packet.BeadID))
+		}
+	}
+	appendUnique(fmt.Sprintf("ao overnight report --from %q", summary.OutputDir))
 	if summary.Goal != "" {
-		recommended = append(recommended, fmt.Sprintf("ao rpi phased %q", summary.Goal))
+		appendUnique(fmt.Sprintf("ao rpi phased %q", summary.Goal))
 	}
 	if summary.Artifacts != nil {
 		if path := summary.Artifacts["summary_json"]; path != "" {
-			recommended = append(recommended, fmt.Sprintf("cat %q", path))
+			appendUnique(fmt.Sprintf("cat %q", path))
 		}
 	}
-	sort.Strings(recommended)
 	return recommended
 }
 
 func deriveDreamNextAction(summary overnightSummary) string {
+	if len(summary.MorningPackets) > 0 {
+		packet := summary.MorningPackets[0]
+		if packet.BeadID != "" {
+			return fmt.Sprintf("Start with %q (%s): `%s`.", packet.Title, packet.BeadID, packet.MorningCommand)
+		}
+		return fmt.Sprintf("Start with %q: `%s`.", packet.Title, packet.MorningCommand)
+	}
 	if summary.Council != nil && strings.TrimSpace(summary.Council.RecommendedFirstAction) != "" {
 		return summary.Council.RecommendedFirstAction
 	}
