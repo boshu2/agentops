@@ -12,7 +12,6 @@ if [[ -f "${SCRIPT_DIR}/../lib/colors.sh" ]]; then
     # shellcheck disable=SC1091
     source "${SCRIPT_DIR}/../lib/colors.sh"
 else
-    RED=""; GREEN=""; NC=""
     log() { echo "$@"; }
     pass() { echo "  PASS  $1"; }
 fi
@@ -36,7 +35,7 @@ grep -q "AGENTOPS_LEAD_ONLY_GUARD_DISABLED" "$HOOK" && pass "Has local kill swit
 # Run the hook in a clean cwd so the .agents/swarm-role check doesn't fire.
 TMPDIR_TEST=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
-cd "$TMPDIR_TEST"
+cd "$TMPDIR_TEST" || exit 1
 
 run_hook() {
     # $1 = JSON stdin payload, remaining args = env assignments
