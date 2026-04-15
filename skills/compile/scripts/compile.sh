@@ -316,7 +316,9 @@ Rules:
 - Include a Related section with [[links]] to related topics
 - Write synthesis, not summaries — connect insights across sources
 - Use YAML frontmatter with title, compiled date, sources list, and tags
-- Article filenames should be kebab-case topic slugs (e.g., testing-strategy.md)"
+- Article filenames should be kebab-case topic slugs (e.g., testing-strategy.md)
+
+IMPORTANT: Do NOT wrap your output in markdown code fences (\`\`\`). Output raw article content directly after each === ARTICLE: marker."
 
   local user_prompt="Compile the following raw knowledge artifacts into wiki articles. Output each article separated by '=== ARTICLE: <filename> ===' markers.
 
@@ -336,6 +338,7 @@ After all articles, output:
   # Parse result into individual files
   local current_file=""
   local current_content=""
+  local written_count=0
 
   while IFS= read -r line; do
     if [[ "$line" =~ ^===\ ARTICLE:\ (.+)\ ===$ ]]; then
@@ -343,6 +346,7 @@ After all articles, output:
       if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
         echo "$current_content" > "$OUTPUT_DIR/$current_file"
         echo "Compiled: $current_file" >&2
+        written_count=$((written_count + 1))
       fi
       current_file=$(basename "${BASH_REMATCH[1]}")
       current_content=""
@@ -351,9 +355,14 @@ After all articles, output:
       if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
         echo "$current_content" > "$OUTPUT_DIR/$current_file"
         echo "Compiled: $current_file" >&2
+        written_count=$((written_count + 1))
       fi
       current_file="index.md"
       current_content=""
+    elif [[ "$line" =~ ^[[:space:]]*\`\`\`(markdown)?[[:space:]]*$ ]]; then
+      # Defense-in-depth: skip opening/closing markdown code fences that
+      # some LLM runtimes (notably `claude -p`) wrap around the response.
+      continue
     else
       current_content+="$line
 "
@@ -364,10 +373,19 @@ After all articles, output:
   if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
     echo "$current_content" > "$OUTPUT_DIR/$current_file"
     echo "Compiled: $current_file" >&2
+    written_count=$((written_count + 1))
   fi
 
-  # Update hashes
-  save_hashes "${changed_files[@]}"
+  # Only persist hashes if this batch actually produced output. If the LLM
+  # returned a malformed/empty response (or the batch was otherwise lost),
+  # leave the input files' hashes alone so they get retried on the next run.
+  # This is the Task A fix: files scheduled but not compiled must NOT have
+  # their hashes saved, otherwise they are silently stranded forever.
+  if [[ $written_count -gt 0 ]]; then
+    save_hashes "${changed_files[@]}"
+  else
+    echo "WARN: batch produced no articles; skipping hash persistence for ${#changed_files[@]} input file(s) so they retry next run." >&2
+  fi
 
   # Append to log
   local article_count
