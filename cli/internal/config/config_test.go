@@ -1,6 +1,8 @@
 package config
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -654,12 +656,92 @@ func TestLoadFromPath_InvalidYAML(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Swallow stderr for this test so the Warning doesn't pollute test output.
+	origStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
 	cfg, err := loadFromPath(configPath)
+
+	_ = w.Close()
+	os.Stderr = origStderr
+	_, _ = io.Copy(io.Discard, r)
+	_ = r.Close()
+
 	if err == nil {
 		t.Error("loadFromPath for invalid YAML should return error")
 	}
 	if cfg != nil {
 		t.Error("loadFromPath for invalid YAML should return nil config")
+	}
+}
+
+// TestLoadConfig_SurfacesYAMLErrorToStderr verifies that when a config file
+// exists but has invalid YAML, the loader prints a clear warning to stderr
+// (including the path and the underlying error) BEFORE falling back to
+// defaults. This gives users visibility into silently broken configs.
+func TestLoadConfig_SurfacesYAMLErrorToStderr(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "broken.yaml")
+
+	// Invalid YAML: unclosed flow sequence.
+	content := "foo: [unclosed\n"
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatalf("write temp config: %v", err)
+	}
+
+	// Redirect stderr to capture the warning.
+	origStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stderr = w
+
+	// Drive the loader via the public Load() entry point with a project
+	// config override so we exercise the fallback path (file exists,
+	// yaml.Unmarshal fails, warning printed, auto-detect/defaults applied).
+	t.Setenv("AGENTOPS_CONFIG", configPath)
+	// Isolate from any ambient home config so the fallback path yields
+	// stable, defaulted values.
+	t.Setenv("HOME", tmpDir)
+
+	cfg, loadErr := Load(nil)
+
+	_ = w.Close()
+	os.Stderr = origStderr
+
+	if loadErr != nil {
+		t.Fatalf("Load should not fail when project config has invalid YAML; got: %v", loadErr)
+	}
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("read captured stderr: %v", err)
+	}
+	_ = r.Close()
+
+	stderr := buf.String()
+
+	if !strings.Contains(stderr, configPath) {
+		t.Errorf("stderr should contain config path %q; got:\n%s", configPath, stderr)
+	}
+	if !strings.Contains(stderr, "invalid YAML") {
+		t.Errorf("stderr should contain %q marker; got:\n%s", "invalid YAML", stderr)
+	}
+	if !strings.Contains(stderr, "Warning:") {
+		t.Errorf("stderr should start warning with %q; got:\n%s", "Warning:", stderr)
+	}
+
+	// Returned config must still be usable (defaults applied).
+	if cfg == nil {
+		t.Fatal("Load should return a non-nil config even when YAML is invalid")
+	}
+	if cfg.Output != "table" {
+		t.Errorf("expected fallback default Output=%q, got %q", "table", cfg.Output)
+	}
+	if cfg.BaseDir != ".agents/ao" {
+		t.Errorf("expected fallback default BaseDir=%q, got %q", ".agents/ao", cfg.BaseDir)
 	}
 }
 

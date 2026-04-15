@@ -427,6 +427,12 @@ func loadFromPath(path string) (*Config, error) {
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		// File exists but has invalid YAML. Surface the error to stderr so
+		// users don't silently fall through to auto-detect defaults, then
+		// return the error so callers can decide whether to continue. The
+		// two loader entry points (loadHomeConfig/loadProjectConfig) discard
+		// the error and fall back, preserving backward compat.
+		fmt.Fprintf(os.Stderr, "Warning: invalid YAML in %s: %v\n", path, err)
 		return nil, err
 	}
 
