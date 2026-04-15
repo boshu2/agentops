@@ -47,6 +47,26 @@ type Config struct {
 
 	// Dream settings for private overnight runs.
 	Dream DreamConfig `yaml:"dream" json:"dream"`
+
+	// Compile settings for ao compile headless runtime preference.
+	Compile CompileConfig `yaml:"compile" json:"compile"`
+}
+
+// CompileConfig holds ao compile runtime preferences.
+type CompileConfig struct {
+	// PreferredRuntime overrides the auto-detect runtime selection.
+	// When set, ao compile uses this value instead of auto-detecting a
+	// local `claude` binary. Useful for users who want to run Ollama
+	// even when Claude Code is installed. Accepted values: "claude-cli",
+	// "ollama", "claude", "openai", or empty (use auto-detect).
+	//
+	// Precedence (high → low):
+	//   1. --runtime flag
+	//   2. AGENTOPS_COMPILE_RUNTIME env var
+	//   3. compile.preferred_runtime in ~/.agentops/config.yaml
+	//   4. auto-detect (claude binary on PATH → claude-cli)
+	//   5. empty (preflight will fail with an actionable error)
+	PreferredRuntime string `yaml:"preferred_runtime" json:"preferred_runtime"`
 }
 
 // RPIConfig holds RPI-specific settings.

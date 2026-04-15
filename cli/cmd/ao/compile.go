@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/embedded"
+	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
 	"github.com/spf13/cobra"
@@ -529,19 +530,33 @@ func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 	return nil
 }
 
+// loadCompileConfigFn is a seam for tests to stub config loading.
+var loadCompileConfigFn = func() (string, error) {
+	cfg, err := config.Load(nil)
+	if err != nil || cfg == nil {
+		return "", err
+	}
+	return cfg.Compile.PreferredRuntime, nil
+}
+
 // resolveCompileRuntime picks the LLM runtime for headless compilation in this
 // order of precedence:
 //  1. explicit --runtime flag
 //  2. AGENTOPS_COMPILE_RUNTIME env var
-//  3. auto-detect: if 'claude' binary is on PATH, use claude-cli (no API key
-//     required — inherits the user's Claude Code auth)
-//  4. empty (preflight will fail with an actionable error)
+//  3. compile.preferred_runtime in ~/.agentops/config.yaml or
+//     .agents/config.yaml (so privacy-preferring users can force Ollama
+//     even when `claude` is installed)
+//  4. auto-detect: if 'claude' binary is on PATH, use claude-cli
+//  5. empty (preflight will fail with an actionable error)
 func resolveCompileRuntime(flagValue string) string {
 	if v := strings.TrimSpace(flagValue); v != "" {
 		return v
 	}
 	if v := strings.TrimSpace(os.Getenv("AGENTOPS_COMPILE_RUNTIME")); v != "" {
 		return v
+	}
+	if v, _ := loadCompileConfigFn(); strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v)
 	}
 	// Auto-detect local Claude Code CLI as a zero-config backend.
 	if _, err := lookPathFn("claude"); err == nil {

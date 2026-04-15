@@ -63,6 +63,21 @@ absent, headless compile fails fast with an explicit error naming the env var
 to set. Interactive `/compile` invocations still run compilation prompts
 inline — the agent reading this SKILL.md IS the compiler.
 
+### Runtime preference (override auto-detect)
+
+To force a non-auto-detected runtime permanently (e.g. you have `claude`
+installed but prefer Ollama for privacy), set it in
+`~/.agentops/config.yaml`:
+
+```yaml
+compile:
+  preferred_runtime: ollama
+```
+
+Precedence (high → low): `--runtime` flag, `AGENTOPS_COMPILE_RUNTIME`
+env, `compile.preferred_runtime` config, `claude`-binary auto-detect,
+empty (error).
+
 ### Large-corpus batching
 
 `ao compile` passes `--batch-size` to the headless compiler (default `25`

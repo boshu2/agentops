@@ -199,28 +199,51 @@ func TestMaterializeCompileScriptFallsBackToEmbedded(t *testing.T) {
 func TestResolveCompileRuntime(t *testing.T) {
 	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "")
 	origLookPath := lookPathFn
-	t.Cleanup(func() { lookPathFn = origLookPath })
+	origLoadCfg := loadCompileConfigFn
+	t.Cleanup(func() {
+		lookPathFn = origLookPath
+		loadCompileConfigFn = origLoadCfg
+	})
+	// Default: empty config (no preferred runtime). Tests override this.
+	loadCompileConfigFn = func() (string, error) { return "", nil }
 
-	// flag wins
+	// flag wins over everything
 	lookPathFn = func(string) (string, error) { return "", os.ErrNotExist }
-	if got := resolveCompileRuntime("ollama"); got != "ollama" {
-		t.Fatalf("flag override: got %q want ollama", got)
+	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "ollama")
+	loadCompileConfigFn = func() (string, error) { return "openai", nil }
+	if got := resolveCompileRuntime("claude"); got != "claude" {
+		t.Fatalf("flag override: got %q want claude", got)
 	}
 
-	// env wins over auto-detect
+	// env wins over config file + auto-detect
 	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "openai")
-	if got := resolveCompileRuntime(""); got != "openai" {
-		t.Fatalf("env var: got %q want openai", got)
-	}
-
-	// auto-detect claude-cli when claude binary is present and nothing set
-	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "")
+	loadCompileConfigFn = func() (string, error) { return "claude-cli", nil }
 	lookPathFn = func(name string) (string, error) {
 		if name == "claude" {
 			return "/usr/local/bin/claude", nil
 		}
 		return "", os.ErrNotExist
 	}
+	if got := resolveCompileRuntime(""); got != "openai" {
+		t.Fatalf("env var precedence: got %q want openai", got)
+	}
+
+	// config file wins over auto-detect (na-pmx1.9 core case: user has claude
+	// installed but prefers ollama for privacy)
+	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "")
+	loadCompileConfigFn = func() (string, error) { return "ollama", nil }
+	lookPathFn = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/local/bin/claude", nil
+		}
+		return "", os.ErrNotExist
+	}
+	if got := resolveCompileRuntime(""); got != "ollama" {
+		t.Fatalf("config file precedence: got %q want ollama", got)
+	}
+
+	// auto-detect claude-cli when claude binary is present and nothing else set
+	loadCompileConfigFn = func() (string, error) { return "", nil }
 	if got := resolveCompileRuntime(""); got != "claude-cli" {
 		t.Fatalf("auto-detect: got %q want claude-cli", got)
 	}
@@ -229,6 +252,18 @@ func TestResolveCompileRuntime(t *testing.T) {
 	lookPathFn = func(string) (string, error) { return "", os.ErrNotExist }
 	if got := resolveCompileRuntime(""); got != "" {
 		t.Fatalf("no config: got %q want empty", got)
+	}
+
+	// config load error falls through to auto-detect gracefully
+	loadCompileConfigFn = func() (string, error) { return "", os.ErrNotExist }
+	lookPathFn = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/local/bin/claude", nil
+		}
+		return "", os.ErrNotExist
+	}
+	if got := resolveCompileRuntime(""); got != "claude-cli" {
+		t.Fatalf("config error fallback: got %q want claude-cli", got)
 	}
 }
 
