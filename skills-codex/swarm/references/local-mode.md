@@ -34,6 +34,8 @@ The output of the final `comm` is the authoritative diff. Failures in `/tmp/pre-
 
 Skip this step when `main` is mandated green before spawn (stricter protocol) or when the wave's validation does not run the gate.
 
+Origin: internal learning note `2026-04-15-pre-wave-gate-snapshot` captured during swarm validation.
+
 ## Step 2b: Pre-Spawn Worktree Setup (Multi-Epic Waves)
 
 > **Skip this step** for single-epic waves or when `--no-worktrees` is set.
