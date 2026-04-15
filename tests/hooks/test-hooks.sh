@@ -858,7 +858,7 @@ if [ "$EC" -eq 0 ]; then pass "holdout-isolation-gate passes non-holdout Read"; 
 
 # Test: Holdout Read without evaluator => block (exit 2)
 EC=0
-echo '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR= bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+echo '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR='' bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
 if [ "$EC" -eq 2 ]; then pass "holdout-isolation-gate blocks holdout Read"; else fail "holdout-isolation-gate blocks holdout Read (got exit $EC)"; fi
 
 # Test: Holdout Read with evaluator => pass
@@ -959,7 +959,6 @@ echo "=== stop-team-guard.sh ==="
 
 # Test: No teams dir => pass (safe to stop)
 EC=0
-TEAMS_DIR_BAK="${HOME}/.claude/teams"
 # Use a clean tmp for HOME to avoid touching real teams
 MOCK_HOME="$TMPDIR/mock-home"
 mkdir -p "$MOCK_HOME/.claude"
