@@ -290,7 +290,7 @@ func setupHarvestJSONSideEffectsFixture(t *testing.T) harvestJSONSideEffectsFixt
 	if err := os.WriteFile(filepath.Join(rigDir, sourceName), []byte(valid), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	invalid := "---\ntitle: Broken: value\nbad: still: broken\n---\n"
+	invalid := "---\nkey:\n\tvalue_with_tab: broken\n---\n"
 	if err := os.WriteFile(filepath.Join(rigDir, "2026-04-10-bad.md"), []byte(invalid), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -477,7 +477,7 @@ func TestRunHarvest_MalformedFileBecomesWarning(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(rigDir, "2026-04-10-valid.md"), []byte(valid), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	invalid := "---\ntitle: Broken: value\nbad: still: broken\n---\n"
+	invalid := "---\nkey:\n\tvalue_with_tab: broken\n---\n"
 	if err := os.WriteFile(filepath.Join(rigDir, "2026-04-10-bad.md"), []byte(invalid), 0o644); err != nil {
 		t.Fatal(err)
 	}

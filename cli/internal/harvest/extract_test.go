@@ -248,11 +248,10 @@ This file should still be harvested even when another file is malformed.
 		t.Fatal(err)
 	}
 
-	invalidContent := `---
-title: Broken: value
-bad: still: broken
----
-`
+	// Truly malformed: tab character in indentation is unsalvageable.
+	// (Mid-value colon cases like "Broken: value" are now salvaged by
+	// salvageFrontmatterYAML — see TestParseFrontmatter_SalvagesMidValueColons.)
+	invalidContent := "---\nkey:\n\tvalue_with_tab: broken\n---\n"
 	if err := os.WriteFile(filepath.Join(learningsDir, "2026-04-10-bad.md"), []byte(invalidContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
