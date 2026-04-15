@@ -24,15 +24,17 @@ import (
 )
 
 var (
-	overnightGoal        string
-	overnightOutputDir   string
-	overnightRunTimeout  string
-	overnightKeepAwake   bool
-	overnightNoKeepAwake bool
-	overnightRunners     []string
-	overnightModels      string
-	overnightCreative    bool
-	overnightReportFrom  string
+	overnightGoal           string
+	overnightOutputDir      string
+	overnightRunTimeout     string
+	overnightLongHaul       bool
+	overnightLongHaulBudget string
+	overnightKeepAwake      bool
+	overnightNoKeepAwake    bool
+	overnightRunners        []string
+	overnightModels         string
+	overnightCreative       bool
+	overnightReportFrom     string
 
 	// Dream nightly compounder loop flags (schema v2).
 	overnightQueue           string
@@ -44,23 +46,28 @@ var (
 )
 
 var (
-	runOvernightLoopFn          = ovn.RunLoop
-	writeDreamCloseLoopArtifact = writeDreamLoopCloseLoopArtifact
-	runDreamDefragPreviewFn     = runDreamDefragPreview
-	runDreamMetricsHealthFn     = runDreamMetricsHealth
-	runDreamRetrievalLiveFn     = runDreamRetrievalLive
-	runDreamKnowledgeBriefFn    = runDreamKnowledgeBrief
+	runOvernightLoopFn           = ovn.RunLoop
+	writeDreamCloseLoopArtifact  = writeDreamLoopCloseLoopArtifact
+	runDreamDefragPreviewFn      = runDreamDefragPreview
+	runDreamMetricsHealthFn      = runDreamMetricsHealth
+	runDreamRetrievalLiveFn      = runDreamRetrievalLive
+	runDreamKnowledgeBriefFn     = runDreamKnowledgeBrief
+	runDreamCouncilFn            = runDreamCouncil
+	executeDreamMorningPacketsFn = executeDreamMorningPackets
 )
 
 type overnightSettings struct {
-	OutputDir     string
-	RunTimeoutRaw string
-	RunTimeout    time.Duration
-	KeepAwake     bool
-	Runners       []string
-	RunnerModels  map[string]string
-	Consensus     string
-	CreativeLane  bool
+	OutputDir         string
+	RunTimeoutRaw     string
+	RunTimeout        time.Duration
+	LongHaulEnabled   bool
+	LongHaulBudgetRaw string
+	LongHaulBudget    time.Duration
+	KeepAwake         bool
+	Runners           []string
+	RunnerModels      map[string]string
+	Consensus         string
+	CreativeLane      bool
 }
 
 type overnightRuntimeSummary struct {
@@ -136,8 +143,9 @@ type overnightSummary struct {
 	MeasureFailureHalt bool   `json:"measure_failure_halt,omitempty" yaml:"measure_failure_halt,omitempty"`
 	FailureReason      string `json:"failure_reason,omitempty" yaml:"failure_reason,omitempty"`
 
-	councilNextActionHint string `json:"-" yaml:"-"`
-	yieldBaselineCaptured bool   `json:"-" yaml:"-"`
+	councilNextActionHint string                              `json:"-" yaml:"-"`
+	yieldBaselineCaptured bool                                `json:"-" yaml:"-"`
+	packetCorroboration   map[string]dreamPacketCorroboration `json:"-" yaml:"-"`
 }
 
 var overnightCmd = &cobra.Command{
@@ -231,6 +239,8 @@ func init() {
 	overnightStartCmd.Flags().StringVar(&overnightGoal, "goal", "", "Optional goal to include in the morning report and briefing step")
 	overnightStartCmd.Flags().StringVar(&overnightOutputDir, "output-dir", "", "Directory for overnight artifacts (defaults to dream.report_dir)")
 	overnightStartCmd.Flags().StringVar(&overnightRunTimeout, "run-timeout", "", "Maximum duration for the overnight run (defaults to dream.run_timeout)")
+	overnightStartCmd.Flags().BoolVar(&overnightLongHaul, "long-haul", false, "Enable the opt-in long-haul Dream controller after the default short path")
+	overnightStartCmd.Flags().StringVar(&overnightLongHaulBudget, "long-haul-budget", "1h", "Maximum extra time the long-haul controller may spend after the short path")
 	overnightStartCmd.Flags().BoolVar(&overnightKeepAwake, "keep-awake", false, "Force keep-awake assistance on for this run")
 	overnightStartCmd.Flags().BoolVar(&overnightNoKeepAwake, "no-keep-awake", false, "Disable keep-awake assistance for this run")
 	overnightStartCmd.Flags().StringSliceVar(&overnightRunners, "runner", nil, "Dream runner to execute (repeatable: --runner codex --runner claude)")
@@ -336,11 +346,19 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 	// Post-loop: Tier 1 local-LLM forge on recent sessions.
 	// Degrades honestly — errors append to summary.Degraded, never abort.
 	runPostLoopTier1Forge(ctx, cwd, &summary, settings)
+	hydrateOvernightSummaryArtifacts(&summary)
 
-	if err := runDreamCouncil(ctx, cwd, logFile, &summary, settings); err != nil {
-		return err
+	if settings.LongHaulEnabled {
+		executeDreamMorningPacketsFn(cwd, &summary)
+		if err := runDreamLongHaul(ctx, cwd, logFile, &summary, settings); err != nil {
+			return err
+		}
+	} else {
+		if err := runDreamCouncilFn(ctx, cwd, logFile, &summary, settings); err != nil {
+			return err
+		}
+		executeDreamMorningPacketsFn(cwd, &summary)
 	}
-	executeDreamMorningPackets(cwd, &summary)
 
 	summary.Status = "done"
 	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
@@ -380,6 +398,7 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 			"close_loop":               filepath.Join(settings.OutputDir, "close-loop.json"),
 			"defrag_report":            filepath.Join(settings.OutputDir, "defrag", "latest.json"),
 			"metrics_health":           filepath.Join(settings.OutputDir, "metrics-health.json"),
+			"packet_corroboration":     filepath.Join(settings.OutputDir, "packet-corroboration.json"),
 			"retrieval_live":           filepath.Join(settings.OutputDir, "retrieval-bench.json"),
 			"morning_packets_json":     filepath.Join(settings.OutputDir, "morning-packets", "index.json"),
 			"morning_packets_markdown": filepath.Join(settings.OutputDir, "morning-packets", "index.md"),
@@ -387,7 +406,7 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 			"summary_markdown":         filepath.Join(settings.OutputDir, "summary.md"),
 		},
 		LongHaul: &ovn.LongHaulSummary{
-			Enabled: false,
+			Enabled: settings.LongHaulEnabled,
 			Active:  false,
 		},
 	}
@@ -398,6 +417,7 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 			Command: fmt.Sprintf("ao knowledge brief --goal %q --json", summary.Goal),
 		})
 		summary.Artifacts["briefing"] = filepath.Join(settings.OutputDir, "briefing.json")
+		summary.Artifacts["briefing_fallback"] = filepath.Join(settings.OutputDir, "briefing-fallback.json")
 	}
 	summary.Steps = append(summary.Steps,
 		overnightStepSummary{
@@ -825,6 +845,14 @@ func resolveOvernightSettings(cmd *cobra.Command, cwd string) (overnightSettings
 	if err != nil {
 		return overnightSettings{}, fmt.Errorf("parse dream timeout %q: %w", runTimeoutRaw, err)
 	}
+	longHaulBudgetRaw := strings.TrimSpace(overnightLongHaulBudget)
+	if longHaulBudgetRaw == "" {
+		longHaulBudgetRaw = "1h"
+	}
+	longHaulBudget, err := time.ParseDuration(longHaulBudgetRaw)
+	if err != nil {
+		return overnightSettings{}, fmt.Errorf("parse long-haul budget %q: %w", longHaulBudgetRaw, err)
+	}
 
 	keepAwake := true
 	if cfg.Dream.KeepAwake != nil {
@@ -838,14 +866,17 @@ func resolveOvernightSettings(cmd *cobra.Command, cwd string) (overnightSettings
 	}
 
 	return overnightSettings{
-		OutputDir:     outputDir,
-		RunTimeoutRaw: runTimeoutRaw,
-		RunTimeout:    runTimeout,
-		KeepAwake:     keepAwake,
-		Runners:       resolveDreamRunRunners(cfg.Dream),
-		RunnerModels:  resolveDreamRunnerModels(cfg),
-		Consensus:     resolveDreamConsensusPolicy(cfg.Dream),
-		CreativeLane:  resolveDreamCreativeLane(cfg.Dream),
+		OutputDir:         outputDir,
+		RunTimeoutRaw:     runTimeoutRaw,
+		RunTimeout:        runTimeout,
+		LongHaulEnabled:   overnightLongHaul,
+		LongHaulBudgetRaw: longHaulBudgetRaw,
+		LongHaulBudget:    longHaulBudget,
+		KeepAwake:         keepAwake,
+		Runners:           resolveDreamRunRunners(cfg.Dream),
+		RunnerModels:      resolveDreamRunnerModels(cfg),
+		Consensus:         resolveDreamConsensusPolicy(cfg.Dream),
+		CreativeLane:      resolveDreamCreativeLane(cfg.Dream),
 	}, nil
 }
 
@@ -924,26 +955,7 @@ func finalizeOvernightSummary(summary *overnightSummary, startedAt time.Time) er
 	summary.FinishedAt = time.Now().UTC().Format(time.RFC3339)
 	summary.Duration = time.Since(startedAt).Round(time.Millisecond).String()
 
-	if artifact := summary.Artifacts["metrics_health"]; artifact != "" {
-		if data, err := loadJSONMap(artifact); err == nil {
-			summary.MetricsHealth = data
-		}
-	}
-	if artifact := summary.Artifacts["retrieval_live"]; artifact != "" {
-		if data, err := loadJSONMap(artifact); err == nil {
-			summary.RetrievalLive = data
-		}
-	}
-	if artifact := summary.Artifacts["close_loop"]; artifact != "" {
-		if data, err := loadJSONMap(artifact); err == nil {
-			summary.CloseLoop = data
-		}
-	}
-	if artifact := summary.Artifacts["briefing"]; artifact != "" {
-		if data, err := loadJSONMap(artifact); err == nil {
-			summary.Briefing = data
-		}
-	}
+	hydrateOvernightSummaryArtifacts(summary)
 	ensureOvernightDerivedViews(summary)
 	refreshOvernightTelemetry(summary)
 	summary.Recommended = recommendedDreamCommands(*summary)
@@ -975,6 +987,36 @@ func finalizeOvernightSummary(summary *overnightSummary, startedAt time.Time) er
 		return fmt.Errorf("write %s: %w", summaryMDPath, err)
 	}
 	return nil
+}
+
+func hydrateOvernightSummaryArtifacts(summary *overnightSummary) {
+	if artifact := summary.Artifacts["metrics_health"]; artifact != "" {
+		if data, err := loadJSONMap(artifact); err == nil {
+			summary.MetricsHealth = data
+		}
+	}
+	if artifact := summary.Artifacts["retrieval_live"]; artifact != "" {
+		if data, err := loadJSONMap(artifact); err == nil {
+			summary.RetrievalLive = data
+		}
+	}
+	if artifact := summary.Artifacts["close_loop"]; artifact != "" {
+		if data, err := loadJSONMap(artifact); err == nil {
+			summary.CloseLoop = data
+		}
+	}
+	if artifact := summary.Artifacts["briefing"]; artifact != "" {
+		if data, err := loadJSONMap(artifact); err == nil {
+			summary.Briefing = data
+		}
+	}
+	if summary.Briefing == nil {
+		if artifact := summary.Artifacts["briefing_fallback"]; artifact != "" {
+			if data, err := loadJSONMap(artifact); err == nil {
+				summary.Briefing = data
+			}
+		}
+	}
 }
 
 func loadJSONMap(path string) (map[string]any, error) {
@@ -1414,6 +1456,13 @@ func snapshotDreamPacketYield(summary *overnightSummary) {
 	if summary.yieldBaselineCaptured {
 		return
 	}
+	yield.PacketCountBefore = len(summary.MorningPackets)
+	yield.TopPacketConfidenceBefore = topDreamPacketConfidence(summary.MorningPackets)
+	summary.yieldBaselineCaptured = true
+}
+
+func resetDreamPacketYieldBaseline(summary *overnightSummary) {
+	yield := ensureOvernightYield(summary)
 	yield.PacketCountBefore = len(summary.MorningPackets)
 	yield.TopPacketConfidenceBefore = topDreamPacketConfidence(summary.MorningPackets)
 	summary.yieldBaselineCaptured = true

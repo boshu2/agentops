@@ -35,6 +35,13 @@ type overnightMorningPacket struct {
 	ArtifactPath   string   `json:"artifact_path,omitempty" yaml:"artifact_path,omitempty"`
 }
 
+type dreamPacketCorroboration struct {
+	Confidence  string   `json:"confidence,omitempty"`
+	Evidence    []string `json:"evidence,omitempty"`
+	TargetFiles []string `json:"target_files,omitempty"`
+	LikelyTests []string `json:"likely_tests,omitempty"`
+}
+
 type dreamMorningPacketPlan struct {
 	Packet     overnightMorningPacket
 	EntryIndex int
@@ -227,7 +234,7 @@ func buildDreamQueuePacket(summary overnightSummary, sel queueSelection, rank in
 	}
 	morningCommand := firstNonEmptyTrimmed(item.MorningCmd, fmt.Sprintf("ao rpi phased %q", strings.TrimSpace(item.Title)))
 
-	return overnightMorningPacket{
+	packet := overnightMorningPacket{
 		ID:             packetID,
 		Rank:           rank,
 		Title:          strings.TrimSpace(item.Title),
@@ -244,6 +251,8 @@ func buildDreamQueuePacket(summary overnightSummary, sel queueSelection, rank in
 		MorningCommand: morningCommand,
 		QueueBacked:    true,
 	}
+	applyDreamPacketCorroboration(&packet, summary)
+	return packet
 }
 
 func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacket {
@@ -254,7 +263,7 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 		if summary.Council != nil && strings.TrimSpace(summary.Council.RecommendedFirstAction) != "" {
 			evidence = append(evidence, "Council guidance: "+strings.TrimSpace(summary.Council.RecommendedFirstAction))
 		}
-		packets = append(packets, overnightMorningPacket{
+		packet := overnightMorningPacket{
 			ID:             dreamPacketID("goal", goal),
 			Title:          "Advance overnight goal: " + goal,
 			Type:           "task",
@@ -265,11 +274,13 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 			WhyNow:         "Dream finished with an explicit goal but no stronger queue-backed packet outranked it. Carry the run forward as an implementation packet instead of leaving the goal stranded in the report.",
 			Evidence:       evidence,
 			MorningCommand: fmt.Sprintf("ao rpi phased %q", goal),
-		})
+		}
+		applyDreamPacketCorroboration(&packet, summary)
+		packets = append(packets, packet)
 	}
 
 	if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok && coverage < 0.50 {
-		packets = append(packets, overnightMorningPacket{
+		packet := overnightMorningPacket{
 			ID:             dreamPacketID("retrieval", fmt.Sprintf("%.3f", coverage)),
 			Title:          "Repair Dream retrieval coverage",
 			Type:           "bug",
@@ -282,11 +293,13 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 			TargetFiles:    []string{summary.Artifacts["retrieval_live"]},
 			LikelyTests:    []string{"cli/cmd/ao/retrieval_bench_test.go"},
 			MorningCommand: `ao rpi phased "Repair Dream retrieval coverage"`,
-		})
+		}
+		applyDreamPacketCorroboration(&packet, summary)
+		packets = append(packets, packet)
 	}
 
 	if escape, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); ok && !escape {
-		packets = append(packets, overnightMorningPacket{
+		packet := overnightMorningPacket{
 			ID:             dreamPacketID("escape-velocity", summary.RunID),
 			Title:          "Restore flywheel escape velocity",
 			Type:           "task",
@@ -298,7 +311,9 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 			Evidence:       dreamPacketEvidence("metrics_health.escape_velocity=false", summary.Artifacts["metrics_health"]),
 			TargetFiles:    []string{summary.Artifacts["metrics_health"]},
 			MorningCommand: `ao rpi phased "Restore flywheel escape velocity"`,
-		})
+		}
+		applyDreamPacketCorroboration(&packet, summary)
+		packets = append(packets, packet)
 	}
 
 	for _, degraded := range summary.Degraded {
@@ -306,7 +321,7 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 		if degraded == "" || !shouldEscalateDreamDegradation(degraded) {
 			continue
 		}
-		packets = append(packets, overnightMorningPacket{
+		packet := overnightMorningPacket{
 			ID:             dreamPacketID("degraded", degraded),
 			Title:          "Investigate Dream degradation: " + degraded,
 			Type:           "bug",
@@ -318,11 +333,53 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 			Evidence:       dreamPacketEvidence(degraded, summary.Artifacts["summary_json"]),
 			TargetFiles:    []string{summary.Artifacts["summary_json"]},
 			MorningCommand: fmt.Sprintf("ao rpi phased %q", "Investigate Dream degradation: "+degraded),
-		})
+		}
+		applyDreamPacketCorroboration(&packet, summary)
+		packets = append(packets, packet)
 		break
 	}
 
 	return packets
+}
+
+func applyDreamPacketCorroboration(packet *overnightMorningPacket, summary overnightSummary) {
+	if packet == nil || summary.packetCorroboration == nil {
+		return
+	}
+	note, ok := summary.packetCorroboration[strings.TrimSpace(packet.ID)]
+	if !ok {
+		return
+	}
+	if dreamConfidenceRank(note.Confidence) > dreamConfidenceRank(packet.Confidence) {
+		packet.Confidence = strings.TrimSpace(note.Confidence)
+	}
+	packet.Evidence = mergeDreamPacketLines(packet.Evidence, note.Evidence)
+	packet.TargetFiles = mergeDreamPacketLines(packet.TargetFiles, note.TargetFiles)
+	packet.LikelyTests = mergeDreamPacketLines(packet.LikelyTests, note.LikelyTests)
+}
+
+func mergeDreamPacketLines(current, extra []string) []string {
+	if len(extra) == 0 {
+		return current
+	}
+	merged := append([]string{}, current...)
+	for _, value := range extra {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		seen := false
+		for _, existing := range merged {
+			if strings.TrimSpace(existing) == value {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			merged = append(merged, value)
+		}
+	}
+	return merged
 }
 
 func shouldEscalateDreamDegradation(value string) bool {

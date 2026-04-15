@@ -1293,20 +1293,22 @@ ao overnight start [flags]
 **Flags:**
 
 ```
-      --checkpoint-max-mb int   Max total MB of checkpoint storage per run (default 512)
-      --creative-lane           Enable the bounded wildcard lane when Dream Council is running
-      --goal string             Optional goal to include in the morning report and briefing step
-  -h, --help                    help for start
-      --keep-awake              Force keep-awake assistance on for this run
-      --max-iterations int      Cap iteration count (0 = budget-bounded only)
-      --no-keep-awake           Disable keep-awake assistance for this run
-      --output-dir string       Directory for overnight artifacts (defaults to dream.report_dir)
-      --plateau-epsilon float   Plateau threshold: |delta| below this counts as plateau (default 0.01)
-      --plateau-window int      Plateau window K (consecutive sub-epsilon deltas required to halt) (default 2)
-      --queue string            Operator-pinned nightly priorities (markdown file)
-      --run-timeout string      Maximum duration for the overnight run (defaults to dream.run_timeout)
-      --runner strings          Dream runner to execute (repeatable: --runner codex --runner claude)
-      --warn-only               First-N-runs mode: warn on plateau/regression, don't halt. Default true; flip to false once thresholds are calibrated. (default true)
+      --checkpoint-max-mb int     Max total MB of checkpoint storage per run (default 512)
+      --creative-lane             Enable the bounded wildcard lane when Dream Council is running
+      --goal string               Optional goal to include in the morning report and briefing step
+  -h, --help                      help for start
+      --keep-awake                Force keep-awake assistance on for this run
+      --long-haul                 Enable the opt-in long-haul Dream controller after the default short path
+      --long-haul-budget string   Maximum extra time the long-haul controller may spend after the short path (default "1h")
+      --max-iterations int        Cap iteration count (0 = budget-bounded only)
+      --no-keep-awake             Disable keep-awake assistance for this run
+      --output-dir string         Directory for overnight artifacts (defaults to dream.report_dir)
+      --plateau-epsilon float     Plateau threshold: |delta| below this counts as plateau (default 0.01)
+      --plateau-window int        Plateau window K (consecutive sub-epsilon deltas required to halt) (default 2)
+      --queue string              Operator-pinned nightly priorities (markdown file)
+      --run-timeout string        Maximum duration for the overnight run (defaults to dream.run_timeout)
+      --runner strings            Dream runner to execute (repeatable: --runner codex --runner claude)
+      --warn-only                 First-N-runs mode: warn on plateau/regression, don't halt. Default true; flip to false once thresholds are calibrated. (default true)
 ```
 
 #### `ao overnight warn-only`

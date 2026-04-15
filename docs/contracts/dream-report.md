@@ -163,8 +163,13 @@ Schema v2 (2026-04-09) introduces the compounding iteration loop. It is **additi
 | `active` | bool | `false` | Whether long-haul work actually ran |
 | `trigger_reason` | string | `"packet confidence below high"` | Why long-haul activated |
 | `exit_reason` | string | `"zero_delta_probe_streak >= 2"` | Why long-haul stopped |
-| `probe_count` | int | `2` | Number of long-haul probes executed |
+| `probe_count` | int | `2` | Number of long-haul probes executed, such as briefing fallback, packet corroboration, or council |
 | `zero_delta_probe_streak` | int | `1` | Consecutive probes that produced no yield delta |
+
+Long-haul probes are allowed to improve the morning packet before council runs.
+When packet corroboration raises the top packet to a strong confidence level,
+Dream may skip council and record those steps as `skipped` instead of leaving
+them `pending`.
 
 ### MorningPacket Shape
 

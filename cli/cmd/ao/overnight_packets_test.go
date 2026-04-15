@@ -267,6 +267,55 @@ func TestBuildDreamQueuePacket_PreservesExistingPacketIdentity(t *testing.T) {
 	}
 }
 
+func TestExecuteDreamMorningPackets_AppliesPacketCorroboration(t *testing.T) {
+	tmpDir := t.TempDir()
+	binDir := t.TempDir()
+	writeExecutable(t, binDir, "bd", `#!/bin/sh
+case "$1" in
+  list)
+    echo '[]'
+    ;;
+  create)
+    echo '[{"id":"na-goal1","status":"open","title":"Advance overnight goal"}]'
+    ;;
+  update)
+    echo '[{"id":"na-goal1","status":"open","title":"Advance overnight goal"}]'
+    ;;
+  *)
+    echo "unexpected bd command: $1" >&2
+    exit 1
+    ;;
+esac
+`)
+	t.Setenv("PATH", binDir)
+
+	goal := "stabilize Dream handoff"
+	summary := newDreamPacketTestSummary(t, tmpDir, goal)
+	summary.packetCorroboration = map[string]dreamPacketCorroboration{
+		dreamPacketID("goal", goal): {
+			Confidence:  "high",
+			Evidence:    []string{"Briefing available: fallback", "Retrieval coverage stayed healthy at 0.90"},
+			TargetFiles: []string{"briefing-fallback.json"},
+		},
+	}
+
+	executeDreamMorningPackets(tmpDir, &summary)
+
+	if len(summary.MorningPackets) != 1 {
+		t.Fatalf("morning packets = %d, want 1", len(summary.MorningPackets))
+	}
+	packet := summary.MorningPackets[0]
+	if packet.Confidence != "high" {
+		t.Fatalf("confidence = %q, want high", packet.Confidence)
+	}
+	if !strings.Contains(strings.Join(packet.Evidence, "\n"), "Briefing available: fallback") {
+		t.Fatalf("evidence = %#v, want corroboration marker", packet.Evidence)
+	}
+	if !strings.Contains(strings.Join(packet.TargetFiles, "\n"), "briefing-fallback.json") {
+		t.Fatalf("target_files = %#v, want corroboration target", packet.TargetFiles)
+	}
+}
+
 func newDreamPacketTestSummary(t *testing.T, repoRoot, goal string) overnightSummary {
 	t.Helper()
 

@@ -155,6 +155,8 @@ Required artifacts:
 - `<output-dir>/metrics-health.json`
 - `<output-dir>/retrieval-bench.json` when live retrieval succeeds
 - `<output-dir>/briefing.json` when a goal briefing succeeds
+- `<output-dir>/briefing-fallback.json` when long-haul synthesizes a fallback briefing
+- `<output-dir>/packet-corroboration.json` when long-haul enriches morning packets from Dream evidence
 - `<output-dir>/morning-packets/index.json`
 - `<output-dir>/morning-packets/index.md`
 - `<output-dir>/morning-packets/<rank>-<slug>-<id>.json` for each emitted packet

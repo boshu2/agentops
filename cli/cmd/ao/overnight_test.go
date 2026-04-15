@@ -44,6 +44,8 @@ func TestRunOvernightStartDryRunJSON(t *testing.T) {
 	oldGoal := overnightGoal
 	oldOutputDir := overnightOutputDir
 	oldRunTimeout := overnightRunTimeout
+	oldLongHaul := overnightLongHaul
+	oldLongHaulBudget := overnightLongHaulBudget
 	oldKeepAwake := overnightKeepAwake
 	oldNoKeepAwake := overnightNoKeepAwake
 	oldRunners := append([]string{}, overnightRunners...)
@@ -55,6 +57,8 @@ func TestRunOvernightStartDryRunJSON(t *testing.T) {
 		overnightGoal = oldGoal
 		overnightOutputDir = oldOutputDir
 		overnightRunTimeout = oldRunTimeout
+		overnightLongHaul = oldLongHaul
+		overnightLongHaulBudget = oldLongHaulBudget
 		overnightKeepAwake = oldKeepAwake
 		overnightNoKeepAwake = oldNoKeepAwake
 		overnightRunners = append([]string{}, oldRunners...)
@@ -71,6 +75,8 @@ func TestRunOvernightStartDryRunJSON(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.Flags().String("output-dir", "", "")
 	cmd.Flags().String("run-timeout", "", "")
+	cmd.Flags().Bool("long-haul", false, "")
+	cmd.Flags().String("long-haul-budget", "", "")
 	cmd.Flags().Bool("keep-awake", false, "")
 	cmd.Flags().Bool("no-keep-awake", false, "")
 	cmd.Flags().StringSlice("runner", nil, "")
@@ -178,6 +184,189 @@ func TestNewOvernightRunLoopOptions_WiresCloseLoopCallbacks(t *testing.T) {
 	}
 	if runOpts.CloseLoopCallbacks.ApplyMaturityFn == nil {
 		t.Fatal("ApplyMaturityFn callback not wired")
+	}
+}
+
+func TestResolveOvernightSettings_LongHaulDefaultsOff(t *testing.T) {
+	oldLongHaul := overnightLongHaul
+	oldLongHaulBudget := overnightLongHaulBudget
+	defer func() {
+		overnightLongHaul = oldLongHaul
+		overnightLongHaulBudget = oldLongHaulBudget
+	}()
+
+	overnightLongHaul = false
+	overnightLongHaulBudget = "1h"
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("output-dir", "", "")
+	cmd.Flags().String("run-timeout", "", "")
+	cmd.Flags().Bool("long-haul", false, "")
+	cmd.Flags().String("long-haul-budget", "", "")
+	cmd.Flags().Bool("keep-awake", false, "")
+	cmd.Flags().Bool("no-keep-awake", false, "")
+
+	settings, err := resolveOvernightSettings(cmd, t.TempDir())
+	if err != nil {
+		t.Fatalf("resolveOvernightSettings: %v", err)
+	}
+	if settings.LongHaulEnabled {
+		t.Fatal("LongHaulEnabled = true, want false")
+	}
+	if settings.LongHaulBudget != time.Hour {
+		t.Fatalf("LongHaulBudget = %s, want 1h", settings.LongHaulBudget)
+	}
+}
+
+func TestRunOvernight_LongHaulSkipsWhenTriggersWeak(t *testing.T) {
+	summary := overnightSummary{
+		OutputDir: filepath.Join(t.TempDir(), "overnight"),
+		MorningPackets: []overnightMorningPacket{
+			{
+				Rank:           1,
+				Title:          "Strong queue-backed packet",
+				QueueBacked:    true,
+				Confidence:     "high",
+				MorningCommand: `ao rpi phased "Strong queue-backed packet"`,
+			},
+		},
+		RetrievalLive: map[string]any{"coverage": 0.91},
+		LongHaul:      &ovn.LongHaulSummary{Enabled: true},
+	}
+	settings := overnightSettings{
+		LongHaulEnabled: true,
+		LongHaulBudget:  time.Hour,
+		Runners:         []string{"codex"},
+	}
+
+	oldCouncil := runDreamCouncilFn
+	oldPackets := executeDreamMorningPacketsFn
+	defer func() {
+		runDreamCouncilFn = oldCouncil
+		executeDreamMorningPacketsFn = oldPackets
+	}()
+
+	councilCalls := 0
+	packetCalls := 0
+	runDreamCouncilFn = func(ctx context.Context, cwd string, log io.Writer, summary *overnightSummary, settings overnightSettings) error {
+		councilCalls++
+		return nil
+	}
+	executeDreamMorningPacketsFn = func(cwd string, summary *overnightSummary) {
+		packetCalls++
+	}
+
+	if err := runDreamLongHaul(context.Background(), t.TempDir(), io.Discard, &summary, settings); err != nil {
+		t.Fatalf("runDreamLongHaul: %v", err)
+	}
+	if councilCalls != 0 || packetCalls != 0 {
+		t.Fatalf("unexpected probe calls: council=%d packets=%d", councilCalls, packetCalls)
+	}
+	if summary.LongHaul == nil || summary.LongHaul.Active {
+		t.Fatalf("long_haul = %#v, want inactive", summary.LongHaul)
+	}
+	if summary.LongHaul.ExitReason != "trigger threshold not met" {
+		t.Fatalf("exit_reason = %q, want trigger threshold not met", summary.LongHaul.ExitReason)
+	}
+}
+
+func TestRunOvernight_LongHaulStopsOnEarlyExit(t *testing.T) {
+	summary := overnightSummary{
+		OutputDir: filepath.Join(t.TempDir(), "overnight"),
+		Goal:      "Strengthen Dream handoff",
+		MorningPackets: []overnightMorningPacket{
+			{
+				ID:             dreamPacketID("goal", "Strengthen Dream handoff"),
+				Rank:           1,
+				Title:          "Weak synthetic packet",
+				SourceEpic:     "dream-goal",
+				QueueBacked:    false,
+				Confidence:     "medium",
+				MorningCommand: `ao rpi phased "Weak synthetic packet"`,
+			},
+		},
+		Briefing:      map[string]any{"mode": "fallback", "first_move": "Use the goal packet."},
+		CloseLoop:     map[string]any{"findings_routed": 1},
+		RetrievalLive: map[string]any{"coverage": 0.91},
+		LongHaul:      &ovn.LongHaulSummary{Enabled: true},
+	}
+	settings := overnightSettings{
+		LongHaulEnabled: true,
+		LongHaulBudget:  time.Hour,
+		Runners:         []string{"codex"},
+	}
+
+	oldCouncil := runDreamCouncilFn
+	oldPackets := executeDreamMorningPacketsFn
+	defer func() {
+		runDreamCouncilFn = oldCouncil
+		executeDreamMorningPacketsFn = oldPackets
+	}()
+
+	councilCalls := 0
+	packetCalls := 0
+	runDreamCouncilFn = func(ctx context.Context, cwd string, log io.Writer, summary *overnightSummary, settings overnightSettings) error {
+		councilCalls++
+		return nil
+	}
+	executeDreamMorningPacketsFn = func(cwd string, summary *overnightSummary) {
+		packetCalls++
+		summary.MorningPackets[0].Confidence = "high"
+		refreshOvernightTelemetry(summary)
+	}
+
+	if err := runDreamLongHaul(context.Background(), t.TempDir(), io.Discard, &summary, settings); err != nil {
+		t.Fatalf("runDreamLongHaul: %v", err)
+	}
+	if councilCalls != 0 || packetCalls != 1 {
+		t.Fatalf("probe calls = council:%d packets:%d, want council skipped after corroboration", councilCalls, packetCalls)
+	}
+	if summary.LongHaul == nil || !summary.LongHaul.Active {
+		t.Fatalf("long_haul = %#v, want active", summary.LongHaul)
+	}
+	if summary.LongHaul.ProbeCount != 1 {
+		t.Fatalf("probe_count = %d, want 1", summary.LongHaul.ProbeCount)
+	}
+	if summary.LongHaul.ZeroDeltaProbeStreak != 0 {
+		t.Fatalf("zero_delta_probe_streak = %d, want 0", summary.LongHaul.ZeroDeltaProbeStreak)
+	}
+	if summary.LongHaul.ExitReason != "no additional long-haul probes available" {
+		t.Fatalf("exit_reason = %q", summary.LongHaul.ExitReason)
+	}
+}
+
+func TestHydrateOvernightSummaryArtifacts_LoadsSurfaces(t *testing.T) {
+	tmpDir := t.TempDir()
+	write := func(name, body string) string {
+		path := filepath.Join(tmpDir, name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+		return path
+	}
+
+	summary := overnightSummary{
+		Artifacts: map[string]string{
+			"metrics_health":    write("metrics.json", `{"escape_velocity":false}`),
+			"retrieval_live":    write("retrieval.json", `{"coverage":0.8}`),
+			"close_loop":        write("close-loop.json", `{"findings_routed":2}`),
+			"briefing_fallback": write("briefing-fallback.json", `{"mode":"fallback","first_move":"Use the packet."}`),
+		},
+	}
+
+	hydrateOvernightSummaryArtifacts(&summary)
+
+	if got, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); !ok || got {
+		t.Fatalf("metrics_health = %#v, want escape_velocity=false", summary.MetricsHealth)
+	}
+	if got, ok := lookupFloat(summary.RetrievalLive, "coverage"); !ok || got != 0.8 {
+		t.Fatalf("retrieval_live = %#v, want coverage=0.8", summary.RetrievalLive)
+	}
+	if got, ok := lookupFloat(summary.CloseLoop, "findings_routed"); !ok || got != 2 {
+		t.Fatalf("close_loop = %#v, want findings_routed=2", summary.CloseLoop)
+	}
+	if got := stringifyAny(summary.Briefing["mode"]); got != "fallback" {
+		t.Fatalf("briefing = %#v, want fallback mode", summary.Briefing)
 	}
 }
 

@@ -161,6 +161,9 @@ func runDreamCouncil(ctx context.Context, cwd string, log io.Writer, summary *ov
 		NextActionHint:  deriveDreamNextAction(*summary),
 	}
 	summary.councilNextActionHint = packet.NextActionHint
+	if summary.Briefing != nil {
+		packet.Briefing = summary.Briefing
+	}
 	if data, err := loadJSONMap(summary.Artifacts["close_loop"]); err == nil {
 		packet.CloseLoop = data
 	}
@@ -170,9 +173,14 @@ func runDreamCouncil(ctx context.Context, cwd string, log io.Writer, summary *ov
 	if data, err := loadJSONMap(summary.Artifacts["retrieval_live"]); err == nil {
 		packet.RetrievalLive = data
 	}
-	if path := summary.Artifacts["briefing"]; path != "" {
-		if data, err := loadJSONMap(path); err == nil {
-			packet.Briefing = data
+	for _, key := range []string{"briefing", "briefing_fallback"} {
+		if packet.Briefing != nil {
+			break
+		}
+		if path := summary.Artifacts[key]; path != "" {
+			if data, err := loadJSONMap(path); err == nil {
+				packet.Briefing = data
+			}
 		}
 	}
 
