@@ -51,14 +51,29 @@ Set `AGENTOPS_COMPILE_RUNTIME` to choose the LLM backend:
 
 | Value | Backend | Notes |
 |-------|---------|-------|
+| `claude-cli` | Local `claude` binary | Zero-config. Inherits your Claude Code auth — no API key needed. Auto-selected if `claude` is on PATH and nothing else is set. |
 | `ollama` | Ollama API | Default model: `gemma3:27b`. Set `OLLAMA_HOST` for remote (e.g., `bushido tunnel ollama`). |
-| `claude` | Claude API | Uses `ANTHROPIC_API_KEY`. Model: `claude-sonnet-4-20250514`. |
+| `claude` | Claude API (HTTP) | Uses `ANTHROPIC_API_KEY`. Model: `claude-sonnet-4-20250514`. |
 | `openai` | OpenAI-compatible | Uses `OPENAI_API_KEY` + `OPENAI_BASE_URL`. |
 | (unset) | Claude Code session | Compilation happens inline via the current session's LLM. |
 
-When `AGENTOPS_COMPILE_RUNTIME` is unset, the skill runs compilation prompts
-inline — the agent reading this SKILL.md IS the compiler. This is the default
-for interactive `/compile` invocations.
+When `AGENTOPS_COMPILE_RUNTIME` is unset, `ao compile` first tries to
+auto-detect a local `claude` binary (claude-cli runtime). If that is also
+absent, headless compile fails fast with an explicit error naming the env var
+to set. Interactive `/compile` invocations still run compilation prompts
+inline — the agent reading this SKILL.md IS the compiler.
+
+### Large-corpus batching
+
+`ao compile` passes `--batch-size` to the headless compiler (default `25`
+changed files per LLM prompt). A fresh run against a 2000+ file corpus will
+split into batches automatically instead of sending one giant prompt.
+
+Flags:
+
+- `--batch-size N` — files per batch (default 25)
+- `--max-batches N` — cap batches per invocation; remaining files are picked
+  up on the next run (default 0 = unlimited)
 
 ## Execution Steps
 

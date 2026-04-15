@@ -626,7 +626,7 @@
       "name": "compile",
       "source_skill": "skills/compile",
       "source_hash": "16201db71f7c545f6169815d66606938bd8af90cc7b2d880cd53139e85a57fe5",
-      "generated_hash": "52b5540197bb609decbedbbe92d9fb73846478c545778a9b14928bb2f2fbba9b"
+      "generated_hash": "efeba741e77663cc94765785f7099abf54e996e1f1c62a6bebeb91257291c381"
     },
     {
       "name": "llm-wiki",
@@ -764,7 +764,7 @@
       "name": "harvest",
       "source_skill": "skills/harvest",
       "source_hash": "2487c8f10d74254ae38d468f10e05dde1405532ed1e8e8b364a7bca5a3469cdc",
-      "generated_hash": "3897eb770aecff1d1d2049addf76db9bcda2937916dd5a830a910693e5e7bbb9"
+      "generated_hash": "301e95d355787f250aee6bdf4ee6bf98f3a7ba6293ef18932332556927084067"
     },
     {
       "name": "heal-skill",
@@ -884,7 +884,7 @@
       "name": "quickstart",
       "source_skill": "skills/quickstart",
       "source_hash": "68a6463ab7dded893cbdd27d7697c70d871ed4149b5c7cbe8bf20369c1e0a813",
-      "generated_hash": "a2db65fab693ac38def85439530f8e2030c685b626a2834922ba4eb41d09b046"
+      "generated_hash": "d35860ab30e2d63c16c9900544925f0bd9ab35f9cd0cf2e51c9e00a1bbfba51c"
     },
     {
       "name": "ratchet",

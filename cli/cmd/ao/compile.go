@@ -31,6 +31,8 @@ var (
 	compileMineOnly    bool
 	compileFull        bool
 	compileQuiet       bool
+	compileBatchSize   int
+	compileMaxBatches  int
 )
 
 var (
@@ -63,7 +65,12 @@ type compileScriptOptions struct {
 	Incremental bool
 	Force       bool
 	LintOnly    bool
+	BatchSize   int
+	MaxBatches  int
 }
+
+// lookPathFn is a seam for tests to stub PATH lookup.
+var lookPathFn = exec.LookPath
 
 var compileCmd = &cobra.Command{
 	Use:   "compile",
@@ -99,6 +106,8 @@ func init() {
 	compileCmd.Flags().BoolVar(&compileMineOnly, "mine-only", false, "Only mine new knowledge signal")
 	compileCmd.Flags().BoolVar(&compileFull, "full", false, "Run the full mine, compile, lint, and defrag cycle")
 	compileCmd.Flags().BoolVar(&compileQuiet, "quiet", false, "Suppress human progress output")
+	compileCmd.Flags().IntVar(&compileBatchSize, "batch-size", 25, "Max changed files per LLM prompt (prevents single-giant-prompt on large corpora)")
+	compileCmd.Flags().IntVar(&compileMaxBatches, "max-batches", 0, "Cap number of compile batches per invocation (0 = unlimited)")
 }
 
 func runCompile(cmd *cobra.Command, _ []string) error {
@@ -112,10 +121,7 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	runtime := strings.TrimSpace(compileRuntime)
-	if runtime == "" {
-		runtime = strings.TrimSpace(os.Getenv("AGENTOPS_COMPILE_RUNTIME"))
-	}
+	runtime := resolveCompileRuntime(compileRuntime)
 
 	report := compileReport{
 		Mode:        mode,
@@ -148,8 +154,18 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 	}
 
 	if shouldRunCompileScript(mode) {
+		// Preflight the runtime before doing any expensive work. lint-only
+		// does not call an LLM, so skip the runtime check there.
+		if mode != "lint-only" {
+			if err := preflightCompileRuntime(runtime); err != nil {
+				return fmt.Errorf("compile wiki: %w", err)
+			}
+		}
 		if !compileQuiet {
 			fmt.Fprintln(progress, "Compile wiki: writing compiled knowledge")
+			if runtime != "" && mode != "lint-only" {
+				fmt.Fprintf(progress, "  runtime: %s\n", runtime)
+			}
 		}
 		opts := compileScriptOptions{
 			Sources:     compileSourcesDir,
@@ -158,6 +174,8 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 			Incremental: compileIncremental && !compileForce,
 			Force:       compileForce,
 			LintOnly:    mode == "lint-only",
+			BatchSize:   compileBatchSize,
+			MaxBatches:  compileMaxBatches,
 		}
 		if err := runCompileScriptFn(cmd.Context(), cwd, opts, cmd.OutOrStdout(), cmd.ErrOrStderr()); err != nil {
 			return fmt.Errorf("compile wiki: %w", err)
@@ -292,6 +310,12 @@ func runCompileScript(ctx context.Context, cwd string, opts compileScriptOptions
 	} else {
 		args = append(args, "--incremental")
 	}
+	if opts.BatchSize > 0 {
+		args = append(args, "--batch-size", fmt.Sprintf("%d", opts.BatchSize))
+	}
+	if opts.MaxBatches > 0 {
+		args = append(args, "--max-batches", fmt.Sprintf("%d", opts.MaxBatches))
+	}
 
 	execCmd := exec.CommandContext(ctx, "bash", args...)
 	execCmd.Dir = cwd
@@ -357,6 +381,64 @@ func loadCompileScript(cwd string) ([]byte, error) {
 
 func normalizeShellScript(data []byte) []byte {
 	return []byte(strings.ReplaceAll(string(data), "\r\n", "\n"))
+}
+
+// resolveCompileRuntime picks the LLM runtime for headless compilation in this
+// order of precedence:
+//  1. explicit --runtime flag
+//  2. AGENTOPS_COMPILE_RUNTIME env var
+//  3. auto-detect: if 'claude' binary is on PATH, use claude-cli (no API key
+//     required — inherits the user's Claude Code auth)
+//  4. empty (preflight will fail with an actionable error)
+func resolveCompileRuntime(flagValue string) string {
+	if v := strings.TrimSpace(flagValue); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(os.Getenv("AGENTOPS_COMPILE_RUNTIME")); v != "" {
+		return v
+	}
+	// Auto-detect local Claude Code CLI as a zero-config backend.
+	if _, err := lookPathFn("claude"); err == nil {
+		return "claude-cli"
+	}
+	return ""
+}
+
+// preflightCompileRuntime verifies the selected runtime has the credentials or
+// binary it needs, and returns an actionable error if not. Kept in Go rather
+// than only in compile.sh so ao can fail fast before materializing the temp
+// script.
+func preflightCompileRuntime(runtime string) error {
+	switch runtime {
+	case "":
+		return fmt.Errorf(`no LLM runtime configured for headless compile.
+
+Pick one:
+  export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed
+  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (default http://localhost:11434)
+  export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY
+  export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY
+
+Or pass --runtime=<name> on this command.
+Or invoke /compile interactively inside a Claude Code session.`)
+	case "claude-cli":
+		if _, err := lookPathFn("claude"); err != nil {
+			return fmt.Errorf("runtime=claude-cli but 'claude' binary is not on PATH; install Claude Code or switch: --runtime=ollama")
+		}
+	case "claude":
+		if strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")) == "" {
+			return fmt.Errorf("runtime=claude but ANTHROPIC_API_KEY is not set; export it or switch: --runtime=claude-cli (uses local claude binary, no key needed)")
+		}
+	case "openai":
+		if strings.TrimSpace(os.Getenv("OPENAI_API_KEY")) == "" {
+			return fmt.Errorf("runtime=openai but OPENAI_API_KEY is not set")
+		}
+	case "ollama":
+		// curl/ollama connectivity is best-effort; compile.sh will warn.
+	default:
+		return fmt.Errorf("unknown runtime %q; expected one of: ollama, claude, claude-cli, openai", runtime)
+	}
+	return nil
 }
 
 func printCompileReport(w io.Writer, report compileReport) error {

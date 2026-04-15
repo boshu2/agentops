@@ -12,7 +12,11 @@ HASH_FILE=""
 RUNTIME="${AGENTOPS_COMPILE_RUNTIME:-}"
 OLLAMA_MODEL="${AGENTOPS_COMPILE_MODEL:-gemma3:27b}"
 CLAUDE_MODEL="${AGENTOPS_COMPILE_CLAUDE_MODEL:-claude-sonnet-4-20250514}"
+CLAUDE_CLI_MODEL="${AGENTOPS_COMPILE_CLAUDE_CLI_MODEL:-}"
 OLLAMA_API="${OLLAMA_HOST:-http://localhost:11434}"
+BATCH_SIZE="${AGENTOPS_COMPILE_BATCH_SIZE:-25}"
+MAX_BATCHES="${AGENTOPS_COMPILE_MAX_BATCHES:-0}"  # 0 = unlimited
+PREFLIGHT_ONLY=false
 
 # --- Argument parsing ---
 while [[ $# -gt 0 ]]; do
@@ -23,6 +27,9 @@ while [[ $# -gt 0 ]]; do
     --force) INCREMENTAL=false; shift ;;
     --lint-only) LINT_ONLY=true; shift ;;
     --full) shift ;;  # default mode, accepted for SKILL.md parity
+    --batch-size) BATCH_SIZE="$2"; shift 2 ;;
+    --max-batches) MAX_BATCHES="$2"; shift 2 ;;
+    --preflight) PREFLIGHT_ONLY=true; shift ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
   esac
 done
@@ -99,6 +106,22 @@ print(json.dumps({
         -H "anthropic-version: 2023-06-01" \
         -d "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['content'][0]['text'])"
       ;;
+    claude-cli)
+      # Use the locally installed `claude` binary in headless (-p) mode.
+      # No API key required; inherits the user's Claude Code auth.
+      if ! command -v claude &>/dev/null; then
+        echo "ERROR: claude-cli runtime requested but 'claude' binary not on PATH." >&2
+        exit 1
+      fi
+      local combined="${system_prompt}
+
+${user_prompt}"
+      if [[ -n "$CLAUDE_CLI_MODEL" ]]; then
+        printf '%s' "$combined" | claude -p --model "$CLAUDE_CLI_MODEL" 2>/dev/null
+      else
+        printf '%s' "$combined" | claude -p 2>/dev/null
+      fi
+      ;;
     openai)
       local payload
       payload=$(python3 -c "
@@ -117,11 +140,63 @@ print(json.dumps({
         -d "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['choices'][0]['message']['content'])"
       ;;
     *)
-      echo "ERROR: AGENTOPS_COMPILE_RUNTIME must be set to ollama, claude, or openai for headless compilation." >&2
+      echo "ERROR: AGENTOPS_COMPILE_RUNTIME must be set to one of: ollama, claude, claude-cli, openai." >&2
+      echo "" >&2
+      echo "Pick one of these that matches what you have installed:" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (default http://localhost:11434)" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY" >&2
+      echo "" >&2
       echo "For interactive compilation, invoke /compile directly in a Claude Code session." >&2
       exit 1
       ;;
   esac
+}
+
+# --- Preflight: verify the selected runtime is usable ---
+
+preflight_runtime() {
+  case "$RUNTIME" in
+    claude-cli)
+      if ! command -v claude &>/dev/null; then
+        echo "ERROR: runtime=claude-cli but 'claude' binary is not on PATH." >&2
+        echo "Install Claude Code or switch runtime: export AGENTOPS_COMPILE_RUNTIME=ollama" >&2
+        return 1
+      fi
+      ;;
+    claude)
+      if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+        echo "ERROR: runtime=claude but ANTHROPIC_API_KEY is not set." >&2
+        echo "Either export ANTHROPIC_API_KEY=... or switch: export AGENTOPS_COMPILE_RUNTIME=claude-cli" >&2
+        return 1
+      fi
+      ;;
+    openai)
+      if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+        echo "ERROR: runtime=openai but OPENAI_API_KEY is not set." >&2
+        return 1
+      fi
+      ;;
+    ollama)
+      if ! command -v curl &>/dev/null; then
+        echo "ERROR: runtime=ollama but curl is not on PATH." >&2
+        return 1
+      fi
+      if ! curl -sf --max-time 2 "$OLLAMA_API/api/tags" >/dev/null 2>&1; then
+        echo "WARN: runtime=ollama but $OLLAMA_API did not respond to /api/tags (continuing anyway)" >&2
+      fi
+      ;;
+    "")
+      echo "ERROR: AGENTOPS_COMPILE_RUNTIME is not set. See 'ao compile --help' for options." >&2
+      return 1
+      ;;
+    *)
+      echo "ERROR: unknown runtime '$RUNTIME'. Expected one of: ollama, claude, claude-cli, openai." >&2
+      return 1
+      ;;
+  esac
+  return 0
 }
 
 # --- Phase: Inventory ---
@@ -178,7 +253,47 @@ compile_articles() {
     return 0
   fi
 
-  # Read all changed files into a single context
+  # --- Batching ---
+  # Sending 2000+ files in a single LLM prompt blows the context window.
+  # Split changed_files into batches of $BATCH_SIZE and compile each batch
+  # independently. Each batch produces its own articles + index entries;
+  # the lint phase reconciles the final wiki shape afterward.
+  local total=${#changed_files[@]}
+  local bsize=${BATCH_SIZE:-25}
+  if ! [[ "$bsize" =~ ^[0-9]+$ ]] || [[ "$bsize" -lt 1 ]]; then
+    bsize=25
+  fi
+  if [[ "$total" -gt "$bsize" ]]; then
+    echo "Batching $total changed files into batches of $bsize..." >&2
+    local batch_index=0
+    local i=0
+    while [[ $i -lt $total ]]; do
+      if [[ "$MAX_BATCHES" -gt 0 ]] && [[ $batch_index -ge "$MAX_BATCHES" ]]; then
+        echo "Reached --max-batches=$MAX_BATCHES; stopping after $batch_index batch(es). Remaining $((total - i)) files will be picked up on next run." >&2
+        break
+      fi
+      local end=$((i + bsize))
+      [[ $end -gt $total ]] && end=$total
+      local batch=("${changed_files[@]:i:bsize}")
+      batch_index=$((batch_index + 1))
+      echo "Batch $batch_index: files $((i+1))..$end of $total" >&2
+      local tmp
+      tmp=$(mktemp)
+      printf '%s\n' "${batch[@]}" > "$tmp"
+      # Recurse with a single-batch file list; disable further batching.
+      BATCH_SIZE=$total MAX_BATCHES=0 compile_articles < "$tmp" || {
+        rm -f "$tmp"
+        echo "Batch $batch_index failed; aborting." >&2
+        return 1
+      }
+      rm -f "$tmp"
+      i=$end
+    done
+    echo "Batched compile complete: $batch_index batch(es), $total file(s)." >&2
+    return 0
+  fi
+
+  # Read all changed files into a single context (single-batch path)
   local context=""
   for f in "${changed_files[@]}"; do
     context+="
@@ -359,11 +474,20 @@ main() {
   echo "Sources: $SOURCES_DIR" >&2
   echo "Output: $OUTPUT_DIR" >&2
   echo "Incremental: $INCREMENTAL" >&2
+  echo "Batch size: ${BATCH_SIZE}" >&2
+
+  if [[ "$PREFLIGHT_ONLY" == "true" ]]; then
+    preflight_runtime
+    return $?
+  fi
 
   if [[ "$LINT_ONLY" == "true" ]]; then
     lint_wiki
     return 0
   fi
+
+  # Verify runtime is configured before doing any work.
+  preflight_runtime || return 1
 
   # Inventory → Compile → Lint
   local changed_files

@@ -13,11 +13,12 @@ all: build
 
 # Sync hooks, scripts, and skills into cli/embedded/ for Go embed
 sync-hooks:
-	@mkdir -p embedded/hooks embedded/lib embedded/skills/standards/references embedded/skills/using-agentops
+	@mkdir -p embedded/hooks embedded/lib embedded/skills/standards/references embedded/skills/using-agentops embedded/skills/compile/scripts
 	@cp ../hooks/*.sh ../hooks/hooks.json embedded/hooks/
 	@cp ../lib/hook-helpers.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
 	@cp ../skills/using-agentops/SKILL.md embedded/skills/using-agentops/SKILL.md
+	@cp ../skills/compile/scripts/compile.sh embedded/skills/compile/scripts/compile.sh
 
 # Build the binary
 build: sync-hooks

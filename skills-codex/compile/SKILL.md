@@ -28,7 +28,24 @@ in context windows. The wiki IS the retrieval layer.
 
 ## Pluggable Compute Backend
 
-When running headless, set `AGENTOPS_COMPILE_RUNTIME` to `ollama` or `openai` for the compilation backend.
+Set `AGENTOPS_COMPILE_RUNTIME` to pick the LLM backend:
+
+| Value | Backend | Notes |
+|-------|---------|-------|
+| `claude-cli` | Local `claude` binary | Zero-config. No API key — inherits Claude Code auth. Auto-selected when `claude` is on PATH. |
+| `ollama` | Ollama API | Needs `OLLAMA_HOST` (default `http://localhost:11434`). |
+| `claude` | Anthropic HTTP API | Needs `ANTHROPIC_API_KEY`. |
+| `openai` | OpenAI-compatible | Needs `OPENAI_API_KEY`. |
+
+When unset, `ao compile` auto-detects a local `claude` binary. If that is
+also absent, headless compile fails fast with an actionable error.
+
+### Large-corpus batching
+
+`ao compile --batch-size N` caps changed files per LLM prompt (default 25),
+so a 2000+ file corpus splits into batches instead of one giant prompt.
+Pair with `--max-batches N` to cap work per invocation; remaining files are
+picked up on the next run.
 
 ## Execution Steps
 

@@ -15,6 +15,20 @@ Sweep all `.agents/` directories across the workspace, extract learnings, patter
 and research, deduplicate cross-rig, and promote high-value items to the global
 knowledge hub (`~/.agents/learnings/`).
 
+> **Naming gotcha.** `$harvest` promotes into `~/.agents/learnings/`, not
+> `~/.agents/`. Users often say "harvest all to `~/.agents`" and mean the
+> promotion hub. If you really want every raw artifact (not just the
+> promotion set) mirrored verbatim, you want `rsync`, not `$harvest`.
+
+## Which skill do I need?
+
+| I want to… | Use |
+|------------|-----|
+| Consolidate artifacts from many repos into one place | `$harvest` (writes `~/.agents/learnings/`) |
+| Synthesize the raw corpus into an interlinked wiki | `$compile` (writes `.agents/compiled/`) |
+| Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` |
+| Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
+
 ## What This Skill Does
 
 The knowledge flywheel captures learnings per-rig, but they stay siloed. Harvest

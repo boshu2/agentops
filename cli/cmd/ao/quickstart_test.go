@@ -9,6 +9,60 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TestQuickstartSkillCoversGlobalCorpus guards the 2026-04-15 regression:
+// a user with GIT=false + AO=true + ~/.agents existing must get a
+// global-corpus-aware branch in the quickstart skill, not only "git init".
+// This is a doc-level test but lives with the CLI tests so CI catches
+// regressions at the same gate.
+func TestQuickstartSkillCoversGlobalCorpus(t *testing.T) {
+	repoRoot, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatalf("abs: %v", err)
+	}
+	cases := []struct {
+		path         string
+		wantMarkers  []string
+		description  string
+	}{
+		{
+			path: filepath.Join(repoRoot, "skills", "quickstart", "SKILL.md"),
+			wantMarkers: []string{
+				"GLOBAL_AGENTS=true",
+				"GIT=false + AO=true + GLOBAL_AGENTS=true",
+				"/harvest",
+				"/compile",
+				"/knowledge-activation",
+			},
+			description: "Claude skill",
+		},
+		{
+			path: filepath.Join(repoRoot, "skills-codex", "quickstart", "SKILL.md"),
+			wantMarkers: []string{
+				"GLOBAL_AGENTS=true",
+				"GIT=false + AO=true + GLOBAL_AGENTS=true",
+				"$harvest",
+				"$compile",
+				"$knowledge-activation",
+			},
+			description: "Codex skill",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			data, err := os.ReadFile(tc.path)
+			if err != nil {
+				t.Fatalf("read %s: %v", tc.path, err)
+			}
+			body := string(data)
+			for _, marker := range tc.wantMarkers {
+				if !strings.Contains(body, marker) {
+					t.Errorf("%s missing marker %q (global-corpus branch regressed)", tc.path, marker)
+				}
+			}
+		})
+	}
+}
+
 func TestQuickstart_CommandExists(t *testing.T) {
 	if quickstartCmd == nil {
 		t.Fatal("quickstartCmd should not be nil")

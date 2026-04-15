@@ -2117,6 +2117,7 @@ ao compile [flags]
 **Flags:**
 
 ```
+      --batch-size int      Max changed files per LLM prompt (prevents single-giant-prompt on large corpora) (default 25)
       --compile-only        Skip mine and defrag; run compile plus lint
       --defrag-only         Only run mechanical defrag cleanup
       --force               Recompile all source artifacts regardless of hashes
@@ -2124,6 +2125,7 @@ ao compile [flags]
   -h, --help                help for compile
       --incremental         Compile only changed source artifacts (default true)
       --lint-only           Only lint the existing compiled wiki
+      --max-batches int     Cap number of compile batches per invocation (0 = unlimited)
       --mine-only           Only mine new knowledge signal
       --output-dir string   Compiled wiki output directory (default ".agents/compiled")
       --quiet               Suppress human progress output
