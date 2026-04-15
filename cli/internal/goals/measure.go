@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 	"unicode/utf8"
+
+	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
 
 // Measurement captures the result of running a single goal's check command.
@@ -96,7 +98,9 @@ func MeasureOne(goal Goal, timeout time.Duration) Measurement {
 	defer cancel()
 
 	start := time.Now()
-	cmd := exec.CommandContext(ctx, "bash", "-c", goal.Check)
+	// SanitizedBashCommand bypasses ~/.bashrc and BASH_ENV so user shell
+	// aliases cannot silently change the meaning of goal check strings.
+	cmd := shellutil.SanitizedBashCommand(ctx, goal.Check)
 	configureProcGroup(cmd)
 	cmd.WaitDelay = 3 * time.Second
 

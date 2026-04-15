@@ -8,12 +8,13 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
 
 // HistoryOptions configures the goals history command.
@@ -867,7 +868,9 @@ func RunAdd(ctx context.Context, opts AddOptions) error {
 	if !opts.DryRun {
 		checkCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
 		defer cancel()
-		testCmd := exec.CommandContext(checkCtx, "bash", "-c", opts.Check)
+		// SanitizedBashCommand bypasses ~/.bashrc and BASH_ENV so user shell
+		// aliases cannot silently change the meaning of new goal check strings.
+		testCmd := shellutil.SanitizedBashCommand(checkCtx, opts.Check)
 		if out, err := testCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("check command failed (exit non-zero):\n%s", string(out))
 		}
