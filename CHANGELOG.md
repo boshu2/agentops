@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.37.1] - 2026-04-15
+
+### Added
+
+- **Dream morning packets** — Dream can now emit ranked morning work packets with evidence, target files, exact follow-up commands, and queue/bead handoff metadata.
+- **Dream yield telemetry and long-haul corroboration** — overnight reports now record packet-confidence telemetry and can trigger a bounded long-haul corroboration pass when the first pass produces weak morning output.
+
+### Changed
+
+- **Dream decision flow** — overnight runs now prefer cheaper evidence corroboration before slower council fan-out, so strong runs stay short and extended runtime is reserved for genuinely weak output.
+
+### Fixed
+
+- **Headless Claude Dream council** — Dream now uses Claude's working JSON output contract for headless council runs and normalizes the returned envelope before validation.
+- **Dream close-loop and report surfaces** — overnight runs now write real close-loop callbacks and post-loop report artifacts instead of leaving placeholder `pending` steps.
+- **Retrieval ratchet release gate fallback** — the retrieval-quality release check now falls back to checked-in eval data when a local manifest is absent.
+
 ## [2.37.0] - 2026-04-14
 
 ### Added
