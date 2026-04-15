@@ -187,6 +187,11 @@ type DreamConfig struct {
 	// ConsensusPolicy controls how Dream Council synthesizes multiple runner outputs.
 	ConsensusPolicy string `yaml:"consensus_policy,omitempty" json:"consensus_policy,omitempty"`
 
+	// CouncilRunnerTimeout caps how long each Dream Council runner lane may
+	// run before its context is cancelled. Accepts Go duration strings
+	// (e.g. "90s", "3m"). Empty means "use the built-in default".
+	CouncilRunnerTimeout string `yaml:"council_runner_timeout,omitempty" json:"council_runner_timeout,omitempty"`
+
 	// CreativeLane controls whether Dream Council should request wildcard ideas.
 	// Nil means "not explicitly configured".
 	CreativeLane *bool `yaml:"creative_lane,omitempty" json:"creative_lane,omitempty"`
@@ -593,6 +598,7 @@ func mergeDream(dst, src *DreamConfig) {
 	mergeStr(&dst.SchedulerMode, src.SchedulerMode)
 	mergeStr(&dst.ScheduleAt, src.ScheduleAt)
 	mergeStr(&dst.ConsensusPolicy, src.ConsensusPolicy)
+	mergeStr(&dst.CouncilRunnerTimeout, src.CouncilRunnerTimeout)
 	if src.CreativeLane != nil {
 		dst.CreativeLane = boolPtr(*src.CreativeLane)
 	}

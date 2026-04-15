@@ -57,17 +57,18 @@ var (
 )
 
 type overnightSettings struct {
-	OutputDir         string
-	RunTimeoutRaw     string
-	RunTimeout        time.Duration
-	LongHaulEnabled   bool
-	LongHaulBudgetRaw string
-	LongHaulBudget    time.Duration
-	KeepAwake         bool
-	Runners           []string
-	RunnerModels      map[string]string
-	Consensus         string
-	CreativeLane      bool
+	OutputDir             string
+	RunTimeoutRaw         string
+	RunTimeout            time.Duration
+	LongHaulEnabled       bool
+	LongHaulBudgetRaw     string
+	LongHaulBudget        time.Duration
+	KeepAwake             bool
+	Runners               []string
+	RunnerModels          map[string]string
+	Consensus             string
+	CreativeLane          bool
+	CouncilRunnerTimeout  time.Duration
 }
 
 type overnightRuntimeSummary struct {
@@ -865,19 +866,43 @@ func resolveOvernightSettings(cmd *cobra.Command, cwd string) (overnightSettings
 		keepAwake = false
 	}
 
+	councilRunnerTimeout, err := resolveDreamCouncilRunnerTimeout(cfg.Dream)
+	if err != nil {
+		return overnightSettings{}, err
+	}
+
 	return overnightSettings{
-		OutputDir:         outputDir,
-		RunTimeoutRaw:     runTimeoutRaw,
-		RunTimeout:        runTimeout,
-		LongHaulEnabled:   overnightLongHaul,
-		LongHaulBudgetRaw: longHaulBudgetRaw,
-		LongHaulBudget:    longHaulBudget,
-		KeepAwake:         keepAwake,
-		Runners:           resolveDreamRunRunners(cfg.Dream),
-		RunnerModels:      resolveDreamRunnerModels(cfg),
-		Consensus:         resolveDreamConsensusPolicy(cfg.Dream),
-		CreativeLane:      resolveDreamCreativeLane(cfg.Dream),
+		OutputDir:            outputDir,
+		RunTimeoutRaw:        runTimeoutRaw,
+		RunTimeout:           runTimeout,
+		LongHaulEnabled:      overnightLongHaul,
+		LongHaulBudgetRaw:    longHaulBudgetRaw,
+		LongHaulBudget:       longHaulBudget,
+		KeepAwake:            keepAwake,
+		Runners:              resolveDreamRunRunners(cfg.Dream),
+		RunnerModels:         resolveDreamRunnerModels(cfg),
+		Consensus:            resolveDreamConsensusPolicy(cfg.Dream),
+		CreativeLane:         resolveDreamCreativeLane(cfg.Dream),
+		CouncilRunnerTimeout: councilRunnerTimeout,
 	}, nil
+}
+
+// resolveDreamCouncilRunnerTimeout parses DreamConfig.CouncilRunnerTimeout,
+// falling back to the package-level default when unset. A zero return means
+// "use the built-in default" per withDreamCouncilRunnerTimeout.
+func resolveDreamCouncilRunnerTimeout(dcfg config.DreamConfig) (time.Duration, error) {
+	raw := strings.TrimSpace(dcfg.CouncilRunnerTimeout)
+	if raw == "" {
+		return 0, nil
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0, fmt.Errorf("parse dream.council_runner_timeout %q: %w", raw, err)
+	}
+	if parsed <= 0 {
+		return 0, fmt.Errorf("dream.council_runner_timeout must be positive, got %q", raw)
+	}
+	return parsed, nil
 }
 
 func acquireOvernightLock(lockPath string) (*os.File, error) {

@@ -17,7 +17,14 @@ import (
 )
 
 var (
-	dreamCouncilRunnerTimeout = 90 * time.Second
+	// dreamCouncilRunnerTimeout is the built-in per-lane cap for Dream Council
+	// runners. Raised from 90s to 180s on 2026-04-15 after real overnight runs
+	// (see .agents/overnight/rpi-deep-dream-runner-fix-20260414/summary.json)
+	// repeatedly logged "claude council timed out after 1m30s" even with the
+	// headless-envelope fix in place — the Claude CLI cold-start + structured
+	// output pass routinely sits in the 90-150s band. Operators can override
+	// via DreamConfig.CouncilRunnerTimeout (yaml: dream.council_runner_timeout).
+	dreamCouncilRunnerTimeout = 180 * time.Second
 	dreamRunCodexCouncilFn    = dreamRunCodexCouncil
 	dreamRunClaudeCouncilFn   = dreamRunClaudeCouncil
 )
@@ -207,7 +214,7 @@ func runDreamCouncil(ctx context.Context, cwd string, log io.Writer, summary *ov
 	for _, runner := range settings.Runners {
 		artifactKey := "council_" + runner
 		artifactPath := summary.Artifacts[artifactKey]
-		report, err := runDreamCouncilRunner(ctx, cwd, log, runner, settings.RunnerModels[runner], schemaPath, packet, artifactPath, settings.CreativeLane)
+		report, err := runDreamCouncilRunner(ctx, cwd, log, runner, settings.RunnerModels[runner], schemaPath, packet, artifactPath, settings.CreativeLane, settings.CouncilRunnerTimeout)
 		if err != nil {
 			setOvernightStepStatus(summary, "council-"+runner, "soft-fail", artifactPath, err.Error())
 			summary.Degraded = append(summary.Degraded, fmt.Sprintf("%s council run failed: %v", runner, err))
@@ -246,13 +253,14 @@ func runDreamCouncilRunner(
 	packet dreamCouncilPacket,
 	outputPath string,
 	creative bool,
+	configuredTimeout time.Duration,
 ) (overnightCouncilRunnerReport, error) {
 	promptBytes, err := json.MarshalIndent(packet, "", "  ")
 	if err != nil {
 		return overnightCouncilRunnerReport{}, fmt.Errorf("marshal council packet: %w", err)
 	}
 	prompt := buildDreamCouncilPrompt(runner, string(promptBytes), creative)
-	runnerCtx, cancel, runnerTimeout := withDreamCouncilRunnerTimeout(ctx)
+	runnerCtx, cancel, runnerTimeout := withDreamCouncilRunnerTimeout(ctx, configuredTimeout)
 	defer cancel()
 	tempOutputPath, cleanup, err := newDreamCouncilOutputTempFile(outputPath)
 	if err != nil {
@@ -284,8 +292,11 @@ func runDreamCouncilRunner(
 	return report, nil
 }
 
-func withDreamCouncilRunnerTimeout(parent context.Context) (context.Context, context.CancelFunc, time.Duration) {
-	timeout := dreamCouncilRunnerTimeout
+func withDreamCouncilRunnerTimeout(parent context.Context, configured time.Duration) (context.Context, context.CancelFunc, time.Duration) {
+	timeout := configured
+	if timeout <= 0 {
+		timeout = dreamCouncilRunnerTimeout
+	}
 	if deadline, ok := parent.Deadline(); ok {
 		if remaining := time.Until(deadline); remaining > 0 && remaining < timeout {
 			timeout = remaining

@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	v1reader "github.com/boshu2/agentops/cli/cmd/ao/testdata/v1_reader"
+	"github.com/boshu2/agentops/cli/internal/config"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 )
 
@@ -488,6 +489,7 @@ func TestRunDreamCouncilRunner_TimesOutAndLeavesNoArtifact(t *testing.T) {
 		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
 		outputPath,
 		false,
+		0,
 	)
 	if err == nil || !strings.Contains(err.Error(), "timed out") {
 		t.Fatalf("runDreamCouncilRunner error = %v, want timeout", err)
@@ -520,6 +522,7 @@ func TestRunDreamCouncilRunner_RejectsEmptyOutput(t *testing.T) {
 		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
 		outputPath,
 		false,
+		0,
 	)
 	if err == nil || !strings.Contains(err.Error(), "output was empty") {
 		t.Fatalf("runDreamCouncilRunner error = %v, want empty-output failure", err)
@@ -553,12 +556,129 @@ func TestRunDreamCouncilRunner_ExtractsClaudeStructuredOutput(t *testing.T) {
 		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
 		outputPath,
 		false,
+		0,
 	)
 	if err != nil {
 		t.Fatalf("runDreamCouncilRunner: %v", err)
 	}
 	if report.Runner != "claude" || report.Headline != "ok" || report.RecommendedKind != "repair" {
 		t.Fatalf("report = %#v", report)
+	}
+}
+
+// TestResolveDreamCouncilRunnerTimeout covers the three config paths for the
+// dream.council_runner_timeout knob: empty → zero (use default), valid →
+// parsed duration, invalid → error.
+func TestResolveDreamCouncilRunnerTimeout(t *testing.T) {
+	got, err := resolveDreamCouncilRunnerTimeout(config.DreamConfig{})
+	if err != nil {
+		t.Fatalf("empty config: %v", err)
+	}
+	if got != 0 {
+		t.Fatalf("empty config timeout = %v, want 0 (use default)", got)
+	}
+
+	got, err = resolveDreamCouncilRunnerTimeout(config.DreamConfig{CouncilRunnerTimeout: "150s"})
+	if err != nil {
+		t.Fatalf("valid config: %v", err)
+	}
+	if got != 150*time.Second {
+		t.Fatalf("valid config timeout = %v, want 150s", got)
+	}
+
+	_, err = resolveDreamCouncilRunnerTimeout(config.DreamConfig{CouncilRunnerTimeout: "not-a-duration"})
+	if err == nil {
+		t.Fatal("invalid config: expected error, got nil")
+	}
+
+	_, err = resolveDreamCouncilRunnerTimeout(config.DreamConfig{CouncilRunnerTimeout: "-5s"})
+	if err == nil {
+		t.Fatal("negative config: expected error, got nil")
+	}
+}
+
+// TestWithDreamCouncilRunnerTimeout_PrefersConfiguredOverDefault verifies that
+// an explicit per-run configured timeout overrides the package-level default
+// (raised to 180s on 2026-04-15 for na-jox1). This is the L2 contract that
+// lets operators tune the Claude lane without rebuilding.
+func TestWithDreamCouncilRunnerTimeout_PrefersConfiguredOverDefault(t *testing.T) {
+	origDefault := dreamCouncilRunnerTimeout
+	defer func() { dreamCouncilRunnerTimeout = origDefault }()
+
+	// Default must match the raised 180s cap so overnight runs stop hitting
+	// the old 90s cold-start wall.
+	if dreamCouncilRunnerTimeout != 180*time.Second {
+		t.Fatalf("dreamCouncilRunnerTimeout default = %v, want 180s", dreamCouncilRunnerTimeout)
+	}
+
+	// Zero configured → use default.
+	_, cancel, effective := withDreamCouncilRunnerTimeout(context.Background(), 0)
+	cancel()
+	if effective != 180*time.Second {
+		t.Fatalf("effective with zero configured = %v, want default 180s", effective)
+	}
+
+	// Positive configured → use configured.
+	_, cancel, effective = withDreamCouncilRunnerTimeout(context.Background(), 42*time.Second)
+	cancel()
+	if effective != 42*time.Second {
+		t.Fatalf("effective with configured 42s = %v, want 42s", effective)
+	}
+
+	// Parent deadline tighter than configured → parent wins.
+	parentCtx, parentCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer parentCancel()
+	_, cancel, effective = withDreamCouncilRunnerTimeout(parentCtx, 200*time.Second)
+	cancel()
+	if effective > 5*time.Second || effective <= 0 {
+		t.Fatalf("effective with tight parent = %v, want <=5s and >0", effective)
+	}
+}
+
+// TestRunDreamCouncilRunner_ConfiguredTimeoutAllowsLongerClaudeRuns is the
+// regression guard for na-jox1: a stub Claude lane that sleeps past the old
+// 90s cap must complete when the configured/default timeout is 180s.
+func TestRunDreamCouncilRunner_ConfiguredTimeoutAllowsLongerClaudeRuns(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "council", "claude.json")
+
+	origClaude := dreamRunClaudeCouncilFn
+	defer func() { dreamRunClaudeCouncilFn = origClaude }()
+
+	// Simulate a Claude lane that would have missed the old 90s cap.
+	// We don't actually sleep 90s — the assertion is that the cap the runner
+	// uses is at least 100s (i.e. not the old 90s), which we check by
+	// inspecting the runner context deadline.
+	var observedDeadline time.Duration
+	dreamRunClaudeCouncilFn = func(ctx context.Context, cwd, model, schemaPath, prompt, outputPath string, log io.Writer) error {
+		if dl, ok := ctx.Deadline(); ok {
+			observedDeadline = time.Until(dl)
+		}
+		payload := `{"type":"result","subtype":"success","is_error":false,"structured_output":{"runner":"claude","headline":"ok","recommended_kind":"repair","recommended_first_action":"act","risks":[],"opportunities":[],"confidence":"high","wildcard_idea":""}}`
+		return os.WriteFile(outputPath, []byte(payload), 0o644)
+	}
+
+	// Pass an explicit 150s configured timeout — well above the old 90s cap.
+	_, err := runDreamCouncilRunner(
+		context.Background(),
+		tmpDir,
+		io.Discard,
+		"claude",
+		"",
+		filepath.Join(tmpDir, "schema.json"),
+		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
+		outputPath,
+		false,
+		150*time.Second,
+	)
+	if err != nil {
+		t.Fatalf("runDreamCouncilRunner with 150s timeout: %v", err)
+	}
+	if observedDeadline <= 90*time.Second {
+		t.Fatalf("runner deadline = %v, want > 90s (old cap)", observedDeadline)
+	}
+	if observedDeadline > 150*time.Second {
+		t.Fatalf("runner deadline = %v, want <= 150s configured", observedDeadline)
 	}
 }
 
