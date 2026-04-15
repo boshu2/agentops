@@ -2121,6 +2121,7 @@ ao compile [flags]
       --compile-only        Skip mine and defrag; run compile plus lint
       --defrag-only         Only run mechanical defrag cleanup
       --force               Recompile all source artifacts regardless of hashes
+      --force-repair        Actually delete orphans during --repair. Without --force-repair, --repair runs dry.
       --full                Run the full mine, compile, lint, and defrag cycle
   -h, --help                help for compile
       --incremental         Compile only changed source artifacts (default true)
