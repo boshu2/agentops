@@ -11,6 +11,7 @@ SEARCH_ROOT="${AGENTOPS_RETRIEVAL_RATCHET_SEARCH_ROOT:-$REPO_ROOT}"
 TURNS_DIR="${AGENTOPS_RETRIEVAL_RATCHET_TURNS_DIR:-.agents/ao/sessions/turns}"
 THRESHOLD="${AGENTOPS_RETRIEVAL_RATCHET_MIN_ANY_RELEVANT:-0.60}"
 STRICT_TURNS="${AGENTOPS_RETRIEVAL_RATCHET_STRICT_TURNS:-500}"
+DEFAULT_FALLBACK_MANIFEST="cli/cmd/ao/testdata/retrieval-bench/eval-queries.json"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "FAIL retrieval quality ratchet: jq is required" >&2
@@ -22,18 +23,52 @@ if [[ "$turns_path" != /* ]]; then
     turns_path="$REPO_ROOT/$turns_path"
 fi
 
+manifest_path="$MANIFEST"
+if [[ "$manifest_path" != /* ]]; then
+    manifest_path="$REPO_ROOT/$manifest_path"
+fi
+if [[ ! -f "$manifest_path" ]]; then
+    fallback_manifest="$REPO_ROOT/$DEFAULT_FALLBACK_MANIFEST"
+    if [[ -z "${AGENTOPS_RETRIEVAL_RATCHET_MANIFEST:-}" && -f "$fallback_manifest" ]]; then
+        manifest_path="$fallback_manifest"
+    else
+        echo "FAIL retrieval quality ratchet: read search eval manifest $manifest_path: no such file or directory" >&2
+        exit 1
+    fi
+fi
+
 turn_count=0
 if [[ -d "$turns_path" ]]; then
     turn_count="$(find "$turns_path" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
 fi
 
 report_file="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-ratchet.XXXXXX.json")"
-trap 'rm -f "$report_file"' EXIT
+normalized_manifest=""
+trap 'rm -f "$report_file" "$normalized_manifest"' EXIT
+
+if jq -e 'type == "array"' "$manifest_path" >/dev/null 2>&1; then
+    normalized_manifest="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-manifest.XXXXXX.json")"
+    jq '{
+        id: "retrieval-ratchet-fallback",
+        description: "Generated from legacy retrieval eval query array",
+        queries: [
+            to_entries[]
+            | select((.value.relevant // []) | length > 0)
+            | {
+                id: ("q" + ((.key + 1) | tostring)),
+                query: .value.query,
+                intent: (.value.category // ""),
+                ground_truth: .value.relevant
+            }
+        ]
+    }' "$manifest_path" >"$normalized_manifest"
+    manifest_path="$normalized_manifest"
+fi
 
 if ! (
     cd "$REPO_ROOT/cli"
     env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao retrieval-bench \
-        --search-eval "$MANIFEST" \
+        --search-eval "$manifest_path" \
         --search-root "$SEARCH_ROOT" \
         --json
 ) >"$report_file"; then

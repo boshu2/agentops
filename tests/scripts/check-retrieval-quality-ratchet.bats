@@ -7,9 +7,10 @@ setup() {
     TMP_DIR="$(mktemp -d)"
     FAKE_REPO="$TMP_DIR/repo"
     MOCK_BIN="$TMP_DIR/bin"
-    mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/cli" "$MOCK_BIN"
+    mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/cli/cmd/ao/testdata/retrieval-bench" "$MOCK_BIN"
     /bin/cp "$SCRIPT" "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
     chmod +x "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
+    printf '[{\"query\":\"dream\"}]\n' > "$FAKE_REPO/cli/cmd/ao/testdata/retrieval-bench/eval-queries.json"
 
     REPORT_FILE="$TMP_DIR/report.json"
     export REPORT_FILE
@@ -72,4 +73,15 @@ JSON
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL retrieval quality ratchet"* ]]
     [[ "$output" == *"indexed_turns=1"* ]]
+}
+
+@test "retrieval ratchet fails when explicit manifest override is missing" {
+    write_report "0.65"
+
+    cd "$FAKE_REPO"
+    export AGENTOPS_RETRIEVAL_RATCHET_MANIFEST="$FAKE_REPO/.agents/rpi/missing.json"
+    run bash scripts/check-retrieval-quality-ratchet.sh
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"read search eval manifest"* ]]
 }
