@@ -637,6 +637,31 @@ durable_packet_path_for_child() {
   return 1
 }
 
+has_evidence_only_packet() {
+  # Returns 0 iff a durable evidence-only closure packet exists for the given
+  # target id AND parses as JSON containing both `evidence_mode` and
+  # `repo_state` keys (the schema written by
+  # skills/post-mortem/scripts/write-evidence-only-closure.sh).
+  #
+  # Used as a top-of-loop short-circuit in classify_child: when this returns 0,
+  # the bead is accepted as fully closed (PASS, evidence-only-packet) and ALL
+  # other classification paths (parser_miss, timing_miss, discovery_miss) are
+  # skipped. This makes evidence-only packets the strongest proof surface.
+  local target_id="$1"
+  local safe_target="${target_id//\//_}"
+  local packet_path=""
+
+  if [[ -f ".agents/releases/evidence-only-closures/${safe_target}.json" ]]; then
+    packet_path=".agents/releases/evidence-only-closures/${safe_target}.json"
+  elif [[ -f ".agents/council/evidence-only-closures/${safe_target}.json" ]]; then
+    packet_path=".agents/council/evidence-only-closures/${safe_target}.json"
+  else
+    return 1
+  fi
+
+  jq -e 'has("evidence_mode") and has("repo_state")' "$packet_path" >/dev/null 2>&1
+}
+
 packet_matches_json() {
   local packet_path="$1"
 
@@ -692,6 +717,22 @@ classify_child() {
     if [[ "$human_output" != *"CLOSED"* ]]; then
       return 0
     fi
+  fi
+
+  # Evidence-only packet short-circuit: when a durable closure packet exists
+  # for this bead AND it has the schema written by write-evidence-only-closure.sh
+  # (must contain `evidence_mode` and `repo_state` keys), accept the bead as
+  # fully closed and skip ALL other classification paths. Evidence-only packets
+  # are the strongest proof surface — they bypass parser_miss, timing_miss, and
+  # discovery_miss because the packet itself is the durable, replayable proof.
+  if has_evidence_only_packet "$child"; then
+    if packet_path="$(durable_packet_path_for_child "$child")"; then
+      packet_json="$(packet_matches_json "$packet_path" 2>/dev/null || printf '[]')"
+    else
+      packet_json='[]'
+    fi
+    build_child_result "$child" '[]' "evidence-only-packet" "evidence-only closure packet accepted (short-circuit)" "$packet_json" "pass"
+    return 0
   fi
 
   mapfile -t scoped_files < <(extract_scoped_files "$child")

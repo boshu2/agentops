@@ -9,23 +9,25 @@ This audit catches four failure modes discovered in production:
 3. **Orphaned children** — Child beads exist in `bd list` but aren't linked to parent in `bd show <parent>`.
 4. **Stretch goals closed without work** — Items marked "stretch" bulk-closed when epic closes, with no implementation or documented deferral rationale.
 
-For **evidence-only closures** that intentionally do not produce a code delta, require a proof artifact at `.agents/council/evidence-only-closures/<target-id>.json`. The artifact is written with `bash skills/post-mortem/scripts/write-evidence-only-closure.sh` and gives later audits something durable to validate besides bead notes.
+For **evidence-only closures** that intentionally do not produce a code delta, require a proof artifact at `.agents/releases/evidence-only-closures/<target-id>.json` (or, for legacy artifacts, `.agents/council/evidence-only-closures/<target-id>.json`). The artifact is written with `bash skills/post-mortem/scripts/write-evidence-only-closure.sh` and gives later audits something durable to validate besides bead notes.
 
 Evidence strength is ordered. Closure integrity must always resolve on the strongest available source in this order:
 
-1. `commit` — commit references or commit history touching the scoped files
-2. `staged` — index state proves the scoped files are queued for commit even if no commit exists yet
-3. `worktree` — unstaged or untracked scoped files prove active-session work exists when neither commit nor staged evidence is available
-4. `evidence-only-packet` — a durable closure proof packet exists at `.agents/releases/evidence-only-closures/<target-id>.json` or `.agents/council/evidence-only-closures/<target-id>.json`, used when no scoped files can be extracted but a valid schema-backed artifact proves the closure
+1. `evidence-only-packet` — a durable closure proof packet exists at `.agents/releases/evidence-only-closures/<target-id>.json` or `.agents/council/evidence-only-closures/<target-id>.json` and parses as JSON containing both `evidence_mode` and `repo_state` keys (the schema written by `write-evidence-only-closure.sh`). This is the **strongest** proof surface and short-circuits all other classification paths: when the packet is present and well-formed, the bead is accepted as PASS regardless of scoped-file extraction or git state. Use this for maintenance epics, policy closures, and any work whose proof is the packet itself rather than a code delta.
+2. `commit` — commit references or commit history touching the scoped files
+3. `staged` — index state proves the scoped files are queued for commit even if no commit exists yet
+4. `worktree` — unstaged or untracked scoped files prove active-session work exists when neither commit nor staged evidence is available
 5. `grace-window` — commit evidence found within the configurable grace window (default 24h) after bead close, covering the close-before-commit pattern
 
-Only fall back to a weaker source when the stronger source has no qualifying evidence for that child. A dirty worktree must not downgrade a valid commit-backed closure.
+Only fall back to a weaker source when the stronger source has no qualifying evidence for that child. A dirty worktree must not downgrade a valid commit-backed closure. Conversely, a valid evidence-only packet must not be downgraded by the absence of scoped-file evidence — the packet is itself the proof.
 
 The allowed evidence modes in audit output are: `commit`, `staged`, `worktree`, `evidence-only-packet`, `grace-window`, and the warn-only mode `discovery-seed-missing`. No catch-all or wildcard modes are accepted.
 
 ### Discovery-phase seed artifacts (WARN-only, never FAIL)
 
 Discovery-phase beads — the brainstorm / research / discovery children an epic spawns during the Research phase — commonly cite seed artifacts (`.agents/brainstorm/...`, `.agents/research/...`, `.agents/discovery/...`) that are ephemeral working notes, not durable proof surfaces. These seeds are often never persisted and cannot be replayed by later audits.
+
+The discovery-miss WARN policy only runs when the bead does NOT have a valid evidence-only closure packet. A bead with such a packet PASSes via the evidence-only-packet short-circuit before discovery classification is considered.
 
 When a CLOSED bead has **every** scoped file under `.agents/brainstorm/`, `.agents/research/`, or `.agents/discovery/` AND at least one of the following non-discovery proof surfaces exists, the audit emits `status=warn`, `evidence_mode=discovery-seed-missing`, `detail` starting with `discovery_miss:` — it does NOT hard-fail as `timing_miss`:
 

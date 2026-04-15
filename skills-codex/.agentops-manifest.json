@@ -812,13 +812,13 @@
       "name": "plan",
       "source_skill": "skills/plan",
       "source_hash": "1a60effff3f0e9380dc55a0816dfb3256d0f5ad6d72d1a269c210668860184d9",
-      "generated_hash": "fe9a9f53d0e7d7a1ba34215c3b7a63625865eadfd4048428f6ee7a74cb1748c7"
+      "generated_hash": "fb1914b662f7fddd9624edf3cb85be8d083ce77a491d17e103897434f258a774"
     },
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "afce1fac76a1e506e9405b76886ecdf390c3eead5d863d82b8311286ad00d6a4",
-      "generated_hash": "7fbb0b9607e6487fa93332fc4bad898bcfd03b436bce50499814b70aad7a92c1"
+      "generated_hash": "c62fcb739217ad8633f10ff27b5dd7a34ea1fae0bfea0a68705d0f140257b6cd"
     },
     {
       "name": "pr-implement",

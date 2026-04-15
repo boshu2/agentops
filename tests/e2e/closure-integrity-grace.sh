@@ -333,6 +333,87 @@ else
   fail "non-discovery miss must remain timing_miss FAIL (got status=$verdict failure_type=$ftype)"
 fi
 
+# Test 9: Bead with NO scoped files but a valid evidence-only packet
+# (containing both `evidence_mode` and `repo_state`) should PASS via the
+# evidence-only-packet short-circuit, NOT trip parser_miss or timing_miss.
+cat > "$BD_DIR/children.json" <<JSON
+[{"id": "test-epic.9"}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.9.json" <<JSON
+[{
+  "id": "test-epic.9",
+  "status": "closed",
+  "created_at": "2026-04-14T10:00:00+00:00",
+  "closed_at": "2026-04-14T20:00:00+00:00",
+  "description": "Maintenance closure with no code delta. Proven via evidence-only packet."
+}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.9.txt" <<TXT
+test-epic.9 - Maintenance closure   [P1 - CLOSED]
+Close reason: Completed: maintenance closure backed by evidence-only packet.
+
+DESCRIPTION
+Maintenance closure with no code delta. Proven via evidence-only packet.
+TXT
+
+(
+  cd "$REPO_DIR"
+  rm -rf .agents 2>/dev/null || true
+  git reset --hard HEAD -q 2>/dev/null || true
+  mkdir -p .agents/releases/evidence-only-closures
+  cat > .agents/releases/evidence-only-closures/test-epic.9.json <<'PACKET'
+{
+  "target_id": "test-epic.9",
+  "target_type": "task",
+  "producer": "post-mortem",
+  "evidence_mode": "commit",
+  "validation_commands": ["bash scripts/validate-manifests.sh"],
+  "repo_state": {
+    "repo_root": ".",
+    "git_branch": "main",
+    "git_dirty": false,
+    "head_sha": "deadbeef",
+    "modified_files": [],
+    "staged_files": [],
+    "unstaged_files": [],
+    "untracked_files": []
+  },
+  "evidence": {
+    "summary": "Closed via evidence-only packet for maintenance audit.",
+    "artifacts": [".agents/releases/evidence-only-closures/test-epic.9.json"],
+    "notes": []
+  }
+}
+PACKET
+)
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto test-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+mode="$(echo "$result" | jq -r '.children[0].evidence_mode')"
+detail="$(echo "$result" | jq -r '.children[0].detail')"
+failures_len="$(echo "$result" | jq -r '.failures | length')"
+
+if [[ "$verdict" == "pass" ]] && [[ "$mode" == "evidence-only-packet" ]] \
+   && [[ "$detail" == *"short-circuit"* ]] && [[ "$failures_len" == "0" ]]; then
+  pass "evidence-only packet short-circuits classification to PASS"
+else
+  fail "evidence-only packet should short-circuit to PASS evidence-only-packet (got status=$verdict mode=$mode detail=$detail failures=$failures_len)"
+fi
+
+# Test 10: same as Test 9 but using --scope commit, verifying the short-circuit
+# fires for the scope-mode classifier path too.
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope commit test-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+mode="$(echo "$result" | jq -r '.children[0].evidence_mode')"
+
+if [[ "$verdict" == "pass" ]] && [[ "$mode" == "evidence-only-packet" ]]; then
+  pass "evidence-only packet short-circuits under --scope commit too"
+else
+  fail "evidence-only packet should short-circuit under --scope commit (got status=$verdict mode=$mode)"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
