@@ -471,6 +471,97 @@ worktree_matches_json() {
   } | json_array_from_stream
 }
 
+is_discovery_phase_path() {
+  # Discovery-phase artifacts are ephemeral seeds for brainstorm/research/discovery
+  # sessions. They are NOT durable proof surfaces. A closed bead that cites one
+  # but never persisted it should not hard-fail closure-integrity-audit as long
+  # as the bead has other real proof (commit referencing the id, a non-discovery
+  # scoped file that does have evidence, or an evidence-only packet).
+  local path="$1"
+  [[ "$path" == .agents/brainstorm/* ]] && return 0
+  [[ "$path" == .agents/research/* ]] && return 0
+  [[ "$path" == .agents/discovery/* ]] && return 0
+  return 1
+}
+
+all_scoped_files_are_discovery() {
+  # Returns 0 (true) if every scoped file is a discovery-phase artifact AND
+  # there is at least one such file. Empty input returns 1 (false).
+  local file
+  local any=1
+  for file in "$@"; do
+    any=0
+    is_discovery_phase_path "$file" || return 1
+  done
+  return $any
+}
+
+child_has_nondiscovery_proof_surface() {
+  # Returns 0 (true) if the bead has at least one non-discovery proof surface
+  # that audits can replay against:
+  #   - a commit message referencing the bead id
+  #   - a durable evidence-only packet
+  #   - a .agents/plans/ or .agents/findings/ file referenced in the bead text
+  #     that actually exists on disk
+  #   - any non-discovery file path referenced in the bead text (description +
+  #     close reason) that has real git history
+  # Used only to downgrade discovery-only timing misses to discovery_miss WARN.
+  local child="$1"
+  local packet_path=""
+
+  if commit_ref_exists "$child"; then
+    return 0
+  fi
+  if packet_path="$(durable_packet_path_for_child "$child")" && packet_is_valid_for_child "$packet_path" "$child"; then
+    return 0
+  fi
+
+  local human_output
+  human_output="$(bd show "$child" 2>/dev/null || true)"
+  [[ -n "$human_output" ]] || return 1
+
+  # Collect all file-like paths from the full bd-show text (description +
+  # close reason). Filter to non-discovery paths.
+  local candidate=""
+  while IFS= read -r candidate; do
+    [[ -n "$candidate" ]] || continue
+    is_discovery_phase_path "$candidate" && continue
+    case "$candidate" in
+      .agents/plans/*|.agents/findings/*|.agents/council/*|.agents/releases/*)
+        [[ -e "$candidate" ]] && return 0
+        ;;
+    esac
+    # Any non-discovery file path that exists OR has git history counts.
+    if [[ -e "$candidate" ]]; then
+      return 0
+    fi
+    if run_git_clean log -n 1 --format=%H --all --diff-filter=ACMR -- "$candidate" 2>/dev/null | grep -q .; then
+      return 0
+    fi
+  done < <(
+    printf '%s\n' "$human_output" \
+      | strip_urls_from_stream \
+      | extract_file_paths_from_stream \
+      | sed '/^[[:space:]]*$/d' \
+      | sort -u
+  )
+
+  # Last proof surface: a non-trivial "Close reason:" line (>= 24 chars of
+  # free text after the prefix). A substantive close reason written at
+  # bd-close time is itself auditable evidence that the work was accepted.
+  # Empty or generic close reasons do NOT count.
+  local close_reason_len=0
+  close_reason_len="$(
+    printf '%s\n' "$human_output" \
+      | awk -F'Close reason:' '/Close reason:/ { print length($2); exit }'
+  )"
+  if [[ -n "$close_reason_len" && "$close_reason_len" -ge 24 ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 child_is_closed() {
   local child_json="$1"
 
@@ -647,6 +738,10 @@ classify_child() {
             build_child_result "$child" "$scoped_json" "none" "parser_miss: no scoped files extracted from description" '[]' "fail"
           fi
         else
+          if all_scoped_files_are_discovery "${scoped_files[@]}" && child_has_nondiscovery_proof_surface "$child"; then
+            build_child_result "$child" "$scoped_json" "discovery-seed-missing" "discovery_miss: closed bead cites discovery-phase artifact(s) (.agents/brainstorm/.agents/research/.agents/discovery/) that were never persisted, but other proof surface exists" '[]' "warn"
+            return 0
+          fi
           build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no commit evidence (checked grace window)" '[]' "fail"
         fi
         return 0
@@ -699,6 +794,18 @@ classify_child() {
     return 0
   fi
 
+  # Discovery-phase seed artifacts (.agents/brainstorm/, .agents/research/,
+  # .agents/discovery/) are ephemeral and commonly not persisted. If EVERY
+  # scoped file is such a seed AND the bead has any other proof surface
+  # (commit referencing the bead id, evidence-only packet, plan/finding
+  # file, or non-discovery file mentioned in bead text with real history),
+  # downgrade to WARN (discovery_miss) instead of hard-failing. Non-discovery
+  # scoped misses still hard-fail.
+  if all_scoped_files_are_discovery "${scoped_files[@]}" && child_has_nondiscovery_proof_surface "$child"; then
+    build_child_result "$child" "$scoped_json" "discovery-seed-missing" "discovery_miss: closed bead cites discovery-phase artifact(s) (.agents/brainstorm/.agents/research/.agents/discovery/) that were never persisted, but other proof surface exists (commit-ref/packet/plan/finding)" '[]' "warn"
+    return 0
+  fi
+
   build_child_result "$child" "$scoped_json" "none" "timing_miss: scoped files found but no evidence in any scope (commit/grace/staged/worktree/packet)" '[]' "fail"
 }
 
@@ -748,15 +855,18 @@ jq -s \
     summary: {
       checked_children: length,
       passed: ([.[] | select(.status == "pass")] | length),
+      warned: ([.[] | select(.status == "warn")] | length),
       failed: ([.[] | select(.status == "fail")] | length),
       evidence_modes: {
         commit: ([.[] | select(.status == "pass" and .evidence_mode == "commit") | .child_id] | sort),
         staged: ([.[] | select(.status == "pass" and .evidence_mode == "staged") | .child_id] | sort),
         worktree: ([.[] | select(.status == "pass" and .evidence_mode == "worktree") | .child_id] | sort),
         "evidence-only-packet": ([.[] | select(.status == "pass" and .evidence_mode == "evidence-only-packet") | .child_id] | sort),
-        "grace-window": ([.[] | select(.status == "pass" and .evidence_mode == "grace-window") | .child_id] | sort)
+        "grace-window": ([.[] | select(.status == "pass" and .evidence_mode == "grace-window") | .child_id] | sort),
+        "discovery-seed-missing": ([.[] | select(.status == "warn" and .evidence_mode == "discovery-seed-missing") | .child_id] | sort)
       }
     },
     children: .,
-    failures: [.[] | select(.status == "fail") | {child_id, detail, failure_type: (if (.detail | startswith("parser_miss")) then "parser_miss" elif (.detail | startswith("timing_miss")) then "timing_miss" else "unknown" end)}]
+    warnings: [.[] | select(.status == "warn") | {child_id, detail, warning_type: (if (.detail | startswith("parser_miss")) then "parser_miss" elif (.detail | startswith("discovery_miss")) then "discovery_miss" else "unknown" end)}],
+    failures: [.[] | select(.status == "fail") | {child_id, detail, failure_type: (if (.detail | startswith("parser_miss")) then "parser_miss" elif (.detail | startswith("timing_miss")) then "timing_miss" elif (.detail | startswith("discovery_miss")) then "discovery_miss" else "unknown" end)}]
   }' "$tmp_results"

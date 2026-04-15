@@ -21,7 +21,21 @@ Evidence strength is ordered. Closure integrity must always resolve on the stron
 
 Only fall back to a weaker source when the stronger source has no qualifying evidence for that child. A dirty worktree must not downgrade a valid commit-backed closure.
 
-The allowed evidence modes in audit output are: `commit`, `staged`, `worktree`, `evidence-only-packet`, `grace-window`. No catch-all or wildcard modes are accepted.
+The allowed evidence modes in audit output are: `commit`, `staged`, `worktree`, `evidence-only-packet`, `grace-window`, and the warn-only mode `discovery-seed-missing`. No catch-all or wildcard modes are accepted.
+
+### Discovery-phase seed artifacts (WARN-only, never FAIL)
+
+Discovery-phase beads — the brainstorm / research / discovery children an epic spawns during the Research phase — commonly cite seed artifacts (`.agents/brainstorm/...`, `.agents/research/...`, `.agents/discovery/...`) that are ephemeral working notes, not durable proof surfaces. These seeds are often never persisted and cannot be replayed by later audits.
+
+When a CLOSED bead has **every** scoped file under `.agents/brainstorm/`, `.agents/research/`, or `.agents/discovery/` AND at least one of the following non-discovery proof surfaces exists, the audit emits `status=warn`, `evidence_mode=discovery-seed-missing`, `detail` starting with `discovery_miss:` — it does NOT hard-fail as `timing_miss`:
+
+- a commit whose message references the bead id
+- a durable evidence-only closure packet for the bead
+- a `.agents/plans/` or `.agents/findings/` file referenced in the bead text that exists on disk
+- any non-discovery file path referenced in the bead description or close reason that has real git history
+- a substantive `Close reason:` line (≥ 24 chars) written at `bd close` time
+
+Beads with scoped files OUTSIDE the discovery-phase prefixes that lack evidence still hard-fail as `timing_miss`. The downgrade applies only when discovery seeds are the only scoped files.
 
 ## When to Run
 

@@ -246,6 +246,93 @@ else
   fail "expired grace window should be timing_miss (got status=$verdict failure_type=$ftype)"
 fi
 
+# Test 7: Discovery-phase seed that was never persisted (.agents/brainstorm/,
+# .agents/research/, .agents/discovery/) on a CLOSED bead with a non-trivial
+# close reason should WARN as discovery_miss, NOT hard-fail as timing_miss.
+cat > "$BD_DIR/children.json" <<JSON
+[{"id": "test-epic.7"}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.7.json" <<JSON
+[{
+  "id": "test-epic.7",
+  "status": "closed",
+  "created_at": "2026-04-14T10:00:00+00:00",
+  "closed_at": "2026-04-14T20:00:00+00:00",
+  "description": "Add opt-in long-haul controller.\n\nSeed: .agents/brainstorm/2026-04-14-long-haul-value.md"
+}]
+JSON
+
+# Also emit a human-readable show with a Close reason: the shell audit reads
+# the human output for the close_reason_len fallback.
+cat > "$BD_DIR/show-test-epic.7.txt" <<TXT
+✓ test-epic.7 · Add opt-in long-haul controller   [● P1 · CLOSED]
+Owner: Test · Type: feature
+Close reason: Completed: landed the controller plus tests in cli/internal; parent remains open for follow-up.
+
+DESCRIPTION
+Add opt-in long-haul controller.
+
+Seed: .agents/brainstorm/2026-04-14-long-haul-value.md
+TXT
+
+(
+  cd "$REPO_DIR"
+  rm -rf .agents 2>/dev/null || true
+  git reset --hard HEAD -q 2>/dev/null || true
+)
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto test-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+mode="$(echo "$result" | jq -r '.children[0].evidence_mode')"
+detail="$(echo "$result" | jq -r '.children[0].detail')"
+failures_len="$(echo "$result" | jq -r '.failures | length')"
+
+if [[ "$verdict" == "warn" ]] && [[ "$mode" == "discovery-seed-missing" ]] \
+   && [[ "$detail" == discovery_miss:* ]] && [[ "$failures_len" == "0" ]]; then
+  pass "discovery-phase seed miss on CLOSED bead classifies as discovery_miss WARN (not timing_miss FAIL)"
+else
+  fail "discovery-phase seed miss should warn as discovery_miss (got status=$verdict mode=$mode detail=$detail failures=$failures_len)"
+fi
+
+# Test 8: Non-discovery scoped file (cli/foo.go) that doesn't exist in git
+# must still hard-fail as timing_miss — the discovery downgrade is NOT a
+# generic escape hatch.
+cat > "$BD_DIR/children.json" <<JSON
+[{"id": "test-epic.8"}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.8.json" <<JSON
+[{
+  "id": "test-epic.8",
+  "status": "closed",
+  "created_at": "2026-04-14T10:00:00+00:00",
+  "closed_at": "2026-04-14T20:00:00+00:00",
+  "description": "Refactor handler.\n\nFiles:\n- \`cli/cmd/ao/nonexistent_handler.go\`"
+}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.8.txt" <<TXT
+✓ test-epic.8 · Refactor handler   [● P1 · CLOSED]
+Close reason: Completed: refactored handler thoroughly across the codebase.
+
+DESCRIPTION
+Refactor handler.
+
+Files:
+- \`cli/cmd/ao/nonexistent_handler.go\`
+TXT
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto test-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+ftype="$(echo "$result" | jq -r '.failures[0].failure_type // "none"')"
+
+if [[ "$verdict" == "fail" ]] && [[ "$ftype" == "timing_miss" ]]; then
+  pass "non-discovery scoped file without evidence still hard-fails as timing_miss"
+else
+  fail "non-discovery miss must remain timing_miss FAIL (got status=$verdict failure_type=$ftype)"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]
