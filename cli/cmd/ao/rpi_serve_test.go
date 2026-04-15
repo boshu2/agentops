@@ -212,8 +212,14 @@ func TestClassifyServeArg_12HexRunID(t *testing.T) {
 		{"12-hex via arg", "", []string{"760fc86f0c0f"}, "", "760fc86f0c0f"},
 		{"8-hex rpi prefix via flag", "rpi-a1b2c3d4", nil, "", "rpi-a1b2c3d4"},
 		{"12-hex rpi prefix via flag", "rpi-760fc86f0c0f", nil, "", "rpi-760fc86f0c0f"},
-		{"bare 8-hex via flag treated as goal", "0aa420a9", nil, "0aa420a9", ""},
+		// Legacy bare 8-hex run IDs (e.g. `.agents/rpi/runs/0aa420a9/`) must
+		// remain reachable via the explicit --run-id flag — user intent is
+		// unambiguous on the flag path. Positional tokens stay strict to
+		// avoid misclassifying short git SHAs typed as goal strings.
+		{"bare 8-hex via flag accepted", "0aa420a9", nil, "", "0aa420a9"},
 		{"bare 8-hex via arg treated as goal", "", []string{"4c538e8a"}, "4c538e8a", ""},
+		{"uuid via flag treated as goal", "550e8400-e29b-41d4-a716-446655440000", nil, "550e8400-e29b-41d4-a716-446655440000", ""},
+		{"uuid via arg treated as goal", "", []string{"550e8400-e29b-41d4-a716-446655440000"}, "550e8400-e29b-41d4-a716-446655440000", ""},
 		{"goal string", "improve-coverage", nil, "improve-coverage", ""},
 		{"empty", "", nil, "", ""},
 	}
@@ -371,8 +377,13 @@ func TestValidateExplicitServeRunID(t *testing.T) {
 		{name: "empty allowed", input: "", want: ""},
 		{name: "bare 12-hex", input: "760fc86f0c0f", want: "760fc86f0c0f"},
 		{name: "prefixed 8-hex", input: "rpi-a1b2c3d4", want: "rpi-a1b2c3d4"},
-		{name: "bare 8-hex rejected", input: "3f0d90bd", wantErr: true},
+		{name: "prefixed 12-hex", input: "rpi-760fc86f0c0f", want: "rpi-760fc86f0c0f"},
+		// Legacy bare 8-hex is accepted on the explicit flag path so historical
+		// run registries at .agents/rpi/runs/<8hex>/ remain reachable.
+		{name: "bare 8-hex accepted", input: "3f0d90bd", want: "3f0d90bd"},
+		{name: "uuid rejected", input: "550e8400-e29b-41d4-a716-446655440000", wantErr: true},
 		{name: "goal rejected", input: "add auth", wantErr: true},
+		{name: "bare 10-hex rejected", input: "3f0d90bd01", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
