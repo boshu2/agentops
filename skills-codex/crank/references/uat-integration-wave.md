@@ -16,6 +16,32 @@ Integration workers **validate but don't modify code**. They run scenarios that 
 
 This prevents integration workers from making conflicting edits to files owned by feature workers.
 
+## Pre-flight: Verify Binary Version
+
+Before running any UAT scenario, confirm the `ao` binary in PATH matches the
+expected release. Stale binaries are the #1 cause of false UAT failures.
+
+```bash
+# Run the pre-flight check (exits non-zero on mismatch):
+bash scripts/preflight-uat-binary.sh
+
+# Or inline:
+ao version   # confirm output matches the release under test
+```
+
+Record the version string below. If it does not match the target version for
+this UAT, **STOP** — rebuild or reinstall before proceeding:
+
+```bash
+cd cli && make build && cp bin/ao "$(command -v ao)"
+```
+
+- **Expected version:** _fill in before UAT starts_
+- **Observed version:** _paste `ao version` output_
+
+This is **Scenario 0** in every UAT integration wave — it must pass before any
+functional scenarios execute.
+
 ## Example Integration Scenarios
 
 ### Pipeline Flow Test
@@ -40,27 +66,6 @@ ao defrag --dry-run --json
 ao mine --quiet --sources git
 ao lookup --query "integration test" --json --no-cite
 ```
-
-## Binary Version Pre-Flight
-
-Before running any UAT scenario, verify the `ao` binary in PATH matches the
-expected release.  Stale binaries are the #1 cause of false UAT failures.
-
-```bash
-# Run the pre-flight check (exits non-zero on mismatch):
-bash scripts/preflight-uat-binary.sh
-
-# Or inline:
-ao version   # confirm output matches the release under test
-```
-
-If the check fails, rebuild and install:
-```bash
-cd cli && make build && cp bin/ao "$(command -v ao)"
-```
-
-Add this as **Scenario 0** in every UAT integration wave — it must pass before
-any functional scenarios execute.
 
 ## Worker Prompt Template
 
