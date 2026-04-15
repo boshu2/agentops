@@ -886,10 +886,10 @@ EC=0
 echo '{"tool_name":"Skill","tool_input":{"skill":"vibe","args":""}}' | bash "$HOOKS_DIR/pre-mortem-gate.sh" >/dev/null 2>&1 || EC=$?
 if [ "$EC" -eq 0 ]; then pass "pre-mortem-gate passes non-crank skill"; else fail "pre-mortem-gate passes non-crank skill"; fi
 
-# Test: Crank with no epic ID => fail-open
+# Test: Crank with no epic ID => strict mode blocks
 EC=0
 echo '{"tool_name":"Skill","tool_input":{"skill":"crank","args":""}}' | bash "$HOOKS_DIR/pre-mortem-gate.sh" >/dev/null 2>&1 || EC=$?
-if [ "$EC" -eq 0 ]; then pass "pre-mortem-gate fail-open on no epic ID"; else fail "pre-mortem-gate fail-open on no epic ID"; fi
+if [ "$EC" -eq 2 ]; then pass "pre-mortem-gate blocks on no epic ID in strict mode"; else fail "pre-mortem-gate blocks on no epic ID in strict mode"; fi
 
 # Test: Kill switch allows crank
 EC=0
