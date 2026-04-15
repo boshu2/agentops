@@ -253,47 +253,52 @@ compile_articles() {
     return 0
   fi
 
-  # --- Batching ---
-  # Sending 2000+ files in a single LLM prompt blows the context window.
-  # Split changed_files into batches of $BATCH_SIZE and compile each batch
-  # independently. Each batch produces its own articles + index entries;
-  # the lint phase reconciles the final wiki shape afterward.
+  # Explicit outer batching loop: chunk changed_files into slices of
+  # $BATCH_SIZE and call compile_single_batch for each slice. Keeping the
+  # loop explicit (no recursion, no prefix-env-assignment) makes the flow
+  # testable and readable.
   local total=${#changed_files[@]}
   local bsize=${BATCH_SIZE:-25}
   if ! [[ "$bsize" =~ ^[0-9]+$ ]] || [[ "$bsize" -lt 1 ]]; then
     bsize=25
   fi
-  if [[ "$total" -gt "$bsize" ]]; then
-    echo "Batching $total changed files into batches of $bsize..." >&2
-    local batch_index=0
-    local i=0
-    while [[ $i -lt $total ]]; do
-      if [[ "$MAX_BATCHES" -gt 0 ]] && [[ $batch_index -ge "$MAX_BATCHES" ]]; then
-        echo "Reached --max-batches=$MAX_BATCHES; stopping after $batch_index batch(es). Remaining $((total - i)) files will be picked up on next run." >&2
-        break
-      fi
-      local end=$((i + bsize))
-      [[ $end -gt $total ]] && end=$total
-      local batch=("${changed_files[@]:i:bsize}")
-      batch_index=$((batch_index + 1))
-      echo "Batch $batch_index: files $((i+1))..$end of $total" >&2
-      local tmp
-      tmp=$(mktemp)
-      printf '%s\n' "${batch[@]}" > "$tmp"
-      # Recurse with a single-batch file list; disable further batching.
-      BATCH_SIZE=$total MAX_BATCHES=0 compile_articles < "$tmp" || {
-        rm -f "$tmp"
-        echo "Batch $batch_index failed; aborting." >&2
-        return 1
-      }
-      rm -f "$tmp"
-      i=$end
-    done
-    echo "Batched compile complete: $batch_index batch(es), $total file(s)." >&2
+  if [[ "$total" -le "$bsize" ]]; then
+    compile_single_batch "${changed_files[@]}"
+    return $?
+  fi
+
+  echo "Batching $total changed files into batches of $bsize..." >&2
+  local batch_index=0
+  local i=0
+  while [[ $i -lt $total ]]; do
+    if [[ "$MAX_BATCHES" -gt 0 ]] && [[ $batch_index -ge "$MAX_BATCHES" ]]; then
+      echo "Reached --max-batches=$MAX_BATCHES; stopping after $batch_index batch(es). Remaining $((total - i)) files will be picked up on next run." >&2
+      break
+    fi
+    local end=$((i + bsize))
+    [[ $end -gt $total ]] && end=$total
+    batch_index=$((batch_index + 1))
+    echo "Batch $batch_index: files $((i+1))..$end of $total" >&2
+    if ! compile_single_batch "${changed_files[@]:i:bsize}"; then
+      echo "Batch $batch_index failed; aborting." >&2
+      return 1
+    fi
+    i=$end
+  done
+  echo "Batched compile complete: $batch_index batch(es), $total file(s)." >&2
+  return 0
+}
+
+# compile_single_batch compiles one chunk of changed files in a single LLM
+# call. Callers (compile_articles) handle chunking; this function assumes
+# the argv list fits in one prompt.
+compile_single_batch() {
+  local changed_files=("$@")
+  if [[ ${#changed_files[@]} -eq 0 ]]; then
     return 0
   fi
 
-  # Read all changed files into a single context (single-batch path)
+  # Read all changed files into a single context
   local context=""
   for f in "${changed_files[@]}"; do
     context+="
