@@ -11,7 +11,16 @@
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_SKIP_PRE_MORTEM_GATE:-}" = "1" ] && exit 0
-PREMORTEM_FALLBACK="${AGENTOPS_PREMORTEM_FALLBACK:-open}"
+
+# Bootstrap escape hatch: only use when the gate itself is broken and you
+# need to land a fix. ALWAYS logs to stderr so its use is never silent.
+if [ "${AGENTOPS_PREMORTEM_GATE_BOOTSTRAP:-}" = "1" ]; then
+    echo "WARN: pre-mortem-gate bypassed via AGENTOPS_PREMORTEM_GATE_BOOTSTRAP=1 (intended only for landing gate fixes)" >&2
+    exit 0
+fi
+
+# Default fallback is strict (lock-on-ambiguity). Set =open for legacy advisory mode.
+PREMORTEM_FALLBACK="${AGENTOPS_PREMORTEM_FALLBACK:-strict}"
 AO_TIMEOUT_BIN="timeout"
 command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
 
@@ -50,11 +59,24 @@ echo "$SKILL_ARGS" | grep -q "\-\-skip-pre-mortem" && exit 0
 
 # Extract epic-id from args (first arg that looks like a bead ID)
 EPIC_ID=$(echo "$SKILL_ARGS" | grep -oE '[a-z]{2}-[a-z0-9]+' | head -1)
-[ -z "$EPIC_ID" ] && exit 0  # No epic ID found, can't check — fail open
+if [ -z "$EPIC_ID" ]; then
+    # No epic ID parseable from args. In open mode, allow (legacy). In strict mode, lock.
+    if [ "$PREMORTEM_FALLBACK" = "strict" ]; then
+        echo "BLOCKED: pre-mortem-gate could not parse an epic-id from /crank args (locked-by-default)." >&2
+        echo "  Pass an explicit epic id (e.g. /crank ag-1234) or set AGENTOPS_PREMORTEM_GATE_BOOTSTRAP=1." >&2
+        exit 2
+    fi
+    exit 0
+fi
 
 # Count children
-if ! command -v bd &>/dev/null; then
-    exit 0  # No bd CLI, can't count — fail open
+if ! command -v bd >/dev/null 2>&1; then
+    if [ "$PREMORTEM_FALLBACK" = "strict" ]; then
+        echo "BLOCKED: pre-mortem-gate cannot find 'bd' CLI to verify epic structure (locked-by-default)." >&2
+        echo "  Install bd, or set AGENTOPS_PREMORTEM_GATE_BOOTSTRAP=1 to bypass while landing a fix." >&2
+        exit 2
+    fi
+    exit 0
 fi
 CHILD_COUNT=$(bd children "$EPIC_ID" 2>/dev/null | wc -l | tr -d ' ')
 [ "$CHILD_COUNT" -lt 3 ] && exit 0  # Less than 3 issues, no gate needed
@@ -65,20 +87,48 @@ ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 PHASED_STATE="$ROOT/.agents/rpi/phased-state.json"
 
 if [ -f "$PHASED_STATE" ]; then
+    PM_VERDICT=""
+    PARSE_OK=0
     if command -v jq >/dev/null 2>&1; then
-        PM_VERDICT=$(jq -r '.verdicts.pre_mortem // ""' "$PHASED_STATE" 2>/dev/null)
+        # Validate the file is well-formed JSON first; bail if it isn't.
+        if jq -e . "$PHASED_STATE" >/dev/null 2>&1; then
+            PARSE_OK=1
+            PM_VERDICT=$(jq -r '.verdicts.pre_mortem // ""' "$PHASED_STATE" 2>/dev/null)
+        fi
     else
+        # Without jq we can't fully validate, but a successful regex match is
+        # treated as a best-effort read (still subject to allow-list below).
+        PARSE_OK=1
         PM_VERDICT=$(grep -o '"pre_mortem"[[:space:]]*:[[:space:]]*"[^"]*"' "$PHASED_STATE" 2>/dev/null | sed 's/.*"pre_mortem"[[:space:]]*:[[:space:]]*"//;s/"$//')
     fi
-    if [ -n "$PM_VERDICT" ] && [ "$PM_VERDICT" != "null" ]; then
-        exit 0
+
+    # Lock-by-default: only allow on an explicit, recognized "passed" verdict.
+    # Unknown enum values, "expired", "stale", null, empty all fall through.
+    if [ "$PARSE_OK" = "1" ]; then
+        case "$PM_VERDICT" in
+            passed|locked|ok|ratchet|approved)
+                exit 0
+                ;;
+            expired|stale|failed|rejected|"")
+                # Explicit no-op: do not allow, fall through to other methods.
+                :
+                ;;
+            *)
+                # Unknown enum value — locked by default. Note in stderr so it isn't silent.
+                echo "WARN: pre-mortem-gate ignoring unrecognized verdict '$PM_VERDICT' in phased-state.json (locked-by-default)" >&2
+                ;;
+        esac
+    else
+        echo "WARN: pre-mortem-gate could not parse $PHASED_STATE as JSON (locked-by-default)" >&2
     fi
 
-    # Also check run_id to scope orchestration log search
-    if command -v jq >/dev/null 2>&1; then
-        RUN_ID=$(jq -r '.run_id // ""' "$PHASED_STATE" 2>/dev/null)
-    else
-        RUN_ID=$(grep -o '"run_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$PHASED_STATE" 2>/dev/null | head -1 | sed 's/.*"run_id"[[:space:]]*:[[:space:]]*"//;s/"$//')
+    # Also check run_id to scope orchestration log search (only if file parsed)
+    if [ "$PARSE_OK" = "1" ]; then
+        if command -v jq >/dev/null 2>&1; then
+            RUN_ID=$(jq -r '.run_id // ""' "$PHASED_STATE" 2>/dev/null)
+        else
+            RUN_ID=$(grep -o '"run_id"[[:space:]]*:[[:space:]]*"[^"]*"' "$PHASED_STATE" 2>/dev/null | head -1 | sed 's/.*"run_id"[[:space:]]*:[[:space:]]*"//;s/"$//')
+        fi
     fi
 fi
 
@@ -161,11 +211,14 @@ BLOCKED: Epic $EPIC_ID has $CHILD_COUNT issues. Pre-mortem is mandatory for 3+ i
 (6/6 consecutive positive ROI — this gate prevents implementation waste.)
 
 Options:
-  1. /pre-mortem                         -- run pre-mortem validation
-  2. /crank $EPIC_ID --skip-pre-mortem   -- bypass with justification
+  1. /pre-mortem                              -- run pre-mortem validation
+  2. /crank $EPIC_ID --skip-pre-mortem        -- bypass with justification
+  3. AGENTOPS_PREMORTEM_GATE_BOOTSTRAP=1 ...  -- escape hatch when the gate itself is broken
 EOMSG
-if [[ "$PREMORTEM_FALLBACK" == "strict" ]]; then
+# Lock-by-default: strict is the new default. Operators who need legacy
+# advisory behavior must opt out with AGENTOPS_PREMORTEM_FALLBACK=open.
+if [ "$PREMORTEM_FALLBACK" != "open" ]; then
   exit 2
 fi
-echo "WARN: pre-mortem gate advisory — set AGENTOPS_PREMORTEM_FALLBACK=strict to enforce" >&2
+echo "WARN: pre-mortem gate advisory (AGENTOPS_PREMORTEM_FALLBACK=open). Default is strict — unset this var to enforce." >&2
 exit 0

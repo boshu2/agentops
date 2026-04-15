@@ -126,6 +126,130 @@ else
 fi
 
 # =============================================================================
+# Lock-on-error fallback semantics
+# =============================================================================
+log "Testing lock-on-error fallback semantics..."
+
+# Sandbox: a fake repo root with .agents/rpi/phased-state.json under our control,
+# plus a fake `bd` binary on PATH that pretends every epic has 5 children. This
+# lets us drive the gate past the early-exit checks without touching the real repo.
+SANDBOX="$(mktemp -d 2>/dev/null || mktemp -d -t pmgate)"
+trap 'rm -rf "$SANDBOX"' EXIT
+
+mkdir -p "$SANDBOX/.agents/rpi" "$SANDBOX/bin"
+( cd "$SANDBOX" && git init -q 2>/dev/null && git config user.email t@t && git config user.name t && git commit --allow-empty -q -m init ) || true
+
+cat > "$SANDBOX/bin/bd" <<'BDFAKE'
+#!/usr/bin/env bash
+# Fake bd: `bd children <id>` prints 5 lines so child count >= 3.
+if [ "${1:-}" = "children" ]; then
+    printf 'a\nb\nc\nd\ne\n'
+fi
+exit 0
+BDFAKE
+chmod +x "$SANDBOX/bin/bd"
+
+run_gate_in_sandbox() {
+    # $1 = extra env var assignments (string), rest = stdin payload
+    local env_pairs="$1"; shift
+    local payload="$1"; shift
+    (
+        cd "$SANDBOX" || exit 99
+        # Put fake bd first on PATH
+        export PATH="$SANDBOX/bin:$PATH"
+        # shellcheck disable=SC2086
+        env $env_pairs bash "$HOOK" <<<"$payload" >/dev/null 2>&1
+    )
+}
+
+CRANK_PAYLOAD='{"tool_name":"Skill","tool_input":{"skill":"crank","args":"ag-test1"}}'
+
+# Test 13: Missing phased-state.json → BLOCKED (strict default)
+EXIT_CODE=0
+run_gate_in_sandbox "" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 2 ]]; then
+    pass "Missing state → BLOCKED (exit 2)"
+else
+    fail "Missing state expected exit 2, got $EXIT_CODE"
+fi
+
+# Test 14: Unparseable phased-state.json → BLOCKED
+echo "{not valid json" > "$SANDBOX/.agents/rpi/phased-state.json"
+EXIT_CODE=0
+run_gate_in_sandbox "" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 2 ]]; then
+    pass "Unparseable state → BLOCKED"
+else
+    fail "Unparseable state expected exit 2, got $EXIT_CODE"
+fi
+
+# Test 15: Valid 'passed' verdict → ALLOWED
+printf '{"verdicts":{"pre_mortem":"passed"},"run_id":"r1"}' > "$SANDBOX/.agents/rpi/phased-state.json"
+EXIT_CODE=0
+run_gate_in_sandbox "" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 0 ]]; then
+    pass "Valid 'passed' verdict → ALLOWED"
+else
+    fail "Passed verdict expected exit 0, got $EXIT_CODE"
+fi
+
+# Test 16: 'expired' verdict → BLOCKED
+printf '{"verdicts":{"pre_mortem":"expired"},"run_id":"r1"}' > "$SANDBOX/.agents/rpi/phased-state.json"
+EXIT_CODE=0
+run_gate_in_sandbox "" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 2 ]]; then
+    pass "'expired' verdict → BLOCKED"
+else
+    fail "Expired verdict expected exit 2, got $EXIT_CODE"
+fi
+
+# Test 17: Unknown verdict enum value → BLOCKED
+printf '{"verdicts":{"pre_mortem":"maybe-sometime"},"run_id":"r1"}' > "$SANDBOX/.agents/rpi/phased-state.json"
+EXIT_CODE=0
+run_gate_in_sandbox "" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 2 ]]; then
+    pass "Unknown verdict → BLOCKED"
+else
+    fail "Unknown verdict expected exit 2, got $EXIT_CODE"
+fi
+
+# Test 18: Bootstrap escape hatch → ALLOWED with stderr warning
+rm -f "$SANDBOX/.agents/rpi/phased-state.json"
+EXIT_CODE=0
+STDERR_CAPTURE=$(
+    cd "$SANDBOX" || exit 99
+    export PATH="$SANDBOX/bin:$PATH"
+    AGENTOPS_PREMORTEM_GATE_BOOTSTRAP=1 bash "$HOOK" <<<"$CRANK_PAYLOAD" 2>&1 >/dev/null
+) || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 0 ]] && echo "$STDERR_CAPTURE" | grep -q "AGENTOPS_PREMORTEM_GATE_BOOTSTRAP"; then
+    pass "Bootstrap env var → ALLOWED with warning"
+else
+    fail "Bootstrap expected exit 0 + warning, got exit $EXIT_CODE stderr='$STDERR_CAPTURE'"
+fi
+
+# Test 19: Kill switch → silent allow (no stderr)
+EXIT_CODE=0
+STDERR_CAPTURE=$(
+    cd "$SANDBOX" || exit 99
+    export PATH="$SANDBOX/bin:$PATH"
+    AGENTOPS_HOOKS_DISABLED=1 bash "$HOOK" <<<"$CRANK_PAYLOAD" 2>&1 >/dev/null
+) || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 0 ]] && [[ -z "$STDERR_CAPTURE" ]]; then
+    pass "Kill switch → silent ALLOW"
+else
+    fail "Kill switch expected silent exit 0, got exit $EXIT_CODE stderr='$STDERR_CAPTURE'"
+fi
+
+# Test 20: AGENTOPS_PREMORTEM_FALLBACK=open + missing state → ALLOWED (legacy mode)
+EXIT_CODE=0
+run_gate_in_sandbox "AGENTOPS_PREMORTEM_FALLBACK=open" "$CRANK_PAYLOAD" || EXIT_CODE=$?
+if [[ $EXIT_CODE -eq 0 ]]; then
+    pass "FALLBACK=open + missing state → ALLOWED (legacy)"
+else
+    fail "Open mode missing state expected exit 0, got $EXIT_CODE"
+fi
+
+# =============================================================================
 # Summary
 # =============================================================================
 echo ""
