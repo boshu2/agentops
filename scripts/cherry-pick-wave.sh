@@ -7,20 +7,30 @@ set -euo pipefail
 #   cherry-pick-wave.sh --pattern "swarm-*"  # custom worktree name pattern
 #   cherry-pick-wave.sh --cleanup-only       # remove worktrees without cherry-picking
 #   cherry-pick-wave.sh --yes                # skip confirmation prompt
+#   cherry-pick-wave.sh --force-delete       # explicit opt-in to destructive removal
+#
+# Safety: destructive worktree removal is gated. Without --yes, --force-delete,
+# or an interactive tty confirming the prompt, removal is reported as a dry-run
+# and no `git worktree remove --force` is invoked.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DRY_RUN=false; CLEANUP_ONLY=false; YES=false; PATTERN="agent-*"
+DRY_RUN=false; CLEANUP_ONLY=false; YES=false; FORCE_DELETE=false; PATTERN="agent-*"
 WT_BASE="$REPO_ROOT/.claude/worktrees"
 
 usage() { cat <<'EOF'
 Usage: cherry-pick-wave.sh [OPTIONS]
 Options:
   --dry-run        Show what would be cherry-picked without making changes
-  --pattern PAT    Glob pattern for worktree dirs (default: "agent-*")
+  --pattern PAT    Anchored glob for worktree dirs under .claude/worktrees
+                   (default: "agent-*"). Must begin with [A-Za-z0-9_-];
+                   leading wildcards (*, ?, [) and path traversal are rejected.
   --cleanup-only   Remove worktrees without cherry-picking
-  --yes            Skip confirmation prompt
-  --help           Show this help message
+  --yes, -y        Skip confirmation prompt (also authorizes destructive removal)
+  --force-delete   Explicit opt-in to destructive worktree removal even when
+                   stdin is not a tty. Without --yes / --force-delete / a tty,
+                   removal defaults to dry-run.
+  --help, -h       Show this help message
 EOF
 }
 
@@ -36,7 +46,30 @@ confirm() {
   printf "%s [y/N] " "$1"; read -r ans; [[ "$ans" =~ ^[Yy] ]]
 }
 
+# destructive_consent: returns 0 if the caller has authorized destructive
+# worktree removal (--yes, --force-delete, or an interactive tty). Otherwise
+# returns 1 and the caller must dry-run.
+destructive_consent() {
+  [[ "$YES" == "true" ]] && return 0
+  [[ "$FORCE_DELETE" == "true" ]] && return 0
+  [[ -t 0 ]] && return 0
+  return 1
+}
+
 remove_worktrees() {
+  local consent="false"
+  if destructive_consent; then
+    consent="true"
+  fi
+  if [[ "$consent" != "true" ]]; then
+    echo "[dry-run] worktree removal skipped (no --yes / --force-delete / tty)"
+    for i in "${!WT_NAMES[@]}"; do
+      local wt="${WORKTREES[$i]}" name="${WT_NAMES[$i]}"
+      echo "[dry-run] would remove worktree: $wt ($name)"
+    done
+    echo "[dry-run] re-run with --force-delete or --yes to actually remove"
+    return 0
+  fi
   echo "Cleaning up worktrees..."
   for i in "${!WT_NAMES[@]}"; do
     local wt="${WORKTREES[$i]}" name="${WT_NAMES[$i]}" c="${WT_COMMITS[$i]}"
@@ -54,15 +87,25 @@ while [[ $# -gt 0 ]]; do
     --dry-run)      DRY_RUN=true; shift ;;
     --cleanup-only) CLEANUP_ONLY=true; shift ;;
     --yes|-y)       YES=true; shift ;;
+    --force-delete) FORCE_DELETE=true; shift ;;
     --pattern)      PATTERN="${2:?--pattern requires a value}"; shift 2 ;;
     --help|-h)      usage; exit 0 ;;
     *)              die "Unknown option: $1" ;;
   esac
 done
 
-# Validate --pattern doesn't contain path traversal
+# Validate --pattern: reject empty, path traversal, leading wildcards.
+# Anchors the worktree match to a known prefix character class so a stray
+# "*" or "?/[" pattern cannot expand to match unexpected directories under
+# .claude/worktrees.
+if [[ -z "$PATTERN" ]]; then
+    die "Invalid --pattern: must not be empty"
+fi
 if [[ "$PATTERN" == *..* ]] || [[ "$PATTERN" == */* ]]; then
     die "Invalid --pattern: must not contain '..' or '/'. Got: $PATTERN"
+fi
+if [[ ! "$PATTERN" =~ ^[A-Za-z0-9_-] ]]; then
+    die "Invalid --pattern: must start with [A-Za-z0-9_-] (anchored prefix). Got: $PATTERN"
 fi
 
 echo "Resolved worktree pattern: $WT_BASE/$PATTERN"
