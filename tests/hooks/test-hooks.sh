@@ -910,14 +910,14 @@ if [ "$EC" -eq 0 ]; then pass "pre-mortem-gate --skip-pre-mortem bypass"; else f
 MOCK_PM="$TMPDIR/mock-pre-mortem"
 setup_mock_repo "$MOCK_PM"
 mkdir -p "$MOCK_PM/.agents/council"
-touch "$MOCK_PM/.agents/council/2026-01-01-pre-mortem-test.md"
-# Simulate bd returning 5 children (mock bd with a script)
-MOCK_BD="$MOCK_PM/mock-bd"
-printf '#!/bin/bash\nif [ "$1" = "children" ]; then printf "1\\n2\\n3\\n4\\n5\\n"; fi\n' > "$MOCK_BD"
-chmod +x "$MOCK_BD"
+touch "$MOCK_PM/.agents/council/2026-01-01-pre-mortem-ag-xxx.md"
+# Simulate bd returning 5 children and force Method 3 council fallback.
+printf '#!/bin/bash\nif [ "$1" = "children" ]; then printf "1\\n2\\n3\\n4\\n5\\n"; fi\n' > "$MOCK_PM/bd"
+chmod +x "$MOCK_PM/bd"
+printf '#!/bin/bash\nexit 1\n' > "$MOCK_PM/ao"
+chmod +x "$MOCK_PM/ao"
 EC=0
-(cd "$MOCK_PM" && PATH="$MOCK_PM:$PATH" echo '{"tool_name":"Skill","tool_input":{"skill":"crank","args":"ag-xxx"}}' | bash "$HOOKS_DIR/pre-mortem-gate.sh" >/dev/null 2>&1) || EC=$?
-# Note: if bd is not available in PATH the gate fail-opens, so we mock it
+(cd "$MOCK_PM" && export PATH="$MOCK_PM:$PATH" && echo '{"tool_name":"Skill","tool_input":{"skill":"crank","args":"ag-xxx"}}' | bash "$HOOKS_DIR/pre-mortem-gate.sh" >/dev/null 2>&1) || EC=$?
 if [ "$EC" -eq 0 ]; then pass "pre-mortem-gate passes with council evidence"; else fail "pre-mortem-gate passes with council evidence (exit=$EC)"; fi
 
 # Test: Method 4b fallback passes on locked chain entry (chain.jsonl)

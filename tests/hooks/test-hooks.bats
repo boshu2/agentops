@@ -730,7 +730,7 @@ EOF
     for hook_file in "$HOOKS_DIR"/*.sh; do
         hook_name=$(basename "$hook_file" .sh)
         # Count any explicit coverage in the hooks test suite, including dedicated per-hook tests.
-        if ! rg -F -q "$hook_name" "$BATS_TEST_DIRNAME"/*.bats "$BATS_TEST_DIRNAME"/*.sh 2>/dev/null; then
+        if ! grep -F -q "$hook_name" "$BATS_TEST_DIRNAME"/*.bats "$BATS_TEST_DIRNAME"/*.sh 2>/dev/null; then
             MISSING_HOOKS="$MISSING_HOOKS $hook_name"
         fi
     done
