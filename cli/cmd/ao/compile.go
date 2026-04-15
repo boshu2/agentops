@@ -36,6 +36,7 @@ var (
 	compileMaxBatches  int
 	compileReset       bool
 	compileRepair      bool
+	compileRepairForce bool
 )
 
 var (
@@ -113,6 +114,7 @@ func init() {
 	compileCmd.Flags().IntVar(&compileMaxBatches, "max-batches", 0, "Cap number of compile batches per invocation (0 = unlimited)")
 	compileCmd.Flags().BoolVar(&compileReset, "reset", false, "Delete .agents/compiled/ and .hashes.json before compiling (force full rebuild)")
 	compileCmd.Flags().BoolVar(&compileRepair, "repair", false, "Remove orphaned fallback stubs from .agents/compiled/ (files with no inbound wikilink traffic)")
+	compileCmd.Flags().BoolVar(&compileRepairForce, "force-repair", false, "Actually delete orphans during --repair. Without --force-repair, --repair runs dry.")
 }
 
 func runCompile(cmd *cobra.Command, _ []string) error {
@@ -508,13 +510,18 @@ func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 	}
 
 	removed := 0
-	dryRun := GetDryRun()
+	// Safety: --repair defaults to dry-run. Actual deletion requires
+	// --force-repair. The global --dry-run flag always wins (even if
+	// --force-repair is also passed). This prevents a regex bug or stray
+	// [[...]] pattern in prose from silently nuking user wiki content.
+	globalDryRun := GetDryRun()
+	dryRun := globalDryRun || !compileRepairForce
 	for _, a := range articles {
 		if inboundCount[a.slug] > 0 {
 			continue
 		}
 		if dryRun {
-			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.name)
+			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.fullPath)
 			removed++
 			continue
 		}
@@ -524,8 +531,16 @@ func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 		removed++
 	}
 
+	if dryRun && removed > 0 && !globalDryRun {
+		fmt.Fprintln(stdout, "Use --force-repair to actually delete.")
+	}
+
 	if !compileQuiet {
-		fmt.Fprintf(stdout, "Compile repair: scanned %d article(s), removed %d orphan(s)\n", len(articles), removed)
+		if dryRun {
+			fmt.Fprintf(stdout, "Compile repair: scanned %d article(s), would remove %d orphan(s)\n", len(articles), removed)
+		} else {
+			fmt.Fprintf(stdout, "Compile repair: scanned %d article(s), removed %d orphan(s)\n", len(articles), removed)
+		}
 	}
 	return nil
 }

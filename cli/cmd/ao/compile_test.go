@@ -448,19 +448,22 @@ func TestResetCompileOutput_IdempotentOnMissingDir(t *testing.T) {
 // infrastructure files (index/log/lint-report) alone.
 func TestRepairCompileOutput_RemovesOrphansOnly(t *testing.T) {
 	resetCommandState(t)
+	// Opt in to actual deletion — default is now dry-run.
+	compileRepairForce = true
+	t.Cleanup(func() { compileRepairForce = false })
 	tmp := t.TempDir()
 	compiled := filepath.Join(tmp, ".agents", "compiled")
 	if err := os.MkdirAll(compiled, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		"auth.md":        "# Auth\n\nSee [[rate-limits]] and [[retry-backoff]].",
-		"rate-limits.md": "# Rate Limits\n\nBased on [[auth]].",
-		"orphan.md":      "# Orphan\n\nNo inbound links.",
+		"auth.md":          "# Auth\n\nSee [[rate-limits]] and [[retry-backoff]].",
+		"rate-limits.md":   "# Rate Limits\n\nBased on [[auth]].",
+		"orphan.md":        "# Orphan\n\nNo inbound links.",
 		"retry-backoff.md": "# Retry Backoff\n\nTalks about [[auth]].",
-		"index.md":       "Index stub (infrastructure — must stay).",
-		"log.md":         "Log stub (infrastructure).",
-		"lint-report.md": "Lint stub (infrastructure).",
+		"index.md":         "Index stub (infrastructure — must stay).",
+		"log.md":           "Log stub (infrastructure).",
+		"lint-report.md":   "Lint stub (infrastructure).",
 	}
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(compiled, name), []byte(content), 0o644); err != nil {
@@ -484,6 +487,110 @@ func TestRepairCompileOutput_RemovesOrphansOnly(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "removed 1 orphan") {
 		t.Errorf("expected 'removed 1 orphan' in output, got %q", out.String())
+	}
+}
+
+// TestRepairCompileOutput_DryRunByDefault asserts that invoking --repair
+// without --force-repair (and without the global --dry-run flag) leaves
+// orphans on disk, prints a [dry-run] line per orphan, and surfaces the
+// "Use --force-repair to actually delete." hint. This is the footgun fix:
+// silent mass-deletion of user wiki content must require explicit opt-in.
+func TestRepairCompileOutput_DryRunByDefault(t *testing.T) {
+	resetCommandState(t)
+	// Explicitly confirm the default state: no force, no global dry-run.
+	compileRepairForce = false
+	tmp := t.TempDir()
+	compiled := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(compiled, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"auth.md":        "# Auth\n\nSee [[rate-limits]].",
+		"rate-limits.md": "# Rate Limits\n\nBased on [[auth]].",
+		"orphan.md":      "# Orphan\n\nNo inbound links.",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(compiled, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var out bytes.Buffer
+	if err := repairCompileOutput(tmp, ".agents/compiled", &out); err != nil {
+		t.Fatalf("repairCompileOutput: %v", err)
+	}
+
+	// orphan.md must STILL exist — dry-run did not delete.
+	if _, err := os.Stat(filepath.Join(compiled, "orphan.md")); err != nil {
+		t.Errorf("orphan.md should have been preserved in dry-run, got err=%v", err)
+	}
+	// Linked articles also preserved.
+	for _, name := range []string{"auth.md", "rate-limits.md"} {
+		if _, err := os.Stat(filepath.Join(compiled, name)); err != nil {
+			t.Errorf("%s should have been preserved, got err=%v", name, err)
+		}
+	}
+	outStr := out.String()
+	if !strings.Contains(outStr, "[dry-run] would remove orphan") {
+		t.Errorf("expected '[dry-run] would remove orphan' in output, got %q", outStr)
+	}
+	if !strings.Contains(outStr, "orphan.md") {
+		t.Errorf("expected 'orphan.md' in output, got %q", outStr)
+	}
+	if !strings.Contains(outStr, "Use --force-repair to actually delete.") {
+		t.Errorf("expected 'Use --force-repair to actually delete.' hint in output, got %q", outStr)
+	}
+	if !strings.Contains(outStr, "would remove 1 orphan") {
+		t.Errorf("expected summary 'would remove 1 orphan' in output, got %q", outStr)
+	}
+}
+
+// TestRepairCompileOutput_ForceFlagDeletes asserts that --repair --force-repair
+// actually removes orphan files, completing the opt-in deletion path.
+func TestRepairCompileOutput_ForceFlagDeletes(t *testing.T) {
+	resetCommandState(t)
+	compileRepairForce = true
+	t.Cleanup(func() { compileRepairForce = false })
+	tmp := t.TempDir()
+	compiled := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(compiled, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"auth.md":        "# Auth\n\nSee [[rate-limits]].",
+		"rate-limits.md": "# Rate Limits\n\nBased on [[auth]].",
+		"orphan.md":      "# Orphan\n\nNo inbound links.",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(compiled, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var out bytes.Buffer
+	if err := repairCompileOutput(tmp, ".agents/compiled", &out); err != nil {
+		t.Fatalf("repairCompileOutput: %v", err)
+	}
+
+	// orphan.md must be gone — force-repair was set.
+	if _, err := os.Stat(filepath.Join(compiled, "orphan.md")); !os.IsNotExist(err) {
+		t.Errorf("orphan.md should have been deleted with --force-repair, got err=%v", err)
+	}
+	// Linked articles preserved.
+	for _, name := range []string{"auth.md", "rate-limits.md"} {
+		if _, err := os.Stat(filepath.Join(compiled, name)); err != nil {
+			t.Errorf("%s should have been preserved, got err=%v", name, err)
+		}
+	}
+	outStr := out.String()
+	if !strings.Contains(outStr, "removed 1 orphan") {
+		t.Errorf("expected 'removed 1 orphan' in output, got %q", outStr)
+	}
+	if strings.Contains(outStr, "[dry-run]") {
+		t.Errorf("did not expect '[dry-run]' marker when --force-repair set, got %q", outStr)
+	}
+	if strings.Contains(outStr, "Use --force-repair to actually delete.") {
+		t.Errorf("did not expect the force-repair hint when --force-repair was set, got %q", outStr)
 	}
 }
 
