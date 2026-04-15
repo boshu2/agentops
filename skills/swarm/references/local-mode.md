@@ -17,6 +17,27 @@
 mkdir -p .agents/swarm/results
 ```
 
+## Step 2a: Pre-Wave Gate Snapshot (Lead Protocol)
+
+Before spawning any wave whose validation ends at a repo-level CI gate, snapshot the pre-existing FAIL set so post-wave triage can mechanically distinguish swarm-introduced failures from stale breakage on `main`.
+
+```bash
+# Before spawn
+scripts/pre-push-gate.sh --fast 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^FAIL  " | sort > /tmp/pre-wave-fails.txt
+
+# After cleanup
+scripts/pre-push-gate.sh --fast 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^FAIL  " | sort > /tmp/post-wave-fails.txt
+
+# Swarm-introduced failures (only present post-wave)
+comm -13 /tmp/pre-wave-fails.txt /tmp/post-wave-fails.txt
+```
+
+The output of the final `comm` is the authoritative diff. Failures in `/tmp/pre-wave-fails.txt` that remain in `/tmp/post-wave-fails.txt` are pre-existing and should be filed as a separate follow-up rather than fixed inline, which keeps the wave's scope honest.
+
+Skip this step when `main` is mandated green before spawn (stricter protocol) or when the wave's validation does not run the gate.
+
+Source: [`../../../.agents/learnings/2026-04-15-pre-wave-gate-snapshot.md`](../../../.agents/learnings/2026-04-15-pre-wave-gate-snapshot.md)
+
 ## Step 2b: Pre-Spawn Worktree Setup (Multi-Epic Waves)
 
 > **Skip this step** for single-epic waves or when `--no-worktrees` is set.
