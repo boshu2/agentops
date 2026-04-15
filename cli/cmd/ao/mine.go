@@ -107,6 +107,9 @@ func runMine(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetDryRun() {
+		if GetOutput() == "json" {
+			return encodeMineDryRunJSON(cmd.OutOrStdout(), sources, window)
+		}
 		return printMineDryRun(cmd.OutOrStdout(), sources, window)
 	}
 
@@ -164,6 +167,29 @@ func printMineDryRun(w io.Writer, sources []string, window time.Duration) error 
 	fmt.Fprintf(w, "  output:  %s\n", mineOutputDir)
 	fmt.Fprintln(w, "\nNo files will be written.")
 	return nil
+}
+
+// encodeMineDryRunJSON emits a single JSON document describing the dry-run
+// parameters. This keeps `ao mine --json --dry-run` parseable by piped
+// consumers (jq, scripts, tests) instead of dumping human text onto stdout
+// while the `--json` flag is set.
+func encodeMineDryRunJSON(w io.Writer, sources []string, window time.Duration) error {
+	payload := struct {
+		DryRun       bool     `json:"dry_run"`
+		Sources      []string `json:"sources"`
+		WindowString string   `json:"window"`
+		OutputDir    string   `json:"output_dir"`
+		Note         string   `json:"note"`
+	}{
+		DryRun:       true,
+		Sources:      sources,
+		WindowString: window.String(),
+		OutputDir:    mineOutputDir,
+		Note:         "No files will be written.",
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(payload)
 }
 
 // collectMineWorkItems builds work items from a mine report.

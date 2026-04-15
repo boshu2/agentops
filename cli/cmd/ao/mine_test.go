@@ -191,6 +191,80 @@ func TestPrintMineDryRun(t *testing.T) {
 	}
 }
 
+// TestMineCommandJSON_ExactlyOnePayloadOnStdout is a regression guard for
+// the ag-co7 double-write bug: `ao mine --json` must emit the JSON payload
+// exactly once on stdout (no trailing duplicate, no prefix text). Piped
+// consumers (`jq`, scripts, tests) require a single parseable document.
+func TestMineCommandJSON_ExactlyOnePayloadOnStdout(t *testing.T) {
+	dir := t.TempDir()
+	chdirTo(t, dir)
+	outputDir := filepath.Join(dir, "mine-output")
+
+	out, err := executeCommand("mine", "--json", "--sources", "agents", "--output-dir", outputDir)
+	if err != nil {
+		t.Fatalf("mine --json: %v\noutput:\n%s", err, out)
+	}
+
+	// Must parse as a single JSON document with no trailing bytes.
+	dec := json.NewDecoder(strings.NewReader(out))
+	var first MineReport
+	if err := dec.Decode(&first); err != nil {
+		t.Fatalf("first decode failed (stdout not a single JSON doc): %v\noutput:\n%s", err, out)
+	}
+	// Any further successful decode means the payload was written twice.
+	var second MineReport
+	if err := dec.Decode(&second); err == nil {
+		t.Fatalf("stdout contained a second JSON payload (double-write regression):\n%s", out)
+	}
+	// There should also be no non-whitespace trailing bytes after the first doc.
+	trailing := strings.TrimSpace(out[dec.InputOffset():])
+	if trailing != "" {
+		t.Fatalf("unexpected trailing bytes after single JSON payload: %q", trailing)
+	}
+	// And no human-readable summary leaked in.
+	if strings.Contains(out, "Mine complete.") {
+		t.Fatalf("human summary leaked onto stdout:\n%s", out)
+	}
+}
+
+// TestMineCommandJSON_DryRunEmitsSingleJSONDocument guards the dry-run path:
+// `ao mine --json --dry-run` should emit a single parseable JSON payload,
+// not a human-readable text block, and definitely not both.
+func TestMineCommandJSON_DryRunEmitsSingleJSONDocument(t *testing.T) {
+	dir := t.TempDir()
+	chdirTo(t, dir)
+
+	out, err := executeCommand("mine", "--json", "--dry-run", "--sources", "git")
+	if err != nil {
+		t.Fatalf("mine --json --dry-run: %v\noutput:\n%s", err, out)
+	}
+
+	if strings.Contains(out, "[dry-run] ao mine") {
+		t.Fatalf("dry-run text leaked onto --json stdout:\n%s", out)
+	}
+
+	dec := json.NewDecoder(strings.NewReader(out))
+	var payload struct {
+		DryRun    bool     `json:"dry_run"`
+		Sources   []string `json:"sources"`
+		OutputDir string   `json:"output_dir"`
+	}
+	if err := dec.Decode(&payload); err != nil {
+		t.Fatalf("dry-run --json stdout is not valid JSON: %v\noutput:\n%s", err, out)
+	}
+	if !payload.DryRun {
+		t.Errorf("dry_run flag = false, want true")
+	}
+	if len(payload.Sources) != 1 || payload.Sources[0] != "git" {
+		t.Errorf("sources = %v, want [git]", payload.Sources)
+	}
+	// Reject any second payload on stdout.
+	var extra map[string]any
+	if err := dec.Decode(&extra); err == nil {
+		t.Fatalf("dry-run --json stdout contained a second payload:\n%s", out)
+	}
+}
+
 func TestMineCommandJSONSuppressesHumanSummary(t *testing.T) {
 	dir := t.TempDir()
 	chdirTo(t, dir)
