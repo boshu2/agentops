@@ -108,6 +108,8 @@ type overnightSummary struct {
 	Degraded       []string                 `json:"degraded,omitempty" yaml:"degraded,omitempty"`
 	Recommended    []string                 `json:"recommended,omitempty" yaml:"recommended,omitempty"`
 	NextAction     string                   `json:"next_action,omitempty" yaml:"next_action,omitempty"`
+	Yield          *ovn.YieldSummary        `json:"yield,omitempty" yaml:"yield,omitempty"`
+	LongHaul       *ovn.LongHaulSummary     `json:"long_haul,omitempty" yaml:"long_haul,omitempty"`
 
 	// Dream-report schema v2 fields. These are populated by the nightly
 	// compounder RunLoop (cli/internal/overnight) when v2 mode is active.
@@ -133,6 +135,9 @@ type overnightSummary struct {
 	// are omitempty so happy-path runs do not emit noise.
 	MeasureFailureHalt bool   `json:"measure_failure_halt,omitempty" yaml:"measure_failure_halt,omitempty"`
 	FailureReason      string `json:"failure_reason,omitempty" yaml:"failure_reason,omitempty"`
+
+	councilNextActionHint string `json:"-" yaml:"-"`
+	yieldBaselineCaptured bool   `json:"-" yaml:"-"`
 }
 
 var overnightCmd = &cobra.Command{
@@ -381,6 +386,10 @@ func newOvernightStartSummary(cwd string, settings overnightSettings, startedAt 
 			"summary_json":             filepath.Join(settings.OutputDir, "summary.json"),
 			"summary_markdown":         filepath.Join(settings.OutputDir, "summary.md"),
 		},
+		LongHaul: &ovn.LongHaulSummary{
+			Enabled: false,
+			Active:  false,
+		},
 	}
 	if summary.Goal != "" {
 		summary.Steps = append(summary.Steps, overnightStepSummary{
@@ -412,6 +421,7 @@ func finishDryRunOvernightSummary(summary *overnightSummary, startedAt time.Time
 	summary.FinishedAt = time.Now().UTC().Format(time.RFC3339)
 	summary.Duration = time.Since(startedAt).Round(time.Millisecond).String()
 	ensureOvernightDerivedViews(summary)
+	refreshOvernightTelemetry(summary)
 	summary.Recommended = recommendedDreamCommands(*summary)
 	summary.NextAction = deriveDreamNextAction(*summary)
 	return outputOvernightSummary(*summary)
@@ -935,6 +945,7 @@ func finalizeOvernightSummary(summary *overnightSummary, startedAt time.Time) er
 		}
 	}
 	ensureOvernightDerivedViews(summary)
+	refreshOvernightTelemetry(summary)
 	summary.Recommended = recommendedDreamCommands(*summary)
 	summary.NextAction = deriveDreamNextAction(*summary)
 
@@ -1007,6 +1018,7 @@ func loadOvernightSummary(path string) (overnightSummary, error) {
 
 func outputOvernightSummary(summary overnightSummary) error {
 	ensureOvernightDerivedViews(&summary)
+	refreshOvernightTelemetry(&summary)
 	summary.Recommended = recommendedDreamCommands(summary)
 	summary.NextAction = deriveDreamNextAction(summary)
 	switch GetOutput() {
@@ -1032,6 +1044,8 @@ func renderOvernightSummaryMarkdown(summary overnightSummary) string {
 	appendDreamOverview(&b, summary)
 	appendDreamscapeSection(&b, summary.Dreamscape)
 	appendDreamTerrainSection(&b, summary)
+	appendDreamYieldSection(&b, summary.Yield)
+	appendDreamLongHaulSection(&b, summary.LongHaul)
 	appendDreamStepsSection(&b, summary.Steps)
 	appendDreamMorningPacketsSection(&b, summary.MorningPackets)
 	appendDreamCouncilSection(&b, summary.Council)
@@ -1094,6 +1108,75 @@ func appendDreamTerrainSection(b *strings.Builder, summary overnightSummary) {
 	if summary.RetrievalLive != nil {
 		fmt.Fprintf(b, "- Queries with hits: `%v/%v`\n", lookupPath(summary.RetrievalLive, "queries_with_hits"), lookupPath(summary.RetrievalLive, "queries"))
 	}
+}
+
+func appendDreamYieldSection(b *strings.Builder, yield *ovn.YieldSummary) {
+	if yield == nil {
+		return
+	}
+	if yield.PacketCountBefore == 0 &&
+		yield.PacketCountAfter == 0 &&
+		yield.BeadSyncCount == 0 &&
+		yield.CouncilCompletedCount == 0 &&
+		yield.CouncilFailedCount == 0 &&
+		yield.CouncilTimeoutCount == 0 &&
+		yield.CouncilActionDelta == "" &&
+		yield.CouncilRecommendedKind == "" {
+		return
+	}
+	b.WriteString("\n## Yield\n\n")
+	fmt.Fprintf(b, "- Packets: `%d -> %d`\n", yield.PacketCountBefore, yield.PacketCountAfter)
+	if yield.TopPacketConfidenceBefore != "" || yield.TopPacketConfidenceAfter != "" {
+		fmt.Fprintf(b, "- Top packet confidence: `%s -> %s`\n",
+			firstNonEmptyTrimmed(yield.TopPacketConfidenceBefore, "n/a"),
+			firstNonEmptyTrimmed(yield.TopPacketConfidenceAfter, "n/a"))
+	}
+	if yield.QueueBackedCount > 0 || yield.SyntheticCount > 0 {
+		fmt.Fprintf(b, "- Queue-backed packets: `%d`\n", yield.QueueBackedCount)
+		fmt.Fprintf(b, "- Synthetic packets: `%d`\n", yield.SyntheticCount)
+		fmt.Fprintf(b, "- Queue-backed winner: `%t`\n", yield.QueueBackedWon)
+	}
+	if yield.BeadSyncCount > 0 {
+		fmt.Fprintf(b, "- Bead sync count: `%d`\n", yield.BeadSyncCount)
+	}
+	if len(yield.ConfidenceMix) > 0 {
+		fmt.Fprintf(b, "- Confidence mix: `%s`\n", formatDreamConfidenceMix(yield.ConfidenceMix))
+	}
+	if yield.CouncilCompletedCount > 0 || yield.CouncilFailedCount > 0 || yield.CouncilTimeoutCount > 0 {
+		fmt.Fprintf(b, "- Council runners: `%d completed / %d failed`\n", yield.CouncilCompletedCount, yield.CouncilFailedCount)
+		fmt.Fprintf(b, "- Council timeouts: `%d`\n", yield.CouncilTimeoutCount)
+	}
+	if yield.CouncilRecommendedKind != "" {
+		fmt.Fprintf(b, "- Council recommended kind: `%s`\n", yield.CouncilRecommendedKind)
+	}
+	if yield.CouncilActionDelta != "" {
+		fmt.Fprintf(b, "- Council action delta: `%s`\n", yield.CouncilActionDelta)
+	}
+}
+
+func appendDreamLongHaulSection(b *strings.Builder, longHaul *ovn.LongHaulSummary) {
+	if longHaul == nil {
+		return
+	}
+	if !longHaul.Enabled &&
+		!longHaul.Active &&
+		longHaul.TriggerReason == "" &&
+		longHaul.ExitReason == "" &&
+		longHaul.ProbeCount == 0 &&
+		longHaul.ZeroDeltaProbeStreak == 0 {
+		return
+	}
+	b.WriteString("\n## Long-Haul\n\n")
+	fmt.Fprintf(b, "- Enabled: `%t`\n", longHaul.Enabled)
+	fmt.Fprintf(b, "- Active: `%t`\n", longHaul.Active)
+	if longHaul.TriggerReason != "" {
+		fmt.Fprintf(b, "- Trigger reason: %s\n", longHaul.TriggerReason)
+	}
+	if longHaul.ExitReason != "" {
+		fmt.Fprintf(b, "- Exit reason: %s\n", longHaul.ExitReason)
+	}
+	fmt.Fprintf(b, "- Probe count: `%d`\n", longHaul.ProbeCount)
+	fmt.Fprintf(b, "- Zero-delta probe streak: `%d`\n", longHaul.ZeroDeltaProbeStreak)
 }
 
 func appendDreamMetricLines(b *strings.Builder, values map[string]any, lines []dreamMetricLine) {
@@ -1261,6 +1344,132 @@ func lookupBool(m map[string]any, key string) (bool, bool) {
 	}
 	b, ok := v.(bool)
 	return b, ok
+}
+
+func refreshOvernightTelemetry(summary *overnightSummary) {
+	ensureOvernightLongHaul(summary)
+	if summary.Council == nil && len(summary.MorningPackets) == 0 && !summary.yieldBaselineCaptured {
+		return
+	}
+	yield := ensureOvernightYield(summary)
+	yield.PacketCountAfter = len(summary.MorningPackets)
+	yield.TopPacketConfidenceAfter = topDreamPacketConfidence(summary.MorningPackets)
+	yield.QueueBackedCount = 0
+	yield.SyntheticCount = 0
+	yield.BeadSyncCount = 0
+	confidenceMix := map[string]int{}
+	for _, packet := range summary.MorningPackets {
+		if packet.QueueBacked {
+			yield.QueueBackedCount++
+		} else {
+			yield.SyntheticCount++
+		}
+		if packet.BeadID != "" {
+			yield.BeadSyncCount++
+		}
+		if confidence := strings.TrimSpace(packet.Confidence); confidence != "" {
+			confidenceMix[confidence]++
+		}
+	}
+	if len(summary.MorningPackets) > 0 {
+		yield.QueueBackedWon = summary.MorningPackets[0].QueueBacked
+	} else {
+		yield.QueueBackedWon = false
+	}
+	if len(confidenceMix) == 0 {
+		yield.ConfidenceMix = nil
+	} else {
+		yield.ConfidenceMix = confidenceMix
+	}
+	if summary.Council != nil {
+		yield.CouncilCompletedCount = len(summary.Council.CompletedRunners)
+		yield.CouncilFailedCount = len(summary.Council.FailedRunners)
+		yield.CouncilRecommendedKind = strings.TrimSpace(summary.Council.ConsensusKind)
+		yield.CouncilActionDelta = classifyDreamCouncilActionDelta(summary.councilNextActionHint, summary.Council.RecommendedFirstAction)
+	} else {
+		yield.CouncilCompletedCount = 0
+		yield.CouncilFailedCount = 0
+		yield.CouncilRecommendedKind = ""
+		yield.CouncilActionDelta = ""
+	}
+	yield.CouncilTimeoutCount = countDreamCouncilTimeouts(summary.Degraded)
+}
+
+func ensureOvernightYield(summary *overnightSummary) *ovn.YieldSummary {
+	if summary.Yield == nil {
+		summary.Yield = &ovn.YieldSummary{}
+	}
+	return summary.Yield
+}
+
+func ensureOvernightLongHaul(summary *overnightSummary) *ovn.LongHaulSummary {
+	if summary.LongHaul == nil {
+		summary.LongHaul = &ovn.LongHaulSummary{}
+	}
+	return summary.LongHaul
+}
+
+func snapshotDreamPacketYield(summary *overnightSummary) {
+	yield := ensureOvernightYield(summary)
+	if summary.yieldBaselineCaptured {
+		return
+	}
+	yield.PacketCountBefore = len(summary.MorningPackets)
+	yield.TopPacketConfidenceBefore = topDreamPacketConfidence(summary.MorningPackets)
+	summary.yieldBaselineCaptured = true
+}
+
+func topDreamPacketConfidence(packets []overnightMorningPacket) string {
+	for _, packet := range packets {
+		if confidence := strings.TrimSpace(packet.Confidence); confidence != "" {
+			return confidence
+		}
+	}
+	return ""
+}
+
+func countDreamCouncilTimeouts(lines []string) int {
+	count := 0
+	for _, line := range lines {
+		if strings.Contains(strings.ToLower(strings.TrimSpace(line)), "council timed out after") {
+			count++
+		}
+	}
+	return count
+}
+
+func classifyDreamCouncilActionDelta(hint, action string) string {
+	hint = strings.TrimSpace(hint)
+	action = strings.TrimSpace(action)
+	switch {
+	case action == "":
+		return ""
+	case hint == "":
+		return "new"
+	case strings.EqualFold(hint, action):
+		return "unchanged"
+	default:
+		return "refined"
+	}
+}
+
+func formatDreamConfidenceMix(m map[string]int) string {
+	order := []string{"high", "medium", "low"}
+	parts := make([]string, 0, len(m))
+	seen := make(map[string]struct{}, len(m))
+	for _, key := range order {
+		if count, ok := m[key]; ok {
+			parts = append(parts, fmt.Sprintf("%s=%d", key, count))
+			seen[key] = struct{}{}
+		}
+	}
+	for key, count := range m {
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s=%d", key, count))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // runOvernightWarnOnlyReset resets .agents/overnight/warn-only-budget.json

@@ -726,6 +726,99 @@ func TestRunOvernight_HardFail_WritesFailedSummary(t *testing.T) {
 	assertOvernightHardFailFinalized(t, persisted)
 }
 
+func TestFinalizeOvernightSummary_PersistsYieldAndLongHaulTelemetry(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "overnight", "latest")
+	startedAt := time.Now().UTC().Add(-2 * time.Minute)
+	summary := overnightSummary{
+		SchemaVersion: 2,
+		Mode:          "dream.local-bedtime",
+		RunID:         "yield-longhaul-run",
+		RepoRoot:      tmpDir,
+		OutputDir:     outputDir,
+		Status:        "done",
+		StartedAt:     startedAt.Format(time.RFC3339),
+		Runtime: overnightRuntimeSummary{
+			KeepAwake:          false,
+			KeepAwakeMode:      "disabled",
+			RequestedTimeout:   "8h",
+			EffectiveTimeout:   "8h0m0s",
+			ProcessContractDoc: "docs/contracts/dream-run-contract.md",
+			ReportContractDoc:  "docs/contracts/dream-report.md",
+		},
+		Artifacts: map[string]string{
+			"summary_json":     filepath.Join(outputDir, "summary.json"),
+			"summary_markdown": filepath.Join(outputDir, "summary.md"),
+		},
+		MorningPackets: []overnightMorningPacket{
+			{
+				Rank:           1,
+				Title:          "Repair Dream retrieval coverage",
+				Confidence:     "high",
+				QueueBacked:    true,
+				BeadID:         "na-telemetry",
+				MorningCommand: `ao rpi phased "Repair Dream retrieval coverage"`,
+			},
+		},
+		Council: &overnightCouncilSummary{
+			RequestedRunners:       []string{"claude", "codex"},
+			CompletedRunners:       []string{"codex"},
+			FailedRunners:          []string{"claude"},
+			ConsensusPolicy:        "majority",
+			ConsensusKind:          "validate",
+			RecommendedFirstAction: "Inspect the retrieval coverage packet before shipping.",
+		},
+		Degraded: []string{"claude council timed out after 1m30s"},
+		LongHaul: &ovn.LongHaulSummary{
+			Enabled:              true,
+			Active:               true,
+			TriggerReason:        "packet confidence below high",
+			ExitReason:           "zero_delta_probe_streak >= 2",
+			ProbeCount:           2,
+			ZeroDeltaProbeStreak: 2,
+		},
+	}
+	summary.councilNextActionHint = "Inspect the overnight report before shipping."
+
+	if err := finalizeOvernightSummary(&summary, startedAt); err != nil {
+		t.Fatalf("finalizeOvernightSummary: %v", err)
+	}
+
+	persisted := readOvernightHardFailSummaryJSON(t, filepath.Join(outputDir, "summary.json"))
+	if persisted.Yield == nil {
+		t.Fatal("persisted yield telemetry unexpectedly nil")
+	}
+	if persisted.Yield.PacketCountAfter != 1 {
+		t.Fatalf("persisted packet_count_after = %d, want 1", persisted.Yield.PacketCountAfter)
+	}
+	if persisted.Yield.BeadSyncCount != 1 {
+		t.Fatalf("persisted bead_sync_count = %d, want 1", persisted.Yield.BeadSyncCount)
+	}
+	if persisted.Yield.CouncilTimeoutCount != 1 {
+		t.Fatalf("persisted council_timeout_count = %d, want 1", persisted.Yield.CouncilTimeoutCount)
+	}
+	if persisted.Yield.CouncilActionDelta != "refined" {
+		t.Fatalf("persisted council_action_delta = %q, want refined", persisted.Yield.CouncilActionDelta)
+	}
+	if persisted.LongHaul == nil {
+		t.Fatal("persisted long_haul unexpectedly nil")
+	}
+	if !persisted.LongHaul.Enabled || !persisted.LongHaul.Active {
+		t.Fatalf("persisted long_haul = %#v, want enabled+active", persisted.LongHaul)
+	}
+
+	md, err := os.ReadFile(filepath.Join(outputDir, "summary.md"))
+	if err != nil {
+		t.Fatalf("read summary markdown: %v", err)
+	}
+	text := string(md)
+	for _, want := range []string{"## Yield", "## Long-Haul", "Council action delta: `refined`", "Probe count: `2`"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("summary markdown missing %q:\n%s", want, text)
+		}
+	}
+}
+
 type overnightHardFailSummaryFixture struct {
 	summary         overnightSummary
 	startedAt       time.Time

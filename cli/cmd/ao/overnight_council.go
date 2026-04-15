@@ -160,6 +160,7 @@ func runDreamCouncil(ctx context.Context, cwd string, log io.Writer, summary *ov
 		CreativeLane:    settings.CreativeLane,
 		NextActionHint:  deriveDreamNextAction(*summary),
 	}
+	summary.councilNextActionHint = packet.NextActionHint
 	if data, err := loadJSONMap(summary.Artifacts["close_loop"]); err == nil {
 		packet.CloseLoop = data
 	}

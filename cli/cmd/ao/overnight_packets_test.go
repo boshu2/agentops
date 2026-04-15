@@ -141,6 +141,69 @@ esac
 	}
 }
 
+func TestExecuteDreamMorningPackets_RecordsYieldTelemetry(t *testing.T) {
+	tmpDir := t.TempDir()
+	nextWorkPath := filepath.Join(tmpDir, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o755); err != nil {
+		t.Fatalf("mkdir next-work dir: %v", err)
+	}
+	queue := `{"source_epic":"dream-findings-router","timestamp":"2026-04-14T12:00:00Z","items":[{"title":"Repair Dream packet ranking","type":"bug","severity":"high","source":"finding-router","description":"Queue-backed packet should become actionable morning work.","evidence":"packet evidence","source_path":"cli/cmd/ao/overnight.go","consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available"}`
+	if err := os.WriteFile(nextWorkPath, []byte(queue+"\n"), 0o644); err != nil {
+		t.Fatalf("write next-work: %v", err)
+	}
+
+	binDir := t.TempDir()
+	writeExecutable(t, binDir, "bd", `#!/bin/sh
+case "$1" in
+  list)
+    echo '[]'
+    ;;
+  create)
+    echo '[{"id":"na-pkt1","status":"open","title":"Repair Dream packet ranking"}]'
+    ;;
+  update)
+    echo '[{"id":"na-pkt1","status":"open","title":"Repair Dream packet ranking"}]'
+    ;;
+  *)
+    echo "unexpected bd command: $1" >&2
+    exit 1
+    ;;
+esac
+`)
+	t.Setenv("PATH", binDir)
+
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	executeDreamMorningPackets(tmpDir, &summary)
+
+	if summary.Yield == nil {
+		t.Fatal("yield telemetry unexpectedly nil")
+	}
+	if summary.Yield.PacketCountBefore != 0 {
+		t.Fatalf("packet_count_before = %d, want 0", summary.Yield.PacketCountBefore)
+	}
+	if summary.Yield.PacketCountAfter != 1 {
+		t.Fatalf("packet_count_after = %d, want 1", summary.Yield.PacketCountAfter)
+	}
+	if summary.Yield.QueueBackedCount != 1 {
+		t.Fatalf("queue_backed_count = %d, want 1", summary.Yield.QueueBackedCount)
+	}
+	if summary.Yield.SyntheticCount != 0 {
+		t.Fatalf("synthetic_count = %d, want 0", summary.Yield.SyntheticCount)
+	}
+	if summary.Yield.BeadSyncCount != 1 {
+		t.Fatalf("bead_sync_count = %d, want 1", summary.Yield.BeadSyncCount)
+	}
+	if !summary.Yield.QueueBackedWon {
+		t.Fatal("queue_backed_won = false, want true")
+	}
+	if summary.Yield.TopPacketConfidenceAfter != "high" {
+		t.Fatalf("top_packet_confidence_after = %q, want high", summary.Yield.TopPacketConfidenceAfter)
+	}
+	if got := summary.Yield.ConfidenceMix["high"]; got != 1 {
+		t.Fatalf("confidence_mix[high] = %d, want 1", got)
+	}
+}
+
 func TestShouldEscalateDreamDegradation(t *testing.T) {
 	tests := []struct {
 		value string

@@ -49,11 +49,13 @@ type dreamPacketIssueRecord struct {
 }
 
 func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
+	snapshotDreamPacketYield(summary)
 	plans, err := buildDreamMorningPacketPlans(cwd, *summary)
 	if err != nil {
 		setOvernightStepStatus(summary, "morning-packets", "soft-fail", summary.Artifacts["morning_packets_json"], err.Error())
 		setOvernightStepStatus(summary, "bead-sync", "soft-fail", "", "packet synthesis aborted")
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("morning-packets: %v", err))
+		refreshOvernightTelemetry(summary)
 		return
 	}
 
@@ -62,11 +64,13 @@ func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 	if err := writeDreamMorningPacketArtifacts(summary, plans); err != nil {
 		setOvernightStepStatus(summary, "morning-packets", "soft-fail", summary.Artifacts["morning_packets_json"], err.Error())
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("morning-packets: %v", err))
+		refreshOvernightTelemetry(summary)
 		return
 	}
 	if err := syncDreamMorningPacketsToQueue(cwd, plans); err != nil {
 		setOvernightStepStatus(summary, "morning-packets", "soft-fail", summary.Artifacts["morning_packets_json"], err.Error())
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("morning-packets queue sync: %v", err))
+		refreshOvernightTelemetry(summary)
 		return
 	}
 
@@ -76,6 +80,7 @@ func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 		note = fmt.Sprintf("%d actionable packet(s) ready", len(summary.MorningPackets))
 	}
 	setOvernightStepStatus(summary, "morning-packets", "done", summary.Artifacts["morning_packets_json"], note)
+	refreshOvernightTelemetry(summary)
 }
 
 func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dreamMorningPacketPlan, error) {

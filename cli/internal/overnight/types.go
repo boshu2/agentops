@@ -268,6 +268,40 @@ type WarnOnlyRatchet struct {
 	OnConsume func(newRemaining int) error
 }
 
+// YieldSummary captures whether a Dream run produced stronger morning-handoff
+// material after its overnight work. Command-layer code populates these fields
+// so later long-haul control logic can compare before/after values without
+// scraping logs or markdown.
+type YieldSummary struct {
+	PacketCountBefore         int            `json:"packet_count_before,omitempty" yaml:"packet_count_before,omitempty"`
+	PacketCountAfter          int            `json:"packet_count_after,omitempty" yaml:"packet_count_after,omitempty"`
+	QueueBackedCount          int            `json:"queue_backed_count,omitempty" yaml:"queue_backed_count,omitempty"`
+	QueueBackedWon            bool           `json:"queue_backed_won,omitempty" yaml:"queue_backed_won,omitempty"`
+	SyntheticCount            int            `json:"synthetic_count,omitempty" yaml:"synthetic_count,omitempty"`
+	BeadSyncCount             int            `json:"bead_sync_count,omitempty" yaml:"bead_sync_count,omitempty"`
+	TopPacketConfidenceBefore string         `json:"top_packet_confidence_before,omitempty" yaml:"top_packet_confidence_before,omitempty"`
+	TopPacketConfidenceAfter  string         `json:"top_packet_confidence_after,omitempty" yaml:"top_packet_confidence_after,omitempty"`
+	ConfidenceMix             map[string]int `json:"confidence_mix,omitempty" yaml:"confidence_mix,omitempty"`
+	CouncilCompletedCount     int            `json:"council_completed_count,omitempty" yaml:"council_completed_count,omitempty"`
+	CouncilFailedCount        int            `json:"council_failed_count,omitempty" yaml:"council_failed_count,omitempty"`
+	CouncilTimeoutCount       int            `json:"council_timeout_count,omitempty" yaml:"council_timeout_count,omitempty"`
+	CouncilRecommendedKind    string         `json:"council_recommended_kind,omitempty" yaml:"council_recommended_kind,omitempty"`
+	CouncilActionDelta        string         `json:"council_action_delta,omitempty" yaml:"council_action_delta,omitempty"`
+}
+
+// LongHaulSummary records whether Dream's optional long-haul lane was enabled,
+// why it activated, and why it stopped. The first telemetry slice leaves Dream
+// default-off but ships the additive report shape so the later controller slice
+// does not need a second report-contract change.
+type LongHaulSummary struct {
+	Enabled              bool   `json:"enabled" yaml:"enabled"`
+	Active               bool   `json:"active" yaml:"active"`
+	TriggerReason        string `json:"trigger_reason,omitempty" yaml:"trigger_reason,omitempty"`
+	ExitReason           string `json:"exit_reason,omitempty" yaml:"exit_reason,omitempty"`
+	ProbeCount           int    `json:"probe_count,omitempty" yaml:"probe_count,omitempty"`
+	ZeroDeltaProbeStreak int    `json:"zero_delta_probe_streak,omitempty" yaml:"zero_delta_probe_streak,omitempty"`
+}
+
 // defaultRunTimeout is the documented default wall-clock cap.
 const defaultRunTimeout = 2 * time.Hour
 

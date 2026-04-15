@@ -68,6 +68,8 @@ These may be embedded when available:
 - `metrics_health`
 - `retrieval_live`
 - `briefing`
+- `yield`
+- `long_haul`
 - `morning_packets`
 - `council`
 - `dreamscape`
@@ -91,6 +93,8 @@ Minimum sections:
 - status header
 - DreamScape, when available
 - terrain or health section
+- yield, when available
+- long-haul, when available
 - what ran
 - morning packets, when available
 - Dream Council, when available
@@ -128,7 +132,39 @@ Schema v2 (2026-04-09) introduces the compounding iteration loop. It is **additi
 | `fitness_delta` | object | `{"composite": 0.042, "retrieval_bench": 0.018}` | Composite delta across all iterations (final minus initial) |
 | `plateau_reason` | string | `"2 consecutive iterations below epsilon 0.01"` | Present iff halted on plateau |
 | `regression_reason` | string | `"retrieval_bench dropped 0.08 below floor 0.05"` | Present iff halted on regression |
+| `yield` | object | `{"packet_count_before":0,"packet_count_after":1}` | Morning-handoff yield telemetry derived from packets and council results |
+| `long_haul` | object | `{"enabled":false,"active":false}` | Default-off long-haul decision telemetry and probe counters |
 | `morning_packets` | array of MorningPacket | `[{...}, {...}]` | Ranked executable morning work packets emitted from Dream's queue/fallback synthesis |
+
+### Yield Shape
+
+| Field | Type | Example | Meaning |
+|-------|------|---------|---------|
+| `packet_count_before` | int | `0` | Packet count before the current synthesis pass |
+| `packet_count_after` | int | `1` | Packet count after synthesis |
+| `queue_backed_count` | int | `1` | Count of packets sourced from existing next-work items |
+| `queue_backed_won` | bool | `true` | Whether the top-ranked packet was queue-backed |
+| `synthetic_count` | int | `0` | Count of fallback packets synthesized by Dream |
+| `bead_sync_count` | int | `1` | Count of packets linked to beads |
+| `top_packet_confidence_before` | string | `"medium"` | Highest-ranked packet confidence before synthesis |
+| `top_packet_confidence_after` | string | `"high"` | Highest-ranked packet confidence after synthesis |
+| `confidence_mix` | object | `{"high":1,"medium":1}` | Packet confidence distribution |
+| `council_completed_count` | int | `1` | Count of Dream Council runners that completed |
+| `council_failed_count` | int | `1` | Count of Dream Council runners that failed |
+| `council_timeout_count` | int | `1` | Count of council failures caused by timeout |
+| `council_recommended_kind` | string | `"validate"` | Consensus kind emitted by Dream Council |
+| `council_action_delta` | string | `"unchanged"` | Whether council left the pre-council first move alone or refined it |
+
+### Long-Haul Shape
+
+| Field | Type | Example | Meaning |
+|-------|------|---------|---------|
+| `enabled` | bool | `false` | Whether long-haul mode was explicitly enabled for the run |
+| `active` | bool | `false` | Whether long-haul work actually ran |
+| `trigger_reason` | string | `"packet confidence below high"` | Why long-haul activated |
+| `exit_reason` | string | `"zero_delta_probe_streak >= 2"` | Why long-haul stopped |
+| `probe_count` | int | `2` | Number of long-haul probes executed |
+| `zero_delta_probe_streak` | int | `1` | Consecutive probes that produced no yield delta |
 
 ### MorningPacket Shape
 
