@@ -66,6 +66,14 @@ type dreamCouncilPacket struct {
 	NextActionHint  string         `json:"next_action_hint,omitempty"`
 }
 
+type dreamClaudeResultEnvelope struct {
+	Type             string          `json:"type"`
+	Subtype          string          `json:"subtype,omitempty"`
+	IsError          bool            `json:"is_error,omitempty"`
+	Message          string          `json:"message,omitempty"`
+	StructuredOutput json.RawMessage `json:"structured_output,omitempty"`
+}
+
 func resolveDreamRunRunners(dcfg config.DreamConfig) []string {
 	selected := normalizeDreamRunnerList(dcfg.Runners)
 	if len(overnightRunners) > 0 {
@@ -325,11 +333,27 @@ func loadDreamCouncilRunnerReport(path, runner string) (overnightCouncilRunnerRe
 	if len(strings.TrimSpace(string(data))) == 0 {
 		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("%s output was empty", runner)
 	}
+	payload, err := normalizeDreamCouncilRunnerPayload(runner, data)
+	if err != nil {
+		return overnightCouncilRunnerReport{}, nil, err
+	}
 	var report overnightCouncilRunnerReport
-	if err := json.Unmarshal(data, &report); err != nil {
+	if err := json.Unmarshal(payload, &report); err != nil {
 		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("parse %s output: %w", runner, err)
 	}
 	if err := validateDreamCouncilRunnerReport(runner, report); err != nil {
+		if runner == "claude" {
+			if payload, payloadErr := extractDreamClaudeStructuredOutput(data); payloadErr == nil {
+				if err := json.Unmarshal(payload, &report); err == nil && validateDreamCouncilRunnerReport(runner, report) == nil {
+					report.Runner = runner
+					normalized, marshalErr := json.Marshal(report)
+					if marshalErr != nil {
+						return overnightCouncilRunnerReport{}, nil, fmt.Errorf("rewrite %s output: %w", runner, marshalErr)
+					}
+					return report, normalized, nil
+				}
+			}
+		}
 		return overnightCouncilRunnerReport{}, nil, err
 	}
 	report.Runner = runner
@@ -338,6 +362,35 @@ func loadDreamCouncilRunnerReport(path, runner string) (overnightCouncilRunnerRe
 		return overnightCouncilRunnerReport{}, nil, fmt.Errorf("rewrite %s output: %w", runner, err)
 	}
 	return report, normalized, nil
+}
+
+func normalizeDreamCouncilRunnerPayload(runner string, data []byte) ([]byte, error) {
+	if runner != "claude" {
+		return data, nil
+	}
+	payload, err := extractDreamClaudeStructuredOutput(data)
+	if err == nil {
+		return payload, nil
+	}
+	return data, nil
+}
+
+func extractDreamClaudeStructuredOutput(data []byte) ([]byte, error) {
+	var envelope dreamClaudeResultEnvelope
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, fmt.Errorf("parse claude result envelope: %w", err)
+	}
+	if strings.TrimSpace(envelope.Type) != "result" {
+		return nil, fmt.Errorf("unexpected claude output type %q", envelope.Type)
+	}
+	if envelope.IsError {
+		return nil, fmt.Errorf("claude output reported error: %s", strings.TrimSpace(envelope.Message))
+	}
+	payload := strings.TrimSpace(string(envelope.StructuredOutput))
+	if payload == "" || payload == "null" {
+		return nil, fmt.Errorf("claude output missing structured_output")
+	}
+	return []byte(payload), nil
 }
 
 func validateDreamCouncilRunnerReport(expectedRunner string, report overnightCouncilRunnerReport) error {
@@ -449,13 +502,23 @@ func dreamRunClaudeCouncil(ctx context.Context, cwd, model, schemaPath, prompt, 
 	}
 	defer func() { _ = outFile.Close() }()
 
-	args := []string{"-p", "--json-schema", schemaPath}
+	schemaJSON, err := os.ReadFile(schemaPath)
+	if err != nil {
+		return fmt.Errorf("read claude schema: %w", err)
+	}
+	args := []string{
+		"-p",
+		"--output-format", "json",
+		"--json-schema", strings.TrimSpace(string(schemaJSON)),
+		"--no-session-persistence",
+	}
 	if model != "" {
 		args = append(args, "--model", model)
 	}
 	args = append(args, prompt)
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Dir = cwd
+	cmd.Env = cleanEnvNoClaude()
 	cmd.Stdout = outFile
 	cmd.Stderr = log
 	return cmd.Run()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -525,6 +526,88 @@ func TestRunDreamCouncilRunner_RejectsEmptyOutput(t *testing.T) {
 	}
 	if _, statErr := os.Stat(outputPath); !os.IsNotExist(statErr) {
 		t.Fatalf("expected no final artifact after empty output, stat err=%v", statErr)
+	}
+}
+
+func TestRunDreamCouncilRunner_ExtractsClaudeStructuredOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "council", "claude.json")
+
+	origClaude := dreamRunClaudeCouncilFn
+	defer func() {
+		dreamRunClaudeCouncilFn = origClaude
+	}()
+
+	dreamRunClaudeCouncilFn = func(ctx context.Context, cwd, model, schemaPath, prompt, outputPath string, log io.Writer) error {
+		payload := `{"type":"result","subtype":"success","is_error":false,"structured_output":{"runner":"claude","headline":"ok","recommended_kind":"repair","recommended_first_action":"act","risks":[],"opportunities":[],"confidence":"high","wildcard_idea":""}}`
+		return os.WriteFile(outputPath, []byte(payload), 0o644)
+	}
+
+	report, err := runDreamCouncilRunner(
+		context.Background(),
+		tmpDir,
+		io.Discard,
+		"claude",
+		"",
+		filepath.Join(tmpDir, "schema.json"),
+		dreamCouncilPacket{RunID: "run-1", RepoRoot: tmpDir},
+		outputPath,
+		false,
+	)
+	if err != nil {
+		t.Fatalf("runDreamCouncilRunner: %v", err)
+	}
+	if report.Runner != "claude" || report.Headline != "ok" || report.RecommendedKind != "repair" {
+		t.Fatalf("report = %#v", report)
+	}
+}
+
+func TestDreamRunClaudeCouncil_UsesInlineSchemaJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	binDir := t.TempDir()
+	argsPath := filepath.Join(tmpDir, "claude-args.txt")
+	writeExecutable(t, binDir, "claude", fmt.Sprintf(`#!/bin/sh
+printf '%%s\n' "$@" > %q
+printf '%%s\n' '{"type":"result","subtype":"success","is_error":false,"structured_output":{"runner":"claude","headline":"ok","recommended_kind":"repair","recommended_first_action":"act","risks":[],"opportunities":[],"confidence":"high","wildcard_idea":""}}'
+`, argsPath))
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	schemaPath := filepath.Join(tmpDir, "schema.json")
+	schemaJSON := `{"type":"object","properties":{"runner":{"type":"string"}},"required":["runner"]}`
+	if err := os.WriteFile(schemaPath, []byte(schemaJSON), 0o644); err != nil {
+		t.Fatalf("write schema: %v", err)
+	}
+
+	outputPath := filepath.Join(tmpDir, "claude-output.json")
+	if err := dreamRunClaudeCouncil(context.Background(), tmpDir, "sonnet", schemaPath, "test prompt", outputPath, io.Discard); err != nil {
+		t.Fatalf("dreamRunClaudeCouncil: %v", err)
+	}
+
+	argsData, err := os.ReadFile(argsPath)
+	if err != nil {
+		t.Fatalf("read args: %v", err)
+	}
+	args := strings.Split(strings.TrimSpace(string(argsData)), "\n")
+	joined := "\n" + strings.Join(args, "\n") + "\n"
+	for _, want := range []string{
+		"\n-p\n",
+		"\n--output-format\n",
+		"\njson\n",
+		"\n--json-schema\n",
+		"\n--no-session-persistence\n",
+		"\n--model\n",
+		"\nsonnet\n",
+		"\ntest prompt\n",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("args = %q, missing %q", joined, want)
+		}
+	}
+	if !strings.Contains(joined, "\n"+schemaJSON+"\n") {
+		t.Fatalf("args = %q, want inline schema JSON", joined)
+	}
+	if strings.Contains(joined, "\n"+schemaPath+"\n") {
+		t.Fatalf("args = %q, should not pass schema path directly", joined)
 	}
 }
 
