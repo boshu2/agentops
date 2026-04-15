@@ -169,6 +169,30 @@ Your message to the lead must be under 100 tokens.
 Do NOT include file contents, diffs, or detailed explanations in messages.
 The result JSON file IS your full report. The lead reads the file, not your message.
 
+CONDITIONAL PREFLIGHT CHECKS (keyed on task + manifest):
+
+1) Flag-collision preflight — Task says "add --<name> flag" AND manifest touches a cobra file:
+   Before writing the registration, grep the target file and parent command for the name.
+   On collision, pick an alternative and note it in your result.detail.
+   Example: grep -nE '"(<name>)"' <target.go> <parent_cmd.go>
+   Source: .agents/learnings/2026-04-15-swarm-flag-collision-preflight.md
+
+2) Codex parity audit — Manifest includes any file under `skills-codex/`:
+   After edits, run: bash scripts/audit-codex-parity.sh --skill <skill>
+   Resolve all CLAUDE_PRIMITIVE_LEAKAGE and residual-mixed-runtime-marker findings
+   (substitute runtime-agnostic terms) before reporting done.
+   Source: .agents/learnings/2026-04-15-codex-mirror-runtime-string-lint.md
+
+3) Post-edit sync-script runs — Apply drift in your worktree so the lead's cherry-pick
+   lands it atomically. Workers still do NOT commit.
+   (a) Manifest has `cli/cmd/ao/*.go` AND task adds a cobra flag:
+       scripts/generate-cli-reference.sh && git diff --exit-code cli/docs/COMMANDS.md
+   (b) Manifest has any `skills-codex/` file:
+       bash scripts/regen-codex-hashes.sh && git diff --exit-code skills-codex/
+   If the diff is non-empty after the script runs, that IS the sync artifact — leave it
+   staged in the worktree and list the touched paths in result.artifacts.
+   Source: .agents/learnings/2026-04-15-post-wave-sync-scripts-are-in-scope.md
+
 Rules:
 - Work only on YOUR pre-assigned task
 - Do NOT claim other tasks
