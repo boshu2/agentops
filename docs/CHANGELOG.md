@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.37.2] - 2026-04-15
+
+### Added
+
+- **Swarm evidence validation** — AgentOps now ships a swarm-evidence schema and validator, and wires that proof surface into validation and release gates.
+- **Lead-only worker git guard** — worker sessions now have an explicit lead-only git guard in the hook chain, reducing accidental write authority in multi-agent runs.
+- **Compile and harvest operator controls** — `ao compile` adds runtime preference plus `--reset` and `--repair` controls, while harvest now reports excluded low-confidence candidates and top near-misses.
+
+### Changed
+
+- **Release and pre-push validation** — local release, pre-push, and command coverage gates now validate more of the hook, evidence, and Codex runtime surface before publish.
+- **Codex/runtime artifacts and docs** — compile, evolve, post-mortem, swarm, and related runtime docs and artifacts were decomposed and synchronized to better match shipped behavior.
+- **Flywheel backlog bookkeeping** — next-work aggregates, consumed markers, and enum normalization were cleaned up so carry-forward work is recorded consistently.
+
+### Fixed
+
+- **Pre-mortem gate ambiguity** — the crank pre-mortem gate now denies ambiguous state by default instead of failing open.
+- **CLI and shell reliability edges** — `ao rpi serve --run-id` now accepts legacy 8-hex IDs, `ao mine --dry-run` emits a single clean JSON payload, and bash invocations are sanitized to bypass unsafe shell aliases.
+- **Compile, harvest, and release drift** — compile repair defaults, malformed frontmatter salvage, YAML parse error surfacing, CI fixture drift, shellcheck drift, and Codex artifact metadata drift were corrected.
+
 ## [2.37.1] - 2026-04-15
 
 ### Added

@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
-    "version": "2.37.1"
+    "version": "2.37.2"
   },
   "plugins": [
     {
       "name": "agentops",
       "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
-      "version": "2.37.1",
+      "version": "2.37.2",
       "source": "./",
       "author": {
         "name": "Boden Fuller",
