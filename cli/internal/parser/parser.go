@@ -617,6 +617,10 @@ func (p *Parser) truncate(s string) string {
 	if p.MaxContentLength <= 0 {
 		return s
 	}
+	// Fast path: byte length is an upper bound on rune count.
+	if len(s) <= p.MaxContentLength {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= p.MaxContentLength {
 		return s
