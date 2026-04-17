@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -344,15 +345,21 @@ func FormattedLogRunStatus(run RPIRun) string {
 }
 
 // JoinVerdicts joins a verdict map into a "key=val,key=val" string.
+// Keys are sorted so output is deterministic across runs.
 func JoinVerdicts(verdicts map[string]string) string {
-	verdictStr := ""
-	for k, v := range verdicts {
-		if verdictStr != "" {
-			verdictStr += ","
-		}
-		verdictStr += k + "=" + v
+	if len(verdicts) == 0 {
+		return ""
 	}
-	return verdictStr
+	keys := make([]string, 0, len(verdicts))
+	for k := range verdicts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+verdicts[k])
+	}
+	return strings.Join(parts, ",")
 }
 
 // TrackerSummary returns a short tracker display string.

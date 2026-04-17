@@ -1763,34 +1763,43 @@ func TestJoinVerdicts(t *testing.T) {
 	tests := []struct {
 		name     string
 		verdicts map[string]string
-		wantLen  int // check length of joined result (ordering not deterministic)
+		want     string
 	}{
-		{"nil map", nil, 0},
-		{"empty map", map[string]string{}, 0},
-		{"single entry", map[string]string{"vibe": "PASS"}, len("vibe=PASS")},
+		{"nil map", nil, ""},
+		{"empty map", map[string]string{}, ""},
+		{"single entry", map[string]string{"vibe": "PASS"}, "vibe=PASS"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := joinVerdicts(tt.verdicts)
-			if len(got) != tt.wantLen {
-				t.Errorf("joinVerdicts length = %d, want %d (got %q)", len(got), tt.wantLen, got)
+			if got != tt.want {
+				t.Errorf("joinVerdicts = %q, want %q", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestJoinVerdicts_MultipleEntries(t *testing.T) {
-	verdicts := map[string]string{"pre_mortem": "PASS", "vibe": "WARN"}
+	verdicts := map[string]string{"vibe": "WARN", "pre_mortem": "PASS"}
 	got := joinVerdicts(verdicts)
-	// Should contain both entries separated by comma
-	if !strings.Contains(got, "pre_mortem=PASS") {
-		t.Errorf("expected pre_mortem=PASS in %q", got)
+	// Keys are sorted: "pre_mortem" < "vibe".
+	want := "pre_mortem=PASS,vibe=WARN"
+	if got != want {
+		t.Errorf("joinVerdicts = %q, want %q (sorted order)", got, want)
 	}
-	if !strings.Contains(got, "vibe=WARN") {
-		t.Errorf("expected vibe=WARN in %q", got)
+}
+
+func TestJoinVerdicts_DeterministicAcrossRuns(t *testing.T) {
+	verdicts := map[string]string{"z": "1", "a": "2", "m": "3", "b": "4"}
+	first := joinVerdicts(verdicts)
+	for i := 0; i < 50; i++ {
+		if got := joinVerdicts(verdicts); got != first {
+			t.Fatalf("joinVerdicts not deterministic: first=%q got=%q", first, got)
+		}
 	}
-	if !strings.Contains(got, ",") {
-		t.Errorf("expected comma separator in %q", got)
+	want := "a=2,b=4,m=3,z=1"
+	if first != want {
+		t.Errorf("joinVerdicts = %q, want %q (sorted order)", first, want)
 	}
 }
 
