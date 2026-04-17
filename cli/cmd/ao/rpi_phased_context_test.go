@@ -386,6 +386,42 @@ func TestCtx_BuildPhaseContext_GoalAndVerdicts(t *testing.T) {
 	}
 }
 
+// TestCtx_BuildPhaseContext_DeterministicVerdictOrder ensures verdict lines are
+// emitted in a stable alphabetical order regardless of Go's map iteration.
+// Regression test for tech-debt judge W-7 (map iteration non-determinism).
+func TestCtx_BuildPhaseContext_DeterministicVerdictOrder(t *testing.T) {
+	state := &phasedState{
+		Verdicts: map[string]string{
+			"zebra":      "FAIL",
+			"apple":      "PASS",
+			"pre_mortem": "WARN",
+			"mango":      "PASS",
+		},
+		Attempts: map[string]int{},
+	}
+
+	first := buildPhaseContext("", state, 2)
+	for i := 0; i < 50; i++ {
+		if got := buildPhaseContext("", state, 2); got != first {
+			t.Fatalf("buildPhaseContext not deterministic:\nfirst=%q\n got =%q", first, got)
+		}
+	}
+
+	// Confirm keys appear in sorted order. Keys are sorted before the
+	// "_"->"-" substitution, so alphabetic order is on raw keys.
+	aIdx := strings.Index(first, "apple verdict:")
+	mIdx := strings.Index(first, "mango verdict:")
+	pIdx := strings.Index(first, "pre-mortem verdict:")
+	zIdx := strings.Index(first, "zebra verdict:")
+	if aIdx < 0 || mIdx < 0 || pIdx < 0 || zIdx < 0 {
+		t.Fatalf("expected all verdicts in context, got: %q", first)
+	}
+	if !(aIdx < mIdx && mIdx < pIdx && pIdx < zIdx) {
+		t.Errorf("verdicts not in sorted order: apple=%d mango=%d pre-mortem=%d zebra=%d\nctx=%q",
+			aIdx, mIdx, pIdx, zIdx, first)
+	}
+}
+
 func TestCtx_ReadPhaseSummaries_CapsAt2000(t *testing.T) {
 	tmp := t.TempDir()
 	rpiDir := filepath.Join(tmp, ".agents", "rpi")
