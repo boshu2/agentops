@@ -80,6 +80,15 @@ var validNextWorkItemSources = map[string]struct{}{
 	"backlog-processing": {},
 }
 
+// validNextWorkItemSeverities mirrors the `Severity` enum in
+// docs/contracts/next-work.schema.md §Enums. Note: "critical" is NOT valid —
+// any finding-schema severity above "high" must collapse to "high".
+var validNextWorkItemSeverities = map[string]struct{}{
+	"low":    {},
+	"medium": {},
+	"high":   {},
+}
+
 // TestRouteFindings_EmitsSchemaCompliantEnums is a build-time guard against
 // the next-work v1.3 enum drift that previously tripped the pre-push gate's
 // contract parity check (see fix commit 271d4de4). Any future change to the
@@ -114,6 +123,42 @@ func TestRouteFindings_EmitsSchemaCompliantEnums(t *testing.T) {
 	}
 	if _, ok := validNextWorkItemSources[item.Source]; !ok {
 		t.Fatalf("router emitted source=%q which is not in the next-work schema enum; update docs/contracts/next-work.schema.md AND this test together if the schema genuinely grew", item.Source)
+	}
+	if _, ok := validNextWorkItemSeverities[item.Severity]; !ok {
+		t.Fatalf("router emitted severity=%q which is not in the next-work schema enum {low,medium,high}; update docs/contracts/next-work.schema.md AND this test together if the schema genuinely grew", item.Severity)
+	}
+}
+
+// TestMapSeverity_CollapsesCriticalToHigh documents the deliberate mapping
+// choice: finding-schema "critical"/"blocker" collapse to "high" because the
+// next-work v1.3 severity enum is {low, medium, high}. Prior to this test
+// mapSeverity returned "critical" which was silently rejected by the
+// pre-push contract parity gate.
+func TestMapSeverity_CollapsesCriticalToHigh(t *testing.T) {
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"", "medium"},
+		{"low", "low"},
+		{"minor", "low"},
+		{"medium", "medium"},
+		{"significant", "medium"},
+		{"high", "high"},
+		{"major", "high"},
+		{"critical", "high"},
+		{"blocker", "high"},
+		{"  CRITICAL  ", "high"},
+		{"unknown-severity", "medium"},
+	}
+	for _, tc := range cases {
+		got := mapSeverity(tc.in)
+		if got != tc.want {
+			t.Errorf("mapSeverity(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+		if _, ok := validNextWorkItemSeverities[got]; !ok {
+			t.Errorf("mapSeverity(%q) = %q which is outside the next-work severity enum", tc.in, got)
+		}
 	}
 }
 

@@ -306,17 +306,18 @@ func extractFrontmatterField(frontmatter, key string) string {
 }
 
 // mapSeverity normalizes the finding-schema severity vocabulary to the
-// next-work.jsonl "low|medium|high|critical" vocabulary.
+// next-work.jsonl severity enum, which is strictly "low|medium|high"
+// (see docs/contracts/next-work.schema.md §Enums → Severity). Finding-schema
+// values above "high" ("critical", "blocker") collapse to "high" rather than
+// emitting a value the next-work contract rejects.
 func mapSeverity(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "minor", "low":
 		return "low"
 	case "medium", "significant":
 		return "medium"
-	case "high", "major":
+	case "high", "major", "critical", "blocker":
 		return "high"
-	case "critical", "blocker":
-		return "critical"
 	default:
 		return "medium"
 	}
