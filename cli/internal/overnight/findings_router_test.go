@@ -118,8 +118,11 @@ func TestRouteFindings_FirstCall_RoutesAllUnseen(t *testing.T) {
 			t.Fatalf("unexpected id %s", it.ID)
 		}
 		wantIDs[it.ID] = true
-		if it.Type != "finding" {
-			t.Fatalf("expected type=finding, got %s", it.Type)
+		if it.Type != "tech-debt" {
+			t.Fatalf("expected type=tech-debt, got %s", it.Type)
+		}
+		if it.Source != "council-finding" {
+			t.Fatalf("expected source=council-finding, got %s", it.Source)
 		}
 	}
 	for id, seen := range wantIDs {
