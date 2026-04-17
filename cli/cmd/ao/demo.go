@@ -32,6 +32,10 @@ Examples:
 var (
 	demoQuick    bool
 	demoConcepts bool
+	// demoStepDelay is the pause between terminal "cards" in quickDemo.
+	// Exposed at package scope so tests can zero it out — the 500 ms is for
+	// human pacing in a live terminal and has no behavioral meaning.
+	demoStepDelay = 500 * time.Millisecond
 )
 
 func init() {
@@ -147,7 +151,9 @@ func quickDemo() error {
 		fmt.Printf("│  $ %s\n", step.cmd)
 		fmt.Printf("│  → %s\n", step.explain)
 		fmt.Print("└─\n")
-		time.Sleep(500 * time.Millisecond)
+		if demoStepDelay > 0 {
+			time.Sleep(demoStepDelay)
+		}
 	}
 
 	fmt.Println(`
