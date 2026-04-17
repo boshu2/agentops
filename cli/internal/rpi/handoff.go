@@ -120,6 +120,13 @@ func ExtractMarkdownListItemsUnderHeading(text, heading string) []string {
 // TruncateRunes truncates s to at most cap runes and appends "..." if truncated.
 // Safe for multi-byte UTF-8 characters.
 func TruncateRunes(s string, cap int) string {
+	// Fast path: len(s) is an upper bound on the rune count, so any string
+	// whose byte length already fits the cap needs no rune conversion. This
+	// avoids a []rune allocation on the common short-ASCII case without
+	// changing behavior for multi-byte inputs that exceed the byte limit.
+	if len(s) <= cap {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= cap {
 		return s

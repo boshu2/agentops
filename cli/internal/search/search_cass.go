@@ -299,6 +299,10 @@ func SearchLearningsWithMaturity(query, dir string, limit int) ([]SearchResult, 
 
 // TruncateContext truncates a search context string to ContextLineMaxLength.
 func TruncateContext(s string) string {
+	// Fast path: byte length is an upper bound on rune count.
+	if len(s) <= ContextLineMaxLength {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) > ContextLineMaxLength {
 		return string(runes[:ContextLineMaxLength]) + "..."

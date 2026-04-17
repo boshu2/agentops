@@ -424,6 +424,10 @@ func truncateForPrompt(s string, maxLen int) string {
 	}
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.Join(strings.Fields(s), " ") // Normalize whitespace
+	// Fast path: byte length is an upper bound on rune count.
+	if len(s) <= maxLen {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= maxLen {
 		return s

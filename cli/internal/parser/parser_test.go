@@ -401,6 +401,9 @@ func TestTruncateForError(t *testing.T) {
 		{"short string", "hello", 10, "hello"},
 		{"exact length", "hello", 5, "hello"},
 		{"needs truncation", "hello world", 5, "hello..."},
+		{"multibyte fits in byte-length", "héllo", 10, "héllo"},
+		{"multibyte truncated by rune count", "héllo world", 5, "héllo..."},
+		{"multibyte where byte length exceeds maxLen but rune count fits", "héllo", 5, "héllo"},
 	}
 
 	for _, tc := range tests {

@@ -573,6 +573,14 @@ func TestTruncateAtWordBoundary(t *testing.T) {
 			limit:    10,
 			expected: "supercalif",
 		},
+		{
+			// Fast-path regression: rune count fits but byte length exceeds
+			// limit — must not truncate.
+			name:     "multibyte fits in rune count but not in bytes",
+			input:    "héllo",
+			limit:    5,
+			expected: "héllo",
+		},
 	}
 
 	for _, tt := range tests {

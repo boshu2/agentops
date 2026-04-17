@@ -928,6 +928,12 @@ func formatDuration(d time.Duration) string {
 // truncateAtWordBoundary truncates a string at the last space before limit.
 // If no space is found before limit, it truncates at limit exactly.
 func truncateAtWordBoundary(s string, limit int) string {
+	// Fast path: byte length bounds rune count from above, so any input that
+	// already fits within `limit` bytes also fits within `limit` runes and
+	// needs no allocation.
+	if len(s) <= limit {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= limit {
 		return s

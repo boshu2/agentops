@@ -211,6 +211,12 @@ func classifyError(err error) string {
 
 // truncateForError limits error context to a reasonable size.
 func truncateForError(s string, maxLen int) string {
+	// Fast path: len(s) is an upper bound on rune count, so any string whose
+	// byte length already fits needs no conversion. This avoids a []rune
+	// allocation on the common short-ASCII case.
+	if len(s) <= maxLen {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= maxLen {
 		return s
@@ -609,6 +615,10 @@ func (p *Parser) extractTopLevelToolOutput(content any) string {
 // Slices at rune boundaries to avoid splitting multi-byte UTF-8 sequences.
 func (p *Parser) truncate(s string) string {
 	if p.MaxContentLength <= 0 {
+		return s
+	}
+	// Fast path: byte length is an upper bound on rune count.
+	if len(s) <= p.MaxContentLength {
 		return s
 	}
 	runes := []rune(s)

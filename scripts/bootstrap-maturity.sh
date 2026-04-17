@@ -59,15 +59,20 @@ if command -v jq >/dev/null 2>&1; then
         [[ -f "$file" ]] || continue
         jsonl_total=$((jsonl_total + 1))
 
-        # Check if maturity field already exists
-        if jq -e '.maturity' "$file" >/dev/null 2>&1; then
+        # Count lines missing the maturity field. JSONL is one object per
+        # line, so we must treat each line independently — a single -e check
+        # only inspects the first object.
+        missing=$(jq -c 'select(has("maturity") | not)' "$file" 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "${missing:-0}" -eq 0 ]]; then
             jsonl_skipped=$((jsonl_skipped + 1))
             continue
         fi
 
-        # Add maturity field via jq
+        # Transform each object: add maturity only when missing, preserving
+        # existing values. Use -c so output stays valid JSONL (compact, one
+        # object per line) instead of jq's default pretty-printed stream.
         tmpfile=$(mktemp)
-        if jq '. + {"maturity": "provisional"}' "$file" > "$tmpfile" 2>/dev/null; then
+        if jq -c 'if has("maturity") then . else . + {"maturity": "provisional"} end' "$file" > "$tmpfile" 2>/dev/null; then
             mv "$tmpfile" "$file"
             jsonl_updated=$((jsonl_updated + 1))
         else

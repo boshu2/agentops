@@ -42,10 +42,13 @@ func classifyResult(ctxErr, cmdErr error) string {
 
 // truncateOutput limits output to 500 runes and trims whitespace.
 // Uses rune-aware truncation to avoid splitting multi-byte UTF-8 characters.
-// Note: ASCII-only strings could use a len(s) fast-path, but rune safety is preferred.
 func truncateOutput(raw []byte) string {
 	s := string(raw)
-	if utf8.RuneCountInString(s) > 500 {
+	// Fast path: byte length is an upper bound on rune count, so any output
+	// whose byte length is already within the cap needs no rune counting or
+	// []rune allocation. Hot paths (successful gates with short stdout)
+	// always take this branch.
+	if len(s) > 500 && utf8.RuneCountInString(s) > 500 {
 		runes := []rune(s)
 		s = string(runes[:500])
 	}

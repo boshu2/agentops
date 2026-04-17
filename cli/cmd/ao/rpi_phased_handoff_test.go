@@ -607,6 +607,16 @@ func TestTruncateRunes_ShortString(t *testing.T) {
 	}
 }
 
+func TestTruncateRunes_MultiByteThatFitsInByteLength(t *testing.T) {
+	// Exercises the rune-count fallback: byte length exceeds cap, but rune
+	// count does not. Fast-path must not short-circuit this case.
+	input := "héllo" // 6 bytes, 5 runes
+	got := truncateRunes(input, 5)
+	if got != input {
+		t.Errorf("truncateRunes(%q, 5) = %q, want %q", input, got, input)
+	}
+}
+
 func TestFormatVerdicts_Sorted(t *testing.T) {
 	verdicts := map[string]string{
 		"zebra": "FAIL",
