@@ -55,6 +55,68 @@ func readNextWorkLines(t *testing.T, cwd string) []string {
 	return out
 }
 
+// validNextWorkItemTypes mirrors the `Type` enum in
+// docs/contracts/next-work.schema.md §Enums. It is intentionally hard-coded
+// here (not imported) so that a schema-doc drift requires a deliberate
+// test-code update, which is exactly the contract this guard enforces.
+var validNextWorkItemTypes = map[string]struct{}{
+	"tech-debt":           {},
+	"improvement":         {},
+	"pattern-fix":         {},
+	"process-improvement": {},
+	"feature":             {},
+	"bug":                 {},
+	"task":                {},
+}
+
+// validNextWorkItemSources mirrors the `Source` enum in
+// docs/contracts/next-work.schema.md §Enums.
+var validNextWorkItemSources = map[string]struct{}{
+	"council-finding":    {},
+	"retro-learning":     {},
+	"retro-pattern":      {},
+	"evolve-generator":   {},
+	"feature-suggestion": {},
+	"backlog-processing": {},
+}
+
+// TestRouteFindings_EmitsSchemaCompliantEnums is a build-time guard against
+// the next-work v1.3 enum drift that previously tripped the pre-push gate's
+// contract parity check (see fix commit 271d4de4). Any future change to the
+// router's `Type`/`Source` string literals that picks a value outside the
+// schema's allowed enum will now fail this test instead of surviving until
+// push time.
+func TestRouteFindings_EmitsSchemaCompliantEnums(t *testing.T) {
+	cwd := t.TempDir()
+	writeFinding(t, cwd, "f-2026-04-17-001.md", "Schema guard", "Body.")
+
+	routed, _, err := RouteFindings(cwd)
+	if err != nil {
+		t.Fatalf("RouteFindings: %v", err)
+	}
+	if routed != 1 {
+		t.Fatalf("expected routed=1, got %d", routed)
+	}
+
+	lines := readNextWorkLines(t, cwd)
+	var parsed struct {
+		Items []routedFinding `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(lines[0]), &parsed); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(parsed.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(parsed.Items))
+	}
+	item := parsed.Items[0]
+	if _, ok := validNextWorkItemTypes[item.Type]; !ok {
+		t.Fatalf("router emitted type=%q which is not in the next-work schema enum; update docs/contracts/next-work.schema.md AND this test together if the schema genuinely grew", item.Type)
+	}
+	if _, ok := validNextWorkItemSources[item.Source]; !ok {
+		t.Fatalf("router emitted source=%q which is not in the next-work schema enum; update docs/contracts/next-work.schema.md AND this test together if the schema genuinely grew", item.Source)
+	}
+}
+
 func TestRouteFindings_MissingFindingsDir_SoftFail(t *testing.T) {
 	cwd := t.TempDir()
 	routed, degraded, err := RouteFindings(cwd)
