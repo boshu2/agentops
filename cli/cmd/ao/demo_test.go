@@ -4,6 +4,17 @@ import (
 	"testing"
 )
 
+// withoutDemoDelay zeroes demoStepDelay for the duration of a test so the
+// 500 ms × 5-step pacing sleep in quickDemo does not inflate test runtime.
+// The 500 ms is purely for human pacing in a live terminal; nothing in
+// quickDemo depends on it for correctness.
+func withoutDemoDelay(t *testing.T) {
+	t.Helper()
+	prev := demoStepDelay
+	demoStepDelay = 0
+	t.Cleanup(func() { demoStepDelay = prev })
+}
+
 func TestDemo_CommandExists(t *testing.T) {
 	if demoCmd == nil {
 		t.Fatal("demoCmd should not be nil")
@@ -33,6 +44,7 @@ func TestDemo_ShowConcepts(t *testing.T) {
 }
 
 func TestDemo_QuickDemo(t *testing.T) {
+	withoutDemoDelay(t)
 	err := quickDemo()
 	if err != nil {
 		t.Fatalf("quickDemo returned error: %v", err)
@@ -56,6 +68,7 @@ func TestDemo_RunDemoDispatch_Concepts(t *testing.T) {
 }
 
 func TestDemo_RunDemoDispatch_Quick(t *testing.T) {
+	withoutDemoDelay(t)
 	origConcepts := demoConcepts
 	origQuick := demoQuick
 	defer func() {

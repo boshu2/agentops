@@ -19,8 +19,11 @@ var findingFilenameRe = regexp.MustCompile(`^f-\d{4}-\d{2}-\d{2}-\d{3}\.md$`)
 // routedFinding is the structured next-work item written by RouteFindings.
 //
 // Fields map to the existing next-work.jsonl item shape. New routes always
-// set Type="finding" and Source="finding-router"; Severity defaults to
-// "medium" when the finding body does not declare one.
+// set Type="tech-debt" and Source="council-finding" to satisfy the v1.3
+// next-work enum contract (see docs/contracts/next-work.schema.md). The
+// original finding provenance lives in SourcePath and in the finding file's
+// own frontmatter. Severity defaults to "medium" when the finding body does
+// not declare one.
 type routedFinding struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -254,9 +257,9 @@ func parseFinding(id, path, cwd string) (routedFinding, error) {
 	return routedFinding{
 		ID:          id,
 		Title:       title,
-		Type:        "finding",
+		Type:        "tech-debt",
 		Severity:    severity,
-		Source:      "finding-router",
+		Source:      "council-finding",
 		Description: description,
 		TargetRepo:  filepath.Base(cwd),
 		SourcePath:  relPath,
@@ -303,17 +306,18 @@ func extractFrontmatterField(frontmatter, key string) string {
 }
 
 // mapSeverity normalizes the finding-schema severity vocabulary to the
-// next-work.jsonl "low|medium|high|critical" vocabulary.
+// next-work.jsonl severity enum, which is strictly "low|medium|high"
+// (see docs/contracts/next-work.schema.md §Enums → Severity). Finding-schema
+// values above "high" ("critical", "blocker") collapse to "high" rather than
+// emitting a value the next-work contract rejects.
 func mapSeverity(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "minor", "low":
 		return "low"
 	case "medium", "significant":
 		return "medium"
-	case "high", "major":
+	case "high", "major", "critical", "blocker":
 		return "high"
-	case "critical", "blocker":
-		return "critical"
 	default:
 		return "medium"
 	}

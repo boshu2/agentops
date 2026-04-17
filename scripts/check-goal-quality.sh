@@ -20,6 +20,14 @@ set -uo pipefail
 GOALS_FILE="${1:-GOALS.yaml}"
 
 if [[ ! -f "$GOALS_FILE" ]]; then
+  # Post-GOALS.md migration (see CLAUDE.md §Agent Goals): the narrative
+  # markdown format does not carry machine-readable `check:` fields, so the
+  # anti-pattern detection here has nothing to run against. Skip gracefully
+  # so that the script is safe to run locally without yelling misconfigured.
+  if [[ -f "GOALS.md" ]]; then
+    echo "SKIP: GOALS.yaml not found; repo uses GOALS.md (post-migration). Nothing to check." >&2
+    exit 0
+  fi
   echo "ERROR: $GOALS_FILE not found" >&2
   exit 2
 fi

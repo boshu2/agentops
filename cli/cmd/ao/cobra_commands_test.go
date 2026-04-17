@@ -632,6 +632,7 @@ func TestCobraDemoConceptsCommand(t *testing.T) {
 
 // TestCobraDemoQuickCommand exercises the demo --quick command.
 func TestCobraDemoQuickCommand(t *testing.T) {
+	withoutDemoDelay(t)
 	out, err := executeCommand("demo", "--quick")
 	if err != nil {
 		t.Fatalf("ao demo --quick failed: %v", err)
