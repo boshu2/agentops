@@ -261,6 +261,10 @@ func TestTruncateText(t *testing.T) {
 		{"exact", "hello", 5, "hello"},
 		{"truncated", "hello world", 8, "hello..."},
 		{"empty", "", 10, ""},
+		// Multibyte fast-path regression cases.
+		{"multibyte fits bytes", "héllo", 10, "héllo"},
+		{"multibyte rune-count fallback", "héllo", 5, "héllo"},
+		{"multibyte truncated", "héllo world", 8, "héllo..."},
 	}
 
 	for _, tt := range tests {

@@ -11,6 +11,11 @@ func TruncateText(s string, maxLen int) string {
 	if maxLen <= 0 {
 		return ""
 	}
+	// Fast path: byte length is an upper bound on rune count, so any input
+	// whose byte length already fits needs no rune conversion.
+	if len(s) <= maxLen {
+		return s
+	}
 	runes := []rune(s)
 	if len(runes) <= maxLen {
 		return s
