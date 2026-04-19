@@ -89,6 +89,16 @@ var validNextWorkItemSeverities = map[string]struct{}{
 	"high":   {},
 }
 
+// validNextWorkClaimStatuses mirrors the entry-level `claim_status` enum in
+// docs/contracts/next-work.schema.md §Enums. Writers of brand-new entries
+// must emit "available"; any other opening value is rejected by
+// tests/smoke-test.sh at push time.
+var validNextWorkClaimStatuses = map[string]struct{}{
+	"available":   {},
+	"in_progress": {},
+	"consumed":    {},
+}
+
 // TestRouteFindings_EmitsSchemaCompliantEnums is a build-time guard against
 // the next-work v1.3 enum drift that previously tripped the pre-push gate's
 // contract parity check (see fix commit 271d4de4). Any future change to the
@@ -109,13 +119,17 @@ func TestRouteFindings_EmitsSchemaCompliantEnums(t *testing.T) {
 
 	lines := readNextWorkLines(t, cwd)
 	var parsed struct {
-		Items []routedFinding `json:"items"`
+		Items       []routedFinding `json:"items"`
+		ClaimStatus string          `json:"claim_status"`
 	}
 	if err := json.Unmarshal([]byte(lines[0]), &parsed); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
 	if len(parsed.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(parsed.Items))
+	}
+	if _, ok := validNextWorkClaimStatuses[parsed.ClaimStatus]; !ok {
+		t.Fatalf("router emitted claim_status=%q which is not in the next-work schema enum {available,in_progress,consumed}; schema expects a new entry to open in 'available'", parsed.ClaimStatus)
 	}
 	item := parsed.Items[0]
 	if _, ok := validNextWorkItemTypes[item.Type]; !ok {
