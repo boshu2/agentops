@@ -126,22 +126,12 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 	// --reset and --repair run BEFORE mode resolution so they work
 	// standalone (no LLM runtime needed) and compose with other flags
 	// (e.g. --reset --full rebuilds from scratch).
-	if compileReset {
-		if err := resetCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
-			return fmt.Errorf("compile reset: %w", err)
-		}
-		if !compileFull && !compileOnly && !compileRepair {
-			// standalone --reset is a complete action
-			return nil
-		}
+	done, err := runCompilePreflightActions(cmd, cwd)
+	if err != nil {
+		return err
 	}
-	if compileRepair {
-		if err := repairCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
-			return fmt.Errorf("compile repair: %w", err)
-		}
-		if !compileFull && !compileOnly {
-			return nil
-		}
+	if done {
+		return nil
 	}
 
 	mode, err := resolveCompileMode()
@@ -172,62 +162,109 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 	}
 
 	if shouldRunCompileMine(mode) {
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile mine: extracting knowledge signal")
+		phase, err := runCompileMinePhase(cwd, progress)
+		if err != nil {
+			return err
 		}
-		if err := runCompileMineFn(cwd, compileSince, compileQuiet); err != nil {
-			return fmt.Errorf("compile mine: %w", err)
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: "mine", Status: "ok", Detail: "knowledge signal extracted"})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	if shouldRunCompileScript(mode) {
-		// Preflight the runtime before doing any expensive work. lint-only
-		// does not call an LLM, so skip the runtime check there.
-		if mode != "lint-only" {
-			if err := preflightCompileRuntime(runtime); err != nil {
-				return fmt.Errorf("compile wiki: %w", err)
-			}
+		phase, err := runCompileScriptPhase(cmd, cwd, mode, runtime, progress)
+		if err != nil {
+			return err
 		}
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile wiki: writing compiled knowledge")
-			if runtime != "" && mode != "lint-only" {
-				fmt.Fprintf(progress, "  runtime: %s\n", runtime)
-			}
-		}
-		opts := compileScriptOptions{
-			Sources:     compileSourcesDir,
-			Output:      compileOutputDir,
-			Runtime:     runtime,
-			Incremental: compileIncremental && !compileForce,
-			Force:       compileForce,
-			LintOnly:    mode == "lint-only",
-			BatchSize:   compileBatchSize,
-			MaxBatches:  compileMaxBatches,
-		}
-		if err := runCompileScriptFn(cmd.Context(), cwd, opts, cmd.OutOrStdout(), cmd.ErrOrStderr()); err != nil {
-			return fmt.Errorf("compile wiki: %w", err)
-		}
-		phase := "compile"
-		detail := "compiled wiki and lint report updated"
-		if mode == "lint-only" {
-			phase = "lint"
-			detail = "lint report updated"
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: phase, Status: "ok", Detail: detail})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	if shouldRunCompileDefrag(mode) {
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile defrag: cleaning knowledge store")
+		phase, err := runCompileDefragPhase(cwd, progress)
+		if err != nil {
+			return err
 		}
-		if err := runCompileDefragFn(cwd, GetDryRun()); err != nil {
-			return fmt.Errorf("compile defrag: %w", err)
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: "defrag", Status: "ok", Detail: "mechanical cleanup completed"})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	return printCompileReport(cmd.OutOrStdout(), report)
+}
+
+// runCompilePreflightActions runs the standalone --reset / --repair actions
+// that don't need a runtime. Returns done=true when the action was
+// standalone (no later phase requested) so the caller should return.
+func runCompilePreflightActions(cmd *cobra.Command, cwd string) (bool, error) {
+	if compileReset {
+		if err := resetCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return false, fmt.Errorf("compile reset: %w", err)
+		}
+		if !compileFull && !compileOnly && !compileRepair {
+			return true, nil
+		}
+	}
+	if compileRepair {
+		if err := repairCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return false, fmt.Errorf("compile repair: %w", err)
+		}
+		if !compileFull && !compileOnly {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func runCompileMinePhase(cwd string, progress io.Writer) (compilePhaseResult, error) {
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile mine: extracting knowledge signal")
+	}
+	if err := runCompileMineFn(cwd, compileSince, compileQuiet); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile mine: %w", err)
+	}
+	return compilePhaseResult{Name: "mine", Status: "ok", Detail: "knowledge signal extracted"}, nil
+}
+
+func runCompileScriptPhase(cmd *cobra.Command, cwd, mode, runtime string, progress io.Writer) (compilePhaseResult, error) {
+	// Preflight the runtime before doing any expensive work. lint-only
+	// does not call an LLM, so skip the runtime check there.
+	if mode != "lint-only" {
+		if err := preflightCompileRuntime(runtime); err != nil {
+			return compilePhaseResult{}, fmt.Errorf("compile wiki: %w", err)
+		}
+	}
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile wiki: writing compiled knowledge")
+		if runtime != "" && mode != "lint-only" {
+			fmt.Fprintf(progress, "  runtime: %s\n", runtime)
+		}
+	}
+	opts := compileScriptOptions{
+		Sources:     compileSourcesDir,
+		Output:      compileOutputDir,
+		Runtime:     runtime,
+		Incremental: compileIncremental && !compileForce,
+		Force:       compileForce,
+		LintOnly:    mode == "lint-only",
+		BatchSize:   compileBatchSize,
+		MaxBatches:  compileMaxBatches,
+	}
+	if err := runCompileScriptFn(cmd.Context(), cwd, opts, cmd.OutOrStdout(), cmd.ErrOrStderr()); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile wiki: %w", err)
+	}
+	phase := "compile"
+	detail := "compiled wiki and lint report updated"
+	if mode == "lint-only" {
+		phase = "lint"
+		detail = "lint report updated"
+	}
+	return compilePhaseResult{Name: phase, Status: "ok", Detail: detail}, nil
+}
+
+func runCompileDefragPhase(cwd string, progress io.Writer) (compilePhaseResult, error) {
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile defrag: cleaning knowledge store")
+	}
+	if err := runCompileDefragFn(cwd, GetDryRun()); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile defrag: %w", err)
+	}
+	return compilePhaseResult{Name: "defrag", Status: "ok", Detail: "mechanical cleanup completed"}, nil
 }
 
 func resolveCompileMode() (string, error) {
