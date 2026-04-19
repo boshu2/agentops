@@ -28,9 +28,9 @@ The packet has five sections, each with a defined character budget, content sour
 │  │  TASK   │  │ PROTOCOL │                               │
 │  │  ~4K ch │  │  ~2K ch  │                               │
 │  └─────────┘  └──────────┘                               │
-│                                                           │
-│  Total: ~28K chars / ~7K tokens                           │
-│  Window utilization: <10% (leaves 90%+ for work)          │
+│                                                          │
+│  Total: ~28K chars / ~7K tokens                          │
+│  Window utilization: <10% (leaves 90%+ for work)         │
 └──────────────────────────────────────────────────────────┘
 ```
 

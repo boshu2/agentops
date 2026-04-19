@@ -24,7 +24,7 @@ The top-level skill `/rpi` chains the full pipeline. Each node is a skill. Arrow
 ┌───────────────────────────────────────────────────────────────────┐
 │                             /rpi                                  │
 │                    (full pipeline orchestrator)                   │
-└──┬──────────┬───────────┬─────────────┬──────────┬─────────────── ┘
+└──┬──────────┬───────────┬─────────────┬──────────┬────────────────┘
    │          │           │             │          │
    ▼          ▼           ▼             ▼          ▼
 /research   /plan    /pre-mortem     /crank    /post-mortem

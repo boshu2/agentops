@@ -67,7 +67,7 @@ RESEARCH          PLAN              IMPLEMENT           VALIDATE
                                    ┌─────────┐      ┌───────────┐
                                    │  swarm  │      │complexity │
                                    └────┬────┘      │ + council │
-                                        │          └───────────┘
+                                        │           └───────────┘
                                         ▼
                                    ┌─────────┐
                                    │  crank  │

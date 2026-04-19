@@ -54,13 +54,13 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                     │  file-manifest-overlap                        │
                     │  skill-lint          learning-coherence       │
                     │  bats-tests          check-test-staleness     │
-                    └────────────────┬──────────────────────────────┘
+                    └──────────────┬────────────────────────────────┘
                                    │
                     ┌──────────────┴──────────────┐
                     │  go-build (must complete)   │
                     └──┬─────────────┬─────────┬──┘
                        │             │         │
-                 ┌─────┴──┐  ┌──────┴───┐ ┌───┴──────────┐
+                 ┌─────┴───┐  ┌──────┴───┐ ┌───┴─────────┐
                  │ doctor- │  │coverage- │ │json-flag-   │
                  │  check  │  │ ratchet  │ │consistency  │
                  └────┬────┘  └────┬─────┘ └──────┬──────┘

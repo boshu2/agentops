@@ -421,43 +421,43 @@ This is why progress can be made one-way at the artifact level, while system-lev
 │  │ Feedback: Vibe, Pre-mortem, Citations, Utility scores   │    │
 │  │ Learning: Retros, Post-mortems, Pattern extraction      │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                           │                                      │
-│                           ▼                                      │
-│  COGNITIVE LAYER (40% Rule)                                      │
+│                           │                                     │
+│                           ▼                                     │
+│  COGNITIVE LAYER (40% Rule)                                     │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │ Context utilization: 35% checkpoint, 40% alert          │    │
 │  │ JIT loading: Load what's needed, when it's needed       │    │
 │  │ Lost-in-middle prevention: Don't crowd the context      │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                           │                                      │
-│                           ▼                                      │
-│  MEMRL LAYER (Utility Learning)                                  │
+│                           │                                     │
+│                           ▼                                     │
+│  MEMRL LAYER (Utility Learning)                                 │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │ Feedback loop: Use → Reward/Penalize → Update utility   │    │
 │  │ Retrieval: Freshness + Utility scoring                  │    │
 │  │ Result: σ (retrieval effectiveness) improves over time  │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                           │                                      │
-│                           ▼                                      │
-│  RATCHET LAYER (Progress Locking)                                │
+│                           │                                     │
+│                           ▼                                     │
+│  RATCHET LAYER (Progress Locking)                               │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │ Chaos: Multiple attempts, parallel exploration          │    │
 │  │ Filter: Validation gates (tests, vibe, CI)              │    │
 │  │ Ratchet: Merge, close, store (permanent)                │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                           │                                      │
-│                           ▼                                      │
-│  THE GOAL (Escape Velocity)                                      │
-│  ┌─────────────────────────────────────────────────────────┐    │
+│                           │                                     │
+│                           ▼                                     │
+│  THE GOAL (Escape Velocity)                                     │
+│  ┌──────────────────────────────────────────────────────────┐   │
 │  │                                                          │   │
 │  │              σ × ρ > δ/100                               │   │
 │  │                                                          │   │
-│  │    retrieval × evidence-backed use > aging threshold    │    │
+│  │    retrieval × evidence-backed use > aging threshold     │   │
 │  │                                                          │   │
 │  │    When true: KNOWLEDGE COMPOUNDS                        │   │
 │  │                                                          │   │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

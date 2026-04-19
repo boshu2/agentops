@@ -500,7 +500,7 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
                │
                ▼
   ┌──────────────────────────┐
-  │  STAGE 2: VERIFY          │  v1
+  │  STAGE 2: VERIFY         │  v1
   │  Mechanical checks:      │
   │  tests pass? goals up?   │
   │  → verification metadata │
@@ -508,7 +508,7 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
                │
                ▼
   ┌──────────────────────────┐
-  │  STAGE 3: INDEX           │  v2
+  │  STAGE 3: INDEX          │  v2
   │  Tag by topic, skill,    │
   │  goal. Update search idx │
   │  → ao search, ao lookup  │
@@ -516,7 +516,7 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
                │
                ▼
   ┌──────────────────────────┐
-  │  STAGE 4: SCORE           │  v2
+  │  STAGE 4: SCORE          │  v2
   │  5-dim quality gate:     │
   │  specificity, action-    │
   │  ability, novelty,       │
