@@ -1693,3 +1693,63 @@ func TestRunOvernight_WarnOnlyRatchet_WiredIntoLoopOpts(t *testing.T) {
 		t.Fatal("OnConsume callback dropped")
 	}
 }
+
+func TestDreamYieldIsEmpty(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		yield ovn.YieldSummary
+		want  bool
+	}{
+		{"zero", ovn.YieldSummary{}, true},
+		{"packets before", ovn.YieldSummary{PacketCountBefore: 1}, false},
+		{"packets after", ovn.YieldSummary{PacketCountAfter: 1}, false},
+		{"bead sync", ovn.YieldSummary{BeadSyncCount: 1}, false},
+		{"council completed", ovn.YieldSummary{CouncilCompletedCount: 1}, false},
+		{"council failed", ovn.YieldSummary{CouncilFailedCount: 1}, false},
+		{"council timeout", ovn.YieldSummary{CouncilTimeoutCount: 1}, false},
+		{"council action delta", ovn.YieldSummary{CouncilActionDelta: "refined"}, false},
+		{"council recommended kind", ovn.YieldSummary{CouncilRecommendedKind: "validate"}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			y := tc.yield
+			if got := dreamYieldIsEmpty(&y); got != tc.want {
+				t.Errorf("dreamYieldIsEmpty(%+v) = %v, want %v", tc.yield, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAppendDreamYieldSection_SkipsEmpty(t *testing.T) {
+	t.Parallel()
+	var b strings.Builder
+	appendDreamYieldSection(&b, nil)
+	if b.Len() != 0 {
+		t.Errorf("nil yield should write nothing, got %q", b.String())
+	}
+	appendDreamYieldSection(&b, &ovn.YieldSummary{})
+	if b.Len() != 0 {
+		t.Errorf("empty yield should write nothing, got %q", b.String())
+	}
+}
+
+func TestAppendDreamYieldSection_RendersPopulated(t *testing.T) {
+	t.Parallel()
+	var b strings.Builder
+	y := &ovn.YieldSummary{
+		PacketCountBefore:      1,
+		PacketCountAfter:       3,
+		BeadSyncCount:          2,
+		CouncilCompletedCount:  2,
+		CouncilFailedCount:     1,
+		CouncilRecommendedKind: "validate",
+	}
+	appendDreamYieldSection(&b, y)
+	out := b.String()
+	for _, want := range []string{"## Yield", "Packets:", "Bead sync count", "Council runners", "Council recommended kind"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q: %s", want, out)
+		}
+	}
+}
