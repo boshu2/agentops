@@ -330,7 +330,7 @@ AgentOps is shaped by a set of public principles — the 12 factors of agent ope
 | **Knowledge (VII-IX)** | Extract Learnings · Compound Knowledge · Measure What Matters |
 | **Scale (X-XII)** | Isolate Workers · Supervise Hierarchically · Harvest Failures as Wisdom |
 
-Each factor maps to concrete tooling in this repo — skills, the `ao` CLI, and the `.agents/` directory. See each factor page at [12factoragentops.com/factors](https://12factoragentops.com/factors) for the doctrine behind the mechanism.
+The AgentOps product implements these principles through skills, the `ao` CLI, and local bookkeeping in `.agents/`. See each factor page at [12factoragentops.com/factors](https://12factoragentops.com/factors) for the doctrine behind the mechanism.
 
 ---
 
