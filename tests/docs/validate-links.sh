@@ -90,7 +90,16 @@ for file in "${md_files[@]}"; do
 
     if [[ ! -e "$resolved" ]]; then
       # Normalize the resolved path so generated-path lookups line up.
-      canonical="$(cd "$(dirname "$resolved")" 2>/dev/null && pwd)/$(basename "$resolved")" || canonical="$resolved"
+      # The mkdocs-generated paths have no on-disk parent dir in CI (docs/skills/
+      # and docs/cli/ exist only via gen-files plugin). Fall back to the raw
+      # resolved path when the parent dir does not exist — do NOT use inline
+      # short-circuit `|| canonical=...` because that never fires when the
+      # outer assignment itself does not fail.
+      if resolved_parent="$(cd "$(dirname "$resolved")" 2>/dev/null && pwd)"; then
+        canonical="$resolved_parent/$(basename "$resolved")"
+      else
+        canonical="$resolved"
+      fi
       if [[ -n "${generated_paths[$canonical]+x}" ]]; then
         generated=$((generated + 1))
         continue

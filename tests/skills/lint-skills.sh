@@ -161,14 +161,19 @@ for skill_dir in "$SKILLS_DIR"/*/; do
 
     # --- (f) Referenced files must exist ---
     # Match patterns like references/foo.md, references/bar-baz.md
-    # Also handles cross-skill references like skills/shared/references/foo.md
-    ref_paths=$(grep -oE '(skills/[a-z-]+/)?references/[A-Za-z0-9_.-]+(\.[a-z]+)?' "$skill_md" 2>/dev/null || true)
+    # Also handles cross-skill references:
+    #   - skills/shared/references/foo.md (repo-absolute)
+    #   - ../shared/references/foo.md (relative to skill dir)
+    ref_paths=$(grep -oE '(\.\./shared/|skills/[a-z-]+/)?references/[A-Za-z0-9_.-]+(\.[a-z]+)?' "$skill_md" 2>/dev/null || true)
     if [ -n "$ref_paths" ]; then
         while IFS= read -r ref; do
             [ -z "$ref" ] && continue
             if [[ "$ref" == skills/* ]]; then
                 # Cross-skill reference — resolve from repo root
                 check_path="$REPO_ROOT/$ref"
+            elif [[ "$ref" == ../shared/* ]]; then
+                # Relative shared reference — resolve via skill dir parent
+                check_path="$skill_dir/$ref"
             else
                 # Local reference — resolve from skill directory
                 check_path="$skill_dir/$ref"
