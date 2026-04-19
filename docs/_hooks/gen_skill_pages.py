@@ -178,6 +178,35 @@ def emit_detail(skill: dict[str, str]) -> None:
 
 def emit_skills_index(skills: list[dict[str, str]]) -> None:
     """Write the skills landing page (docs/skills/index.md)."""
+    by_slug = {s["slug"]: s for s in skills}
+
+    # Headline skills — the ones a new user should try first, in order of decision
+    # distance from "I just want to do the thing" to "I want the whole loop".
+    # Matches the table on docs/index.md and README.md for consistency.
+    headline = [
+        ("quickstart", "You want the fastest setup check and next action"),
+        ("council", "You want independent judges to review a plan, PR, or decision"),
+        ("research", "You need codebase context and prior learnings before changing code"),
+        ("pre-mortem", "You want to pressure-test a plan before implementation"),
+        ("implement", "You want one scoped task built and validated"),
+        ("rpi", "You want discovery, build, validation, and bookkeeping in one flow"),
+        ("vibe", "You want a code-quality and risk review before shipping"),
+        ("evolve", "You want a goal-driven improvement loop with regression gates"),
+        ("dream", "You want overnight knowledge compounding that never mutates source code"),
+    ]
+
+    # Family groups for the complete-catalog section
+    families = [
+        ("Validation", ["council", "vibe", "pre-mortem", "post-mortem", "red-team"]),
+        ("Flows", ["research", "plan", "implement", "crank", "swarm", "rpi", "evolve", "discovery", "validation"]),
+        ("Bookkeeping", ["retro", "forge", "flywheel", "compile", "harvest", "inject", "provenance"]),
+        ("Session", ["handoff", "recover", "status", "trace", "dream", "using-agentops"]),
+        ("Product", ["product", "goals", "release", "readme", "doc", "oss-docs"]),
+        ("Utility", ["brainstorm", "bug-hunt", "complexity", "scaffold", "push", "refactor", "test", "deps", "perf", "review", "security", "security-suite"]),
+        ("Platform", ["beads", "ratchet", "heal-skill", "update", "converter", "codex-team", "scenario", "bootstrap", "autodev"]),
+        ("PR workflow", ["pr-research", "pr-plan", "pr-implement", "pr-validate", "pr-prep", "pr-retro"]),
+    ]
+
     lines = [
         "# Skills",
         "",
@@ -186,47 +215,72 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
         "enforced metadata — that any compatible harness (Claude Code, Codex, "
         "OpenCode) can invoke.",
         "",
-        f"**{len(skills)} skills ship with AgentOps.**",
+        f"**{len(skills)} skills ship with AgentOps.** Start with the headline nine below, then explore the full catalog when you need more specialized tools.",
         "",
-        "<div class=\"grid cards\" markdown>",
+        "## Headline skills — use these first",
         "",
-        "- :material-format-list-bulleted: **[Catalog](catalog.md)**  ",
-        "  Browse every skill on a single page with descriptions and source links.",
-        "",
-        "- :material-sitemap: **[Skill Tiers](../skills/catalog.md#index)**  ",
-        "  User-facing vs internal skills, dependency graph, and tier taxonomy.",
-        "",
-        "- :material-routes: **[Decision Tree](../skills-decision-tree.md)**  ",
-        "  \"Which skill do I need next?\" — single source of truth.",
-        "",
-        "- :material-api: **[Skill API](../SKILL-API.md)**  ",
-        "  Frontmatter fields, context declarations, and enforcement status.",
-        "",
-        "</div>",
-        "",
-        "## Featured Workflows",
-        "",
-        "| Skill | What it does |",
-        "|-------|---------------|",
+        "| Skill | Use it when |",
+        "|-------|-------------|",
     ]
-    featured = [
-        "rpi", "discovery", "crank", "validation", "implement",
-        "research", "plan", "review", "vibe", "post-mortem", "retro",
-        "swarm", "council", "evolve", "release", "beads",
-    ]
-    by_slug = {s["slug"]: s for s in skills}
-    for slug in featured:
-        skill = by_slug.get(slug)
-        if not skill:
-            continue
-        lines.append(f"| [`{slug}`]({slug}.md) | {skill['description']} |")
+    for slug, use_case in headline:
+        if slug in by_slug:
+            lines.append(f"| [`{slug}`]({slug}.md) | {use_case} |")
 
     lines.extend([
         "",
-        "## Skill Tiers",
+        "!!! tip \"Which skill do I need next?\"",
+        "    See the [Decision Tree](../skills-decision-tree.md) for a visual walkthrough, or [SKILL-ROUTER](../SKILL-ROUTER.md) for rule-based routing.",
         "",
-        "See [SKILLS.md](../SKILLS.md) for the authoritative tier breakdown and "
-        "[SKILL-ROUTER.md](../SKILL-ROUTER.md) for the routing decisions.",
+        "---",
+        "",
+        "## Complete catalog by family",
+        "",
+        "Every skill the system ships with, grouped by purpose:",
+        "",
+    ])
+
+    seen: set[str] = set()
+    for family, slugs in families:
+        present = [s for s in slugs if s in by_slug]
+        if not present:
+            continue
+        lines.append(f"### {family}")
+        lines.append("")
+        for slug in present:
+            skill = by_slug[slug]
+            lines.append(f"- [`{slug}`]({slug}.md) — {skill['description']}")
+            seen.add(slug)
+        lines.append("")
+
+    # Anything not in a family bucket → "Other"
+    remaining = [s for s in skills if s["slug"] not in seen]
+    if remaining:
+        lines.append("### Other")
+        lines.append("")
+        for skill in remaining:
+            lines.append(f"- [`{skill['slug']}`]({skill['slug']}.md) — {skill['description']}")
+        lines.append("")
+
+    lines.extend([
+        "---",
+        "",
+        "## Related references",
+        "",
+        "<div class=\"grid cards\" markdown>",
+        "",
+        "- :material-format-list-bulleted: **[Single-page catalog](catalog.md)**",
+        "  All skills on one page — easier to grep or Ctrl-F than browsing by family.",
+        "",
+        "- :material-routes: **[Decision Tree](../skills-decision-tree.md)**",
+        "  \"Which skill do I need next?\" — single source of truth.",
+        "",
+        "- :material-api: **[Skill API](../SKILL-API.md)**",
+        "  Frontmatter fields, context declarations, enforcement status.",
+        "",
+        "- :material-sitemap: **[Skill Router](../SKILL-ROUTER.md)**",
+        "  Routing rules: which skill to use for which task.",
+        "",
+        "</div>",
         "",
     ])
     with mkdocs_gen_files.open("skills/index.md", "w") as fh:
