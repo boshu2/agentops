@@ -10,7 +10,7 @@
 
 AgentOps is the operational layer for coding agents. It adds bookkeeping, validation, primitives, and flows so every session starts where the last one left off.
 
-[Install](#install) · [Quick Start](#quick-start) · [Skills](#skills) · [CLI](#the-ao-cli) · [Docs](docs/INDEX.md)
+[Install](#install) · [Quick Start](#quick-start) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/INDEX.md)
 
 </div>
 
@@ -316,6 +316,21 @@ scripts/docs-build.sh            # build site to _site/
 ```
 
 The first run creates `.venv-docs/` and installs the toolchain via `uv` (preferred) or `pip`. The deploy workflow at `.github/workflows/docs.yml` runs the same `mkdocs build --strict` on every push to `main` and publishes to GitHub Pages.
+
+---
+
+## The 12-Factor Doctrine
+
+AgentOps is shaped by a set of public principles — the 12 factors of agent operations. Foundation, Flow, Knowledge, and Scale. Read them at **[12factoragentops.com](https://12factoragentops.com)**.
+
+| Tier | Factors |
+|------|---------|
+| **Foundation (I-III)** | Context Is Everything · Track Everything in Git · One Agent, One Job |
+| **Flow (IV-VI)** | Research Before You Build · Validate Externally · Lock Progress Forward |
+| **Knowledge (VII-IX)** | Extract Learnings · Compound Knowledge · Measure What Matters |
+| **Scale (X-XII)** | Isolate Workers · Supervise Hierarchically · Harvest Failures as Wisdom |
+
+Each factor maps to concrete tooling in this repo — skills, the `ao` CLI, and the `.agents/` directory. See each factor page at [12factoragentops.com/factors](https://12factoragentops.com/factors) for the doctrine behind the mechanism.
 
 ---
 
