@@ -117,6 +117,9 @@ func ScanFileForDeprecatedCommands(path string) []StaleReference {
 	var refs []StaleReference
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
+		if isRenameDocLine(line) {
+			continue
+		}
 		for oldCmd, newCmd := range DeprecatedCommands {
 			idx := strings.Index(line, oldCmd)
 			if idx < 0 {
@@ -140,6 +143,13 @@ func ScanFileForDeprecatedCommands(path string) []StaleReference {
 	}
 
 	return refs
+}
+
+// isRenameDocLine reports whether a line is documenting a command rename
+// (e.g. `ao old command` → `ao new command`). Such lines intentionally
+// reference the deprecated command and should not count as stale usage.
+func isRenameDocLine(line string) bool {
+	return strings.Contains(line, "→") || strings.Contains(line, " -> ")
 }
 
 // CountUniqueFiles counts the number of distinct files in a slice of StaleReferences.
