@@ -43,6 +43,6 @@ This split keeps repo goals stable while allowing the autonomous runtime policy 
 
 ## See Also
 
-- [README.md](../README.md) — repo overview and `/evolve` demo
+- [README.md](https://github.com/boshu2/agentops/blob/main/README.md) — repo overview and `/evolve` demo
 - [How It Works](how-it-works.md) — runtime mechanics
 - [The Science](the-science.md) — decay model behind fitness scoring

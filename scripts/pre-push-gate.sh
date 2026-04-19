@@ -672,6 +672,24 @@ else
     skip "doc-release gate"
 fi
 
+# --- 25a. MkDocs strict build (fast, optional — requires Python + requirements-docs.txt) ---
+if needs_check docs || needs_check skill; then
+    if [[ "${PRE_PUSH_SKIP_MKDOCS:-0}" == "1" ]]; then
+        skip "mkdocs strict build (PRE_PUSH_SKIP_MKDOCS=1)"
+    elif [[ -x scripts/docs-build.sh ]] && command -v python3 >/dev/null 2>&1; then
+        if mkdocs_output="$(scripts/docs-build.sh --check 2>&1)"; then
+            pass "mkdocs strict build"
+        else
+            fail "mkdocs strict build (run: scripts/docs-build.sh --check)"
+            indent_output "$mkdocs_output"
+        fi
+    else
+        skip "mkdocs strict build (python3 or scripts/docs-build.sh missing)"
+    fi
+else
+    skip "mkdocs strict build"
+fi
+
 # --- 25b. Release audit artifact refs ---
 if needs_check docs || [[ "${all_changed:-}" == *"scripts/validate-release-audit-artifacts.sh"* ]]; then
     if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then

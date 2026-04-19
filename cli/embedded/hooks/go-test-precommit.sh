@@ -40,6 +40,15 @@ done
 
 GO_DIR="$(dirname "$GO_MOD")"
 
+# Scope gate: skip the Go fast-gate entirely when no Go files are staged.
+# Prevents this hook from blocking non-Go commits (docs, skills, shell, YAML).
+# Matches *.go files and go.{mod,sum,work,work.sum} at any depth.
+STAGED_FILES="$(git diff --cached --name-only 2>/dev/null || true)"
+if ! printf '%s\n' "$STAGED_FILES" | grep -qE '\.go$|(^|/)go\.mod$|(^|/)go\.sum$|(^|/)go\.work(\.sum)?$'; then
+  echo "Pre-commit: no Go files staged — skipping go vet/build" >&2
+  exit 0
+fi
+
 # --- Fast gate: vet + build (<5s) ---
 echo "Pre-commit: go vet..." >&2
 if ! (cd "$GO_DIR" && go vet ./... 2>&1) >&2; then

@@ -710,7 +710,7 @@
       "name": "discovery",
       "source_skill": "skills/discovery",
       "source_hash": "a1bbd35f1ac413208e7a8090495f41f34e6b793f18a8d4e5cc30d9029631f4e6",
-      "generated_hash": "8a28eb03e22ab4b4a4442402211f4c279283111a699acc7c7426ac2645fa1356"
+      "generated_hash": "691e799a7d9662c8ab9b45b1e50ab2095c14e9c99f0f19a3f5f8149b0359d5f2"
     },
     {
       "name": "dream",
@@ -950,7 +950,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "c433dc12380733af9b7db7e942873b1143033cb0887d2c8945728cba174b5495",
-      "generated_hash": "d7806f312b4172f2f7d8cc9b63f66f34b50cc5e6d9ca7f2cdb58e68f790b01be"
+      "generated_hash": "6bc9822ad767ad73293875e71ef4ffb7520bc153e794af15edc4f9940c39eaed"
     },
     {
       "name": "scaffold",
@@ -980,7 +980,7 @@
       "name": "shared",
       "source_skill": "skills/shared",
       "source_hash": "3955166ea6cde6ec5d09e4d8a7f11a7c8303a28c1bab8029ba5e752bd5006cbb",
-      "generated_hash": "a9deb4f1aeeb6f7371c548fb8174b185ff90ab4390f34a43618b13d6de0d06ee"
+      "generated_hash": "d554935fb1b81f5ebe16d4d6cf50e7b296c917382fbbcfe552ef0691c7cc4d20"
     },
     {
       "name": "standards",
@@ -1028,7 +1028,7 @@
       "name": "validation",
       "source_skill": "skills/validation",
       "source_hash": "2e71f8dbe94c65971f0dff7f82ac83396649ff036bbea388060174945f660c5c",
-      "generated_hash": "04c7521bc6e5d801f05092c41794ebbd3bd00b6f89b83f366a5201bdb46f874a"
+      "generated_hash": "5cd2d80a2406d05f0eff3a7276ac14d46d00e66d8e0d5785c784bcaa0a8de463"
     },
     {
       "name": "vibe",

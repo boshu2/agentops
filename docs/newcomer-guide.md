@@ -15,7 +15,7 @@ At a high level:
 
 See also:
 
-- [README](../README.md)
+- [README](https://github.com/boshu2/agentops/blob/main/README.md)
 - [Architecture](ARCHITECTURE.md)
 - [How It Works](how-it-works.md)
 
@@ -117,5 +117,5 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 - [Documentation Index](INDEX.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Skills Reference](SKILLS.md)
-- [CLI Reference](../cli/docs/COMMANDS.md)
+- [CLI Reference](cli/commands.md)
 - [Troubleshooting](troubleshooting.md)

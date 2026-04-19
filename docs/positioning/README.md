@@ -1,8 +1,8 @@
 # Positioning
 
 AgentOps is the operational layer for coding agents. The current public
-framing lives in [PRODUCT.md](../../PRODUCT.md) and
-[README.md](../../README.md): bookkeeping, validation, primitives, and flows
+framing lives in [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) and
+[README.md](https://github.com/boshu2/agentops/blob/main/README.md): bookkeeping, validation, primitives, and flows
 so every session starts where the last one left off.
 
 Use DevOps and 12-factor language here as supporting doctrine, lineage, or

@@ -5,7 +5,7 @@ Project-specific terms used throughout AgentOps documentation.
 ## A
 
 ### AgentOps
-The operational layer for coding agents. Publicly, AgentOps adds bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. Technically, it acts as a context compiler around your existing models and tools. [Full documentation](../README.md)
+The operational layer for coding agents. Publicly, AgentOps adds bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. Technically, it acts as a context compiler around your existing models and tools. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md)
 
 ### Atomic Work
 A unit of work with no shared mutable state with concurrent workers. Pure function model: input (issue spec + codebase snapshot) → output (patch + verification). This isolation property is what enables parallel wave execution — workers cannot interfere with each other. Enforced by fresh context per worker and lead-only commits.
@@ -13,10 +13,10 @@ A unit of work with no shared mutable state with concurrent workers. Pure functi
 ## B
 
 ### Beads
-Git-native issue tracking system accessed via the `bd` CLI. Issues live in `.beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](../skills/beads/SKILL.md)
+Git-native issue tracking system accessed via the `bd` CLI. Issues live in `.beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](skills/beads.md)
 
 ### Bookkeeping
-AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](../README.md#how-bookkeeping-compounds)
+AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
 
 ### Brownian Ratchet
 The core execution model: spawn parallel agents (chaos), validate their output with a multi-model council (filter), and merge passing results to main (ratchet). Progress locks forward — failed agents are discarded cheaply because fresh context means no contamination. [Full documentation](how-it-works.md#the-brownian-ratchet)
@@ -24,16 +24,16 @@ The core execution model: spawn parallel agents (chaos), validate their output w
 ## C
 
 ### Codex Team
-A skill (`/codex-team`) that spawns parallel Codex (OpenAI) execution agents orchestrated by Claude, enabling cross-vendor parallel task execution. [Full documentation](../skills/codex-team/SKILL.md)
+A skill (`/codex-team`) that spawns parallel Codex (OpenAI) execution agents orchestrated by Claude, enabling cross-vendor parallel task execution. [Full documentation](skills/codex-team.md)
 
 ### Context Compiler
-The technical framing for AgentOps. Raw session signal becomes reusable knowledge, compiled prevention, and better next work. The public story is operational layer; the context compiler is the architectural explanation behind it. [Full documentation](../README.md)
+The technical framing for AgentOps. Raw session signal becomes reusable knowledge, compiled prevention, and better next work. The public story is operational layer; the context compiler is the architectural explanation behind it. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md)
 
 ### Council
-The core validation primitive. Spawns independent judge agents (Claude and/or Codex) that review work from different perspectives, deliberate, and converge on a verdict: PASS, WARN, or FAIL. Foundation for `/vibe`, `/pre-mortem`, and `/post-mortem`. [Full documentation](../skills/council/SKILL.md)
+The core validation primitive. Spawns independent judge agents (Claude and/or Codex) that review work from different perspectives, deliberate, and converge on a verdict: PASS, WARN, or FAIL. Foundation for `/vibe`, `/pre-mortem`, and `/post-mortem`. [Full documentation](skills/council.md)
 
 ### Crank
-A skill (`/crank`) that executes an epic by spawning parallel worker agents in dependency-ordered waves. Each worker gets fresh context, writes files, and reports back; the lead validates and commits. Runs until every issue in the epic is closed. [Full documentation](../skills/crank/SKILL.md)
+A skill (`/crank`) that executes an epic by spawning parallel worker agents in dependency-ordered waves. Each worker gets fresh context, writes files, and reports back; the lead validates and commits. Runs until every issue in the epic is closed. [Full documentation](skills/crank.md)
 
 ## E
 
@@ -41,7 +41,7 @@ A skill (`/crank`) that executes an epic by spawning parallel worker agents in d
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
 
 ### Extract
-An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/forge --promote`. [Full documentation](../skills/forge/SKILL.md)
+An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/forge --promote`. [Full documentation](skills/forge.md)
 
 ## F
 
@@ -52,7 +52,7 @@ The reconciliation engine that implements the Brownian Ratchet: **F**ind (read c
 The automated loop that extracts learnings from completed work, scores them for quality, and re-injects them at the next session start. Knowledge compounds when retrieval and usage outpace decay and scale friction; otherwise it plateaus until controls improve. [Full documentation](ARCHITECTURE.md#pillar-4-knowledge-flywheel)
 
 ### Forge
-An internal skill that mines session transcripts for knowledge artifacts — decisions, patterns, failures, and fixes — and stores them in `.agents/`. [Full documentation](../skills/forge/SKILL.md)
+An internal skill that mines session transcripts for knowledge artifacts — decisions, patterns, failures, and fixes — and stores them in `.agents/`. [Full documentation](skills/forge.md)
 
 ## G
 
@@ -62,15 +62,15 @@ A checkpoint enforced by a hook that blocks progress until a condition is met. F
 ## H
 
 ### Handoff
-A skill (`/handoff`) that creates structured session handoff documents so another agent or future session can continue work with full context. [Full documentation](../skills/handoff/SKILL.md)
+A skill (`/handoff`) that creates structured session handoff documents so another agent or future session can continue work with full context. [Full documentation](skills/handoff.md)
 
 ### Hook
-A shell script that fires automatically on agent lifecycle events. AgentOps currently registers 7 hook event sections in `hooks/hooks.json`, spanning session lifecycle, prompt routing, tool-time gates, and task completion. All hooks can be disabled with `AGENTOPS_HOOKS_DISABLED=1`. [Full documentation](../hooks/hooks.json)
+A shell script that fires automatically on agent lifecycle events. AgentOps currently registers 7 hook event sections in `hooks/hooks.json`, spanning session lifecycle, prompt routing, tool-time gates, and task completion. All hooks can be disabled with `AGENTOPS_HOOKS_DISABLED=1`. [Full documentation](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json)
 
 ## I
 
 ### Inject
-An internal skill triggered at session start that loads relevant prior knowledge from `.agents/` into the current session context. [Full documentation](../skills/inject/SKILL.md)
+An internal skill triggered at session start that loads relevant prior knowledge from `.agents/` into the current session context. [Full documentation](skills/inject.md)
 
 ### Issue
 A discrete unit of trackable work, stored as a bead. Created by `/plan`, executed by `/implement` or `/crank`. Has status, dependencies, and parent/child relationships. [Full documentation](SKILLS.md#beads)
@@ -78,7 +78,7 @@ A discrete unit of trackable work, stored as a bead. Created by `/plan`, execute
 ## J
 
 ### Judge
-An agent in a council that evaluates work from a specific perspective (security, architecture, correctness, etc.). Judges deliberate asynchronously, then the lead consolidates verdicts. [Full documentation](../skills/council/SKILL.md)
+An agent in a council that evaluates work from a specific perspective (security, architecture, correctness, etc.). Judges deliberate asynchronously, then the lead consolidates verdicts. [Full documentation](skills/council.md)
 
 ## L
 
@@ -96,16 +96,16 @@ A cross-cutting rule enforced by hooks that applies to all skills and agents. Ex
 A knowledge quality tier — pending, tempered, or promoted. Artifacts start in pending, get tempered through repeated validation and use, and can be promoted to the permanent knowledge base. [Full documentation](ARCHITECTURE.md#knowledge-artifacts)
 
 ### Post-mortem
-A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](../skills/post-mortem/SKILL.md)
+A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](skills/post-mortem.md)
 
 ### Pre-mortem
-A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate failures against the plan — including spec-completeness checks — and surface problems while they are still cheap to fix. A FAIL verdict sends the plan back for revision. [Full documentation](../skills/pre-mortem/SKILL.md)
+A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate failures against the plan — including spec-completeness checks — and surface problems while they are still cheap to fix. A FAIL verdict sends the plan back for revision. [Full documentation](skills/pre-mortem.md)
 
 ### Profile
-A documentation grouping for domain-specific workflows and standards. Profiles organize coding standards and validation rules by language or domain. [Full documentation](../skills/standards/SKILL.md)
+A documentation grouping for domain-specific workflows and standards. Profiles organize coding standards and validation rules by language or domain. [Full documentation](skills/standards.md)
 
 ### Provenance
-An internal skill that traces the lineage and sources of knowledge artifacts — where a learning came from, which sessions produced it, and how it was validated. [Full documentation](../skills/provenance/SKILL.md)
+An internal skill that traces the lineage and sources of knowledge artifacts — where a learning came from, which sessions produced it, and how it was validated. [Full documentation](skills/provenance.md)
 
 ## R
 
@@ -113,13 +113,13 @@ An internal skill that traces the lineage and sources of knowledge artifacts —
 The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern--fresh-context-every-wave)
 
 ### Ratchet
-A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and hooks enforce it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/ratchet/SKILL.md)
+A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and hooks enforce it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](skills/ratchet.md)
 
 ### Research
-The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](../skills/research/SKILL.md)
+The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](skills/research.md)
 
 ### Retro
-A skill (`/retro`) that extracts learnings from completed work — decisions made, patterns discovered, and failures encountered — and feeds them into the knowledge flywheel. Learnings are scored for specificity, actionability, and novelty. [Full documentation](../skills/retro/SKILL.md)
+A skill (`/retro`) that extracts learnings from completed work — decisions made, patterns discovered, and failures encountered — and feeds them into the knowledge flywheel. Learnings are scored for specificity, actionability, and novelty. [Full documentation](skills/retro.md)
 
 ### RPI (Research-Plan-Implement)
 The historical name for AgentOps' full lifecycle workflow. In current runtime terms, `/rpi` orchestrates **Discovery -> Implementation -> Validation** while `ao rpi phased` enforces fresh context windows between those phases. The older acronym persists in product language and command names, but validation and loop closure are now first-class parts of the executable lifecycle. [Full documentation](ARCHITECTURE.md#the-phased-lifecycle)
@@ -130,7 +130,7 @@ The historical name for AgentOps' full lifecycle workflow. In current runtime te
 A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 66 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
-A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](../skills/swarm/SKILL.md)
+A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](skills/swarm.md)
 
 ## T
 
@@ -140,12 +140,12 @@ A knowledge quality state indicating an artifact has been validated through mult
 ## V
 
 ### Vibe
-A skill (`/vibe`) that validates code after implementation by running a council of judges against the changes. Produces a PASS, WARN, or FAIL verdict. A passing vibe is typically required by the push gate before code can be pushed to the remote. [Full documentation](../skills/vibe/SKILL.md)
+A skill (`/vibe`) that validates code after implementation by running a council of judges against the changes. Produces a PASS, WARN, or FAIL verdict. A passing vibe is typically required by the push gate before code can be pushed to the remote. [Full documentation](skills/vibe.md)
 
 ## W
 
 ### Wave
-A batch of issues within an epic that can be executed in parallel because they have no dependencies on each other. Waves are ordered by the dependency graph: Wave 1 contains leaf issues, Wave 2 contains issues that depend on Wave 1, and so on. Each wave spawns fresh worker agents. [Full documentation](../skills/crank/SKILL.md)
+A batch of issues within an epic that can be executed in parallel because they have no dependencies on each other. Waves are ordered by the dependency graph: Wave 1 contains leaf issues, Wave 2 contains issues that depend on Wave 1, and so on. Each wave spawns fresh worker agents. [Full documentation](skills/crank.md)
 
 ### Worker
-An agent executing a single task in a swarm. Each worker gets fresh context (no bleed-through from other workers), writes files but never commits — the team lead validates and commits. [Full documentation](../skills/swarm/SKILL.md)
+An agent executing a single task in a swarm. Each worker gets fresh context (no bleed-through from other workers), writes files but never commits — the team lead validates and commits. [Full documentation](skills/swarm.md)

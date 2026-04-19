@@ -101,7 +101,7 @@ This was learned through production experience: orchestration that disappears in
 
 `/swarm` is a special case — it's an orchestrator (no fork) that spawns runtime workers via `TeamCreate`/`spawn_agent`. The workers are runtime sub-agents, not SKILL.md skills.
 
-Full classification: [`SKILL-TIERS.md`](../skills/SKILL-TIERS.md)
+Full classification: [`SKILL-TIERS.md`](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md)
 
 ## Agent Backends — Runtime-Native Orchestration
 

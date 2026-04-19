@@ -90,6 +90,27 @@ Before pushing, the recommended fast gate is:
 scripts/pre-push-gate.sh --fast
 ```
 
+### Working On The Docs Site
+
+The published site at [boshu2.github.io/agentops](https://boshu2.github.io/agentops/) is built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/), not Jekyll. If your change touches anything under `docs/`, the top-level `README.md`, `CHANGELOG.md`, or `skills/**/SKILL.md`, verify the site still builds:
+
+```bash
+# Strict build (what CI runs). First run creates .venv-docs/ and installs
+# the pinned toolchain from requirements-docs.txt (uv preferred, pip fallback).
+scripts/docs-build.sh --check
+
+# Live-reload dev server at http://127.0.0.1:8000
+scripts/docs-build.sh --serve
+```
+
+MkDocs-specific expectations:
+
+- Every internal link must resolve. `mkdocs build --strict` fails on unresolved relative links; `tests/docs/validate-links.sh` catches the same class without a Python toolchain.
+- Skill pages and the CLI reference are **generated at build time** from `skills/**/SKILL.md` and `cli/docs/COMMANDS.md` respectively — do not hand-author `docs/skills/*.md` or `docs/cli/commands.md`.
+- Navigation is declared in `mkdocs.yml` under `nav:`. New top-level docs need an entry there.
+
+Python toolchain is required only for local preview and the strict build. If your dev machine can't install Python, set `PRE_PUSH_SKIP_MKDOCS=1` to bypass the MkDocs check in the pre-push gate; CI will catch it.
+
 ## Opening The PR
 
 Make the PR easy to review. Include:
@@ -156,12 +177,12 @@ Report issues to: fullerbt@users.noreply.github.com
 
 Useful places to orient:
 
-- [README.md](../README.md)
+- [README.md](https://github.com/boshu2/agentops/blob/main/README.md)
 - [docs/INDEX.md](INDEX.md)
 - [docs/SKILLS.md](SKILLS.md)
 - [docs/SKILL-API.md](SKILL-API.md)
 - [docs/testing-skills.md](testing-skills.md)
-- [AGENTS.md](../AGENTS.md)
+- [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md)
 
 For examples, browse existing skills under `skills/`.
 

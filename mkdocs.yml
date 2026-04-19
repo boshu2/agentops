@@ -1,0 +1,253 @@
+site_name: AgentOps
+site_description: The operational layer for coding agents. Memory, validation, and feedback loops that compound between sessions.
+site_url: https://boshu2.github.io/agentops/
+site_author: AgentOps
+
+repo_name: boshu2/agentops
+repo_url: https://github.com/boshu2/agentops
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: _site
+
+# Keep building even when the knowledge graph links outside docs/ (e.g., ../skills/).
+# Strict link checking runs as a separate CI job via tests/docs/validate-links.sh + lychee.
+strict: false
+
+theme:
+  name: material
+  language: en
+  favicon: assets/favicon.svg
+  logo: assets/logo.svg
+  custom_dir: docs/overrides
+  palette:
+    # Dark mode default (slate) — toggle flips to light.
+    - media: "(prefers-color-scheme)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - content.action.view
+    - content.tabs.link
+    - content.tooltips
+    - toc.follow
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/boshu2/agentops
+      name: AgentOps on GitHub
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Anchor link
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      use_pygments: true
+      linenums: false
+      anchor_linenums: false
+      pygments_lang_class: true
+      guess_lang: false
+      auto_title: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+      base_path:
+        - docs
+        - .
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+  - gen-files:
+      scripts:
+        - docs/_hooks/gen_skill_pages.py
+        - docs/_hooks/gen_cli_reference.py
+  - section-index
+  - include-markdown
+  - git-revision-date-localized:
+      enable_creation_date: false
+      fallback_to_build_date: true
+      strict: false
+      type: date
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Newcomer Guide: newcomer-guide.md
+      - Create Your First Skill: create-your-first-skill.md
+      - Behavioral Discipline: behavioral-discipline.md
+      - FAQ: FAQ.md
+      - Contributing: CONTRIBUTING.md
+      - Security: SECURITY.md
+      - Changelog: CHANGELOG.md
+  - Skills:
+      - skills/index.md
+      - Skills Reference: SKILLS.md
+      - Decision Tree: skills-decision-tree.md
+      - Skill API: SKILL-API.md
+      - Skill Router: SKILL-ROUTER.md
+      - Catalog: skills/catalog.md
+  - CLI:
+      - cli/index.md
+      - Command Reference: cli/commands.md
+      - CLI ↔ Skills Map: cli-skills-map.md
+      - Hooks Reference: cli/hooks.md
+  - Architecture:
+      - architecture/index.md
+      - How It Works: how-it-works.md
+      - Architecture Overview: ARCHITECTURE.md
+      - Software Factory: software-factory.md
+      - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
+      - Primitive Chains: architecture/primitive-chains.md
+      - AO-Olympus Matrix: architecture/ao-olympus-ownership-matrix.md
+      - PDC Framework: architecture/pdc-framework.md
+      - FAAFO Alignment: architecture/faafo-alignment.md
+      - Failure Patterns: architecture/failure-patterns.md
+      - AO Command Customization: architecture/ao-command-customization-matrix.md
+  - Workflows:
+      - workflows/README.md
+      - Complete Cycle: workflows/complete-cycle.md
+      - Session Lifecycle: workflows/session-lifecycle.md
+      - Quick Fix: workflows/quick-fix.md
+      - Debug Cycle: workflows/debug-cycle.md
+      - Knowledge Synthesis: workflows/knowledge-synthesis.md
+      - Assumption Validation: workflows/assumption-validation.md
+      - Post-Work Retro: workflows/post-work-retro.md
+      - Multi-Domain: workflows/multi-domain.md
+      - Continuous Improvement: workflows/continuous-improvement.md
+      - Infrastructure Deployment: workflows/infrastructure-deployment.md
+      - Meta-Observer: workflows/meta-observer-pattern.md
+  - Concepts:
+      - Philosophy: philosophy.md
+      - Knowledge Flywheel: knowledge-flywheel.md
+      - The Science: the-science.md
+      - Brownian Ratchet: brownian-ratchet.md
+      - Context Lifecycle: context-lifecycle.md
+      - Context Packet: context-packet.md
+      - Curation Pipeline: curation-pipeline.md
+      - Evolve Setup: evolve-setup.md
+      - Seed Definition: seed-definition.md
+      - Scale Without Swarms: scale-without-swarms.md
+      - Strategic Direction: strategic-direction.md
+      - Leverage Points: leverage-points.md
+  - Levels:
+      - levels/index.md
+      - L1 — Basics: levels/L1-basics/README.md
+      - L2 — Persistence: levels/L2-persistence/README.md
+      - L3 — State Management: levels/L3-state-management/README.md
+      - L4 — Parallelization: levels/L4-parallelization/README.md
+      - L5 — Orchestration: levels/L5-orchestration/README.md
+  - Comparisons:
+      - comparisons/README.md
+      - vs SDD: comparisons/vs-sdd.md
+      - vs GSD: comparisons/vs-gsd.md
+      - vs Superpowers: comparisons/vs-superpowers.md
+      - vs Claude-Flow: comparisons/vs-claude-flow.md
+      - vs Compound Engineer: comparisons/vs-compound-engineer.md
+  - Reference:
+      - reference/index.md
+      - Glossary: GLOSSARY.md
+      - Environment Variables: ENV-VARS.md
+      - Testing: TESTING.md
+      - CI/CD: CI-CD.md
+      - Releasing: RELEASING.md
+      - Incident Runbook: INCIDENT-RUNBOOK.md
+      - Troubleshooting: troubleshooting.md
+      - Agent Footguns: agent-footguns.md
+      - AgentOps Brief: agentops-brief.md
+      - AgentOps System Map: agentops-system-map.md
+      - Reference Deep-Dive: reference.md
+  - Contracts:
+      - contracts/index.md
+      - Repo Execution Profile: contracts/repo-execution-profile.md
+      - Autodev Program: contracts/autodev-program.md
+      - RPI Run Registry: contracts/rpi-run-registry.md
+      - Next-Work Queue: contracts/next-work.schema.md
+      - Finding Registry: contracts/finding-registry.md
+      - Finding Compiler: contracts/finding-compiler.md
+      - Hook Runtime Contract: contracts/hook-runtime-contract.md
+      - Headless Invocation: contracts/headless-invocation-standards.md
+      - Codex Skill API: contracts/codex-skill-api.md
+      - Context Assembly Interface: contracts/context-assembly-interface.md
+      - Session Intelligence Trust Model: contracts/session-intelligence-trust-model.md
+      - Dream Run: contracts/dream-run-contract.md
+      - Dream Report: contracts/dream-report.md
+      - MemRL Policy: contracts/memrl-policy-integration.md
+      - Swarm Evidence: contracts/swarm-evidence.md
+      - OL-AO Bridge: ol-bridge-contracts.md
+      - Scope Escape Report: contracts/scope-escape-report.md
+      - Dispatch Checklist: contracts/dispatch-checklist.md

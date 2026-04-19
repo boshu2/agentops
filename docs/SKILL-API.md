@@ -283,5 +283,5 @@ Core skills and their context policies:
 ## See Also
 
 - [Skills Reference](SKILLS.md) — Skill descriptions and router
-- [Skill Tiers](../skills/SKILL-TIERS.md) — Taxonomy and dependency graph
+- [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - Schema: `schemas/skill-frontmatter.v1.schema.json`

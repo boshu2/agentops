@@ -298,6 +298,7 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 
 | Topic | Where |
 |-------|-------|
+| Published site | [boshu2.github.io/agentops](https://boshu2.github.io/agentops/) |
 | Start navigating | [Docs index](docs/INDEX.md) |
 | New contributor orientation | [Newcomer guide](docs/newcomer-guide.md) |
 | Full skill catalog | [Skills](docs/SKILLS.md) |
@@ -305,6 +306,16 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 | Architecture | [Architecture](docs/ARCHITECTURE.md) |
 | Behavioral discipline | [Behavior guide](docs/behavioral-discipline.md) |
 | FAQ | [FAQ](docs/FAQ.md) |
+
+**Building docs locally.** The site is built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/). Python 3.10+ is required; the dev toolchain is pinned in `requirements-docs.txt`.
+
+```bash
+scripts/docs-build.sh --serve    # live-reload dev server at http://127.0.0.1:8000
+scripts/docs-build.sh --check    # strict build (mirrors what CI runs)
+scripts/docs-build.sh            # build site to _site/
+```
+
+The first run creates `.venv-docs/` and installs the toolchain via `uv` (preferred) or `pip`. The deploy workflow at `.github/workflows/docs.yml` runs the same `mkdocs build --strict` on every push to `main` and publishes to GitHub Pages.
 
 ---
 

@@ -37,12 +37,12 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `/pre-mortem` | [skills/pre-mortem/SKILL.md](../skills/pre-mortem/SKILL.md) | Loads plan-review validation before code exists |
-| `/vibe` | [skills/vibe/SKILL.md](../skills/vibe/SKILL.md) | Runs post-implementation validation instead of stopping at build/test |
-| `/council` | [skills/council/SKILL.md](../skills/council/SKILL.md) | Supplies multi-judge review for plans and code |
-| Pre-mortem gate hook | `hooks/pre-mortem-gate.sh` + [hooks/hooks.json](../hooks/hooks.json) | Prevents large implementation work from skipping plan validation |
+| `/pre-mortem` | [skills/pre-mortem/SKILL.md](skills/pre-mortem.md) | Loads plan-review validation before code exists |
+| `/vibe` | [skills/vibe/SKILL.md](skills/vibe.md) | Runs post-implementation validation instead of stopping at build/test |
+| `/council` | [skills/council/SKILL.md](skills/council.md) | Supplies multi-judge review for plans and code |
+| Pre-mortem gate hook | `hooks/pre-mortem-gate.sh` + [hooks/hooks.json](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json) | Prevents large implementation work from skipping plan validation |
 | Task-validation constraint hook | `hooks/task-validation-gate.sh` + `.agents/constraints/index.json` | Task-validation executes active compiled constraints for mechanically detectable findings |
-| Product-aware review context | [PRODUCT.md](../PRODUCT.md) | Injects product and DX perspectives into validation flows |
+| Product-aware review context | [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) | Injects product and DX perspectives into validation flows |
 
 **Supporting failure modes addressed inside this gap:**
 
@@ -67,9 +67,9 @@ actually closes these gaps.
 | `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger--session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
 | Finding registry | [docs/contracts/finding-registry.md](contracts/finding-registry.md) | Stores reusable structured findings that planning and validation can load before rediscovering the same failure |
 | `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger--session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
-| `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](../skills/post-mortem/SKILL.md) | Turns completed work into reusable learnings and patterns |
+| `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Turns completed work into reusable learnings and patterns |
 | Freshness / maturity controls | `ao maturity`, `ao dedup`, `ao contradict` | Keeps retrieval focused on useful, current knowledge |
-| Compile cycle | [GOALS.md](../GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |
+| Compile cycle | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |
 
 **Supporting failure modes addressed inside this gap:**
 
@@ -91,13 +91,13 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `/post-mortem` | [skills/post-mortem/SKILL.md](../skills/post-mortem/SKILL.md) | Validates shipped work, extracts learnings, and harvests next work |
+| `/post-mortem` | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Validates shipped work, extracts learnings, and harvests next work |
 | Finding registry + compiler path | [docs/contracts/finding-registry.md](contracts/finding-registry.md), [docs/contracts/finding-compiler.md](contracts/finding-compiler.md), `hooks/finding-compiler.sh` | Promotes reusable findings into advisory artifacts and active constraint index entries |
 | Task-validation constraint execution | `hooks/task-validation-gate.sh` + `.agents/constraints/index.json` | Turns mechanically detectable findings into enforced validation checks before task completion |
 | Flywheel close hook | `hooks/ao-flywheel-close.sh` + [docs/how-it-works.md](how-it-works.md) | Closes the feedback loop at stop time |
-| GOALS + `/evolve` | [GOALS.md](../GOALS.md) and `/evolve` flows | Turns findings into measurable next work instead of leaving them as loose notes |
+| GOALS + `/evolve` | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) and `/evolve` flows | Turns findings into measurable next work instead of leaving them as loose notes |
 | Ratchet + run registry | `ao ratchet`, `.agents/rpi/next-work.jsonl` | Records what passed, what remains, and what should be worked next |
-| Phase chaining | [README.md](../README.md) full pipeline | Makes `research -> plan -> pre-mortem -> crank -> post-mortem` the normal operating shape |
+| Phase chaining | [README.md](https://github.com/boshu2/agentops/blob/main/README.md) full pipeline | Makes `research -> plan -> pre-mortem -> crank -> post-mortem` the normal operating shape |
 
 **Supporting failure modes addressed inside this gap:**
 
@@ -152,7 +152,7 @@ Three tiers, descending priority: local `.agents/` → global `~/.agents/` → l
 
 ## See Also
 
-- [README.md](../README.md) for the repo-level overview
+- [README.md](https://github.com/boshu2/agentops/blob/main/README.md) for the repo-level overview
 - [How It Works](how-it-works.md) for runtime mechanics and hook behavior
 - [Knowledge Flywheel](knowledge-flywheel.md) for extraction, retrieval, and compounding details
 - [The Science](the-science.md) for the formal decay/escape-velocity model

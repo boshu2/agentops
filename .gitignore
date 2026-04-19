@@ -51,6 +51,10 @@ state.json
 .runtime/
 .claude/memory.md
 
+# MkDocs build output + local venv
+_site/
+.venv-docs/
+
 # Local temp artifacts (generated during skill self-tests / hooks)
 .tmp/
 skills/.tmp/

@@ -1,7 +1,7 @@
 # Swarm Evidence Contract
 
-**Schema:** [`schemas/swarm-evidence.schema.json`](../../schemas/swarm-evidence.schema.json)
-**Validator:** [`scripts/validate-swarm-evidence.sh`](../../scripts/validate-swarm-evidence.sh)
+**Schema:** [`schemas/swarm-evidence.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json)
+**Validator:** [`scripts/validate-swarm-evidence.sh`](https://github.com/boshu2/agentops/blob/main/scripts/validate-swarm-evidence.sh)
 
 Swarm workers spawned via `/swarm` or `/crank` write one JSON result file per task to:
 

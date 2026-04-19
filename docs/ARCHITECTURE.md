@@ -160,7 +160,7 @@ Skills follow a strict rule: **the orchestrator never forks; the workers it spaw
 
 This was a production lesson: orchestrators that forked became invisible — no cycle-by-cycle visibility during overnight evolve runs, no phase gates visible in rpi. The fix removed `context: fork` from all orchestrators and kept it only on worker spawners.
 
-Full classification: [`SKILL-TIERS.md`](../skills/SKILL-TIERS.md)
+Full classification: [`SKILL-TIERS.md`](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md)
 
 ### Context Boundaries
 

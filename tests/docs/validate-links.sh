@@ -7,6 +7,7 @@ ALLOWLIST="$REPO_ROOT/tests/docs/broken-links-allowlist.txt"
 total=0
 broken=0
 allowlisted=0
+generated=0
 
 # Load allowlist into associative array
 declare -A allowed
@@ -15,6 +16,27 @@ if [[ -f "$ALLOWLIST" ]]; then
     [[ -z "$line" || "$line" == \#* ]] && continue
     allowed["$line"]=1
   done < "$ALLOWLIST"
+fi
+
+# Build a set of paths that are generated at MkDocs build time (docs/_hooks/gen_*.py).
+# These files don't exist on disk but resolve at build time via the mkdocs-gen-files
+# plugin. Link targets pointing to these paths are intentional; MkDocs strict build
+# validates them end-to-end via scripts/docs-build.sh --check.
+declare -A generated_paths
+# CLI reference pages (from docs/_hooks/gen_cli_reference.py)
+generated_paths["$REPO_ROOT/docs/cli/index.md"]=1
+generated_paths["$REPO_ROOT/docs/cli/commands.md"]=1
+generated_paths["$REPO_ROOT/docs/cli/hooks.md"]=1
+# Skill catalog + index (from docs/_hooks/gen_skill_pages.py)
+generated_paths["$REPO_ROOT/docs/skills/index.md"]=1
+generated_paths["$REPO_ROOT/docs/skills/catalog.md"]=1
+# Individual skill pages — one per directory under skills/
+if [[ -d "$REPO_ROOT/skills" ]]; then
+  while IFS= read -r skill_dir; do
+    [[ -z "$skill_dir" ]] && continue
+    slug="$(basename "$skill_dir")"
+    generated_paths["$REPO_ROOT/docs/skills/${slug}.md"]=1
+  done < <(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d)
 fi
 
 # Find all markdown files in specified directories
@@ -67,6 +89,12 @@ for file in "${md_files[@]}"; do
     fi
 
     if [[ ! -e "$resolved" ]]; then
+      # Normalize the resolved path so generated-path lookups line up.
+      canonical="$(cd "$(dirname "$resolved")" 2>/dev/null && pwd)/$(basename "$resolved")" || canonical="$resolved"
+      if [[ -n "${generated_paths[$canonical]+x}" ]]; then
+        generated=$((generated + 1))
+        continue
+      fi
       allowlist_key="$rel_file:$target_path"
       if [[ -n "${allowed[$allowlist_key]+x}" ]]; then
         allowlisted=$((allowlisted + 1))
@@ -79,7 +107,7 @@ for file in "${md_files[@]}"; do
 done
 
 echo ""
-echo "$total links checked, $broken broken ($allowlisted allowlisted)"
+echo "$total links checked, $broken broken ($allowlisted allowlisted, $generated mkdocs-generated)"
 
 if [[ "$broken" -gt 0 ]]; then
   exit 1

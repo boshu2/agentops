@@ -1,6 +1,6 @@
 # AgentOps Reference
 
-Deep documentation for AgentOps. For quick start, see [README](../README.md).
+Deep documentation for AgentOps. For quick start, see [README](https://github.com/boshu2/agentops/blob/main/README.md).
 
 ---
 

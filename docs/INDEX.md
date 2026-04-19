@@ -4,13 +4,13 @@
 
 ## Getting Started
 
-- [README](../README.md) — Project overview and quick start
+- [README](https://github.com/boshu2/agentops/blob/main/README.md) — Project overview and quick start
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
-- [AGENTS.md](../AGENTS.md) — Local agent instructions for this repo
+- [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
@@ -19,7 +19,7 @@
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Architecture](ARCHITECTURE.md) — System design and component overview
-- [Architecture Folder Index](architecture/README.md) — Architecture subdocs overview
+- [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
 - [AO-Olympus Ownership Matrix](architecture/ao-olympus-ownership-matrix.md) — Responsibility split for skills, runtime, and bridge contracts
@@ -32,7 +32,7 @@
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
-- [Skill Tiers](../skills/SKILL-TIERS.md) — Taxonomy and dependency graph
+- [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [Claude Code Skills Docs](https://code.claude.com/docs/en/skills) — Official Claude Code skills documentation (upstream)
 
 ## Workflows
@@ -93,7 +93,7 @@
 
 ## Levels
 
-- [Levels Overview](levels/README.md) — Progressive learning path
+- [Levels Overview](levels/index.md) — Progressive learning path
 
 ### L1 — Basics
 
@@ -179,7 +179,7 @@
 - [AgentOps Brief](agentops-brief.md) — Executive summary
 - [AgentOps System Map](agentops-system-map.md) — Visual system map
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
-- [CLI Reference](../cli/docs/COMMANDS.md) — Complete `ao` command reference
+- [CLI Reference](cli/commands.md) — Complete `ao` command reference
 - [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
 - [Reference](reference.md) — Deep documentation and pipeline details
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
@@ -189,6 +189,7 @@
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [OL-AO Bridge Contracts](ol-bridge-contracts.md) — Olympus-AgentOps interchange formats
+- [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [MemRL Policy Integration](contracts/memrl-policy-integration.md) — AO-exported deterministic MemRL policy contract for Olympus hooks
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable schema for MemRL policy package
 - [MemRL Policy Example Profile](contracts/memrl-policy.profile.example.json) — Example deterministic policy profile
@@ -202,7 +203,7 @@
 - [RPI C2 Commands Schema](contracts/rpi-c2-commands.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/commands.jsonl`
 - [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts (strict completion contract)
 - [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`
-- [Swarm Evidence Schema](../schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
+- [Swarm Evidence Schema](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
 - [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [Dream Run Contract](contracts/dream-run-contract.md) — Process model, locking, keep-awake, and artifact floor for private overnight runs
@@ -215,7 +216,7 @@
 - [Finding Registry Contract](contracts/finding-registry.md) — Canonical intake-ledger contract for reusable findings in `.agents/findings/registry.jsonl`
 - [Finding Registry Schema](contracts/finding-registry.schema.json) — Machine-readable schema for the finding intake ledger
 - [Finding Artifact Schema](contracts/finding-artifact.schema.json) — Machine-readable schema for promoted finding artifacts under `.agents/findings/*.md`
-- [Finding Item Schema](../schemas/finding.json) — Canonical finding-item schema for validation skill outputs (compatible subset of finding-artifact)
+- [Finding Item Schema](https://github.com/boshu2/agentops/blob/main/schemas/finding.json) — Canonical finding-item schema for validation skill outputs (compatible subset of finding-artifact)
 - [Finding Compiler Contract](contracts/finding-compiler.md) — V2 promotion ladder, executable constraint index contract, and lifecycle rules for turning findings into prevention artifacts
 
 ## Migration Trackers

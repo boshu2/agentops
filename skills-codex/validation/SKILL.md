@@ -7,6 +7,14 @@ description: 'Full validation phase orchestrator. Vibe + post-mortem + retro + f
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Strict Delegation Contract (default)
+
+Validation delegates to `$vibe`, `$post-mortem`, `$retro`, and `$forge` (plus lifecycle skills `$test`, `$deps`, `$review`, `$perf`) as **separate skill invocations**. Strict delegation is the **default**.
+
+**Anti-pattern to reject:** spawning judges directly in place of `$vibe`, inlining post-mortem analysis, skipping `$forge`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract and supported compression escapes (`--quick`, `--no-retro`, `--no-forge`, `--no-lifecycle`, `--no-behavioral`, `--allow-critical-deps`).
+
+See [`.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md`](../../.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md) for the live compression signature.
+
 ## DAG — Execute This Sequentially
 
 ```
@@ -143,20 +151,7 @@ STEP 5  ──  write phase summary to .agents/rpi/phase-3-summary-YYYY-MM-DD-<s
 
 ## Setup Detail
 
-**State:**
-```
-validation_state = {
-  epic_id: "<epic-id or null>",
-  complexity: <fast|standard|full>,
-  no_retro: <true if --no-retro>,
-  no_forge: <true if --no-forge>,
-  strict_surfaces: <true if --strict-surfaces>,
-  vibe_verdict: null,
-  post_mortem_verdict: null
-}
-```
-
-**Load execution packet** (if available): read `complexity`, `contract_surfaces`, and `done_criteria` from `.agents/rpi/execution-packet.json`. When a current `run_id` is known, prefer the matching `.agents/rpi/runs/<run-id>/execution-packet.json` archive over the latest alias.
+Track state inline: `epic_id`, `complexity`, `no_retro`, `no_forge`, `strict_surfaces`, `vibe_verdict`, `post_mortem_verdict`. Load execution packet (if available): read `complexity`, `contract_surfaces`, and `done_criteria` from `.agents/rpi/execution-packet.json`. When a current `run_id` is known, prefer the matching `.agents/rpi/runs/<run-id>/execution-packet.json` archive over the latest alias.
 
 ## Gate Detail
 

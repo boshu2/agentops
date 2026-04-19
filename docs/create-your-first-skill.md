@@ -96,7 +96,7 @@ Most first contributions should use one of these:
 - `product`: product, docs, or release oriented
 - `contribute`: contribution-specific workflow support
 
-See [SKILL-API.md](SKILL-API.md) for the full frontmatter contract and [../skills/SKILL-TIERS.md](../skills/SKILL-TIERS.md) for the full taxonomy.
+See [SKILL-API.md](SKILL-API.md) for the full frontmatter contract and [../skills/SKILL-TIERS.md](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) for the full taxonomy.
 
 ## Keep The Entry Point Lean
 
@@ -153,10 +153,10 @@ Start from a simple, high-signal skill rather than the biggest orchestration lay
 
 Useful examples:
 
-- [skills/research/SKILL.md](../skills/research/SKILL.md)
-- [skills/retro/SKILL.md](../skills/retro/SKILL.md)
-- [skills/doc/SKILL.md](../skills/doc/SKILL.md)
-- [skills/implement/SKILL.md](../skills/implement/SKILL.md)
+- [skills/research/SKILL.md](skills/research.md)
+- [skills/retro/SKILL.md](skills/retro.md)
+- [skills/doc/SKILL.md](skills/doc.md)
+- [skills/implement/SKILL.md](skills/implement.md)
 
 ## Opening The PR
 

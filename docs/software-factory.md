@@ -180,4 +180,4 @@ primitives. With it, they see one product surface.
 - [Context Packet](context-packet.md)
 - [Knowledge Flywheel](knowledge-flywheel.md)
 - [Session Lifecycle](workflows/session-lifecycle.md)
-- [CLI Reference](../cli/docs/COMMANDS.md)
+- [CLI Reference](cli/commands.md)

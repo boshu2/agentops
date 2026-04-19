@@ -167,4 +167,4 @@ To update a standard:
 
 **Created:** 2024-12-30
 **Last Updated:** 2026-02-09
-**Related:** [SKILL-TIERS.md](../../skills/SKILL-TIERS.md)
+**Related:** [SKILL-TIERS.md](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md)

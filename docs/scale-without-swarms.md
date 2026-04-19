@@ -136,4 +136,4 @@ Worker count is a tunable, not a maximization target.
 
 ---
 
-*See also: [PRODUCT.md](../PRODUCT.md) — Orchestration at Scale value proposition, Roadmap*
+*See also: [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) — Orchestration at Scale value proposition, Roadmap*

@@ -507,5 +507,5 @@ The context packet unifies and structures what multiple components already provi
 - [Knowledge Flywheel](knowledge-flywheel.md) — How learnings compound across sessions
 - [How It Works](how-it-works.md) — Context windowing, Brownian Ratchet, Ralph Wiggum
 - [The Science](the-science.md) — Freshness decay model, MemRL two-phase retrieval
-- [CLI Reference](../cli/docs/COMMANDS.md) — `ao lookup` command documentation
+- [CLI Reference](cli/commands.md) — `ao lookup` command documentation
 - [OL-AO Bridge Contracts](ol-bridge-contracts.md) — Olympus constraint interchange

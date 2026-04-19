@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Strict Delegation Contract** for `/rpi`, `/discovery`, and `/validation` — top-level orchestrator skills now declare strict sub-skill delegation as the default. Each skill points to the new canonical reference `skills/shared/references/strict-delegation-contract.md` which documents the contract, anti-pattern rationalizations, and supported compression escapes (`--quick`, `--fast-path`, `--no-retro`, `--no-forge`, `--skip-brainstorm`, `--no-scaffold`, `--no-behavioral`, `--allow-critical-deps`). There is no `--full` flag — strict delegation is always on.
+- **Orchestrator Compression Anti-Pattern learning** at `.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md`, surfaced via `ao inject` at session start. Includes detection phrases, corrective actions, and rationalizations to reject.
+- **Orchestrator-owned step markers** in `skills/crank/SKILL.md` (STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7) plus an "Inline Work Policy" footer documenting which steps are intentionally inline vs delegated.
+
+### Changed
+
+- **`--no-lifecycle` in `/discovery` renamed to `--no-scaffold`** for semantic clarity — the flag controls STEP 4.5 scaffold auto-invocation only, not broader lifecycle checks. `--no-lifecycle` is honored as a deprecated alias through v2.40.0; when both flags are passed, they are equivalent. Other skills (`/crank`, `/validation`, `/implement`, `/evolve`) retain `--no-lifecycle` with its existing lifecycle-skill-invocation semantics.
+- **`/discovery` flags table** expanded: `--auto` is now explicitly documented (was transitively honored but undocumented); `--interactive` scope clarified ("research + plan gates, not pre-mortem").
+- **`/validation` flags table** expanded: `--complexity=<level>` syntax formalized to match `/rpi` and `/discovery`; `--interactive` scope documented.
+- **`/rpi` `--interactive` flag** scope note added: applies to discovery (research + plan) and validation (Gate 1, Gate 2); does NOT override pre-mortem or vibe council autonomy.
+
+### Fixed
+
+- **Orchestrator compression vulnerability** — a live compression was observed 2026-04-19 where `/rpi` was invoked but phases were inlined instead of delegated. This release **documents** the anti-pattern (forged learning + loud skill text), **scaffolds** future enforcement (shared contract reference used by all 6 orchestrator skills), and explicitly **defers** runtime hook enforcement to a follow-up initiative. It does not mechanically prevent compression yet — the durable fix depends on `ao inject` surfacing the forged learning on future session starts. See `.agents/research/2026-04-19-rpi-skill-dag-audit.md` for the audit and `.agents/plans/2026-04-19-rpi-dag-hardening.md` for the remediation plan.
+
 ## [2.37.2] - 2026-04-15
 
 ### Added

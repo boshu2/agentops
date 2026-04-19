@@ -1,6 +1,6 @@
 # The 12 Factors as a Supporting Lens for AgentOps
 
-The original 12-factor doctrine still matters here, but only as supporting doctrine. The primary product definition lives in [PRODUCT.md](../../PRODUCT.md), [README.md](../../README.md), [docs/context-lifecycle.md](../context-lifecycle.md), and [docs/software-factory.md](../software-factory.md).
+The original 12-factor doctrine still matters here, but only as supporting doctrine. The primary product definition lives in [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md), [README.md](https://github.com/boshu2/agentops/blob/main/README.md), [docs/context-lifecycle.md](../context-lifecycle.md), and [docs/software-factory.md](../software-factory.md).
 
 Publicly, AgentOps is the **operational layer for coding agents**. Under the
 hood, it behaves like a **software-factory control plane**. The environment
