@@ -210,58 +210,7 @@ func dreamBuildPacketCorroboration(summary overnightSummary) map[string]dreamPac
 		if packetID == "" {
 			continue
 		}
-		note := dreamPacketCorroboration{}
-		supports := 0
-
-		switch packet.SourceEpic {
-		case "dream-goal":
-			if summary.Briefing != nil {
-				mode := firstNonEmptyTrimmed(stringifyAny(summary.Briefing["mode"]), "briefing")
-				note.Evidence = append(note.Evidence, "Briefing available: "+mode)
-				if firstMove := strings.TrimSpace(stringifyAny(summary.Briefing["first_move"])); firstMove != "" {
-					note.Evidence = append(note.Evidence, "Briefing first move: "+firstMove)
-				}
-				note.TargetFiles = append(note.TargetFiles, firstNonEmptyTrimmed(summary.Artifacts["briefing"], summary.Artifacts["briefing_fallback"]))
-				supports++
-			}
-			if findingsRouted, ok := lookupFloat(summary.CloseLoop, "findings_routed"); ok && findingsRouted > 0 {
-				note.Evidence = append(note.Evidence, fmt.Sprintf("Close-loop routed %.0f finding(s) into next-work", findingsRouted))
-				note.TargetFiles = append(note.TargetFiles, summary.Artifacts["close_loop"])
-				supports++
-			}
-			if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok && coverage >= 0.50 {
-				note.Evidence = append(note.Evidence, fmt.Sprintf("Retrieval coverage stayed healthy at %.2f", coverage))
-				note.TargetFiles = append(note.TargetFiles, summary.Artifacts["retrieval_live"])
-				supports++
-			}
-			if summary.Council != nil && strings.TrimSpace(summary.Council.RecommendedFirstAction) != "" && packet.Rank == 1 {
-				note.Evidence = append(note.Evidence, "Council recommended: "+strings.TrimSpace(summary.Council.RecommendedFirstAction))
-				note.TargetFiles = append(note.TargetFiles, summary.Artifacts["council_synthesis"])
-				supports++
-			}
-			if supports >= 2 {
-				note.Confidence = "high"
-			}
-		case "dream-retrieval-live":
-			if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok {
-				note.Evidence = append(note.Evidence,
-					fmt.Sprintf("Retrieval coverage measured %.2f", coverage),
-					fmt.Sprintf("Queries with hits: %v/%v", lookupPath(summary.RetrievalLive, "queries_with_hits"), lookupPath(summary.RetrievalLive, "queries")),
-				)
-				note.TargetFiles = append(note.TargetFiles, summary.Artifacts["retrieval_live"])
-				note.Confidence = "high"
-			}
-		case "dream-metrics-health":
-			if escape, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); ok && !escape {
-				note.Evidence = append(note.Evidence, "Metrics reported escape_velocity=false")
-				if harvest, ok := lookupFloat(summary.CloseLoop, "harvest_promoted"); ok && harvest > 0 {
-					note.Evidence = append(note.Evidence, fmt.Sprintf("Close-loop still promoted %.0f artifact(s)", harvest))
-				}
-				note.TargetFiles = append(note.TargetFiles, summary.Artifacts["metrics_health"], summary.Artifacts["close_loop"])
-				note.Confidence = "high"
-			}
-		}
-
+		note := dreamPacketCorroborationForPacket(summary, packet)
 		note.Evidence = dreamPacketEvidence(note.Evidence...)
 		note.TargetFiles = dreamPacketEvidence(note.TargetFiles...)
 		if len(note.Evidence) == 0 && len(note.TargetFiles) == 0 && strings.TrimSpace(note.Confidence) == "" {
@@ -270,6 +219,80 @@ func dreamBuildPacketCorroboration(summary overnightSummary) map[string]dreamPac
 		annotations[packetID] = note
 	}
 	return annotations
+}
+
+// dreamPacketCorroborationForPacket builds the raw corroboration record for a
+// single morning packet. Kept separate from the caller so the overall CC stays
+// under the cli/ ceiling.
+func dreamPacketCorroborationForPacket(summary overnightSummary, packet overnightMorningPacket) dreamPacketCorroboration {
+	switch packet.SourceEpic {
+	case "dream-goal":
+		return dreamPacketCorroborationGoal(summary, packet)
+	case "dream-retrieval-live":
+		return dreamPacketCorroborationRetrieval(summary)
+	case "dream-metrics-health":
+		return dreamPacketCorroborationMetrics(summary)
+	}
+	return dreamPacketCorroboration{}
+}
+
+func dreamPacketCorroborationGoal(summary overnightSummary, packet overnightMorningPacket) dreamPacketCorroboration {
+	note := dreamPacketCorroboration{}
+	supports := 0
+	if summary.Briefing != nil {
+		mode := firstNonEmptyTrimmed(stringifyAny(summary.Briefing["mode"]), "briefing")
+		note.Evidence = append(note.Evidence, "Briefing available: "+mode)
+		if firstMove := strings.TrimSpace(stringifyAny(summary.Briefing["first_move"])); firstMove != "" {
+			note.Evidence = append(note.Evidence, "Briefing first move: "+firstMove)
+		}
+		note.TargetFiles = append(note.TargetFiles, firstNonEmptyTrimmed(summary.Artifacts["briefing"], summary.Artifacts["briefing_fallback"]))
+		supports++
+	}
+	if findingsRouted, ok := lookupFloat(summary.CloseLoop, "findings_routed"); ok && findingsRouted > 0 {
+		note.Evidence = append(note.Evidence, fmt.Sprintf("Close-loop routed %.0f finding(s) into next-work", findingsRouted))
+		note.TargetFiles = append(note.TargetFiles, summary.Artifacts["close_loop"])
+		supports++
+	}
+	if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok && coverage >= 0.50 {
+		note.Evidence = append(note.Evidence, fmt.Sprintf("Retrieval coverage stayed healthy at %.2f", coverage))
+		note.TargetFiles = append(note.TargetFiles, summary.Artifacts["retrieval_live"])
+		supports++
+	}
+	if summary.Council != nil && strings.TrimSpace(summary.Council.RecommendedFirstAction) != "" && packet.Rank == 1 {
+		note.Evidence = append(note.Evidence, "Council recommended: "+strings.TrimSpace(summary.Council.RecommendedFirstAction))
+		note.TargetFiles = append(note.TargetFiles, summary.Artifacts["council_synthesis"])
+		supports++
+	}
+	if supports >= 2 {
+		note.Confidence = "high"
+	}
+	return note
+}
+
+func dreamPacketCorroborationRetrieval(summary overnightSummary) dreamPacketCorroboration {
+	note := dreamPacketCorroboration{}
+	if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok {
+		note.Evidence = append(note.Evidence,
+			fmt.Sprintf("Retrieval coverage measured %.2f", coverage),
+			fmt.Sprintf("Queries with hits: %v/%v", lookupPath(summary.RetrievalLive, "queries_with_hits"), lookupPath(summary.RetrievalLive, "queries")),
+		)
+		note.TargetFiles = append(note.TargetFiles, summary.Artifacts["retrieval_live"])
+		note.Confidence = "high"
+	}
+	return note
+}
+
+func dreamPacketCorroborationMetrics(summary overnightSummary) dreamPacketCorroboration {
+	note := dreamPacketCorroboration{}
+	if escape, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); ok && !escape {
+		note.Evidence = append(note.Evidence, "Metrics reported escape_velocity=false")
+		if harvest, ok := lookupFloat(summary.CloseLoop, "harvest_promoted"); ok && harvest > 0 {
+			note.Evidence = append(note.Evidence, fmt.Sprintf("Close-loop still promoted %.0f artifact(s)", harvest))
+		}
+		note.TargetFiles = append(note.TargetFiles, summary.Artifacts["metrics_health"], summary.Artifacts["close_loop"])
+		note.Confidence = "high"
+	}
+	return note
 }
 
 func dreamPacketCorroborationEqual(left, right map[string]dreamPacketCorroboration) bool {
