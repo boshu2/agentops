@@ -134,7 +134,7 @@ func TestLoadFromPath(t *testing.T) {
 	// Write test config
 	content := `
 output: json
-base_dir: /custom/olympus
+base_dir: /custom/agentops
 verbose: true
 search:
   default_limit: 20
@@ -151,8 +151,8 @@ search:
 	if cfg.Output != "json" {
 		t.Errorf("loadFromPath Output = %q, want %q", cfg.Output, "json")
 	}
-	if cfg.BaseDir != "/custom/olympus" {
-		t.Errorf("loadFromPath BaseDir = %q, want %q", cfg.BaseDir, "/custom/olympus")
+	if cfg.BaseDir != "/custom/agentops" {
+		t.Errorf("loadFromPath BaseDir = %q, want %q", cfg.BaseDir, "/custom/agentops")
 	}
 	if !cfg.Verbose {
 		t.Error("loadFromPath Verbose = false, want true")

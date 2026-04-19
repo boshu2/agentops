@@ -1,4 +1,4 @@
-// Package formatter provides output formatters for olympus sessions.
+// Package formatter provides output formatters for agentops sessions.
 package formatter
 
 import (
@@ -95,7 +95,7 @@ func (mf *MarkdownFormatter) buildTemplateData(session *storage.Session) *templa
 
 // extractTags generates tags from session content.
 func (mf *MarkdownFormatter) extractTags(session *storage.Session) []string {
-	tags := []string{"olympus", "session"}
+	tags := []string{"agentops", "session"}
 
 	// Add date-based tag
 	tags = append(tags, session.Date.Format("2006-01"))

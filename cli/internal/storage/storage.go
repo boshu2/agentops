@@ -1,5 +1,5 @@
 // Package storage provides interfaces and implementations for persisting
-// olympus session data, indexes, and provenance records.
+// agentops session data, indexes, and provenance records.
 package storage
 
 import (
@@ -99,7 +99,7 @@ type ProvenanceRecord struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// Storage is the interface for persisting olympus data.
+// Storage is the interface for persisting agentops data.
 type Storage interface {
 	// WriteSession writes a session to storage.
 	// Returns the path where the session was written.

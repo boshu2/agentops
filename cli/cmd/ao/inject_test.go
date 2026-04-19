@@ -1451,5 +1451,3 @@ context:
 		t.Errorf("expected adhoc-* directory under %q, found: %v", contextBase, entries)
 	}
 }
-
-// TestCollectOLConstraints_* tests are in inject_ol_test.go

@@ -761,7 +761,7 @@ func TestReadUnconsumedItems_RepoFilter_Match(t *testing.T) {
 		Timestamp:  "2026-02-10T00:00:00Z",
 		Items: []nextWorkItem{
 			{Title: "For agentops", Severity: "high", TargetRepo: "agentops"},
-			{Title: "For olympus", Severity: "medium", TargetRepo: "olympus"},
+			{Title: "For other-repo", Severity: "medium", TargetRepo: "other-repo"},
 		},
 		Consumed: false,
 	}
@@ -793,7 +793,7 @@ func TestReadUnconsumedItems_RepoFilter_Exclude(t *testing.T) {
 		SourceEpic: "ag-repo",
 		Timestamp:  "2026-02-10T00:00:00Z",
 		Items: []nextWorkItem{
-			{Title: "For olympus only", Severity: "high", TargetRepo: "olympus"},
+			{Title: "For other-repo only", Severity: "high", TargetRepo: "other-repo"},
 		},
 		Consumed: false,
 	}
@@ -823,7 +823,7 @@ func TestReadUnconsumedItems_RepoFilter_Wildcard(t *testing.T) {
 		Timestamp:  "2026-02-10T00:00:00Z",
 		Items: []nextWorkItem{
 			{Title: "For all repos", Severity: "high", TargetRepo: "*"},
-			{Title: "For olympus", Severity: "low", TargetRepo: "olympus"},
+			{Title: "For other-repo", Severity: "low", TargetRepo: "other-repo"},
 		},
 		Consumed: false,
 	}
@@ -840,7 +840,7 @@ func TestReadUnconsumedItems_RepoFilter_Wildcard(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(items) != 1 {
-		t.Fatalf("expected 1 item (wildcard passes, olympus excluded), got %d", len(items))
+		t.Fatalf("expected 1 item (wildcard passes, other-repo excluded), got %d", len(items))
 	}
 	if items[0].Title != "For all repos" {
 		t.Errorf("expected 'For all repos', got %q", items[0].Title)
@@ -954,7 +954,7 @@ func TestReadUnconsumedItems_RepoFilter_EmptyFilter(t *testing.T) {
 		Timestamp:  "2026-02-10T00:00:00Z",
 		Items: []nextWorkItem{
 			{Title: "For agentops", Severity: "high", TargetRepo: "agentops"},
-			{Title: "For olympus", Severity: "medium", TargetRepo: "olympus"},
+			{Title: "For other-repo", Severity: "medium", TargetRepo: "other-repo"},
 			{Title: "Legacy", Severity: "low"},
 		},
 		Consumed: false,
@@ -1645,7 +1645,7 @@ func TestSelectHighestSeverityEntry_PicksHighest(t *testing.T) {
 func TestSelectHighestSeverityEntry_RepoFilter(t *testing.T) {
 	entries := []nextWorkEntry{
 		{Items: []nextWorkItem{
-			{Title: "For olympus", Severity: "high", TargetRepo: "olympus"},
+			{Title: "For other-repo", Severity: "high", TargetRepo: "other-repo"},
 			{Title: "For agentops", Severity: "medium", TargetRepo: "agentops"},
 		}},
 	}
@@ -1729,7 +1729,7 @@ func TestSelectHighestSeverityEntry_PrefersImplementationWorkTypeOnTie(t *testin
 func TestSelectHighestSeverityEntry_RepoFilter_NoneMatch(t *testing.T) {
 	entries := []nextWorkEntry{
 		{Items: []nextWorkItem{
-			{Title: "For olympus", Severity: "high", TargetRepo: "olympus"},
+			{Title: "For other-repo", Severity: "high", TargetRepo: "other-repo"},
 		}},
 	}
 	sel := selectHighestSeverityEntry(entries, "agentops")

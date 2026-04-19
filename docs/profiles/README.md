@@ -160,6 +160,5 @@ profiles/
 └── examples/
     ├── software-dev-session.md  # Example dev session
     ├── platform-ops-session.md  # Example ops session
-    ├── content-creation-session.md  # Example writing session
-    └── ../contracts/memrl-policy.profile.example.json  # Example MemRL policy profile for AO→OL export
+    └── content-creation-session.md  # Example writing session
 ```

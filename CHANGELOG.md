@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Orchestrator Compression Anti-Pattern learning** at `.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md`, surfaced via `ao inject` at session start. Includes detection phrases, corrective actions, and rationalizations to reject.
 - **Orchestrator-owned step markers** in `skills/crank/SKILL.md` (STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7) plus an "Inline Work Policy" footer documenting which steps are intentionally inline vs delegated.
 
+### Removed
+
+- Archived AO↔Olympus bridge integration: removed `docs/ol-bridge-contracts.md`, `docs/architecture/ao-olympus-ownership-matrix.md`, MemRL policy contracts, `skills/*/scripts/ol-*.sh`, `cli/cmd/ao/inject_ol_test.go`, and associated CLI types (`OLConstraint`, `gatherOLConstraints`, `.ol/` directory collector). Olympus predecessor's useful patterns live on inside `ao`.
+
 ### Changed
 
 - **`--no-lifecycle` in `/discovery` renamed to `--no-scaffold`** for semantic clarity — the flag controls STEP 4.5 scaffold auto-invocation only, not broader lifecycle checks. `--no-lifecycle` is honored as a deprecated alias through v2.40.0; when both flags are passed, they are equivalent. Other skills (`/crank`, `/validation`, `/implement`, `/evolve`) retain `--no-lifecycle` with its existing lifecycle-skill-invocation semantics.

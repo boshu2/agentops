@@ -10,21 +10,8 @@ Three repositories converge into a single product surface:
 |------------|------|--------|
 | **AgentOps** (`ao`) | One binary. Skills, hooks, knowledge flywheel, RPI orchestration, goal-driven evolution. The product. | Active |
 | **Gas Town** (`gt`) | Upstream workspace manager. Multi-agent coordination, rig registry, dispatch. Consumes `ao` as a tool. | Active (upstream) |
-| **Olympus** (`ol`) | Archived. Patterns extracted into `ao` (context compilation, constraint injection, run ledger concepts). Bridge contracts preserved as spec for future power-user layer. | Archived |
 
-**Why:** Olympus was the power-user daemon layer (persistent scheduling, cryptographic lineage, fleet orchestration). But `ao rpi loop --supervisor` already provides daemonless autonomous execution, and the bridge contracts (INVOCATION_ENVELOPE, STATE_CHECKPOINT_HANDOFF, OBSERVABILITY_EVENTS) are SPEC_ONLY with no envelope enforcement. The Olympus ambition survives as patterns inside `ao`, not as a separate system that must be maintained.
-
-**What was preserved from Olympus:**
-
-| Pattern | Where it lives now | What it does |
-|---------|--------------------|--------------|
-| Agent adapter interface | `ao rpi` backend detection (Claude teams, Codex sub-agents, background tasks) | Runtime-agnostic agent spawning |
-| Forensic evidence | `.agents/ao/sessions/` JSONL + `cycle-history.jsonl` | Append-only audit trail per session and cycle |
-| Terminal reasons | `ao rpi status` terminal state codes (completed, failed, cancelled, stalled) | Unambiguous run termination semantics |
-| SSH transport concept | Deferred; Gas Town `gt sling` handles remote dispatch | Cross-machine agent execution |
-| Controller guardrails | Kill switches (`AGENTOPS_HOOKS_DISABLED`, evolve kill file), regression gates, max-cycle limits | Safety boundaries for autonomous loops |
-| Wave computation | `/crank` FIRE loop with dependency-ordered wave decomposition | Parallel execution with structural ordering |
-| Sente scoring | `ao goals measure` severity-weighted goal selection | Priority by worst gap, not arbitrary ordering |
+Olympus (`ol`) was the power-user daemon predecessor, archived. Its patterns (context compilation, constraint injection, run ledger) survive as features inside `ao`. No live integration exists.
 
 ---
 
@@ -148,7 +135,6 @@ Each level treats the one below as a black box: spec in, validated result out. T
 This document synthesizes:
 
 - Strategic direction council (2026-02-21): 4-judge unanimous WARN, feature saturation reached
-- AO-Olympus ownership matrix v3 (2026-02-12): capability split and bridge contracts
 - The science (formal knowledge model): dK/dt equation, escape velocity, limits to growth
 - Brownian ratchet philosophy: chaos + filter + ratchet execution model
 - Architecture (5 pillars): Three Ways, Ratchet, Ralph Wiggum, Flywheel, Fractal Composition

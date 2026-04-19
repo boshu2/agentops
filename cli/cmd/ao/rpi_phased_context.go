@@ -393,7 +393,7 @@ func buildRetryPrompt(cwd string, phaseNum int, state *phasedState, retryCtx *re
 	return prompt.String(), nil
 }
 
-// worktreeTimeout is the timeout for git worktree operations (matches Olympus DefaultTimeout).
+// worktreeTimeout is the timeout for git worktree operations.
 const worktreeTimeout = 30 * time.Second
 
 // generateRunID returns a 12-char lowercase hex string from crypto/rand.
@@ -420,7 +420,6 @@ func mergeWorktree(repoRoot, worktreePath, runID string) error {
 }
 
 // removeWorktree removes a worktree directory and any legacy branch marker.
-// Modeled on Olympus internal/git/worktree.go Remove().
 func removeWorktree(repoRoot, worktreePath, runID string) error {
 	return cliRPI.RemoveWorktree(repoRoot, worktreePath, runID, worktreeTimeout)
 }

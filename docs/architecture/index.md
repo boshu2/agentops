@@ -44,12 +44,6 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     Runtime-aware lifecycle fallback for Codex when hooks are unavailable.
 
--   :material-account-multiple: **[AO-Olympus Matrix](ao-olympus-ownership-matrix.md)**
-
-    ---
-
-    Responsibility split for skills, runtime, and bridge contracts.
-
 -   :material-shield-check: **[PDC Framework](pdc-framework.md)**
 
     ---

@@ -88,15 +88,6 @@ type Session struct {
 	Path    string `json:"path,omitempty"`
 }
 
-// OLConstraint represents an operational-learning constraint detected in a session.
-type OLConstraint struct {
-	Pattern    string  `json:"pattern"`
-	Detection  string  `json:"detection"`
-	Source     string  `json:"source,omitempty"`
-	Confidence float64 `json:"confidence,omitempty"`
-	Status     string  `json:"status,omitempty"`
-}
-
 // PredecessorContext holds structured context from a predecessor agent's handoff.
 type PredecessorContext struct {
 	WorkingOn  string `json:"working_on,omitempty"`
@@ -109,12 +100,11 @@ type PredecessorContext struct {
 
 // InjectedKnowledge is the top-level container for all knowledge injected into a session.
 type InjectedKnowledge struct {
-	Predecessor   *PredecessorContext `json:"predecessor,omitempty"`
-	Learnings     []Learning         `json:"learnings,omitempty"`
-	Patterns      []Pattern          `json:"patterns,omitempty"`
-	Sessions      []Session          `json:"sessions,omitempty"`
-	OLConstraints []OLConstraint     `json:"ol_constraints,omitempty"`
-	Timestamp     time.Time          `json:"timestamp"`
-	Query         string             `json:"query,omitempty"`
-	BeadID        string             `json:"bead_id,omitempty"`
+	Predecessor *PredecessorContext `json:"predecessor,omitempty"`
+	Learnings   []Learning          `json:"learnings,omitempty"`
+	Patterns    []Pattern           `json:"patterns,omitempty"`
+	Sessions    []Session           `json:"sessions,omitempty"`
+	Timestamp   time.Time           `json:"timestamp"`
+	Query       string              `json:"query,omitempty"`
+	BeadID      string              `json:"bead_id,omitempty"`
 }

@@ -126,7 +126,7 @@ Future sessions will see what you did and how it went.
 
 **Purpose:** What worked and what did not, filtered for THIS agent's specific task. The highest-value section — directly improves output quality by front-loading relevant knowledge.
 
-**Source:** Learnings from `.agents/learnings/` (via `collectLearnings()` with Two-Phase MemRL retrieval), patterns from `.agents/patterns/` (via `collectPatterns()`), Olympus constraints from `.ol/constraints/quarantine.json` (via `collectOLConstraints()`), and task-relevant knowledge from the flywheel.
+**Source:** Learnings from `.agents/learnings/` (via `collectLearnings()` with Two-Phase MemRL retrieval), patterns from `.agents/patterns/` (via `collectPatterns()`), and task-relevant knowledge from the flywheel.
 
 **Content:**
 
@@ -143,23 +143,18 @@ Future sessions will see what you did and how it went.
 - **error-handling-go**: Wrap errors with %w, never bare string errors
 - **test-table-driven**: All Go tests use table-driven pattern
   ...
-
-### Constraints
-- [olympus constraint] no-eval: eval() detected in hook scripts
-  ...
 ```
 
 **Assembly rules:**
 1. The `--query` argument (to `ao lookup`) filters learnings and patterns by substring match against the agent's task description.
 2. Learnings are ranked by composite score (freshness * utility, Two-Phase MemRL retrieval). Maximum 10 learnings.
 3. Patterns are ranked by composite score. Maximum 5 patterns.
-4. Olympus constraints are included unfiltered (they are always relevant as hard boundaries).
-5. When `--apply-decay` is set, confidence decay is applied before ranking (Darr 1995, delta=0.17/week).
-6. CASS maturity weighting is applied when available.
+4. When `--apply-decay` is set, confidence decay is applied before ranking (Darr 1995, delta=0.17/week).
+5. CASS maturity weighting is applied when available.
 
-**Truncation behavior:** When INTEL exceeds its 12K character budget, evict oldest learnings first (lowest freshness score), then oldest patterns. Constraints are never truncated.
+**Truncation behavior:** When INTEL exceeds its 12K character budget, evict oldest learnings first (lowest freshness score), then oldest patterns.
 
-**Graceful degradation:** If no learnings, patterns, or constraints exist:
+**Graceful degradation:** If no learnings or patterns exist:
 
 ```
 ## INTEL
@@ -422,7 +417,7 @@ This provenance record enables:
 
 ## Evolution of `ao lookup`
 
-The deprecated `ao inject` output a flat knowledge dump: learnings, patterns, sessions, and OL constraints rendered as markdown or JSON. The context packet evolves this through an on-demand retrieval pattern:
+The deprecated `ao inject` output a flat knowledge dump: learnings, patterns, and sessions rendered as markdown or JSON. The context packet evolves this through an on-demand retrieval pattern:
 
 ### Phase 1: Structured Sections (non-breaking)
 
@@ -475,7 +470,6 @@ The context packet degrades gracefully when sources are missing. No section prod
 | No `.agents/ao/sessions/` | HISTORY (sessions) | Sessions sub-section omitted. |
 | No `.agents/ao/chain.jsonl` | HISTORY (chain) | Chain sub-section omitted. |
 | No learnings or patterns | INTEL | "No prior knowledge found." |
-| No `.ol/` directory | INTEL (constraints) | Constraints sub-section omitted silently (not an Olympus project). |
 | No bead assigned | TASK | "No specific task assigned. Free-form session." |
 | `ao` CLI not installed | PROTOCOL | Minimal template without ratchet/hook references. |
 | All sources empty | Entire packet | Valid packet with five sections, each containing a degradation note. Still useful — PROTOCOL tells the agent how to start building the knowledge base. |
@@ -492,7 +486,6 @@ The context packet unifies and structures what multiple components already provi
 | `goals.LoadGoals()` | Fitness measurement | Feeds GOALS section |
 | `collectLearnings()` | MemRL retrieval | Feeds INTEL section (learnings) |
 | `collectPatterns()` | Pattern retrieval | Feeds INTEL section (patterns) |
-| `collectOLConstraints()` | Olympus bridge | Feeds INTEL section (constraints) |
 | `collectRecentSessions()` | Session history | Feeds HISTORY section (sessions) |
 | `ratchet.LoadChain()` | Provenance chain | Feeds HISTORY section (chain) |
 | `recordCitations()` | Citation tracking | Provenance tracking (injection-log.jsonl) |
@@ -508,4 +501,3 @@ The context packet unifies and structures what multiple components already provi
 - [How It Works](how-it-works.md) — Context windowing, Brownian Ratchet, Ralph Wiggum
 - [The Science](the-science.md) — Freshness decay model, MemRL two-phase retrieval
 - [CLI Reference](cli/commands.md) — `ao lookup` command documentation
-- [OL-AO Bridge Contracts](ol-bridge-contracts.md) — Olympus constraint interchange

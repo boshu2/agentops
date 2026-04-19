@@ -24,6 +24,14 @@ case "$COMMAND" in
   *) exit 0 ;;
 esac
 
+# Prefer user-local Go (~/.local/go) over system Go when present.
+# Hooks don't inherit interactive-shell PATH, so the apt-provided go-1.22
+# would otherwise be picked up even when the user has a newer local install.
+if [[ -x "$HOME/.local/go/bin/go" ]]; then
+  export PATH="$HOME/.local/go/bin:$PATH"
+  export GOROOT="$HOME/.local/go"
+fi
+
 # Need go compiler
 command -v go &>/dev/null || exit 0
 

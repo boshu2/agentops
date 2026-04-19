@@ -229,13 +229,13 @@ func TestMarkdownFormatter_extractTags(t *testing.T) {
 	tags := mf.extractTags(session)
 
 	// Should contain base tags
-	foundOlympus := false
+	foundAgentops := false
 	foundSession := false
 	foundDateTag := false
 
 	for _, tag := range tags {
-		if tag == "olympus" {
-			foundOlympus = true
+		if tag == "agentops" {
+			foundAgentops = true
 		}
 		if tag == "session" {
 			foundSession = true
@@ -245,8 +245,8 @@ func TestMarkdownFormatter_extractTags(t *testing.T) {
 		}
 	}
 
-	if !foundOlympus {
-		t.Error("Tags should contain 'olympus'")
+	if !foundAgentops {
+		t.Error("Tags should contain 'agentops'")
 	}
 	if !foundSession {
 		t.Error("Tags should contain 'session'")

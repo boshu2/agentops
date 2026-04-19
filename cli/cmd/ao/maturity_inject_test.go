@@ -188,11 +188,10 @@ func TestInject_formatKnowledgeMarkdown(t *testing.T) {
 
 	t.Run("with all sections", func(t *testing.T) {
 		k := &injectedKnowledge{
-			Learnings:     []learning{{ID: "L1", Title: "Test"}},
-			Patterns:      []pattern{{Name: "P1", Description: "desc"}},
-			Sessions:      []session{{Date: "2026-02-20", Summary: "work"}},
-			OLConstraints: []olConstraint{{Pattern: "no-eval", Detection: "found"}},
-			Timestamp:     time.Date(2026, 2, 20, 12, 0, 0, 0, time.UTC),
+			Learnings: []learning{{ID: "L1", Title: "Test"}},
+			Patterns:  []pattern{{Name: "P1", Description: "desc"}},
+			Sessions:  []session{{Date: "2026-02-20", Summary: "work"}},
+			Timestamp: time.Date(2026, 2, 20, 12, 0, 0, 0, time.UTC),
 		}
 		got := formatKnowledgeMarkdown(k)
 		if strings.Contains(got, "No prior knowledge found") {
@@ -250,78 +249,6 @@ func TestInject_findAgentsSubdir(t *testing.T) {
 		got := findAgentsSubdir(tmp, "nonexistent")
 		if got != "" {
 			t.Errorf("expected empty, got %q", got)
-		}
-	})
-}
-
-// ---------------------------------------------------------------------------
-// inject.go — collectOLConstraints
-// ---------------------------------------------------------------------------
-
-func TestInject_collectOLConstraints(t *testing.T) {
-	t.Run("no .ol dir returns nil", func(t *testing.T) {
-		tmp := t.TempDir()
-		constraints, err := collectOLConstraints(tmp, "")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if constraints != nil {
-			t.Errorf("expected nil, got %v", constraints)
-		}
-	})
-
-	t.Run("no quarantine file returns nil", func(t *testing.T) {
-		tmp := t.TempDir()
-		if err := os.MkdirAll(filepath.Join(tmp, ".ol"), 0755); err != nil {
-			t.Fatal(err)
-		}
-		constraints, err := collectOLConstraints(tmp, "")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if constraints != nil {
-			t.Errorf("expected nil, got %v", constraints)
-		}
-	})
-
-	t.Run("reads constraints", func(t *testing.T) {
-		tmp := t.TempDir()
-		quarantineDir := filepath.Join(tmp, ".ol", "constraints")
-		if err := os.MkdirAll(quarantineDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		data := `[{"pattern":"no-eval","detection":"eval() found"},{"pattern":"no-exec","detection":"exec() found"}]`
-		if err := os.WriteFile(filepath.Join(quarantineDir, "quarantine.json"), []byte(data), 0644); err != nil {
-			t.Fatal(err)
-		}
-		constraints, err := collectOLConstraints(tmp, "")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(constraints) != 2 {
-			t.Fatalf("expected 2 constraints, got %d", len(constraints))
-		}
-	})
-
-	t.Run("filters by query", func(t *testing.T) {
-		tmp := t.TempDir()
-		quarantineDir := filepath.Join(tmp, ".ol", "constraints")
-		if err := os.MkdirAll(quarantineDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		data := `[{"pattern":"no-eval","detection":"eval() found"},{"pattern":"no-exec","detection":"exec() found"}]`
-		if err := os.WriteFile(filepath.Join(quarantineDir, "quarantine.json"), []byte(data), 0644); err != nil {
-			t.Fatal(err)
-		}
-		constraints, err := collectOLConstraints(tmp, "eval")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(constraints) != 1 {
-			t.Fatalf("expected 1 filtered constraint, got %d", len(constraints))
-		}
-		if constraints[0].Pattern != "no-eval" {
-			t.Errorf("expected no-eval, got %q", constraints[0].Pattern)
 		}
 	})
 }

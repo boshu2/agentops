@@ -146,18 +146,6 @@ func TestFormatKnowledgeMarkdown(t *testing.T) {
 		}
 	})
 
-	t.Run("with OL constraints", func(t *testing.T) {
-		k := &injectedKnowledge{
-			OLConstraints: []olConstraint{
-				{Pattern: "no-eval", Detection: "eval() usage found"},
-			},
-			Timestamp: time.Date(2026, 2, 10, 12, 0, 0, 0, time.UTC),
-		}
-		got := formatKnowledgeMarkdown(k)
-		if !strings.Contains(got, "Olympus Constraints") {
-			t.Error("expected 'Olympus Constraints' section")
-		}
-	})
 }
 
 func TestRecordCitationsInNamespace_IncludesSectionMetadata(t *testing.T) {
@@ -275,99 +263,6 @@ func TestTruncateText(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCollectOLConstraints(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	t.Run("no .ol directory returns nil", func(t *testing.T) {
-		got, err := collectOLConstraints(tmpDir, "")
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		if got != nil {
-			t.Errorf("expected nil, got %v", got)
-		}
-	})
-
-	t.Run("no quarantine.json returns nil", func(t *testing.T) {
-		if err := os.MkdirAll(filepath.Join(tmpDir, ".ol", "constraints"), 0755); err != nil {
-			t.Fatal(err)
-		}
-		got, err := collectOLConstraints(tmpDir, "")
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		if got != nil {
-			t.Errorf("expected nil, got %v", got)
-		}
-	})
-
-	// Create quarantine.json
-	constraints := []olConstraint{
-		{Pattern: "no-eval", Detection: "eval() usage found in hooks"},
-		{Pattern: "no-force-push", Detection: "git push --force detected"},
-	}
-	data, err := json.Marshal(constraints)
-	if err != nil {
-		t.Fatalf("marshal constraints: %v", err)
-	}
-	quarantinePath := filepath.Join(tmpDir, ".ol", "constraints", "quarantine.json")
-	if err := os.MkdirAll(filepath.Dir(quarantinePath), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(quarantinePath, data, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("loads all constraints without query", func(t *testing.T) {
-		got, err := collectOLConstraints(tmpDir, "")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(got) != 2 {
-			t.Errorf("got %d constraints, want 2", len(got))
-		}
-	})
-
-	t.Run("filters by query", func(t *testing.T) {
-		got, err := collectOLConstraints(tmpDir, "eval")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(got) != 1 {
-			t.Errorf("got %d constraints, want 1", len(got))
-		}
-		if len(got) > 0 && got[0].Pattern != "no-eval" {
-			t.Errorf("got pattern %q, want %q", got[0].Pattern, "no-eval")
-		}
-	})
-
-	t.Run("query no match", func(t *testing.T) {
-		got, err := collectOLConstraints(tmpDir, "kubernetes")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(got) != 0 {
-			t.Errorf("got %d constraints, want 0", len(got))
-		}
-	})
-
-	t.Run("invalid JSON", func(t *testing.T) {
-		badDir := t.TempDir()
-		badPath := filepath.Join(badDir, ".ol", "constraints", "quarantine.json")
-		if err := os.MkdirAll(filepath.Dir(badPath), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(badPath, []byte("not json"), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		_, err := collectOLConstraints(badDir, "")
-		if err == nil {
-			t.Error("expected error for invalid JSON")
-		}
-	})
 }
 
 func TestIsInlineMetadata(t *testing.T) {

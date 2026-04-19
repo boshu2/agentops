@@ -16,8 +16,6 @@ const (
 	// InjectCharsPerToken is the approximate characters per token (conservative estimate).
 	InjectCharsPerToken = 4
 
-	// quarantineRelPath is the path to OL quarantine constraints relative to the .ol/ directory.
-	quarantineRelPath = "constraints/quarantine.json"
 )
 
 // ResortLearnings re-sorts learnings by CompositeScore descending.
@@ -88,42 +86,6 @@ func FindAgentsSubdir(startDir, subdir string) string {
 	return ""
 }
 
-// CollectOLConstraints reads Olympus quarantine constraints; no-op if .ol/ absent.
-func CollectOLConstraints(cwd, query string) ([]OLConstraint, error) {
-	olDir := filepath.Join(cwd, ".ol")
-	if _, err := os.Stat(olDir); os.IsNotExist(err) {
-		return nil, nil
-	}
-
-	quarantinePath := filepath.Join(olDir, quarantineRelPath)
-	data, err := os.ReadFile(quarantinePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("read quarantine.json: %w", err)
-	}
-
-	var raw []OLConstraint
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parse quarantine.json: %w", err)
-	}
-
-	if query == "" {
-		return raw, nil
-	}
-
-	queryLower := strings.ToLower(query)
-	var filtered []OLConstraint
-	for _, c := range raw {
-		content := strings.ToLower(c.Pattern + " " + c.Detection)
-		if strings.Contains(content, queryLower) {
-			filtered = append(filtered, c)
-		}
-	}
-	return filtered, nil
-}
-
 // FormatKnowledgeMarkdown renders knowledge as markdown.
 func FormatKnowledgeMarkdown(k *InjectedKnowledge, compactText func(string) string) string {
 	var sb strings.Builder
@@ -132,8 +94,7 @@ func FormatKnowledgeMarkdown(k *InjectedKnowledge, compactText func(string) stri
 	WriteLearningsSection(&sb, k.Learnings, compactText)
 	WritePatternsSection(&sb, k.Patterns)
 	WriteSessionsSection(&sb, k.Sessions)
-	WriteConstraintsSection(&sb, k.OLConstraints)
-	if k.Predecessor == nil && len(k.Learnings) == 0 && len(k.Patterns) == 0 && len(k.Sessions) == 0 && len(k.OLConstraints) == 0 {
+	if k.Predecessor == nil && len(k.Learnings) == 0 && len(k.Patterns) == 0 && len(k.Sessions) == 0 {
 		sb.WriteString("*No prior knowledge found.*\n\n")
 	}
 	fmt.Fprintf(&sb, "*Last injection: %s*\n", k.Timestamp.Format(time.RFC3339))
@@ -207,18 +168,6 @@ func WriteSessionsSection(sb *strings.Builder, sessions []Session) {
 	sb.WriteString("\n")
 }
 
-// WriteConstraintsSection renders the Olympus constraints block.
-func WriteConstraintsSection(sb *strings.Builder, constraints []OLConstraint) {
-	if len(constraints) == 0 {
-		return
-	}
-	sb.WriteString("### Olympus Constraints\n")
-	for _, c := range constraints {
-		fmt.Fprintf(sb, "- **[olympus constraint]** %s: %s\n", c.Pattern, c.Detection)
-	}
-	sb.WriteString("\n")
-}
-
 // WritePredecessorSection renders the predecessor context block.
 func WritePredecessorSection(sb *strings.Builder, pred *PredecessorContext) {
 	if pred == nil {
@@ -253,7 +202,6 @@ func TrimJSONToCharBudget(knowledge *InjectedKnowledge, budget int) string {
 	trimmed.Learnings = append([]Learning(nil), knowledge.Learnings...)
 	trimmed.Patterns = append([]Pattern(nil), knowledge.Patterns...)
 	trimmed.Sessions = append([]Session(nil), knowledge.Sessions...)
-	trimmed.OLConstraints = append([]OLConstraint(nil), knowledge.OLConstraints...)
 
 	type truncatedKnowledge struct {
 		InjectedKnowledge
@@ -274,12 +222,6 @@ func TrimJSONToCharBudget(knowledge *InjectedKnowledge, budget int) string {
 			return out
 		}
 		trimmed.Sessions = trimmed.Sessions[:len(trimmed.Sessions)-1]
-	}
-	for len(trimmed.OLConstraints) > 0 {
-		if out := tryMarshal(); len(out) <= budget {
-			return out
-		}
-		trimmed.OLConstraints = trimmed.OLConstraints[:len(trimmed.OLConstraints)-1]
 	}
 	for len(trimmed.Patterns) > 0 {
 		if out := tryMarshal(); len(out) <= budget {

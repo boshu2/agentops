@@ -540,20 +540,6 @@ ol hero ratchet "$BEAD_ID" --quest "$QUEST_ID"
 
 **Result:** Parallel execution of independent tasks using TaskList only.
 
-### Loading Wave from OL
-
-**User says:** `/swarm --from-wave /tmp/wave-ol-527.json`
-
-**What happens:**
-1. Agent validates `ol` CLI is on PATH (pre-flight check)
-2. Agent reads wave JSON from OL hero hunt output
-3. Agent creates TaskList tasks from wave entries (priority-sorted)
-4. Agent spawns workers for all unblocked beads
-5. On completion, agent runs `ol hero ratchet <bead-id> --quest <quest-id>` for each bead
-6. Agent reports backflow status to user
-
-**Result:** OL beads executed with completion reporting back to Olympus.
-
 ---
 
 ## Worktree Isolation (Multi-Epic Dispatch)
@@ -759,10 +745,6 @@ Solution: Run `which codex` to verify installation. Check `~/.codex/config.toml`
 ### Workers timeout or hang
 Cause: Worker task too large or blocked on external dependency.
 Solution: Break tasks into smaller units. Add timeout metadata to worker tasks.
-
-### OL wave integration fails with "ol CLI required"
-Cause: `--from-wave` used but `ol` CLI not on PATH.
-Solution: Install Olympus CLI or run swarm without `--from-wave` flag.
 
 ### gc backend detected but workers unresponsive
 Cause: gc controller is running but worker sessions are idle or not accepting nudges.

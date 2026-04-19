@@ -173,7 +173,6 @@ nav:
       - Software Factory: software-factory.md
       - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
       - Primitive Chains: architecture/primitive-chains.md
-      - AO-Olympus Matrix: architecture/ao-olympus-ownership-matrix.md
       - PDC Framework: architecture/pdc-framework.md
       - FAAFO Alignment: architecture/faafo-alignment.md
       - Failure Patterns: architecture/failure-patterns.md
@@ -246,8 +245,6 @@ nav:
       - Session Intelligence Trust Model: contracts/session-intelligence-trust-model.md
       - Dream Run: contracts/dream-run-contract.md
       - Dream Report: contracts/dream-report.md
-      - MemRL Policy: contracts/memrl-policy-integration.md
       - Swarm Evidence: contracts/swarm-evidence.md
-      - OL-AO Bridge: ol-bridge-contracts.md
       - Scope Escape Report: contracts/scope-escape-report.md
       - Dispatch Checklist: contracts/dispatch-checklist.md

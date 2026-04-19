@@ -54,7 +54,6 @@ var (
 )
 
 // Type aliases — canonical definitions live in internal/search/types.go.
-type olConstraint = search.OLConstraint
 type injectedKnowledge = search.InjectedKnowledge
 type learning = search.Learning
 type pattern = search.Pattern
@@ -330,7 +329,6 @@ func gatherKnowledge(cwd string, opts *search.InjectOptions, sessionID string, c
 			len(knowledge.Learnings), len(knowledge.Patterns))
 	}
 	knowledge.Sessions = gatherSessions(cwd, opts.Query)
-	knowledge.OLConstraints = gatherOLConstraints(cwd, opts.Query)
 
 	return knowledge
 }
@@ -380,15 +378,6 @@ func gatherSessions(cwd, query string) []session {
 	return sessions
 }
 
-// gatherOLConstraints collects Olympus constraints (no-op if .ol/ doesn't exist).
-func gatherOLConstraints(cwd, query string) []olConstraint {
-	olConstraints, err := search.CollectOLConstraints(cwd, query)
-	if err != nil {
-		VerbosePrintf("Warning: failed to collect OL constraints: %v\n", err)
-	}
-	return olConstraints
-}
-
 // Thin wrappers — canonical definitions in internal/search/inject_run.go.
 // These exist for test call sites and for readable use within this file.
 func renderKnowledge(k *injectedKnowledge, format string) (string, error) {
@@ -401,9 +390,6 @@ func resortLearnings(ls []learning)                  { search.ResortLearnings(ls
 func trimToCharBudget(out string, budget int) string { return search.TrimToCharBudget(out, budget) }
 func trimJSONToCharBudget(k *injectedKnowledge, b int) string {
 	return search.TrimJSONToCharBudget(k, b)
-}
-func collectOLConstraints(cwd, q string) ([]olConstraint, error) {
-	return search.CollectOLConstraints(cwd, q)
 }
 func filterMemoryDuplicates(cwd string, ls []learning) []learning {
 	return search.FilterMemoryDuplicates(cwd, ls)

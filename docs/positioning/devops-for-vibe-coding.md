@@ -152,7 +152,6 @@ Every session makes the next one better because the environment changes, not bec
 - **Just another automation tool** — We're about validation, not execution speed
 - **Competing with Agent SDKs** — We're complementary (use LangChain, CrewAI, etc. for the runtime)
 - **Model-specific** — Works with Claude, could work with others
-- **Multi-session orchestration** — For that, see Olympus
 
 ---
 
@@ -184,7 +183,6 @@ Every session makes the next one better because the environment changes, not bec
 |----------|-------|-------------------|
 | **12-Factor Agents** (Dex Horthy) | General autonomous agents | Complementary—we're coding-specific |
 | **Agent SDKs** (LangChain, CrewAI) | Runtime infrastructure | We sit above—validation patterns, not execution |
-| **Olympus** (mt-olympus.io) | Multi-session orchestration | Complementary—we're single-session |
 | **CI/CD tools** | Post-merge validation | We shift-left—validation before commit |
 | **Linters/Formatters** | Syntax validation | We're semantic—does the code do what you intended? |
 
@@ -193,17 +191,15 @@ Every session makes the next one better because the environment changes, not bec
 ```
                     General ←—→ Coding-Specific
                          │
-Multi-Session           │   Olympus
-       ↑                │
-       │                │
-       │           ┌────┴────┐
-       │           │ AgentOps │ ← WE ARE HERE
-       │           │(Shift-L)│
-       │           └────┬────┘
-       │                │
-Single-Session          │   Agent SDKs
-       ↓                │
-                        │
+                         │
+       ┌────────────┐    │
+       │  AgentOps  │ ← WE ARE HERE
+       │ (Shift-L)  │    │
+       └────────────┘    │
+                         │
+                         │   Agent SDKs
+                         │
+                         │
               Execution ←—→ Validation
 ```
 

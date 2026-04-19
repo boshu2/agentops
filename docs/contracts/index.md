@@ -88,18 +88,6 @@ skills, the runtime, and external integrations.
 
     Canonical `summary.json` and `summary.md` schema for Dream outputs.
 
--   :material-shield-lock: **[MemRL Policy](memrl-policy-integration.md)**
-
-    ---
-
-    AO-exported deterministic MemRL policy contract for Olympus hooks.
-
--   :material-swap-horizontal: **[OL-AO Bridge](../ol-bridge-contracts.md)**
-
-    ---
-
-    Olympus-AgentOps interchange formats.
-
 -   :material-alert-octagon: **[Scope Escape Report](scope-escape-report.md)**
 
     ---

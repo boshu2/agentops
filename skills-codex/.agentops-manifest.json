@@ -812,7 +812,7 @@
       "name": "plan",
       "source_skill": "skills/plan",
       "source_hash": "1a60effff3f0e9380dc55a0816dfb3256d0f5ad6d72d1a269c210668860184d9",
-      "generated_hash": "d0d2f7731f419edff36aa0138cc2215474c85bdd523809ab93084cbb3503c6f5"
+      "generated_hash": "b61aa02a142cf24ba3a09c31c34362e4d104449f91d51352ee26af9770682ce5"
     },
     {
       "name": "post-mortem",
@@ -860,7 +860,7 @@
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
       "source_hash": "9ed2f0290ccc16ce45a79d0a22b2dae54f525875fa2a8375bf470de54c08912d",
-      "generated_hash": "4230419d7de3654a97c15233f45c1542f291f6ab1ca39752b040bc12b58e7e94"
+      "generated_hash": "fbe1441e1456f424b6f72cfd41f5292afac24576cedcac5153a1a8fdcd652d01"
     },
     {
       "name": "product",
@@ -998,7 +998,7 @@
       "name": "swarm",
       "source_skill": "skills/swarm",
       "source_hash": "fe5abbc8873c805485273cc85d2d480c615f8f016fa14445f8c170bcfabd0fdf",
-      "generated_hash": "8c5b47adb342c37244a0e344269c08ec3ef1ebe5d101b908d78b8bc64bae77a9"
+      "generated_hash": "ee3293f34512c8a01636737db41feb5c48b8d8ab64e6d1d7c27f549afdab61f5"
     },
     {
       "name": "test",
@@ -1034,7 +1034,7 @@
       "name": "vibe",
       "source_skill": "skills/vibe",
       "source_hash": "16b6b0f61dc91dfb1c90627594728a6ec345a876d7895b9a8e0dbe9010575af3",
-      "generated_hash": "77996cb1989eb3bcc5bccad546d69de34eda4474dccb423b7be271af57fdadcf"
+      "generated_hash": "fb228b574960291cc492e53bb212d5208f8184cd00b55a34b91f69866dfe0c74"
     }
   ]
 }

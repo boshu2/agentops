@@ -225,7 +225,7 @@ Run Dream overnight, then Evolve in the morning against a fresher corpus. Same m
 
     ---
 
-    RPI run registry, finding registry, Dream runs, OL-AO bridge, and every
+    RPI run registry, finding registry, Dream runs, and every
     other inter-component contract.
 
 </div>

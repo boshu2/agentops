@@ -22,7 +22,6 @@
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
-- [AO-Olympus Ownership Matrix](architecture/ao-olympus-ownership-matrix.md) — Responsibility split for skills, runtime, and bridge contracts
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -159,7 +158,6 @@
 
 - [Plans Overview](plans/README.md) — Time-stamped plans index
 - [Validated Release Pipeline](plans/2026-01-28-validated-release-pipeline.md) — Release pipeline design (2026-01-28)
-- [AO-Olympus Bridge Next Steps](plans/2026-02-13-ao-olympus-bridge-next-steps.md) — Follow-up work to make the AO↔OL bridge enforceable (2026-02-13)
 - [All Improvements](plans/2026-02-24-all-improvements.md) — Comprehensive improvement plan (2026-02-24)
 - [AO Search as an Upstream CASS Wrapper](plans/2026-03-22-ao-search-cass-wrapper.md) — Make `ao search` broker to upstream `cass` plus AO-local fallback (2026-03-22)
 
@@ -188,11 +186,7 @@
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
-- [OL-AO Bridge Contracts](ol-bridge-contracts.md) — Olympus-AgentOps interchange formats
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
-- [MemRL Policy Integration](contracts/memrl-policy-integration.md) — AO-exported deterministic MemRL policy contract for Olympus hooks
-- [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable schema for MemRL policy package
-- [MemRL Policy Example Profile](contracts/memrl-policy.profile.example.json) — Example deterministic policy profile
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
