@@ -16,6 +16,35 @@ AgentOps is the operational layer for coding agents. It adds bookkeeping, valida
 
 ---
 
+## What AgentOps Gives You
+
+AgentOps gives your coding agent four things it does not have by default:
+
+| Layer | What changes |
+|-------|--------------|
+| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` files |
+| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
+| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks |
+| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end |
+
+Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
+
+Under the hood, AgentOps acts as a context compiler: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
+
+```mermaid
+flowchart LR
+    S[Session work] --> B[Bookkeeping]
+    S --> V[Validation]
+    B --> F[Knowledge flywheel]
+    V --> F
+    F --> N[Next session]
+    N --> S
+```
+
+Local and auditable: `.agents/` is plain text you can grep, diff, review, and commit when you choose. There is no telemetry or cloud service requirement.
+
+---
+
 ## Install
 
 Pick the runtime you use.
@@ -153,35 +182,6 @@ Consensus: WARN - add rate limiting to /login before shipping
 ```
 
 The point is not a bigger prompt. The point is a repo that remembers what worked.
-
----
-
-## What AgentOps Gives You
-
-AgentOps gives your coding agent four things it does not have by default:
-
-| Layer | What changes |
-|-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` files |
-| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
-| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks |
-| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end |
-
-Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
-
-Under the hood, AgentOps acts as a context compiler: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
-
-```mermaid
-flowchart LR
-    S[Session work] --> B[Bookkeeping]
-    S --> V[Validation]
-    B --> F[Knowledge flywheel]
-    V --> F
-    F --> N[Next session]
-    N --> S
-```
-
-Local and auditable: `.agents/` is plain text you can grep, diff, review, and commit when you choose. There is no telemetry or cloud service requirement.
 
 ---
 
