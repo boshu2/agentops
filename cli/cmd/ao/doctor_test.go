@@ -1732,6 +1732,44 @@ func TestCheckStaleReferences_SubdirsScanned(t *testing.T) {
 	}
 }
 
+func TestCheckStaleReferences_CodexAndReferencesScanned(t *testing.T) {
+	tmp := chdirTemp(t)
+
+	codexDir := filepath.Join(tmp, "skills-codex", "fixture")
+	if err := os.MkdirAll(codexDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	refDir := filepath.Join(tmp, "skills", "fixture", "references")
+	if err := os.MkdirAll(refDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// skills-codex/ copies must stay on canonical surfaces
+	if err := os.WriteFile(
+		filepath.Join(codexDir, "SKILL.md"),
+		[]byte("---\nname: fixture\n---\nRun `ao settings config` to review.\n"),
+		0644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	// skills/*/references/*.md is a first-class skill surface
+	if err := os.WriteFile(
+		filepath.Join(refDir, "overview.md"),
+		[]byte("See `ao start seed` for bootstrap.\n"),
+		0644,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	result := checkStaleReferences()
+	if result.Status != "warn" {
+		t.Errorf("status=%q, want warn for stale refs in skills-codex/ and references/ (detail: %s)", result.Status, result.Detail)
+	}
+	if !strings.Contains(result.Detail, "2 stale") {
+		t.Errorf("expected both subdir hits counted, got %q", result.Detail)
+	}
+}
+
 func TestCheckStaleReferences_NoFalsePositiveOnFlat(t *testing.T) {
 	tmp := chdirTemp(t)
 

@@ -290,6 +290,9 @@ func checkStaleReferences() doctorCheck {
 	return quality.CheckStaleReferences([]string{
 		"hooks/*.sh",
 		"skills/*/SKILL.md",
+		"skills/*/references/*.md",
+		"skills-codex/*/SKILL.md",
+		"skills-codex-overrides/*/SKILL.md",
 		"docs/*.md",
 		"scripts/*.sh",
 		"hooks/examples/*.sh",
