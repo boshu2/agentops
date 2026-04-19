@@ -613,3 +613,69 @@ func stubCompileRunners(t *testing.T, mineFn func(string, string, bool) error, s
 		runCompileDefragFn = origDefrag
 	})
 }
+
+// TestRunCompilePreflightActions_StandaloneReset asserts that --reset without
+// any downstream phase flag short-circuits the rest of the compile pipeline.
+func TestRunCompilePreflightActions_StandaloneReset(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+	compiled := filepath.Join(tmp, ".agents", "compiled")
+	if err := os.MkdirAll(compiled, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	compileReset = true
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	done, err := runCompilePreflightActions(cmd, tmp)
+	if err != nil {
+		t.Fatalf("runCompilePreflightActions: %v", err)
+	}
+	if !done {
+		t.Fatalf("standalone --reset should return done=true so the caller exits early")
+	}
+	if _, err := os.Stat(compiled); !os.IsNotExist(err) {
+		t.Errorf("--reset should have removed the compiled dir, got err=%v", err)
+	}
+}
+
+// TestRunCompilePreflightActions_ResetComposedWithFull keeps the pipeline alive
+// when --reset is chained with a downstream phase flag.
+func TestRunCompilePreflightActions_ResetComposedWithFull(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+
+	compileReset = true
+	compileFull = true
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	done, err := runCompilePreflightActions(cmd, tmp)
+	if err != nil {
+		t.Fatalf("runCompilePreflightActions: %v", err)
+	}
+	if done {
+		t.Fatalf("--reset --full should not short-circuit; the full pipeline must continue")
+	}
+}
+
+// TestRunCompilePreflightActions_Noop verifies that neither --reset nor --repair
+// set leaves the caller free to run the full pipeline.
+func TestRunCompilePreflightActions_Noop(t *testing.T) {
+	resetCommandState(t)
+	tmp := t.TempDir()
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	done, err := runCompilePreflightActions(cmd, tmp)
+	if err != nil {
+		t.Fatalf("runCompilePreflightActions: %v", err)
+	}
+	if done {
+		t.Fatalf("no preflight flag should mean done=false; got true")
+	}
+}
