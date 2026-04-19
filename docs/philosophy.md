@@ -24,8 +24,8 @@ This maps directly to what Andrej Karpathy observed about knowledge work: the te
 
 ```
 Sessions → Bookkeeping → Learnings → Findings → Planning Rules → Gates
-    ↑                                                                 │
-    └─────────────────────── Better next session ─────────────────────┘
+    ↑                                                                │
+    └────────────────────── Better next session ─────────────────────┘
 ```
 
 Each phase is deliberate:
