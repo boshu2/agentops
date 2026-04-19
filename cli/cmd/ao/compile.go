@@ -446,6 +446,78 @@ func resetCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 // fallback stubs (index.md, log.md, lint-report.md from a failed run) are
 // always preserved — removing those would delete the user's history.
 // Returns the number of files removed.
+type compileArticle struct {
+	name     string
+	slug     string
+	content  string
+	fullPath string
+}
+
+var compileRepairPreservedFiles = map[string]bool{
+	"index.md":       true,
+	"log.md":         true,
+	"lint-report.md": true,
+	".hashes.json":   true,
+}
+
+func collectCompileArticles(target string, entries []os.DirEntry) []compileArticle {
+	var articles []compileArticle
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		if compileRepairPreservedFiles[e.Name()] {
+			continue
+		}
+		full := filepath.Join(target, e.Name())
+		data, err := os.ReadFile(full)
+		if err != nil {
+			continue
+		}
+		articles = append(articles, compileArticle{
+			name:     e.Name(),
+			slug:     strings.TrimSuffix(e.Name(), ".md"),
+			content:  string(data),
+			fullPath: full,
+		})
+	}
+	return articles
+}
+
+func computeInboundCounts(articles []compileArticle) map[string]int {
+	inbound := make(map[string]int)
+	for _, a := range articles {
+		for _, b := range articles {
+			if a.slug == b.slug {
+				continue
+			}
+			if strings.Contains(b.content, "[["+a.slug+"]]") {
+				inbound[a.slug]++
+			}
+		}
+	}
+	return inbound
+}
+
+func pruneOrphanArticles(articles []compileArticle, inbound map[string]int, dryRun bool, stdout io.Writer) (int, error) {
+	removed := 0
+	for _, a := range articles {
+		if inbound[a.slug] > 0 {
+			continue
+		}
+		if dryRun {
+			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.fullPath)
+			removed++
+			continue
+		}
+		if err := os.Remove(a.fullPath); err != nil {
+			return removed, fmt.Errorf("remove orphan %s: %w", a.name, err)
+		}
+		removed++
+	}
+	return removed, nil
+}
+
 func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 	target := outputDir
 	if !filepath.IsAbs(target) {
@@ -462,73 +534,18 @@ func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 		return fmt.Errorf("read %s: %w", target, err)
 	}
 
-	// Collect candidate articles (skip infrastructure files we never remove).
-	preserved := map[string]bool{
-		"index.md":        true,
-		"log.md":          true,
-		"lint-report.md":  true,
-		".hashes.json":    true,
-	}
-	type article struct {
-		name     string
-		slug     string
-		content  string
-		fullPath string
-	}
-	var articles []article
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
-		}
-		if preserved[e.Name()] {
-			continue
-		}
-		full := filepath.Join(target, e.Name())
-		data, err := os.ReadFile(full)
-		if err != nil {
-			continue
-		}
-		articles = append(articles, article{
-			name:     e.Name(),
-			slug:     strings.TrimSuffix(e.Name(), ".md"),
-			content:  string(data),
-			fullPath: full,
-		})
-	}
+	articles := collectCompileArticles(target, entries)
+	inboundCount := computeInboundCounts(articles)
 
-	// Build the set of all inbound [[wikilinks]] across the compiled set.
-	inboundCount := make(map[string]int)
-	for _, a := range articles {
-		for _, b := range articles {
-			if a.slug == b.slug {
-				continue
-			}
-			if strings.Contains(b.content, "[["+a.slug+"]]") {
-				inboundCount[a.slug]++
-			}
-		}
-	}
-
-	removed := 0
 	// Safety: --repair defaults to dry-run. Actual deletion requires
 	// --force-repair. The global --dry-run flag always wins (even if
 	// --force-repair is also passed). This prevents a regex bug or stray
 	// [[...]] pattern in prose from silently nuking user wiki content.
 	globalDryRun := GetDryRun()
 	dryRun := globalDryRun || !compileRepairForce
-	for _, a := range articles {
-		if inboundCount[a.slug] > 0 {
-			continue
-		}
-		if dryRun {
-			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.fullPath)
-			removed++
-			continue
-		}
-		if err := os.Remove(a.fullPath); err != nil {
-			return fmt.Errorf("remove orphan %s: %w", a.name, err)
-		}
-		removed++
+	removed, err := pruneOrphanArticles(articles, inboundCount, dryRun, stdout)
+	if err != nil {
+		return err
 	}
 
 	if dryRun && removed > 0 && !globalDryRun {
