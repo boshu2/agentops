@@ -1178,17 +1178,7 @@ func appendDreamTerrainSection(b *strings.Builder, summary overnightSummary) {
 }
 
 func appendDreamYieldSection(b *strings.Builder, yield *ovn.YieldSummary) {
-	if yield == nil {
-		return
-	}
-	if yield.PacketCountBefore == 0 &&
-		yield.PacketCountAfter == 0 &&
-		yield.BeadSyncCount == 0 &&
-		yield.CouncilCompletedCount == 0 &&
-		yield.CouncilFailedCount == 0 &&
-		yield.CouncilTimeoutCount == 0 &&
-		yield.CouncilActionDelta == "" &&
-		yield.CouncilRecommendedKind == "" {
+	if yield == nil || dreamYieldIsEmpty(yield) {
 		return
 	}
 	b.WriteString("\n## Yield\n\n")
@@ -1219,6 +1209,19 @@ func appendDreamYieldSection(b *strings.Builder, yield *ovn.YieldSummary) {
 	if yield.CouncilActionDelta != "" {
 		fmt.Fprintf(b, "- Council action delta: `%s`\n", yield.CouncilActionDelta)
 	}
+}
+
+// dreamYieldIsEmpty reports whether a yield summary has nothing worth rendering.
+// Extracted to keep appendDreamYieldSection under the cli/ CC ceiling.
+func dreamYieldIsEmpty(yield *ovn.YieldSummary) bool {
+	return yield.PacketCountBefore == 0 &&
+		yield.PacketCountAfter == 0 &&
+		yield.BeadSyncCount == 0 &&
+		yield.CouncilCompletedCount == 0 &&
+		yield.CouncilFailedCount == 0 &&
+		yield.CouncilTimeoutCount == 0 &&
+		yield.CouncilActionDelta == "" &&
+		yield.CouncilRecommendedKind == ""
 }
 
 func appendDreamLongHaulSection(b *strings.Builder, longHaul *ovn.LongHaulSummary) {

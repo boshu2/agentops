@@ -129,7 +129,7 @@ func RouteFindings(cwd string) (routed int, degraded []string, err error) {
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
 		Items:       newItems,
 		Consumed:    false,
-		ClaimStatus: "pending",
+		ClaimStatus: "available",
 		ClaimedBy:   nil,
 		ClaimedAt:   nil,
 	}

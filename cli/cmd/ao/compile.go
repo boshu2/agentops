@@ -126,22 +126,12 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 	// --reset and --repair run BEFORE mode resolution so they work
 	// standalone (no LLM runtime needed) and compose with other flags
 	// (e.g. --reset --full rebuilds from scratch).
-	if compileReset {
-		if err := resetCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
-			return fmt.Errorf("compile reset: %w", err)
-		}
-		if !compileFull && !compileOnly && !compileRepair {
-			// standalone --reset is a complete action
-			return nil
-		}
+	done, err := runCompilePreflightActions(cmd, cwd)
+	if err != nil {
+		return err
 	}
-	if compileRepair {
-		if err := repairCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
-			return fmt.Errorf("compile repair: %w", err)
-		}
-		if !compileFull && !compileOnly {
-			return nil
-		}
+	if done {
+		return nil
 	}
 
 	mode, err := resolveCompileMode()
@@ -172,62 +162,109 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 	}
 
 	if shouldRunCompileMine(mode) {
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile mine: extracting knowledge signal")
+		phase, err := runCompileMinePhase(cwd, progress)
+		if err != nil {
+			return err
 		}
-		if err := runCompileMineFn(cwd, compileSince, compileQuiet); err != nil {
-			return fmt.Errorf("compile mine: %w", err)
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: "mine", Status: "ok", Detail: "knowledge signal extracted"})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	if shouldRunCompileScript(mode) {
-		// Preflight the runtime before doing any expensive work. lint-only
-		// does not call an LLM, so skip the runtime check there.
-		if mode != "lint-only" {
-			if err := preflightCompileRuntime(runtime); err != nil {
-				return fmt.Errorf("compile wiki: %w", err)
-			}
+		phase, err := runCompileScriptPhase(cmd, cwd, mode, runtime, progress)
+		if err != nil {
+			return err
 		}
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile wiki: writing compiled knowledge")
-			if runtime != "" && mode != "lint-only" {
-				fmt.Fprintf(progress, "  runtime: %s\n", runtime)
-			}
-		}
-		opts := compileScriptOptions{
-			Sources:     compileSourcesDir,
-			Output:      compileOutputDir,
-			Runtime:     runtime,
-			Incremental: compileIncremental && !compileForce,
-			Force:       compileForce,
-			LintOnly:    mode == "lint-only",
-			BatchSize:   compileBatchSize,
-			MaxBatches:  compileMaxBatches,
-		}
-		if err := runCompileScriptFn(cmd.Context(), cwd, opts, cmd.OutOrStdout(), cmd.ErrOrStderr()); err != nil {
-			return fmt.Errorf("compile wiki: %w", err)
-		}
-		phase := "compile"
-		detail := "compiled wiki and lint report updated"
-		if mode == "lint-only" {
-			phase = "lint"
-			detail = "lint report updated"
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: phase, Status: "ok", Detail: detail})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	if shouldRunCompileDefrag(mode) {
-		if !compileQuiet {
-			fmt.Fprintln(progress, "Compile defrag: cleaning knowledge store")
+		phase, err := runCompileDefragPhase(cwd, progress)
+		if err != nil {
+			return err
 		}
-		if err := runCompileDefragFn(cwd, GetDryRun()); err != nil {
-			return fmt.Errorf("compile defrag: %w", err)
-		}
-		report.Phases = append(report.Phases, compilePhaseResult{Name: "defrag", Status: "ok", Detail: "mechanical cleanup completed"})
+		report.Phases = append(report.Phases, phase)
 	}
 
 	return printCompileReport(cmd.OutOrStdout(), report)
+}
+
+// runCompilePreflightActions runs the standalone --reset / --repair actions
+// that don't need a runtime. Returns done=true when the action was
+// standalone (no later phase requested) so the caller should return.
+func runCompilePreflightActions(cmd *cobra.Command, cwd string) (bool, error) {
+	if compileReset {
+		if err := resetCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return false, fmt.Errorf("compile reset: %w", err)
+		}
+		if !compileFull && !compileOnly && !compileRepair {
+			return true, nil
+		}
+	}
+	if compileRepair {
+		if err := repairCompileOutput(cwd, compileOutputDir, cmd.OutOrStdout()); err != nil {
+			return false, fmt.Errorf("compile repair: %w", err)
+		}
+		if !compileFull && !compileOnly {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func runCompileMinePhase(cwd string, progress io.Writer) (compilePhaseResult, error) {
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile mine: extracting knowledge signal")
+	}
+	if err := runCompileMineFn(cwd, compileSince, compileQuiet); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile mine: %w", err)
+	}
+	return compilePhaseResult{Name: "mine", Status: "ok", Detail: "knowledge signal extracted"}, nil
+}
+
+func runCompileScriptPhase(cmd *cobra.Command, cwd, mode, runtime string, progress io.Writer) (compilePhaseResult, error) {
+	// Preflight the runtime before doing any expensive work. lint-only
+	// does not call an LLM, so skip the runtime check there.
+	if mode != "lint-only" {
+		if err := preflightCompileRuntime(runtime); err != nil {
+			return compilePhaseResult{}, fmt.Errorf("compile wiki: %w", err)
+		}
+	}
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile wiki: writing compiled knowledge")
+		if runtime != "" && mode != "lint-only" {
+			fmt.Fprintf(progress, "  runtime: %s\n", runtime)
+		}
+	}
+	opts := compileScriptOptions{
+		Sources:     compileSourcesDir,
+		Output:      compileOutputDir,
+		Runtime:     runtime,
+		Incremental: compileIncremental && !compileForce,
+		Force:       compileForce,
+		LintOnly:    mode == "lint-only",
+		BatchSize:   compileBatchSize,
+		MaxBatches:  compileMaxBatches,
+	}
+	if err := runCompileScriptFn(cmd.Context(), cwd, opts, cmd.OutOrStdout(), cmd.ErrOrStderr()); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile wiki: %w", err)
+	}
+	phase := "compile"
+	detail := "compiled wiki and lint report updated"
+	if mode == "lint-only" {
+		phase = "lint"
+		detail = "lint report updated"
+	}
+	return compilePhaseResult{Name: phase, Status: "ok", Detail: detail}, nil
+}
+
+func runCompileDefragPhase(cwd string, progress io.Writer) (compilePhaseResult, error) {
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile defrag: cleaning knowledge store")
+	}
+	if err := runCompileDefragFn(cwd, GetDryRun()); err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile defrag: %w", err)
+	}
+	return compilePhaseResult{Name: "defrag", Status: "ok", Detail: "mechanical cleanup completed"}, nil
 }
 
 func resolveCompileMode() (string, error) {
@@ -446,6 +483,78 @@ func resetCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 // fallback stubs (index.md, log.md, lint-report.md from a failed run) are
 // always preserved — removing those would delete the user's history.
 // Returns the number of files removed.
+type compileArticle struct {
+	name     string
+	slug     string
+	content  string
+	fullPath string
+}
+
+var compileRepairPreservedFiles = map[string]bool{
+	"index.md":       true,
+	"log.md":         true,
+	"lint-report.md": true,
+	".hashes.json":   true,
+}
+
+func collectCompileArticles(target string, entries []os.DirEntry) []compileArticle {
+	var articles []compileArticle
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		if compileRepairPreservedFiles[e.Name()] {
+			continue
+		}
+		full := filepath.Join(target, e.Name())
+		data, err := os.ReadFile(full)
+		if err != nil {
+			continue
+		}
+		articles = append(articles, compileArticle{
+			name:     e.Name(),
+			slug:     strings.TrimSuffix(e.Name(), ".md"),
+			content:  string(data),
+			fullPath: full,
+		})
+	}
+	return articles
+}
+
+func computeInboundCounts(articles []compileArticle) map[string]int {
+	inbound := make(map[string]int)
+	for _, a := range articles {
+		for _, b := range articles {
+			if a.slug == b.slug {
+				continue
+			}
+			if strings.Contains(b.content, "[["+a.slug+"]]") {
+				inbound[a.slug]++
+			}
+		}
+	}
+	return inbound
+}
+
+func pruneOrphanArticles(articles []compileArticle, inbound map[string]int, dryRun bool, stdout io.Writer) (int, error) {
+	removed := 0
+	for _, a := range articles {
+		if inbound[a.slug] > 0 {
+			continue
+		}
+		if dryRun {
+			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.fullPath)
+			removed++
+			continue
+		}
+		if err := os.Remove(a.fullPath); err != nil {
+			return removed, fmt.Errorf("remove orphan %s: %w", a.name, err)
+		}
+		removed++
+	}
+	return removed, nil
+}
+
 func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 	target := outputDir
 	if !filepath.IsAbs(target) {
@@ -462,73 +571,18 @@ func repairCompileOutput(cwd, outputDir string, stdout io.Writer) error {
 		return fmt.Errorf("read %s: %w", target, err)
 	}
 
-	// Collect candidate articles (skip infrastructure files we never remove).
-	preserved := map[string]bool{
-		"index.md":        true,
-		"log.md":          true,
-		"lint-report.md":  true,
-		".hashes.json":    true,
-	}
-	type article struct {
-		name     string
-		slug     string
-		content  string
-		fullPath string
-	}
-	var articles []article
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
-			continue
-		}
-		if preserved[e.Name()] {
-			continue
-		}
-		full := filepath.Join(target, e.Name())
-		data, err := os.ReadFile(full)
-		if err != nil {
-			continue
-		}
-		articles = append(articles, article{
-			name:     e.Name(),
-			slug:     strings.TrimSuffix(e.Name(), ".md"),
-			content:  string(data),
-			fullPath: full,
-		})
-	}
+	articles := collectCompileArticles(target, entries)
+	inboundCount := computeInboundCounts(articles)
 
-	// Build the set of all inbound [[wikilinks]] across the compiled set.
-	inboundCount := make(map[string]int)
-	for _, a := range articles {
-		for _, b := range articles {
-			if a.slug == b.slug {
-				continue
-			}
-			if strings.Contains(b.content, "[["+a.slug+"]]") {
-				inboundCount[a.slug]++
-			}
-		}
-	}
-
-	removed := 0
 	// Safety: --repair defaults to dry-run. Actual deletion requires
 	// --force-repair. The global --dry-run flag always wins (even if
 	// --force-repair is also passed). This prevents a regex bug or stray
 	// [[...]] pattern in prose from silently nuking user wiki content.
 	globalDryRun := GetDryRun()
 	dryRun := globalDryRun || !compileRepairForce
-	for _, a := range articles {
-		if inboundCount[a.slug] > 0 {
-			continue
-		}
-		if dryRun {
-			fmt.Fprintf(stdout, "[dry-run] would remove orphan: %s\n", a.fullPath)
-			removed++
-			continue
-		}
-		if err := os.Remove(a.fullPath); err != nil {
-			return fmt.Errorf("remove orphan %s: %w", a.name, err)
-		}
-		removed++
+	removed, err := pruneOrphanArticles(articles, inboundCount, dryRun, stdout)
+	if err != nil {
+		return err
 	}
 
 	if dryRun && removed > 0 && !globalDryRun {
