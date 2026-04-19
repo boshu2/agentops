@@ -24,28 +24,28 @@ theme:
     # Dark mode default (slate) — toggle flips to light.
     - media: "(prefers-color-scheme)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
   font:
     text: Inter
-    code: JetBrains Mono
+    code: Space Mono
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
