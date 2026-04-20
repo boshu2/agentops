@@ -1,0 +1,1870 @@
+{
+  "generated_at": "2026-04-19T19:52:54-0400",
+  "duration_sec": 5.09,
+  "rig_count": 92,
+  "total_files": 1642,
+  "unique_content_hashes": 968,
+  "duplicate_clusters": 324,
+  "duplicate_file_count": 998,
+  "tiers": {
+    "wsl_home_hub": {
+      "learnings": 96,
+      "patterns": 12,
+      "research": 15,
+      "findings": 0,
+      "retros": 0,
+      "files": 123,
+      "bytes": 245559,
+      "rigs": 1
+    },
+    "cache": {
+      "learnings": 13,
+      "patterns": 6,
+      "research": 9,
+      "findings": 2,
+      "files": 30,
+      "bytes": 70740,
+      "rigs": 2
+    },
+    "wsl_backup": {
+      "files": 0,
+      "bytes": 0,
+      "rigs": 1
+    },
+    "wsl_live": {
+      "learnings": 425,
+      "patterns": 27,
+      "research": 433,
+      "findings": 35,
+      "retros": 51,
+      "files": 971,
+      "bytes": 4296219,
+      "rigs": 39
+    },
+    "C_home": {
+      "learnings": 1,
+      "patterns": 0,
+      "research": 0,
+      "findings": 0,
+      "retros": 0,
+      "files": 1,
+      "bytes": 3239,
+      "rigs": 6
+    },
+    "D_archive": {
+      "learnings": 191,
+      "patterns": 18,
+      "research": 272,
+      "findings": 20,
+      "retros": 31,
+      "files": 532,
+      "bytes": 1351212,
+      "rigs": 43
+    }
+  },
+  "rigs": [
+    {
+      "path": "/home/boful/.agents",
+      "rig": "/home/boful",
+      "tier": "wsl_home_hub",
+      "counts": {
+        "learnings": 96,
+        "patterns": 12,
+        "research": 15,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 245559,
+      "files": 123,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/.claude/plugins/marketplaces/agentops-marketplace/.agents",
+      "rig": "/home/boful/.claude/plugins/marketplaces/agentops-marketplace",
+      "tier": "cache",
+      "counts": {
+        "learnings": 13,
+        "patterns": 6,
+        "research": 9,
+        "findings": 2,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 70740,
+      "files": 30,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/.codex/.tmp/plugins/.agents",
+      "rig": "/home/boful/.codex/.tmp/plugins",
+      "tier": "cache",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/backups/mac-2026-04-15/.claude/.agents",
+      "rig": "/home/boful/backups/mac-2026-04-15/.claude",
+      "tier": "wsl_backup",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/agentops-showcase/.agents",
+      "rig": "/home/boful/dev/personal/agentops-showcase",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 3,
+        "patterns": 0,
+        "research": 2,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 17938,
+      "files": 5,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/agentops/.agents",
+      "rig": "/home/boful/dev/personal/agentops",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 15,
+        "patterns": 6,
+        "research": 10,
+        "findings": 6,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 92607,
+      "files": 37,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/dotfiles/.agents",
+      "rig": "/home/boful/dev/personal/dotfiles",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 5,
+        "patterns": 0,
+        "research": 2,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 12308,
+      "files": 7,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/olympus/.agents",
+      "rig": "/home/boful/dev/personal/olympus",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 1,
+        "session-handoffs": 0
+      },
+      "bytes": 11469,
+      "files": 2,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/personal-site/.agents",
+      "rig": "/home/boful/dev/personal/personal-site",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 4,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 59493,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/dev/personal/platform-lab/.agents",
+      "rig": "/home/boful/dev/personal/platform-lab",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 73,
+        "patterns": 0,
+        "research": 79,
+        "findings": 9,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 729417,
+      "files": 161,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/.agents",
+      "rig": "/home/boful/gt",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 14,
+        "patterns": 4,
+        "research": 83,
+        "findings": 0,
+        "retros": 3,
+        "session-handoffs": 0
+      },
+      "bytes": 579484,
+      "files": 104,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/acfs-research/.agents",
+      "rig": "/home/boful/gt/acfs-research",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 4,
+        "findings": 0,
+        "retros": 1,
+        "session-handoffs": 0
+      },
+      "bytes": 60843,
+      "files": 6,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/.agents",
+      "rig": "/home/boful/gt/agentops-mac",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/crew/gohan/.agents",
+      "rig": "/home/boful/gt/agentops-mac/crew/gohan",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 1223,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/crew/nami/.agents",
+      "rig": "/home/boful/gt/agentops-mac/crew/nami",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 160,
+        "patterns": 13,
+        "research": 143,
+        "findings": 11,
+        "retros": 33,
+        "session-handoffs": 0
+      },
+      "bytes": 1550714,
+      "files": 360,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/crew/trunks/.agents",
+      "rig": "/home/boful/gt/agentops-mac/crew/trunks",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 10,
+        "patterns": 0,
+        "research": 5,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 28892,
+      "files": 15,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/mayor/rig/.agents",
+      "rig": "/home/boful/gt/agentops-mac/mayor/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 1,
+        "research": 1,
+        "findings": 0,
+        "retros": 1,
+        "session-handoffs": 0
+      },
+      "bytes": 20498,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/refinery/rig/.agents",
+      "rig": "/home/boful/gt/agentops-mac/refinery/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 1,
+        "research": 1,
+        "findings": 0,
+        "retros": 1,
+        "session-handoffs": 0
+      },
+      "bytes": 20482,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/agentops-mac/witness/.agents",
+      "rig": "/home/boful/gt/agentops-mac/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 2103,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/deacon/.agents",
+      "rig": "/home/boful/gt/deacon",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 3,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 2721,
+      "files": 3,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/extracted-knowledge/mom-krillin/plans/.agents",
+      "rig": "/home/boful/gt/extracted-knowledge/mom-krillin/plans",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/gastown_operator/mayor/rig/.agents",
+      "rig": "/home/boful/gt/gastown_operator/mayor/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 6,
+        "patterns": 0,
+        "research": 7,
+        "findings": 0,
+        "retros": 6,
+        "session-handoffs": 0
+      },
+      "bytes": 102564,
+      "files": 19,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/gastown_operator/refinery/rig/.agents",
+      "rig": "/home/boful/gt/gastown_operator/refinery/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 2,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 35975,
+      "files": 2,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/gastown_operator/witness/.agents",
+      "rig": "/home/boful/gt/gastown_operator/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/hq/mayor/rig/.agents",
+      "rig": "/home/boful/gt/hq/mayor/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/hq/witness/.agents",
+      "rig": "/home/boful/gt/hq/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/mayor/.agents",
+      "rig": "/home/boful/gt/mayor",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 1042,
+      "files": 2,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/multiclaude/refinery/rig/.agents",
+      "rig": "/home/boful/gt/multiclaude/refinery/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/multiclaude/witness/.agents",
+      "rig": "/home/boful/gt/multiclaude/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/.agents",
+      "rig": "/home/boful/gt/olympus-mac",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 3,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 36527,
+      "files": 3,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/crew/goku/.agents",
+      "rig": "/home/boful/gt/olympus-mac/crew/goku",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 3,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 1,
+        "session-handoffs": 0
+      },
+      "bytes": 18379,
+      "files": 5,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/crew/piccolo/.agents",
+      "rig": "/home/boful/gt/olympus-mac/crew/piccolo",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 23,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 90080,
+      "files": 24,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/crew/vegeta/.agents",
+      "rig": "/home/boful/gt/olympus-mac/crew/vegeta",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 25,
+        "patterns": 1,
+        "research": 5,
+        "findings": 0,
+        "retros": 2,
+        "session-handoffs": 0
+      },
+      "bytes": 71001,
+      "files": 33,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/refinery/rig/.agents",
+      "rig": "/home/boful/gt/olympus-mac/refinery/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/olympus-mac/witness/.agents",
+      "rig": "/home/boful/gt/olympus-mac/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/platform-lab/.agents",
+      "rig": "/home/boful/gt/platform-lab",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 73,
+        "patterns": 0,
+        "research": 79,
+        "findings": 9,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 729417,
+      "files": 161,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/platform-lab/docs/guides/.agents",
+      "rig": "/home/boful/gt/platform-lab/docs/guides",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 591,
+      "files": 2,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/talos/.agents",
+      "rig": "/home/boful/gt/talos",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/talos/crew/alphonse/.agents",
+      "rig": "/home/boful/gt/talos/crew/alphonse",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 2,
+        "patterns": 1,
+        "research": 0,
+        "findings": 0,
+        "retros": 2,
+        "session-handoffs": 0
+      },
+      "bytes": 20150,
+      "files": 5,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/talos/refinery/rig/.agents",
+      "rig": "/home/boful/gt/talos/refinery/rig",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/talos/witness/.agents",
+      "rig": "/home/boful/gt/talos/witness",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/gt/wow/.agents",
+      "rig": "/home/boful/gt/wow",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 301,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/home/boful/ops/dream/.agents",
+      "rig": "/home/boful/ops/dream",
+      "tier": "wsl_live",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/.agents",
+      "rig": "/mnt/c/Users/Boful",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/.claude/plugins/marketplaces/agentops-marketplace/.agents",
+      "rig": "/mnt/c/Users/Boful/.claude/plugins/marketplaces/agentops-marketplace",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 3239,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/.codex/.tmp/plugins/.agents",
+      "rig": "/mnt/c/Users/Boful/.codex/.tmp/plugins",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-LSh49e/.agents",
+      "rig": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-LSh49e",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-XjZssj/.agents",
+      "rig": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-XjZssj",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-cbh4w0/.agents",
+      "rig": "/mnt/c/Users/Boful/AppData/Local/Temp/sync-gemini-home-cbh4w0",
+      "tier": "C_home",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/.agents",
+      "rig": "/mnt/d",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 8248,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-delta/2026-04-15/dot-agents/.agents",
+      "rig": "/mnt/d/archive/mac-delta/2026-04-15/dot-agents",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-delta/2026-04-15/dot-claude/.agents",
+      "rig": "/mnt/d/archive/mac-delta/2026-04-15/dot-claude",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/desktop/shield-ai-upload/.agents",
+      "rig": "/mnt/d/archive/mac-extract/desktop/shield-ai-upload",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 6,
+        "patterns": 4,
+        "research": 83,
+        "findings": 0,
+        "retros": 3,
+        "session-handoffs": 0
+      },
+      "bytes": 577370,
+      "files": 96,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/12factor/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/12factor",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 14,
+        "findings": 0,
+        "retros": 6,
+        "session-handoffs": 0
+      },
+      "bytes": 72731,
+      "files": 22,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/acfs-research/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/acfs-research",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 8,
+        "findings": 0,
+        "retros": 2,
+        "session-handoffs": 0
+      },
+      "bytes": 61821,
+      "files": 12,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/agentops-showcase/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/agentops-showcase",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 10527,
+      "files": 3,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/agentops/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/agentops",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/agentops/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/agentops/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 2,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 2266,
+      "files": 2,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/ci_container/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/ci_container/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/deacon/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/deacon",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 6,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 3210,
+      "files": 6,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/dotfiles/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/dotfiles",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/forge/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/forge",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 4,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 20536,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/gastown-forge/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/gastown-forge",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 8339,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/gastown/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/gastown",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/gastown/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/gastown/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/gastown_operator/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/gastown_operator/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/gitops/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/gitops/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/hq/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/hq/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/jren_cm/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/jren_cm",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 1,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 309,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/jren_cm/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/jren_cm/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/lattice-lab/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/lattice-lab",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 4,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 23279,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/maia-ui/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/maia-ui",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 14,
+        "patterns": 0,
+        "research": 4,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 14278,
+      "files": 18,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/mayor/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/mayor",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 4,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 1368,
+      "files": 4,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/mcp_agent_mail/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/mcp_agent_mail",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/mom/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/mom",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 10,
+        "patterns": 14,
+        "research": 24,
+        "findings": 0,
+        "retros": 20,
+        "session-handoffs": 0
+      },
+      "bytes": 22819,
+      "files": 68,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/mom/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/mom/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/multiclaude/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/multiclaude/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/ocpcm2/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/ocpcm2/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/ocpeast/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/ocpeast/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/ocphpc/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/ocphpc/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/ocppoc/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/ocppoc/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/olympus/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/olympus",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 3,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 36527,
+      "files": 3,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/olympus/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/olympus/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/openclaw/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/openclaw",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 1,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 11011,
+      "files": 1,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/personal_site/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/personal_site/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/platform-lab-rpi-b40eb3ec0a7a/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/platform-lab-rpi-b40eb3ec0a7a",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/platform-lab/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/platform-lab",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 136,
+        "patterns": 0,
+        "research": 124,
+        "findings": 20,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 464441,
+      "files": 280,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/release_engineering/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/release_engineering/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/sites-ocpcm2/jren-cm/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/sites-ocpcm2/jren-cm",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 6,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 12132,
+      "files": 6,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/gt/utils_container/witness/.agents",
+      "rig": "/mnt/d/archive/mac-extract/gt/utils_container/witness",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    },
+    {
+      "path": "/mnt/d/archive/mac-extract/small-stuff/agents/.agents",
+      "rig": "/mnt/d/archive/mac-extract/small-stuff/agents",
+      "tier": "D_archive",
+      "counts": {
+        "learnings": 0,
+        "patterns": 0,
+        "research": 0,
+        "findings": 0,
+        "retros": 0,
+        "session-handoffs": 0
+      },
+      "bytes": 0,
+      "files": 0,
+      "accessible": true
+    }
+  ],
+  "top_duplicate_clusters": [
+    {
+      "hash": "2e48d93496ecf5e0",
+      "copies": 165,
+      "tiers": [
+        "D_archive"
+      ],
+      "example_paths": [
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2025-12-27-agent-evolution-ai-platform-analysis.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2025-12-27-agentops-showcase-sync.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2026-02-15-v3-docs-rewrite-inventory.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/retros/._2026-02-15-epic-12-3jc-v3-pivot.md"
+      ]
+    },
+    {
+      "hash": "a50bff2bd7019b05",
+      "copies": 47,
+      "tiers": [
+        "D_archive"
+      ],
+      "example_paths": [
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/learnings/._2026-04-04-quick-operator-kernel-beneath-factor-surface.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2026-04-04-12factor-operator-model-brief.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2026-04-04-12factor-operator-model-prompt.md",
+        "/mnt/d/archive/mac-extract/gt/12factor/.agents/research/._2026-04-04-latest-source-gap-analysis.md"
+      ]
+    },
+    {
+      "hash": "0ebf26aad78cf04d",
+      "copies": 4,
+      "tiers": [
+        "D_archive",
+        "wsl_home_hub",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/.agents/learnings/2026-03-22-auto-til-all-issues-assigned-file-level-depen.md",
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-20-auto-til-all-issues-assigned-file-level-depen.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-20-auto-til-all-issues-assigned-file-level-depen.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-20-auto-til-all-issues-assigned-file-level-depen.md"
+      ]
+    },
+    {
+      "hash": "46c23224931e12b2",
+      "copies": 4,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-26-platform-lab-reverse-engineer-rpi.md",
+        "/home/boful/gt/agentops-mac/crew/nami/.agents/learnings/2026-03-23-autoresearch-reverse-engineer-rpi.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-26-platform-lab-reverse-engineer-rpi.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-26-platform-lab-reverse-engineer-rpi.md"
+      ]
+    },
+    {
+      "hash": "01ed5bbd84fdfb75",
+      "copies": 3,
+      "tiers": [
+        "C_home",
+        "cache",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/.claude/plugins/marketplaces/agentops-marketplace/.agents/learnings/2026-04-07-v2.35.0-release-postmortem.md",
+        "/home/boful/dev/personal/agentops/.agents/learnings/2026-04-07-v2.35.0-release-postmortem.md",
+        "/mnt/c/Users/Boful/.claude/plugins/marketplaces/agentops-marketplace/.agents/learnings/2026-04-07-v2.35.0-release-postmortem.md"
+      ]
+    },
+    {
+      "hash": "bb27102d076d3a27",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-29-auto-til-month-6-the-biggest-structural-chang.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-29-auto-til-month-6-the-biggest-structural-chang.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-29-auto-til-month-6-the-biggest-structural-chang.md"
+      ]
+    },
+    {
+      "hash": "e29854f8079d0714",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-20-auto-https-localhost-var-api-port-is-also-cor.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-20-auto-https-localhost-var-api-port-is-also-cor.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-20-auto-https-localhost-var-api-port-is-also-cor.md"
+      ]
+    },
+    {
+      "hash": "0a8b9b1a2a1eec3a",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-23-repo-history-retro.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-23-repo-history-retro.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-23-repo-history-retro.md"
+      ]
+    },
+    {
+      "hash": "2565e307cb4394e1",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-31-compile-site-and-team-profiles-before-privileged-workflows.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-31-compile-site-and-team-profiles-before-privileged-workflows.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-31-compile-site-and-team-profiles-before-privileged-workflows.md"
+      ]
+    },
+    {
+      "hash": "cf0d0ffaf304c911",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-23-auto-til-manually-unsealed-pm-002-vault-cert-.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-23-auto-til-manually-unsealed-pm-002-vault-cert-.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-23-auto-til-manually-unsealed-pm-002-vault-cert-.md"
+      ]
+    },
+    {
+      "hash": "edf0858d193d0509",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-20-validation-parent-epic-auto-close-needs-evidence-backfill.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-20-validation-parent-epic-auto-close-needs-evidence-backfill.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-20-validation-parent-epic-auto-close-needs-evidence-backfill.md"
+      ]
+    },
+    {
+      "hash": "89c572d5e81bf3ae",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-29-auto-til-month-11-to-ask-you-ve-been-optimizi.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-29-auto-til-month-11-to-ask-you-ve-been-optimizi.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-29-auto-til-month-11-to-ask-you-ve-been-optimizi.md"
+      ]
+    },
+    {
+      "hash": "831afe7221c7b4f7",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-10-iterative-review-artifacts-need-explicit-supersession.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-10-iterative-review-artifacts-need-explicit-supersession.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-10-iterative-review-artifacts-need-explicit-supersession.md"
+      ]
+    },
+    {
+      "hash": "efd26fcc6072fac4",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-29-auto-insight-claude-xp-purist-can-you-practic.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-29-auto-insight-claude-xp-purist-can-you-practic.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-29-auto-insight-claude-xp-purist-can-you-practic.md"
+      ]
+    },
+    {
+      "hash": "ec8c48016947c081",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-23-deep-retro-bb-deployment-refactoring.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-23-deep-retro-bb-deployment-refactoring.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-23-deep-retro-bb-deployment-refactoring.md"
+      ]
+    },
+    {
+      "hash": "1519416c0aea8c1e",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-23-quick-contract-first-gates-keep-clean-room-coherent.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-23-quick-contract-first-gates-keep-clean-room-coherent.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-23-quick-contract-first-gates-keep-clean-room-coherent.md"
+      ]
+    },
+    {
+      "hash": "c50aae71fd008fc4",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-09-deeper-domain-seams-need-consumer-wiring-not-just-producer-artifacts.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-09-deeper-domain-seams-need-consumer-wiring-not-just-producer-artifacts.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-09-deeper-domain-seams-need-consumer-wiring-not-just-producer-artifacts.md"
+      ]
+    },
+    {
+      "hash": "71abb9956ef45a1a",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-20-validation-canonical-gates-surface-real-repo-debt.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-20-validation-canonical-gates-surface-real-repo-debt.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-20-validation-canonical-gates-surface-real-repo-debt.md"
+      ]
+    },
+    {
+      "hash": "33b513a730afed5b",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-10-quick-keep-plan-tracker-and-artifacts-in-lockstep.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-10-quick-keep-plan-tracker-and-artifacts-in-lockstep.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-10-quick-keep-plan-tracker-and-artifacts-in-lockstep.md"
+      ]
+    },
+    {
+      "hash": "17ce5f30a61ba30b",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-23-auto-tilized-biggest-waste-candidates-request.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-23-auto-tilized-biggest-waste-candidates-request.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-23-auto-tilized-biggest-waste-candidates-request.md"
+      ]
+    },
+    {
+      "hash": "428fce734ca4626f",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-20-auto-til-live-cluster-execution-a-function-th.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-20-auto-til-live-cluster-execution-a-function-th.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-20-auto-til-live-cluster-execution-a-function-th.md"
+      ]
+    },
+    {
+      "hash": "0b340ba55392fe89",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-15-5cycle-validation-sprint.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-15-5cycle-validation-sprint.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-15-5cycle-validation-sprint.md"
+      ]
+    },
+    {
+      "hash": "776c483935929e22",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-16-gap-closure-security-footguns.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-16-gap-closure-security-footguns.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-16-gap-closure-security-footguns.md"
+      ]
+    },
+    {
+      "hash": "9d438181170db0bf",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-21-big-bang-doctor-python-first-wrapup.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-21-big-bang-doctor-python-first-wrapup.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-21-big-bang-doctor-python-first-wrapup.md"
+      ]
+    },
+    {
+      "hash": "2709b967691dad93",
+      "copies": 3,
+      "tiers": [
+        "D_archive",
+        "wsl_live"
+      ],
+      "example_paths": [
+        "/home/boful/dev/personal/platform-lab/.agents/learnings/2026-03-09-semantic-coherence-needs-cross-file-tests.md",
+        "/home/boful/gt/platform-lab/.agents/learnings/2026-03-09-semantic-coherence-needs-cross-file-tests.md",
+        "/mnt/d/archive/mac-extract/gt/platform-lab/.agents/learnings/2026-03-09-semantic-coherence-needs-cross-file-tests.md"
+      ]
+    }
+  ]
+}
