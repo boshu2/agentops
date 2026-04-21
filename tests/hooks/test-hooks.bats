@@ -361,6 +361,30 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "git-worker-guard: git add -A blocks (uppercase bulk)" {
+    run bash -c 'printf "%s" "$1" | AGENTOPS_ROLE=worker bash "$2" 2>&1' \
+        -- '{"tool_input":{"command":"git add -A"}}' "$HOOKS_DIR/git-worker-guard.sh"
+    [ "$status" -eq 2 ]
+}
+
+@test "git-worker-guard: git add --all blocks" {
+    run bash -c 'printf "%s" "$1" | AGENTOPS_ROLE=worker bash "$2" 2>&1' \
+        -- '{"tool_input":{"command":"git add --all"}}' "$HOOKS_DIR/git-worker-guard.sh"
+    [ "$status" -eq 2 ]
+}
+
+@test "git-worker-guard: git add -u allows (selective update)" {
+    run bash -c 'printf "%s" "$1" | AGENTOPS_ROLE=worker bash "$2" 2>&1' \
+        -- '{"tool_input":{"command":"git add -u"}}' "$HOOKS_DIR/git-worker-guard.sh"
+    [ "$status" -eq 0 ]
+}
+
+@test "git-worker-guard: git add filename containing -a allows" {
+    run bash -c 'printf "%s" "$1" | AGENTOPS_ROLE=worker bash "$2" 2>&1' \
+        -- '{"tool_input":{"command":"git add path/file-a.txt"}}' "$HOOKS_DIR/git-worker-guard.sh"
+    [ "$status" -eq 0 ]
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # dangerous-git-guard.sh — safe alternatives
 # ═══════════════════════════════════════════════════════════════════════
