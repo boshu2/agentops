@@ -57,7 +57,7 @@ The Traditional Pyramid          The AI-Native Shape
 │  regression guards, L0 for contracts, L3 for subsystems.  │
 │                                                           │
 │  L0: Contract — from SPEC.md alone                        │
-│  L1: Unit     — always write for regression safety         │
+│  L1: Unit     — always write for regression safety        │
 │  L2: Integration — DEFAULT for all agent-written tests    │
 │  L3: Component — agent writes, human defines scenarios    │
 ├───────────────────────────────────────────────────────────┤
