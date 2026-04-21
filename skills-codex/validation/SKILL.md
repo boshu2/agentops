@@ -50,7 +50,7 @@ Skip silently if ao is unavailable or returns no results.
 **Run every step in order. Do not stop between steps.**
 
 ```
-STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
+STEP 1  ──  $vibe recent [--quick]
               Use --quick for fast/standard. Full council for full.
               PASS/WARN? → continue
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
@@ -75,20 +75,20 @@ STEP 1.7 ── Lifecycle Checks (advisory except critical dependency findings)
               On budget expiry: skip remaining sub-steps, write [TIME-BOXED].
 
               a) if lifecycle tier >= minimal AND test_framework_detected:
-                   Skill(skill="test", args="coverage --quick")
+                   $test coverage --quick
                    Append coverage delta to phase summary.
 
               b) if lifecycle tier >= standard AND dependency_manifest_exists:
-                   Skill(skill="deps", args="vuln --quick")
+                   $deps vuln --quick
                    CRITICAL vulns (CVSS >= 9.0): **FAIL** (block shipping). Opt-out: `--allow-critical-deps` for acknowledged risk acceptance.
                    Non-critical: advisory note only.
 
               c) if lifecycle tier >= standard:
-                   Skill(skill="review", args="--diff --quick")
+                   $review --diff --quick
                    Append review findings to summary as advisory.
 
               d) if lifecycle tier == full AND modified_files_touch_hot_path:
-                   Skill(skill="perf", args="profile --quick")
+                   $perf profile --quick
                    Append perf findings to summary as advisory.
                    Hot path detection: modified files match benchmark files
                    or patterns (handler, middleware, router, parser, engine,
@@ -123,15 +123,15 @@ STEP 1.8 ── Stage 4: Behavioral Validation (holdout scenarios + agent-built 
             FAIL? → write summary, output <promise>FAIL</promise>, stop
 
 STEP 2  ──  if epic_id:
-              Skill(skill="post-mortem", args="<epic-id> [--quick]")
+              $post-mortem <epic-id> [--quick]
             else:
-              Skill(skill="post-mortem", args="recent [--quick]")
+              $post-mortem recent [--quick]
               Use --quick for fast/standard. Full council for full.
               PASS/WARN? → continue
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
 
 STEP 3  ──  if not --no-retro:
-              Skill(skill="retro")
+              $retro
 
 STEP 4  ──  if not --no-forge AND ao available:
               if [ -n "${CODEX_THREAD_ID:-}" ] || [ "${CODEX_INTERNAL_ORIGINATOR_OVERRIDE:-}" = "Codex Desktop" ]; then

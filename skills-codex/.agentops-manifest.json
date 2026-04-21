@@ -704,7 +704,7 @@
       "name": "design",
       "source_skill": "skills/design",
       "source_hash": "",
-      "generated_hash": "0623a63763fc0737ecb29686b689531574966933160d1fb37f963606e7e5f66f"
+      "generated_hash": "f3089a1425339cf222d714f2451216ba683474765f56bed4c644cbf76f168b92"
     },
     {
       "name": "discovery",
@@ -776,7 +776,7 @@
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "2ab197d1810fd3eb56f73aac4645c02edc01aa41e524064b12b993c6861ebc32",
-      "generated_hash": "69fa694eaad00ead6eebce2590e981eca07660fba16887eb28f4e833e93eaf21"
+      "generated_hash": "aa7f88ad80c6fb371f277c90d2a9e45985f481cb5319e9e87ef137ea4aabea9f"
     },
     {
       "name": "inject",
@@ -908,7 +908,7 @@
       "name": "red-team",
       "source_skill": "skills/red-team",
       "source_hash": "e7ae62c4a820cf3b7c93e1e0e5913e046013d9dfe8ff48ffa9f85294376bb037",
-      "generated_hash": "0b59c335567b529586535737af1d8ab5b70e3d73c39bf9b1da1ac54cf73796a5"
+      "generated_hash": "345e71a7c9d165615b9f10d4c1826e1b3203e36e5aee03cdaa64ea682556bb3a"
     },
     {
       "name": "refactor",
@@ -1028,7 +1028,7 @@
       "name": "validation",
       "source_skill": "skills/validation",
       "source_hash": "2e71f8dbe94c65971f0dff7f82ac83396649ff036bbea388060174945f660c5c",
-      "generated_hash": "5cd2d80a2406d05f0eff3a7276ac14d46d00e66d8e0d5785c784bcaa0a8de463"
+      "generated_hash": "4c1bf07ba20d26e8c82d40272dcfbd520241f9033454c4bf2730a59defaf8d40"
     },
     {
       "name": "vibe",
