@@ -34,9 +34,21 @@ fi
 # Check for git write operations
 COMMAND_LOWER=$(echo "$COMMAND" | tr '[:upper:]' '[:lower:]')
 
-# Block git commit, git push, git add -A/--all/.
+# Block git commit, git push (subcommand names are case-insensitive in practice
+# via shells/aliases, so match against the lowercased form).
 case "$COMMAND_LOWER" in
-    *"git commit"*|*"git push"*|*"git add -a"*|*"git add --all"*|*"git add ."*)
+    *"git commit"*|*"git push"*|*"git add --all"*|*"git add ."*)
+        echo "BLOCKED: Workers cannot run git write operations. Only the lead commits/pushes." >&2
+        echo "Command: $COMMAND" >&2
+        exit 2
+        ;;
+esac
+
+# Block `git add -A` bulk staging. Match on the original (un-lowercased) command
+# so that selective flags like `-a`, `-au`, or filenames containing `-a` (e.g.
+# `file-a.txt`) do not false-block. `-A` is the only uppercase bulk-add flag.
+case "$COMMAND" in
+    *"git add -A"*)
         echo "BLOCKED: Workers cannot run git write operations. Only the lead commits/pushes." >&2
         echo "Command: $COMMAND" >&2
         exit 2
