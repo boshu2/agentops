@@ -32,8 +32,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! command -v gocyclo >/dev/null 2>&1; then
-  echo "gocyclo not found; install with: go install github.com/fzipp/gocyclo/cmd/gocyclo@latest" >&2
-  exit 2
+  # Self-heal when 'go' is available: install gocyclo into GOBIN / $GOPATH/bin.
+  # Set GOCYCLO_NO_AUTOINSTALL=1 to opt out (CI already pre-installs gocyclo).
+  if command -v go >/dev/null 2>&1 && [[ -z "${GOCYCLO_NO_AUTOINSTALL:-}" ]]; then
+    GOBIN_DIR="${GOBIN:-}"
+    if [[ -z "$GOBIN_DIR" ]]; then
+      GOPATH_DIR="$(go env GOPATH 2>/dev/null || echo "$HOME/go")"
+      GOBIN_DIR="$GOPATH_DIR/bin"
+    fi
+    mkdir -p "$GOBIN_DIR"
+    echo "gocyclo not found; auto-installing into $GOBIN_DIR" >&2
+    if GOBIN="$GOBIN_DIR" go install github.com/fzipp/gocyclo/cmd/gocyclo@latest >&2; then
+      export PATH="$GOBIN_DIR:$PATH"
+    fi
+  fi
+  if ! command -v gocyclo >/dev/null 2>&1; then
+    echo "gocyclo not found; install with: go install github.com/fzipp/gocyclo/cmd/gocyclo@latest" >&2
+    exit 2
+  fi
 fi
 
 if [[ ! -d "$DIR" ]]; then
