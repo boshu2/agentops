@@ -54,4 +54,6 @@ func init() {
 	goalsInitCmd.Flags().BoolVar(&goalsInitNonInteractive, "non-interactive", false, "Use defaults without prompting")
 	goalsInitCmd.Flags().StringVar(&goalsInitTemplate, "template", "", "Goal template (go-cli, python-lib, web-app, rust-cli, generic)")
 	goalsCmd.AddCommand(goalsInitCmd)
+
+	_ = goalsInitCmd.RegisterFlagCompletionFunc("template", staticCompletionFunc(templateCompletionValues()...))
 }

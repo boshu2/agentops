@@ -60,6 +60,8 @@ func init() {
 	seedCmd.Flags().BoolVar(&seedForce, "force", false, "Overwrite existing seed files")
 	seedCmd.GroupID = "start"
 	rootCmd.AddCommand(seedCmd)
+
+	_ = seedCmd.RegisterFlagCompletionFunc("template", staticCompletionFunc(templateCompletionValues()...))
 }
 
 // validTemplates enumerates the allowed template names.

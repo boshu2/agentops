@@ -110,6 +110,9 @@ func init() {
 	injectCmd.Flags().StringVar(&injectForSkill, "for", "", "Skill name — assembles context per skill's context declaration")
 	injectCmd.Flags().StringVar(&injectSessionType, "session-type", "", "Session type for scoring boost (career, research, debug, implement, brainstorm)")
 	injectCmd.Flags().BoolVar(&injectProfile, "profile", false, "Include .agents/profile.md identity artifact in output")
+
+	_ = injectCmd.RegisterFlagCompletionFunc("format", staticCompletionFunc("markdown", "json"))
+	_ = injectCmd.RegisterFlagCompletionFunc("session-type", staticCompletionFunc("career", "research", "debug", "implement", "brainstorm"))
 }
 
 // injectOptionsFromFlags builds an InjectOptions from the cobra flag vars + positional args.
