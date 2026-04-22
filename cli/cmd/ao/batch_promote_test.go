@@ -196,7 +196,104 @@ func TestCheckPromotionCriteria(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reason := checkPromotionCriteria("/tmp", tt.entry, minAge, tt.citations, tt.promoted)
+			reason := checkPromotionCriteria("/tmp", tt.entry, minAge, tt.citations, tt.promoted, true)
+			if tt.wantReason == "" {
+				if reason != "" {
+					t.Errorf("expected qualification, got skip reason: %q", reason)
+				}
+			} else {
+				if reason == "" {
+					t.Errorf("expected skip reason containing %q, got qualification", tt.wantReason)
+				} else if !stringContains(reason, tt.wantReason) {
+					t.Errorf("skip reason %q does not contain %q", reason, tt.wantReason)
+				}
+			}
+		})
+	}
+}
+
+// TestCheckPromotionCriteria_RequireCitationsFalse covers the flywheel close-loop path:
+// freshly-scored silver/gold candidates have no citations yet (the loop hasn't surfaced them),
+// so requireCitations=false lets them through on utility + non-duplicate alone. The other
+// gates (age, utility, duplicate) still apply.
+func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
+	minAge := 24 * time.Hour
+
+	tests := []struct {
+		name       string
+		entry      pool.PoolEntry
+		promoted   map[string]bool
+		wantReason string
+	}{
+		{
+			name: "uncited fresh candidate qualifies without citations",
+			entry: pool.PoolEntry{
+				PoolEntry: types.PoolEntry{
+					Candidate: types.Candidate{
+						ID:      "cand-fresh",
+						Content: "new high-scoring learning",
+						Utility: 0.6,
+					},
+				},
+				Age:       48 * time.Hour,
+				AgeString: "48h",
+			},
+			promoted:   map[string]bool{},
+			wantReason: "",
+		},
+		{
+			name: "age gate still enforced",
+			entry: pool.PoolEntry{
+				PoolEntry: types.PoolEntry{
+					Candidate: types.Candidate{
+						ID:      "cand-young",
+						Content: "too fresh",
+						Utility: 0.8,
+					},
+				},
+				Age:       1 * time.Hour,
+				AgeString: "1h",
+			},
+			promoted:   map[string]bool{},
+			wantReason: "too young",
+		},
+		{
+			name: "utility gate still enforced",
+			entry: pool.PoolEntry{
+				PoolEntry: types.PoolEntry{
+					Candidate: types.Candidate{
+						ID:      "cand-lowutil",
+						Content: "weak signal",
+						Utility: 0.2,
+					},
+				},
+				Age:       48 * time.Hour,
+				AgeString: "48h",
+			},
+			promoted:   map[string]bool{},
+			wantReason: "utility too low",
+		},
+		{
+			name: "duplicate gate still enforced",
+			entry: pool.PoolEntry{
+				PoolEntry: types.PoolEntry{
+					Candidate: types.Candidate{
+						ID:      "cand-dup",
+						Content: "Already Promoted",
+						Utility: 0.8,
+					},
+				},
+				Age:       48 * time.Hour,
+				AgeString: "48h",
+			},
+			promoted:   map[string]bool{normalizeContent("already promoted"): true},
+			wantReason: "duplicate of already-promoted content",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reason := checkPromotionCriteria("/tmp", tt.entry, minAge, map[string]int{}, tt.promoted, false)
 			if tt.wantReason == "" {
 				if reason != "" {
 					t.Errorf("expected qualification, got skip reason: %q", reason)

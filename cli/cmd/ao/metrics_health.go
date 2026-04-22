@@ -335,7 +335,7 @@ func countConstraints(baseDir string) int { return quality.CountConstraints(base
 
 // computeLoopDominance computes R1 (new learnings per session) and B1 (decayed per session).
 func computeLoopDominance(baseDir string, citations []types.CitationEvent) loopDominance {
-	ld := loopDominance{Dominant: "B1"}
+	ld := loopDominance{Dominant: "none"}
 
 	// Count sessions from cycle history or citations
 	sessionCount := countUniqueSessions(citations)
@@ -357,8 +357,11 @@ func computeLoopDominance(baseDir string, citations []types.CitationEvent) loopD
 	staleLearnings := countStaleInDir(baseDir, learningsDir, staleSince, buildLastCitedMap(baseDir, citations))
 	ld.B1 = float64(staleLearnings) / float64(sessionCount)
 
-	if ld.R1 > ld.B1 {
+	switch {
+	case ld.R1 > ld.B1:
 		ld.Dominant = "R1"
+	case ld.B1 > ld.R1:
+		ld.Dominant = "B1"
 	}
 
 	return ld

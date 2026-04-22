@@ -93,7 +93,7 @@ func processPromotionCandidate(p *pool.Pool, entry pool.PoolEntry, cwd string, m
 		return false
 	}
 
-	if reason := checkPromotionCriteria(cwd, entry, minAge, citationCounts, promotedContent); reason != "" {
+	if reason := checkPromotionCriteria(cwd, entry, minAge, citationCounts, promotedContent, true); reason != "" {
 		recordPromoteSkip(result, entry.Candidate.ID, reason)
 		return false
 	}
@@ -146,25 +146,31 @@ func runBatchPromote(cmd *cobra.Command, args []string) error {
 }
 
 // checkPromotionCriteria returns a skip reason if the candidate does not qualify, or "" if it qualifies.
-func checkPromotionCriteria(baseDir string, entry pool.PoolEntry, minAge time.Duration, citationCounts map[string]int, promotedContent map[string]bool) string {
+// When requireCitations is true, the candidate must have at least 2 citations (the manual
+// batch-promote path, where citation signal is the primary gate). When false (the automated
+// flywheel close-loop path), the caller has already established signal via scoring tier +
+// gate-not-required, so the citation gate is skipped to let fresh silver/gold candidates flow
+// through — otherwise nothing ever gets promoted, cited, or indexed.
+func checkPromotionCriteria(baseDir string, entry pool.PoolEntry, minAge time.Duration, citationCounts map[string]int, promotedContent map[string]bool, requireCitations bool) string {
 	// Check age
 	if entry.Age < minAge {
 		return fmt.Sprintf("too young (%s < %s)", entry.AgeString, minAge)
 	}
 
-	// Check citations (minimum 2 required for signal-based promotion)
-	totalCitations := citationCounts[entry.Candidate.ID]
-	entryPath := canonicalArtifactKey(baseDir, entry.FilePath)
-	if entry.FilePath != "" {
-		if c := citationCounts[entry.FilePath]; c > totalCitations {
-			totalCitations = c
+	if requireCitations {
+		totalCitations := citationCounts[entry.Candidate.ID]
+		entryPath := canonicalArtifactKey(baseDir, entry.FilePath)
+		if entry.FilePath != "" {
+			if c := citationCounts[entry.FilePath]; c > totalCitations {
+				totalCitations = c
+			}
+			if c := citationCounts[entryPath]; c > totalCitations {
+				totalCitations = c
+			}
 		}
-		if c := citationCounts[entryPath]; c > totalCitations {
-			totalCitations = c
+		if totalCitations < 2 {
+			return fmt.Sprintf("insufficient citations (%d < 2)", totalCitations)
 		}
-	}
-	if totalCitations < 2 {
-		return fmt.Sprintf("insufficient citations (%d < 2)", totalCitations)
 	}
 
 	// Check utility threshold (must show positive signal)

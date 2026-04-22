@@ -72,8 +72,8 @@ func TestMetricsHealth_EmptyInputPaths(t *testing.T) {
 	if hm.KnowledgeStock.Total != 0 {
 		t.Errorf("expected knowledge_stock.total=0, got %d", hm.KnowledgeStock.Total)
 	}
-	if hm.LoopDominance.Dominant != "B1" {
-		t.Errorf("expected loop_dominance.dominant=B1, got %s", hm.LoopDominance.Dominant)
+	if hm.LoopDominance.Dominant != "none" {
+		t.Errorf("expected loop_dominance.dominant=none, got %s", hm.LoopDominance.Dominant)
 	}
 }
 
@@ -160,8 +160,8 @@ func TestMetricsHealth_EmptyRepo(t *testing.T) {
 	if hm.KnowledgeStock.Total != 0 {
 		t.Errorf("expected knowledge_stock.total=0, got %d", hm.KnowledgeStock.Total)
 	}
-	if hm.LoopDominance.Dominant != "B1" {
-		t.Errorf("expected loop_dominance.dominant=B1, got %s", hm.LoopDominance.Dominant)
+	if hm.LoopDominance.Dominant != "none" {
+		t.Errorf("expected loop_dominance.dominant=none, got %s", hm.LoopDominance.Dominant)
 	}
 }
 
@@ -777,11 +777,43 @@ func TestComputeLoopDominance_StaleAndNewBoundaries(t *testing.T) {
 	}
 
 	ldZero := computeLoopDominance(dir, nil)
-	if ldZero.Dominant != "B1" {
-		t.Fatalf("expected zero-session dominant=B1, got %s", ldZero.Dominant)
+	if ldZero.Dominant != "none" {
+		t.Fatalf("expected zero-session dominant=none, got %s", ldZero.Dominant)
 	}
 	if ldZero.R1 != 0 || ldZero.B1 != 0 {
 		t.Fatalf("expected zero-session R1/B1=0, got R1=%f B1=%f", ldZero.R1, ldZero.B1)
+	}
+}
+
+// TestComputeLoopDominance_TieAndEdges verifies that the dominant label reflects
+// actual loop strength: "none" when both are zero (the bug this test guards against),
+// "R1" when R1>B1, "B1" when B1>R1, and "none" on an exact non-zero tie.
+func TestComputeLoopDominance_TieAndEdges(t *testing.T) {
+	cases := []struct {
+		name string
+		r1   float64
+		b1   float64
+		want string
+	}{
+		{"both zero reports none (not B1)", 0, 0, "none"},
+		{"R1 dominates", 2.0, 1.0, "R1"},
+		{"B1 dominates", 1.0, 2.0, "B1"},
+		{"exact tie reports none", 1.5, 1.5, "none"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ld := loopDominance{Dominant: "none", R1: tc.r1, B1: tc.b1}
+			switch {
+			case ld.R1 > ld.B1:
+				ld.Dominant = "R1"
+			case ld.B1 > ld.R1:
+				ld.Dominant = "B1"
+			}
+			if ld.Dominant != tc.want {
+				t.Errorf("r1=%.2f b1=%.2f: expected dominant=%s, got %s", tc.r1, tc.b1, tc.want, ld.Dominant)
+			}
+		})
 	}
 }
 
