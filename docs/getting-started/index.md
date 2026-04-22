@@ -2,7 +2,7 @@
 
 New to AgentOps? You're in the right place. This section answers three questions in order: **what is it**, **how do I install it**, and **what's the first useful thing I can run**.
 
-If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [First command](#first-command). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom.
+If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [First command](#first-command). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom. If you are upgrading from an older release, read [Upgrading](../UPGRADING.md) first.
 
 <div class="grid cards" markdown>
 
@@ -50,6 +50,17 @@ If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../new
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 ```
+
+## Verify the install
+
+```bash
+ao doctor              # Checks runtime, skills, hooks, paths
+ao --version           # Prints installed ao version
+```
+
+`ao doctor` is the canonical health check. It prints a per-component status line
+and non-zero exits on a real problem. If anything looks wrong, see
+[Troubleshooting](../troubleshooting.md) or run `ao doctor --verbose`.
 
 ## First command
 

@@ -117,5 +117,5 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 - [Documentation Index](INDEX.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Skills Reference](SKILLS.md)
-- [CLI Reference](cli/commands.md)
+- [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)
 - [Troubleshooting](troubleshooting.md)
