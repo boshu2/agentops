@@ -202,14 +202,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
                 skill_ok=false
             fi
             # Check fix/why/ref are required in schema v2 findings items.
-            findings_required=$(python3 -c "
-import json, sys
-with open('$verdict_schema') as f:
-    schema = json.load(f)
-items_req = schema.get('properties', {}).get('findings', {}).get('items', {}).get('required', [])
-for r in items_req:
-    print(r)
-" 2>/dev/null || true)
+            findings_required=$(jq -r '.properties.findings.items.required[]?' "$verdict_schema" 2>/dev/null || true)
             for field in fix why ref; do
                 if ! echo "$findings_required" | grep -qx "$field" 2>/dev/null; then
                     fail "$skill_name" "verdict.json '$field' must be in findings required array (schema v2)"

@@ -57,7 +57,7 @@ for file in "${md_files[@]}"; do
   rel_file="${file#"$REPO_ROOT"/}"
   file_dir="$(dirname "$file")"
 
-  # Extract all links with line numbers in one pass using grep -n
+  # Extract live markdown links while skipping fenced code blocks and inline code.
   while IFS= read -r match; do
     [[ -z "$match" ]] && continue
     line_num="${match%%:*}"
@@ -112,7 +112,27 @@ for file in "${md_files[@]}"; do
         echo "BROKEN: $rel_file:$line_num -> $target_path"
       fi
     fi
-  done < <(grep -noE '\]\([^)]+\)' "$file" 2>/dev/null | sed 's/:\]/:/;s/)$//' | sed 's/^\([0-9]*\):\(.*\)$/\1:\2/' | sed 's/^\([0-9]*\):(/\1:/')
+  done < <(
+    awk '
+      BEGIN { in_fence = 0 }
+      /^```/ {
+        in_fence = !in_fence
+        next
+      }
+      in_fence { next }
+      {
+        line = $0
+        while (match(line, /`[^`]*`/)) {
+          line = substr(line, 1, RSTART - 1) substr(line, RSTART + RLENGTH)
+        }
+        while (match(line, /\]\([^)]+\)/)) {
+          target = substr(line, RSTART + 2, RLENGTH - 3)
+          print NR ":" target
+          line = substr(line, RSTART + RLENGTH)
+        }
+      }
+    ' "$file"
+  )
 done
 
 echo ""

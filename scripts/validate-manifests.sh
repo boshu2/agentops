@@ -58,6 +58,16 @@ fail() { echo -e "${RED}✗${NC} $1"; errors=$((errors + 1)); }
 log() { echo -e "${BLUE}==>${NC} $1"; }
 
 errors=0
+SKILL_FRONTMATTER_HELPER=""
+SKILL_FRONTMATTER_HELPER_DIR=""
+
+cleanup() {
+    if [[ -n "$SKILL_FRONTMATTER_HELPER_DIR" && -d "$SKILL_FRONTMATTER_HELPER_DIR" ]]; then
+        rm -rf "$SKILL_FRONTMATTER_HELPER_DIR"
+    fi
+}
+
+trap cleanup EXIT
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "error: jq is required" >&2
@@ -68,6 +78,91 @@ if ! command -v python3 >/dev/null 2>&1; then
     echo "error: python3 is required" >&2
     exit 1
 fi
+
+build_skill_frontmatter_helper() {
+    local bin_ext
+
+    if [[ -n "$SKILL_FRONTMATTER_HELPER" && -x "$SKILL_FRONTMATTER_HELPER" ]]; then
+        return 0
+    fi
+
+    if ! command -v go >/dev/null 2>&1; then
+        echo "error: go is required to validate skill frontmatter when python3 lacks PyYAML" >&2
+        return 1
+    fi
+
+    if [[ ! -d "$REPO_ROOT/cli" ]]; then
+        echo "error: cli/ module not found under $REPO_ROOT" >&2
+        return 1
+    fi
+
+    SKILL_FRONTMATTER_HELPER_DIR="$(mktemp -d)"
+    bin_ext=""
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*)
+            bin_ext=".exe"
+            ;;
+    esac
+    SKILL_FRONTMATTER_HELPER="$SKILL_FRONTMATTER_HELPER_DIR/skill-frontmatter-json$bin_ext"
+
+    if ! (cd "$REPO_ROOT/cli" && go build -o "$SKILL_FRONTMATTER_HELPER" ./cmd/skill-frontmatter-json); then
+        rm -rf "$SKILL_FRONTMATTER_HELPER_DIR"
+        SKILL_FRONTMATTER_HELPER_DIR=""
+        SKILL_FRONTMATTER_HELPER=""
+        return 1
+    fi
+
+    return 0
+}
+
+extract_skill_frontmatter_json() {
+    local skill_md="$1"
+    local output
+    local status
+
+    set +e
+    output="$(
+        python3 - "$skill_md" <<'PY'
+import json
+import re
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    content = handle.read()
+
+m = re.match(r'^\ufeff?---\s*\r?\n(.*?)\r?\n---', content, re.DOTALL)
+if not m:
+    print("{}")
+    sys.exit(0)
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    sys.exit(3)
+
+data = yaml.safe_load(m.group(1))
+if not isinstance(data, dict):
+    print("{}")
+    sys.exit(0)
+
+print(json.dumps(data))
+PY
+    )"
+    status=$?
+    set -e
+
+    if [[ "$status" -eq 0 ]]; then
+        printf '%s\n' "$output"
+        return 0
+    fi
+
+    if [[ "$status" -ne 3 ]]; then
+        return "$status"
+    fi
+
+    build_skill_frontmatter_helper || return 1
+    "$SKILL_FRONTMATTER_HELPER" "$skill_md"
+}
 
 validate_manifest() {
     local manifest="$1"
@@ -298,28 +393,10 @@ if [[ -f "$SKILL_SCHEMA" ]]; then
         [[ -f "$skill_md" ]] || continue
         skill_name="$(basename "$(dirname "$skill_md")")"
 
-        # Extract YAML frontmatter and convert to JSON via PyYAML
-        frontmatter_json="$(python3 - "$skill_md" <<'PY'
-import sys, json, re
-
-with open(sys.argv[1], "r") as f:
-    content = f.read()
-
-# Extract between first two --- markers
-m = re.match(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
-if not m:
-    print("{}")
-    sys.exit(0)
-
-import yaml
-data = yaml.safe_load(m.group(1))
-if not isinstance(data, dict):
-    print("{}")
-    sys.exit(0)
-
-print(json.dumps(data))
-PY
-        )" || continue
+        # Extract YAML frontmatter and convert to JSON.
+        # Prefer PyYAML when present, but fall back to a repo-local Go helper so
+        # the gate is not coupled to a globally provisioned Python environment.
+        frontmatter_json="$(extract_skill_frontmatter_json "$skill_md")" || continue
 
         # Skip if empty/no frontmatter
         if [[ "$frontmatter_json" == "{}" ]]; then
