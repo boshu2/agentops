@@ -22,7 +22,7 @@ AgentOps turns session output into durable environment state. The automation pat
 | Mode | Start path | Closeout path | What is automatic |
 |------|------------|---------------|-------------------|
 | Hook-capable runtime | SessionStart hook or `ao inject` | SessionEnd/Stop hooks or `ao forge transcript` + `ao flywheel close-loop` | Startup retrieval, transcript forging, pool maintenance when hooks are installed |
-| Codex native hooks (v0.115.0+) | Native SessionStart hook via `scripts/install-codex-plugin.sh` | Native SessionEnd/Stop hooks | Same automatic lifecycle as Claude Code; installed by `scripts/install-codex-plugin.sh` |
+| Codex native hooks (v0.115.0+) | Native `SessionStart` hook via `scripts/install-codex-plugin.sh` | Native `Stop` hook plus explicit `ao codex stop` when transcript-driven closeout is needed | Startup retrieval, prompt/tool guardrails, and turn-scope close-loop are automatic; `SessionEnd` remains explicit because Codex has no native `SessionEnd` event today |
 | Codex hookless fallback (pre-v0.115.0) | `ao codex start` | `ao codex stop` | Startup context assembly, transcript discovery fallback, citation capture, and close-loop status through explicit commands |
 | Manual fallback | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Nothing hidden; operator runs the lifecycle directly |
 

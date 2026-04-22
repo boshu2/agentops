@@ -1,63 +1,78 @@
 {
   "$schema": "../schemas/hooks-manifest.v1.schema.json",
-  "hooks": [
-    {
-      "name": "agentops-session-start",
-      "event": "SessionStart",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/session-start.sh",
-      "timeout": 10000
-    },
-    {
-      "name": "agentops-inject",
-      "event": "SessionStart",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-inject.sh",
-      "timeout": 10000
-    },
-    {
-      "name": "agentops-flywheel-close",
-      "event": "Stop",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-flywheel-close.sh",
-      "timeout": 15000
-    },
-    {
-      "name": "agentops-prompt-nudge",
-      "event": "UserPromptSubmit",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/prompt-nudge.sh",
-      "timeout": 5000
-    },
-    {
-      "name": "agentops-quality-signals",
-      "event": "UserPromptSubmit",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/quality-signals.sh",
-      "timeout": 3000
-    },
-    {
-      "name": "agentops-go-test-precommit",
-      "event": "PreToolUse",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/go-test-precommit.sh",
-      "matcher": {
-        "type": "bash"
-      },
-      "timeout": 60000
-    },
-    {
-      "name": "agentops-commit-review",
-      "event": "PreToolUse",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/commit-review-gate.sh",
-      "matcher": {
-        "type": "bash",
-        "pattern": "git commit"
-      },
-      "timeout": 10000
-    },
-    {
-      "name": "agentops-ratchet-advance",
-      "event": "PostToolUse",
-      "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ratchet-advance.sh",
-      "matcher": {
-        "type": "bash"
-      },
-      "timeout": 5000
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/session-start.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-inject.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-flywheel-close.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/prompt-nudge.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/quality-signals.sh",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/go-test-precommit.sh",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/commit-review-gate.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ratchet-advance.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
 }

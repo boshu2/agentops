@@ -231,6 +231,60 @@ upsert_toml_key() {
   mv "$tmp" "$file"
 }
 
+count_codex_hook_handlers() {
+  local path="$1"
+
+  jq -r '[.hooks | to_entries[]? | .value[]? | .hooks[]?] | length' "$path"
+}
+
+merge_codex_hooks() {
+  local existing_file="$1"
+  local new_file="$2"
+
+  jq -n \
+    --slurpfile existing "$existing_file" \
+    --slurpfile new "$new_file" \
+    '
+    def agentops_scripts:
+      [
+        "session-start.sh",
+        "ao-inject.sh",
+        "ao-flywheel-close.sh",
+        "prompt-nudge.sh",
+        "quality-signals.sh",
+        "go-test-precommit.sh",
+        "commit-review-gate.sh",
+        "ratchet-advance.sh"
+      ];
+    def is_agentops_command($cmd):
+      ($cmd | type == "string") and any(agentops_scripts[]; $cmd | endswith("/hooks/" + .));
+    def strip_agentops_groups:
+      if (.hooks | type? == "object") then
+        .hooks |= with_entries(
+          .value |= [
+            .[]?
+            | .hooks = [
+                .hooks[]?
+                | select(is_agentops_command(.command // "") | not)
+              ]
+            | select((.hooks | length) > 0)
+          ]
+        )
+        | .hooks |= with_entries(select((.value | length) > 0))
+      else
+        .hooks = {}
+      end;
+    ($existing[0] // {}) as $existing_doc
+    | ($new[0] // {}) as $new_doc
+    | ($existing_doc | strip_agentops_groups) as $cleaned
+    | ($new_doc."$schema" // $existing_doc."$schema") as $schema
+    | {
+        "$schema": $schema,
+        "hooks": (($cleaned.hooks // {}) + ($new_doc.hooks // {}))
+      }
+    ' > "$existing_file"
+}
+
 stage_plugin_source() {
   local staging_root="$1"
 
@@ -401,28 +455,32 @@ if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
   fi
 
   # Install hooks.json to ~/.codex/hooks.json (merge if exists)
-  CODEX_HOOKS_FILE="${HOME}/.codex/hooks.json"
+  CODEX_HOOKS_FILE="${CODEX_HOME}/hooks.json"
   CODEX_HOOKS_SRC="${HOOKS_SRC}/codex-hooks.json"
 
   # Replace AGENTOPS_PLUGIN_ROOT with actual path
   RENDERED_HOOKS="$(sed "s|\${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}|${PLUGIN_CACHE_ROOT}|g" "$CODEX_HOOKS_SRC")"
+  RENDERED_HOOKS_FILE="${TMP_DIR}/rendered-codex-hooks.json"
+  printf '%s\n' "$RENDERED_HOOKS" > "$RENDERED_HOOKS_FILE"
 
   if [[ -f "$CODEX_HOOKS_FILE" ]]; then
     # Backup existing hooks
     cp "$CODEX_HOOKS_FILE" "${CODEX_HOOKS_FILE}.bak.$(date +%s)"
-    # Remove any existing agentops hooks, then merge
-    EXISTING="$(jq '[.hooks[] | select(.name | startswith("agentops-") | not)]' "$CODEX_HOOKS_FILE" 2>/dev/null || echo '[]')"
-    NEW_HOOKS="$(echo "$RENDERED_HOOKS" | jq '.hooks')"
-    jq -n --argjson existing "$EXISTING" --argjson new "$NEW_HOOKS" '{"hooks": ($existing + $new)}' > "$CODEX_HOOKS_FILE"
+    if jq -e '.hooks | type == "array"' "$CODEX_HOOKS_FILE" >/dev/null 2>&1; then
+      warn "Existing ~/.codex/hooks.json uses the legacy flat-array shape; replacing it with the current Codex event-map schema."
+    fi
+    merge_codex_hooks "$CODEX_HOOKS_FILE" "$RENDERED_HOOKS_FILE"
   else
     mkdir -p "$(dirname "$CODEX_HOOKS_FILE")"
-    echo "$RENDERED_HOOKS" | jq '.' > "$CODEX_HOOKS_FILE"
+    jq '.' "$RENDERED_HOOKS_FILE" > "$CODEX_HOOKS_FILE"
   fi
 
   # Enable hooks feature in config
   upsert_toml_key "$CONFIG_FILE" "[features]" "codex_hooks" "true"
 
-  info "Codex hooks installed ($(echo "$RENDERED_HOOKS" | jq '.hooks | length') hooks)"
+  HOOK_HANDLER_COUNT="$(count_codex_hook_handlers "$RENDERED_HOOKS_FILE")"
+  HOOK_EVENT_COUNT="$(jq -r '.hooks | length' "$RENDERED_HOOKS_FILE")"
+  info "Codex hooks installed (${HOOK_HANDLER_COUNT} handlers across ${HOOK_EVENT_COUNT} events)"
   echo "  Hooks config: $CODEX_HOOKS_FILE"
   echo "  Hook scripts: $HOOKS_DST/"
 else

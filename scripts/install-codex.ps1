@@ -187,6 +187,136 @@ function Archive-SkillRoot {
   return $null
 }
 
+function Get-AgentOpsCodexHookScripts {
+  return @(
+    "session-start.sh",
+    "ao-inject.sh",
+    "ao-flywheel-close.sh",
+    "prompt-nudge.sh",
+    "quality-signals.sh",
+    "go-test-precommit.sh",
+    "commit-review-gate.sh",
+    "ratchet-advance.sh"
+  )
+}
+
+function Test-AgentOpsCodexHookCommand {
+  param([string]$Command)
+
+  if ([string]::IsNullOrWhiteSpace($Command)) {
+    return $false
+  }
+
+  foreach ($script in Get-AgentOpsCodexHookScripts) {
+    if ($Command -like "*/hooks/$script") {
+      return $true
+    }
+  }
+
+  return $false
+}
+
+function Get-CodexHookEventCount {
+  param($Manifest)
+
+  if ($null -eq $Manifest -or $null -eq $Manifest.hooks) {
+    return 0
+  }
+
+  return @($Manifest.hooks.PSObject.Properties).Count
+}
+
+function Get-CodexHookHandlerCount {
+  param($Manifest)
+
+  $count = 0
+  if ($null -eq $Manifest -or $null -eq $Manifest.hooks) {
+    return $count
+  }
+
+  foreach ($eventProp in $Manifest.hooks.PSObject.Properties) {
+    foreach ($group in @($eventProp.Value)) {
+      $count += @($group.hooks).Count
+    }
+  }
+
+  return $count
+}
+
+function Remove-AgentOpsCodexHooks {
+  param($Manifest)
+
+  $schema = $null
+  if ($null -ne $Manifest -and $Manifest.PSObject.Properties.Match('$schema').Count -gt 0) {
+    $schema = $Manifest.'$schema'
+  }
+
+  $cleanedHooks = [ordered]@{}
+  if ($null -ne $Manifest -and $Manifest.PSObject.Properties.Match('hooks').Count -gt 0 -and $Manifest.hooks -isnot [System.Array]) {
+    foreach ($eventProp in $Manifest.hooks.PSObject.Properties) {
+      $keptGroups = New-Object System.Collections.ArrayList
+      foreach ($group in @($eventProp.Value)) {
+        $keptHandlers = @()
+        foreach ($handler in @($group.hooks)) {
+          if (-not (Test-AgentOpsCodexHookCommand ([string]$handler.command))) {
+            $keptHandlers += $handler
+          }
+        }
+        if ($keptHandlers.Count -gt 0) {
+          $newGroup = [ordered]@{}
+          if ($group.PSObject.Properties.Match('matcher').Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$group.matcher)) {
+            $newGroup['matcher'] = [string]$group.matcher
+          }
+          $newGroup['hooks'] = @($keptHandlers)
+          [void]$keptGroups.Add([pscustomobject]$newGroup)
+        }
+      }
+      if ($keptGroups.Count -gt 0) {
+        $cleanedHooks[$eventProp.Name] = @($keptGroups)
+      }
+    }
+  }
+
+  $result = [ordered]@{}
+  if (-not [string]::IsNullOrWhiteSpace([string]$schema)) {
+    $result['$schema'] = $schema
+  }
+  $result['hooks'] = [pscustomobject]$cleanedHooks
+  return [pscustomobject]$result
+}
+
+function Merge-CodexHooksManifest {
+  param($ExistingManifest, $NewManifest)
+
+  $cleaned = Remove-AgentOpsCodexHooks $ExistingManifest
+  $mergedHooks = [ordered]@{}
+
+  if ($null -ne $cleaned.hooks) {
+    foreach ($eventProp in $cleaned.hooks.PSObject.Properties) {
+      $mergedHooks[$eventProp.Name] = @($eventProp.Value)
+    }
+  }
+  if ($null -ne $NewManifest.hooks) {
+    foreach ($eventProp in $NewManifest.hooks.PSObject.Properties) {
+      $mergedHooks[$eventProp.Name] = @($eventProp.Value)
+    }
+  }
+
+  $schema = $null
+  if ($NewManifest.PSObject.Properties.Match('$schema').Count -gt 0) {
+    $schema = $NewManifest.'$schema'
+  } elseif ($cleaned.PSObject.Properties.Match('$schema').Count -gt 0) {
+    $schema = $cleaned.'$schema'
+  }
+
+  $result = [ordered]@{}
+  if (-not [string]::IsNullOrWhiteSpace([string]$schema)) {
+    $result['$schema'] = $schema
+  }
+  $result['hooks'] = [pscustomobject]$mergedHooks
+  return [pscustomobject]$result
+}
+
 function Install-CodexHooks {
   param([string]$RepoRoot, [string]$PluginCacheRoot, [string]$CodexHome)
 
@@ -213,11 +343,15 @@ function Install-CodexHooks {
 
   $bashPluginRoot = Convert-ToBashPath -Path $PluginCacheRoot -BashFlavor $bashFlavor
   $rendered = Get-Content -LiteralPath $hooksManifest -Raw | ConvertFrom-Json
-  foreach ($hook in $rendered.hooks) {
-    if ($hook.command -match "/hooks/(.+\.sh)$") {
-      $hook.command = "bash `"$bashPluginRoot/hooks/$($matches[1])`""
-    } else {
-      $hook.command = $hook.command.Replace('${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}', $bashPluginRoot)
+  foreach ($eventProp in $rendered.hooks.PSObject.Properties) {
+    foreach ($group in @($eventProp.Value)) {
+      foreach ($hook in @($group.hooks)) {
+        if ($hook.command -match "/hooks/(.+\.sh)$") {
+          $hook.command = "bash `"$bashPluginRoot/hooks/$($matches[1])`""
+        } else {
+          $hook.command = $hook.command.Replace('${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}', $bashPluginRoot)
+        }
+      }
     }
   }
 
@@ -225,13 +359,17 @@ function Install-CodexHooks {
   if (Test-Path -LiteralPath $hooksFile) {
     Copy-Item -LiteralPath $hooksFile -Destination "$hooksFile.bak.$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" -Force
     $existing = Get-Content -LiteralPath $hooksFile -Raw | ConvertFrom-Json
-    $keptHooks = @($existing.hooks | Where-Object { $_.name -notlike "agentops-*" })
-    $rendered.hooks = @($keptHooks + @($rendered.hooks))
+    if ($existing.hooks -is [System.Array]) {
+      Write-Warn "Existing ~/.codex/hooks.json uses the legacy flat-array shape; replacing it with the current Codex event-map schema."
+    }
+    $rendered = Merge-CodexHooksManifest $existing $rendered
   }
 
   New-Item -ItemType Directory -Path (Split-Path -Parent $hooksFile) -Force | Out-Null
   $rendered | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $hooksFile -Encoding utf8
-  Write-Info "Codex hooks installed ($(@($rendered.hooks).Count) hooks)"
+  $handlerCount = Get-CodexHookHandlerCount $rendered
+  $eventCount = Get-CodexHookEventCount $rendered
+  Write-Info "Codex hooks installed ($handlerCount handlers across $eventCount events)"
   Write-Host "  Hooks config: $hooksFile"
   Write-Host "  Hook scripts: $hooksDst"
 }

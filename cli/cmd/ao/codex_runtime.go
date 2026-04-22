@@ -21,6 +21,8 @@ const (
 	lifecycleModeHookCapable   = "hook-capable"
 	lifecycleModeCodexHookless = "codex-hookless-fallback"
 	lifecycleModeManual        = "manual"
+
+	codexNativeHooksMinVersion = "0.115.0"
 )
 
 var codexArchivedSessionPattern = regexp.MustCompile(`([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.jsonl$`)
@@ -73,6 +75,8 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 
 	claudeManifest := filepath.Join(homeDir, ".agentops", "hooks.json")
 	legacyClaudeManifest := filepath.Join(homeDir, ".claude", "hooks.json")
+	codexConfig := filepath.Join(homeDir, ".codex", "config.toml")
+	codexManifest := filepath.Join(homeDir, ".codex", "hooks.json")
 	openCodeManifest := filepath.Join(homeDir, ".config", "opencode", "agentops", "hooks", "hooks.json")
 
 	runtimeKind := detectRuntimeKind(forceCodex)
@@ -84,13 +88,30 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 	switch runtimeKind {
 	case runtimeKindCodex:
 		profile.Mode = lifecycleModeCodexHookless
-		profile.HookCapable = false
-		profile.HookConfigured = false
 		profile.SessionID = resolveCodexSessionID(homeDir)
 		if entry, err := readCodexSessionIndexEntry(homeDir, profile.SessionID); err == nil && entry != nil {
 			profile.ThreadName = strings.TrimSpace(entry.ThreadName)
 		}
-		profile.Reason = "Codex does not expose the Claude/OpenCode hook lifecycle under ~/.codex; use ao codex start/stop for explicit lifecycle handling."
+		profile.HookCapable = codexSupportsNativeHooks(homeDir)
+		if profile.HookCapable {
+			manifestConfigured, manifestReason := codexHooksManifestConfigured(codexManifest)
+			featureEnabled := codexHooksFeatureEnabled(codexConfig)
+			switch {
+			case featureEnabled && manifestConfigured:
+				profile.Mode = lifecycleModeHookCapable
+				profile.HookConfigured = true
+				profile.HookManifestPath = codexManifest
+				profile.Reason = "Codex native hooks are configured via ~/.codex/hooks.json."
+			case manifestConfigured && !featureEnabled:
+				profile.Reason = "Codex native hooks are installed, but [features].codex_hooks is disabled in ~/.codex/config.toml; use ao codex start/stop until the feature flag is re-enabled."
+			case featureEnabled && !manifestConfigured:
+				profile.Reason = manifestReason
+			default:
+				profile.Reason = "Codex native hooks are supported but not configured; install them or use ao codex start/stop for explicit lifecycle handling."
+			}
+		} else {
+			profile.Reason = "Detected Codex runtime without native hook support; use ao codex start/stop for explicit lifecycle handling."
+		}
 	case runtimeKindClaude:
 		profile.HookCapable = true
 		profile.SessionID = canonicalSessionID(strings.TrimSpace(os.Getenv("CLAUDE_SESSION_ID")))
@@ -130,6 +151,102 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 	}
 
 	return profile
+}
+
+func codexSupportsNativeHooks(homeDir string) bool {
+	if version, ok := readCodexLatestVersion(homeDir); ok {
+		return compareSemver(version, codexNativeHooksMinVersion) >= 0
+	}
+	return codexHooksFeatureEnabled(filepath.Join(homeDir, ".codex", "config.toml")) ||
+		fileExists(filepath.Join(homeDir, ".codex", "hooks.json"))
+}
+
+func readCodexLatestVersion(homeDir string) (string, bool) {
+	path := filepath.Join(homeDir, ".codex", "version.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+
+	var payload struct {
+		LatestVersion string `json:"latest_version"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return "", false
+	}
+
+	version := normalizeSemver(payload.LatestVersion)
+	if version == "" {
+		return "", false
+	}
+	return version, true
+}
+
+func codexHooksFeatureEnabled(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+
+	inFeatures := false
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "[") {
+			inFeatures = trimmed == "[features]"
+			continue
+		}
+		if inFeatures && strings.HasPrefix(trimmed, "codex_hooks") {
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) != 2 {
+				return false
+			}
+			return strings.EqualFold(strings.TrimSpace(parts[1]), "true")
+		}
+	}
+
+	return false
+}
+
+func codexHooksManifestConfigured(path string) (bool, string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false, "Codex native hooks are supported, but ~/.codex/hooks.json is missing; use ao codex start/stop until hooks are installed."
+	}
+
+	var payload struct {
+		Hooks json.RawMessage `json:"hooks"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return false, fmt.Sprintf("~/.codex/hooks.json is invalid JSON: %v", err)
+	}
+	if len(payload.Hooks) == 0 {
+		return false, "~/.codex/hooks.json is missing the hooks event map."
+	}
+
+	var hooksMap map[string]json.RawMessage
+	if err := json.Unmarshal(payload.Hooks, &hooksMap); err != nil {
+		return false, "~/.codex/hooks.json uses an unsupported hooks shape; expected an event map under hooks."
+	}
+	if len(hooksMap) == 0 {
+		return false, "~/.codex/hooks.json has an empty hooks event map."
+	}
+
+	return true, ""
+}
+
+func normalizeSemver(raw string) string {
+	version := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(raw), "v"))
+	if version == "" {
+		return ""
+	}
+	version = strings.SplitN(version, "-", 2)[0]
+	if version == "" {
+		return ""
+	}
+	return version
 }
 
 func detectRuntimeKind(forceCodex bool) string {

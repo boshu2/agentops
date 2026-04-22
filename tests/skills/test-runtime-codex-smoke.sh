@@ -55,15 +55,25 @@ echo "Stage 2: Codex native hooks"
 if [[ -f "$CODEX_HOOKS_JSON" ]]; then
     python3 -m json.tool "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "hooks/codex-hooks.json is valid JSON" || fail "hooks/codex-hooks.json is invalid JSON"
-    jq -e '.hooks | length >= 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "codex hook bundle defines multiple native hooks" || fail "codex hook bundle is unexpectedly small"
-    for hook_name in agentops-session-start agentops-inject agentops-flywheel-close; do
-        if jq -e --arg name "$hook_name" '.hooks[] | select(.name == $name)' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
-            pass "codex hook bundle includes $hook_name"
-        else
-            fail "codex hook bundle missing $hook_name"
-        fi
-    done
+    jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
+    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 8' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 8 native hook handlers" || fail "codex hook bundle handler count drifted"
+    if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
+        pass "codex hook bundle includes session-start.sh"
+    else
+        fail "codex hook bundle missing session-start.sh"
+    fi
+    if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
+        pass "codex hook bundle includes ao-inject.sh"
+    else
+        fail "codex hook bundle missing ao-inject.sh"
+    fi
+    if jq -e '.hooks.Stop[]?.hooks[] | select(.command | test("ao-flywheel-close\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
+        pass "codex hook bundle includes ao-flywheel-close.sh"
+    else
+        fail "codex hook bundle missing ao-flywheel-close.sh"
+    fi
 else
     fail "hooks/codex-hooks.json not found"
 fi
@@ -129,8 +139,10 @@ fi
 
 if [[ -f "$CODEX_HOME/hooks.json" ]]; then
     pass "$CODEX_HOME/hooks.json created by installer"
-    jq -e '.hooks[] | select(.name == "agentops-session-start")' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
-        && pass "$CODEX_HOME/hooks.json includes agentops-session-start" || fail "$CODEX_HOME/hooks.json missing agentops-session-start"
+    jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
+        && pass "$CODEX_HOME/hooks.json uses the native event-map schema" || fail "$CODEX_HOME/hooks.json did not install the native event-map schema"
+    jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
+        && pass "$CODEX_HOME/hooks.json includes session-start.sh" || fail "$CODEX_HOME/hooks.json missing session-start.sh"
 else
     fail "$CODEX_HOME/hooks.json missing after install"
 fi

@@ -8,33 +8,22 @@
 | Runtime | Detection | Hook Surface |
 |---------|-----------|-------------|
 | Claude Code | `CLAUDE_PLUGIN_ROOT` env or `~/.claude/settings.json` exists | Full hook manifest (`hooks.json`) |
-| Codex (native hooks) | `CODEX_HOME` env + Codex v0.115.0+ detected | Full hook manifest via `scripts/install-codex-plugin.sh` (same surface as Claude Code) |
-| Codex (hookless fallback) | `CODEX_HOME` env or `~/.codex/config.toml` exists + Codex < v0.115.0 | Explicit lifecycle (`ao codex start/stop`) |
+| Codex (native hooks) | `CODEX_HOME` env plus `~/.codex/version.json` / `config.toml` / `hooks.json` indicate native hooks are supported and enabled | Native hook manifest via `scripts/install-codex-plugin.sh` (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `PermissionRequest`) |
+| Codex (hookless fallback) | `CODEX_HOME` env or `~/.codex/config.toml` exists but native hooks are unavailable or not configured | Explicit lifecycle (`ao codex start/stop`) |
 | Manual | Neither detected | Explicit `ao inject` / `ao forge` commands |
 
 ## Event Mapping
 
-### Supported (native equivalent exists)
-
-| Claude Event | Codex Equivalent | Mechanism |
-|-------------|-----------------|-----------|
-| `SessionStart` | `ao codex start` / `ao codex ensure-start` | Claude native hooks can recover a goal and stage runtime state silently; Codex uses the explicit startup command path |
-| `SessionEnd` | `ao codex stop` / `ao codex ensure-stop` | Explicit command in skill epilogue or user invocation |
-| `Stop` | `ao codex stop --close-loop` | Explicit flywheel close via command |
-
-### Adapted (behavior preserved, different mechanism)
-
-| Claude Event | Codex Adaptation | Notes |
-|-------------|-----------------|-------|
-| `UserPromptSubmit` | Skill preamble checks | Claude native hooks can capture first-prompt intake silently, emit prompt nudges, and run intent echo; Codex keeps equivalent guidance inside skill/runtime preambles instead of callbacks |
-| `TaskCompleted` | Skill epilogue validation | Task validation gates run inline after task completion |
-
-### Unsupported (no Codex equivalent)
-
-| Claude Event | Codex Status | Fallback |
-|-------------|-------------|----------|
-| `PreToolUse` | No tool-intercept surface | Validation moves to skill-level checks or pre-commit gates |
-| `PostToolUse` | No tool-intercept surface | Quality checks move to skill-level or post-edit inline checks |
+| Capability | Claude/OpenCode hook-capable | Codex native hooks (v0.115.0+) | Codex hookless fallback |
+|-----------|------------------------------|------------------------------|------------------------|
+| `SessionStart` | Native `SessionStart` hook | Native `SessionStart` hook | `ao codex start` / `ao codex ensure-start` |
+| `UserPromptSubmit` | Native `UserPromptSubmit` hook | Native `UserPromptSubmit` hook | Skill/runtime preambles |
+| `PreToolUse` | Native `PreToolUse` hook | Native `PreToolUse` hook (currently Bash-only) | No runtime hook; validation moves inline or to pre-commit gates |
+| `PostToolUse` | Native `PostToolUse` hook | Native `PostToolUse` hook (currently Bash-only) | No runtime hook; quality checks move inline or post-edit |
+| `Stop` | Native `Stop` hook | Native `Stop` hook | `ao codex stop` / `ao codex ensure-stop` |
+| `SessionEnd` | Native `SessionEnd` hook | No native `SessionEnd` event; transcript-driven closeout still uses `ao codex stop` / `ao codex ensure-stop` | `ao codex stop` / `ao codex ensure-stop` |
+| `PermissionRequest` | Native `PermissionRequest` hook | Native `PermissionRequest` hook | Approval handled explicitly by the runtime/workflow |
+| `TaskCompleted` | Native `TaskCompleted` hook | No native event; task validation remains skill-driven | Skill epilogue validation |
 
 ## Install Behavior by Runtime
 
@@ -55,12 +44,12 @@ ao hook install  # Merges hooks.json into ~/.claude/settings.json
 # Plugin install (handled by install-codex-plugin.sh):
 # 1. Enable plugin in ~/.codex/config.toml
 # 2. Stage skills-codex/ bundle
-# 3. Install native hook manifest — same event surface as Claude Code
+# 3. Install native hook manifest for the current Codex event set
 ```
 
-- Full hook manifest installed by `scripts/install-codex-plugin.sh`
-- SessionStart, SessionEnd, Stop events wired natively
-- Same automatic lifecycle as Claude Code
+- Native hook manifest installed from `hooks/codex-hooks.json`
+- Current Codex-native surface: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest`
+- Transcript-driven closeout still uses `ao codex stop` / `ao codex ensure-stop` because Codex does not expose a native `SessionEnd` event today
 
 ### Codex (pre-v0.115.0 — hookless fallback)
 
