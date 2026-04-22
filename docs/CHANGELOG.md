@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.38.0] - 2026-04-22
+
 ### Added
 
 - **Strict Delegation Contract** for `/rpi`, `/discovery`, and `/validation` — top-level orchestrator skills now declare strict sub-skill delegation as the default. Each skill points to the new canonical reference `skills/shared/references/strict-delegation-contract.md` which documents the contract, anti-pattern rationalizations, and supported compression escapes (`--quick`, `--fast-path`, `--no-retro`, `--no-forge`, `--skip-brainstorm`, `--no-scaffold`, `--no-behavioral`, `--allow-critical-deps`). There is no `--full` flag — strict delegation is always on.
 - **Orchestrator Compression Anti-Pattern learning** at `.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md`, surfaced via `ao inject` at session start. Includes detection phrases, corrective actions, and rationalizations to reject.
 - **Orchestrator-owned step markers** in `skills/crank/SKILL.md` (STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7) plus an "Inline Work Policy" footer documenting which steps are intentionally inline vs delegated.
+- **MkDocs Material documentation site** — Pages site rebuilt on MkDocs Material (slate dark palette). Skill catalog and CLI reference are generated at build from `skills/*/SKILL.md` and `cli/docs/`. `mkdocs build --strict` wired into the pre-push gate (Check 25a). New dedicated pages for hooks, schemas, and upgrading, plus an expanded glossary. Theme tuned to the agentops-showcase terracotta-on-near-black palette; landing page leads with the primary use case and a headline skills table; flywheel diagram ASCII art realigned; doctrine back-links added to `12factoragentops.com`.
+- **Shell completion for enumerated-value flags** — `ao <cmd> --<flag> <TAB>` now suggests the valid values instead of falling back to file completion. Covers `ao --output` (`json`/`table`/`yaml`), `ao seed --template`, `ao goals init --template`, `ao inject --format` and `--session-type`.
+- **`ao doctor` stale-reference scan** now covers `skills-codex/*/SKILL.md` and `skills/*/references/*.md` in addition to the primary skill docs, catching drift in Codex mirrors and skill reference content.
+- **Nightly close-loop throughput alarm** — the dream close-loop gate now fails loudly when `ingested > 0 && promoted == 0`, replacing the silent zero-throughput mode that previously masked citation-gate deadlocks.
 
 ### Removed
 
 - Archived AO↔Olympus bridge integration: removed `docs/ol-bridge-contracts.md`, `docs/architecture/ao-olympus-ownership-matrix.md`, MemRL policy contracts, `skills/*/scripts/ol-*.sh`, `cli/cmd/ao/inject_ol_test.go`, and associated CLI types (`OLConstraint`, `gatherOLConstraints`, `.ol/` directory collector). Olympus predecessor's useful patterns live on inside `ao`.
+- Lowercase `docs/index.md` duplicate removed after the MkDocs migration canonicalized the landing page.
 
 ### Changed
 
@@ -23,10 +30,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/discovery` flags table** expanded: `--auto` is now explicitly documented (was transitively honored but undocumented); `--interactive` scope clarified ("research + plan gates, not pre-mortem").
 - **`/validation` flags table** expanded: `--complexity=<level>` syntax formalized to match `/rpi` and `/discovery`; `--interactive` scope documented.
 - **`/rpi` `--interactive` flag** scope note added: applies to discovery (research + plan) and validation (Gate 1, Gate 2); does NOT override pre-mortem or vibe council autonomy.
+- **ASCII fast-path performance sweep** across rune-aware truncation call sites in `cli/` (`TruncateText`, `TruncateRunes`, `truncateForError`, plus goals/pool/search/rpi/parser call sites) — ASCII inputs now skip the full UTF-8 rune scan.
+- **Compile and overnight internals refactored** — `runCompile` split into phase + preflight helpers; article scan, inbound count, and prune extracted from `repair`; dream packet corroboration split per source epic; dream yield emptiness guard extracted into a dedicated helper. No behavior change; lower cyclomatic complexity and tighter test surfaces.
+- **Skills-codex DAG bodies converted to `$skill` notation** for the Codex runtime.
+- **GitHub Actions bumped** — `actions/upload-pages-artifact 3→4`, `actions/deploy-pages 4→5`, `actions/configure-pages 5→6`, plus docs.yml workflow action versions aligned.
+- **Precommit hook prefers local Go** when available.
+- **Skills backfill pass** — docs, validators, and lint synced across all skills; Codex drift surface reset to no-op.
 
 ### Fixed
 
 - **Orchestrator compression vulnerability** — a live compression was observed 2026-04-19 where `/rpi` was invoked but phases were inlined instead of delegated. This release **documents** the anti-pattern (forged learning + loud skill text), **scaffolds** future enforcement (shared contract reference used by all 6 orchestrator skills), and explicitly **defers** runtime hook enforcement to a follow-up initiative. It does not mechanically prevent compression yet — the durable fix depends on `ao inject` surfacing the forged learning on future session starts. See `.agents/research/2026-04-19-rpi-skill-dag-audit.md` for the audit and `.agents/plans/2026-04-19-rpi-dag-hardening.md` for the remediation plan.
+- **Close-loop promotion deadlock** — `flywheel` close-loop auto-promotion and the loop-dominance signal are unblocked; citation-gate cycles no longer silently zero throughput.
+- **Overnight findings router** now emits schema-compliant `next-work` v1.3 enums — valid `claim_status=available` (was `pending`), severity collapsed to `high` for `critical` and `blocker` inputs — with a build-time guard that fails on future drift.
+- **Quality stale-refs scan** skips rename-doc lines so it no longer false-positives on deliberate rename notes.
+- **Release and compile gates** — `go-complexity-ceiling` self-heals a missing `gocyclo`; `compile-*` gates fall back to Dream defrag preview when the primary path is unavailable.
+- **Proof-run Phase 2** calls `pool ingest` before `close-loop` so the downstream stage has input to consume.
+- **Hooks** — `git-worker-guard` narrowed to avoid false blocks on selective flags; test-hook harness tolerates environments without a locally built `ao`.
+- **Scripts** — `goal-staleness`, `pillar-coverage`, `goal-quality`, and `bootstrap-maturity` now skip cleanly after the `GOALS.yaml → GOALS.md` migration and preserve existing JSONL maturity with compact output.
+- **CI** — resolved 7 failures from the MkDocs rebuild, committed the forged-learning artifacts, and regenerated the codex shared hash.
+- **Docs markdownlint** — unresolved `+ 9 findings).` continuation in the cross-disk harvest plan now reads as prose instead of tripping MD004.
 
 ## [2.37.2] - 2026-04-15
 

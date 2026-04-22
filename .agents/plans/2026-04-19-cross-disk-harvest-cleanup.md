@@ -132,8 +132,8 @@ content:
 - `/home/boful/dev/personal/platform-lab/.agents` (inode 840552)
 - `/home/boful/gt/platform-lab/.agents` (inode 148757)
 
-Both hold 161 files with identical distributions (73 learnings + 79 research
-+ 9 findings). Not a symlink or bind mount — genuine duplicate checkout.
+Both hold 161 files with identical distributions (73 learnings, 79 research,
+and 9 findings). Not a symlink or bind mount — genuine duplicate checkout.
 
 **Pre-check (read-only, per vault rule "Don't mutate git state of cloned
 external repos"):**
