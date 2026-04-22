@@ -118,10 +118,15 @@ if [[ "$PENDING_COUNT" -lt 1 ]]; then
 fi
 pass "forge produced $PENDING_COUNT pending learning(s)"
 
-log "Phase 2: close-loop ingests pending learnings into the pool"
-CLOSE1_JSON="$WORK_DIR/close-loop-1.json"
-run_ao flywheel close-loop --threshold 0h --json > "$CLOSE1_JSON"
-assert_json_match "close-loop ingested pending learnings" "$CLOSE1_JSON" '.ingest.added >= 1'
+log "Phase 2: pool ingest lands pending learnings as pool candidates"
+# Use 'ao pool ingest' rather than 'ao flywheel close-loop' here: close-loop now
+# auto-promotes candidates in the same call (commit b69a00f4 removed the
+# citation-required deadlock), so the candidate would no longer be observable in
+# pool/pending. This phase verifies ingest in isolation before Phase 3 exercises
+# the cite -> promote path via close-loop.
+INGEST_JSON="$WORK_DIR/pool-ingest.json"
+run_ao pool ingest --json > "$INGEST_JSON"
+assert_json_match "pool ingest added pending learnings" "$INGEST_JSON" '.added >= 1'
 
 POOL_PENDING_DIR="$REPO_DIR/.agents/pool/pending"
 CANDIDATE_PATH="$(find "$POOL_PENDING_DIR" -maxdepth 1 -type f -name '*.json' | head -n 1)"
