@@ -4,12 +4,16 @@
 
 ## Getting Started
 
+> **Pick your path:** evaluating the product → [README](https://github.com/boshu2/agentops/blob/main/README.md) then [FAQ](FAQ.md). Installing for real work → [Getting Started landing](getting-started/index.md) then [Create Your First Skill](create-your-first-skill.md). Orienting in the codebase as a contributor → [Newcomer Guide](newcomer-guide.md) then [CONTRIBUTING](CONTRIBUTING.md). Upgrading from an older version → [Upgrading](UPGRADING.md).
+
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Project overview and quick start
+- [Getting Started](getting-started/index.md) — Install + first command landing page
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
+- [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
@@ -177,11 +181,13 @@
 - [AgentOps Brief](agentops-brief.md) — Executive summary
 - [AgentOps System Map](agentops-system-map.md) — Visual system map
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
-- [CLI Reference](cli/commands.md) — Complete `ao` command reference
+- [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
+- [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
 - [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
-- [Reference](reference.md) — Deep documentation and pipeline details
+- [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence
+- [Schemas](SCHEMAS.md) — JSON Schemas for manifests, runtime artifacts, and internal runtime contracts
 - [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery

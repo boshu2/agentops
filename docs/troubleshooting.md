@@ -330,6 +330,38 @@ Use `ao doctor --json` for machine-readable output.
 
 ---
 
+## Pre-mortem gate blocks `/crank`
+
+The pre-mortem gate denies ambiguous state by default (as of 2.37.2). If `/crank` exits immediately with a pre-mortem error, it is telling you there is no pre-mortem artifact or the artifact is stale for the current epic.
+
+**Fixes:**
+
+1. Run `/pre-mortem` against the epic before invoking `/crank`.
+2. For exploratory runs where a pre-mortem is not worth the cost:
+   ```bash
+   AGENTOPS_PREMORTEM_MODE=advisory /crank ...
+   ```
+   This downgrades the gate to a warning.
+
+## `go-test-precommit` blocks commits
+
+The `go-test-precommit.sh` hook runs relevant Go tests before tool calls that would mutate Go code. If it fails, look for the test output above the block message. Common causes:
+
+- Tests that depend on network (`go test -short` typically skips these).
+- A package import that fails to compile — fix compilation first, tests second.
+
+**Bypass (not recommended):** set `AGENTOPS_SKIP_GO_TEST_PRECOMMIT=1` for a single session. Prefer fixing the underlying test.
+
+## Context window compacted and lost work
+
+If a session compacts and drops critical context, check whether `precompact-snapshot.sh` ran. Artifacts land in `.agents/compact/<timestamp>/`:
+
+```bash
+ls -lt .agents/compact/ | head
+```
+
+Restore needed state with `ao inject --from .agents/compact/<timestamp>/` or manually re-seed the session with `MEMORY.md`.
+
 ## Getting help
 
 - **New to AgentOps?** Run `/quickstart` for an interactive onboarding walkthrough.

@@ -154,6 +154,7 @@ nav:
       - Contributing: CONTRIBUTING.md
       - Security: SECURITY.md
       - Changelog: CHANGELOG.md
+      - Upgrading: UPGRADING.md
   - Skills:
       - skills/index.md
       - Skills Reference: SKILLS.md
@@ -165,6 +166,7 @@ nav:
       - cli/index.md
       - Command Reference: cli/commands.md
       - CLI ↔ Skills Map: cli-skills-map.md
+      - Hooks Overview: HOOKS.md
       - Hooks Reference: cli/hooks.md
   - Architecture:
       - architecture/index.md
@@ -221,6 +223,7 @@ nav:
       - reference/index.md
       - Glossary: GLOSSARY.md
       - Environment Variables: ENV-VARS.md
+      - Schemas: SCHEMAS.md
       - Testing: TESTING.md
       - CI/CD: CI-CD.md
       - Releasing: RELEASING.md

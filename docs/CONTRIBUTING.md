@@ -71,11 +71,13 @@ bash skills/heal-skill/scripts/heal.sh --strict
 bash tests/docs/validate-doc-release.sh
 ```
 
-If you add or remove a skill directory, also run:
+**If you add or remove a skill directory, you must run:**
 
 ```bash
 scripts/sync-skill-counts.sh
 ```
+
+This updates the skill count across `SKILL-TIERS.md`, `PRODUCT.md`, `README.md`, `docs/SKILLS.md`, `docs/ARCHITECTURE.md`, and `using-agentops/SKILL.md`. The `doc-release-gate` CI job fails if counts drift, so skipping this step will block your PR. If you're unsure whether your change affects counts, run the script anyway — it's idempotent when counts are already in sync.
 
 If you touched Codex-facing behavior or checked-in Codex artifacts, also run:
 
