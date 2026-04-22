@@ -16,6 +16,9 @@ source:
     - cli/cmd/ao/batch_promote.go
     - scripts/nightly-dream-cycle.sh
 tags: [flywheel, performance, throughput, promotion-gate, chicken-and-egg]
+harmful_count: 0
+reward_count: 0
+helpful_count: 0
 ---
 
 # Learning: Chicken-and-Egg Gates Silently Destroy Flywheel Performance
