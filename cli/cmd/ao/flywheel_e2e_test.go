@@ -530,7 +530,7 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			reason := checkPromotionCriteria("/tmp", tc.entry, minAge, tc.citations, promoted)
+			reason := checkPromotionCriteria("/tmp", tc.entry, minAge, tc.citations, promoted, true)
 			if tc.wantPass {
 				if reason != "" {
 					t.Errorf("expected promotion, got skip: %q", reason)

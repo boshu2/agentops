@@ -335,7 +335,7 @@ func (c *promotionContext) processCandidate(e pool.PoolEntry, result *poolAutoPr
 		}
 		return
 	}
-	if reason := checkPromotionCriteria(c.pool.BaseDir, e, c.threshold, c.citationCounts, c.promotedContent); reason != "" {
+	if reason := checkPromotionCriteria(c.pool.BaseDir, e, c.threshold, c.citationCounts, c.promotedContent, false); reason != "" {
 		result.Skipped++
 		result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
 		VerbosePrintf("Skipping %s: %s\n", e.Candidate.ID, reason)
