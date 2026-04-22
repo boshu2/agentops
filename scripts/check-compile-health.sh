@@ -17,7 +17,25 @@ MAX_STALE="${COMPILE_MAX_STALE:-5}"
 # COMPILE_OUTPUT_DIR overrides AGENTS_DIR prefix (used in CI where defrag writes to /tmp/)
 DEFRAG_LATEST="${COMPILE_OUTPUT_DIR:-$AGENTS_DIR}/defrag/latest.json"
 
-# Gate 1: defrag report must exist
+# Gate 1: defrag report must exist.
+# Fall back to the most recent Dream overnight preview when no canonical
+# report is present and COMPILE_OUTPUT_DIR is unset — Dream writes a
+# dry-run defrag at .agents/overnight/<run>/defrag/latest.json every night,
+# and that report exposes .timestamp + .prune.stale_count in the same shape
+# this gate consumes. Only apply the fallback for the canonical AGENTS_DIR
+# path so CI overrides remain strict.
+if [[ ! -f "$DEFRAG_LATEST" && -z "${COMPILE_OUTPUT_DIR:-}" ]]; then
+    overnight_root="$AGENTS_DIR/overnight"
+    if [[ -d "$overnight_root" ]]; then
+        fallback="$(find "$overnight_root" -path '*/defrag/latest.json' -type f -printf '%T@ %p\n' 2>/dev/null \
+            | sort -n | tail -n 1 | awk '{print $2}')"
+        if [[ -n "$fallback" && -f "$fallback" ]]; then
+            echo "INFO: $DEFRAG_LATEST not found; falling back to overnight preview $fallback"
+            DEFRAG_LATEST="$fallback"
+        fi
+    fi
+fi
+
 if [[ ! -f "$DEFRAG_LATEST" ]]; then
     echo "FAIL: $DEFRAG_LATEST not found — run 'ao defrag' first"
     exit 1
