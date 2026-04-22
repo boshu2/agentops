@@ -11,9 +11,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 HOOKS_DIR="$REPO_ROOT/hooks"
 PASS=0
 FAIL=0
+SKIP=0
 
 red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
+yellow() { printf '\033[0;33m%s\033[0m\n' "$1"; }
 
 pass() {
     green "  PASS: $1"
@@ -23,6 +25,11 @@ pass() {
 fail() {
     red "  FAIL: $1"
     FAIL=$((FAIL + 1))
+}
+
+skip() {
+    yellow "  SKIP: $1"
+    SKIP=$((SKIP + 1))
 }
 
 # Pre-flight: jq required
@@ -1469,7 +1476,12 @@ fi
 EC=0
 OUTPUT=$(bash "$REPO_ROOT/tests/integration/test-finding-prevention-ratchet.sh" 2>&1) || EC=$?
 if [ "$EC" -eq 0 ]; then
-    pass "finding prevention ratchet end-to-end coverage passes"
+    if echo "$OUTPUT" | grep -q '^SKIP:'; then
+        skip "finding prevention ratchet end-to-end coverage skipped (ao binary unavailable)"
+        echo "$OUTPUT" | head -5 | sed 's/^/    /'
+    else
+        pass "finding prevention ratchet end-to-end coverage passes"
+    fi
 else
     fail "finding prevention ratchet end-to-end coverage passes"
     echo "$OUTPUT" | head -20 | sed 's/^/    /'
@@ -2083,12 +2095,15 @@ echo ""
 echo "=== Results ==="
 # ============================================================
 
-TOTAL=$((PASS + FAIL))
-echo "Total: $TOTAL | Pass: $PASS | Fail: $FAIL"
+TOTAL=$((PASS + FAIL + SKIP))
+echo "Total: $TOTAL | Pass: $PASS | Fail: $FAIL | Skip: $SKIP"
 
 if [ "$FAIL" -gt 0 ]; then
     red "FAILED"
     exit 1
+elif [ "$SKIP" -gt 0 ]; then
+    yellow "PASSED WITH SKIPS"
+    exit 0
 else
     green "ALL PASSED"
     exit 0
