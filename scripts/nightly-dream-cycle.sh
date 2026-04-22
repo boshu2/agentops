@@ -206,6 +206,12 @@ close_feedback_rewarded="$(jq -r '.citation_feedback.rewarded // 0' "$CLOSE_LOOP
 close_memory_promoted="$(jq -r '.memory_promoted // 0' "$CLOSE_LOOP_JSON")"
 close_store_indexed="$(jq -r '.store.indexed // 0' "$CLOSE_LOOP_JSON")"
 
+if (( close_ingest_added > 0 && close_auto_promoted == 0 )); then
+  close_throughput_stalled="true"
+else
+  close_throughput_stalled="false"
+fi
+
 defrag_total_learnings="$(jq -r '.prune.total_learnings // 0' "$DEFRAG_JSON")"
 defrag_stale="$(jq -r '.prune.stale_count // 0' "$DEFRAG_JSON")"
 defrag_checked="$(jq -r '.dedup.checked // 0' "$DEFRAG_JSON")"
@@ -252,6 +258,7 @@ jq -n \
   --argjson close_feedback_rewarded "$close_feedback_rewarded" \
   --argjson close_memory_promoted "$close_memory_promoted" \
   --argjson close_store_indexed "$close_store_indexed" \
+  --arg close_throughput_stalled "$close_throughput_stalled" \
   --argjson defrag_total_learnings "$defrag_total_learnings" \
   --argjson defrag_stale "$defrag_stale" \
   --argjson defrag_checked "$defrag_checked" \
@@ -299,7 +306,8 @@ jq -n \
       auto_promoted: $close_auto_promoted,
       feedback_rewarded: $close_feedback_rewarded,
       memory_promoted: $close_memory_promoted,
-      indexed: $close_store_indexed
+      indexed: $close_store_indexed,
+      throughput_stalled: ($close_throughput_stalled == "true")
     },
     defrag: {
       total_learnings: $defrag_total_learnings,
@@ -336,10 +344,18 @@ jq -n \
     }
   }' >"$SUMMARY_JSON"
 
+if [[ "$close_throughput_stalled" == "true" ]]; then
+  throughput_banner="> **Throughput stall detected.** ${close_ingest_added} candidate(s) ingested but 0 auto-promoted. See \`.agents/learnings/2026-04-22-close-loop-citation-gate-deadlock.md\`.
+
+"
+else
+  throughput_banner=""
+fi
+
 cat >"$SUMMARY_MD" <<EOF
 ## Nightly Dream Cycle
 
-This run snapshots the checked-in \`.agents/\` corpus into an ephemeral nightly workspace, runs the dream-cycle primitives there, and uploads the resulting reports with the workflow run.
+${throughput_banner}This run snapshots the checked-in \`.agents/\` corpus into an ephemeral nightly workspace, runs the dream-cycle primitives there, and uploads the resulting reports with the workflow run.
 
 | Stage | Result |
 |-------|--------|
@@ -377,3 +393,25 @@ ${retrieval_hit_summary}
 EOF
 
 echo "Dream-cycle summary written to $SUMMARY_MD"
+
+# Throughput-deadlock gate. Reports (and by default fails) when close-loop
+# ingested candidates but auto-promoted zero — the pattern that quietly
+# persisted through multiple nightly runs before
+# .agents/learnings/2026-04-22-close-loop-citation-gate-deadlock.md.
+# Set NIGHTLY_DREAM_STRICT=0 to downgrade to a warning (e.g. for diagnostic
+# runs where you only want to collect numbers).
+THROUGHPUT_SCRIPT="$(dirname "$0")/check-dream-throughput.sh"
+if [[ -x "$THROUGHPUT_SCRIPT" ]]; then
+  if "$THROUGHPUT_SCRIPT" "$CLOSE_LOOP_JSON"; then
+    :
+  else
+    rc=$?
+    if [[ "${NIGHTLY_DREAM_STRICT:-1}" == "0" ]]; then
+      echo "WARN: throughput gate returned $rc (NIGHTLY_DREAM_STRICT=0 — not failing)" >&2
+    else
+      exit "$rc"
+    fi
+  fi
+else
+  echo "WARN: $THROUGHPUT_SCRIPT not found or not executable; skipping throughput gate" >&2
+fi
