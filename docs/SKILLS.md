@@ -52,7 +52,7 @@ What are you trying to do?
 │
 ├─ "Learn from past work"
 │   ├─ Turn the corpus into operator surfaces ─► /knowledge-activation
-│   ├─ What do we know about X? ──► /knowledge <query>
+│   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
 │   ├─ Save this insight ─────────► /retro --quick "insight"
 │   └─ Full retrospective ────────► /post-mortem
 │
@@ -202,15 +202,18 @@ Root cause analysis with git archaeology.
 /bug-hunt "login fails after password reset"
 ```
 
-### /knowledge
+### Knowledge queries (no slash command)
 
-Query knowledge artifacts across locations.
+Query knowledge artifacts across locations via the CLI. There is no standalone
+`/knowledge` skill — use `/knowledge-activation` to build operator surfaces, or
+run the CLI below for ad-hoc lookup.
 
 ```bash
-/knowledge "patterns for rate limiting"
+ao lookup "patterns for rate limiting"
+ao search --all "patterns for rate limiting"
 ```
 
-**Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`
+**Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`, `.agents/compiled/`
 
 ### /llm-wiki
 
@@ -473,6 +476,37 @@ Reinstall all AgentOps skills globally from the latest source.
 
 ---
 
+## Additional Skills
+
+Single-purpose skills not listed above. See each skill's `SKILL.md` for triggers,
+phases, and flags.
+
+| Skill | Purpose |
+|-------|---------|
+| `/autodev` | Manage the `PROGRAM.md` operational contract for autonomous development loops |
+| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, hooks) |
+| `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
+| `/deps` | Dependency audit, updates, vulnerability scanning, license compliance |
+| `/design` | Product validation gate — aligns goal with `PRODUCT.md` before discovery |
+| `/discovery` | Full discovery-phase orchestrator (brainstorm + search + research + plan + pre-mortem) |
+| `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
+| `/grafana-platform-dashboard` | Design/refactor/validate Grafana dashboards for OpenShift/Kubernetes platform ops |
+| `/harvest` | Cross-rig knowledge consolidation and tiered promotion to the global hub |
+| `/perf` | Performance profiling, benchmarking, regression detection, optimization |
+| `/push` | Atomic test-commit-push with conventional-commit message |
+| `/readme` | Generate a gold-standard README via interview + council validation |
+| `/red-team` | Persona-based adversarial validation — probes whether docs/skills actually work |
+| `/refactor` | Safe, verified refactoring with regression tests at each step |
+| `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog, code map, and specs |
+| `/review` | Structured review of incoming PRs, agent-generated changes, or diffs |
+| `/scaffold` | Project scaffolding, component generation, boilerplate |
+| `/scenario` | Author/manage holdout scenarios in `.agents/holdout/` for behavioral validation |
+| `/security` | Continuous repository security scanning and release gating |
+| `/security-suite` | Composable security suite — static, dynamic, redteam, baseline drift, policy gating |
+| `/test` | Test generation, coverage analysis, TDD workflow |
+
+---
+
 ## Internal Skills
 
 These fire automatically and are not directly invoked:
@@ -480,8 +514,7 @@ These fire automatically and are not directly invoked:
 | Skill | Purpose |
 |-------|---------|
 | `inject` | Load knowledge at session start (`ao inject`) |
-| `extract` | Extract decisions/learnings from transcripts |
-| `forge` | Mine transcripts for knowledge artifacts |
+| `forge` | Mine transcripts for knowledge artifacts (decisions, learnings, failures, patterns) |
 | `ratchet` | Progress gates for RPI workflow |
 | `flywheel` | Knowledge health monitoring |
 | `provenance` | Trace knowledge artifact lineage |
