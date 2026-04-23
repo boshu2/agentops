@@ -178,6 +178,33 @@ while IFS= read -r cmd; do
     fi
   fi
 
+  # Dedicated test file heuristic: a file named after the command (with spaces
+  # and hyphens normalized to underscores) implies coverage even if the
+  # "ao <cmd>" string literal never appears. Examples:
+  #   retrieval-bench → retrieval_bench_test.go / retrieval_bench_*_test.go
+  #   handoff         → handoff_test.go
+  #   rpi serve       → rpi_serve_test.go
+  if ! $covered; then
+    basename_pat=$(printf '%s' "$cmd" | tr ' -' '__')
+    # Use `find` so missing patterns don't fail under `set -euo pipefail`.
+    if [[ -f "$TEST_GLOB_DIR/${basename_pat}_test.go" ]] \
+       || find "$TEST_GLOB_DIR" -maxdepth 1 -name "${basename_pat}_*_test.go" -print -quit 2>/dev/null | grep -q .; then
+      covered=true
+    fi
+  fi
+
+  # executeCommand / Cobra SetArgs heuristic: Go tests often invoke subcommands
+  # as comma-separated string args (e.g., executeCommand("scenario", "list"))
+  # rather than as the literal "ao scenario list" token the earlier checks look
+  # for. Detect this pattern for multi-word commands.
+  if ! $covered && [[ "$cmd" == *" "* ]]; then
+    # Build a regex like: "scenario"[[:space:]]*,[[:space:]]*"list"
+    quoted_tokens=$(printf '%s' "$cmd" | awk '{for(i=1;i<=NF;i++){printf "\"%s\"", $i; if(i<NF) printf "[[:space:]]*,[[:space:]]*"}}')
+    if grep -rlE "$quoted_tokens" "$TEST_GLOB_DIR"/*_test.go >/dev/null 2>/dev/null; then
+      covered=true
+    fi
+  fi
+
   if ! $covered; then
     missing+=("$cmd")
     errors=$((errors + 1))
