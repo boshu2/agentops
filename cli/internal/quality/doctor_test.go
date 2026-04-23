@@ -16,6 +16,34 @@ func TestComputeResult_Healthy(t *testing.T) {
 	}
 }
 
+func TestHealStrictTimeout_DefaultsTo120s(t *testing.T) {
+	t.Setenv("AO_DOCTOR_HEAL_TIMEOUT", "")
+	got := healStrictTimeout()
+	if got != 120*time.Second {
+		t.Errorf("healStrictTimeout() default = %s, want 2m0s", got)
+	}
+}
+
+func TestHealStrictTimeout_HonorsEnvOverride(t *testing.T) {
+	t.Setenv("AO_DOCTOR_HEAL_TIMEOUT", "3m")
+	got := healStrictTimeout()
+	if got != 3*time.Minute {
+		t.Errorf("healStrictTimeout() with AO_DOCTOR_HEAL_TIMEOUT=3m = %s, want 3m0s", got)
+	}
+}
+
+func TestHealStrictTimeout_IgnoresInvalidOverride(t *testing.T) {
+	// Garbage values fall back to the default so doctor never runs with a
+	// zero-length timeout and instantly times out every check.
+	for _, bad := range []string{"not-a-duration", "0", "-5s", "   "} {
+		t.Setenv("AO_DOCTOR_HEAL_TIMEOUT", bad)
+		got := healStrictTimeout()
+		if got != 120*time.Second {
+			t.Errorf("healStrictTimeout() with AO_DOCTOR_HEAL_TIMEOUT=%q = %s, want 2m0s", bad, got)
+		}
+	}
+}
+
 func TestComputeResult_Degraded(t *testing.T) {
 	t.Parallel()
 	out := ComputeResult([]Check{{Status: "pass"}, {Status: "warn"}})
