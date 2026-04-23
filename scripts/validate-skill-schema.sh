@@ -47,14 +47,34 @@ extract_frontmatter() {
 HAS_YQ=0
 HAS_PYTHON_JSONSCHEMA=0
 HAS_JQ=0
+YQ_VARIANT=""
 
 if command -v yq &>/dev/null; then
   HAS_YQ=1
+  # Detect yq variant: "go" (Mike Farah, supports `-o json`) vs "python" (kislyuk,
+  # jq wrapper that emits JSON by default from YAML). Both are packaged under the
+  # same binary name in different distros.
+  if yq --help 2>&1 | grep -q 'jq filter'; then
+    YQ_VARIANT="python"
+  else
+    YQ_VARIANT="go"
+  fi
 fi
 
 if command -v jq &>/dev/null; then
   HAS_JQ=1
 fi
+
+# yq_to_json: run a jq filter over YAML on stdin and emit JSON, regardless of
+# which yq variant is installed.
+yq_to_json() {
+  local filter="${1:-.}"
+  case "$YQ_VARIANT" in
+    go) yq -o json "$filter" ;;
+    python) yq "$filter" ;;
+    *) return 1 ;;
+  esac
+}
 
 if command -v python3 &>/dev/null; then
   if python3 -c "import jsonschema, json, yaml" &>/dev/null; then
@@ -79,7 +99,7 @@ validate_full() {
   local frontmatter="$2"
 
   local json_data
-  json_data=$(echo "$frontmatter" | yq -o json '.' 2>&1) || {
+  json_data=$(echo "$frontmatter" | yq_to_json '.' 2>&1) || {
     echo -e "  ${RED}FAIL${NC} $skill_name: invalid YAML frontmatter"
     [[ $VERBOSE -eq 1 ]] && echo "       yq error: $json_data"
     return 1
@@ -115,7 +135,7 @@ validate_structural() {
   local errors=""
 
   local json_data
-  json_data=$(echo "$frontmatter" | yq -o json '.' 2>&1) || {
+  json_data=$(echo "$frontmatter" | yq_to_json '.' 2>&1) || {
     echo -e "  ${RED}FAIL${NC} $skill_name: invalid YAML frontmatter"
     return 1
   }

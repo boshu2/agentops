@@ -487,6 +487,23 @@ func FindHealScript() string {
 }
 
 // CheckSkillIntegrity runs heal.sh --strict to validate skill hygiene.
+// healStrictDefaultTimeout is the wall-clock budget for `heal.sh --strict` run
+// as part of `ao doctor health`. On a fresh checkout (first run, cold caches)
+// a strict sweep through the full skills tree typically takes 45-75s, so the
+// budget needs to exceed that with margin. Operators with slower disks or
+// busier machines can override via `AO_DOCTOR_HEAL_TIMEOUT` (Go duration
+// string, e.g. "3m").
+const healStrictDefaultTimeout = 120 * time.Second
+
+func healStrictTimeout() time.Duration {
+	if v := strings.TrimSpace(os.Getenv("AO_DOCTOR_HEAL_TIMEOUT")); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+	}
+	return healStrictDefaultTimeout
+}
+
 func CheckSkillIntegrity() Check {
 	healPath := FindHealScript()
 	if healPath == "" {
@@ -498,7 +515,8 @@ func CheckSkillIntegrity() Check {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	timeout := healStrictTimeout()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "bash", healPath, "--strict")
@@ -508,7 +526,7 @@ func CheckSkillIntegrity() Check {
 		return Check{
 			Name:     "Skill Integrity",
 			Status:   "warn",
-			Detail:   "heal.sh timed out after 30s",
+			Detail:   fmt.Sprintf("heal.sh timed out after %s", timeout),
 			Required: false,
 		}
 	}

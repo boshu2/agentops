@@ -45,6 +45,11 @@ trap 'rm -rf "$tmp" /tmp/crank-wave-checkpoint.out /tmp/crank-wave-checkpoint.er
 git -C "$tmp" init -q
 git -C "$tmp" config user.email test@example.com
 git -C "$tmp" config user.name "Test User"
+# Insulate the fixture commit from the operator's global git config: some
+# environments set commit.gpgsign=true or a custom gpg.ssh.program that would
+# require a real signing key and fail inside a throwaway fixture.
+git -C "$tmp" config commit.gpgsign false
+git -C "$tmp" config tag.gpgsign false
 printf 'fixture\n' > "$tmp/README.md"
 git -C "$tmp" add README.md
 git -C "$tmp" -c core.hooksPath=/dev/null commit -q -m "fixture"
