@@ -203,6 +203,31 @@ while IFS= read -r cmd; do
     if grep -rlE "$quoted_tokens" "$TEST_GLOB_DIR"/*_test.go >/dev/null 2>/dev/null; then
       covered=true
     fi
+
+    # Command catalog map heuristic: test files enumerate command trees as
+    # `"<parent>": {"<leaf>", "<leaf>"}`. This pattern is used by command-
+    # registration smoke tests in cobra_commands_test.go and similar.
+    if ! $covered; then
+      parent=$(printf '%s' "$cmd" | awk '{print $1}')
+      leaf=$(printf '%s' "$cmd" | awk '{for(i=2;i<=NF;i++){printf "%s%s", $i, (i<NF?" ":"")}}')
+      map_pattern="\"$parent\"[[:space:]]*:[[:space:]]*\\{[^}]*\"$leaf\""
+      if grep -rlE "$map_pattern" "$TEST_GLOB_DIR"/*_test.go >/dev/null 2>/dev/null; then
+        covered=true
+      fi
+    fi
+
+    # Handler-function naming convention: `runXxxYyy` mirrors `ao xxx yyy`. The
+    # Go codebase wires Cobra subcommands to handlers with this pattern, and
+    # unit tests often call the handler directly rather than routing through
+    # cobra.
+    if ! $covered; then
+      title_cased=$(printf '%s' "$cmd" | awk '{for(i=1;i<=NF;i++){s=$i; printf "%s%s", toupper(substr(s,1,1)), substr(s,2)}}')
+      # Also fold hyphens: e.g., "config models" is fine but "rpi verify-final" would need hyphen→case.
+      title_cased=$(printf '%s' "$title_cased" | awk 'BEGIN{FS="-"; OFS=""} {for(i=1;i<=NF;i++){s=$i; printf "%s%s", toupper(substr(s,1,1)), substr(s,2)}}')
+      if grep -rlE "\\brun${title_cased}\\b" "$TEST_GLOB_DIR"/*_test.go >/dev/null 2>/dev/null; then
+        covered=true
+      fi
+    fi
   fi
 
   if ! $covered; then
