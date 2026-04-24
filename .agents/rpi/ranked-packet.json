@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "objective": "Design a repo-native evaluation environment for AgentOps skills, hooks, ao CLI behavior, RPI flows, and Claude/Codex model/runtime changes.",
+  "generated_at": "2026-04-24T15:45:00-04:00",
+  "tracker_mode": "tasklist",
+  "ranked_items": [
+    {
+      "rank": 1,
+      "path": ".agents/findings/f-2026-04-14-001.md",
+      "type": "finding",
+      "applied": true,
+      "reason": "New ao eval CLI work must pair production command changes with tests."
+    },
+    {
+      "rank": 2,
+      "path": ".agents/findings/f-2026-04-14-002.md",
+      "type": "finding",
+      "applied": true,
+      "reason": "Eval baselines and closure evidence must use durable paths."
+    },
+    {
+      "rank": 3,
+      "path": ".agents/learnings/2026-04-14-scrub-rpi-runtime-from-raw-validation.md",
+      "type": "learning",
+      "applied": true,
+      "reason": "Runtime evals must scrub host AGENTOPS_RPI_RUNTIME variables."
+    },
+    {
+      "rank": 4,
+      "path": ".agents/learnings/2026-04-07-v2.35.0-release-postmortem.md",
+      "type": "learning",
+      "applied": true,
+      "reason": "Eval tiers must distinguish local, CI, and live/runtime failure surfaces."
+    }
+  ]
+}
