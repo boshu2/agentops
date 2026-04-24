@@ -5,6 +5,10 @@ source_phase: validate
 date: 2026-04-19
 maturity: provisional
 utility: 0.5
+confidence: 0.0000
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Strict Sub-Skill Delegation Pays for Its Cost

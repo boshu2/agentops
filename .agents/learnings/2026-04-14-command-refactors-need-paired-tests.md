@@ -6,6 +6,9 @@ category: process
 confidence: high
 maturity: provisional
 utility: 0.7
+helpful_count: 0
+harmful_count: 0
+reward_count: 0
 ---
 
 # Learning: Command Refactors Need Paired Test Diffs

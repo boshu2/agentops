@@ -17,6 +17,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); }
 
 echo "=== OpenCode Runtime Smoke Tests ==="
+echo "Proof tier: Tier S structural/install smoke"
 echo ""
 
 # ── 1. Install script validity ────────────────────────────────────────────────

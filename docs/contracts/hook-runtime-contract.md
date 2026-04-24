@@ -12,6 +12,27 @@
 | Codex (hookless fallback) | `CODEX_HOME` env or `~/.codex/config.toml` exists but native hooks are unavailable or not configured | Explicit lifecycle (`ao codex start/stop`) |
 | Manual | Neither detected | Explicit `ao inject` / `ao forge` commands |
 
+## Runtime Proof Tiers
+
+Runtime support is proven at three separate levels. CI defaults to structural
+proof and skip-on-absent live proof so local and pull-request validation do not
+require external CLIs, credentials, or paid model calls.
+
+| Tier | Meaning | Default Gate Behavior |
+|------|---------|-----------------------|
+| Tier S: structural/install smoke | Files, manifests, generated bundles, installer scripts, and static runtime-specific entrypoints are present and internally consistent. | Blocking in CI. No live runtime or auth required. |
+| Tier I: live inventory/load proof | A real runtime can load AgentOps and report the visible skill inventory, or a documented load-check fallback passes when inventory is unavailable. | Skip or warn when the runtime/auth is absent; strict env vars can make failures blocking. |
+| Tier E: live execution proof | A real runtime executes an AgentOps workflow end to end against a scenario. | Opt-in/nightly only because it may require auth, tool permissions, budget, and wall-clock time. |
+
+### Current Public Runtime Coverage
+
+| Runtime | Tier S | Tier I | Tier E |
+|---------|--------|--------|--------|
+| Claude Code | `tests/skills/test-runtime-claude-code-smoke.sh` | `scripts/validate-headless-runtime-skills.sh --runtime claude` when `claude` and auth are available; load-check fallback unless strict | Not a default CI gate |
+| Codex | `tests/skills/test-runtime-codex-smoke.sh` | `scripts/validate-headless-runtime-skills.sh --runtime codex` when `codex` and auth are available; load-check fallback unless strict | Not a default CI gate |
+| Cursor | `tests/skills/test-runtime-cursor-smoke.sh` verifies Cursor `.mdc` export through the converter | Not implemented as a live Cursor inventory gate | Not implemented |
+| OpenCode | `tests/skills/test-runtime-opencode-smoke.sh` | Not implemented as a live OpenCode inventory gate | Not implemented |
+
 ## Event Mapping
 
 | Capability | Claude/OpenCode hook-capable | Codex native hooks (v0.115.0+) | Codex hookless fallback |
@@ -84,6 +105,13 @@ ao hook validate --runtime claude
 
 # Verify Codex lifecycle commands work
 ao codex status
+
+# Verify default structural/runtime-inventory proof surfaces
+bash tests/skills/test-runtime-claude-code-smoke.sh
+bash tests/skills/test-runtime-codex-smoke.sh
+bash tests/skills/test-runtime-cursor-smoke.sh
+bash tests/skills/test-runtime-opencode-smoke.sh
+bash scripts/validate-headless-runtime-skills.sh
 ```
 
 ## Contract Rules

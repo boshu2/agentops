@@ -19,6 +19,16 @@ CODEX_STRICT="${HEADLESS_RUNTIME_SKILL_CODEX_STRICT:-0}"
 CLAUDE_USED_FALLBACK=0
 CODEX_USED_FALLBACK=0
 
+print_runtime_proof_matrix() {
+    cat <<'EOF'
+Runtime proof tiers:
+  Claude Code: Tier S via tests/skills/test-runtime-claude-code-smoke.sh; Tier I here when claude/auth are available; Tier E opt-in only.
+  Codex: Tier S via tests/skills/test-runtime-codex-smoke.sh; Tier I here when codex/auth are available; Tier E opt-in only.
+  Cursor: Tier S via tests/skills/test-runtime-cursor-smoke.sh; Tier I not implemented; Tier E not implemented.
+  OpenCode: Tier S via tests/skills/test-runtime-opencode-smoke.sh; Tier I not implemented; Tier E not implemented.
+EOF
+}
+
 usage() {
     cat <<'EOF'
 validate-headless-runtime-skills.sh
@@ -110,6 +120,8 @@ if [[ "$SKIP_ENV" == "1" ]]; then
     echo "SKIP: AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS=1"
     exit 0
 fi
+
+print_runtime_proof_matrix
 
 TMP_DIR=""
 cleanup() {

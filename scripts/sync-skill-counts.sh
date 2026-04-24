@@ -25,6 +25,9 @@ fi
 # --- Derive truth from disk ---
 
 TOTAL=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+CODEX_TOTAL=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+CODEX_OVERRIDES=$(find "$REPO_ROOT/skills-codex-overrides" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+HOOK_EVENT_SECTIONS=$(jq -r '.hooks | length' "$REPO_ROOT/hooks/hooks.json" 2>/dev/null || echo 0)
 
 USER_FACING=$(sed -n '/^### User-Facing Skills/,/^### Internal Skills/p' "$REPO_ROOT/skills/SKILL-TIERS.md" \
   | grep -c '^| \*\*')
@@ -37,6 +40,9 @@ echo "Skill counts from disk:"
 echo "  Total:       $TOTAL"
 echo "  User-facing: $USER_FACING"
 echo "  Internal:    $INTERNAL"
+echo "  Codex:       $CODEX_TOTAL"
+echo "  Overrides:   $CODEX_OVERRIDES"
+echo "  Hook events: $HOOK_EVENT_SECTIONS"
 echo ""
 
 if [[ "$INTERNAL_ROWS" -lt 1 ]]; then
@@ -136,11 +142,26 @@ patch_file "$REPO_ROOT/docs/ARCHITECTURE.md" \
   "s|(skills/[[:space:]]+# )[0-9]+ skills \\([0-9]+ user-facing, [0-9]+ internal\\)$|\\1${TOTAL} skills (${USER_FACING} user-facing, ${INTERNAL} internal)|" \
   "docs/ARCHITECTURE.md skills tree"
 
-# PRODUCT.md: "N skills, X hooks,"
+# PRODUCT.md current count surfaces.
 patch_file "$REPO_ROOT/PRODUCT.md" \
-  '[[:space:]][0-9]+ skills, [0-9]+ hooks,' \
-  "s|([[:space:]])[0-9]+ skills, ([0-9]+ hooks,)|\\1${TOTAL} skills, \\2|" \
+  'Skills system — [0-9]+ skills,' \
+  "s|(Skills system — )[0-9]+( skills,)|\\1${TOTAL}\\2|" \
+  "PRODUCT.md convergence skill count"
+
+patch_file "$REPO_ROOT/PRODUCT.md" \
+  '^### 1[.] Skills \([0-9]+ skills across 4 runtimes\)$' \
+  "s|^### 1[.] Skills \\([0-9]+ skills across 4 runtimes\\)$|### 1. Skills (${TOTAL} skills across 4 runtimes)|" \
+  "PRODUCT.md skills layer heading"
+
+patch_file "$REPO_ROOT/PRODUCT.md" \
+  '[[:space:]][0-9]+ skills, [0-9]+ runtime hook event sections,' \
+  "s|([[:space:]])[0-9]+ skills, [0-9]+ runtime hook event sections,|\\1${TOTAL} skills, ${HOOK_EVENT_SECTIONS} runtime hook event sections,|" \
   "PRODUCT.md zero-setup value proposition"
+
+patch_file "$REPO_ROOT/PRODUCT.md" \
+  'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \
+  "s|Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides|Distribution/runtime reach: ${TOTAL} shared skills, ${CODEX_TOTAL} checked-in Codex artifacts, and ${CODEX_OVERRIDES} Codex overrides|" \
+  "PRODUCT.md distribution/runtime reach"
 
 echo ""
 

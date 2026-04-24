@@ -152,6 +152,7 @@ log "Validating runtime smoke surfaces..."
 for runtime_test in \
     "$REPO_ROOT/tests/skills/test-runtime-claude-code-smoke.sh" \
     "$REPO_ROOT/tests/skills/test-runtime-codex-smoke.sh" \
+    "$REPO_ROOT/tests/skills/test-runtime-cursor-smoke.sh" \
     "$REPO_ROOT/tests/skills/test-runtime-opencode-smoke.sh" \
     "$REPO_ROOT/tests/scripts/test-headless-runtime-skills.sh"; do
     [[ -f "$runtime_test" ]] || continue

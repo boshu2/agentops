@@ -93,5 +93,9 @@ if [[ -n "$matches" ]]; then
   exit 1
 fi
 
+if [[ "${SKIP_CLI_SKILLS_MAP_PARITY:-0}" != "1" ]]; then
+  bash "$REPO_ROOT/scripts/validate-cli-skills-map.sh"
+fi
+
 echo "HOOKS_DOC_PARITY: PASS (${#SCOPED_FILES[@]} files checked, active hooks: $active_hook_count)"
 exit 0

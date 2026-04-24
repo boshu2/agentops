@@ -414,7 +414,7 @@ func TestHandlePostPhaseGate_Fail(t *testing.T) {
 	}
 }
 
-func TestRunPhaseLoop_FastPathSkipsPhase3(t *testing.T) {
+func TestRunPhaseLoop_FastPathRunsPhase3(t *testing.T) {
 	tmp := t.TempDir()
 	stateDir := filepath.Join(tmp, ".agents", "rpi")
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
@@ -444,12 +444,19 @@ func TestRunPhaseLoop_FastPathSkipsPhase3(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify phase 3 skip was logged.
+	// Verify phase 3 ran in dry-run mode instead of being skipped.
 	data, err := os.ReadFile(logPath)
 	if err != nil {
 		t.Fatalf("failed to read log: %v", err)
 	}
-	if !strings.Contains(string(data), "skipped") {
-		t.Errorf("log should contain 'skipped' for phase 3, got: %s", string(data))
+	log := string(data)
+	if !strings.Contains(log, "validation: started") {
+		t.Errorf("log should show phase 3 validation starting, got: %s", log)
+	}
+	if !strings.Contains(log, "validation: dry-run") {
+		t.Errorf("log should show phase 3 validation dry-run, got: %s", log)
+	}
+	if strings.Contains(log, "validation: skipped") {
+		t.Errorf("phase 3 validation should not be skipped, got: %s", log)
 	}
 }

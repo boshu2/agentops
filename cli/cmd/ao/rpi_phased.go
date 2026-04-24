@@ -199,15 +199,15 @@ func normalizeOptsCommands(opts *phasedEngineOptions) {
 	}
 }
 
-// applyComplexityFastPath classifies goal complexity and activates the fast path
-// (skips council validation) for trivial goals.
+// applyComplexityFastPath classifies goal complexity and activates quick gates
+// for trivial goals while preserving the three-phase RPI lifecycle.
 func applyComplexityFastPath(state *phasedState, opts phasedEngineOptions) {
 	complexity := classifyComplexity(state.Goal)
 	state.Complexity = complexity
 	fmt.Printf("RPI mode: rpi-phased (complexity: %s)\n", complexity)
 	if complexity == ComplexityFast && !opts.FastPath {
 		state.FastPath = true
-		fmt.Println("Complexity: fast — skipping validation phase (phase 3)")
+		fmt.Println("Complexity: fast — using quick gates for validation")
 	}
 }
 
@@ -510,11 +510,6 @@ func handleBudgetTimeout(spawnCwd string, state *phasedState, p phase, budget ti
 func runPhaseLoopWithBudgets(ctx context.Context, cwd, spawnCwd string, state *phasedState, startPhase int, opts phasedEngineOptions, statusPath string, allPhases []PhaseProgress, logPath string) error {
 	for i := startPhase; i <= len(phases); i++ {
 		p := phases[i-1]
-		if p.Num == 3 && state.FastPath && state.Complexity == ComplexityFast {
-			fmt.Printf("\n--- Phase 3: validation (skipped — complexity: fast) ---\n")
-			logPhaseTransition(logPath, state.RunID, "validation", "skipped — complexity: fast")
-			continue
-		}
 
 		phaseOpts := opts
 		budget, hasBudget, err := resolvePhaseBudget(state, p.Num)

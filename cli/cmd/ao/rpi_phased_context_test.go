@@ -502,7 +502,7 @@ func TestCtx_ResolvePhaseBudget_ComplexityDefault(t *testing.T) {
 		{"standard-phase2-unbounded", ComplexityStandard, false, 2, 0, false},
 		{"standard-phase3", ComplexityStandard, false, 3, 5 * time.Minute, true},
 		{"full-phase3", ComplexityFull, false, 3, 10 * time.Minute, true},
-		{"fast-phase3-zero", ComplexityFast, true, 3, 0, false},
+		{"fast-phase3-quick-budget", ComplexityFast, true, 3, 2 * time.Minute, true},
 	}
 
 	for _, tc := range tests {

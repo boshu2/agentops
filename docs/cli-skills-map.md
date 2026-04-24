@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-03; targeted `autodev` and `compile` update 2026-04-12. 54 CLI commands, 69 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 55 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
 
@@ -12,9 +12,10 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| CLI commands with skill/hook callers | 34 |
-| Orphan commands (user utilities, hidden, CI-only) | 19 |
-| Phantom subcommands (bugs) | 2 |
+| Generated CLI command headings | 55 |
+| CLI command entries with skill/hook callers | 34 |
+| Orphan/hidden command entries (user utilities, hidden, CI-only) | 20 |
+| Known phantom subcommands | 0 |
 
 ---
 
@@ -120,7 +121,9 @@ Which `ao` commands each hook invokes.
 | Hook File | Event | ao Commands |
 |-----------|-------|-------------|
 | **session-start.sh** | SessionStart | `flywheel close-loop`, `knowledge brief`, `rpi cleanup` |
+| **ao-inject.sh** | SessionStart | `inject` |
 | **session-end-maintenance.sh** | SessionEnd | `contradict`, `dedup`, `forge transcript`, `maturity`, `memory sync`, `notebook update`, `pool ingest` |
+| **compile-session-defrag.sh** | SessionEnd | `defrag` |
 | **ao-flywheel-close.sh** | Stop | `flywheel close-loop` |
 | **ratchet-advance.sh** | PostToolUse | `ratchet record` |
 | **context-guard.sh** | UserPromptSubmit | `context guard` |
@@ -162,14 +165,9 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 
 ---
 
-## Phantom Subcommands (Bugs)
+## Phantom Subcommands
 
-References to subcommands that don't exist under their parent command.
-
-| Phantom Call | Location | Problem | Fix |
-|-------------|----------|---------|-----|
-| `ao gate check` | `tests/rpi-e2e/run-full-rpi.sh:172,176,217` | `check` is a subcommand of `ao ratchet`, not `ao gate` | Change to `ao ratchet check` |
-| `ao forge index` | `scripts/test-flywheel.sh:94` | `index` doesn't exist under `forge` (has: `transcript`, `markdown`, `batch`) | **Fixed** — changed to `ao forge markdown` |
+No known phantom subcommands are present in the current map. `scripts/validate-cli-skills-map.sh` fails if removed paths or the known stale gate/forge calls reappear.
 
 ---
 

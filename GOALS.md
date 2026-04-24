@@ -20,9 +20,9 @@ The operational layer for coding agents — repo-native bookkeeping, validation,
 
 ### 1. Close the multi-runtime promise gap
 
-README and PRODUCT.md promise skills work across 4 runtimes, but runtime-specific tests are quarantined (Claude Code, Codex, OpenCode all disabled in `tests/_quarantine/`). Only one cross-runtime test exists (`tests/codex/test-skill-cross-runtime.sh`). Ship at least 2 more runtime-specific smoke tests and promote them to CI.
+README and PRODUCT.md promise skills work across 4 runtimes. The current contract is tiered: Tier S structural/install proof must stay green in CI, Tier I live inventory proof may skip when external CLIs/auth are absent unless strict mode is enabled, and Tier E live execution proof remains opt-in/nightly. Keep the Tier S gates green for Claude Code, Codex, Cursor, and OpenCode, and expand Tier I/E only where the runtime can be provisioned reliably.
 
-**Progress:** One cross-runtime test (`tests/codex/test-skill-cross-runtime.sh`) exists and passes. Three additional runtime smoke tests are now active in CI through `tests/smoke-test.sh`: `tests/skills/test-runtime-opencode-smoke.sh` (OpenCode install script + skill structure), `tests/skills/test-runtime-claude-code-smoke.sh` (Claude Code plugin manifest + hooks + frontmatter), and `tests/skills/test-runtime-codex-smoke.sh` (Codex native plugin install + hooks + bundle structure). `tests/scripts/test-headless-runtime-skills.sh` also now exercises the Claude/Codex headless validator contract in CI with mocked runtimes. Remaining gap: live hosted-runtime execution and inventory proof still require external CLIs/auth beyond GitHub-hosted runners.
+**Progress:** Tier S is active in CI through `tests/smoke-test.sh`: `tests/skills/test-runtime-claude-code-smoke.sh`, `tests/skills/test-runtime-codex-smoke.sh`, `tests/skills/test-runtime-cursor-smoke.sh`, and `tests/skills/test-runtime-opencode-smoke.sh`. `tests/scripts/test-headless-runtime-skills.sh` exercises the Claude/Codex headless validator contract with mocked runtimes, while `scripts/validate-headless-runtime-skills.sh` performs live Tier I inventory proof when local CLIs/auth are available. Remaining gap: live hosted-runtime execution proof is not a default CI gate.
 
 **Steer:** increase (runtime coverage count)
 
@@ -36,7 +36,7 @@ Three install scripts (`install.sh`, `install-codex.sh`, `install-opencode.sh`) 
 
 ### 3. Resurrect quarantined E2E tests
 
-8 test directories sit disabled in `tests/_quarantine/` — RPI pipeline, skill triggering, native teams, runtime-specific tests. Each represents a real user workflow with no regression protection. Triage each: fix and promote, or delete if obsolete.
+`tests/_quarantine/` currently has zero active quarantined suites. Keep it empty: newly disabled workflow tests must either be promoted back to CI, deleted as obsolete, or tracked as explicit follow-up work before they can remain quarantined.
 
 **Steer:** decrease (quarantined test count)
 

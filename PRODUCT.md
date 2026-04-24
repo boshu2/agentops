@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-04-12
+last_reviewed: 2026-04-24
 ---
 
 # PRODUCT.md
@@ -25,7 +25,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 68 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Shipped. Manual authoring today; pattern-to-skill pipeline is the next step. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 69 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 
 The gap between "architecture exists for compound growth" (what others describe) and "compound growth is actually happening" (what AgentOps delivers with harvest/forge/evolve) is the moat.
@@ -51,7 +51,7 @@ The gap between "architecture exists for compound growth" (what others describe)
 
 AgentOps has three layers:
 
-### 1. Skills (68 skills across 4 runtimes)
+### 1. Skills (69 skills across 4 runtimes)
 
 Markdown-defined primitives and flows that agents load and execute:
 
@@ -59,7 +59,7 @@ Markdown-defined primitives and flows that agents load and execute:
 - **Bookkeeping primitives** — `/retro`, `/forge`, `/inject`, `/flywheel`, `/compile`. Extract, score, curate, and retrieve learnings so solved problems stay solved.
 - **Flows** — `/research`, `/implement`, `/validation`, `/rpi`, `/crank`, `/evolve`. Compose single actions into repeatable paths that can run manually or end to end.
 
-Skills work across Claude Code, Codex CLI, Cursor, and OpenCode. Each runtime has native format support (`/converter` exports between them). Codex-native skills ship alongside Claude-native.
+Skills work across Claude Code, Codex CLI, Cursor, and OpenCode through explicit proof tiers. Tier S structural/install proof is active for all four runtimes; Tier I live inventory proof exists for Claude Code and Codex when local CLIs/auth are available; Tier E live execution proof remains opt-in rather than a default CI gate. Codex-native skills ship alongside Claude-native, and `/converter` exports Cursor rules.
 
 ### 2. CLI (`ao`)
 
@@ -85,8 +85,8 @@ The public value proposition should now map to the category we are actually sell
 - **Validation Before Ship** — Multi-model consensus (Claude + Codex judges debate independently) validates plans before build and code before commit. Validation gates block, not advise.
 - **Primitives + Flows** — Skills are standalone building blocks. Use one (`/council validate this PR`), compose several (`/research` → `/plan` → `/council validate`), or run the full lifecycle (`/rpi`). The same recursive shape repeats at every scale.
 - **Hands-Free Execution** — `/evolve` and `/crank` spawn agents that work toward goals autonomously. Cycle state is disk-based, regression gates are hard-gated, and every cycle writes a verifiable audit trail.
-- **Multi-Runtime, Multi-Model** — Same skills work across Claude Code, Codex CLI, Cursor, and OpenCode. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives.
-- **Zero Setup, Zero Telemetry** — All state lives in local `.agents/` directories (git-ignored by default; opt in to commit with `AGENTOPS_GITIGNORE_AUTO=0`) with no cloud dependency. 69 skills, 3 hooks, and the flywheel can operate with no external daemon.
+- **Multi-Runtime, Multi-Model** — Same skills target Claude Code, Codex CLI, Cursor, and OpenCode with documented Tier S/I/E proof levels. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives.
+- **Zero Setup, Zero Telemetry** — All state lives in local `.agents/` directories (git-ignored by default; opt in to commit with `AGENTOPS_GITIGNORE_AUTO=0`) with no cloud dependency. 69 skills, 7 runtime hook event sections, and the flywheel can operate with no external daemon.
 
 ## Strategic Bet
 
@@ -94,13 +94,13 @@ AgentOps bets that the durable advantage in AI coding will come from compounding
 
 ## Evidence
 
-As of 2026-04-09:
+As of 2026-04-24:
 
 **Traction:**
 
 - GitHub repo: 265 stars, 24 forks, 2 open issues, last pushed 2026-04-08
 - Public surface: GitHub Pages comparison site and search metadata are live
-- Distribution/runtime reach: 66 shared skills, 66 checked-in Codex artifacts, and 35 Codex overrides
+- Distribution/runtime reach: 69 shared skills, 69 checked-in Codex artifacts, and 35 Codex overrides
 
 **Measured operational proof:**
 
@@ -113,8 +113,8 @@ As of 2026-04-09:
 | Gap | Impact | Status |
 |-----|--------|--------|
 | Dream autonomy is still maturing | The private local Dream lane now runs through `/dream` and `ao overnight`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish rather than the existence of the overnight engine. | in-progress |
-| Pattern-to-skill pipeline is not built | The strongest differentiation thesis, self-programming compounding, is still manual at the last mile. | open |
-| Multi-runtime proof is still partial | README and PRODUCT promise parity across Claude Code, Codex, Cursor, and OpenCode, but live runtime verification and Codex parity still cost ongoing maintenance. | in-progress |
+| Pattern-to-skill promotion polish remains | The strongest differentiation thesis, self-programming compounding, now has review-only draft generation; the remaining gap is richer synthesis and a clean publish path. | in-progress |
+| Multi-runtime proof is tiered, not complete | Tier S structural proof is active for Claude Code, Codex, Cursor, and OpenCode, but live inventory/execution proof is only partial and still depends on external CLIs/auth. | in-progress |
 | Messaging is not yet fully unified | Public surfaces should now converge on "operational layer," while technical docs still need a clean split between the public category and the internal "context compiler" framing. | open |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place, but retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
 

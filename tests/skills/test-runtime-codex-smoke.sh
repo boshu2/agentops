@@ -16,6 +16,7 @@ fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 skip() { echo "  SKIP: $1"; SKIP=$((SKIP + 1)); }
 
 echo "=== Codex Runtime Smoke Tests ==="
+echo "Proof tier: Tier S structural/install smoke"
 echo ""
 
 PLUGIN_JSON="$REPO_ROOT/.codex-plugin/plugin.json"

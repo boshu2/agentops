@@ -6,6 +6,9 @@ category: process
 confidence: high
 maturity: provisional
 utility: 0.8
+harmful_count: 0
+reward_count: 0
+helpful_count: 0
 ---
 
 # Learning: Dream Long-Haul Needs Durable Proof and Cheap Corroboration

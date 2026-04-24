@@ -14,6 +14,7 @@ PASS_COUNT=0
 LOOKUP_QUERY="task-scoped lookup queries"
 
 cleanup() {
+  chmod -R u+w "$WORK_DIR" 2>/dev/null || true
   rm -rf "$WORK_DIR"
 }
 trap cleanup EXIT

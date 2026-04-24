@@ -62,7 +62,11 @@ func gcBridgeVersion(execCommand gcExecFn) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("gc version: %w", err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	version := strings.TrimSpace(string(out))
+	if version == "" {
+		return "", fmt.Errorf("gc version: empty output")
+	}
+	return version, nil
 }
 
 // gcBridgeCompatible checks if the given version meets the minimum requirement.

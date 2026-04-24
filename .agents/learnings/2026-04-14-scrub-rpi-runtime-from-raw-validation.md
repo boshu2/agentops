@@ -6,6 +6,9 @@ category: debugging
 confidence: high
 maturity: provisional
 utility: 0.7
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Scrub AGENTOPS_RPI_RUNTIME in Raw Validation

@@ -210,7 +210,7 @@ func DefaultPhaseBudgetForComplexity(complexity ComplexityLevel, phaseNum int) t
 	case 3:
 		switch complexity {
 		case ComplexityFast:
-			return 0
+			return 2 * time.Minute
 		case ComplexityFull:
 			return 10 * time.Minute
 		default:

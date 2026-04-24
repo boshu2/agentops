@@ -1,49 +1,72 @@
 {
+  "id": "execution-packet-2026-04-23-pattern-to-skill-pipeline-detection",
   "schema_version": 1,
-  "run_id": "discovery-20260414-dream-long-haul-value",
-  "objective": "Add an opt-in Dream long-haul mode that only extends runtime when yield metrics and deeper probes improve morning packets over the short path.",
-  "epic_id": "na-22xi",
-  "plan_path": ".agents/plans/2026-04-14-dream-long-haul-value.md",
-  "contract_surfaces": [
-    "docs/contracts/repo-execution-profile.md",
-    "docs/contracts/dream-run-contract.md",
-    "docs/contracts/dream-report.md"
-  ],
-  "validation_commands": [
-    "cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./cmd/ao ./internal/overnight -timeout 3m",
-    "scripts/generate-cli-reference.sh",
-    "bash scripts/audit-codex-parity.sh --skill dream",
-    "bash scripts/validate-codex-generated-artifacts.sh --scope worktree",
-    "bash tests/docs/validate-doc-release.sh",
-    "scripts/pre-push-gate.sh --fast"
-  ],
-  "tracker_mode": "beads",
-  "tracker_health": {
-    "healthy": true,
-    "mode": "beads",
-    "reason": "bd probes succeeded and discovery created epic na-22xi with four child issues."
-  },
-  "done_criteria": [
-    "Default Dream behavior remains the current short path unless long-haul is explicitly enabled.",
-    "Dream summary artifacts explain long-haul trigger reason, probe results, and early-exit reason.",
-    "Long-haul mode uses measurable yield gates instead of raw wall-clock as success criteria.",
-    "At least one bounded read-only probe lane improves morning-packet evidence over the short path.",
-    "Council participation is readiness-checked, bounded, and does not silently dominate long-haul cost.",
-    "CLI docs, Dream skill docs, and Codex Dream artifacts stay in sync with the shipped behavior."
-  ],
+  "date": "2026-04-23",
+  "run_id": "p2s-20260423-01",
+  "objective": "Build pattern-to-skill pipeline DETECTION LAYER ONLY (Approach E descope from G). Surface candidate evidence files when patterns mature; ao inject integration is the operator interface. NO synthesis CLI in v1. 4 issues, 4 waves, ~1 crank session.",
   "complexity": "standard",
-  "pre_mortem_verdict": "WARN",
-  "test_levels": {
-    "required": [
-      "L0",
-      "L1",
-      "L2"
-    ],
-    "recommended": [
-      "L3"
-    ],
-    "rationale": "The work spans contracts, command orchestration, and overnight replay behavior. Unit and command tests are required, and at least one end-to-end Dream replay must prove the long-haul decision path."
+  "tracker_mode": "tasklist",
+  "epic_id": null,
+  "epic_id_reason": "bd CLI installed but no beads database; file-backed task spec mode per /discovery STEP 4 contract.",
+  "plan_path": ".agents/plans/2026-04-23-pattern-to-skill-pipeline-detection.md",
+  "brainstorm_path": ".agents/brainstorm/2026-04-23-pattern-to-skill-pipeline.md",
+  "design_path": ".agents/design/2026-04-23-design-pattern-to-skill-pipeline.md",
+  "design_council_path": ".agents/council/2026-04-23-validate-pattern-to-skill-pipeline.md",
+  "research_path": ".agents/research/2026-04-23-pattern-to-skill-pipeline-detection.md",
+  "pre_mortem_path": ".agents/council/2026-04-23-pre-mortem-pattern-to-skill-pipeline-detection.md",
+  "test_levels": ["L0", "L1", "L2"],
+  "test_level_rationale": "L0 unit tests for predicate + frontmatter parse + fail-soft cases. L1 integration tests for scan + injector + cleanup. L2 end-to-end test (test-skillify-detection.sh) covering full pipeline.",
+  "verdicts": {
+    "design": "WARN",
+    "design_consensus": "Council WARN (avg 2.3, actionable). Operator chose Option A (descope to E surface-only) at design gate. 3 CONV blockers all addressed: CONV-1 (eligibility predicate uses real fields, calibrated 5/11), CONV-2 (sibling pipeline lane committed), CONV-3 (moot — no promote command in v1).",
+    "pre_mortem": "WARN",
+    "pre_mortem_consensus": "Quick-mode inline review. No HIGH-severity blockers. 3 MED + 2 LOW findings, all addressable with 4 small acceptance-criterion additions to Issue #1 (race condition / fail-soft / Jaccard calibration / recommendation regex). All 4 propagated inline."
   },
-  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "discovery_timestamp": "2026-04-15T02:18:00Z"
+  "applied_fixes": [
+    "Operator descope from G to E: synthesis CLI deferred to v2; only detection layer in v1",
+    "CONV-1: Eligibility predicate uses maturity + utility + (confidence or helpful_count) — calibrated 5/11 patterns",
+    "CONV-2: Sibling pipeline lane committed; Issue #3 documents in docs/curation-pipeline.md",
+    "Symbol verification correction: cli/internal/inject/ doesn't exist; code lives at cli/cmd/ao/<feature>*.go",
+    "Pre-mortem M1: race condition handled (mid-write atomicity) — Issue #1 acceptance",
+    "Pre-mortem M2: malformed frontmatter handled (fail-soft) — Issue #1 acceptance",
+    "Pre-mortem M3: Jaccard threshold calibration required post-implementation — Issue #1 acceptance",
+    "Pre-mortem L2: recommendation regex validation — Issue #1 acceptance",
+    "Lesson from deferred evolve: tests/skills/run-all.sh hardcoded list updated explicitly (Issue #3)",
+    "Lesson from deferred evolve: CHANGELOG scope-bounded with grep gate against 'synthesis|skillify promote|v2'"
+  ],
+  "binding_constraints": {
+    "out_of_scope_v1": [
+      "ao skillify CLI synthesis (--surface/--template/--draft) — deferred to v2",
+      "ao skillify promote command — deferred to v2",
+      "LLM-authored skill drafts — deferred to v2",
+      "Skill loader/runtime changes",
+      "Multi-runtime parity gate — moot in v1 (no promote)",
+      "Pattern detection — already shipped via /forge",
+      "Pattern → planning-rule promotion — already shipped via finding-compiler"
+    ],
+    "in_scope_v1": [
+      "ao curate skillify scan (detection)",
+      "ao curate skillify cleanup (TTL: 60d stale, 90d archive)",
+      "Candidate JSON schema (schema_version: 1) at .agents/skillify-candidates/<id>.json",
+      "ao inject surfacing (THE operator interface in v1)",
+      "Sibling pipeline lane documented in docs/curation-pipeline.md",
+      "L2 integration test (tests/skills/test-skillify-detection.sh)",
+      "tests/skills/run-all.sh hardcoded list update",
+      "Scope-bounded CHANGELOG entry"
+    ]
+  },
+  "wave_structure": {
+    "wave_1": {"sequential": ["#1 Detection scan + schema doc"]},
+    "wave_2": {"sequential": ["#2 ao inject surfacing"]},
+    "wave_3": {"sequential": ["#3 Cleanup + curation-pipeline doc + L2 test + .gitignore"]},
+    "wave_4": {"sequential": ["#4 CHANGELOG"]}
+  },
+  "issue_count": 4,
+  "estimated_crank_sessions": "1",
+  "completion_marker": "DONE",
+  "discovery_skill_version": "v2.38.0",
+  "previous_latest_packet": {
+    "id": "execution-packet-2026-04-23-goals-product-runtime-gap-plan",
+    "summary": "Parallel-session /discovery for GOALS/PRODUCT runtime alignment. This pattern-to-skill packet supersedes as latest-alias per operator-active session."
+  }
 }

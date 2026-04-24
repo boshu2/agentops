@@ -57,6 +57,8 @@ check_numeric_match() {
 # --- Actual counts from disk ---
 
 actual_total=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+actual_codex_total=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+actual_codex_overrides=$(find "$REPO_ROOT/skills-codex-overrides" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
 
 # Count skills listed in SKILL-TIERS.md user-facing table.
 actual_user_facing=$(sed -n '/^### User-Facing Skills/,/^### Internal Skills/p' "$REPO_ROOT/skills/SKILL-TIERS.md" \
@@ -69,6 +71,8 @@ actual_internal=$((actual_internal - 1))
 
 echo "=== Actual counts from disk ==="
 echo "  Skill directories: $actual_total"
+echo "  Codex skill directories: $actual_codex_total"
+echo "  Codex override directories: $actual_codex_overrides"
 echo "  SKILL-TIERS.md user-facing table rows: $actual_user_facing"
 echo "  SKILL-TIERS.md internal table rows: $actual_internal"
 echo "  Table total: $((actual_user_facing + actual_internal))"
@@ -132,13 +136,28 @@ check_numeric_match "docs/ARCHITECTURE.md internal" "$architecture_internal" "$a
 
 # --- Extract counts from PRODUCT.md ---
 
-product_total=$(extract_number 's|.*[^0-9]\([0-9][0-9]*\) skills, [0-9][0-9]* hooks,.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md zero-setup value proposition total")
+product_total=$(extract_number 's|.*[^0-9]\([0-9][0-9]*\) skills, [0-9][0-9]* runtime hook event sections,.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md zero-setup value proposition total")
+product_layer_total=$(extract_number 's|^### 1[.] Skills (\([0-9][0-9]*\) skills across 4 runtimes).*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md skill layer heading")
+product_convergence_total=$(extract_number 's|.*Skills system — \([0-9][0-9]*\) skills,.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md convergence skill count")
+product_distribution_shared=$(extract_number 's|.*Distribution/runtime reach: \([0-9][0-9]*\) shared skills, [0-9][0-9]* checked-in Codex artifacts, and [0-9][0-9]* Codex overrides.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md distribution shared skill count")
+product_distribution_codex=$(extract_number 's|.*Distribution/runtime reach: [0-9][0-9]* shared skills, \([0-9][0-9]*\) checked-in Codex artifacts, and [0-9][0-9]* Codex overrides.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md distribution Codex artifact count")
+product_distribution_overrides=$(extract_number 's|.*Distribution/runtime reach: [0-9][0-9]* shared skills, [0-9][0-9]* checked-in Codex artifacts, and \([0-9][0-9]*\) Codex overrides.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md distribution Codex override count")
 
 echo "=== PRODUCT.md claims ==="
 echo "  Total: $product_total"
+echo "  Skill layer heading: $product_layer_total"
+echo "  Convergence skill count: $product_convergence_total"
+echo "  Distribution shared skills: $product_distribution_shared"
+echo "  Distribution Codex artifacts: $product_distribution_codex"
+echo "  Distribution Codex overrides: $product_distribution_overrides"
 echo ""
 
 check_numeric_match "PRODUCT.md total" "$product_total" "$actual_total"
+check_numeric_match "PRODUCT.md skill layer heading" "$product_layer_total" "$actual_total"
+check_numeric_match "PRODUCT.md convergence skill count" "$product_convergence_total" "$actual_total"
+check_numeric_match "PRODUCT.md distribution shared skill count" "$product_distribution_shared" "$actual_total"
+check_numeric_match "PRODUCT.md distribution Codex artifact count" "$product_distribution_codex" "$actual_codex_total"
+check_numeric_match "PRODUCT.md distribution Codex override count" "$product_distribution_overrides" "$actual_codex_overrides"
 
 # --- Cross-file consistency ---
 
@@ -153,6 +172,9 @@ internals=()
 [[ "$skills_doc_update_total" != "NOT_FOUND" ]] && totals+=("docs/SKILLS-/update:$skills_doc_update_total")
 [[ "$architecture_total" != "NOT_FOUND" ]] && totals+=("docs/ARCHITECTURE:$architecture_total")
 [[ "$product_total" != "NOT_FOUND" ]] && totals+=("PRODUCT:$product_total")
+[[ "$product_layer_total" != "NOT_FOUND" ]] && totals+=("PRODUCT-layer:$product_layer_total")
+[[ "$product_convergence_total" != "NOT_FOUND" ]] && totals+=("PRODUCT-convergence:$product_convergence_total")
+[[ "$product_distribution_shared" != "NOT_FOUND" ]] && totals+=("PRODUCT-distribution-shared:$product_distribution_shared")
 
 [[ "$tiers_user_claim" != "NOT_FOUND" ]] && users+=("SKILL-TIERS:$tiers_user_claim")
 [[ "$skills_doc_user" != "NOT_FOUND" ]] && users+=("docs/SKILLS:$skills_doc_user")
