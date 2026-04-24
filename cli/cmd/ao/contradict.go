@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,12 @@ type ContradictResult struct {
 	PairsChecked   int                 `json:"pairs_checked"`
 	Contradictions int                 `json:"contradictions"`
 	Pairs          []ContradictionPair `json:"pairs,omitempty"`
+}
+
+type contradictOptions struct {
+	Cwd    string
+	Output string
+	Writer io.Writer
 }
 
 var contradictCmd = &cobra.Command{
@@ -62,18 +69,18 @@ var negationWords = map[string]bool{
 
 // oppositionPairs maps words to their opposites for contradiction detection.
 var oppositionPairs = map[string]string{
-	"always": "never",
-	"never":  "always",
-	"do":     "don't",
-	"don't":  "do",
-	"use":    "avoid",
-	"avoid":  "use",
-	"enable": "disable",
-	"disable": "enable",
-	"required": "optional",
-	"optional": "required",
-	"must":   "never",
-	"should": "shouldn't",
+	"always":    "never",
+	"never":     "always",
+	"do":        "don't",
+	"don't":     "do",
+	"use":       "avoid",
+	"avoid":     "use",
+	"enable":    "disable",
+	"disable":   "enable",
+	"required":  "optional",
+	"optional":  "required",
+	"must":      "never",
+	"should":    "shouldn't",
 	"shouldn't": "should",
 }
 
@@ -85,41 +92,82 @@ type learningEntry struct {
 	Snippet string
 }
 
-func runContradict(_ *cobra.Command, _ []string) error {
+func runContradict(cmd *cobra.Command, _ []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
+	writer := io.Writer(os.Stdout)
+	if cmd != nil {
+		writer = cmd.OutOrStdout()
+	}
 
-	learningsDir := filepath.Join(cwd, ".agents", "learnings")
-	patternsDir := filepath.Join(cwd, ".agents", "patterns")
+	return runContradictWithOptions(contradictOptions{
+		Cwd:    cwd,
+		Output: GetOutput(),
+		Writer: writer,
+	})
+}
 
-	learningsExists := dirExists(learningsDir)
-	patternsExists := dirExists(patternsDir)
+func runContradictWithOptions(opts contradictOptions) error {
+	if opts.Cwd == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get working directory: %w", err)
+		}
+		opts.Cwd = cwd
+	}
+	if opts.Writer == nil {
+		opts.Writer = os.Stdout
+	}
 
-	if !learningsExists && !patternsExists {
-		fmt.Println("No learnings or patterns directory found.")
+	files, emptyMessage := collectContradictFiles(opts.Cwd)
+	if emptyMessage != "" {
+		result := ContradictResult{}
+		if opts.Output == "json" {
+			return writeContradictJSON(opts.Writer, result)
+		}
+		fmt.Fprintln(opts.Writer, emptyMessage)
 		return nil
 	}
 
-	// Collect all files
+	result := buildContradictResult(opts.Cwd, files)
+	if opts.Output == "json" {
+		return writeContradictJSON(opts.Writer, result)
+	}
+
+	writeContradictHuman(opts.Writer, result)
+	return nil
+}
+
+func collectContradictFiles(cwd string) ([]string, string) {
+	learningsDir := filepath.Join(cwd, ".agents", "learnings")
+	patternsDir := filepath.Join(cwd, ".agents", "patterns")
+	dirs := []string{learningsDir, patternsDir}
+
+	hasSourceDir := false
 	var files []string
-	for _, dir := range []string{learningsDir, patternsDir} {
+	for _, dir := range dirs {
 		if !dirExists(dir) {
 			continue
 		}
+		hasSourceDir = true
 		jsonlFiles, _ := filepath.Glob(filepath.Join(dir, "*.jsonl"))
 		mdFiles, _ := filepath.Glob(filepath.Join(dir, "*.md"))
 		files = append(files, jsonlFiles...)
 		files = append(files, mdFiles...)
 	}
 
-	if len(files) == 0 {
-		fmt.Println("No learning or pattern files found.")
-		return nil
+	if !hasSourceDir {
+		return nil, "No learnings or patterns directory found."
 	}
+	if len(files) == 0 {
+		return nil, "No learning or pattern files found."
+	}
+	return files, ""
+}
 
-	// Parse all entries
+func buildContradictResult(cwd string, files []string) ContradictResult {
 	entries := make([]learningEntry, 0, len(files))
 	for _, f := range files {
 		body := extractLearningBody(f)
@@ -139,73 +187,75 @@ func runContradict(_ *cobra.Command, _ []string) error {
 		})
 	}
 
-	// Compare all pairs
-	result := ContradictResult{
-		TotalFiles: len(files),
-	}
-
+	result := ContradictResult{TotalFiles: len(files)}
 	for i := 0; i < len(entries); i++ {
 		for j := i + 1; j < len(entries); j++ {
 			result.PairsChecked++
-			sim := jaccardSimilarity(entries[i].Words, entries[j].Words)
-			if sim < 0.4 {
-				continue // Not similar enough to be about the same topic
+			if pair, ok := compareContradictEntries(cwd, entries[i], entries[j]); ok {
+				result.Contradictions++
+				result.Pairs = append(result.Pairs, pair)
 			}
-
-			reason := detectContradiction(entries[i].Body, entries[j].Body)
-			if reason == "" {
-				continue
-			}
-
-			// Make paths relative for cleaner output
-			relA, relErr := filepath.Rel(cwd, entries[i].File)
-			if relErr != nil {
-				relA = entries[i].File
-			}
-			relB, relErr := filepath.Rel(cwd, entries[j].File)
-			if relErr != nil {
-				relB = entries[j].File
-			}
-
-			result.Contradictions++
-			result.Pairs = append(result.Pairs, ContradictionPair{
-				FileA:      relA,
-				FileB:      relB,
-				Similarity: sim,
-				Reason:     reason,
-				SnippetA:   entries[i].Snippet,
-				SnippetB:   entries[j].Snippet,
-			})
 		}
 	}
 
-	// Output
-	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+	return result
+}
+
+func compareContradictEntries(cwd string, a, b learningEntry) (ContradictionPair, bool) {
+	sim := jaccardSimilarity(a.Words, b.Words)
+	if sim < 0.4 {
+		return ContradictionPair{}, false
 	}
 
-	fmt.Printf("Contradiction Scan Results\n")
-	fmt.Printf("==========================\n")
-	fmt.Printf("Total files:         %d\n", result.TotalFiles)
-	fmt.Printf("Pairs checked:       %d\n", result.PairsChecked)
-	fmt.Printf("Contradictions found: %d\n", result.Contradictions)
+	reason := detectContradiction(a.Body, b.Body)
+	if reason == "" {
+		return ContradictionPair{}, false
+	}
 
+	relA := relativePathOrOriginal(cwd, a.File)
+	relB := relativePathOrOriginal(cwd, b.File)
+	return ContradictionPair{
+		FileA:      relA,
+		FileB:      relB,
+		Similarity: sim,
+		Reason:     reason,
+		SnippetA:   a.Snippet,
+		SnippetB:   b.Snippet,
+	}, true
+}
+
+func relativePathOrOriginal(base, path string) string {
+	rel, err := filepath.Rel(base, path)
+	if err != nil {
+		return path
+	}
+	return rel
+}
+
+func writeContradictHuman(w io.Writer, result ContradictResult) {
+	fmt.Fprintln(w, "Contradiction Scan Results")
+	fmt.Fprintln(w, "==========================")
+	fmt.Fprintf(w, "Total files:         %d\n", result.TotalFiles)
+	fmt.Fprintf(w, "Pairs checked:       %d\n", result.PairsChecked)
+	fmt.Fprintf(w, "Contradictions found: %d\n", result.Contradictions)
 	if result.Contradictions > 0 {
-		fmt.Println("\nPotential Contradictions:")
+		fmt.Fprintln(w, "\nPotential Contradictions:")
 		for i, p := range result.Pairs {
-			fmt.Printf("\n  %d. Similarity: %.1f%% — %s\n", i+1, p.Similarity*100, p.Reason)
-			fmt.Printf("     A: %s\n", p.FileA)
-			fmt.Printf("        %s\n", p.SnippetA)
-			fmt.Printf("     B: %s\n", p.FileB)
-			fmt.Printf("        %s\n", p.SnippetB)
+			fmt.Fprintf(w, "\n  %d. Similarity: %.1f%% — %s\n", i+1, p.Similarity*100, p.Reason)
+			fmt.Fprintf(w, "     A: %s\n", p.FileA)
+			fmt.Fprintf(w, "        %s\n", p.SnippetA)
+			fmt.Fprintf(w, "     B: %s\n", p.FileB)
+			fmt.Fprintf(w, "        %s\n", p.SnippetB)
 		}
 	} else {
-		fmt.Println("\nNo potential contradictions found.")
+		fmt.Fprintln(w, "\nNo potential contradictions found.")
 	}
+}
 
-	return nil
+func writeContradictJSON(w io.Writer, result ContradictResult) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(result)
 }
 
 // dirExists returns true if the path exists and is a directory.
