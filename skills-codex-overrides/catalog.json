@@ -44,7 +44,7 @@
       "name": "autodev",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Thin operator layer over the shipped ao autodev, ao evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
+      "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands."
     },
     {
       "name": "beads",
