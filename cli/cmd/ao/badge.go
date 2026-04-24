@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,21 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
+
+type badgeResult struct {
+	SessionsMined     int     `json:"sessions_mined"`
+	Learnings         int     `json:"learnings"`
+	Patterns          int     `json:"patterns"`
+	Citations         int     `json:"citations"`
+	Sigma             float64 `json:"sigma"`
+	Rho               float64 `json:"rho"`
+	Delta             float64 `json:"delta"`
+	SigmaRho          float64 `json:"sigma_rho"`
+	EscapeThreshold   float64 `json:"escape_threshold"`
+	Status            string  `json:"status"`
+	EscapeVelocity    bool    `json:"escape_velocity"`
+	ApproachingEscape bool    `json:"approaching_escape"`
+}
 
 var badgeCmd = &cobra.Command{
 	Use:   "badge",
@@ -52,6 +68,12 @@ func runBadge(cmd *cobra.Command, args []string) error {
 
 	// Count sessions mined
 	sessionsMined := countSessions(cwd)
+
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(buildBadgeResult(sessionsMined, metrics))
+	}
 
 	// Draw the badge
 	printBadge(sessionsMined, metrics)
@@ -111,6 +133,28 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 	fmt.Printf("║  %-17s │  %s %-13s║\n", statusLine, statusIcon, status)
 	fmt.Println("╚═══════════════════════════════════════════╝")
 	fmt.Println()
+}
+
+func buildBadgeResult(sessions int, m *FlywheelMetrics) badgeResult {
+	if m == nil {
+		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
+	}
+	status, _ := getEscapeStatus(m.SigmaRho, m.Delta)
+	threshold := escapeVelocityThreshold(m.Delta)
+	return badgeResult{
+		SessionsMined:     sessions,
+		Learnings:         m.TierCounts["learning"],
+		Patterns:          m.TierCounts["pattern"],
+		Citations:         m.CitationsThisPeriod,
+		Sigma:             m.Sigma,
+		Rho:               m.Rho,
+		Delta:             m.Delta,
+		SigmaRho:          m.SigmaRho,
+		EscapeThreshold:   threshold,
+		Status:            status,
+		EscapeVelocity:    m.SigmaRho > threshold,
+		ApproachingEscape: threshold > 0 && m.SigmaRho > threshold*0.8,
+	}
 }
 
 // getEscapeStatus returns status text and icon based on velocity.

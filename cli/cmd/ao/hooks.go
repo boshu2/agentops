@@ -96,6 +96,29 @@ type ClaudeSettings struct {
 	Other map[string]any `json:"-"` // Preserve other settings
 }
 
+type hookCoverageStatus struct {
+	Installed      int      `json:"installed"`
+	Total          int      `json:"total"`
+	Events         []string `json:"events,omitempty"`
+	FallbackReason string   `json:"fallback_reason,omitempty"`
+}
+
+type hooksShowStatus struct {
+	SettingsPath               string             `json:"settings_path"`
+	Configured                 bool               `json:"configured"`
+	AOHooksInstalled           bool               `json:"ao_hooks_installed"`
+	ActiveContractCoverage     hookCoverageStatus `json:"active_contract_coverage"`
+	SupportedNamespaceCoverage hookCoverageStatus `json:"supported_namespace_coverage"`
+	Message                    string             `json:"message,omitempty"`
+	NextStep                   string             `json:"next_step,omitempty"`
+}
+
+type hooksMapLoadResult struct {
+	Hooks    map[string]any
+	Message  string
+	NextStep string
+}
+
 var hooksCmd = &cobra.Command{
 	Use:   "hooks",
 	Short: "Manage runtime hooks for automatic knowledge flywheel",
@@ -738,34 +761,55 @@ func commitHooksSettings(settingsPath string, rawSettings map[string]any, newHoo
 // loadHooksMap reads settings.json and extracts the hooks map.
 // Returns (nil, nil) with a printed message when hooks are absent or invalid.
 func loadHooksMap(settingsPath string) (map[string]any, error) {
+	result, err := loadHooksMapStatus(settingsPath)
+	if err != nil {
+		return nil, err
+	}
+	if result.Hooks == nil {
+		printHooksMapLoadMessage(result)
+	}
+	return result.Hooks, nil
+}
+
+func loadHooksMapStatus(settingsPath string) (hooksMapLoadResult, error) {
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Println("No Claude settings found at", settingsPath)
-			fmt.Println("Run 'ao hooks install' to set up hooks.")
-			return nil, nil
+			return hooksMapLoadResult{
+				Message:  "No Claude settings found at " + settingsPath,
+				NextStep: "Run 'ao hooks install' to set up hooks.",
+			}, nil
 		}
-		return nil, fmt.Errorf("read settings: %w", err)
+		return hooksMapLoadResult{}, fmt.Errorf("read settings: %w", err)
 	}
 
 	var settings map[string]any
 	if err := json.Unmarshal(data, &settings); err != nil {
-		return nil, fmt.Errorf("parse settings: %w", err)
+		return hooksMapLoadResult{}, fmt.Errorf("parse settings: %w", err)
 	}
 
 	hooks, ok := settings["hooks"]
 	if !ok {
-		fmt.Println("No hooks configured in", settingsPath)
-		fmt.Println("Run 'ao hooks install' to set up hooks.")
-		return nil, nil
+		return hooksMapLoadResult{
+			Message:  "No hooks configured in " + settingsPath,
+			NextStep: "Run 'ao hooks install' to set up hooks.",
+		}, nil
 	}
 
 	hooksMap, ok := hooks.(map[string]any)
 	if !ok {
-		fmt.Println("Invalid hooks format in", settingsPath)
-		return nil, nil
+		return hooksMapLoadResult{Message: "Invalid hooks format in " + settingsPath}, nil
 	}
-	return hooksMap, nil
+	return hooksMapLoadResult{Hooks: hooksMap}, nil
+}
+
+func printHooksMapLoadMessage(result hooksMapLoadResult) {
+	if result.Message != "" {
+		fmt.Println(result.Message)
+	}
+	if result.NextStep != "" {
+		fmt.Println(result.NextStep)
+	}
 }
 
 // countRawGroupHooks counts the total hooks across all entries in a raw hook group slice.
@@ -808,39 +852,73 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 	}
 
 	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
-	hooksMap, err := loadHooksMap(settingsPath)
+	loadResult, err := loadHooksMapStatus(settingsPath)
 	if err != nil {
 		return err
 	}
+	status := buildHooksShowStatus(settingsPath, loadResult)
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(status)
+	}
+
+	hooksMap := loadResult.Hooks
 	if hooksMap == nil {
+		printHooksMapLoadMessage(loadResult)
 		return nil
 	}
 
 	supportedInstalled := printEventCoverage(hooksMap)
-	contract := resolveHookCoverageContract()
-	activeInstalled := countInstalledEventsForList(hooksMap, contract.ActiveEvents)
 
 	fmt.Println()
-	fmt.Printf("Active contract coverage: %d/%d events\n", activeInstalled, len(contract.ActiveEvents))
-	if contract.FallbackReason != "" {
-		fmt.Printf("Coverage contract fallback: %s\n", contract.FallbackReason)
+	fmt.Printf("Active contract coverage: %d/%d events\n", status.ActiveContractCoverage.Installed, status.ActiveContractCoverage.Total)
+	if status.ActiveContractCoverage.FallbackReason != "" {
+		fmt.Printf("Coverage contract fallback: %s\n", status.ActiveContractCoverage.FallbackReason)
 	}
 	fmt.Printf("Supported namespace coverage: %d/%d events (informational)\n", supportedInstalled, len(AllEventNames()))
 
-	if activeInstalled < len(contract.ActiveEvents) {
+	if status.ActiveContractCoverage.Installed < status.ActiveContractCoverage.Total {
 		fmt.Println()
 		fmt.Println("Run 'ao hooks install --full' for complete coverage.")
 	}
 
 	// Check for ao hooks specifically
 	fmt.Println()
-	if hookGroupContainsAo(hooksMap, "SessionStart") {
+	if status.AOHooksInstalled {
 		fmt.Println("✓ ao hooks are installed")
 	} else {
 		fmt.Println("⚠ ao hooks not found. Run 'ao hooks install' to set up.")
 	}
 
 	return nil
+}
+
+func buildHooksShowStatus(settingsPath string, loadResult hooksMapLoadResult) hooksShowStatus {
+	allEvents := AllEventNames()
+	contract := resolveHookCoverageContract()
+	status := hooksShowStatus{
+		SettingsPath: settingsPath,
+		Configured:   loadResult.Hooks != nil,
+		Message:      loadResult.Message,
+		NextStep:     loadResult.NextStep,
+		ActiveContractCoverage: hookCoverageStatus{
+			Total:          len(contract.ActiveEvents),
+			Events:         contract.ActiveEvents,
+			FallbackReason: contract.FallbackReason,
+		},
+		SupportedNamespaceCoverage: hookCoverageStatus{
+			Total:  len(allEvents),
+			Events: allEvents,
+		},
+	}
+	if loadResult.Hooks == nil {
+		return status
+	}
+	status.ActiveContractCoverage.Installed = countInstalledEventsForList(loadResult.Hooks, contract.ActiveEvents)
+	status.SupportedNamespaceCoverage.Installed = countInstalledEventsForList(loadResult.Hooks, allEvents)
+	status.AOHooksInstalled = hookGroupContainsAo(loadResult.Hooks, "SessionStart")
+	return status
 }
 
 func rawGroupIsAoManaged(group map[string]any) bool {
