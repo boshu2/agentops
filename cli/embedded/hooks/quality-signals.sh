@@ -34,8 +34,18 @@ mkdir -p "$STATE_DIR" "$SIGNAL_DIR" 2>/dev/null
 LAST_PROMPT_FILE="$STATE_DIR/.last-prompt"
 SIGNAL_LOG="$SIGNAL_DIR/session-quality.jsonl"
 
-SESSION_ID="${CLAUDE_SESSION_ID:-unknown}"
+SESSION_ID="${CODEX_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-unknown}}}"
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")
+
+hash_prompt() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        printf '%s' "$1" | sha256sum | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        printf '%s' "$1" | shasum -a 256 | awk '{print $1}'
+    else
+        printf '%s' "$1" | cksum | awk '{print $1 ":" $2}'
+    fi
+}
 
 # Helper: append a signal entry to the JSONL log
 log_signal() {
@@ -61,15 +71,16 @@ log_signal() {
 }
 
 # --- Detection 1: Repeated prompts ---
+PROMPT_FINGERPRINT=$(hash_prompt "$PROMPT")
 if [ -f "$LAST_PROMPT_FILE" ]; then
     LAST_PROMPT=$(cat "$LAST_PROMPT_FILE" 2>/dev/null || echo "")
-    if [ "$PROMPT" = "$LAST_PROMPT" ] && [ -n "$PROMPT" ]; then
+    if [ "$PROMPT_FINGERPRINT" = "$LAST_PROMPT" ] && [ -n "$PROMPT" ]; then
         log_signal "repeated_prompt" "User submitted identical prompt twice in a row"
     fi
 fi
 
-# Store current prompt for next comparison
-printf '%s' "$PROMPT" > "$LAST_PROMPT_FILE" 2>/dev/null || true
+# Store current prompt fingerprint for next comparison without retaining prompt text.
+printf '%s' "$PROMPT_FINGERPRINT" > "$LAST_PROMPT_FILE" 2>/dev/null || true
 
 # --- Detection 2: Correction patterns ---
 # Match at start of prompt (case-insensitive)

@@ -53,7 +53,6 @@ GO_DIR="$(dirname "$GO_MOD")"
 # Matches *.go files and go.{mod,sum,work,work.sum} at any depth.
 STAGED_FILES="$(git diff --cached --name-only 2>/dev/null || true)"
 if ! printf '%s\n' "$STAGED_FILES" | grep -qE '\.go$|(^|/)go\.mod$|(^|/)go\.sum$|(^|/)go\.work(\.sum)?$'; then
-  echo "Pre-commit: no Go files staged — skipping go vet/build" >&2
   exit 0
 fi
 

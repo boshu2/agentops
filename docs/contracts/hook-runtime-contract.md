@@ -8,7 +8,7 @@
 | Runtime | Detection | Hook Surface |
 |---------|-----------|-------------|
 | Claude Code | `CLAUDE_PLUGIN_ROOT` env or `~/.claude/settings.json` exists | Full hook manifest (`hooks.json`) |
-| Codex (native hooks) | `CODEX_HOME` env plus `~/.codex/version.json` / `config.toml` / `hooks.json` indicate native hooks are supported and enabled | Native hook manifest via `scripts/install-codex-plugin.sh` (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `PermissionRequest`) |
+| Codex (native hooks) | `CODEX_HOME` env plus `~/.codex/version.json` / `config.toml` / `hooks.json` indicate native hooks are supported and enabled | Native hook manifest via `scripts/install-codex-plugin.sh` (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`) |
 | Codex (hookless fallback) | `CODEX_HOME` env or `~/.codex/config.toml` exists but native hooks are unavailable or not configured | Explicit lifecycle (`ao codex start/stop`) |
 | Manual | Neither detected | Explicit `ao inject` / `ao forge` commands |
 
@@ -22,7 +22,7 @@
 | `PostToolUse` | Native `PostToolUse` hook | Native `PostToolUse` hook (currently Bash-only) | No runtime hook; quality checks move inline or post-edit |
 | `Stop` | Native `Stop` hook | Native `Stop` hook | `ao codex stop` / `ao codex ensure-stop` |
 | `SessionEnd` | Native `SessionEnd` hook | No native `SessionEnd` event; transcript-driven closeout still uses `ao codex stop` / `ao codex ensure-stop` | `ao codex stop` / `ao codex ensure-stop` |
-| `PermissionRequest` | Native `PermissionRequest` hook | Native `PermissionRequest` hook | Approval handled explicitly by the runtime/workflow |
+| `PermissionRequest` | Native `PermissionRequest` hook | Not wired in the current AgentOps Codex manifest | Approval handled explicitly by the runtime/workflow |
 | `TaskCompleted` | Native `TaskCompleted` hook | No native event; task validation remains skill-driven | Skill epilogue validation |
 
 ## Install Behavior by Runtime
@@ -48,7 +48,7 @@ ao hook install  # Merges hooks.json into ~/.claude/settings.json
 ```
 
 - Native hook manifest installed from `hooks/codex-hooks.json`
-- Current Codex-native surface: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest`
+- Current AgentOps Codex-native surface: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Stop`
 - Transcript-driven closeout still uses `ao codex stop` / `ao codex ensure-stop` because Codex does not expose a native `SessionEnd` event today
 
 ### Codex (pre-v0.115.0 — hookless fallback)

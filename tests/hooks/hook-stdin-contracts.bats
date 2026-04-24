@@ -510,18 +510,20 @@ AOEOF
     [ -z "$output" ]
 }
 
-@test "ratchet-advance: successful research record suggests /plan (fallback)" {
+@test "ratchet-advance: successful research record suggests plan skill (fallback)" {
     run bash -c 'cd "$1" && printf "%s" "$2" | PATH="/usr/bin:/bin" bash "$3" 2>&1' \
         -- "$MOCK_REPO" '{"tool_input":{"command":"ao ratchet record research"},"tool_response":{"exit_code":0}}' "$HOOKS_DIR/ratchet-advance.sh"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"/plan"* ]]
+    [[ "$output" == *"plan"* ]]
+    [[ "$output" != *"/plan"* ]]
 }
 
-@test "ratchet-advance: vibe record suggests /post-mortem (fallback)" {
+@test "ratchet-advance: vibe record suggests post-mortem skill (fallback)" {
     run bash -c 'cd "$1" && printf "%s" "$2" | PATH="/usr/bin:/bin" bash "$3" 2>&1' \
         -- "$MOCK_REPO" '{"tool_input":{"command":"ao ratchet record vibe"},"tool_response":{"exit_code":0}}' "$HOOKS_DIR/ratchet-advance.sh"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"/post-mortem"* ]]
+    [[ "$output" == *"post-mortem"* ]]
+    [[ "$output" != *"/post-mortem"* ]]
 }
 
 @test "ratchet-advance: post-mortem record says cycle complete (fallback)" {

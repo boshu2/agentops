@@ -23,6 +23,15 @@ MARKETPLACE_JSON="$REPO_ROOT/plugins/marketplace.json"
 CODEX_HOOKS_JSON="$REPO_ROOT/hooks/codex-hooks.json"
 PUBLIC_INSTALL="$REPO_ROOT/scripts/install-codex.sh"
 PLUGIN_INSTALL="$REPO_ROOT/scripts/install-codex-plugin.sh"
+EXPECTED_CODEX_HOOK_SCRIPTS=(
+    "session-start.sh"
+    "ao-flywheel-close.sh"
+    "prompt-nudge.sh"
+    "quality-signals.sh"
+    "go-test-precommit.sh"
+    "commit-review-gate.sh"
+    "ratchet-advance.sh"
+)
 
 # ── 1. Codex plugin manifest + marketplace wiring ────────────────────────────
 echo "Stage 1: Codex plugin manifest"
@@ -59,6 +68,15 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
     jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "codex hook bundle defines 7 native hook handlers" || fail "codex hook bundle handler count drifted"
+    for hook_script in "${EXPECTED_CODEX_HOOK_SCRIPTS[@]}"; do
+        if jq -e --arg script "$hook_script" \
+            '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/" + $script))] | length == 1' \
+            "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
+            pass "codex hook bundle includes exactly one $hook_script handler"
+        else
+            fail "codex hook bundle missing or duplicates $hook_script"
+        fi
+    done
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes session-start.sh"
     else
@@ -73,6 +91,12 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         pass "codex hook bundle includes ao-flywheel-close.sh"
     else
         fail "codex hook bundle missing ao-flywheel-close.sh"
+    fi
+    if rg --pcre2 -n '"[^"]*/(plan|pre-mortem|vibe|post-mortem)([^A-Za-z0-9-]|")' \
+        "$REPO_ROOT/hooks/prompt-nudge.sh" "$REPO_ROOT/hooks/ratchet-advance.sh" >/dev/null 2>&1; then
+        fail "codex prompt hooks contain slash-command suggestions"
+    else
+        pass "codex prompt hooks use runtime-neutral suggestions"
     fi
 else
     fail "hooks/codex-hooks.json not found"
@@ -141,6 +165,15 @@ if [[ -f "$CODEX_HOME/hooks.json" ]]; then
     pass "$CODEX_HOME/hooks.json created by installer"
     jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
         && pass "$CODEX_HOME/hooks.json uses the native event-map schema" || fail "$CODEX_HOME/hooks.json did not install the native event-map schema"
+    for hook_script in "${EXPECTED_CODEX_HOOK_SCRIPTS[@]}"; do
+        if jq -e --arg script "$hook_script" \
+            '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/" + $script))] | length == 1' \
+            "$CODEX_HOME/hooks.json" >/dev/null 2>&1; then
+            pass "$CODEX_HOME/hooks.json includes exactly one $hook_script handler"
+        else
+            fail "$CODEX_HOME/hooks.json missing or duplicates $hook_script"
+        fi
+    done
     jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
         && pass "$CODEX_HOME/hooks.json includes session-start.sh" || fail "$CODEX_HOME/hooks.json missing session-start.sh"
 else

@@ -298,7 +298,11 @@ function Merge-CodexHooksManifest {
   }
   if ($null -ne $NewManifest.hooks) {
     foreach ($eventProp in $NewManifest.hooks.PSObject.Properties) {
-      $mergedHooks[$eventProp.Name] = @($eventProp.Value)
+      if ($mergedHooks.Contains($eventProp.Name)) {
+        $mergedHooks[$eventProp.Name] = @($mergedHooks[$eventProp.Name]) + @($eventProp.Value)
+      } else {
+        $mergedHooks[$eventProp.Name] = @($eventProp.Value)
+      }
     }
   }
 

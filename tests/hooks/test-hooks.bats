@@ -680,6 +680,21 @@ LEARN_EOF
     [ "$status" -eq 0 ]
 }
 
+@test "go-test-precommit: non-Go staged commit exits silently" {
+    local mock="$TMP_TEST_DIR/mock-go-test-precommit"
+    setup_mock_repo "$mock"
+    mkdir -p "$mock/cli"
+    echo "module example.com/agentops-test" > "$mock/cli/go.mod"
+    git -C "$mock" add cli/go.mod
+    git -C "$mock" -c user.name=test -c user.email=t@t commit -q -m "init go module" 2>/dev/null
+    echo "docs" > "$mock/README.md"
+    git -C "$mock" add README.md
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$mock" '{"tool_name":"Bash","tool_input":{"command":"git commit -m docs"}}' "$HOOKS_DIR/go-test-precommit.sh"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
 @test "go-vet-post-edit: ignores non-.go files" {
     run bash -c 'CLAUDE_TOOL_NAME="Edit" CLAUDE_TOOL_INPUT_FILE_PATH="/tmp/test.py" bash "$1" 2>&1' \
         -- "$HOOKS_DIR/go-vet-post-edit.sh"
@@ -727,6 +742,22 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "ao-flywheel-close: suppresses quiet command stdout" {
+    local mock_bin="$TMP_TEST_DIR/mock-ao-close-bin"
+    mkdir -p "$mock_bin"
+    cat > "$mock_bin/ao" <<'EOF'
+#!/usr/bin/env bash
+echo "unexpected stdout"
+echo "unexpected stderr" >&2
+exit 0
+EOF
+    chmod +x "$mock_bin/ao"
+    run bash -c 'PATH="$1:$PATH" bash "$2" 2>&1' \
+        -- "$mock_bin" "$HOOKS_DIR/ao-flywheel-close.sh"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # quality-signals.sh
 # ═══════════════════════════════════════════════════════════════════════
@@ -743,6 +774,17 @@ EOF
         -- "$mock" '{"prompt":"repeat this"}' "$HOOKS_DIR/quality-signals.sh"
     [ "$status" -eq 0 ]
     grep -q '"signal_type":"repeated_prompt"' "$mock/.agents/signals/session-quality.jsonl"
+}
+
+@test "quality-signals: stores prompt fingerprint instead of raw prompt text" {
+    local mock="$TMP_TEST_DIR/mock-quality-signals-fingerprint"
+    setup_mock_repo "$mock"
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | CODEX_SESSION_ID="codex-quality-1" bash "$3" 2>&1' \
+        -- "$mock" '{"prompt":"private prompt fixture"}' "$HOOKS_DIR/quality-signals.sh"
+    [ "$status" -eq 0 ]
+    [ -f "$mock/.agents/ao/.last-prompt" ]
+    ! grep -q "private prompt fixture" "$mock/.agents/ao/.last-prompt"
 }
 
 # ═══════════════════════════════════════════════════════════════════════

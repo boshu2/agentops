@@ -10,6 +10,12 @@
 # Read stdin
 INPUT=$(cat)
 
+redact_sensitive_diff() {
+    sed -E \
+        -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]"'\''`]+/\1[REDACTED]/g' \
+        -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)[^[:space:]"'\''`]+/\1[REDACTED]/g'
+}
+
 # Extract tool name and command
 TOOL_NAME="${CLAUDE_TOOL_NAME:-}"
 COMMAND="${CLAUDE_TOOL_INPUT_COMMAND:-}"
@@ -37,7 +43,7 @@ FILE_COUNT=$(printf '%s\n' "$FULL_DIFF" | grep -c '^diff --git' 2>/dev/null || e
 [ "$FILE_COUNT" = "0" ] && exit 0
 
 DIFF_LINES=$(printf '%s\n' "$FULL_DIFF" | wc -l | tr -d ' ')
-DIFF_CONTENT=$(printf '%s\n' "$FULL_DIFF" | head -200)
+DIFF_CONTENT=$(printf '%s\n' "$FULL_DIFF" | head -200 | redact_sensitive_diff)
 TRUNCATED=""
 if [ "$DIFF_LINES" -gt 200 ]; then
     TRUNCATED=" (showing first 200 of $DIFF_LINES lines — run 'git diff --cached' for full diff)"

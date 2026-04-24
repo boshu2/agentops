@@ -788,18 +788,18 @@ MOCK_RATCHET="$TMPDIR/mock-ratchet"
 mkdir -p "$MOCK_RATCHET/.agents/ao"
 git -C "$MOCK_RATCHET" init -q >/dev/null 2>&1
 OUTPUT=$(cd "$MOCK_RATCHET" && echo '{"tool_input":{"command":"ao ratchet record research"},"tool_response":{"exit_code":0}}' | PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ratchet-advance.sh" 2>/dev/null || true)
-if echo "$OUTPUT" | grep -q "/plan"; then
-    pass "research record suggests /plan (fallback)"
+if echo "$OUTPUT" | grep -q "plan" && ! echo "$OUTPUT" | grep -q "/plan"; then
+    pass "research record suggests plan skill (fallback)"
 else
-    fail "research record suggests /plan (fallback)"
+    fail "research record suggests plan skill (fallback)"
 fi
 
-# Test: Successful vibe record => suggests /post-mortem (fallback mode)
+# Test: Successful vibe record => suggests post-mortem skill (fallback mode)
 OUTPUT=$(cd "$MOCK_RATCHET" && echo '{"tool_input":{"command":"ao ratchet record vibe"},"tool_response":{"exit_code":0}}' | PATH="/usr/bin:/bin" bash "$HOOKS_DIR/ratchet-advance.sh" 2>/dev/null || true)
-if echo "$OUTPUT" | grep -q "/post-mortem"; then
-    pass "vibe record suggests /post-mortem (fallback)"
+if echo "$OUTPUT" | grep -q "post-mortem" && ! echo "$OUTPUT" | grep -q "/post-mortem"; then
+    pass "vibe record suggests post-mortem skill (fallback)"
 else
-    fail "vibe record suggests /post-mortem (fallback)"
+    fail "vibe record suggests post-mortem skill (fallback)"
 fi
 
 # Test: post-mortem record => cycle complete (fallback mode)

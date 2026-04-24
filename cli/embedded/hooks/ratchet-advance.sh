@@ -68,12 +68,12 @@ fi
 # Fallback: original case statement if new command unavailable or failed
 if [ -z "$NEXT" ]; then
     case "$STEP" in
-        research)    NEXT="/plan" ;;
-        plan)        NEXT="/pre-mortem" ;;
-        pre-mortem)  NEXT="/implement or /crank" ;;
-        implement)   NEXT="/vibe" ;;
-        crank)       NEXT="/vibe" ;;
-        vibe)        NEXT="/post-mortem" ;;
+        research)    NEXT="plan" ;;
+        plan)        NEXT="pre-mortem" ;;
+        pre-mortem)  NEXT="implement or crank" ;;
+        implement)   NEXT="vibe" ;;
+        crank)       NEXT="vibe" ;;
+        vibe)        NEXT="post-mortem" ;;
         post-mortem) NEXT="Cycle complete" ;;
         *)           exit 0 ;;  # Unknown step, no suggestion
     esac
@@ -140,9 +140,9 @@ echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $STEP" > "$FLAG_DIR/.ratchet-advance-fired"
 if [ "$NEXT" = "Cycle complete" ]; then
     MSG="RPI auto-advance: ${STEP} completed. Cycle complete — all RPI steps done."
 elif [ -n "$ARTIFACT" ]; then
-    MSG="RPI auto-advance: ${STEP} completed. Suggested next: ${NEXT} ${ARTIFACT}"
+    MSG="RPI auto-advance: ${STEP} completed. Suggested next skill: ${NEXT} ${ARTIFACT}"
 else
-    MSG="RPI auto-advance: ${STEP} completed. Suggested next: ${NEXT}"
+    MSG="RPI auto-advance: ${STEP} completed. Suggested next skill: ${NEXT}"
 fi
 
 # Output as additionalContext

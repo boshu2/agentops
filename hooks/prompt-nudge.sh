@@ -79,11 +79,11 @@ if echo "$PROMPT_LOWER" | grep -qE '(implement|build|code|fix|create|add)'; then
     fi
 elif echo "$PROMPT_LOWER" | grep -qE '(commit|push|ship|deploy|release)'; then
     if step_pending "vibe"; then
-        NUDGE="Reminder: run /vibe before pushing."
+        NUDGE="Reminder: run the vibe skill before pushing."
     fi
 elif echo "$PROMPT_LOWER" | grep -qE '(done|finished|wrap|complete|close)'; then
     if step_pending "post-mortem"; then
-        NUDGE="Reminder: run /post-mortem to capture learnings."
+        NUDGE="Reminder: run the post-mortem skill to capture learnings."
     fi
 fi
 

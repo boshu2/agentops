@@ -240,6 +240,8 @@ count_codex_hook_handlers() {
 merge_codex_hooks() {
   local existing_file="$1"
   local new_file="$2"
+  local merged_file
+  merged_file="${TMP_DIR}/merged-codex-hooks.json"
 
   jq -n \
     --slurpfile existing "$existing_file" \
@@ -257,7 +259,7 @@ merge_codex_hooks() {
         "ratchet-advance.sh"
       ];
     def is_agentops_command($cmd):
-      ($cmd | type == "string") and any(agentops_scripts[]; $cmd | endswith("/hooks/" + .));
+      ($cmd | type == "string") and any(agentops_scripts[]; . as $script | $cmd | endswith("/hooks/" + $script));
     def strip_agentops_groups:
       if (.hooks | type? == "object") then
         .hooks |= with_entries(
@@ -274,15 +276,20 @@ merge_codex_hooks() {
       else
         .hooks = {}
       end;
+    def merge_hook_maps($existing_hooks; $new_hooks):
+      reduce (($existing_hooks + $new_hooks) | keys_unsorted[]) as $event ({};
+        .[$event] = (($existing_hooks[$event] // []) + ($new_hooks[$event] // []))
+      );
     ($existing[0] // {}) as $existing_doc
     | ($new[0] // {}) as $new_doc
     | ($existing_doc | strip_agentops_groups) as $cleaned
     | ($new_doc."$schema" // $existing_doc."$schema") as $schema
     | {
         "$schema": $schema,
-        "hooks": (($cleaned.hooks // {}) + ($new_doc.hooks // {}))
+        "hooks": merge_hook_maps(($cleaned.hooks // {}); ($new_doc.hooks // {}))
       }
-    ' > "$existing_file"
+    ' > "$merged_file"
+  mv "$merged_file" "$existing_file"
 }
 
 stage_plugin_source() {
