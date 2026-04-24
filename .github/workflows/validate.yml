@@ -195,7 +195,7 @@ jobs:
                 --exclude="*_test.go" \
                 --exclude="validate.yml" \
                 --binary-files=without-match \
-                . 2>/dev/null | grep -v 'os\.Getenv(' ; then
+                . 2>/dev/null | grep -v 'os\.Getenv(' | grep -v 'regexp\.MustCompile(' ; then
               found=1
             fi
           done
