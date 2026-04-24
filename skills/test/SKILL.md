@@ -1,6 +1,6 @@
 ---
 name: test
-description: 'Test generation, coverage analysis, and TDD workflow. Triggers: "test", "generate tests", "test coverage", "write tests", "tdd", "add tests", "test strategy", "missing tests", "coverage gaps".'
+description: 'Generate tests, analyze coverage, and plan TDD validation.'
 skill_api_version: 1
 context:
   window: fork
@@ -16,7 +16,6 @@ metadata:
     - complexity # optional - identifies high-risk untested code
 output_contract: "test files, coverage report"
 ---
-
 # Test Skill
 
 > **Quick Ref:** Generate tests, analyze coverage, fill gaps, run TDD loops. Output: passing tests + coverage report in `.agents/test/`.

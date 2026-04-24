@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: 'Spawn isolated agents for parallel task execution. Auto-selects runtime-native teams (Claude Native Teams in Claude sessions, Codex sub-agents in Codex sessions). Triggers: "swarm", "spawn agents", "parallel work", "run in parallel", "parallel execution".'
+description: 'Dispatch isolated agents for parallel tasks with file ownership and evidence.'
 skill_api_version: 1
 context:
   window: fork
@@ -16,7 +16,6 @@ metadata:
     - vibe      # optional - integration with validation
 output_contract: ".agents/swarm/results/*.json"
 ---
-
 # Swarm Skill
 
 Spawn isolated agents to execute tasks in parallel. Fresh context per agent (Ralph Wiggum pattern).

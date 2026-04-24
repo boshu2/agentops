@@ -1,6 +1,6 @@
 ---
 name: shared
-description: Shared reference documents for multi-agent skills (not directly invocable)
+description: 'Shared reference contracts used by other AgentOps skills.'
 skill_api_version: 1
 user-invocable: false
 context:
@@ -15,7 +15,6 @@ metadata:
   internal: true
 output_contract: "reference documents (loaded JIT)"
 ---
-
 # Shared References
 
 This directory contains shared reference documents used by multiple skills:

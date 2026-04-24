@@ -143,6 +143,23 @@ else
     echo -e "  ${YELLOW}⚠ test-claude-feature-coverage.sh not found${NC}"
 fi
 
+# Run token/context budget checks
+echo ""
+echo -e "${BLUE}━━━ Token Budget Checks ━━━${NC}"
+echo ""
+TOKEN_BUDGET_SCRIPT="$SCRIPT_DIR/test-token-budgets.sh"
+if [ -f "$TOKEN_BUDGET_SCRIPT" ]; then
+    chmod +x "$TOKEN_BUDGET_SCRIPT"
+    if "$TOKEN_BUDGET_SCRIPT"; then
+        echo -e "  ${GREEN}✓ token budgets passed${NC}"
+    else
+        echo -e "  ${RED}✗ token budgets failed${NC}"
+        FAILED=$((FAILED + 1))
+    fi
+else
+    echo -e "  ${YELLOW}⚠ test-token-budgets.sh not found${NC}"
+fi
+
 # Run alias collision detection
 echo ""
 echo -e "${BLUE}━━━ Alias Collision Detection ━━━${NC}"

@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Epic decomposition into trackable issues. Triggers: "create a plan", "plan implementation", "break down into tasks", "decompose into features", "create beads issues from research", "what issues should we create", "plan out the work".'
+description: 'Decompose goals into issue-ready plans, waves, dependencies, and validation checks.'
 skill_api_version: 1
 metadata:
   tier: execution
@@ -17,7 +17,6 @@ context:
   intel_scope: topic
 output_contract: ".agents/plans/YYYY-MM-DD-*.md, beads (via bd create)"
 ---
-
 # Plan Skill
 
 > **Quick Ref:** Decompose goal into trackable issues with waves. Output: `.agents/plans/*.md` + bd issues.

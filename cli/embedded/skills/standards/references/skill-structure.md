@@ -163,7 +163,9 @@ The description is the **most critical field** — it determines when Claude loa
 
 ### Requirements
 
-- Under 1024 characters
+- Target under 120 characters; hard limit 180 characters for the repo catalog
+- Converter adapters may still enforce their own external hard caps, but repo
+  skills should stay far below those caps so all descriptions fit the always-loaded catalog
 - MUST include trigger phrases users would actually say
 - MUST explain what the skill does (not just when)
 - No XML tags
@@ -172,10 +174,10 @@ The description is the **most critical field** — it determines when Claude loa
 
 ```yaml
 # Specific + actionable + triggers
-description: 'Investigate suspected bugs with git archaeology and root cause analysis. Triggers: "bug", "broken", "doesn''t work", "failing", "investigate bug".'
+description: 'Investigate bugs or audit code with repro evidence, root cause analysis, and fixes.'
 
 # Clear value prop + multiple triggers
-description: 'Comprehensive code validation. Runs complexity analysis then multi-model council. Answer: Is this code ready to ship? Triggers: "vibe", "validate code", "check code", "review code", "is this ready".'
+description: 'Validate code readiness with complexity checks and council or inline review.'
 ```
 
 ### Bad Examples
@@ -279,7 +281,7 @@ Skills use three levels:
 - [ ] Folder name matches `name:` field
 - [ ] Folder name is kebab-case
 - [ ] Description includes WHAT + WHEN (triggers)
-- [ ] Description under 1024 characters
+- [ ] Description under 180 characters, preferably under 120
 - [ ] No XML tags in frontmatter
 - [ ] No `claude`/`anthropic` in name
 - [ ] `metadata.tier` is set and valid

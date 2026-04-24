@@ -1,9 +1,7 @@
 ---
 name: evolve
-description: 'Goal-driven v2 autonomous improvement loop. Runs the post-mortem, repo analysis, next-work selection, plan/pre-mortem, implementation, validation, and repeat cadence through $rpi. Also pulls from open beads when goals all pass. Use when you want to "improve", "iterate", "fix issues", "work through tasks", "evolve", "check goal fitness", "run improvement loop", "pick up next work", or "postmortem and continue".'
+description: 'Run autonomous improvement: goals, planning, implementation, validation, repeat.'
 ---
-
-
 # $evolve — Goal-Driven Compounding Loop
 
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.

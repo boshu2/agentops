@@ -1,6 +1,6 @@
 ---
 name: knowledge-activation
-description: 'Operationalize a mature .agents corpus into usable information. Consolidates packet layers, promotes a belief book, generates playbook candidates, compiles runtime briefings, and surfaces flywheel gaps. Triggers: "operationalize .agents", "turn dot agents into usable information", "knowledge activation", "knowledge flywheel outer loop", "activate knowledge corpus".'
+description: 'Turn a mature .agents corpus into packets, belief books, briefings, and gaps.'
 skill_api_version: 1
 user-invocable: true
 context:
@@ -18,7 +18,6 @@ metadata:
     - flywheel
 output_contract: ".agents/beliefs.md, .agents/playbooks/*.md, .agents/briefings/*.md"
 ---
-
 # Knowledge Activation
 
 Turn a mature `.agents` corpus into operator-ready knowledge surfaces.
