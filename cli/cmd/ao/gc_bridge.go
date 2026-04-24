@@ -159,6 +159,11 @@ func gcNudgeArgs(agent, message string) []string {
 	return bridge.GCNudgeArgs(agent, message)
 }
 
+// gcSessionNewArgs returns the command arguments for `gc session new`.
+func gcSessionNewArgs(template, alias string) []string {
+	return bridge.GCSessionNewArgs(template, alias)
+}
+
 // gcPeekArgs returns the command arguments for `gc session peek`.
 func gcPeekArgs(agent string, lines int) []string {
 	return bridge.GCPeekArgs(agent, lines)

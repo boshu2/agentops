@@ -118,6 +118,52 @@ func TestGCExecutor_CheckSessionDone_Mocked_Completed(t *testing.T) {
 	}
 }
 
+func TestGCExecutor_CheckSessionDone_Mocked_GCV1DormantState(t *testing.T) {
+	mock := newGCMock()
+	sessionsJSON := `[{"ID":"s1","Alias":"rpi-run1-p1","State":"asleep","Template":"worker","Closed":false}]`
+	mock.on("session list --json", gcMockHandler{Stdout: sessionsJSON})
+	mock.install(t)
+
+	e := &gcExecutor{execCommand: mock.execCommand, lookPath: mock.lookPathFn}
+	done, err := e.checkSessionDone("/city", "rpi-run1-p1")
+	if err != nil {
+		t.Fatalf("checkSessionDone error: %v", err)
+	}
+	if !done {
+		t.Error("checkSessionDone should return true for gc v1 dormant sessions")
+	}
+}
+
+func TestGCSessionDoneStates(t *testing.T) {
+	tests := []struct {
+		state string
+		want  bool
+	}{
+		{"creating", false},
+		{"active", false},
+		{"awake", false},
+		{"draining", false},
+		{"closed", true},
+		{"completed", true},
+		{"asleep", true},
+		{"suspended", true},
+		{"drained", true},
+		{"archived", true},
+		{"stopped", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.state, func(t *testing.T) {
+			got := gcSessionDone(GCSession{State: tt.state})
+			if got != tt.want {
+				t.Fatalf("gcSessionDone(%q) = %v, want %v", tt.state, got, tt.want)
+			}
+		})
+	}
+	if !gcSessionDone(GCSession{State: "active", Closed: true}) {
+		t.Fatal("gcSessionDone should honor Closed=true")
+	}
+}
+
 func TestGCExecutor_CheckSessionDone_Mocked_Active(t *testing.T) {
 	mock := newGCMock()
 	sessionsJSON := `[{"id":"s1","alias":"rpi-run1-p1","state":"active","template":"worker"}]`
@@ -472,6 +518,36 @@ func TestPreflightOpts_AutoRuntimeSkipsRuntimeCommandWhenGCReady(t *testing.T) {
 	}
 }
 
+func TestPreparePhasedRun_GCPreflightUsesResolvedWorkingDir(t *testing.T) {
+	cityDir := setupCityDir(t, "gc-prepare-preflight")
+	t.Chdir(cityDir)
+
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "1.0.0"})
+	statusJSON := `{"city":null,"controller":{"running":true,"pid":42,"mode":"standalone"},"agents":[],"summary":{"total_agents":0,"running_agents":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+
+	opts := defaultPhasedEngineOptions()
+	opts.RuntimeMode = "gc"
+	opts.NoWorktree = true
+	opts.ExecCommand = mock.execCommand
+	opts.LookPath = mock.lookPathFn
+
+	run, err := preparePhasedRun(&opts, []string{"validate gc preflight"})
+	if err != nil {
+		t.Fatalf("preparePhasedRun(runtime=gc) error = %v, want nil", err)
+	}
+	if run.cwd != cityDir {
+		t.Fatalf("run.cwd = %q, want %q", run.cwd, cityDir)
+	}
+	if opts.WorkingDir != cityDir {
+		t.Fatalf("opts.WorkingDir = %q, want %q", opts.WorkingDir, cityDir)
+	}
+	if len(mock.callsMatching("--city "+cityDir+" status --json")) == 0 {
+		t.Fatalf("expected gc status preflight to use resolved city %q, calls: %#v", cityDir, mock.calls)
+	}
+}
+
 func TestPreflightOpts_GCRuntimeRequiresCity(t *testing.T) {
 	mock := newGCMock()
 	opts := defaultPhasedEngineOptions()
@@ -563,7 +639,7 @@ func TestGCExecutor_Execute_Mocked_SessionCreateFails(t *testing.T) {
 	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
 	statusJSON := `{"city":"test","controller":{"running":true,"pid":1},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
 	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
-	mock.on("session new --alias rpi-run-3-p1 --template worker", gcMockHandler{ExitCode: 1, Stderr: "cannot create"})
+	mock.on("session new worker --alias rpi-run-3-p1 --no-attach", gcMockHandler{ExitCode: 1, Stderr: "cannot create"})
 	mock.install(t)
 
 	e := &gcExecutor{cityPath: cityDir, execCommand: mock.execCommand, lookPath: mock.lookPathFn}

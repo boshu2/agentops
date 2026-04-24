@@ -61,10 +61,10 @@ func NormalizeRuntimeMode(mode string) string {
 // ValidateRuntimeMode validates the runtime mode domain.
 func ValidateRuntimeMode(mode string) error {
 	switch NormalizeRuntimeMode(mode) {
-	case "auto", "direct", "stream", "tmux":
+	case "auto", "direct", "stream", "tmux", "gc":
 		return nil
 	default:
-		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux)", mode)
+		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux|gc)", mode)
 	}
 }
 
