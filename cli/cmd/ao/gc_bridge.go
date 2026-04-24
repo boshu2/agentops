@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/bridge"
@@ -50,6 +51,8 @@ type GCStatusSummary = bridge.GCStatusSummary
 // GCSession is an alias for bridge.GCSession.
 type GCSession = bridge.GCSession
 
+var gcVersionPattern = regexp.MustCompile(`\bv?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?\b`)
+
 // gcBridgeAvailable returns true if the gc binary is on PATH.
 func gcBridgeAvailable(lookPath gcLookFn) bool {
 	_, err := gcDefaultLook(lookPath)("gc")
@@ -58,11 +61,43 @@ func gcBridgeAvailable(lookPath gcLookFn) bool {
 
 // gcBridgeVersion returns the gc version string.
 func gcBridgeVersion(execCommand gcExecFn) (string, error) {
-	out, err := gcDefaultExec(execCommand)("gc", "version").Output()
+	out, err := gcDefaultExec(execCommand)("gc", "version").CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("gc version: %w%s", err, formatCommandOutputContext(out))
+	}
+	version, err := parseGCVersionOutput(out)
 	if err != nil {
 		return "", fmt.Errorf("gc version: %w", err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return version, nil
+}
+
+func parseGCVersionOutput(output []byte) (string, error) {
+	text := strings.TrimSpace(string(output))
+	if text == "" {
+		return "", fmt.Errorf("empty output")
+	}
+	version := gcVersionPattern.FindString(text)
+	if version == "" {
+		return "", fmt.Errorf("unexpected output %q", truncateCommandOutput(text))
+	}
+	return strings.TrimPrefix(version, "v"), nil
+}
+
+func formatCommandOutputContext(output []byte) string {
+	text := strings.TrimSpace(string(output))
+	if text == "" {
+		return ""
+	}
+	return fmt.Sprintf(": %s", truncateCommandOutput(text))
+}
+
+func truncateCommandOutput(text string) string {
+	const maxLen = 120
+	if len(text) <= maxLen {
+		return text
+	}
+	return text[:maxLen] + "..."
 }
 
 // gcBridgeCompatible checks if the given version meets the minimum requirement.
