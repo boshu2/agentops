@@ -443,12 +443,18 @@ Use `gocyclo` or `gocognit` to measure function complexity:
 # Install
 go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 
-# Check complexity (threshold 10)
-gocyclo -over 10 ./...
+# Check changed CLI files with the repo ratchet
+bash scripts/check-go-complexity.sh --base HEAD~1 --warn 15 --fail 25
 
 # Show all functions sorted by complexity
 gocyclo -top 20 ./...
 ```
+
+The repo gate is a ratchet, not a blanket historical cleanup. CI warns for
+changed non-test functions at CC 15+, and fails only when a changed function is
+newly at or worsened beyond CC 25. Existing high-complexity functions are
+reported when touched but are non-blocking if the change does not make them
+worse.
 
 ### Complexity Grades
 
@@ -456,9 +462,31 @@ gocyclo -top 20 ./...
 |-------|----------|--------|
 | A | 1-5 | Ideal |
 | B | 6-10 | Acceptable |
-| C | 11-15 | Refactor when touching |
-| D | 16-20 | Must refactor |
-| F | 21+ | Block merge |
+| C | 11-14 | Refactor opportunistically |
+| D | 15-24 | Warning threshold; refactor or explain when touching |
+| F | 25+ | Failure threshold for new or worsened changed functions |
+
+### CLI Hot-File Budget
+
+Large Cobra command files are allowed when they are already established command
+surfaces, but they need a stricter edit discipline. For production files under
+`cli/cmd/ao/` over 500 lines:
+
+- Keep net production LOC neutral when the change is a refactor or bug fix.
+- Add paired direct command tests when behavior changes.
+- Move reusable logic into `cli/internal/` instead of adding more package-global
+  state or process-wide stdout capture.
+- Do not lower the CC failure threshold below 25 without a separate baseline and
+  migration plan.
+
+Use this command to identify current hot files:
+
+```bash
+find cli/cmd/ao -name '*.go' -not -name '*_test.go' -print0 \
+  | xargs -0 wc -l \
+  | sort -nr \
+  | head
+```
 
 ### Reducing Complexity in Go
 
@@ -559,7 +587,7 @@ func handle(cmd string) error {
 | **Tooling** | Go 1.24+, `gofmt`, `golangci-lint` |
 | **Formatting** | All code passes `gofmt -l .` |
 | **Linting** | All code passes `golangci-lint run` |
-| **Complexity** | CC ≤ 10 per function (`gocyclo -over 10`) |
+| **Complexity** | Aim for CC ≤ 10; CI warns at 15 and fails new/worsened changed functions at 25 |
 | **Errors** | Wrap with context using `fmt.Errorf("...: %w", err)` |
 | **Errors** | Use `errors.Is`/`errors.As` for comparison |
 | **Errors** | No `panic` in library code |
