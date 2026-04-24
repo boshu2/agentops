@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,16 @@ var (
 	notebookSource     string
 	notebookSessionID  string
 )
+
+type notebookUpdateOptions struct {
+	Cwd        string
+	MemoryFile string
+	Quiet      bool
+	MaxLines   int
+	Source     string
+	SessionID  string
+	Writer     io.Writer
+}
 
 // notebookCmd is the parent for notebook-related subcommands.
 var notebookCmd = &cobra.Command{
@@ -62,43 +73,112 @@ func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-
-	memoryFile := notebookMemoryFile
-	if memoryFile == "" {
-		memoryFile, err = findMemoryFile(cwd)
-		if err != nil {
-			if !notebookQuiet {
-				fmt.Println("No MEMORY.md found — skipping notebook update.")
-			}
-			return nil
-		}
+	writer := io.Writer(os.Stdout)
+	if cmd != nil {
+		writer = cmd.OutOrStdout()
 	}
 
-	var entry *pendingEntry
-	if notebookSessionID != "" {
-		entry, err = readSessionByID(cwd, notebookSessionID)
-		if err != nil || entry == nil {
-			if !notebookQuiet {
-				VerbosePrintf("Session %s not found.\n", notebookSessionID)
-			}
-			return nil
-		}
-	} else {
-		entry, err = resolveNotebookSource(cwd, notebookSource)
-		if err != nil || entry == nil {
-			if !notebookQuiet {
-				VerbosePrintf("No session data — nothing to update.\n")
-			}
-			return nil
-		}
+	return runNotebookUpdateWithOptions(notebookUpdateOptions{
+		Cwd:        cwd,
+		MemoryFile: notebookMemoryFile,
+		Quiet:      notebookQuiet,
+		MaxLines:   notebookMaxLines,
+		Source:     notebookSource,
+		SessionID:  notebookSessionID,
+		Writer:     writer,
+	})
+}
+
+func runNotebookUpdateWithOptions(opts notebookUpdateOptions) error {
+	opts, err := normalizeNotebookUpdateOptions(opts)
+	if err != nil {
+		return err
 	}
 
-	cursorPath := filepath.Join(cwd, ".agents", "ao", "notebook-cursor.json")
-	if lastID, _ := readNotebookCursor(cursorPath); lastID == entry.SessionID && entry.SessionID != "" {
-		VerbosePrintf("Session %s already processed — skipping.\n", entry.SessionID)
+	memoryFile, ok := resolveNotebookMemoryFile(opts)
+	if !ok {
 		return nil
 	}
 
+	entry, ok := resolveNotebookUpdateEntry(opts)
+	if !ok {
+		return nil
+	}
+
+	if notebookEntryAlreadyProcessed(opts, entry) {
+		return nil
+	}
+
+	return writeNotebookUpdate(opts, memoryFile, entry)
+}
+
+func normalizeNotebookUpdateOptions(opts notebookUpdateOptions) (notebookUpdateOptions, error) {
+	if opts.Cwd == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return opts, fmt.Errorf("get working directory: %w", err)
+		}
+		opts.Cwd = cwd
+	}
+	if opts.Writer == nil {
+		opts.Writer = os.Stdout
+	}
+	if opts.MaxLines <= 0 {
+		opts.MaxLines = 190
+	}
+	if opts.Source == "" {
+		opts.Source = "auto"
+	}
+	return opts, nil
+}
+
+func resolveNotebookMemoryFile(opts notebookUpdateOptions) (string, bool) {
+	if opts.MemoryFile != "" {
+		return opts.MemoryFile, true
+	}
+
+	memoryFile, err := findMemoryFile(opts.Cwd)
+	if err != nil {
+		if !opts.Quiet {
+			fmt.Fprintln(opts.Writer, "No MEMORY.md found — skipping notebook update.")
+		}
+		return "", false
+	}
+	return memoryFile, true
+}
+
+func resolveNotebookUpdateEntry(opts notebookUpdateOptions) (*pendingEntry, bool) {
+	if opts.SessionID != "" {
+		entry, err := readSessionByID(opts.Cwd, opts.SessionID)
+		if err != nil || entry == nil {
+			if !opts.Quiet {
+				notebookVerboseFprintf(opts.Writer, "Session %s not found.\n", opts.SessionID)
+			}
+			return nil, false
+		}
+		return entry, true
+	}
+
+	entry, err := resolveNotebookSource(opts.Cwd, opts.Source)
+	if err != nil || entry == nil {
+		if !opts.Quiet {
+			notebookVerboseFprintf(opts.Writer, "No session data — nothing to update.\n")
+		}
+		return nil, false
+	}
+	return entry, true
+}
+
+func notebookEntryAlreadyProcessed(opts notebookUpdateOptions, entry *pendingEntry) bool {
+	cursorPath := filepath.Join(opts.Cwd, ".agents", "ao", "notebook-cursor.json")
+	if lastID, _ := readNotebookCursor(cursorPath); lastID == entry.SessionID && entry.SessionID != "" {
+		notebookVerboseFprintf(opts.Writer, "Session %s already processed — skipping.\n", entry.SessionID)
+		return true
+	}
+	return false
+}
+
+func writeNotebookUpdate(opts notebookUpdateOptions, memoryFile string, entry *pendingEntry) error {
 	sections, err := parseNotebookSections(memoryFile)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("parse MEMORY.md: %w", err)
@@ -106,7 +186,7 @@ func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 
 	lastSession := buildLastSessionSection(entry)
 	sections = upsertLastSession(sections, lastSession)
-	sections = pruneNotebook(sections, notebookMaxLines)
+	sections = pruneNotebook(sections, opts.MaxLines)
 
 	content := renderNotebook(sections)
 	if err := atomicWriteFile(memoryFile, []byte(content), 0600); err != nil {
@@ -114,15 +194,22 @@ func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	if entry.SessionID != "" {
+		cursorPath := filepath.Join(opts.Cwd, ".agents", "ao", "notebook-cursor.json")
 		_ = writeNotebookCursor(cursorPath, entry.SessionID)
 	}
 
-	if !notebookQuiet {
+	if !opts.Quiet {
 		lineCount := strings.Count(content, "\n")
-		fmt.Printf("Updated %s (%d lines)\n", memoryFile, lineCount)
+		fmt.Fprintf(opts.Writer, "Updated %s (%d lines)\n", memoryFile, lineCount)
 	}
 
 	return nil
+}
+
+func notebookVerboseFprintf(w io.Writer, format string, args ...any) {
+	if verbose {
+		fmt.Fprintf(w, format, args...)
+	}
 }
 
 // Thin wrappers delegating to internal/notebook.
