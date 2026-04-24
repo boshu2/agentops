@@ -107,6 +107,8 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedNoDashboard, "no-dashboard", false, "Disable auto-opening the web dashboard")
 	phasedCmd.Flags().BoolVar(&phasedMixed, "mixed", false, "Enable cross-vendor mixed-model execution (planner and reviewer from different vendors)")
 	phasedCmd.Flags().StringVar(&phasedDiscoveryArtifact, "discovery-artifact", "", "Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation")
+	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
+	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux"))
 
 	rpiCmd.AddCommand(phasedCmd)
 }

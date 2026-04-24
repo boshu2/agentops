@@ -1760,7 +1760,7 @@ ao session close [flags]
 Generate shell completion scripts for ao.
 
 ```
-ao completion [bash|zsh|fish]
+ao completion [bash|zsh|fish|powershell]
 ```
 
 ---

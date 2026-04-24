@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
@@ -64,12 +65,40 @@ func TestTemplateCompletionValues_IsSorted(t *testing.T) {
 	}
 }
 
+func sortedCompletionValues(values ...string) []string {
+	out := append([]string(nil), values...)
+	sort.Strings(out)
+	return out
+}
+
+func mustFindCompletionCommand(t *testing.T, path ...string) *cobra.Command {
+	t.Helper()
+	cmd := rootCmd
+	for _, name := range path {
+		var next *cobra.Command
+		for _, child := range cmd.Commands() {
+			if child.Name() == name {
+				next = child
+				break
+			}
+		}
+		if next == nil {
+			t.Fatalf("command path %v not found at %q", path, name)
+		}
+		cmd = next
+	}
+	return cmd
+}
+
 // TestFlagCompletions_Registered verifies that every enumerated flag we care
 // about has a completion function registered with the expected value set.
 // This is an L2 integration test: it exercises the real cobra command tree
 // built by init() side-effects in this package.
 func TestFlagCompletions_Registered(t *testing.T) {
 	tmplValues := templateCompletionValues()
+	phaseValues := sortedCompletionValues("task", "startup", "planning", "pre-mortem", "validation")
+	tierValues := sortedCompletionValues("gold", "silver", "bronze")
+	planStatusValues := sortedCompletionValues("active", "completed", "abandoned", "superseded")
 
 	cases := []struct {
 		name string
@@ -83,6 +112,32 @@ func TestFlagCompletions_Registered(t *testing.T) {
 		{"inject --format", injectCmd, "format", []string{"json", "markdown"}},
 		{"inject --session-type", injectCmd, "session-type",
 			[]string{"brainstorm", "career", "debug", "implement", "research"}},
+		{"config models --set-tier", configModelsCmd, "set-tier",
+			sortedCompletionValues("quality", "balanced", "budget")},
+		{"goals add --type", goalsAddCmd, "type",
+			sortedCompletionValues("health", "architecture", "quality", "meta")},
+		{"goals steer add --steer", goalsSteerAddCmd, "steer",
+			sortedCompletionValues("increase", "decrease", "hold", "explore")},
+		{"gate bulk-approve --tier", gateBulkApproveCmd, "tier", tierValues},
+		{"pool list --tier", poolListCmd, "tier", tierValues},
+		{"pool list --status", poolListCmd, "status",
+			sortedCompletionValues("pending", "staged", "promoted", "rejected")},
+		{"pool stage --min-tier", poolStageCmd, "min-tier", tierValues},
+		{"context assemble --phase", mustFindCompletionCommand(t, "context", "assemble"), "phase", phaseValues},
+		{"context explain --phase", mustFindCompletionCommand(t, "context", "explain"), "phase", phaseValues},
+		{"context packet-status --phase", mustFindCompletionCommand(t, "context", "packet-status"), "phase", phaseValues},
+		{"rpi phased --from", mustFindCompletionCommand(t, "rpi", "phased"), "from",
+			sortedCompletionValues("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem")},
+		{"rpi phased --runtime", mustFindCompletionCommand(t, "rpi", "phased"), "runtime",
+			sortedCompletionValues("auto", "direct", "stream", "tmux")},
+		{"overnight curator enqueue --kind", overnightCuratorEnqueueCmd, "kind",
+			sortedCompletionValues("ingest-claude-session", "lint-wiki", "dream-seed")},
+		{"overnight curator event --severity", overnightCuratorEventCmd, "severity",
+			sortedCompletionValues("info", "warn", "high", "critical")},
+		{"feedback-loop --citation-type", feedbackLoopCmd, "citation-type",
+			sortedCompletionValues("retrieved", "applied", "all")},
+		{"plans list --status", plansListCmd, "status", planStatusValues},
+		{"plans update --status", plansUpdateCmd, "status", planStatusValues},
 	}
 
 	for _, tc := range cases {
