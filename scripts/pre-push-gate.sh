@@ -249,6 +249,18 @@ collect_go_changed() {
     esac
 }
 
+changed_paths() {
+    if [[ -n "${all_changed:-}" ]]; then
+        printf '%s\n' "$all_changed"
+    else
+        collect_all_changed
+    fi
+}
+
+needs_release_audit_artifact_check() {
+    changed_paths | grep -qE '^(docs/releases/.*-audit\.md|scripts/(ci-local-release|resolve-release-artifacts|validate-release-audit-artifacts)\.sh|tests/scripts/release-artifacts\.bats)$'
+}
+
 if [[ "$FAST_MODE" == "true" ]]; then
     echo "pre-push gate (fast): validating changed files before push..."
     echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING"
@@ -691,7 +703,7 @@ else
 fi
 
 # --- 25b. Release audit artifact refs ---
-if needs_check docs || [[ "${all_changed:-}" == *"scripts/validate-release-audit-artifacts.sh"* ]]; then
+if needs_release_audit_artifact_check; then
     if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then
         if release_audit_artifacts_output="$(scripts/validate-release-audit-artifacts.sh 2>&1)"; then
             pass "release audit artifacts"

@@ -162,6 +162,44 @@ GO
     [[ "$output" == *"passed"* ]]
 }
 
+@test "pre-push-gate.sh skips release artifact validation for unrelated docs changes" {
+    make_stub "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "docs/contracts/hook-runtime-contract.md"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"release audit artifacts (skipped)"* ]]
+}
+
+@test "pre-push-gate.sh runs release artifact validation for release audit docs" {
+    make_stub "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "docs/releases/2026-03-22-v2.29.0-audit.md"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"release audit artifacts"* ]]
+}
+
 @test "pre-push-gate.sh detects stale embedded hooks" {
     # Override the embedded sync stub to fail (simulating stale hooks)
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh" 1
