@@ -355,6 +355,7 @@ func preparePhasedRun(opts *phasedEngineOptions, args []string) (*phasedRunLifec
 			return nil, fmt.Errorf("get working directory: %w", err)
 		}
 	}
+	opts.WorkingDir = cwd
 	if err := preflightOpts(opts); err != nil {
 		return nil, err
 	}

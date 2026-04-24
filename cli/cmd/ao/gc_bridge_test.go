@@ -185,6 +185,36 @@ func TestParseGCStatus_ExtraFields(t *testing.T) {
 	}
 }
 
+func TestParseGCStatus_GCV1Shape(t *testing.T) {
+	jsonOutput := `{
+		"city": null,
+		"controller": {"running": true, "pid": 1633791, "mode": "standalone"},
+		"agents": [
+			{"name": "dog-1", "qualified_name": "dog-1", "running": false, "suspended": false}
+		],
+		"summary": {"total_agents": 3, "running_agents": 1}
+	}`
+	status, err := parseGCStatus([]byte(jsonOutput))
+	if err != nil {
+		t.Fatalf("parseGCStatus gc v1 shape error: %v", err)
+	}
+	if !status.Controller.Running {
+		t.Fatal("Controller.Running = false, want true")
+	}
+	if status.Controller.Mode != "standalone" {
+		t.Errorf("Controller.Mode = %q, want standalone", status.Controller.Mode)
+	}
+	if status.Summary.Running != 1 {
+		t.Errorf("Summary.Running = %d, want 1", status.Summary.Running)
+	}
+	if status.Summary.Total != 3 {
+		t.Errorf("Summary.Total = %d, want 3", status.Summary.Total)
+	}
+	if len(status.Agents) != 1 || status.Agents[0].QualifiedName != "dog-1" {
+		t.Fatalf("Agents = %#v, want qualified dog-1", status.Agents)
+	}
+}
+
 func TestParseGCStatus_MissingRequiredField(t *testing.T) {
 	jsonOutput := `{
 		"city": "test",
@@ -223,6 +253,39 @@ func TestParseGCSessions(t *testing.T) {
 	}
 }
 
+func TestParseGCSessions_GCV1Shape(t *testing.T) {
+	jsonOutput := `[
+		{
+			"ID": "gc-10",
+			"Template": "worker",
+			"State": "creating",
+			"Closed": false,
+			"Title": "worker",
+			"Alias": "ao-test-good",
+			"SessionName": "s-gc-10"
+		}
+	]`
+	sessions, err := parseGCSessions([]byte(jsonOutput))
+	if err != nil {
+		t.Fatalf("parseGCSessions gc v1 shape error: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("len(sessions) = %d, want 1", len(sessions))
+	}
+	if sessions[0].ID != "gc-10" {
+		t.Errorf("ID = %q, want gc-10", sessions[0].ID)
+	}
+	if sessions[0].Alias != "ao-test-good" {
+		t.Errorf("Alias = %q, want ao-test-good", sessions[0].Alias)
+	}
+	if sessions[0].State != "creating" {
+		t.Errorf("State = %q, want creating", sessions[0].State)
+	}
+	if sessions[0].Template != "worker" {
+		t.Errorf("Template = %q, want worker", sessions[0].Template)
+	}
+}
+
 func TestParseGCSessions_Empty(t *testing.T) {
 	sessions, err := parseGCSessions([]byte(`[]`))
 	if err != nil {
@@ -255,7 +318,7 @@ func TestParseGCSessions_MissingRequiredField(t *testing.T) {
 
 func TestGCNudgeArgs(t *testing.T) {
 	args := gcNudgeArgs("worker-1", "Pick up ag-0ln9.2 and implement it")
-	expected := []string{"session", "nudge", "worker-1", "Pick up ag-0ln9.2 and implement it"}
+	expected := []string{"session", "nudge", "worker-1", "--delivery", "immediate", "Pick up ag-0ln9.2 and implement it"}
 	if len(args) != len(expected) {
 		t.Fatalf("gcNudgeArgs len = %d, want %d", len(args), len(expected))
 	}
@@ -268,8 +331,21 @@ func TestGCNudgeArgs(t *testing.T) {
 
 func TestGCNudgeArgs_SpecialChars(t *testing.T) {
 	args := gcNudgeArgs("worker-1", `prompt with "quotes" and $vars`)
-	if args[3] != `prompt with "quotes" and $vars` {
-		t.Errorf("message not preserved: %q", args[3])
+	if args[5] != `prompt with "quotes" and $vars` {
+		t.Errorf("message not preserved: %q", args[5])
+	}
+}
+
+func TestGCSessionNewArgs(t *testing.T) {
+	args := gcSessionNewArgs("worker", "rpi-run1-p1")
+	expected := []string{"session", "new", "worker", "--alias", "rpi-run1-p1", "--no-attach"}
+	if len(args) != len(expected) {
+		t.Fatalf("gcSessionNewArgs len = %d, want %d", len(args), len(expected))
+	}
+	for i := range expected {
+		if args[i] != expected[i] {
+			t.Errorf("args[%d] = %q, want %q", i, args[i], expected[i])
+		}
 	}
 }
 
