@@ -6,6 +6,16 @@
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_AUTOCHAIN:-}" = "0" ] && exit 0
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../lib/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/../lib/hook-helpers.sh"
+elif [ -f "$SCRIPT_DIR/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/hook-helpers.sh"
+fi
+
 AO_TIMEOUT_BIN="timeout"
 command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
 
@@ -19,6 +29,9 @@ run_ao_quick() {
 
 # Read stdin JSON
 INPUT=$(cat)
+if declare -F try_managed_hook_backend >/dev/null 2>&1; then
+    try_managed_hook_backend "ratchet-advance" "$INPUT" && exit 0
+fi
 
 # Extract command and exit code from tool input/response
 if command -v jq >/dev/null 2>&1; then
@@ -89,11 +102,13 @@ fi
 
 # Idempotency: check if next step already recorded in chain.jsonl
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHAIN_LIB="$SCRIPT_DIR/../lib/chain-parser.sh"
 if [ -f "$CHAIN_LIB" ]; then
     # shellcheck source=../lib/chain-parser.sh
     . "$CHAIN_LIB"
+elif [ -f "$SCRIPT_DIR/chain-parser.sh" ]; then
+    # shellcheck source=../lib/chain-parser.sh
+    . "$SCRIPT_DIR/chain-parser.sh"
 else
     chain_find_entry() {
         local chain_file="$1" step_name="$2"
@@ -146,7 +161,9 @@ else
 fi
 
 # Output as additionalContext
-if command -v jq >/dev/null 2>&1; then
+if declare -F emit_hook_context >/dev/null 2>&1; then
+    emit_hook_context "PostToolUse" "$MSG"
+elif command -v jq >/dev/null 2>&1; then
     jq -n --arg ctx "$MSG" '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$ctx}}'
 else
     safe_msg=${MSG//\\/\\\\}

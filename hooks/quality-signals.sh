@@ -3,14 +3,38 @@ set -euo pipefail
 # quality-signals.sh - UserPromptSubmit hook: lightweight session quality signal detection
 # Detects repeated prompts and correction patterns. Logs signals to
 # .agents/signals/session-quality.jsonl (append-only, advisory only).
-# Non-blocking (always exit 0). Never surfaces in /status — separate task.
+# Non-blocking (always exit 0). Recent signals surface in `ao status`.
 
 # Kill switches
 [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && exit 0
 [[ "${AGENTOPS_QUALITY_SIGNALS_DISABLED:-}" == "1" ]] && exit 0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../lib/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/../lib/hook-helpers.sh"
+elif [ -f "$SCRIPT_DIR/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/hook-helpers.sh"
+fi
+
 # Read all stdin
 INPUT=$(cat)
+if declare -F try_managed_hook_backend >/dev/null 2>&1; then
+    try_managed_hook_backend "quality-signals" "$INPUT" && exit 0
+fi
+
+if ! declare -F hash_text >/dev/null 2>&1; then
+    hash_text() {
+        if command -v sha256sum >/dev/null 2>&1; then
+            printf '%s' "$1" | sha256sum | awk '{print $1}'
+        elif command -v shasum >/dev/null 2>&1; then
+            printf '%s' "$1" | shasum -a 256 | awk '{print $1}'
+        else
+            printf '%s' "$1" | cksum | awk '{print $1 ":" $2}'
+        fi
+    }
+fi
 
 # Extract prompt from JSON
 PROMPT=""
@@ -37,16 +61,6 @@ SIGNAL_LOG="$SIGNAL_DIR/session-quality.jsonl"
 SESSION_ID="${CODEX_SESSION_ID:-${CODEX_THREAD_ID:-${CLAUDE_SESSION_ID:-unknown}}}"
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")
 
-hash_prompt() {
-    if command -v sha256sum >/dev/null 2>&1; then
-        printf '%s' "$1" | sha256sum | awk '{print $1}'
-    elif command -v shasum >/dev/null 2>&1; then
-        printf '%s' "$1" | shasum -a 256 | awk '{print $1}'
-    else
-        printf '%s' "$1" | cksum | awk '{print $1 ":" $2}'
-    fi
-}
-
 # Helper: append a signal entry to the JSONL log
 log_signal() {
     local signal_type="$1"
@@ -71,7 +85,7 @@ log_signal() {
 }
 
 # --- Detection 1: Repeated prompts ---
-PROMPT_FINGERPRINT=$(hash_prompt "$PROMPT")
+PROMPT_FINGERPRINT=$(hash_text "$PROMPT")
 if [ -f "$LAST_PROMPT_FILE" ]; then
     LAST_PROMPT=$(cat "$LAST_PROMPT_FILE" 2>/dev/null || echo "")
     if [ "$PROMPT_FINGERPRINT" = "$LAST_PROMPT" ] && [ -n "$PROMPT" ]; then

@@ -188,6 +188,7 @@ func init() {
 	hooksCmd.AddCommand(hooksInstallCmd)
 	hooksCmd.AddCommand(hooksShowCmd)
 	hooksCmd.AddCommand(hooksTestCmd)
+	hooksCmd.AddCommand(hooksRunCmd)
 
 	// Init flags
 	hooksInitCmd.Flags().StringVar(&hooksOutputFormat, "format", "json", "Output format: json, shell")

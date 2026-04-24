@@ -24,8 +24,13 @@ if [ ! -e "$ROOT/.agents" ]; then
 fi
 
 HOOK_ERROR_LOG="$AO_DIR/hook-errors.log"
-AO_TIMEOUT_BIN="timeout"
-command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1 || AO_TIMEOUT_BIN="gtimeout"
+if [ -f "$SCRIPT_DIR/../lib/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/../lib/hook-helpers.sh"
+elif [ -f "$SCRIPT_DIR/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/hook-helpers.sh"
+fi
 
 # shellcheck disable=SC2329 # utility available for future use
 log_hook_fail() {
@@ -33,133 +38,11 @@ log_hook_fail() {
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: $1" >> "$HOOK_ERROR_LOG" 2>/dev/null || true
 }
 
-run_with_timeout() {
-    local seconds="$1"
-    shift
-    if command -v "$AO_TIMEOUT_BIN" >/dev/null 2>&1; then
-        "$AO_TIMEOUT_BIN" "$seconds" "$@" 2>/dev/null
-        return $?
-    fi
-    "$@" 2>/dev/null
-}
-
-trim_lookup_text() {
-    printf '%s' "${1:-}" \
-        | tr '\n' ' ' \
-        | tr -s '[:space:]' ' ' \
-        | sed 's/^ //; s/ $//'
-}
-
-resolve_startup_context_mode() {
-    local mode
-    if [ "${AGENTOPS_STARTUP_LEGACY_INJECT:-}" = "1" ]; then
-        printf 'manual'
-        return 0
-    fi
-
-    mode=$(printf '%s' "${AGENTOPS_STARTUP_CONTEXT_MODE:-factory}" | tr '[:upper:]' '[:lower:]')
-    case "$mode" in
-        ""|factory)
-            printf 'factory'
-            ;;
-        manual|lean|legacy)
-            printf 'manual'
-            ;;
-        *)
-            printf 'factory'
-            ;;
-    esac
-}
-
-derive_lookup_query() {
-    if [ -n "${AGENTOPS_SESSION_LOOKUP_QUERY:-}" ]; then
-        trim_lookup_text "$AGENTOPS_SESSION_LOOKUP_QUERY"
-        return 0
-    fi
-    if [ -n "${H_GOAL:-}" ]; then
-        trim_lookup_text "$H_GOAL"
-        return 0
-    fi
-    if [ -n "${H_SUMMARY:-}" ]; then
-        trim_lookup_text "$H_SUMMARY"
-        return 0
-    fi
-    return 0
-}
-
-build_factory_briefing() {
-    local goal="$1"
-    local output path
-
-    [ -n "$goal" ] || return 0
-    command -v ao >/dev/null 2>&1 || return 0
-    command -v jq >/dev/null 2>&1 || return 0
-
-    output=$(run_with_timeout 8 ao knowledge brief --json --goal "$goal") || return 0
-    [ -n "$output" ] || return 0
-
-    path=$(printf '%s' "$output" | jq -r '.output_path // empty' 2>/dev/null)
-    path=$(trim_lookup_text "$path")
-    [ -n "$path" ] || return 0
-    [ -f "$path" ] || return 0
-    printf '%s' "$path"
-}
-
-write_environment_manifest() {
-    local env_file="$AO_DIR/environment.json"
-    local tmp_file git_branch head_sha git_dirty tools_json manifest_json
-
-    git_branch="$(git -C "$ROOT" branch --show-current 2>/dev/null || echo "")"
-    head_sha="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo "")"
-    if git -C "$ROOT" diff --quiet 2>/dev/null && git -C "$ROOT" diff --cached --quiet 2>/dev/null; then
-        if [ -z "$(git -C "$ROOT" ls-files --others --exclude-standard 2>/dev/null)" ]; then
-            git_dirty=false
-        else
-            git_dirty=true
-        fi
-    else
-        git_dirty=true
-    fi
-
-    if command -v jq &>/dev/null; then
-        tools_json=$(jq -n \
-            --arg ao "$(command -v ao 2>/dev/null || true)" \
-            --arg git "$(command -v git 2>/dev/null || true)" \
-            --arg jqbin "$(command -v jq 2>/dev/null || true)" '
-            {
-                ao: ($ao != ""),
-                git: ($git != ""),
-                jq: ($jqbin != "")
-            }
-        ')
-        manifest_json=$(jq -n \
-            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg os "$(uname -s 2>/dev/null || echo unknown)" \
-            --arg arch "$(uname -m 2>/dev/null || echo unknown)" \
-            --arg root "$ROOT" \
-            --arg branch "$git_branch" \
-            --arg head_sha "$head_sha" \
-            --argjson git_dirty "$git_dirty" \
-            --argjson tools "$tools_json" '
-            {
-                timestamp: $ts,
-                platform: {
-                    os: $os,
-                    arch: $arch
-                },
-                tools: $tools,
-                git: {
-                    repo_root: $root,
-                    branch: $branch,
-                    head_sha: $head_sha,
-                    dirty: $git_dirty
-                }
-            }
-        ')
-        tmp_file="${env_file}.tmp"
-        printf '%s\n' "$manifest_json" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$env_file" 2>/dev/null || true
-    fi
-}
+# Stale/manual installs can miss helper updates. SessionStart must never create
+# operator-facing noise, so fail open if the helper layer is unavailable.
+if ! declare -F session_write_environment_manifest >/dev/null 2>&1; then
+    exit 0
+fi
 
 cd "$ROOT" 2>/dev/null || true
 
@@ -179,7 +62,7 @@ if [ "$FRESH_REPO" = "1" ]; then
     : > "$ROOT/.agents/ao/.new-user-welcome-needed" 2>/dev/null || true
 fi
 
-write_environment_manifest
+session_write_environment_manifest "$ROOT" "$AO_DIR"
 
 # Clear stale dedup flags from prior sessions (prevents cross-session suppression)
 rm -f "$ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
@@ -220,7 +103,7 @@ if [ ! -f "$ROOT/.agents/.gitignore" ]; then
 EOF
 fi
 
-STARTUP_CONTEXT_MODE="$(resolve_startup_context_mode)"
+STARTUP_CONTEXT_MODE="$(session_resolve_startup_context_mode)"
 FACTORY_GOAL=""
 FACTORY_BRIEFING_PATH=""
 
@@ -251,10 +134,10 @@ if [ -d "$ROOT/.agents/handoff" ] && command -v jq &>/dev/null; then
 fi
 
 if [ "$STARTUP_CONTEXT_MODE" = "factory" ]; then
-    FACTORY_GOAL="$(derive_lookup_query)"
+    FACTORY_GOAL="$(session_derive_lookup_query "${H_GOAL:-}" "${H_SUMMARY:-}")"
     if [ -n "$FACTORY_GOAL" ]; then
         printf '%s' "$FACTORY_GOAL" > "$ROOT/.agents/ao/factory-goal.txt" 2>/dev/null || true
-        FACTORY_BRIEFING_PATH="$(build_factory_briefing "$FACTORY_GOAL")"
+        FACTORY_BRIEFING_PATH="$(session_build_factory_briefing "$FACTORY_GOAL")"
         if [ -n "$FACTORY_BRIEFING_PATH" ]; then
             printf '%s' "$FACTORY_BRIEFING_PATH" > "$ROOT/.agents/ao/factory-briefing.txt" 2>/dev/null || true
         else

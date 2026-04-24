@@ -7,14 +7,28 @@
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_COMMIT_REVIEW_DISABLED:-}" = "1" ] && exit 0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../lib/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/../lib/hook-helpers.sh"
+elif [ -f "$SCRIPT_DIR/hook-helpers.sh" ]; then
+    # shellcheck source=../lib/hook-helpers.sh
+    . "$SCRIPT_DIR/hook-helpers.sh"
+fi
+
 # Read stdin
 INPUT=$(cat)
+if declare -F try_managed_hook_backend >/dev/null 2>&1; then
+    try_managed_hook_backend "commit-review-gate" "$INPUT" && exit 0
+fi
 
-redact_sensitive_diff() {
-    sed -E \
-        -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]"'\''`]+/\1[REDACTED]/g' \
-        -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)[^[:space:]"'\''`]+/\1[REDACTED]/g'
-}
+if ! declare -F redact_sensitive_diff >/dev/null 2>&1; then
+    redact_sensitive_diff() {
+        sed -E \
+            -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]"'\''`]+/\1[REDACTED]/g' \
+            -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)[^[:space:]"'\''`]+/\1[REDACTED]/g'
+    }
+fi
 
 # Extract tool name and command
 TOOL_NAME="${CLAUDE_TOOL_NAME:-}"
@@ -42,11 +56,15 @@ FULL_DIFF=$(git diff --cached 2>/dev/null)
 FILE_COUNT=$(printf '%s\n' "$FULL_DIFF" | grep -c '^diff --git' 2>/dev/null || echo 0)
 [ "$FILE_COUNT" = "0" ] && exit 0
 
+DIFF_LIMIT="${AGENTOPS_COMMIT_REVIEW_DIFF_LINES:-80}"
+if [ "${AGENTOPS_COMMIT_REVIEW_FULL_DIFF:-}" = "1" ] && [ "$DIFF_LIMIT" -lt 200 ] 2>/dev/null; then
+    DIFF_LIMIT=200
+fi
 DIFF_LINES=$(printf '%s\n' "$FULL_DIFF" | wc -l | tr -d ' ')
-DIFF_CONTENT=$(printf '%s\n' "$FULL_DIFF" | head -200 | redact_sensitive_diff)
+DIFF_CONTENT=$(printf '%s\n' "$FULL_DIFF" | head -"$DIFF_LIMIT" | redact_sensitive_diff)
 TRUNCATED=""
-if [ "$DIFF_LINES" -gt 200 ]; then
-    TRUNCATED=" (showing first 200 of $DIFF_LINES lines — run 'git diff --cached' for full diff)"
+if [ "$DIFF_LINES" -gt "$DIFF_LIMIT" ]; then
+    TRUNCATED=" (showing first $DIFF_LIMIT of $DIFF_LINES lines; run 'git diff --cached' for full diff)"
 fi
 
 # Build review context
@@ -60,7 +78,9 @@ ${TRUNCATED}
 ${DIFF_CONTENT}"
 
 # Inject as additionalContext
-if command -v jq >/dev/null 2>&1; then
+if declare -F emit_hook_context >/dev/null 2>&1; then
+    emit_hook_context "PreToolUse" "$REVIEW_MSG"
+elif command -v jq >/dev/null 2>&1; then
     jq -n --arg ctx "$REVIEW_MSG" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":$ctx}}'
 else
     # Fallback: escape for JSON

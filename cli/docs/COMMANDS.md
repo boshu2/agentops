@@ -1843,6 +1843,14 @@ ao hooks install [flags]
       --source-dir string   Path to agentops repo checkout (for --full script installation)
 ```
 
+#### `ao hooks run`
+
+Run a managed AgentOps hook backend.
+
+```
+ao hooks run <hook-name> [flags]
+```
+
 #### `ao hooks show`
 
 Display the current hooks configuration from ~/.claude/settings.json (Claude Code runtime).

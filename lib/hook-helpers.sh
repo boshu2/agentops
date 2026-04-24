@@ -202,6 +202,194 @@ timeout_run() {
     fi
 }
 
+# try_managed_hook_backend HOOK_NAME INPUT
+# Delegates complex hook behavior to `ao hooks run` when the installed ao
+# binary supports it. Returns 0 only when the backend ran successfully. Callers
+# should keep a shell fallback for older installed binaries and direct script
+# tests.
+try_managed_hook_backend() {
+    local hook_name="$1"
+    local input="${2:-}"
+
+    [[ "${AGENTOPS_MANAGED_HOOK_BACKEND_DISABLED:-}" == "1" ]] && return 1
+    command -v ao >/dev/null 2>&1 || return 1
+
+    timeout_run "${AGENTOPS_MANAGED_HOOK_BACKEND_TIMEOUT:-3}" ao hooks run --help 2>/dev/null \
+        | grep -q "Run a managed AgentOps hook backend" || return 1
+
+    printf '%s' "$input" \
+        | timeout_run "${AGENTOPS_MANAGED_HOOK_BACKEND_TIMEOUT:-3}" ao hooks run "$hook_name" 2>/dev/null
+}
+
+# emit_hook_context EVENT_NAME CONTEXT
+# Writes the hookSpecificOutput/additionalContext JSON shape used by Claude and
+# Codex hook runtimes.
+emit_hook_context() {
+    local event_name="$1"
+    local context_text="$2"
+
+    if command -v jq >/dev/null 2>&1; then
+        jq -n --arg event "$event_name" --arg ctx "$context_text" \
+            '{"hookSpecificOutput":{"hookEventName":$event,"additionalContext":$ctx}}'
+    else
+        local safe_msg
+        safe_msg=$(json_escape_value "$context_text")
+        printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' \
+            "$event_name" "$safe_msg"
+    fi
+}
+
+# redact_sensitive_diff — Scrub secret-like values from diff previews.
+redact_sensitive_diff() {
+    sed -E \
+        -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]"'\''`]+/\1[REDACTED]/g' \
+        -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)[^[:space:]"'\''`]+/\1[REDACTED]/g'
+}
+
+# hash_text — Stable content fingerprint without retaining raw content.
+hash_text() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        printf '%s' "$1" | sha256sum | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        printf '%s' "$1" | shasum -a 256 | awk '{print $1}'
+    else
+        printf '%s' "$1" | cksum | awk '{print $1 ":" $2}'
+    fi
+}
+
+# session_trim_lookup_text TEXT
+# Normalize handoff/goal text for startup lookups.
+session_trim_lookup_text() {
+    printf '%s' "${1:-}" \
+        | tr '\n' ' ' \
+        | tr -s '[:space:]' ' ' \
+        | sed 's/^ //; s/ $//'
+}
+
+# session_resolve_startup_context_mode
+# Returns factory or manual. Legacy inject env opts into manual mode.
+session_resolve_startup_context_mode() {
+    local mode
+    if [ "${AGENTOPS_STARTUP_LEGACY_INJECT:-}" = "1" ]; then
+        printf 'manual'
+        return 0
+    fi
+
+    mode=$(printf '%s' "${AGENTOPS_STARTUP_CONTEXT_MODE:-factory}" | tr '[:upper:]' '[:lower:]')
+    case "$mode" in
+        ""|factory)
+            printf 'factory'
+            ;;
+        manual|lean|legacy)
+            printf 'manual'
+            ;;
+        *)
+            printf 'factory'
+            ;;
+    esac
+}
+
+# session_derive_lookup_query HANDOFF_GOAL HANDOFF_SUMMARY
+# Environment override wins, then handoff goal, then handoff summary.
+session_derive_lookup_query() {
+    local handoff_goal="${1:-}"
+    local handoff_summary="${2:-}"
+
+    if [ -n "${AGENTOPS_SESSION_LOOKUP_QUERY:-}" ]; then
+        session_trim_lookup_text "$AGENTOPS_SESSION_LOOKUP_QUERY"
+        return 0
+    fi
+    if [ -n "$handoff_goal" ]; then
+        session_trim_lookup_text "$handoff_goal"
+        return 0
+    fi
+    if [ -n "$handoff_summary" ]; then
+        session_trim_lookup_text "$handoff_summary"
+        return 0
+    fi
+    return 0
+}
+
+# session_build_factory_briefing GOAL
+# Builds a briefing path with ao knowledge brief when the CLI and jq are present.
+session_build_factory_briefing() {
+    local goal="$1"
+    local output path
+
+    [ -n "$goal" ] || return 0
+    command -v ao >/dev/null 2>&1 || return 0
+    command -v jq >/dev/null 2>&1 || return 0
+
+    output=$(timeout_run 8 ao knowledge brief --json --goal "$goal" 2>/dev/null) || return 0
+    [ -n "$output" ] || return 0
+
+    path=$(printf '%s' "$output" | jq -r '.output_path // empty' 2>/dev/null)
+    path=$(session_trim_lookup_text "$path")
+    [ -n "$path" ] || return 0
+    [ -f "$path" ] || return 0
+    printf '%s' "$path"
+}
+
+# session_write_environment_manifest ROOT AO_DIR
+# Writes .agents/ao/environment.json for diagnostics and recovery.
+session_write_environment_manifest() {
+    local root="$1"
+    local ao_dir="$2"
+    local env_file="$ao_dir/environment.json"
+    local tmp_file git_branch head_sha git_dirty tools_json manifest_json
+
+    git_branch="$(git -C "$root" branch --show-current 2>/dev/null || echo "")"
+    head_sha="$(git -C "$root" rev-parse HEAD 2>/dev/null || echo "")"
+    if git -C "$root" diff --quiet 2>/dev/null && git -C "$root" diff --cached --quiet 2>/dev/null; then
+        if [ -z "$(git -C "$root" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+            git_dirty=false
+        else
+            git_dirty=true
+        fi
+    else
+        git_dirty=true
+    fi
+
+    if command -v jq &>/dev/null; then
+        tools_json=$(jq -n \
+            --arg ao "$(command -v ao 2>/dev/null || true)" \
+            --arg git "$(command -v git 2>/dev/null || true)" \
+            --arg jqbin "$(command -v jq 2>/dev/null || true)" '
+            {
+                ao: ($ao != ""),
+                git: ($git != ""),
+                jq: ($jqbin != "")
+            }
+        ')
+        manifest_json=$(jq -n \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg os "$(uname -s 2>/dev/null || echo unknown)" \
+            --arg arch "$(uname -m 2>/dev/null || echo unknown)" \
+            --arg root "$root" \
+            --arg branch "$git_branch" \
+            --arg head_sha "$head_sha" \
+            --argjson git_dirty "$git_dirty" \
+            --argjson tools "$tools_json" '
+            {
+                timestamp: $ts,
+                platform: {
+                    os: $os,
+                    arch: $arch
+                },
+                tools: $tools,
+                git: {
+                    repo_root: $root,
+                    branch: $branch,
+                    head_sha: $head_sha,
+                    dirty: $git_dirty
+                }
+            }
+        ')
+        tmp_file="${env_file}.tmp"
+        printf '%s\n' "$manifest_json" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$env_file" 2>/dev/null || true
+    fi
+}
+
 # read_hook_input — Read stdin and extract last_assistant_message.
 # Sets global variables: INPUT, LAST_ASSISTANT_MSG
 # Usage: call at top of hook script, then use $LAST_ASSISTANT_MSG
