@@ -182,6 +182,7 @@
 - [AgentOps System Map](agentops-system-map.md) — Visual system map
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
+- [CLI Command Surface](cli-surface.md) — Generated classification of leaf commands by coverage and runtime safety
 - [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
 - [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
 - [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
