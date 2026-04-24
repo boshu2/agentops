@@ -431,6 +431,64 @@ func TestValidateRuntimeMode_GC(t *testing.T) {
 	}
 }
 
+func TestPreflightOpts_GCRuntimeSkipsRuntimeCommand(t *testing.T) {
+	cityDir := setupCityDir(t, "gc-preflight")
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"gc-preflight","controller":{"running":true,"pid":42},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = cityDir
+	opts.RuntimeMode = "gc"
+	opts.RuntimeCommand = "missing-runtime-command"
+	opts.ExecCommand = mock.execCommand
+	opts.LookPath = mock.lookPathFn
+
+	if err := preflightOpts(&opts); err != nil {
+		t.Fatalf("preflightOpts(runtime=gc) error = %v, want nil", err)
+	}
+	if len(mock.callsMatching("version")) == 0 {
+		t.Fatal("expected gc version check during preflight")
+	}
+}
+
+func TestPreflightOpts_AutoRuntimeSkipsRuntimeCommandWhenGCReady(t *testing.T) {
+	cityDir := setupCityDir(t, "gc-auto-preflight")
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"gc-auto-preflight","controller":{"running":true,"pid":42},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = cityDir
+	opts.RuntimeMode = "auto"
+	opts.RuntimeCommand = "missing-runtime-command"
+	opts.ExecCommand = mock.execCommand
+	opts.LookPath = mock.lookPathFn
+
+	if err := preflightOpts(&opts); err != nil {
+		t.Fatalf("preflightOpts(runtime=auto with ready gc) error = %v, want nil", err)
+	}
+}
+
+func TestPreflightOpts_GCRuntimeRequiresCity(t *testing.T) {
+	mock := newGCMock()
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = t.TempDir()
+	opts.RuntimeMode = "gc"
+	opts.ExecCommand = mock.execCommand
+	opts.LookPath = mock.lookPathFn
+
+	err := preflightOpts(&opts)
+	if err == nil {
+		t.Fatal("expected error when runtime=gc has no city.toml")
+	}
+	if !strings.Contains(err.Error(), "city.toml") {
+		t.Fatalf("error = %q, want city.toml detail", err.Error())
+	}
+}
+
 func TestGCCityPathFromOpts(t *testing.T) {
 	tests := []struct {
 		name        string
