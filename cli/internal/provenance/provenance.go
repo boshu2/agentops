@@ -45,11 +45,49 @@ type AuditReport struct {
 // fields the audit cares about. Additional fields in the source are
 // ignored.
 type learningFrontmatter struct {
-	Title      string `yaml:"title"`
-	SourceBead string `yaml:"source_bead"`
-	Source     string `yaml:"source"`
-	Date       string `yaml:"date"`
+	Title      string         `yaml:"title"`
+	SourceBead string         `yaml:"source_bead"`
+	Source     flexibleString `yaml:"source"`
+	Date       string         `yaml:"date"`
 }
+
+// flexibleString holds a learning frontmatter value that may be either a
+// plain YAML scalar or a structured map/sequence. Older learnings used
+// a bare string such as `source: retro-quick`; newer ones occasionally
+// use a map like `source: {session: ..., evidence: [...]}` to carry
+// provenance context. Either shape should be honored by the audit; the
+// canonical "missing source" check only asks whether the value is empty.
+type flexibleString string
+
+// UnmarshalYAML accepts scalar, map, or sequence nodes. Scalars decode
+// to their literal value. Maps and sequences decode to a non-empty
+// sentinel so the caller's MissingSources check does not mark the
+// field as empty; the exact serialization is not interpreted further.
+func (f *flexibleString) UnmarshalYAML(node *yaml.Node) error {
+	if node == nil {
+		*f = ""
+		return nil
+	}
+	switch node.Kind {
+	case yaml.ScalarNode:
+		*f = flexibleString(node.Value)
+		return nil
+	case yaml.MappingNode, yaml.SequenceNode:
+		*f = "<structured>"
+		return nil
+	case yaml.AliasNode:
+		if node.Alias != nil {
+			return f.UnmarshalYAML(node.Alias)
+		}
+		*f = ""
+		return nil
+	default:
+		*f = ""
+		return nil
+	}
+}
+
+func (f flexibleString) String() string { return string(f) }
 
 // Audit scans .agents/learnings/ under cwd and returns an
 // AuditReport. Never prints to stdout/stderr. Soft-fails on
@@ -102,7 +140,7 @@ func Audit(cwd string) (*AuditReport, error) {
 		}
 
 		// Missing source: empty source_bead AND empty source fields.
-		if strings.TrimSpace(fm.SourceBead) == "" && strings.TrimSpace(fm.Source) == "" {
+		if strings.TrimSpace(fm.SourceBead) == "" && strings.TrimSpace(fm.Source.String()) == "" {
 			report.MissingSources++
 		}
 
