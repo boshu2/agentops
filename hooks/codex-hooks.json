@@ -9,11 +9,6 @@
             "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/session-start.sh",
             "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-inject.sh",
-            "timeout": 10
           }
         ]
       }

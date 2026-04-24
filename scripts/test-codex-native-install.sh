@@ -170,10 +170,13 @@ rg -q '^codex_hooks = true$' "$CODEX_HOME/config.toml" || fail "config.toml miss
 [[ -f "$CODEX_HOME/hooks.json" ]] || fail "Missing ~/.codex/hooks.json after native install"
 jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Expected 5 native Codex hook events in ~/.codex/hooks.json"
-jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 8' "$CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 8 native Codex hook handlers in ~/.codex/hooks.json"
+jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Expected 7 native Codex hook handlers in ~/.codex/hooks.json"
 jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Missing session-start.sh handler in ~/.codex/hooks.json"
+if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null; then
+  fail "Codex SessionStart should not install noisy ao-inject.sh"
+fi
 rg -q '"install_mode": "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata missing native-plugin mode"
 rg -q '"hook_runtime": "codex-native-hooks"' "$CODEX_HOME/.agentops-codex-install.json" \
@@ -187,6 +190,29 @@ info "Verifying --codex-home installs hooks into the target Codex home"
 EXPLICIT_HOME_ROOT="/tmp/codex-native-plugin-explicit-${timestamp}"
 EXPLICIT_CODEX_HOME="${EXPLICIT_HOME_ROOT}/explicit/.codex"
 REAL_HOME_ROOT="${EXPLICIT_HOME_ROOT}/real-home"
+mkdir -p "$EXPLICIT_CODEX_HOME"
+cat > "$EXPLICIT_CODEX_HOME/hooks.json" <<'EOF'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /old/agentops/hooks/session-start.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash /old/agentops/hooks/ao-inject.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
 HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
   --repo-root "$REPO_ROOT" \
   --codex-home "$EXPLICIT_CODEX_HOME" \
@@ -194,6 +220,9 @@ HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
   --update-command "test-local" >/dev/null
 [[ -f "$EXPLICIT_CODEX_HOME/hooks.json" ]] || fail "install-codex-plugin.sh did not create hooks.json under --codex-home"
 [[ ! -f "$REAL_HOME_ROOT/.codex/hooks.json" ]] || fail "install-codex-plugin.sh leaked hooks.json into \$HOME instead of --codex-home"
+if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null; then
+  fail "install-codex-plugin.sh left stale ao-inject.sh in existing Codex hooks"
+fi
 
 info "Checking Codex entrypoint files for runtime-agnostic instructions"
 entrypoint_files=()

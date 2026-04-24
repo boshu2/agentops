@@ -57,17 +57,17 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         && pass "hooks/codex-hooks.json is valid JSON" || fail "hooks/codex-hooks.json is invalid JSON"
     jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
-    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 8' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "codex hook bundle defines 8 native hook handlers" || fail "codex hook bundle handler count drifted"
+    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 7 native hook handlers" || fail "codex hook bundle handler count drifted"
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes session-start.sh"
     else
         fail "codex hook bundle missing session-start.sh"
     fi
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
-        pass "codex hook bundle includes ao-inject.sh"
+        fail "codex SessionStart must not include ao-inject.sh"
     else
-        fail "codex hook bundle missing ao-inject.sh"
+        pass "codex SessionStart omits noisy ao-inject.sh"
     fi
     if jq -e '.hooks.Stop[]?.hooks[] | select(.command | test("ao-flywheel-close\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes ao-flywheel-close.sh"
