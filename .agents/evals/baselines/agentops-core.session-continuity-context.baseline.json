@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.session-continuity-context-20260425T072718Z",
+  "suite": {
+    "id": "agentops-core.session-continuity-context",
+    "path": "evals/agentops-core/session-continuity-context.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "e7d3b0fe641e859945909f74b766e607dcb28755704d5ef97e14a71d0d887f50"
+  },
+  "started_at": "2026-04-25T07:27:18.978767768Z",
+  "completed_at": "2026-04-25T07:27:23.087636916Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "3f1ad6585b22",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/session-continuity-context.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.session-continuity-context-20260425T072718Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.session-continuity-context.baseline.json",
+    "promoted_from_run_id": "agentops-core.session-continuity-context-20260425T072718Z",
+    "promoted_at": "2026-04-25T07:27:23.177016636Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 30 baseline for session continuity context canary"
+  },
+  "case_results": [
+    {
+      "id": "session-continuity-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 3332,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "session-continuity-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 773,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "session-continuity-cli-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 1,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao status`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao handoff`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao memory`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao memory sync`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao notebook`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao notebook update`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao plans`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao plans sync`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao sessions`\""
+      ]
+    },
+    {
+      "id": "session-continuity-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/context_assemble.go contains \"GOALS, HISTORY, INTEL, TASK, and PROTOCOL\"",
+        "artifact ../../cli/cmd/ao/context_assemble.go contains \"Secrets are redacted before output.\"",
+        "artifact ../../cli/cmd/ao/context.go contains \"one-shot auto-handoff marker on CRITICAL\"",
+        "artifact ../../cli/cmd/ao/handoff.go contains \"Bridge decisions to learnings\"",
+        "artifact ../../cli/cmd/ao/handoff_bridge.go contains \"source: handoff-bridge\"",
+        "artifact ../../cli/cmd/ao/memory.go contains \"managed block markers\"",
+        "artifact ../../cli/cmd/ao/notebook.go contains \"session artifacts (.agents/ao/sessions/*.jsonl)\"",
+        "artifact ../../cli/cmd/ao/plans.go contains \"beads is source of truth\"",
+        "artifact ../../cli/cmd/ao/task_sync.go contains \"Promote completed tasks to learnings\""
+      ]
+    },
+    {
+      "id": "session-continuity-doc-and-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/context-lifecycle.md contains \"ao notebook update: merge insights into MEMORY.md\"",
+        "artifact ../../docs/context-lifecycle.md contains \"ao memory sync: sync to repo-root MEMORY.md (cross-runtime)\"",
+        "artifact ../../docs/contracts/session-intelligence-trust-model.md contains \"Consumers:** `ao context assemble`, `ao context explain`, `ao codex start`\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao task-sync` | Hidden | Task synchronization |\"",
+        "artifact ../../skills/status/SKILL.md contains \"ao task-status --json\"",
+        "artifact ../../skills/recover/SKILL.md contains \"ao codex status --json\"",
+        "artifact ../../skills/handoff/SKILL.md contains \"Create structured handoff for session continuation\"",
+        "artifact ../../skills-codex/status/SKILL.md contains \"ao codex ensure-start 2\u003e/dev/null || true\"",
+        "artifact ../../skills-codex/handoff/SKILL.md contains \"ao codex ensure-stop --auto-extract 2\u003e/dev/null || true\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T072718Z/agentops-core.session-continuity-context.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.session-continuity-context.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
