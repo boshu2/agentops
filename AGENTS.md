@@ -66,7 +66,7 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except security-toolchain-gate (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
+All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including `codex-runtime-sections`.
 
 ### Local Pre-Push Checklist
@@ -122,6 +122,9 @@ find skills -type l  # must be empty — zero symlinks allowed
 
  # 14. Codex semantic parity audit (generated skills still match Codex-native tool/runtime semantics)
  bash scripts/audit-codex-parity.sh
+
+ # 15. AgentOps eval canaries
+ scripts/eval-agentops.sh --fast
 
 # Full gate (runs everything above and more):
 scripts/ci-local-release.sh
@@ -191,6 +194,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
+| **agentops-eval-advisory** | Runs deterministic public AgentOps eval canaries and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); eval suite or scorecard regression until baselines are ratcheted |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
 | **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces Codex artifact metadata parity, backbone prompts, override coverage, RPI contract, lifecycle guards, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
