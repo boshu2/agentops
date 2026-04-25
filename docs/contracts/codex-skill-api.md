@@ -89,18 +89,28 @@ Skills are loaded via **progressive disclosure**: metadata first (name, descript
 
 ## Multi-Agent (Sub-Agents)
 
-Codex multi-agent is experimental. Enable via `/experimental` or `multi_agent = true` in `~/.codex/config.toml`.
+Current Codex releases enable subagent workflows by default. Codex only spawns
+subagents when the operator or parent agent explicitly asks it to do so.
+Subagents inherit the parent sandbox policy and live runtime overrides.
 
 ### Agent Roles
 
-Configured in `[agents]` section of config files:
+Codex ships with these built-in roles:
 
 | Role | Purpose |
 |------|---------|
 | `default` | General-purpose fallback |
 | `worker` | Execution-focused implementation |
 | `explorer` | Read-heavy codebase exploration |
-| `monitor` | Long-running command/task monitoring |
+
+Custom agents live as standalone TOML files under `$HOME/.codex/agents/` for
+personal agents or `.codex/agents/` for project-scoped agents. Each custom
+agent file must define `name`, `description`, and `developer_instructions`.
+Optional fields such as `nickname_candidates`, `model`,
+`model_reasoning_effort`, `sandbox_mode`, `mcp_servers`, and `skills.config`
+inherit from the parent session when omitted.
+
+Global subagent limits stay in the `[agents]` section of `config.toml`:
 
 ```toml
 [agents]
@@ -113,6 +123,9 @@ description = "Code review specialist"
 config_file = "codex-reviewer.toml"
 ```
 
+`agents.max_threads` defaults to `6`; `agents.max_depth` defaults to `1`,
+which allows direct child agents but prevents deeper recursive fan-out.
+
 ### Batch Processing
 
 `spawn_agents_on_csv` processes batches of similar tasks:
@@ -120,13 +133,17 @@ config_file = "codex-reviewer.toml"
 | Parameter | Description |
 |-----------|-------------|
 | `csv_path` | Source CSV file |
-| `instruction` | Worker prompt template with `{column}` placeholders |
+| `instruction` | Worker prompt template with `{column_name}` placeholders |
 | `id_column` | Stable identifiers |
 | `output_schema` | Fixed JSON structure for worker results |
+| `output_csv_path` | Destination CSV containing row metadata and results |
 | `max_concurrency` | Parallel worker limit |
 | `max_runtime_seconds` | Worker timeout |
 
 Workers call `report_agent_job_result` exactly once.
+
+`sqlite_home` controls where Codex stores the SQLite-backed state used for
+agent jobs and exported results.
 
 ### Codex Built-in Tools
 
@@ -140,7 +157,7 @@ Tools available inside a Codex agent session:
 | `apply_patch` | Apply file edits (diff-based) |
 | `rg` | Ripgrep search |
 | `git` | Git operations |
-| `cmd` / `run_terminal_cmd` | Shell command execution |
+| Shell/terminal tool | Shell command execution |
 | `spawn_agent` | Create a focused sub-agent |
 | `send_input` | Send follow-up input to a sub-agent |
 | `wait_agent` | Wait for one or more sub-agents |
