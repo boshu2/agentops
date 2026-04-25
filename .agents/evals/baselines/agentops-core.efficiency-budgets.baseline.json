@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.efficiency-budgets-20260425T042352Z",
+  "suite": {
+    "id": "agentops-core.efficiency-budgets",
+    "path": "evals/agentops-core/efficiency-budgets.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "0962c182e3f83498454a5dcf0039b42686951fc2dec946adadf309cf210c516e"
+  },
+  "started_at": "2026-04-25T04:23:53.028935413Z",
+  "completed_at": "2026-04-25T04:23:53.311361988Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "61d2a1f5ee55",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 90
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.efficiency-budgets-20260425T042352Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.efficiency-budgets.baseline.json",
+    "promoted_from_run_id": "agentops-core.efficiency-budgets-20260425T042352Z",
+    "promoted_at": "2026-04-25T04:23:53.399684909Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial efficiency-dimension public canary baseline after required dimension coverage reached all canonical score dimensions."
+  },
+  "case_results": [
+    {
+      "id": "coverage-command-budget",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "efficiency": 1
+      },
+      "duration_ms": 282,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "pre-push-eval-conditional",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "efficiency": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../scripts/pre-push-gate.sh contains \"AgentOps eval canaries\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"^evals/|^schemas/eval-|^scripts/eval-agentops\\\\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"scripts/eval-agentops.sh --fast\""
+      ]
+    },
+    {
+      "id": "testing-docs-budget",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "efficiency": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/TESTING.md contains \"| AgentOps eval canaries | `scripts/eval-agentops.sh --fast` | ~20s |\"",
+        "artifact ../../docs/TESTING.md contains \"Run the fast local\""
+      ]
+    },
+    {
+      "id": "efficiency-dimension-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "efficiency": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../docs/contracts/eval-environment.md contains \"`efficiency` | The run stayed within expected time, budget, retry, and output limits.\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "efficiency": 1,
+    "process_adherence": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T042352Z/agentops-core.efficiency-budgets.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.efficiency-budgets.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
