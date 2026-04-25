@@ -270,7 +270,8 @@ func executeCommand(args ...string) (string, error) {
 	evalBaselineBy = ""
 	evalBaselineReason = ""
 	evalCoverageRoot = "evals/agentops-core"
-	evalCoverageRequire = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed"}
+	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed"}
+	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
 	overnightGoal = ""
 	overnightOutputDir = ""
 	overnightRunTimeout = ""
