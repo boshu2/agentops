@@ -8,6 +8,7 @@
 # Checks:
 #   1. Go build + vet (if cli/ changed)
 #   2. Go race tests on changed packages (via validate-go-fast.sh)
+#  3d. .agents/ write-surface contract (catalogued top-level subdirs)
 #   3. Command/test pairing for cli/cmd/ao Go changes
 #   4. cmd/ao coverage floor gate
 #  4b. Per-package coverage ratchet (full mode only)
@@ -343,6 +344,18 @@ fi
 HASH_GATE_SNAPSHOT=""
 if [[ -x scripts/check-agents-hash-snapshot.sh ]]; then
     HASH_GATE_SNAPSHOT="$(scripts/check-agents-hash-snapshot.sh capture 2>/dev/null || echo "")"
+fi
+
+# --- 3d. .agents/ write-surface contract ---
+if [[ -x scripts/check-agents-write-surfaces.sh && -f docs/contracts/agents-write-surfaces.md ]]; then
+    if write_surfaces_output="$(scripts/check-agents-write-surfaces.sh 2>&1)"; then
+        pass ".agents/ write-surface contract"
+    else
+        fail ".agents/ write-surface contract drifted"
+        indent_output "$write_surfaces_output"
+    fi
+else
+    skip ".agents/ write-surface contract"
 fi
 
 # --- 5. Embedded hooks sync (full parity gate) ---
