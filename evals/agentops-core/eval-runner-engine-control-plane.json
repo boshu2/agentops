@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.eval-runner-engine-control-plane",
+  "name": "AgentOps Eval Runner Engine Control Plane Canary",
+  "description": "Offline public canary for the eval runner engine: expectation semantics, baseline comparison and promotion, coverage reports, scorecards, live-runtime isolation, schemas, generated CLI docs, and the scripts/eval-agentops.sh wrapper policy.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "eval", "baseline", "scorecard", "coverage", "runtime", "model-upgrade"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1},
+      {"name": "efficiency", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "eval-runner-engine-go-tests",
+      "title": "Eval command, engine, coverage, scorecard, and runtime tests pass",
+      "kind": "command",
+      "objective": "Protect the deterministic eval runner behavior that tells operators whether a skill, runtime, or model change is better or worse than baseline.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao ./internal/eval -run '^(TestEvalRunCommandJSON|TestEvalRunCommandMissingSuiteFails|TestEvalCompareCommandJSON|TestEvalCompareCommandJSONIncludesZeroAggregateDelta|TestEvalScorecardCommandJSON|TestEvalBaselineCommandJSON|TestEvalCoverageCommandJSON|TestRunSuiteArtifactCheckPasses|TestRunSuiteCommandCasePasses|TestRunSuiteExpectationFailureFailsRun|TestRunSuiteRejectsLiveTier|TestCompareRunsMarksRegression|TestPromoteBaselineWritesRunRecord|TestCollectGitRecordPreservesDirtyPathNames|TestRunRecordJSONRoundTrip|TestBuildCoverageReportSummarizesDomains|TestBuildCoverageReportMissingRootFails|TestBuildScorecardRPICategories|TestBuildScorecardSkillChangeCategories|TestBuildScorecardMissingCategoryFails|TestBuildScorecardBaselineDeltaRegressionImprovement|TestBuildScorecardFailedCandidateFails|TestRunLiveRuntimeSkipsWhenExecutableUnavailable|TestRunLiveRuntimeDisabledSkipsBeforeExternalProbe|TestRunLiveRuntimeIsolatesAndScrubsCodexEnvironment|TestRunLiveRuntimeCapturesTranscriptAndScorecardArtifacts|TestRunLiveRuntimePropagatesRunnerErrors)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/eval"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "eval-runner-help-smoke",
+      "title": "Eval runner CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure operators can discover eval run, compare, baseline, scorecard, and coverage commands from a built ao binary.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" eval --help >/dev/null; \"$tmp/ao\" eval run --help >/dev/null; \"$tmp/ao\" eval compare --help >/dev/null; \"$tmp/ao\" eval baseline --help >/dev/null; \"$tmp/ao\" eval coverage --help >/dev/null; \"$tmp/ao\" eval scorecard --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "eval-runner-cli-docs",
+      "title": "Generated CLI docs expose eval runner commands and flags",
+      "kind": "artifact_check",
+      "objective": "Keep generated docs aligned with the public eval control-plane surface used by model and skill upgrade workflows.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao eval`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run deterministic AgentOps evaluation suites and compare run records."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval run`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--baseline string   compare the run against a baseline run record"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--runtime string    deterministic runtime override (static, mock, shell)"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval compare`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--max-aggregate-regression float   allowed aggregate regression before verdict becomes regression"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--max-dimension-regression float   allowed per-dimension regression before verdict becomes regression"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval baseline`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--promoted-by string   identity promoting the baseline"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--rationale string     rationale for promoting the baseline"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval coverage`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--require-domain stringArray      required product domain for missing-domain reporting"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--require-runtime stringArray     required deterministic runtime for missing-runtime reporting"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval scorecard`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--kind string                     scorecard kind (rpi, skill-change)"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]
+    },
+    {
+      "id": "eval-runner-source-contracts",
+      "title": "Source contracts preserve eval runner semantics",
+      "kind": "artifact_check",
+      "objective": "Lock source-level behavior for deterministic runtime scope, command execution, expectation scoring, baseline deltas, baseline promotion, coverage gaps, scorecards, and live-runtime hygiene.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Run deterministic AgentOps evaluation suites and compare run records."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "runtime %q is out of deterministic scope (use static, mock, or shell)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "evalRunCmd.Flags().StringVar(&evalRunBaseline, \"baseline\", \"\", \"compare the run against a baseline run record\")"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "evalScorecardCmd.Flags().StringVar(&evalScorecardKind, \"kind\", string(aoeval.ScorecardKindRPI), \"scorecard kind (rpi, skill-change)\")"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "if !validDeterministicRuntime(runtimeName)"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "record, err = CompareRuns(record, baseline, compareOptionsFromSuite(*suite))"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "if evalCase.Kind == \"command\""},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "executeCaseCommand"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "scrubbedEnv(os.Environ(), scrubPrefixes(suite))"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "hasCriticalFailure || aggregate < suite.Scoring.AggregateThreshold"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "if suite.Environment.OfflineRequired || suite.Environment.Network == \"forbidden\" || suite.Tier == TierDeterministic"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/expectations.go", "value": "case \"exit_code\":"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/expectations.go", "value": "case \"json_path\":"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/expectations.go", "value": "case \"schema_valid\":"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/expectations.go", "value": "case \"score_at_least\":"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/expectations.go", "value": "manual_review is not supported by deterministic evals"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/compare.go", "value": "aggregate score regressed by %.4f"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/baseline.go", "value": "PromotedFromRunID: run.RunID"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/coverage.go", "value": "DefaultCoverageDomains"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/coverage.go", "value": "MissingRequiredRuntimes"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "candidate regressed one or more scorecard categories"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/runtime.go", "value": "skips instead of invoking external processes unless"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/runtime.go", "value": "live runtime disabled; set LiveRuntimeOptions.Enabled to true"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/runtime.go", "value": "runtime version probe failed:"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "eval-runner-schema-and-contracts",
+      "title": "Eval schemas and contract preserve baseline and runtime semantics",
+      "kind": "artifact_check",
+      "objective": "Ensure the machine-readable schemas and operator contract still define public/private suites, deterministic and live tiers, baseline promotion, score dimensions, runtime hygiene, and verdict rules.",
+      "expectations": [
+        {"type": "schema_valid", "target": "suite", "value": "eval-suite"},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"public_canary\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"private_holdout\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"deterministic\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"headless\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"live\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"runtime_prompt\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"schema_valid\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"score_at_least\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"human_rationale\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-run.v1.schema.json", "value": "\"baseline_comparison\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-run.v1.schema.json", "value": "\"promoted_from_run_id\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-run.v1.schema.json", "value": "\"aggregate_delta\""},
+        {"type": "artifact_contains", "target": "../../schemas/eval-run.v1.schema.json", "value": "\"skipped_reason\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "candidate-vs-baseline score comparison"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "A candidate is better only when it preserves critical cases and improves or holds"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "A live suite that cannot run because auth, runtime, model, budget, or network is"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "Promotion requires:"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "safety"]
+    },
+    {
+      "id": "eval-runner-wrapper-policy",
+      "title": "Eval wrapper script preserves baseline, scorecard, and coverage gate policy",
+      "kind": "artifact_check",
+      "objective": "Protect the shell wrapper operators use for fast canary runs, baseline promotion, scorecard emission, baseline comparisons, advisory mode, and coverage gap enforcement.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "--promote-baseline requires --rationale"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "find evals/agentops-core -maxdepth 1 -type f -name '*.json' | sort"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "go build -o \"$AO_BIN\" ./cmd/ao"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "scorecard_kind_for_suite()"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "eval run \"$suite\" --run-id"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "eval compare \"$run_path\" \"$baseline_path\""},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "eval baseline \"$run_path\" --out \"$baseline_path\" --promoted-by \"$PROMOTED_BY\" --rationale \"$RATIONALE\""},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "eval coverage --root evals/agentops-core --json"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "coverage: required domains, dimensions, and runtimes covered"},
+        {"type": "artifact_contains", "target": "../../scripts/eval-agentops.sh", "value": "if [[ \"$failures\" -gt 0 && \"$ADVISORY\" != \"true\" ]]"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "efficiency"]
+    }
+  ]
+}
