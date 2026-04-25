@@ -25,6 +25,8 @@ var (
 	agentsInspectContract string
 )
 
+const defaultAgentsContract = "docs/contracts/agents-write-surfaces.md"
+
 var agentsInspectCmd = &cobra.Command{
 	Use:   "inspect",
 	Short: "Show catalogued .agents/ write surfaces and active skill-owned subdirs",
@@ -40,7 +42,7 @@ func init() {
 	agentsCmd.AddCommand(agentsInspectCmd)
 	agentsInspectCmd.Flags().BoolVar(&agentsInspectJSON, "json", false, "Emit machine-readable JSON")
 	agentsInspectCmd.Flags().StringVar(&agentsInspectContract, "contract",
-		"docs/contracts/agents-write-surfaces.md",
+		defaultAgentsContract,
 		"Path to the .agents/ write-surfaces contract doc")
 }
 
@@ -52,7 +54,15 @@ type AgentsInventory struct {
 }
 
 func runAgentsInspect(cmd *cobra.Command, args []string) error {
+	repoRoot, rootErr := resolveAgentsRepoRoot()
 	contract := agentsInspectContract
+	skillsDir := "skills"
+	if rootErr == nil {
+		contract = resolveAgentsDefaultPath(cmd, "contract", agentsInspectContract, defaultAgentsContract, repoRoot)
+		skillsDir = filepath.Join(repoRoot, "skills")
+	} else if shouldResolveAgentsDefaultPath(cmd, "contract", agentsInspectContract, defaultAgentsContract) {
+		return rootErr
+	}
 	data, err := os.ReadFile(contract)
 	if err != nil {
 		return fmt.Errorf("reading contract %s: %w", contract, err)
@@ -61,7 +71,7 @@ func runAgentsInspect(cmd *cobra.Command, args []string) error {
 	inv := AgentsInventory{
 		Contract:  contract,
 		Allowlist: parseAgentsAllowlist(string(data)),
-		Skills:    discoverActiveSkills("skills"),
+		Skills:    discoverActiveSkills(skillsDir),
 	}
 
 	if agentsInspectJSON {
@@ -93,6 +103,48 @@ func runAgentsInspect(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(out, "  (none)")
 	}
 	return nil
+}
+
+func resolveAgentsRepoRoot() (string, error) {
+	startDir, err := resolveProjectDir()
+	if err != nil {
+		return "", err
+	}
+	dir, err := filepath.Abs(startDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve project directory %s: %w", startDir, err)
+	}
+	for {
+		if agentsRepoRootLooksValid(dir) {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("locating AgentOps repo root from %s", startDir)
+		}
+		dir = parent
+	}
+}
+
+func agentsRepoRootLooksValid(dir string) bool {
+	if _, err := os.Stat(filepath.Join(dir, defaultAgentsContract)); err != nil {
+		return false
+	}
+	if info, err := os.Stat(filepath.Join(dir, "skills")); err != nil || !info.IsDir() {
+		return false
+	}
+	return true
+}
+
+func resolveAgentsDefaultPath(cmd *cobra.Command, flagName, value, defaultValue, repoRoot string) string {
+	if !shouldResolveAgentsDefaultPath(cmd, flagName, value, defaultValue) {
+		return value
+	}
+	return filepath.Join(repoRoot, defaultValue)
+}
+
+func shouldResolveAgentsDefaultPath(cmd *cobra.Command, flagName, value, defaultValue string) bool {
+	return !filepath.IsAbs(value) && !cmd.Flags().Changed(flagName) && value == defaultValue
 }
 
 // parseAgentsAllowlist extracts the allowlist between the BEGIN/END

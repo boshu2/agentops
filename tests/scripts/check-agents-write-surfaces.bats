@@ -72,6 +72,7 @@ EOF
     [ "$status" -eq 1 ]
     [[ "$output" == *"undocumented"* ]]
     [[ "$output" == *"widgets"* ]]
+    [[ "$output" == *"cli/internal/bad.go"* ]]
 }
 
 @test "allows skill-owned subdirs without allowlist entry" {
@@ -184,6 +185,7 @@ EOF
     [ "$status" -eq 1 ]
     echo "$output" | jq -e '.status == "fail"'
     echo "$output" | jq -e '.undocumented | index("widgets")'
+    echo "$output" | jq -e '.source_locations.widgets | index("cli/internal/bad.go")'
 }
 
 @test "--json emits ok status when everything documented" {
@@ -212,4 +214,32 @@ EOF
     cd "$FAKE_REPO"
     run bash scripts/check-agents-write-surfaces.sh --bogus
     [ "$status" -eq 2 ]
+}
+
+@test "repo allowlist entries are referenced or explicitly lifecycle-only" {
+    local lifecycle_only=""
+    cd "$REPO_ROOT"
+    run bash "$SCRIPT" --json
+    [ "$status" -eq 0 ]
+
+    missing="$(
+        awk '
+          /<!-- BEGIN agents-write-surfaces-allowlist -->/ { inside=1; next }
+          /<!-- END agents-write-surfaces-allowlist -->/ { inside=0; next }
+          inside {
+            sub(/[[:space:]]+#.*$/, "")
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+            if ($0 != "" && $0 !~ /^#/) print $0
+          }
+        ' "$REPO_ROOT/docs/contracts/agents-write-surfaces.md" \
+          | while IFS= read -r entry; do
+              if [[ " $lifecycle_only " == *" $entry "* ]]; then
+                  continue
+              fi
+              if ! echo "$output" | jq -e --arg entry "$entry" '.source_locations[$entry] | length > 0' >/dev/null; then
+                  echo "$entry"
+              fi
+            done
+    )"
+    [ -z "$missing" ]
 }

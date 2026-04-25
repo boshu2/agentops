@@ -2696,6 +2696,21 @@ ao agents [command]
 
 **Subcommands:**
 
+#### `ao agents doctor`
+
+Compose the .agents/ write-surface contract, active skill-owned
+
+```
+ao agents doctor [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for doctor
+      --json   Emit machine-readable JSON
+```
+
 #### `ao agents inspect`
 
 Read the .agents/ write-surface contract and emit a structured

@@ -33,6 +33,8 @@ SCOPES=(learnings patterns findings rpi/next-work.jsonl)
 # --ignore-untracked: exclude git-untracked files from the scoped subtrees
 # so local scratch files (docs/blog/, *_test.txt, etc.) do not trip the gate.
 # Env override: HASH_GATE_IGNORE_UNTRACKED=1 is equivalent to passing the flag.
+# The pre-push wrapper also honors HASH_GATE_TIMEOUT_SECONDS for bounded local
+# runtime when shared ~/.agents state is busy.
 IGNORE_UNTRACKED="${HASH_GATE_IGNORE_UNTRACKED:-0}"
 
 args=()
