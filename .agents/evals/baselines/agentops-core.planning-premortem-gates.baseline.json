@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.planning-premortem-gates-20260425T092020Z",
+  "suite": {
+    "id": "agentops-core.planning-premortem-gates",
+    "path": "evals/agentops-core/planning-premortem-gates.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "9154c2e808e51265506ee8c7862333e4cde4240c5c60e8e2cda2bad672417cf9"
+  },
+  "started_at": "2026-04-25T09:20:20.915108755Z",
+  "completed_at": "2026-04-25T09:20:26.861370333Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "1aa2749794f8",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/planning-premortem-gates.json",
+      "skills-codex/.agentops-manifest.json",
+      "skills-codex/pre-mortem/.agentops-generated.json",
+      "skills-codex/pre-mortem/scripts/validate.sh",
+      "skills/pre-mortem/scripts/validate.sh"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 240
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.planning-premortem-gates-20260425T092020Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.planning-premortem-gates.baseline.json",
+    "promoted_from_run_id": "agentops-core.planning-premortem-gates-20260425T092020Z",
+    "promoted_at": "2026-04-25T09:20:27.02762756Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 42 baseline for planning/pre-mortem failure-prevention gates"
+  },
+  "case_results": [
+    {
+      "id": "plan-premortem-validators-and-hook",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 1034,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 19 passed, 0 failed\"",
+        "stdout contains \"Results: 18 passed, 0 failed\"",
+        "stdout contains \"SKILL.md mentions council delegation\"",
+        "stdout contains \"All pre-mortem-gate tests passed\""
+      ]
+    },
+    {
+      "id": "finding-registry-flow-prevention",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 53,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 20 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "planning-tuning-defaults",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 174,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"OVERALL: PASS\""
+      ]
+    },
+    {
+      "id": "next-work-contract-parity",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 7027,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 12 PASS, 0 FAIL\""
+      ]
+    },
+    {
+      "id": "premortem-mandatory-review-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/pre-mortem/SKILL.md contains \"ao beads verify \u003cbead-id\u003e\"",
+        "artifact ../../skills/pre-mortem/SKILL.md contains \"scope_mode: \u003cexpansion|hold|reduction\u003e\"",
+        "artifact ../../skills/pre-mortem/references/mandatory-checks.md contains \"TEMPORAL INTERROGATION\"",
+        "artifact ../../skills/pre-mortem/references/mandatory-checks.md contains \"Error \u0026 Rescue Map\"",
+        "artifact ../../skills/pre-mortem/references/mandatory-checks.md contains \"COUNCIL FAIL PATTERN CHECK\"",
+        "artifact ../../skills/pre-mortem/references/mandatory-checks.md contains \"TEST PYRAMID CHECK\"",
+        "artifact ../../skills/pre-mortem/references/mandatory-checks.md contains \"bounded set of valid values\"",
+        "artifact ../../skills/pre-mortem/references/write-pre-mortem-output.md contains \"## Council Verdict: PASS / WARN / FAIL\"",
+        "artifact ../../skills/pre-mortem/references/write-pre-mortem-output.md contains \"dedup_key\"",
+        "artifact ../../skills/pre-mortem/references/write-pre-mortem-output.md contains \"finding-compiler.sh\""
+      ]
+    },
+    {
+      "id": "plan-premortem-codex-runtime-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/pre-mortem/scripts/validate.sh contains \"(/|\\\\\\\\$)council\"",
+        "artifact ../../skills-codex/pre-mortem/scripts/validate.sh contains \"(/|\\\\\\\\$)council\"",
+        "artifact ../../skills-codex/pre-mortem/SKILL.md contains \"$council --quick validate \u003cplan-path\u003e\"",
+        "artifact ../../skills-codex/pre-mortem/SKILL.md contains \"$pre-mortem --deep .agents/plans/2026-02-05-migration-plan.md\"",
+        "artifact ../../skills-codex/pre-mortem/prompt.md contains \"Lead with the verdict\"",
+        "artifact ../../skills-codex/plan/SKILL.md contains \"Generated Artifact Companion Scope\"",
+        "artifact ../../skills-codex/plan/SKILL.md contains \"refresh-codex-artifacts.sh --scope worktree\"",
+        "artifact ../../skills/plan/SKILL.md contains \"Applied findings:\"",
+        "artifact ../../skills/shared/references/stale-scope-validation.md contains \"verify that the cited infrastructure\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T092020Z/agentops-core.planning-premortem-gates.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.planning-premortem-gates.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
