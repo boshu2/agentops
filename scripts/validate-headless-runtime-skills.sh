@@ -405,7 +405,7 @@ claude_inventory_failed() {
 
 run_codex_load_check() {
     [[ -f "$CODEX_VALIDATION_HOME/.agentops-codex-install.json" ]] || return 1
-    env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
+    env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" AGENTOPS_HOOKS_DISABLED=1 \
         timeout 20 "$CODEX_BIN" exec --help >/dev/null 2>&1
 }
 
@@ -566,7 +566,7 @@ run_codex_validation() {
     while (( attempt <= INVENTORY_RETRIES )); do
         CODEX_USED_FALLBACK=0
 
-        if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
+        if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" AGENTOPS_HOOKS_DISABLED=1 \
             timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${codex_args[@]}" >"$CODEX_STREAM_JSON"; then
             if [[ -n "$CODEX_PROFILE" ]] && grep -q "config profile .* not found" "$CODEX_STREAM_JSON" 2>/dev/null; then
                 echo "WARN: Codex profile '$CODEX_PROFILE' not found in isolated CODEX_HOME; retrying without --profile" >&2
@@ -578,7 +578,7 @@ run_codex_validation() {
                     -C "$WORKDIR"
                     "$CODEX_PROMPT"
                 )
-                if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" \
+                if ! env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" AGENTOPS_HOOKS_DISABLED=1 \
                     timeout "$TIMEOUT_SECONDS" "$CODEX_BIN" "${fallback_args[@]}" >"$CODEX_STREAM_JSON"; then
                     codex_inventory_failed "headless command exit after retry" "$CODEX_STREAM_JSON"
                     return $?

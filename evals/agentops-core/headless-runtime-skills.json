@@ -91,7 +91,8 @@
         {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT"},
         {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "HEADLESS_RUNTIME_SKILL_CODEX_STRICT"},
         {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "load-check fallback"},
-        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "CODEX_HOME=\"$CODEX_VALIDATION_HOME\""}
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "CODEX_HOME=\"$CODEX_VALIDATION_HOME\""},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "AGENTOPS_HOOKS_DISABLED=1"}
       ],
       "dimensions": ["runtime_compatibility", "safety", "artifact_quality"],
       "critical": true

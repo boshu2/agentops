@@ -72,7 +72,7 @@
       "objective": "Ensure eval changes trigger the AgentOps fast eval gate and that eval-agentops warnings remain visible in pre-push output.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "scripts/eval-agentops.sh"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_agentops_output=\"$(run_without_git_env scripts/eval-agentops.sh --fast 2>&1)\""},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_agentops_output=\"$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh --fast 2>&1)\""},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "grep -q '^WARN eval-agentops:'"},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "warn \"AgentOps eval canaries\""},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "fail \"missing executable: scripts/eval-agentops.sh\""},
