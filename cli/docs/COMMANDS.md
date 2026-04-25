@@ -902,6 +902,23 @@ ao eval run <suite.json> [flags]
       --runtime string    deterministic runtime override (static, mock, shell)
 ```
 
+#### `ao eval scorecard`
+
+Build an eval scorecard from run records
+
+```
+ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                            help for scorecard
+      --kind string                     scorecard kind (rpi, skill-change) (default "rpi")
+      --max-category-regression float   allowed per-category regression before verdict becomes regression
+      --out string                      write scorecard JSON to path
+```
+
 ---
 
 ### `ao evolve`
