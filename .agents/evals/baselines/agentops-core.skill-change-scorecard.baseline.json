@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
+  "suite": {
+    "id": "agentops-core.skill-change-scorecard",
+    "path": "evals/agentops-core/skill-change-scorecard.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "2261e8b9ef4e8bcead4c93a860e16f946a5387f0070111bbb832da344441e657"
+  },
+  "started_at": "2026-04-25T04:06:58.041435532Z",
+  "completed_at": "2026-04-25T04:06:58.041579254Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "02f8415ea6be",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "static",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 20
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
+    "promoted_from_run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
+    "promoted_at": "2026-04-25T04:06:58.169724415Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+  },
+  "case_results": [
+    {
+      "id": "scorecard.structural.surface",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/internal/eval/scorecard.go contains \"structural\""
+      ]
+    },
+    {
+      "id": "scorecard.trigger.surface",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/internal/eval/scorecard.go contains \"trigger\""
+      ]
+    },
+    {
+      "id": "scorecard.runtime.surface",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/internal/eval/scorecard.go contains \"runtime\""
+      ]
+    },
+    {
+      "id": "scorecard.scenario.surface",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/internal/eval/scorecard.go contains \"scenario\""
+      ]
+    },
+    {
+      "id": "scorecard.stocktake.surface",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "learning_closure": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/internal/eval/scorecard.go contains \"stocktake\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.skill-change-scorecard.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
