@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.hook-lifecycle-behavior",
+  "name": "AgentOps Hook Lifecycle Behavior Canary",
+  "description": "Offline public canary for repo-managed hook installation and behavioral hook lifecycle regression tests.",
+  "domain": "hook",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "hooks", "lifecycle", "behavior"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "dev-hook-install-tests",
+      "title": "repo-managed git hook installer tests pass",
+      "kind": "command",
+      "objective": "Validate install-dev-hooks.sh configures core.hooksPath, check mode passes after install, and check mode fails before install.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-install-dev-hooks.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 3 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-chain-integration",
+      "title": "hook chain integration test passes",
+      "kind": "command",
+      "objective": "Exercise session-start and standards-injector with real filesystem state, kill switches, environment manifests, and chained JSON behavior.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/integration/test-hook-chain.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "SUCCESS: All tests passed"},
+        {"type": "stdout_contains", "value": "FAIL: 0"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "hook-lifecycle-integration",
+      "title": "full hook lifecycle integration test passes",
+      "kind": "command",
+      "objective": "Exercise SessionStart, PreToolUse, PostToolUse, UserPromptSubmit, Stop, SessionEnd, kill switches, and fail-open behavior.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/hooks/test-hook-lifecycle.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Hook Lifecycle Test Summary"},
+        {"type": "stdout_contains", "value": "FAIL: 0"},
+        {"type": "stdout_contains", "value": "SUCCESS: All hook lifecycle tests passed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-regression-suite",
+      "title": "broad hook regression suite passes",
+      "kind": "command",
+      "objective": "Exercise hook-specific behavior across prompt nudges, guards, ratchets, holdout isolation, handoff, constraints, worktree hooks, and embedded ao delegation.",
+      "runtime": "shell",
+      "timeout_seconds": 240,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/hooks/test-hooks.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Total: 208"},
+        {"type": "stdout_contains", "value": "Fail: 0"},
+        {"type": "stdout_contains", "value": "ALL PASSED"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "hook-release-gate-wiring",
+      "title": "hook lifecycle smoke remains wired into release gates",
+      "kind": "artifact_check",
+      "objective": "Keep hook install and ao init hook smoke visible in local release and release-e2e documentation.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Dev hook install tests"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Hook install smoke (minimal + full)"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "ao init --hooks + ao rpi smoke"},
+        {"type": "artifact_contains", "target": "../../docs/release-e2e-checklist.md", "value": "Hook install smoke (minimal + full)"},
+        {"type": "artifact_contains", "target": "../../docs/release-e2e-checklist.md", "value": "ao init --hooks + ao rpi smoke"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    }
+  ]
+}
