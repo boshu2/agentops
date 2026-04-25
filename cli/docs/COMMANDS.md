@@ -2686,6 +2686,34 @@ ao trace <artifact-path> [flags]
 
 ---
 
+### `ao agents`
+
+Tooling for the .agents/ knowledge surface that backs the
+
+```
+ao agents [command]
+```
+
+**Subcommands:**
+
+#### `ao agents inspect`
+
+Read the .agents/ write-surface contract and emit a structured
+
+```
+ao agents inspect [flags]
+```
+
+**Flags:**
+
+```
+      --contract string   Path to the .agents/ write-surfaces contract doc (default "docs/contracts/agents-write-surfaces.md")
+  -h, --help              help for inspect
+      --json              Emit machine-readable JSON
+```
+
+---
+
 ### `ao extract`
 
 Check for pending session extractions and output a prompt for Claude to process.
