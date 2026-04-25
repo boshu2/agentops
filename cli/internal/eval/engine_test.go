@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -256,6 +257,28 @@ func TestPromoteBaselineWritesRunRecord(t *testing.T) {
 	}
 }
 
+func TestCollectGitRecordPreservesDirtyPathNames(t *testing.T) {
+	dir := t.TempDir()
+	runGit(t, dir, "init")
+	runGit(t, dir, "config", "user.email", "tester@example.com")
+	runGit(t, dir, "config", "user.name", "Tester")
+	writeEvalFile(t, filepath.Join(dir, "tracked.txt"), "before\n")
+	runGit(t, dir, "add", "tracked.txt")
+	runGit(t, dir, "commit", "-m", "initial")
+	writeEvalFile(t, filepath.Join(dir, "tracked.txt"), "after\n")
+	writeEvalFile(t, filepath.Join(dir, "new.txt"), "new\n")
+
+	record := collectGitRecord(dir)
+
+	if !record.Dirty {
+		t.Fatal("dirty = false, want true")
+	}
+	want := []string{"new.txt", "tracked.txt"}
+	if fmt.Sprint(record.DirtyPaths) != fmt.Sprint(want) {
+		t.Fatalf("dirty paths = %v, want %v", record.DirtyPaths, want)
+	}
+}
+
 func fixedEvalTime() time.Time {
 	return time.Date(2026, 4, 24, 12, 0, 0, 0, time.UTC)
 }
@@ -274,6 +297,15 @@ func writeEvalFile(t *testing.T, path, body string) {
 	}
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v failed: %v\n%s", args, err, out)
 	}
 }
 

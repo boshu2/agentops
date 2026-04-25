@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -24,10 +23,6 @@ var scenarioValidateCmd = &cobra.Command{
 			}
 			return fmt.Errorf("reading holdout directory: %w", err)
 		}
-
-		idPattern := regexp.MustCompile(`^s-\d{4}-\d{2}-\d{2}-\d{3}$`)
-		validStatuses := map[string]bool{"active": true, "draft": true, "retired": true}
-		validSources := map[string]bool{"human": true, "agent": true, "prod-telemetry": true}
 
 		var validationErrors []string
 		var validated int
@@ -59,21 +54,21 @@ var scenarioValidateCmd = &cobra.Command{
 
 			// Validate id pattern
 			if id, ok := s["id"].(string); ok {
-				if !idPattern.MatchString(id) {
-					validationErrors = append(validationErrors, fmt.Sprintf("%s: id '%s' does not match pattern s-YYYY-MM-DD-NNN", entry.Name(), id))
+				if !scenarioIDPattern.MatchString(id) {
+					validationErrors = append(validationErrors, fmt.Sprintf("%s: id '%s' does not match pattern s-YYYY-MM-DD-NNN or auto-*", entry.Name(), id))
 				}
 			}
 
 			// Validate status
 			if status, ok := s["status"].(string); ok {
-				if !validStatuses[status] {
+				if !validScenarioStatus(status) {
 					validationErrors = append(validationErrors, fmt.Sprintf("%s: invalid status '%s' (must be active, draft, or retired)", entry.Name(), status))
 				}
 			}
 
 			// Validate source if present
 			if source, ok := s["source"].(string); ok {
-				if !validSources[source] {
+				if !validScenarioSource(source) {
 					validationErrors = append(validationErrors, fmt.Sprintf("%s: invalid source '%s' (must be human, agent, or prod-telemetry)", entry.Name(), source))
 				}
 			}

@@ -389,7 +389,7 @@ func collectGitRecord(workDir string) GitRecord {
 		return record
 	}
 	for _, line := range strings.Split(status, "\n") {
-		line = strings.TrimSpace(line)
+		line = strings.TrimRight(line, "\r\n")
 		if line == "" {
 			continue
 		}
@@ -411,7 +411,7 @@ func gitOutput(workDir string, args ...string) string {
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(out))
+	return strings.TrimRight(string(out), "\r\n")
 }
 
 func inferRuntime(suite Suite) Runtime {

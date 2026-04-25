@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.rpi-behavior",
+  "name": "AgentOps RPI Behavior Canary",
+  "description": "Offline public canary for RPI phased runner contracts and deterministic runtime boundaries.",
+  "domain": "rpi",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "rpi", "runtime"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 20
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "rpi-runtime-files",
+      "title": "RPI runtime source files are present",
+      "kind": "command",
+      "objective": "Verify the RPI behavior canary resolves repo-root source paths from the suite directory.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "test -f cli/cmd/ao/rpi_phased.go && test -f cli/cmd/ao/rpi_serve.go && test -f skills/rpi/SKILL.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "phased-runner-runtime-contract",
+      "title": "phased runner exposes bounded runtime modes",
+      "kind": "artifact_check",
+      "objective": "Ensure RPI phased execution keeps explicit runtime-mode and runtime-command contracts.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Run RPI with fresh runtime session per phase"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Phase runtime mode: auto|direct|stream|tmux"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_phased.go", "value": "Runtime command used for phase prompts"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "serve-runtime-contract",
+      "title": "RPI serve preserves runtime orchestration flags",
+      "kind": "artifact_check",
+      "objective": "Cover the serve entrypoint used for RPI orchestration without invoking a live runtime.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "Phase runtime mode for orchestration"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "Runtime command for orchestration phase prompts"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility"]
+    },
+    {
+      "id": "eval-deterministic-boundary",
+      "title": "eval runner keeps live adapters advisory",
+      "kind": "artifact_check",
+      "objective": "Protect deterministic public canaries from live Claude or Codex execution.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "runtime %q is out of deterministic scope"}
+      ],
+      "dimensions": ["runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "rpi-skill-contract",
+      "title": "RPI skill contract remains available",
+      "kind": "artifact_check",
+      "objective": "Ensure RPI behavior canaries are anchored to the user-facing skill contract.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "RPI"},
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "validation"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    }
+  ]
+}
