@@ -354,14 +354,19 @@ func (c *Chain) SetPath(path string) {
 
 // findAgentsDir walks up from startDir looking for a .agents directory.
 //
-// Skips the OS tempdir (os.TempDir()) when traversing — a stale
-// /tmp/.agents/ left over from a prior test run or scratch session
-// must not shadow startDirs that legitimately live below /tmp.
+// Skips well-known tempdir roots (/tmp, /var/tmp, os.TempDir()) so a
+// stale /tmp/.agents/ from a prior session can not shadow startDirs
+// that legitimately live below them. The set covers callers that
+// override TMPDIR mid-run.
 func findAgentsDir(startDir string) (string, error) {
-	tmpDir := filepath.Clean(os.TempDir())
+	tmpDirs := map[string]struct{}{
+		filepath.Clean(os.TempDir()): {},
+		"/tmp":                       {},
+		"/var/tmp":                   {},
+	}
 	dir := startDir
 	for {
-		if filepath.Clean(dir) != tmpDir {
+		if _, isTmp := tmpDirs[filepath.Clean(dir)]; !isTmp {
 			agentsPath := filepath.Join(dir, ".agents")
 			if info, err := os.Stat(agentsPath); err == nil && info.IsDir() {
 				return agentsPath, nil
