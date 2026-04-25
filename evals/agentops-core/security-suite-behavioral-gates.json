@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.security-suite-behavioral-gates",
+  "name": "AgentOps Security Suite Behavioral Gates Canary",
+  "description": "Offline public canary for security-suite policy enforcement, baseline removed-command gating, prompt-surface redteam artifacts, shared/Codex validators, and security-suite operator contracts.",
+  "domain": "security",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "security-suite", "policy", "baseline", "redteam", "codex"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "security-suite-validators-and-redteam-tests",
+      "title": "Shared/Codex security-suite validators and redteam harness pass",
+      "kind": "command",
+      "objective": "Keep security-suite skill artifacts, JSON references, Python scripts, and existing prompt redteam harness tests healthy across shared and Codex runtimes.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/security-suite/scripts/validate.sh && bash skills-codex/security-suite/scripts/validate.sh && bash tests/scripts/test-security-suite-redteam.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 11 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 8 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-policy-pass-artifacts",
+      "title": "Policy PASS run writes complete machine-readable artifacts",
+      "kind": "command",
+      "objective": "Verify security_suite.py discovers a command surface, enforces a passing policy, and writes static, dynamic, contract, policy, and summary artifacts.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-suite-behavior-smoke.sh policy-pass"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-suite-policy-pass-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-policy-fail-blocks",
+      "title": "Policy FAIL returns non-zero when fail-on-policy-fail is set",
+      "kind": "command",
+      "objective": "Ensure missing required top-level commands produce policy-verdict.json with a FAIL verdict and block candidate promotion.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-suite-behavior-smoke.sh policy-fail"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-suite-policy-fail-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-baseline-removed-command-blocks",
+      "title": "Removed baseline commands block when fail-on-removed is set",
+      "kind": "command",
+      "objective": "Protect compare-baseline and suite-summary behavior for removed command detection, the core release regression gate for binaries.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-suite-behavior-smoke.sh baseline-removed"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-suite-baseline-removed-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-repo-redteam-artifacts",
+      "title": "Repo-native prompt redteam pack produces passing artifacts",
+      "kind": "command",
+      "objective": "Keep the offline redteam pack producing deterministic PASS artifacts for prompt-injection, tool misuse, context overexposure, secret-handling, unsafe-shell, and policy-gating regressions.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-suite-behavior-smoke.sh redteam-repo"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-suite-redteam-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-contract-artifacts",
+      "title": "Security-suite docs and scripts preserve policy, baseline, and evidence contracts",
+      "kind": "artifact_check",
+      "objective": "Lock the operator-facing contract for composable primitives, machine-readable artifacts, policy checks, Codex guidance, and redteam pack coverage.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "collect-static"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "compare-baseline"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "enforce-policy"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "collect-redteam"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "suite-summary.json"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "deny_network_endpoint_patterns"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "policy-verdict.json"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "baseline-diff.json"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "fail-on-policy-fail"},
+        {"type": "artifact_contains", "target": "../../skills-codex/security-suite/prompt.md", "value": "Separate raw evidence from the final security judgment."},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/references/agentops-redteam-pack.json", "value": "policy-gated-security-suite"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/references/policy-example.json", "value": "block_if_removed_commands"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    }
+  ]
+}
