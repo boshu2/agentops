@@ -13,20 +13,21 @@ For the comprehensive technical reference — including CASS wiring, token budge
 
 When `hooks.json` disagrees with this page, trust `hooks.json`.
 
-## Lifecycle events
+## Lifecycle Events
 
-AgentOps currently uses six lifecycle events. Every event dispatches one or more scripts in `hooks/`.
+AgentOps currently uses seven lifecycle event sections in `hooks/hooks.json`. Every event dispatches one or more scripts in `hooks/`.
 
 | Event | Purpose | Representative scripts |
 |-------|---------|-----------------------|
-| `SessionStart` | Seed the session with recent learnings, pointers to MEMORY.md | `session-start.sh`, `ao-inject.sh` |
+| `SessionStart` | Prepare session state and startup context | `session-start.sh`, `ao-inject.sh` |
 | `SessionEnd` | Compile session signal, maintain the knowledge pool | `session-end-maintenance.sh`, `compile-session-defrag.sh` |
 | `Stop` | Close the flywheel for the turn | `ao-flywheel-close.sh` |
 | `UserPromptSubmit` | Route the prompt, nudge discipline, echo intent | `factory-router.sh`, `prompt-nudge.sh`, `intent-echo.sh`, `quality-signals.sh` |
 | `PreToolUse` | Gate risky tool calls (commits, edits, reads in isolation) | `pre-mortem-gate.sh`, `commit-review-gate.sh`, `holdout-isolation-gate.sh`, `go-test-precommit.sh` |
 | `PostToolUse` | Quality and loop-detection after edits | `write-time-quality.sh`, `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh`, `context-monitor.sh` |
+| `TaskCompleted` | Validate completed delegated work when the runtime emits task events | `task-validation-gate.sh` |
 
-A `TaskCompleted` block also exists in the manifest (for `task-validation-gate.sh`); it is runtime-dependent and may be a no-op on agents that do not emit that event.
+Codex native hooks intentionally install a narrower event set from `hooks/codex-hooks.json`. The Codex manifest excludes historically noisy startup injection such as `ao-inject.sh`; `session-start.sh` prepares state silently.
 
 ## Install and uninstall
 
@@ -42,6 +43,25 @@ ao hooks uninstall     # removes ao hook entries (other entries are preserved)
 ### Codex (v0.115.0+)
 
 Use `scripts/install-codex-plugin.sh` or `scripts/install-codex.sh` to install the native hook manifest to `~/.codex/hooks.json`.
+
+The Codex installer preserves unrelated hooks already present in `~/.codex/hooks.json`. If Codex starts injecting unrelated context, audit the active manifest:
+
+```bash
+bash scripts/audit-codex-hooks.sh
+```
+
+To remove non-AgentOps Codex hook handlers, run the pruning mode. It writes a timestamped `hooks.json.bak.*` backup before editing:
+
+```bash
+bash scripts/audit-codex-hooks.sh --prune-foreign
+```
+
+You can also point the audit at another installed hook manifest when debugging
+runtime crossover or stale plugin caches:
+
+```bash
+bash scripts/audit-codex-hooks.sh --hooks-file ~/.agentops/hooks/hooks.json --strict
+```
 
 ### Codex (older)
 
