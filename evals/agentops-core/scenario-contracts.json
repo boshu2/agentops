@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.scenario-contracts",
+  "name": "AgentOps Scenario Contracts Canary",
+  "description": "Offline public canary for holdout scenario schema, scenario skill docs, CLI docs, and isolated scenario authoring validation.",
+  "domain": "scenario",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "scenario", "holdout"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "scenario-schema-contract",
+      "title": "scenario schema preserves holdout fields",
+      "kind": "artifact_check",
+      "objective": "Ensure the scenario schema still captures the behavioral holdout contract.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../schemas/scenario.v1.schema.json", "value": "expected_outcome"},
+        {"type": "artifact_contains", "target": "../../schemas/scenario.v1.schema.json", "value": "satisfaction_threshold"},
+        {"type": "artifact_contains", "target": "../../schemas/scenario.v1.schema.json", "value": "acceptance_vectors"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "scenario-skill-docs",
+      "title": "scenario skill documents authoring and validation",
+      "kind": "artifact_check",
+      "objective": "Keep the scenario skill contract tied to scenario add, list, and validate workflows.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/scenario/SKILL.md", "value": "ao scenario add"},
+        {"type": "artifact_contains", "target": "../../skills/scenario/SKILL.md", "value": "ao scenario validate"},
+        {"type": "artifact_contains", "target": "../../skills/scenario/SKILL.md", "value": "The implementing agent MUST NOT author its own scenarios"}
+      ],
+      "dimensions": ["process_adherence", "safety"]
+    },
+    {
+      "id": "scenario-cli-docs",
+      "title": "scenario CLI docs include add and validate",
+      "kind": "artifact_check",
+      "objective": "Ensure generated CLI docs expose scenario authoring and validation commands.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao scenario add`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao scenario validate`"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "scenario-add-validate-isolated",
+      "title": "scenario add and validate work in an isolated workspace",
+      "kind": "command",
+      "objective": "Exercise scenario authoring without touching repo-local holdouts.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; repo=$PWD; (cd \"$repo/cli\" && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); cd \"$tmp\"; ./ao scenario add \"eval scenario canary\" --json > scenario.json; id=$(python3 -c 'import json; print(json.load(open(\"scenario.json\"))[\"id\"])'); test -f \".agents/holdout/${id}.json\"; ./ao scenario validate >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": true
+    }
+  ]
+}
