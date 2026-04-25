@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.mock-runtime-contracts-20260425T043610Z",
+  "suite": {
+    "id": "agentops-core.mock-runtime-contracts",
+    "path": "evals/agentops-core/mock-runtime-contracts.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "c7aac05788f8c45bcb099ad6bca5efb20582973595251c791c99e1f7e901688f"
+  },
+  "started_at": "2026-04-25T04:36:10.232353554Z",
+  "completed_at": "2026-04-25T04:36:10.663195968Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "06cf31440e28",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 90
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.mock-runtime-contracts-20260425T043610Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.mock-runtime-contracts.baseline.json",
+    "promoted_from_run_id": "agentops-core.mock-runtime-contracts-20260425T043610Z",
+    "promoted_at": "2026-04-25T04:36:10.797776461Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial mock-runtime public canary baseline after deterministic runtime coverage reached static, shell, and mock."
+  },
+  "case_results": [
+    {
+      "id": "mock-runtime-record",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 430,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "mock-runtime-schema",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../schemas/eval-suite.v1.schema.json contains \"\\\"mock\\\"\"",
+        "artifact ../../cli/internal/eval/types.go contains \"RuntimeMock   Runtime = \\\"mock\\\"\"",
+        "artifact ../../cli/internal/eval/io.go contains \"RuntimeStatic || r == RuntimeMock || r == RuntimeShell\""
+      ]
+    },
+    {
+      "id": "headless-mock-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/contracts/eval-environment.md contains \"Local Claude/Codex CLI inventory or mocked runtime I/O\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T043610Z/agentops-core.mock-runtime-contracts.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.mock-runtime-contracts.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
