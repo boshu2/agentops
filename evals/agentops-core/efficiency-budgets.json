@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.efficiency-budgets",
+  "name": "AgentOps Efficiency Budgets Canary",
+  "description": "Offline public canary for eval runtime budget visibility, fast coverage reporting, and conditional pre-push eval gating.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "efficiency", "budget"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "efficiency", "weight": 2, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "coverage-command-budget",
+      "title": "coverage command completes under budget and reports all dimensions",
+      "kind": "command",
+      "objective": "Ensure product-wide eval coverage can be measured quickly enough for evolve and local gate feedback loops.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; timeout 30s bash -lc 'cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao eval coverage --root ../evals/agentops-core --json' > \"$tmp/coverage.json\"; python3 -c 'import json, sys; data=json.load(open(sys.argv[1])); assert data[\"suite_count\"] >= 11; assert \"efficiency\" in data.get(\"required_dimensions\", []); assert not data.get(\"missing_required_dimensions\")' \"$tmp/coverage.json\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "efficiency"],
+      "critical": true
+    },
+    {
+      "id": "pre-push-eval-conditional",
+      "title": "pre-push gate runs eval canaries only for relevant changes",
+      "kind": "artifact_check",
+      "objective": "Keep local eval validation fast by only running public canaries when eval-related surfaces changed.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "AgentOps eval canaries"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "^evals/|^schemas/eval-|^scripts/eval-agentops\\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "scripts/eval-agentops.sh --fast"}
+      ],
+      "dimensions": ["efficiency", "process_adherence"]
+    },
+    {
+      "id": "testing-docs-budget",
+      "title": "testing docs publish eval canary runtime budget",
+      "kind": "artifact_check",
+      "objective": "Keep the expected public eval runtime visible to operators.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "| AgentOps eval canaries | `scripts/eval-agentops.sh --fast` | ~20s |"},
+        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "Run the fast local"}
+      ],
+      "dimensions": ["artifact_quality", "efficiency"]
+    },
+    {
+      "id": "efficiency-dimension-contract",
+      "title": "eval contract defines efficiency as a score dimension",
+      "kind": "artifact_check",
+      "objective": "Protect the canonical definition that eval runs score time, budget, retry, and output limits.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "`efficiency` | The run stayed within expected time, budget, retry, and output limits."}
+      ],
+      "dimensions": ["artifact_quality", "efficiency"],
+      "critical": true
+    }
+  ]
+}
