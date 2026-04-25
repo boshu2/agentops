@@ -9,10 +9,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLI_DIR="$REPO_ROOT/cli"
-AO_BIN="$CLI_DIR/.tmp/ao-docgen"
 OUTPUT="$REPO_ROOT/cli/docs/COMMANDS.md"
 CHECK_MODE=false
 TMPFILE=""
+TMP_AO_DIR=""
+AO_BIN=""
 
 if [[ "${1:-}" == "--check" ]]; then
   CHECK_MODE=true
@@ -25,12 +26,13 @@ fi
 
 cleanup() {
   [[ -n "$TMPFILE" ]] && rm -f "$TMPFILE"
-  rm -f "$AO_BIN"
+  [[ -n "$TMP_AO_DIR" ]] && rm -rf "$TMP_AO_DIR"
 }
 trap cleanup EXIT
 
 build_ao() {
-  mkdir -p "$(dirname "$AO_BIN")"
+  TMP_AO_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ao-docgen.XXXXXX")"
+  AO_BIN="$TMP_AO_DIR/ao-docgen"
   (
     cd "$CLI_DIR"
     go build -o "$AO_BIN" ./cmd/ao

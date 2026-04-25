@@ -15,6 +15,7 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 		Roots:              []string{dir},
 		RequiredDomains:    []string{"cli", "skill", "scenario"},
 		RequiredDimensions: []string{"correctness", "efficiency"},
+		RequiredRuntimes:   []string{"shell", "static", "mock"},
 	})
 	if err != nil {
 		t.Fatalf("BuildCoverageReport failed: %v", err)
@@ -33,6 +34,9 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 	}
 	if len(report.MissingRequiredDimensions) != 1 || report.MissingRequiredDimensions[0] != "efficiency" {
 		t.Fatalf("missing required dimensions = %v, want [efficiency]", report.MissingRequiredDimensions)
+	}
+	if len(report.MissingRequiredRuntimes) != 1 || report.MissingRequiredRuntimes[0] != "mock" {
+		t.Fatalf("missing required runtimes = %v, want [mock]", report.MissingRequiredRuntimes)
 	}
 }
 

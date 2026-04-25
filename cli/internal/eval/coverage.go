@@ -30,11 +30,18 @@ var DefaultCoverageDimensions = []string{
 	string(DimensionLearningClosure),
 }
 
+var DefaultCoverageRuntimes = []string{
+	string(RuntimeStatic),
+	string(RuntimeShell),
+	string(RuntimeMock),
+}
+
 type CoverageOptions struct {
 	SuitePaths         []string
 	Roots              []string
 	RequiredDomains    []string
 	RequiredDimensions []string
+	RequiredRuntimes   []string
 }
 
 type CoverageReport struct {
@@ -49,6 +56,8 @@ type CoverageReport struct {
 	MissingRequiredDomains    []string                  `json:"missing_required_domains,omitempty"`
 	RequiredDimensions        []string                  `json:"required_dimensions,omitempty"`
 	MissingRequiredDimensions []string                  `json:"missing_required_dimensions,omitempty"`
+	RequiredRuntimes          []string                  `json:"required_runtimes,omitempty"`
+	MissingRequiredRuntimes   []string                  `json:"missing_required_runtimes,omitempty"`
 }
 
 type CoverageSuite struct {
@@ -89,6 +98,8 @@ func BuildCoverageReport(opts CoverageOptions) (*CoverageReport, error) {
 	report.MissingRequiredDomains = missingCoverageDomains(report.Domains, report.RequiredDomains)
 	report.RequiredDimensions = normalizedCoverageValues(opts.RequiredDimensions)
 	report.MissingRequiredDimensions = missingCoverageDimensions(report.Dimensions, report.RequiredDimensions)
+	report.RequiredRuntimes = normalizedCoverageValues(opts.RequiredRuntimes)
+	report.MissingRequiredRuntimes = missingCoverageValues(report.Runtimes, report.RequiredRuntimes)
 	return report, nil
 }
 
@@ -253,10 +264,14 @@ func missingCoverageDomains(domains map[string]CoverageBucket, required []string
 }
 
 func missingCoverageDimensions(dimensions map[string]int, required []string) []string {
+	return missingCoverageValues(dimensions, required)
+}
+
+func missingCoverageValues(counts map[string]int, required []string) []string {
 	var missing []string
-	for _, dimension := range required {
-		if dimensions[dimension] == 0 {
-			missing = append(missing, dimension)
+	for _, value := range required {
+		if counts[value] == 0 {
+			missing = append(missing, value)
 		}
 	}
 	sort.Strings(missing)
