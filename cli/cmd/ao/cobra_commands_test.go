@@ -256,6 +256,16 @@ func executeCommand(args ...string) (string, error) {
 	findingsPullForce = false
 	findingsRetireBy = ""
 	scenarioListStatus = ""
+	evalRunOutput = ""
+	evalRunID = ""
+	evalRunRuntime = ""
+	evalRunBaseline = ""
+	evalCompareOutput = ""
+	evalCompareMaxAgg = 0
+	evalCompareMaxDim = 0
+	evalBaselineOutput = ""
+	evalBaselineBy = ""
+	evalBaselineReason = ""
 	overnightGoal = ""
 	overnightOutputDir = ""
 	overnightRunTimeout = ""
@@ -387,7 +397,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"defrag", "demo", "doctor", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",
@@ -410,6 +420,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
+		"eval":       {"run", "compare", "baseline"},
 		"factory":    {"start"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
@@ -445,7 +456,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"defrag", "demo", "doctor", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",

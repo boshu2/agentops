@@ -840,6 +840,70 @@ ao codex stop [flags]
 
 ---
 
+### `ao eval`
+
+Run deterministic AgentOps evaluation suites and compare run records.
+
+```
+ao eval [command]
+```
+
+**Subcommands:**
+
+#### `ao eval baseline`
+
+Promote an eval run record as a baseline
+
+```
+ao eval baseline <run.json> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                 help for baseline
+      --out string           write promoted baseline run record to path
+      --promoted-by string   identity promoting the baseline
+      --rationale string     rationale for promoting the baseline
+```
+
+#### `ao eval compare`
+
+Compare an eval run against a baseline
+
+```
+ao eval compare <candidate-run.json> <baseline-run.json> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                             help for compare
+      --max-aggregate-regression float   allowed aggregate regression before verdict becomes regression
+      --max-dimension-regression float   allowed per-dimension regression before verdict becomes regression
+      --out string                       write compared eval run record to path
+```
+
+#### `ao eval run`
+
+Run a deterministic eval suite
+
+```
+ao eval run <suite.json> [flags]
+```
+
+**Flags:**
+
+```
+      --baseline string   compare the run against a baseline run record
+  -h, --help              help for run
+      --out string        write eval run record to path
+      --run-id string     stable run id to use in the run record
+      --runtime string    deterministic runtime override (static, mock, shell)
+```
+
+---
+
 ### `ao evolve`
 
 Run the v2 autonomous improvement loop.
