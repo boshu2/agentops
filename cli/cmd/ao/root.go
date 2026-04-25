@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -71,6 +72,10 @@ Use "ao <command> --help" for more information about a command.`,
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		var lintErr *AgentsLintError
+		if errors.As(err, &lintErr) {
+			os.Exit(lintErr.ExitCode)
+		}
 		os.Exit(1)
 	}
 }
