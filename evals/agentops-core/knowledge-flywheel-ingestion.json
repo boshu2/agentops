@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.knowledge-flywheel-ingestion",
+  "name": "AgentOps Knowledge Flywheel Ingestion Canary",
+  "description": "Offline public canary for the upstream knowledge flywheel: forge, mine, compile, harvest, defrag, corpus/Dream ingest behavior, and their operator contracts.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "knowledge", "flywheel", "forge", "mine", "compile", "harvest", "defrag", "dream"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "learning_closure", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "flywheel-ingestion-command-tests",
+      "title": "forge, mine, compile, harvest, and defrag command tests pass",
+      "kind": "command",
+      "objective": "Protect command-level knowledge ingestion and synthesis behavior across markdown/transcript forging, mining JSON, compile orchestration, harvest JSON/warnings, and defrag dry-run/oscillation detection.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestRunCompile_EndToEnd_FixtureCorpus|TestRunCompileFullOrchestratesPhases|TestMineCommandJSON_ExactlyOnePayloadOnStdout|TestCollectMineWorkItems_CodeHotspots|TestMineAgentsDir_OrphanedResearch|TestRunHarvest_JSONOutput|TestRunHarvest_MalformedFileBecomesWarning|TestRunDefrag_DryRun|TestSweepOscillatingGoals_DetectsOscillation|TestForge_ForgeMarkdownFile|TestForge_ForgeTranscriptFile)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "dream-ingest-internal-tests",
+      "title": "Dream ingest and internal mine/forge tests pass",
+      "kind": "command",
+      "objective": "Protect the internal ingestion substrate that builds harvest catalogs, proves forge/provenance/mine are real, collects actionable mining work, and mines minimal session corpora.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./internal/overnight ./internal/mine ./internal/forge -run '^(TestRunIngest_HappyPath_HarvestCatalogBuilt|TestRunIngest_ForgeProvenanceMineAreReal|TestCollectMineWorkItems_HotspotsAndOrphans|TestRunMinePass_MinimalSession)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/overnight"},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/mine"},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/forge"}
+      ],
+      "dimensions": ["correctness", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "flywheel-ingestion-help-smoke",
+      "title": "knowledge ingestion CLI help works from a built binary",
+      "kind": "command",
+      "objective": "Smoke the operator-facing command surfaces without requiring live private transcripts or global knowledge roots.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); for cmd in forge mine compile harvest defrag corpus; do \"$tmp/ao\" \"$cmd\" --help >/dev/null; done"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "flywheel-ingestion-cli-docs",
+      "title": "generated CLI docs expose ingestion and synthesis commands",
+      "kind": "artifact_check",
+      "objective": "Keep generated command documentation aligned with the ingestion surfaces that feed retrieval and activation.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao forge`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao mine`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao compile`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao harvest`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao defrag`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao corpus`"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    },
+    {
+      "id": "flywheel-ingestion-skill-contracts",
+      "title": "flywheel ingestion skills preserve command contracts",
+      "kind": "artifact_check",
+      "objective": "Keep compile, harvest, forge, and flywheel skills tied to the implemented CLI surfaces and knowledge lifecycle.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/compile/SKILL.md", "value": "ao compile"},
+        {"type": "artifact_contains", "target": "../../skills/harvest/SKILL.md", "value": "ao harvest"},
+        {"type": "artifact_contains", "target": "../../skills/forge/SKILL.md", "value": "ao forge"},
+        {"type": "artifact_contains", "target": "../../skills/flywheel/SKILL.md", "value": "ao flywheel"},
+        {"type": "artifact_contains", "target": "../../docs/knowledge-flywheel.md", "value": "At closeout, `ao forge transcript` or `ao codex stop` parses the transcript and extracts structured knowledge"},
+        {"type": "artifact_contains", "target": "../../docs/knowledge-flywheel.md", "value": "Candidates that pass the promotion gate graduate to permanent knowledge"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"]
+    },
+    {
+      "id": "dream-ingest-source-contract",
+      "title": "Dream ingest source preserves harvest, forge, provenance, and mine wiring",
+      "kind": "artifact_check",
+      "objective": "Ensure the private overnight compounding path continues to exercise real ingestion primitives instead of report-only placeholders.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/ingest.go", "value": "RunIngest"},
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/stages_test.go", "value": "TestRunIngest_HappyPath_HarvestCatalogBuilt"},
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/stages_test.go", "value": "TestRunIngest_ForgeProvenanceMineAreReal"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/compile_integration_test.go", "value": "TestRunCompile_EndToEnd_FixtureCorpus"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "learning_closure"]
+    }
+  ]
+}
