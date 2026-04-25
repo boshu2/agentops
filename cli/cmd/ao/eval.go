@@ -25,6 +25,8 @@ var (
 	evalBaselineOutput  string
 	evalBaselineBy      string
 	evalBaselineReason  string
+	evalCoverageRoot    string
+	evalCoverageRequire []string
 	evalConfigured      bool
 )
 
@@ -180,6 +182,36 @@ var evalScorecardCmd = &cobra.Command{
 	},
 }
 
+var evalCoverageCmd = &cobra.Command{
+	Use:   "coverage [suite.json ...]",
+	Short: "Summarize eval suite coverage",
+	Args:  cobra.ArbitraryArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		roots := []string{}
+		if len(args) == 0 {
+			roots = append(roots, evalCoverageRoot)
+		}
+		report, err := aoeval.BuildCoverageReport(aoeval.CoverageOptions{
+			SuitePaths:      args,
+			Roots:           roots,
+			RequiredDomains: evalCoverageRequire,
+		})
+		if err != nil {
+			return err
+		}
+		if GetOutput() == "json" {
+			return writeEvalJSON(cmd, report)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Eval coverage: %d suites, %d cases, %d critical cases\n", report.SuiteCount, report.CaseCount, report.CriticalCaseCount)
+		if len(report.MissingRequiredDomains) > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "Missing required domains: %s\n", strings.Join(report.MissingRequiredDomains, ", "))
+		} else if len(report.RequiredDomains) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "Required domains covered")
+		}
+		return nil
+	},
+}
+
 func init() {
 	registerEvalCommand()
 }
@@ -211,12 +243,15 @@ func configureEvalCommand() {
 	evalBaselineCmd.Flags().StringVar(&evalBaselineBy, "promoted-by", "", "identity promoting the baseline")
 	evalBaselineCmd.Flags().StringVar(&evalBaselineReason, "rationale", "", "rationale for promoting the baseline")
 
+	evalCoverageCmd.Flags().StringVar(&evalCoverageRoot, "root", "evals/agentops-core", "suite root to scan when no suite paths are provided")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageRequire, "require-domain", aoeval.DefaultCoverageDomains, "required product domain for missing-domain reporting")
+
 	evalScorecardCmd.Flags().StringVar(&evalScorecardOutput, "out", "", "write scorecard JSON to path")
 	evalScorecardCmd.Flags().StringVar(&evalScorecardKind, "kind", string(aoeval.ScorecardKindRPI), "scorecard kind (rpi, skill-change)")
 	evalScorecardCmd.Flags().Float64Var(&evalScorecardMaxCat, "max-category-regression", 0, "allowed per-category regression before verdict becomes regression")
 	_ = evalScorecardCmd.RegisterFlagCompletionFunc("kind", staticCompletionFunc(string(aoeval.ScorecardKindRPI), string(aoeval.ScorecardKindSkillChange)))
 
-	evalCmd.AddCommand(evalRunCmd, evalCompareCmd, evalBaselineCmd, evalScorecardCmd)
+	evalCmd.AddCommand(evalRunCmd, evalCompareCmd, evalBaselineCmd, evalScorecardCmd, evalCoverageCmd)
 }
 
 func parseEvalRuntime(value string) (aoeval.Runtime, error) {

@@ -884,6 +884,22 @@ ao eval compare <candidate-run.json> <baseline-run.json> [flags]
       --out string                       write compared eval run record to path
 ```
 
+#### `ao eval coverage`
+
+Summarize eval suite coverage
+
+```
+ao eval coverage [suite.json ...] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                         help for coverage
+      --require-domain stringArray   required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed])
+      --root string                  suite root to scan when no suite paths are provided (default "evals/agentops-core")
+```
+
 #### `ao eval run`
 
 Run a deterministic eval suite
