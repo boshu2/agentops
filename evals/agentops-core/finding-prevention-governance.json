@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.finding-prevention-governance",
+  "name": "AgentOps Finding Prevention Governance Canary",
+  "description": "Offline public canary for reusable findings, compiled prevention artifacts, task-validation constraints, constraint governance, and ratchet/finding CLI behavior.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "findings", "constraints", "ratchet", "prevention", "governance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "finding-registry-skill-flow",
+      "title": "finding registry skill flow validates",
+      "kind": "command",
+      "objective": "Protect planning, pre-mortem, vibe, and post-mortem contracts for compiled prevention loading, registry fallback, dedup keys, fail-open behavior, atomic writes, and compiler refreshes.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/test-finding-registry-flow.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 20 passed, 0 failed"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "finding-prevention-ratchet-e2e",
+      "title": "finding prevention ratchet end-to-end passes",
+      "kind": "command",
+      "objective": "Protect registry compilation into advisory findings, active mechanical constraints, task-validation enforcement, and close-loop citation feedback on finding artifacts.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/integration/test-finding-prevention-ratchet.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 11 passed, 0 failed, 0 skipped"}
+      ],
+      "dimensions": ["correctness", "safety", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "constraint-hook-compiler-tests",
+      "title": "task-validation constraints and compiler wrappers pass",
+      "kind": "command",
+      "objective": "Protect hook-time enforcement for active constraints and the compiler wrapper that promotes registry findings into advisory and mechanical outputs.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/hooks/test-task-validation-constraints.sh && bash tests/hooks/test-constraint-compiler.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 6 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "ok 3 constraint compiler wrapper promotes tagged legacy learnings through finding compiler"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "finding-constraint-go-tests",
+      "title": "finding, constraint, ratchet, and router tests pass",
+      "kind": "command",
+      "objective": "Protect ao constraint lifecycle behavior, findings list/pull/stats JSON, ratchet gate checks, and Dream finding router enum compliance.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao ./internal/overnight -run '^(TestConstraint_Integration_FullLifecycle|TestConstraintActivateJSONAndReviewStale|TestFindingsListJSON_ExcludesRetiredByDefault|TestFindingsPullAndExport_JSON|TestFindingsStats_JSON|TestRunRatchetCheck_GateChecker_PreMortemWithResearch|TestRunRatchetValidate_UnknownStep|TestRouteFindings_EmitsSchemaCompliantEnums)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/overnight"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "prevention-contract-docs",
+      "title": "finding prevention contracts document fail-open and compilation rules",
+      "kind": "artifact_check",
+      "objective": "Keep docs and runtime skill copies explicit about registry reader behavior, compiled prevention outputs, and mechanical constraint promotion.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/pre-mortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
+        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/finding-registry.md", "value": "Reader failure behavior is fail-open:"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": ".agents/constraints/index.json"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": "retired` or `superseded` findings must not leave active downstream outputs behind"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"]
+    },
+    {
+      "id": "governance-cli-docs",
+      "title": "generated CLI docs expose findings, constraints, and ratchet commands",
+      "kind": "artifact_check",
+      "objective": "Keep operator docs aligned with the CLI surfaces that inspect, compile, enforce, and audit reusable prevention artifacts.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao findings`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao constraint`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao ratchet`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Manage promoted finding artifacts under .agents/findings/."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Manage constraints compiled from promoted findings."}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    }
+  ]
+}
