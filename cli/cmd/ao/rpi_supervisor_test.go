@@ -225,6 +225,14 @@ func TestValidateLoopNumericConstraints(t *testing.T) {
 // --- applyLoopTimingDefaults ---
 
 func TestApplyLoopTimingDefaults(t *testing.T) {
+	// Isolate from package-level rpiSupervisor: when true, applyLoopTimingDefaults
+	// zeros AutoCleanStaleAfter unless --auto-clean-stale-after was explicitly set.
+	// CI runs the suite in an order where a prior test leaves rpiSupervisor=true,
+	// causing this test to see AutoCleanStaleAfter=0 instead of 24h.
+	prev := rpiSupervisor
+	rpiSupervisor = false
+	t.Cleanup(func() { rpiSupervisor = prev })
+
 	cfg := rpiLoopSupervisorConfig{
 		LeaseTTL:            0,
 		CommandTimeout:      0,
