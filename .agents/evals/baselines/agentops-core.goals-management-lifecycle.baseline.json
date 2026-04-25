@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
+  "suite": {
+    "id": "agentops-core.goals-management-lifecycle",
+    "path": "evals/agentops-core/goals-management-lifecycle.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "45d74bcf960e0c24c491168b84169277e06aadfdb99a88bd6279813e118bf800"
+  },
+  "started_at": "2026-04-25T08:32:54.916752517Z",
+  "completed_at": "2026-04-25T08:32:56.830072717Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "d52bb11b43ee",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/goals-management-lifecycle.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
+    "promoted_from_run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
+    "promoted_at": "2026-04-25T08:32:56.969382757Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 37 baseline for goals management lifecycle canary"
+  },
+  "case_results": [
+    {
+      "id": "goals-management-focused-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 619,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "goals-management-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 1289,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "goals-management-generated-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 4,
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao goals`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Track, measure, and validate project fitness goals.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals measure`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--directives    Output directives as JSON (skip gate checks)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals validate`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals drift`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals export`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals history`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--since string   Show entries since date (YYYY-MM-DD)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals add`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--weight int           Goal weight (1-10) (default 5)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals init`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--template string   Goal template (go-cli, python-lib, web-app, rust-cli, generic)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals meta`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals migrate`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--to-md   Convert GOALS.yaml to GOALS.md format\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals prune`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals steer`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao goals steer add`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao goals steer prioritize`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao goals steer remove`\""
+      ]
+    },
+    {
+      "id": "goals-management-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/goals.go contains \"When both exist, GOALS.md takes precedence.\"",
+        "artifact ../../cli/cmd/ao/goals.go contains \"goalsCmd.PersistentFlags().StringVar(\u0026goalsFile\"",
+        "artifact ../../cli/cmd/ao/goals.go contains \"defaultGoalsTimeoutSeconds = 240\"",
+        "artifact ../../cli/cmd/ao/goals_measure.go contains \"goalsMeasureCmd.Flags().BoolVar(\u0026goalsMeasureDirectives\"",
+        "artifact ../../cli/cmd/ao/goals_measure.go contains \"RunMeasure(goals.MeasureOptions\"",
+        "artifact ../../cli/cmd/ao/goals_validate.go contains \"RunValidate(goals.ValidateOptions\"",
+        "artifact ../../cli/cmd/ao/goals_init.go contains \"TemplatesFS:    embedded.TemplatesFS\"",
+        "artifact ../../cli/cmd/ao/goals_init.go contains \"RegisterFlagCompletionFunc(\\\"template\\\"\"",
+        "artifact ../../cli/cmd/ao/goals_add.go contains \"Args:    cobra.ExactArgs(2)\"",
+        "artifact ../../cli/cmd/ao/goals_add.go contains \"goalsAddCmd.Flags().IntVar(\u0026goalsAddWeight\"",
+        "artifact ../../cli/cmd/ao/goals_steer.go contains \"Use:   \\\"add \u003ctitle\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/goals_steer.go contains \"Use:   \\\"remove \u003cnumber\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/goals_steer.go contains \"Use:   \\\"prioritize \u003cnumber\u003e \u003cnew-position\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/goals_history.go contains \"goalsHistoryCmd.Flags().StringVar(\u0026goalsHistorySince\"",
+        "artifact ../../cli/cmd/ao/goals_prune.go contains \"RunPrune(goals.PruneOptions\"",
+        "artifact ../../cli/cmd/ao/goals_migrate.go contains \"migrateCmd.Flags().BoolVar(\u0026migrateToMD\"",
+        "artifact ../../cli/cmd/ao/goals_export.go contains \"RunExport(goals.ExportOptions\"",
+        "artifact ../../cli/cmd/ao/goals_drift.go contains \"RunDrift(goals.DriftOptions\"",
+        "artifact ../../cli/cmd/ao/goals_meta.go contains \"RunMeta(goals.MetaOptions\""
+      ]
+    },
+    {
+      "id": "goals-management-skill-and-setup-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/goals/SKILL.md contains \"ao goals measure --json\"",
+        "artifact ../../skills/goals/SKILL.md contains \"When both files exist, GOALS.md takes precedence.\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals init`, \\\"bootstrap goals\\\" | **init** | `ao goals init` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals steer`, \\\"manage directives\\\" | **steer** | `ao goals steer` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals add`, \\\"add goal\\\" | **add** | `ao goals add` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals drift`, \\\"goal drift\\\" | **drift** | `ao goals drift` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals history`, \\\"goal history\\\" | **history** | `ao goals history` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals export`, \\\"export goals\\\" | **export** | `ao goals export` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals meta`, \\\"meta goals\\\" | **meta** | `ao goals meta` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals prune`, \\\"prune goals\\\", \\\"clean goals\\\" | **prune** | `ao goals prune` |\"",
+        "artifact ../../skills/goals/SKILL.md contains \"| `/goals migrate`, \\\"migrate goals\\\" | **migrate** | `ao goals migrate` |\"",
+        "artifact ../../docs/evolve-setup.md contains \"Bootstrap with `ao goals init`\"",
+        "artifact ../../docs/evolve-setup.md contains \"Run `ao goals migrate --to-md`.\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T083254Z/agentops-core.goals-management-lifecycle.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
