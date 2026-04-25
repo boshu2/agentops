@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.hidden-cli-internals-20260425T082539Z",
+  "suite": {
+    "id": "agentops-core.hidden-cli-internals",
+    "path": "evals/agentops-core/hidden-cli-internals.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "b861dd64f0bdb6d7f43ea10759ceb1679dda6f2cf6bc00d22ce4246bb5e9d939"
+  },
+  "started_at": "2026-04-25T08:25:39.338273505Z",
+  "completed_at": "2026-04-25T08:25:40.89720908Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "108416537ee2",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/hidden-cli-internals.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.hidden-cli-internals-20260425T082539Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.hidden-cli-internals.baseline.json",
+    "promoted_from_run_id": "agentops-core.hidden-cli-internals-20260425T082539Z",
+    "promoted_at": "2026-04-25T08:25:40.989336319Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 36 baseline for hidden CLI internals canary"
+  },
+  "case_results": [
+    {
+      "id": "hidden-cli-internals-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 403,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "hidden-cli-internals-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 753,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "hidden-cli-internals-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/store.go contains \"storeCmd.Hidden = true\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"Use:   \\\"store\\\"\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"Use:   \\\"index \u003cfiles...\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"Use:   \\\"search \u003cquery\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"Use:   \\\"rebuild\\\"\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"Use:   \\\"stats\\\"\"",
+        "artifact ../../cli/cmd/ao/store.go contains \"IndexFileName = storage.SearchIndexFileName\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"temperCmd.Hidden = true\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"Use:   \\\"temper\\\"\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"Use:   \\\"validate \u003cfiles...\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"Use:   \\\"lock \u003cfiles...\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"Use:   \\\"status\\\"\"",
+        "artifact ../../cli/cmd/ao/temper.go contains \"chain.Append(entry)\"",
+        "artifact ../../cli/cmd/ao/index.go contains \"indexCmd.Hidden = true\"",
+        "artifact ../../cli/cmd/ao/index.go contains \"Generate INDEX.md manifest files for .agents/ knowledge directories.\"",
+        "artifact ../../cli/cmd/ao/index.go contains \"indexCmd.Flags().Bool(\\\"check\\\", false\"",
+        "artifact ../../cli/cmd/ao/index.go contains \"indexCmd.Flags().Bool(\\\"json\\\", false\"",
+        "artifact ../../cli/cmd/ao/feedback.go contains \"migrateCmd.Hidden = true\"",
+        "artifact ../../cli/cmd/ao/feedback.go contains \"Use:   \\\"migrate memrl\\\"\"",
+        "artifact ../../cli/cmd/ao/feedback.go contains \"migrateJSONLFiles(files []string, dryRun bool)\""
+      ]
+    },
+    {
+      "id": "hidden-cli-internals-doc-map",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../docs/cli-skills-map.md contains \"Commands that exist in the Go CLI but are not called by any skill or hook.\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao store` | Hidden | Vector store management |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao index` | Hidden | Indexing utility |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao migrate` | Hidden | Migration utility (`migrate memrl`) |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao feedback` | Hidden | UI for providing feedback on learnings |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao batch-feedback` | Hidden | Batch feedback processing |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao session-outcome` | Hidden | Session outcome recording |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao worktree` | Hidden | Worktree GC utility |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao anti-patterns` | Hidden | Anti-pattern list |\""
+      ]
+    },
+    {
+      "id": "hidden-cli-internals-json-validity",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 400,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T082539Z/agentops-core.hidden-cli-internals.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.hidden-cli-internals.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
