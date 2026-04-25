@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
+  "suite": {
+    "id": "agentops-core.skill-quality-gates",
+    "path": "evals/agentops-core/skill-quality-gates.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "fa1d11c2f5e5bda8bd30b14d0842662c321cd06851aa8ddac0ae2f61ea7acf53"
+  },
+  "started_at": "2026-04-25T05:03:24.936083218Z",
+  "completed_at": "2026-04-25T05:04:00.10492482Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "632212b0e023",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
+    "promoted_from_run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
+    "promoted_at": "2026-04-25T05:04:00.266999212Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial skill quality gate baseline covering lint, schema, runtime format, CLI snippets, and size-warning ratchet."
+  },
+  "case_results": [
+    {
+      "id": "skill-validation-suite",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 15102,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"69 skills checked\"",
+        "stdout contains \"OVERALL: PASS\""
+      ]
+    },
+    {
+      "id": "skill-size-warning-ratchet",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "efficiency": 1
+      },
+      "duration_ms": 1125,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Summary:\"",
+        "stdout contains \"0 fail\""
+      ]
+    },
+    {
+      "id": "skill-schema-validation",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1
+      },
+      "duration_ms": 12296,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"All 69 skill(s) passed schema validation\""
+      ]
+    },
+    {
+      "id": "skill-runtime-format-validation",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 6416,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Skill runtime format validation passed.\""
+      ]
+    },
+    {
+      "id": "skill-cli-snippet-validation",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 3146,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Skill CLI snippet validation passed.\""
+      ]
+    },
+    {
+      "id": "skill-quality-gate-wiring",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../scripts/pre-push-gate.sh contains \"skill lint suite\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"skill schema validation\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"skill runtime formats\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"skill CLI snippets\"",
+        "artifact ../../scripts/check-skill-size.sh contains \"WARN_LINES\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "efficiency": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T050324Z/agentops-core.skill-quality-gates.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
