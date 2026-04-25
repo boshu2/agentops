@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.skill-quality-gates",
+  "name": "AgentOps Skill Quality Gates Canary",
+  "description": "Offline public canary for skill lint, schema, runtime-format, CLI-snippet, and size-warning ratchets used to judge skill edits.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "quality", "ratchet"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "efficiency", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "skill-validation-suite",
+      "title": "full skill validation suite passes",
+      "kind": "command",
+      "objective": "Run the aggregate skill validation suite so per-skill validate scripts, lint, feature coverage, token budgets, aliases, and lifecycle skill tests stay green.",
+      "runtime": "shell",
+      "timeout_seconds": 210,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/run-all.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "69 skills checked"},
+        {"type": "stdout_contains", "value": "OVERALL: PASS"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "skill-size-warning-ratchet",
+      "title": "skill size warnings do not increase",
+      "kind": "command",
+      "objective": "Prevent skill edits from adding oversized SKILL.md bodies while allowing refactors that reduce the current warning count.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "out=$(scripts/check-skill-size.sh --warn-only); printf '%s\\n' \"$out\"; warn=$(printf '%s\\n' \"$out\" | awk '/^Summary:/{gsub(\",\", \"\"); print $2}'); fail=$(printf '%s\\n' \"$out\" | awk '/^Summary:/{gsub(\",\", \"\"); print $4}'); test \"${fail:-999}\" -eq 0 && test \"${warn:-999}\" -le 13"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Summary:"},
+        {"type": "stdout_contains", "value": "0 fail"}
+      ],
+      "dimensions": ["artifact_quality", "efficiency"],
+      "critical": true
+    },
+    {
+      "id": "skill-schema-validation",
+      "title": "skill schema validation passes",
+      "kind": "command",
+      "objective": "Ensure all shared skill frontmatter remains schema-valid.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/validate-skill-schema.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "All 69 skill(s) passed schema validation"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "skill-runtime-format-validation",
+      "title": "skill runtime format validation passes",
+      "kind": "command",
+      "objective": "Ensure Claude/shared and Codex-native skill formats remain runtime-compatible.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/validate-skill-runtime-formats.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Skill runtime format validation passed."}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "skill-cli-snippet-validation",
+      "title": "skill CLI snippets remain executable",
+      "kind": "command",
+      "objective": "Ensure CLI snippets embedded in skills still match the shipped ao command surface.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/validate-skill-cli-snippets.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Skill CLI snippet validation passed."}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "skill-quality-gate-wiring",
+      "title": "pre-push skill quality gates remain wired",
+      "kind": "artifact_check",
+      "objective": "Keep the same skill quality checks connected to the repo-managed pre-push gate.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill lint suite"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill schema validation"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill runtime formats"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "skill CLI snippets"},
+        {"type": "artifact_contains", "target": "../../scripts/check-skill-size.sh", "value": "WARN_LINES"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    }
+  ]
+}
