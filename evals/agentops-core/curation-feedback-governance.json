@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.curation-feedback-governance",
+  "name": "AgentOps Curation Feedback Governance Canary",
+  "description": "Offline public canary for the post-ingestion knowledge quality loop: pool promotion, human gates, curation verification, maturity transitions, citation feedback, metrics reporting, contradiction detection, and deduplication.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "curation", "feedback", "pool", "maturity", "metrics", "dedup", "governance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "learning_closure", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "curation-feedback-go-tests",
+      "title": "curation, pool, maturity, feedback, metrics, contradiction, and dedup tests pass",
+      "kind": "command",
+      "objective": "Protect the behavior that decides whether captured knowledge is promoted, reviewed, rewarded, demoted, rejected, merged, or surfaced as a contradiction.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestPoolStagePromoteWorkflow|TestPoolBulkApproveThreshold|TestPoolList_Integration_WithCandidates|TestPoolStageAndPromote_Integration_Lifecycle|TestGateApproveRecordsReview|TestGateRejectRecordsReason|TestGateStateMachine|TestCurate_Catalog_Learning|TestCurate_Verify_AllPass|TestCurate_Verify_Regression|TestCuratePipeline_CatalogAssembleVerify|TestMaturity_Integration_ScanWithLearnings|TestMaturity_Integration_ScanPendingTransitions|TestPropertyMaturity_MonotonicPromotionTransitions|TestRunFeedback_ActualUpdate|TestIntegrationFeedbackLoop|TestFeedbackLoop_processUniqueCitations_withLearning|TestMetricsCite_ValidArtifact|TestContradictDetection_FindsContradiction|TestRunDedup_FindsDuplicates|TestRunDedup_MergeKeepsHighestUtility|TestRunBatchPromote_NoPendingCandidates)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "curation-feedback-help-smoke",
+      "title": "curation and feedback CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure the operator can discover the command surfaces that inspect, promote, curate, reward, report, deduplicate, and diagnose knowledge quality.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" pool --help >/dev/null; \"$tmp/ao\" pool batch-promote --help >/dev/null; \"$tmp/ao\" gate --help >/dev/null; \"$tmp/ao\" curate --help >/dev/null; \"$tmp/ao\" maturity --help >/dev/null; \"$tmp/ao\" feedback --help >/dev/null; \"$tmp/ao\" feedback-loop --help >/dev/null; \"$tmp/ao\" batch-feedback --help >/dev/null; \"$tmp/ao\" metrics cite --help >/dev/null; \"$tmp/ao\" metrics cite-report --help >/dev/null; \"$tmp/ao\" contradict --help >/dev/null; \"$tmp/ao\" dedup --help >/dev/null; \"$tmp/ao\" session-outcome --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "curation-feedback-cli-docs",
+      "title": "generated CLI docs expose curation and feedback governance commands",
+      "kind": "artifact_check",
+      "objective": "Keep public CLI docs aligned with the command surfaces for quality pool governance, human review gates, curation, maturity, feedback, metrics, contradiction, and dedup.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao pool`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao pool batch-promote`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao gate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao curate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao maturity`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao feedback-loop`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao metrics cite-report`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao contradict`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao dedup`"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
+    },
+    {
+      "id": "curation-feedback-source-contracts",
+      "title": "source contracts preserve post-ingestion quality rules",
+      "kind": "artifact_check",
+      "objective": "Lock the source-level rules that prevent unreviewed, uncited, stale, harmful, duplicate, or contradictory knowledge from silently entering the long-term corpus.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/batch_promote.go", "value": "When requireCitations is true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/pool.go", "value": "Move a candidate from pending to staged status."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/gate.go", "value": "Manage human review gates"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/feedback_loop.go", "value": "Filter citations by type"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics_cite_report.go", "value": "FeedbackRate"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/maturity.go", "value": "any \u2192 anti-pattern"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/dedup.go", "value": "highest utility"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/contradict.go", "value": "oppositionPairs"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "curation-feedback-product-contracts",
+      "title": "product docs preserve curation and feedback loop intent",
+      "kind": "artifact_check",
+      "objective": "Ensure the public product contract still describes curation, quality measurement, feedback, and promotion as part of the compounding control plane.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, and `ao memory sync` manage learning capture, retrieval, freshness decay, and promotion"},
+        {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "Each agent is an experiment. Each experiment produces data. The data gets curated."},
+        {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "Existing pool pipeline: pending -> staged -> promoted"},
+        {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "After promotion, artifacts enter the MemRL utility tracking system."},
+        {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "Negative feedback can demote to `anti-pattern`."}
+      ],
+      "dimensions": ["artifact_quality", "learning_closure", "process_adherence"]
+    }
+  ]
+}
