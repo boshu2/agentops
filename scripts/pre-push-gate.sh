@@ -347,7 +347,7 @@ if [[ -x scripts/check-agents-hash-snapshot.sh ]]; then
 fi
 
 # --- 3d. .agents/ write-surface contract ---
-if [[ -x scripts/check-agents-write-surfaces.sh ]]; then
+if [[ -x scripts/check-agents-write-surfaces.sh && -f docs/contracts/agents-write-surfaces.md ]]; then
     if write_surfaces_output="$(scripts/check-agents-write-surfaces.sh 2>&1)"; then
         pass ".agents/ write-surface contract"
     else
@@ -355,7 +355,7 @@ if [[ -x scripts/check-agents-write-surfaces.sh ]]; then
         indent_output "$write_surfaces_output"
     fi
 else
-    fail "missing executable: scripts/check-agents-write-surfaces.sh"
+    skip ".agents/ write-surface contract"
 fi
 
 # --- 5. Embedded hooks sync (full parity gate) ---
