@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.mock-runtime-contracts",
+  "name": "AgentOps Mock Runtime Contracts Canary",
+  "description": "Offline public canary for deterministic mock runtime coverage and schema/docs contracts.",
+  "domain": "runtime",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "runtime", "mock"],
+  "allowed_runtimes": ["mock", "shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "mock-runtime-record",
+      "title": "temporary mock suite records mock runtime",
+      "kind": "command",
+      "objective": "Verify deterministic eval runs can execute a mock-runtime suite and record runtime.name=mock.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; printf 'mock fixture\\n' > \"$tmp/fixture.txt\"; python3 -c 'import json, sys; suite={\"schema_version\":1,\"id\":\"tmp.mock-runtime\",\"name\":\"Temporary mock runtime\",\"domain\":\"runtime\",\"visibility\":\"public_canary\",\"tier\":\"deterministic\",\"allowed_runtimes\":[\"mock\"],\"scoring\":{\"aggregate_threshold\":1,\"dimensions\":[{\"name\":\"correctness\",\"weight\":1,\"threshold\":1}]},\"baseline_policy\":{\"mode\":\"none\"},\"cases\":[{\"id\":\"mock-artifact\",\"title\":\"mock artifact\",\"kind\":\"artifact_check\",\"objective\":\"mock runtime inference\",\"runtime\":\"mock\",\"expectations\":[{\"type\":\"artifact_contains\",\"target\":\"fixture.txt\",\"value\":\"mock fixture\"}],\"critical\":True}]}; json.dump(suite, open(sys.argv[1],\"w\"))' \"$tmp/mock-suite.json\"; (cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao eval run \"$tmp/mock-suite.json\" --out \"$tmp/run.json\" >/dev/null); python3 -c 'import json, sys; data=json.load(open(sys.argv[1])); assert data[\"runtime\"][\"name\"] == \"mock\"; assert data[\"runtime\"][\"attempts\"] == 1; assert data[\"status\"] == \"pass\"; assert data[\"case_results\"][0][\"status\"] == \"pass\"' \"$tmp/run.json\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "mock-runtime-schema",
+      "title": "eval suite schema allows mock runtime",
+      "kind": "artifact_check",
+      "objective": "Keep the deterministic mock runtime represented in the eval suite schema.",
+      "runtime": "mock",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../schemas/eval-suite.v1.schema.json", "value": "\"mock\""},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/types.go", "value": "RuntimeMock   Runtime = \"mock\""},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/io.go", "value": "RuntimeStatic || r == RuntimeMock || r == RuntimeShell"}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "headless-mock-contract",
+      "title": "eval environment documents mocked runtime io",
+      "kind": "artifact_check",
+      "objective": "Keep the headless tier contract tied to mocked runtime I/O.",
+      "runtime": "mock",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/eval-environment.md", "value": "Local Claude/Codex CLI inventory or mocked runtime I/O"}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality"]
+    }
+  ]
+}
