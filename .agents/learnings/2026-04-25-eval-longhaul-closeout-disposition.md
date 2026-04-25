@@ -14,9 +14,13 @@ utility: 0.5
 
 Product validation can be green while closeout is still blocked by repository disposition or replayability gaps. After a long autonomous eval run, run both the product gates and the closure/worktree audits before selecting the next RPI target.
 
+A second failure mode surfaced during validation: tests that create temp project roots can be polluted by a stale `/tmp/.agents` directory if root discovery walks through the OS temp directory. Validation runs should isolate `TMPDIR` or clean temp AgentOps state before treating root-discovery failures as product failures.
+
 ## Why It Matters
 
 This prevents agents from compounding on a dirty or unreplayable state after the eval suite itself says PASS.
+
+It also separates real regressions from environmental contamination when Go tests exercise root-discovery behavior below `/tmp`.
 
 ## Source
 
