@@ -296,6 +296,32 @@ func TestRunStatus_LoadsQualitySignalsFromAgentsRoot(t *testing.T) {
 	}
 }
 
+func TestLoadFlywheelBrief_TimesOut(t *testing.T) {
+	oldTimeout := statusFlywheelTimeout
+	oldCompute := statusComputeFlywheelBrief
+	t.Cleanup(func() {
+		statusFlywheelTimeout = oldTimeout
+		statusComputeFlywheelBrief = oldCompute
+	})
+
+	statusFlywheelTimeout = 5 * time.Millisecond
+	statusComputeFlywheelBrief = func(string) *flywheelBrief {
+		time.Sleep(500 * time.Millisecond)
+		return &flywheelBrief{Status: "SHOULD_NOT_BLOCK"}
+	}
+
+	start := time.Now()
+	got := loadFlywheelBrief(t.TempDir())
+	elapsed := time.Since(start)
+
+	if got != nil {
+		t.Fatalf("got %+v, want nil after timeout", got)
+	}
+	if elapsed > 100*time.Millisecond {
+		t.Fatalf("loadFlywheelBrief took %s, want bounded timeout", elapsed)
+	}
+}
+
 func TestOutputStatus_IncludesQualitySignalsHuman(t *testing.T) {
 	var buf bytes.Buffer
 	oldStdout := os.Stdout
