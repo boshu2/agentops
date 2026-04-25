@@ -14,7 +14,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 |----------|-------|
 | Generated CLI command headings | 56 |
 | CLI command entries with skill/hook callers | 34 |
-| Orphan/hidden command entries (user utilities, hidden, CI-only) | 20 |
+| Orphan/hidden command entries (user utilities, hidden, CI-only) | 21 |
 | Known phantom subcommands | 0 |
 
 ---
@@ -146,6 +146,7 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao config` | User utility | Config management |
 | `ao demo` | User utility | Interactive demonstration |
 | `ao doctor` | CI/install | Called by install.sh and release-smoke-test.sh |
+| `ao eval` | CI/test | Public AgentOps canary suites and baseline comparisons |
 | `ao version` | User utility | Version query |
 | `ao quick-start` | User utility | `/quickstart` skill is the orchestrator |
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |
