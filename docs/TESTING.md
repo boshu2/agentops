@@ -68,8 +68,10 @@ scripts/eval-agentops.sh --fast
 
 The runner writes artifacts under `.agents/evals/runs/`. If a promoted baseline
 exists under `.agents/evals/baselines/`, the runner compares the new run against
-it and fails on regressions. Missing baselines are warnings, not failures, so new
-canaries can land before their ratchet is promoted.
+it and fails on regressions. In `--fast` mode it also writes `coverage.json` and
+fails when required domains, score dimensions, or deterministic runtimes are
+missing. Missing baselines are warnings, not failures, so new canaries can land
+before their ratchet is promoted.
 
 Baseline promotion is explicit and requires a rationale:
 
