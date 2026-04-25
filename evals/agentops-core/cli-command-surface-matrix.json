@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.cli-command-surface-matrix",
+  "name": "AgentOps CLI Command Surface Matrix Canary",
+  "description": "Offline public canary for the generated ao command surface: every documented command and subcommand help page builds and opens, heading counts are explicit, and representative operator subcommand docs stay present.",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "commands", "docs", "help", "subcommands"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "documented-cli-help-matrix",
+      "title": "every generated CLI command help page opens",
+      "kind": "command",
+      "objective": "Build ao once, parse every top-level and subcommand heading from cli/docs/COMMANDS.md, and prove each documented help page is routable.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/cli-command-surface-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=56 sub=128 all=184"},
+        {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "cli-reference-and-map-gates",
+      "title": "CLI generated docs and skill map remain current",
+      "kind": "command",
+      "objective": "Keep the generated CLI reference and CLI-to-skills map synchronized with the Go command tree before relying on the matrix smoke.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/generate-cli-reference.sh --check && bash scripts/validate-cli-skills-map.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "CLI_SKILLS_MAP: PASS"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "cli-json-flag-machine-contracts",
+      "title": "machine-readable CLI JSON flag gate passes",
+      "kind": "command",
+      "objective": "Protect the machine-consumable command subset so command-surface growth does not silently drop --json behavior.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/cli/test-json-flag-consistency.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "=== JSON Flag Consistency ==="},
+        {"type": "stdout_contains", "value": "Errors: 0"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "cli-operator-subcommand-docs",
+      "title": "operator subcommand docs cover the breadth of ao",
+      "kind": "artifact_check",
+      "objective": "Lock representative generated subcommand docs across constraints, curation, pool, goals, hooks, beads, findings, knowledge activation, sessions, and scenarios.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao constraint activate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Change constraint status from draft to active"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao curate verify`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Verify gate health against baselines"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao pool auto-promote`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Automatically approve (and optionally promote) high-quality candidates"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run goal checks and produce a snapshot"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao hooks install`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Install ao hooks to ~/.claude/settings.json."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao memory sync`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Write recent session history to a repo-root MEMORY.md with managed block markers."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao beads audit`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Audits open and in-progress beads for backlog hygiene issues."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao findings stats`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Summarize local finding artifact inventory"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao knowledge activate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the full knowledge activation outer loop"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao sessions index`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao scenario validate`"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "cli-command-source-surface-contracts",
+      "title": "CLI source keeps command families registered",
+      "kind": "artifact_check",
+      "objective": "Ensure the Go command tree still wires the less frequently touched command families that the generated docs and matrix smoke depend on.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/init.go", "value": "rootCmd.AddCommand(initCmd)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/hooks.go", "value": "var hooksCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/beads.go", "value": "var beadsCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/findings.go", "value": "var findingsCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "var knowledgeCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/scenario.go", "value": "var scenarioCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/plans.go", "value": "var plansCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics.go", "value": "var metricsCmd = &cobra.Command"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/pool.go", "value": "var poolCmd = &cobra.Command"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    }
+  ]
+}
