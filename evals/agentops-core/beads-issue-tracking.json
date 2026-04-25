@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.beads-issue-tracking",
+  "name": "AgentOps Beads Issue Tracking Canary",
+  "description": "Offline public canary for bd/beads issue-tracking behavior, ao beads parsing and degradation logic, shared/Codex beads skill contracts, current bd JSON health probes, and RPI tasklist fallback behavior.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "beads", "bd", "issue-tracking", "rpi", "tasklist"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "ao-beads-command-tests",
+      "title": "ao beads command logic tests pass",
+      "kind": "command",
+      "objective": "Protect bead ID parsing, bd show parsing, citation extraction, stale citation classification, missing-bd degradation, audit clustering, and closed-bead learning rendering.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestBeadSlugify_|TestParseBDShow_|TestBdShowParsed_|TestExtractCitations_|TestVerifyFileCitation_|TestIsClosedStatus_|TestListBeadIDs_|TestVerifyBead_|TestAuditBeads_|TestFinalizeAuditReport_|TestPatternExistsInRepoSearchesScopedRoots|TestClusterBeads_|TestClusterBeadRecords_|TestRenderLearningBody_)'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "rpi-beads-tasklist-fallback-tests",
+      "title": "RPI survives unavailable or non-epic beads paths",
+      "kind": "command",
+      "objective": "Protect tasklist-mode prompts, execution-packet handoff, retry prompts, latest-epic parsing, and post-phase processing that depends on bd output.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestCtx_BuildPromptForPhase_TasklistModeUsesExecutionPacket|TestBuildRetryPrompt_TasklistModeUsesExecutionPacket|TestParseLatestEpicIDFromJSON|TestParseLatestEpicIDFromText|TestPostPhaseProcessing_Discovery|TestPostPhaseProcessing_Implementation)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "beads-skill-contracts",
+      "title": "shared and Codex beads skill contracts validate",
+      "kind": "command",
+      "objective": "Protect live-bd source-of-truth rules, tracked export refresh guidance, parent-child reconciliation, broad parent handling, conditional Dolt push guidance, and current migration/version probes in both runtime skill copies.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/beads/scripts/validate.sh && bash skills-codex/beads/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "cli reference avoids stale migrate inspect json command"},
+        {"type": "stdout_contains", "value": "cli reference documents machine-readable version probe"},
+        {"type": "stdout_contains", "value": "Results: 24 passed, 0 failed"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "bd-runtime-version-health",
+      "title": "installed bd exposes current JSON health probes",
+      "kind": "command",
+      "objective": "Protect the latest-version check path with commands that currently emit JSON, while allowing migration inspect to remain human-readable.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bd version && bd upgrade status --json | jq -e '.current_version and (.schema_version == 1)' >/dev/null && bd status --json | jq -e '.schema_version == 1 and (.summary.total_issues >= 0)' >/dev/null && bd doctor --json | jq -e '.overall_ok == true and (.cli_version | length > 0)' >/dev/null && bd migrate --inspect >/tmp/agentops-bd-migrate-inspect.txt && rg -q 'Schema Version:' /tmp/agentops-bd-migrate-inspect.txt"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "bd version"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "stale-migration-json-command-absent",
+      "title": "docs do not advertise stale bd migrate inspect JSON command",
+      "kind": "command",
+      "objective": "Prevent agents from piping human-readable bd migration inspection output into jq after seeing a stale --json example.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "! rg -n 'bd migrate --inspect --json' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md && rg -q 'bd upgrade status --json' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md && rg -q 'bd migrate --inspect' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "agent-instructions-use-bd",
+      "title": "agent instructions preserve bd as the task tracker",
+      "kind": "artifact_check",
+      "objective": "Keep repo onboarding, lifecycle rules, and troubleshooting tied to bd instead of markdown task lists or stale direct JSONL decision-making.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Run `bd onboard` to get started."},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "bd ready --json"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Do NOT use markdown TODOs, task lists, or other tracking methods."},
+        {"type": "artifact_contains", "target": "../../skills/beads/SKILL.md", "value": "Treat live `bd` reads as authoritative."},
+        {"type": "artifact_contains", "target": "../../skills/beads/SKILL.md", "value": "reconcile the open parent in the same session"},
+        {"type": "artifact_contains", "target": "../../skills-codex/beads/prompt.md", "value": "Treat live `bd` reads (`bd ready`, `bd show`, `bd export`) as authoritative"},
+        {"type": "artifact_contains", "target": "../../docs/troubleshooting.md", "value": "bd upgrade status --json"},
+        {"type": "artifact_contains", "target": "../../docs/troubleshooting.md", "value": "RPI falls back to tasklist mode"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"]
+    }
+  ]
+}
