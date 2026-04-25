@@ -46,6 +46,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-codex-lifecycle-guards.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"
+    make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
     make_stub "$FAKE_REPO/skills/heal-skill/scripts/heal.sh"
     make_stub "$FAKE_REPO/tests/skills/run-all.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-schema.sh"

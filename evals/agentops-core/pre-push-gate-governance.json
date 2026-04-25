@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.pre-push-gate-governance",
+  "name": "AgentOps Pre-Push Gate Governance Canary",
+  "description": "Offline public canary for pre-push gate behavior and eval-gate wiring: BATS fixture coverage, eval-agentops fast gate integration, GIT env isolation, and warning/failure handling.",
+  "domain": "process",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "pre-push", "gate", "bats", "evals", "git-env"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "pre-push-bats-suite",
+      "title": "pre-push BATS suite passes",
+      "kind": "command",
+      "objective": "Protect pre-push gate behavior for no-change passes, failure counting, worktree disposition, Codex gates, headless runtime checks, GIT env isolation, and non-blocking warnings.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/scripts/pre-push-gate.bats"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "1..17"},
+        {"type": "stdout_contains", "value": "ok 5 pre-push-gate.sh passes when no Go changes"},
+        {"type": "stdout_contains", "value": "ok 15 pre-push-gate.sh clears GIT env for skill CLI snippets"},
+        {"type": "stdout_contains", "value": "ok 16 pre-push-gate.sh clears GIT env for CLI docs parity"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "pre-push-shell-syntax",
+      "title": "pre-push gate shell syntax is valid",
+      "kind": "command",
+      "objective": "Catch shell syntax breakage in the local gate before the broader BATS suite has to diagnose behavior.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash -n scripts/pre-push-gate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "eval-fast-gate-wiring",
+      "title": "pre-push gate preserves eval-agentops fast gate wiring",
+      "kind": "artifact_check",
+      "objective": "Ensure eval changes trigger the AgentOps fast eval gate and that eval-agentops warnings remain visible in pre-push output.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "scripts/eval-agentops.sh"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_agentops_output=\"$(run_without_git_env scripts/eval-agentops.sh --fast 2>&1)\""},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "grep -q '^WARN eval-agentops:'"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "warn \"AgentOps eval canaries\""},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "fail \"missing executable: scripts/eval-agentops.sh\""},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "pass \"AgentOps eval canaries\""}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "pre-push-bats-fixture-contracts",
+      "title": "pre-push BATS fixture stubs every unconditional gate dependency",
+      "kind": "artifact_check",
+      "objective": "Prevent fake-repo drift when pre-push adds a new unconditional gate by checking fixture stubs for eval-agentops, headless runtime, Codex lifecycle, CLI docs, and skill snippets.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "make_stub \"$FAKE_REPO/scripts/eval-agentops.sh\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "make_stub \"$FAKE_REPO/scripts/validate-headless-runtime-skills.sh\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "make_stub \"$FAKE_REPO/scripts/validate-codex-lifecycle-guards.sh\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "make_stub \"$FAKE_REPO/scripts/generate-cli-reference.sh\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "make_stub \"$FAKE_REPO/scripts/validate-skill-cli-snippets.sh\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "pre-push-gate.sh passes when no Go changes"},
+        {"type": "artifact_contains", "target": "../../tests/scripts/pre-push-gate.bats", "value": "pre-push-gate.sh clears GIT env for CLI docs parity"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    }
+  ]
+}
