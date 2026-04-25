@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
+  "suite": {
+    "id": "agentops-core.dream-software-factory-operator",
+    "path": "evals/agentops-core/dream-software-factory-operator.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "75cc96e00eb4133c9eb1a9f83aee93e015ef7e9cf45f22c59d20c447f0f9669f"
+  },
+  "started_at": "2026-04-25T07:36:56.112920355Z",
+  "completed_at": "2026-04-25T07:37:00.146389816Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "e7164b6078f8",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/dream-software-factory-operator.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
+    "promoted_from_run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
+    "promoted_at": "2026-04-25T07:37:00.235873767Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 31 baseline for Dream software-factory operator canary"
+  },
+  "case_results": [
+    {
+      "id": "dream-operator-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 5470,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "dream-internal-loop-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "safety": 1
+      },
+      "duration_ms": 315,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/internal/overnight\""
+      ]
+    },
+    {
+      "id": "dream-factory-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 726,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "dream-factory-cli-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 2,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao factory`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao factory start`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao overnight`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao overnight setup`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao overnight start`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao overnight report`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao overnight warn-only reset`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao overnight curator status`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao overnight curator enqueue`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"##### `ao overnight curator event`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--plateau-epsilon float\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--warn-only\""
+      ]
+    },
+    {
+      "id": "dream-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/overnight.go contains \"Dream operator mode for private overnight runs\"",
+        "artifact ../../cli/cmd/ao/overnight.go contains \"Dream writes both summary.json and summary.md\"",
+        "artifact ../../cli/cmd/ao/overnight.go contains \"\\\"morning_packets_json\\\"\"",
+        "artifact ../../cli/cmd/ao/overnight.go contains \"Dream morning packet synthesis\"",
+        "artifact ../../cli/cmd/ao/overnight.go contains \"runOvernightWarnOnlyReset resets .agents/overnight/warn-only-budget.json\"",
+        "artifact ../../cli/cmd/ao/overnight_curator.go contains \"The curator adapter is intentionally bounded\"",
+        "artifact ../../cli/cmd/ao/overnight_curator.go contains \"defaultCuratorJobKinds\"",
+        "artifact ../../cli/cmd/ao/factory.go contains \"Start the software-factory operator lane for a concrete goal.\"",
+        "artifact ../../cli/cmd/ao/factory.go contains \"bridge.FactoryRecommendedCommands(goal)\"",
+        "artifact ../../cli/internal/overnight/recovery.go contains \"COMMIT-MARKER.*\"",
+        "artifact ../../cli/internal/overnight/types.go contains \"WarnOnly, when true, turns plateau and regression detection into\"",
+        "artifact ../../cli/internal/overnight/measure.go contains \"corpus.Compute(cwd) — fitness vector\""
+      ]
+    },
+    {
+      "id": "dream-doc-and-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../skills/dream/SKILL.md contains \"engine as `ao overnight`; do not invent a parallel workflow\"",
+        "artifact ../../skills/dream/SKILL.md contains \"NEVER mutates source code.\"",
+        "artifact ../../skills/dream/SKILL.md contains \"ao overnight curator status|diagnose|enqueue|compact|event\"",
+        "artifact ../../skills/dream/SKILL.md contains \"writes `summary.json` and `summary.md`\"",
+        "artifact ../../skills-codex/dream/SKILL.md contains \"Dream v2 runs a bounded outer loop of `INGEST -\u003e REDUCE -\u003e MEASURE`\"",
+        "artifact ../../skills-codex/dream/SKILL.md contains \"NEVER invokes `$rpi` or any code-mutating flow.\"",
+        "artifact ../../skills-codex/dream/SKILL.md contains \"Do not create an unbounded model-to-model loop.\"",
+        "artifact ../../docs/contracts/dream-run-contract.md contains \"`ao overnight` is the headless automation surface for Dream\"",
+        "artifact ../../docs/contracts/dream-run-contract.md contains \"ranked executable morning packets synced into next-work and beads when possible\"",
+        "artifact ../../docs/contracts/dream-run-contract.md contains \"Semantic invariant:** No external observer of `~/.agents/` ever sees a fitness-regressed state under strict mode.\"",
+        "artifact ../../docs/contracts/dream-report.md contains \"`summary.json` and `summary.md` are the canonical Dream report artifacts.\"",
+        "artifact ../../docs/contracts/dream-report.md contains \"IterationSummary.Status\"",
+        "artifact ../../docs/software-factory.md contains \"AgentOps is best understood as a **software-factory control plane**.\"",
+        "artifact ../../docs/software-factory.md contains \"ao factory start --goal \\\"fix auth startup\\\"\"",
+        "artifact ../../docs/workflows/session-lifecycle.md contains \"ao overnight setup --apply --runner codex --runner claude --at 01:30\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T073656Z/agentops-core.dream-software-factory-operator.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
