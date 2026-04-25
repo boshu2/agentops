@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.ratchet-lifecycle-ledger",
+  "name": "AgentOps Ratchet Lifecycle Ledger Canary",
+  "description": "Offline public canary for the Brownian Ratchet lifecycle ledger: status, check, next, spec, validate, record, promote, skip, find, trace, migrate, and artifact migration.",
+  "domain": "rpi",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "ratchet", "rpi", "ledger", "progression", "provenance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "ratchet-lifecycle-focused-tests",
+      "title": "Ratchet lifecycle tests pass",
+      "kind": "command",
+      "objective": "Protect command behavior for ratchet status, check, next, spec, validate, record, promote, skip, find, trace, migration, JSON output, golden output, and RPI integration.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestRunRatchet|TestRatchet|TestJSONValidity_Ratchet|TestCobraRatchetParentHelp|TestGoldenRatchet|TestIntegration_Ratchet|TestWorkflow_RPIRatchetProgression|TestNegativePath_RatchetRecordUnknownStep)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "ratchet-lifecycle-help-smoke",
+      "title": "Ratchet lifecycle help surfaces work from built ao",
+      "kind": "command",
+      "objective": "Ensure every ratchet command family remains routable from the shipped CLI help surface without mutating repository state.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" ratchet --help >/dev/null; \"$tmp/ao\" ratchet status --help >/dev/null; \"$tmp/ao\" ratchet check --help >/dev/null; \"$tmp/ao\" ratchet next --help >/dev/null; \"$tmp/ao\" ratchet spec --help >/dev/null; \"$tmp/ao\" ratchet validate --help >/dev/null; \"$tmp/ao\" ratchet record --help >/dev/null; \"$tmp/ao\" ratchet promote --help >/dev/null; \"$tmp/ao\" ratchet skip --help >/dev/null; \"$tmp/ao\" ratchet find --help >/dev/null; \"$tmp/ao\" ratchet trace --help >/dev/null; \"$tmp/ao\" ratchet migrate --help >/dev/null; \"$tmp/ao\" ratchet migrate-artifacts --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "ratchet-lifecycle-generated-docs",
+      "title": "Generated CLI docs expose the ratchet lifecycle",
+      "kind": "artifact_check",
+      "objective": "Keep generated command reference coverage aligned with every ratchet command operators and hooks rely on for progress permanence.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao ratchet`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Track progress through the phased RPI workflow."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet check`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet next`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet spec`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet status`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet validate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--lenient              Allow legacy artifacts without schema_version (expires in 90 days)"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet promote`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet record`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--parent-epic string   Parent epic ID from prior RPI cycle"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet skip`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet find`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet trace`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet migrate`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao ratchet migrate-artifacts`"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "ratchet-lifecycle-source-contracts",
+      "title": "Source contracts preserve ratchet lifecycle routing",
+      "kind": "artifact_check",
+      "objective": "Lock command registration, JSON structures, chain persistence, and provenance routing that make the ratchet an append-only progress ledger.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet.go", "value": "The ratchet chain is stored in .agents/ao/chain.jsonl"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet.go", "value": "ratchetCmd.AddGroup("},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_status.go", "value": "chain.GetAllStatus()"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_status.go", "value": "outputRatchetStatus"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_next.go", "value": "type NextResult struct"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_next.go", "value": "stepSkillMap"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_check.go", "value": "Check if prerequisites are satisfied for a workflow step."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_spec.go", "value": "Find and output the current spec artifact path."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_validate.go", "value": "validateSubCmd.Flags().StringSliceVar(&ratchetFiles"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_validate.go", "value": "Default mode is STRICT"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_record.go", "value": "recordSubCmd.Flags().StringVar(&ratchetOutput"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_record.go", "value": "chain.Append(entry)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_promote.go", "value": "validatePromotion(cwd, artifact, targetTier, w)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_skip.go", "value": "Skipped:   true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_find.go", "value": "locator.Find(pattern)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_trace.go", "value": "buildTrace(artifact, chain)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_migrate.go", "value": "ratchet.MigrateChain(cwd)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/ratchet_migrate.go", "value": "Add schema_version: 1 to existing .agents/ artifacts."}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "ratchet-lifecycle-skill-and-context-docs",
+      "title": "Ratchet skill and context docs preserve append-only guidance",
+      "kind": "artifact_check",
+      "objective": "Ensure operator guidance continues to route ratchet work through CLI commands and treats the chain as append-only evidence.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/ratchet/SKILL.md", "value": "Progress stored in `.agents/ao/chain.jsonl`:"},
+        {"type": "artifact_contains", "target": "../../skills/ratchet/SKILL.md", "value": "ao ratchet status 2>/dev/null"},
+        {"type": "artifact_contains", "target": "../../skills/ratchet/SKILL.md", "value": "ao ratchet check <step> 2>/dev/null"},
+        {"type": "artifact_contains", "target": "../../skills/ratchet/SKILL.md", "value": "ao ratchet record <step> --output \"<artifact-path>\" 2>/dev/null"},
+        {"type": "artifact_contains", "target": "../../skills/ratchet/SKILL.md", "value": "ao ratchet skip <step> --reason \"<why>\" 2>/dev/null"},
+        {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "Gate passes are recorded via `ao ratchet record`."},
+        {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "The ratchet chain in `.agents/ao/chain.jsonl` is append-only."},
+        {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "Never manually edit chain.jsonl"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| **ratchet** | `ratchet check`, `ratchet record`, `ratchet skip`, `ratchet status` |"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
+      "critical": true
+    }
+  ]
+}

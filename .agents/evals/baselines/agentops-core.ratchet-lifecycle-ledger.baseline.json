@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
+  "suite": {
+    "id": "agentops-core.ratchet-lifecycle-ledger",
+    "path": "evals/agentops-core/ratchet-lifecycle-ledger.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "400a5f80ceb8b6aacf78546de614b471029ea2f8a10bbb32a92ff18525ddfb87"
+  },
+  "started_at": "2026-04-25T08:40:24.192374828Z",
+  "completed_at": "2026-04-25T08:40:25.348010903Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "67c5f4b7a01d",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/ratchet-lifecycle-ledger.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
+    "promoted_from_run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
+    "promoted_at": "2026-04-25T08:40:25.434359385Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 38 baseline for ratchet lifecycle ledger canary"
+  },
+  "case_results": [
+    {
+      "id": "ratchet-lifecycle-focused-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 400,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "ratchet-lifecycle-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 751,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "ratchet-lifecycle-generated-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 2,
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao ratchet`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Track progress through the phased RPI workflow.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet check`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet next`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet spec`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet status`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet validate`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--lenient              Allow legacy artifacts without schema_version (expires in 90 days)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet promote`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet record`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--parent-epic string   Parent epic ID from prior RPI cycle\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet skip`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet find`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet trace`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet migrate`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao ratchet migrate-artifacts`\""
+      ]
+    },
+    {
+      "id": "ratchet-lifecycle-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/ratchet.go contains \"The ratchet chain is stored in .agents/ao/chain.jsonl\"",
+        "artifact ../../cli/cmd/ao/ratchet.go contains \"ratchetCmd.AddGroup(\"",
+        "artifact ../../cli/cmd/ao/ratchet_status.go contains \"chain.GetAllStatus()\"",
+        "artifact ../../cli/cmd/ao/ratchet_status.go contains \"outputRatchetStatus\"",
+        "artifact ../../cli/cmd/ao/ratchet_next.go contains \"type NextResult struct\"",
+        "artifact ../../cli/cmd/ao/ratchet_next.go contains \"stepSkillMap\"",
+        "artifact ../../cli/cmd/ao/ratchet_check.go contains \"Check if prerequisites are satisfied for a workflow step.\"",
+        "artifact ../../cli/cmd/ao/ratchet_spec.go contains \"Find and output the current spec artifact path.\"",
+        "artifact ../../cli/cmd/ao/ratchet_validate.go contains \"validateSubCmd.Flags().StringSliceVar(\u0026ratchetFiles\"",
+        "artifact ../../cli/cmd/ao/ratchet_validate.go contains \"Default mode is STRICT\"",
+        "artifact ../../cli/cmd/ao/ratchet_record.go contains \"recordSubCmd.Flags().StringVar(\u0026ratchetOutput\"",
+        "artifact ../../cli/cmd/ao/ratchet_record.go contains \"chain.Append(entry)\"",
+        "artifact ../../cli/cmd/ao/ratchet_promote.go contains \"validatePromotion(cwd, artifact, targetTier, w)\"",
+        "artifact ../../cli/cmd/ao/ratchet_skip.go contains \"Skipped:   true\"",
+        "artifact ../../cli/cmd/ao/ratchet_find.go contains \"locator.Find(pattern)\"",
+        "artifact ../../cli/cmd/ao/ratchet_trace.go contains \"buildTrace(artifact, chain)\"",
+        "artifact ../../cli/cmd/ao/ratchet_migrate.go contains \"ratchet.MigrateChain(cwd)\"",
+        "artifact ../../cli/cmd/ao/ratchet_migrate.go contains \"Add schema_version: 1 to existing .agents/ artifacts.\""
+      ]
+    },
+    {
+      "id": "ratchet-lifecycle-skill-and-context-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/ratchet/SKILL.md contains \"Progress stored in `.agents/ao/chain.jsonl`:\"",
+        "artifact ../../skills/ratchet/SKILL.md contains \"ao ratchet status 2\u003e/dev/null\"",
+        "artifact ../../skills/ratchet/SKILL.md contains \"ao ratchet check \u003cstep\u003e 2\u003e/dev/null\"",
+        "artifact ../../skills/ratchet/SKILL.md contains \"ao ratchet record \u003cstep\u003e --output \\\"\u003cartifact-path\u003e\\\" 2\u003e/dev/null\"",
+        "artifact ../../skills/ratchet/SKILL.md contains \"ao ratchet skip \u003cstep\u003e --reason \\\"\u003cwhy\u003e\\\" 2\u003e/dev/null\"",
+        "artifact ../../docs/context-packet.md contains \"Gate passes are recorded via `ao ratchet record`.\"",
+        "artifact ../../docs/context-packet.md contains \"The ratchet chain in `.agents/ao/chain.jsonl` is append-only.\"",
+        "artifact ../../docs/context-packet.md contains \"Never manually edit chain.jsonl\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| **ratchet** | `ratchet check`, `ratchet record`, `ratchet skip`, `ratchet status` |\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T084024Z/agentops-core.ratchet-lifecycle-ledger.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
