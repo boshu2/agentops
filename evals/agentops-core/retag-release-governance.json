@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.retag-release-governance",
+  "name": "AgentOps Retag Release Governance Canary",
+  "description": "Offline public canary for retag release behavior: annotated tag preservation/recreation, tag-push workflow waiting, Homebrew upgrade contract, and release documentation wiring.",
+  "domain": "process",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "release", "retag", "homebrew", "github-actions"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "retag-release-bats",
+      "title": "retag-release BATS suite passes",
+      "kind": "command",
+      "objective": "Protect retag-release behavior for preserving annotated tag messages, recreating lightweight tags as annotated tags, pushing tags, waiting on the tag-push workflow, and using stubbed Homebrew/GitHub CLIs.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/scripts/retag-release.bats"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "1..2"},
+        {"type": "stdout_contains", "value": "ok 1 retag-release preserves annotation and waits on the tag-push run only"},
+        {"type": "stdout_contains", "value": "ok 2 retag-release recreates a lightweight tag at HEAD as annotated"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "retag-release-script-contracts",
+      "title": "retag-release script preserves release and Homebrew contracts",
+      "kind": "artifact_check",
+      "objective": "Keep the retag script's non-interactive release workflow controls visible in the eval corpus.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "verify_annotated_tag \"$TAG\" \"retag\""},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "gh release delete \"$TAG\" --repo \"$REPO\" --yes"},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "git push origin \":refs/tags/$TAG\""},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "git push origin \"$TAG\""},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "gh run watch \"$RUN_ID\" --repo \"$REPO\" --exit-status"},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "brew update --quiet"},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "brew upgrade agentops"},
+        {"type": "artifact_contains", "target": "../../scripts/retag-release.sh", "value": "ao version"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "retag-release-test-contracts",
+      "title": "retag-release tests assert workflow narrowing and tag object type",
+      "kind": "artifact_check",
+      "objective": "Ensure tests keep guarding against watching the wrong GitHub Actions run and against lightweight-tag release drift.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "Verified annotated tag object for v1.0.0 (retag)"},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "Release workflow succeeded."},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "run grep -F \"workflow run\" \"$GH_LOG\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "points at HEAD but is a commit object; recreating annotated tag."},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "git --git-dir=\"$REMOTE_REPO\" cat-file -t refs/tags/v1.0.0"},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "cat > \"$STUB_BIN/brew\""},
+        {"type": "artifact_contains", "target": "../../tests/scripts/retag-release.bats", "value": "cat > \"$STUB_BIN/gh\""}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "retag-release-docs-and-workflow",
+      "title": "release docs and workflow preserve retag guidance",
+      "kind": "artifact_check",
+      "objective": "Keep the retag operator path aligned across AGENTS instructions, release docs, and release workflow concurrency.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "scripts/retag-release.sh v2.13.0"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Homebrew tap, and upgrades locally."},
+        {"type": "artifact_contains", "target": "../../docs/RELEASING.md", "value": "For post-tag commits, use `scripts/retag-release.sh vX.Y.Z`"},
+        {"type": "artifact_contains", "target": "../../docs/RELEASING.md", "value": "`scripts/retag-release.sh` already waits on the tag-push workflow."},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "cancel-in-progress: true ensures that a retag"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Publish with GoReleaser"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Validate Homebrew token"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    }
+  ]
+}
