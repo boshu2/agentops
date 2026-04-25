@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.parallel-execution-evidence",
+  "name": "AgentOps Parallel Execution Evidence Canary",
+  "description": "Offline public canary for swarm and codex-team parallel execution safety: validators, swarm evidence schema behavior, file ownership manifests, worktree evidence, and no-worker-git-mutation contracts.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "swarm", "codex-team", "parallel", "evidence", "worktree", "manifest"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "parallel-execution-skill-validators",
+      "title": "swarm and codex-team validators pass across runtimes",
+      "kind": "command",
+      "objective": "Keep shared and Codex parallel execution skills healthy, including swarm metadata/file-manifest rules and codex-team multi-wave output contracts.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/swarm/scripts/validate.sh && bash skills-codex/swarm/scripts/validate.sh && bash skills/codex-team/scripts/validate.sh && bash skills-codex/codex-team/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 8 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 9 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "swarm-evidence-validator-behavior",
+      "title": "swarm evidence validator handles tracked and untracked evidence correctly",
+      "kind": "command",
+      "objective": "Behaviorally protect the evidence validator so default scans ignore untracked local runtime state but explicit validation remains strict.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/scripts/validate-swarm-evidence.bats"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "1..3"},
+        {"type": "stdout_contains", "value": "ok 1 default scan ignores untracked local swarm evidence in git repos"},
+        {"type": "stdout_contains", "value": "ok 3 default scan still validates tracked swarm evidence"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "file-manifest-overlap-behavior",
+      "title": "file ownership manifest gate passes, fails, and warns deterministically",
+      "kind": "command",
+      "objective": "Exercise the file-manifest overlap guard that prevents parallel workers from editing the same files in one wave.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/parallel-execution-smoke.sh all"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "file-manifest-no-overlap-ok"},
+        {"type": "stdout_contains", "value": "file-manifest-conflict-ok"},
+        {"type": "stdout_contains", "value": "file-manifest-missing-ok"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "swarm-evidence-and-manifest-contracts",
+      "title": "swarm evidence and file-manifest scripts preserve fail-closed behavior",
+      "kind": "artifact_check",
+      "objective": "Lock the script-level contracts for required status enums, completion evidence blocks, required checks, and file overlap conflict detection.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/validate-swarm-evidence.sh", "value": "status with valid enum"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-swarm-evidence.sh", "value": "completion result missing evidence block"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-swarm-evidence.sh", "value": "evidence.required_checks is empty"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-swarm-evidence.sh", "value": "EVIDENCE VALIDATION PASS"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/swarm-worker-result.schema.json", "value": "\"required\": [\"required_checks\", \"checks\"]"},
+        {"type": "artifact_contains", "target": "../../schemas/swarm-evidence.schema.json", "value": "required_checks"},
+        {"type": "artifact_contains", "target": "../../scripts/check-file-manifest-overlap.sh", "value": "CONFLICT: $file claimed by task ${FILE_OWNERS[$file]} and task $task_id"},
+        {"type": "artifact_contains", "target": "../../scripts/check-file-manifest-overlap.sh", "value": "WARN: task $task_id has no file manifest"},
+        {"type": "artifact_contains", "target": "../../scripts/check-file-manifest-overlap.sh", "value": "Found $CONFLICTS file overlap conflict(s)"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "parallel-ownership-and-worktree-contracts",
+      "title": "parallel execution skills preserve ownership and worktree evidence contracts",
+      "kind": "artifact_check",
+      "objective": "Ensure swarm and codex-team keep explicit file ownership, pre-spawn conflict checks, worktreePath validation, and no-worker-git-mutation rules.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/swarm/SKILL.md", "value": "Every TaskCreate **must** include `metadata.issue_type` plus a `metadata.files` array."},
+        {"type": "artifact_contains", "target": "../../skills/swarm/SKILL.md", "value": "Do not spawn workers with overlapping file manifests into the same shared-worktree wave."},
+        {"type": "artifact_contains", "target": "../../skills/swarm/references/pre-spawn-friction-gates.md", "value": "Explicit file manifest per worker, verified for no overlap"},
+        {"type": "artifact_contains", "target": "../../skills/swarm/references/local-mode.md", "value": "Runtime `worktreePath` Contract"},
+        {"type": "artifact_contains", "target": "../../skills/swarm/references/local-mode.md", "value": "Do NOT run git add, git commit, or git push"},
+        {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "Pre-spawn conflict check (file ownership)"},
+        {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "worktreePath"},
+        {"type": "artifact_contains", "target": "../../skills-codex/swarm/references/local-mode.md", "value": "the lead must verify each spawned worker reports a `worktreePath`"},
+        {"type": "artifact_contains", "target": "../../skills/codex-team/SKILL.md", "value": "the orchestrator IS the lock manager"},
+        {"type": "artifact_contains", "target": "../../skills/codex-team/SKILL.md", "value": "MULTI-WAVE"},
+        {"type": "artifact_contains", "target": "../../skills-codex/codex-team/SKILL.md", "value": "`$swarm` (runtime-native)"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility", "safety"],
+      "critical": true
+    }
+  ]
+}
