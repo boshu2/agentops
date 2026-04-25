@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.standards-governance-20260425T104310Z",
+  "suite": {
+    "id": "agentops-core.standards-governance",
+    "path": "evals/agentops-core/standards-governance.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "a6d79af10821216ff1674a99cf293ffdc1c6ab5c6e89f86efd2f7efd4c6dd4a4"
+  },
+  "started_at": "2026-04-25T10:43:10.26802525Z",
+  "completed_at": "2026-04-25T10:43:10.305537467Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "d54b6f9c4f52",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/standards-governance.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 120
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.standards-governance-20260425T104310Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.standards-governance.baseline.json",
+    "promoted_from_run_id": "agentops-core.standards-governance-20260425T104310Z",
+    "promoted_at": "2026-04-25T10:43:10.394159645Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 49 standards governance canary baseline after first passing deterministic run"
+  },
+  "case_results": [
+    {
+      "id": "standards-skill-validators",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 36,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"PASS: SKILL.md exists\"",
+        "stdout contains \"PASS: mentions language-specific or coding standards\"",
+        "stdout contains \"PASS: has references directory\"",
+        "stdout contains \"Results: 5 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "standards-reference-catalog",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/standards/SKILL.md contains \"This is a **library skill**\"",
+        "artifact ../../skills/standards/SKILL.md contains \"Skills detect triggers via file content patterns and import statements.\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/go.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/python.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/shell.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/markdown.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/json.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/yaml.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/test-pyramid.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/codex-skill.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/llm-trust-boundary-checklist.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/sql-safety-checklist.md`\"",
+        "artifact ../../skills/standards/SKILL.md contains \"`references/race-condition-checklist.md`\""
+      ]
+    },
+    {
+      "id": "standards-codex-runtime-parity",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills-codex/standards/SKILL.md contains \"Loaded automatically by `$vibe` and `$pre-mortem`\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$vibe` - Loads based on changed file types\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$implement` - Loads for files being modified\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$review` - Loads for change-quality and blast-radius checks\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$doc` - Loads markdown standards\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$bug-hunt` - Loads for root cause analysis\"",
+        "artifact ../../skills-codex/standards/SKILL.md contains \"- `$complexity` - Loads for refactoring recommendations\""
+      ]
+    },
+    {
+      "id": "standards-high-risk-checklists",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/standards/references/sql-safety-checklist.md contains \"### Injection Prevention\"",
+        "artifact ../../skills/standards/references/sql-safety-checklist.md contains \"Raw SQL uses `?` or `$N` placeholders, never concatenation\"",
+        "artifact ../../skills/standards/references/sql-safety-checklist.md contains \"N+1 queries identified and resolved\"",
+        "artifact ../../skills/standards/references/sql-safety-checklist.md contains \"### Transaction Safety\"",
+        "artifact ../../skills/standards/references/llm-trust-boundary-checklist.md contains \"User-supplied prompts are sanitized (no prompt injection vectors)\"",
+        "artifact ../../skills/standards/references/llm-trust-boundary-checklist.md contains \"JSON responses are parsed with strict schema validation\"",
+        "artifact ../../skills/standards/references/llm-trust-boundary-checklist.md contains \"No direct database writes from LLM output without validation\"",
+        "artifact ../../skills/standards/references/race-condition-checklist.md contains \"No global mutable variables accessed from multiple goroutines/threads\"",
+        "artifact ../../skills/standards/references/race-condition-checklist.md contains \"Map/dict access synchronized (Go maps are NOT goroutine-safe)\"",
+        "artifact ../../skills/standards/references/race-condition-checklist.md contains \"`sync.WaitGroup` counter matches goroutine count exactly\"",
+        "artifact ../../skills/standards/references/race-condition-checklist.md contains \"Concurrent tests exist (multiple goroutines/threads hitting same code)\""
+      ]
+    },
+    {
+      "id": "standards-codex-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/standards/references/codex-skill.md contains \"Codex SKILL.md frontmatter must contain **only** `name` and `description`\"",
+        "artifact ../../skills/standards/references/codex-skill.md contains \"Skills must reference only tools available in Codex sessions\"",
+        "artifact ../../skills/standards/references/codex-skill.md contains \"`TaskCreate`, `TaskList`, `TaskUpdate`, `TaskGet`, `TaskStop`\"",
+        "artifact ../../skills/standards/references/codex-skill.md contains \"`Skill(skill=...)`\"",
+        "artifact ../../skills/standards/references/codex-skill.md contains \"The previously-mapped `todo_write` and `update_plan` are **not available**\"",
+        "artifact ../../skills/standards/references/codex-skill.md contains \"Use `bd` CLI or file-based tracking\"",
+        "artifact ../../skills-codex/standards/references/codex-skill.md contains \"These Codex primitives have **no Codex equivalent** and must not appear\"",
+        "artifact ../../skills-codex/standards/references/codex-skill.md contains \"Instructions are actionable for a Codex agent with only Codex tools\""
+      ]
+    },
+    {
+      "id": "standards-test-pyramid-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| L0 | Contract Tests |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| L1 | Unit Tests |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| L2 | Integration Tests |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| L3 | Component Tests |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"DEFAULT: Start at L2 (integration)\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"L2 Integration | yes/no | yes/no/na\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| BF1 | Property-Based |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| BF4 | Chaos/Negative |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| BF7 | Performance |\"",
+        "artifact ../../skills/standards/references/test-pyramid.md contains \"| BF9 | Security (In-Test) |\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T104310Z/agentops-core.standards-governance.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.standards-governance.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

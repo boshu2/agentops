@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.standards-governance",
+  "name": "AgentOps Standards Governance Canary",
+  "description": "Offline public canary for the shared standards library: validator health, JIT reference catalog completeness, high-risk checklist contracts, Codex skill constraints, and AI-native test pyramid defaults.",
+  "domain": "quality",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "standards", "quality", "codex", "test-pyramid", "checklists"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "standards-skill-validators",
+      "title": "standards skill validators pass across shared and Codex artifacts",
+      "kind": "command",
+      "objective": "Protect the core standards library health checks for both canonical skill and checked-in Codex runtime artifact.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/standards/scripts/validate.sh && bash skills-codex/standards/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "PASS: SKILL.md exists"},
+        {"type": "stdout_contains", "value": "PASS: mentions language-specific or coding standards"},
+        {"type": "stdout_contains", "value": "PASS: has references directory"},
+        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "standards-reference-catalog",
+      "title": "standards catalog preserves JIT reference coverage",
+      "kind": "artifact_check",
+      "objective": "Ensure the library skill keeps direct links to language standards, domain checklists, Codex standards, and the test pyramid so dependent skills can load them just-in-time.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "This is a **library skill**"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "Skills detect triggers via file content patterns and import statements."},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/go.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/python.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/shell.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/markdown.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/json.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/yaml.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/test-pyramid.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/codex-skill.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/llm-trust-boundary-checklist.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/sql-safety-checklist.md`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/SKILL.md", "value": "`references/race-condition-checklist.md`"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "standards-codex-runtime-parity",
+      "title": "Codex standards artifact preserves runtime wording and integration hooks",
+      "kind": "artifact_check",
+      "objective": "Catch drift where the Codex standards artifact regresses to slash-command wording or drops downstream skill integration links.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "Loaded automatically by `$vibe` and `$pre-mortem`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$vibe` - Loads based on changed file types"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$implement` - Loads for files being modified"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$review` - Loads for change-quality and blast-radius checks"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$doc` - Loads markdown standards"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$bug-hunt` - Loads for root cause analysis"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/SKILL.md", "value": "- `$complexity` - Loads for refactoring recommendations"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "standards-high-risk-checklists",
+      "title": "high-risk checklist contracts remain explicit",
+      "kind": "artifact_check",
+      "objective": "Preserve safety-critical checklist content for SQL injection, LLM trust boundaries, and concurrency risks.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/standards/references/sql-safety-checklist.md", "value": "### Injection Prevention"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/sql-safety-checklist.md", "value": "Raw SQL uses `?` or `$N` placeholders, never concatenation"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/sql-safety-checklist.md", "value": "N+1 queries identified and resolved"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/sql-safety-checklist.md", "value": "### Transaction Safety"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/llm-trust-boundary-checklist.md", "value": "User-supplied prompts are sanitized (no prompt injection vectors)"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/llm-trust-boundary-checklist.md", "value": "JSON responses are parsed with strict schema validation"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/llm-trust-boundary-checklist.md", "value": "No direct database writes from LLM output without validation"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/race-condition-checklist.md", "value": "No global mutable variables accessed from multiple goroutines/threads"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/race-condition-checklist.md", "value": "Map/dict access synchronized (Go maps are NOT goroutine-safe)"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/race-condition-checklist.md", "value": "`sync.WaitGroup` counter matches goroutine count exactly"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/race-condition-checklist.md", "value": "Concurrent tests exist (multiple goroutines/threads hitting same code)"}
+      ],
+      "dimensions": ["safety", "artifact_quality", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "standards-codex-skill-contracts",
+      "title": "Codex skill standards prohibit unsupported primitives",
+      "kind": "artifact_check",
+      "objective": "Keep standards aligned to the actual Codex runtime surface and prevent reintroduction of Claude-only primitives in Codex skill guidance.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "Codex SKILL.md frontmatter must contain **only** `name` and `description`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "Skills must reference only tools available in Codex sessions"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "`TaskCreate`, `TaskList`, `TaskUpdate`, `TaskGet`, `TaskStop`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "`Skill(skill=...)`"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "The previously-mapped `todo_write` and `update_plan` are **not available**"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/codex-skill.md", "value": "Use `bd` CLI or file-based tracking"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/references/codex-skill.md", "value": "These Codex primitives have **no Codex equivalent** and must not appear"},
+        {"type": "artifact_contains", "target": "../../skills-codex/standards/references/codex-skill.md", "value": "Instructions are actionable for a Codex agent with only Codex tools"}
+      ],
+      "dimensions": ["runtime_compatibility", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "standards-test-pyramid-contracts",
+      "title": "test pyramid preserves AI-native L2-first and bug-finding contracts",
+      "kind": "artifact_check",
+      "objective": "Protect the testing doctrine that makes evals and implementation reviews judge L2/L3 and BF coverage rather than unit count alone.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| L0 | Contract Tests |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| L1 | Unit Tests |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| L2 | Integration Tests |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| L3 | Component Tests |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "DEFAULT: Start at L2 (integration)"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "L2 Integration | yes/no | yes/no/na"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| BF1 | Property-Based |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| BF4 | Chaos/Negative |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| BF7 | Performance |"},
+        {"type": "artifact_contains", "target": "../../skills/standards/references/test-pyramid.md", "value": "| BF9 | Security (In-Test) |"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    }
+  ]
+}
