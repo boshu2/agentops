@@ -117,13 +117,13 @@ DOC_HEADER
 
 DOC_GLOBAL_FLAGS
 
-  echo "$top_help" | extract_flags | while IFS= read -r line; do
+  extract_flags <<<"$top_help" | while IFS= read -r line; do
     echo "    $line"
   done
   echo ""
 
   local commands
-  commands="$(echo "$top_help" | extract_commands | grep -v '^$')"
+  commands="$(extract_commands <<<"$top_help" | grep -v '^$')"
 
   cat <<'DOC_COMMANDS'
 ---
@@ -137,7 +137,7 @@ DOC_COMMANDS
     cmd_help="$("$AO_BIN" "$cmd" --help 2>&1 || true)"
 
     local description
-    description="$(echo "$cmd_help" | head -n1)"
+    description="${cmd_help%%$'\n'*}"
 
     echo "### \`ao ${cmd}\`"
     echo ""
@@ -145,7 +145,7 @@ DOC_COMMANDS
     echo ""
 
     local usage
-    usage="$(echo "$cmd_help" | extract_usage || true)"
+    usage="$(extract_usage <<<"$cmd_help" || true)"
     if [[ -n "$usage" ]]; then
       echo '```'
       echo "$usage"
@@ -154,8 +154,8 @@ DOC_COMMANDS
     fi
 
     local flags_block
-    flags_block="$(echo "$cmd_help" | extract_flags || true)"
-    if echo "$flags_block" | has_non_help_flags >/dev/null 2>&1; then
+    flags_block="$(extract_flags <<<"$cmd_help" || true)"
+    if has_non_help_flags <<<"$flags_block" >/dev/null 2>&1; then
       echo "**Flags:**"
       echo ""
       echo '```'
@@ -165,7 +165,7 @@ DOC_COMMANDS
     fi
 
     local subcmds
-    subcmds="$(echo "$cmd_help" | extract_commands | grep -v '^$' || true)"
+    subcmds="$(extract_commands <<<"$cmd_help" | grep -v '^$' || true)"
     if [[ -n "$subcmds" ]]; then
       echo "**Subcommands:**"
       echo ""
@@ -174,7 +174,7 @@ DOC_COMMANDS
         sub_help="$("$AO_BIN" "$cmd" "$sub" --help 2>&1 || true)"
 
         local sub_desc
-        sub_desc="$(echo "$sub_help" | head -n1)"
+        sub_desc="${sub_help%%$'\n'*}"
 
         echo "#### \`ao ${cmd} ${sub}\`"
         echo ""
@@ -182,7 +182,7 @@ DOC_COMMANDS
         echo ""
 
         local sub_usage
-        sub_usage="$(echo "$sub_help" | extract_usage || true)"
+        sub_usage="$(extract_usage <<<"$sub_help" || true)"
         if [[ -n "$sub_usage" ]]; then
           echo '```'
           echo "$sub_usage"
@@ -191,8 +191,8 @@ DOC_COMMANDS
         fi
 
         local sub_flags
-        sub_flags="$(echo "$sub_help" | extract_flags || true)"
-        if echo "$sub_flags" | has_non_help_flags >/dev/null 2>&1; then
+        sub_flags="$(extract_flags <<<"$sub_help" || true)"
+        if has_non_help_flags <<<"$sub_flags" >/dev/null 2>&1; then
           echo "**Flags:**"
           echo ""
           echo '```'
@@ -202,14 +202,14 @@ DOC_COMMANDS
         fi
 
         local subsub_cmds
-        subsub_cmds="$(echo "$sub_help" | extract_commands | grep -v '^$' || true)"
+        subsub_cmds="$(extract_commands <<<"$sub_help" | grep -v '^$' || true)"
         if [[ -n "$subsub_cmds" ]]; then
           for subsub in $subsub_cmds; do
             local subsub_help
             subsub_help="$("$AO_BIN" "$cmd" "$sub" "$subsub" --help 2>&1 || true)"
 
             local subsub_desc
-            subsub_desc="$(echo "$subsub_help" | head -n1)"
+            subsub_desc="${subsub_help%%$'\n'*}"
 
             echo "##### \`ao ${cmd} ${sub} ${subsub}\`"
             echo ""
@@ -217,7 +217,7 @@ DOC_COMMANDS
             echo ""
 
             local subsub_usage
-            subsub_usage="$(echo "$subsub_help" | extract_usage || true)"
+            subsub_usage="$(extract_usage <<<"$subsub_help" || true)"
             if [[ -n "$subsub_usage" ]]; then
               echo '```'
               echo "$subsub_usage"
@@ -226,8 +226,8 @@ DOC_COMMANDS
             fi
 
             local subsub_flags
-            subsub_flags="$(echo "$subsub_help" | extract_flags || true)"
-            if echo "$subsub_flags" | has_non_help_flags >/dev/null 2>&1; then
+            subsub_flags="$(extract_flags <<<"$subsub_help" || true)"
+            if has_non_help_flags <<<"$subsub_flags" >/dev/null 2>&1; then
               echo "**Flags:**"
               echo ""
               echo '```'
