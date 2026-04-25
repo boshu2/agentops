@@ -36,13 +36,14 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
 
 ```text
                     ┌───────────────────────────────────────────────┐
-                    │         26 independent parallel jobs          │
+                    │         27 independent parallel jobs          │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
                     │  hook-preflight      validate-hooks-doc-parity│
                     │  validate-ci-policy-parity                    │
                     │  codex-runtime-sections                       │
                     │  embedded-sync       cli-docs-parity          │
+                    │  agentops-eval-advisory                      │
                     │  shellcheck          markdownlint             │
                     │  security-scan       security-toolchain-gate  │
                     │  skill-integrity     skill-schema             │
@@ -67,7 +68,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                       │            │              │
                     ┌─┴────────────┴──────────────┴─┐
                     │           summary             │
-                    │  (needs: ALL 29 jobs)         │
+                    │  (needs: ALL 30 jobs)         │
                     │  if: always()                 │
                     └───────────────────────────────┘
 ```
@@ -76,7 +77,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `security-toolchain-gate`, `doctor-check`, and `check-test-staleness` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
+Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, and `check-test-staleness` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
 
 ## Blocking vs Soft Gates
 
@@ -86,6 +87,7 @@ These jobs run but their failure does **not** block merges:
 
 | Job | Reason |
 |-----|--------|
+| `agentops-eval-advisory` | Public eval canaries run on every PR, but baseline ratchets start advisory until variance and promotion policy are stable |
 | `security-toolchain-gate` | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check |
 | `doctor-check` | Reports stale CLI references; CI environment lacks some expected tools |
 | `check-test-staleness` | Advisory -- flags tests that may need updating |
