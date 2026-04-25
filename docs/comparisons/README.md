@@ -17,10 +17,10 @@ The AI coding agent ecosystem has exploded. Here's how the major players stack u
 | Tool | Focus | Strength | Gap AgentOps Fills |
 |------|-------|----------|-------------------|
 | [Superpowers](vs-superpowers.md) | TDD + Planning | Disciplined autonomous work, 6+ runtimes | No cross-session memory |
-| [Claude-Flow / Ruflo](vs-claude-flow.md) | Multi-agent swarms | 54+ agents, WASM, 314 MCP tools | No learning mechanism |
-| [SDD Tools](vs-sdd.md) | Spec-driven development | Industry standard (AWS Kiro, GitHub Spec Kit) | Specs only, no learnings |
-| [GSD](vs-gsd.md) | Spec-driven execution | 53 commands, 7 runtimes, advisor mode | Ephemeral, no persistence |
-| [Compound Engineer](vs-compound-engineer.md) | Plan/work/review/compound | Stack-aware routing, 10 runtimes | Manual compounding, no validation gates |
+| [Claude-Flow / Ruflo](vs-claude-flow.md) | Multi-agent swarms + memory | Swarm orchestration, AgentDB/ReasoningBank | Database-first memory, not repo-native flywheel |
+| [SDD Tools](vs-sdd.md) | Spec-driven development | Industry standard (AWS Kiro, GitHub Spec Kit) | Specs first; memory mostly optional extensions |
+| [GSD](vs-gsd.md) | Spec-driven execution | 53 commands, 7 runtimes, advisor mode | Planning persistence, limited governed memory |
+| [Compound Engineer](vs-compound-engineer.md) | Plan/work/review/compound | Stack-aware routing, 10 runtimes | Manual/doc-solution compounding, no validation gates |
 
 ---
 
@@ -59,8 +59,8 @@ Compound Engineer is the exception in this set: it also aims at compounding, but
 | TDD enforcement | ✅ | ❌ | ⚠️ | ❌ | ❌ | ✅ |
 | Multi-agent execution | ✅ | ✅ | ❌ | ❌ | ⚠️ | ✅ |
 | Spec validation | ⚠️ | ❌ | ✅ | ⚠️ | ❌ | ✅ |
-| **Cross-session memory** | ❌ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
-| **Knowledge compounding** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Cross-session memory** | ❌ | ✅ | ⚠️ | ⚠️ | ✅ | ✅ |
+| **Knowledge compounding** | ❌ | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ |
 | **Pre-mortem simulation** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **8-aspect validation** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
@@ -136,6 +136,7 @@ By session 100:
 
 ## Detailed Comparisons
 
+- [Competition RPI: Memory, Learning, Wiki, Dream, and Pruning Pipelines](competition-rpi-memory-pipelines.md) — Cross-product primitive and pipeline audit
 - [vs. Superpowers](vs-superpowers.md) — The TDD powerhouse
 - [vs. Claude-Flow / Ruflo](vs-claude-flow.md) — The swarm orchestrator
 - [vs. SDD Tools](vs-sdd.md) — The spec-driven approach

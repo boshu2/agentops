@@ -146,6 +146,7 @@
 ## Comparisons
 
 - [Comparisons Overview](comparisons/README.md) — AgentOps vs the competition
+- [Competition RPI: Memory, Learning, Wiki, Dream, and Pruning Pipelines](comparisons/competition-rpi-memory-pipelines.md) — Cross-product primitive and pipeline audit
 - [vs SDD](comparisons/vs-sdd.md) — AgentOps vs Spec-Driven Development
 - [vs GSD](comparisons/vs-gsd.md) — AgentOps vs Get Shit Done
 - [vs Superpowers](comparisons/vs-superpowers.md) — AgentOps vs Superpowers plugin
