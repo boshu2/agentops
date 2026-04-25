@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.hook-manifest-runtime-contracts",
+  "name": "AgentOps Hook Manifest Runtime Contracts Canary",
+  "description": "Offline public canary for hook manifest fidelity: registered command inventory, orphan JSON-emitter audit, stdin/output schema behavior, Codex hook subset, and embedded hook shipping parity.",
+  "domain": "hook",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "hooks", "manifest", "codex", "embedded", "schema"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "hook-preflight-and-orphan-audit",
+      "title": "hook preflight and orphan audit preserve manifest visibility",
+      "kind": "command",
+      "objective": "Protect script-existence, timeout, kill-switch, and advisory orphan JSON-emitter reporting for the full hook inventory.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-hook-preflight.sh && bash tests/hooks/test-orphan-hooks.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Hook preflight PASSED"},
+        {"type": "stdout_contains", "value": "Registered: 24 of 48"},
+        {"type": "stdout_contains", "value": "Unregistered: 24"},
+        {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 4"},
+        {"type": "stdout_contains", "value": "context-guard.sh"},
+        {"type": "stdout_contains", "value": "precompact-snapshot.sh"},
+        {"type": "stdout_contains", "value": "ratchet-advance.sh"},
+        {"type": "stdout_contains", "value": "standards-injector.sh"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-stdin-output-bats-contracts",
+      "title": "hook stdin and JSON output BATS contracts pass",
+      "kind": "command",
+      "objective": "Exercise all stdin-consuming hook contracts and JSON hookSpecificOutput schema behavior across valid, malformed, empty, and kill-switch inputs.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/hooks/hook-output-schema.bats tests/hooks/hook-stdin-contracts.bats"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "1..122"},
+        {"type": "stdout_contains", "value": "ok 24 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
+        {"type": "stdout_contains", "value": "ok 39 dangerous-git-guard: force push blocked with exit 2"},
+        {"type": "stdout_contains", "value": "ok 50 codex-parity-warn: shared skill edit emits parity warning"},
+        {"type": "stdout_contains", "value": "ok 122 task-validation-gate: empty stdin exits gracefully"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-manifest-command-inventory",
+      "title": "Claude hook manifest preserves lifecycle and safety command inventory",
+      "kind": "artifact_check",
+      "objective": "Keep the primary hooks manifest wired to the session lifecycle, prompt nudges, pre-tool safety guards, post-tool quality checks, and task completion validation.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"SessionStart\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"SessionEnd\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"UserPromptSubmit\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"PreToolUse\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"PostToolUse\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"TaskCompleted\""},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "session-start.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "ao-inject.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "session-end-maintenance.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "compile-session-defrag.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "factory-router.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "quality-signals.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "pre-mortem-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "commit-review-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "git-worker-guard.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "lead-only-worker-git-guard.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "write-time-quality.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "go-complexity-precommit.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "go-vet-post-edit.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "research-loop-detector.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "task-validation-gate.sh"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-manifest-command-counts",
+      "title": "Claude hook manifest command counts are explicit",
+      "kind": "command",
+      "objective": "Make additions, deletions, and duplicate registrations in hooks/hooks.json visible in eval baselines.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 28) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 24)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "hook-manifest-counts-ok"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "codex-hook-runtime-subset",
+      "title": "Codex hook manifest preserves supported runtime subset",
+      "kind": "artifact_check",
+      "objective": "Protect the intentionally smaller native Codex hook manifest: startup, closeout, prompt nudges, pre-command tests/review, and ratchet advancement.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "\"matcher\": \"startup|resume\""},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "session-start.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "ao-flywheel-close.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "prompt-nudge.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "quality-signals.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "go-test-precommit.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "commit-review-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "ratchet-advance.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}"}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "embedded-hook-inventory-parity",
+      "title": "source hook inventory matches embedded hook inventory",
+      "kind": "command",
+      "objective": "Ensure every source hook script and Claude manifest ships in the CLI embedded hook bundle without extra or missing files.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; find hooks -maxdepth 1 -type f \\( -name '*.sh' -o -name 'hooks.json' \\) -printf '%f\\n' | sort > \"$tmp/source.txt\"; find cli/embedded/hooks -maxdepth 1 -type f -printf '%f\\n' | sort > \"$tmp/embedded.txt\"; diff -u \"$tmp/source.txt\" \"$tmp/embedded.txt\" && echo embedded-hooks-in-sync"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "embedded-hooks-in-sync"}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality", "process_adherence"],
+      "critical": true
+    }
+  ]
+}

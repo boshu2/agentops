@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.hook-manifest-runtime-contracts-20260425T105334Z",
+  "suite": {
+    "id": "agentops-core.hook-manifest-runtime-contracts",
+    "path": "evals/agentops-core/hook-manifest-runtime-contracts.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "a6f232ba8d749e2a382339a7405259d025b682e5d8704c93abd3051713c7be63"
+  },
+  "started_at": "2026-04-25T10:53:34.394032752Z",
+  "completed_at": "2026-04-25T10:53:44.457151342Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "4e73013cf53b",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/hook-manifest-runtime-contracts.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.hook-manifest-runtime-contracts-20260425T105334Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
+    "promoted_from_run_id": "agentops-core.hook-manifest-runtime-contracts-20260425T105334Z",
+    "promoted_at": "2026-04-25T10:53:44.55065989Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 50 hook manifest runtime contracts canary baseline after first passing deterministic run"
+  },
+  "case_results": [
+    {
+      "id": "hook-preflight-and-orphan-audit",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "duration_ms": 375,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Hook preflight PASSED\"",
+        "stdout contains \"Registered: 24 of 48\"",
+        "stdout contains \"Unregistered: 24\"",
+        "stdout contains \"JSON-emitting (WARNING): 4\"",
+        "stdout contains \"context-guard.sh\"",
+        "stdout contains \"precompact-snapshot.sh\"",
+        "stdout contains \"ratchet-advance.sh\"",
+        "stdout contains \"standards-injector.sh\""
+      ]
+    },
+    {
+      "id": "hook-stdin-output-bats-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 12152,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"1..122\"",
+        "stdout contains \"ok 24 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper\"",
+        "stdout contains \"ok 39 dangerous-git-guard: force push blocked with exit 2\"",
+        "stdout contains \"ok 50 codex-parity-warn: shared skill edit emits parity warning\"",
+        "stdout contains \"ok 122 task-validation-gate: empty stdin exits gracefully\""
+      ]
+    },
+    {
+      "id": "hook-manifest-command-inventory",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../hooks/hooks.json contains \"\\\"SessionStart\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"\\\"SessionEnd\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"\\\"UserPromptSubmit\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"\\\"PreToolUse\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"\\\"PostToolUse\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"\\\"TaskCompleted\\\"\"",
+        "artifact ../../hooks/hooks.json contains \"session-start.sh\"",
+        "artifact ../../hooks/hooks.json contains \"ao-inject.sh\"",
+        "artifact ../../hooks/hooks.json contains \"session-end-maintenance.sh\"",
+        "artifact ../../hooks/hooks.json contains \"compile-session-defrag.sh\"",
+        "artifact ../../hooks/hooks.json contains \"factory-router.sh\"",
+        "artifact ../../hooks/hooks.json contains \"quality-signals.sh\"",
+        "artifact ../../hooks/hooks.json contains \"pre-mortem-gate.sh\"",
+        "artifact ../../hooks/hooks.json contains \"commit-review-gate.sh\"",
+        "artifact ../../hooks/hooks.json contains \"git-worker-guard.sh\"",
+        "artifact ../../hooks/hooks.json contains \"lead-only-worker-git-guard.sh\"",
+        "artifact ../../hooks/hooks.json contains \"holdout-isolation-gate.sh\"",
+        "artifact ../../hooks/hooks.json contains \"write-time-quality.sh\"",
+        "artifact ../../hooks/hooks.json contains \"go-complexity-precommit.sh\"",
+        "artifact ../../hooks/hooks.json contains \"go-vet-post-edit.sh\"",
+        "artifact ../../hooks/hooks.json contains \"research-loop-detector.sh\"",
+        "artifact ../../hooks/hooks.json contains \"task-validation-gate.sh\""
+      ]
+    },
+    {
+      "id": "hook-manifest-command-counts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1
+      },
+      "duration_ms": 4,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"hook-manifest-counts-ok\""
+      ]
+    },
+    {
+      "id": "codex-hook-runtime-subset",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../hooks/codex-hooks.json contains \"\\\"matcher\\\": \\\"startup|resume\\\"\"",
+        "artifact ../../hooks/codex-hooks.json contains \"session-start.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"ao-flywheel-close.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"prompt-nudge.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"quality-signals.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"go-test-precommit.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"commit-review-gate.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"ratchet-advance.sh\"",
+        "artifact ../../hooks/codex-hooks.json contains \"${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}\""
+      ]
+    },
+    {
+      "id": "embedded-hook-inventory-parity",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 9,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"embedded-hooks-in-sync\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T105334Z/agentops-core.hook-manifest-runtime-contracts.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
