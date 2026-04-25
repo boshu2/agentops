@@ -24,9 +24,18 @@ fi
 
 if ! declare -F redact_sensitive_diff >/dev/null 2>&1; then
     redact_sensitive_diff() {
+        local secret_name='[A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*'
+        local assign_prefix="((${secret_name})[[:space:]]*[:=][[:space:]]*)"
+        local auth_prefix='(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)'
         sed -E \
-            -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]"'\''`]+/\1[REDACTED]/g' \
-            -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)[^[:space:]"'\''`]+/\1[REDACTED]/g'
+            -e "s/${assign_prefix}\"[^\"]*\"/\\1[REDACTED]/g" \
+            -e "s/${assign_prefix}'[^']*'/\\1[REDACTED]/g" \
+            -e 's/(([A-Za-z0-9_-]*([Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)`[^`]*`/\1[REDACTED]/g' \
+            -e "s/${assign_prefix}[^[:space:]\"'\`]+/\\1[REDACTED]/g" \
+            -e "s/${auth_prefix}\"[^\"]*\"/\\1[REDACTED]/g" \
+            -e "s/${auth_prefix}'[^']*'/\\1[REDACTED]/g" \
+            -e 's/(([Aa]uthorization|AUTHORIZATION)[[:space:]]*:[[:space:]]*([Bb]earer|[Bb]asic)[[:space:]]+)`[^`]*`/\1[REDACTED]/g' \
+            -e "s/${auth_prefix}[^[:space:]\"'\`]+/\\1[REDACTED]/g"
     }
 fi
 

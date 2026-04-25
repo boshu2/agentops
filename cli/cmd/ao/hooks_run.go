@@ -200,8 +200,8 @@ func firstLines(s string, limit int) string {
 }
 
 var (
-	diffSecretAssignmentRE = regexp.MustCompile("(?i)((?:[A-Za-z0-9_-]*(?:api[_-]?key|token|password|passwd|secret)[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)[^[:space:]\"'`]+")
-	diffAuthorizationRE    = regexp.MustCompile("(?i)((?:Authorization)[[:space:]]*:[[:space:]]*(?:Bearer|Basic)[[:space:]]+)[^[:space:]\"'`]+")
+	diffSecretAssignmentRE = regexp.MustCompile("(?i)((?:[A-Za-z0-9_-]*(?:api[_-]?key|token|password|passwd|secret)[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)(?:\"[^\"\\r\\n]*\"|'[^'\\r\\n]*'|`[^`\\r\\n]*`|[^[:space:]\"'`]+)")
+	diffAuthorizationRE    = regexp.MustCompile("(?i)((?:Authorization)[[:space:]]*:[[:space:]]*(?:Bearer|Basic)[[:space:]]+)(?:\"[^\"\\r\\n]*\"|'[^'\\r\\n]*'|`[^`\\r\\n]*`|[^[:space:]\"'`]+)")
 )
 
 func redactSensitiveDiff(diff string) string {

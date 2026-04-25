@@ -33,13 +33,22 @@ func captureHookStdout(t *testing.T, fn func() error) string {
 }
 
 func TestHooksRunRedactsSensitiveDiff(t *testing.T) {
-	diff := "API_TOKEN=not-a-secret-fixture\nAuthorization: Bearer plain-text"
+	diff := strings.Join([]string{
+		"API_TOKEN=not-a-secret-fixture",
+		`QUOTED_API_TOKEN="quoted-secret-fixture"`,
+		"Authorization: Bearer plain-text",
+		`Authorization: Bearer "quoted-token-fixture"`,
+	}, "\n")
 	redacted := redactSensitiveDiff(diff)
-	if strings.Contains(redacted, "not-a-secret-fixture") || strings.Contains(redacted, "plain-text") {
-		t.Fatalf("diff was not redacted: %q", redacted)
+	for _, leaked := range []string{"not-a-secret-fixture", "quoted-secret-fixture", "plain-text", "quoted-token-fixture"} {
+		if strings.Contains(redacted, leaked) {
+			t.Fatalf("diff leaked %q after redaction: %q", leaked, redacted)
+		}
 	}
-	if !strings.Contains(redacted, "API_TOKEN=[REDACTED]") || !strings.Contains(redacted, "Authorization: Bearer [REDACTED]") {
-		t.Fatalf("redacted markers missing: %q", redacted)
+	if !strings.Contains(redacted, "API_TOKEN=[REDACTED]") ||
+		!strings.Contains(redacted, "QUOTED_API_TOKEN=[REDACTED]") ||
+		!strings.Contains(redacted, "Authorization: Bearer [REDACTED]") {
+		t.Fatalf("diff was not redacted: %q", redacted)
 	}
 }
 
