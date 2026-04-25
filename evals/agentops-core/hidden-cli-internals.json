@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.hidden-cli-internals",
+  "name": "AgentOps Hidden CLI Internals Canary",
+  "description": "Offline public canary for hidden and backwards-compatible CLI internals that support knowledge storage, indexing, tempering, and MemRL migration.",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "hidden", "internals", "store", "temper", "index", "migrate"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "hidden-cli-internals-go-tests",
+      "title": "Hidden CLI internals tests pass",
+      "kind": "command",
+      "objective": "Protect hidden and backwards-compatible command behavior for store, temper, index, and MemRL migration paths.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestCobra(StoreParentHelp|TemperParentHelp|IndexCommand|IndexCheckCommand|MigrateCommand|IndexHelpers|FeedbackMigrateJSONLFiles|FeedbackMigrateJSONLFilesDryRun)|TestRunIndex_JSONOutput|TestRunTemperStatus_JSON|TestJSONValidity_(Index|TemperStatus|StoreSearchIndex|StoreStats))$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "hidden-cli-internals-help-smoke",
+      "title": "Hidden CLI internals help surfaces work from built ao",
+      "kind": "command",
+      "objective": "Ensure hidden internal command help stays routable without executing host-specific side effects.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" store --help >/dev/null; \"$tmp/ao\" store index --help >/dev/null; \"$tmp/ao\" store search --help >/dev/null; \"$tmp/ao\" store rebuild --help >/dev/null; \"$tmp/ao\" store stats --help >/dev/null; \"$tmp/ao\" temper --help >/dev/null; \"$tmp/ao\" temper validate --help >/dev/null; \"$tmp/ao\" temper lock --help >/dev/null; \"$tmp/ao\" temper status --help >/dev/null; \"$tmp/ao\" index --help >/dev/null; \"$tmp/ao\" migrate --help >/dev/null; \"$tmp/ao\" migrate memrl --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "hidden-cli-internals-source-contracts",
+      "title": "Source contracts preserve hidden internal routing",
+      "kind": "artifact_check",
+      "objective": "Lock the implementation-level contracts that keep hidden knowledge pipeline commands wired while leaving them out of the public command surface.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "storeCmd.Hidden = true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "Use:   \"store\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "Use:   \"index <files...>\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "Use:   \"search <query>\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "Use:   \"rebuild\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "Use:   \"stats\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/store.go", "value": "IndexFileName = storage.SearchIndexFileName"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "temperCmd.Hidden = true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "Use:   \"temper\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "Use:   \"validate <files...>\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "Use:   \"lock <files...>\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "Use:   \"status\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/temper.go", "value": "chain.Append(entry)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/index.go", "value": "indexCmd.Hidden = true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/index.go", "value": "Generate INDEX.md manifest files for .agents/ knowledge directories."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/index.go", "value": "indexCmd.Flags().Bool(\"check\", false"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/index.go", "value": "indexCmd.Flags().Bool(\"json\", false"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/feedback.go", "value": "migrateCmd.Hidden = true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/feedback.go", "value": "Use:   \"migrate memrl\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/feedback.go", "value": "migrateJSONLFiles(files []string, dryRun bool)"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "hidden-cli-internals-doc-map",
+      "title": "Hidden internal commands remain documented in the CLI-skill map",
+      "kind": "artifact_check",
+      "objective": "Keep hidden and internal commands represented in the operator map even though generated public CLI docs omit hidden commands.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "Commands that exist in the Go CLI but are not called by any skill or hook."},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao store` | Hidden | Vector store management |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao index` | Hidden | Indexing utility |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao migrate` | Hidden | Migration utility (`migrate memrl`) |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao feedback` | Hidden | UI for providing feedback on learnings |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao batch-feedback` | Hidden | Batch feedback processing |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao session-outcome` | Hidden | Session outcome recording |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao worktree` | Hidden | Worktree GC utility |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao anti-patterns` | Hidden | Anti-pattern list |"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "hidden-cli-internals-json-validity",
+      "title": "Hidden internal JSON outputs stay machine-readable",
+      "kind": "command",
+      "objective": "Protect machine-readable surfaces for hidden internal commands that are used by scripts, tests, and agent workflows.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestJSONValidity_(Index|TemperStatus|StoreSearchIndex|StoreStats)|TestRunIndex_JSONOutput|TestRunTemperStatus_JSON)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    }
+  ]
+}
