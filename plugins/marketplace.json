@@ -1,12 +1,20 @@
 {
   "name": "agentops-marketplace",
+  "interface": {
+    "displayName": "AgentOps"
+  },
   "plugins": [
     {
       "name": "agentops",
       "source": {
         "source": "local",
         "path": "./"
-      }
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
     }
   ]
 }

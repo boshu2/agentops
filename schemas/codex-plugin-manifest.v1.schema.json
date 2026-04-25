@@ -13,10 +13,17 @@
       "type": "string",
       "minLength": 1
     },
+    "version": {
+      "type": "string"
+    },
     "description": {
       "type": "string"
     },
     "skills": {
+      "type": "string",
+      "pattern": "^\\./"
+    },
+    "mcpServers": {
       "type": "string",
       "pattern": "^\\./"
     },
@@ -27,6 +34,76 @@
     "apps": {
       "type": "string",
       "pattern": "^\\./"
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shortDescription": {
+          "type": "string",
+          "minLength": 1
+        },
+        "longDescription": {
+          "type": "string",
+          "minLength": 1
+        },
+        "developerName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "websiteURL": {
+          "type": "string"
+        },
+        "privacyPolicyURL": {
+          "type": "string"
+        },
+        "termsOfServiceURL": {
+          "type": "string"
+        },
+        "defaultPrompt": {
+          "type": ["string", "array"],
+          "maxLength": 128,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "brandColor": {
+          "type": "string"
+        },
+        "composerIcon": {
+          "type": "string",
+          "pattern": "^\\./"
+        },
+        "logo": {
+          "type": "string",
+          "pattern": "^\\./"
+        },
+        "screenshots": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\./"
+          }
+        }
+      }
     }
   }
 }

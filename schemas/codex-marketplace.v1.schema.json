@@ -13,6 +13,17 @@
       "type": "string",
       "minLength": 1
     },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayName"],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "plugins": {
       "type": "array",
       "minItems": 1,
@@ -41,6 +52,32 @@
                 "pattern": "^\\./"
               }
             }
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["installation", "authentication"],
+            "properties": {
+              "installation": {
+                "type": "string",
+                "enum": ["NOT_AVAILABLE", "AVAILABLE", "INSTALLED_BY_DEFAULT"]
+              },
+              "authentication": {
+                "type": "string",
+                "enum": ["ON_INSTALL", "ON_USE"]
+              },
+              "products": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
