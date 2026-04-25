@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.rpi-control-plane-orchestration",
+  "name": "AgentOps RPI Control Plane Orchestration Canary",
+  "description": "Offline public canary for RPI run status, dashboard/event serving, cleanup, cancel, verify, stream fallback, parallel worktrees, and worktree GC surfaces needed to operate long-running RPI/evolve sessions.",
+  "domain": "rpi",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "rpi", "control-plane", "status", "serve", "cleanup", "cancel", "stream", "parallel", "worktree"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1},
+      {"name": "efficiency", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "rpi-control-plane-go-tests",
+      "title": "RPI control-plane, cleanup, stream, parallel, and worktree tests pass",
+      "kind": "command",
+      "objective": "Protect operator surfaces that make long RPI/evolve runs inspectable, cancellable, recoverable, and safely isolated across worktrees.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestRPI_Integration_StatusNoRuns|TestRPI_Integration_StatusWithRunRegistry|TestRPI_Integration_StatusJSON|TestRPI_Integration_PhasedDryRun|TestRPIStatusDiscovery|TestBuildRPIStatusOutput_WithRegistryRuns|TestServeRPIRuns_ReturnsJSONArray|TestServeRPIEvents_StreamsPreExistingEvents|TestServeRPIArtifact_RejectsTraversal|TestRPIVerifyPassJSON|TestRPIVerifyFailText|TestCleanupStaleRun|TestCleanupActiveRunUntouched|TestCleanupDryRun|TestCleanupByRunID|TestExecuteRPICleanup_StaleAfterOnlyMarksOldRuns|TestRemoveOrphanedWorktree_RepoRootProtection|TestDiscoverSupervisorLeaseTargets|TestMarkRunInterruptedByCancel|TestRPICancel_runRPICancel_noFlagsError|TestRPICancel_cancelOneTarget_dryRun|TestStreamCoverage_SelectExecutor|TestStreamCoverage_ClassifyStreamResult|TestStreamExecutorExecute_FallsBackToDirectOnStartupTimeout|TestResolveParallelEpics_Args|TestResolveParallelEpics_Manifest|TestCreateParallelWorktrees_CreatesAndCleansUp|TestMergeParallelWorktrees_SkipsFailedEpics|TestSpawnParallelEpics_ArgumentConstruction|TestWorktree_resolveRepoRoot_ignoresPollutedGitEnvInLinkedWorktree|TestRunWorktreeGC_DryRunInGitRepo|TestWorktree_gcWorktreeCandidates_DryRunDirty)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety", "efficiency"],
+      "critical": true
+    },
+    {
+      "id": "rpi-control-plane-help-smoke",
+      "title": "RPI control-plane CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure the operator can discover the commands used to inspect, stream, cancel, clean, verify, parallelize, and garbage-collect RPI runs.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" rpi --help >/dev/null; \"$tmp/ao\" rpi status --help >/dev/null; \"$tmp/ao\" rpi serve --help >/dev/null; \"$tmp/ao\" rpi phased --help >/dev/null; \"$tmp/ao\" rpi cleanup --help >/dev/null; \"$tmp/ao\" rpi cancel --help >/dev/null; \"$tmp/ao\" rpi nudge --help >/dev/null; \"$tmp/ao\" rpi stream --help >/dev/null; \"$tmp/ao\" rpi verify --help >/dev/null; \"$tmp/ao\" rpi parallel --help >/dev/null; \"$tmp/ao\" worktree --help >/dev/null; \"$tmp/ao\" worktree gc --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "rpi-control-plane-cli-docs",
+      "title": "generated CLI docs expose RPI control-plane commands",
+      "kind": "artifact_check",
+      "objective": "Keep generated CLI docs aligned with RPI control-plane commands and flags used during long autonomous sessions.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao rpi`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi cancel`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi cleanup`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi nudge`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi parallel`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi phased`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi serve`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi status`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi stream`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao rpi verify`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--auto-clean-stale"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--stream-startup-timeout duration"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
+    },
+    {
+      "id": "rpi-control-plane-source-contracts",
+      "title": "source contracts preserve RPI control-plane behavior",
+      "kind": "artifact_check",
+      "objective": "Lock source-level guarantees for dashboard streaming, artifact serving, cleanup safety, cancellation, stream formats, verification, parallel isolation, and hidden worktree GC.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "Start a production RPI orchestration run or stream its live dashboard."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "The dashboard streams events via Server-Sent Events (SSE)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_serve.go", "value": "mux.HandleFunc(\"/artifact\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_cleanup.go", "value": "A run is considered stale if it has no active heartbeat"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_cleanup.go", "value": "removeOrphanedWorktree(repoRoot, sr.WorktreePath, sr.RunID)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_cancel.go", "value": "Cancel active RPI orchestration runs via a CLI kill switch."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_cancel.go", "value": "Expired/corrupted lease metadata is treated as stale and ignored."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_stream.go", "value": "Read normalized per-run C2 events from events.jsonl."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_verify.go", "value": "Verify integrity of the RPI ledger."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_parallel.go", "value": "Run multiple RPI epics concurrently, each in an isolated git worktree."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/rpi_parallel.go", "value": "AGENTOPS_RPI_NO_WORKTREE=1"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/worktree.go", "value": "Safely remove stale AgentOps RPI worktrees and orphaned tmux sessions."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/worktree.go", "value": "Skips worktrees with uncommitted changes"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "rpi-control-plane-doc-and-skill-contracts",
+      "title": "RPI docs and skills preserve control-plane guidance",
+      "kind": "artifact_check",
+      "objective": "Ensure RPI operator docs and skill contracts describe the control-plane surfaces, registry layout, worktree lifecycle, cleanup/cancel paths, and canonical long-running supervisor path.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "runs/<run-id>/events.jsonl"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "ao rpi phased --runtime"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "Failure path: worktree is preserved for debugging"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "ao rpi cleanup --all --dry-run"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "ao rpi cancel --all"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "ao worktree gc"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "Refuses to remove repo root as a worktree target"},
+        {"type": "artifact_contains", "target": "../../docs/how-it-works.md", "value": "use the canonical path `ao rpi loop --supervisor`"},
+        {"type": "artifact_contains", "target": "../../docs/how-it-works.md", "value": "`ao rpi parallel` runs multiple epics concurrently, each in its own git worktree."},
+        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "`ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao codex stop`"},
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Preserve the discovered"},
+        {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "`--loop`, restart from discovery on FAIL while `cycle < max_cycles`."},
+        {"type": "artifact_contains", "target": "../../skills-codex/rpi/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Every foreign worktree must end the session as `merged`, `preserved`, `exported`, or `deleted`."}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    }
+  ]
+}
