@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.converter-update-runtime-parity-20260425T085954Z",
+  "suite": {
+    "id": "agentops-core.converter-update-runtime-parity",
+    "path": "evals/agentops-core/converter-update-runtime-parity.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "b7d642238c3b557c587f744879b4c0cc54340e551f3395512b91ded425392e7e"
+  },
+  "started_at": "2026-04-25T08:59:54.467029719Z",
+  "completed_at": "2026-04-25T09:00:00.452990573Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "25851a583b1a",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/converter-update-runtime-parity.json",
+      "skills-codex/.agentops-manifest.json",
+      "skills-codex/goals/.agentops-generated.json",
+      "skills-codex/goals/scripts/validate.sh",
+      "skills-codex/recover/.agentops-generated.json",
+      "skills-codex/recover/scripts/validate.sh",
+      "skills-codex/update/.agentops-generated.json",
+      "skills-codex/update/scripts/validate.sh",
+      "skills/goals/scripts/validate.sh",
+      "skills/recover/scripts/validate.sh",
+      "skills/update/scripts/validate.sh"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.converter-update-runtime-parity-20260425T085954Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.converter-update-runtime-parity.baseline.json",
+    "promoted_from_run_id": "agentops-core.converter-update-runtime-parity-20260425T085954Z",
+    "promoted_at": "2026-04-25T09:00:00.544322617Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 40 baseline for converter/update runtime parity canary"
+  },
+  "case_results": [
+    {
+      "id": "converter-update-validator-portability",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 159,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"PASS: update skill validated\"",
+        "stdout contains \"Results: 12 passed, 0 failed\"",
+        "stdout contains \"Results: 6 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "fresh-conversion-validator-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 2326,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"conversion-portability-ok\""
+      ]
+    },
+    {
+      "id": "codex-artifact-metadata-after-validator-edits",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 3499,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Codex artifact metadata validation passed.\""
+      ]
+    },
+    {
+      "id": "converter-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/converter/SKILL.md contains \"Parse AgentOps skills into a universal SkillBundle format\"",
+        "artifact ../../skills/converter/SKILL.md contains \"Default mode is **modular**\"",
+        "artifact ../../skills/converter/SKILL.md contains \"slash-to-dollar skills\"",
+        "artifact ../../skills/converter/SKILL.md contains \"Converter enforces passthrough parity\"",
+        "artifact ../../skills/converter/references/skill-bundle-schema.md contains \"SkillBundle\"",
+        "artifact ../../skills/converter/scripts/convert.sh contains \"convert_codex()\"",
+        "artifact ../../skills/converter/scripts/convert.sh contains \"convert_cursor()\"",
+        "artifact ../../skills/converter/scripts/convert.sh contains \"Copy and dereference symlinks to keep output plugin-compatible.\"",
+        "artifact ../../skills/converter/scripts/convert.sh contains \"Passthrough parity check failed\""
+      ]
+    },
+    {
+      "id": "update-and-codex-validator-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/update/SKILL.md contains \"bash \u003c(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)\"",
+        "artifact ../../skills-codex/update/SKILL.md contains \"bash \u003c(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)\"",
+        "artifact ../../skills/update/scripts/validate.sh contains \"grep -q '^metadata:'\"",
+        "artifact ../../skills-codex/update/scripts/validate.sh contains \"grep -q '^metadata:'\"",
+        "artifact ../../skills/goals/scripts/validate.sh contains \"SKILL.md references evolve skill\"",
+        "artifact ../../skills-codex/goals/scripts/validate.sh contains \"SKILL.md references evolve skill\"",
+        "artifact ../../skills/recover/scripts/validate.sh contains \"tier: session when metadata is present\"",
+        "artifact ../../skills-codex/recover/scripts/validate.sh contains \"tier: session when metadata is present\"",
+        "artifact ../../skills-codex/update/.agentops-generated.json contains \"\\\"source_skill\\\": \\\"skills/update\\\"\"",
+        "artifact ../../skills-codex/converter/.agentops-generated.json contains \"\\\"source_skill\\\": \\\"skills/converter\\\"\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T085954Z/agentops-core.converter-update-runtime-parity.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.converter-update-runtime-parity.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
