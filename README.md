@@ -301,6 +301,7 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 | Published site | [boshu2.github.io/agentops](https://boshu2.github.io/agentops/) |
 | Start navigating | [Docs index](docs/INDEX.md) |
 | New contributor orientation | [Newcomer guide](docs/newcomer-guide.md) |
+| Working with `.agents/` | [Operator guide](docs/agents-operator-guide.md) |
 | Full skill catalog | [Skills](docs/SKILLS.md) |
 | CLI reference | [CLI commands](cli/docs/COMMANDS.md) |
 | Architecture | [Architecture](docs/ARCHITECTURE.md) |

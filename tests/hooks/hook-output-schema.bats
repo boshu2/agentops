@@ -178,16 +178,24 @@ EOF
     echo "initial" > "$MOCK_REPO/file.txt"
     git -C "$MOCK_REPO" add file.txt
     git -C "$MOCK_REPO" -c user.name=test -c user.email=t@t commit -q -m "init" 2>/dev/null
-    echo "TOKEN_FOR_REDACTION=not-a-secret-fixture" > "$MOCK_REPO/config.env"
+    cat > "$MOCK_REPO/config.env" <<'EOF'
+TOKEN_FOR_REDACTION=not-a-secret-fixture
+QUOTED_TOKEN_FOR_REDACTION="quoted-secret-fixture"
+Authorization: Bearer "quoted-token-fixture"
+EOF
     git -C "$MOCK_REPO" add config.env
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+    run bash -c 'cd "$1" && printf "%s" "$2" | AGENTOPS_MANAGED_HOOK_BACKEND_DISABLED=1 bash "$3" 2>&1' \
         -- "$MOCK_REPO" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' "$HOOKS_DIR/commit-review-gate.sh"
     [ "$status" -eq 0 ]
     [ -n "$output" ]
     local ctx
     ctx=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
     [[ "$ctx" == *"TOKEN_FOR_REDACTION=[REDACTED]"* ]]
+    [[ "$ctx" == *"QUOTED_TOKEN_FOR_REDACTION=[REDACTED]"* ]]
+    [[ "$ctx" == *"Authorization: Bearer [REDACTED]"* ]]
     [[ "$ctx" != *"not-a-secret-fixture"* ]]
+    [[ "$ctx" != *"quoted-secret-fixture"* ]]
+    [[ "$ctx" != *"quoted-token-fixture"* ]]
 }
 
 @test "commit-review-gate: non-git command emits no output" {
