@@ -1,7 +1,7 @@
 # Phase 1 Summary: Discovery
 
 - **Goal:** Design a repo-native evaluation environment for AgentOps skills, hooks, `ao` CLI behavior, RPI flows, and Claude/Codex model/runtime changes.
-- **Epic:** none (tasklist fallback; bd crashed during readiness probes)
+- **Epic:** `agentops-dv5` (recovered after bd upgrade; original run fell back to tasklist because bd crashed during readiness probes)
 - **Issues:** 6
 - **Complexity:** standard
 - **Pre-mortem:** WARN (attempt 1/3)
