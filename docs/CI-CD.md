@@ -224,7 +224,7 @@ scripts/security-gate.sh --require-tools       # Fail if scanners missing
 | radon | Python | Cyclomatic complexity for Python |
 | ShellCheck | Shell | Shell script analysis (also runs standalone in validate.yml) |
 
-### scripts/security-toolchain-validate.sh
+### scripts/toolchain-validate.sh
 
 Validates that the security toolchain itself is correctly installed and functional. Used by `security-toolchain-gate` in CI.
 

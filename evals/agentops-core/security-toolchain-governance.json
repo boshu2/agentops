@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.security-toolchain-governance",
+  "name": "AgentOps Security Toolchain Governance Canary",
+  "description": "Offline public canary for direct scripts/toolchain-validate.sh gate semantics, security-vs-quality severity separation, security-gate require-tools and parse-error handling, quick-mode skip contracts, and CI soft-gate policy.",
+  "domain": "security",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "security", "toolchain", "ci", "governance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "toolchain-gate-exit-semantics",
+      "title": "toolchain --gate exits 0, 2, and 3 for pass, critical, and security high findings",
+      "kind": "command",
+      "objective": "Lock scripts/toolchain-validate.sh --gate --json exit semantics for PASS, BLOCKED_CRITICAL, and BLOCKED_HIGH without depending on installed scanners.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh gate-exit-semantics"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "toolchain-gate-exit-semantics-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "toolchain-quality-high-is-nonblocking",
+      "title": "quality high findings stay separate from security high findings",
+      "kind": "command",
+      "objective": "Ensure quality scanner highs produce WARN_QUALITY with exit 0 under --gate while keeping security_high at zero.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh quality-separation"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "toolchain-quality-separation-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "security-gate-require-tools-and-invalid-json",
+      "title": "security-gate require-tools and invalid JSON handling remain explicit",
+      "kind": "command",
+      "objective": "Verify scripts/security-gate.sh --require-tools exits 4 on not_installed/error scanners and emits parse_error JSON plus exit 1 for invalid toolchain JSON.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh security-gate-guards"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-gate-guards-ok"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "toolchain-quick-mode-skip-contract",
+      "title": "quick mode skips slow security and test tools with stable statuses and artifacts",
+      "kind": "command",
+      "objective": "Keep --quick --gate --json reporting gitleaks, pytest, and go-test as skipped and writing SKIPPED_QUICK_MODE sentinel files.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh quick-mode-skips"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "toolchain-quick-mode-skips-ok"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "security-toolchain-ci-soft-gate-policy",
+      "title": "CI keeps security-toolchain-gate non-blocking while uploading artifacts",
+      "kind": "command",
+      "objective": "Govern the warn-then-fail security toolchain policy: the CI job remains continue-on-error, runs the quick security gate, uploads artifacts, and is excluded from the blocking summary expression.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh ci-policy"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-toolchain-ci-policy-ok"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "security-toolchain-docs-heading-current",
+      "title": "CI docs name the actual toolchain validation script",
+      "kind": "command",
+      "objective": "Prevent docs/CI-CD.md from drifting back to the stale scripts/security-toolchain-validate.sh heading.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh docs-heading"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "security-toolchain-docs-heading-ok"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "security-toolchain-script-contracts",
+      "title": "toolchain and gate scripts expose governed JSON fields and flags",
+      "kind": "artifact_check",
+      "objective": "Keep static script contracts visible for direct toolchain governance.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/toolchain-validate.sh", "value": "SECURITY_HIGH_COUNT"},
+        {"type": "artifact_contains", "target": "../../scripts/toolchain-validate.sh", "value": "QUALITY_HIGH_COUNT"},
+        {"type": "artifact_contains", "target": "../../scripts/toolchain-validate.sh", "value": "WARN_QUALITY"},
+        {"type": "artifact_contains", "target": "../../scripts/toolchain-validate.sh", "value": "SKIPPED_QUICK_MODE"},
+        {"type": "artifact_contains", "target": "../../scripts/security-gate.sh", "value": "--require-tools"},
+        {"type": "artifact_contains", "target": "../../scripts/security-gate.sh", "value": "parse_error"},
+        {"type": "artifact_contains", "target": "../../docs/CI-CD.md", "value": "### scripts/toolchain-validate.sh"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    }
+  ]
+}
