@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.cli-contracts",
+  "name": "AgentOps CLI Contracts Canary",
+  "description": "Offline public canary for generated command docs, CLI surface parity, JSON flag consistency, and eval command registration.",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "json"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "cli-reference-current",
+      "title": "generated CLI reference is current",
+      "kind": "command",
+      "objective": "Ensure command help output and checked-in CLI docs remain synchronized.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/generate-cli-reference.sh --check"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "cli-skills-map-current",
+      "title": "CLI skills map gate passes",
+      "kind": "command",
+      "objective": "Verify the checked-in CLI-to-skills map stays aligned with generated command headings.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-cli-skills-map.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "json-flag-ci-gate",
+      "title": "JSON flag consistency gate remains in CI",
+      "kind": "artifact_check",
+      "objective": "Protect machine-readable output contracts by keeping JSON flag consistency as a dedicated CI gate.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "json-flag-consistency"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "tests/cli/test-json-flag-consistency.sh"}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "eval-command-documented",
+      "title": "eval command family is documented",
+      "kind": "artifact_check",
+      "objective": "Keep the eval command family visible in generated command docs.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao eval`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval scorecard`"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence"]
+    }
+  ]
+}
