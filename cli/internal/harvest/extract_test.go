@@ -537,3 +537,101 @@ func TestExtractTitle_FallbackToFilename(t *testing.T) {
 		t.Errorf("extractTitle = %q, want %q", got, "my-doc")
 	}
 }
+
+// TestExtractArtifacts_RecursesIntoNestedSubdirs guards the 2026-04-25
+// regression: ao harvest only descended depth-1 under .agents/learnings/,
+// silently dropping ~76% of /home/boful's corpus that lived at depth 2-3.
+// The walker must descend to arbitrary depth so nested rig-prefixed legacy
+// dirs (learnings/learning/<rig>-<file>.md) are captured.
+func TestExtractArtifacts_RecursesIntoNestedSubdirs(t *testing.T) {
+	tmp := t.TempDir()
+	agentsDir := filepath.Join(tmp, ".agents")
+	learningsDir := filepath.Join(agentsDir, "learnings")
+	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// depth-1 file
+	depth1 := "---\ntitle: Depth One\ndate: \"2026-04-01\"\n---\nbody1\n"
+	if err := os.WriteFile(filepath.Join(learningsDir, "2026-04-01-depth-one.md"), []byte(depth1), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// depth-2 file: learnings/learning/<file>.md
+	nested1 := filepath.Join(learningsDir, "learning")
+	if err := os.MkdirAll(nested1, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	depth2 := "---\ntitle: Depth Two\ndate: \"2026-04-02\"\n---\nbody2\n"
+	if err := os.WriteFile(filepath.Join(nested1, "2026-04-02-depth-two.md"), []byte(depth2), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// depth-3 file: learnings/learning/sub/<file>.md
+	nested2 := filepath.Join(nested1, "sub")
+	if err := os.MkdirAll(nested2, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	depth3 := "---\ntitle: Depth Three\ndate: \"2026-04-03\"\n---\nbody3\n"
+	if err := os.WriteFile(filepath.Join(nested2, "2026-04-03-depth-three.md"), []byte(depth3), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Hidden dir (.git) should be skipped even when nested under an artifact dir.
+	hidden := filepath.Join(learningsDir, ".git")
+	if err := os.MkdirAll(hidden, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hidden, "should-not-be-found.md"), []byte("---\ntitle: Hidden\n---\nbody\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Configured skip dir (archive) should be skipped.
+	archive := filepath.Join(learningsDir, "archive")
+	if err := os.MkdirAll(archive, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(archive, "should-not-be-found.md"), []byte("---\ntitle: Archived\n---\nbody\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rig := RigInfo{
+		Path:    agentsDir,
+		Project: "agentops",
+		Crew:    "nami",
+		Rig:     "agentops-nami",
+	}
+	opts := WalkOptions{
+		MaxFileSize: 1048576,
+		IncludeDirs: []string{"learnings"},
+		SkipDirs:    []string{"archive", ".tmp", ".git"},
+	}
+
+	artifacts, warnings := ExtractArtifacts(rig, opts)
+	if len(warnings) != 0 {
+		t.Fatalf("ExtractArtifacts warnings = %#v, want none", warnings)
+	}
+
+	if len(artifacts) != 3 {
+		t.Fatalf("expected 3 artifacts (depth-1+2+3, hidden+archive skipped), got %d", len(artifacts))
+	}
+
+	titles := map[string]bool{}
+	for _, a := range artifacts {
+		titles[a.Title] = true
+		if a.Type != "learning" {
+			t.Errorf("artifact %q: type = %q, want learning", a.Title, a.Type)
+		}
+		if a.SourceRig != "agentops-nami" {
+			t.Errorf("artifact %q: source_rig = %q, want agentops-nami", a.Title, a.SourceRig)
+		}
+	}
+	for _, want := range []string{"Depth One", "Depth Two", "Depth Three"} {
+		if !titles[want] {
+			t.Errorf("missing artifact %q in result; got titles %v", want, titles)
+		}
+	}
+	if titles["Hidden"] || titles["Archived"] {
+		t.Errorf("walker descended into a skip-dir; got titles %v", titles)
+	}
+}
