@@ -27,11 +27,12 @@ echo "=== Release E2E Validation (fast mode) ==="
 echo ""
 
 OUTPUT_FILE="$(mktemp)"
-trap 'rm -f "$OUTPUT_FILE"' EXIT
+AGENTS_HUB_TMP="$(mktemp -d)"
+trap 'rm -f "$OUTPUT_FILE"; rm -rf "$AGENTS_HUB_TMP"' EXIT
 
 log "Running ci-local release gate in fast mode..."
 set +e
-(cd "$REPO_ROOT" && bash scripts/ci-local-release.sh --fast --skip-e2e-install --jobs 4) >"$OUTPUT_FILE" 2>&1
+(cd "$REPO_ROOT" && AGENTS_HUB_OVERRIDE="$AGENTS_HUB_TMP" bash scripts/ci-local-release.sh --fast --jobs 4) >"$OUTPUT_FILE" 2>&1
 CI_EXIT=$?
 set -e
 
