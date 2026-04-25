@@ -69,4 +69,3 @@ skill-owned directory convention.
 
 Do not bypass the contract by moving writes to a less precise path. The purpose
 of the gate is to make ownership and cleanup rules visible to the next operator.
-
