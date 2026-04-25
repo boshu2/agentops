@@ -414,6 +414,45 @@ else
   fail "evidence-only packet should short-circuit under --scope commit (got status=$verdict mode=$mode)"
 fi
 
+# Test 11: A close_reason validation command is durable scoped evidence.
+# The description intentionally has no file-like paths; the audit must inspect
+# structured close_reason text and extract command paths from there.
+cat > "$BD_DIR/children.json" <<JSON
+[{"id": "test-epic.11"}]
+JSON
+
+cat > "$BD_DIR/show-test-epic.11.json" <<JSON
+[{
+  "id": "test-epic.11",
+  "status": "closed",
+  "created_at": "2026-04-15T10:00:00+00:00",
+  "closed_at": "2026-04-15T12:00:00+00:00",
+  "description": "Add live runtime adapter behavior with no explicit scoped file list.",
+  "close_reason": "Completed adapter work. Validation: cd cli && go test ./internal/eval passed; crank checkpoint validated."
+}]
+JSON
+
+(
+  cd "$REPO_DIR"
+  rm -rf .agents 2>/dev/null || true
+  mkdir -p cli/internal/eval
+  echo "package eval" > cli/internal/eval/close_reason_probe.go
+  git add cli/internal/eval/close_reason_probe.go
+  GIT_AUTHOR_DATE="2026-04-15T13:00:00+00:00" GIT_COMMITTER_DATE="2026-04-15T13:00:00+00:00" \
+    git commit -q -m "test: close reason probe"
+)
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto test-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+mode="$(echo "$result" | jq -r '.children[0].evidence_mode')"
+matched="$(echo "$result" | jq -r '.children[0].matched_files[]?')"
+
+if [[ "$verdict" == "pass" ]] && [[ "$mode" == "grace-window" ]] && [[ "$matched" == *"cli/internal/eval"* ]]; then
+  pass "close_reason validation command paths count as durable scoped evidence"
+else
+  fail "close_reason command evidence should pass via grace-window (got status=$verdict mode=$mode matched=$matched)"
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

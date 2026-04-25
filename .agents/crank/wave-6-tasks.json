@@ -1,0 +1,57 @@
+{
+  "wave": 6,
+  "epic_id": "agentops-dv5-closeout",
+  "tasks": [
+    {
+      "issue_id": "agentops-6xe",
+      "subject": "Resolve canonical root knowledge metadata dirtiness",
+      "files": [
+        "/home/boful/dev/personal/agentops/.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md",
+        "/home/boful/dev/personal/agentops/.agents/patterns/pre-tag-ci-validation.md",
+        "/home/boful/dev/personal/agentops/wiki/synthesis/lint-2026-04-25.md"
+      ],
+      "validation_cmd": "bash scripts/check-worktree-disposition.sh",
+      "metadata": {
+        "issue_type": "task"
+      }
+    },
+    {
+      "issue_id": "agentops-aeg",
+      "subject": "Repair closure-integrity evidence for eval epic children",
+      "files": [
+        "skills/post-mortem/scripts/closure-integrity-audit.sh",
+        "tests/e2e/closure-integrity-grace.sh"
+      ],
+      "validation_cmd": "bash skills/post-mortem/scripts/closure-integrity-audit.sh --scope auto agentops-dv5 && bash tests/e2e/closure-integrity-grace.sh",
+      "metadata": {
+        "issue_type": "bug"
+      }
+    },
+    {
+      "issue_id": "agentops-i6j",
+      "subject": "Repair copied Beads CLI reference relative links",
+      "files": [
+        "skills/beads/references/CLI_REFERENCE.md",
+        "skills-codex/beads/references/CLI_REFERENCE.md"
+      ],
+      "validation_cmd": "ao beads verify agentops-i6j && bash skills/beads/scripts/validate.sh && bash skills-codex/beads/scripts/validate.sh",
+      "metadata": {
+        "issue_type": "task"
+      }
+    },
+    {
+      "issue_id": "agentops-f6g",
+      "subject": "Add direct security toolchain governance eval",
+      "files": [
+        "evals/agentops-core/security-toolchain-governance.json",
+        "evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh",
+        ".agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
+        "docs/CI-CD.md"
+      ],
+      "validation_cmd": "bash tests/scripts/test-toolchain-validate.sh && bash tests/scripts/test-security-gate.sh && scripts/eval-agentops.sh --suite evals/agentops-core/security-toolchain-governance.json",
+      "metadata": {
+        "issue_type": "task"
+      }
+    }
+  ]
+}

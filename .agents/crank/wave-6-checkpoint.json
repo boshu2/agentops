@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "wave": 6,
+  "epic_id": "agentops-dv5-closeout",
+  "timestamp": "2026-04-25T13:57:21Z",
+  "tasks_completed": [
+    "agentops-6xe",
+    "agentops-aeg",
+    "agentops-i6j",
+    "agentops-f6g"
+  ],
+  "tasks_failed": [],
+  "files_changed": [
+    ".agents/crank/results/agentops-aeg.md",
+    ".agents/crank/results/agentops-f6g.md",
+    ".agents/crank/results/agentops-i6j.md",
+    ".agents/crank/wave-6-checkpoint.json",
+    ".agents/crank/wave-6-tasks.json",
+    ".agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
+    "docs/CI-CD.md",
+    "evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh",
+    "evals/agentops-core/security-toolchain-governance.json",
+    "skills-codex/beads/references/CLI_REFERENCE.md",
+    "skills/beads/references/CLI_REFERENCE.md",
+    "skills/post-mortem/scripts/closure-integrity-audit.sh",
+    "tests/e2e/closure-integrity-grace.sh"
+  ],
+  "git_sha": "d5c49b2be76140bd5ce0b30fa2815c5ca6dfdf43",
+  "acceptance_verdict": "PASS",
+  "commit_strategy": "mixed-worker-and-lead-batch",
+  "mutations_this_wave": 0,
+  "total_mutations": 0,
+  "mutation_budget": {
+    "task_added": {
+      "used": 0,
+      "limit": 5
+    },
+    "task_reordered": {
+      "used": 0,
+      "limit": 3
+    }
+  }
+}
