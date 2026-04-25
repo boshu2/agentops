@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.explicit-skill-prompts",
+  "name": "AgentOps Explicit Skill Prompt Canary",
+  "description": "Offline public canary for explicit skill request prompt catalog integrity across shared and Codex skill artifacts.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "prompts", "routing", "codex"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 60
+  },
+  "fixtures": [
+    {
+      "path": "fixtures/explicit-skill-prompts-smoke.sh",
+      "purpose": "Static prompt catalog smoke proving every explicit skill prompt maps to shared and Codex skill artifacts and stale legacy aliases are absent.",
+      "required": true
+    }
+  ],
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "explicit-skill-prompt-catalog",
+      "title": "explicit skill prompt catalog maps to shipped skills",
+      "kind": "command",
+      "objective": "Ensure every explicit skill request prompt names a real shared skill and Codex skill artifact, and stale legacy aliases are not tested as active skills.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/explicit-skill-prompts-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "explicit skill prompt catalog passed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "explicit-skill-runner-contract",
+      "title": "explicit skill runner checks trigger before tools",
+      "kind": "artifact_check",
+      "objective": "Keep the explicit skill request runner tied to skill-trigger detection and no-premature-tool assertions.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../tests/explicit-skill-requests/run-all.sh", "value": "assert_skill_triggered"},
+        {"type": "artifact_contains", "target": "../../tests/explicit-skill-requests/run-all.sh", "value": "assert_no_premature_tools"},
+        {"type": "artifact_contains", "target": "../../tests/explicit-skill-requests/run-test.sh", "value": "assert_skill_triggered"},
+        {"type": "artifact_contains", "target": "../../tests/explicit-skill-requests/README.md", "value": "Prompt filenames must map to real"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "explicit-skill-doc-coverage",
+      "title": "explicit skill request tests remain documented",
+      "kind": "artifact_check",
+      "objective": "Keep user-facing testing docs aware that explicit skill request tests cover natural-language skill triggering.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "tests/explicit-skill-requests/"},
+        {"type": "artifact_contains", "target": "../../docs/testing-skills.md", "value": "No tools before skill invocation"},
+        {"type": "artifact_contains", "target": "../../docs/testing-skills.md", "value": "Skill Not Triggered"}
+      ],
+      "dimensions": ["process_adherence", "learning_closure", "artifact_quality"]
+    }
+  ]
+}
