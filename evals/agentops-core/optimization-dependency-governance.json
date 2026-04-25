@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.optimization-dependency-governance",
+  "name": "AgentOps Optimization and Dependency Governance Canary",
+  "description": "Offline public canary for complexity, performance, and dependency workflows: focused validators, behavioral Go complexity gate coverage, measurable performance baselines, and reversible dependency update contracts.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "complexity", "performance", "deps", "go", "baseline", "governance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "optimization-skill-validators",
+      "title": "complexity, perf, and deps validators pass",
+      "kind": "command",
+      "objective": "Keep optimization and dependency skill validators green for shared contracts and Codex complexity artifacts.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/complexity/scripts/validate.sh && bash skills-codex/complexity/scripts/validate.sh && bash skills/perf/scripts/validate.sh && bash skills/deps/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 7 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 6 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "go-complexity-gate-behavior",
+      "title": "absolute Go complexity gate passes, fails, and reports per-file counts",
+      "kind": "command",
+      "objective": "Behaviorally exercise the real complexity guard on synthetic Go fixtures so complexity regressions are caught by exit code and diagnostics, not just static text checks.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/optimization-governance-smoke.sh all"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "complexity-pass-ok"},
+        {"type": "stdout_contains", "value": "complexity-fail-ok"},
+        {"type": "stdout_contains", "value": "complexity-per-file-ok"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "absolute-complexity-script-contracts",
+      "title": "absolute Go complexity gate preserves offline and reporting controls",
+      "kind": "artifact_check",
+      "objective": "Lock the script-level behavior that keeps complexity checks deterministic: non-test Go scan, opt-out from autoinstall, thresholded gocyclo invocation, and per-file summaries.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "Checks that no non-test Go function exceeds the given cyclomatic complexity threshold."},
+        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "GOCYCLO_NO_AUTOINSTALL=1"},
+        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "find \"$DIR\" -name '*.go' ! -name '*_test.go'"},
+        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "gocyclo -over \"$THRESHOLD\""},
+        {"type": "artifact_contains", "target": "../../scripts/check-go-absolute-complexity.sh", "value": "Per-file violations (complexity > $THRESHOLD in $DIR):"},
+        {"type": "artifact_contains", "target": "../../skills/complexity/SKILL.md", "value": "Functions over threshold"},
+        {"type": "artifact_contains", "target": "../../skills-codex/complexity/prompt.md", "value": "ranked hotspots"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "performance-regression-contracts",
+      "title": "performance workflow preserves measurable baselines and keep-or-revert rules",
+      "kind": "artifact_check",
+      "objective": "Ensure perf work can tell whether a change made behavior better or worse using statistical baselines, benchmark comparison, and one-change-at-a-time rollback discipline.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "Save raw baseline output to `.agents/perf/baseline-YYYY-MM-DD.txt`"},
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "-benchtime=3s -count=5"},
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "results against baseline using `benchstat`"},
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "**Keep or revert**"},
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "p < 0.05 for `benchstat`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/perf/SKILL.md", "value": "**Critical rule: ONE optimization at a time.**"},
+        {"type": "artifact_contains", "target": "../../skills-codex/perf/prompt.md", "value": "Performance profiling, benchmarking, regression detection, and optimization."}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "dependency-update-contracts",
+      "title": "dependency workflow preserves ecosystem detection, vulnerability gates, and rollback loop",
+      "kind": "artifact_check",
+      "objective": "Lock the dependency update flow that prevents blind upgrades: detect manifests, classify critical vulnerabilities, record lock-file state, test each update, and revert failed updates.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "No supported dependency manifest detected."},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "go list -m -u all"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "govulncheck ./..."},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "npm audit"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "| **Critical** | Known CVE with active exploitation, CVSS >= 9.0 | Update immediately, block release |"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "1. Record current state (version, lock file hash)"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "3. Run tests: `go test ./...` / `npm test` / `pytest` / `cargo test`"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "- Revert: restore manifest + lock file to pre-update state"},
+        {"type": "artifact_contains", "target": "../../skills-codex/deps/SKILL.md", "value": "Run tests after each update"},
+        {"type": "artifact_contains", "target": "../../skills-codex/deps/prompt.md", "value": "Dependency audit, update, vulnerability scanning, and license compliance"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    }
+  ]
+}
