@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 55 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 56 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
 
@@ -12,7 +12,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| Generated CLI command headings | 55 |
+| Generated CLI command headings | 56 |
 | CLI command entries with skill/hook callers | 34 |
 | Orphan/hidden command entries (user utilities, hidden, CI-only) | 20 |
 | Known phantom subcommands | 0 |
