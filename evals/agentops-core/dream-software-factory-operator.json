@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.dream-software-factory-operator",
+  "name": "AgentOps Dream Software Factory Operator Canary",
+  "description": "Offline public canary for Dream/overnight operator behavior, local curator controls, warn-only/fitness/recovery contracts, morning report packets, and the briefing-first software-factory entrypoint.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "dream", "overnight", "software-factory", "curator", "fitness", "recovery", "codex"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "dream-operator-go-tests",
+      "title": "Dream operator and factory command tests pass",
+      "kind": "command",
+      "objective": "Protect overnight setup/start/report/warn-only/local-curator behavior plus the briefing-first factory start entrypoint.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestRunOvernightStartDryRunJSON|TestRunOvernight_RunLoopOptionsReceivesRunID|TestNewOvernightRunLoopOptions_WiresCloseLoopCallbacks|TestResolveOvernightSettings_LongHaulDefaultsOff|TestRunOvernight_LongHaulSkipsWhenTriggersWeak|TestHydrateOvernightSummaryArtifacts_LoadsSurfaces|TestExecuteOvernightReportSurfaces_MarksRealStatuses|TestRunOvernightSetupDryRunJSON|TestRunOvernightSetupApplyWritesSchedulerArtifact|TestRunOvernightReportReadsSummaryJSON|TestRunOvernight_HardFail_WritesFailedSummary|TestFinalizeOvernightSummary_PersistsYieldAndLongHaulTelemetry|TestRunOvernight_SchemaV2IsV1BackwardCompatible|TestRunOvernightWarnOnlyReset_WritesFreshBudget|TestRunOvernight_WarnOnlyRatchet_WiredIntoLoopOpts|TestDreamYieldIsEmpty|TestAppendDreamYieldSection_RendersPopulated|TestResolveDreamLocalCuratorConfigDetectsOllamaModel|TestDefaultCuratorAllowedJobKindsReturnsCopy|TestRunCuratorEnqueueWritesValidatedJob|TestMaybeWriteDreamSchedulerArtifactsWindowsTaskScheduler|TestFactoryStartJSONBuildsBriefingThenRunsCodexStartup|TestFactoryStartJSONWarnsWhenBriefingCannotBeBuiltYet)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "dream-internal-loop-go-tests",
+      "title": "Dream internal fitness, recovery, failed-summary, and warn-only tests pass",
+      "kind": "command",
+      "objective": "Protect the all-night invariants behind Dream: fitness deltas, strict rollback, warn-only rescue budgets, crash recovery markers, lock handling, and degraded failed summaries.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./internal/overnight -run '^(TestDreamFailedSummary_InternalContract|TestDreamFailedSummary_DegradedNotesPreserved|TestFitnessSnapshot_Delta_AllImproved|TestFitnessSnapshot_Delta_MetricRegressionBeyondFloor|TestFitnessSnapshot_Delta_RegressionUnderFloor|TestFitnessSnapshot_Delta_MixedImprovementAndRegression|TestFitnessSnapshot_Delta_NilPrev|TestFitnessSnapshot_Delta_MissingMetricInCurr|TestFitnessSnapshot_Delta_PerMetricFloorOverride|TestFitnessSnapshot_Delta_Deterministic|TestRunLoop_RegressionIgnoredWarnOnly|TestRunLoop_WarnOnlyBudgetExhausted|TestRecoverFromCrash_NoOvernightDir|TestLockIsStale_NoLockFile|TestLockIsStale_FreshLock|TestLockIsStale_OldLockLivePID|TestLockIsStale_OldLockDeadPID|TestReadLockPID_Missing|TestReadLockPID_Malformed|TestReadLockPID_Valid|TestWriteLockPID_CreatesAndOverwrites|TestWarnOnlyBudgetPath_UnderDotAgents)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/overnight"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "dream-factory-help-smoke",
+      "title": "Dream and factory CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure the operator commands for factory startup, Dream setup/start/report, warn-only reset, and local curator controls remain callable from a built binary.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" factory --help >/dev/null; \"$tmp/ao\" factory start --help >/dev/null; \"$tmp/ao\" overnight --help >/dev/null; \"$tmp/ao\" overnight start --help >/dev/null; \"$tmp/ao\" overnight report --help >/dev/null; \"$tmp/ao\" overnight setup --help >/dev/null; \"$tmp/ao\" overnight warn-only reset --help >/dev/null; \"$tmp/ao\" overnight curator status --help >/dev/null; \"$tmp/ao\" overnight curator diagnose --help >/dev/null; \"$tmp/ao\" overnight curator enqueue --help >/dev/null; \"$tmp/ao\" overnight curator compact --help >/dev/null; \"$tmp/ao\" overnight curator event --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "dream-factory-cli-docs",
+      "title": "generated CLI docs expose Dream and factory operator commands",
+      "kind": "artifact_check",
+      "objective": "Keep generated docs aligned with the command surfaces operators need for briefing-first starts and private overnight runs.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao factory`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao factory start`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao overnight`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao overnight setup`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao overnight start`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao overnight report`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao overnight warn-only reset`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao overnight curator status`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao overnight curator enqueue`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao overnight curator event`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--plateau-epsilon float"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--warn-only"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
+    },
+    {
+      "id": "dream-source-contracts",
+      "title": "source contracts preserve Dream and factory behavior",
+      "kind": "artifact_check",
+      "objective": "Lock source-level invariants for Dream operator mode, local curator bounds, morning packets, warn-only budgets, crash recovery, and software-factory startup.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight.go", "value": "Dream operator mode for private overnight runs"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight.go", "value": "Dream writes both summary.json and summary.md"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight.go", "value": "\"morning_packets_json\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight.go", "value": "Dream morning packet synthesis"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight.go", "value": "runOvernightWarnOnlyReset resets .agents/overnight/warn-only-budget.json"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight_curator.go", "value": "The curator adapter is intentionally bounded"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/overnight_curator.go", "value": "defaultCuratorJobKinds"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/factory.go", "value": "Start the software-factory operator lane for a concrete goal."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/factory.go", "value": "bridge.FactoryRecommendedCommands(goal)"},
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/recovery.go", "value": "COMMIT-MARKER.*"},
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/types.go", "value": "WarnOnly, when true, turns plateau and regression detection into"},
+        {"type": "artifact_contains", "target": "../../cli/internal/overnight/measure.go", "value": "corpus.Compute(cwd) — fitness vector"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "dream-doc-and-skill-contracts",
+      "title": "Dream, factory, and lifecycle docs preserve operator guidance",
+      "kind": "artifact_check",
+      "objective": "Ensure the interactive Dream skills and product docs keep the operator lanes, hard constraints, local curator model, morning reports, and software-factory entrypoint explicit.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/dream/SKILL.md", "value": "engine as `ao overnight`; do not invent a parallel workflow"},
+        {"type": "artifact_contains", "target": "../../skills/dream/SKILL.md", "value": "NEVER mutates source code."},
+        {"type": "artifact_contains", "target": "../../skills/dream/SKILL.md", "value": "ao overnight curator status|diagnose|enqueue|compact|event"},
+        {"type": "artifact_contains", "target": "../../skills/dream/SKILL.md", "value": "writes `summary.json` and `summary.md`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/dream/SKILL.md", "value": "Dream v2 runs a bounded outer loop of `INGEST -> REDUCE -> MEASURE`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/dream/SKILL.md", "value": "NEVER invokes `$rpi` or any code-mutating flow."},
+        {"type": "artifact_contains", "target": "../../skills-codex/dream/SKILL.md", "value": "Do not create an unbounded model-to-model loop."},
+        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "`ao overnight` is the headless automation surface for Dream"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "ranked executable morning packets synced into next-work and beads when possible"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "Semantic invariant:** No external observer of `~/.agents/` ever sees a fitness-regressed state under strict mode."},
+        {"type": "artifact_contains", "target": "../../docs/contracts/dream-report.md", "value": "`summary.json` and `summary.md` are the canonical Dream report artifacts."},
+        {"type": "artifact_contains", "target": "../../docs/contracts/dream-report.md", "value": "IterationSummary.Status"},
+        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "AgentOps is best understood as a **software-factory control plane**."},
+        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "ao factory start --goal \"fix auth startup\""},
+        {"type": "artifact_contains", "target": "../../docs/workflows/session-lifecycle.md", "value": "ao overnight setup --apply --runner codex --runner claude --at 01:30"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]
+    }
+  ]
+}
