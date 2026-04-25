@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.runtime-smoke-matrix",
+  "name": "AgentOps Runtime Smoke Matrix Canary",
+  "description": "Offline public canary for Tier S structural/install smoke coverage across Claude Code, Codex, Cursor, and OpenCode.",
+  "domain": "runtime",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "runtime", "claude", "codex", "cursor", "opencode"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "claude-code-runtime-smoke",
+      "title": "Claude Code runtime structural smoke passes",
+      "kind": "command",
+      "objective": "Validate Claude Code plugin manifests, hook configuration, skill frontmatter, and no-symlink load rules.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/test-runtime-claude-code-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Proof tier: Tier S structural/install smoke"},
+        {"type": "stdout_contains", "value": "0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "codex-runtime-smoke",
+      "title": "Codex runtime structural smoke passes",
+      "kind": "command",
+      "objective": "Validate native Codex plugin manifests, hook bundle, installer behavior, install metadata, and stale mirror avoidance.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/test-runtime-codex-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Proof tier: Tier S structural/install smoke"},
+        {"type": "stdout_contains", "value": "0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "cursor-runtime-smoke",
+      "title": "Cursor runtime structural smoke passes",
+      "kind": "command",
+      "objective": "Validate Cursor export format generation and generated .mdc rule structure.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/test-runtime-cursor-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Proof tier: Tier S structural/export smoke"},
+        {"type": "stdout_contains", "value": "0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "opencode-runtime-smoke",
+      "title": "OpenCode runtime structural smoke passes",
+      "kind": "command",
+      "objective": "Validate OpenCode installer wiring, runtime-compatible skill frontmatter, skill directory structure, and config path references.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/skills/test-runtime-opencode-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Proof tier: Tier S structural/install smoke"},
+        {"type": "stdout_contains", "value": "0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "runtime-proof-matrix-contract",
+      "title": "product and docs preserve the four-runtime proof contract",
+      "kind": "artifact_check",
+      "objective": "Keep the product contract and smoke dispatch tied to Claude Code, Codex, Cursor, and OpenCode runtime proof tiers.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Claude Code, Codex CLI, Cursor, and OpenCode"},
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Tier S structural/install proof is active for all four runtimes"},
+        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-claude-code-smoke.sh"},
+        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-codex-smoke.sh"},
+        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-cursor-smoke.sh"},
+        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-opencode-smoke.sh"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    }
+  ]
+}
