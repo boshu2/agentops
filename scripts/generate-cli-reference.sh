@@ -100,6 +100,11 @@ has_non_help_flags() {
   grep -Ev '^[[:space:]]*-h,[[:space:]]*--help[[:space:]]+help for' | grep -Ev '^[[:space:]]*$'
 }
 
+first_line() {
+  local text="$1"
+  printf '%s\n' "${text%%$'\n'*}"
+}
+
 generate() {
   cat <<DOC_HEADER
 # ao CLI Reference
@@ -137,7 +142,7 @@ DOC_COMMANDS
     cmd_help="$("$AO_BIN" "$cmd" --help 2>&1 || true)"
 
     local description
-    description="$(echo "$cmd_help" | head -n1)"
+    description="$(first_line "$cmd_help")"
 
     echo "### \`ao ${cmd}\`"
     echo ""
@@ -174,7 +179,7 @@ DOC_COMMANDS
         sub_help="$("$AO_BIN" "$cmd" "$sub" --help 2>&1 || true)"
 
         local sub_desc
-        sub_desc="$(echo "$sub_help" | head -n1)"
+        sub_desc="$(first_line "$sub_help")"
 
         echo "#### \`ao ${cmd} ${sub}\`"
         echo ""
@@ -209,7 +214,7 @@ DOC_COMMANDS
             subsub_help="$("$AO_BIN" "$cmd" "$sub" "$subsub" --help 2>&1 || true)"
 
             local subsub_desc
-            subsub_desc="$(echo "$subsub_help" | head -n1)"
+            subsub_desc="$(first_line "$subsub_help")"
 
             echo "##### \`ao ${cmd} ${sub} ${subsub}\`"
             echo ""

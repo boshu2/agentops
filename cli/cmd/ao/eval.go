@@ -26,7 +26,8 @@ var (
 	evalBaselineBy      string
 	evalBaselineReason  string
 	evalCoverageRoot    string
-	evalCoverageRequire []string
+	evalCoverageDomains []string
+	evalCoverageDims    []string
 	evalConfigured      bool
 )
 
@@ -192,9 +193,10 @@ var evalCoverageCmd = &cobra.Command{
 			roots = append(roots, evalCoverageRoot)
 		}
 		report, err := aoeval.BuildCoverageReport(aoeval.CoverageOptions{
-			SuitePaths:      args,
-			Roots:           roots,
-			RequiredDomains: evalCoverageRequire,
+			SuitePaths:         args,
+			Roots:              roots,
+			RequiredDomains:    evalCoverageDomains,
+			RequiredDimensions: evalCoverageDims,
 		})
 		if err != nil {
 			return err
@@ -207,6 +209,11 @@ var evalCoverageCmd = &cobra.Command{
 			fmt.Fprintf(cmd.OutOrStdout(), "Missing required domains: %s\n", strings.Join(report.MissingRequiredDomains, ", "))
 		} else if len(report.RequiredDomains) > 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), "Required domains covered")
+		}
+		if len(report.MissingRequiredDimensions) > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "Missing required dimensions: %s\n", strings.Join(report.MissingRequiredDimensions, ", "))
+		} else if len(report.RequiredDimensions) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "Required dimensions covered")
 		}
 		return nil
 	},
@@ -244,7 +251,8 @@ func configureEvalCommand() {
 	evalBaselineCmd.Flags().StringVar(&evalBaselineReason, "rationale", "", "rationale for promoting the baseline")
 
 	evalCoverageCmd.Flags().StringVar(&evalCoverageRoot, "root", "evals/agentops-core", "suite root to scan when no suite paths are provided")
-	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageRequire, "require-domain", aoeval.DefaultCoverageDomains, "required product domain for missing-domain reporting")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageDomains, "require-domain", aoeval.DefaultCoverageDomains, "required product domain for missing-domain reporting")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageDims, "require-dimension", aoeval.DefaultCoverageDimensions, "required score dimension for missing-dimension reporting")
 
 	evalScorecardCmd.Flags().StringVar(&evalScorecardOutput, "out", "", "write scorecard JSON to path")
 	evalScorecardCmd.Flags().StringVar(&evalScorecardKind, "kind", string(aoeval.ScorecardKindRPI), "scorecard kind (rpi, skill-change)")

@@ -12,8 +12,9 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 	writeCoverageSuite(t, filepath.Join(dir, "skill.json"), "coverage.skill", "skill", "static")
 
 	report, err := BuildCoverageReport(CoverageOptions{
-		Roots:           []string{dir},
-		RequiredDomains: []string{"cli", "skill", "scenario"},
+		Roots:              []string{dir},
+		RequiredDomains:    []string{"cli", "skill", "scenario"},
+		RequiredDimensions: []string{"correctness", "efficiency"},
 	})
 	if err != nil {
 		t.Fatalf("BuildCoverageReport failed: %v", err)
@@ -29,6 +30,9 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 	}
 	if report.Dimensions[string(DimensionCorrectness)] != 2 {
 		t.Fatalf("correctness dimension count = %d, want 2", report.Dimensions[string(DimensionCorrectness)])
+	}
+	if len(report.MissingRequiredDimensions) != 1 || report.MissingRequiredDimensions[0] != "efficiency" {
+		t.Fatalf("missing required dimensions = %v, want [efficiency]", report.MissingRequiredDimensions)
 	}
 }
 
