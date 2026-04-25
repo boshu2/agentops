@@ -7,8 +7,18 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
 
 # Block reads to .agents/holdout/ for non-evaluator agents
 if [[ "$TOOL_NAME" == "Read" || "$TOOL_NAME" == "Glob" || "$TOOL_NAME" == "Grep" ]]; then
-    FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null)
-    if [[ "$FILE_PATH" == *".agents/holdout"* ]] && [[ "${AGENTOPS_HOLDOUT_EVALUATOR:-}" != "1" ]]; then
+    TARGETS=$(echo "$INPUT" | jq -r '
+        [
+            .tool_input.file_path?,
+            .tool_input.path?,
+            .tool_input.pattern?,
+            .tool_input.glob?,
+            .tool_input.query?
+        ]
+        | map(select(type == "string" and length > 0))
+        | .[]
+    ' 2>/dev/null)
+    if [[ "$TARGETS" == *".agents/holdout"* ]] && [[ "${AGENTOPS_HOLDOUT_EVALUATOR:-}" != "1" ]]; then
         echo '{"decision":"block","reason":"Holdout scenarios are isolated from implementing agents. Set AGENTOPS_HOLDOUT_EVALUATOR=1 for evaluator access."}'
         exit 2
     fi
