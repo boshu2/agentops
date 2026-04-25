@@ -69,17 +69,25 @@ func ResolvePlanName(explicit, planPath string) string {
 }
 
 // FindAgentsDir looks for .agents directory walking up to rig root.
+//
+// Skips the OS tempdir (os.TempDir()) when traversing — a stale
+// /tmp/.agents/ left over from a prior test run or scratch session
+// is not a real rig root and must not shadow legitimate startDirs that
+// happen to live below /tmp.
 func FindAgentsDir(startDir string) string {
+	tmpDir := filepath.Clean(os.TempDir())
 	dir := startDir
 	for {
-		candidate := filepath.Join(dir, ".agents")
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate
-		}
-		markers := []string{".beads", "crew", "polecats"}
-		for _, marker := range markers {
-			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
-				return filepath.Join(dir, ".agents")
+		if filepath.Clean(dir) != tmpDir {
+			candidate := filepath.Join(dir, ".agents")
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+			markers := []string{".beads", "crew", "polecats"}
+			for _, marker := range markers {
+				if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+					return filepath.Join(dir, ".agents")
+				}
 			}
 		}
 		parent := filepath.Dir(dir)
