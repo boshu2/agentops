@@ -220,7 +220,7 @@ type BaselineComparison struct {
 	Verdict        Verdict               `json:"verdict"`
 	BaselineRunID  string                `json:"baseline_run_id,omitempty"`
 	BaselineScore  float64               `json:"baseline_score,omitempty"`
-	AggregateDelta float64               `json:"aggregate_delta,omitempty"`
+	AggregateDelta float64               `json:"aggregate_delta"`
 	DimensionDelta map[Dimension]float64 `json:"dimension_deltas,omitempty"`
 	Regressions    []ComparisonItem      `json:"regressions,omitempty"`
 	Improvements   []ComparisonItem      `json:"improvements,omitempty"`

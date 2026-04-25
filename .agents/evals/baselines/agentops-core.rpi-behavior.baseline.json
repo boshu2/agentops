@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.rpi-behavior-20260425T040635Z",
+  "suite": {
+    "id": "agentops-core.rpi-behavior",
+    "path": "evals/agentops-core/rpi-behavior.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "b334623ebd289a370d409a8ebfa07278e20017eac00fbdc413985f6958c1888f"
+  },
+  "started_at": "2026-04-25T04:06:47.6646373Z",
+  "completed_at": "2026-04-25T04:06:47.666510308Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "02f8415ea6be",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 20
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.rpi-behavior-20260425T040635Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
+    "promoted_from_run_id": "agentops-core.rpi-behavior-20260425T040635Z",
+    "promoted_at": "2026-04-25T04:06:47.757842297Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+  },
+  "case_results": [
+    {
+      "id": "rpi-runtime-files",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 1,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "phased-runner-runtime-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/rpi_phased.go contains \"Run RPI with fresh runtime session per phase\"",
+        "artifact ../../cli/cmd/ao/rpi_phased.go contains \"Phase runtime mode: auto|direct|stream|tmux\"",
+        "artifact ../../cli/cmd/ao/rpi_phased.go contains \"Runtime command used for phase prompts\""
+      ]
+    },
+    {
+      "id": "serve-runtime-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/rpi_serve.go contains \"Phase runtime mode for orchestration\"",
+        "artifact ../../cli/cmd/ao/rpi_serve.go contains \"Runtime command for orchestration phase prompts\""
+      ]
+    },
+    {
+      "id": "eval-deterministic-boundary",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/eval.go contains \"Live Claude and Codex adapters are evaluated by a later runtime tier.\"",
+        "artifact ../../cli/cmd/ao/eval.go contains \"runtime %q is out of deterministic scope\""
+      ]
+    },
+    {
+      "id": "rpi-skill-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../skills/rpi/SKILL.md contains \"RPI\"",
+        "artifact ../../skills/rpi/SKILL.md contains \"validation\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.rpi-behavior.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

@@ -86,6 +86,31 @@ func TestEvalCompareCommandJSON(t *testing.T) {
 	}
 }
 
+func TestEvalCompareCommandJSONIncludesZeroAggregateDelta(t *testing.T) {
+	withEvalCommand(t)
+	dir := t.TempDir()
+	baselinePath := filepath.Join(dir, "baseline.json")
+	candidatePath := filepath.Join(dir, "candidate.json")
+	writeEvalRunRecord(t, baselinePath, "baseline-run", 1.0)
+	writeEvalRunRecord(t, candidatePath, "candidate-run", 1.0)
+
+	out, err := executeCommand("eval", "compare", candidatePath, baselinePath, "--json")
+	if err != nil {
+		t.Fatalf("ao eval compare failed: %v\noutput: %s", err, out)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal([]byte(out), &raw); err != nil {
+		t.Fatalf("eval compare JSON parse failed: %v\noutput: %s", err, out)
+	}
+	comparison, ok := raw["baseline_comparison"].(map[string]any)
+	if !ok {
+		t.Fatalf("baseline_comparison missing or invalid: %#v", raw["baseline_comparison"])
+	}
+	if delta, ok := comparison["aggregate_delta"].(float64); !ok || delta != 0 {
+		t.Fatalf("aggregate_delta = %#v, want explicit 0", comparison["aggregate_delta"])
+	}
+}
+
 func TestEvalScorecardCommandJSON(t *testing.T) {
 	withEvalCommand(t)
 	dir := t.TempDir()
