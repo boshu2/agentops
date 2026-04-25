@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
+  "suite": {
+    "id": "agentops-core.status-quickstart-dashboard",
+    "path": "evals/agentops-core/status-quickstart-dashboard.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "e0c248511e38c11faa4d752382c7e2ebd1be0fa90a286277cec1b080bbbc7662"
+  },
+  "started_at": "2026-04-25T09:36:34.378268262Z",
+  "completed_at": "2026-04-25T09:36:40.583414024Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "28601cc12912",
+    "dirty": true,
+    "dirty_paths": [
+      "cli/cmd/ao/status.go",
+      "cli/cmd/ao/status_test.go",
+      "evals/agentops-core/status-quickstart-dashboard.json",
+      "skills-codex/.agentops-manifest.json",
+      "skills-codex/quickstart/.agentops-generated.json",
+      "skills-codex/quickstart/scripts/validate.sh",
+      "skills/quickstart/scripts/validate.sh"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
+    "promoted_from_run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
+    "promoted_at": "2026-04-25T09:36:40.673254449Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 43 baseline for status/quickstart dashboard and live status latency canary"
+  },
+  "case_results": [
+    {
+      "id": "status-quickstart-skill-validators",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 85,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 5 passed, 0 failed\"",
+        "stdout contains \"Results: 7 passed, 0 failed\"",
+        "stdout contains \"mentions onboarding\""
+      ]
+    },
+    {
+      "id": "status-quickstart-focused-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 416,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "status-quickstart-live-cli-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 5703,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"status-quickstart-cli-ok\""
+      ]
+    },
+    {
+      "id": "status-dashboard-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/status/SKILL.md contains \"Run ALL of the following in parallel bash calls for speed\"",
+        "artifact ../../skills/status/SKILL.md contains \"SUGGESTED NEXT ACTION\"",
+        "artifact ../../skills/status/SKILL.md contains \"If the user passed `--json`\"",
+        "artifact ../../skills/status/SKILL.md contains \"SESSION QUALITY SIGNALS\"",
+        "artifact ../../skills-codex/status/SKILL.md contains \"$quickstart\"",
+        "artifact ../../skills-codex/status/prompt.md contains \"Current Work\"",
+        "artifact ../../skills-codex/status/prompt.md contains \"Latest Gates\"",
+        "artifact ../../skills-codex/status/prompt.md contains \"Next Action\"",
+        "artifact ../../cli/cmd/ao/status.go contains \"statusFlywheelTimeout\"",
+        "artifact ../../cli/cmd/ao/status.go contains \"status should remain an operator dashboard\""
+      ]
+    },
+    {
+      "id": "quickstart-onboarding-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/quickstart/SKILL.md contains \"Tell a new user what AgentOps does and what to do first\"",
+        "artifact ../../skills/quickstart/SKILL.md contains \"Output only that message\"",
+        "artifact ../../skills/quickstart/SKILL.md contains \"AgentOps is the operational layer for coding agents.\"",
+        "artifact ../../skills/quickstart/SKILL.md contains \"CODEX=true\"",
+        "artifact ../../skills-codex/quickstart/SKILL.md contains \"$rpi \\\"your goal\\\"\"",
+        "artifact ../../skills-codex/quickstart/SKILL.md contains \"ao codex status\"",
+        "artifact ../../skills-codex/quickstart/prompt.md contains \"next command, expected result, fallback\"",
+        "artifact ../../skills/quickstart/scripts/validate.sh contains \"onboarding|new user\"",
+        "artifact ../../skills-codex/quickstart/scripts/validate.sh contains \"onboarding|new user\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T093634Z/agentops-core.status-quickstart-dashboard.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
