@@ -169,6 +169,58 @@ func TestEvalBaselineCommandJSON(t *testing.T) {
 	}
 }
 
+func TestEvalCoverageCommandJSON(t *testing.T) {
+	withEvalCommand(t)
+	dir := t.TempDir()
+	writeEvalCmdFile(t, filepath.Join(dir, "fixture.txt"), "ok\n")
+	writeEvalCmdFile(t, filepath.Join(dir, "suite.json"), `{
+  "schema_version": 1,
+  "id": "coverage.cli",
+  "name": "Coverage CLI",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "allowed_runtimes": ["static"],
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "fixture",
+      "title": "fixture",
+      "kind": "artifact_check",
+      "objective": "fixture",
+      "expectations": [
+        {"type": "file_exists", "target": "fixture.txt"}
+      ],
+      "critical": true
+    }
+  ]
+}`)
+
+	out, err := executeCommand("eval", "coverage", "--root", dir, "--json")
+	if err != nil {
+		t.Fatalf("ao eval coverage failed: %v\noutput: %s", err, out)
+	}
+	var report aoeval.CoverageReport
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatalf("eval coverage JSON parse failed: %v\noutput: %s", err, out)
+	}
+	if report.SuiteCount != 1 || report.CaseCount != 1 || report.CriticalCaseCount != 1 {
+		t.Fatalf("coverage counts = suites:%d cases:%d critical:%d, want 1/1/1", report.SuiteCount, report.CaseCount, report.CriticalCaseCount)
+	}
+	if report.Domains["cli"].SuiteCount != 1 {
+		t.Fatalf("cli domain coverage = %+v, want one suite", report.Domains["cli"])
+	}
+	if len(report.MissingRequiredDomains) == 0 {
+		t.Fatalf("missing required domains empty; want gaps for non-cli domains")
+	}
+}
+
 func writeEvalCmdSuite(t *testing.T, dir, body string) string {
 	t.Helper()
 	path := filepath.Join(dir, "suite.json")

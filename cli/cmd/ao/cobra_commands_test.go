@@ -269,6 +269,8 @@ func executeCommand(args ...string) (string, error) {
 	evalBaselineOutput = ""
 	evalBaselineBy = ""
 	evalBaselineReason = ""
+	evalCoverageRoot = "evals/agentops-core"
+	evalCoverageRequire = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed"}
 	overnightGoal = ""
 	overnightOutputDir = ""
 	overnightRunTimeout = ""
@@ -423,7 +425,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
-		"eval":       {"run", "compare", "baseline", "scorecard"},
+		"eval":       {"run", "compare", "baseline", "scorecard", "coverage"},
 		"factory":    {"start"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
