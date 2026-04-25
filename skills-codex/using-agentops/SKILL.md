@@ -155,14 +155,7 @@ These are the skills every user needs first. Everything else is available when y
 
 Every `$post-mortem` promotes learnings and patterns into `.agents/` so future `$research` starts with better context instead of zero.
 
-Inspect and lint the `.agents/` write surface contract directly:
-
-```bash
-ao agents inspect          # list catalogued + skill-owned write surfaces (text or --json)
-ao agents lint             # diff actual writes against docs/contracts/agents-write-surfaces.md
-```
-
-`inspect` prints the AgentsInventory shape; `lint` exits non-zero on undocumented surfaces. Both are wired through the same contract gate the CI hygiene check uses.
+Inspect, lint, and triage the `.agents/` write surface contract via `ao agents inspect | lint | doctor` (`doctor` rolls up inspect + lint + orphan/stray-dir report; `--strict` fails on orphans).
 
 ## Runtime Modes
 
