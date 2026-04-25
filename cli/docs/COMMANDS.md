@@ -2712,6 +2712,22 @@ ao agents inspect [flags]
       --json              Emit machine-readable JSON
 ```
 
+#### `ao agents lint`
+
+Wrap scripts/check-agents-write-surfaces.sh and surface its
+
+```
+ao agents lint [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for lint
+      --json            Forward --json to the lint script
+      --script string   Path to the lint script (default "scripts/check-agents-write-surfaces.sh")
+```
+
 ---
 
 ### `ao extract`
