@@ -713,3 +713,109 @@ func TestRunHarvest_PersistsDiscoveryWarnings(t *testing.T) {
 		t.Fatalf("expected a persisted discovery warning, got %#v", cat.Warnings)
 	}
 }
+
+// TestRunHarvest_NestedSubdirsCaught_E2E exercises the full ao harvest
+// command path against a rig whose .agents/learnings/ tree carries
+// nested rig-prefixed legacy artifacts at depth 2 and 3. PR #138
+// (squash da141872) replaced os.ReadDir with filepath.WalkDir at the
+// extract layer; this test guards the integration so a future regression
+// in the cobra command (flag wiring, rig discovery, output assembly)
+// can't silently undo that fix while the unit-level
+// TestExtractArtifacts_RecursesIntoNestedSubdirs still passes.
+func TestRunHarvest_NestedSubdirsCaught_E2E(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+
+	rigBase := filepath.Join(tmp, "myproj", ".agents", "learnings")
+	depth2 := filepath.Join(rigBase, "learning")
+	depth3 := filepath.Join(depth2, "sub")
+	for _, d := range []string{rigBase, depth2, depth3} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	fixtures := map[string]string{
+		filepath.Join(rigBase, "2026-04-01-d1.md"): "---\ntitle: D1\nconfidence: 0.7\n---\n\nbody1\n",
+		filepath.Join(depth2, "2026-04-02-d2.md"):  "---\ntitle: D2\nconfidence: 0.7\n---\n\nbody2\n",
+		filepath.Join(depth3, "2026-04-03-d3.md"):  "---\ntitle: D3\nconfidence: 0.7\n---\n\nbody3\n",
+	}
+	for path, body := range fixtures {
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatalf("writing fixture %s: %v", path, err)
+		}
+	}
+
+	outputDir := filepath.Join(tmp, "harvest-output")
+	promoteDir := filepath.Join(tmp, "promoted")
+
+	origRoots := harvestRootsFlag
+	origOutput := harvestOutputDir
+	origPromote := harvestPromoteTo
+	origQuiet := harvestQuiet
+	origDryRun := dryRun
+	origMinConf := harvestMinConfidence
+	origInclude := harvestInclude
+	origMaxSize := harvestMaxFileSize
+	t.Cleanup(func() {
+		harvestRootsFlag = origRoots
+		harvestOutputDir = origOutput
+		harvestPromoteTo = origPromote
+		harvestQuiet = origQuiet
+		dryRun = origDryRun
+		harvestMinConfidence = origMinConf
+		harvestInclude = origInclude
+		harvestMaxFileSize = origMaxSize
+	})
+
+	harvestRootsFlag = tmp
+	harvestOutputDir = outputDir
+	harvestPromoteTo = promoteDir
+	harvestQuiet = true
+	dryRun = true
+	harvestMinConfidence = 0.5
+	harvestInclude = "learnings"
+	harvestMaxFileSize = 1048576
+
+	if err := runHarvest(harvestCmd, nil); err != nil {
+		t.Fatalf("runHarvest returned error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(outputDir, "latest.json"))
+	if err != nil {
+		t.Fatalf("reading catalog: %v", err)
+	}
+	var cat harvest.Catalog
+	if err := json.Unmarshal(data, &cat); err != nil {
+		t.Fatalf("unmarshaling catalog: %v", err)
+	}
+
+	if len(cat.Artifacts) != 3 {
+		t.Fatalf("expected 3 artifacts (depth 1+2+3), got %d: %+v", len(cat.Artifacts), cat.Artifacts)
+	}
+	if cat.TotalFiles != 3 {
+		t.Errorf("total_files = %d, want 3", cat.TotalFiles)
+	}
+
+	titles := map[string]bool{}
+	for _, a := range cat.Artifacts {
+		titles[a.Title] = true
+		if a.Type != "learning" {
+			t.Errorf("artifact %q: type = %q, want %q", a.Title, a.Type, "learning")
+		}
+		if a.SourcePath == "" {
+			t.Errorf("artifact %q: empty source_path", a.Title)
+		}
+	}
+	for _, want := range []string{"D1", "D2", "D3"} {
+		if !titles[want] {
+			t.Errorf("missing artifact title %q (have %v)", want, titles)
+		}
+	}
+
+	for _, w := range cat.Warnings {
+		if strings.HasPrefix(w.Stage, "walk_dir") || strings.HasPrefix(w.Stage, "read_dir") {
+			t.Errorf("unexpected walk/read warning: stage=%s path=%s msg=%s", w.Stage, w.Path, w.Message)
+		}
+	}
+}
