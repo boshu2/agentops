@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.hook-gates",
+  "name": "AgentOps Hook Gates Canary",
+  "description": "Offline public canary for hook manifest, preflight safety, docs parity, and plugin structure gates.",
+  "domain": "hook",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "hooks", "gates"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 60
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "hook-preflight",
+      "title": "hook preflight safety gate passes",
+      "kind": "command",
+      "objective": "Protect hook kill switches, unsafe shell patterns, and timeout requirements.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "./scripts/validate-hook-preflight.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": true
+    },
+    {
+      "id": "hook-doc-parity",
+      "title": "hook docs parity gate passes",
+      "kind": "command",
+      "objective": "Ensure docs do not drift from hooks/hooks.json and active hook sections.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-hooks-doc-parity.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "plugin-manifest-structure",
+      "title": "plugin manifest structure gate passes",
+      "kind": "command",
+      "objective": "Keep plugin manifests and no-symlink structure aligned with shipped runtime artifacts.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "./scripts/validate-manifests.sh --repo-root . && test -z \"$(find skills -type l -print -quit)\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "holdout-isolation-registered",
+      "title": "holdout isolation remains wired",
+      "kind": "artifact_check",
+      "objective": "Keep private holdout protections visible in the hook manifest and hook script.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/holdout-isolation-gate.sh", "value": "AGENTOPS_HOLDOUT_EVALUATOR"}
+      ],
+      "dimensions": ["safety", "artifact_quality"]
+    }
+  ]
+}

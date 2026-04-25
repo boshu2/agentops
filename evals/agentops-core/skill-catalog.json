@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.skill-catalog",
+  "name": "AgentOps Skill Catalog Canary",
+  "description": "Offline public canary for shared skills, Codex runtime artifacts, override coverage, and strict skill integrity.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "codex"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "skill-counts-synced",
+      "title": "skill counts remain synchronized",
+      "kind": "command",
+      "objective": "Protect public skill inventory counts across docs and generated catalogs.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "scripts/sync-skill-counts.sh --check"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "skill-integrity-strict",
+      "title": "skill integrity strict gate passes",
+      "kind": "command",
+      "objective": "Ensure every skill reference remains linked and structurally valid.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "codex-override-coverage",
+      "title": "codex override coverage remains complete",
+      "kind": "command",
+      "objective": "Ensure the full skill catalog has an explicit Codex treatment.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-codex-override-coverage.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "codex-treatment-map-present",
+      "title": "codex treatment map documents full catalog",
+      "kind": "artifact_check",
+      "objective": "Keep deterministic eval coverage tied to the machine-readable Codex skill treatment map.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills-codex-overrides/catalog.json", "value": "Machine-readable Codex treatment map"},
+        {"type": "artifact_contains", "target": "../../skills-codex-overrides/catalog.json", "value": "\"skills\""}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility"]
+    }
+  ]
+}
