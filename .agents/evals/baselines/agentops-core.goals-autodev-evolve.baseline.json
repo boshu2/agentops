@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.goals-autodev-evolve-20260425T064433Z",
+  "suite": {
+    "id": "agentops-core.goals-autodev-evolve",
+    "path": "evals/agentops-core/goals-autodev-evolve.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "ae164aa141c047eb2653a9c4c4409dd200c3b8b33e6893056baf4c74f1b9368b"
+  },
+  "started_at": "2026-04-25T06:44:33.504611831Z",
+  "completed_at": "2026-04-25T06:44:34.614627087Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "92e9a689af9e",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/goals-autodev-evolve.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 120
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.goals-autodev-evolve-20260425T064433Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.goals-autodev-evolve.baseline.json",
+    "promoted_from_run_id": "agentops-core.goals-autodev-evolve-20260425T064433Z",
+    "promoted_at": "2026-04-25T06:44:34.707814063Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 25 baseline for goals/autodev/evolve operator contract canary"
+  },
+  "case_results": [
+    {
+      "id": "goals-autodev-evolve-focused-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 407,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "repo-fitness-contract-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 701,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Evolve loop finished\""
+      ]
+    },
+    {
+      "id": "fitness-operator-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "learning_closure": 1,
+        "process_adherence": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/goals/SKILL.md contains \"ao goals measure --json\"",
+        "artifact ../../skills/goals/SKILL.md contains \"When both files exist, GOALS.md takes precedence.\"",
+        "artifact ../../skills/autodev/SKILL.md contains \"`PROGRAM.md` takes precedence over `AUTODEV.md`.\"",
+        "artifact ../../skills/autodev/SKILL.md contains \"Do not mark an autonomous cycle successful only because the main tests pass.\"",
+        "artifact ../../skills/evolve/SKILL.md contains \"Failing goals and directive gaps\"",
+        "artifact ../../skills/evolve/SKILL.md contains \"Testing improvements\""
+      ]
+    },
+    {
+      "id": "autodev-contract-doc-required-sections",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/contracts/autodev-program.md contains \"### `Objective`\"",
+        "artifact ../../docs/contracts/autodev-program.md contains \"### `Mutable Scope`\"",
+        "artifact ../../docs/contracts/autodev-program.md contains \"### `Immutable Scope`\"",
+        "artifact ../../docs/contracts/autodev-program.md contains \"### `Validation Commands`\"",
+        "artifact ../../docs/contracts/autodev-program.md contains \"## Evolve Integration\"",
+        "artifact ../../PROGRAM.md contains \"## Validation Commands\""
+      ]
+    },
+    {
+      "id": "cli-docs-expose-fitness-commands",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao goals`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao autodev`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao evolve`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Track, measure, and validate project fitness goals.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Run the v2 autonomous improvement loop.\""
+      ]
+    },
+    {
+      "id": "evolve-code-defaults",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/evolve.go contains \"applyEvolveDefaults(cmd)\"",
+        "artifact ../../cli/cmd/ao/evolve.go contains \"rpiSupervisor = true\"",
+        "artifact ../../cli/cmd/ao/evolve.go contains \"ensureEvolveEraBaseline(cwd)\"",
+        "artifact ../../cli/cmd/ao/evolve.go contains \"return runRPILoop(cmd, args)\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T064433Z/agentops-core.goals-autodev-evolve.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.goals-autodev-evolve.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
