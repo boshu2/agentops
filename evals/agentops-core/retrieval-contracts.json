@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.retrieval-contracts",
+  "name": "AgentOps Retrieval Contracts Canary",
+  "description": "Offline public canary for lookup/search/inject CLI docs, retrieval-oriented skill contracts, help smoke, and deterministic retrieval benchmark fixtures.",
+  "domain": "retrieval",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "retrieval", "knowledge"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 90
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "retrieval-cli-docs",
+      "title": "retrieval command docs expose lookup search inject and bench",
+      "kind": "artifact_check",
+      "objective": "Keep generated CLI docs tied to the public retrieval command surface.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao inject`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao lookup`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao search`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao retrieval-bench`"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "retrieval-skill-contracts",
+      "title": "retrieval skills preserve lookup search and inject contracts",
+      "kind": "artifact_check",
+      "objective": "Ensure retrieval-oriented skills still document the current on-demand knowledge loading flow.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Use `ao lookup --query \"topic\"`"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "ao search"},
+        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao lookup --query \"<topic>\""},
+        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao search \"<topic>\""},
+        {"type": "artifact_contains", "target": "../../skills/recover/SKILL.md", "value": "ao lookup --query \"evolve cycle recovery\""}
+      ],
+      "dimensions": ["correctness", "process_adherence"]
+    },
+    {
+      "id": "retrieval-help-smoke",
+      "title": "retrieval command help works from built ao",
+      "kind": "command",
+      "objective": "Smoke the retrieval command family without requiring live knowledge index contents.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" inject --help >/dev/null; \"$tmp/ao\" lookup --help >/dev/null; \"$tmp/ao\" search --help >/dev/null; \"$tmp/ao\" retrieval-bench --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "retrieval-benchmark-fixtures",
+      "title": "retrieval benchmark fixtures remain deterministic",
+      "kind": "command",
+      "objective": "Validate labeled retrieval benchmark fixtures and search eval scoring logic from Go tests.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run 'TestRetrievalBench_LoadManifestCases|TestBuildSearchEvalReport_FixtureAnyRelevantAtFive'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    }
+  ]
+}
