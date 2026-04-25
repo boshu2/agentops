@@ -13,6 +13,8 @@ var (
 	agentsLintJSON   bool
 )
 
+const defaultAgentsLintScript = "scripts/check-agents-write-surfaces.sh"
+
 var agentsLintCmd = &cobra.Command{
 	Use:   "lint",
 	Short: "Run the .agents/ write-surfaces contract lint",
@@ -26,7 +28,7 @@ script's machine-readable output is forwarded verbatim.`,
 func init() {
 	agentsCmd.AddCommand(agentsLintCmd)
 	agentsLintCmd.Flags().StringVar(&agentsLintScript, "script",
-		"scripts/check-agents-write-surfaces.sh",
+		defaultAgentsLintScript,
 		"Path to the lint script")
 	agentsLintCmd.Flags().BoolVar(&agentsLintJSON, "json", false,
 		"Forward --json to the lint script")
@@ -45,15 +47,23 @@ func (e *AgentsLintError) Error() string {
 }
 
 func runAgentsLint(cmd *cobra.Command, args []string) error {
-	if _, err := os.Stat(agentsLintScript); err != nil {
-		return fmt.Errorf("lint script not found at %s: %w", agentsLintScript, err)
+	script := agentsLintScript
+	if shouldResolveAgentsDefaultPath(cmd, "script", agentsLintScript, defaultAgentsLintScript) {
+		repoRoot, err := resolveAgentsRepoRoot()
+		if err != nil {
+			return err
+		}
+		script = resolveAgentsDefaultPath(cmd, "script", agentsLintScript, defaultAgentsLintScript, repoRoot)
+	}
+	if _, err := os.Stat(script); err != nil {
+		return fmt.Errorf("lint script not found at %s: %w", script, err)
 	}
 
 	cmdArgs := []string{}
 	if agentsLintJSON {
 		cmdArgs = append(cmdArgs, "--json")
 	}
-	c := exec.Command("bash", append([]string{agentsLintScript}, cmdArgs...)...)
+	c := exec.Command("bash", append([]string{script}, cmdArgs...)...)
 	c.Stdout = cmd.OutOrStdout()
 	c.Stderr = cmd.ErrOrStderr()
 
@@ -63,7 +73,7 @@ func runAgentsLint(cmd *cobra.Command, args []string) error {
 	}
 	if ee, ok := err.(*exec.ExitError); ok {
 		cmd.SilenceUsage = true
-		return &AgentsLintError{ExitCode: ee.ExitCode(), Script: agentsLintScript}
+		return &AgentsLintError{ExitCode: ee.ExitCode(), Script: script}
 	}
-	return fmt.Errorf("running %s: %w", agentsLintScript, err)
+	return fmt.Errorf("running %s: %w", script, err)
 }
