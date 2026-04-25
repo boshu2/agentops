@@ -119,11 +119,14 @@ you likely have a beads CLI / beads DB schema mismatch.
 
 ```bash
 bd version
-bd migrate --inspect --json
+bd upgrade status --json
+bd status --json
+bd migrate --inspect
 ```
 
-If `bd migrate --inspect --json` shows the database state is newer than the
-installed `bd` version, the local CLI is too old for the repo's tracker data.
+If the JSON version/status probes or the human-readable migration inspection
+show the database state is newer than the installed `bd` version, the local CLI
+is too old for the repo's tracker data.
 
 **Fixes:**
 
