@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.converter-update-runtime-parity",
+  "name": "AgentOps Converter Update Runtime Parity Canary",
+  "description": "Offline public canary for cross-runtime skill conversion, update/recover/goals validator portability, Codex artifact metadata, and converter/update skill contracts.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "converter", "update", "codex", "cursor", "runtime-parity", "skills"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "converter-update-validator-portability",
+      "title": "Shared and Codex converter/update validators pass",
+      "kind": "command",
+      "objective": "Protect checked-in shared and Codex validators for converter, update, goals, and recover after Codex rewrites reduce frontmatter and convert slash skills to dollar skills.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/converter/scripts/validate.sh && bash skills-codex/converter/scripts/validate.sh && bash skills/update/scripts/validate.sh && bash skills-codex/update/scripts/validate.sh && bash skills/goals/scripts/validate.sh && bash skills-codex/goals/scripts/validate.sh && bash skills/recover/scripts/validate.sh && bash skills-codex/recover/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "PASS: update skill validated"},
+        {"type": "stdout_contains", "value": "Results: 12 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 6 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "fresh-conversion-validator-smoke",
+      "title": "Freshly converted Codex and Cursor skills validate",
+      "kind": "command",
+      "objective": "Ensure the converter emits runnable Codex validators for source skills whose checks must be portable, and still emits Cursor rules for cross-platform distribution.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; bash skills/converter/scripts/convert.sh skills/goals codex \"$tmp/goals-codex\" >/dev/null; bash \"$tmp/goals-codex/scripts/validate.sh\"; bash skills/converter/scripts/convert.sh skills/update codex \"$tmp/update-codex\" >/dev/null; bash \"$tmp/update-codex/scripts/validate.sh\"; bash skills/converter/scripts/convert.sh skills/recover codex \"$tmp/recover-codex\" >/dev/null; bash \"$tmp/recover-codex/scripts/validate.sh\"; bash skills/converter/scripts/convert.sh skills/converter cursor \"$tmp/converter-cursor\" >/dev/null; test -f \"$tmp/converter-cursor/converter.mdc\"; bash skills/converter/scripts/convert.sh skills/update test \"$tmp/update-test\" >/dev/null; test -f \"$tmp/update-test/bundle.md\"; echo conversion-portability-ok"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "conversion-portability-ok"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "codex-artifact-metadata-after-validator-edits",
+      "title": "Codex artifact metadata remains current after validator edits",
+      "kind": "command",
+      "objective": "Prevent manual edits to checked-in Codex runtime artifacts from leaving generated_hash or parity metadata stale.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-codex-generated-artifacts.sh --scope worktree"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Codex artifact metadata validation passed."}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "converter-source-contracts",
+      "title": "Converter source preserves runtime rewrite and parity contracts",
+      "kind": "artifact_check",
+      "objective": "Lock converter behavior that makes shared skills portable to Codex, Cursor, and raw bundle outputs without losing references or reintroducing deprecated runtime terms.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "Parse AgentOps skills into a universal SkillBundle format"},
+        {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "Default mode is **modular**"},
+        {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "slash-to-dollar skills"},
+        {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "Converter enforces passthrough parity"},
+        {"type": "artifact_contains", "target": "../../skills/converter/references/skill-bundle-schema.md", "value": "SkillBundle"},
+        {"type": "artifact_contains", "target": "../../skills/converter/scripts/convert.sh", "value": "convert_codex()"},
+        {"type": "artifact_contains", "target": "../../skills/converter/scripts/convert.sh", "value": "convert_cursor()"},
+        {"type": "artifact_contains", "target": "../../skills/converter/scripts/convert.sh", "value": "Copy and dereference symlinks to keep output plugin-compatible."},
+        {"type": "artifact_contains", "target": "../../skills/converter/scripts/convert.sh", "value": "Passthrough parity check failed"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "update-and-codex-validator-contracts",
+      "title": "Update and Codex validator contracts preserve runtime-specific assumptions",
+      "kind": "artifact_check",
+      "objective": "Ensure update/recover/goals validators keep validating shared metadata when present while accepting minimal Codex frontmatter and dollar-skill references.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/update/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills-codex/update/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills/update/scripts/validate.sh", "value": "grep -q '^metadata:'"},
+        {"type": "artifact_contains", "target": "../../skills-codex/update/scripts/validate.sh", "value": "grep -q '^metadata:'"},
+        {"type": "artifact_contains", "target": "../../skills/goals/scripts/validate.sh", "value": "SKILL.md references evolve skill"},
+        {"type": "artifact_contains", "target": "../../skills-codex/goals/scripts/validate.sh", "value": "SKILL.md references evolve skill"},
+        {"type": "artifact_contains", "target": "../../skills/recover/scripts/validate.sh", "value": "tier: session when metadata is present"},
+        {"type": "artifact_contains", "target": "../../skills-codex/recover/scripts/validate.sh", "value": "tier: session when metadata is present"},
+        {"type": "artifact_contains", "target": "../../skills-codex/update/.agentops-generated.json", "value": "\"source_skill\": \"skills/update\""},
+        {"type": "artifact_contains", "target": "../../skills-codex/converter/.agentops-generated.json", "value": "\"source_skill\": \"skills/converter\""}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    }
+  ]
+}

@@ -746,7 +746,7 @@
       "name": "goals",
       "source_skill": "skills/goals",
       "source_hash": "3a2b714569c2378c300658f7796125275b18204a91d8e8eee252507f7c7caf91",
-      "generated_hash": "a700a957383e85eb944d3a60a3d8a4f7a92856f458cf442dc73fa67e5748d7a0"
+      "generated_hash": "4d4f36636725c03411016e68d8f5016d92d925c11ad663f1450bc342d8ae70ca"
     },
     {
       "name": "grafana-platform-dashboard",
@@ -902,7 +902,7 @@
       "name": "recover",
       "source_skill": "skills/recover",
       "source_hash": "d4b69c42101d3dcdac9969bdcb19b695e1dfb206f01a312f6307a316e095117a",
-      "generated_hash": "22c57d246dd67162984d7f35e67f81c4472f36fa327861075cea6f29a6b8181a"
+      "generated_hash": "82f5d974d79992514ab967264c3694bd975ed1f4e1f48b27811eb9454b80503a"
     },
     {
       "name": "red-team",
@@ -1016,7 +1016,7 @@
       "name": "update",
       "source_skill": "skills/update",
       "source_hash": "d869e48c5c68e58a37ad3f98d43d4daabd88074511cd2892d1b1a018859d9afe",
-      "generated_hash": "e532a1a94c83d7d5c9ea4840aeff3fbbd16795d557579f53aace08857932a9e8"
+      "generated_hash": "41bc577892e04487df423770d7bc8b91e61461598172c09b428aac038098d596"
     },
     {
       "name": "using-agentops",
