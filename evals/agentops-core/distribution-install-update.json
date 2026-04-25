@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.distribution-install-update",
+  "name": "AgentOps Distribution Install and Update Canary",
+  "description": "Offline public canary for shell installers, Codex native-plugin installs, release bundle coherence, Windows installer smoke wiring, public install docs, and update skill contracts.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "install", "update", "distribution", "codex", "windows", "homebrew"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "shell-installer-smoke",
+      "title": "shell installer smoke passes with a local ao binary",
+      "kind": "command",
+      "objective": "Protect install.sh, install-codex.sh, install-opencode.sh, supporting installer syntax, delegation wiring, safety invariants, usage docs, and installed ao command registration.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); PATH=\"$tmp:$PATH\" bash tests/install/test-install-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Install Script Smoke Tests"},
+        {"type": "stdout_contains", "value": "Runtime Execution Tests"},
+        {"type": "stdout_contains", "value": "Results: 29 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "codex-native-plugin-install-paths",
+      "title": "Codex native plugin install and refresh paths pass",
+      "kind": "command",
+      "objective": "Protect native Codex plugin cache installs, stale raw mirror archival, plugin metadata refresh, raw-skills fallback, explicit --dest behavior, full public Codex installer temp-home smoke, and hook metadata.",
+      "runtime": "shell",
+      "timeout_seconds": 240,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-codex-plugin-install.sh && bash tests/scripts/test-codex-native-skills-install.sh && bash scripts/test-codex-native-install.sh --skip-lint"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 3 PASS, 0 FAIL"},
+        {"type": "stdout_contains", "value": "PASS: Codex-native install flow verified"},
+        {"type": "stdout_contains", "value": "skills tested: 69"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "codex-release-bundle-and-manifests",
+      "title": "Codex release bundle and plugin manifests are coherent",
+      "kind": "command",
+      "objective": "Protect archive-time Codex bundle coherence, generated-artifact metadata, plugin marketplace schema, hooks manifest schema, and full skill frontmatter schema validation.",
+      "runtime": "shell",
+      "timeout_seconds": 240,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-codex-install-bundle.sh && bash scripts/validate-codex-install-bundle.sh && bash scripts/validate-manifests.sh --repo-root ."
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 2 PASS, 0 FAIL"},
+        {"type": "stdout_contains", "value": "Codex install bundle validation OK"},
+        {"type": "stdout_contains", "value": "Codex marketplace manifest matches codex-marketplace.v1.schema.json"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "windows-installer-smoke-wiring",
+      "title": "Windows installer smoke remains wired into blocking CI",
+      "kind": "artifact_check",
+      "objective": "Keep native Windows PowerShell install, Codex plugin temp install, doctor hints, and Windows-sensitive Go tests wired into validate.yml even when Linux runners cannot execute PowerShell.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "Test-PowerShellSyntax (Join-Path $RepoRoot \"scripts\\install-ao.ps1\")"},
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "Test-PowerShellSyntax (Join-Path $RepoRoot \"scripts\\install-codex.ps1\")"},
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "-InstallDir $aoInstallDir -NoPathUpdate"},
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "-RepoRoot $RepoRoot -CodexHome $codexHome"},
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "$builtAO doctor --json"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "windows-smoke"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": ".\\tests\\windows\\test-windows-smoke.ps1"},
+        {"type": "artifact_contains", "target": "../../docs/CI-CD.md", "value": "Windows installer smoke must pass"}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "public-install-docs-current",
+      "title": "public install docs preserve supported distribution commands",
+      "kind": "artifact_check",
+      "objective": "Keep README, docs site, AGENTS, troubleshooting, and release docs aligned on supported Claude, Codex, OpenCode, Homebrew, and Windows install/update paths.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../README.md", "value": "claude plugin marketplace add boshu2/agentops"},
+        {"type": "artifact_contains", "target": "../../README.md", "value": "curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash"},
+        {"type": "artifact_contains", "target": "../../README.md", "value": "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex"},
+        {"type": "artifact_contains", "target": "../../README.md", "value": "brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops"},
+        {"type": "artifact_contains", "target": "../../README.md", "value": "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex"},
+        {"type": "artifact_contains", "target": "../../docs/index.md", "value": "curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash"},
+        {"type": "artifact_contains", "target": "../../docs/troubleshooting.md", "value": "For Codex, use `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash`"},
+        {"type": "artifact_contains", "target": "../../docs/RELEASING.md", "value": "brew tap boshu2/agentops"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    },
+    {
+      "id": "update-skill-install-contract",
+      "title": "update skill keeps latest-source reinstall contract across runtimes",
+      "kind": "artifact_check",
+      "objective": "Protect the user-facing update skill and Codex runtime copy from drifting away from the supported latest-source installer and failure-reporting contract.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/update/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills/update/SKILL.md", "value": "Confirm the output shows all skills installed with no failures."},
+        {"type": "artifact_contains", "target": "../../skills/update/SKILL.md", "value": "Any failures and how to fix them"},
+        {"type": "artifact_contains", "target": "../../skills-codex/update/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills-codex/update/SKILL.md", "value": "Confirm the output shows all skills installed with no failures."},
+        {"type": "artifact_contains", "target": "../../scripts/install.sh", "value": "install-codex.sh"},
+        {"type": "artifact_contains", "target": "../../scripts/install-opencode.sh", "value": "get_latest_tag"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility", "safety"]
+    }
+  ]
+}
