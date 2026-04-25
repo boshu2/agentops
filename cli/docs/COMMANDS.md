@@ -2873,6 +2873,25 @@ ao scenario [command]
 
 **Subcommands:**
 
+#### `ao scenario add`
+
+Author a schema-compliant holdout scenario in .agents/holdout/.
+
+```
+ao scenario add <goal> [flags]
+```
+
+**Flags:**
+
+```
+      --expected-outcome string   Expected observable outcome (default: inferred from goal)
+  -h, --help                      help for add
+      --narrative string          Narrative description (default: inferred from goal)
+      --source string             Scenario source (human, agent, prod-telemetry) (default "human")
+      --status string             Scenario status (active, draft, retired) (default "draft")
+      --threshold float           Satisfaction threshold in [0,1] (default 0.8)
+```
+
 #### `ao scenario init`
 
 Initialize .agents/holdout/ directory for scenario storage
