@@ -1,10 +1,12 @@
 package harvest
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -535,6 +537,132 @@ func TestExtractTitle_FallbackToFilename(t *testing.T) {
 	got := extractTitle(fm, body, "2026-03-15-my-doc.md")
 	if got != "my-doc" {
 		t.Errorf("extractTitle = %q, want %q", got, "my-doc")
+	}
+}
+
+// TestExtractArtifactsWithStats_RejectsSymlinkEscape guards the gosec G122
+// fix (TOCTOU symlink race). The harvest extractor must not follow symlinks
+// that point outside the rooted include directory, even if their name and
+// extension look like a valid artifact.
+func TestExtractArtifactsWithStats_RejectsSymlinkEscape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires admin privileges on Windows")
+	}
+
+	tmp := t.TempDir()
+	agentsDir := filepath.Join(tmp, ".agents")
+	learningsDir := filepath.Join(agentsDir, "learnings")
+	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Legit regular file inside the rooted include dir.
+	legit := "---\ntitle: Legit Learning\ndate: \"2026-04-25\"\n---\nGood content.\n"
+	if err := os.WriteFile(filepath.Join(learningsDir, "2026-04-25-legit.md"), []byte(legit), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Secret file OUTSIDE the rooted include dir — should never appear in
+	// the result, even if pointed to by a symlink inside the dir.
+	secretDir := filepath.Join(tmp, "secret")
+	if err := os.MkdirAll(secretDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	secretContent := "---\ntitle: ESCAPED-SECRET\ndate: \"2026-04-25\"\n---\nLeaked.\n"
+	secretPath := filepath.Join(secretDir, "secret.md")
+	if err := os.WriteFile(secretPath, []byte(secretContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Symlink with a .md extension inside learnings, pointing OUTSIDE the dir.
+	if err := os.Symlink(secretPath, filepath.Join(learningsDir, "escape.md")); err != nil {
+		t.Fatal(err)
+	}
+
+	rig := RigInfo{
+		Path:    agentsDir,
+		Project: "agentops",
+		Crew:    "nami",
+		Rig:     "agentops-nami",
+	}
+	opts := WalkOptions{
+		MaxFileSize: 1048576,
+		IncludeDirs: []string{"learnings"},
+	}
+
+	result := ExtractArtifactsWithStats(rig, opts)
+
+	// Only the legit artifact should be harvested. The escaping symlink must
+	// not be followed.
+	for _, a := range result.Artifacts {
+		if a.Title == "ESCAPED-SECRET" {
+			t.Fatalf("symlink escape harvested forbidden content: %#v", a)
+		}
+		if strings.Contains(a.SourcePath, "secret") {
+			t.Fatalf("artifact source path leaked secret dir: %q", a.SourcePath)
+		}
+	}
+	if len(result.Artifacts) != 1 {
+		t.Fatalf("expected exactly 1 artifact (legit), got %d: %#v", len(result.Artifacts), result.Artifacts)
+	}
+	if result.Artifacts[0].Title != "Legit Learning" {
+		t.Fatalf("expected Legit Learning artifact, got title %q", result.Artifacts[0].Title)
+	}
+}
+
+// TestExtractArtifactsWithStats_OpenRootCorrectness verifies that the
+// os.OpenRoot rewrite preserves byte-identical content for non-symlink
+// files (regression guard for the G122 fix).
+func TestExtractArtifactsWithStats_OpenRootCorrectness(t *testing.T) {
+	tmp := t.TempDir()
+	agentsDir := filepath.Join(tmp, ".agents")
+	learningsDir := filepath.Join(agentsDir, "learnings")
+	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	body := "Body bytes that must round-trip exactly."
+	rawContent := "---\ntitle: Round Trip\ndate: \"2026-04-25\"\n---\n" + body + "\n"
+	if err := os.WriteFile(filepath.Join(learningsDir, "rt.md"), []byte(rawContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rig := RigInfo{
+		Path:    agentsDir,
+		Project: "agentops",
+		Crew:    "nami",
+		Rig:     "agentops-nami",
+	}
+	opts := WalkOptions{
+		MaxFileSize: 1048576,
+		IncludeDirs: []string{"learnings"},
+	}
+
+	result := ExtractArtifactsWithStats(rig, opts)
+	if len(result.Warnings) != 0 {
+		t.Fatalf("unexpected warnings: %#v", result.Warnings)
+	}
+	if len(result.Artifacts) != 1 {
+		t.Fatalf("expected 1 artifact, got %d", len(result.Artifacts))
+	}
+
+	// Recompute the expected hash from the original body to assert byte-level
+	// fidelity through the OpenRoot read path.
+	normalized := strings.ToLower(strings.TrimSpace("\n" + body + "\n"))
+	normalized = strings.ReplaceAll(normalized, "#", "")
+	normalized = strings.ReplaceAll(normalized, "*", "")
+	normalized = strings.ReplaceAll(normalized, "`", "")
+	normalized = strings.ReplaceAll(normalized, "---", "")
+	normalized = strings.Join(strings.Fields(normalized), " ")
+	h := sha256.Sum256([]byte(normalized))
+	expected := hex.EncodeToString(h[:])
+	if result.Artifacts[0].ContentHash != expected {
+		t.Fatalf("content_hash = %q, want %q (byte-mismatch through OpenRoot path)", result.Artifacts[0].ContentHash, expected)
+	}
+
+	// Sanity: the normalized body bytes were preserved (no surprise rewrites).
+	if !bytes.Contains([]byte(rawContent), []byte(body)) {
+		t.Fatalf("body bytes missing from raw content fixture")
 	}
 }
 
