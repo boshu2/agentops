@@ -27,98 +27,122 @@ type expectationResult struct {
 func evaluateExpectation(exp Expectation, ctx caseContext) expectationResult {
 	switch exp.Type {
 	case "exit_code":
-		want, ok := intValue(exp.Value)
-		if !ok {
-			want = 0
-		}
-		if ctx.exitCode == want {
-			return passf("exit_code matched %d", want)
-		}
-		return failf("exit_code = %d, want %d", ctx.exitCode, want)
+		return evaluateExitCode(exp, ctx)
 	case "stdout_contains":
-		needle := stringExpectationValue(exp)
-		if strings.Contains(ctx.stdout, needle) {
-			return passf("stdout contains %q", needle)
-		}
-		return failf("stdout does not contain %q", needle)
+		return evaluateStringContains("stdout", ctx.stdout, stringExpectationValue(exp))
 	case "stderr_contains":
-		needle := stringExpectationValue(exp)
-		if strings.Contains(ctx.stderr, needle) {
-			return passf("stderr contains %q", needle)
-		}
-		return failf("stderr does not contain %q", needle)
+		return evaluateStringContains("stderr", ctx.stderr, stringExpectationValue(exp))
 	case "file_exists":
-		path := resolvePath(ctx.suiteDir, exp.Target)
-		if info, err := os.Stat(path); err == nil && !info.IsDir() {
-			return passf("file exists: %s", exp.Target)
-		}
-		return failf("file does not exist: %s", exp.Target)
+		return evaluateFileExists(exp, ctx)
 	case "file_absent":
-		path := resolvePath(ctx.suiteDir, exp.Target)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return passf("file absent: %s", exp.Target)
-		}
-		return failf("file exists: %s", exp.Target)
+		return evaluateFileAbsent(exp, ctx)
 	case "artifact_contains":
-		path := resolvePath(ctx.suiteDir, exp.Target)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return failf("read artifact %s: %v", exp.Target, err)
-		}
-		needle := stringExpectationValue(exp)
-		if strings.Contains(string(data), needle) {
-			return passf("artifact %s contains %q", exp.Target, needle)
-		}
-		return failf("artifact %s does not contain %q", exp.Target, needle)
+		return evaluateArtifactContains(exp, ctx)
 	case "json_path":
-		actual, ok, err := jsonPathValue(exp.Target, ctx)
-		if err != nil {
-			return failf("json_path %s: %v", exp.Target, err)
-		}
-		if !ok {
-			return failf("json_path %s not found", exp.Target)
-		}
-		if exp.Value == nil {
-			return passf("json_path %s exists", exp.Target)
-		}
-		if jsonValuesEqual(actual, exp.Value) {
-			return passf("json_path %s matched", exp.Target)
-		}
-		return failf("json_path %s = %v, want %v", exp.Target, actual, exp.Value)
+		return evaluateJSONPath(exp, ctx)
 	case "schema_valid":
 		if err := validateSchemaTarget(exp, ctx); err != nil {
 			return failf("schema_valid %s: %v", exp.Target, err)
 		}
 		return passf("schema_valid %s matched", exp.Target)
 	case "score_at_least":
-		actual, ok, err := jsonPathValue(exp.Target, ctx)
-		if err != nil {
-			return failf("score_at_least %s: %v", exp.Target, err)
-		}
-		if !ok {
-			return failf("score_at_least target %s not found", exp.Target)
-		}
-		actualScore, ok := floatValue(actual)
-		if !ok {
-			return failf("score_at_least target %s is not numeric", exp.Target)
-		}
-		threshold := 1.0
-		if exp.Threshold != nil {
-			threshold = *exp.Threshold
-		} else if exp.Value != nil {
-			if parsed, ok := floatValue(exp.Value); ok {
-				threshold = parsed
-			}
-		}
-		if actualScore >= threshold {
-			return passf("score %.4f >= %.4f", actualScore, threshold)
-		}
-		return failf("score %.4f < %.4f", actualScore, threshold)
+		return evaluateScoreAtLeast(exp, ctx)
 	case "manual_review":
 		return failf("manual_review is not supported by deterministic evals")
 	default:
 		return failf("unsupported expectation type %q", exp.Type)
 	}
+}
+
+func evaluateExitCode(exp Expectation, ctx caseContext) expectationResult {
+	want, ok := intValue(exp.Value)
+	if !ok {
+		want = 0
+	}
+	if ctx.exitCode == want {
+		return passf("exit_code matched %d", want)
+	}
+	return failf("exit_code = %d, want %d", ctx.exitCode, want)
+}
+
+func evaluateStringContains(name, haystack, needle string) expectationResult {
+	if strings.Contains(haystack, needle) {
+		return passf("%s contains %q", name, needle)
+	}
+	return failf("%s does not contain %q", name, needle)
+}
+
+func evaluateFileExists(exp Expectation, ctx caseContext) expectationResult {
+	path := resolvePath(ctx.suiteDir, exp.Target)
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		return passf("file exists: %s", exp.Target)
+	}
+	return failf("file does not exist: %s", exp.Target)
+}
+
+func evaluateFileAbsent(exp Expectation, ctx caseContext) expectationResult {
+	path := resolvePath(ctx.suiteDir, exp.Target)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return passf("file absent: %s", exp.Target)
+	}
+	return failf("file exists: %s", exp.Target)
+}
+
+func evaluateArtifactContains(exp Expectation, ctx caseContext) expectationResult {
+	path := resolvePath(ctx.suiteDir, exp.Target)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return failf("read artifact %s: %v", exp.Target, err)
+	}
+	return evaluateStringContains("artifact "+exp.Target, string(data), stringExpectationValue(exp))
+}
+
+func evaluateJSONPath(exp Expectation, ctx caseContext) expectationResult {
+	actual, ok, err := jsonPathValue(exp.Target, ctx)
+	if err != nil {
+		return failf("json_path %s: %v", exp.Target, err)
+	}
+	if !ok {
+		return failf("json_path %s not found", exp.Target)
+	}
+	if exp.Value == nil {
+		return passf("json_path %s exists", exp.Target)
+	}
+	if jsonValuesEqual(actual, exp.Value) {
+		return passf("json_path %s matched", exp.Target)
+	}
+	return failf("json_path %s = %v, want %v", exp.Target, actual, exp.Value)
+}
+
+func evaluateScoreAtLeast(exp Expectation, ctx caseContext) expectationResult {
+	actual, ok, err := jsonPathValue(exp.Target, ctx)
+	if err != nil {
+		return failf("score_at_least %s: %v", exp.Target, err)
+	}
+	if !ok {
+		return failf("score_at_least target %s not found", exp.Target)
+	}
+	actualScore, ok := floatValue(actual)
+	if !ok {
+		return failf("score_at_least target %s is not numeric", exp.Target)
+	}
+	threshold := scoreThreshold(exp)
+	if actualScore >= threshold {
+		return passf("score %.4f >= %.4f", actualScore, threshold)
+	}
+	return failf("score %.4f < %.4f", actualScore, threshold)
+}
+
+func scoreThreshold(exp Expectation) float64 {
+	if exp.Threshold != nil {
+		return *exp.Threshold
+	}
+	if exp.Value != nil {
+		if parsed, ok := floatValue(exp.Value); ok {
+			return parsed
+		}
+	}
+	return 1.0
 }
 
 func expectationRequired(exp Expectation) bool {
