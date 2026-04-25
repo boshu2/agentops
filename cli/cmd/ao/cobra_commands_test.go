@@ -263,6 +263,9 @@ func executeCommand(args ...string) (string, error) {
 	evalCompareOutput = ""
 	evalCompareMaxAgg = 0
 	evalCompareMaxDim = 0
+	evalScorecardOutput = ""
+	evalScorecardKind = "rpi"
+	evalScorecardMaxCat = 0
 	evalBaselineOutput = ""
 	evalBaselineBy = ""
 	evalBaselineReason = ""
@@ -420,7 +423,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
-		"eval":       {"run", "compare", "baseline"},
+		"eval":       {"run", "compare", "baseline", "scorecard"},
 		"factory":    {"start"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
