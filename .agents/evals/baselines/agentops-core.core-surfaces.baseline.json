@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.core-surfaces-20260425T040635Z",
+  "suite": {
+    "id": "agentops-core.core-surfaces",
+    "path": "evals/agentops-core/core-surfaces.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "96c666021dcfb6fa30849aed14db3efa9e59ae166cc4571aeceb1ac3f6534710"
+  },
+  "started_at": "2026-04-25T04:06:40.609167232Z",
+  "completed_at": "2026-04-25T04:06:40.610719104Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "02f8415ea6be",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 20
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.core-surfaces-20260425T040635Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
+    "promoted_from_run_id": "agentops-core.core-surfaces-20260425T040635Z",
+    "promoted_at": "2026-04-25T04:06:40.702163113Z",
+    "promoted_by": "codex-rpi",
+    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+  },
+  "case_results": [
+    {
+      "id": "repo-root-surface-files",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "scenario-add-command",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/scenario_add.go contains \"Use:   \\\"add \u003cgoal\u003e\\\"\"",
+        "artifact ../../cli/cmd/ao/scenario_add.go contains \"scenarioCmd.AddCommand(scenarioAddCmd)\""
+      ]
+    },
+    {
+      "id": "scenario-add-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao scenario add`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"ao scenario add \u003cgoal\u003e [flags]\""
+      ]
+    },
+    {
+      "id": "holdout-isolation-hook",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../hooks/hooks.json contains \"holdout-isolation-gate.sh\"",
+        "artifact ../../hooks/holdout-isolation-gate.sh contains \"AGENTOPS_HOLDOUT_EVALUATOR\""
+      ]
+    },
+    {
+      "id": "scenario-skill-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../skills/scenario/SKILL.md contains \"ao scenario add\"",
+        "artifact ../../skills/scenario/SKILL.md contains \"ao scenario validate\""
+      ]
+    },
+    {
+      "id": "codex-runtime-inventory",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../skills-codex-overrides/catalog.json contains \"Machine-readable Codex treatment map\"",
+        "artifact ../../skills-codex-overrides/catalog.json contains \"\\\"name\\\": \\\"codex-team\\\"\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.core-surfaces.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
