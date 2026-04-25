@@ -343,6 +343,10 @@ func gatherLearnings(cwd string, opts *search.InjectOptions, sessionID, globalDi
 		VerbosePrintf("Warning: failed to collect learnings: %v\n", err)
 	}
 
+	if filtered := LastQualityFilteredCount(); filtered > 0 && !verbose {
+		fmt.Fprintf(os.Stderr, "Quality gate filtered %d learning(s) (use --verbose for details)\n", filtered)
+	}
+
 	if !opts.NoCite && len(learnings) > 0 {
 		if err := recordCitations(cwd, learnings, sessionID, opts.Query); err != nil {
 			VerbosePrintf("Warning: failed to record citations: %v\n", err)

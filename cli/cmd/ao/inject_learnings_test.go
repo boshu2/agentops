@@ -787,6 +787,52 @@ func TestInjectLearnings_processLearningFile_TokenOverlapQuery(t *testing.T) {
 	}
 }
 
+func TestInjectLearnings_LastQualityFilteredCount(t *testing.T) {
+	cwd := t.TempDir()
+	dir := filepath.Join(cwd, ".agents", "learnings")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Two learnings whose body is shorter than the 50-char minimum the
+	// quality gate enforces, so both must be dropped at the gate.
+	short := "---\nmaturity: provisional\n---\n# Short\n\nToo brief.\n"
+	if err := os.WriteFile(filepath.Join(dir, "short1.md"), []byte(short), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "short2.md"), []byte(short), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// One learning that comfortably clears the body-length gate.
+	good := "---\nmaturity: provisional\n---\n# Robust\n\n" +
+		"This learning has more than fifty characters of body text and should pass the hard quality gate.\n"
+	if err := os.WriteFile(filepath.Join(dir, "good.md"), []byte(good), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := collectLearnings(cwd, "", 10, "", 0.8)
+	if err != nil {
+		t.Fatalf("collectLearnings: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len(learnings) = %d, want 1 (one good, two filtered)", len(got))
+	}
+	if filtered := LastQualityFilteredCount(); filtered != 2 {
+		t.Errorf("LastQualityFilteredCount = %d, want 2", filtered)
+	}
+
+	// A second collectLearnings call must reset the counter, so callers
+	// never read a stale total from a prior invocation. Use a fresh
+	// tempdir with no learnings so this run cannot drop anything.
+	clean := t.TempDir()
+	if _, err := collectLearnings(clean, "", 10, "", 0.8); err != nil {
+		t.Fatalf("collectLearnings on empty cwd: %v", err)
+	}
+	if filtered := LastQualityFilteredCount(); filtered != 0 {
+		t.Errorf("after empty run LastQualityFilteredCount = %d, want 0", filtered)
+	}
+}
+
 func TestQueryTokens(t *testing.T) {
 	tests := []struct {
 		input string
