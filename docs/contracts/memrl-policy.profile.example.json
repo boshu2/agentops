@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "default_mode": "observe",
+  "unknown_failure_class_action": "escalate",
+  "missing_metadata_action": "retry",
+  "tie_break_rules": [
+    "prefer_specific_failure_class",
+    "prefer_lowest_retry_budget",
+    "prefer_escalate_on_equal_specificity"
+  ],
+  "rules": [
+    {
+      "failure_class": "transient-runtime",
+      "match": ["timeout", "rate_limit", "temporary_io"],
+      "action": "retry",
+      "max_attempts": 2,
+      "cooldown_seconds": 30,
+      "rationale": "Transient runtime failures can usually be retried without changing learned policy."
+    },
+    {
+      "failure_class": "contract-drift",
+      "match": ["schema_mismatch", "missing_required_field", "unknown_enum"],
+      "action": "escalate",
+      "max_attempts": 0,
+      "cooldown_seconds": 0,
+      "rationale": "Contract drift should stop automation until the schema or producer is corrected."
+    }
+  ],
+  "rollback_matrix": [
+    {
+      "trigger": "repeated_feedback_failure",
+      "threshold": 3,
+      "action": "escalate",
+      "rollback_to": "last-known-good-policy"
+    }
+  ]
+}

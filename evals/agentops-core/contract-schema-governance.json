@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.contract-schema-governance",
+  "name": "AgentOps Contract Schema Governance Canary",
+  "description": "Offline public canary for contract governance: contract compatibility, orphan detection, MemRL policy schema/profile validation, next-work parity, and docs index cataloguing.",
+  "domain": "docs",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "contracts", "schemas", "memrl", "docs", "next-work"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "contract-compatibility-gate",
+      "title": "contract compatibility gate passes",
+      "kind": "command",
+      "objective": "Protect docs/contracts cataloguing, link resolution, schema JSON validation, example JSON validation, example-to-schema conformance, and orphan detection.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "./scripts/check-contract-compatibility.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Contract compatibility check passed."},
+        {"type": "stdout_contains", "value": "memrl-policy.schema.json is valid JSON"},
+        {"type": "stdout_contains", "value": "memrl-policy.profile.example.json is valid JSON"},
+        {"type": "stdout_contains", "value": "memrl-policy.profile.example.json conforms to memrl-policy.schema.json"},
+        {"type": "stdout_contains", "value": "docs/contracts/memrl-policy.schema.json catalogued in INDEX.md"},
+        {"type": "stdout_contains", "value": "Failures: 0"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "contract-compatibility-regression-tests",
+      "title": "contract compatibility regression tests pass",
+      "kind": "command",
+      "objective": "Exercise orphan, allowlist, malformed allowlist, wildcard rejection, and stale allowlist failure modes in an isolated fixture.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-contract-compatibility-gate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "PASS: orphan fails when not catalogued and not allowlisted"},
+        {"type": "stdout_contains", "value": "PASS: wildcard allowlist path is rejected"},
+        {"type": "stdout_contains", "value": "PASS: allowlist entry for catalogued contract fails"},
+        {"type": "stdout_contains", "value": "Results: 7 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "codex-schema-validation",
+      "title": "Codex schema validation covers council and MemRL contracts",
+      "kind": "command",
+      "objective": "Ensure structured-output council verdict schema and MemRL policy schema/profile remain valid and constrained.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/codex/test-schema-validation.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Root has additionalProperties: false"},
+        {"type": "stdout_contains", "value": "findings items required: all properties"},
+        {"type": "stdout_contains", "value": "MemRL policy schema exists and is valid JSON"},
+        {"type": "stdout_contains", "value": "MemRL schema constrains actions to retry|escalate"},
+        {"type": "stdout_contains", "value": "MemRL profile example has required deterministic policy fields"},
+        {"type": "stdout_contains", "value": "PASSED"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "next-work-contract-parity",
+      "title": "next-work contract parity tests pass",
+      "kind": "command",
+      "objective": "Keep next-work schema examples, post-mortem skill contracts, Codex artifacts, and lifecycle enum drift checks aligned.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-next-work-contract-parity.sh && bash tests/scripts/test-next-work-contract-parity.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "next-work contract parity validation passed."},
+        {"type": "stdout_contains", "value": "PASS: schema version drift fails parity gate"},
+        {"type": "stdout_contains", "value": "PASS: aggregate self drift fails parity gate"},
+        {"type": "stdout_contains", "value": "Results: 12 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "memrl-policy-contract-artifacts",
+      "title": "MemRL policy contract artifacts preserve deterministic retry/escalation shape",
+      "kind": "artifact_check",
+      "objective": "Lock the restored MemRL schema/profile and catalog entries that the schema validation gate depends on.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"title\": \"MemRL Policy Profile\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"default_mode\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"enum\": [\"off\", \"observe\", \"enforce\"]"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"unknown_failure_class_action\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"enum\": [\"retry\", \"escalate\"]"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.schema.json", "value": "\"rollback_matrix\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"default_mode\": \"observe\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"failure_class\": \"contract-drift\""},
+        {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"rollback_to\": \"last-known-good-policy\""},
+        {"type": "artifact_contains", "target": "../../docs/INDEX.md", "value": "[MemRL Policy Schema](contracts/memrl-policy.schema.json)"},
+        {"type": "artifact_contains", "target": "../../docs/INDEX.md", "value": "[MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json)"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/index.md", "value": "[MemRL Policy Schema](memrl-policy.schema.json)"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "safety"],
+      "critical": true
+    }
+  ]
+}

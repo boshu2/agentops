@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/boshu2/agentops/docs/contracts/memrl-policy.schema.json",
+  "title": "MemRL Policy Profile",
+  "description": "Deterministic retry/escalation policy for memory-reinforcement feedback loops. Profiles decide how automation handles known failure classes, missing metadata, and rollback triggers without model judgment.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "default_mode",
+    "unknown_failure_class_action",
+    "missing_metadata_action",
+    "tie_break_rules",
+    "rules",
+    "rollback_matrix"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "default_mode": {
+      "type": "string",
+      "enum": ["off", "observe", "enforce"],
+      "description": "Default enforcement mode when no narrower runtime override is present."
+    },
+    "unknown_failure_class_action": {
+      "type": "string",
+      "enum": ["retry", "escalate"],
+      "description": "Action when a feedback event cannot be classified."
+    },
+    "missing_metadata_action": {
+      "type": "string",
+      "enum": ["retry", "escalate"],
+      "description": "Action when required event metadata is absent or incomplete."
+    },
+    "tie_break_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Ordered deterministic rules used when multiple policy rules match."
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["failure_class", "match", "action", "max_attempts", "cooldown_seconds", "rationale"],
+        "properties": {
+          "failure_class": {
+            "type": "string",
+            "minLength": 1
+          },
+          "match": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "action": {
+            "type": "string",
+            "enum": ["retry", "escalate"]
+          },
+          "max_attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cooldown_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "rollback_matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["trigger", "threshold", "action", "rollback_to"],
+        "properties": {
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "threshold": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "action": {
+            "type": "string",
+            "enum": ["retry", "escalate"]
+          },
+          "rollback_to": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

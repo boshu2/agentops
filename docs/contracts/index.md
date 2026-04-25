@@ -31,6 +31,13 @@ skills, the runtime, and external integrations.
 
     Evaluation suite, run, scorecard, baseline, canary, and holdout contract.
 
+-   :material-brain: **[MemRL Policy Schema](memrl-policy.schema.json)**
+
+    ---
+
+    Deterministic retry/escalation policy profile for memory-reinforcement
+    feedback loops.
+
 -   :material-format-list-numbered: **[Next-Work Queue](next-work.schema.md)**
 
     ---
