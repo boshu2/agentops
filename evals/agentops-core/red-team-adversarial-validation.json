@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.red-team-adversarial-validation",
+  "name": "AgentOps Red-Team Adversarial Validation Canary",
+  "description": "Offline public canary for the red-team skill's persona-constrained usability probes, scenario/report/reference contracts, and Codex runtime artifact parity.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "red-team", "adversarial-validation", "persona", "codex"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "red-team-validator-and-codex-reference-parity",
+      "title": "Red-team validator and Codex reference parity pass",
+      "kind": "command",
+      "objective": "Protect shared red-team skill hygiene, Codex runtime provenance metadata, and copied reference contracts used by Codex runtime agents.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/red-team/scripts/validate.sh; for f in persona-format scenario-format report-format surface-types; do cmp -s \"skills/red-team/references/$f.md\" \"skills-codex/red-team/references/$f.md\"; done; jq -e '.source_skill == \"skills/red-team\" and .layout == \"modular\" and .generator == \"manual-maintained\"' skills-codex/red-team/.agentops-generated.json >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 6 passed, 0 failed"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "red-team-shared-skill-contracts",
+      "title": "Shared red-team skill preserves persona-constrained workflow",
+      "kind": "artifact_check",
+      "objective": "Ensure the shared skill still makes red-team validation executable: constrained personas attempt tasks, probes run in parallel, findings normalize, and council consolidates.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Persona-Based Adversarial Validation"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "context-restricted agent prompt"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "You can ONLY read files in: {ALLOWED_PATHS}"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Do NOT use Grep to search the entire codebase"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Spawn one agent per persona."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Spawn all persona agents in parallel"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Parse findings into canonical `schemas/finding.json` format"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Run council with red-team preset"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "Do NOT emit raw findings directly to `.agents/findings/registry.jsonl`."}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "red-team-codex-skill-contracts",
+      "title": "Codex red-team artifact preserves runtime semantics",
+      "kind": "artifact_check",
+      "objective": "Keep the checked-in Codex artifact aligned with Codex invocation syntax and shared red-team constraints.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "# $red-team"},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "Unlike `$council`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "$red-team --surface=docs README.md"},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "context-restricted agent prompt"},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "$council --preset=red-team [--quick] validate .agents/red-team/"},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/SKILL.md", "value": "Do NOT emit raw findings directly to `.agents/findings/registry.jsonl`."},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/prompt.md", "value": "Persona-based adversarial validation."},
+        {"type": "artifact_contains", "target": "../../skills-codex/red-team/prompt.md", "value": "Load and follow the skill instructions from the sibling `SKILL.md` file"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "red-team-reference-contracts",
+      "title": "Red-team reference files preserve personas, scenarios, reports, and surfaces",
+      "kind": "artifact_check",
+      "objective": "Ensure the reference contracts still define the adversarial boundaries and report semantics needed to tell whether docs or skills actually work.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/persona-format.md", "value": "All fields are required."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/persona-format.md", "value": "constraints` is what differentiates red-team personas from standard council perspectives"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/persona-format.md", "value": "zero-context-agent"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/scenario-format.md", "value": "pass_criteria: string"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/scenario-format.md", "value": "Default: 4-6 scenarios per persona."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/scenario-format.md", "value": "Default: 3-5 scenarios per persona."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/report-format.md", "value": "Verdict from `/council --preset=red-team`: PASS | WARN | FAIL"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/report-format.md", "value": "Any persona has critical FAIL"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/surface-types.md", "value": "Red-team v1 supports two surface types."},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/surface-types.md", "value": "Default persona:** zero-context-agent"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/references/surface-types.md", "value": "Deferred Surfaces (v2)"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "safety"],
+      "critical": true
+    },
+    {
+      "id": "red-team-catalog-and-security-suite-positioning",
+      "title": "Catalog and security-suite docs preserve red-team positioning",
+      "kind": "artifact_check",
+      "objective": "Keep red-team discoverable as usability validation while security-suite owns deterministic prompt-surface security redteam scans.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/SKILLS.md", "value": "| `/red-team` | Persona-based adversarial validation"},
+        {"type": "artifact_contains", "target": "../../docs/SKILLS.md", "value": "| `/security-suite` | Composable security suite"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "repo-surface redteam checks for prompt and operator-contract regressions"},
+        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "without needing hosted model scanning"},
+        {"type": "artifact_contains", "target": "../../skills/using-agentops/SKILL.md", "value": "| `/red-team` | Persona-based adversarial validation"},
+        {"type": "artifact_contains", "target": "../../docs/CHANGELOG.md", "value": "`/red-team` adversarial validation"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    }
+  ]
+}

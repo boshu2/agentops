@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.red-team-adversarial-validation-20260425T084822Z",
+  "suite": {
+    "id": "agentops-core.red-team-adversarial-validation",
+    "path": "evals/agentops-core/red-team-adversarial-validation.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "0d7a57ffc9cec2f4e979fae401d96b171f425c5686452bc3e83b1f13c3763ecc"
+  },
+  "started_at": "2026-04-25T08:48:22.086528454Z",
+  "completed_at": "2026-04-25T08:48:22.118080206Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "4747f8126bef",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/red-team-adversarial-validation.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 120
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.red-team-adversarial-validation-20260425T084822Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.red-team-adversarial-validation.baseline.json",
+    "promoted_from_run_id": "agentops-core.red-team-adversarial-validation-20260425T084822Z",
+    "promoted_at": "2026-04-25T08:48:22.210802218Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 39 baseline for red-team adversarial validation skill canary"
+  },
+  "case_results": [
+    {
+      "id": "red-team-validator-and-codex-reference-parity",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 30,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 6 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "red-team-shared-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/red-team/SKILL.md contains \"Persona-Based Adversarial Validation\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"context-restricted agent prompt\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"You can ONLY read files in: {ALLOWED_PATHS}\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Do NOT use Grep to search the entire codebase\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Spawn one agent per persona.\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Spawn all persona agents in parallel\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Parse findings into canonical `schemas/finding.json` format\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Run council with red-team preset\"",
+        "artifact ../../skills/red-team/SKILL.md contains \"Do NOT emit raw findings directly to `.agents/findings/registry.jsonl`.\""
+      ]
+    },
+    {
+      "id": "red-team-codex-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"# $red-team\"",
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"Unlike `$council`\"",
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"$red-team --surface=docs README.md\"",
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"context-restricted agent prompt\"",
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"$council --preset=red-team [--quick] validate .agents/red-team/\"",
+        "artifact ../../skills-codex/red-team/SKILL.md contains \"Do NOT emit raw findings directly to `.agents/findings/registry.jsonl`.\"",
+        "artifact ../../skills-codex/red-team/prompt.md contains \"Persona-based adversarial validation.\"",
+        "artifact ../../skills-codex/red-team/prompt.md contains \"Load and follow the skill instructions from the sibling `SKILL.md` file\""
+      ]
+    },
+    {
+      "id": "red-team-reference-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/red-team/references/persona-format.md contains \"All fields are required.\"",
+        "artifact ../../skills/red-team/references/persona-format.md contains \"constraints` is what differentiates red-team personas from standard council perspectives\"",
+        "artifact ../../skills/red-team/references/persona-format.md contains \"zero-context-agent\"",
+        "artifact ../../skills/red-team/references/scenario-format.md contains \"pass_criteria: string\"",
+        "artifact ../../skills/red-team/references/scenario-format.md contains \"Default: 4-6 scenarios per persona.\"",
+        "artifact ../../skills/red-team/references/scenario-format.md contains \"Default: 3-5 scenarios per persona.\"",
+        "artifact ../../skills/red-team/references/report-format.md contains \"Verdict from `/council --preset=red-team`: PASS | WARN | FAIL\"",
+        "artifact ../../skills/red-team/references/report-format.md contains \"Any persona has critical FAIL\"",
+        "artifact ../../skills/red-team/references/surface-types.md contains \"Red-team v1 supports two surface types.\"",
+        "artifact ../../skills/red-team/references/surface-types.md contains \"Default persona:** zero-context-agent\"",
+        "artifact ../../skills/red-team/references/surface-types.md contains \"Deferred Surfaces (v2)\""
+      ]
+    },
+    {
+      "id": "red-team-catalog-and-security-suite-positioning",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/SKILLS.md contains \"| `/red-team` | Persona-based adversarial validation\"",
+        "artifact ../../docs/SKILLS.md contains \"| `/security-suite` | Composable security suite\"",
+        "artifact ../../skills/security-suite/SKILL.md contains \"repo-surface redteam checks for prompt and operator-contract regressions\"",
+        "artifact ../../skills/security-suite/SKILL.md contains \"without needing hosted model scanning\"",
+        "artifact ../../skills/using-agentops/SKILL.md contains \"| `/red-team` | Persona-based adversarial validation\"",
+        "artifact ../../docs/CHANGELOG.md contains \"`/red-team` adversarial validation\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T084822Z/agentops-core.red-team-adversarial-validation.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.red-team-adversarial-validation.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
