@@ -91,7 +91,10 @@ run_without_git_env_isolated_agents_home() {
     rc=$?
     set -e
 
-    rm -rf "$tmp_home" "$tmp_codex_home"
+    # Go module cache entries are intentionally read-only; make the isolated
+    # tree removable so cleanup noise cannot mask the gate result.
+    chmod -R u+w "$tmp_home" "$tmp_codex_home" 2>/dev/null || true
+    rm -rf "$tmp_home" "$tmp_codex_home" 2>/dev/null || true
     return "$rc"
 }
 
