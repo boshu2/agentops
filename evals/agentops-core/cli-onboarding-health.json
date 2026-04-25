@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.cli-onboarding-health",
+  "name": "AgentOps CLI Onboarding Health Canary",
+  "description": "Offline public canary for installer smoke, ao init, ao quick-start, and ao doctor health surfaces.",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "install", "onboarding", "doctor"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "install-script-smoke",
+      "title": "install script smoke passes with a local ao binary",
+      "kind": "command",
+      "objective": "Validate installer syntax, safety invariants, delegation wiring, usage docs, and basic ao command registration without writing to real install locations.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); PATH=\"$tmp:$PATH\" bash tests/install/test-install-smoke.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Install Script Smoke Tests"},
+        {"type": "stdout_contains", "value": "ao binary runs (version)"},
+        {"type": "stdout_contains", "value": "0 failed"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "init-and-quickstart-tests",
+      "title": "ao init and quick-start focused tests pass",
+      "kind": "command",
+      "objective": "Protect fresh repo initialization, idempotent .agents setup, quick-start starter pack creation, and next-step guidance.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run 'TestRunInit|TestQuickstart_'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "doctor-health-tests",
+      "title": "ao doctor health focused tests pass",
+      "kind": "command",
+      "objective": "Protect health result computation, doctor JSON/table output, hook coverage, CLI dependency checks, and Codex skill install diagnostics.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao ./internal/quality -run 'TestRunDoctor|TestDoctor_|TestCheckSkills|TestCheckHookCoverage|TestCheckCLIDependencies|TestComputeResult|TestGatherDoctorChecks'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/quality"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "onboarding-command-docs",
+      "title": "onboarding and health commands remain documented",
+      "kind": "artifact_check",
+      "objective": "Keep install-adjacent command surfaces visible in generated CLI docs and CI policy docs.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao init`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao quick-start`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao doctor`"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "doctor-check"},
+        {"type": "artifact_contains", "target": "../../docs/CI-CD.md", "value": "`doctor-check`"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "install-test-wiring",
+      "title": "install smoke tests stay discoverable",
+      "kind": "artifact_check",
+      "objective": "Keep deterministic installer smoke coverage discoverable alongside release and contribution docs.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "INSTALL_SCRIPTS=("},
+        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-codex.sh"},
+        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-opencode.sh"},
+        {"type": "artifact_contains", "target": "../../docs/CONTRIBUTING.md", "value": "Runtime reliability: hooks, install paths, and lifecycle behavior"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"]
+    }
+  ]
+}
