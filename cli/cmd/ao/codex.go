@@ -941,7 +941,7 @@ func writeCodexStartupNewUserWelcome(sb *strings.Builder) {
 func writeCodexStartupBriefings(sb *strings.Builder, query string, briefings []codexArtifactRef) {
 	sb.WriteString("\n## Briefings\n")
 	if len(briefings) == 0 {
-		fmt.Fprintf(sb, "- No recent knowledge briefing surfaced. Build one with `ao knowledge brief --goal %q` when workspace builders are available.\n", query)
+		fmt.Fprintf(sb, "- No recent knowledge briefing surfaced. Build one with `ao knowledge brief --goal %q` when topic or harvest knowledge is available.\n", query)
 	} else {
 		sb.WriteString("- Treat matched knowledge briefings as the primary dynamic surface for this thread; use the ranked context below as supporting operator state.\n")
 		for _, item := range briefings {

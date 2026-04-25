@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.knowledge-activation-operator-surfaces",
+  "name": "AgentOps Knowledge Activation Operator Surfaces Canary",
+  "description": "Offline public canary for ao knowledge native activation, harvest-catalog fallback materialization, knowledge startup consumers, and shared/Codex knowledge-activation skill contracts.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "knowledge", "harvest", "activation", "codex", "rpi", "evolve"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "knowledge-activation-command-tests",
+      "title": "ao knowledge native activation tests pass",
+      "kind": "command",
+      "objective": "Protect full activation with workspace packet builders, native belief/playbook/brief/gap builders, and the harvest-catalog fallback path when workspace packet builders are absent.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestKnowledgeActivateJSONRunsNativeActivationBuilders|TestKnowledgeActivateJSONUsesHarvestCatalogWithoutWorkspaceScripts|TestKnowledgeBeliefsJSONUsesNativeBuilderWithoutScripts|TestKnowledgePlaybooksJSONUsesNativeBuilderWithoutScripts|TestKnowledgeBriefJSONUsesNativeBuilderWithoutScripts|TestKnowledgeGapsJSONSurfacesThinTopicsAndPromotionGaps)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "knowledge-startup-consumer-tests",
+      "title": "startup consumers read generated knowledge surfaces",
+      "kind": "command",
+      "objective": "Protect Codex startup and factory flows that consume matched briefings, belief books, and playbooks after knowledge activation produces operator surfaces.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestWriteCodexStartupContextUsesRankedSectionsAndPolicy|TestCodexStartJSONSurfacesMatchingBriefings|TestFactoryStartJSONBuildsBriefingThenRunsCodexStartup)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "knowledge-activation-skill-contracts",
+      "title": "shared and Codex knowledge-activation skill contracts validate",
+      "kind": "command",
+      "objective": "Keep shared and Codex runtime skill copies linked to the ao knowledge command family, canonical output surfaces, and script-contract references.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/knowledge-activation/scripts/validate.sh && bash skills-codex/knowledge-activation/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 14 passed, 0 failed"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "knowledge-activation-native-docs",
+      "title": "operator docs describe native harvest fallback and avoid stale builder requirements",
+      "kind": "command",
+      "objective": "Prevent docs from telling agents that activation always requires workspace-local builders or deprecated activation builder scripts.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "rg -F -q 'promoted `.agents/harvest/latest.json` catalog' skills/knowledge-activation/SKILL.md skills-codex/knowledge-activation/SKILL.md && rg -F -q 'harvest-catalog substrate materialization' skills/knowledge-activation/references/script-contracts.md skills-codex/knowledge-activation/references/script-contracts.md && ! rg -n 'book_of_beliefs_build.py|playbook_build.py|briefing_build.py|when workspace builders are available' skills/knowledge-activation skills-codex/knowledge-activation cli/cmd/ao/codex.go"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "knowledge-native-fallback-source",
+      "title": "ao knowledge source contains explicit native substrate fallback",
+      "kind": "artifact_check",
+      "objective": "Keep the implementation auditable: missing packet builders must route through an explicit native substrate preparation step before native operator builders run.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "prepareKnowledgeNativeActivationSubstrate"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "materializeKnowledgeHarvestCatalog"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "Step:           \"harvest-catalog\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "filterKnowledgeAONativeSteps(steps)"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "learning_closure"]
+    },
+    {
+      "id": "knowledge-harvest-fixture",
+      "title": "harvest fallback regression fixture is committed in tests",
+      "kind": "artifact_check",
+      "objective": "Ensure the unit test fixture exercises promoted harvest artifacts rather than only prebuilt topic packets.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge_test.go", "value": "writeKnowledgeHarvestCatalogFixture"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge_test.go", "value": "TestKnowledgeActivateJSONUsesHarvestCatalogWithoutWorkspaceScripts"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge_test.go", "value": "Harvested activation evidence should become operator surfaces without local packet builders."}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "learning_closure"]
+    }
+  ]
+}

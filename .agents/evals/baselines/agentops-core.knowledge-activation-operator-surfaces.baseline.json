@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.knowledge-activation-operator-surfaces-20260425T063411Z",
+  "suite": {
+    "id": "agentops-core.knowledge-activation-operator-surfaces",
+    "path": "evals/agentops-core/knowledge-activation-operator-surfaces.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "6569964a1398c79a7180fc3edb478f7a91cd35efb0ca13adedaa66a610ac6202"
+  },
+  "started_at": "2026-04-25T06:34:11.457547051Z",
+  "completed_at": "2026-04-25T06:34:12.372670576Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "c280ee14939e",
+    "dirty": true,
+    "dirty_paths": [
+      "cli/cmd/ao/codex.go",
+      "cli/cmd/ao/knowledge.go",
+      "cli/cmd/ao/knowledge_test.go",
+      "evals/agentops-core/knowledge-activation-operator-surfaces.json",
+      "skills-codex/knowledge-activation/SKILL.md",
+      "skills-codex/knowledge-activation/references/script-contracts.md",
+      "skills/knowledge-activation/SKILL.md",
+      "skills/knowledge-activation/references/script-contracts.md"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 120
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.knowledge-activation-operator-surfaces-20260425T063411Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.knowledge-activation-operator-surfaces.baseline.json",
+    "promoted_from_run_id": "agentops-core.knowledge-activation-operator-surfaces-20260425T063411Z",
+    "promoted_at": "2026-04-25T06:34:12.467154512Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 24 baseline for native knowledge activation harvest-catalog operator surfaces"
+  },
+  "case_results": [
+    {
+      "id": "knowledge-activation-command-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 408,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "knowledge-startup-consumer-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 407,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "knowledge-activation-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 85,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 14 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "knowledge-activation-native-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 13,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "knowledge-native-fallback-source",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "learning_closure": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/knowledge.go contains \"prepareKnowledgeNativeActivationSubstrate\"",
+        "artifact ../../cli/cmd/ao/knowledge.go contains \"materializeKnowledgeHarvestCatalog\"",
+        "artifact ../../cli/cmd/ao/knowledge.go contains \"Step:           \\\"harvest-catalog\\\"\"",
+        "artifact ../../cli/cmd/ao/knowledge.go contains \"filterKnowledgeAONativeSteps(steps)\""
+      ]
+    },
+    {
+      "id": "knowledge-harvest-fixture",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "learning_closure": 1
+      },
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/knowledge_test.go contains \"writeKnowledgeHarvestCatalogFixture\"",
+        "artifact ../../cli/cmd/ao/knowledge_test.go contains \"TestKnowledgeActivateJSONUsesHarvestCatalogWithoutWorkspaceScripts\"",
+        "artifact ../../cli/cmd/ao/knowledge_test.go contains \"Harvested activation evidence should become operator surfaces without local packet builders.\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T063411Z/agentops-core.knowledge-activation-operator-surfaces.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.knowledge-activation-operator-surfaces.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
