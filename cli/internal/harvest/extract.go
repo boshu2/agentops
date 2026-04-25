@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -83,49 +84,71 @@ func ExtractArtifactsWithStats(rig RigInfo, opts WalkOptions) ExtractionResult {
 			continue
 		}
 
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			warn(dir, "read_dir", fmt.Errorf("reading subdir %s: %w", dir, err))
-			continue
-		}
-
 		artType := singularType(subdir)
 
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-			name := e.Name()
-			ext := strings.ToLower(filepath.Ext(name))
-			if ext != ".md" && ext != ".jsonl" {
-				continue
+		walkErr := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				if os.IsPermission(err) {
+					warn(path, "walk_dir", err)
+					if d != nil && d.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+				return err
 			}
 
-			path := filepath.Join(dir, name)
+			if d.IsDir() {
+				if path == dir {
+					return nil
+				}
+				name := d.Name()
+				if isSkipDir(name, opts.SkipDirs) {
+					return filepath.SkipDir
+				}
+				// Skip hidden subdirs (.git, .archive, etc.) under artifact dirs.
+				if strings.HasPrefix(name, ".") {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
+			// Plain files only — symlinks fall through fs.DirEntry as non-dir
+			// non-regular and are skipped here.
+			if !d.Type().IsRegular() {
+				return nil
+			}
+
+			name := d.Name()
+			ext := strings.ToLower(filepath.Ext(name))
+			if ext != ".md" && ext != ".jsonl" {
+				return nil
+			}
+
 			result.CandidateFiles++
 
 			if opts.MaxFileSize > 0 {
-				fi, err := e.Info()
-				if err != nil {
-					warn(path, "stat", fmt.Errorf("stat %s: %w", path, err))
-					continue
+				fi, statErr := d.Info()
+				if statErr != nil {
+					warn(path, "stat", fmt.Errorf("stat %s: %w", path, statErr))
+					return nil
 				}
 				if fi.Size() > opts.MaxFileSize {
-					continue
+					return nil
 				}
 			}
 
-			data, err := os.ReadFile(path)
-			if err != nil {
-				warn(path, "read_file", fmt.Errorf("reading %s: %w", path, err))
-				continue
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				warn(path, "read_file", fmt.Errorf("reading %s: %w", path, readErr))
+				return nil
 			}
 
 			content := string(data)
-			fm, body, err := parseFrontmatter(content)
-			if err != nil {
-				warn(path, "parse_frontmatter", fmt.Errorf("parsing frontmatter in %s: %w", path, err))
-				continue
+			fm, body, parseErr := parseFrontmatter(content)
+			if parseErr != nil {
+				warn(path, "parse_frontmatter", fmt.Errorf("parsing frontmatter in %s: %w", path, parseErr))
+				return nil
 			}
 
 			fm = NormalizeFrontmatter(fm)
@@ -150,6 +173,10 @@ func ExtractArtifactsWithStats(rig RigInfo, opts WalkOptions) ExtractionResult {
 				Date:        date,
 				Frontmatter: fm,
 			})
+			return nil
+		})
+		if walkErr != nil {
+			warn(dir, "walk_dir", fmt.Errorf("walking %s: %w", dir, walkErr))
 		}
 	}
 
