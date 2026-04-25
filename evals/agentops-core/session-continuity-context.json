@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.session-continuity-context",
+  "name": "AgentOps Session Continuity Context Canary",
+  "description": "Offline public canary for context assembly, context telemetry, handoff bridges, status dashboards, memory/notebook sync, plan manifests, task sync, and session indexing surfaces needed to recover long RPI/evolve runs.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "context", "handoff", "status", "memory", "plans", "task-sync", "session-continuity"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "session-continuity-go-tests",
+      "title": "context, handoff, memory, notebook, plans, status, and task-sync tests pass",
+      "kind": "command",
+      "objective": "Protect the behavior that writes and reads resumable context: 5-section briefings, context status JSON, handoff markdown/learning bridges, MEMORY sync, notebook updates, plan manifests, and task promotion.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestContextAssemble_FiveSections|TestContextAssemble_CommandWritesBriefingAndManifest|TestContextAssemble_JSONOutput|TestContextExplainCmdJSONOutput|TestContextExplainReportsProofBackedNextWorkSuppression|TestContextPacketCmd_JSONOutput|TestContext_CollectTrackedSessionStatuses|TestContext_RenderHandoffMarkdown|TestEnsureCriticalHandoffWritesMarkerAndDeduplicates|TestUATSmoke_HandoffDryRun|TestBridgeHandoffToLearnings_WithDecisions|TestNotebookUpdate_Idempotent|TestNotebookUpdate_AtomicWrite|TestSyncMemory_DedupOnSecondSync|TestRunPlansRegister|TestRunPlansSync|TestRunPlansList|TestJSONValidity_ContextStatus|TestJSONValidity_Status|TestJSONValidity_TaskSync|TestTaskSync_promoteTaskToLearning)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "session-continuity-help-smoke",
+      "title": "session continuity CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure hidden and public operator commands remain callable for status checks, context assembly/debugging, handoff creation, memory sync, notebooks, plan manifests, sessions, and task tracking.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" status --help >/dev/null; \"$tmp/ao\" context status --help >/dev/null; \"$tmp/ao\" context guard --help >/dev/null; \"$tmp/ao\" context assemble --help >/dev/null; \"$tmp/ao\" context explain --help >/dev/null; \"$tmp/ao\" context packet --help >/dev/null; \"$tmp/ao\" context packet-status --help >/dev/null; \"$tmp/ao\" handoff --help >/dev/null; \"$tmp/ao\" memory sync --help >/dev/null; \"$tmp/ao\" notebook update --help >/dev/null; \"$tmp/ao\" plans --help >/dev/null; \"$tmp/ao\" plans register --help >/dev/null; \"$tmp/ao\" plans sync --help >/dev/null; \"$tmp/ao\" sessions index --help >/dev/null; \"$tmp/ao\" task-sync --help >/dev/null; \"$tmp/ao\" task-status --help >/dev/null; \"$tmp/ao\" task-feedback --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "session-continuity-cli-docs",
+      "title": "generated CLI docs expose public session continuity commands",
+      "kind": "artifact_check",
+      "objective": "Keep generated CLI docs aligned with public surfaces used by operators to inspect status, write handoffs, sync memory, update notebooks, manage plans, and index sessions.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao status`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao handoff`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao memory`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao memory sync`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao notebook`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao notebook update`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao plans`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao plans sync`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao sessions`"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
+    },
+    {
+      "id": "session-continuity-source-contracts",
+      "title": "source contracts preserve resumable context and handoff behavior",
+      "kind": "artifact_check",
+      "objective": "Lock source-level continuity guarantees: redacted five-section briefings, critical auto-handoff markers, handoff-to-learning bridges, managed memory blocks, notebook source fallback, plan/beads drift prevention, and task promotion.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_assemble.go", "value": "GOALS, HISTORY, INTEL, TASK, and PROTOCOL"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_assemble.go", "value": "Secrets are redacted before output."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context.go", "value": "one-shot auto-handoff marker on CRITICAL"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/handoff.go", "value": "Bridge decisions to learnings"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/handoff_bridge.go", "value": "source: handoff-bridge"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/memory.go", "value": "managed block markers"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/notebook.go", "value": "session artifacts (.agents/ao/sessions/*.jsonl)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/plans.go", "value": "beads is source of truth"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/task_sync.go", "value": "Promote completed tasks to learnings"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "session-continuity-doc-and-skill-contracts",
+      "title": "docs and skill contracts preserve recovery guidance",
+      "kind": "artifact_check",
+      "objective": "Ensure operators and skills still describe the recovery path from context guard through notebook/memory sync, status dashboards, and Codex hookless lifecycle health.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/context-lifecycle.md", "value": "ao notebook update: merge insights into MEMORY.md"},
+        {"type": "artifact_contains", "target": "../../docs/context-lifecycle.md", "value": "ao memory sync: sync to repo-root MEMORY.md (cross-runtime)"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/session-intelligence-trust-model.md", "value": "Consumers:** `ao context assemble`, `ao context explain`, `ao codex start`"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao task-sync` | Hidden | Task synchronization |"},
+        {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "ao task-status --json"},
+        {"type": "artifact_contains", "target": "../../skills/recover/SKILL.md", "value": "ao codex status --json"},
+        {"type": "artifact_contains", "target": "../../skills/handoff/SKILL.md", "value": "Create structured handoff for session continuation"},
+        {"type": "artifact_contains", "target": "../../skills-codex/status/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
+        {"type": "artifact_contains", "target": "../../skills-codex/handoff/SKILL.md", "value": "ao codex ensure-stop --auto-extract 2>/dev/null || true"}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]
+    }
+  ]
+}
