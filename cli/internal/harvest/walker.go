@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -38,7 +39,7 @@ func DefaultWalkOptions() WalkOptions {
 	return WalkOptions{
 		Roots:       []string{filepath.Join(home, "gt")},
 		MaxFileSize: 1048576,
-		SkipDirs:    []string{"archive", ".tmp", "test-fixtures", "node_modules", "vendor", ".archive"},
+		SkipDirs:    []string{"archive", ".tmp", "test-fixtures", "node_modules", "vendor", ".archive", ".git"},
 		IncludeDirs: []string{"learnings", "patterns", "research"},
 	}
 }
@@ -186,34 +187,147 @@ func inspectAgentsDir(agentsPath, project, crew string) (RigInfo, error) {
 	}, nil
 }
 
-// extractProvenance derives project and crew from the filesystem path.
-// Pattern: {root}/{project}/crew/{crew}/.agents/ -> project, crew
-// Pattern: {root}/{project}/.agents/ -> project, project
-// Fallback: "unknown", "unknown"
+// extractProvenance derives project and crew. Resolution order:
+//  1. .agents/.config file (project: foo, crew: bar)
+//  2. Path patterns: {root}/{project}/crew/{crew}/.agents and {root}/{project}/.agents
+//  3. Path-prefix fallback: e.g. /mnt/c/Users/X/.agents -> ("mnt-c", "x"),
+//     /home/boful/.agents -> ("home-boful", "root").
+//
+// Returns "unknown", "unknown" only as a last resort when no signal is recoverable.
 func extractProvenance(root, agentsPath string) (string, string) {
-	// Get relative path from root to .agents/.
+	if proj, crew, ok := readAgentsConfig(agentsPath); ok {
+		return proj, crew
+	}
+
 	rel, err := filepath.Rel(root, agentsPath)
+	if err == nil && rel != "." {
+		parts := strings.Split(rel, string(filepath.Separator))
+
+		// Pattern: {project}/crew/{crew}/.agents
+		if len(parts) >= 4 && parts[len(parts)-3] == "crew" {
+			return parts[0], parts[len(parts)-2]
+		}
+
+		// Pattern: {project}/.agents
+		if len(parts) >= 2 && parts[0] != "" {
+			return parts[0], parts[0]
+		}
+	}
+
+	// Root IS the .agents dir (or path-rel returned ".") — derive from absolute path.
+	return derivePathPrefixProvenance(agentsPath)
+}
+
+// readAgentsConfig reads project/crew from <agentsPath>/.config if present.
+// Format is line-based "key: value" so the file stays trivial to author by hand.
+// Lines beginning with "#" are comments. Returns ok=false when no .config exists
+// or no usable project key was found.
+func readAgentsConfig(agentsPath string) (string, string, bool) {
+	data, err := os.ReadFile(filepath.Join(agentsPath, ".config"))
 	if err != nil {
+		return "", "", false
+	}
+	var project, crew string
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+		switch key {
+		case "project":
+			project = val
+		case "crew":
+			crew = val
+		}
+	}
+	if project == "" {
+		return "", "", false
+	}
+	if crew == "" {
+		crew = project
+	}
+	return project, crew, true
+}
+
+// derivePathPrefixProvenance returns a sensible (project, crew) pair from the
+// absolute path of an .agents/ directory. Used when neither .agents/.config
+// nor the {root}/{project}/[crew/{crew}/].agents/ pattern resolves the rig.
+//
+// Conventions:
+//
+//	/mnt/<drive>/<...>/.agents          -> ("mnt-<drive>", "<...leaf>" or "root")
+//	/home/<user>/.agents                -> ("home-<user>", "root")
+//	/home/<user>/<a>/.../.agents        -> ("home-<user>", "<...leaf>")
+//	/<top>/<...>/.agents                -> ("<top>", "<...leaf>" or "<top>")
+var rigSanitizeRe = regexp.MustCompile(`[^a-z0-9-]`)
+
+func derivePathPrefixProvenance(agentsPath string) (string, string) {
+	abs, err := filepath.Abs(agentsPath)
+	if err != nil {
+		abs = agentsPath
+	}
+	abs = filepath.Clean(abs)
+
+	parts := strings.Split(strings.TrimPrefix(abs, string(filepath.Separator)), string(filepath.Separator))
+	// Anchor on the parent of .agents so the rig describes the containing tree.
+	if len(parts) > 0 && parts[len(parts)-1] == ".agents" {
+		parts = parts[:len(parts)-1]
+	}
+	if len(parts) == 0 {
 		return "unknown", "unknown"
 	}
 
-	parts := strings.Split(rel, string(filepath.Separator))
-	// parts[-1] is always ".agents"
-
-	// Pattern: {project}/crew/{crew}/.agents
-	if len(parts) >= 4 && parts[len(parts)-3] == "crew" {
-		project := parts[0]
-		crew := parts[len(parts)-2]
-		return project, crew
+	var project, crew string
+	switch parts[0] {
+	case "mnt":
+		if len(parts) >= 2 {
+			project = "mnt-" + parts[1]
+			if len(parts) >= 3 {
+				crew = parts[len(parts)-1]
+			} else {
+				crew = "root"
+			}
+		} else {
+			project = "mnt"
+			crew = "root"
+		}
+	case "home":
+		if len(parts) >= 2 {
+			project = "home-" + parts[1]
+			if len(parts) >= 3 {
+				crew = parts[len(parts)-1]
+			} else {
+				crew = "root"
+			}
+		} else {
+			project = "home"
+			crew = "root"
+		}
+	default:
+		project = parts[0]
+		if len(parts) >= 2 {
+			crew = parts[len(parts)-1]
+		} else {
+			crew = parts[0]
+		}
 	}
+	return sanitizeRigToken(project), sanitizeRigToken(crew)
+}
 
-	// Pattern: {project}/.agents
-	if len(parts) >= 2 {
-		project := parts[0]
-		return project, project
+func sanitizeRigToken(s string) string {
+	s = strings.ToLower(s)
+	s = rigSanitizeRe.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	if s == "" {
+		return "unknown"
 	}
-
-	return "unknown", "unknown"
+	return s
 }
 
 // isSkipDir returns true if the directory name matches a skip entry.

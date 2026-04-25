@@ -290,6 +290,119 @@ func TestDiscoverRigs_SkipGlobalHub_OmitsHome(t *testing.T) {
 	}
 }
 
+// TestExtractProvenance_PathPrefixFallback guards the 2026-04-25 regression:
+// when --roots= points directly at an .agents dir (e.g. /home/boful/.agents
+// or /mnt/c/Users/Boful/.agents), the prior provenance logic returned
+// ("unknown", "unknown") because filepath.Rel(root, path) was ".". Every
+// rig in the catalog inherited "unknown-unknown" and per-tree grouping
+// became impossible via the rig field. The fallback now derives a sensible
+// (project, crew) pair from the absolute path.
+func TestExtractProvenance_PathPrefixFallback(t *testing.T) {
+	cases := []struct {
+		name        string
+		root        string
+		path        string
+		wantProject string
+		wantCrew    string
+	}{
+		{
+			name:        "home user .agents directly as root",
+			root:        "/home/boful/.agents",
+			path:        "/home/boful/.agents",
+			wantProject: "home-boful",
+			wantCrew:    "root",
+		},
+		{
+			name:        "mnt drive .agents directly as root",
+			root:        "/mnt/d/.agents",
+			path:        "/mnt/d/.agents",
+			wantProject: "mnt-d",
+			wantCrew:    "root",
+		},
+		{
+			name:        "mnt drive nested user .agents directly as root",
+			root:        "/mnt/c/Users/Boful/.agents",
+			path:        "/mnt/c/Users/Boful/.agents",
+			wantProject: "mnt-c",
+			wantCrew:    "boful",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotProject, gotCrew := extractProvenance(tc.root, tc.path)
+			if gotProject != tc.wantProject {
+				t.Errorf("project = %q, want %q", gotProject, tc.wantProject)
+			}
+			if gotCrew != tc.wantCrew {
+				t.Errorf("crew = %q, want %q", gotCrew, tc.wantCrew)
+			}
+			if gotProject == "unknown" || gotCrew == "unknown" {
+				t.Errorf("provenance must never be 'unknown' for resolvable absolute paths; got (%q, %q)", gotProject, gotCrew)
+			}
+		})
+	}
+}
+
+// TestExtractProvenance_PreservesPathPatterns ensures the legacy
+// {root}/{project}/crew/{crew}/.agents pattern still resolves correctly
+// after the path-prefix fallback was introduced.
+func TestExtractProvenance_PreservesPathPatterns(t *testing.T) {
+	root := "/work"
+	cases := []struct {
+		name        string
+		path        string
+		wantProject string
+		wantCrew    string
+	}{
+		{
+			name:        "{project}/crew/{crew}/.agents",
+			path:        "/work/agentops/crew/nami/.agents",
+			wantProject: "agentops",
+			wantCrew:    "nami",
+		},
+		{
+			name:        "{project}/.agents",
+			path:        "/work/myproject/.agents",
+			wantProject: "myproject",
+			wantCrew:    "myproject",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotProject, gotCrew := extractProvenance(root, tc.path)
+			if gotProject != tc.wantProject {
+				t.Errorf("project = %q, want %q", gotProject, tc.wantProject)
+			}
+			if gotCrew != tc.wantCrew {
+				t.Errorf("crew = %q, want %q", gotCrew, tc.wantCrew)
+			}
+		})
+	}
+}
+
+// TestExtractProvenance_AgentsConfigOverrides verifies that .agents/.config
+// (when present) takes precedence over both path patterns and the path-
+// prefix fallback. Format is line-based "key: value".
+func TestExtractProvenance_AgentsConfigOverrides(t *testing.T) {
+	tmp := t.TempDir()
+	agentsDir := filepath.Join(tmp, ".agents")
+	if err := os.MkdirAll(agentsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := "# rig identity\nproject: my-project\ncrew: my-crew\n"
+	if err := os.WriteFile(filepath.Join(agentsDir, ".config"), []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	gotProject, gotCrew := extractProvenance(tmp, agentsDir)
+	if gotProject != "my-project" {
+		t.Errorf("project = %q, want %q", gotProject, "my-project")
+	}
+	if gotCrew != "my-crew" {
+		t.Errorf("crew = %q, want %q", gotCrew, "my-crew")
+	}
+}
+
 // --- helpers ---
 
 func mustMkdirAll(t *testing.T, path string) {
