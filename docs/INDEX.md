@@ -180,6 +180,7 @@
 - [Agent Footguns](agent-footguns.md) — Common agent failure modes and mitigations
 - [AgentOps Brief](agentops-brief.md) — Executive summary
 - [AgentOps System Map](agentops-system-map.md) — Visual system map
+- [Working with `.agents/`](agents-operator-guide.md) — Operator guide for `.agents/` state, write surfaces, and contributor flow
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
 - [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
