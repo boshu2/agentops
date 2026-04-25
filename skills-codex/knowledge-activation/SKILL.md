@@ -38,7 +38,8 @@ dream, knowledge-activation, and quickstart.
 This skill assumes the current workspace already has:
 
 - a `.agents/` directory
-- workspace-local builders under `.agents/scripts/`
+- either existing topic/packet substrate or a promoted `.agents/harvest/latest.json` catalog
+- workspace-local packet builders under `.agents/scripts/` only when `ao knowledge activate` must rebuild source manifests, topics, promoted packets, and chunk bundles from scratch
 - packet, topic, playbook, and briefing surfaces that can be refreshed mechanically
 
 Read [references/script-contracts.md](references/script-contracts.md) for the required builder inventory and command ownership.
@@ -55,7 +56,7 @@ ao knowledge brief --goal "fix auth startup"
 ao knowledge gaps
 ```
 
-The skill owns routing, sequencing, interpretation, and next-step recommendations. The builders do the heavy lifting.
+The skill owns routing, sequencing, interpretation, and next-step recommendations. `ao` owns the belief/playbook/brief/gap product surfaces directly.
 
 `ao context assemble` and `ao codex start` consume these outputs as operator context. Matched knowledge briefings are the preferred dynamic startup surface, while selected beliefs and healthy playbooks provide bounded supporting guidance.
 
@@ -63,10 +64,10 @@ The skill owns routing, sequencing, interpretation, and next-step recommendation
 
 ### Step 1: Preflight
 
-Verify that `.agents/` exists and that the workspace-local builders are present.
+Verify that `.agents/` exists. When you plan to run `ao knowledge activate`, check whether the workspace already has topic/packet substrate or `.agents/harvest/latest.json`; packet refresh builders are required only when neither native substrate path can seed activation.
 
 - packet builders: `source_manifest_build.py`, `topic_packet_build.py`, `corpus_packet_promote.py`, `knowledge_chunk_build.py`
-- activation builders: `book_of_beliefs_build.py`, `playbook_build.py`, `briefing_build.py`
+- native operator surfaces: `ao knowledge beliefs`, `ao knowledge playbooks`, `ao knowledge brief`, `ao knowledge gaps`
 
 ### Step 2: Consolidate Evidence
 
@@ -119,6 +120,7 @@ ao knowledge activate --goal "your goal here"
 ```
 
 That command sequences evidence consolidation, belief/playbook refresh, optional briefing compilation, and a gap summary.
+When workspace packet builders are absent, `ao knowledge activate` can still materialize healthy topics, promoted packets, and chunk bundles from promoted harvest catalog entries before writing the native operator surfaces.
 
 ## Trust Rules
 

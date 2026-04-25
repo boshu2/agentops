@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	harvestpkg "github.com/boshu2/agentops/cli/internal/harvest"
 )
 
 func TestKnowledgeActivateJSONRunsNativeActivationBuilders(t *testing.T) {
@@ -65,6 +67,60 @@ func TestKnowledgeActivateJSONRunsNativeActivationBuilders(t *testing.T) {
 	}
 	if len(result.Gaps.PromotionGaps) != 0 {
 		t.Fatalf("promotion gaps = %+v, want none", result.Gaps.PromotionGaps)
+	}
+}
+
+func TestKnowledgeActivateJSONUsesHarvestCatalogWithoutWorkspaceScripts(t *testing.T) {
+	repo := t.TempDir()
+	writeKnowledgeHarvestCatalogFixture(t, repo)
+
+	origProjectDir := testProjectDir
+	origActivateGoal := knowledgeActivateGoal
+	origBriefGoal := knowledgeBriefGoal
+	origIncludeThin := knowledgePlaybooksIncludeThin
+	testProjectDir = repo
+	defer func() {
+		testProjectDir = origProjectDir
+		knowledgeActivateGoal = origActivateGoal
+		knowledgeBriefGoal = origBriefGoal
+		knowledgePlaybooksIncludeThin = origIncludeThin
+	}()
+
+	out, err := executeCommand("knowledge", "activate", "--json", "--goal", "Harvested activation rollout")
+	if err != nil {
+		t.Fatalf("knowledge activate --json without scripts: %v\noutput: %s", err, out)
+	}
+
+	var result knowledgeActivateResult
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &result); err != nil {
+		t.Fatalf("parse knowledge activate json: %v\noutput: %s", err, out)
+	}
+
+	if len(result.Steps) != 4 {
+		t.Fatalf("steps = %d, want harvest-catalog + 3 native steps: %+v", len(result.Steps), result.Steps)
+	}
+	if result.Steps[0].Step != "harvest-catalog" {
+		t.Fatalf("first step = %q, want harvest-catalog", result.Steps[0].Step)
+	}
+	for _, step := range result.Steps {
+		if step.Implementation == knowledgeBuilderImplementationWorkspaceScript {
+			t.Fatalf("unexpected workspace-script step without packet builders: %+v", step)
+		}
+	}
+	if result.BeliefBook == "" || !knowledgePathExists(result.BeliefBook) {
+		t.Fatalf("belief book missing: %q", result.BeliefBook)
+	}
+	if result.PlaybooksIndex == "" || !knowledgePathExists(result.PlaybooksIndex) {
+		t.Fatalf("playbooks index missing: %q", result.PlaybooksIndex)
+	}
+	if result.Briefing == "" || !knowledgePathExists(result.Briefing) {
+		t.Fatalf("briefing missing: %q", result.Briefing)
+	}
+	if !knowledgePathExists(filepath.Join(repo, ".agents", "playbooks", "harvested-activation.md")) {
+		t.Fatal("expected harvested activation playbook to exist")
+	}
+	if len(result.Gaps.ThinTopics) != 0 || len(result.Gaps.PromotionGaps) != 0 {
+		t.Fatalf("gaps = %+v, want no thin topics or promotion gaps", result.Gaps)
 	}
 }
 
@@ -382,6 +438,61 @@ promoted_packet_path: `+filepath.Join(promotedRoot, "healthy-topic.md")+`
 - Confidence: topic
 - Claim: Stable operator outputs belong in the ao binary, not workspace-local prototypes.
 `)
+}
+
+func writeKnowledgeHarvestCatalogFixture(t *testing.T, repo string) {
+	t.Helper()
+
+	agentsRoot := filepath.Join(repo, ".agents")
+	harvestRoot := filepath.Join(agentsRoot, "harvest")
+	sourceRoot := filepath.Join(agentsRoot, "learnings")
+	if err := os.MkdirAll(harvestRoot, 0o755); err != nil {
+		t.Fatalf("mkdir harvest root: %v", err)
+	}
+	if err := os.MkdirAll(sourceRoot, 0o755); err != nil {
+		t.Fatalf("mkdir source root: %v", err)
+	}
+
+	sourcePath := filepath.Join(sourceRoot, "2026-04-25-harvested-activation.md")
+	if err := os.WriteFile(sourcePath, []byte(`---
+title: Harvested Activation
+confidence: 0.92
+summary: Harvested activation evidence should become operator surfaces without local packet builders.
+---
+
+# Harvested Activation
+
+Native activation can use promoted harvest catalog entries when packet builders are absent.
+`), 0o644); err != nil {
+		t.Fatalf("write harvest source: %v", err)
+	}
+
+	catalog := harvestpkg.Catalog{
+		SchemaVersion: harvestpkg.CatalogSchemaVersion,
+		RigsScanned:   1,
+		TotalFiles:    1,
+		Promoted: []harvestpkg.Artifact{
+			{
+				ID:          "learning-2026-04-25-harvested-activation",
+				Title:       "Harvested Activation",
+				Summary:     "Harvested activation evidence should become operator surfaces without local packet builders.",
+				Type:        "learning",
+				SourceRig:   "agentops-test",
+				SourcePath:  sourcePath,
+				ContentHash: "fixture",
+				Confidence:  0.92,
+				Scope:       "project:agentops",
+				Date:        "2026-04-25",
+			},
+		},
+	}
+	data, err := json.MarshalIndent(catalog, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal harvest catalog: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(harvestRoot, "latest.json"), data, 0o644); err != nil {
+		t.Fatalf("write harvest catalog: %v", err)
+	}
 }
 
 func writeKnowledgePacketBuilderFixtures(t *testing.T, repo string) {

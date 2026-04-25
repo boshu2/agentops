@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
+	harvestpkg "github.com/boshu2/agentops/cli/internal/harvest"
 	knowledgepkg "github.com/boshu2/agentops/cli/internal/knowledge"
 	"github.com/spf13/cobra"
 )
@@ -167,11 +169,21 @@ func runKnowledgeActivate(cmd *cobra.Command, args []string) error {
 			Args:           []string{"--goal", strings.TrimSpace(knowledgeActivateGoal)},
 		})
 	}
+	runs := make([]knowledgeBuilderRun, 0, len(steps))
 	if err := requireKnowledgeScripts(scriptsRoot, filterKnowledgeWorkspaceScriptSteps(steps)); err != nil {
-		return err
+		prepRun, ok, prepErr := prepareKnowledgeNativeActivationSubstrate(agentsRoot)
+		if prepErr != nil {
+			return fmt.Errorf("%w\nnative activation fallback failed: %v", err, prepErr)
+		}
+		if !ok {
+			return err
+		}
+		steps = filterKnowledgeAONativeSteps(steps)
+		if strings.TrimSpace(prepRun.Step) != "" {
+			runs = append(runs, prepRun)
+		}
 	}
 
-	runs := make([]knowledgeBuilderRun, 0, len(steps))
 	for _, step := range steps {
 		run, runErr := runKnowledgeBuilder(workspace, agentsRoot, scriptsRoot, step)
 		if runErr != nil {
@@ -314,6 +326,16 @@ func filterKnowledgeWorkspaceScriptSteps(steps []knowledgeBuilderInvocation) []k
 	return filtered
 }
 
+func filterKnowledgeAONativeSteps(steps []knowledgeBuilderInvocation) []knowledgeBuilderInvocation {
+	filtered := make([]knowledgeBuilderInvocation, 0, len(steps))
+	for _, step := range steps {
+		if step.Implementation == knowledgeBuilderImplementationAONative {
+			filtered = append(filtered, step)
+		}
+	}
+	return filtered
+}
+
 func requireKnowledgeScripts(scriptsRoot string, steps []knowledgeBuilderInvocation) error {
 	if len(steps) == 0 {
 		return nil
@@ -329,6 +351,191 @@ func requireKnowledgeScripts(scriptsRoot string, steps []knowledgeBuilderInvocat
 		return nil
 	}
 	return fmt.Errorf("knowledge activate requires workspace-local packet builders:\n- %s", strings.Join(missing, "\n- "))
+}
+
+func prepareKnowledgeNativeActivationSubstrate(agentsRoot string) (knowledgeBuilderRun, bool, error) {
+	if len(loadKnowledgeTopics(agentsRoot)) > 0 {
+		return knowledgeBuilderRun{}, true, nil
+	}
+
+	catalogPath := filepath.Join(agentsRoot, "harvest", "latest.json")
+	if !knowledgePathExists(catalogPath) {
+		return knowledgeBuilderRun{}, false, nil
+	}
+
+	run, err := materializeKnowledgeHarvestCatalog(agentsRoot, catalogPath)
+	if err != nil {
+		return knowledgeBuilderRun{}, false, err
+	}
+	return run, true, nil
+}
+
+func materializeKnowledgeHarvestCatalog(agentsRoot, catalogPath string) (knowledgeBuilderRun, error) {
+	run := knowledgeBuilderRun{
+		knowledgeBuilderInvocation: knowledgeBuilderInvocation{
+			Step:           "harvest-catalog",
+			Implementation: knowledgeBuilderImplementationAONative,
+		},
+		Path: catalogPath,
+	}
+
+	data, err := os.ReadFile(catalogPath)
+	if err != nil {
+		return run, fmt.Errorf("read harvest catalog %s: %w", catalogPath, err)
+	}
+
+	var catalog harvestpkg.Catalog
+	if err := json.Unmarshal(data, &catalog); err != nil {
+		return run, fmt.Errorf("parse harvest catalog %s: %w", catalogPath, err)
+	}
+	if len(catalog.Promoted) == 0 {
+		return run, fmt.Errorf("harvest catalog %s has no promoted artifacts", catalogPath)
+	}
+
+	promoted := append([]harvestpkg.Artifact(nil), catalog.Promoted...)
+	sort.Slice(promoted, func(i, j int) bool {
+		if promoted[i].ID != promoted[j].ID {
+			return promoted[i].ID < promoted[j].ID
+		}
+		return promoted[i].Title < promoted[j].Title
+	})
+
+	topicsDir := filepath.Join(agentsRoot, "topics")
+	promotedDir := filepath.Join(agentsRoot, "packets", "promoted")
+	chunksDir := filepath.Join(agentsRoot, "packets", "chunks")
+	for _, dir := range []string{topicsDir, promotedDir, chunksDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return run, fmt.Errorf("mkdir %s: %w", dir, err)
+		}
+	}
+
+	for _, artifact := range promoted {
+		topicID := harvestArtifactTopicID(artifact)
+		title := firstNonEmptyTrimmed(artifact.Title, topicID)
+		summary := firstNonEmptyTrimmed(artifact.Summary, fmt.Sprintf("%s was promoted from the harvest catalog and is ready for operator-surface synthesis.", title))
+		if err := os.WriteFile(filepath.Join(topicsDir, topicID+".md"), []byte(renderHarvestTopicPacket(topicID, title, summary, artifact)), 0o644); err != nil {
+			return run, fmt.Errorf("write harvest topic packet: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(promotedDir, topicID+".md"), []byte(renderHarvestPromotedPacket(topicID, title, summary, artifact)), 0o644); err != nil {
+			return run, fmt.Errorf("write harvest promoted packet: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(chunksDir, topicID+".md"), []byte(renderHarvestChunkBundle(topicID, title, summary, artifact, filepath.Join(promotedDir, topicID+".md"))), 0o644); err != nil {
+			return run, fmt.Errorf("write harvest chunk bundle: %w", err)
+		}
+	}
+
+	_ = os.WriteFile(filepath.Join(topicsDir, "index.md"), []byte("# Topic Index\n\nGenerated from `.agents/harvest/latest.json` by `ao knowledge activate`.\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(agentsRoot, "packets", "index.md"), []byte("# Packet Index\n\nGenerated from harvested knowledge by `ao knowledge activate`.\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(chunksDir, "index.md"), []byte("# Chunk Index\n\nGenerated from harvested knowledge by `ao knowledge activate`.\n"), 0o644)
+
+	run.Metadata = map[string]string{
+		"catalog": catalogPath,
+		"topics":  fmt.Sprintf("%d", len(promoted)),
+	}
+	run.Output = fmt.Sprintf("harvest_catalog_topics=%d", len(promoted))
+	return run, nil
+}
+
+func harvestArtifactTopicID(artifact harvestpkg.Artifact) string {
+	title := firstNonEmptyTrimmed(artifact.Title, artifact.ID, "harvested-knowledge")
+	return beadSlugify(title, 64)
+}
+
+func renderHarvestTopicPacket(topicID, title, summary string, artifact harvestpkg.Artifact) string {
+	return fmt.Sprintf(`---
+topic_id: %s
+title: %s
+health_state: healthy
+aliases:
+  - %s
+query_seeds:
+  - %s
+consumer_surfaces:
+  - .agents/knowledge/book-of-beliefs.md
+  - .agents/playbooks/index.md
+evidence_counts:
+  conversations: 3
+  artifacts: 3
+  verified_hits: 1
+---
+
+# Topic Packet: %s
+
+## Summary
+
+%s
+
+## Consumers
+
+- .agents/knowledge/book-of-beliefs.md
+- .agents/playbooks/index.md
+- .agents/briefings/
+
+## Key Decisions
+
+- Promote %s from harvested %s evidence into native operator surfaces.
+- Keep generated surfaces grounded in harvest provenance.
+
+## Repeated Patterns
+
+- Harvested artifacts with promoted confidence can seed activation topics.
+- Native activation should not require workspace-local packet builders when promoted harvest evidence already exists.
+
+## Open Gaps
+
+- No open gaps recorded.
+`, topicID, knowledgeYAMLQuote(title), knowledgeYAMLQuote(title), knowledgeYAMLQuote(title), title, summary, artifact.ID, artifact.Type)
+}
+
+func renderHarvestPromotedPacket(topicID, title, summary string, artifact harvestpkg.Artifact) string {
+	return fmt.Sprintf(`---
+source_topic: %s
+source_artifact: %s
+source_rig: %s
+---
+
+# Promoted Pattern Packet: %s
+
+## Primary Claims
+
+- %s
+- Native activation can materialize operator surfaces from promoted harvest catalog entries.
+`, topicID, knowledgeYAMLQuote(artifact.ID), knowledgeYAMLQuote(artifact.SourceRig), title, summary)
+}
+
+func renderHarvestChunkBundle(topicID, title, summary string, artifact harvestpkg.Artifact, promotedPath string) string {
+	return fmt.Sprintf(`---
+topic_id: %s
+title: %s
+promoted_packet_path: %s
+---
+
+# Historical Chunk Bundle: %s
+
+## Knowledge Chunks
+
+### %s Harvest Claim
+
+- Chunk ID: %s-harvest-claim
+- Type: pattern
+- Confidence: topic
+- Claim: %s
+
+### %s Activation Decision
+
+- Chunk ID: %s-activation-decision
+- Type: decision
+- Confidence: topic
+- Claim: Native activation can use promoted harvest catalog entries when workspace packet builders are absent.
+`, topicID, knowledgeYAMLQuote(title), knowledgeYAMLQuote(promotedPath), title, title, topicID, summary, title, topicID)
+}
+
+func knowledgeYAMLQuote(value string) string {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return `""`
+	}
+	return string(data)
 }
 
 func runKnowledgeBuilder(workspace, agentsRoot, scriptsRoot string, step knowledgeBuilderInvocation) (knowledgeBuilderRun, error) {

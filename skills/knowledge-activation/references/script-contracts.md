@@ -2,7 +2,7 @@
 
 ## Builder Boundary
 
-The current product slice still expects packet refresh builders under `WORKSPACE/.agents/scripts/` when `ao knowledge activate` needs to refresh the evidence substrate.
+`ao knowledge activate` uses workspace packet builders when they are present and a full source-manifest/topic/promotion/chunk rebuild is needed. When builders are absent, native activation can continue if either topic/packet substrate already exists or `WORKSPACE/.agents/harvest/latest.json` has promoted artifacts that can seed healthy topics, promoted packets, and chunk bundles.
 
 ### Packet Builders
 
@@ -19,6 +19,7 @@ These product surfaces are implemented inside the `ao` binary and no longer requ
 - `ao knowledge playbooks`
 - `ao knowledge brief --goal "<goal>"`
 - `ao knowledge gaps`
+- `ao knowledge activate` harvest-catalog substrate materialization
 
 ## Command Ownership
 
@@ -26,10 +27,10 @@ These product surfaces are implemented inside the `ao` binary and no longer requ
 
 Runs the full outer loop:
 
-1. source manifests
-2. topic packets
-3. promoted packets
-4. chunk bundles
+1. source manifests via workspace packet builders when present
+2. topic packets or native harvest-catalog topic materialization
+3. promoted packets or native harvest-catalog promotion materialization
+4. chunk bundles or native harvest-catalog chunk materialization
 5. native belief book build
 6. native playbook build
 7. optional native briefing build for `--goal`
@@ -54,7 +55,8 @@ Reads generated artifacts and reports thin topics, promotion gaps, weak claims, 
 
 This slice now splits responsibility:
 
-- packet refresh remains workspace-local while the corpus contracts keep moving
+- full packet refresh remains workspace-local while the corpus contracts keep moving
+- harvest-catalog-to-topic substrate materialization is durable `ao`-native fallback behavior
 - belief/playbook/brief/gap surfaces are durable `ao`-native product surfaces
 
 The skill contract stays stable across that boundary.
