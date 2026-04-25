@@ -94,7 +94,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Total: 208"},
+        {"type": "stdout_contains", "value": "Total: 212"},
         {"type": "stdout_contains", "value": "Fail: 0"},
         {"type": "stdout_contains", "value": "ALL PASSED"}
       ],
