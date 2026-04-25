@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
+  "suite": {
+    "id": "agentops-core.retrieval-brokerage-citations",
+    "path": "evals/agentops-core/retrieval-brokerage-citations.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "0db275fe28f81d9c64134cf7289aa69871ef0fd2e677d11f46356c1f7ddffd2e"
+  },
+  "started_at": "2026-04-25T07:54:58.948313694Z",
+  "completed_at": "2026-04-25T07:55:00.092168559Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "bb832aaf236d",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/retrieval-brokerage-citations.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
+    "promoted_from_run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
+    "promoted_at": "2026-04-25T07:55:00.185871717Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 33 baseline for retrieval brokerage citation canary"
+  },
+  "case_results": [
+    {
+      "id": "retrieval-brokerage-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 418,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "retrieval-brokerage-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 721,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "retrieval-brokerage-cli-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 2,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao search`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Search workspace session history and repo-local AgentOps knowledge.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--cass             Require upstream cass session-history search\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--local            Force repo-local AgentOps search only\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--cite string      Optional citation type to record for matching repo-local artifacts: retrieved, reference, applied\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao lookup`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--cite string      Citation type to record for returned artifacts: retrieved, reference, applied (default \\\"retrieved\\\")\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--no-cite          Skip citation recording\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao inject`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--no-cite               Disable citation recording\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--apply-decay           Apply confidence decay before ranking\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--session string        Session ID for citation tracking (auto-generated if empty)\""
+      ]
+    },
+    {
+      "id": "retrieval-brokerage-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "learning_closure": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/search.go contains \"By default, ao search brokers across two backends:\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"upstream cass search --workspace \u003ccwd\u003e for session history when cass is available\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"Use --cass to require upstream cass only.\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"--cass and --local are mutually exclusive\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"recordSearchCitations\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"isRetrievableArtifactPath\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"searchAuto\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"searchUpstreamCASS\"",
+        "artifact ../../cli/cmd/ao/search.go contains \"searchRepoLocalKnowledge\"",
+        "artifact ../../cli/cmd/ao/lookup.go contains \"Search query for relevance matching\"",
+        "artifact ../../cli/cmd/ao/lookup.go contains \"Skip citation recording\"",
+        "artifact ../../cli/cmd/ao/lookup.go contains \"recordLookupCitations\"",
+        "artifact ../../cli/cmd/ao/inject.go contains \"NOTICE: ao inject is deprecated (removal target: v3.0.0). Use 'ao lookup' for learnings or see .agents/AGENTS.md for navigation.\"",
+        "artifact ../../cli/cmd/ao/inject.go contains \"CASS integration adds maturity weighting and confidence decay.\"",
+        "artifact ../../cli/cmd/ao/inject.go contains \"gatherKnowledge collects all knowledge sources and records citations.\"",
+        "artifact ../../cli/cmd/ao/inject.go contains \"recordPatternCitations records citation events for retrieved patterns.\"",
+        "artifact ../../cli/cmd/ao/context_relevance.go contains \"defaultSessionSearchFn returns searchUpstreamCASS if fn is nil.\"",
+        "artifact ../../cli/cmd/ao/context_relevance.go contains \"runtimeCassHitScores(cwd, query, 8, nil)\"",
+        "artifact ../../cli/cmd/ao/context_relevance.go contains \"cassHitWeight\"",
+        "artifact ../../cli/cmd/ao/context_relevance.go contains \"usageSignalForArtifact\"",
+        "artifact ../../cli/cmd/ao/session_intelligence_telemetry.go contains \"type citationAggregate struct\"",
+        "artifact ../../cli/cmd/ao/session_intelligence_telemetry.go contains \"DedupedEvents\"",
+        "artifact ../../cli/cmd/ao/session_intelligence_telemetry.go contains \"normalizeCitationEventForRuntime\"",
+        "artifact ../../cli/cmd/ao/session_intelligence_telemetry.go contains \"annotateCitationMatch\"",
+        "artifact ../../cli/cmd/ao/session_intelligence_telemetry.go contains \"normalizeCitationMatchConfidence\""
+      ]
+    },
+    {
+      "id": "retrieval-brokerage-doc-and-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/architecture/ao-command-customization-matrix.md contains \"Brokers to upstream `cass` for session history and keeps fixed repo-local fallback helpers.\"",
+        "artifact ../../docs/architecture/codex-hookless-lifecycle.md contains \"`ao lookup` remains the primary automatic citation path for curated knowledge.\"",
+        "artifact ../../docs/architecture/codex-hookless-lifecycle.md contains \"`ao codex start` records `retrieved` citations for the startup artifacts it surfaces.\"",
+        "artifact ../../docs/architecture/codex-hookless-lifecycle.md contains \"`ao search --cite retrieved|reference|applied` provides an assisted path when a search result is actually adopted.\"",
+        "artifact ../../docs/architecture/codex-hookless-lifecycle.md contains \"Search citation is assisted rather than inferred from every result automatically; the user or skill must choose `--cite` when adoption is known.\"",
+        "artifact ../../docs/architecture/primitive-chains.md contains \"`ao search` and `ao lookup` pull prior repo knowledge and nearby precedents.\"",
+        "artifact ../../docs/architecture/primitive-chains.md contains \"`lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together\"",
+        "artifact ../../docs/contracts/session-intelligence-trust-model.md contains \"Any runtime surface that injects context must be able to explain:\"",
+        "artifact ../../skills/inject/SKILL.md contains \"Use `ao lookup --query \\\"topic\\\"` for on-demand learnings retrieval\"",
+        "artifact ../../skills/inject/SKILL.md contains \"After presenting injected knowledge, record which files were injected for the feedback loop:\"",
+        "artifact ../../skills/inject/SKILL.md contains \"Citation tracking enables the feedback loop\"",
+        "artifact ../../skills/inject/SKILL.md contains \"this hook emits only a pointer to on-demand retrieval commands (`ao search`, `ao lookup`).\"",
+        "artifact ../../skills-codex/inject/SKILL.md contains \"Treat `$inject` as passive context loading\"",
+        "artifact ../../skills-codex/inject/SKILL.md contains \"Use `$inject` or `ao inject` for on-demand retrieval\"",
+        "artifact ../../skills-codex/inject/SKILL.md contains \"After presenting injected knowledge, record which files were injected for the feedback loop:\"",
+        "artifact ../../skills-codex/inject/SKILL.md contains \"Citation tracking enables the feedback loop\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "learning_closure": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T075458Z/agentops-core.retrieval-brokerage-citations.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
