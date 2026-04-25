@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
+  "suite": {
+    "id": "agentops-core.push-worktree-closeout",
+    "path": "evals/agentops-core/push-worktree-closeout.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "ec4258847a1338873880a8fbde1fcd90d021484c151570b0d056c7fc76d12616"
+  },
+  "started_at": "2026-04-25T10:20:08.124811209Z",
+  "completed_at": "2026-04-25T10:20:08.517984863Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "21d7b95ec7ef",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/push-worktree-closeout.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
+    "promoted_from_run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
+    "promoted_at": "2026-04-25T10:20:08.608245428Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 47 baseline for push and worktree closeout governance canary"
+  },
+  "case_results": [
+    {
+      "id": "push-skill-validators",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 15,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"OK: push\""
+      ]
+    },
+    {
+      "id": "worktree-disposition-behavior",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "duration_ms": 376,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"PASS: check-worktree-disposition.sh\""
+      ]
+    },
+    {
+      "id": "push-skill-guardrail-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/push/SKILL.md contains \"Run ALL applicable test suites. Do NOT skip any.\"",
+        "artifact ../../skills/push/SKILL.md contains \"Stage only the files relevant to the current work. Do NOT use `git add -A` unless the user explicitly requests it.\"",
+        "artifact ../../skills/push/SKILL.md contains \"git pull --rebase origin $(git branch --show-current)\"",
+        "artifact ../../skills/push/SKILL.md contains \"git push origin $(git branch --show-current)\"",
+        "artifact ../../skills/push/SKILL.md contains \"NEVER push to `main` or `master` without explicit user confirmation\"",
+        "artifact ../../skills/push/SKILL.md contains \"NEVER stage files matching: `.env*`, `*credentials*`, `*secret*`, `*.key`, `*.pem`\"",
+        "artifact ../../skills/push/SKILL.md contains \"If `git pull --rebase` fails, do NOT force push\"",
+        "artifact ../../skills-codex/push/SKILL.md contains \"Do NOT run `ao codex stop` after the remote push.\"",
+        "artifact ../../skills-codex/push/SKILL.md contains \"Files changed count\""
+      ]
+    },
+    {
+      "id": "worktree-disposition-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"GIT_WORK_TREE=\\\"$(pwd -P)\\\"\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"FAIL: canonical root $target_root has uncommitted changes\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"Generated/gate-managed paths detected:\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"docs/preserved-refs.tsv\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"FAIL: current worktree is detached\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"FAIL: canonical root $canonical_root is detached; it must stay on main\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"FAIL: canonical root $canonical_root is on $canonical_branch; expected main\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"FAIL: unexpected branch-attached worktrees detected:\"",
+        "artifact ../../scripts/check-worktree-disposition.sh contains \"PASS: canonical root $canonical_root is clean on main; current branch $current_branch is attached at $repo_root\""
+      ]
+    },
+    {
+      "id": "landing-plane-instructions",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../AGENTS.md contains \"## Landing the Plane (Session Completion)\"",
+        "artifact ../../AGENTS.md contains \"Work is NOT complete until `git push` succeeds.\"",
+        "artifact ../../AGENTS.md contains \"git status  # MUST show \\\"up to date with origin\\\"\"",
+        "artifact ../../AGENTS.md contains \"NEVER stop before pushing - that leaves work stranded locally\"",
+        "artifact ../../AGENTS.md contains \"NEVER leave a foreign branch-attached worktree without a recorded disposition\"",
+        "artifact ../../AGENTS.md contains \"Keep the canonical root clean and attached to `main`.\"",
+        "artifact ../../AGENTS.md contains \"Run `bash scripts/check-worktree-disposition.sh` before push and session close.\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T102008Z/agentops-core.push-worktree-closeout.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

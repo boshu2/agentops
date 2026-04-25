@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.push-worktree-closeout",
+  "name": "AgentOps Push and Worktree Closeout Canary",
+  "description": "Offline public canary for session closeout safety: push skill guardrails, canonical worktree disposition behavior, preserved-ref governance, and landing-the-plane requirements.",
+  "domain": "process",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "push", "worktree", "closeout", "git", "session"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "push-skill-validators",
+      "title": "shared and Codex push validators pass",
+      "kind": "command",
+      "objective": "Keep the push skill artifacts loadable in both shared and Codex runtime copies.",
+      "runtime": "shell",
+      "timeout_seconds": 60,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/push/scripts/validate.sh && bash skills-codex/push/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "OK: push"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "worktree-disposition-behavior",
+      "title": "worktree disposition behavioral tests pass",
+      "kind": "command",
+      "objective": "Exercise canonical-root cleanliness, detached-root failure, dirty-root diagnostics, preserved-ref manifest checks, and unexpected foreign worktree failures.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-worktree-disposition.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "PASS: check-worktree-disposition.sh"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "push-skill-guardrail-contracts",
+      "title": "push skill preserves test, stage, sync, and no-force-push guardrails",
+      "kind": "artifact_check",
+      "objective": "Lock the push workflow guardrails that prevent stranded or unsafe changes: run tests, stage specific files, rebase before push, avoid main, avoid secrets, and do not force-push after rebase failures.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "Run ALL applicable test suites. Do NOT skip any."},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "Stage only the files relevant to the current work. Do NOT use `git add -A` unless the user explicitly requests it."},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "git pull --rebase origin $(git branch --show-current)"},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "git push origin $(git branch --show-current)"},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "NEVER push to `main` or `master` without explicit user confirmation"},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "NEVER stage files matching: `.env*`, `*credentials*`, `*secret*`, `*.key`, `*.pem`"},
+        {"type": "artifact_contains", "target": "../../skills/push/SKILL.md", "value": "If `git pull --rebase` fails, do NOT force push"},
+        {"type": "artifact_contains", "target": "../../skills-codex/push/SKILL.md", "value": "Do NOT run `ao codex stop` after the remote push."},
+        {"type": "artifact_contains", "target": "../../skills-codex/push/SKILL.md", "value": "Files changed count"}
+      ],
+      "dimensions": ["process_adherence", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "worktree-disposition-contracts",
+      "title": "worktree disposition script preserves canonical-root and preserved-ref checks",
+      "kind": "artifact_check",
+      "objective": "Ensure the disposition gate keeps its fail-closed checks for hook git env recovery, canonical root cleanliness, generated path diagnostics, preserved refs, and foreign branch-attached worktrees.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "GIT_WORK_TREE=\"$(pwd -P)\""},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: canonical root $target_root has uncommitted changes"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "Generated/gate-managed paths detected:"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "docs/preserved-refs.tsv"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: current worktree is detached"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: canonical root $canonical_root is detached; it must stay on main"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: canonical root $canonical_root is on $canonical_branch; expected main"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: unexpected branch-attached worktrees detected:"},
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "PASS: canonical root $canonical_root is clean on main; current branch $current_branch is attached at $repo_root"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"],
+      "critical": true
+    },
+    {
+      "id": "landing-plane-instructions",
+      "title": "agent closeout instructions require push and disposition proof",
+      "kind": "artifact_check",
+      "objective": "Keep AGENTS closeout policy explicit that a session is not complete until changes are committed, pushed, remotely confirmed, and foreign worktrees have a recorded disposition.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "## Landing the Plane (Session Completion)"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Work is NOT complete until `git push` succeeds."},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "git status  # MUST show \"up to date with origin\""},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "NEVER stop before pushing - that leaves work stranded locally"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "NEVER leave a foreign branch-attached worktree without a recorded disposition"},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Keep the canonical root clean and attached to `main`."},
+        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Run `bash scripts/check-worktree-disposition.sh` before push and session close."}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"],
+      "critical": true
+    }
+  ]
+}
