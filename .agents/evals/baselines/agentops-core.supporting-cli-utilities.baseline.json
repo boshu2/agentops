@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
+  "suite": {
+    "id": "agentops-core.supporting-cli-utilities",
+    "path": "evals/agentops-core/supporting-cli-utilities.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "f316e18e6d538a3b958e3abdbf80c147888528c6f609474e23ac02336af8ae2e"
+  },
+  "started_at": "2026-04-25T08:12:35.692773901Z",
+  "completed_at": "2026-04-25T08:12:36.875137426Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "68c29c809f55",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/supporting-cli-utilities.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
+    "promoted_from_run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
+    "promoted_at": "2026-04-25T08:12:36.962734219Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 35 baseline for supporting CLI utilities canary"
+  },
+  "case_results": [
+    {
+      "id": "supporting-cli-utility-go-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 417,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "supporting-cli-utility-help-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 761,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "supporting-cli-utility-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 2,
+      "diagnostics": [
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao demo`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Run an interactive demonstration of AgentOps capabilities.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao seed`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Plant the AgentOps seed in any repository.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--template string   Goal template: go-cli, python-lib, web-app, rust-cli, generic\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao badge`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Display a visual badge showing knowledge flywheel health status.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao completion`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Generate shell completion scripts for ao.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao config`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao config models`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--set-tier string    Set the default model cost tier (quality, balanced, budget)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao vibe-check`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Run a comprehensive vibe-check analysis on your repository.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao mind`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Scan, normalize, link, and index .agents/ markdown into an Obsidian knowledge graph.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao mind normalize`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao trace`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Trace the provenance of an artifact back to its source transcript.\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"### `ao extract`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"Check for pending session extractions and output a prompt for Claude to process.\""
+      ]
+    },
+    {
+      "id": "supporting-cli-utility-source-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../cli/cmd/ao/demo.go contains \"Interactive demo showing AgentOps value in 5 minutes\"",
+        "artifact ../../cli/cmd/ao/demo.go contains \"demoStepDelay = 500 * time.Millisecond\"",
+        "artifact ../../cli/cmd/ao/seed.go contains \"Auto-detection reads go.mod, package.json, pyproject.toml, and Cargo.toml\"",
+        "artifact ../../cli/cmd/ao/seed.go contains \"validateTemplateMapEntries(validTemplates, embedded.TemplatesFS)\"",
+        "artifact ../../cli/cmd/ao/seed.go contains \"type seedResult struct\"",
+        "artifact ../../cli/cmd/ao/badge.go contains \"Display knowledge flywheel health badge\"",
+        "artifact ../../cli/cmd/ao/badge.go contains \"escapeVelocityThreshold\"",
+        "artifact ../../cli/cmd/ao/completion.go contains \"ValidArgs:             []string{\\\"bash\\\", \\\"zsh\\\", \\\"fish\\\"}\"",
+        "artifact ../../cli/cmd/ao/completion.go contains \"GenBashCompletionV2\"",
+        "artifact ../../cli/cmd/ao/config.go contains \"AGENTOPS_MODEL_TIER\"",
+        "artifact ../../cli/cmd/ao/config.go contains \"modelsSetSkill\"",
+        "artifact ../../cli/cmd/ao/config.go contains \"Set a skill-specific tier override\"",
+        "artifact ../../cli/cmd/ao/vibe_check.go contains \"Run a comprehensive vibe-check analysis\"",
+        "artifact ../../cli/cmd/ao/vibe_check.go contains \"parseDuration(vibeCheckSince)\"",
+        "artifact ../../cli/cmd/ao/vibe_check.go contains \"vibecheck.Analyze\"",
+        "artifact ../../cli/cmd/ao/trace.go contains \"Trace the provenance of an artifact back to its source transcript.\"",
+        "artifact ../../cli/cmd/ao/trace.go contains \"provenance.NewGraph\"",
+        "artifact ../../cli/cmd/ao/trace.go contains \"if GetDryRun()\"",
+        "artifact ../../cli/cmd/ao/extract.go contains \"pending sessions (queued by 'ao forge --queue')\"",
+        "artifact ../../cli/cmd/ao/extract.go contains \"loadPendingOrNil\"",
+        "artifact ../../cli/cmd/ao/extract.go contains \"extractMostRecent\"",
+        "artifact ../../cli/cmd/ao/mind.go contains \"python3 -m mind\"",
+        "artifact ../../cli/cmd/ao/mind.go contains \"mindArgs := []string{\\\"-m\\\", \\\"mind\\\", subcommand}\"",
+        "artifact ../../cli/cmd/ao/mind.go contains \"if !GetDryRun()\""
+      ]
+    },
+    {
+      "id": "supporting-cli-utility-map-and-docs",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "diagnostics": [
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao badge` | flywheel, status |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao seed` | quickstart |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao extract` |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao completion` | User utility | Shell completion generation |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao config` | User utility | Config management |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao demo` | User utility | Interactive demonstration |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao vibe-check` | User utility |\"",
+        "artifact ../../docs/cli-skills-map.md contains \"| `ao trace` | User utility | Artifact tracing |\"",
+        "artifact ../../README.md contains \"ao demo\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T081235Z/agentops-core.supporting-cli-utilities.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}
