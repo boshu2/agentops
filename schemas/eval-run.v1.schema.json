@@ -1,0 +1,546 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/eval-run.v1.schema.json",
+  "title": "AgentOps Eval Run v1",
+  "description": "Run record and scorecard schema for AgentOps evaluation suites.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "suite",
+    "started_at",
+    "status",
+    "verdict",
+    "git",
+    "runtime",
+    "environment",
+    "case_results",
+    "aggregate_score",
+    "dimension_scores"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]*$"
+    },
+    "suite": {
+      "$ref": "#/$defs/suite_ref"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "$ref": "#/$defs/status"
+    },
+    "verdict": {
+      "$ref": "#/$defs/verdict"
+    },
+    "git": {
+      "$ref": "#/$defs/git"
+    },
+    "runtime": {
+      "$ref": "#/$defs/runtime_record"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment_record"
+    },
+    "baseline": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "compare",
+            "promote"
+          ]
+        },
+        "baseline_run_id": {
+          "type": "string"
+        },
+        "baseline_ref": {
+          "type": "string"
+        },
+        "baseline_path": {
+          "type": "string"
+        },
+        "promoted_from_run_id": {
+          "type": "string"
+        },
+        "promoted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "promoted_by": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "case_results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/case_result"
+      }
+    },
+    "aggregate_score": {
+      "$ref": "#/$defs/score"
+    },
+    "dimension_scores": {
+      "$ref": "#/$defs/dimension_scores"
+    },
+    "baseline_comparison": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "verdict"
+      ],
+      "properties": {
+        "verdict": {
+          "$ref": "#/$defs/verdict"
+        },
+        "baseline_run_id": {
+          "type": "string"
+        },
+        "baseline_score": {
+          "$ref": "#/$defs/score"
+        },
+        "aggregate_delta": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "dimension_deltas": {
+          "$ref": "#/$defs/dimension_deltas"
+        },
+        "regressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/comparison_item"
+          }
+        },
+        "improvements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/comparison_item"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "error",
+        "skipped",
+        "inconclusive"
+      ]
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "improvement",
+        "regression",
+        "advisory",
+        "inconclusive"
+      ]
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "static",
+        "mock",
+        "shell",
+        "claude",
+        "codex",
+        "manual"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "headless",
+        "live",
+        "release"
+      ]
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public_canary",
+        "private_holdout"
+      ]
+    },
+    "suite_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "visibility",
+        "tier"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visibility": {
+          "$ref": "#/$defs/visibility"
+        },
+        "tier": {
+          "$ref": "#/$defs/tier"
+        },
+        "version": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_ref",
+        "candidate_sha",
+        "dirty"
+      ],
+      "properties": {
+        "candidate_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_sha": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{7,40}$"
+        },
+        "baseline_ref": {
+          "type": "string"
+        },
+        "baseline_sha": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{7,40}$"
+        },
+        "dirty": {
+          "type": "boolean"
+        },
+        "dirty_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "runtime_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "live"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/runtime"
+        },
+        "version": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "live": {
+          "type": "boolean"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "skipped_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "environment_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scrubbed_env_prefixes",
+        "isolated_home",
+        "isolated_codex_home",
+        "network_access"
+      ],
+      "properties": {
+        "scrubbed_env_prefixes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "isolated_home": {
+          "type": "boolean"
+        },
+        "isolated_codex_home": {
+          "type": "boolean"
+        },
+        "network_access": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "enabled",
+            "unknown"
+          ]
+        },
+        "hooks_disabled": {
+          "type": "boolean"
+        },
+        "host_notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "case_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "score",
+        "dimension_scores"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "score": {
+          "$ref": "#/$defs/score"
+        },
+        "dimension_scores": {
+          "$ref": "#/$defs/dimension_scores"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "critical": {
+          "type": "boolean"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "failure_message": {
+          "type": "string"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dimension_scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "correctness": {
+          "$ref": "#/$defs/score"
+        },
+        "process_adherence": {
+          "$ref": "#/$defs/score"
+        },
+        "artifact_quality": {
+          "$ref": "#/$defs/score"
+        },
+        "runtime_compatibility": {
+          "$ref": "#/$defs/score"
+        },
+        "efficiency": {
+          "$ref": "#/$defs/score"
+        },
+        "safety": {
+          "$ref": "#/$defs/score"
+        },
+        "learning_closure": {
+          "$ref": "#/$defs/score"
+        }
+      },
+      "minProperties": 1
+    },
+    "dimension_deltas": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "correctness": {
+          "$ref": "#/$defs/delta"
+        },
+        "process_adherence": {
+          "$ref": "#/$defs/delta"
+        },
+        "artifact_quality": {
+          "$ref": "#/$defs/delta"
+        },
+        "runtime_compatibility": {
+          "$ref": "#/$defs/delta"
+        },
+        "efficiency": {
+          "$ref": "#/$defs/delta"
+        },
+        "safety": {
+          "$ref": "#/$defs/delta"
+        },
+        "learning_closure": {
+          "$ref": "#/$defs/delta"
+        }
+      }
+    },
+    "delta": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "comparison_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension",
+        "delta",
+        "reason"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string"
+        },
+        "dimension": {
+          "type": "string",
+          "enum": [
+            "correctness",
+            "process_adherence",
+            "artifact_quality",
+            "runtime_compatibility",
+            "efficiency",
+            "safety",
+            "learning_closure"
+          ]
+        },
+        "delta": {
+          "$ref": "#/$defs/delta"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "purpose"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "run_json",
+            "scorecard",
+            "transcript",
+            "stdout",
+            "stderr",
+            "diagnostic",
+            "fixture",
+            "baseline"
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      }
+    }
+  }
+}

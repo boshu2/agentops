@@ -25,6 +25,12 @@ skills, the runtime, and external integrations.
 
     RPI run registry specification.
 
+-   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
+
+    ---
+
+    Evaluation suite, run, scorecard, baseline, canary, and holdout contract.
+
 -   :material-format-list-numbered: **[Next-Work Queue](next-work.schema.md)**
 
     ---
