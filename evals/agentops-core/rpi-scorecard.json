@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.rpi-scorecard",
+  "name": "AgentOps RPI Scorecard Canary",
+  "description": "Offline public canary for the required RPI scorecard categories.",
+  "domain": "rpi",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "rpi", "scorecard"],
+  "allowed_runtimes": ["static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 20
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "artifact_quality", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "correctness", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "scorecard.artifact-completeness.surface",
+      "title": "RPI scorecard covers artifact completeness",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify required RPI artifacts exist and validate.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "artifact-completeness"}
+      ],
+      "dimensions": ["artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "scorecard.phase-order.surface",
+      "title": "RPI scorecard covers phase order",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify discovery, crank, and validation ordering.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "phase-order"}
+      ],
+      "dimensions": ["process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "scorecard.objective-spine.surface",
+      "title": "RPI scorecard covers objective spine",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify one objective is preserved across RPI phases.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "objective-spine"}
+      ],
+      "dimensions": ["process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "scorecard.validation-separation.surface",
+      "title": "RPI scorecard covers validation separation",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify implementation and validation evidence stay distinct.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "validation-separation"}
+      ],
+      "dimensions": ["process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "scorecard.scenario-satisfaction.surface",
+      "title": "RPI scorecard covers scenario satisfaction",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify scenario satisfaction evidence.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "scenario-satisfaction"}
+      ],
+      "dimensions": ["correctness"],
+      "critical": true
+    },
+    {
+      "id": "scorecard.runtime-safety.surface",
+      "title": "RPI scorecard covers runtime safety",
+      "kind": "artifact_check",
+      "objective": "Ensure scorecards verify runtime safety and isolation evidence.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/scorecard.go", "value": "runtime-safety"}
+      ],
+      "dimensions": ["safety"],
+      "critical": true
+    }
+  ]
+}

@@ -86,6 +86,60 @@ func TestEvalCompareCommandJSON(t *testing.T) {
 	}
 }
 
+func TestEvalScorecardCommandJSON(t *testing.T) {
+	withEvalCommand(t)
+	dir := t.TempDir()
+	baselinePath := filepath.Join(dir, "baseline.json")
+	candidatePath := filepath.Join(dir, "candidate.json")
+	writeEvalScorecardRunRecord(t, candidatePath, "candidate-run", map[string]float64{
+		"artifact-completeness": 1,
+		"phase-order":           1,
+		"objective-spine":       1,
+		"validation-separation": 1,
+		"scenario-satisfaction": 1,
+		"runtime-safety":        1,
+	})
+	writeEvalScorecardRunRecord(t, baselinePath, "baseline-run", map[string]float64{
+		"artifact-completeness": 0.8,
+		"phase-order":           1,
+		"objective-spine":       1,
+		"validation-separation": 1,
+		"scenario-satisfaction": 1,
+		"runtime-safety":        1,
+	})
+
+	out, err := executeCommand("eval", "scorecard", candidatePath, baselinePath, "--kind", "rpi", "--json")
+	if err != nil {
+		t.Fatalf("ao eval scorecard failed: %v\noutput: %s", err, out)
+	}
+	var scorecard aoeval.Scorecard
+	if err := json.Unmarshal([]byte(out), &scorecard); err != nil {
+		t.Fatalf("eval scorecard JSON parse failed: %v\noutput: %s", err, out)
+	}
+	if scorecard.Kind != aoeval.ScorecardKindRPI {
+		t.Fatalf("kind = %s, want rpi", scorecard.Kind)
+	}
+	if scorecard.CandidateRunID != "candidate-run" || scorecard.BaselineRunID != "baseline-run" {
+		t.Fatalf("run ids = %q/%q, want candidate-run/baseline-run", scorecard.CandidateRunID, scorecard.BaselineRunID)
+	}
+	if scorecard.Verdict != aoeval.VerdictImprovement {
+		t.Fatalf("verdict = %s, want improvement", scorecard.Verdict)
+	}
+	if len(scorecard.Categories) != 6 {
+		t.Fatalf("category count = %d, want 6", len(scorecard.Categories))
+	}
+	category := evalScorecardCategory(t, scorecard, "artifact completeness")
+	if category.CandidateScore != 1 {
+		t.Fatalf("artifact completeness candidate_score = %v, want 1", category.CandidateScore)
+	}
+	if category.BaselineScore == nil || *category.BaselineScore != 0.8 {
+		t.Fatalf("artifact completeness baseline_score = %v, want 0.8", category.BaselineScore)
+	}
+	if category.Delta == nil || *category.Delta != 0.2 {
+		t.Fatalf("artifact completeness delta = %v, want 0.2", category.Delta)
+	}
+}
+
 func TestEvalBaselineCommandJSON(t *testing.T) {
 	withEvalCommand(t)
 	dir := t.TempDir()
@@ -181,6 +235,87 @@ func writeEvalRunRecord(t *testing.T, path, runID string, score float64) {
 		t.Fatalf("marshal run: %v", err)
 	}
 	writeEvalCmdFile(t, path, string(data))
+}
+
+func writeEvalScorecardRunRecord(t *testing.T, path, runID string, scores map[string]float64) {
+	t.Helper()
+	slugs := []string{
+		"artifact-completeness",
+		"phase-order",
+		"objective-spine",
+		"validation-separation",
+		"scenario-satisfaction",
+		"runtime-safety",
+	}
+	sum := 0.0
+	results := make([]aoeval.CaseResult, 0, len(slugs))
+	for _, slug := range slugs {
+		score := scores[slug]
+		sum += score
+		results = append(results, aoeval.CaseResult{
+			ID:     "scorecard." + slug + ".surface",
+			Status: aoeval.StatusPass,
+			Score:  score,
+			DimensionScores: map[aoeval.Dimension]float64{
+				aoeval.DimensionCorrectness: score,
+			},
+		})
+	}
+	aggregate := sum / float64(len(slugs))
+	run := aoeval.RunRecord{
+		SchemaVersion: 1,
+		RunID:         runID,
+		Suite: aoeval.SuiteRef{
+			ID:         "agentops-core.rpi-scorecard",
+			Path:       "suite.json",
+			Visibility: aoeval.VisibilityPublicCanary,
+			Tier:       aoeval.TierDeterministic,
+		},
+		StartedAt: fixedEvalCmdTime(),
+		Status:    aoeval.StatusPass,
+		Verdict:   aoeval.VerdictPass,
+		Git: aoeval.GitRecord{
+			CandidateRef: "test",
+			CandidateSHA: "0000000",
+			Dirty:        false,
+		},
+		Runtime: aoeval.RuntimeRecord{
+			Name: aoeval.RuntimeStatic,
+			Live: false,
+		},
+		Environment: aoeval.EnvironmentRecord{
+			ScrubbedEnvPrefixes: []string{"AGENTOPS_RPI_RUNTIME"},
+			IsolatedHome:        false,
+			IsolatedCodexHome:   false,
+			NetworkAccess:       aoeval.NetworkDisabled,
+		},
+		CaseResults:    results,
+		AggregateScore: aggregate,
+		DimensionScores: map[aoeval.Dimension]float64{
+			aoeval.DimensionCorrectness:          aggregate,
+			aoeval.DimensionProcessAdherence:     aggregate,
+			aoeval.DimensionArtifactQuality:      aggregate,
+			aoeval.DimensionRuntimeCompatibility: aggregate,
+			aoeval.DimensionSafety:               aggregate,
+			aoeval.DimensionLearningClosure:      aggregate,
+		},
+	}
+	data, err := json.MarshalIndent(run, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal scorecard run: %v", err)
+	}
+	writeEvalCmdFile(t, path, string(data))
+}
+
+func evalScorecardCategory(t *testing.T, scorecard aoeval.Scorecard, name string) aoeval.ScorecardCategory {
+	t.Helper()
+	for _, category := range scorecard.Categories {
+		if category.Category == name {
+			return category
+		}
+	}
+	t.Fatalf("category %q not found in %+v", name, scorecard.Categories)
+	return aoeval.ScorecardCategory{}
 }
 
 func fixedEvalCmdTime() time.Time {

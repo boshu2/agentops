@@ -12,17 +12,20 @@ import (
 )
 
 var (
-	evalRunOutput      string
-	evalRunID          string
-	evalRunRuntime     string
-	evalRunBaseline    string
-	evalCompareOutput  string
-	evalCompareMaxAgg  float64
-	evalCompareMaxDim  float64
-	evalBaselineOutput string
-	evalBaselineBy     string
-	evalBaselineReason string
-	evalConfigured     bool
+	evalRunOutput       string
+	evalRunID           string
+	evalRunRuntime      string
+	evalRunBaseline     string
+	evalCompareOutput   string
+	evalCompareMaxAgg   float64
+	evalCompareMaxDim   float64
+	evalScorecardOutput string
+	evalScorecardKind   string
+	evalScorecardMaxCat float64
+	evalBaselineOutput  string
+	evalBaselineBy      string
+	evalBaselineReason  string
+	evalConfigured      bool
 )
 
 var evalCmd = &cobra.Command{
@@ -134,6 +137,49 @@ var evalBaselineCmd = &cobra.Command{
 	},
 }
 
+var evalScorecardCmd = &cobra.Command{
+	Use:   "scorecard <candidate-run.json> [baseline-run.json]",
+	Short: "Build an eval scorecard from run records",
+	Args:  cobra.RangeArgs(1, 2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		kind, err := parseScorecardKind(evalScorecardKind)
+		if err != nil {
+			return err
+		}
+		candidate, err := aoeval.LoadRun(args[0])
+		if err != nil {
+			return err
+		}
+		var baseline *aoeval.RunRecord
+		if len(args) == 2 {
+			baseline, err = aoeval.LoadRun(args[1])
+			if err != nil {
+				return err
+			}
+		}
+		scorecard, err := aoeval.BuildScorecard(candidate, baseline, aoeval.ScorecardOptions{
+			Kind:                  kind,
+			MaxCategoryRegression: evalScorecardMaxCat,
+		})
+		if err != nil {
+			return err
+		}
+		if evalScorecardOutput != "" {
+			if err := aoeval.WriteScorecard(evalScorecardOutput, scorecard); err != nil {
+				return err
+			}
+		}
+		if GetOutput() == "json" {
+			return writeEvalJSON(cmd, scorecard)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Eval scorecard %s: %s (%s, categories %d)\n", scorecard.CandidateRunID, scorecard.Verdict, scorecard.Kind, len(scorecard.Categories))
+		if evalScorecardOutput != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "Scorecard: %s\n", evalScorecardOutput)
+		}
+		return nil
+	},
+}
+
 func init() {
 	registerEvalCommand()
 }
@@ -165,7 +211,12 @@ func configureEvalCommand() {
 	evalBaselineCmd.Flags().StringVar(&evalBaselineBy, "promoted-by", "", "identity promoting the baseline")
 	evalBaselineCmd.Flags().StringVar(&evalBaselineReason, "rationale", "", "rationale for promoting the baseline")
 
-	evalCmd.AddCommand(evalRunCmd, evalCompareCmd, evalBaselineCmd)
+	evalScorecardCmd.Flags().StringVar(&evalScorecardOutput, "out", "", "write scorecard JSON to path")
+	evalScorecardCmd.Flags().StringVar(&evalScorecardKind, "kind", string(aoeval.ScorecardKindRPI), "scorecard kind (rpi, skill-change)")
+	evalScorecardCmd.Flags().Float64Var(&evalScorecardMaxCat, "max-category-regression", 0, "allowed per-category regression before verdict becomes regression")
+	_ = evalScorecardCmd.RegisterFlagCompletionFunc("kind", staticCompletionFunc(string(aoeval.ScorecardKindRPI), string(aoeval.ScorecardKindSkillChange)))
+
+	evalCmd.AddCommand(evalRunCmd, evalCompareCmd, evalBaselineCmd, evalScorecardCmd)
 }
 
 func parseEvalRuntime(value string) (aoeval.Runtime, error) {
@@ -178,6 +229,19 @@ func parseEvalRuntime(value string) (aoeval.Runtime, error) {
 		return aoeval.Runtime(value), nil
 	default:
 		return "", fmt.Errorf("runtime %q is out of deterministic scope (use static, mock, or shell)", value)
+	}
+}
+
+func parseScorecardKind(value string) (aoeval.ScorecardKind, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return aoeval.ScorecardKindRPI, nil
+	}
+	switch aoeval.ScorecardKind(value) {
+	case aoeval.ScorecardKindRPI, aoeval.ScorecardKindSkillChange:
+		return aoeval.ScorecardKind(value), nil
+	default:
+		return "", fmt.Errorf("unsupported scorecard kind %q (use rpi or skill-change)", value)
 	}
 }
 
