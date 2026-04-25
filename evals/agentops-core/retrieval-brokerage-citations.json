@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.retrieval-brokerage-citations",
+  "name": "AgentOps Retrieval Brokerage Citations Canary",
+  "description": "Offline public canary for CASS versus repo-local retrieval brokerage, search/lookup/inject citation accounting, context relevance scoring, and session-intelligence citation telemetry.",
+  "domain": "retrieval",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "retrieval", "search", "cass", "lookup", "inject", "citations", "context-relevance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "retrieval-brokerage-go-tests",
+      "title": "Retrieval brokerage, citation, context relevance, and telemetry tests pass",
+      "kind": "command",
+      "objective": "Protect behavior that decides between CASS and repo-local search, records adopted retrieval citations, weights relevance with CASS and citation telemetry, and dedupes session-intelligence citation signals.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestRunSearch_AutoUsesCassWithoutRepoLocalData|TestSelectAndSearch_DefaultsToCASS|TestSelectAndSearch_CassFlagRequiresWorkingCass|TestSelectAndSearch_AutoFallsBackToLocalWhenCassFails|TestSelectAndSearch_LocalFlagSkipsCass|TestSearchRepoLocalKnowledgeIncludesCompiledDir|TestSearchRepoLocalKnowledgeIncludesConfiguredDreamVaultSources|TestSearchRepoLocalKnowledgeIncludesPlanningSurfaces|TestRankUniqueSearchResultsSortsDedupesAndLimits|TestRecordSearchCitations_IgnoresNonRetrievablePaths|TestJSONValidity_Search|TestLookupByQuery_FindsNestedGlobalLearning|TestLookup_outputResults_jsonMode|TestRecordLookupCitations|TestInject_Integration_WithLearnings|TestInject_Integration_JSONFormat|TestIntegration_TwoPhaseInjection|TestInjectScoring_ContentHashDedup|TestInjectLearnings_collectLearnings_WithGlobalDir|TestCassHitWeight|TestRuntimeCassHitScores_WithMockSearch|TestBuildCitationAggregate_DedupesRepeatedSignals|TestAnnotateCitationMatch_BucketsConfidenceAndPreservesProvenance)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "retrieval-brokerage-help-smoke",
+      "title": "Retrieval brokerage CLI surfaces expose help",
+      "kind": "command",
+      "objective": "Ensure operators can discover search, lookup, inject, citation, and benchmark retrieval surfaces from a built ao binary.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" search --help >/dev/null; \"$tmp/ao\" lookup --help >/dev/null; \"$tmp/ao\" inject --help >/dev/null; \"$tmp/ao\" retrieval-bench --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "retrieval-brokerage-cli-docs",
+      "title": "Generated CLI docs expose brokerage and citation flags",
+      "kind": "artifact_check",
+      "objective": "Keep generated CLI docs aligned with retrieval brokerage defaults and citation-recording controls.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao search`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Search workspace session history and repo-local AgentOps knowledge."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--cass             Require upstream cass session-history search"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--local            Force repo-local AgentOps search only"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--cite string      Optional citation type to record for matching repo-local artifacts: retrieved, reference, applied"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao lookup`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--cite string      Citation type to record for returned artifacts: retrieved, reference, applied (default \"retrieved\")"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--no-cite          Skip citation recording"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao inject`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--no-cite               Disable citation recording"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--apply-decay           Apply confidence decay before ranking"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--session string        Session ID for citation tracking (auto-generated if empty)"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
+    },
+    {
+      "id": "retrieval-brokerage-source-contracts",
+      "title": "Source contracts preserve retrieval brokerage and citation behavior",
+      "kind": "artifact_check",
+      "objective": "Lock source-level guarantees for CASS/local search selection, citation recording, context scoring, and citation telemetry normalization.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "By default, ao search brokers across two backends:"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "upstream cass search --workspace <cwd> for session history when cass is available"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "Use --cass to require upstream cass only."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "--cass and --local are mutually exclusive"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "recordSearchCitations"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "isRetrievableArtifactPath"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "searchAuto"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "searchUpstreamCASS"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/search.go", "value": "searchRepoLocalKnowledge"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/lookup.go", "value": "Search query for relevance matching"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/lookup.go", "value": "Skip citation recording"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/lookup.go", "value": "recordLookupCitations"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/inject.go", "value": "NOTICE: ao inject is deprecated (removal target: v3.0.0). Use 'ao lookup' for learnings or see .agents/AGENTS.md for navigation."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/inject.go", "value": "CASS integration adds maturity weighting and confidence decay."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/inject.go", "value": "gatherKnowledge collects all knowledge sources and records citations."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/inject.go", "value": "recordPatternCitations records citation events for retrieved patterns."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_relevance.go", "value": "defaultSessionSearchFn returns searchUpstreamCASS if fn is nil."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_relevance.go", "value": "runtimeCassHitScores(cwd, query, 8, nil)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_relevance.go", "value": "cassHitWeight"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/context_relevance.go", "value": "usageSignalForArtifact"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_intelligence_telemetry.go", "value": "type citationAggregate struct"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_intelligence_telemetry.go", "value": "DedupedEvents"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_intelligence_telemetry.go", "value": "normalizeCitationEventForRuntime"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_intelligence_telemetry.go", "value": "annotateCitationMatch"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/session_intelligence_telemetry.go", "value": "normalizeCitationMatchConfidence"}
+      ],
+      "dimensions": ["correctness", "learning_closure", "safety"],
+      "critical": true
+    },
+    {
+      "id": "retrieval-brokerage-doc-and-skill-contracts",
+      "title": "Retrieval docs and skills preserve brokerage and citation guidance",
+      "kind": "artifact_check",
+      "objective": "Ensure architecture docs and shared/Codex skill contracts describe the retrieval brokerage, assisted citation path, and feedback loop expectations.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/architecture/ao-command-customization-matrix.md", "value": "Brokers to upstream `cass` for session history and keeps fixed repo-local fallback helpers."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/codex-hookless-lifecycle.md", "value": "`ao lookup` remains the primary automatic citation path for curated knowledge."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/codex-hookless-lifecycle.md", "value": "`ao codex start` records `retrieved` citations for the startup artifacts it surfaces."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/codex-hookless-lifecycle.md", "value": "`ao search --cite retrieved|reference|applied` provides an assisted path when a search result is actually adopted."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/codex-hookless-lifecycle.md", "value": "Search citation is assisted rather than inferred from every result automatically; the user or skill must choose `--cite` when adoption is known."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/primitive-chains.md", "value": "`ao search` and `ao lookup` pull prior repo knowledge and nearby precedents."},
+        {"type": "artifact_contains", "target": "../../docs/architecture/primitive-chains.md", "value": "`lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/session-intelligence-trust-model.md", "value": "Any runtime surface that injects context must be able to explain:"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Use `ao lookup --query \"topic\"` for on-demand learnings retrieval"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "After presenting injected knowledge, record which files were injected for the feedback loop:"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Citation tracking enables the feedback loop"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "this hook emits only a pointer to on-demand retrieval commands (`ao search`, `ao lookup`)."},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Treat `$inject` as passive context loading"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Use `$inject` or `ao inject` for on-demand retrieval"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "After presenting injected knowledge, record which files were injected for the feedback loop:"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Citation tracking enables the feedback loop"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    }
+  ]
+}
