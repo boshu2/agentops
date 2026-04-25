@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.hook-lifecycle-behavior-20260425T051531Z",
+  "run_id": "agentops-core.hook-lifecycle-behavior-20260425T053504Z",
   "suite": {
     "id": "agentops-core.hook-lifecycle-behavior",
     "path": "evals/agentops-core/hook-lifecycle-behavior.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "cfac8af6a88fe2f1ff281c8e0d1770bdb1bddec3581f986a3e537eaf0d381682"
+    "sha256": "c8fb0ddfa805a053b915341af202ca0b0770d8badab4926ff1df6b249cb84cf6"
   },
-  "started_at": "2026-04-25T05:15:31.975598502Z",
-  "completed_at": "2026-04-25T05:15:44.233436298Z",
+  "started_at": "2026-04-25T05:35:04.399038942Z",
+  "completed_at": "2026-04-25T05:35:16.686931421Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "ad41a9902c42",
+    "candidate_sha": "7a048b4fb44c",
     "dirty": false
   },
   "runtime": {
@@ -35,12 +35,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.hook-lifecycle-behavior-20260425T051531Z",
+    "baseline_run_id": "agentops-core.hook-lifecycle-behavior-20260425T053504Z",
     "baseline_path": ".agents/evals/baselines/agentops-core.hook-lifecycle-behavior.baseline.json",
-    "promoted_from_run_id": "agentops-core.hook-lifecycle-behavior-20260425T051531Z",
-    "promoted_at": "2026-04-25T05:15:44.326857439Z",
+    "promoted_from_run_id": "agentops-core.hook-lifecycle-behavior-20260425T053504Z",
+    "promoted_at": "2026-04-25T05:35:16.832457449Z",
     "promoted_by": "codex-rpi",
-    "rationale": "Initial hook lifecycle behavior baseline covering git hook install, hook chain, lifecycle integration, broad hook regressions, and release wiring."
+    "rationale": "Refresh hook lifecycle baseline after adding four holdout isolation bypass regression tests; aggregate behavior remains passing."
   },
   "case_results": [
     {
@@ -52,7 +52,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 102,
+      "duration_ms": 108,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -68,7 +68,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 416,
+      "duration_ms": 418,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -85,7 +85,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 1039,
+      "duration_ms": 1085,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -103,11 +103,11 @@
         "correctness": 1,
         "safety": 1
       },
-      "duration_ms": 10698,
+      "duration_ms": 10674,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
-        "stdout contains \"Total: 208\"",
+        "stdout contains \"Total: 212\"",
         "stdout contains \"Fail: 0\"",
         "stdout contains \"ALL PASSED\""
       ]
@@ -139,7 +139,7 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T051531Z/agentops-core.hook-lifecycle-behavior.run.json",
+      "path": ".agents/evals/runs/20260425T053504Z/agentops-core.hook-lifecycle-behavior.run.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
