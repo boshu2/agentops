@@ -108,102 +108,120 @@ func extractFromSubdir(rig RigInfo, subdir string, opts WalkOptions, result *Ext
 
 	walkErr := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			if os.IsPermission(err) {
-				warn(path, "walk_dir", err)
-				if d != nil && d.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			return err
+			return handleWalkErr(path, d, err, warn)
 		}
-
 		if d.IsDir() {
-			if path == dir {
-				return nil
-			}
-			name := d.Name()
-			if isSkipDir(name, opts.SkipDirs) {
-				return filepath.SkipDir
-			}
-			// Skip hidden subdirs (.git, .archive, etc.) under artifact dirs.
-			if strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
-			}
-			return nil
+			return classifyWalkDir(path, dir, d, opts)
 		}
-
 		// Plain files only — symlinks fall through fs.DirEntry as non-dir
 		// non-regular and are skipped here.
 		if !d.Type().IsRegular() {
 			return nil
 		}
-
-		name := d.Name()
-		ext := strings.ToLower(filepath.Ext(name))
-		if ext != ".md" && ext != ".jsonl" {
+		if !isArtifactFile(d.Name()) {
 			return nil
 		}
-
 		result.CandidateFiles++
-
-		if opts.MaxFileSize > 0 {
-			fi, statErr := d.Info()
-			if statErr != nil {
-				warn(path, "stat", fmt.Errorf("stat %s: %w", path, statErr))
-				return nil
-			}
-			if fi.Size() > opts.MaxFileSize {
-				return nil
-			}
+		if art, ok := readArtifactFile(rig, dir, path, d, root, opts, artType, warn); ok {
+			result.Artifacts = append(result.Artifacts, art)
 		}
-
-		relPath, relErr := filepath.Rel(dir, path)
-		if relErr != nil || relPath == "." || relPath == ".." ||
-			strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
-			return nil
-		}
-
-		data, readErr := root.ReadFile(relPath)
-		if readErr != nil {
-			warn(path, "read_file", fmt.Errorf("reading %s: %w", path, readErr))
-			return nil
-		}
-
-		content := string(data)
-		fm, body, parseErr := parseFrontmatter(content)
-		if parseErr != nil {
-			warn(path, "parse_frontmatter", fmt.Errorf("parsing frontmatter in %s: %w", path, parseErr))
-			return nil
-		}
-
-		fm = NormalizeFrontmatter(fm)
-
-		title := extractTitle(fm, body, name)
-		confidence := extractFloat(fm, "confidence", 0.5)
-		scope := extractString(fm, "scope", "project:"+rig.Project)
-		date := extractDate(fm, name)
-		slug := toSlug(title)
-		id := fmt.Sprintf("%s-%s-%s", artType, date, slug)
-
-		result.Artifacts = append(result.Artifacts, Artifact{
-			ID:          id,
-			Title:       title,
-			Summary:     extractString(fm, "summary", ""),
-			Type:        artType,
-			SourceRig:   rig.Rig,
-			SourcePath:  path,
-			ContentHash: hashNormalizedContent(body),
-			Confidence:  confidence,
-			Scope:       scope,
-			Date:        date,
-			Frontmatter: fm,
-		})
 		return nil
 	})
 	if walkErr != nil {
 		warn(dir, "walk_dir", fmt.Errorf("walking %s: %w", dir, walkErr))
 	}
+}
+
+// handleWalkErr maps a WalkDir-supplied error into the next walk action.
+// Permission errors warn and skip; other errors propagate.
+func handleWalkErr(path string, d fs.DirEntry, err error, warn func(path, stage string, err error)) error {
+	if os.IsPermission(err) {
+		warn(path, "walk_dir", err)
+		if d != nil && d.IsDir() {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+	return err
+}
+
+// classifyWalkDir decides whether to descend into a directory entry.
+func classifyWalkDir(path, dir string, d fs.DirEntry, opts WalkOptions) error {
+	if path == dir {
+		return nil
+	}
+	name := d.Name()
+	if isSkipDir(name, opts.SkipDirs) {
+		return filepath.SkipDir
+	}
+	// Skip hidden subdirs (.git, .archive, etc.) under artifact dirs.
+	if strings.HasPrefix(name, ".") {
+		return filepath.SkipDir
+	}
+	return nil
+}
+
+// isArtifactFile reports whether the file extension is one harvest extracts.
+func isArtifactFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	return ext == ".md" || ext == ".jsonl"
+}
+
+// readArtifactFile reads, parses, and converts one candidate file into an
+// Artifact. The bool is false when the file is skipped (size cap, rel-path
+// guard) or when reads/parses fail; warnings are routed via warn.
+func readArtifactFile(rig RigInfo, dir, path string, d fs.DirEntry, root *os.Root, opts WalkOptions, artType string, warn func(path, stage string, err error)) (Artifact, bool) {
+	if opts.MaxFileSize > 0 {
+		fi, statErr := d.Info()
+		if statErr != nil {
+			warn(path, "stat", fmt.Errorf("stat %s: %w", path, statErr))
+			return Artifact{}, false
+		}
+		if fi.Size() > opts.MaxFileSize {
+			return Artifact{}, false
+		}
+	}
+
+	relPath, relErr := filepath.Rel(dir, path)
+	if relErr != nil || relPath == "." || relPath == ".." ||
+		strings.HasPrefix(relPath, ".."+string(os.PathSeparator)) {
+		return Artifact{}, false
+	}
+
+	data, readErr := root.ReadFile(relPath)
+	if readErr != nil {
+		warn(path, "read_file", fmt.Errorf("reading %s: %w", path, readErr))
+		return Artifact{}, false
+	}
+
+	fm, body, parseErr := parseFrontmatter(string(data))
+	if parseErr != nil {
+		warn(path, "parse_frontmatter", fmt.Errorf("parsing frontmatter in %s: %w", path, parseErr))
+		return Artifact{}, false
+	}
+	fm = NormalizeFrontmatter(fm)
+
+	name := d.Name()
+	title := extractTitle(fm, body, name)
+	confidence := extractFloat(fm, "confidence", 0.5)
+	scope := extractString(fm, "scope", "project:"+rig.Project)
+	date := extractDate(fm, name)
+	slug := toSlug(title)
+	id := fmt.Sprintf("%s-%s-%s", artType, date, slug)
+
+	return Artifact{
+		ID:          id,
+		Title:       title,
+		Summary:     extractString(fm, "summary", ""),
+		Type:        artType,
+		SourceRig:   rig.Rig,
+		SourcePath:  path,
+		ContentHash: hashNormalizedContent(body),
+		Confidence:  confidence,
+		Scope:       scope,
+		Date:        date,
+		Frontmatter: fm,
+	}, true
 }
 
 // parseFrontmatter splits YAML frontmatter from body content.
