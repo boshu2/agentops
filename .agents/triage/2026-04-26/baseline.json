@@ -1,0 +1,7 @@
+{
+  "date": "2026-04-26",
+  "unconsumed_item_count": 62,
+  "morning_packet_count": 0,
+  "schema_violation_count": 0,
+  "schema_check": "PASS: 66 row(s) in next-work.jsonl conform to v1.3 schema enums"
+}
