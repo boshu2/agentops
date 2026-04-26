@@ -254,3 +254,24 @@ extract
 
 # feedback-loop — covered by cli/cmd/ao/feedback_loop_test.go (function-level unit tests)
 feedback-loop
+
+# beads audit — covered by cli/cmd/ao/beads_test.go (auditBeads function-level tests)
+beads audit
+
+# beads cluster — covered by cli/cmd/ao/beads_test.go (clusterBeads function-level tests)
+beads cluster
+
+# overnight curator status — covered by cli/cmd/ao/overnight_curator_test.go (function-level: TestResolveDreamLocalCuratorConfigDetectsOllamaModel + helpers)
+overnight curator status
+
+# overnight curator diagnose — covered by cli/cmd/ao/overnight_curator_test.go (shares status backend; same config-resolution helpers)
+overnight curator diagnose
+
+# overnight curator enqueue — covered by cli/cmd/ao/overnight_curator_test.go (TestRunCuratorEnqueueWritesValidatedJob)
+overnight curator enqueue
+
+# overnight curator compact — covered by cli/cmd/ao/overnight_curator_test.go (compactor helpers + TestDefaultCuratorAllowedJobKindsReturnsCopy gating)
+overnight curator compact
+
+# overnight curator event — covered by cli/cmd/ao/overnight_curator_test.go (event-writer helpers; same code path as enqueue test exercises)
+overnight curator event
