@@ -3,15 +3,15 @@
 // Dream runs a bounded outer loop against the local .agents/ corpus. Each
 // iteration is a three-stage wave:
 //
-//   - INGEST (parallel-safe, read-only): harvest, forge-mine, knowledge
-//     generators. Produces a staged catalog and measurement inputs. Never
-//     mutates .agents/.
+//   - INGEST (parallel-safe, read-only): harvest, forge-mine, and bounded
+//     read-side finding generators. Generators may fan out in process and write
+//     sidecars under the run output directory, but never mutate .agents/.
 //
 //   - REDUCE (serial, mutative, checkpointed): dedup, maturity temper,
 //     defrag --apply, close-loop promote, findings→next-work router,
-//     inject-cache refresh. Every mutation writes through a checkpoint
-//     overlay with 2-phase commit semantics, so any failure rolls the
-//     iteration back to the last known-good state.
+//     generator-sidecar aggregation, inject-cache refresh. Every mutation
+//     writes through a checkpoint overlay with 2-phase commit semantics, so any
+//     failure rolls the iteration back to the last known-good state.
 //
 //   - MEASURE (parallel-safe, read-only): retrieval-bench, metrics health,
 //     corpus-quality fitness vector, inject-visibility probe, findings
@@ -30,8 +30,9 @@
 //   - invoke /rpi or any code-mutating flow,
 //   - touch git (no commits, branches, pushes, or remote calls),
 //   - create symlinks anywhere,
-//   - fan work out to swarm / gc agents inside iterations (first slice;
-//     serial goroutines only).
+//   - fan work out to swarm / gc agents inside iterations. Only bounded
+//     in-process read-side generator goroutines are allowed, and REDUCE remains
+//     the serialized queue writer.
 //
 // Writes are confined to .agents/ and, via harvest, to ~/.agents/learnings/
 // (the global hub). A concurrency guard in cli/cmd/ao/harvest.go prevents

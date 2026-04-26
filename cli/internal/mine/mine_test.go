@@ -2,6 +2,7 @@ package mine
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -46,6 +47,29 @@ func TestRun_DryRunSkipsSourcesAndWrites(t *testing.T) {
 	// Sources field should be populated even on dry run.
 	if len(report.Sources) != 1 || report.Sources[0] != "events" {
 		t.Errorf("Sources = %v, want [events]", report.Sources)
+	}
+}
+
+func TestRun_ContextCanceledSkipsSourcesAndWrites(t *testing.T) {
+	tmp := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	opts := RunOpts{
+		Context:   ctx,
+		Sources:   []string{"agents"},
+		Window:    time.Hour,
+		OutputDir: filepath.Join(tmp, "mine-out"),
+	}
+
+	report, err := Run(tmp, opts)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run error = %v, want context.Canceled", err)
+	}
+	if report == nil {
+		t.Fatal("Run returned nil report")
+	}
+	if _, err := os.Stat(opts.OutputDir); !os.IsNotExist(err) {
+		t.Fatalf("canceled run should not create output dir, stat err = %v", err)
 	}
 }
 
