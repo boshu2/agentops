@@ -73,12 +73,7 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 		}
 	}
 
-	claudeManifest := filepath.Join(homeDir, ".agentops", "hooks.json")
-	legacyClaudeManifest := filepath.Join(homeDir, ".claude", "hooks.json")
-	codexConfig := filepath.Join(homeDir, ".codex", "config.toml")
-	codexManifest := filepath.Join(homeDir, ".codex", "hooks.json")
-	openCodeManifest := filepath.Join(homeDir, ".config", "opencode", "agentops", "hooks", "hooks.json")
-
+	paths := newLifecycleManifestPaths(homeDir)
 	runtimeKind := detectRuntimeKind(forceCodex)
 	profile := lifecycleRuntimeProfile{
 		Runtime: runtimeKind,
@@ -87,70 +82,106 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 
 	switch runtimeKind {
 	case runtimeKindCodex:
-		profile.Mode = lifecycleModeCodexHookless
-		profile.SessionID = resolveCodexSessionID(homeDir)
-		if entry, err := readCodexSessionIndexEntry(homeDir, profile.SessionID); err == nil && entry != nil {
-			profile.ThreadName = strings.TrimSpace(entry.ThreadName)
-		}
-		profile.HookCapable = codexSupportsNativeHooks(homeDir)
-		if profile.HookCapable {
-			manifestConfigured, manifestReason := codexHooksManifestConfigured(codexManifest)
-			featureEnabled := codexHooksFeatureEnabled(codexConfig)
-			switch {
-			case featureEnabled && manifestConfigured:
-				profile.Mode = lifecycleModeHookCapable
-				profile.HookConfigured = true
-				profile.HookManifestPath = codexManifest
-				profile.Reason = "Codex native hooks are configured via ~/.codex/hooks.json."
-			case manifestConfigured && !featureEnabled:
-				profile.Reason = "Codex native hooks are installed, but [features].codex_hooks is disabled in ~/.codex/config.toml; use ao codex start/stop until the feature flag is re-enabled."
-			case featureEnabled && !manifestConfigured:
-				profile.Reason = manifestReason
-			default:
-				profile.Reason = "Codex native hooks are supported but not configured; install them or use ao codex start/stop for explicit lifecycle handling."
-			}
-		} else {
-			profile.Reason = "Detected Codex runtime without native hook support; use ao codex start/stop for explicit lifecycle handling."
-		}
+		populateCodexProfile(&profile, homeDir, paths)
 	case runtimeKindClaude:
-		profile.HookCapable = true
-		profile.SessionID = canonicalSessionID(strings.TrimSpace(os.Getenv("CLAUDE_SESSION_ID")))
-		for _, candidate := range []string{claudeManifest, legacyClaudeManifest} {
-			if fileExists(candidate) {
-				profile.Mode = lifecycleModeHookCapable
-				profile.HookConfigured = true
-				profile.HookManifestPath = candidate
-				break
-			}
-		}
-		if !profile.HookConfigured {
-			profile.Reason = "Claude runtime supports hooks, but no installed hook manifest was found."
-		}
+		populateClaudeProfile(&profile, paths)
 	case runtimeKindOpenCode:
-		profile.HookCapable = true
-		profile.SessionID = canonicalSessionID(strings.TrimSpace(os.Getenv("OPENCODE_SESSION_ID")))
-		if fileExists(openCodeManifest) {
-			profile.Mode = lifecycleModeHookCapable
-			profile.HookConfigured = true
-			profile.HookManifestPath = openCodeManifest
-		} else {
-			profile.Reason = "OpenCode runtime detected without an installed AgentOps hook manifest."
-		}
+		populateOpenCodeProfile(&profile, paths)
 	default:
-		for _, candidate := range []string{openCodeManifest, claudeManifest, legacyClaudeManifest} {
-			if fileExists(candidate) {
-				profile.Mode = lifecycleModeHookCapable
-				profile.HookCapable = true
-				profile.HookConfigured = true
-				profile.HookManifestPath = candidate
-				profile.Reason = "Installed hook manifest detected; runtime can use hook-driven lifecycle."
-				return profile
-			}
-		}
-		profile.Reason = "No active runtime hook manifest detected."
+		populateUnknownProfile(&profile, paths)
 	}
 
 	return profile
+}
+
+// lifecycleManifestPaths bundles the per-runtime config/manifest paths so the
+// detector body and per-runtime helpers share the same source of truth.
+type lifecycleManifestPaths struct {
+	claudeManifest       string
+	legacyClaudeManifest string
+	codexConfig          string
+	codexManifest        string
+	openCodeManifest     string
+}
+
+func newLifecycleManifestPaths(homeDir string) lifecycleManifestPaths {
+	return lifecycleManifestPaths{
+		claudeManifest:       filepath.Join(homeDir, ".agentops", "hooks.json"),
+		legacyClaudeManifest: filepath.Join(homeDir, ".claude", "hooks.json"),
+		codexConfig:          filepath.Join(homeDir, ".codex", "config.toml"),
+		codexManifest:        filepath.Join(homeDir, ".codex", "hooks.json"),
+		openCodeManifest:     filepath.Join(homeDir, ".config", "opencode", "agentops", "hooks", "hooks.json"),
+	}
+}
+
+func populateCodexProfile(profile *lifecycleRuntimeProfile, homeDir string, paths lifecycleManifestPaths) {
+	profile.Mode = lifecycleModeCodexHookless
+	profile.SessionID = resolveCodexSessionID(homeDir)
+	if entry, err := readCodexSessionIndexEntry(homeDir, profile.SessionID); err == nil && entry != nil {
+		profile.ThreadName = strings.TrimSpace(entry.ThreadName)
+	}
+	profile.HookCapable = codexSupportsNativeHooks(homeDir)
+	if !profile.HookCapable {
+		profile.Reason = "Detected Codex runtime without native hook support; use ao codex start/stop for explicit lifecycle handling."
+		return
+	}
+	manifestConfigured, manifestReason := codexHooksManifestConfigured(paths.codexManifest)
+	featureEnabled := codexHooksFeatureEnabled(paths.codexConfig)
+	switch {
+	case featureEnabled && manifestConfigured:
+		profile.Mode = lifecycleModeHookCapable
+		profile.HookConfigured = true
+		profile.HookManifestPath = paths.codexManifest
+		profile.Reason = "Codex native hooks are configured via ~/.codex/hooks.json."
+	case manifestConfigured && !featureEnabled:
+		profile.Reason = "Codex native hooks are installed, but [features].codex_hooks is disabled in ~/.codex/config.toml; use ao codex start/stop until the feature flag is re-enabled."
+	case featureEnabled && !manifestConfigured:
+		profile.Reason = manifestReason
+	default:
+		profile.Reason = "Codex native hooks are supported but not configured; install them or use ao codex start/stop for explicit lifecycle handling."
+	}
+}
+
+func populateClaudeProfile(profile *lifecycleRuntimeProfile, paths lifecycleManifestPaths) {
+	profile.HookCapable = true
+	profile.SessionID = canonicalSessionID(strings.TrimSpace(os.Getenv("CLAUDE_SESSION_ID")))
+	for _, candidate := range []string{paths.claudeManifest, paths.legacyClaudeManifest} {
+		if fileExists(candidate) {
+			profile.Mode = lifecycleModeHookCapable
+			profile.HookConfigured = true
+			profile.HookManifestPath = candidate
+			break
+		}
+	}
+	if !profile.HookConfigured {
+		profile.Reason = "Claude runtime supports hooks, but no installed hook manifest was found."
+	}
+}
+
+func populateOpenCodeProfile(profile *lifecycleRuntimeProfile, paths lifecycleManifestPaths) {
+	profile.HookCapable = true
+	profile.SessionID = canonicalSessionID(strings.TrimSpace(os.Getenv("OPENCODE_SESSION_ID")))
+	if fileExists(paths.openCodeManifest) {
+		profile.Mode = lifecycleModeHookCapable
+		profile.HookConfigured = true
+		profile.HookManifestPath = paths.openCodeManifest
+	} else {
+		profile.Reason = "OpenCode runtime detected without an installed AgentOps hook manifest."
+	}
+}
+
+func populateUnknownProfile(profile *lifecycleRuntimeProfile, paths lifecycleManifestPaths) {
+	for _, candidate := range []string{paths.openCodeManifest, paths.claudeManifest, paths.legacyClaudeManifest} {
+		if fileExists(candidate) {
+			profile.Mode = lifecycleModeHookCapable
+			profile.HookCapable = true
+			profile.HookConfigured = true
+			profile.HookManifestPath = candidate
+			profile.Reason = "Installed hook manifest detected; runtime can use hook-driven lifecycle."
+			return
+		}
+	}
+	profile.Reason = "No active runtime hook manifest detected."
 }
 
 func codexSupportsNativeHooks(homeDir string) bool {
