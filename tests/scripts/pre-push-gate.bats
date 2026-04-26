@@ -50,6 +50,7 @@ setup() {
     make_stub "$FAKE_REPO/tests/skills/run-all.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-schema.sh"
     make_stub "$FAKE_REPO/scripts/validate-manifests.sh"
+    make_stub "$FAKE_REPO/scripts/check-casefold-path-collisions.sh"
     make_stub "$FAKE_REPO/scripts/generate-cli-reference.sh"
     # Checks 25-33: shifted from CI-only
     mkdir -p "$FAKE_REPO/tests/docs" "$FAKE_REPO/tests/hooks" \

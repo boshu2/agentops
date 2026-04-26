@@ -9,4 +9,4 @@
 # Rules:
 # - Wildcards are not allowed in path.
 # - Expired entries fail the contract compatibility gate.
-# - Remove entries once contracts are catalogued in docs/INDEX.md.
+# - Remove entries once contracts are catalogued in docs/documentation-index.md.

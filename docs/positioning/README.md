@@ -20,4 +20,4 @@ Use this section as the entry point for positioning work:
 - [`Convergence Thesis Discussion Draft`](./convergence-thesis-discussion.md) - draft for the pinned GitHub Discussion
 - [`HN / dev.to Article Draft`](./hn-devto-article.md) - long-form GTM draft for external posting
 
-Back: [Docs Index](../INDEX.md)
+Back: [Docs Index](../documentation-index.md)
