@@ -41,17 +41,29 @@ func classifyResult(ctxErr, cmdErr error) string {
 	}
 }
 
-// truncateOutput limits output to 500 runes and trims whitespace.
-// Uses rune-aware truncation to avoid splitting multi-byte UTF-8 characters.
+// truncateOutput caps output at 500 runes by keeping the first 200 and last
+// 200 runes joined by a truncation marker, then trims whitespace.
+// Diagnostic gate output (e.g. check-flywheel-compounding.sh) often puts the
+// operator hint at the END of stdout; head-only truncation cuts that hint.
+// The head+tail shape preserves both the failure label and the trailing fix.
+const (
+	truncateLimit  = 500
+	truncateHead   = 200
+	truncateTail   = 200
+	truncateMarker = "\n…[truncated]…\n"
+)
+
 func truncateOutput(raw []byte) string {
 	s := string(raw)
 	// Fast path: byte length is an upper bound on rune count, so any output
 	// whose byte length is already within the cap needs no rune counting or
 	// []rune allocation. Hot paths (successful gates with short stdout)
 	// always take this branch.
-	if len(s) > 500 && utf8.RuneCountInString(s) > 500 {
+	if len(s) > truncateLimit && utf8.RuneCountInString(s) > truncateLimit {
 		runes := []rune(s)
-		s = string(runes[:500])
+		head := string(runes[:truncateHead])
+		tail := string(runes[len(runes)-truncateTail:])
+		s = head + truncateMarker + tail
 	}
 	return strings.TrimSpace(s)
 }

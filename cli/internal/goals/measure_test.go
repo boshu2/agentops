@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -63,7 +64,46 @@ func TestMeasureOne_OutputTruncated(t *testing.T) {
 	}
 	m := MeasureOne(goal, 5*time.Second)
 	if len([]rune(m.Output)) > 500 {
-		t.Errorf("output should be truncated to 500 runes, got %d", len([]rune(m.Output)))
+		t.Errorf("output should be truncated to <= 500 runes, got %d", len([]rune(m.Output)))
+	}
+}
+
+// TestTruncateOutput_PreservesTailHint guards against the regression seen in
+// the 2026-04-26 nightly retro: head-only truncation cut diagnostic hints
+// that operators rely on (e.g. "sessions must use 'ao lookup --cite ...'").
+// A 1000-rune input must keep both the leading FAIL label and the trailing
+// HINT_AT_END marker.
+func TestTruncateOutput_PreservesTailHint(t *testing.T) {
+	prefix := "FAIL: "
+	suffix := " — HINT_AT_END"
+	fillerRunes := 1000 - len([]rune(prefix)) - len([]rune(suffix))
+	input := prefix + strings.Repeat("x", fillerRunes) + suffix
+	if len([]rune(input)) != 1000 {
+		t.Fatalf("test fixture wrong size: got %d runes, want 1000", len([]rune(input)))
+	}
+
+	got := truncateOutput([]byte(input))
+	if !strings.Contains(got, "HINT_AT_END") {
+		t.Errorf("trailing hint dropped; output = %q", got)
+	}
+	if !strings.Contains(got, "FAIL:") {
+		t.Errorf("leading FAIL label dropped; output = %q", got)
+	}
+	if !strings.Contains(got, "[truncated]") {
+		t.Errorf("truncation marker missing; output = %q", got)
+	}
+	if got == input {
+		t.Errorf("output unchanged from input; truncation did not run")
+	}
+}
+
+// TestTruncateOutput_ShortInputUntouched verifies the fast path is unchanged
+// for inputs at or below the cap.
+func TestTruncateOutput_ShortInputUntouched(t *testing.T) {
+	short := "FAIL: small output — operator hint here"
+	got := truncateOutput([]byte(short))
+	if got != short {
+		t.Errorf("short input mutated: got %q, want %q", got, short)
 	}
 }
 
@@ -269,11 +309,10 @@ func TestTruncateOutput_MultiByteRunes(t *testing.T) {
 
 	result := truncateOutput(input)
 	runeCount := len([]rune(result))
-	if runeCount > 500 {
-		t.Errorf("expected <=500 runes, got %d", runeCount)
-	}
-	if runeCount < 500 {
-		t.Errorf("expected exactly 500 runes (not fewer), got %d", runeCount)
+	// New shape: head (200 CJK) + marker (ASCII + ellipses) + tail (200 CJK).
+	expected := truncateHead + len([]rune(truncateMarker)) + truncateTail
+	if runeCount != expected {
+		t.Errorf("rune count = %d, want %d (head+marker+tail shape)", runeCount, expected)
 	}
 	for i, r := range result {
 		if r == '\uFFFD' {
