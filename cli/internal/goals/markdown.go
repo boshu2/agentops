@@ -186,6 +186,7 @@ func parseDirectives(lines []string) []Directive {
 
 // buildGateColumnMap takes header row cells and returns a column index map.
 // Default mapping: {"id": 0, "check": 1, "weight": 2, "description": 3}.
+// "tags" is opt-in: only present in the map when the header declares it.
 // Header cell names are matched case-insensitively to override default positions.
 func buildGateColumnMap(cells []string) map[string]int {
 	colMap := map[string]int{"id": 0, "check": 1, "weight": 2, "description": 3}
@@ -200,9 +201,39 @@ func buildGateColumnMap(cells []string) map[string]int {
 			colMap["weight"] = j
 		case "description":
 			colMap["description"] = j
+		case "tags":
+			colMap["tags"] = j
 		}
 	}
 	return colMap
+}
+
+// parseTagsCell splits a Tags cell into a slice of tag strings.
+// Tags are comma- or semicolon-separated, lowercased, and trimmed; empty
+// entries are dropped. Backticks wrapping the cell value are stripped.
+// Returns nil for empty input so an unset Tags field stays nil rather than
+// becoming an empty slice (preserves omitempty behavior in serialization).
+func parseTagsCell(s string) []string {
+	s = strings.TrimSpace(s)
+	if len(s) >= 2 && s[0] == '`' && s[len(s)-1] == '`' {
+		s = s[1 : len(s)-1]
+	}
+	if s == "" {
+		return nil
+	}
+	splitter := func(r rune) bool { return r == ',' || r == ';' }
+	parts := strings.FieldsFunc(s, splitter)
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.ToLower(strings.TrimSpace(p))
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // parseGateRow extracts a Goal from a data row's cells using the column index map.
@@ -232,6 +263,9 @@ func parseGateRow(cells []string, colMap map[string]int) Goal {
 	}
 	if g.Description == "" {
 		g.Description = g.ID
+	}
+	if idx, ok := colMap["tags"]; ok && idx < len(cells) {
+		g.Tags = parseTagsCell(cells[idx])
 	}
 	return g
 }
