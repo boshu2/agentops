@@ -42,3 +42,10 @@ setup() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"already installed"* ]] || [[ "$output" == *"skipping"* ]]
 }
+
+@test "skills/bootstrap/SKILL.md wires install-bd.sh" {
+    run grep -q "install-bd.sh" "$REPO_ROOT/skills/bootstrap/SKILL.md"
+    [ "$status" -eq 0 ]
+    run grep -q "command -v bd" "$REPO_ROOT/skills/bootstrap/SKILL.md"
+    [ "$status" -eq 0 ]
+}
