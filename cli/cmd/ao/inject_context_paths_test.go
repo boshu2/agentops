@@ -66,6 +66,57 @@ func TestNewAdhocContextRunID_FallsBackToTimeBits(t *testing.T) {
 	}
 }
 
+// TestEnsureContextDir_IdempotentOnAdhocCollision pins the documented
+// collision behavior: when two adhoc IDs share the same timestamp AND
+// the same 16-bit random suffix (~1/65 536 within the same second),
+// the second ensureContextDir call MUST reuse the directory rather than
+// erroring. This is the behavior that lets concurrent adhoc-id callers
+// stay safe without coordination.
+func TestEnsureContextDir_IdempotentOnAdhocCollision(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	first, err := ensureContextDir(tmpDir, "adhoc-1234-abcd", nil)
+	if err != nil {
+		t.Fatalf("first ensureContextDir error: %v", err)
+	}
+	// Drop a marker so we can prove the second call reused the same dir.
+	marker := filepath.Join(first, "marker.txt")
+	if err := os.WriteFile(marker, []byte("from-first"), 0644); err != nil {
+		t.Fatalf("write marker: %v", err)
+	}
+
+	second, err := ensureContextDir(tmpDir, "adhoc-1234-abcd", nil)
+	if err != nil {
+		t.Fatalf("collision ensureContextDir error: %v", err)
+	}
+	if first != second {
+		t.Errorf("collision returned different paths: first=%q second=%q", first, second)
+	}
+	got, err := os.ReadFile(filepath.Join(second, "marker.txt"))
+	if err != nil {
+		t.Fatalf("read marker after collision: %v", err)
+	}
+	if string(got) != "from-first" {
+		t.Errorf("marker = %q, want %q (second call clobbered the dir instead of reusing it)", got, "from-first")
+	}
+}
+
+// TestNewAdhocContextRunID_DistinctSuffixesInSameSecond pins that two adhoc
+// IDs minted in the same second with different entropy reads produce
+// different run IDs. This is the protection that makes 1-second timestamp
+// granularity acceptable in practice.
+func TestNewAdhocContextRunID_DistinctSuffixesInSameSecond(t *testing.T) {
+	now := time.Unix(2000, 0)
+	a := newAdhocContextRunID(now, strings.NewReader("\x00\x01"))
+	b := newAdhocContextRunID(now, strings.NewReader("\xff\xfe"))
+	if a == b {
+		t.Fatalf("expected different IDs, got %q == %q", a, b)
+	}
+	if a != "adhoc-2000-0001" || b != "adhoc-2000-fffe" {
+		t.Errorf("ids = (%q, %q), want (adhoc-2000-0001, adhoc-2000-fffe)", a, b)
+	}
+}
+
 func TestEnsureContextDir_CreatesDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	got, err := ensureContextDir(tmpDir, "test-run", nil)
