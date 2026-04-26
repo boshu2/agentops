@@ -6,6 +6,7 @@ package mine
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -216,6 +217,9 @@ type GateVerdictSummary struct {
 // main and cannot be imported from internal/. If MineEventsFn is nil
 // and "events" is in Sources, the events source is treated as a no-op.
 type RunOpts struct {
+	// Context bounds source execution. Nil means context.Background().
+	Context context.Context
+
 	// Sources restricts the scan to a subset of {git,agents,code,events}.
 	// Must be pre-validated via SplitSources.
 	Sources []string
@@ -270,6 +274,10 @@ func Run(cwd string, opts RunOpts) (*Report, error) {
 	if opts.Now == nil {
 		opts.Now = time.Now
 	}
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	report := &Report{
 		Timestamp:    opts.Now().UTC(),
@@ -283,7 +291,9 @@ func Run(cwd string, opts RunOpts) (*Report, error) {
 		return report, nil
 	}
 
-	runSources(cwd, opts, report)
+	if err := runSources(ctx, cwd, opts, report); err != nil {
+		return report, err
+	}
 
 	if err := writeReport(opts.OutputDir, report); err != nil {
 		return report, err
@@ -301,11 +311,14 @@ func Run(cwd string, opts RunOpts) (*Report, error) {
 // runSources dispatches each requested source, accumulating findings
 // into report. Per-source failures are logged to opts.ErrOut as
 // warnings when Quiet is false.
-func runSources(cwd string, opts RunOpts, report *Report) {
+func runSources(ctx context.Context, cwd string, opts RunOpts, report *Report) error {
 	for _, src := range opts.Sources {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		switch src {
 		case "git":
-			findings, gitErr := MineGitLog(cwd, opts.Window)
+			findings, gitErr := MineGitLogContext(ctx, cwd, opts.Window)
 			if gitErr != nil {
 				warnSource(opts, "git", gitErr)
 				continue
@@ -319,7 +332,7 @@ func runSources(cwd string, opts RunOpts, report *Report) {
 			}
 			report.Agents = findings
 		case "code":
-			findings, codeErr := MineCodeComplexity(cwd, opts.Window)
+			findings, codeErr := MineCodeComplexityContext(ctx, cwd, opts.Window)
 			if codeErr != nil {
 				warnSource(opts, "code", codeErr)
 				continue
@@ -337,6 +350,7 @@ func runSources(cwd string, opts RunOpts, report *Report) {
 			report.Events = findings
 		}
 	}
+	return ctx.Err()
 }
 
 // warnSource logs a per-source failure to opts.ErrOut unless Quiet is set.
@@ -369,12 +383,20 @@ var gitLogFixRe = regexp.MustCompile(`(?i)^[0-9a-f]+ (fix|bugfix|hotfix)`)
 // Shells out to `git log`; callers with no git repo should exclude the
 // git source from opts.Sources.
 func MineGitLog(cwd string, window time.Duration) (*GitFindings, error) {
+	return MineGitLogContext(context.Background(), cwd, window)
+}
+
+// MineGitLogContext extracts signal from git log with context cancellation.
+func MineGitLogContext(ctx context.Context, cwd string, window time.Duration) (*GitFindings, error) {
 	sinceArg := fmt.Sprintf("--since=%d seconds ago", int64(window.Seconds()))
-	cmd := exec.Command("git", "log", sinceArg, "--name-only", "--pretty=format:%H %s")
+	cmd := exec.CommandContext(ctx, "git", "log", sinceArg, "--name-only", "--pretty=format:%H %s")
 	cmd.Dir = cwd
 
 	out, err := cmd.Output()
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
 			return nil, fmt.Errorf("git log: %s", strings.TrimSpace(string(exitErr.Stderr)))
@@ -474,6 +496,11 @@ var gocycloLineRe = regexp.MustCompile(`^(\d+)\s+(\S+)\s+(\S+)\s+(\S+):(\d+):\d+
 // hotspots with recent git edits. If gocyclo is not installed or fails,
 // returns a skipped finding without error.
 func MineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error) {
+	return MineCodeComplexityContext(context.Background(), cwd, window)
+}
+
+// MineCodeComplexityContext runs gocyclo with context cancellation.
+func MineCodeComplexityContext(ctx context.Context, cwd string, window time.Duration) (*CodeFindings, error) {
 	findings := &CodeFindings{}
 
 	gocycloPath, err := exec.LookPath("gocyclo")
@@ -482,11 +509,14 @@ func MineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error)
 		return findings, nil
 	}
 
-	cmd := exec.Command(gocycloPath, "-top", "10", "cli/")
+	cmd := exec.CommandContext(ctx, gocycloPath, "-top", "10", "cli/")
 	cmd.Dir = cwd
 
 	out, err := cmd.Output()
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return findings, ctxErr
+		}
 		// gocyclo may fail if cli/ doesn't exist
 		findings.Skipped = true
 		return findings, nil
@@ -504,7 +534,7 @@ func MineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error)
 		funcName := matches[3]
 		file := matches[4]
 
-		recentEdits := CountRecentEdits(cwd, file, window)
+		recentEdits := CountRecentEditsContext(ctx, cwd, file, window)
 
 		findings.Hotspots = append(findings.Hotspots, ComplexityHotspot{
 			File:        file,
@@ -523,8 +553,13 @@ func MineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error)
 // CountRecentEdits counts how many commits touched a file within the
 // given window.
 func CountRecentEdits(cwd, file string, window time.Duration) int {
+	return CountRecentEditsContext(context.Background(), cwd, file, window)
+}
+
+// CountRecentEditsContext counts recent commits with context cancellation.
+func CountRecentEditsContext(ctx context.Context, cwd, file string, window time.Duration) int {
 	sinceArg := fmt.Sprintf("--since=%d seconds ago", int64(window.Seconds()))
-	cmd := exec.Command("git", "log", sinceArg, "--oneline", "--", file)
+	cmd := exec.CommandContext(ctx, "git", "log", sinceArg, "--oneline", "--", file)
 	cmd.Dir = cwd
 	out, err := cmd.Output()
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/forge"
@@ -57,9 +58,21 @@ type IngestResult struct {
 	// there are no candidates.
 	GeneratorDuplicateRate float64
 
+	// GeneratorSidecarCount is the count of per-generator sidecars written
+	// during INGEST.
+	GeneratorSidecarCount int
+
+	// GeneratorSoftFailCount is the count of generators that emitted a
+	// soft-fail sidecar instead of completed candidates.
+	GeneratorSoftFailCount int
+
 	// GeneratorSidecarPath points at the latest generator sidecar written
 	// during INGEST, relative or absolute according to RunLoopOptions.
 	GeneratorSidecarPath string
+
+	// GeneratorSidecarPaths points at every generator sidecar written during
+	// INGEST, relative or absolute according to RunLoopOptions.
+	GeneratorSidecarPaths []string
 
 	// Degraded lists human-readable degradation notes for substages that
 	// were skipped, deferred, or soft-failed.
@@ -77,10 +90,9 @@ type IngestResult struct {
 // RunIngest executes the parallel-safe INGEST stage.
 //
 // RunIngest never mutates the Dream corpus or next-work queue. It runs serial
-// substages (no swarm, no goroutine fan-out in the first slice) and each
-// substage degrades independently on failure. Read-side generators may write
-// per-run sidecars under OutputDir/generator-results so candidate yield is
-// measurable without creating queue write races. The stage as a whole only
+// corpus substages, then bounded read-side finding generators may fan out and
+// write per-run sidecars under OutputDir/generator-results so candidate yield
+// is measurable without creating queue write races. The stage as a whole only
 // returns a non-nil error when the harvest catalog cannot be produced — that
 // catalog is the load-bearing output REDUCE needs to run its real promotion
 // pass.
@@ -94,8 +106,8 @@ type IngestResult struct {
 //     under .agents/sessions/ (Wave 2 Issue 5 wiring).
 //  4. provenance.Audit — in-process audit of .agents/learnings/ for
 //     stale/missing citations (Wave 2 Issue 5 wiring).
-//  5. mine.Run — in-process drift/complexity pass with DryRun=true so
-//     INGEST remains read-only (Wave 2 Issue 5 wiring).
+//  5. finding generator fanout — read-only candidate producers, currently
+//     mine.Run with EmitWorkItems=false so INGEST never writes next-work.
 //
 // Substages 3-5 soft-fail independently: a single error degrades that
 // substage only and the stage continues. This is honest degradation per
@@ -126,7 +138,7 @@ func RunIngest(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Ingest
 	if err := runner.runProvenanceAudit(); err != nil {
 		return result, err
 	}
-	if err := runner.runMineFindings(); err != nil {
+	if err := runner.runFindingGenerators(); err != nil {
 		return result, err
 	}
 
@@ -141,6 +153,22 @@ type ingestRunner struct {
 	log     io.Writer
 	result  *IngestResult
 	started time.Time
+}
+
+const defaultFindingGeneratorTimeout = 2 * time.Minute
+
+type findingGenerator struct {
+	name       string
+	sourceEpic string
+	timeout    time.Duration
+	run        func(context.Context, RunLoopOptions) FindingGeneratorSidecar
+}
+
+type findingGeneratorRunResult struct {
+	name    string
+	sidecar FindingGeneratorSidecar
+	path    string
+	err     error
 }
 
 func newIngestResult() *IngestResult {
@@ -270,49 +298,130 @@ func (r *ingestRunner) runProvenanceAudit() error {
 	return nil
 }
 
-func (r *ingestRunner) runMineFindings() error {
+func (r *ingestRunner) runFindingGenerators() error {
 	if err := ctxCheck(r.ctx); err != nil {
 		return err
 	}
-	started := time.Now()
-	mineOpts := mine.RunOpts{
-		Sources: []string{"git", "agents", "code"},
-		Quiet:   true,
-		DryRun:  true,
-	}
-	mineReport, mineErr := mine.Run(r.opts.Cwd, mineOpts)
-	if mineErr != nil {
-		r.result.StageFailures["mine-findings"] = mineErr.Error()
-		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-findings: %v", mineErr))
-		r.recordMineGeneratorSidecar(buildFailedMineGeneratorSidecar(r.opts, started, time.Now(), mineErr))
+	generators := r.findingGenerators()
+	if len(generators) == 0 {
 		return nil
 	}
-	if mineReport != nil {
-		r.result.MineFindingsNew = countMineFindings(mineReport)
-		existingIDs, dedupErr := mine.LoadExistingMineIDs(filepath.Join(r.opts.Cwd, ".agents", "rpi", "next-work.jsonl"))
-		if dedupErr != nil {
-			r.result.StageFailures["mine-generator-dedup"] = dedupErr.Error()
-			r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-generator-dedup: %v", dedupErr))
-		}
-		r.recordMineGeneratorSidecar(buildMineGeneratorSidecar(r.opts, mineReport, started, time.Now(), existingIDs))
-		fmt.Fprintf(r.log, "overnight/ingest: mine-findings new=%d\n", r.result.MineFindingsNew)
+	results := make(chan findingGeneratorRunResult, len(generators))
+	for _, generator := range generators {
+		generator := generator
+		go func() {
+			results <- runFindingGenerator(r.ctx, r.opts, generator)
+		}()
+	}
+	ordered := make([]findingGeneratorRunResult, 0, len(generators))
+	for range generators {
+		ordered = append(ordered, <-results)
+	}
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].name < ordered[j].name })
+	for _, result := range ordered {
+		r.recordFindingGeneratorResult(result)
 	}
 	return nil
 }
 
-func (r *ingestRunner) recordMineGeneratorSidecar(sidecar FindingGeneratorSidecar) {
-	r.result.GeneratorCandidateCount = sidecar.CandidateCount
-	r.result.GeneratorDuplicateCount = sidecar.DuplicateCount
-	r.result.GeneratorDuplicateRate = sidecar.DuplicateRate
-	path, err := writeFindingGeneratorSidecar(r.opts, sidecar)
-	if err != nil {
-		r.result.StageFailures["mine-generator-sidecar"] = err.Error()
-		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-generator-sidecar: %v", err))
+func (r *ingestRunner) findingGenerators() []findingGenerator {
+	return []findingGenerator{
+		{
+			name:       mineFindingsGeneratorName,
+			sourceEpic: "compile-mine",
+			timeout:    defaultFindingGeneratorTimeout,
+			run:        runMineFindingGenerator,
+		},
+	}
+}
+
+func runFindingGenerator(
+	ctx context.Context,
+	opts RunLoopOptions,
+	generator findingGenerator,
+) findingGeneratorRunResult {
+	timeout := generator.timeout
+	if timeout <= 0 {
+		timeout = defaultFindingGeneratorTimeout
+	}
+	genCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	started := time.Now()
+	done := make(chan FindingGeneratorSidecar, 1)
+	go func() {
+		done <- generator.run(genCtx, opts)
+	}()
+
+	var sidecar FindingGeneratorSidecar
+	select {
+	case sidecar = <-done:
+	case <-genCtx.Done():
+		sidecar = buildFailedFindingGeneratorSidecar(
+			opts,
+			generator.name,
+			generator.sourceEpic,
+			started,
+			time.Now(),
+			genCtx.Err(),
+		)
+	}
+	path, err := writeFindingGeneratorSidecar(opts, sidecar)
+	return findingGeneratorRunResult{
+		name:    generator.name,
+		sidecar: sidecar,
+		path:    path,
+		err:     err,
+	}
+}
+
+func runMineFindingGenerator(ctx context.Context, opts RunLoopOptions) FindingGeneratorSidecar {
+	started := time.Now()
+	mineOpts := mine.RunOpts{
+		Context:       ctx,
+		Sources:       []string{"git", "agents", "code"},
+		Window:        26 * time.Hour,
+		OutputDir:     filepath.Join(opts.OutputDir, "mine-findings"),
+		Quiet:         true,
+		EmitWorkItems: false,
+	}
+	mineReport, mineErr := mine.Run(opts.Cwd, mineOpts)
+	if mineErr != nil {
+		return buildFailedMineGeneratorSidecar(opts, started, time.Now(), mineErr)
+	}
+	existingIDs, dedupErr := mine.LoadExistingMineIDs(filepath.Join(opts.Cwd, ".agents", "rpi", "next-work.jsonl"))
+	if dedupErr != nil {
+		return buildFailedMineGeneratorSidecar(opts, started, time.Now(), fmt.Errorf("mine-generator-dedup: %w", dedupErr))
+	}
+	return buildMineGeneratorSidecar(opts, mineReport, started, time.Now(), existingIDs)
+}
+
+func (r *ingestRunner) recordFindingGeneratorResult(runResult findingGeneratorRunResult) {
+	sidecar := runResult.sidecar
+	if sidecar.Status == "soft-fail" {
+		r.result.GeneratorSoftFailCount++
+		if sidecar.Error != "" {
+			r.result.StageFailures[runResult.name] = sidecar.Error
+			r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("%s: %s", runResult.name, sidecar.Error))
+		}
+	}
+	if runResult.err != nil {
+		r.result.StageFailures[runResult.name+"-sidecar"] = runResult.err.Error()
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("%s-sidecar: %v", runResult.name, runResult.err))
 		return
 	}
-	r.result.GeneratorSidecarPath = path
+	r.result.GeneratorCandidateCount += sidecar.CandidateCount
+	r.result.GeneratorDuplicateCount += sidecar.DuplicateCount
+	if r.result.GeneratorCandidateCount > 0 {
+		r.result.GeneratorDuplicateRate = float64(r.result.GeneratorDuplicateCount) / float64(r.result.GeneratorCandidateCount)
+	}
+	r.result.GeneratorSidecarCount++
+	r.result.GeneratorSidecarPath = runResult.path
+	r.result.GeneratorSidecarPaths = append(r.result.GeneratorSidecarPaths, runResult.path)
+	if sidecar.Generator == mineFindingsGeneratorName {
+		r.result.MineFindingsNew = sidecar.NewCandidateCount
+	}
 	fmt.Fprintf(r.log, "overnight/ingest: %s sidecar candidates=%d duplicates=%d path=%s\n",
-		sidecar.Generator, sidecar.CandidateCount, sidecar.DuplicateCount, path)
+		sidecar.Generator, sidecar.CandidateCount, sidecar.DuplicateCount, runResult.path)
 }
 
 // ctxCheck returns ctx.Err() if ctx has been cancelled, or nil otherwise.

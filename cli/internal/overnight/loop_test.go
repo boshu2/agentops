@@ -228,7 +228,10 @@ func TestIngestSummary(t *testing.T) {
 		GeneratorCandidateCount: 8,
 		GeneratorDuplicateCount: 2,
 		GeneratorDuplicateRate:  0.25,
+		GeneratorSidecarCount:   1,
+		GeneratorSoftFailCount:  0,
 		GeneratorSidecarPath:    ".agents/overnight/test-run/generator-results/mine-findings.json",
+		GeneratorSidecarPaths:   []string{".agents/overnight/test-run/generator-results/mine-findings.json"},
 	}
 	got := ingestSummary(r)
 	if got["harvest_preview_count"] != 4 {
@@ -255,8 +258,18 @@ func TestIngestSummary(t *testing.T) {
 	if got["generator_sidecar_path"] != ".agents/overnight/test-run/generator-results/mine-findings.json" {
 		t.Fatalf("generator_sidecar_path: got %v, want sidecar path", got["generator_sidecar_path"])
 	}
-	if len(got) != 8 {
-		t.Fatalf("summary key count: got %d, want 8", len(got))
+	if got["generator_sidecar_count"] != 1 {
+		t.Fatalf("generator_sidecar_count: got %v, want 1", got["generator_sidecar_count"])
+	}
+	if got["generator_soft_fail_count"] != 0 {
+		t.Fatalf("generator_soft_fail_count: got %v, want 0", got["generator_soft_fail_count"])
+	}
+	paths, ok := got["generator_sidecar_paths"].([]string)
+	if !ok || len(paths) != 1 || paths[0] != ".agents/overnight/test-run/generator-results/mine-findings.json" {
+		t.Fatalf("generator_sidecar_paths: got %#v, want one sidecar path", got["generator_sidecar_paths"])
+	}
+	if len(got) != 11 {
+		t.Fatalf("summary key count: got %d, want 11", len(got))
 	}
 }
 
@@ -264,23 +277,31 @@ func TestIngestSummary(t *testing.T) {
 // the expected key in the summary map.
 func TestReduceSummary(t *testing.T) {
 	r := &ReduceResult{
-		HarvestPromoted:   1,
-		DedupMerged:       2,
-		MaturityTempered:  3,
-		DefragPruned:      4,
-		CloseLoopPromoted: 5,
-		FindingsRouted:    6,
-		InjectRefreshed:   true,
-		RolledBack:        true,
+		HarvestPromoted:             1,
+		DedupMerged:                 2,
+		MaturityTempered:            3,
+		DefragPruned:                4,
+		CloseLoopPromoted:           5,
+		FindingsRouted:              6,
+		GeneratorCandidatesRouted:   7,
+		GeneratorCandidatesSkipped:  8,
+		GeneratorSidecarsAggregated: 9,
+		GeneratorSidecarsSoftFailed: 1,
+		InjectRefreshed:             true,
+		RolledBack:                  true,
 	}
 	got := reduceSummary(r)
 	wantInts := map[string]int{
-		"harvest_promoted":    1,
-		"dedup_merged":        2,
-		"maturity_tempered":   3,
-		"defrag_pruned":       4,
-		"close_loop_promoted": 5,
-		"findings_routed":     6,
+		"harvest_promoted":               1,
+		"dedup_merged":                   2,
+		"maturity_tempered":              3,
+		"defrag_pruned":                  4,
+		"close_loop_promoted":            5,
+		"findings_routed":                6,
+		"generator_candidates_routed":    7,
+		"generator_candidates_skipped":   8,
+		"generator_sidecars_aggregated":  9,
+		"generator_sidecars_soft_failed": 1,
 	}
 	for k, v := range wantInts {
 		if got[k] != v {
@@ -293,8 +314,8 @@ func TestReduceSummary(t *testing.T) {
 	if got["rolled_back"] != true {
 		t.Fatalf("rolled_back: got %v, want true", got["rolled_back"])
 	}
-	if len(got) != 8 {
-		t.Fatalf("summary key count: got %d, want 8", len(got))
+	if len(got) != 12 {
+		t.Fatalf("summary key count: got %d, want 12", len(got))
 	}
 }
 

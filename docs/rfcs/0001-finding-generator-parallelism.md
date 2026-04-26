@@ -1,8 +1,27 @@
 # RFC 0001: Finding-Generator Parallelism
 
-Status: draft
+Status: accepted (Proposal 1 implemented 2026-04-26)
 Date: 2026-04-26
 Branch: `research/finding-generator-parallelism`
+
+## Decision Record
+
+**Proposal 1 — accepted and implemented.** The first slice landed in two commits:
+
+- `1bd2f082` (PR #154) — wired the `mine.Run` adapter to write a per-run sidecar at `.agents/overnight/<run-id>/generator-results/mine-findings.json` from INGEST. Sidecar schema landed at `cli/internal/overnight/generator_sidecars.go:24-56` (`FindingGeneratorSidecar`, `FindingGeneratorCandidate`).
+- `08e3a38e` (PR #155) — added `AggregateFindingGeneratorSidecars` (`cli/internal/overnight/generator_sidecars.go:225-302`) as the single serialized writer for `next-work.jsonl`, wired in as REDUCE stage 7 between `findings-router` and `inject-refresh` (`cli/internal/overnight/reduce.go:247-373`). Dedup uses both finding ID and a normalized `finding-generator|<generator>|<type|title|target>` `dedup_key`; on collision the higher-severity candidate wins (`preferGeneratorCandidate`). Soft-failed sidecars surface as degraded notes without blocking the iteration.
+
+**Contract updates landed alongside:**
+- `docs/contracts/dream-run-contract.md:208-249` — INGEST may run bounded in-process read-only generators concurrently; REDUCE remains the single serialized writer for `.agents/rpi/next-work.jsonl`.
+- `skills/dream/SKILL.md:53-58` — anti-goals updated to mirror the contract.
+- `PROGRAM.md` — adds `.agents/overnight/*/generator-results/*.json` as Dream-owned runtime state.
+
+**Decision Ask #2 — partially resolved.** `dedup_key` is now first-class on items the aggregator emits (`generatorNextWorkItem.DedupKey`, `cli/internal/overnight/generator_sidecars.go:324-336`) and the dedup loader reads it back across runs (`loadGeneratorNextWorkDedupState`, ibid. lines 368-422). The schema documentation in `docs/contracts/next-work.schema.md` will be updated to surface `dedup_key` as an optional first-class item field. `status`, `requires`, and `goal_weight` remain deferred — they are required for Proposal 2 (external watchlist) and have no consumer in Proposal 1.
+
+**Decision Ask #3 — deferred.** External web/competitor/dependency findings remain out of scope until Proposal 2. When Proposal 2 is taken up, those generators will emit `status=proposed`, `requires=human-review` candidates that the selector explicitly holds.
+
+**Fitness signals shipping with Proposal 1** (visible on `IngestResult` and `ReduceResult`):
+`generator_candidate_count`, `generator_duplicate_count`, `generator_duplicate_rate`, `generator_sidecar_count`, `generator_soft_fail_count`, `generator_candidates_routed`, `generator_candidates_skipped`, `generator_sidecars_aggregated`, `generator_sidecars_soft_failed`. Auto-revert thresholds from the Risks section (duplicate rate ≥ 0.75 for two consecutive nights, regression-halt rise) remain advisory until two nights of baseline data accumulate.
 
 ## Problem
 
