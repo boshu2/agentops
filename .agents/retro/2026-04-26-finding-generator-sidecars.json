@@ -1,0 +1,29 @@
+{
+  "id": "retro-2026-04-26-finding-generator-sidecars",
+  "date": "2026-04-26",
+  "epic_id": "pr-155",
+  "verdict": "PASS",
+  "duration_minutes": 24,
+  "cycle_time_trend": "stable",
+  "learnings_extracted": 2,
+  "learnings_promoted": 2,
+  "stale_retired": 0,
+  "prediction_accuracy": {
+    "hits": 3,
+    "misses": 0,
+    "surprises": 1,
+    "rate": 1.0
+  },
+  "footguns": [
+    "In-process generators can ignore context cancellation unless authoring rules require context-aware IO",
+    "A remote PR merge can succeed even when the local gh command exits non-zero because another worktree owns main",
+    "Dirty worktree-local docs can appear on a clean post-mortem branch and must stay unstaged"
+  ],
+  "top_learning": "Parallel read lanes should emit sidecars while one reducer owns the durable queue write.",
+  "improvements_proposed": 2,
+  "tags": [
+    "architecture",
+    "testing",
+    "process"
+  ]
+}
