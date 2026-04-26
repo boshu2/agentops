@@ -78,6 +78,12 @@ type NextWorkItem struct {
 	ConsumedBy  *string           `json:"consumed_by,omitempty"`
 	ConsumedAt  *string           `json:"consumed_at,omitempty"`
 	FailedAt    *string           `json:"failed_at,omitempty"`
+	// ProbedStaleAt records when a tractability probe found this item
+	// already satisfied (file/symbol/script grep matched) but the item
+	// has not yet been marked consumed. Pairs with ProbedBy so future
+	// nightlies can skip the item without re-probing.
+	ProbedStaleAt *string `json:"probed_stale_at,omitempty"`
+	ProbedBy      *string `json:"probed_by,omitempty"`
 }
 
 // QueueSelection holds the selected item together with its source entry index

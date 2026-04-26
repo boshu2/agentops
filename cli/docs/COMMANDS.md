@@ -1590,6 +1590,24 @@ ao rpi loop [goal] [flags]
       --supervisor                        Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup)
 ```
 
+#### `ao rpi mark-probed`
+
+Set probed_stale_at and probed_by on a next-work item whose tractability
+
+```
+ao rpi mark-probed [flags]
+```
+
+**Flags:**
+
+```
+      --at string      Override the probed-at timestamp (RFC3339); defaults to now
+      --by string      Probe author tag, e.g. nightly/2026-04-26-v3 (required)
+  -h, --help           help for mark-probed
+      --id string      Item identifier (id, bead_id, or title) to stamp (required)
+      --queue string   Path to next-work.jsonl (default ".agents/rpi/next-work.jsonl")
+```
+
 #### `ao rpi nudge`
 
 Send a message to an active tmux-backed RPI phase session.
