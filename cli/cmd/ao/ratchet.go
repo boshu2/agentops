@@ -101,8 +101,15 @@ func statusIcon(status ratchet.StepStatus) string {
 }
 
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	if max <= 0 {
+		return ""
+	}
+	runes := []rune(s)
+	if len(runes) <= max {
 		return s
 	}
-	return s[:max-3] + "..."
+	if max <= 3 {
+		return "..."[:max]
+	}
+	return string(runes[:max-3]) + "..."
 }

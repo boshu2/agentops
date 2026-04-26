@@ -66,10 +66,10 @@ func TestFindOrphanSkills(t *testing.T) {
 func TestFindUndocumentedDirs(t *testing.T) {
 	tmp := t.TempDir()
 	agentsDir := filepath.Join(tmp, ".agents")
-	mkdir(t, agentsDir, "learnings")  // catalogued
-	mkdir(t, agentsDir, "harvest")    // skill-owned
-	mkdir(t, agentsDir, "stray-dir")  // undocumented
-	mkdir(t, agentsDir, ".git")       // hidden, must be skipped
+	mkdir(t, agentsDir, "learnings") // catalogued
+	mkdir(t, agentsDir, "harvest")   // skill-owned
+	mkdir(t, agentsDir, "stray-dir") // undocumented
+	mkdir(t, agentsDir, ".git")      // hidden, must be skipped
 	mkdir(t, agentsDir, "another-orphan")
 
 	if err := os.WriteFile(filepath.Join(agentsDir, "loose-file.txt"), []byte("x"), 0o644); err != nil {
@@ -176,7 +176,17 @@ func TestRunAgentsDoctor_JSON(t *testing.T) {
 	mkdir(t, tmp, ".agents", "stray")
 
 	scriptPath := filepath.Join(tmp, "ok.sh")
-	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\nexit 0\n"), 0o755); err != nil {
+	script := strings.Join([]string{
+		"#!/usr/bin/env bash",
+		"if [ \"${1:-}\" = \"--json\" ]; then",
+		"  echo '{\"from_lint\":true}'",
+		"else",
+		"  echo 'lint text'",
+		"fi",
+		"exit 0",
+		"",
+	}, "\n")
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,6 +208,9 @@ func TestRunAgentsDoctor_JSON(t *testing.T) {
 	var report AgentsDoctorReport
 	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
 		t.Fatalf("invalid JSON: %v\nbytes: %s", err, stdout.String())
+	}
+	if strings.Contains(stdout.String(), "from_lint") {
+		t.Fatalf("doctor JSON included nested lint JSON: %s", stdout.String())
 	}
 	if !report.LintClean {
 		t.Error("expected LintClean=true")

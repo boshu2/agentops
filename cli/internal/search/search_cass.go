@@ -183,9 +183,7 @@ func GetFileContext(path, query string) string {
 		line := scanner.Text()
 		if strings.Contains(strings.ToLower(line), queryLower) {
 			line = strings.TrimSpace(line)
-			if len(line) > ContextLineMaxLength {
-				line = line[:ContextLineMaxLength] + "..."
-			}
+			line = TruncateContext(line)
 			context = append(context, line)
 			if len(context) >= MaxContextLines {
 				break
@@ -245,10 +243,7 @@ func ParseJSONLMatch(line, file string) (SearchResult, bool) {
 	}
 	context := ""
 	if summary, ok := data["summary"].(string); ok {
-		context = summary
-		if len(context) > ContextLineMaxLength {
-			context = context[:ContextLineMaxLength] + "..."
-		}
+		context = TruncateContext(summary)
 	}
 	return SearchResult{
 		Path:    file,

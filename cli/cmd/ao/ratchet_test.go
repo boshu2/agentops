@@ -53,6 +53,7 @@ func TestTruncate(t *testing.T) {
 		{"empty string", "", 10, ""},
 		{"max 3 (minimum for ellipsis)", "hello", 3, "..."},
 		{"single char over", "abcdef", 5, "ab..."},
+		{"unicode boundary", "aébbbb", 5, "aé..."},
 		{"long string", "this is a very long string that should be truncated", 20, "this is a very lo..."},
 	}
 

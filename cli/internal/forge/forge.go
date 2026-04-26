@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -157,15 +158,25 @@ func CountLines(path string) int {
 
 // ExtractSnippet extracts a text snippet around a match index.
 func ExtractSnippet(content string, startIdx, maxLen int) string {
+	if maxLen <= 0 {
+		return ""
+	}
 	if startIdx < 0 {
 		startIdx = 0
 	}
 	if startIdx >= len(content) {
 		return ""
 	}
-	end := startIdx + maxLen
-	if end > len(content) {
-		end = len(content)
+	for startIdx > 0 && !utf8.RuneStart(content[startIdx]) {
+		startIdx--
+	}
+	end := startIdx
+	for count := 0; end < len(content) && count < maxLen; count++ {
+		_, size := utf8.DecodeRuneInString(content[end:])
+		if size == 0 {
+			break
+		}
+		end += size
 	}
 	snippet := content[startIdx:end]
 	if end < len(content) {
@@ -198,10 +209,17 @@ func ExtractIssueIDs(content string) []string {
 
 // TruncateString limits a string to maxLen characters with an ellipsis.
 func TruncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
+	if maxLen <= 0 {
+		return ""
+	}
+	runes := []rune(s)
+	if len(runes) <= maxLen {
 		return s
 	}
-	return s[:maxLen-3] + "..."
+	if maxLen <= 3 {
+		return "..."[:maxLen]
+	}
+	return string(runes[:maxLen-3]) + "..."
 }
 
 // Dedup removes duplicate strings preserving order.

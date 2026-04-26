@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,7 +84,11 @@ func runAgentsDoctor(cmd *cobra.Command, args []string) error {
 		Skills:    discoverActiveSkills(agentsDoctorSkillsDir),
 	}
 
-	lintExit, lintErr := runDoctorLint(cmd, agentsDoctorScript, agentsDoctorJSON)
+	lintStdout := cmd.OutOrStdout()
+	if agentsDoctorJSON {
+		lintStdout = io.Discard
+	}
+	lintExit, lintErr := runDoctorLint(cmd, agentsDoctorScript, agentsDoctorJSON, lintStdout)
 	lintClean := lintErr == nil
 
 	orphanSkills := findOrphanSkills(inv.Skills, agentsDoctorAgentsDir)
@@ -125,7 +130,7 @@ func runAgentsDoctor(cmd *cobra.Command, args []string) error {
 // nil/non-nil error mirror of agents_lint.go's behavior. It does not abort
 // the doctor flow on script absence — it surfaces the absence as a
 // distinct exit-code (-1) so the report can record it.
-func runDoctorLint(cmd *cobra.Command, scriptPath string, jsonOut bool) (int, error) {
+func runDoctorLint(cmd *cobra.Command, scriptPath string, jsonOut bool, stdout io.Writer) (int, error) {
 	if _, err := os.Stat(scriptPath); err != nil {
 		return -1, fmt.Errorf("lint script not found at %s: %w", scriptPath, err)
 	}
@@ -134,7 +139,7 @@ func runDoctorLint(cmd *cobra.Command, scriptPath string, jsonOut bool) (int, er
 		cmdArgs = append(cmdArgs, "--json")
 	}
 	c := exec.Command("bash", append([]string{scriptPath}, cmdArgs...)...)
-	c.Stdout = cmd.OutOrStdout()
+	c.Stdout = stdout
 	c.Stderr = cmd.ErrOrStderr()
 	err := c.Run()
 	if err == nil {

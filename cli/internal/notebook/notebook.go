@@ -276,13 +276,17 @@ func CategorizeKnowledge(items []string) (worked, next, other []string) {
 
 // Truncate shortens s to at most n runes, appending "..." if truncated.
 func Truncate(s string, n int) string {
-	if len(s) <= n {
+	if n <= 0 {
+		return ""
+	}
+	runes := []rune(s)
+	if len(runes) <= n {
 		return s
 	}
 	if n <= 3 {
-		return s[:n]
+		return "..."[:n]
 	}
-	return s[:n-3] + "..."
+	return string(runes[:n-3]) + "..."
 }
 
 // AppendBulletSection appends a heading + indented bullet list.

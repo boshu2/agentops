@@ -468,9 +468,7 @@ func searchSmartConnections(query, dir string, limit int) ([]searchResult, error
 		if context == "" && r.Title != "" {
 			context = r.Title
 		}
-		if len(context) > search.ContextLineMaxLength {
-			context = context[:search.ContextLineMaxLength] + "..."
-		}
+		context = search.TruncateContext(context)
 
 		results = append(results, searchResult{
 			Path:    r.Path,
@@ -702,9 +700,7 @@ func searchFallbackContext(content string, tokens []string) string {
 				continue
 			}
 			trimmed := strings.TrimSpace(line)
-			if len(trimmed) > search.ContextLineMaxLength {
-				trimmed = trimmed[:search.ContextLineMaxLength] + "..."
-			}
+			trimmed = search.TruncateContext(trimmed)
 			context = append(context, trimmed)
 			break
 		}

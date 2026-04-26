@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/boshu2/agentops/cli/internal/search"
 )
@@ -490,6 +491,18 @@ Fourth query should be excluded (max 3)
 			}
 		}
 	})
+
+	t.Run("long unicode lines stay valid UTF-8", func(t *testing.T) {
+		longLine := strings.Repeat("a", search.ContextLineMaxLength-1) + "é query"
+		longPath := filepath.Join(tmpDir, "long-unicode.md")
+		if err := os.WriteFile(longPath, []byte(longLine), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ctx := getFileContext(longPath, "query")
+		if !utf8.ValidString(ctx) {
+			t.Fatalf("context is not valid UTF-8: %q", ctx)
+		}
+	})
 }
 
 // splitNonEmpty splits a string by newlines and removes empty strings.
@@ -733,6 +746,7 @@ func TestParseGrepResults(t *testing.T) {
 				}
 			}
 		})
+
 	}
 }
 
@@ -1514,6 +1528,22 @@ func TestParseJSONLMatch_LongSummary(t *testing.T) {
 	}
 	if len(result.Context) > search.ContextLineMaxLength+3 {
 		t.Errorf("expected truncated context, got length %d", len(result.Context))
+	}
+}
+
+func TestParseJSONLMatch_LongUnicodeSummary(t *testing.T) {
+	long := strings.Repeat("x", search.ContextLineMaxLength-1) + "é" + strings.Repeat("y", 50)
+	data := map[string]any{"summary": long}
+	line, _ := json.Marshal(data)
+	result, ok := parseJSONLMatch(string(line), "/path/file.jsonl")
+	if !ok {
+		t.Error("expected ok=true")
+	}
+	if !utf8.ValidString(result.Context) {
+		t.Fatalf("context is not valid UTF-8: %q", result.Context)
+	}
+	if utf8.RuneCountInString(result.Context) > search.ContextLineMaxLength+3 {
+		t.Errorf("expected truncated context, got %d runes", utf8.RuneCountInString(result.Context))
 	}
 }
 

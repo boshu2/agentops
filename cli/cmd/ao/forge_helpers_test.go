@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/parser"
@@ -76,6 +77,20 @@ func TestExtractSnippet(t *testing.T) {
 				t.Errorf("extractSnippet(%d, %d) = %q; %s", tt.startIdx, tt.maxLen, got, tt.desc)
 			}
 		})
+	}
+}
+
+func TestExtractSnippet_RuneSafe(t *testing.T) {
+	content := strings.Repeat("a", 99) + "é suffix"
+	got := extractSnippet(content, 0, 100)
+	if !utf8.ValidString(got) {
+		t.Fatalf("extractSnippet returned invalid UTF-8: %q", got)
+	}
+
+	startInRune := strings.Index(content, "é") + 1
+	got = extractSnippet(content, startInRune, 10)
+	if !utf8.ValidString(got) {
+		t.Fatalf("extractSnippet with middle-rune start returned invalid UTF-8: %q", got)
 	}
 }
 
@@ -154,6 +169,7 @@ func TestTruncateString(t *testing.T) {
 		{"short", "hello", 10, "hello"},
 		{"exact", "hello", 5, "hello"},
 		{"truncated", "hello world!", 8, "hello..."},
+		{"unicode boundary", "aébbbb", 5, "aé..."},
 		{"empty", "", 10, ""},
 	}
 
