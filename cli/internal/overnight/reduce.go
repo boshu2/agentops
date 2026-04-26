@@ -48,6 +48,23 @@ type ReduceResult struct {
 	// by RouteFindings.
 	FindingsRouted int
 
+	// GeneratorCandidatesRouted is the count of read-side generator
+	// candidates routed to next-work.jsonl by the single-writer sidecar
+	// aggregator.
+	GeneratorCandidatesRouted int
+
+	// GeneratorCandidatesSkipped is the count of read-side generator
+	// candidates skipped during aggregation because they were duplicates.
+	GeneratorCandidatesSkipped int
+
+	// GeneratorSidecarsAggregated is the count of generator sidecar files read
+	// during aggregation.
+	GeneratorSidecarsAggregated int
+
+	// GeneratorSidecarsSoftFailed is the count of generator sidecars that
+	// represented a soft-failed generator.
+	GeneratorSidecarsSoftFailed int
+
 	// InjectRefreshed indicates whether the inject-cache refresh stage
 	// ran successfully. Flipped to true by Wave 4 Issue 16 when the
 	// inject-refresh stage completes without error.
@@ -107,15 +124,17 @@ type reduceStage struct {
 //     the callback set is nil so tests can exercise rollback without
 //     wiring the full cmd/ao helper graph.
 //  6. RouteFindings(cwd) — findings → next-work router.
-//  7. RefreshInjectCache(ctx, cwd) — best-effort inject-cache refresh
+//  7. AggregateFindingGeneratorSidecars(staging, outputDir) — read-side
+//     generator sidecars → next-work queue through one writer.
+//  8. RefreshInjectCache(ctx, cwd) — best-effort inject-cache refresh
 //     (Wave 4 Issue 16). Closes PRODUCT.md Gap #1's loop framing
 //     ("harvest → forge → INJECT → report"). Failures here are
 //     captured as degraded notes on the result and do NOT trigger a
 //     rollback: a stale inject cache is less bad than discarding the
 //     compounded corpus this iteration already landed.
-//  8. VerifyMetadataRoundTrip(cp) — frontmatter strip guard (pm-005).
+//  9. VerifyMetadataRoundTrip(cp) — frontmatter strip guard (pm-005).
 //
-// If ANY stage (1-6) returns an error OR the integrity check in stage 8
+// If ANY stage (1-8) returns an error OR the integrity check in stage 9
 // fails, RunReduce invokes cp.Rollback() and returns a non-nil error
 // with a populated RollbackReason on the result. Partial counters are
 // preserved so the morning report can show what landed before the
@@ -228,6 +247,7 @@ func (r *reduceRunner) stages() []reduceStage {
 		{name: "defrag-prune", run: r.runDefragPrune},
 		{name: "close-loop", run: r.runCloseLoop},
 		{name: "findings-router", run: r.runFindingsRouter},
+		{name: "generator-aggregator", run: r.runGeneratorAggregator},
 		{name: "inject-refresh", run: r.runInjectRefresh},
 	}
 }
@@ -333,6 +353,22 @@ func (r *reduceRunner) runFindingsRouter() error {
 	r.result.FindingsRouted = routed
 	for _, d := range degraded {
 		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("findings-router: %s", d))
+	}
+	return nil
+}
+
+func (r *reduceRunner) runGeneratorAggregator() error {
+	r.recordStage("generator-aggregator")
+	aggregate, degraded, err := AggregateFindingGeneratorSidecars(r.stagingCwd, r.opts.OutputDir)
+	if err != nil {
+		return err
+	}
+	r.result.GeneratorCandidatesRouted = aggregate.ItemsWritten
+	r.result.GeneratorCandidatesSkipped = aggregate.DuplicatesSkipped
+	r.result.GeneratorSidecarsAggregated = aggregate.SidecarsRead
+	r.result.GeneratorSidecarsSoftFailed = aggregate.SidecarsSoftFail
+	for _, d := range degraded {
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("generator-aggregator: %s", d))
 	}
 	return nil
 }
