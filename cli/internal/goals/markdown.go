@@ -236,36 +236,57 @@ func parseTagsCell(s string) []string {
 	return out
 }
 
+// cellAt returns the trimmed value of cells[colMap[key]] if both the key
+// is mapped and the index is in range. Returns "", false otherwise.
+func cellAt(cells []string, colMap map[string]int, key string) (string, bool) {
+	idx, ok := colMap[key]
+	if !ok || idx >= len(cells) {
+		return "", false
+	}
+	return strings.TrimSpace(cells[idx]), true
+}
+
+// parseCheckCell strips wrapping backticks (`cmd`) so the gate's command
+// runs as written rather than literally including the markdown formatting.
+func parseCheckCell(s string) string {
+	if len(s) >= 2 && s[0] == '`' && s[len(s)-1] == '`' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
+// parseWeightCell parses a goal weight, defaulting to 5 for non-numeric or
+// out-of-range (<1, >10) values.
+func parseWeightCell(s string) int {
+	w, err := strconv.Atoi(s)
+	if err != nil || w < 1 || w > 10 {
+		return 5
+	}
+	return w
+}
+
 // parseGateRow extracts a Goal from a data row's cells using the column index map.
 // Strips backticks from the check field, defaults weight to 5 on parse error,
 // and falls back description to ID if empty.
 func parseGateRow(cells []string, colMap map[string]int) Goal {
 	g := Goal{Type: GoalTypeHealth}
-	if idx, ok := colMap["id"]; ok && idx < len(cells) {
-		g.ID = strings.TrimSpace(cells[idx])
+	if v, ok := cellAt(cells, colMap, "id"); ok {
+		g.ID = v
 	}
-	if idx, ok := colMap["check"]; ok && idx < len(cells) {
-		s := strings.TrimSpace(cells[idx])
-		if len(s) >= 2 && s[0] == '`' && s[len(s)-1] == '`' {
-			s = s[1 : len(s)-1]
-		}
-		g.Check = s
+	if v, ok := cellAt(cells, colMap, "check"); ok {
+		g.Check = parseCheckCell(v)
 	}
-	if idx, ok := colMap["weight"]; ok && idx < len(cells) {
-		w, err := strconv.Atoi(strings.TrimSpace(cells[idx]))
-		if err != nil || w < 1 || w > 10 {
-			w = 5
-		}
-		g.Weight = w
+	if v, ok := cellAt(cells, colMap, "weight"); ok {
+		g.Weight = parseWeightCell(v)
 	}
-	if idx, ok := colMap["description"]; ok && idx < len(cells) {
-		g.Description = strings.TrimSpace(cells[idx])
+	if v, ok := cellAt(cells, colMap, "description"); ok {
+		g.Description = v
 	}
 	if g.Description == "" {
 		g.Description = g.ID
 	}
-	if idx, ok := colMap["tags"]; ok && idx < len(cells) {
-		g.Tags = parseTagsCell(cells[idx])
+	if v, ok := cellAt(cells, colMap, "tags"); ok {
+		g.Tags = parseTagsCell(v)
 	}
 	return g
 }

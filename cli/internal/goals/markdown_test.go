@@ -987,6 +987,77 @@ func TestParseGateRow_TagsAbsentByDefault(t *testing.T) {
 	}
 }
 
+func TestCellAt(t *testing.T) {
+	cells := []string{"a", "b", "c"}
+	colMap := map[string]int{"first": 0, "third": 2, "out_of_range": 9}
+
+	v, ok := cellAt(cells, colMap, "first")
+	if !ok || v != "a" {
+		t.Errorf("first → (%q, %v), want (\"a\", true)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "third")
+	if !ok || v != "c" {
+		t.Errorf("third → (%q, %v), want (\"c\", true)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "missing_key")
+	if ok || v != "" {
+		t.Errorf("missing_key → (%q, %v), want (\"\", false)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "out_of_range")
+	if ok || v != "" {
+		t.Errorf("out_of_range → (%q, %v), want (\"\", false)", v, ok)
+	}
+
+	// Whitespace must be trimmed.
+	cells2 := []string{"  padded  "}
+	colMap2 := map[string]int{"k": 0}
+	v, ok = cellAt(cells2, colMap2, "k")
+	if !ok || v != "padded" {
+		t.Errorf("padded → (%q, %v), want (\"padded\", true)", v, ok)
+	}
+}
+
+func TestParseCheckCell(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{"`echo ok`", "echo ok"},
+		{"echo ok", "echo ok"},
+		{"`x`", "x"},
+		{"``", ""},
+		{"`", "`"},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		got := parseCheckCell(tc.in)
+		if got != tc.want {
+			t.Errorf("parseCheckCell(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestParseWeightCell(t *testing.T) {
+	cases := []struct {
+		in   string
+		want int
+	}{
+		{"5", 5},
+		{"1", 1},
+		{"10", 10},
+		{"0", 5},   // out of range → default
+		{"11", 5},  // out of range → default
+		{"-1", 5},  // out of range → default
+		{"abc", 5}, // non-numeric → default
+		{"", 5},    // empty → default
+	}
+	for _, tc := range cases {
+		got := parseWeightCell(tc.in)
+		if got != tc.want {
+			t.Errorf("parseWeightCell(%q) = %d, want %d", tc.in, got, tc.want)
+		}
+	}
+}
+
 func TestParseGatesTable_TagsRoundTrip(t *testing.T) {
 	input := "# G\n\n## Gates\n" +
 		"| ID | Check | Weight | Description | Tags |\n" +
