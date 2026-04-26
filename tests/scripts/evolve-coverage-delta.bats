@@ -25,10 +25,13 @@ parse_avg() {
     [ -x "$SCRIPT" ]
 }
 
-@test "parser uses the same regex anchors as the script" {
-    # Pin the regex by source-grepping it. Failure here means the script
-    # changed shape and this test needs to be updated alongside it.
-    grep -q "grep -oE 'coverage: \[0-9\]+(\\\\\\.[0-9]+)?%'" "$SCRIPT"
+@test "parser regex requires the % suffix" {
+    # The whole point of this test file: ensure the script's coverage
+    # extractor keeps the trailing % anchor so Go's event-coverage
+    # informational line (`coverage: 1/12 events`) is not consumed.
+    # Use awk for robust substring matching that side-steps grep regex
+    # escaping headaches.
+    awk '/grep -oE/ && /coverage:/ && /\)\?%/ {found=1} END {exit !found}' "$SCRIPT"
 }
 
 @test "ignores Go event-coverage informational line" {
