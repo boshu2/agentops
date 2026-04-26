@@ -85,6 +85,17 @@ EOF
     [[ "$output" == *"claim_status=claimed"* ]]
 }
 
+@test "accepts items carrying probed_stale_at and probed_by" {
+    # 2026-04-26 nightly retro task 3: schema gate must accept the new
+    # optional fields without flagging them as drift.
+    cat > "$QUEUE" <<'EOF'
+{"source_epic":"e1","timestamp":"2026-04-26T00:00:00Z","items":[{"title":"probed item","type":"tech-debt","severity":"medium","source":"council-finding","description":"d","probed_stale_at":"2026-04-26T22:30:00Z","probed_by":"nightly/2026-04-26-v3"}],"consumed":false,"claim_status":"available"}
+EOF
+    run env QUEUE="$QUEUE" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS"* ]]
+}
+
 @test "skips empty lines" {
     printf '\n\n' > "$QUEUE"
     cat >> "$QUEUE" <<'EOF'
