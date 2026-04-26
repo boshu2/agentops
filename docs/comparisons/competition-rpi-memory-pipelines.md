@@ -53,7 +53,7 @@ The curation path includes catalog, verify, index, score, reject, and constrain 
 
 Dream is a separate contract. `ao overnight` runs a private local maintenance loop that ingests knowledge, reduces it through defrag/dedup/compile/prune, measures health, and commits only improved staged artifacts. It never mutates source code, never invokes RPI, and emits a morning packet.
 
-Sources: [README](../../README.md), [PRODUCT](../../PRODUCT.md), [knowledge flywheel](../knowledge-flywheel.md), [curation pipeline](../curation-pipeline.md), [dream run contract](../contracts/dream-run-contract.md), [dream report contract](../contracts/dream-report.md).
+Sources: [README](https://github.com/boshu2/agentops/blob/main/README.md), [PRODUCT](https://github.com/boshu2/agentops/blob/main/PRODUCT.md), [knowledge flywheel](../knowledge-flywheel.md), [curation pipeline](../curation-pipeline.md), [dream run contract](../contracts/dream-run-contract.md), [dream report contract](../contracts/dream-report.md).
 
 ## Superpowers
 
@@ -344,7 +344,7 @@ cc-sdd is strong at boundary-first spec work and intra-run learning propagation.
 
 ## Karpathy LLM Wiki Pattern
 
-Reference: [Karpathy gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and AgentOps' [`llm-wiki` skill](../../skills/llm-wiki/SKILL.md).
+Reference: [Karpathy gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and AgentOps' [`llm-wiki` skill](https://github.com/boshu2/agentops/blob/main/skills/llm-wiki/SKILL.md).
 
 Pattern:
 
