@@ -1,0 +1,32 @@
+# Sample external watchlist for the Dream finding-generator (RFC 0001 Proposal 2).
+#
+# Operators copy this format to .agents/dream/external-watchlist.yaml. The
+# generator emits one held-for-review candidate per entry whose last_seen_at
+# is older than stale_after (defaults to 168h / 1 week when omitted). After
+# reviewing an upstream source, operators bump last_seen_at to suppress
+# re-emission until the next stale-after window elapses.
+entries:
+  - id: stale-week
+    title: Review competitor X release notes
+    type: task
+    severity: medium
+    source: github.com/example/competitor-x
+    last_seen_at: 2026-01-01T00:00:00Z
+  - id: fresh-day
+    title: Tracked but reviewed yesterday
+    type: task
+    severity: low
+    source: github.com/example/fresh-y
+    last_seen_at: 2026-04-25T00:00:00Z
+  - id: stale-custom-window
+    title: Watch upstream Z security advisories
+    type: bug
+    severity: high
+    source: pkg:npm/upstream-z
+    last_seen_at: 2026-04-22T00:00:00Z
+    stale_after: 48h
+  - id: never-seeded
+    title: Entry without last_seen_at, should never emit
+    type: task
+    severity: low
+    source: github.com/example/never-seen
