@@ -10,6 +10,7 @@ import (
 var (
 	goalsMeasureGoalID     string
 	goalsMeasureDirectives bool
+	goalsMeasureExcludeTag string
 )
 
 var goalsMeasureCmd = &cobra.Command{
@@ -20,6 +21,7 @@ var goalsMeasureCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return goals.RunMeasure(goals.MeasureOptions{
 			GoalID:     goalsMeasureGoalID,
+			ExcludeTag: goalsMeasureExcludeTag,
 			Directives: goalsMeasureDirectives,
 			GoalsFile:  resolveGoalsFile(),
 			Timeout:    time.Duration(goalsTimeout) * time.Second,
@@ -32,5 +34,6 @@ var goalsMeasureCmd = &cobra.Command{
 func init() {
 	goalsMeasureCmd.Flags().StringVar(&goalsMeasureGoalID, "goal", "", "Measure a single goal by ID")
 	goalsMeasureCmd.Flags().BoolVar(&goalsMeasureDirectives, "directives", false, "Output directives as JSON (skip gate checks)")
+	goalsMeasureCmd.Flags().StringVar(&goalsMeasureExcludeTag, "exclude-tag", "", "Skip goals whose Tags include this value (e.g. long-cycle)")
 	goalsCmd.AddCommand(goalsMeasureCmd)
 }
