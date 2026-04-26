@@ -26,6 +26,7 @@ ready to land.
 - .beads/**
 - .agents/** runtime state when the active command owns it
 - .agents/overnight/*/generator-results/*.json when Dream owns the active run
+- .agents/dream/external-watchlist.yaml when Dream is the active command (RFC 0001 Proposal 2 source)
 
 ## Immutable Scope
 

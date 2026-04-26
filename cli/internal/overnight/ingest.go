@@ -332,6 +332,12 @@ func (r *ingestRunner) findingGenerators() []findingGenerator {
 			timeout:    defaultFindingGeneratorTimeout,
 			run:        runMineFindingGenerator,
 		},
+		{
+			name:       externalWatchlistGeneratorName,
+			sourceEpic: externalWatchlistSourceEpic,
+			timeout:    defaultFindingGeneratorTimeout, // RFC 0001 §253: ≤ 2 min per source
+			run:        runExternalWatchlistGenerator,
+		},
 	}
 }
 

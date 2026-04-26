@@ -151,11 +151,15 @@ func TestRunIngest_FindingGeneratorEmitsRealSidecarCandidates(t *testing.T) {
 	if res.GeneratorCandidateCount == 0 {
 		t.Fatal("expected generator candidates from orphaned research")
 	}
-	if res.GeneratorSidecarCount != 1 {
-		t.Fatalf("GeneratorSidecarCount = %d, want 1", res.GeneratorSidecarCount)
+	// Two registered generators land sidecars: mine-findings (always emits
+	// when the corpus is seeded) and external-watchlist (soft-success with
+	// zero candidates when no .agents/dream/external-watchlist.yaml exists,
+	// per RFC 0001 Proposal 2 Wave 3).
+	if res.GeneratorSidecarCount != 2 {
+		t.Fatalf("GeneratorSidecarCount = %d, want 2 (mine-findings + external-watchlist)", res.GeneratorSidecarCount)
 	}
-	if len(res.GeneratorSidecarPaths) != 1 {
-		t.Fatalf("GeneratorSidecarPaths = %v, want one sidecar", res.GeneratorSidecarPaths)
+	if len(res.GeneratorSidecarPaths) != 2 {
+		t.Fatalf("GeneratorSidecarPaths = %v, want two sidecar paths", res.GeneratorSidecarPaths)
 	}
 	data, err := os.ReadFile(filepath.Join(opts.OutputDir, "generator-results", "mine-findings.json"))
 	if err != nil {
