@@ -173,3 +173,97 @@ func TestApplyConfidenceDecay_ClampsMinimum(t *testing.T) {
 		t.Errorf("confidence = %f, want 0.1 (clamped minimum)", newConf)
 	}
 }
+
+// TestParseConfidenceField pins the default-on-missing behavior so a learning
+// file without a confidence frontmatter field still gets the 0.5 baseline that
+// the decay calculation expects.
+func TestParseConfidenceField(t *testing.T) {
+	cases := []struct {
+		name   string
+		fields map[string]string
+		want   float64
+	}{
+		{"missing field returns default 0.5", map[string]string{}, 0.5},
+		{"empty string returns default", map[string]string{"confidence": ""}, 0.5},
+		{"unparseable returns default", map[string]string{"confidence": "abc"}, 0.5},
+		{"zero collapses to default", map[string]string{"confidence": "0"}, 0.5},
+		{"negative collapses to default", map[string]string{"confidence": "-0.4"}, 0.5},
+		{"valid float passes through", map[string]string{"confidence": "0.75"}, 0.75},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseConfidenceField(tc.fields)
+			if got != tc.want {
+				t.Errorf("parseConfidenceField(%v) = %v, want %v", tc.fields, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestMostRecentInteraction asserts the helper picks the latest of
+// last_decay_at / last_reward_at, returns zero on absence, and ignores
+// unparseable timestamps without confusing later parses.
+func TestMostRecentInteraction(t *testing.T) {
+	earlier := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	later := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+
+	t.Run("both present, returns later", func(t *testing.T) {
+		got := mostRecentInteraction(map[string]string{
+			"last_decay_at":  earlier.Format(time.RFC3339),
+			"last_reward_at": later.Format(time.RFC3339),
+		})
+		if !got.Equal(later) {
+			t.Errorf("got %v, want %v", got, later)
+		}
+	})
+
+	t.Run("only decay present", func(t *testing.T) {
+		got := mostRecentInteraction(map[string]string{
+			"last_decay_at": later.Format(time.RFC3339),
+		})
+		if !got.Equal(later) {
+			t.Errorf("got %v, want %v", got, later)
+		}
+	})
+
+	t.Run("neither present returns zero time", func(t *testing.T) {
+		got := mostRecentInteraction(map[string]string{})
+		if !got.IsZero() {
+			t.Errorf("expected zero time, got %v", got)
+		}
+	})
+
+	t.Run("unparseable values skipped, valid still wins", func(t *testing.T) {
+		got := mostRecentInteraction(map[string]string{
+			"last_decay_at":  "not-a-timestamp",
+			"last_reward_at": later.Format(time.RFC3339),
+		})
+		if !got.Equal(later) {
+			t.Errorf("got %v, want %v", got, later)
+		}
+	})
+}
+
+// TestFindFrontmatterEnd documents the lookup semantics: returns the closing
+// `---` after line 0, or -1 when no closer is present.
+func TestFindFrontmatterEnd(t *testing.T) {
+	cases := []struct {
+		name  string
+		lines []string
+		want  int
+	}{
+		{"empty slice", []string{}, -1},
+		{"only opener", []string{"---", "key: value"}, -1},
+		{"opener + closer", []string{"---", "key: value", "---", "body"}, 2},
+		{"closer with whitespace", []string{"---", "key: value", "  ---  ", "body"}, 2},
+		{"first closer wins on multiple", []string{"---", "k: v", "---", "x: y", "---"}, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := findFrontmatterEnd(tc.lines)
+			if got != tc.want {
+				t.Errorf("got %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
