@@ -316,6 +316,95 @@ esac
 	}
 }
 
+// TestExecuteDreamMorningPackets_SuppressesPacketWhenTargetFileExists guards
+// the 2026-04-26 retro fix: the curator must run a tractability probe before
+// emitting a packet whose first_move grep would match an existing tracked
+// file. The synthetic queue item below points at cli/cmd/ao/overnight.go,
+// which is shipped — so the curator should suppress instead of emit and
+// surface a dream-curator-suppressed entry.
+func TestExecuteDreamMorningPackets_SuppressesPacketWhenTargetFileExists(t *testing.T) {
+	tmpDir := t.TempDir()
+	nextWorkPath := filepath.Join(tmpDir, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	// Drop a sentinel file inside the tmp repo and have the queue item
+	// cite it as target_files. Probe should hit, packet should be suppressed.
+	relTarget := "cli/cmd/ao/overnight.go"
+	if err := os.MkdirAll(filepath.Join(tmpDir, "cli", "cmd", "ao"), 0o755); err != nil {
+		t.Fatalf("mkdir target: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, relTarget), []byte("// already shipped\n"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+
+	queue := `{"source_epic":"dream-stale","timestamp":"2026-04-26T12:00:00Z","items":[{"id":"stale-1","title":"Ship overnight.go feature already done","type":"task","severity":"high","source":"council-finding","description":"Cited target file already exists.","target_files":["cli/cmd/ao/overnight.go"],"consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available"}`
+	if err := os.WriteFile(nextWorkPath, []byte(queue+"\n"), 0o644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+
+	binDir := t.TempDir()
+	writeExecutable(t, binDir, "bd", "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", binDir)
+
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	executeDreamMorningPackets(tmpDir, &summary)
+
+	if len(summary.MorningPackets) != 0 {
+		t.Fatalf("expected suppression, got %d packets: %+v", len(summary.MorningPackets), summary.MorningPackets)
+	}
+	if len(summary.CuratorSuppressed) != 1 {
+		t.Fatalf("expected 1 suppression, got %d: %+v", len(summary.CuratorSuppressed), summary.CuratorSuppressed)
+	}
+	got := summary.CuratorSuppressed[0]
+	if got.PacketID != "stale-1" {
+		t.Errorf("suppression packet_id = %q, want stale-1", got.PacketID)
+	}
+	if got.Match != "cli/cmd/ao/overnight.go" {
+		t.Errorf("suppression match = %q, want cli/cmd/ao/overnight.go", got.Match)
+	}
+	if got.Reason == "" {
+		t.Error("suppression reason should be non-empty")
+	}
+}
+
+// TestExecuteDreamMorningPackets_EmitsWhenProbeInconclusive verifies that
+// the probe does NOT suppress when no cited surface resolves on disk —
+// inconclusive evidence should let the packet through normally.
+func TestExecuteDreamMorningPackets_EmitsWhenProbeInconclusive(t *testing.T) {
+	tmpDir := t.TempDir()
+	nextWorkPath := filepath.Join(tmpDir, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	queue := `{"source_epic":"dream-fresh","timestamp":"2026-04-26T12:00:00Z","items":[{"id":"fresh-1","title":"Implement brand new module","type":"feature","severity":"high","source":"council-finding","description":"No file cited yet.","target_files":["cli/internal/totally-new-package/foo.go"],"consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available"}`
+	if err := os.WriteFile(nextWorkPath, []byte(queue+"\n"), 0o644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+
+	binDir := t.TempDir()
+	writeExecutable(t, binDir, "bd", `#!/bin/sh
+case "$1" in
+  list) echo '[]' ;;
+  create) echo '[{"id":"na-fresh","status":"open","title":"Implement brand new module"}]' ;;
+  update) echo '[{"id":"na-fresh","status":"open","title":"Implement brand new module"}]' ;;
+  *) echo "unexpected" >&2; exit 1 ;;
+esac
+`)
+	t.Setenv("PATH", binDir)
+
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	executeDreamMorningPackets(tmpDir, &summary)
+
+	if len(summary.MorningPackets) != 1 {
+		t.Fatalf("expected 1 packet to emit, got %d", len(summary.MorningPackets))
+	}
+	if len(summary.CuratorSuppressed) != 0 {
+		t.Fatalf("expected 0 suppressions, got %+v", summary.CuratorSuppressed)
+	}
+}
+
 func newDreamPacketTestSummary(t *testing.T, repoRoot, goal string) overnightSummary {
 	t.Helper()
 

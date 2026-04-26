@@ -113,6 +113,11 @@ type overnightSummary struct {
 	Council        *overnightCouncilSummary `json:"council,omitempty" yaml:"council,omitempty"`
 	Dreamscape     *overnightDreamscape     `json:"dreamscape,omitempty" yaml:"dreamscape,omitempty"`
 	MorningPackets []overnightMorningPacket `json:"morning_packets,omitempty" yaml:"morning_packets,omitempty"`
+	// CuratorSuppressed lists candidate packets the Dream curator skipped
+	// because their cited file/symbol/script was already tracked. Lets
+	// operators see what was suppressed instead of a silent gap. Added
+	// 2026-04-26 nightly retro task 4.
+	CuratorSuppressed []dreamCuratorSuppression `json:"dream-curator-suppressed,omitempty" yaml:"dream-curator-suppressed,omitempty"`
 	Degraded       []string                 `json:"degraded,omitempty" yaml:"degraded,omitempty"`
 	Recommended    []string                 `json:"recommended,omitempty" yaml:"recommended,omitempty"`
 	NextAction     string                   `json:"next_action,omitempty" yaml:"next_action,omitempty"`
