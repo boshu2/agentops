@@ -661,7 +661,10 @@ func ingestSummary(r *IngestResult) map[string]any {
 		"generator_candidate_count": r.GeneratorCandidateCount,
 		"generator_duplicate_count": r.GeneratorDuplicateCount,
 		"generator_duplicate_rate":  r.GeneratorDuplicateRate,
+		"generator_sidecar_count":   r.GeneratorSidecarCount,
+		"generator_soft_fail_count": r.GeneratorSoftFailCount,
 		"generator_sidecar_path":    r.GeneratorSidecarPath,
+		"generator_sidecar_paths":   r.GeneratorSidecarPaths,
 	}
 }
 
@@ -669,14 +672,18 @@ func ingestSummary(r *IngestResult) map[string]any {
 // IterationSummary uses.
 func reduceSummary(r *ReduceResult) map[string]any {
 	return map[string]any{
-		"harvest_promoted":    r.HarvestPromoted,
-		"dedup_merged":        r.DedupMerged,
-		"maturity_tempered":   r.MaturityTempered,
-		"defrag_pruned":       r.DefragPruned,
-		"close_loop_promoted": r.CloseLoopPromoted,
-		"findings_routed":     r.FindingsRouted,
-		"inject_refreshed":    r.InjectRefreshed,
-		"rolled_back":         r.RolledBack,
+		"harvest_promoted":               r.HarvestPromoted,
+		"dedup_merged":                   r.DedupMerged,
+		"maturity_tempered":              r.MaturityTempered,
+		"defrag_pruned":                  r.DefragPruned,
+		"close_loop_promoted":            r.CloseLoopPromoted,
+		"findings_routed":                r.FindingsRouted,
+		"generator_candidates_routed":    r.GeneratorCandidatesRouted,
+		"generator_candidates_skipped":   r.GeneratorCandidatesSkipped,
+		"generator_sidecars_aggregated":  r.GeneratorSidecarsAggregated,
+		"generator_sidecars_soft_failed": r.GeneratorSidecarsSoftFailed,
+		"inject_refreshed":               r.InjectRefreshed,
+		"rolled_back":                    r.RolledBack,
 	}
 }
 

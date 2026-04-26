@@ -128,6 +128,80 @@ func TestRunIngest_HarvestDryRunDoesNotMutate(t *testing.T) {
 	}
 }
 
+func TestRunIngest_FindingGeneratorEmitsRealSidecarCandidates(t *testing.T) {
+	cwd := t.TempDir()
+	writeLearning(t, cwd, "2026-04-09-static.md", map[string]string{
+		"type":       "learning",
+		"confidence": "0.9",
+	}, "# Static\n\nUntouched body.\n")
+	researchDir := filepath.Join(cwd, ".agents", "research")
+	if err := os.MkdirAll(researchDir, 0o755); err != nil {
+		t.Fatalf("mkdir research: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(researchDir, "orphan.md"), []byte("# Orphan\n"), 0o644); err != nil {
+		t.Fatalf("write orphan research: %v", err)
+	}
+
+	opts := newTestOpts(cwd)
+	res, err := RunIngest(context.Background(), opts, io.Discard)
+	if err != nil {
+		t.Fatalf("RunIngest: %v", err)
+	}
+	if res.GeneratorCandidateCount == 0 {
+		t.Fatal("expected generator candidates from orphaned research")
+	}
+	if res.GeneratorSidecarCount != 1 {
+		t.Fatalf("GeneratorSidecarCount = %d, want 1", res.GeneratorSidecarCount)
+	}
+	if len(res.GeneratorSidecarPaths) != 1 {
+		t.Fatalf("GeneratorSidecarPaths = %v, want one sidecar", res.GeneratorSidecarPaths)
+	}
+	data, err := os.ReadFile(filepath.Join(opts.OutputDir, "generator-results", "mine-findings.json"))
+	if err != nil {
+		t.Fatalf("read mine sidecar: %v", err)
+	}
+	var sidecar FindingGeneratorSidecar
+	if err := json.Unmarshal(data, &sidecar); err != nil {
+		t.Fatalf("decode mine sidecar: %v", err)
+	}
+	if sidecar.Status != "completed" {
+		t.Fatalf("sidecar status = %q, want completed: %s", sidecar.Status, sidecar.Error)
+	}
+	if len(sidecar.Candidates) == 0 {
+		t.Fatal("sidecar candidates empty")
+	}
+	got := sidecar.Candidates[0]
+	if got.Type != "task" || got.Source != "evolve-generator" || got.Description == "" || got.DedupKey == "" {
+		t.Fatalf("candidate not queue-safe: %+v", got)
+	}
+}
+
+func TestRunFindingGenerator_StalledGeneratorWritesSoftFailSidecar(t *testing.T) {
+	cwd := t.TempDir()
+	opts := newTestOpts(cwd)
+	result := runFindingGenerator(context.Background(), opts, findingGenerator{
+		name:       "stalled-generator",
+		sourceEpic: "stall-test",
+		timeout:    5 * time.Millisecond,
+		run: func(context.Context, RunLoopOptions) FindingGeneratorSidecar {
+			select {}
+		},
+	})
+
+	if result.err != nil {
+		t.Fatalf("runFindingGenerator write error: %v", result.err)
+	}
+	if result.sidecar.Status != "soft-fail" {
+		t.Fatalf("sidecar status = %q, want soft-fail", result.sidecar.Status)
+	}
+	if !strings.Contains(result.sidecar.Error, "context deadline exceeded") {
+		t.Fatalf("sidecar error = %q, want context deadline exceeded", result.sidecar.Error)
+	}
+	if _, err := os.Stat(result.path); err != nil {
+		t.Fatalf("expected soft-fail sidecar at %s: %v", result.path, err)
+	}
+}
+
 func TestRunIngest_EmptyCorpus(t *testing.T) {
 	// Isolate HOME to the tempdir so harvest.DiscoverRigs does not pick
 	// up the operator's real ~/.agents/ global hub. DiscoverRigs adds
@@ -306,6 +380,131 @@ func TestWriteFindingGeneratorSidecarAtomicJSON(t *testing.T) {
 	}
 }
 
+func TestAggregateFindingGeneratorSidecarsAppendsOneDedupedBatch(t *testing.T) {
+	cwd := t.TempDir()
+	nextWorkDir := filepath.Join(cwd, ".agents", "rpi")
+	if err := os.MkdirAll(nextWorkDir, 0o755); err != nil {
+		t.Fatalf("mkdir next-work dir: %v", err)
+	}
+	existingLine := `{"source_epic":"seed","timestamp":"2026-04-26T00:00:00Z","items":[{"id":"already-present","title":"Already present","type":"task","severity":"medium","source":"evolve-generator","description":"seed","dedup_key":"finding-generator|mine-findings|already-present"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}` + "\n"
+	if err := os.WriteFile(filepath.Join(nextWorkDir, "next-work.jsonl"), []byte(existingLine), 0o644); err != nil {
+		t.Fatalf("write seed next-work: %v", err)
+	}
+
+	opts := newTestOpts(cwd)
+	completed := FindingGeneratorSidecar{
+		SchemaVersion:  "finding-generator-sidecar/v1",
+		RunID:          opts.RunID,
+		Generator:      mineFindingsGeneratorName,
+		SourceEpic:     "compile-mine",
+		Status:         "completed",
+		CandidateCount: 3,
+		Candidates: []FindingGeneratorCandidate{
+			{
+				ID:          "already-present",
+				Title:       "Already present",
+				Type:        "task",
+				Severity:    "medium",
+				Source:      "evolve-generator",
+				Description: "Seeded duplicate should not be routed again.",
+				DedupKey:    "finding-generator|mine-findings|already-present",
+			},
+			{
+				ID:          "new-high",
+				Title:       "Reduce complexity: runDream",
+				Type:        "tech-debt",
+				Severity:    "high",
+				Source:      "evolve-generator",
+				Description: "Complexity hotspot should be routed.",
+				Evidence:    "complexity=27",
+				File:        "cli/cmd/ao/overnight.go",
+				Func:        "runDream",
+				DedupKey:    "finding-generator|mine-findings|tech-debt-reduce-complexity-rundream",
+			},
+			{
+				ID:          "new-low-duplicate",
+				Title:       "Reduce complexity duplicate",
+				Type:        "tech-debt",
+				Severity:    "medium",
+				Source:      "evolve-generator",
+				Description: "Lower-priority duplicate should lose reconciliation.",
+				DedupKey:    "finding-generator|mine-findings|tech-debt-reduce-complexity-rundream",
+			},
+		},
+	}
+	if _, err := writeFindingGeneratorSidecar(opts, completed); err != nil {
+		t.Fatalf("write completed sidecar: %v", err)
+	}
+	if _, err := writeFindingGeneratorSidecar(opts, FindingGeneratorSidecar{
+		SchemaVersion: "finding-generator-sidecar/v1",
+		RunID:         opts.RunID,
+		Generator:     "slow-generator",
+		SourceEpic:    "compile-mine",
+		Status:        "soft-fail",
+		Error:         "deadline exceeded",
+	}); err != nil {
+		t.Fatalf("write failed sidecar: %v", err)
+	}
+
+	got, degraded, err := AggregateFindingGeneratorSidecars(cwd, opts.OutputDir)
+	if err != nil {
+		t.Fatalf("AggregateFindingGeneratorSidecars: %v", err)
+	}
+	if got.SidecarsRead != 2 {
+		t.Fatalf("SidecarsRead = %d, want 2", got.SidecarsRead)
+	}
+	if got.CandidatesSeen != 3 {
+		t.Fatalf("CandidatesSeen = %d, want 3", got.CandidatesSeen)
+	}
+	if got.DuplicatesSkipped != 2 {
+		t.Fatalf("DuplicatesSkipped = %d, want 2", got.DuplicatesSkipped)
+	}
+	if got.ItemsWritten != 1 {
+		t.Fatalf("ItemsWritten = %d, want 1", got.ItemsWritten)
+	}
+	if !containsSubstring(degraded, "slow-generator: soft-fail") {
+		t.Fatalf("expected soft-fail degradation, got %v", degraded)
+	}
+
+	data, err := os.ReadFile(filepath.Join(nextWorkDir, "next-work.jsonl"))
+	if err != nil {
+		t.Fatalf("read next-work: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("next-work lines = %d, want seed + one aggregate line\n%s", len(lines), data)
+	}
+	var appended struct {
+		SourceEpic  string `json:"source_epic"`
+		ClaimStatus string `json:"claim_status"`
+		Items       []struct {
+			ID          string `json:"id"`
+			Title       string `json:"title"`
+			Type        string `json:"type"`
+			Severity    string `json:"severity"`
+			Source      string `json:"source"`
+			Description string `json:"description"`
+			DedupKey    string `json:"dedup_key"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(lines[1]), &appended); err != nil {
+		t.Fatalf("unmarshal appended line: %v", err)
+	}
+	if appended.SourceEpic != "dream-generator-aggregator" {
+		t.Fatalf("SourceEpic = %q, want dream-generator-aggregator", appended.SourceEpic)
+	}
+	if appended.ClaimStatus != "available" {
+		t.Fatalf("ClaimStatus = %q, want available", appended.ClaimStatus)
+	}
+	if len(appended.Items) != 1 {
+		t.Fatalf("appended items = %d, want 1", len(appended.Items))
+	}
+	item := appended.Items[0]
+	if item.ID != "new-high" || item.Type != "tech-debt" || item.Source != "evolve-generator" || item.Description == "" || item.DedupKey == "" {
+		t.Fatalf("unexpected appended item: %+v", item)
+	}
+}
+
 // --- REDUCE ------------------------------------------------------------
 
 // recordingCallbacks builds a CloseLoopOpts whose callbacks append their
@@ -392,6 +591,49 @@ func TestRunReduce_StageOrderEnforced(t *testing.T) {
 	// loop ran past its position in the stage sequence.
 	if len(rec.order) != 1 || rec.order[0] != "close-loop" {
 		t.Errorf("expected close-loop to be invoked exactly once, got %v", rec.order)
+	}
+}
+
+func TestRunReduce_AggregatesGeneratorSidecarsIntoStagedNextWork(t *testing.T) {
+	cwd, cp, ingest := newReduceFixture(t)
+	opts := newTestOpts(cwd)
+	if _, err := writeFindingGeneratorSidecar(opts, FindingGeneratorSidecar{
+		SchemaVersion: "finding-generator-sidecar/v1",
+		RunID:         opts.RunID,
+		Generator:     mineFindingsGeneratorName,
+		SourceEpic:    "compile-mine",
+		Status:        "completed",
+		Candidates: []FindingGeneratorCandidate{{
+			ID:          "generated-one",
+			Title:       "Generated queue item",
+			Type:        "task",
+			Severity:    "medium",
+			Source:      "evolve-generator",
+			Description: "Aggregator should write this item only inside the checkpoint staging tree.",
+			DedupKey:    "finding-generator|mine-findings|generated-one",
+		}},
+	}); err != nil {
+		t.Fatalf("write sidecar: %v", err)
+	}
+
+	res, err := RunReduce(context.Background(), opts, ingest, cp, (&recorder{}).callbacks(), io.Discard)
+	if err != nil {
+		t.Fatalf("RunReduce: %v", err)
+	}
+	if res.GeneratorCandidatesRouted != 1 {
+		t.Fatalf("GeneratorCandidatesRouted = %d, want 1", res.GeneratorCandidatesRouted)
+	}
+	liveNextWork := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
+	if liveData, err := os.ReadFile(liveNextWork); err == nil && strings.Contains(string(liveData), "generated-one") {
+		t.Fatalf("live next-work mutated before checkpoint commit:\n%s", liveData)
+	}
+	stagedNextWork := filepath.Join(cp.StagingDir, ".agents", "rpi", "next-work.jsonl")
+	stagedData, err := os.ReadFile(stagedNextWork)
+	if err != nil {
+		t.Fatalf("read staged next-work: %v", err)
+	}
+	if !strings.Contains(string(stagedData), "generated-one") {
+		t.Fatalf("staged next-work missing generated item:\n%s", stagedData)
 	}
 }
 
@@ -716,6 +958,7 @@ func TestRunReduce_FullStageOrder_Enforced(t *testing.T) {
 		"defrag-prune",
 		"close-loop",
 		"findings-router",
+		"generator-aggregator",
 		"inject-refresh",
 	}
 	if !reflect.DeepEqual(order, want) {
