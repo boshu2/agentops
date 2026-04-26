@@ -17,6 +17,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/mine"
 	"github.com/boshu2/agentops/cli/internal/pool"
+	"github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // writeLearning writes a minimal learning markdown file under
@@ -963,5 +964,214 @@ func TestRunReduce_FullStageOrder_Enforced(t *testing.T) {
 	}
 	if !reflect.DeepEqual(order, want) {
 		t.Errorf("stage order mismatch:\n got=%v\nwant=%v", order, want)
+	}
+}
+
+// --- Proposal 2 propagation: status / requires / dedup_key prefix ----------
+
+// TestFindingGeneratorCandidate_StatusRequiresRoundTrip verifies the new
+// Status and Requires fields survive marshal/unmarshal and stay omitted
+// when empty (RFC 0001 Proposal 2 prerequisite).
+func TestFindingGeneratorCandidate_StatusRequiresRoundTrip(t *testing.T) {
+	in := FindingGeneratorCandidate{
+		ID:       "ext-1",
+		Title:    "Watch upstream X",
+		Type:     "task",
+		Severity: "medium",
+		Source:   "evolve-generator",
+		DedupKey: "external-watchlist|ext-1|watch-upstream-x",
+		Status:   "proposed",
+		Requires: []string{"human-review"},
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(b)
+	for _, want := range []string{
+		`"status":"proposed"`,
+		`"requires":["human-review"]`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %s; json=%s", want, got)
+		}
+	}
+
+	var out FindingGeneratorCandidate
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.Status != "proposed" {
+		t.Errorf("Status = %q, want proposed", out.Status)
+	}
+	if len(out.Requires) != 1 || out.Requires[0] != "human-review" {
+		t.Errorf("Requires = %v", out.Requires)
+	}
+
+	bare := FindingGeneratorCandidate{Title: "x", Type: "task", Severity: "low", Source: "evolve-generator"}
+	bb, _ := json.Marshal(bare)
+	bareJSON := string(bb)
+	for _, k := range []string{"status", "requires"} {
+		if strings.Contains(bareJSON, k) {
+			t.Errorf("expected %q omitted when empty; json=%s", k, bareJSON)
+		}
+	}
+}
+
+// TestNormalizeGeneratorCandidate_PreservesExternalWatchlistPrefix is the
+// pre-mortem Fix #1 regression guard: normalizeGeneratorCandidate must
+// accept "external-watchlist|" as a legitimate dedup_key prefix and not
+// rewrite it as "finding-generator|external-watchlist|...".
+func TestNormalizeGeneratorCandidate_PreservesExternalWatchlistPrefix(t *testing.T) {
+	in := FindingGeneratorCandidate{
+		Title:    "watch foo/bar releases",
+		Type:     "task",
+		Severity: "medium",
+		DedupKey: "external-watchlist|github.com/foo/bar|new-release-v2",
+	}
+	out := normalizeGeneratorCandidate(in)
+	if out.DedupKey != "external-watchlist|github.com/foo/bar|new-release-v2" {
+		t.Errorf("DedupKey rewritten unexpectedly: got %q", out.DedupKey)
+	}
+
+	// finding-generator| prefix still preserved (no double-prefix).
+	in2 := in
+	in2.DedupKey = "finding-generator|mine-findings|already-normalized"
+	out2 := normalizeGeneratorCandidate(in2)
+	if out2.DedupKey != "finding-generator|mine-findings|already-normalized" {
+		t.Errorf("finding-generator prefix corrupted: got %q", out2.DedupKey)
+	}
+
+	// No prefix at all → finding-generator| prepended (legacy behavior preserved).
+	in3 := in
+	in3.DedupKey = "no-prefix-here"
+	out3 := normalizeGeneratorCandidate(in3)
+	if !strings.HasPrefix(out3.DedupKey, "finding-generator|") {
+		t.Errorf("expected legacy prepend for unknown prefix; got %q", out3.DedupKey)
+	}
+}
+
+// TestAggregateFindingGeneratorSidecars_PropagatesProposed is the pre-mortem
+// Fix #2: assert the L2 propagation chain preserves status, requires, AND the
+// external-watchlist| dedup_key prefix end-to-end into next-work.jsonl.
+func TestAggregateFindingGeneratorSidecars_PropagatesProposed(t *testing.T) {
+	cwd := t.TempDir()
+	nextWorkDir := filepath.Join(cwd, ".agents", "rpi")
+	if err := os.MkdirAll(nextWorkDir, 0o755); err != nil {
+		t.Fatalf("mkdir next-work dir: %v", err)
+	}
+
+	opts := newTestOpts(cwd)
+	sidecar := FindingGeneratorSidecar{
+		SchemaVersion:  "finding-generator-sidecar/v1",
+		RunID:          opts.RunID,
+		Generator:      "external-watchlist",
+		SourceEpic:     "external-watchlist",
+		Status:         "completed",
+		CandidateCount: 1,
+		Candidates: []FindingGeneratorCandidate{
+			{
+				ID:          "ext-watch-1",
+				Title:       "Review competitor X release notes",
+				Type:        "task",
+				Severity:    "medium",
+				Source:      "evolve-generator",
+				Description: "Static watchlist entry past stale_after window.",
+				DedupKey:    "external-watchlist|github.com/example/x|review-competitor-x-release-notes",
+				Status:      "proposed",
+				Requires:    []string{"human-review"},
+			},
+		},
+	}
+	if _, err := writeFindingGeneratorSidecar(opts, sidecar); err != nil {
+		t.Fatalf("write sidecar: %v", err)
+	}
+
+	got, _, err := AggregateFindingGeneratorSidecars(cwd, opts.OutputDir)
+	if err != nil {
+		t.Fatalf("aggregate: %v", err)
+	}
+	if got.ItemsWritten != 1 {
+		t.Fatalf("ItemsWritten = %d, want 1", got.ItemsWritten)
+	}
+
+	data, err := os.ReadFile(filepath.Join(nextWorkDir, "next-work.jsonl"))
+	if err != nil {
+		t.Fatalf("read next-work: %v", err)
+	}
+	line := strings.TrimSpace(string(data))
+	for _, want := range []string{
+		`"status":"proposed"`,
+		`"requires":["human-review"]`,
+		`"dedup_key":"external-watchlist|`, // Fix #2: prefix must survive normalize
+	} {
+		if !strings.Contains(line, want) {
+			t.Errorf("expected %s in queue line\nline: %s", want, line)
+		}
+	}
+}
+
+// TestAggregateFindingGeneratorSidecars_HeldByRpiSelector confirms the
+// end-to-end selector contract — a queue item produced from a proposed
+// sidecar candidate is rejected by IsQueueItemSelectable.
+func TestAggregateFindingGeneratorSidecars_HeldByRpiSelector(t *testing.T) {
+	cwd := t.TempDir()
+	nextWorkDir := filepath.Join(cwd, ".agents", "rpi")
+	if err := os.MkdirAll(nextWorkDir, 0o755); err != nil {
+		t.Fatalf("mkdir next-work dir: %v", err)
+	}
+
+	opts := newTestOpts(cwd)
+	sidecar := FindingGeneratorSidecar{
+		SchemaVersion:  "finding-generator-sidecar/v1",
+		RunID:          opts.RunID,
+		Generator:      "external-watchlist",
+		SourceEpic:     "external-watchlist",
+		Status:         "completed",
+		CandidateCount: 1,
+		Candidates: []FindingGeneratorCandidate{
+			{
+				ID:          "ext-held",
+				Title:       "Held proposed item",
+				Type:        "task",
+				Severity:    "medium",
+				Source:      "evolve-generator",
+				Description: "Should be held by selector.",
+				DedupKey:    "external-watchlist|src|held-proposed-item",
+				Status:      "proposed",
+				Requires:    []string{"human-review"},
+			},
+		},
+	}
+	if _, err := writeFindingGeneratorSidecar(opts, sidecar); err != nil {
+		t.Fatalf("write sidecar: %v", err)
+	}
+	if _, _, err := AggregateFindingGeneratorSidecars(cwd, opts.OutputDir); err != nil {
+		t.Fatalf("aggregate: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(nextWorkDir, "next-work.jsonl"))
+	if err != nil {
+		t.Fatalf("read next-work: %v", err)
+	}
+	var entry rpi.NextWorkEntry
+	if err := json.Unmarshal([]byte(strings.TrimSpace(string(data))), &entry); err != nil {
+		t.Fatalf("unmarshal entry: %v", err)
+	}
+	if len(entry.Items) != 1 {
+		t.Fatalf("expected 1 item in entry, got %d", len(entry.Items))
+	}
+	item := entry.Items[0]
+	if item.Status != "proposed" {
+		t.Errorf("item.Status = %q, want proposed", item.Status)
+	}
+	if len(item.Requires) != 1 || item.Requires[0] != "human-review" {
+		t.Errorf("item.Requires = %v", item.Requires)
+	}
+	if rpi.IsQueueItemSelectable(item) {
+		t.Errorf("expected proposed/human-review item to be NOT selectable")
+	}
+	if !rpi.IsQueueItemHeldForReview(item) {
+		t.Errorf("expected IsQueueItemHeldForReview(item) == true")
 	}
 }

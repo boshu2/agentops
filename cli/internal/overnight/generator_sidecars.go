@@ -41,18 +41,20 @@ type FindingGeneratorSidecar struct {
 // FindingGeneratorCandidate is a normalized, read-only candidate emitted into a
 // sidecar. It intentionally mirrors only queue-safe fields and dedup metadata.
 type FindingGeneratorCandidate struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Type        string `json:"type"`
-	Severity    string `json:"severity"`
-	Source      string `json:"source"`
-	Description string `json:"description"`
-	Evidence    string `json:"evidence,omitempty"`
-	File        string `json:"file,omitempty"`
-	Func        string `json:"func,omitempty"`
-	TargetRepo  string `json:"target_repo,omitempty"`
-	DedupKey    string `json:"dedup_key"`
-	Duplicate   bool   `json:"duplicate"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Type        string   `json:"type"`
+	Severity    string   `json:"severity"`
+	Source      string   `json:"source"`
+	Description string   `json:"description"`
+	Evidence    string   `json:"evidence,omitempty"`
+	File        string   `json:"file,omitempty"`
+	Func        string   `json:"func,omitempty"`
+	TargetRepo  string   `json:"target_repo,omitempty"`
+	DedupKey    string   `json:"dedup_key"`
+	Duplicate   bool     `json:"duplicate"`
+	Status      string   `json:"status,omitempty"`
+	Requires    []string `json:"requires,omitempty"`
 }
 
 // FindingGeneratorAggregateResult summarizes the single-writer merge of all
@@ -322,17 +324,19 @@ func (s generatorNextWorkDedupState) has(id, dedupKey string) bool {
 }
 
 type generatorNextWorkItem struct {
-	ID          string `json:"id,omitempty"`
-	Title       string `json:"title"`
-	Type        string `json:"type"`
-	Severity    string `json:"severity"`
-	Source      string `json:"source"`
-	Description string `json:"description"`
-	Evidence    string `json:"evidence,omitempty"`
-	TargetRepo  string `json:"target_repo,omitempty"`
-	File        string `json:"file,omitempty"`
-	Func        string `json:"func,omitempty"`
-	DedupKey    string `json:"dedup_key,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Title       string   `json:"title"`
+	Type        string   `json:"type"`
+	Severity    string   `json:"severity"`
+	Source      string   `json:"source"`
+	Description string   `json:"description"`
+	Evidence    string   `json:"evidence,omitempty"`
+	TargetRepo  string   `json:"target_repo,omitempty"`
+	File        string   `json:"file,omitempty"`
+	Func        string   `json:"func,omitempty"`
+	DedupKey    string   `json:"dedup_key,omitempty"`
+	Status      string   `json:"status,omitempty"`
+	Requires    []string `json:"requires,omitempty"`
 }
 
 type generatorNextWorkLine struct {
@@ -469,7 +473,9 @@ func normalizeGeneratorCandidate(candidate FindingGeneratorCandidate) FindingGen
 		candidate.Description = candidate.Title
 	}
 	candidate.DedupKey = strings.ToLower(strings.TrimSpace(candidate.DedupKey))
-	if candidate.DedupKey != "" && !strings.HasPrefix(candidate.DedupKey, "finding-generator|") {
+	hasKnownPrefix := strings.HasPrefix(candidate.DedupKey, "finding-generator|") ||
+		strings.HasPrefix(candidate.DedupKey, "external-watchlist|")
+	if candidate.DedupKey != "" && !hasKnownPrefix {
 		candidate.DedupKey = "finding-generator|" + candidate.DedupKey
 	}
 	if candidate.DedupKey == "" {
@@ -496,6 +502,8 @@ func generatorCandidateNextWorkItem(candidate FindingGeneratorCandidate) generat
 		File:        candidate.File,
 		Func:        candidate.Func,
 		DedupKey:    candidate.DedupKey,
+		Status:      candidate.Status,
+		Requires:    candidate.Requires,
 	}
 }
 
