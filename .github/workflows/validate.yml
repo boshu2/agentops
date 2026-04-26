@@ -42,6 +42,16 @@ jobs:
           chmod +x scripts/validate-hook-preflight.sh
           ./scripts/validate-hook-preflight.sh
 
+  standards-injector-completeness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify standards-injector references are complete
+        run: |
+          chmod +x scripts/check-standards-injector-completeness.sh
+          ./scripts/check-standards-injector-completeness.sh
+
   validate-hooks-doc-parity:
     runs-on: ubuntu-latest
     steps:
@@ -845,7 +855,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -855,6 +865,7 @@ jobs:
           echo "doc-release-gate: ${{ needs.doc-release-gate.result }}"
           echo "smoke-test: ${{ needs.smoke-test.result }}"
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
+          echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
           echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"
           echo "validate-ci-policy-parity: ${{ needs.validate-ci-policy-parity.result }}"
           echo "codex-runtime-sections: ${{ needs.codex-runtime-sections.result }}"
@@ -885,6 +896,7 @@ jobs:
           if [[ "${{ needs.doc-release-gate.result }}" != "success" ]] || \
              [[ "${{ needs.smoke-test.result }}" != "success" ]] || \
              [[ "${{ needs.hook-preflight.result }}" != "success" ]] || \
+             [[ "${{ needs.standards-injector-completeness.result }}" != "success" ]] || \
              [[ "${{ needs.validate-hooks-doc-parity.result }}" != "success" ]] || \
              [[ "${{ needs.validate-ci-policy-parity.result }}" != "success" ]] || \
              [[ "${{ needs.codex-runtime-sections.result }}" != "success" ]] || \
