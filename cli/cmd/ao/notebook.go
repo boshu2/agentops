@@ -63,34 +63,14 @@ func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	memoryFile := notebookMemoryFile
-	if memoryFile == "" {
-		memoryFile, err = findMemoryFile(cwd)
-		if err != nil {
-			if !notebookQuiet {
-				fmt.Println("No MEMORY.md found — skipping notebook update.")
-			}
-			return nil
-		}
+	memoryFile, ok := resolveNotebookMemoryFile(cwd)
+	if !ok {
+		return nil
 	}
 
-	var entry *pendingEntry
-	if notebookSessionID != "" {
-		entry, err = readSessionByID(cwd, notebookSessionID)
-		if err != nil || entry == nil {
-			if !notebookQuiet {
-				VerbosePrintf("Session %s not found.\n", notebookSessionID)
-			}
-			return nil
-		}
-	} else {
-		entry, err = resolveNotebookSource(cwd, notebookSource)
-		if err != nil || entry == nil {
-			if !notebookQuiet {
-				VerbosePrintf("No session data — nothing to update.\n")
-			}
-			return nil
-		}
+	entry := resolveNotebookEntry(cwd)
+	if entry == nil {
+		return nil
 	}
 
 	cursorPath := filepath.Join(cwd, ".agents", "ao", "notebook-cursor.json")
@@ -123,6 +103,48 @@ func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// resolveNotebookMemoryFile honors the --memory-file override or, when absent,
+// searches upward for a MEMORY.md. Returns ok=false when no MEMORY.md can be
+// located so the caller can short-circuit with the standard "skipping" message.
+func resolveNotebookMemoryFile(cwd string) (string, bool) {
+	if notebookMemoryFile != "" {
+		return notebookMemoryFile, true
+	}
+	memoryFile, err := findMemoryFile(cwd)
+	if err != nil {
+		if !notebookQuiet {
+			fmt.Println("No MEMORY.md found — skipping notebook update.")
+		}
+		return "", false
+	}
+	return memoryFile, true
+}
+
+// resolveNotebookEntry returns the pending session entry to render, honoring
+// --session-id when set and falling back to the configured source. Returns nil
+// when no entry is found so the caller can short-circuit; the caller does not
+// need to distinguish "not found" from a read error here — both end the run.
+func resolveNotebookEntry(cwd string) *pendingEntry {
+	if notebookSessionID != "" {
+		entry, err := readSessionByID(cwd, notebookSessionID)
+		if err != nil || entry == nil {
+			if !notebookQuiet {
+				VerbosePrintf("Session %s not found.\n", notebookSessionID)
+			}
+			return nil
+		}
+		return entry
+	}
+	entry, err := resolveNotebookSource(cwd, notebookSource)
+	if err != nil || entry == nil {
+		if !notebookQuiet {
+			VerbosePrintf("No session data — nothing to update.\n")
+		}
+		return nil
+	}
+	return entry
 }
 
 // Thin wrappers delegating to internal/notebook.
