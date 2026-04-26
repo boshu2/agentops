@@ -416,7 +416,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"ratchet":    {"status", "check", "next"},
 		"metrics":    {"baseline", "report"},
 		"overnight":  {"start", "report", "setup"},
-		"flywheel":   {"status", "nudge", "gate"},
+		"flywheel":   {"status", "nudge", "gate", "compare", "close-loop"},
 		"constraint": {"activate", "retire", "review", "list"},
 		"corpus":     {"fitness"},
 		"pool":       {"list", "ingest"},
@@ -960,6 +960,36 @@ func TestCobraFlywheelStatusCommand(t *testing.T) {
 	}
 	if out == "" {
 		t.Error("expected some output from flywheel status")
+	}
+}
+
+// TestCobraFlywheelCompareCommand exercises flywheel compare.
+func TestCobraFlywheelCompareCommand(t *testing.T) {
+	tmp := chdirTemp(t)
+	t.Setenv("HOME", tmp)
+	setupAgentsDir(t, tmp)
+
+	out, err := executeCommand("flywheel", "compare")
+	if err != nil {
+		t.Fatalf("ao flywheel compare failed: %v", err)
+	}
+	if out == "" {
+		t.Error("expected some output from flywheel compare")
+	}
+	if !strings.Contains(out, "primary") || !strings.Contains(out, "PROMOTION") {
+		t.Errorf("expected primary/PROMOTION in compare output, got: %s", out)
+	}
+}
+
+// TestCobraFlywheelCloseLoopCommand exercises flywheel close-loop.
+func TestCobraFlywheelCloseLoopCommand(t *testing.T) {
+	tmp := chdirTemp(t)
+	t.Setenv("HOME", tmp)
+	setupAgentsDir(t, tmp)
+
+	_, err := executeCommand("flywheel", "close-loop", "--dry-run")
+	if err != nil {
+		t.Fatalf("ao flywheel close-loop --dry-run failed: %v", err)
 	}
 }
 
