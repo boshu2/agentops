@@ -416,6 +416,104 @@ func TestGoalsMeasure_WeightedScoring(t *testing.T) {
 	}
 }
 
+func TestGoalsMeasure_ExcludeTagFilter(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	md := `# Goals
+
+Mission.
+
+## Gates
+
+| ID | Check | Weight | Description | Tags |
+|----|-------|--------|-------------|------|
+| code-actionable | ` + "`exit 0`" + ` | 5 | Untagged | |
+| corpus-bound | ` + "`exit 1`" + ` | 8 | Bound to corpus | long-cycle, corpus-state |
+`
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	if err := os.WriteFile(goalsPath, []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err := goals.RunMeasure(goals.MeasureOptions{
+		GoalsFile:  goalsPath,
+		ExcludeTag: "long-cycle",
+		JSON:       true,
+		Timeout:    10 * time.Second,
+		Stdout:     &buf,
+		SnapDir:    filepath.Join(dir, "baselines"),
+	})
+	if err != nil {
+		t.Fatalf("measure returned error: %v", err)
+	}
+
+	var snap goals.Snapshot
+	if err := json.Unmarshal(buf.Bytes(), &snap); err != nil {
+		t.Fatalf("failed to decode JSON: %v (raw: %s)", err, buf.String())
+	}
+
+	if snap.Summary.Total != 1 {
+		t.Errorf("Total = %d, want 1 (corpus-bound goal must be excluded)", snap.Summary.Total)
+	}
+	if snap.Summary.Failing != 0 {
+		t.Errorf("Failing = %d, want 0 (the failing goal is excluded by tag)", snap.Summary.Failing)
+	}
+	if snap.Summary.Score != 100.0 {
+		t.Errorf("Score = %f, want 100.0 (only the passing untagged goal remains)", snap.Summary.Score)
+	}
+	for _, m := range snap.Goals {
+		if m.GoalID == "corpus-bound" {
+			t.Errorf("corpus-bound goal leaked into snapshot despite --exclude-tag long-cycle")
+		}
+	}
+}
+
+func TestGoalsMeasure_ExcludeTagPlusGoalIDInteraction(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	md := `# Goals
+
+Mission.
+
+## Gates
+
+| ID | Check | Weight | Description | Tags |
+|----|-------|--------|-------------|------|
+| g-untagged | ` + "`exit 0`" + ` | 5 | | |
+| g-tagged | ` + "`exit 0`" + ` | 5 | | long-cycle |
+`
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	if err := os.WriteFile(goalsPath, []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// --goal narrows first; if the named goal is then dropped by --exclude-tag,
+	// the snapshot should be empty (no error — the goal was found and then filtered).
+	var buf bytes.Buffer
+	err := goals.RunMeasure(goals.MeasureOptions{
+		GoalsFile:  goalsPath,
+		GoalID:     "g-tagged",
+		ExcludeTag: "long-cycle",
+		JSON:       true,
+		Timeout:    10 * time.Second,
+		Stdout:     &buf,
+		SnapDir:    filepath.Join(dir, "baselines"),
+	})
+	if err != nil {
+		t.Fatalf("measure returned error: %v", err)
+	}
+	var snap goals.Snapshot
+	if err := json.Unmarshal(buf.Bytes(), &snap); err != nil {
+		t.Fatalf("failed to decode JSON: %v (raw: %s)", err, buf.String())
+	}
+	if snap.Summary.Total != 0 {
+		t.Errorf("Total = %d, want 0 (named goal was filtered out by tag)", snap.Summary.Total)
+	}
+}
+
 func TestGoalsMeasure_SkippedGoals(t *testing.T) {
 	t.Parallel()
 	gf := &goals.GoalFile{

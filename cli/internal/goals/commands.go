@@ -74,6 +74,7 @@ func RunHistory(opts HistoryOptions) error {
 // MeasureOptions configures the goals measure command.
 type MeasureOptions struct {
 	GoalID     string
+	ExcludeTag string // Filter out goals whose Tags include this value (e.g. "long-cycle").
 	Directives bool
 	GoalsFile  string
 	Timeout    time.Duration
@@ -82,6 +83,45 @@ type MeasureOptions struct {
 	SnapDir    string
 	Stdout     io.Writer
 	Stderr     io.Writer
+}
+
+// goalHasTag reports whether g.Tags contains the given tag (case-insensitive).
+func goalHasTag(g Goal, tag string) bool {
+	for _, t := range g.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+// applyMeasureFilters narrows gf.Goals according to MeasureOptions:
+// --goal restricts to a single ID (returns "not found" if absent), then
+// --exclude-tag drops any remaining goal whose Tags include that value.
+// Mutates gf in place.
+func applyMeasureFilters(gf *GoalFile, opts MeasureOptions) error {
+	if opts.GoalID != "" {
+		var filtered []Goal
+		for _, g := range gf.Goals {
+			if g.ID == opts.GoalID {
+				filtered = append(filtered, g)
+			}
+		}
+		if len(filtered) == 0 {
+			return fmt.Errorf("goal %q not found", opts.GoalID)
+		}
+		gf.Goals = filtered
+	}
+	if opts.ExcludeTag != "" {
+		var filtered []Goal
+		for _, g := range gf.Goals {
+			if !goalHasTag(g, opts.ExcludeTag) {
+				filtered = append(filtered, g)
+			}
+		}
+		gf.Goals = filtered
+	}
+	return nil
 }
 
 // RunMeasure runs goal checks and produces a snapshot.
@@ -120,17 +160,8 @@ func RunMeasure(opts MeasureOptions) error {
 		return fmt.Errorf("%d validation errors", len(errs))
 	}
 
-	if opts.GoalID != "" {
-		var filtered []Goal
-		for _, g := range gf.Goals {
-			if g.ID == opts.GoalID {
-				filtered = append(filtered, g)
-			}
-		}
-		if len(filtered) == 0 {
-			return fmt.Errorf("goal %q not found", opts.GoalID)
-		}
-		gf.Goals = filtered
+	if err := applyMeasureFilters(gf, opts); err != nil {
+		return err
 	}
 
 	snap := Measure(gf, opts.Timeout)

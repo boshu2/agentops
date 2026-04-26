@@ -50,9 +50,13 @@ echo "=== Coverage Delta Measurement ==="
 # Run tests with coverage and capture output
 COVERAGE_OUTPUT=$(cd "$DIR" && go test -cover ./... 2>&1 || true)
 
-# Extract per-package coverage percentages and compute average
+# Extract per-package coverage percentages and compute average.
+# Require the trailing "%" so we don't match Go's event-coverage line for
+# packages with no _test.go files (e.g. cmd/ao under coverpkg builds emits
+# `coverage: 1/12 events (informational)` — without the % anchor that "1"
+# was previously averaged in as 1.0% and dragged the project average down).
 CURRENT_PCT=$(echo "$COVERAGE_OUTPUT" | \
-  grep -oE 'coverage: [0-9]+(\.[0-9]+)?' | \
+  grep -oE 'coverage: [0-9]+(\.[0-9]+)?%' | \
   grep -oE '[0-9]+(\.[0-9]+)?' | \
   awk '{sum += $1; count++} END { if (count > 0) printf "%.1f", sum/count; else print "0.0" }')
 

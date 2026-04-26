@@ -923,8 +923,158 @@ func TestParseGatesTable_ExtraColumns(t *testing.T) {
 	if gf.Goals[0].ID != "g1" {
 		t.Errorf("goal ID = %q, want %q", gf.Goals[0].ID, "g1")
 	}
-	// The extra column must NOT corrupt the Description field.
 	if gf.Goals[0].Description != "Test" {
 		t.Errorf("Description = %q, want %q", gf.Goals[0].Description, "Test")
+	}
+}
+
+func TestParseTagsCell(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want []string
+	}{
+		{"empty", "", nil},
+		{"whitespace_only", "   ", nil},
+		{"single", "long-cycle", []string{"long-cycle"}},
+		{"comma_separated", "long-cycle, corpus-state", []string{"long-cycle", "corpus-state"}},
+		{"semicolon_separated", "long-cycle; corpus-state", []string{"long-cycle", "corpus-state"}},
+		{"backticks_stripped", "`long-cycle, corpus-state`", []string{"long-cycle", "corpus-state"}},
+		{"mixed_case_lowered", "Long-Cycle, CORPUS-STATE", []string{"long-cycle", "corpus-state"}},
+		{"empty_entries_dropped", "long-cycle,, ; ,corpus-state,", []string{"long-cycle", "corpus-state"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseTagsCell(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("len = %d, want %d (got %v)", len(got), len(tc.want), got)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Errorf("[%d] = %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestParseGateRow_TagsHeaderColumn(t *testing.T) {
+	colMap := buildGateColumnMap([]string{"ID", "Check", "Weight", "Description", "Tags"})
+	cells := []string{"flywheel-compounding", "`bash check.sh`", "8", "knowledge flywheel", "long-cycle, corpus-state"}
+	g := parseGateRow(cells, colMap)
+
+	if g.ID != "flywheel-compounding" {
+		t.Errorf("ID = %q, want flywheel-compounding", g.ID)
+	}
+	if g.Weight != 8 {
+		t.Errorf("Weight = %d, want 8", g.Weight)
+	}
+	if len(g.Tags) != 2 {
+		t.Fatalf("Tags len = %d, want 2 (got %v)", len(g.Tags), g.Tags)
+	}
+	if g.Tags[0] != "long-cycle" || g.Tags[1] != "corpus-state" {
+		t.Errorf("Tags = %v, want [long-cycle corpus-state]", g.Tags)
+	}
+}
+
+func TestParseGateRow_TagsAbsentByDefault(t *testing.T) {
+	colMap := buildGateColumnMap([]string{"ID", "Check", "Weight", "Description"})
+	cells := []string{"g1", "echo ok", "5", "no tags column"}
+	g := parseGateRow(cells, colMap)
+
+	if g.Tags != nil {
+		t.Errorf("Tags = %v, want nil (no Tags column declared)", g.Tags)
+	}
+}
+
+func TestCellAt(t *testing.T) {
+	cells := []string{"a", "b", "c"}
+	colMap := map[string]int{"first": 0, "third": 2, "out_of_range": 9}
+
+	v, ok := cellAt(cells, colMap, "first")
+	if !ok || v != "a" {
+		t.Errorf("first → (%q, %v), want (\"a\", true)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "third")
+	if !ok || v != "c" {
+		t.Errorf("third → (%q, %v), want (\"c\", true)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "missing_key")
+	if ok || v != "" {
+		t.Errorf("missing_key → (%q, %v), want (\"\", false)", v, ok)
+	}
+	v, ok = cellAt(cells, colMap, "out_of_range")
+	if ok || v != "" {
+		t.Errorf("out_of_range → (%q, %v), want (\"\", false)", v, ok)
+	}
+
+	// Whitespace must be trimmed.
+	cells2 := []string{"  padded  "}
+	colMap2 := map[string]int{"k": 0}
+	v, ok = cellAt(cells2, colMap2, "k")
+	if !ok || v != "padded" {
+		t.Errorf("padded → (%q, %v), want (\"padded\", true)", v, ok)
+	}
+}
+
+func TestParseCheckCell(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{"`echo ok`", "echo ok"},
+		{"echo ok", "echo ok"},
+		{"`x`", "x"},
+		{"``", ""},
+		{"`", "`"},
+		{"", ""},
+	}
+	for _, tc := range cases {
+		got := parseCheckCell(tc.in)
+		if got != tc.want {
+			t.Errorf("parseCheckCell(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestParseWeightCell(t *testing.T) {
+	cases := []struct {
+		in   string
+		want int
+	}{
+		{"5", 5},
+		{"1", 1},
+		{"10", 10},
+		{"0", 5},   // out of range → default
+		{"11", 5},  // out of range → default
+		{"-1", 5},  // out of range → default
+		{"abc", 5}, // non-numeric → default
+		{"", 5},    // empty → default
+	}
+	for _, tc := range cases {
+		got := parseWeightCell(tc.in)
+		if got != tc.want {
+			t.Errorf("parseWeightCell(%q) = %d, want %d", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestParseGatesTable_TagsRoundTrip(t *testing.T) {
+	input := "# G\n\n## Gates\n" +
+		"| ID | Check | Weight | Description | Tags |\n" +
+		"|---|---|---|---|---|\n" +
+		"| g-tagged | echo ok | 8 | tagged gate | long-cycle, corpus-state |\n" +
+		"| g-bare | echo ok | 5 | untagged gate |  |\n"
+	gf, err := ParseMarkdownGoals([]byte(input))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(gf.Goals) != 2 {
+		t.Fatalf("expected 2 goals, got %d", len(gf.Goals))
+	}
+	if len(gf.Goals[0].Tags) != 2 {
+		t.Errorf("g-tagged Tags = %v, want 2 entries", gf.Goals[0].Tags)
+	}
+	if gf.Goals[1].Tags != nil {
+		t.Errorf("g-bare Tags = %v, want nil", gf.Goals[1].Tags)
 	}
 }

@@ -26,6 +26,7 @@ type Measurement struct {
 	Duration  float64  `json:"duration_s"`
 	Output    string   `json:"output,omitempty"`
 	Weight    int      `json:"weight"`
+	Tags      []string `json:"tags,omitempty"`
 }
 
 // classifyResult maps command exit status to a result string.
@@ -95,7 +96,7 @@ func untrackChild(pid int) {
 // Exit 0 = pass, non-zero = fail, context deadline exceeded = skip.
 // Uses process groups so child processes are killed on timeout.
 func MeasureOne(goal Goal, timeout time.Duration) Measurement {
-	m := Measurement{GoalID: goal.ID, Weight: goal.Weight}
+	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()

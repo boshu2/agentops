@@ -971,9 +971,10 @@ ao goals measure [flags]
 **Flags:**
 
 ```
-      --directives    Output directives as JSON (skip gate checks)
-      --goal string   Measure a single goal by ID
-  -h, --help          help for measure
+      --directives           Output directives as JSON (skip gate checks)
+      --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
+      --goal string          Measure a single goal by ID
+  -h, --help                 help for measure
 ```
 
 #### `ao goals validate`
