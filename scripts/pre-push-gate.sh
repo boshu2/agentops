@@ -497,6 +497,20 @@ else
     skip "manifest schema validation"
 fi
 
+# --- 15a. Case-folded tracked path collisions ---
+if needs_check always; then
+    if [[ -x scripts/check-casefold-path-collisions.sh ]]; then
+        if casefold_output="$(scripts/check-casefold-path-collisions.sh --repo-root . 2>&1)"; then
+            pass "case-folded path collisions"
+        else
+            fail "case-folded path collisions"
+            indent_output "$casefold_output"
+        fi
+    else
+        fail "missing executable: scripts/check-casefold-path-collisions.sh"
+    fi
+fi
+
 # --- 16. Codex artifact metadata ---
 if needs_check skill; then
     if [[ -x scripts/validate-codex-generated-artifacts.sh ]]; then

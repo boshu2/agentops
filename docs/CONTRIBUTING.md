@@ -180,7 +180,7 @@ Report issues to: fullerbt@users.noreply.github.com
 Useful places to orient:
 
 - [README.md](https://github.com/boshu2/agentops/blob/main/README.md)
-- [docs/INDEX.md](INDEX.md)
+- [docs/documentation-index.md](documentation-index.md)
 - [docs/SKILLS.md](SKILLS.md)
 - [docs/SKILL-API.md](SKILL-API.md)
 - [docs/testing-skills.md](testing-skills.md)

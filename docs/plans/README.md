@@ -7,4 +7,4 @@ Time-stamped plans and validated design notes.
 - [2026-03-22 AO Search as an Upstream CASS Wrapper](./2026-03-22-ao-search-cass-wrapper.md)
 - [2026-04-01 Knowledge Activation Productization](./2026-04-01-knowledge-activation-productization.md)
 
-Back: [Docs Index](../INDEX.md)
+Back: [Docs Index](../documentation-index.md)

@@ -661,13 +661,13 @@ EOF
     mkdir -p "$audit_repo/cli/docs"
     printf 'commands\n' > "$audit_repo/cli/docs/COMMANDS.md"
     printf 'contract\n' > "$audit_repo/docs/contracts/codex-skill-api.md"
-    printf 'index\n' > "$audit_repo/docs/INDEX.md"
+    printf 'index\n' > "$audit_repo/docs/documentation-index.md"
     git -C "$audit_repo" add \
         scripts/retag-release.sh \
         cli/docs/COMMANDS.md \
         docs/contracts/codex-skill-api.md \
-        docs/INDEX.md
-    child_description=$'scripts/retag-release.sh currently recreates tags as lightweight tags.\ncli/docs/COMMANDS.md embeds the current UTC date in its generated header.\n\nLikely files:\n- docs/contracts/codex-skill-api.md#frontmatter\n\nPrimary files:\n- docs/INDEX.md (update link)\n\nReference URL that should not be treated as a repo file: https://developers.openai.com/codex/skills/\n'
+        docs/documentation-index.md
+    child_description=$'scripts/retag-release.sh currently recreates tags as lightweight tags.\ncli/docs/COMMANDS.md embeds the current UTC date in its generated header.\n\nLikely files:\n- docs/contracts/codex-skill-api.md#frontmatter\n\nPrimary files:\n- docs/documentation-index.md (update link)\n\nReference URL that should not be treated as a repo file: https://developers.openai.com/codex/skills/\n'
     write_fake_bd_json "$audit_repo" "ag-prose" "ag-prose.1" "$child_description" \
         "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z" "2030-01-01T00:00:00Z"
 
@@ -681,7 +681,7 @@ EOF
     [[ "$scoped_files" == *"scripts/retag-release.sh"* ]]
     [[ "$scoped_files" == *"cli/docs/COMMANDS.md"* ]]
     [[ "$scoped_files" == *"docs/contracts/codex-skill-api.md"* ]]
-    [[ "$scoped_files" == *"docs/INDEX.md"* ]]
+    [[ "$scoped_files" == *"docs/documentation-index.md"* ]]
     [[ "$scoped_files" != *"developers.openai.com"* ]]
 }
 

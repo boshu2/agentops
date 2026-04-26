@@ -6,5 +6,5 @@
 - [Command Template](./command.template.md)
 - [Kernel Template](./kernel.template.md)
 
-Back: [Docs Index](../INDEX.md)
+Back: [Docs Index](../documentation-index.md)
 

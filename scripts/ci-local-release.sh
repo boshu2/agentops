@@ -630,6 +630,7 @@ check_agents_hash_gate() {
 
 run_step_bg "Doc-release gate" ./tests/docs/validate-doc-release.sh
 run_step_bg "Manifest schema validation" ./scripts/validate-manifests.sh --repo-root "$REPO_ROOT"
+run_step_bg "Case-folded path collision check" ./scripts/check-casefold-path-collisions.sh --repo-root "$REPO_ROOT"
 run_step_bg "Manifest version consistency" check_manifest_version_consistency
 run_step_bg "Hook preflight" ./scripts/validate-hook-preflight.sh
 run_step_bg "Hooks/docs parity" ./scripts/validate-hooks-doc-parity.sh

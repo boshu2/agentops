@@ -85,7 +85,7 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 ### Day 1 reading order
 
 1. `README.md`
-2. `docs/INDEX.md`
+2. `docs/documentation-index.md`
 3. `docs/how-it-works.md`
 4. `docs/ARCHITECTURE.md`
 5. `docs/SKILLS.md`
@@ -114,7 +114,7 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 
 ## Where to go next
 
-- [Documentation Index](INDEX.md)
+- [Documentation Index](documentation-index.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Skills Reference](SKILLS.md)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)

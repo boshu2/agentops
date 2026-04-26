@@ -42,7 +42,7 @@ The schema sets `additionalProperties: true` because workers regularly add task-
 {
   "task": "fix-broken-link",
   "status": "done",
-  "files_changed": ["docs/INDEX.md"],
+  "files_changed": ["docs/documentation-index.md"],
   "notes": "Replaced dead link to old contracts page."
 }
 ```
