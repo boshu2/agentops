@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -511,5 +512,47 @@ func TestProvenanceAudit_NoAgentsDir(t *testing.T) {
 	if report.StaleCitations != 0 || report.MissingSources != 0 {
 		t.Errorf("expected zero counts, got stale=%d missing=%d",
 			report.StaleCitations, report.MissingSources)
+	}
+}
+
+// Regression: a learning whose frontmatter uses a structured (map or
+// sequence) `source:` value must still parse and must not be flagged as
+// a missing source. Pre-fix the YAML decoder returned
+// "cannot unmarshal !!map into string" and the file was skipped.
+func TestProvenanceAudit_StructuredSourceAccepted(t *testing.T) {
+	cwd := t.TempDir()
+	learnings := filepath.Join(cwd, ".agents", "learnings")
+	if err := os.MkdirAll(learnings, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	recent := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	mapSource := "---\ntitle: Structured\ndate: " + recent + "\nsource:\n  session: 2026-01-01 demo\n  evidence:\n    - a.md\n    - b.md\n---\n\nbody\n"
+	seqSource := "---\ntitle: Sequence\ndate: " + recent + "\nsource:\n  - a.md\n  - b.md\n---\n\nbody\n"
+	stringSource := "---\ntitle: Scalar\ndate: " + recent + "\nsource: retro-quick\n---\n\nbody\n"
+
+	mustWrite := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(learnings, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mustWrite("map-source.md", mapSource)
+	mustWrite("seq-source.md", seqSource)
+	mustWrite("scalar-source.md", stringSource)
+
+	report, err := Audit(cwd)
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if report == nil {
+		t.Fatal("nil report")
+	}
+	for _, note := range report.Degraded {
+		if strings.Contains(note, "yaml:") {
+			t.Errorf("unexpected YAML degraded entry: %q", note)
+		}
+	}
+	if report.MissingSources != 0 {
+		t.Errorf("expected 0 missing sources for structured+scalar sources, got %d", report.MissingSources)
 	}
 }
