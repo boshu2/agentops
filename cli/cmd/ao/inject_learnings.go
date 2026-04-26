@@ -43,11 +43,35 @@ func sanitizeSourcePhase(phase string) string { return search.SanitizeSourcePhas
 // reach it.
 var nowFunc = time.Now
 
+// qualityFilteredCount tracks how many learnings the most recent
+// collectLearnings invocation dropped at the hard quality gate. It is
+// reset at the start of every collectLearnings call and incremented
+// from processLearningFile when a learning fails passesQualityGate.
+// Callers that want a non-verbose summary read it via
+// LastQualityFilteredCount after collectLearnings returns.
+//
+// Plain int is fine here: collectLearnings is single-goroutine; tests
+// that call it never do so concurrently.
+var qualityFilteredCount int
+
+// LastQualityFilteredCount returns the number of learnings dropped by
+// the hard quality gate during the most recent collectLearnings call.
+// Useful for emitting a one-line non-verbose summary in calling
+// commands (verbose mode already logs each filtered learning
+// individually).
+func LastQualityFilteredCount() int {
+	return qualityFilteredCount
+}
+
 // collectLearnings finds recent learnings from .agents/learnings/ and optionally ~/.agents/learnings/.
 // Implements MemRL Two-Phase retrieval: Phase A (similarity/freshness) + Phase B (utility-weighted)
 // With CASS integration: applies confidence decay when --apply-decay is set.
 // Global learnings receive a post-scoring weight penalty (globalWeight, default 0.8).
 func collectLearnings(cwd, query string, limit int, globalDir string, globalWeight float64) ([]learning, error) {
+	// Reset before any early return so callers always see the count
+	// for the most recent collectLearnings call, not a stale prior one.
+	qualityFilteredCount = 0
+
 	files, err := findLearningFiles(cwd)
 	if err != nil {
 		return nil, err
@@ -364,6 +388,7 @@ func processLearningFile(file string, queryTokensList []string, now time.Time) (
 
 	// Hard quality gate: filter out low-maturity or low-utility learnings
 	if !passesQualityGate(l) {
+		qualityFilteredCount++
 		VerbosePrintf("Quality gate filtered: %s (maturity=%s, utility=%.3f)\n", l.ID, l.Maturity, l.Utility)
 		return l, false
 	}
