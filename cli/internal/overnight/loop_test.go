@@ -221,10 +221,14 @@ func TestLastCompoundedSnapshot(t *testing.T) {
 // marshal.
 func TestIngestSummary(t *testing.T) {
 	r := &IngestResult{
-		HarvestPreviewCount: 4,
-		ForgeArtifactsMined: 5,
-		ProvenanceAudited:   6,
-		MineFindingsNew:     7,
+		HarvestPreviewCount:     4,
+		ForgeArtifactsMined:     5,
+		ProvenanceAudited:       6,
+		MineFindingsNew:         7,
+		GeneratorCandidateCount: 8,
+		GeneratorDuplicateCount: 2,
+		GeneratorDuplicateRate:  0.25,
+		GeneratorSidecarPath:    ".agents/overnight/test-run/generator-results/mine-findings.json",
 	}
 	got := ingestSummary(r)
 	if got["harvest_preview_count"] != 4 {
@@ -239,8 +243,20 @@ func TestIngestSummary(t *testing.T) {
 	if got["mine_findings_new"] != 7 {
 		t.Fatalf("mine_findings_new: got %v, want 7", got["mine_findings_new"])
 	}
-	if len(got) != 4 {
-		t.Fatalf("summary key count: got %d, want 4", len(got))
+	if got["generator_candidate_count"] != 8 {
+		t.Fatalf("generator_candidate_count: got %v, want 8", got["generator_candidate_count"])
+	}
+	if got["generator_duplicate_count"] != 2 {
+		t.Fatalf("generator_duplicate_count: got %v, want 2", got["generator_duplicate_count"])
+	}
+	if got["generator_duplicate_rate"] != 0.25 {
+		t.Fatalf("generator_duplicate_rate: got %v, want 0.25", got["generator_duplicate_rate"])
+	}
+	if got["generator_sidecar_path"] != ".agents/overnight/test-run/generator-results/mine-findings.json" {
+		t.Fatalf("generator_sidecar_path: got %v, want sidecar path", got["generator_sidecar_path"])
+	}
+	if len(got) != 8 {
+		t.Fatalf("summary key count: got %d, want 8", len(got))
 	}
 }
 

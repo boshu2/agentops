@@ -44,6 +44,23 @@ type IngestResult struct {
 	// ao mine drift/complexity pass. Zero when skipped or deferred.
 	MineFindingsNew int
 
+	// GeneratorCandidateCount is the total number of candidate work items
+	// emitted by Dream read-side finding generators before dedup.
+	GeneratorCandidateCount int
+
+	// GeneratorDuplicateCount is the number of generator candidates already
+	// present in next-work. It lets Dream measure generator yield without
+	// allowing generators to write next-work directly.
+	GeneratorDuplicateCount int
+
+	// GeneratorDuplicateRate is DuplicateCount / CandidateCount. Zero when
+	// there are no candidates.
+	GeneratorDuplicateRate float64
+
+	// GeneratorSidecarPath points at the latest generator sidecar written
+	// during INGEST, relative or absolute according to RunLoopOptions.
+	GeneratorSidecarPath string
+
 	// Degraded lists human-readable degradation notes for substages that
 	// were skipped, deferred, or soft-failed.
 	Degraded []string
@@ -59,11 +76,14 @@ type IngestResult struct {
 
 // RunIngest executes the parallel-safe INGEST stage.
 //
-// RunIngest never mutates .agents/. It runs serial substages (no swarm,
-// no goroutine fan-out in the first slice) and each substage degrades
-// independently on failure. The stage as a whole only returns a non-nil
-// error when the harvest catalog cannot be produced — that catalog is
-// the load-bearing output REDUCE needs to run its real promotion pass.
+// RunIngest never mutates the Dream corpus or next-work queue. It runs serial
+// substages (no swarm, no goroutine fan-out in the first slice) and each
+// substage degrades independently on failure. Read-side generators may write
+// per-run sidecars under OutputDir/generator-results so candidate yield is
+// measurable without creating queue write races. The stage as a whole only
+// returns a non-nil error when the harvest catalog cannot be produced — that
+// catalog is the load-bearing output REDUCE needs to run its real promotion
+// pass.
 //
 // Substage order:
 //
@@ -254,6 +274,7 @@ func (r *ingestRunner) runMineFindings() error {
 	if err := ctxCheck(r.ctx); err != nil {
 		return err
 	}
+	started := time.Now()
 	mineOpts := mine.RunOpts{
 		Sources: []string{"git", "agents", "code"},
 		Quiet:   true,
@@ -263,13 +284,35 @@ func (r *ingestRunner) runMineFindings() error {
 	if mineErr != nil {
 		r.result.StageFailures["mine-findings"] = mineErr.Error()
 		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-findings: %v", mineErr))
+		r.recordMineGeneratorSidecar(buildFailedMineGeneratorSidecar(r.opts, started, time.Now(), mineErr))
 		return nil
 	}
 	if mineReport != nil {
 		r.result.MineFindingsNew = countMineFindings(mineReport)
+		existingIDs, dedupErr := mine.LoadExistingMineIDs(filepath.Join(r.opts.Cwd, ".agents", "rpi", "next-work.jsonl"))
+		if dedupErr != nil {
+			r.result.StageFailures["mine-generator-dedup"] = dedupErr.Error()
+			r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-generator-dedup: %v", dedupErr))
+		}
+		r.recordMineGeneratorSidecar(buildMineGeneratorSidecar(r.opts, mineReport, started, time.Now(), existingIDs))
 		fmt.Fprintf(r.log, "overnight/ingest: mine-findings new=%d\n", r.result.MineFindingsNew)
 	}
 	return nil
+}
+
+func (r *ingestRunner) recordMineGeneratorSidecar(sidecar FindingGeneratorSidecar) {
+	r.result.GeneratorCandidateCount = sidecar.CandidateCount
+	r.result.GeneratorDuplicateCount = sidecar.DuplicateCount
+	r.result.GeneratorDuplicateRate = sidecar.DuplicateRate
+	path, err := writeFindingGeneratorSidecar(r.opts, sidecar)
+	if err != nil {
+		r.result.StageFailures["mine-generator-sidecar"] = err.Error()
+		r.result.Degraded = append(r.result.Degraded, fmt.Sprintf("mine-generator-sidecar: %v", err))
+		return
+	}
+	r.result.GeneratorSidecarPath = path
+	fmt.Fprintf(r.log, "overnight/ingest: %s sidecar candidates=%d duplicates=%d path=%s\n",
+		sidecar.Generator, sidecar.CandidateCount, sidecar.DuplicateCount, path)
 }
 
 // ctxCheck returns ctx.Err() if ctx has been cancelled, or nil otherwise.

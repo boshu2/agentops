@@ -654,10 +654,14 @@ func runTestPostCommitFaultInjector(iterIndex int, cwd string) string {
 // pulling in Go types.
 func ingestSummary(r *IngestResult) map[string]any {
 	return map[string]any{
-		"harvest_preview_count": r.HarvestPreviewCount,
-		"forge_artifacts_mined": r.ForgeArtifactsMined,
-		"provenance_audited":    r.ProvenanceAudited,
-		"mine_findings_new":     r.MineFindingsNew,
+		"harvest_preview_count":     r.HarvestPreviewCount,
+		"forge_artifacts_mined":     r.ForgeArtifactsMined,
+		"provenance_audited":        r.ProvenanceAudited,
+		"mine_findings_new":         r.MineFindingsNew,
+		"generator_candidate_count": r.GeneratorCandidateCount,
+		"generator_duplicate_count": r.GeneratorDuplicateCount,
+		"generator_duplicate_rate":  r.GeneratorDuplicateRate,
+		"generator_sidecar_path":    r.GeneratorSidecarPath,
 	}
 }
 

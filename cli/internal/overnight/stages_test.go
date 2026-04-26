@@ -3,6 +3,7 @@ package overnight
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/mine"
 	"github.com/boshu2/agentops/cli/internal/pool"
 )
 
@@ -208,6 +210,99 @@ func TestRunIngest_ForgeProvenanceMineAreReal(t *testing.T) {
 		if msg, failed := res.StageFailures[stage]; failed {
 			t.Errorf("unexpected hard failure for %s: %s", stage, msg)
 		}
+	}
+}
+
+func TestBuildMineGeneratorSidecarDedupesCandidates(t *testing.T) {
+	started := time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC)
+	finished := started.Add(1500 * time.Millisecond)
+	report := &mine.Report{
+		Code: &mine.CodeFindings{
+			Hotspots: []mine.ComplexityHotspot{
+				{File: "cli/cmd/ao/overnight.go", Func: "runOvernight", Complexity: 27, RecentEdits: 3},
+			},
+		},
+		Agents: &mine.AgentsFindings{
+			OrphanedResearch: []string{"2026-04-26-sidecar.md"},
+		},
+	}
+	items := mine.CollectMineWorkItems(report)
+	if len(items) != 2 {
+		t.Fatalf("fixture work items: got %d, want 2", len(items))
+	}
+	sidecar := buildMineGeneratorSidecar(
+		newTestOpts(t.TempDir()),
+		report,
+		started,
+		finished,
+		map[string]bool{items[0].ID: true},
+	)
+	if sidecar.SchemaVersion != "finding-generator-sidecar/v1" {
+		t.Fatalf("SchemaVersion = %q", sidecar.SchemaVersion)
+	}
+	if sidecar.Generator != mineFindingsGeneratorName {
+		t.Fatalf("Generator = %q", sidecar.Generator)
+	}
+	if sidecar.CandidateCount != 2 {
+		t.Fatalf("CandidateCount = %d, want 2", sidecar.CandidateCount)
+	}
+	if sidecar.DuplicateCount != 1 {
+		t.Fatalf("DuplicateCount = %d, want 1", sidecar.DuplicateCount)
+	}
+	if sidecar.NewCandidateCount != 1 {
+		t.Fatalf("NewCandidateCount = %d, want 1", sidecar.NewCandidateCount)
+	}
+	if sidecar.DuplicateRate != 0.5 {
+		t.Fatalf("DuplicateRate = %v, want 0.5", sidecar.DuplicateRate)
+	}
+	if sidecar.DurationMillis != 1500 {
+		t.Fatalf("DurationMillis = %d, want 1500", sidecar.DurationMillis)
+	}
+	for _, candidate := range sidecar.Candidates {
+		if candidate.DedupKey == "" {
+			t.Fatalf("candidate %q missing dedup key", candidate.Title)
+		}
+	}
+}
+
+func TestWriteFindingGeneratorSidecarAtomicJSON(t *testing.T) {
+	cwd := t.TempDir()
+	opts := newTestOpts(cwd)
+	sidecar := FindingGeneratorSidecar{
+		SchemaVersion:     "finding-generator-sidecar/v1",
+		RunID:             opts.RunID,
+		Generator:         mineFindingsGeneratorName,
+		SourceEpic:        "compile-mine",
+		Status:            "completed",
+		CandidateCount:    1,
+		NewCandidateCount: 1,
+		Candidates: []FindingGeneratorCandidate{{
+			ID:       "abc123",
+			Title:    "Example",
+			Type:     "task",
+			Severity: "medium",
+			Source:   "compile-mine",
+			DedupKey: "finding-generator|mine-findings|example",
+		}},
+	}
+	path, err := writeFindingGeneratorSidecar(opts, sidecar)
+	if err != nil {
+		t.Fatalf("writeFindingGeneratorSidecar: %v", err)
+	}
+	wantPath := filepath.Join(opts.OutputDir, "generator-results", "mine-findings.json")
+	if path != wantPath {
+		t.Fatalf("sidecar path = %q, want %q", path, wantPath)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read sidecar: %v", err)
+	}
+	var got FindingGeneratorSidecar
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("sidecar JSON invalid: %v", err)
+	}
+	if got.CandidateCount != 1 || len(got.Candidates) != 1 {
+		t.Fatalf("unexpected sidecar payload: %+v", got)
 	}
 }
 

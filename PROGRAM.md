@@ -25,6 +25,7 @@ ready to land.
 - .github/workflows/**
 - .beads/**
 - .agents/** runtime state when the active command owns it
+- .agents/overnight/*/generator-results/*.json when Dream owns the active run
 
 ## Immutable Scope
 
