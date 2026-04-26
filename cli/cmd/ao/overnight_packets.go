@@ -55,9 +55,27 @@ type dreamPacketIssueRecord struct {
 	Title  string `json:"title"`
 }
 
+// dreamCuratorProbeTimeout caps each tractability probe so a slow grep
+// cannot stall packet emission. Per the 2026-04-26 retro the probe is a
+// "5-second" check; this constant matches the documented intent.
+const dreamCuratorProbeTimeout = 5 * time.Second
+
+// dreamCuratorSuppression records that the curator skipped a packet
+// because the tractability probe found the cited surface already
+// present. Surfaces in the run summary so operators can see what was
+// suppressed instead of getting a silent gap.
+type dreamCuratorSuppression struct {
+	PacketID string `json:"packet_id"`
+	Title    string `json:"title"`
+	Source   string `json:"source"`
+	Reason   string `json:"reason"`
+	Match    string `json:"match,omitempty"`
+}
+
 func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 	snapshotDreamPacketYield(summary)
-	plans, err := buildDreamMorningPacketPlans(cwd, *summary)
+	plans, suppressed, err := buildDreamMorningPacketPlans(cwd, *summary)
+	summary.CuratorSuppressed = append(summary.CuratorSuppressed, suppressed...)
 	if err != nil {
 		setOvernightStepStatus(summary, "morning-packets", "soft-fail", summary.Artifacts["morning_packets_json"], err.Error())
 		setOvernightStepStatus(summary, "bead-sync", "soft-fail", "", "packet synthesis aborted")
@@ -90,11 +108,11 @@ func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 	refreshOvernightTelemetry(summary)
 }
 
-func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dreamMorningPacketPlan, error) {
+func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dreamMorningPacketPlan, []dreamCuratorSuppression, error) {
 	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
 	entries, err := readQueueEntries(nextWorkPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	repoFilter := detectRepoName(cwd)
@@ -102,9 +120,26 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 	selectedIDs := make(map[string]struct{}, len(selections))
 	existingByID := indexDreamExistingQueueItems(entries)
 
+	var suppressed []dreamCuratorSuppression
 	plans := make([]dreamMorningPacketPlan, 0, maxDreamMorningPackets)
 	for i, sel := range selections {
 		packet := buildDreamQueuePacket(summary, sel, i+1)
+		// Curator-side tractability probe: per the 2026-04-26 retro,
+		// the curator emitted the same stale packets ("philosophy doc",
+		// "next-work schema v1.3") three nightlies in a row because no
+		// gate verified the cited surface wasn't already shipped. If
+		// the probe is conclusively stale, suppress and record; if
+		// inconclusive, emit normally.
+		if reason, match, ok := probeDreamPacketStaleness(cwd, packet); ok {
+			suppressed = append(suppressed, dreamCuratorSuppression{
+				PacketID: packet.ID,
+				Title:    strings.TrimSpace(packet.Title),
+				Source:   strings.TrimSpace(packet.Source),
+				Reason:   reason,
+				Match:    match,
+			})
+			continue
+		}
 		if packet.ID != "" {
 			selectedIDs[packet.ID] = struct{}{}
 		}
@@ -123,6 +158,16 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		if _, exists := selectedIDs[packet.ID]; exists {
 			continue
 		}
+		if reason, match, ok := probeDreamPacketStaleness(cwd, packet); ok {
+			suppressed = append(suppressed, dreamCuratorSuppression{
+				PacketID: packet.ID,
+				Title:    strings.TrimSpace(packet.Title),
+				Source:   strings.TrimSpace(packet.Source),
+				Reason:   reason,
+				Match:    match,
+			})
+			continue
+		}
 		packet.Rank = len(plans) + 1
 		plan := dreamMorningPacketPlan{Packet: packet}
 		if existing, ok := existingByID[packet.ID]; ok {
@@ -135,8 +180,87 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		selectedIDs[packet.ID] = struct{}{}
 	}
 
-	return plans, nil
+	return plans, suppressed, nil
 }
+
+// probeDreamPacketStaleness runs a 5-second tractability probe against the
+// candidate packet. It checks two surfaces:
+//  1. TargetFiles entries — if any cited path already exists on disk, the
+//     packet is treated as already done.
+//  2. The morning_command and title — if a unique-looking script reference
+//     in either field resolves to an existing scripts/* file, treat as done.
+//
+// On conclusive staleness it returns (reason, match, true). On inconclusive
+// signals it returns (_, _, false) and the curator emits the packet normally.
+func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (string, string, bool) {
+	deadline := time.Now().Add(dreamCuratorProbeTimeout)
+	for _, raw := range packet.TargetFiles {
+		if time.Now().After(deadline) {
+			return "", "", false
+		}
+		path := strings.TrimSpace(raw)
+		if path == "" {
+			continue
+		}
+		// Skip absolute paths outside the repo and obvious URLs.
+		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+			continue
+		}
+		candidate := path
+		if !filepath.IsAbs(candidate) {
+			candidate = filepath.Join(cwd, candidate)
+		}
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return "target file already tracked", path, true
+		}
+	}
+
+	// Look for "scripts/<name>.sh" tokens in the morning command or title.
+	// These are the most common false-positive surface from the retro.
+	for _, hay := range []string{packet.MorningCommand, packet.Title} {
+		if time.Now().After(deadline) {
+			break
+		}
+		token := extractScriptsRef(hay)
+		if token == "" {
+			continue
+		}
+		candidate := filepath.Join(cwd, token)
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return "scripts/ reference already tracked", token, true
+		}
+	}
+
+	return "", "", false
+}
+
+// extractScriptsRef pulls the first scripts/<...>.sh occurrence from s.
+// Returns "" when no match is found. Kept narrow so we don't false-positive
+// on prose mentions of "scripts" in general.
+func extractScriptsRef(s string) string {
+	const prefix = "scripts/"
+	idx := strings.Index(s, prefix)
+	if idx < 0 {
+		return ""
+	}
+	rest := s[idx:]
+	end := len(rest)
+	for i, r := range rest {
+		switch {
+		case r == ' ', r == '"', r == '\'', r == ')', r == '`', r == '\n':
+			end = i
+		}
+		if end != len(rest) {
+			break
+		}
+	}
+	tok := rest[:end]
+	if !strings.HasSuffix(tok, ".sh") {
+		return ""
+	}
+	return tok
+}
+
 
 func rankDreamMorningQueueSelections(cwd string, entries []nextWorkEntry, repoFilter string, limit int) []queueSelection {
 	if limit <= 0 || len(entries) == 0 {
