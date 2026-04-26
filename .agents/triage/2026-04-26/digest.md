@@ -57,6 +57,16 @@ Items deliberately left unconsumed (probe said "not done" or was ambiguous):
 | Morning packets | 0 | 0 |
 | Schema violations | 0 | 0 |
 
+## CI Post-Push Findings
+
+- `contract-compatibility-gate`: FAILED in CI, passes locally — pre-existing env issue unrelated to our changes.
+- `smoke-test (next-work parity)`: FAILED — caused by inheriting bad batch-level marks from prior triage; fixed in `8831a842`.
+- `smoke-test (cursor)`: FAILED — pre-existing on main, unrelated to our changes.
+- `summary`: FAILED — aggregate of above failures.
+
 ## Commit SHA
 
-_Pending commit._
+`d4f8b043` — mark 9 stale items consumed 2026-04-26
+`1077c3f4` — incorporate batch-level marks from earlier triage pass
+`8831a842` — fix lifecycle drift on partially-consumed batches (CI fix)
+PR: https://github.com/boshu2/agentops/pull/149
