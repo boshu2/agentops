@@ -248,6 +248,105 @@ Only these paths are mutated and rolled back as a unit:
   in-process read-only finding generators may run concurrently during INGEST,
   but REDUCE remains the single serialized writer for `.agents/rpi/next-work.jsonl`.
 
+### Read-Side Generator Authoring Contract
+
+Dream generators are read-side candidate producers that run during INGEST. They
+are allowed to find actionable follow-up work, but they are not queue writers.
+The durable handoff between INGEST and REDUCE is the generator sidecar contract.
+
+Authoring invariants:
+
+- A generator MUST NOT mutate source code, git state, live `.agents/`, or
+  `.agents/rpi/next-work.jsonl`.
+- A generator MAY write only its per-run sidecar under
+  `<output-dir>/generator-results/<generator>.json`.
+- A generator MUST honor the provided context and timeout. The default timeout
+  for in-process generators is 2 minutes.
+- A generator MUST emit either a completed sidecar or a soft-fail sidecar. A
+  stalled generator is converted to `status: "soft-fail"` with the timeout
+  error recorded.
+- A generator name MUST be stable, non-empty, and filename-normalizable. The
+  normalized name is the sidecar basename.
+- `source_epic` SHOULD identify the source family that produced the candidates,
+  not the later queue writer. The built-in mine generator uses `compile-mine`.
+
+Sidecars use schema version `finding-generator-sidecar/v1` and carry these
+top-level fields:
+
+| Field | Meaning |
+|-------|---------|
+| `schema_version` | Must equal `finding-generator-sidecar/v1` |
+| `run_id` | Optional Dream run identifier |
+| `generator` | Stable generator name |
+| `source_epic` | Source family for the generator's candidates |
+| `status` | `completed` or `soft-fail` |
+| `started_at`, `finished_at` | RFC3339Nano UTC timestamps |
+| `duration_millis` | Generator wall-clock duration |
+| `candidate_count` | Total candidates emitted before aggregation |
+| `duplicate_count` | Candidates already known to be duplicates |
+| `new_candidate_count` | `candidate_count - duplicate_count` |
+| `duplicate_rate` | Duplicate count divided by candidate count |
+| `error` | Soft-fail detail, omitted on success |
+| `candidates` | Candidate array, omitted or empty for soft-fail sidecars |
+
+Each candidate must be queue-safe before REDUCE sees it:
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `id` | recommended | Stable across runs for the same finding |
+| `title` | yes | Short imperative work title |
+| `type` | yes | Normalized to the next-work type enum |
+| `severity` | yes | Normalized to `high`, `medium`, or `low` |
+| `source` | yes | Aggregation normalizes this to `evolve-generator` |
+| `description` | yes | Falls back to `evidence`, then `title` if omitted |
+| `evidence` | no | Concrete signal behind the candidate |
+| `file`, `func` | no | Target path and symbol when known |
+| `target_repo` | no | Repo slug or `*` for cross-repo/process work |
+| `dedup_key` | yes | Stable key; auto-prefixed with `finding-generator|` |
+| `duplicate` | yes | Whether INGEST already knows this candidate is present |
+
+Type normalization follows the next-work v1.3 enum:
+
+- Existing enum values pass through unchanged:
+  `tech-debt`, `improvement`, `pattern-fix`, `process-improvement`,
+  `feature`, `bug`, and `task`.
+- `refactor` becomes `tech-debt`.
+- `knowledge-gap` becomes `task`.
+- Any unknown type becomes `task`.
+
+Severity normalization is intentionally narrow:
+
+- `high`, `medium`, and `low` pass through unchanged.
+- Any unknown severity becomes `medium`.
+
+REDUCE is the only writer that converts generator output into queue entries. It
+reads completed sidecars from `generator-results`, reconciles duplicate
+`dedup_key` and `id` values, and appends one batch to
+`.agents/rpi/next-work.jsonl`. The batch uses `source_epic` value
+`dream-generator-aggregator` and is written inside the checkpoint staging tree,
+not the live `.agents` tree; live state changes only after the outer Dream loop
+passes MEASURE and commits the checkpoint.
+
+Aggregation rules:
+
+- Soft-fail sidecars are counted as degraded and do not block the run.
+- Malformed, unsupported-schema, or missing-generator sidecars are degraded and
+  skipped.
+- Duplicate candidates already present in next-work are skipped.
+- Same-pass duplicate `dedup_key` values collapse to one candidate. Higher
+  severity wins; ties pick lexicographically by title, then id.
+- If appending the aggregate next-work batch fails, REDUCE fails and the
+  checkpoint rolls back.
+
+Validation surface:
+
+- `TestRunIngest_FindingGeneratorEmitsRealSidecarCandidates`
+- `TestRunFindingGenerator_StalledGeneratorWritesSoftFailSidecar`
+- `TestBuildMineGeneratorSidecarDedupesCandidates`
+- `TestWriteFindingGeneratorSidecarAtomicJSON`
+- `TestAggregateFindingGeneratorSidecarsAppendsOneDedupedBatch`
+- `TestRunReduce_AggregatesGeneratorSidecarsIntoStagedNextWork`
+
 ### New Flags
 
 - `--queue=<file>` - operator-pinned nightly priorities (markdown file; uses evolve pinned-queue format)

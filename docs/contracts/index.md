@@ -79,8 +79,8 @@ skills, the runtime, and external integrations.
 
     ---
 
-    Process model, locking, keep-awake, and artifact floor for private
-    overnight runs.
+    Process model, generator authoring, locking, keep-awake, and artifact floor
+    for private overnight runs.
 
 -   :material-file-chart: **[Dream Report](dream-report.md)**
 
