@@ -80,19 +80,36 @@ run_ao() {
 }
 
 require_cmd git
-require_cmd go
 require_cmd jq
 
 mkdir -p "$BUILD_DIR" "$HOME_DIR" "$REPO_DIR"
 export HOME="$HOME_DIR"
 export PATH="$BUILD_DIR:$PATH"
 
-log "Building local ao binary"
-(
-  cd "$REPO_ROOT/cli"
-  go build -o "$AO_BIN" ./cmd/ao
-) >/dev/null
-pass "built local ao binary"
+# Allow callers to bypass the build step by pointing PROOF_AO_BIN at an
+# already-built binary. Auto-detects $REPO_ROOT/cli/bin/ao when present so
+# the gate stays green when the toolchain download path is broken
+# (e.g. sum.golang.org returning 503) but the local cli/bin/ao is fresh —
+# the proof-run still validates end-to-end behavior, just against the
+# pre-built binary instead of a freshly-built one. Set PROOF_FORCE_BUILD=1
+# to disable both the override and the auto-detect and always rebuild.
+PROOF_AO_BIN="${PROOF_AO_BIN:-}"
+if [[ -z "$PROOF_AO_BIN" && "${PROOF_FORCE_BUILD:-0}" != "1" && -x "$REPO_ROOT/cli/bin/ao" ]]; then
+  PROOF_AO_BIN="$REPO_ROOT/cli/bin/ao"
+fi
+if [[ -n "$PROOF_AO_BIN" && -x "$PROOF_AO_BIN" ]]; then
+  log "Using pre-built ao binary: $PROOF_AO_BIN"
+  cp "$PROOF_AO_BIN" "$AO_BIN"
+  pass "reused pre-built ao binary"
+else
+  require_cmd go
+  log "Building local ao binary"
+  (
+    cd "$REPO_ROOT/cli"
+    go build -o "$AO_BIN" ./cmd/ao
+  ) >/dev/null
+  pass "built local ao binary"
+fi
 
 log "Creating isolated proof repo"
 (

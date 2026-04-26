@@ -497,13 +497,9 @@ func serveRPIRuns(w http.ResponseWriter, r *http.Request, root string) {
 func serveRPIState(w http.ResponseWriter, r *http.Request, root, defaultRunID string) {
 	setCORSHeaders(w, r)
 
-	runID := strings.TrimSpace(r.URL.Query().Get("run-id"))
-	if runID != "" && (strings.Contains(runID, "..") || strings.Contains(runID, "/") || strings.Contains(runID, "\\")) {
-		http.Error(w, "invalid run-id", http.StatusBadRequest)
+	runID, ok := parseServeStateRunID(w, r, defaultRunID)
+	if !ok {
 		return
-	}
-	if runID == "" {
-		runID = defaultRunID
 	}
 
 	resp := map[string]any{
@@ -511,58 +507,96 @@ func serveRPIState(w http.ResponseWriter, r *http.Request, root, defaultRunID st
 		"run_id": runID,
 	}
 
-	resolvedRoot := root
-	if runID != "" {
-		if state, stateRoot := resolveServeRun(root, runID); state != nil {
-			resolvedRoot = stateRoot
-			respState, err := json.Marshal(state)
-			if err == nil {
-				var mapped map[string]any
-				if json.Unmarshal(respState, &mapped) == nil {
-					resp["phased_state"] = mapped
-				}
-			}
-		}
-	}
+	resolvedRoot := resolveStateForRunID(resp, root, runID)
 	resp["root"] = resolvedRoot
 
-	// Read phased-state.json if it exists and a run-specific lookup did not already populate it.
-	if _, ok := resp["phased_state"]; !ok {
-		statePath := filepath.Join(resolvedRoot, ".agents", "rpi", "phased-state.json")
-		if data, err := os.ReadFile(statePath); err == nil {
-			var state map[string]any
-			if json.Unmarshal(data, &state) == nil {
-				resp["phased_state"] = state
-			}
-		}
-	}
-
-	// Read per-phase results
-	phaseResults := make(map[string]any)
-	for i := 1; i <= 3; i++ {
-		resultPath := filepath.Join(resolvedRoot, ".agents", "rpi", fmt.Sprintf("phase-%d-result.json", i))
-		if data, err := os.ReadFile(resultPath); err == nil {
-			var result map[string]any
-			if json.Unmarshal(data, &result) == nil {
-				phaseResults[fmt.Sprintf("phase_%d", i)] = result
-			}
-		}
-	}
-	if len(phaseResults) > 0 {
+	loadFallbackPhasedState(resp, resolvedRoot)
+	if phaseResults := loadPhaseResults(resolvedRoot); len(phaseResults) > 0 {
 		resp["phase_results"] = phaseResults
 	}
 	if artifacts := collectRunArtifacts(resolvedRoot, runID); len(artifacts) > 0 {
 		resp["artifacts"] = artifacts
 	}
-
-	// Scan for active runs if no specific run requested
 	if runID == "" {
-		runs := discoverServeRuns(root)
-		resp["runs"] = runs
+		resp["runs"] = discoverServeRuns(root)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+// parseServeStateRunID extracts and validates the run-id query parameter,
+// applying defaultRunID when missing. Returns ok=false after writing a 400
+// for path-traversal attempts so the caller can short-circuit cleanly.
+func parseServeStateRunID(w http.ResponseWriter, r *http.Request, defaultRunID string) (string, bool) {
+	runID := strings.TrimSpace(r.URL.Query().Get("run-id"))
+	if runID != "" && (strings.Contains(runID, "..") || strings.Contains(runID, "/") || strings.Contains(runID, "\\")) {
+		http.Error(w, "invalid run-id", http.StatusBadRequest)
+		return "", false
+	}
+	if runID == "" {
+		runID = defaultRunID
+	}
+	return runID, true
+}
+
+// resolveStateForRunID looks up the phased state for the given runID, mutating
+// resp["phased_state"] when found. Returns the resolved root (unchanged when
+// runID is empty or the lookup fails).
+func resolveStateForRunID(resp map[string]any, root, runID string) string {
+	if runID == "" {
+		return root
+	}
+	state, stateRoot := resolveServeRun(root, runID)
+	if state == nil {
+		return root
+	}
+	respState, err := json.Marshal(state)
+	if err != nil {
+		return stateRoot
+	}
+	var mapped map[string]any
+	if json.Unmarshal(respState, &mapped) == nil {
+		resp["phased_state"] = mapped
+	}
+	return stateRoot
+}
+
+// loadFallbackPhasedState reads .agents/rpi/phased-state.json directly and
+// stores it under resp["phased_state"] only when the run-id lookup did not
+// already populate it. Silent on read/parse errors — the absent key signals
+// "no state available" to the frontend.
+func loadFallbackPhasedState(resp map[string]any, resolvedRoot string) {
+	if _, ok := resp["phased_state"]; ok {
+		return
+	}
+	statePath := filepath.Join(resolvedRoot, ".agents", "rpi", "phased-state.json")
+	data, err := os.ReadFile(statePath)
+	if err != nil {
+		return
+	}
+	var state map[string]any
+	if json.Unmarshal(data, &state) == nil {
+		resp["phased_state"] = state
+	}
+}
+
+// loadPhaseResults gathers phase-1/2/3-result.json into a "phase_N" map.
+// Missing or unparseable files are silently skipped so partial runs render.
+func loadPhaseResults(resolvedRoot string) map[string]any {
+	phaseResults := make(map[string]any)
+	for i := 1; i <= 3; i++ {
+		resultPath := filepath.Join(resolvedRoot, ".agents", "rpi", fmt.Sprintf("phase-%d-result.json", i))
+		data, err := os.ReadFile(resultPath)
+		if err != nil {
+			continue
+		}
+		var result map[string]any
+		if json.Unmarshal(data, &result) == nil {
+			phaseResults[fmt.Sprintf("phase_%d", i)] = result
+		}
+	}
+	return phaseResults
 }
 
 func serveRPIArtifacts(w http.ResponseWriter, r *http.Request, root, defaultRunID string) {
