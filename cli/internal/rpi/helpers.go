@@ -82,7 +82,31 @@ func IsQueueItemSelectable(item NextWorkItem) bool {
 	if item.Consumed || NormalizeClaimStatus(item.Consumed, item.ClaimStatus) == "consumed" {
 		return false
 	}
-	return NormalizeClaimStatus(item.Consumed, item.ClaimStatus) != "in_progress"
+	if NormalizeClaimStatus(item.Consumed, item.ClaimStatus) == "in_progress" {
+		return false
+	}
+	return !IsQueueItemHeldForReview(item)
+}
+
+// IsQueueItemHeldForReview returns true when the item has an advisory
+// release-status that selectors must respect. Items with `status=proposed`
+// or any non-empty `requires` entry stay held until promoted by a human or
+// an explicit release path.
+//
+// "ready" is the canonical released value; an empty status is treated as
+// "ready" for backward compatibility with pre-Proposal-2 producers. Any
+// other status is treated as held to fail safe — selectors must understand
+// the value before unblocking it.
+func IsQueueItemHeldForReview(item NextWorkItem) bool {
+	if len(item.Requires) > 0 {
+		return true
+	}
+	switch strings.TrimSpace(item.Status) {
+	case "", "ready":
+		return false
+	default:
+		return true
+	}
 }
 
 // HasQueueItemLifecycleMetadata returns true when an item has any lifecycle fields set.

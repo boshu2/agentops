@@ -84,6 +84,25 @@ type NextWorkItem struct {
 	// nightlies can skip the item without re-probing.
 	ProbedStaleAt *string `json:"probed_stale_at,omitempty"`
 	ProbedBy      *string `json:"probed_by,omitempty"`
+
+	// Status is an advisory release-readiness signal for items that should
+	// not auto-execute even when claim_status is "available". Recognized
+	// values: "ready" (default when omitted) and "proposed" (held until a
+	// human or explicit selector promotes the item). Introduced for RFC 0001
+	// Proposal 2 external watchlist items.
+	Status string `json:"status,omitempty"`
+
+	// Requires lists explicit gates that must be satisfied before a selector
+	// may pick this item. The only currently recognized value is
+	// "human-review", which holds the item until an operator releases it.
+	// Selectors MUST treat any unrecognized value as also blocking.
+	Requires []string `json:"requires,omitempty"`
+
+	// DedupKey is a normalized cross-run identity used by producers to
+	// suppress duplicates across runs. First-class for finding-generator
+	// aggregator output (RFC 0001 Proposal 1) and external watchlist
+	// candidates (Proposal 2).
+	DedupKey string `json:"dedup_key,omitempty"`
 }
 
 // QueueSelection holds the selected item together with its source entry index

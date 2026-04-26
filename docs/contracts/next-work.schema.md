@@ -1,6 +1,6 @@
 # next-work.jsonl Schema
 
-schema_version: 1.3
+schema_version: 1.4
 
 Contract for `.agents/rpi/next-work.jsonl` — the carry-forward queue that feeds harvested findings from `/post-mortem` into `/evolve`, `/rpi loop`, and related pre-flight checks.
 
@@ -61,13 +61,16 @@ One actionable follow-up item.
 | `failed_at` | string (ISO-8601) or null | no | Last failure timestamp for retry ordering; retry metadata only, not completion proof |
 | `probed_stale_at` | string (ISO-8601) or null | no | When a probe found this item already done (file/symbol/script grep matched) but the item was not yet marked consumed. Lets the next nightly skip the same item without re-probing. |
 | `probed_by` | string or null | no | Identifier of the run that wrote `probed_stale_at` (e.g. `nightly/2026-04-26-v3`). Pairs with `probed_stale_at` so probe writes are auditable. |
-| `dedup_key` | string | no | Normalized cross-run identity used by producers (currently the Dream finding-generator aggregator) to suppress duplicate candidates across runs. Format: `finding-generator\|<generator>\|<normalized-type-title-target>`. Optional; absence means the item is not deduped at the next-work layer. |
+| `dedup_key` | string | no | Normalized cross-run identity used by producers (currently the Dream finding-generator aggregator) to suppress duplicate candidates across runs. Format: `finding-generator\|<generator>\|<normalized-type-title-target>` for internal generators, `external-watchlist\|<source>\|<id>` for external watchlist items. Optional; absence means the item is not deduped at the next-work layer. |
+| `status` | enum | no | Advisory release-readiness signal. Recognized values: `ready` (the default when omitted; selectors may pick the item) and `proposed` (selectors MUST NOT auto-pick the item — release requires a human or an explicit promotion path). Any other value MUST be treated as held to fail safe. Introduced for RFC 0001 Proposal 2 external watchlist items. |
+| `requires` | array of string | no | Explicit gates that must be satisfied before a selector may pick this item. Currently recognized: `human-review`. Selectors MUST treat any unrecognized value as also blocking. An empty or absent array imposes no gate. |
 
 Compatibility notes:
 - omitted item `claim_status` means `available`
 - new producers should prefer `proof_ref` when they already know the authoritative completion-proof surface for a harvested item
 - producers may attach extra metadata fields (for example `id`, `file`, or `func`); readers MUST ignore unknown fields
 - when `dedup_key` is set, downstream producers SHOULD treat any new item with the same key as already covered and skip emission; consumers MAY use it for cross-run idempotency checks
+- `status` and `requires` are advisory release fields — they do not replace `claim_status`. An item is selectable only when `claim_status` is `available` AND `status` is `ready` (or absent) AND `requires` is empty (or absent)
 
 ### Proof Reference Object
 
@@ -123,6 +126,15 @@ Allowed `kind` values:
 - `available`
 - `in_progress`
 - `consumed`
+
+### Status
+
+- `ready` (default when omitted)
+- `proposed`
+
+### Requires
+
+- `human-review`
 
 ## Lifecycle Rules
 
