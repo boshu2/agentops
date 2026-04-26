@@ -94,15 +94,28 @@ func runContradict(_ *cobra.Command, _ []string) error {
 	learningsDir := filepath.Join(cwd, ".agents", "learnings")
 	patternsDir := filepath.Join(cwd, ".agents", "patterns")
 
-	learningsExists := dirExists(learningsDir)
-	patternsExists := dirExists(patternsDir)
-
-	if !learningsExists && !patternsExists {
+	if !dirExists(learningsDir) && !dirExists(patternsDir) {
 		fmt.Println("No learnings or patterns directory found.")
 		return nil
 	}
 
-	// Collect all files
+	files := collectContradictFiles(learningsDir, patternsDir)
+	if len(files) == 0 {
+		fmt.Println("No learning or pattern files found.")
+		return nil
+	}
+
+	entries := parseContradictEntries(files)
+	result := compareContradictPairs(entries, cwd)
+	result.TotalFiles = len(files)
+
+	return emitContradictResult(result)
+}
+
+// collectContradictFiles returns *.jsonl and *.md files in the learnings and
+// patterns directories (silently skipping any that don't exist), preserving
+// the directory order so json output ordering stays stable.
+func collectContradictFiles(learningsDir, patternsDir string) []string {
 	var files []string
 	for _, dir := range []string{learningsDir, patternsDir} {
 		if !dirExists(dir) {
@@ -113,13 +126,13 @@ func runContradict(_ *cobra.Command, _ []string) error {
 		files = append(files, jsonlFiles...)
 		files = append(files, mdFiles...)
 	}
+	return files
+}
 
-	if len(files) == 0 {
-		fmt.Println("No learning or pattern files found.")
-		return nil
-	}
-
-	// Parse all entries
+// parseContradictEntries reads each file's learning body and produces a
+// learningEntry. Files with empty bodies or zero tokenized words are dropped
+// — they cannot participate in a similarity comparison.
+func parseContradictEntries(files []string) []learningEntry {
 	entries := make([]learningEntry, 0, len(files))
 	for _, f := range files {
 		body := extractLearningBody(f)
@@ -130,47 +143,36 @@ func runContradict(_ *cobra.Command, _ []string) error {
 		if len(words) == 0 {
 			continue
 		}
-		snippet := truncateSnippet(body, 120)
 		entries = append(entries, learningEntry{
 			File:    f,
 			Body:    body,
 			Words:   words,
-			Snippet: snippet,
+			Snippet: truncateSnippet(body, 120),
 		})
 	}
+	return entries
+}
 
-	// Compare all pairs
-	result := ContradictResult{
-		TotalFiles: len(files),
-	}
-
+// compareContradictPairs runs the O(n²) pair scan, gating on jaccard ≥ 0.4
+// for topical overlap and detectContradiction for the actual signal. cwd is
+// used to make file paths relative for human output.
+func compareContradictPairs(entries []learningEntry, cwd string) ContradictResult {
+	var result ContradictResult
 	for i := 0; i < len(entries); i++ {
 		for j := i + 1; j < len(entries); j++ {
 			result.PairsChecked++
 			sim := jaccardSimilarity(entries[i].Words, entries[j].Words)
 			if sim < 0.4 {
-				continue // Not similar enough to be about the same topic
+				continue
 			}
-
 			reason := detectContradiction(entries[i].Body, entries[j].Body)
 			if reason == "" {
 				continue
 			}
-
-			// Make paths relative for cleaner output
-			relA, relErr := filepath.Rel(cwd, entries[i].File)
-			if relErr != nil {
-				relA = entries[i].File
-			}
-			relB, relErr := filepath.Rel(cwd, entries[j].File)
-			if relErr != nil {
-				relB = entries[j].File
-			}
-
 			result.Contradictions++
 			result.Pairs = append(result.Pairs, ContradictionPair{
-				FileA:      relA,
-				FileB:      relB,
+				FileA:      relPathOrAbs(cwd, entries[i].File),
+				FileB:      relPathOrAbs(cwd, entries[j].File),
 				Similarity: sim,
 				Reason:     reason,
 				SnippetA:   entries[i].Snippet,
@@ -178,8 +180,22 @@ func runContradict(_ *cobra.Command, _ []string) error {
 			})
 		}
 	}
+	return result
+}
 
-	// Output
+// relPathOrAbs returns the path relative to base, falling back to the
+// original absolute path if the relative computation fails.
+func relPathOrAbs(base, abs string) string {
+	rel, err := filepath.Rel(base, abs)
+	if err != nil {
+		return abs
+	}
+	return rel
+}
+
+// emitContradictResult writes either JSON (when --output=json) or the
+// human-readable summary to stdout.
+func emitContradictResult(result ContradictResult) error {
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -192,19 +208,19 @@ func runContradict(_ *cobra.Command, _ []string) error {
 	fmt.Printf("Pairs checked:       %d\n", result.PairsChecked)
 	fmt.Printf("Contradictions found: %d\n", result.Contradictions)
 
-	if result.Contradictions > 0 {
-		fmt.Println("\nPotential Contradictions:")
-		for i, p := range result.Pairs {
-			fmt.Printf("\n  %d. Similarity: %.1f%% — %s\n", i+1, p.Similarity*100, p.Reason)
-			fmt.Printf("     A: %s\n", p.FileA)
-			fmt.Printf("        %s\n", p.SnippetA)
-			fmt.Printf("     B: %s\n", p.FileB)
-			fmt.Printf("        %s\n", p.SnippetB)
-		}
-	} else {
+	if result.Contradictions == 0 {
 		fmt.Println("\nNo potential contradictions found.")
+		return nil
 	}
 
+	fmt.Println("\nPotential Contradictions:")
+	for i, p := range result.Pairs {
+		fmt.Printf("\n  %d. Similarity: %.1f%% — %s\n", i+1, p.Similarity*100, p.Reason)
+		fmt.Printf("     A: %s\n", p.FileA)
+		fmt.Printf("        %s\n", p.SnippetA)
+		fmt.Printf("     B: %s\n", p.FileB)
+		fmt.Printf("        %s\n", p.SnippetB)
+	}
 	return nil
 }
 
