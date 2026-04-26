@@ -665,6 +665,7 @@ func ingestSummary(r *IngestResult) map[string]any {
 		"generator_soft_fail_count": r.GeneratorSoftFailCount,
 		"generator_sidecar_path":    r.GeneratorSidecarPath,
 		"generator_sidecar_paths":   r.GeneratorSidecarPaths,
+		"external_watchlist_emitted": r.ExternalWatchlistEmitted,
 	}
 }
 

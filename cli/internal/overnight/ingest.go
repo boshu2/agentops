@@ -74,6 +74,13 @@ type IngestResult struct {
 	// INGEST, relative or absolute according to RunLoopOptions.
 	GeneratorSidecarPaths []string
 
+	// ExternalWatchlistEmitted is the number of held-for-review candidates
+	// produced by the external-watchlist generator (RFC 0001 Proposal 2).
+	// Lane-specific lookup so morning summaries can surface external-source
+	// throughput without parsing every sidecar; the broader generator
+	// counters above stay generator-agnostic.
+	ExternalWatchlistEmitted int
+
 	// Degraded lists human-readable degradation notes for substages that
 	// were skipped, deferred, or soft-failed.
 	Degraded []string
@@ -425,6 +432,9 @@ func (r *ingestRunner) recordFindingGeneratorResult(runResult findingGeneratorRu
 	r.result.GeneratorSidecarPaths = append(r.result.GeneratorSidecarPaths, runResult.path)
 	if sidecar.Generator == mineFindingsGeneratorName {
 		r.result.MineFindingsNew = sidecar.NewCandidateCount
+	}
+	if sidecar.Generator == externalWatchlistGeneratorName {
+		r.result.ExternalWatchlistEmitted += sidecar.NewCandidateCount
 	}
 	fmt.Fprintf(r.log, "overnight/ingest: %s sidecar candidates=%d duplicates=%d path=%s\n",
 		sidecar.Generator, sidecar.CandidateCount, sidecar.DuplicateCount, runResult.path)

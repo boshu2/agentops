@@ -208,7 +208,7 @@ Dream v2 replaces the single-pass 5-step script with a bounded outer loop that i
 
 Each iteration runs four stages in order (Micro-epic 8 / C1 Option A, 2026-04-11):
 
-1. **INGEST** - harvest new signal into the corpus (absorbs `/harvest` overnight work) and run bounded, read-only finding generators that write per-run sidecars only.
+1. **INGEST** - harvest new signal into the corpus (absorbs `/harvest` overnight work) and run bounded, read-only finding generators (currently `mine-findings` for code-internal candidates and `external-watchlist` for operator-curated external sources, RFC 0001) that write per-run sidecars only.
 2. **REDUCE** - defrag, dedup, compile, prune, route findings, and aggregate generator sidecars through one serialized `next-work.jsonl` writer. Mutations are written to the checkpoint's **staging tree** (`cp.StagingDir/.agents/<subpath>/`), NOT the live `.agents/` path.
 3. **MEASURE** - `corpus.Compute(cp.StagingDir)` computes fitness against the staged mutations (pre-commit). Under warn-only mode, a regression consumes a rescue and the iteration still commits; under strict mode, a regression (or plateau) triggers `cp.Rollback()` and the iteration halts with status `halted-on-regression-pre-commit` — the live `.agents/` tree is **never mutated**.
 4. **COMMIT** - `cp.Commit()` atomically promotes the staging tree into live. This is the first point at which external observers of `~/.agents/` see the new state. A post-commit metadata integrity check (`VerifyMetadataRoundTripPostCommit`) runs here as a ratchet-forward second-stage defence (strip detection).

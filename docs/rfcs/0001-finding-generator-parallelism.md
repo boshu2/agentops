@@ -1,6 +1,6 @@
 # RFC 0001: Finding-Generator Parallelism
 
-Status: accepted (Proposal 1 implemented 2026-04-26)
+Status: accepted (Proposal 1 + Proposal 2 first slice implemented 2026-04-26)
 Date: 2026-04-26
 Branch: `research/finding-generator-parallelism`
 
@@ -22,7 +22,15 @@ Branch: `research/finding-generator-parallelism`
 - `status` and `requires` are now first-class fields on `NextWorkItem` (`cli/internal/rpi/types.go`) and in the schema. The selector entry point `IsQueueItemSelectable` (`cli/internal/rpi/helpers.go`) routes through a new `IsQueueItemHeldForReview` check that holds any item with `status=proposed` or a non-empty `requires` slice. This is the precondition Proposal 2 generators need: external watchlist items can land in the queue without auto-execution risk. `status=ready` is the canonical released value; an empty status remains backward-compatible. Unknown statuses fail safe (held).
 - `goal_weight` remains deferred. It has no Proposal 2 selector consumer yet and would invite under-specified ranking semantics. Will revisit when ranking pressure exists.
 
-**Decision Ask #3 — deferred (path now unblocked).** External web/competitor/dependency findings still need a concrete generator. With `status` / `requires` first-class and selector-enforced, the next slice can land an external watchlist generator that emits `status=proposed`, `requires=["human-review"]` candidates without any change to the selector contract.
+**Decision Ask #3 — first slice landed.** The external watchlist generator ships with one operator-managed YAML source (`.agents/dream/external-watchlist.yaml`), no live network fetch yet (deferred). Implementation:
+
+- `cli/internal/overnight/external_watchlist_generator.go` — `runExternalWatchlistGenerator` reads the operator-managed watchlist and emits one `Status="proposed"`, `Requires=["human-review"]` candidate per entry past its `stale_after` window (default 168h). Missing file → soft-success with zero candidates; malformed YAML → soft-fail; ctx cancellation → soft-fail. Dedup key format: `external-watchlist|<normalized-id-and-title>`.
+- `cli/internal/overnight/ingest.go` — registered in `findingGenerators()` alongside `mine-findings`; reuses `defaultFindingGeneratorTimeout` (2 min, RFC §253).
+- `cli/internal/overnight/generator_sidecars.go` — `normalizeGeneratorCandidate` recognizes both `finding-generator|` and `external-watchlist|` prefixes (Wave 1 pre-mortem fix); without this, the aggregator silently rewrote external dedup keys.
+- `PROGRAM.md` — `.agents/dream/external-watchlist.yaml` listed under Mutable Scope.
+- `IngestResult.ExternalWatchlistEmitted` + `ingestSummary["external_watchlist_emitted"]` — fitness counter for lane throughput.
+
+Network fetch (HTTP/API watchlist), dynamic per-source dedup, and `goal_weight` ranking remain deferred to a future Proposal 2 expansion. The current slice is sufficient to prove the lane shape against operator workflow.
 
 **Fitness signals shipping with Proposal 1** (visible on `IngestResult` and `ReduceResult`):
 `generator_candidate_count`, `generator_duplicate_count`, `generator_duplicate_rate`, `generator_sidecar_count`, `generator_soft_fail_count`, `generator_candidates_routed`, `generator_candidates_skipped`, `generator_sidecars_aggregated`, `generator_sidecars_soft_failed`. Auto-revert thresholds from the Risks section (duplicate rate ≥ 0.75 for two consecutive nights, regression-halt rise) remain advisory until two nights of baseline data accumulate.
