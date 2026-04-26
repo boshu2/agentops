@@ -5,7 +5,7 @@
 If this is your first message in a fresh session, orient in this order:
 
 1. `docs/newcomer-guide.md` for a practical repo orientation and learning path.
-2. `docs/README.md` and `docs/INDEX.md` for navigation.
+2. `docs/index.md` (MkDocs landing) and `docs/documentation-index.md` (full catalog) for navigation.
 3. `README.md` for product-level framing.
 4. Task-specific canonical surfaces:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`
@@ -102,7 +102,7 @@ This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITE
 
 **CLI docs must stay in sync.** After changing commands/flags: run `scripts/generate-cli-reference.sh`.
 
-**Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/INDEX.md`.
+**Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`.
 
 **Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15).
 

@@ -66,8 +66,8 @@ This keeps repo policy additive and phase-stable without replacing the current g
   "schema_version": 1,
   "startup_reads": [
     "docs/newcomer-guide.md",
-    "docs/README.md",
-    "docs/INDEX.md"
+    "docs/index.md",
+    "docs/documentation-index.md"
   ],
   "goals_source": {
     "primary": "GOALS.md",

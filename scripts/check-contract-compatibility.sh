@@ -5,11 +5,11 @@ set -euo pipefail
 # Dynamic contract-compatibility gate.
 #
 # Validates:
-#   1. All contract files referenced in docs/INDEX.md exist on disk
+#   1. All contract files referenced in docs/documentation-index.md exist on disk
 #   2. All contract .md files' embedded schema/file references resolve
 #   3. All *.schema.json files are valid JSON
 #   4. Orphan allowlist is well-formed and governed
-#   5. All contracts on disk are catalogued in docs/INDEX.md (orphan check)
+#   5. All contracts on disk are catalogued in docs/documentation-index.md (orphan check)
 #   6. Example JSON files conform to their corresponding schemas
 
 # Graceful skip when required tools are missing
@@ -28,7 +28,7 @@ fi
 ROOT="$(cd "$ROOT" && pwd)"
 
 CONTRACTS_DIR="$ROOT/docs/contracts"
-INDEX="$ROOT/docs/INDEX.md"
+INDEX="$ROOT/docs/documentation-index.md"
 BRIDGE="$ROOT/docs/ol-bridge-contracts.md"
 ORPHAN_ALLOWLIST="$ROOT/scripts/contract-orphans-allowlist.txt"
 
@@ -134,9 +134,9 @@ echo "--- Orphan allowlist validation ---"
 load_orphan_allowlist
 echo ""
 
-# ── Check 3: INDEX.md references resolve ──
+# ── Check 3: documentation-index.md references resolve ──
 
-echo "--- INDEX.md link resolution ---"
+echo "--- documentation-index.md link resolution ---"
 if [[ -f "$INDEX" ]]; then
   # Extract markdown links pointing into contracts/ (outside code blocks)
   while IFS= read -r ref; do
@@ -145,13 +145,13 @@ if [[ -f "$INDEX" ]]; then
     if [[ -f "$ROOT/docs/$ref" ]]; then
       pass "$ref"
     else
-      fail "INDEX.md references $ref but file not found"
+      fail "documentation-index.md references $ref but file not found"
     fi
   done < <(awk '/^```/{skip=!skip; next} !skip{print}' "$INDEX" \
     | grep -oE '\]\(contracts/[A-Za-z0-9_./-]+\)' \
     | sed 's/\](//; s/)//' | sort -u)
 else
-  fail "docs/INDEX.md not found"
+  fail "docs/documentation-index.md not found"
 fi
 sort -u "$INDEX_CONTRACTS_TMP" -o "$INDEX_CONTRACTS_TMP"
 echo ""
@@ -406,7 +406,7 @@ PYVALIDATE
 done
 echo ""
 
-# ── Check 9: Orphan detection — files on disk not in INDEX.md ──
+# ── Check 9: Orphan detection — files on disk not in documentation-index.md ──
 
 echo "--- Orphan detection ---"
 if [[ -f "$INDEX" ]]; then
@@ -414,7 +414,7 @@ if [[ -f "$INDEX" ]]; then
     [[ -f "$contract" ]] || continue
     rel_contract="${contract#"$ROOT"/}"
     if grep -Fxq "$rel_contract" "$INDEX_CONTRACTS_TMP" 2>/dev/null; then
-      pass "$rel_contract catalogued in INDEX.md"
+      pass "$rel_contract catalogued in documentation-index.md"
     elif grep -Fxq "$rel_contract" "$ALLOWLIST_PATHS_TMP" 2>/dev/null; then
       metadata="$(grep -F "^$rel_contract|" "$ALLOWLIST_ENTRIES_TMP" | head -1 || true)"
       reason="$(trim "$(printf '%s' "$metadata" | cut -d'|' -f2)")"
@@ -422,7 +422,7 @@ if [[ -f "$INDEX" ]]; then
       expires="$(trim "$(printf '%s' "$metadata" | cut -d'|' -f4)")"
       pass "$rel_contract allowlisted ($reason; $owner; expires $expires)"
     else
-      fail "$rel_contract exists on disk but not in INDEX.md (not allowlisted)"
+      fail "$rel_contract exists on disk but not in documentation-index.md (not allowlisted)"
     fi
   done
 
@@ -434,7 +434,7 @@ if [[ -f "$INDEX" ]]; then
       continue
     fi
     if grep -Fxq "$allowlisted_path" "$INDEX_CONTRACTS_TMP" 2>/dev/null; then
-      fail "allowlist entry is stale (already catalogued in INDEX.md): $allowlisted_path"
+      fail "allowlist entry is stale (already catalogued in documentation-index.md): $allowlisted_path"
     fi
   done < "$ALLOWLIST_ENTRIES_TMP"
 fi

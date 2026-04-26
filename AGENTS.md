@@ -7,7 +7,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 If you spawn into this repo without context, do this first:
 
 1. Read `docs/newcomer-guide.md` first for a practical repo orientation.
-2. Open `docs/README.md` then `docs/INDEX.md` to get the current doc map.
+2. Open `docs/index.md` (MkDocs landing) then `docs/documentation-index.md` (full catalog) to get the current doc map.
 3. Identify your task domain:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, `cli/docs/COMMANDS.md`
    - Skill behavior: `skills/<name>/SKILL.md`
@@ -194,8 +194,8 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
 | **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces Codex artifact metadata parity, backbone prompts, override coverage, RPI contract, lifecycle guards, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
-| **contract-compatibility-gate** | INDEX.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/INDEX.md` or allowlist governance |
-| **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, INDEX.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
+| **contract-compatibility-gate** | documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance |
+| **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
 | **embedded-sync** | `cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/` | Editing hooks without running `cd cli && make sync-hooks` |
 | **go-build** | `ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
@@ -250,7 +250,7 @@ cd cli && make sync-hooks
 scripts/generate-cli-reference.sh
 ```
 
-**Contracts must be catalogued.** When adding files to `docs/contracts/`, add a corresponding entry in `docs/INDEX.md`. The contract gate discovers files dynamically but checks for orphans.
+**Contracts must be catalogued.** When adding files to `docs/contracts/`, add a corresponding entry in `docs/documentation-index.md`. The contract gate discovers files dynamically but checks for orphans.
 
 **Go complexity budget.** New or modified functions must stay under cyclomatic complexity 25 (warning at 15). The check only flags new/worsened violations, not legacy ones.
 

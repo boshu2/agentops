@@ -28,7 +28,7 @@ create_fixture() {
   local fixture="$TMP_DIR/fixture-$1"
   mkdir -p "$fixture/docs/contracts" "$fixture/scripts"
 
-  cat >"$fixture/docs/INDEX.md" <<'EOF'
+  cat >"$fixture/docs/documentation-index.md" <<'EOF'
 # Contract Index
 
 - [Known Contract](contracts/known-contract.md)
@@ -116,7 +116,7 @@ EOF
   assert_gate_fails_with \
     "orphan fails when not catalogued and not allowlisted" \
     "$fixture" \
-    "docs/contracts/orphan-contract.md exists on disk but not in INDEX.md (not allowlisted)"
+    "docs/contracts/orphan-contract.md exists on disk but not in documentation-index.md (not allowlisted)"
 }
 
 test_orphan_passes_with_allowlist_entry() {
@@ -168,7 +168,7 @@ EOF
   assert_gate_fails_with \
     "allowlist entry for catalogued contract fails" \
     "$fixture" \
-    "allowlist entry is stale (already catalogued in INDEX.md)"
+    "allowlist entry is stale (already catalogued in documentation-index.md)"
 }
 
 echo "================================"
