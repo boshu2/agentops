@@ -489,31 +489,15 @@ func applyConfidenceDecayJSONL(l learning, filePath string, now time.Time) learn
 // with YAML frontmatter containing confidence and last_reward_at/last_decay_at fields.
 // Single read/modify/atomic-write to eliminate race window with concurrent sessions.
 func applyConfidenceDecayMarkdown(l learning, filePath string, now time.Time) learning {
-	// Single read — all parsing and modification uses this content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return l
 	}
 
-	// Parse frontmatter fields from the already-read content
 	fields := parseFrontmatterFromContent(string(content), "confidence", "last_decay_at", "last_reward_at")
+	confidence := parseConfidenceField(fields)
 
-	confidence := 0.5
-	if c, parseErr := strconv.ParseFloat(fields["confidence"], 64); parseErr == nil && c > 0 {
-		confidence = c
-	}
-
-	// Find most recent interaction time from either field
-	var lastInteraction time.Time
-	for _, key := range []string{"last_decay_at", "last_reward_at"} {
-		if v := fields[key]; v != "" {
-			if t, parseErr := time.Parse(time.RFC3339, v); parseErr == nil {
-				if lastInteraction.IsZero() || t.After(lastInteraction) {
-					lastInteraction = t
-				}
-			}
-		}
-	}
+	lastInteraction := mostRecentInteraction(fields)
 	if lastInteraction.IsZero() {
 		return l
 	}
@@ -527,36 +511,72 @@ func applyConfidenceDecayMarkdown(l learning, filePath string, now time.Time) le
 	VerbosePrintf("Applied confidence decay to %s: %.3f -> %.3f (%.1f weeks)\n",
 		l.ID, confidence, newConfidence, weeksSinceInteraction)
 
-	// Modify frontmatter from the same content (no second read)
-	lines := strings.Split(string(content), "\n")
-	if len(lines) < 2 || strings.TrimSpace(lines[0]) != "---" {
-		return l
-	}
-
-	// Find frontmatter end
-	endIdx := -1
-	for i := 1; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == "---" {
-			endIdx = i
-			break
-		}
-	}
-	if endIdx < 0 {
-		return l
-	}
-
-	fmLines := lines[1:endIdx]
-	updatedFM := updateFrontMatterFields(fmLines, map[string]string{
-		"confidence":    fmt.Sprintf("%.4f", newConfidence),
-		"last_decay_at": now.Format(time.RFC3339),
-	})
-	rebuilt := rebuildWithFrontMatter(updatedFM, lines[endIdx+1:])
-	if writeErr := atomicWriteFile(filePath, []byte(rebuilt), 0600); writeErr != nil {
+	if writeErr := writeDecayedFrontmatter(filePath, content, newConfidence, now); writeErr != nil {
 		VerbosePrintf("Warning: failed to write decay for %s: %v\n", l.ID, writeErr)
 	}
 
 	l.Utility *= newConfidence / confidence
 	return l
+}
+
+// parseConfidenceField extracts the `confidence` frontmatter value, defaulting
+// to 0.5 when absent or unparseable.
+func parseConfidenceField(fields map[string]string) float64 {
+	if c, parseErr := strconv.ParseFloat(fields["confidence"], 64); parseErr == nil && c > 0 {
+		return c
+	}
+	return 0.5
+}
+
+// mostRecentInteraction returns the latest of the last_decay_at / last_reward_at
+// timestamps, or the zero time when neither parses.
+func mostRecentInteraction(fields map[string]string) time.Time {
+	var latest time.Time
+	for _, key := range []string{"last_decay_at", "last_reward_at"} {
+		v := fields[key]
+		if v == "" {
+			continue
+		}
+		t, parseErr := time.Parse(time.RFC3339, v)
+		if parseErr != nil {
+			continue
+		}
+		if latest.IsZero() || t.After(latest) {
+			latest = t
+		}
+	}
+	return latest
+}
+
+// writeDecayedFrontmatter rewrites the YAML frontmatter of an already-loaded
+// markdown file with the new confidence and last_decay_at, then atomically
+// writes it back. Returns nil when the file has no frontmatter (no-op).
+func writeDecayedFrontmatter(filePath string, content []byte, newConfidence float64, now time.Time) error {
+	lines := strings.Split(string(content), "\n")
+	if len(lines) < 2 || strings.TrimSpace(lines[0]) != "---" {
+		return nil
+	}
+	endIdx := findFrontmatterEnd(lines)
+	if endIdx < 0 {
+		return nil
+	}
+	updatedFM := updateFrontMatterFields(lines[1:endIdx], map[string]string{
+		"confidence":    fmt.Sprintf("%.4f", newConfidence),
+		"last_decay_at": now.Format(time.RFC3339),
+	})
+	rebuilt := rebuildWithFrontMatter(updatedFM, lines[endIdx+1:])
+	return atomicWriteFile(filePath, []byte(rebuilt), 0600)
+}
+
+// findFrontmatterEnd locates the closing `---` delimiter index after an
+// already-confirmed opening `---` at line 0. Returns -1 when no closer is found.
+func findFrontmatterEnd(lines []string) int {
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			return i
+		}
+	}
+	return -1
 }
 
 // Thin wrappers — canonical definitions in internal/search/learnings.go.
