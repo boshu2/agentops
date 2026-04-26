@@ -59,11 +59,13 @@ One actionable follow-up item.
 | `consumed_by` | string or null | no | Consumer that finalized this item |
 | `consumed_at` | string (ISO-8601) or null | no | When this item was consumed |
 | `failed_at` | string (ISO-8601) or null | no | Last failure timestamp for retry ordering; retry metadata only, not completion proof |
+| `dedup_key` | string | no | Normalized cross-run identity used by producers (currently the Dream finding-generator aggregator) to suppress duplicate candidates across runs. Format: `finding-generator\|<generator>\|<normalized-type-title-target>`. Optional; absence means the item is not deduped at the next-work layer. |
 
 Compatibility notes:
 - omitted item `claim_status` means `available`
 - new producers should prefer `proof_ref` when they already know the authoritative completion-proof surface for a harvested item
 - producers may attach extra metadata fields (for example `id`, `file`, or `func`); readers MUST ignore unknown fields
+- when `dedup_key` is set, downstream producers SHOULD treat any new item with the same key as already covered and skip emission; consumers MAY use it for cross-run idempotency checks
 
 ### Proof Reference Object
 
