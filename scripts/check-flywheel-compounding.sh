@@ -38,11 +38,15 @@ diag=$(printf '%s' "$JSON" | jq -r '
 ')
 hint="(σρ ≤ δ/100; corpus has insufficient evidence-backed influence)"
 
-# When ρ is exactly 0, the corpus has no high-confidence (applied or reference)
-# citations — this is the most common failure mode and operators benefit from
-# being told to record applied/reference citations rather than retrieved-only.
+# Distinguish "no signal at all" (σ=0 → no citations of any kind in window) from
+# "no high-confidence signal" (ρ=0 with σ>0 → only retrieved-only citations).
+# Each maps to a different operator action: σ=0 needs ANY citation activity to
+# wake the flywheel; ρ=0 needs --cite applied|reference instead of bare retrieval.
+sigma=$(printf '%s' "$JSON" | jq -r '.sigma')
 rho=$(printf '%s' "$JSON" | jq -r '.rho')
-if [[ "$rho" == "0" ]]; then
+if [[ "$sigma" == "0" && "$rho" == "0" ]]; then
+    hint="σ=0 ρ=0 — zero citations recorded in measurement window; corpus is dormant. Sessions must run 'ao lookup' (any --cite kind) before the gate sees signal"
+elif [[ "$rho" == "0" ]]; then
     hint="ρ=0 — no applied/reference citations recorded; sessions must use 'ao lookup --cite applied|reference' or programmatic high-confidence citations"
 fi
 
