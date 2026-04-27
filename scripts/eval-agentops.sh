@@ -127,6 +127,30 @@ else:
 PY
 }
 
+json_get_default() {
+    local path="$1"
+    local key="$2"
+    local default="$3"
+    python3 - "$path" "$key" "$default" <<'PY'
+import json
+import sys
+
+path, key, default = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path, encoding="utf-8") as fh:
+    data = json.load(fh)
+value = data
+for part in key.split("."):
+    if not isinstance(value, dict) or part not in value:
+        print(default)
+        raise SystemExit(0)
+    value = value[part]
+if isinstance(value, bool):
+    print("true" if value else "false")
+else:
+    print(value)
+PY
+}
+
 scorecard_kind_for_suite() {
     local suite_id="$1"
     case "$suite_id" in
@@ -218,7 +242,7 @@ for suite in "${SUITES[@]}"; do
             record_failure "$suite_id baseline compare command failed"
         else
             compare_verdict="$(json_get "$compare_path" "verdict")"
-            delta="$(json_get "$compare_path" "baseline_comparison.aggregate_delta")"
+            delta="$(json_get_default "$compare_path" "baseline_comparison.aggregate_delta" "0")"
             echo "baseline: verdict=$compare_verdict aggregate_delta=$delta"
             if [[ "$compare_verdict" == "fail" || "$compare_verdict" == "regression" ]]; then
                 record_failure "$suite_id regressed against baseline"

@@ -210,6 +210,15 @@ scripts/security-gate.sh --mode full --json    # Machine-readable output
 scripts/security-gate.sh --require-tools       # Fail if scanners missing
 ```
 
+### scripts/toolchain-validate.sh
+
+Runs the scanner invocation contract used by `scripts/security-gate.sh`, including JSON output, quick-mode skips, and gate exit codes.
+
+```bash
+scripts/toolchain-validate.sh --quick --gate --json
+scripts/toolchain-validate.sh --gate --json
+```
+
 ### Scanners
 
 | Scanner | Target | Purpose |
@@ -223,10 +232,6 @@ scripts/security-gate.sh --require-tools       # Fail if scanners missing
 | ruff | Python | Python linter |
 | radon | Python | Cyclomatic complexity for Python |
 | ShellCheck | Shell | Shell script analysis (also runs standalone in validate.yml) |
-
-### scripts/security-toolchain-validate.sh
-
-Validates that the security toolchain itself is correctly installed and functional. Used by `security-toolchain-gate` in CI.
 
 ## Release Workflow
 

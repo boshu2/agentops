@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TMP_ROOT="$(mktemp -d)"
+HOST_BASH_DIR="$(dirname "$(command -v bash)")"
 
 cleanup() {
   rm -rf "$TMP_ROOT"
@@ -152,7 +153,7 @@ run_toolchain_case() {
 
   set +e
   env \
-    PATH="$repo/mockbin:/usr/bin:/bin" \
+    PATH="$repo/mockbin:$HOST_BASH_DIR:/usr/bin:/bin" \
     TOOLCHAIN_OUTPUT_DIR="$output_dir" \
     SECURITY_TOOLCHAIN_FIXTURE_SEMGREP="$semgrep_mode" \
     SECURITY_TOOLCHAIN_FIXTURE_RUFF="$ruff_mode" \
@@ -257,7 +258,7 @@ case "${1:-}" in
     repo="$(make_fixture_repo "quick-mode")"
     output_dir="$repo/out"
     stdout_json="$repo/stdout.json"
-    env PATH="$repo/mockbin:/usr/bin:/bin" TOOLCHAIN_OUTPUT_DIR="$output_dir" "$repo/scripts/toolchain-validate.sh" --quick --gate --json >"$stdout_json"
+    env PATH="$repo/mockbin:$HOST_BASH_DIR:/usr/bin:/bin" TOOLCHAIN_OUTPUT_DIR="$output_dir" "$repo/scripts/toolchain-validate.sh" --quick --gate --json >"$stdout_json"
     jq -e '.tools.gitleaks == "skipped" and .tools.pytest == "skipped" and .tools["go-test"] == "skipped"' "$stdout_json" >/dev/null
     grep -Fxq "SKIPPED_QUICK_MODE" "$output_dir/gitleaks.txt"
     grep -Fxq "SKIPPED_QUICK_MODE" "$output_dir/pytest.txt"
