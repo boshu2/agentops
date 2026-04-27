@@ -6,6 +6,7 @@
 
 - **Harness Reuse**: Long-running RPI improvements should extend existing phase/result/handoff artifacts instead of creating a second run ledger (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
 - **Trust-Gated Context**: Startup quality improves when canonical findings and planning rules outrank raw notes and packet families stay experimental until health is proven (source: `.agents/learnings/2026-04-01-session-intelligence-trust-gates.md`)
+- **Sidecar Single Writer**: Parallel read lanes should emit sidecars while one reducer owns durable queue writes (source: `.agents/learnings/2026-04-26-dream-generator-sidecar-single-writer.md`)
 
 ## Process
 
@@ -28,3 +29,4 @@
 - **Scrub RPI Runtime Env in Raw Go Checks**: Raw validation of `internal/rpi` is not trustworthy on this machine unless `AGENTOPS_RPI_RUNTIME` is explicitly scrubbed first (source: `.agents/learnings/2026-04-14-scrub-rpi-runtime-from-raw-validation.md`)
 - **Corroborate Before Council**: Dream long-haul should spend budget on cheap packet corroboration before paying for council; strong corroboration can make the expensive lane unnecessary (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
 - **Durable Closure Evidence**: Closed beads should cite committed discovery artifacts or explicit proof packets, not ephemeral seed paths, so closure audits can replay mechanically (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
+- **Timeout-Aware Generators**: Pluggable generators need context-aware IO and stall tests before joining Dream fanout (source: `.agents/learnings/2026-04-26-generator-timeout-contract.md`)
