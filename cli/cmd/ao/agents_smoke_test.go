@@ -149,8 +149,12 @@ func TestScanProductionAgentsReferences_FindsKnownLiteral(t *testing.T) {
 	}
 
 	goSrc := []byte(`package main
+
+import "path/filepath"
+
 const _ = ".agents/learnings/foo.md"
 var _ = filepath.Join(cwd, ".agents", "packets", "promoted")
+var _ = filepath.Join(".agents", "wiki", "sources")
 `)
 	if err := os.WriteFile(filepath.Join(tmp, "cli", "cmd", "ao", "thing.go"), goSrc, 0o644); err != nil {
 		t.Fatal(err)
@@ -177,6 +181,9 @@ const _ = ".agents/test-only-surface/x"
 	}
 	if !refs["packets"] {
 		t.Error("expected 'packets' from filepath.Join production go file")
+	}
+	if !refs["wiki"] {
+		t.Error("expected 'wiki' from filepath.Join in production go file")
 	}
 	if !refs["releases"] {
 		t.Error("expected 'releases' from shell script")
