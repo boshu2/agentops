@@ -155,3 +155,14 @@ write_artifact_files() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"release audit artifact validation passed"* ]]
 }
+
+@test "validate-release-audit-artifacts skips older missing local artifact dirs" {
+    write_audit "2.29.0" "20260322T212222Z"
+    write_manifest "20260330T231401Z" "2.30.0" false
+    write_artifact_files "20260330T231401Z" "2.30.0"
+    write_audit "2.30.0" "20260330T231401Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"release audit artifact validation passed"* ]]
+}

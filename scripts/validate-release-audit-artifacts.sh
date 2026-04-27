@@ -90,8 +90,17 @@ validate_legacy_artifacts() {
     return 1
 }
 
+audit_files=()
+while IFS= read -r audit_file; do
+    audit_files+=("$audit_file")
+done < <(find "$REPO_ROOT/docs/releases" -maxdepth 1 -type f -name '*-audit.md' | sort)
+latest_audit=""
+if (( ${#audit_files[@]} > 0 )); then
+    latest_audit="${audit_files[$((${#audit_files[@]} - 1))]}"
+fi
+
 failures=()
-while IFS= read -r audit; do
+for audit in "${audit_files[@]}"; do
     version="$(extract_version "$audit")"
     [[ -n "$version" ]] || continue
 
@@ -100,6 +109,10 @@ while IFS= read -r audit; do
     artifact_dir="${artifact_dir%/}"
 
     manifest="$REPO_ROOT/$artifact_dir/release-artifacts.json"
+    if [[ ! -f "$manifest" && ! -d "$REPO_ROOT/$artifact_dir" && "$audit" != "$latest_audit" ]]; then
+        continue
+    fi
+
     if [[ -f "$manifest" ]]; then
         if ! output="$(validate_manifest_artifacts "$audit" "$version" "$artifact_dir" "$manifest")"; then
             failures+=("$output")
@@ -107,7 +120,7 @@ while IFS= read -r audit; do
     elif ! output="$(validate_legacy_artifacts "$audit" "$version" "$artifact_dir")"; then
         failures+=("$output")
     fi
-done < <(find "$REPO_ROOT/docs/releases" -maxdepth 1 -type f -name '*-audit.md' | sort)
+done
 
 if (( ${#failures[@]} > 0 )); then
     printf 'release audit artifact validation failed:\n' >&2
