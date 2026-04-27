@@ -321,4 +321,5 @@ func init() {
 
 	gateBulkApproveCmd.Flags().StringVar(&gateOlderThan, "older-than", "24h", "Age threshold for bulk approval")
 	gateBulkApproveCmd.Flags().StringVar(&gateTier, "tier", "silver", "Tier to bulk approve (default: silver)")
+	_ = gateBulkApproveCmd.RegisterFlagCompletionFunc("tier", staticCompletionFunc("bronze", "silver", "gold"))
 }

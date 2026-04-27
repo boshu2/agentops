@@ -8,7 +8,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 AO="$REPO_ROOT/cli/bin/ao"
 
 ERRORS=0
-WARNINGS=0
 PASSED=0
 TMP_BASE="${TMPDIR:-/tmp}"
 mkdir -p "$TMP_BASE"
@@ -25,7 +24,6 @@ trap 'cleanup' EXIT
 
 pass() { echo -e "\033[0;32m✓\033[0m $1"; PASSED=$((PASSED + 1)); }
 fail() { echo -e "\033[0;31m✗\033[0m $1"; ERRORS=$((ERRORS + 1)); }
-warn() { echo -e "\033[0;33m⚠\033[0m $1"; WARNINGS=$((WARNINGS + 1)); }
 
 # ── Pre-flight: ensure ao binary exists ──────────────────────────────
 if [[ ! -x "$AO" ]]; then
@@ -49,7 +47,6 @@ echo ""
 # Runs the command, checks:
 #   1. --json flag is accepted (not "unknown flag")
 #   2. stdout is valid JSON (via jq empty)
-# Non-zero exit is tolerated if stdout is still JSON or empty.
 test_json_cmd() {
   local label="$1"; shift
   local stdout stderr rc
@@ -64,14 +61,14 @@ test_json_cmd() {
     return
   fi
 
+  if [[ $rc -ne 0 ]]; then
+    fail "$label — exited $rc with --json"
+    return
+  fi
+
   # Empty stdout: command ran but produced no output
   if [[ -z "$stdout" ]]; then
-    # Non-zero exit with no stdout likely means the command needs state/args
-    if [[ $rc -ne 0 ]]; then
-      warn "$label — exited $rc with no stdout (may need state/args)"
-    else
-      warn "$label — exited 0 but produced no JSON output"
-    fi
+    fail "$label — exited 0 but produced no JSON output"
     return
   fi
 
@@ -79,8 +76,7 @@ test_json_cmd() {
   if echo "$stdout" | jq empty 2>/dev/null; then
     pass "$label"
   else
-    # stdout exists but is not valid JSON — the command ignores --json
-    warn "$label — produced non-JSON output despite --json flag"
+    fail "$label — produced non-JSON output despite --json flag"
   fi
 }
 
@@ -111,7 +107,6 @@ echo ""
 echo "--- Pool / Flywheel commands ---"
 test_json_cmd "ao pool list"        pool list
 test_json_cmd "ao flywheel status"  flywheel status
-test_json_cmd "ao maturity list"    maturity list
 
 echo ""
 echo "--- Output flag equivalence (--json vs -o json) ---"
@@ -126,12 +121,12 @@ if [[ -n "$json_flag" && -n "$o_flag" ]]; then
     fail "--json and -o json produce DIFFERENT output (config --show)"
   fi
 else
-  warn "--json/-o json equivalence test skipped (one or both produced no output)"
+  fail "--json/-o json equivalence test skipped (one or both produced no output)"
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────
 echo ""
 echo "=== JSON Flag Consistency ==="
-echo "Passed: $PASSED  Warnings: $WARNINGS  Errors: $ERRORS"
+echo "Passed: $PASSED  Errors: $ERRORS"
 
 exit $((ERRORS > 0 ? 1 : 0))

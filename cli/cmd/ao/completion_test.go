@@ -9,8 +9,8 @@ func TestCompletion_CommandExists(t *testing.T) {
 	if completionCmd == nil {
 		t.Fatal("completionCmd should not be nil")
 	}
-	if completionCmd.Use != "completion [bash|zsh|fish]" {
-		t.Errorf("completionCmd.Use = %q, want %q", completionCmd.Use, "completion [bash|zsh|fish]")
+	if completionCmd.Use != "completion [bash|zsh|fish|powershell]" {
+		t.Errorf("completionCmd.Use = %q, want %q", completionCmd.Use, "completion [bash|zsh|fish|powershell]")
 	}
 	if completionCmd.GroupID != "config" {
 		t.Errorf("completionCmd.GroupID = %q, want %q", completionCmd.GroupID, "config")
@@ -18,7 +18,7 @@ func TestCompletion_CommandExists(t *testing.T) {
 }
 
 func TestCompletion_ValidArgs(t *testing.T) {
-	expected := []string{"bash", "zsh", "fish"}
+	expected := []string{"bash", "zsh", "fish", "powershell"}
 	if len(completionCmd.ValidArgs) != len(expected) {
 		t.Fatalf("ValidArgs length = %d, want %d", len(completionCmd.ValidArgs), len(expected))
 	}
@@ -84,9 +84,22 @@ func TestCompletion_FishOutputContainsShellMarker(t *testing.T) {
 	}
 }
 
+func TestCompletion_PowerShellOutputContainsShellMarker(t *testing.T) {
+	out, err := executeCommand("completion", "powershell")
+	if err != nil {
+		t.Fatalf("ao completion powershell returned error: %v", err)
+	}
+	if out == "" {
+		t.Fatal("powershell completion output is empty")
+	}
+	if !strings.Contains(out, "Register-ArgumentCompleter") {
+		t.Errorf("powershell completion output does not contain expected shell marker, got: %.200s...", out)
+	}
+}
+
 func TestCompletion_OutputIsNonTrivial(t *testing.T) {
 	// Each shell's completion output should be substantial (not just a few bytes).
-	shells := []string{"bash", "zsh", "fish"}
+	shells := []string{"bash", "zsh", "fish", "powershell"}
 	for _, shell := range shells {
 		t.Run(shell, func(t *testing.T) {
 			out, err := executeCommand("completion", shell)
@@ -109,7 +122,7 @@ func TestCompletion_NoArgsReturnsError(t *testing.T) {
 }
 
 func TestCompletion_InvalidShellReturnsError(t *testing.T) {
-	_, err := executeCommand("completion", "powershell")
+	_, err := executeCommand("completion", "nu")
 	if err == nil {
 		t.Error("ao completion with invalid shell should return an error")
 	}

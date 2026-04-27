@@ -9,6 +9,7 @@
 #
 # Usage:
 #   bash scripts/check-cmdao-surface-parity.sh
+#   bash scripts/check-cmdao-surface-parity.sh --write-surface
 #
 # Exit codes:
 #   0 = all leaf commands are covered or allowlisted
@@ -17,18 +18,31 @@
 # Environment overrides (for testing):
 #   CMDAO_COMMANDS_MD    Path to CLI reference (default: cli/docs/COMMANDS.md)
 #   CMDAO_SMOKE_TEST     Path to smoke test (default: scripts/release-smoke-test.sh)
-#   CMDAO_TEST_GLOB      Glob for unit test files (default: cli/cmd/ao/*_test.go)
+#   CMDAO_TEST_GLOB_DIR  Directory for unit test files (default: cli/cmd/ao)
 #   CMDAO_ALLOWLIST      Path to allowlist (default: scripts/cmdao-surface-allowlist.txt)
+#   CMDAO_SURFACE_MD     Human command-surface inventory (default: docs/cli-surface.md)
+#   CMDAO_SURFACE_JSON   Machine command-surface inventory (default: docs/cli-surface.json)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+WRITE_SURFACE=false
+if [[ "${1:-}" == "--write-surface" ]]; then
+  WRITE_SURFACE=true
+elif [[ $# -gt 0 ]]; then
+  echo "Unknown argument: $1" >&2
+  echo "Usage: bash scripts/check-cmdao-surface-parity.sh [--write-surface]" >&2
+  exit 2
+fi
+
 COMMANDS_MD="${CMDAO_COMMANDS_MD:-$REPO_ROOT/cli/docs/COMMANDS.md}"
 SMOKE_TEST="${CMDAO_SMOKE_TEST:-$REPO_ROOT/scripts/release-smoke-test.sh}"
 TEST_GLOB_DIR="${CMDAO_TEST_GLOB_DIR:-$REPO_ROOT/cli/cmd/ao}"
 ALLOWLIST="${CMDAO_ALLOWLIST:-$REPO_ROOT/scripts/cmdao-surface-allowlist.txt}"
+SURFACE_MD="${CMDAO_SURFACE_MD:-$REPO_ROOT/docs/cli-surface.md}"
+SURFACE_JSON="${CMDAO_SURFACE_JSON:-$REPO_ROOT/docs/cli-surface.json}"
 
 # ─── Validate inputs ───────────────────────────────────────────────────────────
 
@@ -61,7 +75,10 @@ ALL_COMMANDS_FILE="$TMP_DIR/all_commands.txt"
 LEAF_COMMANDS_FILE="$TMP_DIR/leaf_commands.txt"
 PARENT_COMMANDS_FILE="$TMP_DIR/parent_commands.txt"
 ALLOWLIST_FILE="$TMP_DIR/allowlist.txt"
-UNCOVERED_FILE="$TMP_DIR/uncovered.txt"
+ALLOWLIST_META_FILE="$TMP_DIR/allowlist_meta.tsv"
+SURFACE_TSV="$TMP_DIR/cli_surface.tsv"
+GENERATED_SURFACE_MD="$TMP_DIR/cli-surface.md"
+GENERATED_SURFACE_JSON="$TMP_DIR/cli-surface.json"
 
 # ─── Step 1: Extract all commands from COMMANDS.md ────────────────────────────
 #
@@ -124,11 +141,38 @@ fi
 # ─── Step 3: Load the allowlist ───────────────────────────────────────────────
 #
 # Strip comment lines (# ...) and blank lines.
+# Format: category|command|reason
 
-grep -Ev '^[[:space:]]*(#|$)' "$ALLOWLIST" \
-  | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' \
-  | sort -u \
-  > "$ALLOWLIST_FILE" || true
+VALID_CATEGORIES_RE='^(public-tested|public-stateful-fixture-needed|internal-hidden|deprecated|unsafe-live|manual-only)$'
+
+awk -F'|' -v valid_re="$VALID_CATEGORIES_RE" '
+  /^[[:space:]]*(#|$)/ { next }
+  {
+    if (NF != 3) {
+      printf "CMDAO_SURFACE_PARITY: invalid allowlist row %d: expected category|command|reason\n", NR > "/dev/stderr"
+      exit 1
+    }
+    category=$1
+    command=$2
+    reason=$3
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", category)
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", command)
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", reason)
+    if (category !~ valid_re) {
+      printf "CMDAO_SURFACE_PARITY: invalid category on row %d: %s\n", NR, category > "/dev/stderr"
+      exit 1
+    }
+    if (command == "" || reason == "") {
+      printf "CMDAO_SURFACE_PARITY: allowlist row %d needs non-empty command and reason\n", NR > "/dev/stderr"
+      exit 1
+    }
+    printf "%s\t%s\t%s\n", command, category, reason
+  }
+' "$ALLOWLIST" | sort -u > "$ALLOWLIST_META_FILE"
+
+cut -f1 "$ALLOWLIST_META_FILE" > "$ALLOWLIST_FILE" || true
+
+printf 'command\tkind\tcategory\tcoverage_status\treason\n' > "$SURFACE_TSV"
 
 # ─── Step 4: Check each leaf command for coverage ─────────────────────────────
 #
@@ -145,6 +189,7 @@ missing=()
 while IFS= read -r cmd; do
   # Check allowlist first
   if grep -qxF "$cmd" "$ALLOWLIST_FILE" 2>/dev/null; then
+    awk -F'\t' -v cmd="$cmd" '$1 == cmd { printf "%s\tleaf\t%s\tallowlisted\t%s\n", $1, $2, $3 }' "$ALLOWLIST_META_FILE" >> "$SURFACE_TSV"
     continue
   fi
 
@@ -233,11 +278,85 @@ while IFS= read -r cmd; do
   if ! $covered; then
     missing+=("$cmd")
     errors=$((errors + 1))
+    printf '%s\tleaf\tmanual-only\tmissing\tNo smoke, direct test, or allowlist coverage found.\n' "$cmd" >> "$SURFACE_TSV"
+  else
+    printf '%s\tleaf\tpublic-tested\tcovered\tCovered by release smoke tests, direct command tests, or command handler tests.\n' "$cmd" >> "$SURFACE_TSV"
   fi
 
 done < "$LEAF_COMMANDS_FILE"
 
-# ─── Step 5: Report ───────────────────────────────────────────────────────────
+# ─── Step 5: Generate or check command-surface sidecars ───────────────────────
+
+python3 - "$SURFACE_TSV" "$GENERATED_SURFACE_MD" "$GENERATED_SURFACE_JSON" <<'PY'
+import csv
+import json
+import sys
+from pathlib import Path
+
+tsv_path, md_path, json_path = map(Path, sys.argv[1:4])
+with tsv_path.open(newline="") as f:
+    rows = list(csv.DictReader(f, delimiter="\t"))
+
+payload = {
+    "schema_version": 1,
+    "generated_by": "scripts/check-cmdao-surface-parity.sh --write-surface",
+    "categories": [
+        "public-tested",
+        "public-stateful-fixture-needed",
+        "internal-hidden",
+        "deprecated",
+        "unsafe-live",
+        "manual-only",
+    ],
+    "commands": rows,
+}
+
+json_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+lines = [
+    "# ao CLI Command Surface",
+    "",
+    "> Generated by `scripts/check-cmdao-surface-parity.sh --write-surface`.",
+    "> Do not edit command rows manually.",
+    "",
+    "| Command | Category | Coverage | Reason |",
+    "|---------|----------|----------|--------|",
+]
+for row in rows:
+    command = row["command"].replace("|", "\\|")
+    category = row["category"].replace("|", "\\|")
+    coverage = row["coverage_status"].replace("|", "\\|")
+    reason = row["reason"].replace("|", "\\|")
+    lines.append(f"| `ao {command}` | `{category}` | `{coverage}` | {reason} |")
+
+md_path.write_text("\n".join(lines) + "\n")
+PY
+
+if $WRITE_SURFACE; then
+  mkdir -p "$(dirname "$SURFACE_MD")" "$(dirname "$SURFACE_JSON")"
+  cp "$GENERATED_SURFACE_MD" "$SURFACE_MD"
+  cp "$GENERATED_SURFACE_JSON" "$SURFACE_JSON"
+else
+  if [[ ! -f "$SURFACE_MD" || ! -f "$SURFACE_JSON" ]]; then
+    echo "CMDAO_SURFACE_PARITY: command-surface sidecars are missing."
+    echo "Run: bash scripts/check-cmdao-surface-parity.sh --write-surface"
+    exit 1
+  fi
+  if ! diff -q "$SURFACE_MD" "$GENERATED_SURFACE_MD" >/dev/null 2>&1; then
+    echo "CMDAO_SURFACE_PARITY: $SURFACE_MD is out of date."
+    echo "Run: bash scripts/check-cmdao-surface-parity.sh --write-surface"
+    diff -u "$SURFACE_MD" "$GENERATED_SURFACE_MD" || true
+    exit 1
+  fi
+  if ! diff -q "$SURFACE_JSON" "$GENERATED_SURFACE_JSON" >/dev/null 2>&1; then
+    echo "CMDAO_SURFACE_PARITY: $SURFACE_JSON is out of date."
+    echo "Run: bash scripts/check-cmdao-surface-parity.sh --write-surface"
+    diff -u "$SURFACE_JSON" "$GENERATED_SURFACE_JSON" || true
+    exit 1
+  fi
+fi
+
+# ─── Step 6: Report ───────────────────────────────────────────────────────────
 
 ALLOWLIST_COUNT=$(wc -l < "$ALLOWLIST_FILE" | tr -d ' ')
 
@@ -251,7 +370,7 @@ if [[ "${#missing[@]}" -gt 0 ]]; then
   done
   echo ""
   echo "Action: add coverage to scripts/release-smoke-test.sh or cli/cmd/ao/*_test.go,"
-  echo "        or add to scripts/cmdao-surface-allowlist.txt with a reason comment."
+  echo "        or add a category|command|reason row to scripts/cmdao-surface-allowlist.txt."
   echo ""
   echo "CMDAO_SURFACE_PARITY: FAILED ($errors uncovered command(s))"
   exit 1

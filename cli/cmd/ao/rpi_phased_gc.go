@@ -35,7 +35,7 @@ func (g *gcExecutor) Execute(ctx context.Context, prompt, cwd, runID string, pha
 	_ = gcEmitPhaseEvent(cityPath, phaseNum, "started", runID, g.execCommand, g.lookPath)
 
 	sessionAlias := fmt.Sprintf("rpi-%s-p%d", runID, phaseNum)
-	if err := gcRunCommand(g.execCommand, cityPath, "session", "new", "--alias", sessionAlias, "--template", "worker"); err != nil {
+	if err := gcRunCommand(g.execCommand, cityPath, gcSessionNewArgs("worker", sessionAlias)...); err != nil {
 		return fmt.Errorf("gc executor: create session %q: %w", sessionAlias, err)
 	}
 	if err := gcRunCommand(g.execCommand, cityPath, gcNudgeArgs(sessionAlias, prompt)...); err != nil {
@@ -100,12 +100,24 @@ func (g *gcExecutor) checkSessionDone(cityPath, sessionAlias string) (bool, erro
 	}
 	for _, s := range sessions {
 		if s.Alias == sessionAlias {
-			return s.State == "closed" || s.State == "completed", nil
+			return gcSessionDone(s), nil
 		}
 	}
 	// Session disappeared — likely controller crash or cleanup
 	fmt.Printf("WARN: gc session %q not found in session list — treating as complete\n", sessionAlias)
 	return true, nil
+}
+
+func gcSessionDone(s GCSession) bool {
+	if s.Closed {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(s.State)) {
+	case "closed", "completed", "asleep", "suspended", "drained", "archived", "stopped":
+		return true
+	default:
+		return false
+	}
 }
 
 // gcRunCommand runs a gc CLI command with optional city path prefix.

@@ -305,6 +305,22 @@ fi
 # test_exec "Codex release bundle parity" bash "$REPO_ROOT/scripts/validate-codex-install-bundle.sh"
 
 # ═══════════════════════════════════════════════════════
+#  Exhaustive Leaf Help Smoke
+# ═══════════════════════════════════════════════════════
+
+section "All Leaf Commands (--help execution)"
+
+leaf_smoke_log="$(mktemp "${TMPDIR:-/tmp}/ao-leaf-help-smoke.XXXXXX")"
+if bash "$REPO_ROOT/tests/cli/test-all-leaf-help-smoke.sh" --skip-build --binary "$AO" >"$leaf_smoke_log" 2>&1; then
+    leaf_count=$(grep -E '^Leaf commands:' "$leaf_smoke_log" | awk '{print $3}' || true)
+    pass "All generated leaf commands run --help${leaf_count:+ ($leaf_count commands)}"
+else
+    fail "All generated leaf commands run --help"
+    tail -40 "$leaf_smoke_log" | sed 's/^/    /'
+fi
+rm -f "$leaf_smoke_log"
+
+# ═══════════════════════════════════════════════════════
 #  Safe Commands (read-only / reporting — actually execute)
 # ═══════════════════════════════════════════════════════
 

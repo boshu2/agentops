@@ -93,6 +93,7 @@ func init() {
 	goalsSteerAddCmd.Flags().StringVar(&steerAddDescription, "description", "", "Directive description (required)")
 	_ = goalsSteerAddCmd.MarkFlagRequired("description")
 	goalsSteerAddCmd.Flags().StringVar(&steerAddSteer, "steer", "increase", "Steer direction (increase, decrease, hold, explore)")
+	_ = goalsSteerAddCmd.RegisterFlagCompletionFunc("steer", staticCompletionFunc("increase", "decrease", "hold", "explore"))
 
 	goalsSteerCmd.AddCommand(goalsSteerAddCmd)
 	goalsSteerCmd.AddCommand(goalsSteerRemoveCmd)

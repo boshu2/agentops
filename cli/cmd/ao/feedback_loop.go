@@ -65,6 +65,7 @@ func init() {
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopTranscript, "transcript", "", "Path to transcript for reward computation")
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopCitationType, "citation-type", "retrieved", "Filter citations by type (retrieved, applied, all)")
+	_ = feedbackLoopCmd.RegisterFlagCompletionFunc("citation-type", staticCompletionFunc("retrieved", "applied", "all"))
 }
 
 // annealedAlpha computes a decaying learning rate.

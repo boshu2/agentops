@@ -26,13 +26,6 @@
     "reason": "bd probes succeeded and discovery created epic soc-n67 with six child issues."
   },
   "complexity": "standard",
-  "scope_mode": "reduction",
-  "phase_origin": "rpi",
-  "test_first": true,
-  "test_levels": ["L0", "L1"],
-  "plan_path": ".agents/plans/2026-04-26-git-topology-consolidation.md",
-  "research_path": ".agents/research/2026-04-26-branch-consolidation-audit.md",
-  "pre_mortem_path": ".agents/council/2026-04-26-pre-mortem-git-topology-consolidation.md",
   "pre_mortem_verdict": "WARN",
   "pre_mortem_required_fix": "Issue 2 must emit docs/cli-surface.json as the machine-readable command-surface sidecar; Issue 3 and Issue 4 must consume it instead of parsing docs/cli-surface.md.",
   "done_criteria": [

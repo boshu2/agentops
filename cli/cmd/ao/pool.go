@@ -501,9 +501,12 @@ func init() {
 	poolListCmd.Flags().IntVar(&poolLimit, "limit", 50, "Maximum results to return (default 50, 0 for unlimited)")
 	poolListCmd.Flags().IntVar(&poolOffset, "offset", 0, "Skip first N results (for pagination)")
 	poolListCmd.Flags().BoolVarP(&poolWide, "wide", "w", false, "Show full IDs without truncation")
+	_ = poolListCmd.RegisterFlagCompletionFunc("tier", staticCompletionFunc("gold", "silver", "bronze"))
+	_ = poolListCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("pending", "staged", "promoted", "rejected"))
 
 	// Add flags to stage command
 	poolStageCmd.Flags().StringVar(&poolTier, "min-tier", "", "Minimum tier threshold (default: bronze)")
+	_ = poolStageCmd.RegisterFlagCompletionFunc("min-tier", staticCompletionFunc("gold", "silver", "bronze"))
 
 	// Add flags to reject command
 	poolRejectCmd.Flags().StringVar(&poolReason, "reason", "", "Reason for rejection (required)")

@@ -64,6 +64,7 @@ packetization out of default startup injection until health improves.`,
 	packetStatusCmd.Flags().StringVar(&contextPacketStatusFlags.task, "task", "", "task or query to evaluate")
 	packetStatusCmd.Flags().StringVar(&contextPacketStatusFlags.phase, "phase", "startup", "Context phase to evaluate")
 	packetStatusCmd.Flags().IntVar(&contextPacketStatusFlags.limit, "limit", defaultStigmergicPacketLimit, "max items per class")
+	_ = packetStatusCmd.RegisterFlagCompletionFunc("phase", staticCompletionFunc("task", "startup", "planning", "pre-mortem", "validation"))
 	contextCmd.AddCommand(packetStatusCmd)
 }
 

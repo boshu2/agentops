@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +13,27 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
+
+type badgeResult struct {
+	SessionsMined     int     `json:"sessions_mined"`
+	Learnings         int     `json:"learnings"`
+	Patterns          int     `json:"patterns"`
+	Citations         int     `json:"citations"`
+	Sigma             float64 `json:"sigma"`
+	Rho               float64 `json:"rho"`
+	Delta             float64 `json:"delta"`
+	SigmaRho          float64 `json:"sigma_rho"`
+	EscapeThreshold   float64 `json:"escape_threshold"`
+	Status            string  `json:"status"`
+	EscapeVelocity    bool    `json:"escape_velocity"`
+	ApproachingEscape bool    `json:"approaching_escape"`
+}
+
+type badgeOptions struct {
+	Cwd    string
+	Output string
+	Writer io.Writer
+}
 
 var badgeCmd = &cobra.Command{
 	Use:   "badge",
@@ -43,18 +66,34 @@ func runBadge(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	return runBadgeWithOptions(badgeOptions{
+		Cwd:    cwd,
+		Output: GetOutput(),
+		Writer: cmd.OutOrStdout(),
+	})
+}
 
+func runBadgeWithOptions(opts badgeOptions) error {
+	if opts.Writer == nil {
+		opts.Writer = os.Stdout
+	}
 	// Compute metrics (reuse existing logic)
-	metrics, err := computeMetrics(cwd, 7)
+	metrics, err := computeMetrics(opts.Cwd, 7)
 	if err != nil {
 		VerbosePrintf("Warning: compute metrics: %v\n", err)
 	}
 
 	// Count sessions mined
-	sessionsMined := countSessions(cwd)
+	sessionsMined := countSessions(opts.Cwd)
+
+	if opts.Output == "json" {
+		enc := json.NewEncoder(opts.Writer)
+		enc.SetIndent("", "  ")
+		return enc.Encode(buildBadgeResult(sessionsMined, metrics))
+	}
 
 	// Draw the badge
-	printBadge(sessionsMined, metrics)
+	printBadge(opts.Writer, sessionsMined, metrics)
 	return nil
 }
 
@@ -69,7 +108,7 @@ func countSessions(baseDir string) int {
 }
 
 // printBadge prints the visual badge.
-func printBadge(sessions int, m *FlywheelMetrics) {
+func printBadge(w io.Writer, sessions int, m *FlywheelMetrics) {
 	if m == nil {
 		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
 	}
@@ -86,19 +125,19 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 	learnings := m.TierCounts["learning"]
 	patterns := m.TierCounts["pattern"]
 
-	fmt.Println()
-	fmt.Println("╔═══════════════════════════════════════════╗")
-	fmt.Println("║         🏛️  AGENTOPS KNOWLEDGE             ║")
-	fmt.Println("╠═══════════════════════════════════════════╣")
-	fmt.Printf("║  Sessions Mined    │  %-19d ║\n", sessions)
-	fmt.Printf("║  Learnings         │  %-19d ║\n", learnings)
-	fmt.Printf("║  Patterns          │  %-19d ║\n", patterns)
-	fmt.Printf("║  Citations         │  %-19d ║\n", m.CitationsThisPeriod)
-	fmt.Println("╠═══════════════════════════════════════════╣")
-	fmt.Printf("║  Retrieval (σ)     │  %.2f  %s ║\n", m.Sigma, sigmaBar)
-	fmt.Printf("║  Influence (ρ)     │  %.2f  %s ║\n", m.Rho, rhoBar)
-	fmt.Printf("║  Age Days (δ)      │  %.1f  %s ║\n", m.Delta, deltaBar)
-	fmt.Println("╠═══════════════════════════════════════════╣")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "╔═══════════════════════════════════════════╗")
+	fmt.Fprintln(w, "║         🏛️  AGENTOPS KNOWLEDGE             ║")
+	fmt.Fprintln(w, "╠═══════════════════════════════════════════╣")
+	fmt.Fprintf(w, "║  Sessions Mined    │  %-19d ║\n", sessions)
+	fmt.Fprintf(w, "║  Learnings         │  %-19d ║\n", learnings)
+	fmt.Fprintf(w, "║  Patterns          │  %-19d ║\n", patterns)
+	fmt.Fprintf(w, "║  Citations         │  %-19d ║\n", m.CitationsThisPeriod)
+	fmt.Fprintln(w, "╠═══════════════════════════════════════════╣")
+	fmt.Fprintf(w, "║  Retrieval (σ)     │  %.2f  %s ║\n", m.Sigma, sigmaBar)
+	fmt.Fprintf(w, "║  Influence (ρ)     │  %.2f  %s ║\n", m.Rho, rhoBar)
+	fmt.Fprintf(w, "║  Age Days (δ)      │  %.1f  %s ║\n", m.Delta, deltaBar)
+	fmt.Fprintln(w, "╠═══════════════════════════════════════════╣")
 
 	// Final status line
 	sigmaRhoStr := fmt.Sprintf("%.2f", m.SigmaRho)
@@ -108,9 +147,31 @@ func printBadge(sessions int, m *FlywheelMetrics) {
 		comparison = "≤"
 	}
 	statusLine := fmt.Sprintf("σ×ρ = %s %s δ/100", sigmaRhoStr, comparison)
-	fmt.Printf("║  %-17s │  %s %-13s║\n", statusLine, statusIcon, status)
-	fmt.Println("╚═══════════════════════════════════════════╝")
-	fmt.Println()
+	fmt.Fprintf(w, "║  %-17s │  %s %-13s║\n", statusLine, statusIcon, status)
+	fmt.Fprintln(w, "╚═══════════════════════════════════════════╝")
+	fmt.Fprintln(w)
+}
+
+func buildBadgeResult(sessions int, m *FlywheelMetrics) badgeResult {
+	if m == nil {
+		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
+	}
+	status, _ := getEscapeStatus(m.SigmaRho, m.Delta)
+	threshold := escapeVelocityThreshold(m.Delta)
+	return badgeResult{
+		SessionsMined:     sessions,
+		Learnings:         m.TierCounts["learning"],
+		Patterns:          m.TierCounts["pattern"],
+		Citations:         m.CitationsThisPeriod,
+		Sigma:             m.Sigma,
+		Rho:               m.Rho,
+		Delta:             m.Delta,
+		SigmaRho:          m.SigmaRho,
+		EscapeThreshold:   threshold,
+		Status:            status,
+		EscapeVelocity:    m.SigmaRho > threshold,
+		ApproachingEscape: threshold > 0 && m.SigmaRho > threshold*0.8,
+	}
 }
 
 // getEscapeStatus returns status text and icon based on velocity.

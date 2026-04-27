@@ -91,6 +91,7 @@ Examples:
 	assembleCmd.Flags().IntVar(&assembleMaxChars, "max-chars", defaultAssembleMaxChars, "Total character budget")
 	assembleCmd.Flags().StringVar(&assembleOutput, "output-file", defaultAssembleOutput, "Output path for briefing")
 	_ = assembleCmd.MarkFlagRequired("task")
+	_ = assembleCmd.RegisterFlagCompletionFunc("phase", staticCompletionFunc("task", "startup", "planning", "pre-mortem", "validation"))
 
 	// Register under contextCmd (package-level var in context.go).
 	contextCmd.AddCommand(assembleCmd)

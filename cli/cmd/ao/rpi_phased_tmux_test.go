@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -159,9 +160,9 @@ done
 		t.Fatalf("write runtime script: %v", err)
 	}
 
-	runID := "nudge1234"
+	runID := tmuxNudgeE2ERunID()
 	baseSession := tmuxSessionName(runID, 1)
-	return tmuxNudgeE2EFixture{
+	fixture := tmuxNudgeE2EFixture{
 		tmuxBin: tmuxBin,
 		tmpDir:  tmp,
 		logPath: logPath,
@@ -176,6 +177,19 @@ done
 			workerCount:    2,
 		},
 	}
+	t.Cleanup(func() {
+		fixture.executor.killWorkerSessions(tmuxBin, baseSession, fixture.executor.effectiveWorkerCount())
+		fixture.executor.killSession(tmuxBin, baseSession)
+	})
+	return fixture
+}
+
+func tmuxNudgeE2ERunID() string {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err == nil {
+		return fmt.Sprintf("%x", b[:])
+	}
+	return fmt.Sprintf("%08x", uint32(time.Now().UnixNano())^uint32(os.Getpid()))
 }
 
 func startTmuxNudgeE2E(t *testing.T, fixture tmuxNudgeE2EFixture) <-chan error {

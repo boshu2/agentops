@@ -965,6 +965,10 @@ func runAntiPatterns(cmd *cobra.Command, args []string) error {
 
 	learningsDir := filepath.Join(cwd, ".agents", "learnings")
 	if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
+		if GetOutput() == "json" {
+			fmt.Println("[]")
+			return nil
+		}
 		fmt.Println("No learnings directory found.")
 		return nil
 	}
@@ -975,6 +979,10 @@ func runAntiPatterns(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(antiPatterns) == 0 {
+		if GetOutput() == "json" {
+			fmt.Println("[]")
+			return nil
+		}
 		fmt.Println("No anti-patterns found.")
 		return nil
 	}

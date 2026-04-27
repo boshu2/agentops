@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -64,13 +66,10 @@ func TestBadge_MakeProgressBar_WidthVariants(t *testing.T) {
 
 func TestBadge_PrintBadge_NilMetrics(t *testing.T) {
 	// Should not panic with nil metrics
-	stdout, err := captureStdout(t, func() error {
-		printBadge(0, nil)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("printBadge with nil: %v", err)
-	}
+	var out bytes.Buffer
+	printBadge(&out, 0, nil)
+	stdout := out.String()
+
 	if !strings.Contains(stdout, "AGENTOPS KNOWLEDGE") {
 		t.Errorf("expected badge header, got: %q", stdout)
 	}
@@ -90,13 +89,9 @@ func TestBadge_PrintBadge_WithMetrics(t *testing.T) {
 		TierCounts:          map[string]int{"learning": 5, "pattern": 3},
 	}
 
-	stdout, err := captureStdout(t, func() error {
-		printBadge(42, m)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("printBadge: %v", err)
-	}
+	var out bytes.Buffer
+	printBadge(&out, 42, m)
+	stdout := out.String()
 
 	if !strings.Contains(stdout, "42") {
 		t.Errorf("expected session count 42, got: %q", stdout)
@@ -112,13 +107,9 @@ func TestBadge_PrintBadge_BoxDrawingChars(t *testing.T) {
 		TierCounts: map[string]int{},
 	}
 
-	stdout, err := captureStdout(t, func() error {
-		printBadge(0, m)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("printBadge: %v", err)
-	}
+	var out bytes.Buffer
+	printBadge(&out, 0, m)
+	stdout := out.String()
 
 	// Verify box drawing characters are present
 	for _, char := range []string{"╔", "╗", "╚", "╝", "║", "═", "╠", "╣"} {
@@ -135,17 +126,39 @@ func TestBadge_PrintBadge_ComparisonOperator(t *testing.T) {
 			Delta:      17.0,
 			TierCounts: map[string]int{},
 		}
-		stdout, err := captureStdout(t, func() error {
-			printBadge(0, m)
-			return nil
-		})
-		if err != nil {
-			t.Fatalf("printBadge: %v", err)
-		}
+		var out bytes.Buffer
+		printBadge(&out, 0, m)
+		stdout := out.String()
+
 		if !strings.Contains(stdout, ">") {
 			t.Errorf("expected '>' operator for sigmaRho > delta, got: %q", stdout)
 		}
 	})
+}
+
+func TestBadge_RunBadgeWithOptions_JSONUsesWriter(t *testing.T) {
+	var out bytes.Buffer
+	dir := t.TempDir()
+
+	err := runBadgeWithOptions(badgeOptions{
+		Cwd:    dir,
+		Output: "json",
+		Writer: &out,
+	})
+	if err != nil {
+		t.Fatalf("runBadgeWithOptions returned error: %v", err)
+	}
+
+	var got badgeResult
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("json output did not decode as badgeResult: %v\noutput: %s", err, out.String())
+	}
+	if got.SessionsMined != 0 {
+		t.Fatalf("SessionsMined = %d, want 0", got.SessionsMined)
+	}
+	if got.Status == "" {
+		t.Fatal("expected status in JSON output")
+	}
 }
 
 func TestBadge_RunBadge_EmptyDir(t *testing.T) {

@@ -92,6 +92,7 @@ func init() {
 	configCmd.AddCommand(configModelsCmd)
 	configModelsCmd.Flags().StringVar(&modelsSetTier, "set-tier", "", "Set the default model cost tier (quality, balanced, budget)")
 	configModelsCmd.Flags().StringVar(&modelsSetSkill, "set-skill", "", "Set a skill-specific tier override (e.g. council=quality)")
+	_ = configModelsCmd.RegisterFlagCompletionFunc("set-tier", staticCompletionFunc("quality", "balanced", "budget"))
 }
 
 func runConfig(cmd *cobra.Command, args []string) error {

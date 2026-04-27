@@ -196,6 +196,7 @@ func init() {
 	overnightCuratorEnqueueCmd.Flags().StringVar(&curatorEnqueueSource, "source", "", "Source path for ingest-claude-session jobs")
 	overnightCuratorEnqueueCmd.Flags().IntVar(&curatorEnqueueChunkStart, "chunk-start", 0, "Start chunk index for ingest-claude-session jobs")
 	overnightCuratorEnqueueCmd.Flags().IntVar(&curatorEnqueueChunkEnd, "chunk-end", 0, "End chunk index for ingest-claude-session jobs")
+	_ = overnightCuratorEnqueueCmd.RegisterFlagCompletionFunc("kind", staticCompletionFunc("ingest-claude-session", "lint-wiki", "dream-seed"))
 
 	overnightCuratorCompactCmd.Flags().BoolVar(&curatorCompactDryRun, "dry-run", false, "Preview pending-log compaction without writing")
 	overnightCuratorCompactCmd.Flags().BoolVar(&curatorCompactApply, "apply", false, "Apply pending-log compaction")
@@ -206,6 +207,7 @@ func init() {
 	overnightCuratorEventCmd.Flags().StringVar(&curatorEventTarget, "target", "dream-council", "Escalation target")
 	overnightCuratorEventCmd.Flags().IntVar(&curatorEventBudget, "budget", 1, "Maximum downstream event budget")
 	overnightCuratorEventCmd.Flags().StringVar(&curatorEventNote, "note", "", "Optional operator note")
+	_ = overnightCuratorEventCmd.RegisterFlagCompletionFunc("severity", staticCompletionFunc("info", "warn", "high", "critical"))
 }
 
 func getDreamLocalCuratorStatus(timeout time.Duration) (dreamLocalCuratorStatus, error) {

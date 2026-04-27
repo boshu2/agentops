@@ -1,12 +1,33 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func runContradictJSONForTest(t *testing.T, cwd string) ContradictResult {
+	t.Helper()
+
+	var out bytes.Buffer
+	err := runContradictWithOptions(contradictOptions{
+		Cwd:    cwd,
+		Output: "json",
+		Writer: &out,
+	})
+	if err != nil {
+		t.Fatalf("runContradictWithOptions returned error: %v", err)
+	}
+
+	var result ContradictResult
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatalf("decoding JSON output: %v\noutput: %s", err, out.String())
+	}
+	return result
+}
 
 func TestContradictDetection_NoFiles(t *testing.T) {
 	tmp := t.TempDir()
@@ -16,46 +37,27 @@ func TestContradictDetection_NoFiles(t *testing.T) {
 	}
 	// Empty directory — no files
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
+	result := runContradictJSONForTest(t, tmp)
+	if result.TotalFiles != 0 {
+		t.Errorf("TotalFiles = %d, want 0", result.TotalFiles)
 	}
-	defer func() { _ = os.Chdir(origDir) }()
+	if result.Contradictions != 0 {
+		t.Errorf("Contradictions = %d, want 0", result.Contradictions)
+	}
+}
 
-	origOutput := output
-	output = "json"
-	defer func() { output = origOutput }()
-
-	r, w, _ := os.Pipe()
-	origStdout := os.Stdout
-	os.Stdout = w
-
-	err := runContradict(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = origStdout
-
+func TestContradictDetection_HumanNoDirsUsesWriter(t *testing.T) {
+	var out bytes.Buffer
+	err := runContradictWithOptions(contradictOptions{
+		Cwd:    t.TempDir(),
+		Output: "text",
+		Writer: &out,
+	})
 	if err != nil {
-		t.Fatalf("runContradict returned error: %v", err)
+		t.Fatalf("runContradictWithOptions returned error: %v", err)
 	}
-
-	// With no files, no JSON is emitted — just a text message.
-	// Read whatever was written.
-	buf := make([]byte, 4096)
-	n, _ := r.Read(buf)
-	got := string(buf[:n])
-
-	if got == "" {
-		t.Fatal("expected some output, got nothing")
-	}
-
-	// Should not contain any JSON with contradictions
-	var result ContradictResult
-	if decErr := json.Unmarshal(buf[:n], &result); decErr == nil {
-		// If it did parse as JSON, contradictions should be 0
-		if result.Contradictions != 0 {
-			t.Errorf("Contradictions = %d, want 0", result.Contradictions)
-		}
+	if !strings.Contains(out.String(), "No learnings or patterns directory found.") {
+		t.Fatalf("expected no-directory message, got: %q", out.String())
 	}
 }
 
@@ -77,33 +79,7 @@ func TestContradictDetection_NoContradictions(t *testing.T) {
 		t.Fatalf("writing file2: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
-
-	origOutput := output
-	output = "json"
-	defer func() { output = origOutput }()
-
-	r, w, _ := os.Pipe()
-	origStdout := os.Stdout
-	os.Stdout = w
-
-	err := runContradict(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = origStdout
-
-	if err != nil {
-		t.Fatalf("runContradict returned error: %v", err)
-	}
-
-	var result ContradictResult
-	if decErr := json.NewDecoder(r).Decode(&result); decErr != nil {
-		t.Fatalf("decoding JSON output: %v", decErr)
-	}
+	result := runContradictJSONForTest(t, tmp)
 
 	if result.TotalFiles != 2 {
 		t.Errorf("TotalFiles = %d, want 2", result.TotalFiles)
@@ -131,33 +107,7 @@ func TestContradictDetection_FindsContradiction(t *testing.T) {
 		t.Fatalf("writing file2: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
-
-	origOutput := output
-	output = "json"
-	defer func() { output = origOutput }()
-
-	r, w, _ := os.Pipe()
-	origStdout := os.Stdout
-	os.Stdout = w
-
-	err := runContradict(nil, nil)
-
-	_ = w.Close()
-	os.Stdout = origStdout
-
-	if err != nil {
-		t.Fatalf("runContradict returned error: %v", err)
-	}
-
-	var result ContradictResult
-	if decErr := json.NewDecoder(r).Decode(&result); decErr != nil {
-		t.Fatalf("decoding JSON output: %v", decErr)
-	}
+	result := runContradictJSONForTest(t, tmp)
 
 	if result.TotalFiles != 2 {
 		t.Errorf("TotalFiles = %d, want 2", result.TotalFiles)

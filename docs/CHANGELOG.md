@@ -7,34 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.39.0] - 2026-04-27
-
-### Added
-
-- **`ao agents` command group** - added `ao agents inspect`, `ao agents lint`, and `ao agents doctor` for `.agents/` write-surface introspection, linting, orphan reporting, and combined health checks.
-- **Dream finding-generator pipeline** - added generator sidecar recording, aggregation, external-watchlist candidate emission, RFC 0001 authoring docs, and an `external_watchlist_emitted` fitness counter.
-- **RPI next-work v1.4 metadata** - promoted `status`, `requires`, `dedup_key`, and external-watchlist routing into first-class next-work contract fields, validators, and skill documentation.
-- **Goals measurement filtering** - added `ao goals measure --exclude-tag` and tagged `flywheel-compounding` as `long-cycle` / `corpus-state` so long-cycle corpus state can be excluded from selected measurements.
-- **`.agents/` write-surface contract** - catalogued repo memory write surfaces, added a lint gate, and added production-code smoke coverage for the allowlisted surfaces.
-- **Harvest nested artifact support** - harvest now recurses into nested artifact directories and emits real rig metadata.
-
-### Changed
-
-- **Codex runtime packaging** - refreshed Codex skills for GPT-5.5, aligned Codex plugin metadata with the marketplace schema, regenerated manifests and shared hashes, converted remaining skill references to `$skill` notation, and reduced skill-catalog context footprint.
-- **Hook runtime backend** - refactored hooks around a managed runtime backend and refreshed native Codex hook/runtime proof gates.
-- **Docs and release governance** - restored `docs/index.md`, renamed the full catalog to `docs/documentation-index.md`, added `.agents/` operator and comparison docs, and accepted RFC 0001 for finding-generator parallelism.
-- **Release gate coverage** - CI/local gates now cover command/test pairing, next-work schema rows, Codex RPI contracts, assertion-density scope, agents write surfaces, standards-injector completeness, and release audit artifact references.
-- **Goals parsing internals** - reduced markdown parser complexity by extracting table-cell helpers without changing behavior.
-- **Bootstrap behavior** - `/bootstrap` now recommends installing `bd` instead of attempting automatic installation.
-
-### Fixed
-
-- **CLI output safety** - fixed JSON and UTF-8 truncation bugs, command catalog drift, commit-review redaction, stale docs links, and temp-directory walk-up behavior in `FindAgentsDir`.
-- **Security and scanner false positives** - closed the harvest TOCTOU path with `os.OpenRoot`, excluded safe regexp literals from broad secret scans, and split secret-regex construction so release gates do not flag their own patterns.
-- **Codex/runtime drift** - fixed Codex skill chaining defaults, native hook manifest install, quiet session-start behavior, hook test gaps, `$skill` notation, and vibe language-gated complexity.
-- **RPI, triage, and coverage edges** - repaired partial-batch lifecycle drift, pinned coverage-anchor parsing, isolated RPI supervisor test state, added inject/ratchet/harvest/overnight regressions, and normalized stale next-work bookkeeping.
-- **Release blockers** - aligned the next-work schema contract with current queue enums and paired new command changes with regression tests so the release gate passes cleanly.
-
 ## [2.38.0] - 2026-04-22
 
 ### Added

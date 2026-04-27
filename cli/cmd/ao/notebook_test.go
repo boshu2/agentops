@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -250,6 +251,106 @@ func TestNotebookUpdate_EmptyPending(t *testing.T) {
 	}
 	// err is expected to be non-nil since file doesn't exist
 	_ = err
+}
+
+func TestRunNotebookUpdateWithOptions_NoMemoryUsesWriter(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", filepath.Join(tmp, "home"))
+
+	var out bytes.Buffer
+	err := runNotebookUpdateWithOptions(notebookUpdateOptions{
+		Cwd:    filepath.Join(tmp, "repo"),
+		Writer: &out,
+	})
+	if err != nil {
+		t.Fatalf("runNotebookUpdateWithOptions returned error: %v", err)
+	}
+	if !strings.Contains(out.String(), "No MEMORY.md found") {
+		t.Fatalf("expected no-memory message, got: %q", out.String())
+	}
+}
+
+func TestRunNotebookUpdateWithOptions_UpdatesMemoryAndUsesWriter(t *testing.T) {
+	tmp := t.TempDir()
+	memoryFile := filepath.Join(tmp, "MEMORY.md")
+	if err := os.WriteFile(memoryFile, []byte("# Test Memory\n\n## Lessons\n- keep this\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	entry := pendingEntry{
+		SessionID: "notebook-writer-1",
+		Summary:   "Updated the notebook through injected options",
+		Decisions: []string{"Use an injected writer"},
+		Knowledge: []string{"Next: keep command handlers thin"},
+		QueuedAt:  time.Date(2026, 4, 24, 1, 15, 0, 0, time.UTC),
+	}
+	data, _ := json.Marshal(entry)
+	if err := os.WriteFile(filepath.Join(aoDir, "pending.jsonl"), append(data, '\n'), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	err := runNotebookUpdateWithOptions(notebookUpdateOptions{
+		Cwd:        tmp,
+		MemoryFile: memoryFile,
+		Source:     "pending",
+		MaxLines:   190,
+		Writer:     &out,
+	})
+	if err != nil {
+		t.Fatalf("runNotebookUpdateWithOptions returned error: %v", err)
+	}
+	if !strings.Contains(out.String(), "Updated "+memoryFile) {
+		t.Fatalf("expected update message, got: %q", out.String())
+	}
+
+	content, err := os.ReadFile(memoryFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "Updated the notebook through injected options") {
+		t.Fatalf("memory file was not updated with session summary:\n%s", string(content))
+	}
+	if got, err := readNotebookCursor(filepath.Join(aoDir, "notebook-cursor.json")); err != nil || got != entry.SessionID {
+		t.Fatalf("cursor = %q, err = %v; want %q", got, err, entry.SessionID)
+	}
+}
+
+func TestRunNotebookUpdateWithOptions_QuietSuppressesSuccessOutput(t *testing.T) {
+	tmp := t.TempDir()
+	memoryFile := filepath.Join(tmp, "MEMORY.md")
+	if err := os.WriteFile(memoryFile, []byte("# Test Memory\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	entry := pendingEntry{SessionID: "quiet-1", Summary: "Quiet update"}
+	data, _ := json.Marshal(entry)
+	if err := os.WriteFile(filepath.Join(aoDir, "pending.jsonl"), append(data, '\n'), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	err := runNotebookUpdateWithOptions(notebookUpdateOptions{
+		Cwd:        tmp,
+		MemoryFile: memoryFile,
+		Quiet:      true,
+		Source:     "pending",
+		Writer:     &out,
+	})
+	if err != nil {
+		t.Fatalf("runNotebookUpdateWithOptions returned error: %v", err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("quiet update wrote output: %q", out.String())
+	}
 }
 
 func TestNotebookUpdate_AtomicWrite(t *testing.T) {

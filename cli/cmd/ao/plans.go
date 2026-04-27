@@ -127,10 +127,12 @@ func init() {
 	// List flags
 	plansListCmd.Flags().StringVar(&planProjectPath, "project", "", "Filter by project path")
 	plansListCmd.Flags().StringVar(&planStatus, "status", "", "Filter by status (active, completed, abandoned, superseded)")
+	_ = plansListCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("active", "completed", "abandoned", "superseded"))
 
 	// Update flags
 	plansUpdateCmd.Flags().StringVar(&planStatus, "status", "", "New status for the plan")
 	plansUpdateCmd.Flags().StringVar(&planBeadsID, "beads-id", "", "Update beads ID")
+	_ = plansUpdateCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("active", "completed", "abandoned", "superseded"))
 }
 
 // computePlanChecksum returns first 8 bytes of SHA256 as hex
