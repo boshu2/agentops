@@ -18,6 +18,7 @@ var DefaultCoverageDomains = []string{
 	"retrieval",
 	"scenario",
 	"mixed",
+	"security",
 }
 
 var DefaultCoverageDimensions = []string{

@@ -224,7 +224,8 @@
         "runtime",
         "retrieval",
         "scenario",
-        "mixed"
+        "mixed",
+        "security"
       ]
     },
     "tier": {
