@@ -238,7 +238,7 @@ This updates counts in SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, do
 ```bash
 bash scripts/audit-codex-parity.sh --skill <name>
 ```
-Then update the canonical source and, when the Codex runtime copy itself must change, patch `skills-codex/<name>/` and/or add a durable override under `skills-codex-overrides/<name>/`. Finish by running `bash scripts/refresh-codex-artifacts.sh --scope worktree` and re-running the audit. Do not use the deprecated `scripts/sync-codex-native-skills.sh` workflow.
+Then update the canonical source and, when the Codex runtime copy itself must change, patch `skills-codex/<name>/` and/or add a durable override under `skills-codex-overrides/<name>/`. Finish by running `bash scripts/refresh-codex-artifacts.sh --scope worktree` and re-running the audit.
 
 **Embedded hooks must stay in sync.** After editing anything in `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`, run:
 ```bash

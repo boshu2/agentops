@@ -83,8 +83,7 @@ jobs:
           ./scripts/validate-codex-runtime-sections.sh
 
       # Codex skill parity + install bundle checks removed — skills-codex/ is manually maintained.
-      # The sync script (sync-codex-native-skills.sh) is unreliable and overwrites
-      # manual edits. Edit skills-codex/ directly instead of regenerating.
+      # Edit skills-codex/ directly. Audit drift with scripts/audit-codex-parity.sh.
 
       - name: Validate Codex generated artifacts
         run: |
