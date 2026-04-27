@@ -82,6 +82,7 @@ func findContractRoot(t *testing.T) (string, string) {
 // write-side gates agree on what counts as a reference.
 func scanProductionAgentsReferences(repoRoot string) (map[string]bool, error) {
 	literalRe := regexp.MustCompile(`\.agents/([a-z][a-zA-Z0-9_-]*)`)
+	joinRe := regexp.MustCompile(`filepath\.Join\([^)]*\.agents"\s*,\s*"([a-z][a-zA-Z0-9_-]*)`)
 	found := map[string]bool{}
 
 	walkOne := func(rootDir string, isProductionFile func(path string, d fs.DirEntry) bool) error {
@@ -104,6 +105,9 @@ func scanProductionAgentsReferences(repoRoot string) (map[string]bool, error) {
 				return nil
 			}
 			for _, m := range literalRe.FindAllSubmatch(data, -1) {
+				found[string(m[1])] = true
+			}
+			for _, m := range joinRe.FindAllSubmatch(data, -1) {
 				found[string(m[1])] = true
 			}
 			return nil
