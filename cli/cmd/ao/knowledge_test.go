@@ -68,6 +68,86 @@ func TestKnowledgeActivateJSONRunsNativeActivationBuilders(t *testing.T) {
 	}
 }
 
+func TestKnowledgeActivateFallsBackToHarvestCatalogWithoutScripts(t *testing.T) {
+	repo := t.TempDir()
+	writeKnowledgeHarvestCatalogFixture(t, repo)
+
+	origProjectDir := testProjectDir
+	origActivateGoal := knowledgeActivateGoal
+	origBriefGoal := knowledgeBriefGoal
+	origIncludeThin := knowledgePlaybooksIncludeThin
+	testProjectDir = repo
+	defer func() {
+		testProjectDir = origProjectDir
+		knowledgeActivateGoal = origActivateGoal
+		knowledgeBriefGoal = origBriefGoal
+		knowledgePlaybooksIncludeThin = origIncludeThin
+	}()
+
+	out, err := executeCommand("knowledge", "activate", "--json", "--goal", "turn harvested knowledge into actionable praxis")
+	if err != nil {
+		t.Fatalf("knowledge activate --json: %v\noutput: %s", err, out)
+	}
+
+	var result knowledgeActivateResult
+	if err := json.Unmarshal([]byte(strings.TrimSpace(out)), &result); err != nil {
+		t.Fatalf("parse knowledge activate json: %v\noutput: %s", err, out)
+	}
+
+	if len(result.Steps) != 7 {
+		t.Fatalf("steps = %d, want 7", len(result.Steps))
+	}
+	for idx, step := range result.Steps[:4] {
+		if got := step.Implementation; got != knowledgeBuilderImplementationHarvestCatalog {
+			t.Fatalf("step %d implementation = %q, want %q", idx, got, knowledgeBuilderImplementationHarvestCatalog)
+		}
+	}
+
+	for _, path := range []string{
+		filepath.Join(repo, ".agents", "topics", "harvested-praxis.md"),
+		filepath.Join(repo, ".agents", "packets", "promoted", "harvested-praxis.md"),
+		filepath.Join(repo, ".agents", "packets", "chunks", "harvested-praxis.md"),
+		result.BeliefBook,
+		result.PlaybooksIndex,
+		result.Briefing,
+	} {
+		if path == "" || !knowledgePathExists(path) {
+			t.Fatalf("expected generated knowledge surface: %q", path)
+		}
+	}
+
+	playbook, err := os.ReadFile(filepath.Join(repo, ".agents", "playbooks", "harvested-praxis.md"))
+	if err != nil {
+		t.Fatalf("read playbook: %v", err)
+	}
+	if !strings.Contains(string(playbook), "Reliability findings should become contract tests quickly") {
+		t.Fatalf("playbook did not include harvested praxis signal:\n%s", string(playbook))
+	}
+}
+
+func TestKnowledgeActivateStillReportsMissingScriptsWithoutHarvestCatalog(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".agents"), 0o755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+
+	origProjectDir := testProjectDir
+	origActivateGoal := knowledgeActivateGoal
+	testProjectDir = repo
+	defer func() {
+		testProjectDir = origProjectDir
+		knowledgeActivateGoal = origActivateGoal
+	}()
+
+	out, err := executeCommand("knowledge", "activate", "--json", "--goal", "no harvest catalog")
+	if err == nil {
+		t.Fatalf("knowledge activate unexpectedly succeeded:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "workspace-local packet builders") {
+		t.Fatalf("error = %v, want missing script builders", err)
+	}
+}
+
 func TestKnowledgeBeliefsJSONUsesNativeBuilderWithoutScripts(t *testing.T) {
 	repo := t.TempDir()
 	writeKnowledgeCorpusFixtures(t, repo)
@@ -545,6 +625,83 @@ print("chunk_bundles=1")
 		if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 			t.Fatalf("write %s: %v", name, err)
 		}
+	}
+}
+
+func writeKnowledgeHarvestCatalogFixture(t *testing.T, repo string) {
+	t.Helper()
+
+	harvestRoot := filepath.Join(repo, ".agents", "harvest")
+	if err := os.MkdirAll(harvestRoot, 0o755); err != nil {
+		t.Fatalf("mkdir harvest: %v", err)
+	}
+
+	catalog := `{
+  "timestamp": "2026-04-24T19:38:20Z",
+  "rigs_scanned": 5,
+  "total_files": 4,
+  "roots": ["/tmp/repo"],
+  "promote_to": "/tmp/home/.agents/learnings",
+  "min_confidence": 0.5,
+  "summary": {
+    "artifacts_extracted": 4,
+    "unique_artifacts": 4,
+    "duplicate_groups": 0,
+    "duplicate_excess": 0,
+    "promotion_candidates": 4,
+    "promotion_writes": 4,
+    "warning_count": 0,
+    "artifacts_by_type": {"learning": 3, "pattern": 1}
+  },
+  "promoted": [
+    {
+      "id": "learning-2026-04-24-reliability-contract-tests",
+      "title": "Reliability findings should become contract tests quickly",
+      "summary": "Reliability findings should become contract tests quickly so regressions fail close to the changed surface.",
+      "type": "learning",
+      "source_rig": "agentops-agentops",
+      "source_path": "/tmp/repo/.agents/learnings/reliability.md",
+      "confidence": 0.98,
+      "scope": "project:agentops",
+      "date": "2026-04-24"
+    },
+    {
+      "id": "pattern-2026-04-24-warn-then-fail-ratchet",
+      "title": "warn-then-fail-ratchet",
+      "summary": "Run a warn-only gate first, then make it blocking after evidence shows the signal is stable.",
+      "type": "pattern",
+      "source_rig": "agentops-agentops",
+      "source_path": "/tmp/repo/.agents/patterns/warn-then-fail-ratchet.md",
+      "confidence": 0.97,
+      "scope": "project:agentops",
+      "date": "2026-04-24"
+    },
+    {
+      "id": "learning-2026-04-24-premortem-grep",
+      "title": "Pre-mortem should grep target files before adding fallback tasks",
+      "summary": "Plans that add fallback work should verify the target file does not already have the intended behavior.",
+      "type": "learning",
+      "source_rig": "agentops-agentops",
+      "source_path": "/tmp/repo/.agents/learnings/pre-mortem-grep.md",
+      "confidence": 0.90,
+      "scope": "project:agentops",
+      "date": "2026-04-24"
+    },
+    {
+      "id": "learning-2026-04-24-percentile-order",
+      "title": "Always sanity-check percentile ordering at emit time",
+      "summary": "Metric emitters should reject p50 greater than p99 for age-like metrics.",
+      "type": "learning",
+      "source_rig": "agentops-agentops",
+      "source_path": "/tmp/repo/.agents/learnings/percentile-order.md",
+      "confidence": 0.90,
+      "scope": "project:agentops",
+      "date": "2026-04-24"
+    }
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(harvestRoot, "latest.json"), []byte(catalog), 0o644); err != nil {
+		t.Fatalf("write harvest catalog: %v", err)
 	}
 }
 
