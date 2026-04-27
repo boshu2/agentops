@@ -1,100 +1,86 @@
 {
   "schema_version": 1,
-  "run_id": "20260424-go-cli-quality",
-  "objective": "Analyze the Go code in this repo for usefulness and quality, compare ao to best-in-class Go CLIs, and plan how to close the gap.",
-  "epic_id": "soc-n67",
-  "issue_ids": [
-    "soc-n67.1",
-    "soc-n67.2",
-    "soc-n67.3",
-    "soc-n67.4",
-    "soc-n67.5",
-    "soc-n67.6"
-  ],
-  "plan_path": ".agents/plans/2026-04-24-go-cli-quality-gap-closure.md",
-  "research_paths": [
-    ".agents/research/2026-04-24-go-cli-quality-gap-analysis.md",
-    ".agents/research/2026-04-24-go-cli-local-code-explore.md"
-  ],
-  "design_path": ".agents/design/2026-04-24-design-go-cli-quality-gap-analysis.md",
-  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-04-24-go-cli-quality.md",
-  "pre_mortem_path": ".agents/council/2026-04-24-pre-mortem-go-cli-quality-gap-closure.md",
-  "tracker_mode": "beads",
-  "tracker_health": {
-    "healthy": true,
-    "mode": "beads",
-    "reason": "bd probes succeeded and discovery created epic soc-n67 with six child issues."
-  },
-  "complexity": "standard",
-  "scope_mode": "reduction",
-  "phase_origin": "rpi",
+  "id": "execution-packet-2026-04-27-land-eval-environment",
+  "date": "2026-04-27",
+  "run_id": "rpi-2026-04-27-land-eval-environment",
+  "objective": "Land AgentOps eval environment from origin/codex/eval-env-discovery (89 commits, 8b47ba14, +25,748/-266 LOC, 230 files) onto main as 3 stacked PRs gated by 3 prereq beads.",
+  "epic_id": "ag-3lx",
+  "complexity": "full",
   "test_first": true,
-  "test_levels": ["L0", "L1"],
-  "plan_path": ".agents/plans/2026-04-26-git-topology-consolidation.md",
-  "research_path": ".agents/research/2026-04-26-branch-consolidation-audit.md",
-  "pre_mortem_path": ".agents/council/2026-04-26-pre-mortem-git-topology-consolidation.md",
+  "plan_path": ".agents/plans/2026-04-27-land-eval-environment.md",
+  "research_paths": [
+    ".agents/research/2026-04-27-eval-branch-commit-and-conflict-analysis.md",
+    ".agents/research/2026-04-27-eval-closure-integrity-and-foundation-isolation.md"
+  ],
+  "pre_mortem_path": ".agents/council/2026-04-27-pre-mortem-land-eval-environment.md",
   "pre_mortem_verdict": "WARN",
-  "pre_mortem_required_fix": "Issue 2 must emit docs/cli-surface.json as the machine-readable command-surface sidecar; Issue 3 and Issue 4 must consume it instead of parsing docs/cli-surface.md.",
+  "pre_mortem_fixes_applied": "P1 (3): rollback section, error-rescue map, prereq-A acceptance, documentation-index.md added to PR-1. P2 (3): fresh-session rule, rebase-on-latest, error-rescue table.",
+  "test_levels": ["L0", "L1", "L2", "L3", "BF4", "BF9"],
+  "ranked_packet_path": null,
+  "beads": {
+    "parent_epic": "ag-3lx",
+    "prereqs": ["ag-l0w", "ag-5p8", "ag-aez"],
+    "prs": ["ag-664", "ag-rnb", "ag-xsy"]
+  },
+  "waves": [
+    {
+      "wave": 1,
+      "ready_now": ["ag-l0w", "ag-5p8", "ag-aez", "ag-664"],
+      "description": "Fix prereqs in parallel + start PR-1 setup (cherry-pick foundation onto fresh branch)"
+    },
+    {
+      "wave": 2,
+      "blocked_by": "wave 1",
+      "issues": ["ag-664 conflict resolution + verify + push"],
+      "description": "PR-1 hand-merges (validate.yml, AGENTS.md, pre-push-gate pair, docs); push as draft"
+    },
+    {
+      "wave": 3,
+      "blocked_by": ["ag-664"],
+      "issues": ["ag-rnb"],
+      "description": "PR-2 cherry-pick CLI integration 6 commits + regenerate"
+    },
+    {
+      "wave": 4,
+      "blocked_by": ["ag-664", "ag-rnb", "ag-l0w", "ag-5p8", "ag-aez"],
+      "issues": ["ag-xsy"],
+      "description": "PR-3 cherry-pick canaries+closeout 76 commits + state-file resolution + regenerate"
+    },
+    {
+      "wave": 5,
+      "blocked_by": "PR-3 merged",
+      "description": "Archive tag + delete codex/eval-env-discovery (apply f-2026-04-26-003 squash-merge-aware check + f-2026-04-26-004 archive-tag-before-delete)"
+    }
+  ],
+  "contract_surfaces": [
+    "git: branch off main, cherry-pick, rebase, conflict resolution, archive-tag-before-delete",
+    "go: cli/internal/eval/* + cli/cmd/ao/eval.go build & test",
+    "shell: scripts/pre-push-gate.sh, scripts/eval-agentops.sh, scripts/generate-cli-reference.sh, scripts/regen-codex-hashes.sh",
+    "docs: docs/contracts/index.md, docs/documentation-index.md, docs/CI-CD.md, docs/cli-skills-map.md",
+    "ci: .github/workflows/validate.yml job set",
+    "beads: prereqs blocking PR-3, PR-1 blocks PR-2 blocks PR-3"
+  ],
   "done_criteria": [
-    "The live gc bridge boundary no longer panics or fails the full Go suite on hosts where gc resolves to the wrong binary.",
-    "The ao command surface is classified by public/internal/stateful/deprecated/manual-only status with durable owner and reason fields.",
-    "Generated command docs remain in parity with Cobra help and include richer stable metadata.",
-    "Supported JSON output contracts fail mechanically on invalid non-empty JSON.",
-    "PowerShell completion works and selected enum-like flags have completion coverage.",
-    "A bounded two-command Options/writer pilot reduces process-global output coupling without changing user-facing behavior.",
-    "Go complexity guidance, gates, and hot-file expectations are aligned."
+    "All 3 prereqs (ag-l0w, ag-5p8, ag-aez) closed via mechanical acceptance criteria",
+    "PR-1 (ag-664) merged to main with green CI and reviewer approval",
+    "PR-2 (ag-rnb) merged to main with green CI and reviewer approval",
+    "PR-3 (ag-xsy) merged to main with green CI (>=54 suites passing) and reviewer approval",
+    "codex/eval-env-discovery branch archived (archive/codex-eval-env-discovery tag) and deleted from origin",
+    "Parent epic (ag-3lx) closed with reference to all 3 merge commits"
   ],
-  "test_levels": {
-    "required": [
-      "L0",
-      "L1",
-      "L2"
-    ],
-    "recommended": [],
-    "rationale": "The plan changes CLI contracts, generated docs, completion generation, focused command rendering, and one external binary boundary. It does not require L3 unless RPI runtime orchestration behavior changes."
-  },
-  "known_baseline": {
-    "passes": [
-      "cd cli && make build",
-      "cd cli && go vet ./...",
-      "./scripts/generate-cli-reference.sh --check",
-      "cd cli && go test ./cmd/ao -run 'TestJSONValidity|TestFlagMatrix_JSONOutput'"
-    ],
-    "fails": [
-      {
-        "command": "cd cli && go test ./...",
-        "reason": "TestGCBridgeVersion_Live panics after /usr/bin/gc version exits 0 with empty stdout and stderr text 'Can't open version'."
-      },
-      {
-        "command": "cd cli && go run ./cmd/ao completion powershell",
-        "reason": "PowerShell is not accepted by the current completion command."
-      }
-    ]
-  },
-  "validation_commands": [
-    "cd cli && make build",
-    "cd cli && go vet ./...",
-    "cd cli && go test ./cmd/ao -run 'TestGCBridge|TestJSONValidity|TestFlagMatrix_JSONOutput|Test.*Completion|Test.*Contradict|Test.*Notebook'",
-    "./scripts/generate-cli-reference.sh --check",
-    "bash scripts/check-cmdao-surface-parity.sh",
-    "bash tests/cli/test-json-flag-consistency.sh ./cli/bin/ao",
-    "bash scripts/check-go-complexity.sh --base HEAD~1 --warn 15 --fail 25",
-    "cd cli && go test ./...",
-    "scripts/pre-push-gate.sh --fast"
+  "applied_findings": [
+    {"id": "f-2026-04-14-001", "how": "PR-2 acceptance includes paired-test rule"},
+    {"id": "f-2026-04-26-003", "how": "Wave 5 uses mergeCommit-aware check, not raw git cherry"},
+    {"id": "f-2026-04-26-004", "how": "Wave 5 archive tags before delete"},
+    {"id": "f-2026-04-27-001", "how": "d749108b reclassified to closeout based on diff content, not commit position"},
+    {"id": "f-2026-04-27-002", "how": "PR-1 treats pre-push-gate.sh + .bats as a coupled hand-merge pair"},
+    {"id": "f-2026-04-27-003", "how": "Subagent claim of wave-6 bead exercise verified false via git ls-tree before incorporating into plan"}
   ],
-  "execution_order": {
-    "wave_1": [
-      "soc-n67.1",
-      "soc-n67.2",
-      "soc-n67.6"
-    ],
-    "wave_2": [
-      "soc-n67.3",
-      "soc-n67.4"
-    ],
-    "wave_3": [
-      "soc-n67.5"
-    ]
-  },
-  "discovery_timestamp": "2026-04-24T03:36:00Z"
+  "risks_acknowledged": [
+    "Main moves daily; rebase-on-latest required before each PR push",
+    "PR-3's 76-commit cherry-pick chain requires fresh session boundary",
+    "Standards-injector removal coupling: pre-push-gate.sh + .bats must be edited together",
+    "Codex artifacts regenerated post-rebase, never 3-way merged (ensures hash parity)"
+  ],
+  "next_phase": "STOP-and-confirm with user before /crank starts cherry-picking. User explicitly said Phase 2 (git surgery) needs separate confirmation."
 }
