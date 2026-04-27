@@ -1101,45 +1101,30 @@ func TestProjectConfigPath_GetwdError(t *testing.T) {
 	// and projectConfigPath should return "".
 	t.Setenv("AGENTOPS_CONFIG", "")
 
-	// Save original directory so we can restore it.
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get original cwd: %v", err)
-	}
-
-	// Create a standalone temp dir (not via t.TempDir which defers cleanup).
+	// Create a standalone temp dir (not via t.TempDir which defers cleanup
+	// — this test deliberately removes the dir mid-test).
 	tmp, err := os.MkdirTemp("", "test-getwd-err")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
 
-	if err := os.Chdir(tmp); err != nil {
-		os.Remove(tmp)
-		t.Fatalf("failed to chdir to temp dir: %v", err)
-	}
+	// t.Chdir registers a cleanup that restores the original cwd at test
+	// teardown, so manual restore branches across panics/skips are not
+	// needed.
+	t.Chdir(tmp)
+
 	// Remove the dir while we're inside it — makes Getwd fail on Linux.
 	if err := os.Remove(tmp); err != nil {
-		if err2 := os.Chdir(origDir); err2 != nil {
-			t.Fatalf("chdir restore failed: %v", err2)
-		}
 		t.Skip("cannot remove cwd on this platform")
 	}
 
 	// On macOS, Getwd succeeds even after the directory is removed.
 	// Detect that and skip — the error branch is only reachable on Linux.
 	if _, getwdErr := os.Getwd(); getwdErr == nil {
-		if err := os.Chdir(origDir); err != nil {
-			t.Fatalf("chdir restore failed: %v", err)
-		}
 		t.Skip("Getwd does not fail after removing cwd on this OS")
 	}
 
 	got := projectConfigPath()
-	// Restore cwd before any assertions so subsequent tests aren't affected.
-	if err := os.Chdir(origDir); err != nil {
-		t.Fatalf("failed to restore cwd: %v", err)
-	}
-
 	if got != "" {
 		t.Errorf("projectConfigPath() with removed cwd = %q, want %q", got, "")
 	}

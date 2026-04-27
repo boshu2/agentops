@@ -123,9 +123,7 @@ func TestArtifactDir(t *testing.T) {
 
 func TestResolveCurateGoalsFile_FindsFirst(t *testing.T) {
 	tmp := t.TempDir()
-	wd, _ := os.Getwd()
-	defer func() { _ = os.Chdir(wd) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	if _, err := ResolveCurateGoalsFile(); err == nil {
 		t.Fatalf("expected error when no goals file present")
