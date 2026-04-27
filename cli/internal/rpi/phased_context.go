@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -293,8 +294,13 @@ func BuildPhaseContext(cwd, goal string, verdicts map[string]string, phaseNum in
 		parts = append(parts, fmt.Sprintf("Goal: %s", goal))
 	}
 
-	for key, verdict := range verdicts {
-		parts = append(parts, fmt.Sprintf("%s verdict: %s", strings.ReplaceAll(key, "_", "-"), verdict))
+	verdictKeys := make([]string, 0, len(verdicts))
+	for k := range verdicts {
+		verdictKeys = append(verdictKeys, k)
+	}
+	sort.Strings(verdictKeys)
+	for _, key := range verdictKeys {
+		parts = append(parts, fmt.Sprintf("%s verdict: %s", strings.ReplaceAll(key, "_", "-"), verdicts[key]))
 	}
 
 	if cwd != "" {
