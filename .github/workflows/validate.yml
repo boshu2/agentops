@@ -160,6 +160,7 @@ jobs:
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
           bash scripts/install-bd.sh --version v1.0.3
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
 
       - name: Run AgentOps public eval canaries
         run: |

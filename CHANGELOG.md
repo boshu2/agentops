@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
+- **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) and initializes a disposable bd database before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
 
 ## [2.38.0] - 2026-04-22
 
