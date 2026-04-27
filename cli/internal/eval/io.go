@@ -65,6 +65,17 @@ func WriteRun(path string, run *RunRecord) error {
 
 func ValidateSuite(suite *Suite) error {
 	var errs []string
+	errs = append(errs, validateSuiteMetadata(suite)...)
+	errs = append(errs, validateSuiteScoring(suite)...)
+	errs = append(errs, validateSuiteCases(suite)...)
+	if len(errs) > 0 {
+		return fmt.Errorf("eval suite validation failed: %s", strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+func validateSuiteMetadata(suite *Suite) []string {
+	var errs []string
 	if suite.SchemaVersion != 1 {
 		errs = append(errs, "schema_version must be 1")
 	}
@@ -83,6 +94,14 @@ func ValidateSuite(suite *Suite) error {
 	if suite.Tier != TierDeterministic {
 		errs = append(errs, fmt.Sprintf("tier %q is out of deterministic scope", suite.Tier))
 	}
+	if strings.TrimSpace(suite.BaselinePolicy.Mode) == "" {
+		errs = append(errs, "baseline_policy.mode is required")
+	}
+	return errs
+}
+
+func validateSuiteScoring(suite *Suite) []string {
+	var errs []string
 	if suite.Scoring.AggregateThreshold < 0 || suite.Scoring.AggregateThreshold > 1 {
 		errs = append(errs, "scoring.aggregate_threshold must be in [0,1]")
 	}
@@ -100,9 +119,11 @@ func ValidateSuite(suite *Suite) error {
 			errs = append(errs, fmt.Sprintf("scoring.dimensions[%d].threshold must be in [0,1]", i))
 		}
 	}
-	if strings.TrimSpace(suite.BaselinePolicy.Mode) == "" {
-		errs = append(errs, "baseline_policy.mode is required")
-	}
+	return errs
+}
+
+func validateSuiteCases(suite *Suite) []string {
+	var errs []string
 	if len(suite.Cases) == 0 {
 		errs = append(errs, "cases must contain at least one case")
 	}
@@ -136,13 +157,21 @@ func ValidateSuite(suite *Suite) error {
 			}
 		}
 	}
+	return errs
+}
+
+func ValidateRun(run *RunRecord) error {
+	var errs []string
+	errs = append(errs, validateRunMetadata(run)...)
+	errs = append(errs, validateRunScores(run)...)
+	errs = append(errs, validateRunCaseResults(run)...)
 	if len(errs) > 0 {
-		return fmt.Errorf("eval suite validation failed: %s", strings.Join(errs, "; "))
+		return fmt.Errorf("eval run validation failed: %s", strings.Join(errs, "; "))
 	}
 	return nil
 }
 
-func ValidateRun(run *RunRecord) error {
+func validateRunMetadata(run *RunRecord) []string {
 	var errs []string
 	if run.SchemaVersion != 1 {
 		errs = append(errs, "schema_version must be 1")
@@ -186,6 +215,11 @@ func ValidateRun(run *RunRecord) error {
 	if len(run.CaseResults) == 0 {
 		errs = append(errs, "case_results must contain at least one case")
 	}
+	return errs
+}
+
+func validateRunScores(run *RunRecord) []string {
+	var errs []string
 	if !scoreInRange(run.AggregateScore) {
 		errs = append(errs, "aggregate_score must be in [0,1]")
 	}
@@ -200,6 +234,11 @@ func ValidateRun(run *RunRecord) error {
 			errs = append(errs, fmt.Sprintf("dimension_scores.%s must be in [0,1]", dim))
 		}
 	}
+	return errs
+}
+
+func validateRunCaseResults(run *RunRecord) []string {
+	var errs []string
 	for i, result := range run.CaseResults {
 		if strings.TrimSpace(result.ID) == "" {
 			errs = append(errs, fmt.Sprintf("case_results[%d].id is required", i))
@@ -214,10 +253,7 @@ func ValidateRun(run *RunRecord) error {
 			errs = append(errs, fmt.Sprintf("case_results[%d].dimension_scores is required", i))
 		}
 	}
-	if len(errs) > 0 {
-		return fmt.Errorf("eval run validation failed: %s", strings.Join(errs, "; "))
-	}
-	return nil
+	return errs
 }
 
 func decodeStrict(data []byte, target any) error {

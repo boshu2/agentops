@@ -160,6 +160,29 @@ scorecard_kind_for_suite() {
     esac
 }
 
+coverage_missing_summary() {
+    local path="$1"
+    python3 - "$path" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as fh:
+    data = json.load(fh)
+
+parts = []
+for label, key in (
+    ("domains", "missing_required_domains"),
+    ("dimensions", "missing_required_dimensions"),
+    ("runtimes", "missing_required_runtimes"),
+):
+    values = data.get(key) or []
+    if values:
+        parts.append(f"{label}={','.join(values)}")
+
+print("; ".join(parts))
+PY
+}
+
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/agentops-eval.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
@@ -261,6 +284,24 @@ for suite in "${SUITES[@]}"; do
         fi
     fi
 done
+
+if [[ "$FAST" == "true" ]]; then
+    coverage_path="$run_dir/coverage.json"
+    coverage_stdout="$run_dir/coverage.stdout.json"
+    echo ""
+    echo "== eval coverage =="
+    if ! "$AO_BIN" eval coverage --root evals/agentops-core --json >"$coverage_path"; then
+        record_failure "coverage command failed"
+    else
+        cp "$coverage_path" "$coverage_stdout"
+        coverage_missing="$(coverage_missing_summary "$coverage_path")"
+        if [[ -n "$coverage_missing" ]]; then
+            record_failure "coverage gaps: $coverage_missing"
+        else
+            echo "coverage: required domains, dimensions, and runtimes covered"
+        fi
+    fi
+fi
 
 echo ""
 echo "AgentOps eval summary: failures=$failures warnings=$warnings artifacts=$run_dir"

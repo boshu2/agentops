@@ -12,22 +12,24 @@ import (
 )
 
 var (
-	evalRunOutput       string
-	evalRunID           string
-	evalRunRuntime      string
-	evalRunBaseline     string
-	evalCompareOutput   string
-	evalCompareMaxAgg   float64
-	evalCompareMaxDim   float64
-	evalScorecardOutput string
-	evalScorecardKind   string
-	evalScorecardMaxCat float64
-	evalBaselineOutput  string
-	evalBaselineBy      string
-	evalBaselineReason  string
-	evalCoverageRoot    string
-	evalCoverageRequire []string
-	evalConfigured      bool
+	evalRunOutput        string
+	evalRunID            string
+	evalRunRuntime       string
+	evalRunBaseline      string
+	evalCompareOutput    string
+	evalCompareMaxAgg    float64
+	evalCompareMaxDim    float64
+	evalScorecardOutput  string
+	evalScorecardKind    string
+	evalScorecardMaxCat  float64
+	evalBaselineOutput   string
+	evalBaselineBy       string
+	evalBaselineReason   string
+	evalCoverageRoot     string
+	evalCoverageDomains  []string
+	evalCoverageDims     []string
+	evalCoverageRuntimes []string
+	evalConfigured       bool
 )
 
 var evalCmd = &cobra.Command{
@@ -192,9 +194,11 @@ var evalCoverageCmd = &cobra.Command{
 			roots = append(roots, evalCoverageRoot)
 		}
 		report, err := aoeval.BuildCoverageReport(aoeval.CoverageOptions{
-			SuitePaths:      args,
-			Roots:           roots,
-			RequiredDomains: evalCoverageRequire,
+			SuitePaths:         args,
+			Roots:              roots,
+			RequiredDomains:    evalCoverageDomains,
+			RequiredDimensions: evalCoverageDims,
+			RequiredRuntimes:   evalCoverageRuntimes,
 		})
 		if err != nil {
 			return err
@@ -207,6 +211,16 @@ var evalCoverageCmd = &cobra.Command{
 			fmt.Fprintf(cmd.OutOrStdout(), "Missing required domains: %s\n", strings.Join(report.MissingRequiredDomains, ", "))
 		} else if len(report.RequiredDomains) > 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), "Required domains covered")
+		}
+		if len(report.MissingRequiredDimensions) > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "Missing required dimensions: %s\n", strings.Join(report.MissingRequiredDimensions, ", "))
+		} else if len(report.RequiredDimensions) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "Required dimensions covered")
+		}
+		if len(report.MissingRequiredRuntimes) > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "Missing required runtimes: %s\n", strings.Join(report.MissingRequiredRuntimes, ", "))
+		} else if len(report.RequiredRuntimes) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "Required runtimes covered")
 		}
 		return nil
 	},
@@ -244,7 +258,9 @@ func configureEvalCommand() {
 	evalBaselineCmd.Flags().StringVar(&evalBaselineReason, "rationale", "", "rationale for promoting the baseline")
 
 	evalCoverageCmd.Flags().StringVar(&evalCoverageRoot, "root", "evals/agentops-core", "suite root to scan when no suite paths are provided")
-	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageRequire, "require-domain", aoeval.DefaultCoverageDomains, "required product domain for missing-domain reporting")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageDomains, "require-domain", aoeval.DefaultCoverageDomains, "required product domain for missing-domain reporting")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageDims, "require-dimension", aoeval.DefaultCoverageDimensions, "required score dimension for missing-dimension reporting")
+	evalCoverageCmd.Flags().StringArrayVar(&evalCoverageRuntimes, "require-runtime", aoeval.DefaultCoverageRuntimes, "required deterministic runtime for missing-runtime reporting")
 
 	evalScorecardCmd.Flags().StringVar(&evalScorecardOutput, "out", "", "write scorecard JSON to path")
 	evalScorecardCmd.Flags().StringVar(&evalScorecardKind, "kind", string(aoeval.ScorecardKindRPI), "scorecard kind (rpi, skill-change)")

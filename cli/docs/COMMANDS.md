@@ -895,9 +895,11 @@ ao eval coverage [suite.json ...] [flags]
 **Flags:**
 
 ```
-  -h, --help                         help for coverage
-      --require-domain stringArray   required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed])
-      --root string                  suite root to scan when no suite paths are provided (default "evals/agentops-core")
+  -h, --help                            help for coverage
+      --require-dimension stringArray   required score dimension for missing-dimension reporting (default [correctness,process_adherence,artifact_quality,runtime_compatibility,efficiency,safety,learning_closure])
+      --require-domain stringArray      required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed])
+      --require-runtime stringArray     required deterministic runtime for missing-runtime reporting (default [static,shell,mock])
+      --root string                     suite root to scan when no suite paths are provided (default "evals/agentops-core")
 ```
 
 #### `ao eval run`

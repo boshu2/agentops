@@ -20,22 +20,44 @@ var DefaultCoverageDomains = []string{
 	"mixed",
 }
 
+var DefaultCoverageDimensions = []string{
+	string(DimensionCorrectness),
+	string(DimensionProcessAdherence),
+	string(DimensionArtifactQuality),
+	string(DimensionRuntimeCompatibility),
+	string(DimensionEfficiency),
+	string(DimensionSafety),
+	string(DimensionLearningClosure),
+}
+
+var DefaultCoverageRuntimes = []string{
+	string(RuntimeStatic),
+	string(RuntimeShell),
+	string(RuntimeMock),
+}
+
 type CoverageOptions struct {
-	SuitePaths      []string
-	Roots           []string
-	RequiredDomains []string
+	SuitePaths         []string
+	Roots              []string
+	RequiredDomains    []string
+	RequiredDimensions []string
+	RequiredRuntimes   []string
 }
 
 type CoverageReport struct {
-	SuiteCount             int                       `json:"suite_count"`
-	CaseCount              int                       `json:"case_count"`
-	CriticalCaseCount      int                       `json:"critical_case_count"`
-	Suites                 []CoverageSuite           `json:"suites"`
-	Domains                map[string]CoverageBucket `json:"domains"`
-	Dimensions             map[string]int            `json:"dimensions"`
-	Runtimes               map[string]int            `json:"runtimes"`
-	RequiredDomains        []string                  `json:"required_domains,omitempty"`
-	MissingRequiredDomains []string                  `json:"missing_required_domains,omitempty"`
+	SuiteCount                int                       `json:"suite_count"`
+	CaseCount                 int                       `json:"case_count"`
+	CriticalCaseCount         int                       `json:"critical_case_count"`
+	Suites                    []CoverageSuite           `json:"suites"`
+	Domains                   map[string]CoverageBucket `json:"domains"`
+	Dimensions                map[string]int            `json:"dimensions"`
+	Runtimes                  map[string]int            `json:"runtimes"`
+	RequiredDomains           []string                  `json:"required_domains,omitempty"`
+	MissingRequiredDomains    []string                  `json:"missing_required_domains,omitempty"`
+	RequiredDimensions        []string                  `json:"required_dimensions,omitempty"`
+	MissingRequiredDimensions []string                  `json:"missing_required_dimensions,omitempty"`
+	RequiredRuntimes          []string                  `json:"required_runtimes,omitempty"`
+	MissingRequiredRuntimes   []string                  `json:"missing_required_runtimes,omitempty"`
 }
 
 type CoverageSuite struct {
@@ -72,8 +94,12 @@ func BuildCoverageReport(opts CoverageOptions) (*CoverageReport, error) {
 		}
 		addSuiteCoverage(report, suite)
 	}
-	report.RequiredDomains = normalizedCoverageDomains(opts.RequiredDomains)
+	report.RequiredDomains = normalizedCoverageValues(opts.RequiredDomains)
 	report.MissingRequiredDomains = missingCoverageDomains(report.Domains, report.RequiredDomains)
+	report.RequiredDimensions = normalizedCoverageValues(opts.RequiredDimensions)
+	report.MissingRequiredDimensions = missingCoverageDimensions(report.Dimensions, report.RequiredDimensions)
+	report.RequiredRuntimes = normalizedCoverageValues(opts.RequiredRuntimes)
+	report.MissingRequiredRuntimes = missingCoverageValues(report.Runtimes, report.RequiredRuntimes)
 	return report, nil
 }
 
@@ -214,7 +240,7 @@ func coverageRuntimes(suite *Suite) []string {
 	return sortedCoverageKeys(seen)
 }
 
-func normalizedCoverageDomains(values []string) []string {
+func normalizedCoverageValues(values []string) []string {
 	seen := map[string]struct{}{}
 	for _, value := range values {
 		value = strings.TrimSpace(value)
@@ -231,6 +257,21 @@ func missingCoverageDomains(domains map[string]CoverageBucket, required []string
 	for _, domain := range required {
 		if domains[domain].SuiteCount == 0 {
 			missing = append(missing, domain)
+		}
+	}
+	sort.Strings(missing)
+	return missing
+}
+
+func missingCoverageDimensions(dimensions map[string]int, required []string) []string {
+	return missingCoverageValues(dimensions, required)
+}
+
+func missingCoverageValues(counts map[string]int, required []string) []string {
+	var missing []string
+	for _, value := range required {
+		if counts[value] == 0 {
+			missing = append(missing, value)
 		}
 	}
 	sort.Strings(missing)
