@@ -111,6 +111,7 @@
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "go install github.com/fzipp/gocyclo/cmd/gocyclo@latest"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "scripts/install-bd.sh --version v1.0.3"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "init --non-interactive --skip-agents --skip-hooks --quiet"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "BEADS_DIR=$bd_eval_root/.beads"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "Run release smoke test"},
         {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Generate SBOM and security report assets"},
         {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "security-gate-summary.json"},

@@ -160,7 +160,14 @@ jobs:
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
           bash scripts/install-bd.sh --version v1.0.3
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
+          bd_eval_root="$RUNNER_TEMP/agentops-bd"
+          mkdir -p "$bd_eval_root"
+          git -C "$bd_eval_root" init --quiet
+          (
+            cd "$bd_eval_root"
+            "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
+          )
+          echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
 
       - name: Run AgentOps public eval canaries
         run: |
