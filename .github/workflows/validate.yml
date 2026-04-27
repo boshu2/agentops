@@ -667,12 +667,15 @@ jobs:
           echo "✅ Embedded hooks are in sync"
 
       - name: Enforce Go complexity budget on changed files
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF_NAME: ${{ github.base_ref }}
         run: |
           echo "=== Enforcing Go complexity budget ==="
           GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            BASE_REF="origin/${{ github.base_ref }}"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REF_NAME"
+            BASE_REF="origin/$BASE_REF_NAME"
           else
             BASE_REF="HEAD~1"
           fi
