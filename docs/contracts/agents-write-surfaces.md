@@ -32,6 +32,7 @@ allowlist nor an active skill name fails the gate.
 | `constraints` | cli (constraints subsystem) | persistent | Compiled constraint manifests |
 | `context` | cli (`cli/cmd/ao/inject_context_paths.go`) | rolling | Per-run adhoc context injection paths keyed by run ID |
 | `defrag` | cli (compile defrag), scripts | rolling | Defrag run state and dry-run reports |
+| `evals` | cli eval runtime, scripts (`eval-agentops`) | persistent | Eval run outputs, promoted baselines, and suite execution state |
 | `findings` | scripts, /forge | persistent | Mined findings awaiting promotion |
 | `git` | cli (git-aware tooling) | persistent | Git-derived state cached for the runtime |
 | `holdout` | cli (`/scenario`) | persistent | Holdout scenarios stored outside the codebase view |
@@ -88,6 +89,7 @@ config
 constraints
 context
 defrag
+evals
 findings
 git
 holdout

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.core-surfaces",
+  "name": "AgentOps Core Surfaces Canary",
+  "description": "Offline public canary for CLI scenario authoring, hook isolation, skill contracts, and runtime inventory surfaces.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "hooks", "skills", "runtime"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 20
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "repo-root-surface-files",
+      "title": "core surface files resolve from repo root",
+      "kind": "command",
+      "objective": "Verify deterministic eval commands can inspect AgentOps core surfaces from the suite directory.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "test -f cli/cmd/ao/scenario_add.go && test -f hooks/hooks.json && test -f skills/scenario/SKILL.md && test -f skills-codex-overrides/catalog.json"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "scenario-add-command",
+      "title": "scenario add command is registered in source",
+      "kind": "artifact_check",
+      "objective": "Ensure public scenario authoring has a concrete CLI command.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/scenario_add.go", "value": "Use:   \"add <goal>\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/scenario_add.go", "value": "scenarioCmd.AddCommand(scenarioAddCmd)"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "scenario-add-docs",
+      "title": "scenario add appears in generated CLI docs",
+      "kind": "artifact_check",
+      "objective": "Keep CLI reference output aligned with the scenario authoring command.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao scenario add`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "ao scenario add <goal> [flags]"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "holdout-isolation-hook",
+      "title": "holdout isolation hook remains registered",
+      "kind": "artifact_check",
+      "objective": "Protect private holdout scenarios while public canaries stay checked in.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/holdout-isolation-gate.sh", "value": "AGENTOPS_HOLDOUT_EVALUATOR"}
+      ],
+      "dimensions": ["safety", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "scenario-skill-contract",
+      "title": "scenario skill documents add and validate workflow",
+      "kind": "artifact_check",
+      "objective": "Keep the scenario skill contract tied to the implemented CLI surface.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/scenario/SKILL.md", "value": "ao scenario add"},
+        {"type": "artifact_contains", "target": "../../skills/scenario/SKILL.md", "value": "ao scenario validate"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "codex-runtime-inventory",
+      "title": "codex runtime inventory catalog is present",
+      "kind": "artifact_check",
+      "objective": "Ensure deterministic canaries cover runtime inventory metadata without invoking live runtimes.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills-codex-overrides/catalog.json", "value": "Machine-readable Codex treatment map"},
+        {"type": "artifact_contains", "target": "../../skills-codex-overrides/catalog.json", "value": "\"name\": \"codex-team\""}
+      ],
+      "dimensions": ["runtime_compatibility", "artifact_quality"]
+    }
+  ]
+}

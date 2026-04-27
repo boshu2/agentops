@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/eval-suite.v1.schema.json",
+  "title": "AgentOps Eval Suite v1",
+  "description": "Manifest schema for AgentOps public canary and private holdout evaluation suites.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "domain",
+    "visibility",
+    "tier",
+    "scoring",
+    "baseline_policy",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "domain": {
+      "$ref": "#/$defs/domain"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public_canary",
+        "private_holdout"
+      ]
+    },
+    "tier": {
+      "$ref": "#/$defs/tier"
+    },
+    "owners": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "allowed_runtimes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/runtime"
+      },
+      "uniqueItems": true
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "offline_required": {
+          "type": "boolean"
+        },
+        "network": {
+          "type": "string",
+          "enum": [
+            "forbidden",
+            "allowed",
+            "required"
+          ]
+        },
+        "scrub_env_prefixes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "isolate_home": {
+          "type": "boolean"
+        },
+        "isolate_codex_home": {
+          "type": "boolean"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fixture"
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimensions",
+        "aggregate_threshold"
+      ],
+      "properties": {
+        "aggregate_threshold": {
+          "$ref": "#/$defs/score"
+        },
+        "critical_threshold": {
+          "$ref": "#/$defs/score"
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/scoring_dimension"
+          }
+        }
+      }
+    },
+    "baseline_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "compare",
+            "promotable"
+          ]
+        },
+        "baseline_ref": {
+          "type": "string"
+        },
+        "baseline_path": {
+          "type": "string"
+        },
+        "max_aggregate_regression": {
+          "$ref": "#/$defs/non_negative_score"
+        },
+        "max_dimension_regression": {
+          "$ref": "#/$defs/non_negative_score"
+        },
+        "repeat_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "promotion_requires": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "critical_canaries_pass",
+              "no_safety_regression",
+              "no_runtime_compatibility_regression",
+              "private_holdouts_reviewed",
+              "durable_artifacts",
+              "human_rationale"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "blocking_gate": {
+          "type": "string",
+          "enum": [
+            "none",
+            "pre-push",
+            "ci",
+            "nightly",
+            "release",
+            "model-upgrade"
+          ]
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "non_negative_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "skill",
+        "hook",
+        "cli",
+        "rpi",
+        "runtime",
+        "retrieval",
+        "scenario",
+        "mixed"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "headless",
+        "live",
+        "release"
+      ]
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "static",
+        "mock",
+        "shell",
+        "claude",
+        "codex",
+        "manual"
+      ]
+    },
+    "dimension": {
+      "type": "string",
+      "enum": [
+        "correctness",
+        "process_adherence",
+        "artifact_quality",
+        "runtime_compatibility",
+        "efficiency",
+        "safety",
+        "learning_closure"
+      ]
+    },
+    "scoring_dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "weight",
+        "threshold"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/dimension"
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "threshold": {
+          "$ref": "#/$defs/score"
+        },
+        "critical": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "purpose"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "objective",
+        "expectations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "command",
+            "hook_event",
+            "skill_contract",
+            "rpi_flow",
+            "retrieval_query",
+            "scenario",
+            "runtime_prompt",
+            "artifact_check"
+          ]
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtime"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fixtures": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "expectations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/expectation"
+          }
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dimension"
+          },
+          "uniqueItems": true
+        },
+        "critical": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "expectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "exit_code",
+            "stdout_contains",
+            "stderr_contains",
+            "json_path",
+            "file_exists",
+            "file_absent",
+            "schema_valid",
+            "artifact_contains",
+            "score_at_least",
+            "manual_review"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "value": {},
+        "threshold": {
+          "$ref": "#/$defs/score"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

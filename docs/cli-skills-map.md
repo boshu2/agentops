@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 56 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 57 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
 
@@ -12,9 +12,9 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| Generated CLI command headings | 56 |
+| Generated CLI command headings | 57 |
 | CLI command entries with skill/hook callers | 34 |
-| Orphan/hidden command entries (user utilities, hidden, CI-only) | 20 |
+| Orphan/hidden command entries (user utilities, hidden, CI-only) | 21 |
 | Known phantom subcommands | 0 |
 
 ---
@@ -146,6 +146,7 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao config` | User utility | Config management |
 | `ao demo` | User utility | Interactive demonstration |
 | `ao doctor` | CI/install | Called by install.sh and release-smoke-test.sh |
+| `ao eval` | CI/test | Public AgentOps canary suites and baseline comparisons |
 | `ao version` | User utility | Version query |
 | `ao quick-start` | User utility | `/quickstart` skill is the orchestrator |
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |

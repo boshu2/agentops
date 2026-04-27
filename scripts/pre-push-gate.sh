@@ -34,6 +34,7 @@
 #  23. Skill CLI snippets
 #  24. Headless runtime skill smoke (full mode only)
 #  24b. CLI docs parity
+#  24c. AgentOps eval canaries (fast deterministic suites)
 #  --- shifted from CI-only (v2.32) ---
 #  25. Doc-release stabilization gate
 #  25b. Release audit artifact refs
@@ -182,6 +183,7 @@ HAS_HOOK=1
 HAS_DOCS=1
 HAS_SHELL=1
 HAS_LEARNING=1
+HAS_EVAL=1
 
 if [[ "$FAST_MODE" == "true" ]]; then
     all_changed="$(collect_all_changed)"
@@ -215,6 +217,11 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_LEARNING=0
     fi
+    if echo "$all_changed" | grep -qE '^evals/|^schemas/eval-|^scripts/eval-agentops\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval'; then
+        HAS_EVAL=1
+    else
+        HAS_EVAL=0
+    fi
 fi
 
 needs_check() {
@@ -229,6 +236,7 @@ needs_check() {
         docs)     [[ "$HAS_DOCS" -eq 1 ]] ;;
         shell)    [[ "$HAS_SHELL" -eq 1 ]] ;;
         learning) [[ "$HAS_LEARNING" -eq 1 ]] ;;
+        eval)     [[ "$HAS_EVAL" -eq 1 ]] ;;
         always)   return 0 ;;
         *)        return 0 ;;
     esac
@@ -710,6 +718,27 @@ if needs_check go || [[ "$HAS_CMD_AO" -eq 1 ]]; then
     fi
 else
     skip "CLI docs parity"
+fi
+
+# --- 24c. AgentOps eval canaries ---
+if needs_check eval || needs_check go; then
+    if [[ -x scripts/eval-agentops.sh ]]; then
+        if eval_agentops_output="$(run_without_git_env scripts/eval-agentops.sh --fast 2>&1)"; then
+            if grep -q '^WARN eval-agentops:' <<<"$eval_agentops_output"; then
+                warn "AgentOps eval canaries"
+                indent_output "$eval_agentops_output"
+            else
+                pass "AgentOps eval canaries"
+            fi
+        else
+            fail "AgentOps eval canaries"
+            indent_output "$eval_agentops_output"
+        fi
+    else
+        fail "missing executable: scripts/eval-agentops.sh"
+    fi
+else
+    skip "AgentOps eval canaries"
 fi
 
 # --- 25. Doc-release stabilization gate ---

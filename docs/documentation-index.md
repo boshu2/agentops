@@ -202,6 +202,9 @@
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
+- [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
+- [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
+- [Eval Run Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) — JSON Schema for evaluation run records and scorecards
 - [Next-Work Queue Schema](contracts/next-work.schema.md) — Contract for `.agents/rpi/next-work.jsonl`
 - [RPI Phase Result Schema](contracts/rpi-phase-result.schema.json) — Machine-readable schema for RPI phase results
 - [RPI C2 Events Schema](contracts/rpi-c2-events.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/events.jsonl`

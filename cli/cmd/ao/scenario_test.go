@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestScenarioInit_CreatesDirectory(t *testing.T) {
@@ -152,6 +153,104 @@ func TestScenarioList_FilterByStatus(t *testing.T) {
 	}
 }
 
+func TestScenarioAdd_CreatesSchemaCompliantScenario(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+	withScenarioClock(t, time.Date(2026, 4, 24, 10, 30, 0, 0, time.UTC))
+
+	out, err := executeCommand(
+		"scenario", "add", "CLI can author holdout scenarios",
+		"--narrative", "Evaluator authors a scenario through the CLI.",
+		"--expected-outcome", "A schema-compliant scenario file is written.",
+		"--status", "active",
+		"--source", "agent",
+		"--threshold", "0.9",
+		"--json",
+	)
+	if err != nil {
+		t.Fatalf("scenario add failed: %v\noutput: %s", err, out)
+	}
+
+	var scenario scenarioFile
+	if err := json.Unmarshal([]byte(out), &scenario); err != nil {
+		t.Fatalf("parse scenario add JSON: %v\noutput: %s", err, out)
+	}
+	if scenario.ID != "s-2026-04-24-001" {
+		t.Fatalf("id = %q, want s-2026-04-24-001", scenario.ID)
+	}
+	if scenario.Date != "2026-04-24" || scenario.Status != "active" || scenario.Source != "agent" {
+		t.Fatalf("unexpected metadata: %+v", scenario)
+	}
+	if scenario.SatisfactionThreshold != 0.9 {
+		t.Fatalf("threshold = %.2f, want 0.90", scenario.SatisfactionThreshold)
+	}
+
+	path := filepath.Join(".agents", "holdout", "s-2026-04-24-001.json")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("scenario file not written: %v", err)
+	}
+	validateOut, err := executeCommand("scenario", "validate")
+	if err != nil {
+		t.Fatalf("written scenario should validate: %v\noutput: %s", err, validateOut)
+	}
+}
+
+func TestScenarioAdd_IncrementsSameDayID(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+	withScenarioClock(t, time.Date(2026, 4, 24, 10, 30, 0, 0, time.UTC))
+
+	holdoutDir := filepath.Join(".agents", "holdout")
+	if err := os.MkdirAll(holdoutDir, 0755); err != nil {
+		t.Fatalf("mkdir holdout: %v", err)
+	}
+	existing := map[string]interface{}{
+		"id": "s-2026-04-24-003", "version": 1, "date": "2026-04-24",
+		"goal": "existing", "narrative": "existing", "expected_outcome": "existing",
+		"satisfaction_threshold": 0.8, "status": "draft",
+	}
+	data, _ := json.Marshal(existing)
+	if err := os.WriteFile(filepath.Join(holdoutDir, "legacy.json"), data, 0644); err != nil {
+		t.Fatalf("write existing scenario: %v", err)
+	}
+
+	out, err := executeCommand("scenario", "add", "next same-day scenario", "--json")
+	if err != nil {
+		t.Fatalf("scenario add failed: %v\noutput: %s", err, out)
+	}
+	var scenario scenarioFile
+	if err := json.Unmarshal([]byte(out), &scenario); err != nil {
+		t.Fatalf("parse scenario add JSON: %v\noutput: %s", err, out)
+	}
+	if scenario.ID != "s-2026-04-24-004" {
+		t.Fatalf("id = %q, want s-2026-04-24-004", scenario.ID)
+	}
+}
+
+func TestScenarioAdd_RejectsInvalidFlags(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	if out, err := executeCommand("scenario", "add", "bad threshold", "--threshold", "1.2"); err == nil {
+		t.Fatalf("scenario add should reject invalid threshold; output: %s", out)
+	}
+	if out, err := executeCommand("scenario", "add", "bad status", "--status", "blocked"); err == nil {
+		t.Fatalf("scenario add should reject invalid status; output: %s", out)
+	}
+}
+
 func TestScenarioValidate_ValidSchema(t *testing.T) {
 	dir := t.TempDir()
 	origDir, _ := os.Getwd()
@@ -174,6 +273,34 @@ func TestScenarioValidate_ValidSchema(t *testing.T) {
 	out, err := executeCommand("scenario", "validate")
 	if err != nil {
 		t.Fatalf("validate should pass: %v", err)
+	}
+	if !strings.Contains(out, "all pass") {
+		t.Fatalf("expected 'all pass', got: %s", out)
+	}
+}
+
+func TestScenarioValidate_AcceptsAutoID(t *testing.T) {
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	holdoutDir := filepath.Join(".agents", "holdout")
+	os.MkdirAll(holdoutDir, 0755)
+
+	scenario := map[string]interface{}{
+		"id": "auto-agentops-core-cli", "version": 1, "date": "2026-04-24",
+		"goal": "test", "narrative": "test", "expected_outcome": "test",
+		"satisfaction_threshold": 0.7, "status": "draft", "source": "agent",
+	}
+	data, _ := json.Marshal(scenario)
+	os.WriteFile(filepath.Join(holdoutDir, "auto.json"), data, 0644)
+
+	out, err := executeCommand("scenario", "validate")
+	if err != nil {
+		t.Fatalf("validate should accept auto-* IDs: %v\noutput: %s", err, out)
 	}
 	if !strings.Contains(out, "all pass") {
 		t.Fatalf("expected 'all pass', got: %s", out)
@@ -255,4 +382,13 @@ func TestScenarioValidate_EmptyDir(t *testing.T) {
 	if !strings.Contains(out, "No scenario files found") {
 		t.Fatalf("expected empty message, got: %s", out)
 	}
+}
+
+func withScenarioClock(t *testing.T, now time.Time) {
+	t.Helper()
+	orig := scenarioAddNow
+	scenarioAddNow = func() time.Time { return now }
+	t.Cleanup(func() {
+		scenarioAddNow = orig
+	})
 }

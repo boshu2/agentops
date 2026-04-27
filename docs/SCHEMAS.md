@@ -32,6 +32,8 @@ These describe data written and consumed at runtime — handoffs between session
 | [`evidence-only-closure.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/evidence-only-closure.v1.schema.json) | Proof artifact for issue closures that rely on validation or policy evidence instead of a code delta. |
 | [`session-quality-signal.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/session-quality-signal.v1.schema.json) | Per-session quality signal rolled up into the knowledge flywheel. |
 | [`scenario.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/scenario.v1.schema.json) | Behavioral validation scenarios stored in `.agents/holdout/`. |
+| [`eval-suite.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) | Public canary and private holdout evaluation suite manifests. See [`Eval Environment`](contracts/eval-environment.md). |
+| [`eval-run.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) | Evaluation run records, scorecards, baseline comparisons, runtime hygiene, and artifacts. See [`Eval Environment`](contracts/eval-environment.md). |
 | [`swarm-evidence.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) | Permissive shape for files written by swarm workers to `.agents/swarm/results/<task>.json`. Companion strict schema: [`contracts/swarm-worker-result.schema.json`](contracts/swarm-worker-result.schema.json). |
 | [`finding.json`](https://github.com/boshu2/agentops/blob/main/schemas/finding.json) | Canonical finding-item schema for validation skills. Compatible subset of [`contracts/finding-artifact.schema.json`](contracts/finding-artifact.schema.json). |
 
