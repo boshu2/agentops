@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`security` domain in eval-suite manifests** — `$defs/domain` enum in `schemas/eval-suite.v1.schema.json` now accepts `security` alongside the existing eight domains. Paired updates land in `cli/internal/eval/coverage.go` (`DefaultCoverageDomains`) and `cli/cmd/ao/cobra_commands_test.go` (`evalCoverageDomains`) so schema, production default, and test fixture stay in lock-step. `ao eval coverage` will report `security` as a missing required domain until a security-domain manifest is authored.
 
+### Fixed
+
+- **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
+
 ## [2.38.0] - 2026-04-22
 
 ### Added
