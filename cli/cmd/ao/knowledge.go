@@ -19,6 +19,7 @@ const knowledgeBuilderTimeout = 20 * time.Minute
 const (
 	knowledgeBuilderImplementationWorkspaceScript = "workspace-script"
 	knowledgeBuilderImplementationAONative        = "ao-native"
+	knowledgeBuilderImplementationHarvestCatalog  = "ao-native-harvest"
 )
 
 var (
@@ -92,7 +93,7 @@ var knowledgeCmd = &cobra.Command{
 	Long: `Knowledge turns a mature .agents corpus into operator-ready surfaces.
 
 Subcommands:
-  activate   Refresh packet layers with workspace builders, then write native operator surfaces
+  activate   Refresh packet layers from workspace builders or harvest catalog, then write native operator surfaces
   beliefs    Refresh the belief book from existing packet artifacts
   playbooks  Refresh candidate playbooks from existing packet artifacts
   brief      Compile a goal-time briefing from existing packet artifacts
@@ -167,6 +168,7 @@ func runKnowledgeActivate(cmd *cobra.Command, args []string) error {
 			Args:           []string{"--goal", strings.TrimSpace(knowledgeActivateGoal)},
 		})
 	}
+	steps = prepareKnowledgeActivateSteps(agentsRoot, steps)
 	if err := requireKnowledgeScripts(scriptsRoot, filterKnowledgeWorkspaceScriptSteps(steps)); err != nil {
 		return err
 	}
@@ -314,10 +316,38 @@ func filterKnowledgeWorkspaceScriptSteps(steps []knowledgeBuilderInvocation) []k
 	return filtered
 }
 
+func prepareKnowledgeActivateSteps(agentsRoot string, steps []knowledgeBuilderInvocation) []knowledgeBuilderInvocation {
+	scriptSteps := filterKnowledgeWorkspaceScriptSteps(steps)
+	if len(scriptSteps) == 0 || len(missingKnowledgeScripts(filepath.Join(agentsRoot, "scripts"), scriptSteps)) == 0 {
+		return steps
+	}
+	if !knowledgePathExists(knowledgeHarvestCatalogPath(agentsRoot)) {
+		return steps
+	}
+
+	prepared := make([]knowledgeBuilderInvocation, 0, len(steps))
+	for _, step := range steps {
+		if step.Implementation == knowledgeBuilderImplementationWorkspaceScript {
+			step.Script = ""
+			step.Implementation = knowledgeBuilderImplementationHarvestCatalog
+		}
+		prepared = append(prepared, step)
+	}
+	return prepared
+}
+
 func requireKnowledgeScripts(scriptsRoot string, steps []knowledgeBuilderInvocation) error {
 	if len(steps) == 0 {
 		return nil
 	}
+	missing := missingKnowledgeScripts(scriptsRoot, steps)
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("knowledge activate requires workspace-local packet builders:\n- %s", strings.Join(missing, "\n- "))
+}
+
+func missingKnowledgeScripts(scriptsRoot string, steps []knowledgeBuilderInvocation) []string {
 	var missing []string
 	for _, step := range steps {
 		path := filepath.Join(scriptsRoot, step.Script)
@@ -325,15 +355,15 @@ func requireKnowledgeScripts(scriptsRoot string, steps []knowledgeBuilderInvocat
 			missing = append(missing, path)
 		}
 	}
-	if len(missing) == 0 {
-		return nil
-	}
-	return fmt.Errorf("knowledge activate requires workspace-local packet builders:\n- %s", strings.Join(missing, "\n- "))
+	return missing
 }
 
 func runKnowledgeBuilder(workspace, agentsRoot, scriptsRoot string, step knowledgeBuilderInvocation) (knowledgeBuilderRun, error) {
 	if step.Implementation == knowledgeBuilderImplementationAONative {
 		return runKnowledgeNativeBuilder(workspace, agentsRoot, step)
+	}
+	if step.Implementation == knowledgeBuilderImplementationHarvestCatalog {
+		return runKnowledgeHarvestCatalogBuilder(workspace, agentsRoot, step)
 	}
 
 	run := knowledgeBuilderRun{
