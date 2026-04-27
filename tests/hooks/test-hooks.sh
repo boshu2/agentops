@@ -868,10 +868,30 @@ EC=0
 echo '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR='' bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
 if [ "$EC" -eq 2 ]; then pass "holdout-isolation-gate blocks holdout Read"; else fail "holdout-isolation-gate blocks holdout Read (got exit $EC)"; fi
 
+# Test: Holdout Glob pattern without evaluator => block (exit 2)
+EC=0
+echo '{"tool_name":"Glob","tool_input":{"pattern":".agents/holdout/*.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR='' bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 2 ]; then pass "holdout-isolation-gate blocks holdout Glob pattern"; else fail "holdout-isolation-gate blocks holdout Glob pattern (got exit $EC)"; fi
+
+# Test: Holdout Grep query without evaluator => block (exit 2)
+EC=0
+echo '{"tool_name":"Grep","tool_input":{"query":".agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR='' bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 2 ]; then pass "holdout-isolation-gate blocks holdout Grep query"; else fail "holdout-isolation-gate blocks holdout Grep query (got exit $EC)"; fi
+
+# Test: Holdout Bash without evaluator => block (exit 2)
+EC=0
+echo '{"tool_name":"Bash","tool_input":{"command":"cat .agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR='' bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 2 ]; then pass "holdout-isolation-gate blocks holdout Bash"; else fail "holdout-isolation-gate blocks holdout Bash (got exit $EC)"; fi
+
 # Test: Holdout Read with evaluator => pass
 EC=0
 echo '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR=1 bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
 if [ "$EC" -eq 0 ]; then pass "holdout-isolation-gate passes evaluator Read"; else fail "holdout-isolation-gate passes evaluator Read"; fi
+
+# Test: Holdout Glob with evaluator => pass
+EC=0
+echo '{"tool_name":"Glob","tool_input":{"pattern":".agents/holdout/*.json"}}' | AGENTOPS_HOLDOUT_EVALUATOR=1 bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+if [ "$EC" -eq 0 ]; then pass "holdout-isolation-gate passes evaluator Glob"; else fail "holdout-isolation-gate passes evaluator Glob"; fi
 
 # Test: Kill switch => pass
 EC=0

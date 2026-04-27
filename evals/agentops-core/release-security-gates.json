@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.release-security-gates",
+  "name": "AgentOps Release and Security Gates Canary",
+  "description": "Offline public canary for deterministic release-gate, security-gate, redteam, artifact, and workflow wiring surfaces.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "release", "security", "ci"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "security-gate-script-tests",
+      "title": "security gate script tests pass",
+      "kind": "command",
+      "objective": "Keep security-gate CLI parsing, JSON output, mock scanner aggregation, and artifact creation covered.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-security-gate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 6 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "security-suite-redteam-tests",
+      "title": "security-suite redteam harness tests pass",
+      "kind": "command",
+      "objective": "Keep the prompt redteam harness able to pass valid fixtures, fail missing safeguards, and run the repo-native redteam pack.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-security-suite-redteam.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 8 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "safety", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "release-gate-contract-tests",
+      "title": "release gate contract tests pass",
+      "kind": "command",
+      "objective": "Keep ci-local-release CLI contracts and release artifact resolver/audit behavior covered without invoking the whole local release gate.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/scripts/ci-local-release.bats tests/scripts/release-artifacts.bats"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "1..28"},
+        {"type": "stdout_contains", "value": "ok 28 validate-release-audit-artifacts skips older missing local artifact dirs"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "release-e2e-command-current",
+      "title": "release E2E fast command uses current ci-local flags",
+      "kind": "command",
+      "objective": "Prevent release E2E docs/tests from drifting to removed ci-local-release flags.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash -n tests/integration/test-release-e2e-validation.sh && ! rg -- '--skip-e2e-install' tests/integration/test-release-e2e-validation.sh docs/release-e2e-checklist.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "ci-release-security-wiring",
+      "title": "CI and release workflows keep security artifacts wired",
+      "kind": "artifact_check",
+      "objective": "Keep validation and release workflows wired to security scans, security-gate artifacts, release smoke, SBOM, and release artifact manifests.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "security-scan"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "security-toolchain-gate"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "agentops-eval-advisory"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "Run release smoke test"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Generate SBOM and security report assets"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "security-gate-summary.json"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Generate SBOM artifacts"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Security toolchain gate"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "write_release_artifact_manifest"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "safety"]
+    }
+  ]
+}

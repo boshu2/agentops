@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.headless-runtime-skills",
+  "name": "AgentOps Headless Runtime Skills Canary",
+  "description": "Public deterministic canary for Claude and Codex headless skill inventory validation, fallback controls, and CI/release wiring.",
+  "domain": "runtime",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "headless", "runtime", "skills", "claude", "codex"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": false,
+    "network": "allowed",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME"],
+    "isolate_codex_home": true,
+    "timeout_seconds": 180,
+    "max_attempts": 1
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "headless-runtime-script-tests",
+      "title": "headless runtime skill validator script tests pass",
+      "kind": "command",
+      "objective": "Exercise mocked Claude and Codex skill inventories, retry behavior, malformed output fallback, and strict-mode failure paths deterministically.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-headless-runtime-skills.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 7 PASS, 0 FAIL"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "headless-runtime-validation",
+      "title": "headless runtime skill validation command passes",
+      "kind": "command",
+      "objective": "Run the same headless runtime skill validation surface used by CI and release gates with bounded retries and timeout.",
+      "runtime": "shell",
+      "timeout_seconds": 210,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/validate-headless-runtime-skills.sh --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Runtime proof tiers:"},
+        {"type": "stdout_contains", "value": "Headless runtime skill validation passed."}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "headless-runtime-gate-wiring",
+      "title": "headless runtime skill validation remains wired into gates",
+      "kind": "artifact_check",
+      "objective": "Keep the runtime inventory validator visible in CI, local release, fast pre-push full mode, and smoke-test dispatch.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "Validate headless runtime skills"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "./scripts/validate-headless-runtime-skills.sh"},
+        {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Headless runtime skill smoke"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "headless runtime skills"},
+        {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-headless-runtime-skills.sh"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "headless-runtime-inventory-controls",
+      "title": "headless runtime validator preserves inventory controls",
+      "kind": "artifact_check",
+      "objective": "Ensure Claude and Codex inventories are built from shipped skill roots and retain strict-mode and fallback controls.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "build_expected_inventory \"$REPO_ROOT/skills\" \"$EXPECTED_CLAUDE_JSON\""},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "build_expected_inventory \"$REPO_ROOT/skills-codex\" \"$EXPECTED_CODEX_JSON\""},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "HEADLESS_RUNTIME_SKILL_CODEX_STRICT"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "load-check fallback"},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "CODEX_HOME=\"$CODEX_VALIDATION_HOME\""},
+        {"type": "artifact_contains", "target": "../../scripts/validate-headless-runtime-skills.sh", "value": "AGENTOPS_HOOKS_DISABLED=1"}
+      ],
+      "dimensions": ["runtime_compatibility", "safety", "artifact_quality"],
+      "critical": true
+    }
+  ]
+}

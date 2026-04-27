@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.parallel-execution-evidence-20260425T100600Z",
+  "suite": {
+    "id": "agentops-core.parallel-execution-evidence",
+    "path": "evals/agentops-core/parallel-execution-evidence.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "5c19ca5d72234db99c4096c008e6ecc9f42b245d6d6fc0fe9c9a19a04dbdd37e"
+  },
+  "started_at": "2026-04-25T10:06:01.011180124Z",
+  "completed_at": "2026-04-25T10:06:01.818546951Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "be1d82be58bb",
+    "dirty": true,
+    "dirty_paths": [
+      "evals/agentops-core/fixtures/parallel-execution-smoke.sh",
+      "evals/agentops-core/parallel-execution-evidence.json"
+    ]
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.parallel-execution-evidence-20260425T100600Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.parallel-execution-evidence.baseline.json",
+    "promoted_from_run_id": "agentops-core.parallel-execution-evidence-20260425T100600Z",
+    "promoted_at": "2026-04-25T10:06:01.909147419Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 46 baseline for parallel execution evidence and file ownership canary"
+  },
+  "case_results": [
+    {
+      "id": "parallel-execution-skill-validators",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 111,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 8 passed, 0 failed\"",
+        "stdout contains \"Results: 9 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "swarm-evidence-validator-behavior",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 641,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"1..3\"",
+        "stdout contains \"ok 1 default scan ignores untracked local swarm evidence in git repos\"",
+        "stdout contains \"ok 3 default scan still validates tracked swarm evidence\""
+      ]
+    },
+    {
+      "id": "file-manifest-overlap-behavior",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "duration_ms": 53,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"file-manifest-no-overlap-ok\"",
+        "stdout contains \"file-manifest-conflict-ok\"",
+        "stdout contains \"file-manifest-missing-ok\""
+      ]
+    },
+    {
+      "id": "swarm-evidence-and-manifest-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../scripts/validate-swarm-evidence.sh contains \"status with valid enum\"",
+        "artifact ../../scripts/validate-swarm-evidence.sh contains \"completion result missing evidence block\"",
+        "artifact ../../scripts/validate-swarm-evidence.sh contains \"evidence.required_checks is empty\"",
+        "artifact ../../scripts/validate-swarm-evidence.sh contains \"EVIDENCE VALIDATION PASS\"",
+        "artifact ../../docs/contracts/swarm-worker-result.schema.json contains \"\\\"required\\\": [\\\"required_checks\\\", \\\"checks\\\"]\"",
+        "artifact ../../schemas/swarm-evidence.schema.json contains \"required_checks\"",
+        "artifact ../../scripts/check-file-manifest-overlap.sh contains \"CONFLICT: $file claimed by task ${FILE_OWNERS[$file]} and task $task_id\"",
+        "artifact ../../scripts/check-file-manifest-overlap.sh contains \"WARN: task $task_id has no file manifest\"",
+        "artifact ../../scripts/check-file-manifest-overlap.sh contains \"Found $CONFLICTS file overlap conflict(s)\""
+      ]
+    },
+    {
+      "id": "parallel-ownership-and-worktree-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "process_adherence": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../skills/swarm/SKILL.md contains \"Every TaskCreate **must** include `metadata.issue_type` plus a `metadata.files` array.\"",
+        "artifact ../../skills/swarm/SKILL.md contains \"Do not spawn workers with overlapping file manifests into the same shared-worktree wave.\"",
+        "artifact ../../skills/swarm/references/pre-spawn-friction-gates.md contains \"Explicit file manifest per worker, verified for no overlap\"",
+        "artifact ../../skills/swarm/references/local-mode.md contains \"Runtime `worktreePath` Contract\"",
+        "artifact ../../skills/swarm/references/local-mode.md contains \"Do NOT run git add, git commit, or git push\"",
+        "artifact ../../skills-codex/swarm/SKILL.md contains \"Pre-spawn conflict check (file ownership)\"",
+        "artifact ../../skills-codex/swarm/SKILL.md contains \"worktreePath\"",
+        "artifact ../../skills-codex/swarm/references/local-mode.md contains \"the lead must verify each spawned worker reports a `worktreePath`\"",
+        "artifact ../../skills/codex-team/SKILL.md contains \"the orchestrator IS the lock manager\"",
+        "artifact ../../skills/codex-team/SKILL.md contains \"MULTI-WAVE\"",
+        "artifact ../../skills-codex/codex-team/SKILL.md contains \"`$swarm` (runtime-native)\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T100600Z/agentops-core.parallel-execution-evidence.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.parallel-execution-evidence.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

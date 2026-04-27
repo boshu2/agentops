@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.operator-workflow-skills",
+  "name": "AgentOps Operator Workflow Skills Canary",
+  "description": "Offline public canary for high-use planning, review, investigation, refactor, optimization, PR, swarm, and provenance skill contracts that were previously only covered indirectly by aggregate skill lint.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "workflow", "planning", "review", "pr", "swarm", "provenance"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 300
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "operator-workflow-skill-validators",
+      "title": "operator workflow skill validators pass",
+      "kind": "command",
+      "objective": "Run focused validators for high-use operator workflow skills across shared and Codex artifacts, including optional Codex validators when present.",
+      "runtime": "shell",
+      "timeout_seconds": 300,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "set -eu; for s in bootstrap brainstorm bug-hunt complexity converter council deps design grafana-platform-dashboard implement llm-wiki openai-docs oss-docs perf plan pr-implement pr-plan pr-prep pr-research pr-retro pr-validate readme red-team refactor retro reverse-engineer-rpi review scaffold swarm trace using-agentops; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done; for s in bootstrap brainstorm bug-hunt complexity converter council deps design grafana-platform-dashboard implement llm-wiki openai-docs oss-docs perf plan pr-implement pr-plan pr-prep pr-research pr-retro pr-validate readme red-team refactor retro reverse-engineer-rpi review scaffold swarm trace using-agentops; do if [ -f \"skills-codex/$s/scripts/validate.sh\" ]; then echo \"codex: $s\"; bash \"skills-codex/$s/scripts/validate.sh\"; else echo \"codex: $s (no validator)\"; fi; done"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "shared: plan"},
+        {"type": "stdout_contains", "value": "codex: plan"},
+        {"type": "stdout_contains", "value": "shared: review"},
+        {"type": "stdout_contains", "value": "shared: pr-validate"},
+        {"type": "stdout_contains", "value": "codex: swarm"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "planning-decomposition-prevention-contracts",
+      "title": "planning and decomposition contracts include prevention context and companion-file scope",
+      "kind": "artifact_check",
+      "objective": "Protect the plan skill behavior that prevents stale planning: active findings, Applied findings lines, full touched-file inventories, Codex companion artifacts, and refresh verification.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/plan/SKILL.md", "value": "Active findings from `.agents/findings/registry.jsonl` are a fallback planning input."},
+        {"type": "artifact_contains", "target": "../../skills/plan/SKILL.md", "value": "Every written plan must include an `Applied findings:` line"},
+        {"type": "artifact_contains", "target": "../../skills/plan/references/wave-matrices.md", "value": "Generated Artifact Companion Scope"},
+        {"type": "artifact_contains", "target": "../../skills/plan/references/wave-matrices.md", "value": "list every touched file"},
+        {"type": "artifact_contains", "target": "../../skills/plan/references/wave-matrices.md", "value": "refresh-codex-artifacts.sh --scope worktree"},
+        {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "Treat active findings as hard"},
+        {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "`Applied findings:` line"},
+        {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "Generated Artifact Companion Scope"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "review-investigation-refactor-contracts",
+      "title": "review, investigation, red-team, and refactor skills preserve execution discipline",
+      "kind": "artifact_check",
+      "objective": "Protect human/judgment workflow contracts that decide whether a change is better or worse: findings-first review, root-cause investigation, context-restricted red-team probes, and one-step-at-a-time refactors.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/review/SKILL.md", "value": "Systematic Review Pass (SCORED)"},
+        {"type": "artifact_contains", "target": "../../skills-codex/review/SKILL.md", "value": "What assumptions does this change make"},
+        {"type": "artifact_contains", "target": "../../skills/bug-hunt/SKILL.md", "value": "One hypothesis at a time"},
+        {"type": "artifact_contains", "target": "../../skills-codex/bug-hunt/SKILL.md", "value": "3-failure rule"},
+        {"type": "artifact_contains", "target": "../../skills/red-team/SKILL.md", "value": "context-restricted agent prompt"},
+        {"type": "artifact_contains", "target": "../../skills/refactor/SKILL.md", "value": "Transform -> Test -> Pass? -> Commit -> Next"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "safety"]
+    },
+    {
+      "id": "optimization-and-dependency-contracts",
+      "title": "complexity, performance, and dependency workflows preserve measurable baselines",
+      "kind": "artifact_check",
+      "objective": "Ensure optimization skills remain measurement-driven: complexity reports name thresholds, performance work preserves baselines, and dependency updates validate after each change.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/complexity/SKILL.md", "value": ".agents/complexity/YYYY-MM-DD-<target>.md"},
+        {"type": "artifact_contains", "target": "../../skills-codex/complexity/SKILL.md", "value": "Functions over threshold"},
+        {"type": "artifact_contains", "target": "../../skills/perf/SKILL.md", "value": "Save raw baseline output to `.agents/perf/baseline-YYYY-MM-DD.txt`"},
+        {"type": "artifact_contains", "target": "../../skills-codex/perf/SKILL.md", "value": "against baseline using `benchstat`"},
+        {"type": "artifact_contains", "target": "../../skills/deps/SKILL.md", "value": "Run tests after each update"},
+        {"type": "artifact_contains", "target": "../../skills-codex/deps/SKILL.md", "value": "Record current state (version, lock file hash)"}
+      ],
+      "dimensions": ["correctness", "artifact_quality", "safety"]
+    },
+    {
+      "id": "open-source-docs-and-conversion-contracts",
+      "title": "documentation, wiki, OpenAI docs, and conversion skills preserve source-backed outputs",
+      "kind": "artifact_check",
+      "objective": "Protect operator workflows that turn evidence into docs or runtime artifacts without stale, speculative, or runtime-incompatible output.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/readme/SKILL.md", "value": "Assertions without evidence trigger hostility."},
+        {"type": "artifact_contains", "target": "../../skills/oss-docs/SKILL.md", "value": "CONTRIBUTING.md"},
+        {"type": "artifact_contains", "target": "../../skills/openai-docs/SKILL.md", "value": "Treat OpenAI docs as the source of truth"},
+        {"type": "artifact_contains", "target": "../../skills/llm-wiki/SKILL.md", "value": "Not a replacement for `compile`"},
+        {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "passthrough parity"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility", "learning_closure"]
+    },
+    {
+      "id": "pr-workflow-contracts",
+      "title": "open-source PR workflow skills preserve upstream fit and isolation",
+      "kind": "artifact_check",
+      "objective": "Protect contribution workflows from scope creep by checking PR research, planning, implementation, preparation, validation, and retro artifacts.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/pr-plan/SKILL.md", "value": "Define success from maintainer perspective"},
+        {"type": "artifact_contains", "target": "../../skills/pr-implement/SKILL.md", "value": "DO NOT PROCEED IF PRE-CHECK FAILS"},
+        {"type": "artifact_contains", "target": "../../skills/pr-validate/SKILL.md", "value": "scope creep"},
+        {"type": "artifact_contains", "target": "../../skills-codex/pr-validate/prompt.md", "value": "findings-first output"},
+        {"type": "artifact_contains", "target": "../../skills-codex/pr-retro/prompt.md", "value": "Separate one-off reviewer taste from durable contribution patterns."}
+      ],
+      "dimensions": ["process_adherence", "correctness", "artifact_quality"]
+    },
+    {
+      "id": "parallel-and-provenance-contracts",
+      "title": "swarm, codex-team, trace, and provenance skills preserve ownership and evidence chains",
+      "kind": "artifact_check",
+      "objective": "Ensure parallel execution keeps file ownership explicit and provenance tools keep source citations attached to decisions and artifacts.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/swarm/SKILL.md", "value": "Every TaskCreate **must** include `metadata.issue_type` plus a `metadata.files` array."},
+        {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "Pre-spawn conflict check (file ownership)"},
+        {"type": "artifact_contains", "target": "../../skills/codex-team/SKILL.md", "value": "the orchestrator IS the lock manager"},
+        {"type": "artifact_contains", "target": "../../skills/trace/SKILL.md", "value": "Every claim needs a source citation."},
+        {"type": "artifact_contains", "target": "../../skills-codex/provenance/SKILL.md", "value": "Every insight has a source"}
+      ],
+      "dimensions": ["process_adherence", "runtime_compatibility", "learning_closure"]
+    }
+  ]
+}

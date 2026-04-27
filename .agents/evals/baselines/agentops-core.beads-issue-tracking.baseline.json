@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.beads-issue-tracking-20260425T061937Z",
+  "suite": {
+    "id": "agentops-core.beads-issue-tracking",
+    "path": "evals/agentops-core/beads-issue-tracking.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "a6ca7368118d904f233a049a245a6136db5c106ea49b0d7446d90816dc1a86f5"
+  },
+  "started_at": "2026-04-25T06:19:37.9755591Z",
+  "completed_at": "2026-04-25T06:19:45.394917684Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "c6cefc988b4a",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 120
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.beads-issue-tracking-20260425T061937Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.beads-issue-tracking.baseline.json",
+    "promoted_from_run_id": "agentops-core.beads-issue-tracking-20260425T061937Z",
+    "promoted_at": "2026-04-25T06:19:45.541030442Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 23 baseline for deterministic beads issue-tracking canary after Codex artifact metadata refresh."
+  },
+  "case_results": [
+    {
+      "id": "ao-beads-command-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 601,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "rpi-beads-tasklist-fallback-tests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 677,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"ok  \\tgithub.com/boshu2/agentops/cli/cmd/ao\""
+      ]
+    },
+    {
+      "id": "beads-skill-contracts",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 233,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"cli reference avoids stale migrate inspect json command\"",
+        "stdout contains \"cli reference documents machine-readable version probe\"",
+        "stdout contains \"Results: 24 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "bd-runtime-version-health",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 5893,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"bd version\""
+      ]
+    },
+    {
+      "id": "stale-migration-json-command-absent",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 12,
+      "diagnostics": [
+        "exit_code matched 0"
+      ]
+    },
+    {
+      "id": "agent-instructions-use-bd",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "safety": 1
+      },
+      "diagnostics": [
+        "artifact ../../AGENTS.md contains \"Run `bd onboard` to get started.\"",
+        "artifact ../../AGENTS.md contains \"bd ready --json\"",
+        "artifact ../../AGENTS.md contains \"Do NOT use markdown TODOs, task lists, or other tracking methods.\"",
+        "artifact ../../skills/beads/SKILL.md contains \"Treat live `bd` reads as authoritative.\"",
+        "artifact ../../skills/beads/SKILL.md contains \"reconcile the open parent in the same session\"",
+        "artifact ../../skills-codex/beads/prompt.md contains \"Treat live `bd` reads (`bd ready`, `bd show`, `bd export`) as authoritative\"",
+        "artifact ../../docs/troubleshooting.md contains \"bd upgrade status --json\"",
+        "artifact ../../docs/troubleshooting.md contains \"RPI falls back to tasklist mode\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T061937Z/agentops-core.beads-issue-tracking.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.beads-issue-tracking.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

@@ -33,6 +33,11 @@ Examples:
 	RunE: runStatus,
 }
 
+var (
+	statusFlywheelTimeout      = 5 * time.Second
+	statusComputeFlywheelBrief = computeStatusFlywheelBrief
+)
+
 func init() {
 	statusCmd.GroupID = "core"
 	rootCmd.AddCommand(statusCmd)
@@ -114,8 +119,26 @@ func loadRecentSessions(baseDir string, status *statusOutput) {
 	}
 }
 
-// loadFlywheelBrief computes the flywheel health summary for status output.
+// loadFlywheelBrief computes the flywheel health summary for status output with
+// a small latency budget. The full `ao metrics` commands still perform complete
+// analysis; status should remain an operator dashboard, not a long-running scan.
 func loadFlywheelBrief(cwd string) *flywheelBrief {
+	timeout := statusFlywheelTimeout
+	compute := statusComputeFlywheelBrief
+	ch := make(chan *flywheelBrief, 1)
+	go func() {
+		ch <- compute(cwd)
+	}()
+
+	select {
+	case brief := <-ch:
+		return brief
+	case <-time.After(timeout):
+		return nil
+	}
+}
+
+func computeStatusFlywheelBrief(cwd string) *flywheelBrief {
 	metrics, err := computeMetrics(cwd, 7)
 	if err != nil {
 		return nil

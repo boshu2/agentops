@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.supporting-cli-utilities",
+  "name": "AgentOps Supporting CLI Utilities Canary",
+  "description": "Offline public canary for lower-frequency but user-facing CLI utilities: demo, seed, badge, completion, config, vibe-check, trace, extract, and mind.",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "cli", "utilities", "demo", "seed", "config", "trace", "extract", "mind"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "supporting-cli-utility-go-tests",
+      "title": "Supporting CLI utility tests pass",
+      "kind": "command",
+      "objective": "Protect lower-frequency command behavior that helps users bootstrap, inspect, demo, configure, trace, extract, and complete AgentOps workflows.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=180s ./cmd/ao -run '^(TestDemo_|TestCompletion_|TestBadge_|TestSeed_|TestCobra(BadgeCommand|ConfigCommand|DemoConceptsCommand|DemoQuickCommand|CompletionCommand|SeedCommand|TraceHelpAndDryRun|ExtractCommand|VersionCommand|StatusCommand|RootHelpOutput)|TestVibeCheck(Command|Flags|DryRun|RepoPath|_outputVibeCheckJSON_emptyResult|_outputVibeCheckJSON_withData|_outputVibeCheckMarkdown_emptyResult|_outputVibeCheckMarkdown_withData)|TestRunVibeCheck_(invalidDuration|validRepo|jsonOutput|markdownOutput)|TestTrace_traceOneArtifact_(Found|NotFound|JSONOutput|GraphMode|jsonOutput|noProvenance))$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "supporting-cli-utility-help-smoke",
+      "title": "Supporting CLI utility help surfaces work from built ao",
+      "kind": "command",
+      "objective": "Ensure user-facing utility commands and their key subcommands remain discoverable without executing host-specific side effects.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" demo --help >/dev/null; \"$tmp/ao\" seed --help >/dev/null; \"$tmp/ao\" badge --help >/dev/null; \"$tmp/ao\" completion --help >/dev/null; \"$tmp/ao\" completion bash >/dev/null; \"$tmp/ao\" config --help >/dev/null; \"$tmp/ao\" config models --help >/dev/null; \"$tmp/ao\" vibe-check --help >/dev/null; \"$tmp/ao\" trace --help >/dev/null; \"$tmp/ao\" extract --help >/dev/null; \"$tmp/ao\" mind --help >/dev/null; \"$tmp/ao\" mind scan --help >/dev/null; \"$tmp/ao\" mind normalize --help >/dev/null; \"$tmp/ao\" mind link --help >/dev/null; \"$tmp/ao\" mind index --help >/dev/null; \"$tmp/ao\" mind all --help >/dev/null; \"$tmp/ao\" mind graph --help >/dev/null"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "supporting-cli-utility-docs",
+      "title": "Generated CLI docs expose supporting utilities",
+      "kind": "artifact_check",
+      "objective": "Keep generated CLI docs aligned with the lower-frequency command surfaces operators and new users still rely on.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao demo`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run an interactive demonstration of AgentOps capabilities."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao seed`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Plant the AgentOps seed in any repository."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--template string   Goal template: go-cli, python-lib, web-app, rust-cli, generic"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao badge`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Display a visual badge showing knowledge flywheel health status."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao completion`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Generate shell completion scripts for ao."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao config`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao config models`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--set-tier string    Set the default model cost tier (quality, balanced, budget)"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao vibe-check`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run a comprehensive vibe-check analysis on your repository."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao mind`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Scan, normalize, link, and index .agents/ markdown into an Obsidian knowledge graph."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao mind normalize`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao trace`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Trace the provenance of an artifact back to its source transcript."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao extract`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Check for pending session extractions and output a prompt for Claude to process."}
+      ],
+      "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]
+    },
+    {
+      "id": "supporting-cli-utility-source-contracts",
+      "title": "Source contracts preserve supporting utility behavior",
+      "kind": "artifact_check",
+      "objective": "Lock implementation-level guarantees for utility command routing, dry-run behavior, template detection, shell completion generation, config model tiers, provenance tracing, extraction queues, and mind Python delegation.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/demo.go", "value": "Interactive demo showing AgentOps value in 5 minutes"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/demo.go", "value": "demoStepDelay = 500 * time.Millisecond"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "Auto-detection reads go.mod, package.json, pyproject.toml, and Cargo.toml"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "validateTemplateMapEntries(validTemplates, embedded.TemplatesFS)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "type seedResult struct"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/badge.go", "value": "Display knowledge flywheel health badge"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/badge.go", "value": "escapeVelocityThreshold"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/completion.go", "value": "ValidArgs:             []string{\"bash\", \"zsh\", \"fish\", \"powershell\"}"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/completion.go", "value": "GenBashCompletionV2"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/config.go", "value": "AGENTOPS_MODEL_TIER"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/config.go", "value": "modelsSetSkill"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/config.go", "value": "Set a skill-specific tier override"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/vibe_check.go", "value": "Run a comprehensive vibe-check analysis"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/vibe_check.go", "value": "parseDuration(vibeCheckSince)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/vibe_check.go", "value": "vibecheck.Analyze"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/trace.go", "value": "Trace the provenance of an artifact back to its source transcript."},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/trace.go", "value": "provenance.NewGraph"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/trace.go", "value": "if GetDryRun()"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/extract.go", "value": "pending sessions (queued by 'ao forge --queue')"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/extract.go", "value": "loadPendingOrNil"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/extract.go", "value": "extractMostRecent"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/mind.go", "value": "python3 -m mind"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/mind.go", "value": "mindArgs := []string{\"-m\", \"mind\", subcommand}"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/mind.go", "value": "if !GetDryRun()"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "supporting-cli-utility-map-and-docs",
+      "title": "Utility commands remain mapped for operators",
+      "kind": "artifact_check",
+      "objective": "Ensure utility commands remain represented in the CLI-skill map and README proof path, not only in generated command help.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao badge` | flywheel, status |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao seed` | quickstart |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao extract` |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao completion` | User utility | Shell completion generation |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao config` | User utility | Config management |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao demo` | User utility | Interactive demonstration |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao vibe-check` | User utility |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao trace` | User utility | Artifact tracing |"},
+        {"type": "artifact_contains", "target": "../../README.md", "value": "ao demo"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    }
+  ]
+}

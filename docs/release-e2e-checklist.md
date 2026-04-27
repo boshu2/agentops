@@ -19,7 +19,7 @@ Use this before you tag. The release process in [RELEASING](RELEASING.md) is the
 Run:
 
 ```bash
-bash scripts/ci-local-release.sh --fast --skip-e2e-install --jobs 4
+bash scripts/ci-local-release.sh --fast --jobs 4
 ```
 
 Expect:

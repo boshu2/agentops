@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.goals-autodev-evolve",
+  "name": "AgentOps Goals Autodev Evolve Canary",
+  "description": "Offline public canary for the fitness and autonomous-loop control plane: ao goals, PROGRAM/AUTODEV validation, and ao evolve operator defaults.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "goals", "autodev", "evolve", "fitness", "operator-contract"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "learning_closure", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "goals-autodev-evolve-focused-tests",
+      "title": "goals, autodev, and evolve focused tests pass",
+      "kind": "command",
+      "objective": "Protect goals lifecycle measurement, GOALS.md validation, JSON validity, PROGRAM/AUTODEV validation, evolve command registration, evolve default supervisor mode, era baselines, and dry-run generator fallback behavior.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestGoals_Integration_FullLifecycle|TestGoals_Integration_MeasureDirectivesJSON|TestGoalsMeasure_BasicRun|TestGoalsMeasure_WeightedScoring|TestGoalsValidate_ValidMD|TestJSONValidity_GoalsMeasure|TestJSONValidity_GoalsDrift|TestCobraAutodevValidateJSON|TestAutodev_Integration_ValidateJSON|TestEvolveCommandRegisteredOnRoot|TestEvolveCommandReusesRPILoopFlags|TestEvolveHelpDescribesV2OperatorCadence|TestEnsureEvolveEraBaselineWritesOncePerGoalsHash|TestEvolveDryRunEmptyQueueShowsGeneratorFallback)$'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "repo-fitness-contract-smoke",
+      "title": "repo GOALS and PROGRAM contracts validate from the built CLI",
+      "kind": "command",
+      "objective": "Ensure the checked-in repo fitness and operational contracts are executable by the same binary operators use during autonomous loops.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" goals validate --json | jq -e '.valid == true' >/dev/null; \"$tmp/ao\" autodev validate --json | jq -e '.valid == true and .program_path == \"PROGRAM.md\"' >/dev/null; \"$tmp/ao\" evolve --dry-run --max-cycles 1 | tee \"$tmp/evolve.txt\"; rg -q 'Evolve loop finished' \"$tmp/evolve.txt\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Evolve loop finished"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "fitness-operator-skill-contracts",
+      "title": "goals, autodev, and evolve skills preserve operator routing",
+      "kind": "artifact_check",
+      "objective": "Keep skill-level instructions aligned with the CLI surfaces that run the fitness/autonomy loop.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/goals/SKILL.md", "value": "ao goals measure --json"},
+        {"type": "artifact_contains", "target": "../../skills/goals/SKILL.md", "value": "When both files exist, GOALS.md takes precedence."},
+        {"type": "artifact_contains", "target": "../../skills/autodev/SKILL.md", "value": "`PROGRAM.md` takes precedence over `AUTODEV.md`."},
+        {"type": "artifact_contains", "target": "../../skills/autodev/SKILL.md", "value": "Do not mark an autonomous cycle successful only because the main tests pass."},
+        {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "Failing goals and directive gaps"},
+        {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "Testing improvements"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
+      "critical": true
+    },
+    {
+      "id": "autodev-contract-doc-required-sections",
+      "title": "autodev program contract documents required sections",
+      "kind": "artifact_check",
+      "objective": "Protect the repo-local operational layer that bounds autonomous work before evolve starts mutating files.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/autodev-program.md", "value": "### `Objective`"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/autodev-program.md", "value": "### `Mutable Scope`"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/autodev-program.md", "value": "### `Immutable Scope`"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/autodev-program.md", "value": "### `Validation Commands`"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/autodev-program.md", "value": "## Evolve Integration"},
+        {"type": "artifact_contains", "target": "../../PROGRAM.md", "value": "## Validation Commands"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"]
+    },
+    {
+      "id": "cli-docs-expose-fitness-commands",
+      "title": "generated CLI docs expose goals, autodev, and evolve commands",
+      "kind": "artifact_check",
+      "objective": "Keep the generated command reference aligned with the operator surfaces used to measure and run autonomous improvement.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao goals`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao autodev`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao evolve`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Track, measure, and validate project fitness goals."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the v2 autonomous improvement loop."}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+    },
+    {
+      "id": "evolve-code-defaults",
+      "title": "evolve source preserves supervised RPI loop defaults",
+      "kind": "artifact_check",
+      "objective": "Ensure evolve continues to route code cycles through the supervised RPI loop and captures fitness baselines by goals era.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "applyEvolveDefaults(cmd)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "rpiSupervisor = true"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "ensureEvolveEraBaseline(cwd)"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "return runRPILoop(cmd, args)"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"]
+    }
+  ]
+}

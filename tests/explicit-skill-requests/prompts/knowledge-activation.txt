@@ -1,0 +1,1 @@
+Run /knowledge-activation to turn the compiled corpus into operator-ready beliefs, playbooks, and briefings

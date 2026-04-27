@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "run_id": "agentops-core.distribution-install-update-20260425T060438Z",
+  "suite": {
+    "id": "agentops-core.distribution-install-update",
+    "path": "evals/agentops-core/distribution-install-update.json",
+    "visibility": "public_canary",
+    "tier": "deterministic",
+    "sha256": "02ab057ebc10270dbb9be3134dcade77dde08598f794657ee537a00e8c1a2f59"
+  },
+  "started_at": "2026-04-25T06:04:38.562856331Z",
+  "completed_at": "2026-04-25T06:05:05.993324758Z",
+  "status": "pass",
+  "verdict": "pass",
+  "git": {
+    "candidate_ref": "codex/eval-env-discovery",
+    "candidate_sha": "8435d914795d",
+    "dirty": false
+  },
+  "runtime": {
+    "name": "shell",
+    "live": false,
+    "attempts": 1,
+    "timeout_seconds": 180
+  },
+  "environment": {
+    "scrubbed_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "isolated_home": false,
+    "isolated_codex_home": false,
+    "network_access": "disabled"
+  },
+  "baseline": {
+    "mode": "promote",
+    "baseline_run_id": "agentops-core.distribution-install-update-20260425T060438Z",
+    "baseline_path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+    "promoted_from_run_id": "agentops-core.distribution-install-update-20260425T060438Z",
+    "promoted_at": "2026-04-25T06:05:06.136287964Z",
+    "promoted_by": "codex",
+    "rationale": "Cycle 22 baseline for deterministic installer/update distribution canary after committed suite pass."
+  },
+  "case_results": [
+    {
+      "id": "shell-installer-smoke",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "correctness": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "duration_ms": 1405,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Install Script Smoke Tests\"",
+        "stdout contains \"Runtime Execution Tests\"",
+        "stdout contains \"Results: 29 passed, 0 failed\""
+      ]
+    },
+    {
+      "id": "codex-native-plugin-install-paths",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "duration_ms": 18518,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 3 PASS, 0 FAIL\"",
+        "stdout contains \"PASS: Codex-native install flow verified\"",
+        "stdout contains \"skills tested: 69\""
+      ]
+    },
+    {
+      "id": "codex-release-bundle-and-manifests",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "correctness": 1,
+        "process_adherence": 1
+      },
+      "duration_ms": 13371,
+      "critical": true,
+      "diagnostics": [
+        "exit_code matched 0",
+        "stdout contains \"Results: 2 PASS, 0 FAIL\"",
+        "stdout contains \"Codex install bundle validation OK\"",
+        "stdout contains \"Codex marketplace manifest matches codex-marketplace.v1.schema.json\""
+      ]
+    },
+    {
+      "id": "windows-installer-smoke-wiring",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "critical": true,
+      "diagnostics": [
+        "artifact ../../tests/windows/test-windows-smoke.ps1 contains \"Test-PowerShellSyntax (Join-Path $RepoRoot \\\"scripts\\\\install-ao.ps1\\\")\"",
+        "artifact ../../tests/windows/test-windows-smoke.ps1 contains \"Test-PowerShellSyntax (Join-Path $RepoRoot \\\"scripts\\\\install-codex.ps1\\\")\"",
+        "artifact ../../tests/windows/test-windows-smoke.ps1 contains \"-InstallDir $aoInstallDir -NoPathUpdate\"",
+        "artifact ../../tests/windows/test-windows-smoke.ps1 contains \"-RepoRoot $RepoRoot -CodexHome $codexHome\"",
+        "artifact ../../tests/windows/test-windows-smoke.ps1 contains \"$builtAO doctor --json\"",
+        "artifact ../../.github/workflows/validate.yml contains \"windows-smoke\"",
+        "artifact ../../.github/workflows/validate.yml contains \".\\\\tests\\\\windows\\\\test-windows-smoke.ps1\"",
+        "artifact ../../docs/CI-CD.md contains \"Windows installer smoke must pass\""
+      ]
+    },
+    {
+      "id": "public-install-docs-current",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1
+      },
+      "diagnostics": [
+        "artifact ../../README.md contains \"claude plugin marketplace add boshu2/agentops\"",
+        "artifact ../../README.md contains \"curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash\"",
+        "artifact ../../README.md contains \"irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex\"",
+        "artifact ../../README.md contains \"brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops\"",
+        "artifact ../../README.md contains \"irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex\"",
+        "artifact ../../docs/index.md contains \"curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash\"",
+        "artifact ../../docs/troubleshooting.md contains \"For Codex, use `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash`\"",
+        "artifact ../../docs/RELEASING.md contains \"brew tap boshu2/agentops\""
+      ]
+    },
+    {
+      "id": "update-skill-install-contract",
+      "status": "pass",
+      "score": 1,
+      "dimension_scores": {
+        "artifact_quality": 1,
+        "process_adherence": 1,
+        "runtime_compatibility": 1,
+        "safety": 1
+      },
+      "diagnostics": [
+        "artifact ../../skills/update/SKILL.md contains \"bash \u003c(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)\"",
+        "artifact ../../skills/update/SKILL.md contains \"Confirm the output shows all skills installed with no failures.\"",
+        "artifact ../../skills/update/SKILL.md contains \"Any failures and how to fix them\"",
+        "artifact ../../skills-codex/update/SKILL.md contains \"bash \u003c(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)\"",
+        "artifact ../../skills-codex/update/SKILL.md contains \"Confirm the output shows all skills installed with no failures.\"",
+        "artifact ../../scripts/install.sh contains \"install-codex.sh\"",
+        "artifact ../../scripts/install-opencode.sh contains \"get_latest_tag\""
+      ]
+    }
+  ],
+  "aggregate_score": 1,
+  "dimension_scores": {
+    "artifact_quality": 1,
+    "correctness": 1,
+    "process_adherence": 1,
+    "runtime_compatibility": 1,
+    "safety": 1
+  },
+  "artifacts": [
+    {
+      "path": ".agents/evals/runs/20260425T060438Z/agentops-core.distribution-install-update.run.json",
+      "purpose": "evaluation run record",
+      "kind": "run_json"
+    },
+    {
+      "path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+      "purpose": "promoted eval baseline",
+      "kind": "baseline"
+    }
+  ]
+}

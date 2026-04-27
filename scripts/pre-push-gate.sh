@@ -78,6 +78,26 @@ run_without_git_env_and_stdin() {
     run_without_git_env "$@" </dev/null
 }
 
+run_without_git_env_isolated_agents_home() {
+    local tmp_home tmp_codex_home rc
+    tmp_home="$(mktemp -d "${TMPDIR:-/tmp}/agentops-prepush-home.XXXXXX")"
+    tmp_codex_home="$(mktemp -d "${TMPDIR:-/tmp}/agentops-prepush-codex.XXXXXX")"
+
+    set +e
+    HOME="$tmp_home" \
+        CODEX_HOME="$tmp_codex_home" \
+        AGENTS_HOME="$tmp_home/.agents" \
+        run_without_git_env "$@"
+    rc=$?
+    set -e
+
+    # Go module cache entries are intentionally read-only; make the isolated
+    # tree removable so cleanup noise cannot mask the gate result.
+    chmod -R u+w "$tmp_home" "$tmp_codex_home" 2>/dev/null || true
+    rm -rf "$tmp_home" "$tmp_codex_home" 2>/dev/null || true
+    return "$rc"
+}
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -723,7 +743,7 @@ fi
 # --- 24c. AgentOps eval canaries ---
 if needs_check eval || needs_check go; then
     if [[ -x scripts/eval-agentops.sh ]]; then
-        if eval_agentops_output="$(run_without_git_env scripts/eval-agentops.sh --fast 2>&1)"; then
+        if eval_agentops_output="$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh --fast 2>&1)"; then
             if grep -q '^WARN eval-agentops:' <<<"$eval_agentops_output"; then
                 warn "AgentOps eval canaries"
                 indent_output "$eval_agentops_output"

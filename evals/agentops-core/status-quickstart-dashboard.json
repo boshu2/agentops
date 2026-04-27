@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.status-quickstart-dashboard",
+  "name": "AgentOps Status Quickstart Dashboard Canary",
+  "description": "Offline public canary for status and quickstart operator dashboards: shared/Codex validators, CLI helper behavior, live status JSON latency, quickstart help, state-aware next actions, and Codex prompt contracts.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "status", "quickstart", "dashboard", "onboarding", "codex", "cli"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "status-quickstart-skill-validators",
+      "title": "Shared/Codex status and quickstart validators pass",
+      "kind": "command",
+      "objective": "Keep status and quickstart skill validators healthy across shared and Codex artifacts, including semantic onboarding detection for Codex quickstart.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash skills/status/scripts/validate.sh && bash skills-codex/status/scripts/validate.sh && bash skills/quickstart/scripts/validate.sh && bash skills-codex/quickstart/scripts/validate.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "Results: 7 passed, 0 failed"},
+        {"type": "stdout_contains", "value": "mentions onboarding"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "status-quickstart-focused-go-tests",
+      "title": "Status and quickstart focused Go tests pass",
+      "kind": "command",
+      "objective": "Protect status output helpers, bounded status flywheel latency, quickstart helper behavior, init/quick-start flows, and status JSON validity.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestLoadFlywheelBrief_TimesOut|TestCobraStatusHelpers|TestCobraQuickstartHelpers|TestJSONValidity_Status|TestQuickstart_|TestRunQuickStart|TestRunInit)'"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "status-quickstart-live-cli-smoke",
+      "title": "Built status JSON and quickstart help return within latency budget",
+      "kind": "command",
+      "objective": "Catch live command regressions that unit tests can miss: status must emit JSON quickly in this repo, and quick-start help must remain callable from the built binary.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); timeout 15 \"$tmp/ao\" status --json >\"$tmp/status.json\"; jq -e 'type == \"object\" and has(\"initialized\") and has(\"base_dir\")' \"$tmp/status.json\" >/dev/null; timeout 10 \"$tmp/ao\" quick-start --help >/dev/null; echo status-quickstart-cli-ok"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "status-quickstart-cli-ok"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "status-dashboard-contracts",
+      "title": "Status dashboard preserves state gathering, JSON, and next-action contracts",
+      "kind": "artifact_check",
+      "objective": "Ensure status remains a single-screen operator dashboard with parallel state gathering, JSON output, quality signals, and ordered next-action rules.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "Run ALL of the following in parallel bash calls for speed"},
+        {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "SUGGESTED NEXT ACTION"},
+        {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "If the user passed `--json`"},
+        {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "SESSION QUALITY SIGNALS"},
+        {"type": "artifact_contains", "target": "../../skills-codex/status/SKILL.md", "value": "$quickstart"},
+        {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Current Work"},
+        {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Latest Gates"},
+        {"type": "artifact_contains", "target": "../../skills-codex/status/prompt.md", "value": "Next Action"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/status.go", "value": "statusFlywheelTimeout"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/status.go", "value": "status should remain an operator dashboard"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "quickstart-onboarding-contracts",
+      "title": "Quickstart preserves setup detection and one-next-action onboarding",
+      "kind": "artifact_check",
+      "objective": "Lock quickstart's setup detector, exact AgentOps explanation, decision-table recommendations, Codex lifecycle guidance, and semantic onboarding validator.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "Tell a new user what AgentOps does and what to do first"},
+        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "Output only that message"},
+        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "AgentOps is the operational layer for coding agents."},
+        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "CODEX=true"},
+        {"type": "artifact_contains", "target": "../../skills-codex/quickstart/SKILL.md", "value": "$rpi \"your goal\""},
+        {"type": "artifact_contains", "target": "../../skills-codex/quickstart/SKILL.md", "value": "ao codex status"},
+        {"type": "artifact_contains", "target": "../../skills-codex/quickstart/prompt.md", "value": "next command, expected result, fallback"},
+        {"type": "artifact_contains", "target": "../../skills/quickstart/scripts/validate.sh", "value": "onboarding|new user"},
+        {"type": "artifact_contains", "target": "../../skills-codex/quickstart/scripts/validate.sh", "value": "onboarding|new user"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality", "correctness"],
+      "critical": true
+    }
+  ]
+}
