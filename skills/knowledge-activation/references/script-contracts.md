@@ -2,7 +2,14 @@
 
 ## Builder Boundary
 
-The current product slice still expects packet refresh builders under `WORKSPACE/.agents/scripts/` when `ao knowledge activate` needs to refresh the evidence substrate.
+The product slice supports two evidence-substrate paths for `ao knowledge activate`:
+
+1. workspace-local packet refresh builders under `WORKSPACE/.agents/scripts/`
+2. a native harvest-catalog fallback from `WORKSPACE/.agents/harvest/latest.json`
+
+The fallback is intentionally narrow: it promotes the latest harvest catalog into a
+single `harvested-praxis` topic packet, promoted packet, and chunk bundle so the
+normal native belief/playbook/briefing builders have a concrete operator surface.
 
 ### Packet Builders
 
@@ -55,6 +62,7 @@ Reads generated artifacts and reports thin topics, promotion gaps, weak claims, 
 This slice now splits responsibility:
 
 - packet refresh remains workspace-local while the corpus contracts keep moving
+- harvest-to-praxis activation is durable `ao`-native fallback behavior
 - belief/playbook/brief/gap surfaces are durable `ao`-native product surfaces
 
 The skill contract stays stable across that boundary.
