@@ -30,7 +30,6 @@ allowlist nor an active skill name fails the gate.
 | `compiled` | cli (compile pipeline) | regenerated | Compiled wiki output (subset; see `wiki/`) |
 | `config` | cli (.agents/.config) | persistent | Rig identity (project/crew) — read by harvest path-prefix fallback |
 | `constraints` | cli (constraints subsystem) | persistent | Compiled constraint manifests |
-| `context` | cli (context assembly) | rolling | Adhoc context assembly artifacts created for explicit context requests |
 | `defrag` | cli (compile defrag), scripts | rolling | Defrag run state and dry-run reports |
 | `findings` | scripts, /forge | persistent | Mined findings awaiting promotion |
 | `git` | cli (git-aware tooling) | persistent | Git-derived state cached for the runtime |
@@ -42,7 +41,6 @@ allowlist nor an active skill name fails the gate.
 | `mine` | cli (compile mine), /forge | rolling | Mined raw signal awaiting promotion |
 | `opencode-tests` | scripts (opencode runtime tests) | regenerated | Opencode runtime test fixtures and outputs |
 | `overnight` | scripts (nightly dream cycle), /dream | rolling | Overnight run state and morning packets |
-| `packets` | cli (context packet rollout) | rolling | Source manifests and promoted context packets for startup/context assembly |
 | `patterns` | cli (curate), /post-mortem, /retro | persistent | Promoted pattern artifacts |
 | `planning-rules` | cli (planning) | persistent | Planning rules sourced from skills/contracts |
 | `plans` | /plan, scripts | persistent | Planning artifacts |
@@ -55,7 +53,6 @@ allowlist nor an active skill name fails the gate.
 | `retros` | /retro | persistent | Retrospectives |
 | `sessions` | cli (`.agents/ao/sessions`), hooks | rolling | Session transcripts and matches |
 | `signals` | hooks (quality-signals) | rolling | Append-only quality signal log |
-| `skill-drafts` | cli (ratchet) | regenerated | Draft skill proposals and evidence generated from recurring patterns |
 | `skills` | cli (`doctor`, install) | persistent | User-installed skill state (alt path under `~/.agents/skills/`) |
 | `smoke-test` | scripts (smoke harness) | regenerated | Smoke test scratch dirs |
 | `specs` | /plan, /pre-mortem | persistent | Specs gating ratchet steps |
@@ -63,8 +60,6 @@ allowlist nor an active skill name fails the gate.
 | `synthesis` | /plan, /forge, /compile | persistent | Synthesis output |
 | `tasks` | cli (quickstart beads-optional mode) | persistent | Beads-optional task tracking fallback |
 | `teams` | cli (`codex-team`, `swarm`) | rolling | Team coordination state |
-| `topics` | cli (context packet rollout) | persistent | Topic packet artifacts used by context assembly health checks |
-| `wiki` | cli (forge, dream, search) | persistent | Session wiki sources, entities, concepts, and synthesis used by forge/search workflows |
 
 ### Skill-owned subdirs
 
@@ -86,7 +81,6 @@ compile
 compiled
 config
 constraints
-context
 defrag
 findings
 git
@@ -98,7 +92,6 @@ memory
 mine
 opencode-tests
 overnight
-packets
 patterns
 planning-rules
 plans
@@ -111,7 +104,6 @@ releases
 retros
 sessions
 signals
-skill-drafts
 skills
 smoke-test
 specs
@@ -119,8 +111,6 @@ swarm-role
 synthesis
 tasks
 teams
-topics
-wiki
 <!-- END agents-write-surfaces-allowlist -->
 
 ## How to update
