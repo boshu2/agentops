@@ -100,7 +100,7 @@ var validNextWorkClaimStatuses = map[string]struct{}{
 }
 
 // TestRouteFindings_EmitsSchemaCompliantEnums is a build-time guard against
-// the next-work v1.3 enum drift that previously tripped the pre-push gate's
+// the next-work v1.4 enum drift that previously tripped the pre-push gate's
 // contract parity check (see fix commit 271d4de4). Any future change to the
 // router's `Type`/`Source` string literals that picks a value outside the
 // schema's allowed enum will now fail this test instead of surviving until
@@ -145,7 +145,7 @@ func TestRouteFindings_EmitsSchemaCompliantEnums(t *testing.T) {
 
 // TestMapSeverity_CollapsesCriticalToHigh documents the deliberate mapping
 // choice: finding-schema "critical"/"blocker" collapse to "high" because the
-// next-work v1.3 severity enum is {low, medium, high}. Prior to this test
+// next-work v1.4 severity enum is {low, medium, high}. Prior to this test
 // mapSeverity returned "critical" which was silently rejected by the
 // pre-push contract parity gate.
 func TestMapSeverity_CollapsesCriticalToHigh(t *testing.T) {

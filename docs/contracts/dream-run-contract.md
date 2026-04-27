@@ -305,11 +305,11 @@ Each candidate must be queue-safe before REDUCE sees it:
 | `dedup_key` | yes | Stable key; auto-prefixed with `finding-generator|` |
 | `duplicate` | yes | Whether INGEST already knows this candidate is present |
 
-Type normalization follows the next-work v1.3 enum:
+Type normalization follows the next-work v1.4 enum:
 
 - Existing enum values pass through unchanged:
   `tech-debt`, `improvement`, `pattern-fix`, `process-improvement`,
-  `feature`, `bug`, and `task`.
+  `feature`, `bug`, `task`, `docs`, and `chore`.
 - `refactor` becomes `tech-debt`.
 - `knowledge-gap` becomes `task`.
 - Any unknown type becomes `task`.

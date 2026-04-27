@@ -140,13 +140,13 @@ test_schema_version_drift_fails() {
   python3 - <<'PY' "$fixture/docs/contracts/next-work.schema.md"
 from pathlib import Path
 path = Path(__import__("sys").argv[1])
-path.write_text(path.read_text().replace("schema_version: 1.3", "schema_version: 1.2"))
+path.write_text(path.read_text().replace("schema_version: 1.4", "schema_version: 1.3"))
 PY
 
   assert_gate_fails_with \
     "schema version drift fails parity gate" \
     "$fixture" \
-    "next-work schema is not at v1.3"
+    "next-work schema is not at v1.4"
 }
 
 test_runtime_pattern_fix_rank_fails() {
@@ -267,7 +267,7 @@ test_active_item_enum_drift_fails() {
   fixture="$(create_fixture "active-enum-drift")"
   mkdir -p "$fixture/.agents/rpi"
   cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
-{"source_epic":"ag-enum-drift","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Write docs","type":"docs","severity":"moderate","source":"post-mortem","description":"Active item with legacy enum values","target_repo":"agentops","consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
+{"source_epic":"ag-enum-drift","timestamp":"2026-04-13T00:00:00Z","items":[{"title":"Write docs","type":"finding","severity":"moderate","source":"post-mortem","description":"Active item with legacy enum values","target_repo":"agentops","consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
 EOF
 
   assert_gate_fails_with \

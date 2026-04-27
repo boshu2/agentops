@@ -36,17 +36,19 @@ func TestHooksRunRedactsSensitiveDiff(t *testing.T) {
 	diff := strings.Join([]string{
 		"API_TOKEN=not-a-secret-fixture",
 		`QUOTED_API_TOKEN="quoted-secret-fixture"`,
+		`client_secret = 'lowercase-secret-fixture'`,
 		"Authorization: Bearer plain-text",
 		`Authorization: Bearer "quoted-token-fixture"`,
 	}, "\n")
 	redacted := redactSensitiveDiff(diff)
-	for _, leaked := range []string{"not-a-secret-fixture", "quoted-secret-fixture", "plain-text", "quoted-token-fixture"} {
+	for _, leaked := range []string{"not-a-secret-fixture", "quoted-secret-fixture", "lowercase-secret-fixture", "plain-text", "quoted-token-fixture"} {
 		if strings.Contains(redacted, leaked) {
 			t.Fatalf("diff leaked %q after redaction: %q", leaked, redacted)
 		}
 	}
 	if !strings.Contains(redacted, "API_TOKEN=[REDACTED]") ||
 		!strings.Contains(redacted, "QUOTED_API_TOKEN=[REDACTED]") ||
+		!strings.Contains(redacted, "client_secret = [REDACTED]") ||
 		!strings.Contains(redacted, "Authorization: Bearer [REDACTED]") {
 		t.Fatalf("diff was not redacted: %q", redacted)
 	}

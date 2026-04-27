@@ -105,6 +105,8 @@ Allowed `kind` values:
 - `feature`
 - `bug`
 - `task`
+- `docs`
+- `chore`
 
 ### Severity
 
@@ -120,6 +122,8 @@ Allowed `kind` values:
 - `evolve-generator`
 - `feature-suggestion`
 - `backlog-processing`
+- `post-mortem-finding`
+- `manifest-classification`
 
 ### Claim Status
 
@@ -171,5 +175,5 @@ Runtime readers still tolerate older flat rows with top-level `title`, `type`, `
 ## Canonical Example
 
 ```jsonl
-{"source_epic":"na-fr0","timestamp":"2026-03-08T17:30:00Z","items":[{"title":"Publish next-work schema v1.3 and add contract parity checks","type":"tech-debt","severity":"high","source":"council-finding","description":"Collapse next-work queue docs to one tracked v1.3 contract and validate drift against runtime behavior.","evidence":"March 8 audit found the local schema file at v1.2 while runtime and skill docs had already moved to per-item lifecycle semantics.","target_repo":"agentops","proof_ref":{"kind":"execution_packet","run_id":"run-2026-03-08","path":".agents/rpi/runs/run-2026-03-08/execution-packet.json"},"consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
+{"source_epic":"na-fr0","timestamp":"2026-03-08T17:30:00Z","items":[{"title":"Publish next-work schema v1.4 and add contract parity checks","type":"tech-debt","severity":"high","source":"council-finding","description":"Collapse next-work queue docs to one tracked v1.4 contract and validate drift against runtime behavior.","evidence":"March 8 audit found the local schema file at v1.2 while runtime and skill docs had already moved to per-item lifecycle semantics.","target_repo":"agentops","proof_ref":{"kind":"execution_packet","run_id":"run-2026-03-08","path":".agents/rpi/runs/run-2026-03-08/execution-packet.json"},"consumed":false,"claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
 ```

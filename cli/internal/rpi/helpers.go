@@ -53,7 +53,7 @@ func WorkTypeRank(item NextWorkItem) int {
 	switch item.Type {
 	case "feature", "improvement", "tech-debt", "pattern-fix", "bug", "task":
 		return 2
-	case "process-improvement":
+	case "process-improvement", "docs", "chore":
 		return 1
 	default:
 		return 0

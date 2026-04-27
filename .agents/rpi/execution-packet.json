@@ -1,51 +1,74 @@
 {
-  "id": "execution-packet-2026-04-26-rfc-0001-proposal-2-external-watchlist",
   "schema_version": 1,
+  "id": "execution-packet-2026-04-26-git-topology-consolidation",
   "date": "2026-04-26",
-  "run_id": "rfc0001p2-20260426-01",
-  "objective": "Implement RFC 0001 Proposal 2 — external watchlist finding-generator emitting sidecar candidates with status=proposed, requires=[\"human-review\"]; held by IsQueueItemHeldForReview from commit 0dc6b7f3.",
-  "epic_id": null,
-  "primary_bead_id": null,
-  "tracking_mode": "tasklist",
+  "run_id": "rpi-2026-04-26-git-topology-consolidation",
+  "created_at": "2026-04-26T20:55:00-04:00",
+  "objective": "Audit and consolidate all git branches/worktrees/stashes into main. Delete fully-merged + content-equivalent + squash-residue refs; preserve unmerged unique work as a manifest; archive-tag deleted SHAs locally; never delete codex/preserve-nightly-retrospective-20260426.",
+  "epic_id": "ag-06p",
+  "primary_bead_id": "ag-06p",
+  "tracking_mode": "beads",
   "complexity": "standard",
+  "scope_mode": "reduction",
+  "phase_origin": "rpi",
   "test_first": true,
-  "plan_path": ".agents/plans/2026-04-26-rfc-0001-proposal-2-external-watchlist.md",
-  "research_path": ".agents/research/2026-04-26-proposal-2-external-watchlist-implementation.md",
-  "pre_mortem_path": ".agents/council/2026-04-26-pre-mortem-rfc-0001-proposal-2-external-watchlist.md",
+  "test_levels": ["L0", "L1"],
+  "plan_path": ".agents/plans/2026-04-26-git-topology-consolidation.md",
+  "research_path": ".agents/research/2026-04-26-branch-consolidation-audit.md",
+  "pre_mortem_path": ".agents/council/2026-04-26-pre-mortem-git-topology-consolidation.md",
   "pre_mortem_verdict": "WARN",
   "pre_mortem_fixes_applied": true,
-  "test_levels": ["L0", "L1", "L2"],
+  "ranked_packet_path": null,
+  "applied_findings": [],
   "contract_surfaces": [
-    "cli/internal/overnight/generator_sidecars.go",
-    "cli/internal/overnight/ingest.go",
-    "cli/internal/overnight/loop.go",
-    "cli/internal/overnight/reduce.go",
-    "cli/internal/rpi/helpers.go",
-    "cli/internal/rpi/types.go",
-    "docs/contracts/next-work.schema.md",
-    "docs/contracts/dream-run-contract.md",
-    "docs/rfcs/0001-finding-generator-parallelism.md",
-    "PROGRAM.md"
+    "git refs (local branches, remote branches)",
+    "git worktrees",
+    "git stashes",
+    ".agents/rpi/consolidation-2026-04-26-prederivation.tsv",
+    ".agents/rpi/consolidation-2026-04-26-unmerged-manifest.md",
+    ".agents/rpi/consolidation-2026-04-26-summary.md",
+    ".agents/rpi/consolidation-2026-04-26-workflow-refs.md"
   ],
   "done_criteria": [
-    "Status/Requires/DedupKey fields propagate end-to-end from sidecar candidate to next-work.jsonl line",
-    "external-watchlist| dedup_key prefix preserved by normalizeGeneratorCandidate (Pre-mortem Fix #1 regression guard)",
-    "Resulting queue items return false from rpi.IsQueueItemSelectable",
-    "External watchlist generator soft-fails on context cancellation",
-    "Lane-level fitness counter (external_watchlist_emitted) visible on IngestResult after a run with stale entries",
-    "cd cli && go test ./internal/overnight/... ./internal/rpi/... passes",
-    "bash scripts/check-contract-compatibility.sh passes"
+    "git branch | wc -l == 3 (main + postmortem + preserve)",
+    "git branch -r | grep -v 'origin/HEAD' | wc -l == 15",
+    "git worktree list | wc -l == 1",
+    "git stash list | wc -l == 0",
+    ".agents/rpi/consolidation-2026-04-26-prederivation.tsv exists with all 31+ deleted SHAs",
+    ".agents/rpi/consolidation-2026-04-26-unmerged-manifest.md exists",
+    ".agents/rpi/consolidation-2026-04-26-summary.md exists",
+    "git tag -l 'archive/*' | wc -l == 31",
+    "codex/preserve-nightly-retrospective-20260426 still exists with SHA a76d8562"
   ],
-  "applied_findings": [
-    ".agents/findings/f-2026-04-14-001.md",
-    ".agents/research/2026-04-26-state-since-v2.38.0.md",
-    ".agents/research/2026-04-26-proposal-2-external-watchlist-implementation.md"
-  ],
-  "ranked_packet_path": null,
   "waves": [
-    {"wave": 1, "tasks": ["TASK-1"], "name": "Propagation plumbing + Fix #1 normalize prefix preservation"},
-    {"wave": 2, "tasks": ["TASK-2"], "name": "External watchlist generator + tests + fixture"},
-    {"wave": 3, "tasks": ["TASK-3"], "name": "Register generator in INGEST + PROGRAM.md scope"},
-    {"wave": 4, "tasks": ["TASK-4"], "name": "Fitness counter + RFC + dream-run-contract"}
-  ]
+    { "wave": "0",   "bead": "ag-vyn", "name": "Pre-flight + workflow-ref scan" },
+    { "wave": "1",   "bead": "ag-0vg", "name": "Delete 3 fully-merged local branches" },
+    { "wave": "1.5", "bead": "ag-x4g", "name": "Delete 2 squash-residue local branches (mergeCommit-verified)" },
+    { "wave": "2",   "bead": "ag-30j", "name": "Remove docs-index-collision worktree + delete superseded branch" },
+    { "wave": "3",   "bead": "ag-wtz", "name": "Drop all 5 stashes (reverse-index order)" },
+    { "wave": "4a",  "bead": "ag-0sc", "name": "Delete 18 tip-ancestor-of-main remote branches" },
+    { "wave": "4b",  "bead": "ag-zvn", "name": "Delete 11 squash-merge residue remote branches (PR-verified)" },
+    { "wave": "4c",  "bead": "ag-ysz", "name": "Delete feat/ao-forge-tiered (patch-equivalent)" },
+    { "wave": "4d",  "bead": "ag-gux", "name": "Delete feat/bootstrap-recommend-bd (net-zero content)" },
+    { "wave": "5",   "bead": "ag-33w", "name": "Write unmerged-manifest report (no deletions)" },
+    { "wave": "6",   "bead": "ag-9x8", "name": "Verify preserved local branches still intact" },
+    { "wave": "7",   "bead": "ag-8v8", "name": "Write consolidation summary report" }
+  ],
+  "constraints": {
+    "hard": [
+      "NEVER delete codex/preserve-nightly-retrospective-20260426",
+      "Preserve all unmerged unique work — surface as PR candidates",
+      "No force-push, no reset --hard, no --no-verify",
+      "Primary worktree at /Users/bo/dev/agentops stays",
+      "Remote-branch deletions verify content reachable from origin/main first",
+      "Each remote-branch deletion preceded by archive-tag (F3 from pre-mortem)"
+    ]
+  },
+  "operator_pre_approval": {
+    "scope": "batch deletions for the merged-safe-to-delete set",
+    "granted_at": "2026-04-26T20:30:00-04:00",
+    "remote_scope": true,
+    "stash_scope": true,
+    "wt_changes_disposition": "stashed at stash@{0}; drop in Wave 3"
+  }
 }

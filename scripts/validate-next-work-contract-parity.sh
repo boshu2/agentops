@@ -151,8 +151,8 @@ for path in \
   require_file "$path"
 done
 
-require_contains "$SCHEMA" "schema_version: 1.3" \
-  "next-work schema is not at v1.3"
+require_contains "$SCHEMA" "schema_version: 1.4" \
+  "next-work schema is not at v1.4"
 require_contains "$SCHEMA" 'Item lifecycle inside `items[]` is authoritative.' \
   "next-work schema must declare item lifecycle authority"
 require_contains "$SCHEMA" "may be empty when a post-mortem finds nothing actionable" \
@@ -177,11 +177,11 @@ proof_ref_kinds=(
   completed_run evidence_only_closure execution_packet
 )
 item_types=(
-  tech-debt improvement pattern-fix process-improvement feature bug task
+  tech-debt improvement pattern-fix process-improvement feature bug task docs chore
 )
 item_sources=(
   council-finding retro-learning retro-pattern evolve-generator
-  feature-suggestion backlog-processing
+  feature-suggestion backlog-processing post-mortem-finding manifest-classification
 )
 
 for field in "${entry_fields[@]}"; do
@@ -262,6 +262,8 @@ require_contains "$SMOKE" "validate-next-work-contract-parity.sh" \
 
 require_contains "$RUNTIME" "case \"feature\", \"improvement\", \"tech-debt\", \"pattern-fix\", \"bug\", \"task\":" \
   "RPI runtime is missing workTypeRank coverage for pattern-fix"
+require_contains "$RUNTIME" "case \"process-improvement\", \"docs\", \"chore\":" \
+  "RPI runtime is missing workTypeRank coverage for docs/chore"
 require_contains "$RUNTIME" 'omitted item `claim_status` semantically' \
   "runtime comments or docs should preserve omitted claim_status semantics"
 
@@ -271,7 +273,7 @@ require_contains "$RUNTIME" 'CompletionEvidence' \
 require_contains "$RUNTIME" 'completion_evidence' \
   "runtime next-work struct must have completion_evidence json tag"
 
-# Harvest reference must show the batched v1.3 write shape.
+# Harvest reference must show the batched v1.4 write shape.
 require_contains "$HARVEST_REF" "source_epic" \
   "harvest-next-work reference must show batched source_epic field"
 require_contains "$HARVEST_REF" "items" \
@@ -310,7 +312,7 @@ for skill in "$POST_MORTEM_SKILL" "$POST_MORTEM_CODEX_SKILL"; do
     "${skill#$ROOT/} ACT.3 still contains the legacy flat-row append example"
 done
 
-# Drift validation: if a live next-work.jsonl exists, verify all entries conform to v1.3.
+# Drift validation: if a live next-work.jsonl exists, verify all entries conform to v1.4.
 LIVE_QUEUE="$ROOT/.agents/rpi/next-work.jsonl"
 if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
   drift_count=0
@@ -321,7 +323,7 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
     fi
   done < "$LIVE_QUEUE"
   if [[ "$drift_count" -gt 0 ]]; then
-    fail "next-work.jsonl has $drift_count entries not conforming to v1.3 schema (missing source_epic, items, or claim_status)"
+    fail "next-work.jsonl has $drift_count entries not conforming to v1.4 schema (missing source_epic, items, or claim_status)"
   fi
 
   aggregate_self_drift="$(
@@ -365,12 +367,14 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
         end;
       def valid_type:
         . == "tech-debt" or . == "improvement" or . == "pattern-fix" or
-        . == "process-improvement" or . == "feature" or . == "bug" or . == "task";
+        . == "process-improvement" or . == "feature" or . == "bug" or . == "task" or
+        . == "docs" or . == "chore";
       def valid_severity:
         . == "high" or . == "medium" or . == "low";
       def valid_source:
         . == "council-finding" or . == "retro-learning" or . == "retro-pattern" or
-        . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing";
+        . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing" or
+        . == "post-mortem-finding" or . == "manifest-classification";
       to_entries[] as $line |
       select(($line.value.items? | type) == "array") |
       ($line.value.items | to_entries[]) as $item |

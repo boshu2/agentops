@@ -126,7 +126,7 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		packet := buildDreamQueuePacket(summary, sel, i+1)
 		// Curator-side tractability probe: per the 2026-04-26 retro,
 		// the curator emitted the same stale packets ("philosophy doc",
-		// "next-work schema v1.3") three nightlies in a row because no
+		// "next-work schema v1.4") three nightlies in a row because no
 		// gate verified the cited surface wasn't already shipped. If
 		// the probe is conclusively stale, suppress and record; if
 		// inconclusive, emit normally.
@@ -260,7 +260,6 @@ func extractScriptsRef(s string) string {
 	}
 	return tok
 }
-
 
 func rankDreamMorningQueueSelections(cwd string, entries []nextWorkEntry, repoFilter string, limit int) []queueSelection {
 	if limit <= 0 || len(entries) == 0 {
