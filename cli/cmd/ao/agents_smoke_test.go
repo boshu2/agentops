@@ -76,12 +76,14 @@ func findContractRoot(t *testing.T) (string, string) {
 }
 
 // scanProductionAgentsReferences returns the set of subdir names referenced
-// via .agents/<name> literals in production code (cli/**/*.go excluding
-// _test.go, plus scripts/, hooks/, lib/ shell files). Mirrors the regex
-// used by scripts/check-agents-write-surfaces.sh so the read-side and
-// write-side gates agree on what counts as a reference.
+// via .agents/<name> literals or filepath.Join(..., ".agents", "<name>")
+// calls in production code (cli/**/*.go excluding _test.go, plus scripts/,
+// hooks/, lib/ shell files). Mirrors the regexes used by
+// scripts/check-agents-write-surfaces.sh so the read-side and write-side
+// gates agree on what counts as a reference.
 func scanProductionAgentsReferences(repoRoot string) (map[string]bool, error) {
 	literalRe := regexp.MustCompile(`\.agents/([a-z][a-zA-Z0-9_-]*)`)
+	joinRe := regexp.MustCompile(`filepath\.Join\([^)]*"\.agents"[[:space:]]*,[[:space:]]*"([a-z][a-zA-Z0-9_-]*)"`)
 	found := map[string]bool{}
 
 	walkOne := func(rootDir string, isProductionFile func(path string, d fs.DirEntry) bool) error {
@@ -104,6 +106,9 @@ func scanProductionAgentsReferences(repoRoot string) (map[string]bool, error) {
 				return nil
 			}
 			for _, m := range literalRe.FindAllSubmatch(data, -1) {
+				found[string(m[1])] = true
+			}
+			for _, m := range joinRe.FindAllSubmatch(data, -1) {
 				found[string(m[1])] = true
 			}
 			return nil
@@ -145,6 +150,7 @@ func TestScanProductionAgentsReferences_FindsKnownLiteral(t *testing.T) {
 
 	goSrc := []byte(`package main
 const _ = ".agents/learnings/foo.md"
+var _ = filepath.Join(cwd, ".agents", "packets", "promoted")
 `)
 	if err := os.WriteFile(filepath.Join(tmp, "cli", "cmd", "ao", "thing.go"), goSrc, 0o644); err != nil {
 		t.Fatal(err)
@@ -168,6 +174,9 @@ const _ = ".agents/test-only-surface/x"
 	}
 	if !refs["learnings"] {
 		t.Error("expected 'learnings' from production go file")
+	}
+	if !refs["packets"] {
+		t.Error("expected 'packets' from filepath.Join production go file")
 	}
 	if !refs["releases"] {
 		t.Error("expected 'releases' from shell script")
