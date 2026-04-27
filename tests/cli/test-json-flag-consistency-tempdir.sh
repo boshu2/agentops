@@ -34,7 +34,8 @@ for ((i = 1; i <= $#; i++)); do
     printf '{}\n'
     exit 0
   fi
-  if [[ "${!i}" == "-o" ]] && [[ $((i + 1)) -le $# ]] && [[ "${!((i + 1))}" == "json" ]]; then
+  next=$((i + 1))
+  if [[ "${!i}" == "-o" ]] && [[ $next -le $# ]] && [[ "${!next}" == "json" ]]; then
     printf '{}\n'
     exit 0
   fi

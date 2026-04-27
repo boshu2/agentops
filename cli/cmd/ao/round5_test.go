@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -108,16 +109,16 @@ func TestMakeProgressBar(t *testing.T) {
 func TestPrintBadge(t *testing.T) {
 	// Just ensure it doesn't panic with various inputs
 	t.Run("nil metrics", func(t *testing.T) {
-		printBadge(0, nil)
+		printBadge(io.Discard, 0, nil)
 	})
 	t.Run("zero metrics", func(t *testing.T) {
-		printBadge(5, &FlywheelMetrics{
+		printBadge(io.Discard, 5, &FlywheelMetrics{
 			Delta:      types.DefaultDelta * 100,
 			TierCounts: map[string]int{"learning": 3, "pattern": 1},
 		})
 	})
 	t.Run("escape velocity", func(t *testing.T) {
-		printBadge(10, &FlywheelMetrics{
+		printBadge(io.Discard, 10, &FlywheelMetrics{
 			Sigma:               0.8,
 			Rho:                 0.9,
 			Delta:               30.0,
@@ -371,7 +372,6 @@ func TestIndexFiles(t *testing.T) {
 		t.Errorf("indexFiles() = %d, want 1", indexed)
 	}
 }
-
 
 // ---------------------------------------------------------------------------
 // batch_promote.go: recordPromoteSkip

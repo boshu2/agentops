@@ -1,10 +1,11 @@
 # CLI Tests
 
-Validates that the `ao` CLI's `--json` flag produces valid JSON output across all subcommands that support it. Ensures flag consistency between documented behavior and actual output, checks that JSON responses parse without errors, and verifies expected fields are present. Requires the `ao` binary (auto-builds if missing).
+Validates broad `ao` CLI contracts: JSON output for the committed machine-output set and executable help smoke coverage for every generated leaf command. The leaf smoke test parses `cli/docs/COMMANDS.md` and runs `ao <leaf> --help` for each leaf command, catching registration gaps that reference-only parity checks can miss.
 
 ## Running
 
 ```bash
 bash tests/cli/test-json-flag-consistency.sh
 bash tests/cli/test-json-flag-consistency-tempdir.sh
+bash tests/cli/test-all-leaf-help-smoke.sh
 ```

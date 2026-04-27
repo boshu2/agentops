@@ -163,6 +163,7 @@ func TestNormalizeRuntimeMode(t *testing.T) {
 		{"Direct", "direct"},
 		{"STREAM", "stream"},
 		{"tmux", "tmux"},
+		{"GC", "gc"},
 	}
 	for _, tc := range cases {
 		got := NormalizeRuntimeMode(tc.input)
@@ -173,7 +174,7 @@ func TestNormalizeRuntimeMode(t *testing.T) {
 }
 
 func TestValidateRuntimeMode(t *testing.T) {
-	validModes := []string{"auto", "direct", "stream", "tmux", " Auto ", "DIRECT", "TMUX"}
+	validModes := []string{"auto", "direct", "stream", "tmux", "gc", " Auto ", "DIRECT", "TMUX", "GC"}
 	for _, m := range validModes {
 		if err := ValidateRuntimeMode(m); err != nil {
 			t.Errorf("ValidateRuntimeMode(%q) unexpected error: %v", m, err)

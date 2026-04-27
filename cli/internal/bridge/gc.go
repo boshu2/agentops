@@ -27,9 +27,11 @@ type GCController struct {
 
 // GCAgentInfo represents a single agent entry within GCStatus.
 type GCAgentInfo struct {
-	Name     string `json:"name"`
-	State    string `json:"state"`
-	Template string `json:"template"`
+	Name          string `json:"name"`
+	QualifiedName string `json:"qualified_name"`
+	Running       bool   `json:"running"`
+	State         string `json:"state"`
+	Template      string `json:"template"`
 }
 
 // GCStatusSummary holds aggregate agent counts.
@@ -41,10 +43,57 @@ type GCStatusSummary struct {
 
 // GCSession represents a session from `gc session list --json`.
 type GCSession struct {
-	ID       string `json:"id"`
-	Alias    string `json:"alias"`
-	State    string `json:"state"`
-	Template string `json:"template"`
+	ID       string
+	Alias    string
+	State    string
+	Template string
+	Closed   bool
+}
+
+// UnmarshalJSON accepts both the early lowercase session-list shape and the
+// v1.0.0 exported struct shape with capitalized keys.
+func (s *GCSession) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		ID            string `json:"id"`
+		Alias         string `json:"alias"`
+		State         string `json:"state"`
+		Template      string `json:"template"`
+		Closed        bool   `json:"closed"`
+		UpperID       string `json:"ID"`
+		UpperAlias    string `json:"Alias"`
+		UpperState    string `json:"State"`
+		UpperTemplate string `json:"Template"`
+		UpperClosed   bool   `json:"Closed"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	s.ID = firstNonEmpty(raw.ID, raw.UpperID)
+	s.Alias = firstNonEmpty(raw.Alias, raw.UpperAlias)
+	s.State = firstNonEmpty(raw.State, raw.UpperState)
+	s.Template = firstNonEmpty(raw.Template, raw.UpperTemplate)
+	s.Closed = raw.Closed || raw.UpperClosed
+	return nil
+}
+
+// UnmarshalJSON accepts both the early summary shape and the v1.0.0
+// total_agents/running_agents shape.
+func (s *GCStatusSummary) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Running       int `json:"running"`
+		Stopped       int `json:"stopped"`
+		Total         int `json:"total"`
+		RunningAgents int `json:"running_agents"`
+		StoppedAgents int `json:"stopped_agents"`
+		TotalAgents   int `json:"total_agents"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	s.Running = firstNonZero(raw.Running, raw.RunningAgents)
+	s.Stopped = firstNonZero(raw.Stopped, raw.StoppedAgents)
+	s.Total = firstNonZero(raw.Total, raw.TotalAgents)
+	return nil
 }
 
 // ParseSemverParts extracts major, minor, patch integers from a version string.
@@ -106,7 +155,7 @@ func ParseGCSessions(data []byte) ([]GCSession, error) {
 	}
 	for i, entry := range raw {
 		for _, field := range []string{"alias", "state"} {
-			if missingJSONField(entry[field]) {
+			if missingJSONField(jsonField(entry, field)) {
 				return nil, fmt.Errorf("parse gc sessions: entry %d missing required field %q", i, field)
 			}
 		}
@@ -124,9 +173,44 @@ func missingJSONField(raw json.RawMessage) bool {
 	return trimmed == "" || trimmed == "null"
 }
 
+func jsonField(entry map[string]json.RawMessage, lowerName string) json.RawMessage {
+	if raw := entry[lowerName]; !missingJSONField(raw) {
+		return raw
+	}
+	titleName := strings.ToUpper(lowerName[:1]) + lowerName[1:]
+	return entry[titleName]
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func firstNonZero(values ...int) int {
+	for _, value := range values {
+		if value != 0 {
+			return value
+		}
+	}
+	return 0
+}
+
+// GCSessionNewArgs returns the command arguments for `gc session new`.
+func GCSessionNewArgs(template, alias string) []string {
+	args := []string{"session", "new", template}
+	if alias != "" {
+		args = append(args, "--alias", alias)
+	}
+	return append(args, "--no-attach")
+}
+
 // GCNudgeArgs returns the command arguments for `gc session nudge`.
 func GCNudgeArgs(agent, message string) []string {
-	return []string{"session", "nudge", agent, message}
+	return []string{"session", "nudge", agent, "--delivery", "immediate", message}
 }
 
 // GCPeekArgs returns the command arguments for `gc session peek`.

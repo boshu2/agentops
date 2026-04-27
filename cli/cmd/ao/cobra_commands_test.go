@@ -644,7 +644,7 @@ func TestCobraDemoQuickCommand(t *testing.T) {
 
 // TestCobraCompletionCommand exercises shell completion generation.
 func TestCobraCompletionCommand(t *testing.T) {
-	for _, shell := range []string{"bash", "zsh", "fish"} {
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
 		t.Run(shell, func(t *testing.T) {
 			out, err := executeCommand("completion", shell)
 			if err != nil {
