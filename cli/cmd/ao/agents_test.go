@@ -47,9 +47,9 @@ func TestParseAgentsAllowlist(t *testing.T) {
 			want: []string{},
 		},
 		{
-			name: "no markers",
+			name:    "no markers",
 			content: "ao\nlearnings\n",
-			want: []string{},
+			want:    []string{},
 		},
 		{
 			name: "basic allowlist",
@@ -217,6 +217,58 @@ patterns
 	}
 }
 
+func TestRunAgentsInspect_DefaultPathsResolveFromSubdir(t *testing.T) {
+	repo := t.TempDir()
+	if err := writeAgentsContract(filepath.Join(repo, defaultAgentsContract), []string{"ao", "patterns"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"alpha", "beta"} {
+		dir := filepath.Join(repo, "skills", name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("ok"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cliDir := filepath.Join(repo, "cli")
+	if err := os.MkdirAll(cliDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	origJSON := agentsInspectJSON
+	origContract := agentsInspectContract
+	origProjectDir := testProjectDir
+	t.Cleanup(func() {
+		agentsInspectJSON = origJSON
+		agentsInspectContract = origContract
+		testProjectDir = origProjectDir
+	})
+	agentsInspectJSON = true
+	agentsInspectContract = defaultAgentsContract
+	testProjectDir = cliDir
+
+	var buf bytes.Buffer
+	agentsInspectCmd.SetOut(&buf)
+	t.Cleanup(func() { agentsInspectCmd.SetOut(nil) })
+
+	if err := runAgentsInspect(agentsInspectCmd, nil); err != nil {
+		t.Fatalf("runAgentsInspect: %v", err)
+	}
+
+	var got AgentsInventory
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("output not valid JSON: %v\nGot: %s", err, buf.String())
+	}
+	if got.Contract != filepath.Join(repo, defaultAgentsContract) {
+		t.Errorf("Contract = %q, want repo-root path", got.Contract)
+	}
+	wantSkills := []string{"alpha", "beta"}
+	if !reflect.DeepEqual(got.Skills, wantSkills) {
+		t.Errorf("Skills = %v, want %v", got.Skills, wantSkills)
+	}
+}
+
 func TestRunAgentsInspect_MissingContract(t *testing.T) {
 	origJSON := agentsInspectJSON
 	origContract := agentsInspectContract
@@ -238,4 +290,18 @@ func TestRunAgentsInspect_MissingContract(t *testing.T) {
 	if !strings.Contains(err.Error(), "reading contract") {
 		t.Errorf("error = %v, want one mentioning 'reading contract'", err)
 	}
+}
+
+func writeAgentsContract(path string, entries []string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	var b strings.Builder
+	b.WriteString("<!-- BEGIN agents-write-surfaces-allowlist -->\n")
+	for _, entry := range entries {
+		b.WriteString(entry)
+		b.WriteByte('\n')
+	}
+	b.WriteString("<!-- END agents-write-surfaces-allowlist -->\n")
+	return os.WriteFile(path, []byte(b.String()), 0o644)
 }

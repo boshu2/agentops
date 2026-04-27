@@ -505,3 +505,57 @@ GIT
     [[ "$output" == *"WARN"*"retrieval quality ratchet"* ]]
     [[ "$output" == *"pre-push gate (fast): passed"* ]]
 }
+
+@test "pre-push-gate.sh warns locally when agents hash capture times out" {
+    cat > "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh" <<'HASH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "capture" ]]; then
+  sleep 2
+fi
+exit 0
+HASH
+    chmod +x "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+    export HASH_GATE_TIMEOUT_SECONDS=1
+
+    run bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"*"snapshot timed out locally"* ]]
+    [[ "$output" == *"pre-push gate (fast): passed"* ]]
+}
+
+@test "pre-push-gate.sh fails in CI when agents hash capture times out" {
+    cat > "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh" <<'HASH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "capture" ]]; then
+  sleep 2
+fi
+exit 0
+HASH
+    chmod +x "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+    export HASH_GATE_TIMEOUT_SECONDS=1
+    export CI=true
+
+    run bash "$GATE" --fast
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"agents-hub content-hash gate snapshot failed"* ]]
+}

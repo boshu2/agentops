@@ -1,0 +1,48 @@
+{
+  "id": "execution-packet-2026-04-25-agents-control-plane-hardening",
+  "schema_version": 1,
+  "date": "2026-04-25",
+  "run_id": "discovery-agents-control-plane-20260425",
+  "skill": "agentops:discovery",
+  "objective": "Harden AgentOps' repo-native .agents operating surface into an auditable, operator-friendly control plane across contracts, CLI inspection and linting, hooks, Codex runtime proof, and validation gates.",
+  "complexity": "standard",
+  "tracker_mode": "bd",
+  "tracker_healthy": true,
+  "epic_id": "agentops-gpu",
+  "issue_count": 6,
+  "plan_path": ".agents/plans/2026-04-25-agents-control-plane-hardening.md",
+  "brainstorm_path": ".agents/brainstorm/2026-04-25-agents-control-plane.md",
+  "design_path": ".agents/design/2026-04-25-design-agents-control-plane.md",
+  "research_path": ".agents/research/2026-04-25-agents-control-plane-hardening.md",
+  "pre_mortem_path": ".agents/pre-mortem/2026-04-25-agents-control-plane-hardening.md",
+  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "test_levels": ["L0", "L1", "L2"],
+  "recommended_test_levels": ["L3"],
+  "test_level_rationale": "L0 covers CLI helpers and parsers, L1 covers shell/BATS integration, L2 covers command workflows from repo root and subdirectories. L3 fast-gate validation is recommended because the packet touches CLI, scripts, docs, and hook-adjacent gates.",
+  "verdicts": {
+    "design": "PASS",
+    "pre_mortem": "WARN",
+    "pre_mortem_summary": "Proceed with narrow diagnostic scope, strict dependency order, structured JSON handling, and CI-strict hash-gate behavior."
+  },
+  "wave_structure": {
+    "wave_1": ["agentops-gpu.1", "agentops-gpu.3", "agentops-gpu.5"],
+    "wave_2": ["agentops-gpu.2", "agentops-gpu.4"],
+    "wave_3": ["agentops-gpu.7"]
+  },
+  "validation_commands": [
+    "cd cli && go test ./cmd/ao -run 'TestAgents|TestAgentsLint|TestAgentsDoctor' -count=1",
+    "bats tests/scripts/check-agents-write-surfaces.bats",
+    "shellcheck --severity=error scripts/check-agents-write-surfaces.sh scripts/check-agents-hash-snapshot.sh scripts/pre-push-gate.sh",
+    "scripts/generate-cli-reference.sh --check",
+    "npx -y markdownlint-cli docs/agents-operator-guide.md docs/INDEX.md README.md",
+    "bash tests/docs/validate-doc-release.sh",
+    "AGENTS_HUB_OVERRIDE=/tmp/empty-agents-hub-for-agent-control HASH_GATE_IGNORE_UNTRACKED=1 scripts/pre-push-gate.sh --fast"
+  ],
+  "applied_knowledge": [
+    ".agents/findings/f-2026-04-14-001.md",
+    ".agents/findings/f-2026-04-14-002.md",
+    ".agents/learnings/2026-04-07-v2.35.0-release-postmortem.md",
+    ".agents/patterns/warn-then-fail-ratchet.md"
+  ],
+  "discovery_timestamp": "2026-04-25T20:55:56Z"
+}

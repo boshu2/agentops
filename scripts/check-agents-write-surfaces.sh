@@ -39,6 +39,16 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONTRACT_DOC="$REPO_ROOT/docs/contracts/agents-write-surfaces.md"
 SKILLS_DIR="$REPO_ROOT/skills"
 
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
 if [[ ! -f "$CONTRACT_DOC" ]]; then
   echo "ERROR: contract doc missing: $CONTRACT_DOC" >&2
   exit 2
@@ -76,7 +86,25 @@ fi
 # - cli/**/*.go excluding _test.go
 # - scripts/*.sh, hooks/*.sh, lib/*.sh
 referenced_tmp="$(mktemp)"
-trap 'rm -f "$allowlist_tmp" "$referenced_tmp"' EXIT
+references_tmp="$(mktemp)"
+trap 'rm -f "$allowlist_tmp" "$referenced_tmp" "$references_tmp"' EXIT
+
+scan_agent_references() {
+  local file rel match subdir
+  while IFS= read -r -d '' file; do
+    rel="${file#"$REPO_ROOT"/}"
+    while IFS= read -r match; do
+      [[ -z "$match" ]] && continue
+      subdir="${match#.agents/}"
+      printf '%s\t%s\n' "$subdir" "$rel"
+    done < <(grep -Eo '\.agents/[a-z][a-zA-Z0-9_-]*' "$file" 2>/dev/null || true)
+    while IFS= read -r match; do
+      [[ -z "$match" ]] && continue
+      subdir="$(sed -E 's/^.*"[[:space:]]*,[[:space:]]*"([a-z][a-zA-Z0-9_-]*).*$/\1/' <<<"$match")"
+      printf '%s\t%s\n' "$subdir" "$rel"
+    done < <(grep -Eo 'filepath\.Join\([^)]*\.agents"[[:space:]]*,[[:space:]]*"[a-z][a-zA-Z0-9_-]*' "$file" 2>/dev/null || true)
+  done
+}
 
 scan_dirs=()
 [[ -d "$REPO_ROOT/scripts" ]] && scan_dirs+=("$REPO_ROOT/scripts")
@@ -85,18 +113,17 @@ scan_dirs=()
 
 {
   if [[ -d "$REPO_ROOT/cli" ]]; then
-    find "$REPO_ROOT/cli" -type f -name '*.go' ! -name '*_test.go' -print0 2>/dev/null \
-      | xargs -0 -r grep -hEo '\.agents/[a-z][a-zA-Z0-9_-]*' 2>/dev/null || true
+    scan_agent_references < <(find "$REPO_ROOT/cli" -type f -name '*.go' ! -name '*_test.go' -print0 2>/dev/null)
   fi
   if [[ ${#scan_dirs[@]} -gt 0 ]]; then
-    find "${scan_dirs[@]}" -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null \
-      | xargs -0 -r grep -hEo '\.agents/[a-z][a-zA-Z0-9_-]*' 2>/dev/null || true
+    scan_agent_references < <(find "${scan_dirs[@]}" -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null)
   fi
-} | sed -E 's|^\.agents/([a-zA-Z0-9_-]+).*|\1|' | sort -u > "$referenced_tmp"
+} | sort -u > "$references_tmp"
+cut -f1 "$references_tmp" | sort -u > "$referenced_tmp"
 
 # Compute active skill names — skill-owned subdirs are auto-allowed.
 skills_tmp="$(mktemp)"
-trap 'rm -f "$allowlist_tmp" "$referenced_tmp" "$skills_tmp"' EXIT
+trap 'rm -f "$allowlist_tmp" "$referenced_tmp" "$references_tmp" "$skills_tmp"' EXIT
 : > "$skills_tmp"
 if [[ -d "$SKILLS_DIR" ]]; then
   shopt -s nullglob
@@ -111,7 +138,7 @@ fi
 
 # undocumented = referenced - allowlist - skills
 undocumented_tmp="$(mktemp)"
-trap 'rm -f "$allowlist_tmp" "$referenced_tmp" "$skills_tmp" "$undocumented_tmp"' EXIT
+trap 'rm -f "$allowlist_tmp" "$referenced_tmp" "$references_tmp" "$skills_tmp" "$undocumented_tmp"' EXIT
 comm -23 "$referenced_tmp" "$allowlist_tmp" \
   | comm -23 - "$skills_tmp" > "$undocumented_tmp"
 
@@ -121,14 +148,28 @@ REF_COUNT=$(wc -l < "$referenced_tmp" | tr -d ' ')
 
 if [[ "$JSON" == "true" ]]; then
   printf '{"contract":"%s","allowlist_size":%s,"referenced":%s,"undocumented":[' \
-    "${CONTRACT_DOC#"$REPO_ROOT"/}" "$ALLOW_COUNT" "$REF_COUNT"
+    "$(json_escape "${CONTRACT_DOC#"$REPO_ROOT"/}")" "$ALLOW_COUNT" "$REF_COUNT"
   first=1
   while IFS= read -r entry; do
     [[ -z "$entry" ]] && continue
     if [[ "$first" -eq 1 ]]; then first=0; else printf ','; fi
-    printf '"%s"' "$entry"
+    printf '"%s"' "$(json_escape "$entry")"
   done < "$undocumented_tmp"
-  printf '],"status":"%s"}\n' "$([ "$UNDOC_COUNT" -gt 0 ] && echo fail || echo ok)"
+  printf '],"source_locations":{'
+  first=1
+  while IFS= read -r entry; do
+    [[ -z "$entry" ]] && continue
+    if [[ "$first" -eq 1 ]]; then first=0; else printf ','; fi
+    printf '"%s":[' "$(json_escape "$entry")"
+    file_first=1
+    while IFS= read -r source_file; do
+      [[ -z "$source_file" ]] && continue
+      if [[ "$file_first" -eq 1 ]]; then file_first=0; else printf ','; fi
+      printf '"%s"' "$(json_escape "$source_file")"
+    done < <(awk -F '\t' -v key="$entry" '$1 == key { print $2 }' "$references_tmp" | sort -u)
+    printf ']'
+  done < "$referenced_tmp"
+  printf '},"status":"%s"}\n' "$([ "$UNDOC_COUNT" -gt 0 ] && echo fail || echo ok)"
 fi
 
 if [[ "$UNDOC_COUNT" -gt 0 ]]; then
@@ -137,7 +178,14 @@ if [[ "$UNDOC_COUNT" -gt 0 ]]; then
     echo "Add an entry under '<!-- BEGIN agents-write-surfaces-allowlist -->' in:" >&2
     echo "  $CONTRACT_DOC" >&2
     echo "Undocumented subdirs:" >&2
-    sed 's/^/  - /' "$undocumented_tmp" >&2
+    while IFS= read -r entry; do
+      [[ -z "$entry" ]] && continue
+      echo "  - $entry" >&2
+      while IFS= read -r source_file; do
+        [[ -z "$source_file" ]] && continue
+        echo "      $source_file" >&2
+      done < <(awk -F '\t' -v key="$entry" '$1 == key { print $2 }' "$references_tmp" | sort -u | head -5)
+    done < "$undocumented_tmp"
   fi
   exit 1
 fi
