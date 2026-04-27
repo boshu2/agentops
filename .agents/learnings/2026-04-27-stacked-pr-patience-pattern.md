@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.6
 source_epic: ag-3lx
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Wait For Stacked-PR Auto-Rebase Instead Of Pre-emptively Resolving

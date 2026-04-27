@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.5
 source_epic: ag-3lx
+helpful_count: 0
+harmful_count: 0
+reward_count: 0
 ---
 
 # Learning: `gh pr merge --delete-branch` Aborts Mid-Step If A Local Worktree Holds The Branch

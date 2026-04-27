@@ -6,6 +6,9 @@ category: process
 confidence: high
 maturity: provisional
 utility: 0.5
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Long Evolve Runs Need Disposition Validation
