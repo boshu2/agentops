@@ -135,7 +135,7 @@ AgentOps `/vibe` asks 8 questions:
 | Feature | SDD Tools | AgentOps | Winner |
 |---------|:---------:|:--------:|:------:|
 | Spec-first workflow | ✅ Core focus | ✅ Via `/plan` | SDD |
-| Cross-platform | ✅ 7+ agents | ⚠️ Claude Code focus | SDD |
+| Cross-platform | ✅ 7+ agents | ⚠️ 4 supported runtime paths | SDD |
 | Structured templates | ✅ Comprehensive | ⚠️ Via standards | SDD |
 | Human approval gates | ✅ Built-in | ✅ 4 gates | Tie |
 | **Cross-session memory** | ❌ Specs only | ✅ Learnings + patterns | **AgentOps** |
@@ -282,7 +282,7 @@ AgentOps doesn't aim for "spec-as-source" — it captures *learnings*, not just 
 | **What persists** | Documents | Learnings + patterns |
 | **Validation** | Spec match | 8-aspect semantic |
 | **Learning** | None | Compounds over time |
-| **Cross-platform** | 7+ agents | Claude Code |
+| **Cross-platform** | 7+ agents | 4 supported runtime paths |
 
 **SDD captures *what you decided*.**
 **AgentOps captures *what you learned*.**

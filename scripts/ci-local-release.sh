@@ -667,6 +667,7 @@ run_step_bg "Skill lint" bash ./tests/skills/run-all.sh
 run_step_bg "Headless runtime skill smoke" bash ./scripts/validate-headless-runtime-skills.sh
 run_step_bg "CLI integration smoke tests" ./tests/integration/test-cli-commands.sh
 run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-test-pair.sh
+run_step_bg "Competitive freshness tests" bash ./tests/scripts/test-competitive-freshness.sh
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
