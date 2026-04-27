@@ -76,10 +76,6 @@ func Execute() {
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
 		}
-		var doctorErr *AgentsDoctorError
-		if errors.As(err, &doctorErr) {
-			os.Exit(doctorErr.ExitCode)
-		}
 		os.Exit(1)
 	}
 }
