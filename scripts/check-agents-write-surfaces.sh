@@ -60,8 +60,8 @@ fi
 allowlist_tmp="$(mktemp)"
 trap 'rm -f "$allowlist_tmp"' EXIT
 awk '
-  /<!-- BEGIN agents-write-surfaces-allowlist -->/ { inside=1; next }
-  /<!-- END agents-write-surfaces-allowlist -->/   { inside=0; next }
+  /^[[:space:]]*<!-- BEGIN agents-write-surfaces-allowlist -->[[:space:]]*$/ { inside=1; next }
+  /^[[:space:]]*<!-- END agents-write-surfaces-allowlist -->[[:space:]]*$/   { inside=0; next }
   inside { print }
 ' "$CONTRACT_DOC" \
   | sed -E 's/[[:space:]]+#.*$//' \

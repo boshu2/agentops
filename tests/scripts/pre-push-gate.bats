@@ -68,7 +68,7 @@ setup() {
     # in non-fast mode. Both must exist as executables so the gate does not fail
     # with "missing executable" before it reaches the checks under test.
     make_stub "$FAKE_REPO/scripts/check-home-isolation.sh"
-    make_stub "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
+    make_hash_snapshot_stub "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
 }
 
 teardown() {
@@ -82,6 +82,28 @@ make_stub() {
     cat > "$path" <<STUB
 #!/usr/bin/env bash
 exit $exit_code
+STUB
+    chmod +x "$path"
+}
+
+make_hash_snapshot_stub() {
+    local path="$1"
+    cat > "$path" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+  capture)
+    snapshot="$(mktemp)"
+    printf 'snapshot\n' > "$snapshot"
+    printf '%s\n' "$snapshot"
+    ;;
+  diff)
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 STUB
     chmod +x "$path"
 }
@@ -527,7 +549,7 @@ GIT
     export PATH="$MOCK_BIN:$PATH"
     export HASH_GATE_TIMEOUT_SECONDS=1
 
-    run bash "$GATE" --fast
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"snapshot timed out locally"* ]]
     [[ "$output" == *"pre-push gate (fast): passed"* ]]

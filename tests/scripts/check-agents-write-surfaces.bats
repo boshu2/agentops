@@ -216,6 +216,27 @@ EOF
     [ "$status" -eq 2 ]
 }
 
+@test "ignores prose mentions of allowlist markers" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '# .agents/ Write Surfaces\n\n'
+        printf 'The `<!-- BEGIN agents-write-surfaces-allowlist -->` / `<!-- END agents-write-surfaces-allowlist -->` markers are documented here.\n\n'
+        printf 'This sentence is prose, not an allowlist entry.\n\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+    cat > "$FAKE_REPO/cli/internal/foo.go" <<'EOF'
+package foo
+
+const A = ".agents/ao"
+EOF
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 0 ]
+}
+
 @test "repo allowlist entries are referenced or explicitly lifecycle-only" {
     local lifecycle_only=""
     cd "$REPO_ROOT"
@@ -224,8 +245,8 @@ EOF
 
     missing="$(
         awk '
-          /<!-- BEGIN agents-write-surfaces-allowlist -->/ { inside=1; next }
-          /<!-- END agents-write-surfaces-allowlist -->/ { inside=0; next }
+          /^[[:space:]]*<!-- BEGIN agents-write-surfaces-allowlist -->[[:space:]]*$/ { inside=1; next }
+          /^[[:space:]]*<!-- END agents-write-surfaces-allowlist -->[[:space:]]*$/ { inside=0; next }
           inside {
             sub(/[[:space:]]+#.*$/, "")
             gsub(/^[[:space:]]+|[[:space:]]+$/, "")
