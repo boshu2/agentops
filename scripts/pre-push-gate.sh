@@ -95,6 +95,17 @@ indent_output() {
         printf '    %s\n' "$line"
     done <<<"$1"
 }
+is_ci_env() {
+    [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" ]]
+}
+run_hash_snapshot() {
+    local timeout_seconds="${HASH_GATE_TIMEOUT_SECONDS:-15}"
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "${timeout_seconds}s" scripts/check-agents-hash-snapshot.sh "$@"
+        return $?
+    fi
+    scripts/check-agents-hash-snapshot.sh "$@"
+}
 
 usage() {
     cat <<'EOF'
@@ -343,7 +354,27 @@ fi
 # --- 3c. Capture ~/.agents hash snapshot (diff'd at end of gate) ---
 HASH_GATE_SNAPSHOT=""
 if [[ -x scripts/check-agents-hash-snapshot.sh ]]; then
-    HASH_GATE_SNAPSHOT="$(scripts/check-agents-hash-snapshot.sh capture 2>/dev/null || echo "")"
+    hash_capture_err="$(mktemp)"
+    if hash_capture_output="$(run_hash_snapshot capture 2>"$hash_capture_err")"; then
+        if [[ -n "$hash_capture_output" && -f "$hash_capture_output" ]]; then
+            HASH_GATE_SNAPSHOT="$hash_capture_output"
+        elif is_ci_env; then
+            fail "agents-hub content-hash gate snapshot not captured"
+            indent_output "$(cat "$hash_capture_err")"
+        else
+            warn "agents-hub content-hash gate snapshot not captured; local mutation check skipped"
+            indent_output "$(cat "$hash_capture_err")"
+        fi
+    else
+        hash_capture_status=$?
+        if [[ "$hash_capture_status" -eq 124 ]] && ! is_ci_env; then
+            warn "agents-hub content-hash gate snapshot timed out locally after ${HASH_GATE_TIMEOUT_SECONDS:-15}s; use AGENTS_HUB_OVERRIDE or HASH_GATE_IGNORE_UNTRACKED=1 when shared-agent state is noisy"
+        else
+            fail "agents-hub content-hash gate snapshot failed"
+            indent_output "$(cat "$hash_capture_err")"
+        fi
+    fi
+    rm -f "$hash_capture_err"
 fi
 
 # --- 3d. .agents/ write-surface contract ---
@@ -985,11 +1016,17 @@ if [[ "${HASH_GATE_IGNORE_UNTRACKED:-0}" == "1" ]]; then
     skip "agents-hub content-hash gate (HASH_GATE_IGNORE_UNTRACKED=1)"
     rm -f "$HASH_GATE_SNAPSHOT" 2>/dev/null || true
 elif [[ -n "$HASH_GATE_SNAPSHOT" && -x scripts/check-agents-hash-snapshot.sh ]]; then
-    if hash_gate_output="$(scripts/check-agents-hash-snapshot.sh diff "$HASH_GATE_SNAPSHOT" 2>&1)"; then
+    if hash_gate_output="$(run_hash_snapshot diff "$HASH_GATE_SNAPSHOT" 2>&1)"; then
         pass "agents-hub content-hash gate"
     else
-        fail "agents-hub mutated during tests (content-hash gate)"
-        indent_output "$hash_gate_output"
+        hash_gate_status=$?
+        if [[ "$hash_gate_status" -eq 124 ]] && ! is_ci_env; then
+            warn "agents-hub content-hash gate diff timed out locally after ${HASH_GATE_TIMEOUT_SECONDS:-15}s; use AGENTS_HUB_OVERRIDE or HASH_GATE_IGNORE_UNTRACKED=1 when shared-agent state is noisy"
+            indent_output "$hash_gate_output"
+        else
+            fail "agents-hub mutated during tests (content-hash gate)"
+            indent_output "$hash_gate_output"
+        fi
     fi
     rm -f "$HASH_GATE_SNAPSHOT"
 fi

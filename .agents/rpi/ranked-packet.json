@@ -1,0 +1,76 @@
+{
+  "id": "ranked-packet-2026-04-25-agents-control-plane-hardening",
+  "schema_version": 1,
+  "date": "2026-04-25",
+  "skill": "agentops:discovery",
+  "theme": "Hardening AgentOps' repo-native .agents operating surface into an auditable, operator-friendly control plane across contracts, CLI inspection and linting, hooks, Codex runtime proof, and validation gates.",
+  "epic_id": "agentops-gpu",
+  "complexity": "standard",
+  "ranking_basis": [
+    "Fix observed command failures from subdirectories before adding new diagnostics.",
+    "Improve failure evidence before adding wider smoke coverage.",
+    "Keep local hash-gate tuning independent from CLI and lint work.",
+    "Write docs after implementation behavior is stable."
+  ],
+  "ranked_work": [
+    {
+      "rank": 1,
+      "id": "agentops-gpu.1",
+      "title": "Refactor ao agents path resolution to repo-root aware helpers",
+      "wave": 1,
+      "priority": 1,
+      "depends_on": [],
+      "rationale": "Observed from cli/: default inspect and lint paths fail, and explicit contract inspection misses active skills."
+    },
+    {
+      "rank": 2,
+      "id": "agentops-gpu.3",
+      "title": "Enhance .agents write-surface lint with source-location evidence",
+      "wave": 1,
+      "priority": 2,
+      "depends_on": [],
+      "rationale": "Current lint reports undocumented subdirs but does not show where references were found."
+    },
+    {
+      "rank": 3,
+      "id": "agentops-gpu.5",
+      "title": "Stabilize agents-hub content-hash gate for concurrent local agents",
+      "wave": 1,
+      "priority": 2,
+      "depends_on": [],
+      "rationale": "Local shared-agent state can make the fast gate noisy or slow, while CI must remain strict."
+    },
+    {
+      "rank": 4,
+      "id": "agentops-gpu.2",
+      "title": "Add ao agents doctor diagnostic summary",
+      "wave": 2,
+      "priority": 2,
+      "depends_on": ["agentops-gpu.1"],
+      "rationale": "Doctor should compose stable repo-root-aware inspect and lint behavior."
+    },
+    {
+      "rank": 5,
+      "id": "agentops-gpu.4",
+      "title": "Add smoke coverage for documented .agents surface references",
+      "wave": 2,
+      "priority": 2,
+      "depends_on": ["agentops-gpu.3"],
+      "rationale": "Smoke coverage should build on richer source-location evidence."
+    },
+    {
+      "rank": 6,
+      "id": "agentops-gpu.7",
+      "title": "Update .agents operator docs for doctor, lint evidence, and hash-gate triage",
+      "wave": 3,
+      "priority": 3,
+      "depends_on": ["agentops-gpu.2", "agentops-gpu.3", "agentops-gpu.5"],
+      "rationale": "Docs should describe implemented behavior, not intended behavior."
+    }
+  ],
+  "validation_levels": {
+    "required": ["L0", "L1", "L2"],
+    "recommended": ["L3"]
+  },
+  "pre_mortem_verdict": "WARN"
+}
