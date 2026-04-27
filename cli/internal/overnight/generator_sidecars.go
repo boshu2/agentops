@@ -259,28 +259,7 @@ func AggregateFindingGeneratorSidecars(cwd, outputDir string) (FindingGeneratorA
 			degraded = append(degraded, fmt.Sprintf("%s: %s", sidecar.Generator, sidecar.Status))
 			continue
 		}
-		for _, candidate := range sidecar.Candidates {
-			result.CandidatesSeen++
-			candidate = normalizeGeneratorCandidate(candidate)
-			key := candidate.DedupKey
-			if key == "" {
-				result.DuplicatesSkipped++
-				degraded = append(degraded, fmt.Sprintf("%s: candidate %q missing dedup key", sidecar.Generator, candidate.Title))
-				continue
-			}
-			if candidate.Duplicate || existing.has(candidate.ID, key) {
-				result.DuplicatesSkipped++
-				continue
-			}
-			if previous, ok := selected[key]; ok {
-				result.DuplicatesSkipped++
-				if preferGeneratorCandidate(candidate, previous) {
-					selected[key] = candidate
-				}
-				continue
-			}
-			selected[key] = candidate
-		}
+		degraded = applyGeneratorSidecarCandidates(sidecar, existing, selected, &result, degraded)
 	}
 
 	if len(selected) == 0 {
@@ -301,6 +280,42 @@ func AggregateFindingGeneratorSidecars(cwd, outputDir string) (FindingGeneratorA
 	}
 	result.ItemsWritten = len(items)
 	return result, degraded, nil
+}
+
+// applyGeneratorSidecarCandidates merges a completed sidecar's candidates into
+// the cumulative selected map, updating result counters and appending any
+// degraded notes. Extracted from AggregateFindingGeneratorSidecars to keep
+// the parent's cyclomatic complexity below the cli/internal/ ceiling.
+func applyGeneratorSidecarCandidates(
+	sidecar FindingGeneratorSidecar,
+	existing generatorNextWorkDedupState,
+	selected map[string]FindingGeneratorCandidate,
+	result *FindingGeneratorAggregateResult,
+	degraded []string,
+) []string {
+	for _, candidate := range sidecar.Candidates {
+		result.CandidatesSeen++
+		candidate = normalizeGeneratorCandidate(candidate)
+		key := candidate.DedupKey
+		if key == "" {
+			result.DuplicatesSkipped++
+			degraded = append(degraded, fmt.Sprintf("%s: candidate %q missing dedup key", sidecar.Generator, candidate.Title))
+			continue
+		}
+		if candidate.Duplicate || existing.has(candidate.ID, key) {
+			result.DuplicatesSkipped++
+			continue
+		}
+		if previous, ok := selected[key]; ok {
+			result.DuplicatesSkipped++
+			if preferGeneratorCandidate(candidate, previous) {
+				selected[key] = candidate
+			}
+			continue
+		}
+		selected[key] = candidate
+	}
+	return degraded
 }
 
 func mineGeneratorDedupKey(item mine.WorkItemEmit) string {
