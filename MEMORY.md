@@ -23,6 +23,7 @@
 
 ## Key Lessons
 
+- **CI Scanner Syntax Parity** — Contract validators that mirror each other need paired fixtures for every accepted syntax form, not only comments saying the regexes agree (source: `.agents/learnings/2026-04-27-ci-contract-scanners-need-syntax-parity.md`)
 - **Audit Parser Reality**: Mechanical auditors must parse `File:` prose, anchors, and examples correctly or they create noisy false failures (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
 - **Output Mode Orthogonality**: `--json` must preserve normal command side effects and change only serialization (source: `.agents/learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md`)
 - **Pair Command Refactors With Tests**: Production command refactors under `cli/cmd/ao/` should ship with direct test diffs so the command/test-pairing gate is designed for, not rediscovered at push time (source: `.agents/learnings/2026-04-14-command-refactors-need-paired-tests.md`)

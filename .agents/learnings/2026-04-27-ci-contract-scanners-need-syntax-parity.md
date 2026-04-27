@@ -1,0 +1,31 @@
+---
+id: learning-2026-04-27-ci-contract-scanners-need-syntax-parity
+type: learning
+date: 2026-04-27
+category: testing
+confidence: high
+maturity: provisional
+utility: 0.7
+helpful_count: 0
+harmful_count: 0
+reward_count: 0
+---
+
+# Learning: CI Contract Scanners Need Syntax Parity
+
+## What We Learned
+
+When two CI validators enforce the same contract with separate scanners, a new
+accepted syntax must be added to both recognizers and covered by a shared or
+paired fixture.
+
+## Why It Matters
+
+This prevents one gate from accepting a contract representation while another
+gate still fails on the same shipped code path.
+
+## Source
+
+Post-mortem for PR #167 / bead `ag-0af`, where the shell write-surface gate
+recognized `filepath.Join(cwd, ".agents", "<surface>")` references before the
+Go smoke scanner did.
