@@ -157,8 +157,6 @@ func collectContradictFiles(cwd string) ([]string, string) {
 		files = append(files, jsonlFiles...)
 		files = append(files, mdFiles...)
 	}
-	return files
-}
 
 	if !hasSourceDir {
 		return nil, "No learnings or patterns directory found."
@@ -180,15 +178,14 @@ func buildContradictResult(cwd string, files []string) ContradictResult {
 		if len(words) == 0 {
 			continue
 		}
+		snippet := truncateSnippet(body, 120)
 		entries = append(entries, learningEntry{
 			File:    f,
 			Body:    body,
 			Words:   words,
-			Snippet: truncateSnippet(body, 120),
+			Snippet: snippet,
 		})
 	}
-	return entries
-}
 
 	result := ContradictResult{TotalFiles: len(files)}
 	for i := 0; i < len(entries); i++ {
@@ -200,8 +197,6 @@ func buildContradictResult(cwd string, files []string) ContradictResult {
 			}
 		}
 	}
-	return result
-}
 
 	return result
 }
