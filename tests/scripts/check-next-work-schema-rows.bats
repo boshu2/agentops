@@ -44,11 +44,11 @@ EOF
 
 @test "rejects type not in schema enum" {
     cat > "$QUEUE" <<'EOF'
-{"source_epic":"e1","timestamp":"2026-04-26T00:00:00Z","items":[{"title":"bad","type":"docs","severity":"medium","source":"council-finding","description":"d"}],"consumed":false,"claim_status":"available"}
+{"source_epic":"e1","timestamp":"2026-04-26T00:00:00Z","items":[{"title":"bad","type":"finding","severity":"medium","source":"council-finding","description":"d"}],"consumed":false,"claim_status":"available"}
 EOF
     run env QUEUE="$QUEUE" bash "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"type=docs"* ]]
+    [[ "$output" == *"type=finding"* ]]
 }
 
 @test "rejects source not in schema enum" {
