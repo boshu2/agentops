@@ -89,6 +89,29 @@ SH
   chmod +x "$path"
 }
 
+write_policy_fixture() {
+  local path="$1"
+  cat >"$path" <<'JSON'
+{
+  "required_top_level_commands": ["status"],
+  "deny_command_patterns": [
+    "(^|\\s)--unsafe($|\\s)",
+    "(^|\\s)debug-shell($|\\s)"
+  ],
+  "max_created_files": 50,
+  "forbid_file_path_patterns": [
+    "(^|/)\\.ssh(/|$)",
+    "(^|/)Library/Keychains(/|$)",
+    "(^|/)id_rsa($|\\.)"
+  ],
+  "allow_network_endpoint_patterns": [],
+  "deny_network_endpoint_patterns": [],
+  "block_if_removed_commands": true,
+  "min_command_count": 1
+}
+JSON
+}
+
 run_security_suite() {
   python3 "$REPO_ROOT/skills/security-suite/scripts/security_suite.py" run "$@"
 }
@@ -96,11 +119,13 @@ run_security_suite() {
 case "${1:-}" in
   policy-pass)
     fixture="$TMP_ROOT/ao-fixture"
+    policy="$TMP_ROOT/policy.json"
     write_full_fixture "$fixture"
+    write_policy_fixture "$policy"
     run_security_suite \
       --binary "$fixture" \
       --out-dir "$TMP_ROOT/out" \
-      --policy-file "$REPO_ROOT/skills/security-suite/references/policy-example.json" \
+      --policy-file "$policy" \
       --fail-on-policy-fail \
       --max-depth 1 \
       --total-timeout 15 \
@@ -116,11 +141,13 @@ case "${1:-}" in
     ;;
   policy-fail)
     fixture="$TMP_ROOT/ao-fixture"
+    policy="$TMP_ROOT/policy.json"
     write_missing_status_fixture "$fixture"
+    write_policy_fixture "$policy"
     if run_security_suite \
       --binary "$fixture" \
       --out-dir "$TMP_ROOT/out" \
-      --policy-file "$REPO_ROOT/skills/security-suite/references/policy-example.json" \
+      --policy-file "$policy" \
       --fail-on-policy-fail \
       --max-depth 1 \
       --total-timeout 15 \

@@ -105,7 +105,7 @@
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "type seedResult struct"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/badge.go", "value": "Display knowledge flywheel health badge"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/badge.go", "value": "escapeVelocityThreshold"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/completion.go", "value": "ValidArgs:             []string{\"bash\", \"zsh\", \"fish\"}"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/completion.go", "value": "ValidArgs:             []string{\"bash\", \"zsh\", \"fish\", \"powershell\"}"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/completion.go", "value": "GenBashCompletionV2"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/config.go", "value": "AGENTOPS_MODEL_TIER"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/config.go", "value": "modelsSetSkill"},

@@ -17,14 +17,14 @@ top_count="$(rg -c '^### `ao ' "$DOCS_PATH")"
 sub_count="$(rg -c '^#### `ao ' "$DOCS_PATH")"
 all_count="$(rg -c '^#{3,4} `ao ' "$DOCS_PATH")"
 
-if [[ "$top_count" != "56" || "$sub_count" != "128" || "$all_count" != "184" ]]; then
+if [[ "$top_count" != "57" || "$sub_count" != "132" || "$all_count" != "189" ]]; then
   printf 'unexpected command heading counts: top=%s sub=%s all=%s\n' "$top_count" "$sub_count" "$all_count" >&2
   exit 1
 fi
 
 mapfile -t commands < <(rg '^#{3,4} `ao ' "$DOCS_PATH" | sed -E 's/^.*`([^`]+)`.*/\1/')
 
-if [[ "${#commands[@]}" -ne 184 ]]; then
+if [[ "${#commands[@]}" -ne 189 ]]; then
   printf 'unexpected command matrix size: %s\n' "${#commands[@]}" >&2
   exit 1
 fi

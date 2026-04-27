@@ -71,7 +71,7 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao goals`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Track, measure, and validate project fitness goals."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--directives    Output directives as JSON (skip gate checks)"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--directives           Output directives as JSON (skip gate checks)"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals validate`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals drift`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals export`"},

@@ -44,7 +44,7 @@
         {"type": "stdout_contains", "value": "memrl-policy.schema.json is valid JSON"},
         {"type": "stdout_contains", "value": "memrl-policy.profile.example.json is valid JSON"},
         {"type": "stdout_contains", "value": "memrl-policy.profile.example.json conforms to memrl-policy.schema.json"},
-        {"type": "stdout_contains", "value": "docs/contracts/memrl-policy.schema.json catalogued in INDEX.md"},
+        {"type": "stdout_contains", "value": "docs/contracts/memrl-policy.schema.json catalogued in documentation-index.md"},
         {"type": "stdout_contains", "value": "Failures: 0"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
@@ -130,8 +130,8 @@
         {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"default_mode\": \"observe\""},
         {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"failure_class\": \"contract-drift\""},
         {"type": "artifact_contains", "target": "../../docs/contracts/memrl-policy.profile.example.json", "value": "\"rollback_to\": \"last-known-good-policy\""},
-        {"type": "artifact_contains", "target": "../../docs/INDEX.md", "value": "[MemRL Policy Schema](contracts/memrl-policy.schema.json)"},
-        {"type": "artifact_contains", "target": "../../docs/INDEX.md", "value": "[MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json)"},
+        {"type": "artifact_contains", "target": "../../docs/documentation-index.md", "value": "[MemRL Policy Schema](contracts/memrl-policy.schema.json)"},
+        {"type": "artifact_contains", "target": "../../docs/documentation-index.md", "value": "[MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json)"},
         {"type": "artifact_contains", "target": "../../docs/contracts/index.md", "value": "[MemRL Policy Schema](memrl-policy.schema.json)"}
       ],
       "dimensions": ["artifact_quality", "process_adherence", "safety"],
