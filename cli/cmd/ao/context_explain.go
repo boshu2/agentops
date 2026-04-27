@@ -51,6 +51,7 @@ briefing assembly, then exposes:
 	explainCmd.Flags().StringVar(&contextExplainFlags.task, "task", "", "task or query to explain")
 	explainCmd.Flags().StringVar(&contextExplainFlags.phase, "phase", "task", "Context phase: task, startup, planning, pre-mortem, validation")
 	explainCmd.Flags().IntVar(&contextExplainFlags.limit, "limit", defaultStigmergicPacketLimit, "max items per class")
+	_ = explainCmd.RegisterFlagCompletionFunc("phase", staticCompletionFunc("task", "startup", "planning", "pre-mortem", "validation"))
 	contextCmd.AddCommand(explainCmd)
 }
 

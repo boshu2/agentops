@@ -38,5 +38,6 @@ func init() {
 	goalsAddCmd.Flags().IntVar(&goalsAddWeight, "weight", 5, "Goal weight (1-10)")
 	goalsAddCmd.Flags().StringVar(&goalsAddType, "type", "", "Goal type (health, architecture, quality, meta)")
 	goalsAddCmd.Flags().StringVar(&goalsAddDescription, "description", "", "Goal description")
+	_ = goalsAddCmd.RegisterFlagCompletionFunc("type", staticCompletionFunc("health", "architecture", "quality", "meta"))
 	goalsCmd.AddCommand(goalsAddCmd)
 }

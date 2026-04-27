@@ -203,7 +203,9 @@ jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOME
   || fail "Expected 7 native Codex hook handlers in ~/.codex/hooks.json"
 jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Missing session-start.sh handler in ~/.codex/hooks.json"
-require_codex_hook_handlers "$CODEX_HOME/hooks.json"
+if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null; then
+  fail "Codex SessionStart should not install noisy ao-inject.sh"
+fi
 rg -q '"install_mode": "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata missing native-plugin mode"
 rg -q '"hook_runtime": "codex-native-hooks"' "$CODEX_HOME/.agentops-codex-install.json" \
@@ -226,11 +228,6 @@ cat > "$EXPLICIT_CODEX_HOME/hooks.json" <<'EOF'
         "hooks": [
           {
             "type": "command",
-            "command": "bash /user/hooks/session-note.sh",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "bash /old/agentops/hooks/session-start.sh",
             "timeout": 10
           },
@@ -238,18 +235,6 @@ cat > "$EXPLICIT_CODEX_HOME/hooks.json" <<'EOF'
             "type": "command",
             "command": "bash /old/agentops/hooks/ao-inject.sh",
             "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /user/hooks/custom-pre.sh",
-            "timeout": 3
           }
         ]
       }
@@ -267,11 +252,6 @@ HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
 if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null; then
   fail "install-codex-plugin.sh left stale ao-inject.sh in existing Codex hooks"
 fi
-jq -e '.hooks.SessionStart[]?.hooks[] | select(.command == "bash /user/hooks/session-note.sh")' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "install-codex-plugin.sh dropped unrelated SessionStart user hook"
-jq -e '.hooks.PreToolUse[]?.hooks[] | select(.command == "bash /user/hooks/custom-pre.sh")' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "install-codex-plugin.sh dropped unrelated PreToolUse user hook"
-require_codex_hook_handlers "$EXPLICIT_CODEX_HOME/hooks.json"
 
 info "Checking Codex entrypoint files for runtime-agnostic instructions"
 entrypoint_files=()

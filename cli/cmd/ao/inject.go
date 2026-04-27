@@ -137,6 +137,9 @@ func injectOptionsFromFlags(args []string) *search.InjectOptions {
 	} else {
 		opts.Query = injectContext
 	}
+	if GetOutput() == "json" {
+		opts.Format = "json"
+	}
 	return opts
 }
 

@@ -1675,7 +1675,7 @@ ao rpi phased <goal> [flags]
       --no-test-first                     Opt out of strict-quality spec-first execution (do not pass --test-first to /crank)
       --no-worktree                       Disable worktree isolation (run in current directory)
       --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
-      --runtime string                    Phase runtime mode: auto|direct|stream|tmux (default "auto")
+      --runtime string                    Phase runtime mode: auto|direct|stream|tmux|gc (default "auto")
       --runtime-cmd string                Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec') (default "claude")
       --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
       --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)
@@ -1779,7 +1779,7 @@ ao session close [flags]
 Generate shell completion scripts for ao.
 
 ```
-ao completion [bash|zsh|fish]
+ao completion [bash|zsh|fish|powershell]
 ```
 
 ---

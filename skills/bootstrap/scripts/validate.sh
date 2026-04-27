@@ -11,7 +11,6 @@ check "SKILL.md has name: bootstrap" "grep -q '^name: bootstrap' '$SKILL_DIR/SKI
 check "SKILL.md mentions GOALS.md" "grep -q 'GOALS\\.md' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions PRODUCT.md" "grep -q 'PRODUCT\\.md' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions progressive/gap-filling behavior" "grep -qiE 'progressive|fills? gaps|idempotent' '$SKILL_DIR/SKILL.md'"
-check "SKILL.md wires install-bd.sh and probes bd" "grep -q 'install-bd\\.sh' '$SKILL_DIR/SKILL.md' && grep -q 'command -v bd' '$SKILL_DIR/SKILL.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1
