@@ -155,6 +155,55 @@ func TestRunAgentsLint_ForwardsJSONFlag(t *testing.T) {
 	}
 }
 
+func TestRunAgentsLint_DefaultScriptResolvesFromSubdir(t *testing.T) {
+	repo := t.TempDir()
+	if err := writeAgentsContract(filepath.Join(repo, defaultAgentsContract), []string{"ao"}); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(repo, defaultAgentsLintScript)
+	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "#!/usr/bin/env bash\nif [ \"$1\" = \"--json\" ]; then echo '{\"status\":\"ok\"}'; else echo ok; fi\n"
+	if err := os.WriteFile(scriptPath, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cliDir := filepath.Join(repo, "cli")
+	if err := os.MkdirAll(cliDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	origScript := agentsLintScript
+	origJSON := agentsLintJSON
+	origProjectDir := testProjectDir
+	t.Cleanup(func() {
+		agentsLintScript = origScript
+		agentsLintJSON = origJSON
+		testProjectDir = origProjectDir
+	})
+	agentsLintScript = defaultAgentsLintScript
+	agentsLintJSON = true
+	testProjectDir = cliDir
+
+	var stdout bytes.Buffer
+	agentsLintCmd.SetOut(&stdout)
+	t.Cleanup(func() { agentsLintCmd.SetOut(nil) })
+
+	if err := runAgentsLint(agentsLintCmd, nil); err != nil {
+		t.Fatalf("runAgentsLint: %v", err)
+	}
+	var got map[string]string
+	if err := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &got); err != nil {
+		t.Fatalf("stdout not JSON: %v\nGot: %s", err, stdout.String())
+	}
+	if got["status"] != "ok" {
+		t.Errorf("status = %q, want ok", got["status"])
+	}
+}
+
 func TestAgentsLintError_Message(t *testing.T) {
 	err := &AgentsLintError{ExitCode: 7, Script: "/path/to/lint.sh"}
 	got := err.Error()
