@@ -1,0 +1,13 @@
+{
+  "date": "2026-04-28",
+  "unconsumed_batch_count": 21,
+  "unconsumed_item_count": 39,
+  "morning_packet_count": 0,
+  "morning_packet_note": "no overnight dir \u2014 .agents/overnight/latest/morning-packets/ does not exist",
+  "schema_rows_output": "PASS: 60 row(s) in /home/user/agentops/.agents/rpi/next-work.jsonl conform to v1.4 schema enums",
+  "contract_parity_output": "next-work contract parity validation passed.",
+  "smoke_grep_output": "\u001b[0;34m[TEST]\u001b[0m Testing flywheel loop (next-work round-trip)...\n\u001b[0;32m  \u2713\u001b[0m next-work.schema.md exists\n\u001b[0;32m  \u2713\u001b[0m next-work contract parity validator passed\n\u001b[0;32m  \u2713\u001b[0m next-work.jsonl: all 60 entries have valid schema\n\u001b[0;31mFAILED\u001b[0m - 1 errors, 0 warnings",
+  "pre_existing_failures": [
+    "test-runtime-cursor-smoke.sh failed"
+  ]
+}
