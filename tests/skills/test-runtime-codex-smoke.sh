@@ -24,16 +24,6 @@ MARKETPLACE_JSON="$REPO_ROOT/plugins/marketplace.json"
 CODEX_HOOKS_JSON="$REPO_ROOT/hooks/codex-hooks.json"
 PUBLIC_INSTALL="$REPO_ROOT/scripts/install-codex.sh"
 PLUGIN_INSTALL="$REPO_ROOT/scripts/install-codex-plugin.sh"
-EXPECTED_CODEX_HOOK_SCRIPTS=(
-    "session-start.sh"
-    "ao-flywheel-close.sh"
-    "prompt-nudge.sh"
-    "quality-signals.sh"
-    "go-test-precommit.sh"
-    "commit-review-gate.sh"
-    "ratchet-advance.sh"
-)
-
 # ── 1. Codex plugin manifest + marketplace wiring ────────────────────────────
 echo "Stage 1: Codex plugin manifest"
 
@@ -67,8 +57,8 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         && pass "hooks/codex-hooks.json is valid JSON" || fail "hooks/codex-hooks.json is invalid JSON"
     jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
-    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "codex hook bundle defines 7 native hook handlers" || fail "codex hook bundle handler count drifted"
+    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 22 native hook handlers" || fail "codex hook bundle handler count drifted"
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes session-start.sh"
     else

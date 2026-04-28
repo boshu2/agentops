@@ -240,6 +240,9 @@ count_codex_hook_handlers() {
 merge_codex_hooks() {
   local existing_file="$1"
   local new_file="$2"
+  local tmp_file
+
+  tmp_file="$(mktemp)"
 
   jq -n \
     --slurpfile existing "$existing_file" \
@@ -248,12 +251,21 @@ merge_codex_hooks() {
     def agentops_scripts:
       [
         "session-start.sh",
-        "ao-inject.sh",
+        "stop-team-guard.sh",
+        "stop-auto-handoff.sh",
         "ao-flywheel-close.sh",
         "prompt-nudge.sh",
+        "intent-echo.sh",
         "quality-signals.sh",
+        "dangerous-git-guard.sh",
         "go-test-precommit.sh",
         "commit-review-gate.sh",
+        "lead-only-worker-git-guard.sh",
+        "holdout-isolation-gate.sh",
+        "standards-injector.sh",
+        "edit-knowledge-surface.sh",
+        "codex-parity-warn.sh",
+        "write-time-quality.sh",
         "ratchet-advance.sh"
       ];
     def is_agentops_command($cmd):
@@ -282,7 +294,8 @@ merge_codex_hooks() {
         "$schema": $schema,
         "hooks": (($cleaned.hooks // {}) + ($new_doc.hooks // {}))
       }
-    ' > "$existing_file"
+    ' > "$tmp_file"
+  mv "$tmp_file" "$existing_file"
 }
 
 stage_plugin_source() {

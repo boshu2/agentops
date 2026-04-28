@@ -41,9 +41,9 @@
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Hook preflight PASSED"},
-        {"type": "stdout_contains", "value": "Registered: 24 of 48"},
-        {"type": "stdout_contains", "value": "Unregistered: 24"},
-        {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 4"},
+        {"type": "stdout_contains", "value": "Registered: 34 of 48"},
+        {"type": "stdout_contains", "value": "Unregistered: 14"},
+        {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 0"},
         {"type": "stdout_contains", "value": "context-guard.sh"},
         {"type": "stdout_contains", "value": "precompact-snapshot.sh"},
         {"type": "stdout_contains", "value": "ratchet-advance.sh"},
@@ -87,7 +87,7 @@
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"PostToolUse\""},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"TaskCompleted\""},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "session-start.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "ao-inject.sh"},
+        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "dangerous-git-guard.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "session-end-maintenance.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "compile-session-defrag.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "factory-router.sh"},
@@ -115,7 +115,7 @@
       "timeout_seconds": 60,
       "inputs": {
         "cwd": "../..",
-        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 28) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 24)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
+        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 38) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 33) and (($cmds | map(select(test(\"ao-inject\\\\.sh\"))) | length) == 0)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

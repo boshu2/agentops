@@ -430,20 +430,19 @@ contracts and control plane.
 
 The runtime manifest currently declares seven hook event sections. Three lifecycle anchors form the compounding backbone, while the others enforce guardrails at prompt, tool, and task boundaries.
 
-### SessionStart — sessions compound instead of reset
+### SessionStart — sessions compound without eager context
 
 On session start, `hooks/session-start.sh`:
 1. Creates `.agents/` directories if missing (local + global `~/.agents/`)
-2. Runs `ao extract` to process any pending knowledge queue
-3. Points to `.agents/AGENTS.md` signpost for on-demand knowledge navigation:
-   - **Local** `.agents/learnings/` and `.agents/patterns/` available via `ao lookup --query "topic"`
-   - **Global** `~/.agents/learnings/` and `~/.agents/patterns/` (cross-repo, 0.8x weight in lookup scoring)
-   - **Predecessor context**: if `.agents/handoff/` contains a handoff, emits what the previous session was working on (~200 tokens)
-   - **Two-phase MemRL ranking**: Phase A scores by similarity + freshness, Phase B by utility + composite. Result: the most recent, most relevant learnings from *this repo* surface first
-4. Injects `using-agentops` skill content as context
-5. Outputs JSON with `additionalContext` for compatible agent runtimes
+2. Runs lightweight stale-run cleanup and closes any pending flywheel loop
+3. Consumes structured handoff packets when present
+4. Stages factory-goal state so the first substantive prompt can build a
+   task-scoped briefing
+5. Keeps operator-facing output silent
 
-The injection is intentionally lightweight (~1000 tokens). The agent gets the freshest context automatically; if the task needs more, it searches `.agents/` on demand.
+Startup no longer injects broad prior knowledge by default. The agent uses
+goal-scoped factory briefings and `ao lookup --query "topic"` when task context
+is actually needed.
 
 ### SessionEnd — Extract and prune
 

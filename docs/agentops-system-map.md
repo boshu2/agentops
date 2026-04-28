@@ -154,7 +154,7 @@ Hooks fire without human involvement. The AI cannot bypass them.
 ```
 TRIGGER                   HOOK                        WHAT IT DOES
 ───────                   ────                        ────────────
-Session starts         session-start.sh            Inject prior knowledge into briefing
+Session starts         session-start.sh            Stage runtime state and briefing pointers
 Session ends           session-end-maintenance.sh  Harvest learnings, run maintenance
 Agent stops            ao-flywheel-close.sh        Close the learning loop
 Task completes         task-validation-gate.sh     Execute active compiled constraints and metadata checks

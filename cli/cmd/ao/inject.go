@@ -62,11 +62,12 @@ type session = search.Session
 
 var injectCmd = &cobra.Command{
 	Use:   "inject [context]",
-	Short: "Output relevant knowledge for session injection",
-	Long: `Inject searches and outputs relevant knowledge for session startup.
+	Short: "Output relevant knowledge for explicit or JIT injection",
+	Long: `Inject searches and outputs relevant knowledge for explicit or JIT context.
 
-This command is designed to be called from a SessionStart hook to
-inject prior learnings, patterns, and context into new sessions.
+Current runtime hook manifests keep SessionStart lean. Use this command
+directly, from skills, or from goal-scoped briefing flows when prior learnings,
+patterns, and context are needed for the task at hand.
 
 Searches:
   1. Recent learnings (.agents/learnings/*.md)

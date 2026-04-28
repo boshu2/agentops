@@ -2,9 +2,9 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-24. 57 generated CLI command headings, 69 source skills, 7 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 57 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
 
-Source-of-truth note: `hooks/hooks.json` currently declares 7 runtime hook event sections. Repository hook scripts such as `worktree-setup.sh` are support/setup scripts and are listed separately when relevant.
+Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
 
 Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mortem` now also read or write `.agents/findings/registry.jsonl` directly via skill contract. Those file-native prevention reads are intentionally not counted as `ao` command invocations in the tables below.
 
@@ -25,7 +25,7 @@ Every `ao` command that is actively called by at least one skill or hook.
 
 | Command | Skill Callers | Hook Callers |
 |---------|--------------|--------------|
-| `ao inject` | crank, evolve, implement, inject, recover, research, retro | session-start.sh, worktree-setup.sh |
+| `ao inject` | crank, evolve, implement, inject, recover, research, retro | worktree-setup.sh |
 | `ao forge` | flywheel, forge, post-mortem, retro, vibe, evolve, crank | session-end-maintenance.sh |
 | `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, prompt-nudge.sh, precompact-snapshot.sh |
 | `ao goals` | goals, evolve | — |
@@ -121,7 +121,6 @@ Which `ao` commands each hook invokes.
 | Hook File | Event | ao Commands |
 |-----------|-------|-------------|
 | **session-start.sh** | SessionStart | `flywheel close-loop`, `knowledge brief`, `rpi cleanup` |
-| **ao-inject.sh** | SessionStart | `inject` |
 | **session-end-maintenance.sh** | SessionEnd | `contradict`, `dedup`, `forge transcript`, `maturity`, `memory sync`, `notebook update`, `pool ingest` |
 | **compile-session-defrag.sh** | SessionEnd | `defrag` |
 | **ao-flywheel-close.sh** | Stop | `flywheel close-loop` |
@@ -132,7 +131,7 @@ Which `ao` commands each hook invokes.
 | **stop-auto-handoff.sh** | Stop | `ratchet status` |
 | **worktree-setup.sh** | setup script (outside `hooks/hooks.json`) | `inject` |
 
-Hooks with **no ao commands**: citation-tracker.sh, config-change-monitor.sh, constraint-compiler.sh, dangerous-git-guard.sh, git-worker-guard.sh, pending-cleaner.sh, pre-mortem-gate.sh, skill-lint-gate.sh, standards-injector.sh, stop-team-guard.sh, subagent-stop.sh, task-validation-gate.sh, worktree-cleanup.sh.
+Hooks with **no ao commands**: citation-tracker.sh, config-change-monitor.sh, constraint-compiler.sh, dangerous-git-guard.sh, git-worker-guard.sh, holdout-isolation-gate.sh, lead-only-worker-git-guard.sh, pending-cleaner.sh, pre-mortem-gate.sh, skill-lint-gate.sh, standards-injector.sh, stop-team-guard.sh, subagent-stop.sh, task-validation-gate.sh, worktree-cleanup.sh.
 
 ---
 
@@ -179,9 +178,9 @@ How hooks chain `ao` commands across a session:
 ```
 Session Start
   → session-start.sh
-      → ao extract (lean mode: extract + inject with auto-shrink)
-      → ao inject
-      → ao lookup (JIT knowledge retrieval)
+      → ao rpi cleanup --all --stale-after 24h --dry-run
+      → ao flywheel close-loop --quiet
+      → stage factory goal/briefing state for JIT retrieval
 
 During Session
   → ratchet-advance.sh (PostToolUse)

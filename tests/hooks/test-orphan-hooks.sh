@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 HOOKS_DIR="$REPO_ROOT/hooks"
 HOOKS_JSON="$HOOKS_DIR/hooks.json"
+CODEX_HOOKS_JSON="$HOOKS_DIR/codex-hooks.json"
 
 ERRORS=0
 WARNINGS=0
@@ -30,8 +31,18 @@ if [[ ! -f "$HOOKS_JSON" ]]; then
     exit 1
 fi
 
-# --- Parse registered hooks from hooks.json ---
-registered_scripts=$(jq -r '.. | .command? // empty' "$HOOKS_JSON" | grep -o '[^/]*\.sh$' | sort -u)
+if [[ ! -f "$CODEX_HOOKS_JSON" ]]; then
+    fail "codex-hooks.json not found at $CODEX_HOOKS_JSON"
+    exit 1
+fi
+
+# --- Parse registered hooks from Claude and Codex manifests ---
+registered_scripts=$(
+    {
+        jq -r '.. | .command? // empty' "$HOOKS_JSON"
+        jq -r '.. | .command? // empty' "$CODEX_HOOKS_JSON"
+    } | grep -o '[^/]*\.sh$' | sort -u
+)
 
 # --- List all hook scripts ---
 all_scripts=()
@@ -76,7 +87,7 @@ echo "  - Non-JSON (info): $non_json"
 echo ""
 
 if [[ $json_emitting -eq 0 ]]; then
-    pass "No unregistered hooks emitting JSON output"
+    pass "No unregistered hooks emitting JSON output in Claude or Codex manifests"
 else
     warn "$json_emitting unregistered hook(s) emit JSON that goes nowhere"
 fi

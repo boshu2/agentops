@@ -15,18 +15,24 @@ When `hooks.json` disagrees with this page, trust `hooks.json`.
 
 ## Lifecycle events
 
-AgentOps currently uses six lifecycle events. Every event dispatches one or more scripts in `hooks/`.
+AgentOps currently ships a full Claude runtime manifest across the supported hook event surface. Hooks are for event-timed gates, lifecycle bookkeeping, and small JIT nudges; broad knowledge should be loaded with `ao lookup`, factory briefings, or explicit `/inject` flows instead of automatic startup injection.
 
 | Event | Purpose | Representative scripts |
 |-------|---------|-----------------------|
-| `SessionStart` | Seed the session with recent learnings, pointers to MEMORY.md | `session-start.sh`, `ao-inject.sh` |
+| `SessionStart` | Prepare runtime state, consume handoffs, stage factory briefing state | `session-start.sh` |
 | `SessionEnd` | Compile session signal, maintain the knowledge pool | `session-end-maintenance.sh`, `compile-session-defrag.sh` |
-| `Stop` | Close the flywheel for the turn | `ao-flywheel-close.sh` |
-| `UserPromptSubmit` | Route the prompt, nudge discipline, echo intent | `factory-router.sh`, `prompt-nudge.sh`, `intent-echo.sh`, `quality-signals.sh` |
-| `PreToolUse` | Gate risky tool calls (commits, edits, reads in isolation) | `pre-mortem-gate.sh`, `commit-review-gate.sh`, `holdout-isolation-gate.sh`, `go-test-precommit.sh` |
+| `Stop` | Preserve handoff/team state and close the flywheel for the turn | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` |
+| `UserPromptSubmit` | Route the prompt, nudge discipline, echo intent, watch context | `factory-router.sh`, `prompt-nudge.sh`, `intent-echo.sh`, `context-guard.sh`, `quality-signals.sh` |
+| `PreToolUse` | Gate risky tool calls and inject compact file-scoped guidance | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `standards-injector.sh`, `holdout-isolation-gate.sh` |
 | `PostToolUse` | Quality and loop-detection after edits | `write-time-quality.sh`, `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh`, `context-monitor.sh` |
+| `TaskCompleted` | Validate task closure metadata and structural checks | `task-validation-gate.sh` |
+| `PreCompact` | Snapshot branch, changed files, and ratchet state before compaction | `precompact-snapshot.sh` |
+| `SubagentStop` | Capture worker output for later recovery | `subagent-stop.sh` |
+| `WorktreeCreate` | Initialize isolated worktree state | `worktree-setup.sh` |
+| `WorktreeRemove` | Archive worktree-local state before deletion | `worktree-cleanup.sh` |
+| `ConfigChange` | Audit or block high-risk runtime configuration changes | `config-change-monitor.sh` |
 
-A `TaskCompleted` block also exists in the manifest (for `task-validation-gate.sh`); it is runtime-dependent and may be a no-op on agents that do not emit that event.
+Codex uses the same hook scripts where its native event map can support them. Codex keeps startup lean as well: `hooks/codex-hooks.json` intentionally omits `ao-inject.sh`.
 
 ## Install and uninstall
 
@@ -53,7 +59,8 @@ Most hooks read environment variables rather than checking in-tree config. See [
 
 | Variable | Effect |
 |----------|--------|
-| `AGENTOPS_STARTUP_CONTEXT_MODE` | `manual` (default), `lean`, `legacy` — controls how much context `SessionStart` injects |
+| `AGENTOPS_STARTUP_CONTEXT_MODE` | `factory` (default) stages goal-scoped briefing state; `manual` skips prompt-time factory intake |
+| `AGENTOPS_STANDARDS_FULL_INJECT` | Set to `1` only for legacy debugging when you need full standards references injected by `standards-injector.sh` |
 | `AGENTOPS_GITIGNORE_AUTO` | Set to `0` to commit `.agents/` artifacts to the repo |
 | `AGENTOPS_HOOKS_DISABLED` | Set to `1` to short-circuit all hooks without uninstalling them |
 | `AGENTOPS_QUIET` | Set to `1` to suppress non-error hook output |

@@ -190,12 +190,21 @@ function Archive-SkillRoot {
 function Get-AgentOpsCodexHookScripts {
   return @(
     "session-start.sh",
-    "ao-inject.sh",
+    "stop-team-guard.sh",
+    "stop-auto-handoff.sh",
     "ao-flywheel-close.sh",
     "prompt-nudge.sh",
+    "intent-echo.sh",
     "quality-signals.sh",
+    "dangerous-git-guard.sh",
     "go-test-precommit.sh",
     "commit-review-gate.sh",
+    "lead-only-worker-git-guard.sh",
+    "holdout-isolation-gate.sh",
+    "standards-injector.sh",
+    "edit-knowledge-surface.sh",
+    "codex-parity-warn.sh",
+    "write-time-quality.sh",
     "ratchet-advance.sh"
   )
 }

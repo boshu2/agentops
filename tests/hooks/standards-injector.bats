@@ -40,39 +40,45 @@ fire() {
     [ "$status" -eq 0 ]
     echo "$output" | jq -e '.hookSpecificOutput.additionalContext | length > 0' >/dev/null
     echo "$output" | jq -e '.hookSpecificOutput.hookEventName == "PreToolUse"' >/dev/null
-    # The standards body should appear inside additionalContext
     body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    expected=$(cat "$REPO_ROOT/skills/standards/references/go.md")
-    [ "$body" = "$expected" ]
+    [[ "$body" == *"# Go Standards"* ]]
+    [[ "$body" == *"gofmt"* ]]
+    [[ "$body" == *"skills/standards/references/go.md"* ]]
+    [ "${#body}" -lt 1200 ]
 }
 
 @test "ts extension injects typescript standards" {
     fire "/some/repo/foo.ts"
     [ "$status" -eq 0 ]
     body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    expected=$(cat "$REPO_ROOT/skills/standards/references/typescript.md")
-    [ "$body" = "$expected" ]
+    [[ "$body" == *"# TypeScript Standards"* ]]
+    [[ "$body" == *"skills/standards/references/typescript.md"* ]]
+    [ "${#body}" -lt 1200 ]
 }
 
 @test "tsx extension also injects typescript standards" {
     fire "/some/repo/foo.tsx"
     body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    expected=$(cat "$REPO_ROOT/skills/standards/references/typescript.md")
-    [ "$body" = "$expected" ]
+    [[ "$body" == *"# TypeScript Standards"* ]]
+    [[ "$body" == *"skills/standards/references/typescript.md"* ]]
+    [ "${#body}" -lt 1200 ]
 }
 
 @test "sh extension injects shell standards" {
     fire "/some/repo/script.sh"
     body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    expected=$(cat "$REPO_ROOT/skills/standards/references/shell.md")
-    [ "$body" = "$expected" ]
+    [[ "$body" == *"# Shell Standards"* ]]
+    [[ "$body" == *"set -euo pipefail"* ]]
+    [[ "$body" == *"skills/standards/references/shell.md"* ]]
+    [ "${#body}" -lt 1200 ]
 }
 
 @test "js extension injects javascript standards" {
     fire "/some/repo/app.js"
     body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    expected=$(cat "$REPO_ROOT/skills/standards/references/javascript.md")
-    [ "$body" = "$expected" ]
+    [[ "$body" == *"# JavaScript Standards"* ]]
+    [[ "$body" == *"skills/standards/references/javascript.md"* ]]
+    [ "${#body}" -lt 1200 ]
 }
 
 @test "yaml and yml both inject yaml standards" {
@@ -81,8 +87,19 @@ fire() {
     fire "/some/repo/conf.yml"
     body2=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
     [ "$body1" = "$body2" ]
-    expected=$(cat "$REPO_ROOT/skills/standards/references/yaml.md")
-    [ "$body1" = "$expected" ]
+    [[ "$body1" == *"# YAML Standards"* ]]
+    [[ "$body1" == *"skills/standards/references/yaml.md"* ]]
+    [ "${#body1}" -lt 1200 ]
+}
+
+@test "full standards injection is explicit legacy opt-in" {
+    local payload
+    payload=$(jq -n '{"tool_input":{"file_path":"/some/repo/foo.go"}}')
+    run bash -c 'printf "%s" "$1" | AGENTOPS_STANDARDS_FULL_INJECT=1 bash "$2" 2>&1' -- "$payload" "$HOOK"
+    [ "$status" -eq 0 ]
+    body=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
+    expected=$(cat "$REPO_ROOT/skills/standards/references/go.md")
+    [ "$body" = "$expected" ]
 }
 
 @test "extensionless file path is silently skipped" {

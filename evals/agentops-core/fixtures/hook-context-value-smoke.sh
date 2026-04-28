@@ -116,7 +116,8 @@ test_standards_injector() {
     ctx="$(context_of "$output")"
     assert_contains "$ctx" "# Go Standards" "standards-injector go"
     assert_contains "$ctx" "gofmt" "standards-injector go"
-    assert_bytes_le "$ctx" 16000 "standards_go_bytes"
+    assert_contains "$ctx" "Full reference: skills/standards/references/go.md" "standards-injector go"
+    assert_bytes_le "$ctx" 1200 "standards_go_bytes"
 
     unsupported="$(jq -n '{"tool_input":{"file_path":"notes.txt"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)"
     assert_empty "$unsupported" "standards-injector unsupported extension"

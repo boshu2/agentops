@@ -267,7 +267,7 @@ ao quick-start --minimal  # Create .agents/ structure (or use /quickstart skill)
 ao init --hooks           # Recommended: create `.agents/` + install minimal hooks
 ao hooks install          # Hooks only (does not create `.agents/`)
 ao hooks test             # Verify hooks are working
-ao inject [topic]         # Load prior knowledge (auto at session start)
+ao inject [topic]         # Load prior knowledge explicitly/JIT
 ao search "query"         # Search workspace session history plus repo-local knowledge
 ao flywheel status        # Knowledge growth rate, escape velocity
 ao metrics report         # Flywheel health dashboard

@@ -195,7 +195,7 @@ Hooks are installed via `ao init --hooks` or `ao hooks install`. They live in `h
 
 ### Session Hooks
 
-The `ao` CLI also installs Claude Code session hooks (`SessionStart`, `PreToolUse`, `PostToolUse`, `UserPromptSubmit`) that drive the AgentOps workflow nudges and knowledge injection. These are managed separately from git hooks.
+The `ao` CLI also installs Claude Code session hooks (`SessionStart`, `PreToolUse`, `PostToolUse`, `UserPromptSubmit`) that drive AgentOps workflow nudges, validation gates, and JIT context. These are managed separately from git hooks.
 
 ## Security Gate
 

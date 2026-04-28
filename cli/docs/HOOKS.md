@@ -35,18 +35,15 @@ ao hooks show
 
 ### SessionStart Hook
 
-When you start a Claude Code session, behavior depends on `AGENTOPS_STARTUP_CONTEXT_MODE`:
+When you start a Claude Code session, `session-start.sh` prepares runtime state
+without broad model-visible context injection. It creates `.agents/`
+directories, consumes handoff packets, closes any pending flywheel loop, and
+stages factory-goal state so the first substantive prompt can build a scoped
+briefing.
 
-**`manual` (default):** MEMORY.md is auto-loaded by Claude Code. The hook emits only a pointer to on-demand retrieval commands (`ao search`, `ao lookup`). No `ao extract` or `ao inject` runs. This is the lightest startup path.
-
-**`lean`:** Runs `ao extract` + `ao lookup` with a reduced token budget (400 tokens when MEMORY.md is fresh). Provides automatic knowledge retrieval alongside MEMORY.md. Use `AGENTOPS_STARTUP_LEGACY_INJECT=1` to force this mode.
-
-**`legacy`:** Runs `ao extract` + `ao lookup` with full token budget (800 tokens). Pre-notebook behavior for backward compatibility.
-
-In `lean`/`legacy` modes, injection is weighted by:
-- **Freshness**: More recent = higher score
-- **Utility**: Learnings that led to successful outcomes score higher
-- **Maturity**: Established learnings weighted over provisional ones
+Use `ao lookup`, `ao search`, `ao inject`, or the factory briefing path when
+task-specific knowledge is actually needed. The installed runtime manifest does
+not call `ao-inject.sh` at SessionStart.
 
 ### SessionEnd Hook
 
@@ -61,7 +58,8 @@ When a Claude Code session ends:
 
 When your session stops:
 
-1. **Flywheel close** via `ao flywheel close-loop`
+1. **Team/handoff guardrails** via `stop-team-guard.sh` and `stop-auto-handoff.sh`
+2. **Flywheel close** via `ao flywheel close-loop`
 
 ### CPU Safety Guardrails
 

@@ -44,7 +44,7 @@ scripts at lifecycle events (`SessionStart`, `PreToolUse`, `PostToolUse`,
 with zero operator action:
 
 ```
-SessionStart  →  session-start.sh injects context
+SessionStart  →  session-start.sh stages runtime state
 UserPromptSubmit  →  factory-router.sh, prompt-nudge.sh, quality-signals.sh
 PreToolUse    →  pre-mortem-gate.sh blocks unvalidated /crank
 PostToolUse   →  go-vet, complexity, research-loop-detector
@@ -57,7 +57,7 @@ In Claude Code the operator lane is simply:
 /rpi "fix auth startup"
 ```
 
-Hooks handle startup context, validation gates, execution discipline, and
+Hooks handle runtime state, validation gates, execution discipline, and
 flywheel closure automatically around whatever the agent does.
 
 ### Codex (hookless — explicit lifecycle)
@@ -115,19 +115,21 @@ run without operator action and keep the conveyor belt honest.
 
 | Event | Hook | Purpose |
 |-------|------|---------|
-| **SessionStart** | `session-start.sh` | Cleans stale runs, injects startup context |
+| **SessionStart** | `session-start.sh` | Cleans stale runs and stages goal-scoped briefing state |
 | **SessionEnd** | `session-end-maintenance.sh` | Post-session cleanup and state persistence |
 | | `compile-session-defrag.sh` | Knowledge defragmentation pass |
-| **Stop** | `ao-flywheel-close.sh` | Closes the flywheel loop (learnings, citations, handoff) |
+| **Stop** | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` | Preserves active work and closes the flywheel loop |
 | **UserPromptSubmit** | `factory-router.sh` | Routes operator intent to the correct lane |
 | | `new-user-welcome.sh` | Gives fresh repos a one-time path into `/research`, `/implement`, or `/council` |
 | | `prompt-nudge.sh` | Reminds about pending gates (e.g. pre-mortem) |
 | | `intent-echo.sh` | Injects intent-echo discipline |
 | | `quality-signals.sh` | Surfaces quality context before work begins |
 | **PreToolUse** | `pre-mortem-gate.sh` | Blocks `/crank` or `/implement` without pre-mortem |
+| | `dangerous-git-guard.sh` | Blocks destructive git operations |
 | | `go-test-precommit.sh` | Requires Go tests pass before commits |
 | | `commit-review-gate.sh` | Reviews commit content before `git commit` |
 | | `git-worker-guard.sh` | Prevents destructive git operations |
+| | `standards-injector.sh` | Injects compact file-scoped standards guidance |
 | | `edit-knowledge-surface.sh` | Warns on edits to knowledge-surface files |
 | | `codex-parity-warn.sh` | Warns when skill edits may drift from Codex copies |
 | **PostToolUse** | `write-time-quality.sh` | Checks quality of written/edited files |
@@ -136,6 +138,11 @@ run without operator action and keep the conveyor belt honest.
 | | `research-loop-detector.sh` | Detects stalling in research without output |
 | | `context-monitor.sh` | Tracks context window consumption |
 | **TaskCompleted** | `task-validation-gate.sh` | Validates task output before marking complete |
+| **PreCompact** | `precompact-snapshot.sh` | Captures recovery state before context compaction |
+| **SubagentStop** | `subagent-stop.sh` | Captures worker output packets |
+| **WorktreeCreate** | `worktree-setup.sh` | Initializes isolated worktree state |
+| **WorktreeRemove** | `worktree-cleanup.sh` | Archives worktree-local state |
+| **ConfigChange** | `config-change-monitor.sh` | Audits high-risk runtime configuration changes |
 
 Every hook checks the kill switch (`AGENTOPS_HOOKS_DISABLED=1`) and produces
 structured JSON on stdout. Exit code `2` blocks the operation (PreToolUse only);

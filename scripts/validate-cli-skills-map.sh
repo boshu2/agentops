@@ -43,16 +43,14 @@ if [[ "$errors" -eq 0 ]]; then
     fail "map still lists phantom subcommand ao forge index"
   fi
 
-  for hook in session-start.sh ao-inject.sh; do
-    if ! awk -v hook="$hook" '
-      /^## Hooks → Commands/ { in_hooks = 1; next }
-      in_hooks && /^---$/ { exit }
-      in_hooks && index($0, hook) && index($0, "SessionStart") { found = 1 }
-      END { exit found ? 0 : 1 }
-    ' "$MAP_PATH"; then
-      fail "SessionStart hook table must include $hook"
-    fi
-  done
+  if ! awk -v hook="session-start.sh" '
+    /^## Hooks → Commands/ { in_hooks = 1; next }
+    in_hooks && /^---$/ { exit }
+    in_hooks && index($0, hook) && index($0, "SessionStart") { found = 1 }
+    END { exit found ? 0 : 1 }
+  ' "$MAP_PATH"; then
+    fail "SessionStart hook table must include session-start.sh"
+  fi
 fi
 
 if [[ "$errors" -gt 0 ]]; then

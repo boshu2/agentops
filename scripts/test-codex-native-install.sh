@@ -76,12 +76,22 @@ require_cmd() {
 
 EXPECTED_CODEX_HOOK_SCRIPTS=(
   "session-start.sh"
+  "stop-team-guard.sh"
+  "stop-auto-handoff.sh"
   "ao-flywheel-close.sh"
   "prompt-nudge.sh"
+  "intent-echo.sh"
   "quality-signals.sh"
+  "dangerous-git-guard.sh"
   "go-test-precommit.sh"
   "commit-review-gate.sh"
+  "lead-only-worker-git-guard.sh"
+  "holdout-isolation-gate.sh"
+  "standards-injector.sh"
+  "edit-knowledge-surface.sh"
+  "codex-parity-warn.sh"
   "ratchet-advance.sh"
+  "write-time-quality.sh"
 )
 
 require_codex_hook_handlers() {
@@ -90,9 +100,9 @@ require_codex_hook_handlers() {
 
   for hook_script in "${EXPECTED_CODEX_HOOK_SCRIPTS[@]}"; do
     jq -e --arg script "$hook_script" \
-      '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/" + $script))] | length == 1' \
+      '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/" + $script))] | length >= 1' \
       "$hooks_file" >/dev/null \
-      || fail "Expected exactly one $hook_script handler in $hooks_file"
+      || fail "Expected at least one $hook_script handler in $hooks_file"
   done
 
   if jq -e '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/ao-inject.sh"))] | length == 0' \
@@ -199,8 +209,8 @@ rg -q '^codex_hooks = true$' "$CODEX_HOME/config.toml" || fail "config.toml miss
 [[ -f "$CODEX_HOME/hooks.json" ]] || fail "Missing ~/.codex/hooks.json after native install"
 jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Expected 5 native Codex hook events in ~/.codex/hooks.json"
-jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 7' "$CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 7 native Codex hook handlers in ~/.codex/hooks.json"
+jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Expected 22 native Codex hook handlers in ~/.codex/hooks.json"
 jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Missing session-start.sh handler in ~/.codex/hooks.json"
 if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null; then

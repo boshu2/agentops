@@ -2509,7 +2509,7 @@ ao harvest [flags]
 
 ### `ao inject`
 
-Inject searches and outputs relevant knowledge for session startup.
+Inject searches and outputs relevant knowledge for explicit or JIT context.
 
 ```
 ao inject [context] [flags]

@@ -135,8 +135,8 @@ Subcommands:
   test      Verify hooks work correctly
 
 The knowledge flywheel automates:
-  1. SessionStart: Inject prior knowledge with confidence decay
-  2. Stop: Extract learnings and update feedback loop
+  1. SessionStart: Prepare runtime state and handoff/factory briefing pointers
+  2. Stop: Preserve handoff state and update the feedback loop
 
 Example workflow:
   ao hooks init                    # Generate configuration
@@ -151,8 +151,8 @@ var hooksInitCmd = &cobra.Command{
 
 The generated hooks will:
   SessionStart:
-    - Apply confidence decay to stale learnings
-    - Inject CASS-weighted knowledge (up to 1500 tokens)
+    - Prepare .agents runtime directories
+    - Consume handoff packets and stage factory briefing state
 
   Stop:
     - Extract learnings from completed session

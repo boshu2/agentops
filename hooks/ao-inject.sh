@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# AgentOps Hook: ao inject
-# Injects prior knowledge with decay and token limits at session start.
+# AgentOps Hook Helper: ao inject
+# Legacy/manual wrapper for explicit knowledge injection. Runtime manifests keep
+# SessionStart lean and use factory/JIT retrieval instead of calling this by default.
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

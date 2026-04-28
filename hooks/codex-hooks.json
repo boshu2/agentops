@@ -18,6 +18,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/stop-team-guard.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/stop-auto-handoff.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ao-flywheel-close.sh",
             "timeout": 15
           }
@@ -34,6 +44,11 @@
           },
           {
             "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/intent-echo.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/quality-signals.sh",
             "timeout": 3
           }
@@ -46,6 +61,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/dangerous-git-guard.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/go-test-precommit.sh",
             "timeout": 60
           },
@@ -53,6 +73,76 @@
             "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/commit-review-gate.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/lead-only-worker-git-guard.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/holdout-isolation-gate.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/standards-injector.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/edit-knowledge-surface.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/codex-parity-warn.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/standards-injector.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/holdout-isolation-gate.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/holdout-isolation-gate.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/holdout-isolation-gate.sh",
+            "timeout": 5
           }
         ]
       }
@@ -64,6 +154,26 @@
           {
             "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ratchet-advance.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/write-time-quality.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/write-time-quality.sh",
             "timeout": 5
           }
         ]

@@ -176,7 +176,7 @@ GOALS.md
 ```
 TRIGGER                   HOOK                        WHAT IT DOES
 ───────                   ────                        ────────────
-Session starts         session-start.sh            Inject prior knowledge
+Session starts         session-start.sh            Stage runtime state
 Session ends           session-end-maintenance.sh  Harvest learnings
 Agent stops            ao-flywheel-close.sh        Close learning loop
 Prompt submit         prompt-nudge.sh             Remind missing intent / ratchet state
