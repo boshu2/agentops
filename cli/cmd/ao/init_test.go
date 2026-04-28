@@ -15,11 +15,7 @@ func TestRunInitCreatesDirs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	dryRun = false
 	initStealth = false
@@ -69,11 +65,7 @@ func TestRunInitGitignoreAppend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -96,11 +88,7 @@ func TestRunInitGitignoreCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -123,11 +111,7 @@ func TestRunInitIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -152,11 +136,7 @@ func TestRunInitNonGitRepo(t *testing.T) {
 	tmp := t.TempDir()
 	// No .git directory
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -183,11 +163,7 @@ func TestRunInitStealth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = true
 	initHooks = false
@@ -216,11 +192,7 @@ func TestRunInitDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -245,11 +217,7 @@ func TestNestedGitignoreContent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
@@ -283,11 +251,7 @@ func TestRunInitGitignoreNoTrailingNewline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	initStealth = false
 	initHooks = false
