@@ -152,6 +152,23 @@ jobs:
           go-version: '1.26'
           cache-dependency-path: cli/go.sum
 
+      - name: Install AgentOps eval dependencies
+        run: |
+          sudo apt-get install -y jq ripgrep
+          sudo npm install -g bats
+          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+          bash scripts/install-bd.sh --version v1.0.3
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          bd_eval_root="$RUNNER_TEMP/agentops-bd"
+          mkdir -p "$bd_eval_root"
+          git -C "$bd_eval_root" init --quiet
+          (
+            cd "$bd_eval_root"
+            "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
+          )
+          echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
+
       - name: Run AgentOps public eval canaries
         run: |
           chmod +x scripts/eval-agentops.sh
@@ -650,12 +667,15 @@ jobs:
           echo "✅ Embedded hooks are in sync"
 
       - name: Enforce Go complexity budget on changed files
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF_NAME: ${{ github.base_ref }}
         run: |
           echo "=== Enforcing Go complexity budget ==="
           GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-            BASE_REF="origin/${{ github.base_ref }}"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REF_NAME"
+            BASE_REF="origin/$BASE_REF_NAME"
           else
             BASE_REF="HEAD~1"
           fi

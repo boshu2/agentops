@@ -243,7 +243,8 @@ func AggregateFindingGeneratorSidecars(cwd, outputDir string) (FindingGeneratorA
 	}
 
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
-	selected := map[string]FindingGeneratorCandidate{}
+	// selected is populated through applyGeneratorSidecarCandidates before use.
+	selected := map[string]FindingGeneratorCandidate{} // nosemgrep: trailofbits.go.iterate-over-empty-map.iterate-over-empty-map
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
