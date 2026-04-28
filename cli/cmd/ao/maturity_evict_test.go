@@ -68,11 +68,7 @@ func TestEvictIdentifiesCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	maturityEvict = true
 	maturityArchive = false
@@ -112,11 +108,7 @@ func TestEvictSkipsEstablished(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	maturityEvict = true
 	maturityArchive = true
@@ -154,11 +146,7 @@ func TestEvictSkipsRecentlyCited(t *testing.T) {
 		"maturity":   "provisional",
 	})
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Resolve the learning path AFTER chdir so it matches what os.Getwd() returns
 	// (macOS /var -> /private/var symlink resolution)
@@ -204,11 +192,7 @@ func TestEvictArchivesCandidate(t *testing.T) {
 		"maturity":   "provisional",
 	})
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Resolve path AFTER chdir (macOS /var -> /private/var symlink)
 	resolvedCwd, _ := os.Getwd()
