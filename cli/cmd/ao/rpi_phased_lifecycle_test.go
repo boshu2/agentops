@@ -15,11 +15,7 @@ func TestMergeFailurePropagation(t *testing.T) {
 	t.Setenv("AGENTOPS_RPI_MERGE_RETRY_DELAY", "1ms")
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
