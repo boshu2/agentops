@@ -171,6 +171,29 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	}
 	record.Environment.HostNotes = append(record.Environment.HostNotes, hostNotes...)
 
+	probeRuntimeVersion(ctx, opts, adapter, record, executablePath, env, workDir)
+
+	runner := opts.Runner
+	if runner == nil {
+		runner = defaultRuntimeRunner
+	}
+	result, attempts, runErr := runLiveRuntimeWithAttempts(ctx, runner, RuntimeCommand{
+		Executable:     executablePath,
+		Args:           adapter.DirectArgs(command, liveRuntimePrompt(suite)),
+		Env:            env,
+		Dir:            workDir,
+		TimeoutSeconds: record.Runtime.TimeoutSeconds,
+	}, record.Runtime.Attempts)
+	record.Runtime.Attempts = attempts
+	if runErr != nil {
+		markRuntimeError(record, suite, runErr.Error())
+		return finishLiveRuntimeRun(opts, record, now)
+	}
+	applyRuntimeExecutionResult(record, suite, result)
+	return finishLiveRuntimeRun(opts, record, now)
+}
+
+func probeRuntimeVersion(ctx context.Context, opts LiveRuntimeOptions, adapter liveRuntimeAdapter, record *RunRecord, executablePath string, env []string, workDir string) {
 	versionRunner := opts.VersionRunner
 	if versionRunner == nil {
 		versionRunner = defaultRuntimeVersionRunner
@@ -193,28 +216,9 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 			err = fmt.Errorf("runtime version probe timed out after %ds", record.Runtime.TimeoutSeconds)
 		}
 		record.Environment.HostNotes = append(record.Environment.HostNotes, "runtime version probe failed: "+err.Error())
-	} else {
-		record.Runtime.Version = strings.TrimSpace(version)
+		return
 	}
-
-	runner := opts.Runner
-	if runner == nil {
-		runner = defaultRuntimeRunner
-	}
-	result, attempts, runErr := runLiveRuntimeWithAttempts(ctx, runner, RuntimeCommand{
-		Executable:     executablePath,
-		Args:           adapter.DirectArgs(command, liveRuntimePrompt(suite)),
-		Env:            env,
-		Dir:            workDir,
-		TimeoutSeconds: record.Runtime.TimeoutSeconds,
-	}, record.Runtime.Attempts)
-	record.Runtime.Attempts = attempts
-	if runErr != nil {
-		markRuntimeError(record, suite, runErr.Error())
-		return finishLiveRuntimeRun(opts, record, now)
-	}
-	applyRuntimeExecutionResult(record, suite, result)
-	return finishLiveRuntimeRun(opts, record, now)
+	record.Runtime.Version = strings.TrimSpace(version)
 }
 
 func liveRuntimeAdapterFor(runtimeName Runtime) (liveRuntimeAdapter, error) {
