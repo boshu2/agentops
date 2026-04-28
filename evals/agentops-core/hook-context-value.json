@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.hook-context-value",
+  "name": "AgentOps Hook Context Value Canary",
+  "description": "Offline public canary for measuring whether context-emitting hooks add targeted value while staying silent or bounded to avoid context bloat.",
+  "domain": "hook",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "hooks", "context", "efficiency"],
+  "allowed_runtimes": ["shell", "static"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": [
+      "AGENTOPS_RPI_RUNTIME",
+      "ANTHROPIC_",
+      "OPENAI_"
+    ],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {
+        "name": "correctness",
+        "weight": 2,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "efficiency",
+        "weight": 2,
+        "threshold": 1,
+        "critical": true
+      },
+      {
+        "name": "artifact_quality",
+        "weight": 1,
+        "threshold": 1
+      },
+      {
+        "name": "safety",
+        "weight": 1,
+        "threshold": 1,
+        "critical": true
+      }
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "hook-context-value-smoke",
+      "title": "context-emitting hooks provide signal within budgets",
+      "kind": "command",
+      "objective": "Exercise representative additionalContext hooks and fail when they emit irrelevant, unsafe, or oversized context.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash evals/agentops-core/fixtures/hook-context-value-smoke.sh"
+      },
+      "expectations": [
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "RESULT hook-context-value PASS"
+        },
+        {
+          "type": "stdout_contains",
+          "value": "standards_go_bytes="
+        },
+        {
+          "type": "stdout_contains",
+          "value": "commit_review_bytes="
+        },
+        {
+          "type": "stdout_contains",
+          "value": "precompact_bytes="
+        }
+      ],
+      "dimensions": [
+        "correctness",
+        "efficiency",
+        "artifact_quality",
+        "safety"
+      ],
+      "critical": true
+    }
+  ]
+}
