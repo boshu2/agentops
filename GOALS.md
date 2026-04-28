@@ -112,7 +112,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 
 | ID | Check | Weight | Description | Tags |
 |----|-------|--------|-------------|------|
-| flywheel-compounding | `bash -c 'cd cli && go build -o /tmp/ao-fw-check ./cmd/ao && cd .. && /tmp/ao-fw-check flywheel status --json 2>/dev/null \| jq -e ".escape_velocity_compounding == true"'` | 8 | Knowledge flywheel above escape velocity (σρ > δ), a necessary but not sufficient condition for true compounding | long-cycle, corpus-state |
+| flywheel-compounding | `bash scripts/check-flywheel-compounding.sh` | 8 | Knowledge flywheel above escape velocity (σρ > δ), a necessary but not sufficient condition for true compounding | long-cycle, corpus-state |
 | flywheel-proof | `bash scripts/proof-run.sh` | 7 | Flywheel compounds across sessions (automated proof) |  |
 | skill-frontmatter | `bash -c 'for f in skills/*/SKILL.md; do head -5 "$f" \| grep -q "^---" && head -10 "$f" \| grep -q "^name:" && head -10 "$f" \| grep -q "^description:" \|\| { echo FAIL:$f; exit 1; }; done'` | 6 | Every skill has valid YAML frontmatter |  |
 | hook-preflight | `timeout 60 ./scripts/validate-hook-preflight.sh` | 6 | All hooks pass safety checks |  |
