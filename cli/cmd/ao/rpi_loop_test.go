@@ -1836,12 +1836,8 @@ func TestRPILoop_DryRun_EmptyQueue(t *testing.T) {
 
 	// No next-work.jsonl in temp dir, so queue is empty.
 	// Loop should detect empty queue before dry-run branch is reached.
-	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	out, err := captureStdout(t, func() error {
 		return runRPILoop(nil, nil)
@@ -1874,11 +1870,7 @@ func TestRPILoop_DryRun_FromQueue(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	// Create a queue with one item.
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
@@ -1928,11 +1920,7 @@ func TestRPILoop_InfraFailure_DoesNotMarkQueueFailed(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-infra",
@@ -1993,11 +1981,7 @@ func TestRPILoop_InfraFailure_ContinuePolicy_RetriesUntilMaxCycles(t *testing.T)
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-infra-continue",
@@ -2057,11 +2041,7 @@ func TestRPILoop_TaskFailure_MarksQueueFailed(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-task",
@@ -2120,11 +2100,7 @@ func TestRPILoop_TaskFailure_ContinuePolicy_AdvancesAfterFailingEntry(t *testing
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0755); err != nil {
@@ -2211,11 +2187,7 @@ func TestRPILoop_TaskFailure_StopPolicy_DoesNotAdvanceQueue(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0755); err != nil {
@@ -2288,11 +2260,7 @@ func TestRPILoop_TaskFailure_ContinuePolicy_AdvancesToSiblingItemInSameEntry(t *
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0755); err != nil {
@@ -2383,11 +2351,7 @@ func TestRPILoop_KillSwitchDuringRetry_StopsWithoutQueueMutation(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-kill-switch",
@@ -2463,11 +2427,7 @@ func TestRPILoop_ExplicitGoalReportsExecutedCycles(t *testing.T) {
 	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiMaxCycles = 0
 	rpiSupervisor = false
@@ -2518,11 +2478,7 @@ func TestRPILoop_PreflightCompletedRunConsumesStaleItemAndAdvances(t *testing.T)
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
@@ -2607,11 +2563,7 @@ func TestRPILoop_PreflightEvidenceOnlyClosureConsumesStaleItemAndAdvances(t *tes
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
@@ -2694,11 +2646,7 @@ func TestRPILoop_KillSwitchStopsBeforeCycleExecution(t *testing.T) {
 	defer func() { runRPISupervisedCycleFn = prevRunCycle }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	killPath := filepath.Join(tmpDir, ".agents", "rpi", "KILL")
 	if err := os.MkdirAll(filepath.Dir(killPath), 0755); err != nil {
@@ -2765,11 +2713,7 @@ func TestRPILoop_CompileCadence_RunsOncePerInterval(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
 	if err := os.MkdirAll(rpiDir, 0755); err != nil {
@@ -2857,11 +2801,7 @@ func TestRPILoop_CompileCadence_ProducerFailure_ContinuePolicy(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-compile-continue",
@@ -2929,11 +2869,7 @@ func TestRPILoop_CompileCadence_ProducerFailure_StopPolicy(t *testing.T) {
 	defer func() { rpiMaxCycles = prevMaxCycles }()
 
 	tmpDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	queuePath := setupSingleQueueEntry(t, tmpDir, nextWorkEntry{
 		SourceEpic: "ag-compile-stop",

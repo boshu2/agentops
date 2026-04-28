@@ -27,11 +27,7 @@ func TestMaturityExpireScan(t *testing.T) {
 	createTestLearning(t, learningsDir, "archived.md", "valid_until: 2020-01-01\nexpiry_status: archived")
 
 	// Change to temp dir so runMaturityExpire picks it up
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Reset flags
 	maturityArchive = false
@@ -54,11 +50,7 @@ func TestMaturityExpireArchive(t *testing.T) {
 	createTestLearning(t, learningsDir, "expired2.md", "valid_until: 2021-06-15")
 	createTestLearning(t, learningsDir, "active.md", "valid_until: 2099-12-31")
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	maturityArchive = true
 	maturityExpire = true
@@ -97,11 +89,7 @@ func TestMaturityExpireNoValidUntil(t *testing.T) {
 	createTestLearning(t, learningsDir, "no-date2.md", "maturity: provisional")
 	createTestLearning(t, learningsDir, "has-date.md", "valid_until: 2099-01-01")
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	maturityArchive = false
 	maturityExpire = true
@@ -124,11 +112,7 @@ func TestMaturityExpireMalformedYAML(t *testing.T) {
 	createTestLearning(t, learningsDir, "empty-date.md", "valid_until: ")
 	createTestLearning(t, learningsDir, "good.md", "valid_until: 2099-12-31")
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	maturityArchive = false
 	maturityExpire = true

@@ -185,14 +185,7 @@ Use ao codex start and ao codex stop when runtime hooks are unavailable.
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	out, err := executeCommand("codex", "start", "--json", "--query", "explicit codex lifecycle")
 	if err != nil {
@@ -466,14 +459,7 @@ func TestCodexStartJSONSurfacesMatchingBriefings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	out, err := executeCommand("codex", "start", "--json", "--no-maintenance", "--query", "fix auth startup")
 	if err != nil {
@@ -538,14 +524,7 @@ Use ao codex ensure-start and ao codex ensure-stop when runtime hooks are unavai
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	firstOut, err := executeCommand("codex", "ensure-start", "--json", "--query", "explicit codex lifecycle")
 	if err != nil {
@@ -613,14 +592,7 @@ func TestCodexStopJSONUsesHistoryFallback(t *testing.T) {
 	}
 
 	repo := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	out, err := executeCommand("codex", "stop", "--json")
 	if err != nil {
@@ -669,14 +641,7 @@ func TestCodexStopJSONSkipsDuplicateCloseoutForSameSession(t *testing.T) {
 	}
 
 	repo := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	firstOut, err := executeCommand("codex", "stop", "--json")
 	if err != nil {
@@ -749,14 +714,7 @@ func TestCodexEnsureStopJSONSkipsDuplicateCloseoutForSameSession(t *testing.T) {
 	}
 
 	repo := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	firstOut, err := executeCommand("codex", "ensure-stop", "--json")
 	if err != nil {
@@ -854,14 +812,7 @@ let me force the revert because the goals agent is still running and re-wrote it
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(repo)
 
 	out, err := executeCommand("codex", "ensure-stop", "--json")
 	if err != nil {
@@ -925,14 +876,7 @@ Use ao codex start, ao search --cite applied, and ao codex stop when runtime hoo
 	writeCodexStatusJSONFile(t, filepath.Join(repo, ".agents", "knowledge", "pending", "queued-learning.md"), "# queued\n")
 	writeCodexStatusJSONFile(t, filepath.Join(repo, ".agents", "knowledge", "pending", ".quarantine", "truncated-learning.md"), "# quarantined\n")
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(repo)
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)

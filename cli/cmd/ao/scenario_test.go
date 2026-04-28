@@ -11,11 +11,7 @@ import (
 
 func TestScenarioInit_CreatesDirectory(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	out, err := executeCommand("scenario", "init")
 	if err != nil {
@@ -36,11 +32,7 @@ func TestScenarioInit_CreatesDirectory(t *testing.T) {
 
 func TestScenarioInit_Idempotent(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	// Run twice
 	executeCommand("scenario", "init")
@@ -52,11 +44,7 @@ func TestScenarioInit_Idempotent(t *testing.T) {
 
 func TestScenarioList_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	os.MkdirAll(filepath.Join(".agents", "holdout"), 0755)
 
@@ -71,11 +59,7 @@ func TestScenarioList_EmptyDir(t *testing.T) {
 
 func TestScenarioList_NoDirectory(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	out, err := executeCommand("scenario", "list")
 	if err != nil {
@@ -88,11 +72,7 @@ func TestScenarioList_NoDirectory(t *testing.T) {
 
 func TestScenarioList_WithScenarios(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -117,11 +97,7 @@ func TestScenarioList_WithScenarios(t *testing.T) {
 
 func TestScenarioList_FilterByStatus(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -155,11 +131,7 @@ func TestScenarioList_FilterByStatus(t *testing.T) {
 
 func TestScenarioAdd_CreatesSchemaCompliantScenario(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 	withScenarioClock(t, time.Date(2026, 4, 24, 10, 30, 0, 0, time.UTC))
 
 	out, err := executeCommand(
@@ -201,11 +173,7 @@ func TestScenarioAdd_CreatesSchemaCompliantScenario(t *testing.T) {
 
 func TestScenarioAdd_IncrementsSameDayID(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 	withScenarioClock(t, time.Date(2026, 4, 24, 10, 30, 0, 0, time.UTC))
 
 	holdoutDir := filepath.Join(".agents", "holdout")
@@ -237,11 +205,7 @@ func TestScenarioAdd_IncrementsSameDayID(t *testing.T) {
 
 func TestScenarioAdd_RejectsInvalidFlags(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	if out, err := executeCommand("scenario", "add", "bad threshold", "--threshold", "1.2"); err == nil {
 		t.Fatalf("scenario add should reject invalid threshold; output: %s", out)
@@ -253,11 +217,7 @@ func TestScenarioAdd_RejectsInvalidFlags(t *testing.T) {
 
 func TestScenarioValidate_ValidSchema(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -281,11 +241,7 @@ func TestScenarioValidate_ValidSchema(t *testing.T) {
 
 func TestScenarioValidate_AcceptsAutoID(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -309,11 +265,7 @@ func TestScenarioValidate_AcceptsAutoID(t *testing.T) {
 
 func TestScenarioValidate_InvalidSchema(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -331,11 +283,7 @@ func TestScenarioValidate_InvalidSchema(t *testing.T) {
 
 func TestScenarioValidate_MalformedJSON(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	holdoutDir := filepath.Join(".agents", "holdout")
 	os.MkdirAll(holdoutDir, 0755)
@@ -350,11 +298,7 @@ func TestScenarioValidate_MalformedJSON(t *testing.T) {
 
 func TestScenarioValidate_NoDirectory(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	out, err := executeCommand("scenario", "validate")
 	if err != nil {
@@ -367,11 +311,7 @@ func TestScenarioValidate_NoDirectory(t *testing.T) {
 
 func TestScenarioValidate_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	os.MkdirAll(filepath.Join(".agents", "holdout"), 0755)
 

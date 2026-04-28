@@ -361,11 +361,7 @@ func TestResumePhasedStateIfNeeded_Phase2NoExistingState(t *testing.T) {
 func TestSetupWorktreeLifecycle_PreservesPreseededRunID(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	state := newTestPhasedState().WithRunID("seeded-run-id")
 	spawnCwd, cleanup, err := setupWorktreeLifecycle(repo, repo, phasedEngineOptions{}, state)
@@ -541,11 +537,7 @@ func TestWorktreeResumedEvent(t *testing.T) {
 func TestWorktreeCreatedEvent(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	state := newTestPhasedState().WithRunID("run-created-001")
 	spawnCwd, cleanup, err := setupWorktreeLifecycle(repo, repo, phasedEngineOptions{}, state)
@@ -612,11 +604,7 @@ func TestRPIStartedEvent(t *testing.T) {
 func TestWorktreeMergedAndRemovedEvents(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	state := newTestPhasedState().WithRunID("run-merge-001")
 	_, cleanup, err := setupWorktreeLifecycle(repo, repo, phasedEngineOptions{}, state)

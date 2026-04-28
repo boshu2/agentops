@@ -79,11 +79,7 @@ func TestCreateWorktree(t *testing.T) {
 	repo := initTestRepo(t)
 
 	// Override cwd to the test repo.
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
@@ -135,11 +131,7 @@ func TestCreateWorktree(t *testing.T) {
 func TestCreateWorktree_RetryOnCollision(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	// createWorktree should still succeed and follow detached naming.
 	worktreePath, runID, err := createWorktree(repo)
@@ -161,11 +153,7 @@ func TestCreateWorktree_RetryOnCollision(t *testing.T) {
 func TestMergeWorktree(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
@@ -224,11 +212,7 @@ func TestMergeWorktree_Conflict(t *testing.T) {
 		}
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
@@ -307,11 +291,7 @@ func TestMergeWorktree_DirtyRepo(t *testing.T) {
 	t.Setenv("AGENTOPS_RPI_MERGE_RETRY_DELAY", "1ms")
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {
@@ -345,11 +325,7 @@ func TestMergeWorktree_DirtyRepo(t *testing.T) {
 func TestRemoveWorktree(t *testing.T) {
 	repo := initTestRepo(t)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(repo); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir) //nolint:errcheck
+	t.Chdir(repo)
 
 	worktreePath, runID, err := createWorktree(repo)
 	if err != nil {

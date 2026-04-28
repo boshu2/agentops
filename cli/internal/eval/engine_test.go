@@ -262,6 +262,8 @@ func TestCollectGitRecordPreservesDirtyPathNames(t *testing.T) {
 	runGit(t, dir, "init")
 	runGit(t, dir, "config", "user.email", "tester@example.com")
 	runGit(t, dir, "config", "user.name", "Tester")
+	runGit(t, dir, "config", "commit.gpgsign", "false")
+	runGit(t, dir, "config", "tag.gpgsign", "false")
 	writeEvalFile(t, filepath.Join(dir, "tracked.txt"), "before\n")
 	runGit(t, dir, "add", "tracked.txt")
 	runGit(t, dir, "commit", "-m", "initial")

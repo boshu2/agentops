@@ -593,12 +593,7 @@ version = "0.1.0"
 func TestSeed_DefaultPath(t *testing.T) {
 	tmp := t.TempDir()
 
-	// Save and restore cwd
-	orig, _ := os.Getwd()
-	defer func() { _ = os.Chdir(orig) }()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmp)
 
 	dryRun = false
 	seedForce = false
