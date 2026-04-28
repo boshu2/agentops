@@ -246,11 +246,7 @@ func TestCreateParallelWorktrees_CreatesAndCleansUp(t *testing.T) {
 
 	// Must chdir to the git repo since createParallelWorktrees
 	// runs git commands relative to CWD.
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	epics := []parallelEpic{
 		{Name: "wt-alpha", Goal: "do alpha"},
@@ -396,11 +392,7 @@ func TestMergeParallelWorktrees_SkipsFailedEpics(t *testing.T) {
 	}
 
 	// Change to tmpDir so git merge runs in the right repo.
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmpDir)
 
 	mergedCount, err := mergeParallelWorktrees(epics, results, worktrees)
 	if err != nil {
