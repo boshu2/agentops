@@ -1,61 +1,44 @@
 {
   "schema_version": 1,
-  "run_id": "rpi-2026-04-29-daemon-tracer-bullets-remaining",
-  "objective": "Complete AgentOps daemon tracer bullets TB-04 through TB-07",
-  "epic_id": "agentops-n7b",
-  "issue_ids": [
-    "agentops-n7b.1",
-    "agentops-n7b.2",
-    "agentops-n7b.3",
-    "agentops-n7b.4"
+  "run_id": "20260429T193010Z",
+  "objective": "Analyze the full AgentOps eval suite and identify what to improve, refactor, merge, or kill.",
+  "epic_id": "ag-v29",
+  "plan_path": ".agents/plans/2026-04-29-eval-suite-triage.md",
+  "contract_surfaces": [
+    "docs/contracts/eval-environment.md",
+    "schemas/eval-suite.v1.schema.json",
+    "schemas/eval-run.v1.schema.json",
+    "scripts/eval-agentops.sh",
+    "evals/agentops-core/"
   ],
-  "plan_path": ".agents/plans/2026-04-29-agentops-daemon-tracer-bullets.md",
-  "research_path": ".agents/research/2026-04-29-bushido-overnight-soak-introspection.md",
-  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-agentops-daemon-tracer-bullets.md",
+  "validation_commands": [
+    "python3 -m json.tool schemas/eval-suite.v1.schema.json >/dev/null",
+    "find evals/agentops-core -maxdepth 1 -name '*.json' -print0 | xargs -0 -n1 python3 -m json.tool >/dev/null",
+    "cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./cmd/ao ./internal/eval",
+    "scripts/eval-agentops.sh --fast",
+    "scripts/pre-push-gate.sh --fast"
+  ],
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd available; created epic agentops-n7b with children agentops-n7b.1 through agentops-n7b.4"
+    "reason": "bd ready and bd list probes succeeded; epic ag-v29 and six child issues were created"
   },
-  "contract_surfaces": [
-    "cli/internal/daemon",
-    "cli/internal/agentworker",
-    "cli/internal/gascity",
-    "cli/internal/overnight",
-    "cli/internal/wikiworker",
-    "cli/cmd/ao",
-    "docs/contracts/agentops-daemon.md",
-    "docs/contracts/gascity-integration.md",
-    "docs/contracts/openclaw-consumer-api.md"
-  ],
   "done_criteria": [
-    "TB-04 operator job list/show/wait/cancel/events UX passes mutation-scope and JSON/text parity tests",
-    "TB-05 wiki.forge jobs reach terminal supervisor state through AgentWorker fake policy and GasCity product policy fails closed without config",
-    "TB-06 dream.run daemon executor reaches terminal state with separate wait and execution timeout semantics",
-    "TB-07 daemon soak scenarios write structured proof and OpenClaw sees terminal status from daemon projections",
-    "All remaining slice validation commands and full affected-package validation pass"
+    "Evidence-kind taxonomy is mechanically enforced",
+    "Baseline policy matches promoted artifacts",
+    "Artifact-only canaries are kept, refactored, merged, or removed with replacement proof",
+    "Fast and full deterministic eval lanes are distinct",
+    "RPI and skill-change scorecards use behavioral fixtures",
+    "Live runtime and holdout lanes remain opt-in and advisory until calibrated"
   ],
-  "validation_commands": [
-    "cd cli && go test ./internal/daemon ./cmd/ao -run 'TestDaemonJobsList|TestDaemonJobsShow|TestDaemonJobsWaitCompleted|TestDaemonJobsWaitTimeout|TestDaemonJobsCancelWritesTerminalEvent|TestDaemonJobsCancelStaticRouteUsesMutationPolicy|TestDaemonJobsJSONTextParity|TestThreatModel|TestMutationPolicy'",
-    "cd cli && go test ./internal/daemon ./internal/wikiworker ./internal/agentworker ./internal/gascity ./cmd/ao -run 'TestWikiForgeExecutor|TestWikiForgeRunner|TestWikiWorker|TestGasCityAgentWorker|TestDoctorProductRuntime|TestForgeTier1_AgentWorker'",
-    "cd cli && go test ./internal/daemon ./internal/overnight ./cmd/ao -run 'TestDreamExecutor|TestDreamExecutorExecutionTimeoutFailsJob|TestOvernightDaemonSubmitQueueOnly|TestOvernightDaemonWaitCompleted|TestOvernightDaemonWaitTimeoutDoesNotMarkSuccess|TestOvernightDaemonWaitFailed|TestRunLoop_HarvestPromotionCandidatesStayBounded'",
-    "cd cli && go test ./cmd/ao ./internal/daemon -run 'TestDaemonSoakQueueOnly|TestDaemonSoakRequireTerminalFailsOnQueuedJobs|TestDaemonSoakFakeExecutorWritesProof|TestOpenClawJobsReflectTerminalStatus'",
-    "ao daemon soak --scenario fake-executor --duration 2m --interval 15s --require-terminal --json"
-  ],
-  "complexity": "full",
+  "complexity": "standard",
   "pre_mortem_verdict": "WARN",
   "test_levels": {
-    "required": [
-      "L1",
-      "L2",
-      "L3"
-    ],
-    "recommended": [
-      "BF1",
-      "BF4"
-    ],
-    "rationale": "Remaining slices cross CLI, HTTP mutation policy, daemon queue execution, AgentWorker/GasCity, Dream runtime, and soak proof surfaces."
+    "required": ["L0", "L1", "L2"],
+    "recommended": ["L3"],
+    "rationale": "The plan touches schemas/contracts (L0), Go runner and CLI behavior (L1), script/CI integration and suite execution (L2), and broad product canary behavior where a component-level full deterministic run is appropriate (L3)."
   },
-  "discovery_timestamp": "2026-04-29T13:30:45-04:00"
+  "ranked_packet_path": ".agents/rpi/ranked-packet-eval-suite-triage.md",
+  "discovery_timestamp": "2026-04-29T19:30:10Z"
 }
