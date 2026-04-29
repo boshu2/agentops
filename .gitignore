@@ -38,6 +38,7 @@ coverage.xml
 # Generated reports
 reports/
 /release-notes.md
+wiki/
 
 # Claude session artifacts
 .agents/

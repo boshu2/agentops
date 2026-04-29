@@ -40,6 +40,32 @@ is_gate_managed_path() {
     esac
 }
 
+is_disposition_ignored_path() {
+    case "$1" in
+        .agents/*|wiki/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+filter_disposition_dirty_status() {
+    local dirty_status="$1"
+    local line
+    local path
+
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        path="$(porcelain_path "$line")"
+        if is_disposition_ignored_path "$path"; then
+            continue
+        fi
+        printf '%s\n' "$line"
+    done <<<"$dirty_status"
+}
+
 print_dirty_diagnostics() {
     local target_root="$1"
     local dirty_status="$2"
@@ -182,7 +208,7 @@ if [[ "$canonical_branch" != "main" ]]; then
     exit 1
 fi
 
-dirty_status="$(run_git_external "$canonical_root" status --porcelain --untracked-files=all)"
+dirty_status="$(filter_disposition_dirty_status "$(run_git_external "$canonical_root" status --porcelain --untracked-files=all)")"
 if [[ -n "$dirty_status" ]]; then
     print_dirty_diagnostics "$canonical_root" "$dirty_status"
     exit 1

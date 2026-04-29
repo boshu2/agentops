@@ -38,6 +38,9 @@ done
 # Check skills/using-agentops/SKILL.md
 check_file "$REPO_ROOT/skills/using-agentops/SKILL.md" "$EMBEDDED/skills/using-agentops/SKILL.md"
 
+# Check skills/compile runtime script
+check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     echo "ERROR: $ERRORS embedded file(s) are out of sync."
