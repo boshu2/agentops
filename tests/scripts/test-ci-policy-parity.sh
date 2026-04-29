@@ -40,6 +40,7 @@ write_workflow() {
   local path="$1"
   local needs_line="$2"
   local fail_expr="$3"
+  local extra_jobs="${4:-}"
   cat > "$path" <<EOF
 name: Validate
 on:
@@ -53,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
   security-toolchain-gate:
     runs-on: ubuntu-latest
+$extra_jobs
   summary:
     needs: [$needs_line]
     runs-on: ubuntu-latest
@@ -152,10 +154,39 @@ test_fail_nonblocking_drift() {
   fi
 }
 
+test_fail_workflow_orphan_job() {
+  local fixture="$TMP_DIR/workflow-orphan-job"
+  mkdir -p "$fixture"
+  local agents="$fixture/AGENTS.md"
+  local workflow="$fixture/validate.yml"
+  local out="$fixture/out.txt"
+
+  write_agents "$agents" \
+    "The summary job gates on all checks except security-toolchain-gate (non-blocking)." \
+    $'| **doc-release-gate** | docs parity | stale docs |\n| **hook-preflight** | hook safety | missing guard |\n| **security-toolchain-gate** | scanners | tool not installed |'
+
+  write_workflow "$workflow" \
+    "doc-release-gate, hook-preflight, security-toolchain-gate" \
+    "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.hook-preflight.result }}\" != \"success\" ]]" \
+    $'  retrieval-quality:\n    runs-on: ubuntu-latest'
+
+  if run_with_fixtures "$agents" "$workflow" "$out"; then
+    fail "should fail when a top-level workflow job is missing from summary.needs"
+    return
+  fi
+
+  if grep -q "Workflow job list drift detected" "$out"; then
+    pass "reports top-level workflow jobs missing from summary.needs"
+  else
+    fail "missing workflow job list drift message"
+  fi
+}
+
 echo "== test-ci-policy-parity =="
 test_pass_aligned_policy
 test_fail_job_list_drift
 test_fail_nonblocking_drift
+test_fail_workflow_orphan_job
 
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"

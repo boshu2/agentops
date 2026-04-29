@@ -23,6 +23,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 AGENTS_JOBS_FILE="$TMP_DIR/agents_jobs.txt"
 AGENTS_NONBLOCKING_FILE="$TMP_DIR/agents_nonblocking.txt"
 WF_NEEDS_FILE="$TMP_DIR/workflow_needs.txt"
+WF_JOBS_FILE="$TMP_DIR/workflow_jobs.txt"
 WF_FAIL_FILE="$TMP_DIR/workflow_failset.txt"
 WF_NONBLOCKING_FILE="$TMP_DIR/workflow_nonblocking.txt"
 AGENTS_BLOCKING_FILE="$TMP_DIR/agents_blocking.txt"
@@ -77,6 +78,22 @@ extract_summary_needs() {
     | sort -u
 }
 
+extract_workflow_jobs() {
+  local file="$1"
+  awk '
+    /^jobs:/ { in_jobs=1; next }
+    in_jobs && /^[^[:space:]][^:]*:/ { in_jobs=0 }
+    in_jobs && /^  [A-Za-z0-9_-]+:/ {
+      job=$1
+      sub(/:$/, "", job)
+      if (job != "summary") {
+        print job
+      }
+    }
+  ' "$file" \
+    | sort -u
+}
+
 extract_summary_failset() {
   local file="$1"
   awk '
@@ -105,6 +122,7 @@ print_set_diff() {
 
 extract_agents_jobs "$AGENTS_PATH" > "$AGENTS_JOBS_FILE"
 extract_agents_nonblocking "$AGENTS_PATH" > "$AGENTS_NONBLOCKING_FILE" || true
+extract_workflow_jobs "$WORKFLOW_PATH" > "$WF_JOBS_FILE"
 extract_summary_failset "$WORKFLOW_PATH" > "$WF_FAIL_FILE"
 
 if ! extract_summary_needs "$WORKFLOW_PATH" > "$WF_NEEDS_FILE"; then
@@ -123,6 +141,11 @@ if [[ ! -s "$WF_NEEDS_FILE" ]]; then
   exit 1
 fi
 
+if [[ ! -s "$WF_JOBS_FILE" ]]; then
+  echo "CI_POLICY_PARITY: no top-level workflow jobs parsed from $WORKFLOW_PATH"
+  exit 1
+fi
+
 comm -23 "$WF_FAIL_FILE" "$WF_NEEDS_FILE" > "$WF_UNKNOWN_FAIL_FILE" || true
 if [[ -s "$WF_UNKNOWN_FAIL_FILE" ]]; then
   echo "CI_POLICY_PARITY: workflow summary fail condition references jobs not present in summary.needs:"
@@ -134,6 +157,14 @@ comm -23 "$WF_NEEDS_FILE" "$WF_FAIL_FILE" > "$WF_NONBLOCKING_FILE" || true
 comm -23 "$AGENTS_JOBS_FILE" "$AGENTS_NONBLOCKING_FILE" > "$AGENTS_BLOCKING_FILE" || true
 
 errors=0
+
+if ! diff -u "$WF_JOBS_FILE" "$WF_NEEDS_FILE" >/dev/null; then
+  echo "CI_POLICY_PARITY: Workflow job list drift detected (top-level jobs vs validate.yml summary.needs)."
+  print_set_diff "Workflow jobs" "$WF_JOBS_FILE" "Workflow summary.needs jobs" "$WF_NEEDS_FILE"
+  echo "Action: every top-level workflow job except summary must be listed in summary.needs."
+  echo ""
+  errors=$((errors + 1))
+fi
 
 if ! diff -u "$AGENTS_JOBS_FILE" "$WF_NEEDS_FILE" >/dev/null; then
   echo "CI_POLICY_PARITY: Job list drift detected (AGENTS table vs validate.yml summary.needs)."
