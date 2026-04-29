@@ -121,6 +121,7 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 				Code:    FailureRequestRejected,
 				Message: execErr.Error(),
 			},
+			Artifacts: result.Artifacts,
 		}, QueueMutationOptions{})
 		if err != nil {
 			return SupervisorRunOnceResult{}, err

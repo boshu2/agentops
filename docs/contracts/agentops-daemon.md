@@ -157,6 +157,12 @@ job type. `--worker-once` exits after each configured worker makes one claim
 attempt, which keeps local validation deterministic while exercising the same
 queue claim, heartbeat, and terminal event path as the long-running worker loop.
 
+The fake policy also supports `wiki.forge` through the shared `AgentWorker`
+contract with an in-memory worker. Product `wiki.forge` execution uses
+`--executor-policy=gascity` and requires explicit `--gascity-endpoint` and
+`--gascity-city` configuration. The daemon must fail fast when those values are
+missing instead of inferring API readiness from the legacy `gc` CLI bridge.
+
 ## Local Trust
 
 The default daemon API is local-only.

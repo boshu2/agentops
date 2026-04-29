@@ -195,8 +195,73 @@ func TestDaemonRunWorkerOnceCompletesFakeJob(t *testing.T) {
 	}
 }
 
+func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session-a.jsonl"})
+	jobSpec, err := spec.ToJobSpec("job-wiki")
+	if err != nil {
+		t.Fatalf("wiki job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-wiki",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+
+	prevProjectDir := testProjectDir
+	prevAddr := daemonAddr
+	prevToken := daemonToken
+	prevTokenFile := daemonTokenFile
+	prevWorkers := daemonWorkers
+	prevWorkerOnce := daemonWorkerOnce
+	prevExecutorPolicy := daemonExecutorPolicy
+	testProjectDir = cwd
+	daemonAddr = "127.0.0.1:0"
+	daemonToken = "secret-token"
+	daemonTokenFile = ""
+	daemonWorkers = 1
+	daemonWorkerOnce = true
+	daemonExecutorPolicy = "fake"
+	t.Cleanup(func() {
+		testProjectDir = prevProjectDir
+		daemonAddr = prevAddr
+		daemonToken = prevToken
+		daemonTokenFile = prevTokenFile
+		daemonWorkers = prevWorkers
+		daemonWorkerOnce = prevWorkerOnce
+		daemonExecutorPolicy = prevExecutorPolicy
+	})
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runAgentOpsDaemonCommand(cmd, nil); err != nil {
+		t.Fatalf("daemon run worker once: %v", err)
+	}
+	snapshot, err := queue.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("jobs = %#v, want completed wiki job", snapshot.Jobs)
+	}
+	if snapshot.Jobs[0].Artifacts["worker_session_refs"] == "" || snapshot.Jobs[0].Artifacts["session_id"] == "" {
+		t.Fatalf("wiki artifacts = %#v, want worker session refs", snapshot.Jobs[0].Artifacts)
+	}
+}
+
+func TestAgentOpsDaemonGasCityExecutorPolicyRequiresConfig(t *testing.T) {
+	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "gascity"}); err == nil {
+		t.Fatal("gascity executor policy without endpoint/city succeeded")
+	}
+}
+
 func TestAgentOpsDaemonWorkerFlagsRegistered(t *testing.T) {
-	for _, flag := range []string{"workers", "worker-once", "executor-policy"} {
+	for _, flag := range []string{"workers", "worker-once", "executor-policy", "gascity-endpoint", "gascity-city", "gascity-token", "gascity-token-file"} {
 		if daemonRunCmd.Flags().Lookup(flag) == nil {
 			t.Fatalf("daemon run missing --%s flag", flag)
 		}

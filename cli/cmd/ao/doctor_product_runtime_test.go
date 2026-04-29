@@ -82,6 +82,31 @@ func TestDoctorGasCityBridgeCheckUsesDiagnostics(t *testing.T) {
 	}
 }
 
+func TestDoctorProductRuntimeFailsClosedWithoutGasCityAPI(t *testing.T) {
+	missing := newGCMock()
+	missing.binaryAvailable = false
+	check := checkGasCityProductRuntimeWith("", missing.execCommand, missing.lookPathFn)
+	if check.Name != "GasCity Product Runtime" || check.Status != "fail" || !check.Required {
+		t.Fatalf("missing product runtime check = %#v, want required fail", check)
+	}
+
+	unready := newGCMock()
+	unready.on("version", gcMockHandler{Stdout: "0.14.0"})
+	unready.on("status --json", gcMockHandler{Stdout: `{"city":"test","controller":{"running":false,"pid":0},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`})
+	check = checkGasCityProductRuntimeWith("", unready.execCommand, unready.lookPathFn)
+	if check.Status != "fail" || !strings.Contains(check.Detail, "api=true") || !strings.Contains(check.Detail, "ready=false") {
+		t.Fatalf("unready product runtime check = %#v, want API reached but readiness fail", check)
+	}
+
+	ready := newGCMock()
+	ready.on("version", gcMockHandler{Stdout: "0.14.0"})
+	ready.on("status --json", gcMockHandler{Stdout: `{"city":"test","controller":{"running":true,"pid":99},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`})
+	check = checkGasCityProductRuntimeWith("", ready.execCommand, ready.lookPathFn)
+	if check.Status != "pass" || !check.Required {
+		t.Fatalf("ready product runtime check = %#v, want required pass", check)
+	}
+}
+
 func TestGatherDoctorChecksIncludesProductRuntimeSurfaces(t *testing.T) {
 	checks := gatherDoctorChecks()
 	names := map[string]bool{}

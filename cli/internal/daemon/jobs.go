@@ -123,6 +123,7 @@ type FailJobInput struct {
 	LeaseEpoch int
 	Actor      string
 	Failure    JobFailure
+	Artifacts  map[string]string
 }
 
 // CancelJobInput identifies a job cancellation request.
@@ -341,6 +342,7 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 				"message":   input.Failure.Message,
 				"retryable": input.Failure.Retryable,
 			},
+			"artifacts": input.Artifacts,
 		},
 	})
 	if err != nil {

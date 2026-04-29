@@ -58,6 +58,12 @@ The adapter must distinguish these states:
 Binary discovery is not readiness. `gc` being present on `PATH` is only a
 fallback hint.
 
+For daemon product execution, `ao daemon run --executor-policy=gascity` must be
+configured with an explicit API endpoint and city. Missing endpoint or city is
+a startup error. `ao doctor --product-runtime` treats GasCity API/readiness
+failure as required failure, while normal `ao doctor` may keep GasCity as an
+advisory warning for non-product workflows.
+
 ## Compatibility Matrix
 
 The adapter must make runtime capability explicit instead of collapsing every

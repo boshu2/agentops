@@ -235,8 +235,9 @@ ao doctor [flags]
 **Flags:**
 
 ```
-  -h, --help   help for doctor
-      --json   Output results as JSON
+  -h, --help              help for doctor
+      --json              Output results as JSON
+      --product-runtime   Fail closed on daemon product runtime readiness checks
 ```
 
 ---
@@ -969,13 +970,17 @@ ao daemon run [flags]
 **Flags:**
 
 ```
-      --addr string              Loopback address for foreground daemon (default "127.0.0.1:8765")
-      --executor-policy string   Daemon executor policy for workers (fake) (default "fake")
-  -h, --help                     help for run
-      --token string             Mutation token for daemon write routes
-      --token-file string        Path to mutation token file
-      --worker-once              Exit after each worker makes one claim attempt
-      --workers int              Number of daemon worker loops to run in the foreground
+      --addr string                 Loopback address for foreground daemon (default "127.0.0.1:8765")
+      --executor-policy string      Daemon executor policy for workers (fake, gascity) (default "fake")
+      --gascity-city string         GasCity city name for gascity executor policy
+      --gascity-endpoint string     GasCity API endpoint for gascity executor policy
+      --gascity-token string        GasCity mutation token for gascity executor policy
+      --gascity-token-file string   Path to GasCity mutation token file
+  -h, --help                        help for run
+      --token string                Mutation token for daemon write routes
+      --token-file string           Path to mutation token file
+      --worker-once                 Exit after each worker makes one claim attempt
+      --workers int                 Number of daemon worker loops to run in the foreground
 ```
 
 #### `ao daemon service`

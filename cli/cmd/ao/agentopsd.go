@@ -11,8 +11,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/agentworker"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/gascity"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
+	"github.com/boshu2/agentops/cli/internal/wikiworker"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +30,10 @@ var (
 	daemonWorkers           int
 	daemonWorkerOnce        bool
 	daemonExecutorPolicy    string
+	daemonGasCityEndpoint   string
+	daemonGasCityCity       string
+	daemonGasCityToken      string
+	daemonGasCityTokenFile  string
 )
 
 type agentopsDaemonActivation struct {
@@ -44,6 +51,10 @@ type agentopsDaemonRunOptions struct {
 	Workers           int
 	WorkerOnce        bool
 	ExecutorPolicy    string
+	GasCityEndpoint   string
+	GasCityCity       string
+	GasCityToken      string
+	GasCityTokenFile  string
 	PollInterval      time.Duration
 	HeartbeatInterval time.Duration
 	Now               func() time.Time
@@ -98,7 +109,11 @@ func init() {
 	daemonRunCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonRunCmd.Flags().IntVar(&daemonWorkers, "workers", 0, "Number of daemon worker loops to run in the foreground")
 	daemonRunCmd.Flags().BoolVar(&daemonWorkerOnce, "worker-once", false, "Exit after each worker makes one claim attempt")
-	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake)")
+	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake, gascity)")
+	daemonRunCmd.Flags().StringVar(&daemonGasCityEndpoint, "gascity-endpoint", "", "GasCity API endpoint for gascity executor policy")
+	daemonRunCmd.Flags().StringVar(&daemonGasCityCity, "gascity-city", "", "GasCity city name for gascity executor policy")
+	daemonRunCmd.Flags().StringVar(&daemonGasCityToken, "gascity-token", "", "GasCity mutation token for gascity executor policy")
+	daemonRunCmd.Flags().StringVar(&daemonGasCityTokenFile, "gascity-token-file", "", "Path to GasCity mutation token file")
 	daemonReadyCmd.Flags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonStatusCmd.Flags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonServiceInstallCmd.Flags().StringVar(&daemonAddr, "addr", "127.0.0.1:8765", "Loopback address for service plan")
@@ -111,12 +126,16 @@ func runAgentOpsDaemonCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return serveAgentOpsDaemon(cobraContext(cmd), cwd, agentopsDaemonRunOptions{
-		Addr:           daemonAddr,
-		Token:          daemonToken,
-		TokenFile:      daemonTokenFile,
-		Workers:        daemonWorkers,
-		WorkerOnce:     daemonWorkerOnce,
-		ExecutorPolicy: daemonExecutorPolicy,
+		Addr:             daemonAddr,
+		Token:            daemonToken,
+		TokenFile:        daemonTokenFile,
+		Workers:          daemonWorkers,
+		WorkerOnce:       daemonWorkerOnce,
+		ExecutorPolicy:   daemonExecutorPolicy,
+		GasCityEndpoint:  daemonGasCityEndpoint,
+		GasCityCity:      daemonGasCityCity,
+		GasCityToken:     daemonGasCityToken,
+		GasCityTokenFile: daemonGasCityTokenFile,
 	}, cmd.OutOrStdout())
 }
 
@@ -277,7 +296,17 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	var executors []daemonpkg.JobExecutor
 	switch policy {
 	case "fake":
-		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}}
+		wikiExecutor, err := buildAgentOpsDaemonFakeWikiExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}, wikiExecutor}
+	case "gascity":
+		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
@@ -291,6 +320,46 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		Actor:             "agentopsd-worker",
 		PollInterval:      opts.PollInterval,
 		HeartbeatInterval: opts.HeartbeatInterval,
+	})
+}
+
+func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, error) {
+	worker, err := wikiworker.NewWorker(daemonpkg.NewFakeWikiAgentWorker())
+	if err != nil {
+		return nil, err
+	}
+	return daemonpkg.NewWikiForgeExecutor(daemonpkg.WikiForgeExecutorOptions{
+		Store:  daemonpkg.NewStore(cwd),
+		Worker: worker,
+	})
+}
+
+func buildAgentOpsDaemonGasCityWikiExecutor(cwd string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {
+	if opts.GasCityEndpoint == "" || opts.GasCityCity == "" {
+		return nil, errors.New("gascity executor policy requires --gascity-endpoint and --gascity-city")
+	}
+	token, err := resolveDaemonMutationToken(opts.GasCityToken, opts.GasCityTokenFile)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gascity.NewClient(gascity.Config{Endpoint: opts.GasCityEndpoint, MutationToken: token})
+	if err != nil {
+		return nil, err
+	}
+	agent, err := agentworker.NewGasCityWorker(agentworker.GasCityWorkerOptions{
+		Client:   agentworker.GasCityClientAdapter{Client: client},
+		CityName: opts.GasCityCity,
+	})
+	if err != nil {
+		return nil, err
+	}
+	worker, err := wikiworker.NewWorker(agent)
+	if err != nil {
+		return nil, err
+	}
+	return daemonpkg.NewWikiForgeExecutor(daemonpkg.WikiForgeExecutorOptions{
+		Store:  daemonpkg.NewStore(cwd),
+		Worker: worker,
 	})
 }
 

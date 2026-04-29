@@ -18,7 +18,10 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
-var doctorJSON bool
+var (
+	doctorJSON           bool
+	doctorProductRuntime bool
+)
 
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
@@ -37,6 +40,7 @@ Examples:
 func init() {
 	doctorCmd.GroupID = "core"
 	doctorCmd.Flags().BoolVar(&doctorJSON, "json", false, "Output results as JSON")
+	doctorCmd.Flags().BoolVar(&doctorProductRuntime, "product-runtime", false, "Fail closed on daemon product runtime readiness checks")
 	rootCmd.AddCommand(doctorCmd)
 }
 
@@ -73,9 +77,13 @@ func newestFileModTime(entries []os.DirEntry) time.Time  { return quality.Newest
 func countEstablished(dir string) int                    { return quality.CountEstablished(dir) }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
+	checks := gatherDoctorChecks()
+	if doctorProductRuntime {
+		checks = gatherDoctorProductRuntimeChecks()
+	}
 	return quality.RunDoctor(quality.DoctorOptions{
 		JSON:   doctorJSON,
-		Checks: gatherDoctorChecks(),
+		Checks: checks,
 		Stdout: cmd.OutOrStdout(),
 	})
 }
@@ -137,6 +145,34 @@ func checkGasCityBridgeWith(cityPath string, execCommand gcExecFn, lookPath gcLo
 		return doctorCheck{Name: "GasCity Bridge", Status: "pass", Detail: detail, Required: false}
 	}
 	return doctorCheck{Name: "GasCity Bridge", Status: "warn", Detail: detail, Required: false}
+}
+
+func gatherDoctorProductRuntimeChecks() []doctorCheck {
+	return []doctorCheck{
+		checkDaemonRuntime(),
+		checkGasCityProductRuntime(),
+		checkOpenClawConsumer(),
+	}
+}
+
+func checkGasCityProductRuntime() doctorCheck {
+	cityPath := ""
+	if cwd, err := os.Getwd(); err == nil {
+		cityPath = gcBridgeCityPath(cwd)
+	}
+	return checkGasCityProductRuntimeWith(cityPath, exec.Command, exec.LookPath)
+}
+
+func checkGasCityProductRuntimeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
+	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, false)
+	detail := formatGasCityDiagnostic(diag)
+	if cityPath != "" {
+		detail += "; city=" + cityPath
+	}
+	if diag.APIReachable && diag.ReadinessReady && diag.Ready {
+		return doctorCheck{Name: "GasCity Product Runtime", Status: "pass", Detail: detail, Required: true}
+	}
+	return doctorCheck{Name: "GasCity Product Runtime", Status: "fail", Detail: detail, Required: true}
 }
 
 func formatGasCityDiagnostic(diag gcBridgeDiagnostics) string {
