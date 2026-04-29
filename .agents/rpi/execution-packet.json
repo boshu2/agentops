@@ -1,86 +1,37 @@
 {
   "schema_version": 1,
-  "id": "execution-packet-2026-04-28-agentops-daemon-atomic-slices",
-  "date": "2026-04-28",
-  "run_id": "discovery-2026-04-28-agentops-daemon-atomic-slices",
-  "objective": "Implement the AgentOps always-on daemon product architecture for Dream, wiki/forge, RPI, GasCity, headless workers, and OpenClaw consumer snapshots using the 67 atom backlog under ag-hpb.",
-  "epic_id": "ag-hpb",
-  "complexity": "full",
-  "test_first": true,
-  "plan_path": ".agents/plans/2026-04-28-agentops-daemon-atomic-slices.md",
-  "research_paths": [
-    ".agents/research/2026-04-28-agentops-daemon-atomic-slice-fit.md",
-    ".agents/research/2026-04-28-agentops-gascity-deep-research-and-rpi-reverse.md",
-    ".agents/research/2026-04-28-agentops-daemon-gascity-vertical-slices.md"
-  ],
-  "design_path": ".agents/design/2026-04-28-design-agentops-daemon-atomic-slices.md",
-  "pre_mortem_paths": [
-    ".agents/council/2026-04-28-pre-mortem-agentops-daemon-atomic-slices-attempt-1.md",
-    ".agents/council/2026-04-28-pre-mortem-agentops-daemon-atomic-slices-attempt-2.md"
-  ],
-  "pre_mortem_verdict": "WARN",
-  "pre_mortem_attempts": 2,
+  "run_id": "discovery-2026-04-29-tb-02-queue-claim-cancel-invariants",
+  "objective": "TB-02 queue claim/cancel invariants",
+  "epic_id": "agentops-31c",
+  "issue_ids": ["agentops-31c.1"],
+  "plan_path": ".agents/plans/2026-04-29-tb-02-queue-claim-cancel-invariants.md",
+  "research_path": ".agents/research/2026-04-29-tb-02-queue-claim-cancel-invariants.md",
+  "design_path": ".agents/design/2026-04-29-design-tb-02-queue-claim-cancel-invariants.md",
+  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-tb-02-queue-claim-cancel-invariants.md",
   "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "tracker": {
-    "parent_epic": "ag-hpb",
-    "slice_count": 9,
-    "atomic_task_count": 67,
-    "atomic_dependency_edge_count": 159,
-    "graph_path": ".agents/rpi/atomic-slices-graph.json"
+  "tracker_mode": "beads",
+  "tracker_health": {
+    "healthy": true,
+    "mode": "beads",
+    "reason": "bd available; created epic agentops-31c and task agentops-31c.1"
   },
-  "validation": {
-    "required_levels": [
-      "L0",
-      "L1",
-      "L2"
-    ],
-    "recommended_levels": [
-      "L3"
-    ],
-    "live_gascity_env": "AGENTOPS_LIVE_GASCITY=1"
+  "done_criteria": [
+    "Queue.ClaimNextMatching skips unsupported jobs",
+    "Queue.CancelJob appends ledger-only cancellation for queued/running jobs",
+    "First terminal event wins during replay",
+    "Expired running jobs are reclaimable after restart",
+    "TB-02 validation command passes"
+  ],
+  "validation_commands": [
+    "cd cli && go test ./internal/daemon -run 'TestQueue_ClaimNextMatchingSkipsUnsupported|TestQueue_CancelJob|TestQueue_DuplicateTerminalEventsDoNotMutateFinalState|TestQueue_RestartReclaimsExpiredRunningJob|TestJobStatusTransitionMatrix'",
+    "cd cli && go test ./internal/daemon"
+  ],
+  "complexity": "fast",
+  "pre_mortem_verdict": "WARN",
+  "test_levels": {
+    "required": ["L1", "L2"],
+    "recommended": [],
+    "rationale": "Internal queue API plus append-only ledger replay and file-backed store behavior."
   },
-  "waves": [
-    "Wave 0: A1.* contracts and product seams",
-    "Wave 1: A2.* GasCity adapter and A3.* RPI API/SSE",
-    "Wave 2: A4.* daemon substrate, A5.* RPI jobs, A6.* Dream jobs",
-    "Wave 3: A7.* wiki/forge workers and A8.* consumer snapshots",
-    "Wave 4: A9.* hardening, migration, docs, and proof"
-  ],
-  "known_adjustments_before_implementation": [
-    "A1.1/A1.2 and A4.2/A4.3 now make the daemon ledger authoritative and projections rebuildable.",
-    "A1.6 and A7.1-A7.3 now promote headless Codex/Claude lifecycle into first-class AgentWorker/AgentSession contracts.",
-    "A2.1 now freezes the narrow handwritten GasCity adapter strategy with fixture/version/DTO round-trip coverage.",
-    "A4.8 now blocks daemon-submitted RPI, Dream, wiki, and OpenClaw mutation behavior through foreground readiness proof.",
-    "A4.5 now gates local HTTP mutation policy/threat tests before mutation routes land in A4.7.",
-    "Required validation now includes state-machine invariants and boundary failpoints, not just endpoint tests."
-  ],
-  "next_phase": "Start implementation with A1.1. Do not implement against ag-hpb directly.",
-  "proof_artifacts": [
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/final-proof-packet.md",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/ao-doctor.json.log",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/ao-rpi-verify-latest.json.log",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/validate-daemon-product-e2e.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/generate-cli-reference-check.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-cmdao-surface-parity.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-agents-write-surfaces.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-contract-compatibility.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/validate-doc-release.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/shellcheck-daemon-product-e2e.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/go-test-cmd-ao-rpi-verify-doctor.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/pre-push-gate-fast-clean-shadow.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/pre-push-gate-fast.txt",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-closeout-gate-allow-dirty.json.log",
-    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-closeout-gate-active-worktree.json.log",
-    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.beads-issue-tracking.run.json",
-    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.cli-command-surface-matrix.run.json",
-    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.cli-contracts.run.json",
-    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.docs-release-governance.run.json",
-    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.hook-gates.run.json"
-  ],
-  "proof_updated_at": "2026-04-29T03:29:00Z",
-  "final_gate": {
-    "status": "PASS",
-    "packet": ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/final-proof-packet.md",
-    "note": "Active worktree is dirty because RPI changes are uncommitted; clean shadow pre-push gate passed."
-  }
+  "discovery_timestamp": "2026-04-29T11:05:59-04:00"
 }

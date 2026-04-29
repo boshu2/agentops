@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -170,6 +171,96 @@ func TestRunLoop_L2_FullIteration_CorpusQualityMoves(t *testing.T) {
 	assertCorpusQualityFindingsRouted(t, dir, result)
 	assertCorpusQualityFitnessCaptured(t, result)
 	assertCorpusQualityFrontmatterPreserved(t, dir, before)
+}
+
+func TestRunLoop_HarvestPromotionCandidatesStayBounded(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	restore := stubInjectRefresh(t)
+	defer restore()
+
+	dir := t.TempDir()
+	if err := fixture.GenerateFixture(dir, fixture.FixtureOpts{
+		Seed:           7,
+		LearningCount:  12,
+		FindingCount:   1,
+		PatternCount:   1,
+		KnowledgeCount: 1,
+	}); err != nil {
+		t.Fatalf("GenerateFixture: %v", err)
+	}
+
+	opts := RunLoopOptions{
+		Cwd:        dir,
+		OutputDir:  filepath.Join(dir, ".agents", "overnight", "bounded-promote"),
+		RunID:      "bounded-promote",
+		RunTimeout: 30 * time.Second,
+		WarnOnly:   true,
+		LogWriter:  io.Discard,
+	}
+
+	var firstCandidates int
+	var firstPreview int
+	for i := 1; i <= 4; i++ {
+		ingest, err := RunIngest(context.Background(), opts, io.Discard)
+		if err != nil {
+			t.Fatalf("iteration %d RunIngest: %v", i, err)
+		}
+		if ingest.HarvestCatalog == nil {
+			t.Fatalf("iteration %d missing harvest catalog", i)
+		}
+		candidates := ingest.HarvestCatalog.Summary.PromotionCandidates
+		preview := ingest.HarvestPreviewCount
+		if i == 1 {
+			firstCandidates = candidates
+			firstPreview = preview
+		} else {
+			if candidates > firstCandidates {
+				t.Fatalf("iteration %d promotion candidates grew from %d to %d", i, firstCandidates, candidates)
+			}
+			if preview > firstPreview {
+				t.Fatalf("iteration %d promotion preview grew from %d to %d", i, firstPreview, preview)
+			}
+		}
+
+		cp, err := NewCheckpoint(dir, fmt.Sprintf("bounded-promote-iter-%d", i), 128*1024*1024)
+		if err != nil {
+			t.Fatalf("iteration %d NewCheckpoint: %v", i, err)
+		}
+		reduce, err := RunReduce(context.Background(), opts, ingest, cp, lifecycle.CloseLoopOpts{}, io.Discard)
+		if err != nil {
+			t.Fatalf("iteration %d RunReduce: %v", i, err)
+		}
+		if reduce.RolledBack {
+			t.Fatalf("iteration %d rolled back: %s", i, reduce.RollbackReason)
+		}
+		if err := cp.Commit(); err != nil {
+			t.Fatalf("iteration %d Commit: %v", i, err)
+		}
+	}
+
+	count := countMarkdownFiles(t, filepath.Join(dir, ".agents", "learnings"))
+	maxExpected := firstCandidates * 2
+	if count > maxExpected {
+		t.Fatalf("learning corpus grew to %d files, want <= %d after repeated promotion", count, maxExpected)
+	}
+}
+
+func countMarkdownFiles(t *testing.T, dir string) int {
+	t.Helper()
+	count := 0
+	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", dir, err)
+	}
+	return count
 }
 
 type corpusQualityFrontmatterSnapshot struct {

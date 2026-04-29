@@ -1,6 +1,8 @@
 package harvest
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,6 +20,8 @@ import (
 //   - 2: ExcludedCandidates slimmed from []Artifact to []ExcludedArtifactMeta
 //     (id, title, confidence only). Introduced SchemaVersion field.
 const CatalogSchemaVersion = 2
+
+const promotedDestinationNameLimit = 160
 
 // ExcludedArtifactMeta is the slim representation of a below-threshold
 // candidate emitted into the catalog JSON. The full Artifact (with
@@ -123,8 +127,14 @@ func BuildCatalog(artifacts []Artifact, minConfidence float64) *Catalog {
 			continue
 		}
 
-		// Sort: highest confidence first, then most recent date, then alphabetical ID.
+		// Sort: originals before promoted projections, then highest confidence,
+		// most recent date, and alphabetical ID.
 		sort.Slice(arts, func(i, j int) bool {
+			iPromoted := isPromotedArtifact(arts[i])
+			jPromoted := isPromotedArtifact(arts[j])
+			if iPromoted != jPromoted {
+				return !iPromoted
+			}
 			if arts[i].Confidence != arts[j].Confidence {
 				return arts[i].Confidence > arts[j].Confidence
 			}
@@ -200,6 +210,17 @@ func Promote(catalog *Catalog, destDir string, dryRun bool) (int, error) {
 	count := 0
 
 	for _, art := range catalog.Promoted {
+		// Read source before destination construction so already-promoted
+		// artifacts can reuse their stable original identity.
+		data, err := os.ReadFile(art.SourcePath)
+		if err != nil {
+			return count, fmt.Errorf("reading source %s: %w", art.SourcePath, err)
+		}
+		origFM := extractFrontmatter(string(data))
+		body := stripFrontmatter(string(data))
+		sourceRig := promotionSourceRig(art, origFM)
+		sourceIdentity := promotionSourceIdentity(art, origFM)
+
 		// Create type subdirectory (pm-003).
 		typeDir := filepath.Join(destDir, art.Type)
 		if !dryRun {
@@ -208,9 +229,8 @@ func Promote(catalog *Catalog, destDir string, dryRun bool) (int, error) {
 			}
 		}
 
-		// Build destination filename: {source_rig}-{basename}.
-		base := filepath.Base(art.SourcePath)
-		destName := art.SourceRig + "-" + base
+		// Build destination filename from stable original provenance.
+		destName := promotionDestinationName(sourceRig, sourceIdentity, art.ContentHash)
 		destPath := filepath.Join(typeDir, destName)
 
 		// Skip if destination already exists.
@@ -224,25 +244,17 @@ func Promote(catalog *Catalog, destDir string, dryRun bool) (int, error) {
 			continue
 		}
 
-		// Read source file.
-		data, err := os.ReadFile(art.SourcePath)
-		if err != nil {
-			return count, fmt.Errorf("reading source %s: %w", art.SourcePath, err)
-		}
-
 		// Merge original frontmatter with provenance fields.
 		// Preserves maturity, utility, type, confidence from the source
 		// while adding harvest provenance metadata.
 		now := time.Now().UTC().Format("2006-01-02")
-		origFM := extractFrontmatter(string(data))
-		body := stripFrontmatter(string(data))
 
 		// Start with provenance fields
 		var headerLines []string
 		headerLines = append(headerLines,
-			fmt.Sprintf("promoted_from: %q", art.SourceRig),
+			fmt.Sprintf("promoted_from: %q", sourceRig),
 			fmt.Sprintf("promoted_at: %q", now),
-			fmt.Sprintf("original_path: %q", art.SourcePath),
+			fmt.Sprintf("original_path: %q", sourceIdentity),
 			fmt.Sprintf("harvest_confidence: %g", art.Confidence),
 		)
 
@@ -272,6 +284,94 @@ func Promote(catalog *Catalog, destDir string, dryRun bool) (int, error) {
 	}
 
 	return count, nil
+}
+
+func isPromotedArtifact(a Artifact) bool {
+	return frontmatterString(a.Frontmatter, "promoted_from") != "" ||
+		frontmatterString(a.Frontmatter, "original_path") != ""
+}
+
+func frontmatterString(fm map[string]any, key string) string {
+	if len(fm) == 0 {
+		return ""
+	}
+	value, ok := fm[key]
+	if !ok || value == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func promotionSourceRig(art Artifact, sourceFM map[string]string) string {
+	if promotedFrom := strings.TrimSpace(sourceFM["promoted_from"]); promotedFrom != "" {
+		return promotedFrom
+	}
+	if strings.TrimSpace(art.SourceRig) != "" {
+		return art.SourceRig
+	}
+	return "unknown"
+}
+
+func promotionSourceIdentity(art Artifact, sourceFM map[string]string) string {
+	if originalPath := strings.TrimSpace(sourceFM["original_path"]); originalPath != "" {
+		return originalPath
+	}
+	return art.SourcePath
+}
+
+func promotionDestinationName(sourceRig, sourceIdentity, contentHash string) string {
+	base := sanitizeFilenamePart(filepath.Base(sourceIdentity))
+	if base == "" || base == "." {
+		base = "artifact.md"
+	}
+	name := sanitizeFilenamePart(sourceRig) + "-" + base
+	if len(name) <= promotedDestinationNameLimit {
+		return name
+	}
+
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(name, ext)
+	suffix := "-" + shortPromotionHash(sourceIdentity+"\n"+contentHash)
+	maxStem := promotedDestinationNameLimit - len(suffix) - len(ext)
+	if maxStem < 1 {
+		return shortPromotionHash(sourceIdentity+contentHash) + ext
+	}
+	return strings.TrimRight(stem[:maxStem], ".-") + suffix + ext
+}
+
+func sanitizeFilenamePart(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "unknown"
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	lastDash := false
+	for _, r := range s {
+		allowed := (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			r == '.' || r == '_' || r == '-'
+		if allowed {
+			b.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+	out := strings.Trim(b.String(), ".-")
+	if out == "" {
+		return "unknown"
+	}
+	return out
+}
+
+func shortPromotionHash(input string) string {
+	sum := sha256.Sum256([]byte(input))
+	return hex.EncodeToString(sum[:])[:8]
 }
 
 // extractFrontmatter parses YAML frontmatter into a key-value map.

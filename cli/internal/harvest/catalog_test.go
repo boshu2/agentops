@@ -328,6 +328,149 @@ func TestPromote_CopiesWithProvenance(t *testing.T) {
 	}
 }
 
+func TestPromote_RepeatedPromotionIsIdempotent(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	srcFile := filepath.Join(srcDir, "note.md")
+	srcContent := "---\ntype: learning\nconfidence: 0.9\n---\n\n# Stable\n\nPromote me once.\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	firstCatalog := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:          "art-1",
+				Type:        "learning",
+				SourceRig:   "agentops-nami",
+				SourcePath:  srcFile,
+				ContentHash: "hash-stable",
+				Confidence:  0.9,
+			},
+		},
+	}
+	if count, err := Promote(firstCatalog, destDir, false); err != nil || count != 1 {
+		t.Fatalf("first Promote count=%d err=%v, want count=1 err=nil", count, err)
+	}
+
+	promotedFile := filepath.Join(destDir, "learning", "agentops-nami-note.md")
+	secondCatalog := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:          "art-1-promoted",
+				Type:        "learning",
+				SourceRig:   "agentops-nami",
+				SourcePath:  promotedFile,
+				ContentHash: "hash-stable",
+				Confidence:  0.9,
+			},
+		},
+	}
+	if count, err := Promote(secondCatalog, destDir, false); err != nil || count != 0 {
+		t.Fatalf("second Promote count=%d err=%v, want count=0 err=nil", count, err)
+	}
+
+	grownName := filepath.Join(destDir, "learning", "agentops-nami-agentops-nami-note.md")
+	if _, err := os.Stat(grownName); !os.IsNotExist(err) {
+		t.Fatalf("recursive promoted filename exists or stat failed with non-missing error: %v", err)
+	}
+}
+
+func TestPromote_CapsLongDestinationFilenameWithHash(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	longBase := strings.Repeat("source-segment-", 12) + "learning.md"
+	srcFile := filepath.Join(srcDir, longBase)
+	if err := os.WriteFile(srcFile, []byte("# Long source\n\nBody.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:          "long",
+				Type:        "learning",
+				SourceRig:   "agentops-nami-with-a-long-rig-name",
+				SourcePath:  srcFile,
+				ContentHash: "hash-long",
+				Confidence:  0.8,
+			},
+		},
+	}
+
+	count, err := Promote(cat, destDir, false)
+	if err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("Promote count=%d, want 1", count)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(destDir, "learning"))
+	if err != nil {
+		t.Fatalf("read promoted learning dir: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("promoted entries=%d, want 1", len(entries))
+	}
+	name := entries[0].Name()
+	if len(name) > promotedDestinationNameLimit {
+		t.Fatalf("promoted basename length=%d, want <= %d (%q)", len(name), promotedDestinationNameLimit, name)
+	}
+	if !strings.HasSuffix(name, ".md") {
+		t.Fatalf("promoted basename %q should preserve .md extension", name)
+	}
+	if !strings.Contains(strings.TrimSuffix(name, ".md"), "-") {
+		t.Fatalf("promoted basename %q should include a hash suffix separator", name)
+	}
+	stem := strings.TrimSuffix(name, ".md")
+	hashStart := strings.LastIndex(stem, "-")
+	if hashStart < 0 || len(stem[hashStart+1:]) != 8 {
+		t.Fatalf("promoted basename %q should end with an 8-byte hash suffix", name)
+	}
+	for _, r := range stem[hashStart+1:] {
+		if !strings.ContainsRune("0123456789abcdef", r) {
+			t.Fatalf("promoted basename %q has non-hex hash suffix", name)
+		}
+	}
+}
+
+func TestPromote_PrefersOriginalOverPromotedDuplicate(t *testing.T) {
+	arts := []Artifact{
+		{
+			ID:          "promoted",
+			ContentHash: "same-body",
+			Confidence:  0.99,
+			Date:        "2026-04-29",
+			Type:        "learning",
+			Frontmatter: map[string]any{
+				"promoted_from": "agentops-nami",
+				"original_path": "/src/original.md",
+			},
+		},
+		{
+			ID:          "original",
+			ContentHash: "same-body",
+			Confidence:  0.5,
+			Date:        "2026-01-01",
+			Type:        "learning",
+		},
+	}
+
+	cat := BuildCatalog(arts, 0.5)
+	if len(cat.Duplicates) != 1 {
+		t.Fatalf("duplicates=%d, want 1", len(cat.Duplicates))
+	}
+	if cat.Duplicates[0].Kept != "original" {
+		t.Fatalf("duplicate kept=%q, want original", cat.Duplicates[0].Kept)
+	}
+	if len(cat.Promoted) != 1 || cat.Promoted[0].ID != "original" {
+		t.Fatalf("promoted=%v, want only original", cat.Promoted)
+	}
+}
+
 func TestPromote_DryRunNoCopy(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()
