@@ -390,8 +390,16 @@ changed_paths() {
     fi
 }
 
+changed_release_audit_docs() {
+    changed_paths | grep -E '^docs/releases/.*-audit\.md$' || true
+}
+
+changed_release_artifact_tooling() {
+    changed_paths | grep -E '^(scripts/(ci-local-release|resolve-release-artifacts|validate-release-audit-artifacts)\.sh|tests/scripts/release-artifacts\.bats)$' || true
+}
+
 needs_release_audit_artifact_check() {
-    changed_paths | grep -qE '^(docs/releases/.*-audit\.md|scripts/(ci-local-release|resolve-release-artifacts|validate-release-audit-artifacts)\.sh|tests/scripts/release-artifacts\.bats)$'
+    [[ -n "$(changed_release_audit_docs)" || -n "$(changed_release_artifact_tooling)" ]]
 }
 
 if [[ "$FAST_MODE" == "true" ]]; then
@@ -930,15 +938,40 @@ fi
 
 # --- 25b. Release audit artifact refs ---
 if needs_release_audit_artifact_check; then
-    if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then
-        if release_audit_artifacts_output="$(scripts/validate-release-audit-artifacts.sh 2>&1)"; then
-            pass "release audit artifacts"
+    release_audit_artifacts_ok=1
+    release_audit_artifacts_output=""
+    release_audit_docs="$(changed_release_audit_docs)"
+    release_artifact_tooling="$(changed_release_artifact_tooling)"
+
+    if [[ -n "$release_audit_docs" ]]; then
+        if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then
+            mapfile -t release_audit_args <<< "$release_audit_docs"
+            if ! validate_release_output="$(scripts/validate-release-audit-artifacts.sh "${release_audit_args[@]}" 2>&1)"; then
+                release_audit_artifacts_ok=0
+                release_audit_artifacts_output+="$validate_release_output"$'\n'
+            fi
         else
-            fail "release audit artifacts"
-            indent_output "$release_audit_artifacts_output"
+            release_audit_artifacts_ok=0
+            release_audit_artifacts_output+="missing executable: scripts/validate-release-audit-artifacts.sh"$'\n'
         fi
+    fi
+
+    if [[ -n "$release_artifact_tooling" && -f tests/scripts/release-artifacts.bats ]]; then
+        if command -v bats >/dev/null 2>&1; then
+            if ! release_artifacts_bats_output="$(bats tests/scripts/release-artifacts.bats 2>&1)"; then
+                release_audit_artifacts_ok=0
+                release_audit_artifacts_output+="$release_artifacts_bats_output"$'\n'
+            fi
+        else
+            release_audit_artifacts_output+="BATS not installed; skipped release artifact fixture tests"$'\n'
+        fi
+    fi
+
+    if [[ "$release_audit_artifacts_ok" == "1" ]]; then
+        pass "release audit artifacts"
     else
-        fail "missing executable: scripts/validate-release-audit-artifacts.sh"
+        fail "release audit artifacts"
+        indent_output "$release_audit_artifacts_output"
     fi
 else
     skip "release audit artifacts"

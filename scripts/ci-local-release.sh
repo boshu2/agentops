@@ -307,6 +307,9 @@ run_security_scan_patterns() {
             --exclude-dir=.claude \
             --exclude-dir=.agents \
             --exclude-dir=.tmp \
+            --exclude-dir=.venv \
+            --exclude-dir=.venv-docs \
+            --exclude-dir=venv \
             --exclude-dir=tests \
             --exclude-dir=testdata \
             --exclude-dir=cli/testdata \
@@ -342,6 +345,9 @@ run_dangerous_pattern_scan() {
             --exclude-dir=.claude \
             --exclude-dir=.agents \
             --exclude-dir=.tmp \
+            --exclude-dir=.venv \
+            --exclude-dir=.venv-docs \
+            --exclude-dir=venv \
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
             --exclude="install-opencode.sh" \

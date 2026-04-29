@@ -50,6 +50,8 @@ JSON
     cat > "$FAKE_REPO/.claude-plugin/marketplace.json" <<'JSON'
 {"metadata":{"version":"2.99.0"},"plugins":[{"version":"2.99.0"}]}
 JSON
+    mkdir -p "$FAKE_REPO/.venv-docs/site-packages/example"
+    printf 'loginpasswordfield = "password"\n' > "$FAKE_REPO/.venv-docs/site-packages/example/config.py"
 
     cat > "$FAKE_REPO/cli/bin/ao" <<'AO'
 #!/usr/bin/env bash

@@ -232,6 +232,9 @@ jobs:
                 --exclude-dir=.agents \
                 --exclude-dir=.tmp \
                 --exclude-dir=.gc \
+                --exclude-dir=.venv \
+                --exclude-dir=.venv-docs \
+                --exclude-dir=venv \
                 --exclude="*.md" \
                 --exclude="*.jsonl" \
                 --exclude="*.sh" \

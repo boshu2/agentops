@@ -238,6 +238,36 @@ GIT
     [[ "$output" == *"FAIL"*"release audit artifacts"* ]]
 }
 
+@test "pre-push-gate.sh runs release artifact fixture tests for tooling changes" {
+    mkdir -p "$FAKE_REPO/tests/scripts"
+    touch "$FAKE_REPO/tests/scripts/release-artifacts.bats"
+
+    cat > "$MOCK_BIN/bats" <<'BATS'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$BATS_LOG"
+exit 0
+BATS
+    chmod +x "$MOCK_BIN/bats"
+    export BATS_LOG="$TMP_DIR/bats.log"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "scripts/ci-local-release.sh"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"OK"*"release audit artifacts"* || "$output" == *"ok"*"release audit artifacts"* ]]
+    run grep -q 'tests/scripts/release-artifacts.bats' "$BATS_LOG"
+    [ "$status" -eq 0 ]
+}
+
 @test "pre-push-gate.sh detects stale embedded hooks" {
     # Override the embedded sync stub to fail (simulating stale hooks)
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh" 1
