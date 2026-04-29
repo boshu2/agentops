@@ -107,8 +107,11 @@ errors=0
 skipped=0
 SCOPE="${PRE_PUSH_GO_SCOPE:-upstream}"
 FAST_MODE=false
+FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
+FAIL_FAST_EFFECTIVE=false
+FAIL_FAST_PENDING=false
+HASH_GATE_SNAPSHOT=""
 pass() { echo -e "${GREEN}  ok${NC}  $1"; }
-fail() { echo -e "${RED}FAIL${NC}  $1"; errors=$((errors + 1)); }
 skip() { echo -e "  --  $1 (skipped)"; skipped=$((skipped + 1)); }
 warn() { echo -e "${YELLOW}WARN${NC}  $1"; }
 indent_output() {
@@ -118,6 +121,41 @@ indent_output() {
 }
 is_ci_env() {
     [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" ]]
+}
+truthy() {
+    case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|y|on|always) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+cleanup_hash_snapshot() {
+    if [[ -n "${HASH_GATE_SNAPSHOT:-}" ]]; then
+        rm -f "$HASH_GATE_SNAPSHOT" 2>/dev/null || true
+        HASH_GATE_SNAPSHOT=""
+    fi
+}
+blocked_exit() {
+    echo ""
+    if [[ "$FAST_MODE" == "true" ]]; then
+        echo -e "${RED}pre-push gate (fast): BLOCKED ($errors failures, $skipped skipped)${NC}"
+    else
+        echo -e "${RED}pre-push gate: BLOCKED ($errors failures)${NC}"
+    fi
+    cleanup_hash_snapshot
+    exit 1
+}
+fail() {
+    echo -e "${RED}FAIL${NC}  $1"
+    errors=$((errors + 1))
+    if [[ "${FAIL_FAST_EFFECTIVE:-false}" == "true" ]]; then
+        FAIL_FAST_PENDING=true
+    fi
+}
+maybe_fail_fast() {
+    if [[ "${FAIL_FAST_PENDING:-false}" == "true" ]]; then
+        warn "fail-fast enabled; stopping after first blocking failure"
+        blocked_exit
+    fi
 }
 run_hash_snapshot() {
     local timeout_seconds="${HASH_GATE_TIMEOUT_SECONDS:-15}"
@@ -133,8 +171,18 @@ usage() {
 Usage: scripts/pre-push-gate.sh [--fast] [--scope auto|upstream|staged|worktree|head]
 
 Options:
-  --fast    Only run checks relevant to changed files (~15-30s vs ~3min)
-  --scope   How to determine changed files (default: upstream)
+  --fast       Only run checks relevant to changed files
+  --scope      How to determine changed files (default: upstream)
+  --fail-fast  Stop after first blocking failure
+  --accumulate Continue after failures and report all blocking failures
+
+Environment:
+  PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
+  PRE_PUSH_RUN_EVAL=1           run eval canaries even when eval files did not change
+  PRE_PUSH_STRICT_EVAL=1        make local fast eval canaries blocking
+  PRE_PUSH_AGENT_HEALTH=1       run local fast AgentOps health/ratchet checks
+  PRE_PUSH_AGENT_HASH=1         force local fast agents-hub content hash gate
+  PRE_PUSH_STRICT_WORKTREE=1    run worktree disposition in local fast mode
 EOF
 }
 
@@ -147,6 +195,14 @@ while [[ $# -gt 0 ]]; do
         --scope)
             SCOPE="${2:-}"
             shift 2
+            ;;
+        --fail-fast)
+            FAIL_FAST_SETTING=1
+            shift
+            ;;
+        --accumulate)
+            FAIL_FAST_SETTING=0
+            shift
             ;;
         -h|--help)
             usage
@@ -168,6 +224,14 @@ case "$SCOPE" in
         exit 2
         ;;
 esac
+
+if [[ "$FAIL_FAST_SETTING" == "auto" ]]; then
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        FAIL_FAST_EFFECTIVE=true
+    fi
+elif truthy "$FAIL_FAST_SETTING"; then
+    FAIL_FAST_EFFECTIVE=true
+fi
 
 collect_all_changed() {
     case "$SCOPE" in
@@ -204,6 +268,10 @@ HAS_DOCS=1
 HAS_SHELL=1
 HAS_LEARNING=1
 HAS_EVAL=1
+HAS_CONTRACT=1
+HAS_CI_POLICY=1
+HAS_SWARM=1
+HAS_CHANGELOG=1
 
 if [[ "$FAST_MODE" == "true" ]]; then
     all_changed="$(collect_all_changed)"
@@ -217,7 +285,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_SKILL=0
     fi
-    if echo "$all_changed" | grep -qE '^hooks/|^lib/'; then
+    if echo "$all_changed" | grep -qE '^hooks/|^lib/|^skills/standards/references/|^skills/using-agentops/SKILL\.md$'; then
         HAS_HOOK=1
     else
         HAS_HOOK=0
@@ -242,10 +310,31 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_EVAL=0
     fi
+    if echo "$all_changed" | grep -qE '^docs/contracts/|^schemas/|^scripts/check-contract-compatibility\.sh$|^docs/documentation-index\.md$'; then
+        HAS_CONTRACT=1
+    else
+        HAS_CONTRACT=0
+    fi
+    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/validate-ci-policy-parity\.sh$'; then
+        HAS_CI_POLICY=1
+    else
+        HAS_CI_POLICY=0
+    fi
+    if echo "$all_changed" | grep -qE '^\.agents/swarm/|^schemas/swarm-|^scripts/validate-swarm-evidence\.sh$'; then
+        HAS_SWARM=1
+    else
+        HAS_SWARM=0
+    fi
+    if echo "$all_changed" | grep -qE '(^|/)CHANGELOG\.md$'; then
+        HAS_CHANGELOG=1
+    else
+        HAS_CHANGELOG=0
+    fi
 fi
 
 needs_check() {
     local category="$1"
+    maybe_fail_fast
     if [[ "$FAST_MODE" != "true" ]]; then
         return 0
     fi
@@ -257,6 +346,10 @@ needs_check() {
         shell)    [[ "$HAS_SHELL" -eq 1 ]] ;;
         learning) [[ "$HAS_LEARNING" -eq 1 ]] ;;
         eval)     [[ "$HAS_EVAL" -eq 1 ]] ;;
+        contract) [[ "$HAS_CONTRACT" -eq 1 ]] ;;
+        ci_policy) [[ "$HAS_CI_POLICY" -eq 1 ]] ;;
+        swarm)    [[ "$HAS_SWARM" -eq 1 ]] ;;
+        changelog) [[ "$HAS_CHANGELOG" -eq 1 ]] ;;
         always)   return 0 ;;
         *)        return 0 ;;
     esac
@@ -303,7 +396,7 @@ needs_release_audit_artifact_check() {
 
 if [[ "$FAST_MODE" == "true" ]]; then
     echo "pre-push gate (fast): validating changed files before push..."
-    echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING"
+    echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING eval=$HAS_EVAL contract=$HAS_CONTRACT ci_policy=$HAS_CI_POLICY swarm=$HAS_SWARM changelog=$HAS_CHANGELOG"
 else
     echo "pre-push gate: validating before push..."
 fi
@@ -380,8 +473,11 @@ else
 fi
 
 # --- 3c. Capture ~/.agents hash snapshot (diff'd at end of gate) ---
-HASH_GATE_SNAPSHOT=""
-if [[ -x scripts/check-agents-hash-snapshot.sh ]]; then
+# This gate protects Go tests from mutating the operator's real agent hub. In
+# local fast mode, skip it when no Go checks are running unless explicitly
+# requested; user-hub state is noisy and unrelated to docs/shell pushes.
+if [[ -x scripts/check-agents-hash-snapshot.sh ]] && \
+    { [[ "$FAST_MODE" != "true" ]] || [[ "$HAS_GO" -eq 1 ]] || truthy "${PRE_PUSH_AGENT_HASH:-0}"; }; then
     hash_capture_err="$(mktemp)"
     if hash_capture_output="$(run_hash_snapshot capture 2>"$hash_capture_err")"; then
         if [[ -n "$hash_capture_output" && -f "$hash_capture_output" ]]; then
@@ -403,6 +499,8 @@ if [[ -x scripts/check-agents-hash-snapshot.sh ]]; then
         fi
     fi
     rm -f "$hash_capture_err"
+else
+    skip "agents-hub content-hash gate (no Go checks in local fast mode)"
 fi
 
 # --- 3d. .agents/ write-surface contract ---
@@ -418,15 +516,19 @@ else
 fi
 
 # --- 5. Embedded hooks sync (full parity gate) ---
-if [[ -x scripts/validate-embedded-sync.sh ]]; then
-    if embed_output="$(./scripts/validate-embedded-sync.sh 2>&1)"; then
-        pass "embedded hooks in sync"
+if needs_check hook; then
+    if [[ -x scripts/validate-embedded-sync.sh ]]; then
+        if embed_output="$(./scripts/validate-embedded-sync.sh 2>&1)"; then
+            pass "embedded hooks in sync"
+        else
+            fail "embedded hooks stale (run: cd cli && make sync-hooks)"
+            indent_output "$embed_output"
+        fi
     else
-        fail "embedded hooks stale (run: cd cli && make sync-hooks)"
-        indent_output "$embed_output"
+        fail "missing executable: scripts/validate-embedded-sync.sh"
     fi
 else
-    fail "missing executable: scripts/validate-embedded-sync.sh"
+    skip "embedded hooks in sync"
 fi
 
 # --- 6. Skill count sync ---
@@ -443,15 +545,22 @@ else
 fi
 
 # --- 7. Worktree disposition ---
-if [[ -x scripts/check-worktree-disposition.sh ]]; then
-    if disposition_output="$(scripts/check-worktree-disposition.sh 2>&1)"; then
-        pass "worktree disposition"
+# Full/release gates still enforce repository worktree governance. Local fast
+# pre-push skips it by default because stale unrelated worktrees should not
+# block pushing a scoped commit; opt in with PRE_PUSH_STRICT_WORKTREE=1.
+if [[ "$FAST_MODE" != "true" ]] || is_ci_env || truthy "${PRE_PUSH_STRICT_WORKTREE:-0}"; then
+    if [[ -x scripts/check-worktree-disposition.sh ]]; then
+        if disposition_output="$(scripts/check-worktree-disposition.sh 2>&1)"; then
+            pass "worktree disposition"
+        else
+            fail "worktree disposition"
+            indent_output "$disposition_output"
+        fi
     else
-        fail "worktree disposition"
-        indent_output "$disposition_output"
+        fail "missing executable: scripts/check-worktree-disposition.sh"
     fi
 else
-    fail "missing executable: scripts/check-worktree-disposition.sh"
+    skip "worktree disposition (local fast; set PRE_PUSH_STRICT_WORKTREE=1)"
 fi
 
 # --- 8. Skill runtime/CLI parity ---
@@ -617,7 +726,7 @@ else
 fi
 
 # --- 19b. Retrieval quality ratchet ---
-if needs_check always; then
+if [[ "$FAST_MODE" != "true" ]] || truthy "${PRE_PUSH_AGENT_HEALTH:-0}"; then
     if [[ -x scripts/check-retrieval-quality-ratchet.sh ]]; then
         if retrieval_quality_output="$(run_without_git_env scripts/check-retrieval-quality-ratchet.sh 2>&1)"; then
             if grep -q '^WARN retrieval quality ratchet:' <<<"$retrieval_quality_output"; then
@@ -633,6 +742,8 @@ if needs_check always; then
     else
         fail "missing executable: scripts/check-retrieval-quality-ratchet.sh"
     fi
+else
+    skip "retrieval quality ratchet (local fast; set PRE_PUSH_AGENT_HEALTH=1)"
 fi
 
 # --- 20. Skill runtime formats ---
@@ -741,10 +852,32 @@ else
 fi
 
 # --- 24c. AgentOps eval canaries ---
-if needs_check eval || needs_check go; then
+run_eval_canaries=false
+if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
+    run_eval_canaries=false
+elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+    run_eval_canaries=true
+elif needs_check eval; then
+    run_eval_canaries=true
+fi
+
+if [[ "$run_eval_canaries" == "true" ]]; then
     if [[ -x scripts/eval-agentops.sh ]]; then
-        if eval_agentops_output="$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh --fast 2>&1)"; then
-            if grep -q '^WARN eval-agentops:' <<<"$eval_agentops_output"; then
+        eval_args=(--fast)
+        eval_is_advisory=false
+        if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env && ! truthy "${PRE_PUSH_STRICT_EVAL:-0}"; then
+            eval_args+=(--advisory)
+            eval_is_advisory=true
+        fi
+        if eval_agentops_output="$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh "${eval_args[@]}" 2>&1)"; then
+            if grep -q '^FAIL eval-agentops:' <<<"$eval_agentops_output"; then
+                if [[ "$eval_is_advisory" == "true" ]]; then
+                    warn "AgentOps eval canaries (advisory)"
+                else
+                    fail "AgentOps eval canaries"
+                fi
+                indent_output "$eval_agentops_output"
+            elif grep -q '^WARN eval-agentops:' <<<"$eval_agentops_output"; then
                 warn "AgentOps eval canaries"
                 indent_output "$eval_agentops_output"
             else
@@ -758,7 +891,7 @@ if needs_check eval || needs_check go; then
         fail "missing executable: scripts/eval-agentops.sh"
     fi
 else
-    skip "AgentOps eval canaries"
+    skip "AgentOps eval canaries (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
 fi
 
 # --- 25. Doc-release stabilization gate ---
@@ -812,7 +945,7 @@ else
 fi
 
 # --- 26. Contract compatibility ---
-if needs_check always; then
+if needs_check contract; then
     if [[ -x scripts/check-contract-compatibility.sh ]]; then
         if contract_output="$(./scripts/check-contract-compatibility.sh 2>&1)"; then
             pass "contract compatibility"
@@ -823,10 +956,12 @@ if needs_check always; then
     else
         fail "missing executable: scripts/check-contract-compatibility.sh"
     fi
+else
+    skip "contract compatibility"
 fi
 
 # --- 26b. Swarm evidence schema validation ---
-if needs_check always; then
+if needs_check swarm; then
     if [[ -x scripts/validate-swarm-evidence.sh ]]; then
         if swarm_evidence_output="$(./scripts/validate-swarm-evidence.sh 2>&1)"; then
             pass "swarm evidence schema"
@@ -837,6 +972,8 @@ if needs_check always; then
     else
         fail "missing executable: scripts/validate-swarm-evidence.sh"
     fi
+else
+    skip "swarm evidence schema"
 fi
 
 # --- 27. Hook preflight ---
@@ -888,7 +1025,7 @@ else
 fi
 
 # --- 29. CI policy parity ---
-if needs_check always; then
+if needs_check ci_policy; then
     if [[ -x scripts/validate-ci-policy-parity.sh ]]; then
         if ci_policy_output="$(./scripts/validate-ci-policy-parity.sh 2>&1)"; then
             pass "CI policy parity"
@@ -899,6 +1036,8 @@ if needs_check always; then
     else
         fail "missing executable: scripts/validate-ci-policy-parity.sh"
     fi
+else
+    skip "CI policy parity"
 fi
 
 # --- 30. ShellCheck on changed scripts ---
@@ -1026,7 +1165,9 @@ else
 fi
 
 # --- 35. Flywheel health (warn only) ---
-if command -v ao >/dev/null 2>&1 && [[ -d .agents ]]; then
+if [[ "$FAST_MODE" == "true" ]] && ! truthy "${PRE_PUSH_AGENT_HEALTH:-0}"; then
+    skip "flywheel health (local fast; set PRE_PUSH_AGENT_HEALTH=1)"
+elif command -v ao >/dev/null 2>&1 && [[ -d .agents ]]; then
     if health_output="$(ao metrics health --json 2>/dev/null)"; then
         fly_status="$(echo "$health_output" | grep -o '"flywheel_status":"[^"]*"' | head -1 | cut -d'"' -f4 || true)"
         if [[ "$fly_status" == "DECAYING" ]]; then
@@ -1044,7 +1185,7 @@ else
 fi
 
 # --- 36. CHANGELOG sync (docs/CHANGELOG.md must match root) ---
-if needs_check docs || needs_check always; then
+if needs_check changelog; then
     if [[ -f docs/CHANGELOG.md && -f CHANGELOG.md ]]; then
         if diff -q CHANGELOG.md docs/CHANGELOG.md >/dev/null 2>&1; then
             pass "CHANGELOG sync"
@@ -1054,6 +1195,8 @@ if needs_check docs || needs_check always; then
     else
         skip "CHANGELOG sync (missing file)"
     fi
+else
+    skip "CHANGELOG sync"
 fi
 
 # --- 37. ~/.agents content-hash gate (post-hoc mutation detector) ---
@@ -1063,7 +1206,7 @@ fi
 # so strict enforcement is preserved on main.
 if [[ "${HASH_GATE_IGNORE_UNTRACKED:-0}" == "1" ]]; then
     skip "agents-hub content-hash gate (HASH_GATE_IGNORE_UNTRACKED=1)"
-    rm -f "$HASH_GATE_SNAPSHOT" 2>/dev/null || true
+    cleanup_hash_snapshot
 elif [[ -n "$HASH_GATE_SNAPSHOT" && -x scripts/check-agents-hash-snapshot.sh ]]; then
     if hash_gate_output="$(run_hash_snapshot diff "$HASH_GATE_SNAPSHOT" 2>&1)"; then
         pass "agents-hub content-hash gate"
@@ -1077,10 +1220,11 @@ elif [[ -n "$HASH_GATE_SNAPSHOT" && -x scripts/check-agents-hash-snapshot.sh ]];
             indent_output "$hash_gate_output"
         fi
     fi
-    rm -f "$HASH_GATE_SNAPSHOT"
+    cleanup_hash_snapshot
 fi
 
 # --- Summary ---
+maybe_fail_fast
 echo ""
 if [[ $errors -gt 0 ]]; then
     if [[ "$FAST_MODE" == "true" ]]; then
@@ -1090,6 +1234,11 @@ if [[ $errors -gt 0 ]]; then
     fi
     exit 1
 else
+    if [[ "$FAST_MODE" == "true" && -x scripts/pre-push-proof.sh ]]; then
+        if ! scripts/pre-push-proof.sh write --scope "$SCOPE" --mode fast >/dev/null 2>&1; then
+            warn "pre-push validation proof not recorded"
+        fi
+    fi
     if [[ "$FAST_MODE" == "true" ]]; then
         echo -e "${GREEN}pre-push gate (fast): passed ($skipped skipped)${NC}"
     else

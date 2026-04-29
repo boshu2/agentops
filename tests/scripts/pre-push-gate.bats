@@ -66,11 +66,11 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
     make_stub "$FAKE_REPO/tests/hooks/test-orphan-hooks.sh"
-    # Check 3b (HOME isolation) and 3c (agents hash snapshot) run unconditionally
-    # in non-fast mode. Both must exist as executables so the gate does not fail
-    # with "missing executable" before it reaches the checks under test.
+    # Check 3b (HOME isolation) and 3c (agents hash snapshot) need executable
+    # stubs when tests exercise the Go/hash paths.
     make_stub "$FAKE_REPO/scripts/check-home-isolation.sh"
     make_hash_snapshot_stub "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
+    make_stub "$FAKE_REPO/scripts/pre-push-proof.sh"
 }
 
 teardown() {
@@ -316,6 +316,73 @@ GIT
     [[ "$output" == *"BLOCKED"* ]]
 }
 
+@test "pre-push-gate.sh fail-fast stops local fast mode after first blocking failure" {
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+if [[ "$1" == "build" ]]; then exit 1; fi
+exit 0
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/cmd/ao/main.go"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/validate-go-fast.sh" <<'FAST'
+#!/usr/bin/env bash
+echo "validate-go-fast should not run under fail-fast" >&2
+exit 1
+FAST
+    chmod +x "$FAKE_REPO/scripts/validate-go-fast.sh"
+    make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"go build"* ]]
+    [[ "$output" == *"fail-fast enabled"* ]]
+    [[ "$output" != *"validate-go-fast should not run"* ]]
+}
+
+@test "pre-push-gate.sh accumulate mode continues after local fast failure" {
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+if [[ "$1" == "build" ]]; then exit 1; fi
+exit 0
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/cmd/ao/main.go"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/validate-go-fast.sh" <<'FAST'
+#!/usr/bin/env bash
+echo "validate-go-fast did run" >&2
+exit 1
+FAST
+    chmod +x "$FAKE_REPO/scripts/validate-go-fast.sh"
+    make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"go build"* ]]
+    [[ "$output" == *"validate-go-fast did run"* ]]
+}
+
 @test "pre-push-gate.sh fails when worktree disposition check fails" {
     cat > "$MOCK_BIN/go" <<'GO'
 #!/usr/bin/env bash
@@ -340,6 +407,42 @@ GIT
     export PATH="$MOCK_BIN:$PATH"
 
     run bash "$GATE"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"worktree disposition"* ]]
+}
+
+@test "pre-push-gate.sh skips worktree disposition in local fast mode by default" {
+    make_stub "$FAKE_REPO/scripts/check-worktree-disposition.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"worktree disposition (local fast"* ]]
+}
+
+@test "pre-push-gate.sh runs worktree disposition in local fast strict mode" {
+    make_stub "$FAKE_REPO/scripts/check-worktree-disposition.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_STRICT_WORKTREE=1 bash "$GATE" --fast --scope upstream
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"worktree disposition"* ]]
 }
@@ -524,10 +627,105 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE" --fast
+    run env PRE_PUSH_AGENT_HEALTH=1 bash "$GATE" --fast
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"retrieval quality ratchet"* ]]
     [[ "$output" == *"pre-push gate (fast): passed"* ]]
+}
+
+@test "pre-push-gate.sh skips AgentOps health checks in local fast mode by default" {
+    make_stub "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"retrieval quality ratchet (local fast"* ]]
+    [[ "$output" == *"flywheel health (local fast"* ]]
+}
+
+@test "pre-push-gate.sh skips eval canaries for ordinary Go changes in local fast mode" {
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+exit 0
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/cmd/ao/main.go"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    make_stub "$FAKE_REPO/scripts/validate-go-fast.sh"
+    make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
+    make_stub "$FAKE_REPO/scripts/eval-agentops.sh" 1
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"AgentOps eval canaries"*"skipped"* ]]
+}
+
+@test "pre-push-gate.sh runs local fast eval canaries as advisory when requested" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "evals/agentops-core/example.json"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$BATS_TEST_TMPDIR/eval-args.txt"
+echo "FAIL eval-agentops: simulated regression"
+exit 0
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"*"AgentOps eval canaries (advisory)"* ]]
+    run grep -q -- '--advisory' "$BATS_TEST_TMPDIR/eval-args.txt"
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh blocks local fast eval canaries in strict mode" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "evals/agentops-core/example.json"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+echo "FAIL eval-agentops: simulated regression"
+exit 1
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_STRICT_EVAL=1 bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"AgentOps eval canaries"* ]]
 }
 
 @test "pre-push-gate.sh warns locally when agents hash capture times out" {
@@ -551,7 +749,7 @@ GIT
     export PATH="$MOCK_BIN:$PATH"
     export HASH_GATE_TIMEOUT_SECONDS=1
 
-    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_AGENT_HASH=1 bash "$GATE" --fast
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"snapshot timed out locally"* ]]
     [[ "$output" == *"pre-push gate (fast): passed"* ]]
@@ -579,7 +777,7 @@ GIT
     export HASH_GATE_TIMEOUT_SECONDS=1
     export CI=true
 
-    run bash "$GATE" --fast
+    run env PRE_PUSH_AGENT_HASH=1 bash "$GATE" --fast
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"agents-hub content-hash gate snapshot failed"* ]]
 }
