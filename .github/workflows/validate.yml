@@ -141,6 +141,7 @@ jobs:
           ./scripts/generate-cli-reference.sh --check
 
   agentops-eval-advisory:
+    name: agentops-eval-advisory (warn-only)
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -286,6 +287,7 @@ jobs:
           echo "✅ No dangerous patterns"
 
   security-toolchain-gate:
+    name: security-toolchain-gate (warn-only)
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
@@ -787,6 +789,7 @@ jobs:
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
 
   doctor-check:
+    name: doctor-check (warn-only)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: go-build
@@ -855,6 +858,7 @@ jobs:
         run: bash tests/hooks/test-orphan-hooks.sh
 
   check-test-staleness:
+    name: check-test-staleness (warn-only)
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
