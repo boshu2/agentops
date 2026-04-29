@@ -524,14 +524,7 @@ func TestMetricsHealth_JSONOutput(t *testing.T) {
 	})
 
 	// Save and restore global state
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "json"
