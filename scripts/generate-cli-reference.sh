@@ -107,6 +107,91 @@ first_line() {
   printf '%s\n' "${text%%$'\n'*}"
 }
 
+heading_for_depth() {
+  local depth="$1"
+  local level=$((depth + 2))
+  local heading=""
+  local i
+
+  if ((level > 6)); then
+    level=6
+  fi
+
+  for ((i = 0; i < level; i++)); do
+    heading+="#"
+  done
+  printf '%s' "$heading"
+}
+
+command_label() {
+  local label="ao"
+  local part
+
+  for part in "$@"; do
+    label+=" $part"
+  done
+
+  printf '%s' "$label"
+}
+
+emit_command_reference() {
+  local depth="$1"
+  shift
+
+  local -a command_path=("$@")
+  local cmd_help
+  cmd_help="$("$AO_BIN" "${command_path[@]}" --help 2>&1 || true)"
+
+  local description
+  description="$(first_line "$cmd_help")"
+
+  local heading
+  heading="$(heading_for_depth "$depth")"
+
+  local label
+  label="$(command_label "${command_path[@]}")"
+
+  echo "${heading} \`${label}\`"
+  echo ""
+  echo "$description"
+  echo ""
+
+  local usage
+  usage="$(echo "$cmd_help" | extract_usage || true)"
+  if [[ -n "$usage" ]]; then
+    echo '```'
+    echo "$usage"
+    echo '```'
+    echo ""
+  fi
+
+  local flags_block
+  flags_block="$(echo "$cmd_help" | extract_flags || true)"
+  if echo "$flags_block" | has_non_help_flags >/dev/null 2>&1; then
+    echo "**Flags:**"
+    echo ""
+    echo '```'
+    echo "$flags_block"
+    echo '```'
+    echo ""
+  fi
+
+  local subcmds
+  subcmds="$(echo "$cmd_help" | extract_commands | grep -v '^$' || true)"
+  if [[ -n "$subcmds" ]]; then
+    if [[ "$depth" -eq 1 ]]; then
+      echo "**Subcommands:**"
+      echo ""
+    fi
+
+    local sub
+    while IFS= read -r sub; do
+      [[ -z "$sub" ]] && continue
+      emit_command_reference "$((depth + 1))" "${command_path[@]}" "$sub"
+    done <<<"$subcmds"
+  fi
+}
+
 generate() {
   cat <<DOC_HEADER
 # ao CLI Reference
@@ -140,113 +225,7 @@ DOC_GLOBAL_FLAGS
 DOC_COMMANDS
 
   for cmd in $commands; do
-    local cmd_help
-    cmd_help="$("$AO_BIN" "$cmd" --help 2>&1 || true)"
-
-    local description
-    description="$(first_line "$cmd_help")"
-
-    echo "### \`ao ${cmd}\`"
-    echo ""
-    echo "$description"
-    echo ""
-
-    local usage
-    usage="$(echo "$cmd_help" | extract_usage || true)"
-    if [[ -n "$usage" ]]; then
-      echo '```'
-      echo "$usage"
-      echo '```'
-      echo ""
-    fi
-
-    local flags_block
-    flags_block="$(echo "$cmd_help" | extract_flags || true)"
-    if echo "$flags_block" | has_non_help_flags >/dev/null 2>&1; then
-      echo "**Flags:**"
-      echo ""
-      echo '```'
-      echo "$flags_block"
-      echo '```'
-      echo ""
-    fi
-
-    local subcmds
-    subcmds="$(echo "$cmd_help" | extract_commands | grep -v '^$' || true)"
-    if [[ -n "$subcmds" ]]; then
-      echo "**Subcommands:**"
-      echo ""
-      for sub in $subcmds; do
-        local sub_help
-        sub_help="$("$AO_BIN" "$cmd" "$sub" --help 2>&1 || true)"
-
-        local sub_desc
-        sub_desc="$(first_line "$sub_help")"
-
-        echo "#### \`ao ${cmd} ${sub}\`"
-        echo ""
-        echo "$sub_desc"
-        echo ""
-
-        local sub_usage
-        sub_usage="$(echo "$sub_help" | extract_usage || true)"
-        if [[ -n "$sub_usage" ]]; then
-          echo '```'
-          echo "$sub_usage"
-          echo '```'
-          echo ""
-        fi
-
-        local sub_flags
-        sub_flags="$(echo "$sub_help" | extract_flags || true)"
-        if echo "$sub_flags" | has_non_help_flags >/dev/null 2>&1; then
-          echo "**Flags:**"
-          echo ""
-          echo '```'
-          echo "$sub_flags"
-          echo '```'
-          echo ""
-        fi
-
-        local subsub_cmds
-        subsub_cmds="$(echo "$sub_help" | extract_commands | grep -v '^$' || true)"
-        if [[ -n "$subsub_cmds" ]]; then
-          for subsub in $subsub_cmds; do
-            local subsub_help
-            subsub_help="$("$AO_BIN" "$cmd" "$sub" "$subsub" --help 2>&1 || true)"
-
-            local subsub_desc
-            subsub_desc="$(first_line "$subsub_help")"
-
-            echo "##### \`ao ${cmd} ${sub} ${subsub}\`"
-            echo ""
-            echo "$subsub_desc"
-            echo ""
-
-            local subsub_usage
-            subsub_usage="$(echo "$subsub_help" | extract_usage || true)"
-            if [[ -n "$subsub_usage" ]]; then
-              echo '```'
-              echo "$subsub_usage"
-              echo '```'
-              echo ""
-            fi
-
-            local subsub_flags
-            subsub_flags="$(echo "$subsub_help" | extract_flags || true)"
-            if echo "$subsub_flags" | has_non_help_flags >/dev/null 2>&1; then
-              echo "**Flags:**"
-              echo ""
-              echo '```'
-              echo "$subsub_flags"
-              echo '```'
-              echo ""
-            fi
-          done
-        fi
-      done
-    fi
-
+    emit_command_reference 1 "$cmd"
     echo "---"
     echo ""
   done
