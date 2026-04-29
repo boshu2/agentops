@@ -148,6 +148,15 @@ Queue workers must use leases and heartbeats rather than in-memory ownership.
 The queue must tolerate daemon restart and worker crash without losing accepted
 jobs.
 
+### Foreground Supervisor
+
+`ao daemon run` may start foreground worker loops with `--workers`. During the
+tracer-bullet phase the only supported executor policy is `--executor-policy=fake`,
+and that policy is intentionally limited to the existing `openclaw.snapshot`
+job type. `--worker-once` exits after each configured worker makes one claim
+attempt, which keeps local validation deterministic while exercising the same
+queue claim, heartbeat, and terminal event path as the long-running worker loop.
+
 ## Local Trust
 
 The default daemon API is local-only.

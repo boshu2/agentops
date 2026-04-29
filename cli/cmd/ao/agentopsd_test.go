@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/spf13/cobra"
 )
 
@@ -138,5 +139,66 @@ func TestDaemonRunRejectsUnsafeActivationBind(t *testing.T) {
 	_, _, _, err := startAgentOpsDaemon(context.Background(), t.TempDir(), agentopsDaemonRunOptions{Addr: "0.0.0.0:8765"})
 	if err == nil {
 		t.Fatal("unsafe daemon bind succeeded")
+	}
+}
+
+func TestDaemonRunWorkerOnceCompletesFakeJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-openclaw",
+		JobID:     "job-openclaw",
+		JobType:   daemonpkg.JobTypeOpenClawSnapshot,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+
+	prevProjectDir := testProjectDir
+	prevAddr := daemonAddr
+	prevToken := daemonToken
+	prevTokenFile := daemonTokenFile
+	prevWorkers := daemonWorkers
+	prevWorkerOnce := daemonWorkerOnce
+	prevExecutorPolicy := daemonExecutorPolicy
+	testProjectDir = cwd
+	daemonAddr = "127.0.0.1:0"
+	daemonToken = "secret-token"
+	daemonTokenFile = ""
+	daemonWorkers = 1
+	daemonWorkerOnce = true
+	daemonExecutorPolicy = "fake"
+	t.Cleanup(func() {
+		testProjectDir = prevProjectDir
+		daemonAddr = prevAddr
+		daemonToken = prevToken
+		daemonTokenFile = prevTokenFile
+		daemonWorkers = prevWorkers
+		daemonWorkerOnce = prevWorkerOnce
+		daemonExecutorPolicy = prevExecutorPolicy
+	})
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runAgentOpsDaemonCommand(cmd, nil); err != nil {
+		t.Fatalf("daemon run worker once: %v", err)
+	}
+	snapshot, err := queue.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("jobs = %#v, want completed openclaw job", snapshot.Jobs)
+	}
+	if !strings.Contains(out.String(), "agentopsd ready:") {
+		t.Fatalf("output %q missing ready line", out.String())
+	}
+}
+
+func TestAgentOpsDaemonWorkerFlagsRegistered(t *testing.T) {
+	for _, flag := range []string{"workers", "worker-once", "executor-policy"} {
+		if daemonRunCmd.Flags().Lookup(flag) == nil {
+			t.Fatalf("daemon run missing --%s flag", flag)
+		}
 	}
 }

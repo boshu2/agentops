@@ -24,6 +24,9 @@ var (
 	daemonToken             string
 	daemonTokenFile         string
 	daemonServiceExecutable string
+	daemonWorkers           int
+	daemonWorkerOnce        bool
+	daemonExecutorPolicy    string
 )
 
 type agentopsDaemonActivation struct {
@@ -35,10 +38,15 @@ type agentopsDaemonActivation struct {
 }
 
 type agentopsDaemonRunOptions struct {
-	Addr      string
-	Token     string
-	TokenFile string
-	Now       func() time.Time
+	Addr              string
+	Token             string
+	TokenFile         string
+	Workers           int
+	WorkerOnce        bool
+	ExecutorPolicy    string
+	PollInterval      time.Duration
+	HeartbeatInterval time.Duration
+	Now               func() time.Time
 }
 
 var daemonCmd = &cobra.Command{
@@ -88,6 +96,9 @@ func init() {
 	daemonRunCmd.Flags().StringVar(&daemonAddr, "addr", "127.0.0.1:8765", "Loopback address for foreground daemon")
 	daemonRunCmd.Flags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
 	daemonRunCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
+	daemonRunCmd.Flags().IntVar(&daemonWorkers, "workers", 0, "Number of daemon worker loops to run in the foreground")
+	daemonRunCmd.Flags().BoolVar(&daemonWorkerOnce, "worker-once", false, "Exit after each worker makes one claim attempt")
+	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake)")
 	daemonReadyCmd.Flags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonStatusCmd.Flags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonServiceInstallCmd.Flags().StringVar(&daemonAddr, "addr", "127.0.0.1:8765", "Loopback address for service plan")
@@ -99,10 +110,13 @@ func runAgentOpsDaemonCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return serveAgentOpsDaemon(cmd.Context(), cwd, agentopsDaemonRunOptions{
-		Addr:      daemonAddr,
-		Token:     daemonToken,
-		TokenFile: daemonTokenFile,
+	return serveAgentOpsDaemon(cobraContext(cmd), cwd, agentopsDaemonRunOptions{
+		Addr:           daemonAddr,
+		Token:          daemonToken,
+		TokenFile:      daemonTokenFile,
+		Workers:        daemonWorkers,
+		WorkerOnce:     daemonWorkerOnce,
+		ExecutorPolicy: daemonExecutorPolicy,
 	}, cmd.OutOrStdout())
 }
 
@@ -172,6 +186,12 @@ func runAgentOpsDaemonServiceInstallCommand(cmd *cobra.Command, args []string) e
 }
 
 func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRunOptions, out anyWriter) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if opts.Workers < 0 {
+		return errors.New("daemon workers must be >= 0")
+	}
 	server, listener, activation, err := startAgentOpsDaemon(ctx, cwd, opts)
 	if err != nil {
 		return err
@@ -182,22 +202,133 @@ func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 	go func() {
 		errCh <- server.Serve(listener)
 	}()
+	if opts.Workers > 0 {
+		return serveAgentOpsDaemonWithWorkers(ctx, cwd, opts, server, errCh)
+	}
+	return waitForAgentOpsDaemonServer(ctx, server, errCh)
+}
+
+func serveAgentOpsDaemonWithWorkers(ctx context.Context, cwd string, opts agentopsDaemonRunOptions, server *http.Server, errCh <-chan error) error {
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, opts)
+	if err != nil {
+		serverErr := shutdownAgentOpsDaemon(ctx, server)
+		serveErr := normalizeAgentOpsDaemonServeError(<-errCh)
+		return firstAgentOpsDaemonError(err, serverErr, serveErr)
+	}
+	if opts.WorkerOnce {
+		return serveAgentOpsDaemonWorkersOnce(ctx, supervisor, opts.Workers, server, errCh)
+	}
+	return serveAgentOpsDaemonWorkerLoops(ctx, supervisor, opts.Workers, server, errCh)
+}
+
+func serveAgentOpsDaemonWorkersOnce(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int, server *http.Server, errCh <-chan error) error {
+	workerErr := runAgentOpsDaemonWorkersOnce(ctx, supervisor, workers)
+	serverErr := shutdownAgentOpsDaemon(ctx, server)
+	serveErr := normalizeAgentOpsDaemonServeError(<-errCh)
+	return firstAgentOpsDaemonError(workerErr, serverErr, serveErr)
+}
+
+func serveAgentOpsDaemonWorkerLoops(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int, server *http.Server, errCh <-chan error) error {
+	workerErrCh := startAgentOpsDaemonWorkerLoops(ctx, supervisor, workers)
 	select {
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		_ = server.Shutdown(shutdownCtx)
-		err := <-errCh
-		if err == nil || errors.Is(err, http.ErrServerClosed) {
-			return nil
+		return firstAgentOpsDaemonError(shutdownAgentOpsDaemon(ctx, server), normalizeAgentOpsDaemonServeError(<-errCh))
+	case err := <-workerErrCh:
+		serverErr := shutdownAgentOpsDaemon(ctx, server)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			return firstAgentOpsDaemonError(err, serverErr)
 		}
-		return err
+		return serverErr
 	case err := <-errCh:
-		if err == nil || errors.Is(err, http.ErrServerClosed) {
-			return nil
+		return normalizeAgentOpsDaemonServeError(err)
+	}
+}
+
+func waitForAgentOpsDaemonServer(ctx context.Context, server *http.Server, errCh <-chan error) error {
+	select {
+	case <-ctx.Done():
+		return firstAgentOpsDaemonError(shutdownAgentOpsDaemon(ctx, server), normalizeAgentOpsDaemonServeError(<-errCh))
+	case err := <-errCh:
+		return normalizeAgentOpsDaemonServeError(err)
+	}
+}
+
+func normalizeAgentOpsDaemonServeError(err error) error {
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+
+func firstAgentOpsDaemonError(errs ...error) error {
+	for _, err := range errs {
+		if err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*daemonpkg.Supervisor, error) {
+	policy := opts.ExecutorPolicy
+	if policy == "" {
+		policy = "fake"
+	}
+	var executors []daemonpkg.JobExecutor
+	switch policy {
+	case "fake":
+		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}}
+	default:
+		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
+	}
+	queueOpts := daemonpkg.QueueOptions{}
+	if opts.Now != nil {
+		queueOpts.Now = opts.Now
+	}
+	return daemonpkg.NewSupervisor(daemonpkg.SupervisorOptions{
+		Queue:             daemonpkg.NewQueue(daemonpkg.NewStore(cwd), queueOpts),
+		Executors:         executors,
+		Actor:             "agentopsd-worker",
+		PollInterval:      opts.PollInterval,
+		HeartbeatInterval: opts.HeartbeatInterval,
+	})
+}
+
+func runAgentOpsDaemonWorkersOnce(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int) error {
+	for range workers {
+		if _, err := supervisor.RunOnce(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func startAgentOpsDaemonWorkerLoops(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int) <-chan error {
+	errCh := make(chan error, workers)
+	for range workers {
+		go func() {
+			errCh <- supervisor.RunLoop(ctx)
+		}()
+	}
+	return errCh
+}
+
+func shutdownAgentOpsDaemon(ctx context.Context, server *http.Server) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	timeout := 2 * time.Second
+	if deadline, ok := ctx.Deadline(); ok {
+		if remaining := time.Until(deadline); remaining > 0 && remaining < timeout {
+			timeout = remaining
+		}
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
+	return nil
 }
 
 type anyWriter interface {
@@ -205,6 +336,9 @@ type anyWriter interface {
 }
 
 func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRunOptions) (*http.Server, net.Listener, agentopsDaemonActivation, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	addr := opts.Addr
 	if addr == "" {
 		addr = "127.0.0.1:8765"
