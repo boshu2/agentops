@@ -15,6 +15,119 @@ teardown() {
     rm -rf "$TMP_DIR"
 }
 
+make_stub() {
+    local path="$1"
+    mkdir -p "$(dirname "$path")"
+    cat > "$path" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ -n "${CI_STUB_LOG:-}" ]]; then
+    printf '%s\n' "$(basename "$0")" >> "$CI_STUB_LOG"
+fi
+exit 0
+STUB
+    chmod +x "$path"
+}
+
+make_mock_tool() {
+    local path="$1"
+    local body="$2"
+    mkdir -p "$(dirname "$path")"
+    printf '%s\n' '#!/usr/bin/env bash' "$body" > "$path"
+    chmod +x "$path"
+}
+
+setup_fake_release_repo() {
+    FAKE_REPO="$TMP_DIR/repo"
+    MOCK_BIN="$TMP_DIR/bin"
+    mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/cli/bin" "$FAKE_REPO/.claude-plugin" "$MOCK_BIN"
+    /bin/cp "$SCRIPT" "$FAKE_REPO/scripts/ci-local-release.sh"
+    chmod +x "$FAKE_REPO/scripts/ci-local-release.sh"
+
+    cat > "$FAKE_REPO/.claude-plugin/plugin.json" <<'JSON'
+{"version":"2.99.0"}
+JSON
+    cat > "$FAKE_REPO/.claude-plugin/marketplace.json" <<'JSON'
+{"metadata":{"version":"2.99.0"},"plugins":[{"version":"2.99.0"}]}
+JSON
+
+    cat > "$FAKE_REPO/cli/bin/ao" <<'AO'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-} ${2:-}" in
+  "hooks install")
+    mkdir -p "$HOME/.claude" "$HOME/.agentops/hooks"
+    printf '{}\n' > "$HOME/.claude/settings.json"
+    printf '#!/usr/bin/env bash\n' > "$HOME/.agentops/hooks/session-start.sh"
+    ;;
+esac
+exit 0
+AO
+    chmod +x "$FAKE_REPO/cli/bin/ao"
+
+    make_mock_tool "$MOCK_BIN/git" 'case "$*" in *"describe"*) echo "v2.99.0";; *"rev-parse HEAD"*) echo "0000000000000000000000000000000000000000";; *"ls-files"*) exit 0;; *) exit 0;; esac'
+    make_mock_tool "$MOCK_BIN/go" 'exit 0'
+    make_mock_tool "$MOCK_BIN/make" 'mkdir -p bin; exit 0'
+    make_mock_tool "$MOCK_BIN/shellcheck" 'exit 0'
+    make_mock_tool "$MOCK_BIN/markdownlint" 'exit 0'
+    make_mock_tool "$MOCK_BIN/bats" 'exit 0'
+
+    local stub_paths=(
+        tests/docs/validate-doc-release.sh
+        scripts/validate-manifests.sh
+        scripts/validate-hook-preflight.sh
+        scripts/validate-hooks-doc-parity.sh
+        scripts/validate-ci-policy-parity.sh
+        scripts/validate-surface-inventory.sh
+        scripts/check-worktree-disposition.sh
+        skills/heal-skill/scripts/heal.sh
+        scripts/validate-skill-runtime-parity.sh
+        scripts/validate-codex-runtime-sections.sh
+        scripts/validate-codex-generated-manifest.sh
+        scripts/validate-codex-generated-artifacts.sh
+        scripts/validate-codex-backbone-prompts.sh
+        scripts/validate-next-work-contract-parity.sh
+        scripts/validate-skill-runtime-formats.sh
+        scripts/check-contract-compatibility.sh
+        scripts/validate-embedded-sync.sh
+        scripts/validate-skill-cli-snippets.sh
+        scripts/check-go-command-test-pair.sh
+        scripts/check-memrl-health.sh
+        scripts/check-doctor-health.sh
+        scripts/generate-cli-reference.sh
+        tests/smoke-test.sh
+        tests/skills/run-all.sh
+        scripts/validate-headless-runtime-skills.sh
+        tests/integration/test-cli-commands.sh
+        tests/scripts/test-go-command-test-pair.sh
+        tests/scripts/test-competitive-freshness.sh
+        tests/scripts/test-skill-runtime-parity.sh
+        tests/scripts/test-skill-cli-snippets.sh
+        tests/scripts/test-codex-plugin-install.sh
+        tests/scripts/test-codex-native-skills-install.sh
+        tests/scripts/test-codex-generated-manifest.sh
+        tests/scripts/test-codex-generated-artifacts.sh
+        tests/scripts/test-codex-backbone-prompts.sh
+        tests/scripts/test-install-dev-hooks.sh
+        tests/scripts/test-githook-shims.sh
+        tests/scripts/test-validate-local.sh
+        tests/scripts/test-headless-runtime-skills.sh
+        tests/hooks/test-constraint-compiler.sh
+        scripts/validate-skill-schema.sh
+        scripts/validate-learning-coherence.sh
+        tests/cli/test-json-flag-consistency.sh
+        tests/cli/test-json-flag-consistency-tempdir.sh
+        scripts/validate-release.sh
+        scripts/release-smoke-test.sh
+        scripts/check-agents-hash-snapshot.sh
+    )
+
+    local stub
+    for stub in "${stub_paths[@]}"; do
+        make_stub "$FAKE_REPO/$stub"
+    done
+}
+
 @test "ci-local-release.sh exists and is executable" {
     [ -f "$SCRIPT" ]
     [ -x "$SCRIPT" ]
@@ -118,5 +231,20 @@ teardown() {
 @test "script increments error count from fail helper" {
     # Guard the convention: fail() must bump errors so the gate can aggregate.
     run grep -q 'errors=\$((errors + 1))' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "fast mode executes stubbed local gate matrix including surface inventory" {
+    setup_fake_release_repo
+    export PATH="$MOCK_BIN:$PATH"
+    export CI_STUB_LOG="$TMP_DIR/stub.log"
+
+    run bash "$FAKE_REPO/scripts/ci-local-release.sh" --fast --jobs 4
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"LOCAL CI PASSED"* ]]
+    run grep -q '^validate-surface-inventory.sh$' "$CI_STUB_LOG"
+    [ "$status" -eq 0 ]
+    run grep -q '^validate-ci-policy-parity.sh$' "$CI_STUB_LOG"
     [ "$status" -eq 0 ]
 }
