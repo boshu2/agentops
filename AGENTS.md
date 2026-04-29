@@ -102,6 +102,7 @@ bash scripts/validate-hooks-doc-parity.sh
 
 # 8. CI policy/docs parity
 bash scripts/validate-ci-policy-parity.sh
+bash scripts/validate-surface-inventory.sh
 
 # 9. Worktree disposition
 bash scripts/check-worktree-disposition.sh

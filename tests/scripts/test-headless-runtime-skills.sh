@@ -140,14 +140,14 @@ fi
 
 if [[ "$prompt" == *"compact JSON array of skill names"* ]]; then
   text='["compile","research"]'
-  if [[ "$mode" == "retry-missing" ]]; then
+  if [[ "$mode" == "retry-missing" || "$mode" == "retry-missing-twice" ]]; then
     count=0
     if [[ -f "$state_file" ]]; then
       count="$(cat "$state_file")"
     fi
     count=$((count + 1))
     printf '%s' "$count" > "$state_file"
-    if [[ "$count" -eq 1 ]]; then
+    if [[ "$count" -eq 1 || ( "$mode" == "retry-missing-twice" && "$count" -eq 2 ) ]]; then
       text='["compile"]'
     fi
   fi
@@ -284,7 +284,7 @@ test_retries_when_codex_inventory_omits_skill_once() {
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex --workdir "$TMP_DIR/workdir-codex-retry" \
         >"$TMP_DIR/codex-retry.log" 2>&1; then
-        if contains_text 'Codex inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/codex-retry.log" && \
+        if contains_text 'Codex inventory mismatch on attempt 1/3; retrying' "$TMP_DIR/codex-retry.log" && \
             contains_text 'codex: inventory verified' "$TMP_DIR/codex-retry.log"; then
             pass "retries when Codex inventory omits a skill once"
         else
@@ -347,7 +347,7 @@ test_retries_when_claude_inventory_omits_skill_once() {
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-retry" \
         >"$TMP_DIR/retry.log" 2>&1; then
-        if contains_text 'inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/retry.log" && \
+        if contains_text 'inventory mismatch on attempt 1/3; retrying' "$TMP_DIR/retry.log" && \
             contains_text 'claude: inventory verified' "$TMP_DIR/retry.log"; then
             pass "retries when Claude inventory omits a skill once"
         else
@@ -357,6 +357,29 @@ test_retries_when_claude_inventory_omits_skill_once() {
     else
         fail "retries when Claude inventory omits a skill once"
         sed -n '1,80p' "$TMP_DIR/retry.log" >&2
+    fi
+}
+
+test_retries_when_claude_inventory_omits_skill_twice() {
+    local repo="$TMP_DIR/retry-twice-repo"
+    local bin_dir="$TMP_DIR/retry-twice-bin"
+    mkdir -p "$bin_dir"
+    make_fixture "$repo"
+    make_mock_claude "$bin_dir" retry-missing-twice
+
+    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-retry-twice" \
+        >"$TMP_DIR/retry-twice.log" 2>&1; then
+        if contains_text 'inventory mismatch on attempt 1/3; retrying' "$TMP_DIR/retry-twice.log" && \
+            contains_text 'inventory mismatch on attempt 2/3; retrying' "$TMP_DIR/retry-twice.log" && \
+            contains_text 'claude: inventory verified' "$TMP_DIR/retry-twice.log"; then
+            pass "retries when Claude inventory omits a skill twice"
+        else
+            fail "retries when Claude inventory omits a skill twice"
+            sed -n '1,120p' "$TMP_DIR/retry-twice.log" >&2
+        fi
+    else
+        fail "retries when Claude inventory omits a skill twice"
+        sed -n '1,120p' "$TMP_DIR/retry-twice.log" >&2
     fi
 }
 
@@ -386,6 +409,7 @@ test_retries_when_codex_inventory_omits_skill_once
 test_warns_and_passes_when_claude_inventory_falls_back_to_help
 test_warns_and_passes_when_claude_output_is_malformed
 test_retries_when_claude_inventory_omits_skill_once
+test_retries_when_claude_inventory_omits_skill_twice
 test_fails_in_strict_mode_when_claude_uses_load_check_fallback
 
 echo ""

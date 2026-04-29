@@ -123,8 +123,8 @@ The local CI gate mirrors the remote pipeline and runs in 5 phases:
 | Phase | Description | Parallelism |
 |-------|-------------|-------------|
 | 1 | Required tool check (bash, git, jq, go, shellcheck, markdownlint) | Sequential |
-| 2 | Quick independent checks: doc-release gate, manifest validation, hook preflight, parity checks, secret scans, MemRL health, etc. | Parallel (capped at half CPU cores, min 4) |
-| 3 | Medium-weight checks: CLI docs parity, ShellCheck, markdownlint, smoke tests, integration tests, coverage floor | Parallel |
+| 2 | Quick independent checks: doc-release gate, manifest validation, hook preflight, validation surface inventory, parity checks, secret scans, MemRL health, etc. | Parallel (capped at half CPU cores, min 4) |
+| 3 | Medium-weight checks: CLI docs parity, ShellCheck, markdownlint, smoke tests, script tests, and integration tests | Parallel |
 | 4 | Heavy checks: Go build + race tests, hook integration tests, SBOM generation, security toolchain gate | Parallel |
 | 5 | CLI smoke tests: hook install smoke, `ao init --hooks` + RPI smoke, release smoke test | Parallel |
 
@@ -137,7 +137,11 @@ scripts/ci-local-release.sh --jobs 8     # Override parallel job cap
 scripts/ci-local-release.sh --security-mode quick  # Quick security scan
 ```
 
-In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
+In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation. This is different from `scripts/pre-push-gate.sh --fast`: pre-push fast mode is changed-file scoped, while ci-local-release fast mode is still a broad release gate with only heavyweight checks removed.
+
+### Validation Surface Inventory
+
+`scripts/validation-surface-inventory.json` is the machine-readable inventory for CI and local validation surfaces. It records each surface's command, purpose, category, blocking/advisory policy, fast/full behavior, CI job mapping, and owner docs. `scripts/validate-surface-inventory.sh` compares that inventory against `.github/workflows/validate.yml` summary needs and failset so new jobs or policy changes cannot land without an explicit classification.
 
 ### Minimum Checks Before Any Push
 
@@ -160,22 +164,25 @@ cd cli && make sync-hooks
 
 ### Local-Only Checks
 
-Four checks run only in the local CI gate and are intentionally excluded from `validate.yml`:
+These checks run only in the local CI gate and are intentionally excluded from `validate.yml`:
 
 | Script | Reason |
 |--------|--------|
 | `check-doctor-health.sh` | Already present in `validate.yml` as the `doctor-check` job; duplicating it adds no value |
 | `check-go-command-test-pair.sh` | Go-specific pairing check; CI has a dedicated `go-build` job that covers this surface |
+| `validate-surface-inventory.sh` | Local contract check that validates the shared CI/local inventory against `validate.yml` |
 | `validate-skill-cli-snippets.sh` | Verifies `ao ...` snippets in `skills/` and `skills-codex/` against the built CLI help surface so stale commands and flags fail locally |
 | `release-cadence-check.sh` | Only relevant at release time; not meaningful in a per-push pipeline |
 
-### Skipped Remote-Parity Checks
+### Remote-Parity Checks
 
-One CI check is intentionally **not** wired into the local gate:
+`ci-local-release.sh` includes the remote-parity checks that commonly drift when they are only exercised in GitHub Actions:
 
 | Script | Reason |
 |--------|--------|
-| `validate-learning-coherence.sh` | Fails on pre-existing frontmatter-only learning files; needs repo cleanup before local enforcement |
+| `validate-learning-coherence.sh` | Mirrors the `learning-coherence` CI job locally |
+| `tests/cli/test-json-flag-consistency.sh` | Mirrors the `json-flag-consistency` CI job locally |
+| `tests/cli/test-json-flag-consistency-tempdir.sh` | Adds local temp-workspace coverage for JSON flag behavior |
 
 ## Git Hooks
 

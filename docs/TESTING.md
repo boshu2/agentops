@@ -18,7 +18,7 @@ Testing ensures AgentOps skills, hooks, and the `ao` CLI work correctly across c
 
 ## Test Tiers
 
-The master runner `tests/run-all.sh` organizes tests into tiers by speed and dependency requirements:
+`tests/run-all.sh` is a targeted tier runner for static, smoke, and functional suites. It is useful while developing tests, but it is not the full repo CI gate. Use `scripts/pre-push-gate.sh --fast` for changed-file push readiness and `scripts/ci-local-release.sh` for release-grade local validation.
 
 | Tier | Name | Requires | What it covers |
 |------|------|----------|----------------|
@@ -42,7 +42,7 @@ Run a specific tier:
 | Quick static validation | `./tests/run-all.sh` | ~10s |
 | Full test suite | `./tests/run-all.sh --all` | 2-5 min |
 | Go unit tests | `cd cli && make test` | ~15s |
-| Push-time local gate | `scripts/pre-push-gate.sh` | ~30-90s |
+| Push-time changed-file gate | `scripts/pre-push-gate.sh --fast --scope worktree` | ~30-90s |
 | Activate repo hooks | `bash scripts/install-dev-hooks.sh` | ~1s |
 | Go build + vet + changed-scope race | `scripts/validate-go-fast.sh` | ~20s |
 | AgentOps eval canaries | `scripts/eval-agentops.sh --fast` | ~20s |
@@ -52,8 +52,11 @@ Run a specific tier:
 | Skill integrity (heal) | `bash skills/heal-skill/scripts/heal.sh --strict` | ~15s |
 | Doc validation | `./tests/docs/validate-doc-release.sh` | ~10s |
 | Contract compatibility | `./scripts/check-contract-compatibility.sh` | ~10s |
+| Fast release-grade local gate | `scripts/ci-local-release.sh --fast` | ~3-5 min |
 | Full CI gate (local) | `scripts/ci-local-release.sh` | 5-10 min |
 | Native Windows smoke | `powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1` | ~1-3 min |
+
+`pre-push-gate.sh --fast` is scoped to the selected diff and skips unrelated surfaces. `ci-local-release.sh --fast` is broader: it still runs the local CI matrix, but skips race tests, hook integration tests, SBOM generation, and the security toolchain gate.
 
 ### AgentOps eval canaries
 

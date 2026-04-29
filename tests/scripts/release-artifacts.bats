@@ -166,3 +166,15 @@ write_artifact_files() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"release audit artifact validation passed"* ]]
 }
+
+@test "validate-release-audit-artifacts scopes supplied audit docs" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    write_audit "2.29.0" "20260322T212222Z"
+    write_audit "2.30.0" "20260330T231401Z"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" \
+        "$FAKE_REPO/docs/releases/2026-03-22-v2.29.0-audit.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"release audit artifact validation passed"* ]]
+}

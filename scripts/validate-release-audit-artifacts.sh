@@ -91,11 +91,23 @@ validate_legacy_artifacts() {
 }
 
 audit_files=()
-while IFS= read -r audit_file; do
-    audit_files+=("$audit_file")
-done < <(find "$REPO_ROOT/docs/releases" -maxdepth 1 -type f -name '*-audit.md' | sort)
+scan_all=1
+if (( $# > 0 )); then
+    scan_all=0
+    for audit_arg in "$@"; do
+        if [[ "$audit_arg" == /* ]]; then
+            audit_files+=("$audit_arg")
+        else
+            audit_files+=("$REPO_ROOT/$audit_arg")
+        fi
+    done
+else
+    while IFS= read -r audit_file; do
+        audit_files+=("$audit_file")
+    done < <(find "$REPO_ROOT/docs/releases" -maxdepth 1 -type f -name '*-audit.md' | sort)
+fi
 latest_audit=""
-if (( ${#audit_files[@]} > 0 )); then
+if [[ "$scan_all" == "1" && ${#audit_files[@]} -gt 0 ]]; then
     latest_audit="${audit_files[$((${#audit_files[@]} - 1))]}"
 fi
 
@@ -109,7 +121,7 @@ for audit in "${audit_files[@]}"; do
     artifact_dir="${artifact_dir%/}"
 
     manifest="$REPO_ROOT/$artifact_dir/release-artifacts.json"
-    if [[ ! -f "$manifest" && ! -d "$REPO_ROOT/$artifact_dir" && "$audit" != "$latest_audit" ]]; then
+    if [[ "$scan_all" == "1" && ! -f "$manifest" && ! -d "$REPO_ROOT/$artifact_dir" && "$audit" != "$latest_audit" ]]; then
         continue
     fi
 
