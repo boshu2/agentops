@@ -22,6 +22,11 @@ Required operations:
 | `artifacts` | list or fetch produced artifacts |
 | `terminal` | classify final state and failure reason |
 
+Remote compute uses the same `AgentWorker`/`AgentSession` contract. A
+GasCity-backed remote node is a provider-backed worker location, not a separate
+SSH/tmux product runtime. Bootstrap transport may prepare the node, but session
+operations still flow through the provider contract above.
+
 ## Session Fields
 
 Every `AgentSession` must expose:
@@ -36,7 +41,9 @@ Every `AgentSession` must expose:
 | `provider_request_id` | provider request/log correlation ID such as `X-GC-Request-Id` |
 | `session_id` | provider session identity |
 | `event_cursor` | last consumed stream/list cursor |
-| `status` | `starting`, `running`, `waiting`, `completed`, `failed`, `cancelled`, `lost`, or `provider_unreachable` |
+| `status` | `starting`, `running`, `waiting`, `completed`, `failed`, `cancelled`, `lost`, `provider_unreachable`, or `unknown` |
+| `command_id` | latest AgentOps remote command identity when the session is command-driven |
+| `idempotency_key` | latest idempotency key recorded before provider delivery |
 
 ## Terminal Classification
 
@@ -49,6 +56,7 @@ Terminal state must be explicit:
 | cancelled by AgentOps | `cancelled` |
 | session ID previously known but provider cannot find it | `lost` |
 | provider readiness unavailable before terminal state | `provider_unreachable` |
+| accepted command has no provable delivery outcome after crash | `unknown` |
 | stream disconnected but REST reconciliation pending | `running` with degraded stream |
 
 `lost` and `provider_unreachable` must not be reported as success.

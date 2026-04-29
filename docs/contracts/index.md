@@ -39,6 +39,13 @@ skills, the runtime, and external integrations.
     Public GasCity API/SSE boundary, mutation headers, request IDs, readiness,
     replay, versioning, and adapter rules.
 
+-   :material-lan-connect: **[Remote Compute](remote-compute.md)**
+
+    ---
+
+    Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and
+    GasCity-first remote execution contract.
+
 -   :material-robot-outline: **[AgentWorker Runtime](agent-worker.md)**
 
     ---
