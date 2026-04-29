@@ -80,8 +80,19 @@ Each resource summary carries `resource_id`, `resource_kind`, `status`, optional
 job/run identifiers, request IDs, artifacts, projection targets, timestamps, and
 provenance links. `resource_kind` must match the containing list: `run` for
 `resources.runs`, `job` for `resources.jobs`, and `wiki` for `resources.wiki`.
+For terminal daemon jobs, `/openclaw/v1/jobs` must report the same `status`,
+failure summary, artifacts, and latest event provenance as the daemon queue
+projection used by `ao daemon jobs show`.
 
 Golden fixture: `cli/internal/openclaw/testdata/consumer_snapshot_v1.json`.
+
+## Product Proof
+
+`ao daemon soak --scenario fake-executor --require-terminal --json` is the
+repeatable local proof that OpenClaw can consume terminal daemon state. The soak
+writes its scenario, filtered ledger events, JSON report, and markdown summary
+under `.agents/daemon/soaks/<run-id>/`; the report includes both daemon queue
+jobs and the matching `/openclaw/v1/jobs` resources.
 
 ## Mutation Gate
 

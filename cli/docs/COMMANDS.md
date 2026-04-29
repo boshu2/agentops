@@ -1007,6 +1007,24 @@ ao daemon service install [flags]
   -h, --help                help for install
 ```
 
+#### `ao daemon soak`
+
+Run a daemon product proof scenario
+
+```
+ao daemon soak [flags]
+```
+
+**Flags:**
+
+```
+      --duration duration   Maximum scenario duration (default 2m0s)
+  -h, --help                help for soak
+      --interval duration   Polling interval for scenario checks (default 15s)
+      --require-terminal    Fail unless scenario jobs reach terminal daemon state
+      --scenario string     Soak scenario (queue-only, fake-executor, dream) (default "queue-only")
+```
+
 #### `ao daemon status`
 
 Show daemon status

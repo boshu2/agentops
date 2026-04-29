@@ -185,6 +185,47 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	}
 }
 
+func TestOpenClawJobsReflectTerminalStatus(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{
+		RequestID: "req-openclaw-terminal",
+		JobID:     "job-openclaw-terminal",
+		JobType:   JobTypeOpenClawSnapshot,
+	}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit openclaw job: %v", err)
+	}
+	claim, err := queue.ClaimJob("job-openclaw-terminal", "worker", QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("claim openclaw job: %v", err)
+	}
+	completed, err := queue.CompleteJob(CompleteJobInput{
+		JobID:      claim.Job.JobID,
+		RequestID:  "req-openclaw-terminal-complete",
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
+		Actor:      "worker",
+		Artifacts:  map[string]string{"snapshot_status": "validated"},
+	}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("complete openclaw job: %v", err)
+	}
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+
+	var jobs openclaw.JobsResponse
+	getJSON(t, router, "/openclaw/v1/jobs", &jobs)
+	if len(jobs.Jobs) != 1 {
+		t.Fatalf("OpenClaw jobs = %#v, want one job", jobs.Jobs)
+	}
+	if jobs.Jobs[0].JobID != completed.JobID || jobs.Jobs[0].Status != string(completed.Status) {
+		t.Fatalf("OpenClaw job = %#v, want status %s for %s", jobs.Jobs[0], completed.Status, completed.JobID)
+	}
+	if jobs.Jobs[0].Artifacts["snapshot_status"] != "validated" {
+		t.Fatalf("OpenClaw artifacts = %#v, want terminal artifacts", jobs.Jobs[0].Artifacts)
+	}
+}
+
 func hasOpenClawProvenance(links []openclaw.ProvenanceLink, rel, kind, artifact string) bool {
 	for _, link := range links {
 		if link.Rel != rel || link.Kind != kind {

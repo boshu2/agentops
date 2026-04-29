@@ -127,6 +127,7 @@ The daemon stores runtime state below `.agents/daemon/`:
   projections/             # rebuilt read models
   quarantine/              # corrupt records or invalid worker output
   locks/                   # local daemon and queue coordination locks
+  soaks/                   # structured product proof runs
 ```
 
 Writes that accept or mutate jobs must append the ledger event before returning
@@ -164,6 +165,23 @@ Product `wiki.forge` execution uses `--executor-policy=gascity` and requires
 explicit `--gascity-endpoint` and `--gascity-city` configuration. The daemon
 must fail fast when those values are missing instead of inferring API readiness
 from the legacy `gc` CLI bridge.
+
+### Product Soak Proofs
+
+`ao daemon soak` writes repeatable proof runs under
+`.agents/daemon/soaks/<run-id>/`:
+
+- `scenario.json`
+- `events.jsonl`
+- `soak-report.json`
+- `summary.md`
+
+The `queue-only` scenario proves durable ingestion without claiming terminal
+success. `fake-executor --require-terminal` proves the executor path reaches a
+terminal ledger event and that `/openclaw/v1/jobs` reports the same terminal
+status and artifacts as the daemon queue projection. `dream --require-terminal`
+uses the Dream executor path and may complete or fail, but it must produce a
+terminal daemon job with artifacts rather than remaining silently queued.
 
 ## Local Trust
 
