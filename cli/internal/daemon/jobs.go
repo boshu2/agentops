@@ -35,6 +35,20 @@ type QueueMutationOptions struct {
 	Failpoint QueueFailpoint
 }
 
+// CancelJobOutcome reports how a cancellation request affected a job.
+type CancelJobOutcome string
+
+const (
+	// CancelJobOutcomeCancelled means the queue appended a cancellation event.
+	CancelJobOutcomeCancelled CancelJobOutcome = "cancelled"
+	// CancelJobOutcomeAlreadyTerminalCompleted means the job was already completed.
+	CancelJobOutcomeAlreadyTerminalCompleted CancelJobOutcome = "already_terminal_completed"
+	// CancelJobOutcomeAlreadyTerminalFailed means the job was already failed.
+	CancelJobOutcomeAlreadyTerminalFailed CancelJobOutcome = "already_terminal_failed"
+	// CancelJobOutcomeAlreadyTerminalCancelled means the job was already cancelled.
+	CancelJobOutcomeAlreadyTerminalCancelled CancelJobOutcome = "already_terminal_cancelled"
+)
+
 type Queue struct {
 	store *Store
 	opts  QueueOptions
@@ -111,6 +125,20 @@ type FailJobInput struct {
 	Failure    JobFailure
 }
 
+// CancelJobInput identifies a job cancellation request.
+type CancelJobInput struct {
+	JobID     string
+	RequestID RequestID
+	Actor     string
+	Reason    string
+}
+
+// CancelJobResult returns the job state and cancellation outcome.
+type CancelJobResult struct {
+	Job     QueueJobState    `json:"job"`
+	Outcome CancelJobOutcome `json:"outcome"`
+}
+
 func NewQueue(store *Store, opts QueueOptions) *Queue {
 	if opts.LeaseDuration <= 0 {
 		opts.LeaseDuration = time.Minute
@@ -124,7 +152,7 @@ func NewQueue(store *Store, opts QueueOptions) *Queue {
 	if opts.Now == nil {
 		opts.Now = func() time.Time { return time.Now().UTC() }
 	}
-	return &Queue{store: store, opts: opts}
+	return &Queue{store: store, opts: opts, seq: initialQueueSequence(store)}
 }
 
 func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (QueueJobState, error) {
@@ -182,12 +210,20 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 }
 
 func (q *Queue) ClaimNext(actor string, opts QueueMutationOptions) (QueueClaim, error) {
+	return q.ClaimNextMatching(actor, nil, opts)
+}
+
+// ClaimNextMatching claims the next claimable job accepted by match.
+func (q *Queue) ClaimNextMatching(actor string, match func(QueueJobState) bool, opts QueueMutationOptions) (QueueClaim, error) {
 	snapshot, err := q.Snapshot()
 	if err != nil {
 		return QueueClaim{}, err
 	}
 	for _, job := range snapshot.Jobs {
 		if !q.isClaimable(job) {
+			continue
+		}
+		if match != nil && !match(job) {
 			continue
 		}
 		return q.claimJobState(job, actor, opts)
@@ -314,6 +350,44 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
+}
+
+// CancelJob appends a terminal cancellation event for a non-terminal job.
+func (q *Queue) CancelJob(input CancelJobInput, opts QueueMutationOptions) (CancelJobResult, error) {
+	job, err := q.currentJob(input.JobID)
+	if err != nil {
+		return CancelJobResult{}, err
+	}
+	if isTerminalStatus(job.Status) {
+		return CancelJobResult{Job: job, Outcome: cancelJobTerminalOutcome(job.Status)}, nil
+	}
+	reason := strings.TrimSpace(input.Reason)
+	if reason == "" {
+		reason = "cancelled"
+	}
+	event, err := NewLedgerEvent(LedgerEventInput{
+		EventID:    q.nextEventID(EventJobCancelled, input.JobID),
+		RequestID:  q.requestID(input.RequestID, job.RequestID),
+		JobID:      input.JobID,
+		EventType:  EventJobCancelled,
+		OccurredAt: q.now(),
+		Actor:      q.actor(input.Actor),
+		Payload: map[string]any{
+			"result_status": string(JobResultCancelled),
+			"reason":        reason,
+		},
+	})
+	if err != nil {
+		return CancelJobResult{}, err
+	}
+	if err := q.appendQueueEvent(event, opts); err != nil {
+		return CancelJobResult{}, err
+	}
+	updated, err := q.currentJob(input.JobID)
+	if err != nil {
+		return CancelJobResult{}, err
+	}
+	return CancelJobResult{Job: updated, Outcome: CancelJobOutcomeCancelled}, nil
 }
 
 func (q *Queue) Snapshot() (QueueSnapshot, error) {
@@ -493,13 +567,14 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 			jobsByID[event.JobID] = job
 			order = append(order, event.JobID)
 		}
-		appendQueueRequestID(job, event.RequestID)
-		job.LastEventID = event.EventID
-		job.UpdatedAt = event.OccurredAt
-		if job.CreatedAt == "" && event.EventType == EventJobAccepted {
-			job.CreatedAt = event.OccurredAt
+		if q.applyQueueEvent(job, event) {
+			appendQueueRequestID(job, event.RequestID)
+			job.LastEventID = event.EventID
+			job.UpdatedAt = event.OccurredAt
+			if job.CreatedAt == "" && event.EventType == EventJobAccepted {
+				job.CreatedAt = event.OccurredAt
+			}
 		}
-		q.applyQueueEvent(job, event)
 	}
 	for _, jobID := range order {
 		job := *jobsByID[jobID]
@@ -517,9 +592,9 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 	return snapshot, nil
 }
 
-func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) {
+func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if isTerminalStatus(job.Status) {
-		return
+		return false
 	}
 	if jobType, ok, err := jobTypeFromPayload(event.Payload); err == nil && ok {
 		job.JobType = jobType
@@ -577,6 +652,7 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) {
 	case EventJobCancelled:
 		job.Status = JobStatusCancelled
 	}
+	return true
 }
 
 func (q *Queue) isClaimable(job QueueJobState) bool {
@@ -646,6 +722,30 @@ func (q *Queue) requestID(input RequestID, fallback string) RequestID {
 		return input
 	}
 	return RequestID(fallback)
+}
+
+func initialQueueSequence(store *Store) uint64 {
+	if store == nil {
+		return 0
+	}
+	replay, err := store.ReplayLedgerReadOnly()
+	if err != nil {
+		return 0
+	}
+	return uint64(len(replay.Events))
+}
+
+func cancelJobTerminalOutcome(status JobStatus) CancelJobOutcome {
+	switch status {
+	case JobStatusCompleted:
+		return CancelJobOutcomeAlreadyTerminalCompleted
+	case JobStatusFailed:
+		return CancelJobOutcomeAlreadyTerminalFailed
+	case JobStatusCancelled:
+		return CancelJobOutcomeAlreadyTerminalCancelled
+	default:
+		return CancelJobOutcomeCancelled
+	}
 }
 
 func appendQueueRequestID(job *QueueJobState, requestID string) {
