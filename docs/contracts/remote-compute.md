@@ -180,5 +180,7 @@ RC-01 is valid when these checks pass:
 rg -n "RemoteTarget|RemoteNode|RemoteSession|RemoteCommand|GasCity|bootstrap_transport" docs/contracts/remote-compute.md
 python3 -m json.tool schemas/remote-compute-target.schema.json >/dev/null
 python3 -m json.tool schemas/remote-session-event.schema.json >/dev/null
+bash tests/scripts/test-remote-compute-contracts.sh
+scripts/eval-agentops.sh --suite evals/agentops-core/remote-compute-contracts.json
 bash scripts/check-contract-compatibility.sh
 ```

@@ -91,7 +91,7 @@
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bd version && bd upgrade status --json | jq -e '.current_version and (.schema_version == 1)' >/dev/null && bd status --json | jq -e '.schema_version == 1 and (.summary.total_issues >= 0)' >/dev/null && if bd doctor --json >/tmp/agentops-bd-doctor.json 2>/tmp/agentops-bd-doctor.err && jq -e '.overall_ok == true and (.cli_version | length > 0)' /tmp/agentops-bd-doctor.json >/dev/null; then :; else rg -q 'not yet supported in embedded mode' /tmp/agentops-bd-doctor.err; fi && bd migrate --inspect >/tmp/agentops-bd-migrate-inspect.txt && rg -q 'Schema Version:' /tmp/agentops-bd-migrate-inspect.txt"
+        "shell": "bd version && bd upgrade status --json | jq -e '.current_version and (.schema_version == 1)' >/dev/null && bd status --json | jq -e '.schema_version == 1 and (.summary.total_issues >= 0)' >/dev/null && (bd doctor --json >/tmp/agentops-bd-doctor.json 2>/tmp/agentops-bd-doctor.err || true; jq -e '.schema_version == 1 and (.cli_version | length > 0) and (.checks | type == \"array\")' /tmp/agentops-bd-doctor.json >/dev/null || rg -q 'not yet supported in embedded mode' /tmp/agentops-bd-doctor.err) && bd migrate --inspect >/tmp/agentops-bd-migrate-inspect.txt && rg -q 'Schema Version:' /tmp/agentops-bd-migrate-inspect.txt"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

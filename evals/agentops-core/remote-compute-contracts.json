@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.remote-compute-contracts",
+  "name": "AgentOps Remote Compute Contracts Canary",
+  "description": "Offline public canary for the product-neutral remote compute contract, GasCity-first provider boundary, durable command ledger semantics, schema cataloguing, and the private Bushido boundary.",
+  "domain": "mixed",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "remote-compute", "contracts", "schemas", "gascity", "agentworker"],
+  "allowed_runtimes": ["static", "shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 180
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 3, "threshold": 1, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "artifact_quality", "weight": 2, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "safety", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "remote-compute-contract-tests",
+      "title": "remote compute contract test suite passes",
+      "kind": "command",
+      "objective": "Exercise remote compute schema invariants, product boundary text, GasCity integration alignment, AgentWorker alignment, catalog entries, and public Bushido namespace absence.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash tests/scripts/test-remote-compute-contracts.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "PASS: remote compute contract tests"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "runtime_compatibility", "safety"],
+      "critical": true
+    },
+    {
+      "id": "remote-compute-contract-compatibility",
+      "title": "contract compatibility gate includes remote compute artifacts",
+      "kind": "command",
+      "objective": "Keep the remote compute contract and schemas catalogued in the repository documentation contract gate.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/check-contract-compatibility.sh"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "remote-compute.md catalogued in documentation-index.md"},
+        {"type": "stdout_contains", "value": "schemas/remote-compute-target.schema.json is valid JSON"},
+        {"type": "stdout_contains", "value": "schemas/remote-session-event.schema.json is valid JSON"},
+        {"type": "stdout_contains", "value": "Contract compatibility check passed."},
+        {"type": "stdout_contains", "value": "Failures: 0"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "remote-compute-product-boundary",
+      "title": "remote compute product boundary remains product-neutral",
+      "kind": "artifact_check",
+      "objective": "Lock the GasCity-first architecture, SSH/tmux bootstrap limit, durable delivery_unknown recovery path, and private Bushido boundary.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/remote-compute.md", "value": "private dogfood target and soak harness"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/remote-compute.md", "value": "create an `ao bushido` command family"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/remote-compute.md", "value": "SSH/tmux is bootstrap and rescue only"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/remote-compute.md", "value": "delivery_unknown"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/remote-compute.md", "value": "AgentOps must record command intent before delivery to GasCity"}
+      ],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "remote-compute-schema-catalog",
+      "title": "remote compute schemas remain catalogued",
+      "kind": "artifact_check",
+      "objective": "Keep the target and session-event schemas visible in schema and documentation indexes.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/SCHEMAS.md", "value": "remote-compute-target.schema.json"},
+        {"type": "artifact_contains", "target": "../../docs/SCHEMAS.md", "value": "remote-session-event.schema.json"},
+        {"type": "artifact_contains", "target": "../../docs/documentation-index.md", "value": "[Remote Compute Contract](contracts/remote-compute.md)"},
+        {"type": "artifact_contains", "target": "../../docs/documentation-index.md", "value": "[Remote Compute Target Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json)"},
+        {"type": "artifact_contains", "target": "../../docs/documentation-index.md", "value": "[Remote Session Event Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-session-event.schema.json)"}
+      ],
+      "dimensions": ["process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "remote-compute-agentworker-gascity-alignment",
+      "title": "AgentWorker and GasCity contracts stay aligned with remote compute",
+      "kind": "artifact_check",
+      "objective": "Ensure the adjacent provider and worker contracts continue to describe the same GasCity-backed AgentWorker path and command idempotency semantics.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../docs/contracts/agent-worker.md", "value": "Remote compute uses the same"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/agent-worker.md", "value": "idempotency_key"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/agent-worker.md", "value": "unknown"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/gascity-integration.md", "value": "## Remote Compute Usage"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/gascity-integration.md", "value": "public GasCity API/SSE surface"},
+        {"type": "artifact_contains", "target": "../../docs/contracts/gascity-integration.md", "value": "delivery_unknown"}
+      ],
+      "dimensions": ["correctness", "process_adherence", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "remote-compute-no-bushido-cli",
+      "title": "public Bushido CLI namespace remains absent",
+      "kind": "command",
+      "objective": "Prevent remote compute work from exposing a product-specific ao bushido command family.",
+      "runtime": "shell",
+      "timeout_seconds": 30,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "test ! -e cli/cmd/ao/bushido.go && ! grep -Eq '### `ao bushido`|#### `ao bushido`' cli/docs/COMMANDS.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["safety", "process_adherence"],
+      "critical": true
+    }
+  ]
+}

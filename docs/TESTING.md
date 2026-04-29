@@ -66,6 +66,15 @@ set before changing eval contracts, `ao eval`, or the canary suites:
 scripts/eval-agentops.sh --fast
 ```
 
+Remote compute has a deterministic canary at
+`evals/agentops-core/remote-compute-contracts.json` and a focused shell suite at
+`tests/scripts/test-remote-compute-contracts.sh`. Run it while iterating on
+remote-compute RC slices:
+
+```bash
+scripts/eval-agentops.sh --suite evals/agentops-core/remote-compute-contracts.json
+```
+
 The runner writes artifacts under `.agents/evals/runs/`. If a promoted baseline
 exists under `.agents/evals/baselines/`, the runner compares the new run against
 it and fails on regressions. In `--fast` mode it also writes `coverage.json` and
