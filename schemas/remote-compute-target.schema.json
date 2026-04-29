@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/remote-compute-target.schema.json",
+  "title": "AgentOps Remote Compute Target v1",
+  "description": "Product-neutral target configuration for a GasCity-backed remote compute node. Secrets are referenced, never embedded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "target_id",
+    "provider",
+    "gascity",
+    "bootstrap_transport",
+    "bootstrap_profile",
+    "auth_ref",
+    "capabilities",
+    "redaction"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "target_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["gascity"]
+    },
+    "gascity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "city"],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "supervisor_hint": {
+          "type": "string"
+        },
+        "api_contract_version": {
+          "type": "string"
+        }
+      }
+    },
+    "bootstrap_transport": {
+      "type": "string",
+      "enum": ["ssh", "local", "manual", "none"]
+    },
+    "bootstrap_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport"],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "enum": ["ssh", "local", "manual", "none"]
+        },
+        "host": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "workdir": {
+          "type": "string"
+        },
+        "gc_binary": {
+          "type": "string"
+        },
+        "supervisor_command": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "auth_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["keychain", "env", "file", "agent", "none"]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_sse",
+        "sessions",
+        "transcripts",
+        "artifacts",
+        "cancel",
+        "provider_readiness",
+        "context_sync"
+      ],
+      "properties": {
+        "api_sse": {
+          "type": "boolean"
+        },
+        "sessions": {
+          "type": "boolean"
+        },
+        "transcripts": {
+          "type": "boolean"
+        },
+        "artifacts": {
+          "type": "boolean"
+        },
+        "cancel": {
+          "type": "boolean"
+        },
+        "provider_readiness": {
+          "type": "boolean"
+        },
+        "context_sync": {
+          "type": "boolean"
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["omit_secrets", "fields"],
+      "properties": {
+        "omit_secrets": {
+          "type": "boolean",
+          "const": true
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

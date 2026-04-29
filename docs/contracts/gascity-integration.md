@@ -89,6 +89,20 @@ The first adapter must cover:
 Session IDs and aliases returned by GasCity must be persisted in daemon ledger
 events before AgentOps reports accepted daemon work as running.
 
+## Remote Compute Usage
+
+Remote compute targets use GasCity as the product session substrate. AgentOps
+may use SSH, local shell, or manual setup as `bootstrap_transport` to install,
+start, or diagnose a GC node, but prompt delivery, attach, nudge, cancel,
+event replay, transcripts, artifacts, and terminal classification must use the
+public GasCity API/SSE surface.
+
+For every remote command, AgentOps records command intent and idempotency before
+delivery. If the process crashes after an attempted delivery but before a
+provider acknowledgement is durable, recovery records `delivery_unknown` and
+reconciles through GasCity request IDs, event replay, transcript evidence, or
+artifact evidence before retrying.
+
 ## Event And SSE Replay
 
 The adapter must support both list and stream forms:
