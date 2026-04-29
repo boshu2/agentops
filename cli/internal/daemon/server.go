@@ -77,6 +77,21 @@ type SubmitJobResponse struct {
 	IdempotencyKey   string           `json:"idempotency_key,omitempty"`
 }
 
+type CancelJobRequest struct {
+	RequestID string `json:"request_id,omitempty"`
+	JobID     string `json:"job_id"`
+	Reason    string `json:"reason,omitempty"`
+}
+
+type CancelJobResponse struct {
+	Cancelled        bool             `json:"cancelled"`
+	Outcome          CancelJobOutcome `json:"outcome"`
+	Job              QueueJobState    `json:"job"`
+	ProjectionStatus ProjectionStatus `json:"projection_status"`
+	ProjectionLag    ProjectionLag    `json:"projection_lag"`
+	DegradedReasons  []string         `json:"degraded_reasons,omitempty"`
+}
+
 type readOnlyState struct {
 	Replay      ReplayResult
 	Queue       QueueSnapshot
@@ -98,6 +113,7 @@ func NewDaemonRouter(store *Store, opts ServerOptions) http.Handler {
 	server.registerReadOnlyRoutes(mux)
 	for _, prefix := range []string{"", "/v1"} {
 		mux.HandleFunc(prefix+"/jobs", server.handleSubmitJob)
+		mux.HandleFunc(prefix+"/jobs/cancel", server.handleCancelJob)
 	}
 	mux.HandleFunc(openclaw.TriggerJobsPath, server.handleOpenClawTriggerJob)
 	return mux
@@ -390,6 +406,57 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) {
+		return
+	}
+	policy := s.mutationPolicy()
+	if err := AuthorizeMutation(r, policy); err != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
+		return
+	}
+	var req CancelJobRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+		return
+	}
+	queue := NewQueue(s.store, s.queueOptions())
+	cancelled, err := queue.CancelJob(CancelJobInput{
+		RequestID: RequestID(req.RequestID),
+		JobID:     req.JobID,
+		Actor:     "ao-http",
+		Reason:    req.Reason,
+	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, ErrFailpoint) {
+			status = http.StatusServiceUnavailable
+		}
+		writeJSON(w, status, map[string]string{"error": err.Error()})
+		return
+	}
+	projectionStatus := ProjectionStatusCurrent
+	var degradedReasons []string
+	state, err := s.readState()
+	lag := ProjectionLag{}
+	if err != nil {
+		projectionStatus = ProjectionStatusDegraded
+		degradedReasons = []string{err.Error()}
+	} else {
+		projectionStatus = state.Projections.Manifests[ProjectionDaemonJobStatus].Status
+		degradedReasons = state.Projections.DegradedReasons
+		lag = state.Lag
+	}
+	writeJSON(w, http.StatusAccepted, CancelJobResponse{
+		Cancelled:        cancelled.Job.Status == JobStatusCancelled,
+		Outcome:          cancelled.Outcome,
+		Job:              cancelled.Job,
+		ProjectionStatus: projectionStatus,
+		ProjectionLag:    lag,
+		DegradedReasons:  degradedReasons,
+	})
+}
+
 func (s *ReadOnlyServer) readState() (readOnlyState, error) {
 	replay, err := s.store.ReplayLedgerReadOnly()
 	if err != nil {
@@ -553,7 +620,7 @@ func (s *ReadOnlyServer) mutationPolicy() MutationPolicy {
 		policy.TokenHeader = DefaultMutationTokenHeader
 	}
 	if len(policy.AllowedPaths) == 0 {
-		policy.AllowedPaths = []string{"/jobs", "/v1/jobs", openclaw.TriggerJobsPath}
+		policy.AllowedPaths = []string{"/jobs", "/v1/jobs", "/jobs/cancel", "/v1/jobs/cancel", openclaw.TriggerJobsPath}
 	}
 	if len(policy.AllowedMethods) == 0 {
 		policy.AllowedMethods = []string{http.MethodPost}

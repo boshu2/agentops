@@ -369,6 +369,8 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 		MutationPolicy: daemonpkg.DefaultMutationPolicy(token, []string{
 			"/jobs",
 			"/v1/jobs",
+			"/jobs/cancel",
+			"/v1/jobs/cancel",
 			"/openclaw/v1/triggers/jobs",
 		}),
 	})

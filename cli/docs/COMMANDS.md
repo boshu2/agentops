@@ -850,6 +850,99 @@ ao daemon [command]
 
 **Subcommands:**
 
+#### `ao daemon events`
+
+Inspect daemon events
+
+```
+ao daemon events [command]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for events
+      --url string   Daemon base URL (defaults to activation file)
+```
+
+##### `ao daemon events tail`
+
+Show daemon events after an optional event id
+
+```
+ao daemon events tail [flags]
+```
+
+**Flags:**
+
+```
+      --after string   Only show events after this event id
+  -h, --help           help for tail
+```
+
+#### `ao daemon jobs`
+
+Inspect and control daemon jobs
+
+```
+ao daemon jobs [command]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for jobs
+      --url string   Daemon base URL (defaults to activation file)
+```
+
+##### `ao daemon jobs cancel`
+
+Cancel a daemon job
+
+```
+ao daemon jobs cancel <job-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for cancel
+      --reason string       Cancellation reason
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+```
+
+##### `ao daemon jobs list`
+
+List daemon jobs
+
+```
+ao daemon jobs list [flags]
+```
+
+##### `ao daemon jobs show`
+
+Show a daemon job
+
+```
+ao daemon jobs show <job-id> [flags]
+```
+
+##### `ao daemon jobs wait`
+
+Wait for a daemon job to reach terminal state
+
+```
+ao daemon jobs wait <job-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for wait
+      --timeout duration   Maximum time to wait for terminal job state (default 30s)
+```
+
 #### `ao daemon ready`
 
 Check daemon readiness

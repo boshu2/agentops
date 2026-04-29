@@ -299,6 +299,74 @@ func TestOpenClawTriggerRejectsNonAllowlistedJobType(t *testing.T) {
 	}
 }
 
+func TestDaemonJobsCancelStaticRouteUsesMutationPolicy(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-cancel", JobID: "job-cancel", JobType: JobTypeRPIRun}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	router := NewDaemonRouter(store, ServerOptions{
+		Now: func() time.Time { return now },
+		MutationPolicy: DefaultMutationPolicy("secret-token", []string{
+			"/jobs/cancel",
+			"/v1/jobs/cancel",
+		}),
+	})
+
+	for _, tc := range []struct {
+		name       string
+		method     string
+		path       string
+		token      string
+		origin     string
+		remoteAddr string
+		wantStatus int
+	}{
+		{name: "missing token", method: http.MethodPost, path: "/v1/jobs/cancel", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusForbidden},
+		{name: "bad token", method: http.MethodPost, path: "/v1/jobs/cancel", token: "wrong", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusForbidden},
+		{name: "bad method", method: http.MethodGet, path: "/v1/jobs/cancel", token: "secret-token", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusMethodNotAllowed},
+		{name: "cross origin", method: http.MethodPost, path: "/v1/jobs/cancel", token: "secret-token", origin: "https://example.com", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusForbidden},
+		{name: "non local remote", method: http.MethodPost, path: "/v1/jobs/cancel", token: "secret-token", remoteAddr: "192.0.2.1:51111", wantStatus: http.StatusForbidden},
+		{name: "bad path", method: http.MethodPost, path: "/v1/jobs/job-cancel/cancel", token: "secret-token", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusNotFound},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(`{"job_id":"job-cancel","reason":"operator"}`))
+			req.RemoteAddr = tc.remoteAddr
+			if tc.token != "" {
+				req.Header.Set(DefaultMutationTokenHeader, tc.token)
+			}
+			if tc.origin != "" {
+				req.Header.Set("Origin", tc.origin)
+			}
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+			if resp.Code != tc.wantStatus {
+				t.Fatalf("%s status = %d body=%s, want %d", tc.name, resp.Code, resp.Body.String(), tc.wantStatus)
+			}
+			snapshot, err := queue.Snapshot()
+			if err != nil {
+				t.Fatalf("snapshot: %v", err)
+			}
+			if snapshot.Jobs[0].Status != JobStatusQueued {
+				t.Fatalf("unauthorized cancel mutated status to %q", snapshot.Jobs[0].Status)
+			}
+		})
+	}
+
+	resp := postDaemonCancel(t, router, `{"request_id":"req-cancel-op","job_id":"job-cancel","reason":"operator"}`, "secret-token", "/v1/jobs/cancel")
+	if resp.Code != http.StatusAccepted {
+		t.Fatalf("authorized cancel status = %d body=%s, want 202", resp.Code, resp.Body.String())
+	}
+	var body CancelJobResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode cancel response: %v", err)
+	}
+	if !body.Cancelled || body.Outcome != CancelJobOutcomeCancelled || body.Job.Status != JobStatusCancelled {
+		t.Fatalf("cancel response = %#v, want cancelled terminal job", body)
+	}
+}
+
 func openClawTriggerRouter(t *testing.T, store *Store, now *time.Time) http.Handler {
 	t.Helper()
 	return NewDaemonRouter(store, ServerOptions{
@@ -319,6 +387,19 @@ func postOpenClawTrigger(t *testing.T, handler http.Handler, payload, token, fai
 	}
 	if failpoint != "" {
 		req.Header.Set("X-AgentOps-Failpoint", failpoint)
+	}
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+	return resp
+}
+
+func postDaemonCancel(t *testing.T, handler http.Handler, payload, token, path string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(payload))
+	req.RemoteAddr = "127.0.0.1:51111"
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set(DefaultMutationTokenHeader, token)
 	}
 	resp := httptest.NewRecorder()
 	handler.ServeHTTP(resp, req)

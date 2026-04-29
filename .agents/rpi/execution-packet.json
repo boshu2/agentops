@@ -1,37 +1,61 @@
 {
   "schema_version": 1,
-  "run_id": "discovery-2026-04-29-tb-02-queue-claim-cancel-invariants",
-  "objective": "TB-02 queue claim/cancel invariants",
-  "epic_id": "agentops-31c",
-  "issue_ids": ["agentops-31c.1"],
-  "plan_path": ".agents/plans/2026-04-29-tb-02-queue-claim-cancel-invariants.md",
-  "research_path": ".agents/research/2026-04-29-tb-02-queue-claim-cancel-invariants.md",
-  "design_path": ".agents/design/2026-04-29-design-tb-02-queue-claim-cancel-invariants.md",
-  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-tb-02-queue-claim-cancel-invariants.md",
-  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "run_id": "rpi-2026-04-29-daemon-tracer-bullets-remaining",
+  "objective": "Complete AgentOps daemon tracer bullets TB-04 through TB-07",
+  "epic_id": "agentops-n7b",
+  "issue_ids": [
+    "agentops-n7b.1",
+    "agentops-n7b.2",
+    "agentops-n7b.3",
+    "agentops-n7b.4"
+  ],
+  "plan_path": ".agents/plans/2026-04-29-agentops-daemon-tracer-bullets.md",
+  "research_path": ".agents/research/2026-04-29-bushido-overnight-soak-introspection.md",
+  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-agentops-daemon-tracer-bullets.md",
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd available; created epic agentops-31c and task agentops-31c.1"
+    "reason": "bd available; created epic agentops-n7b with children agentops-n7b.1 through agentops-n7b.4"
   },
+  "contract_surfaces": [
+    "cli/internal/daemon",
+    "cli/internal/agentworker",
+    "cli/internal/gascity",
+    "cli/internal/overnight",
+    "cli/internal/wikiworker",
+    "cli/cmd/ao",
+    "docs/contracts/agentops-daemon.md",
+    "docs/contracts/gascity-integration.md",
+    "docs/contracts/openclaw-consumer-api.md"
+  ],
   "done_criteria": [
-    "Queue.ClaimNextMatching skips unsupported jobs",
-    "Queue.CancelJob appends ledger-only cancellation for queued/running jobs",
-    "First terminal event wins during replay",
-    "Expired running jobs are reclaimable after restart",
-    "TB-02 validation command passes"
+    "TB-04 operator job list/show/wait/cancel/events UX passes mutation-scope and JSON/text parity tests",
+    "TB-05 wiki.forge jobs reach terminal supervisor state through AgentWorker fake policy and GasCity product policy fails closed without config",
+    "TB-06 dream.run daemon executor reaches terminal state with separate wait and execution timeout semantics",
+    "TB-07 daemon soak scenarios write structured proof and OpenClaw sees terminal status from daemon projections",
+    "All remaining slice validation commands and full affected-package validation pass"
   ],
   "validation_commands": [
-    "cd cli && go test ./internal/daemon -run 'TestQueue_ClaimNextMatchingSkipsUnsupported|TestQueue_CancelJob|TestQueue_DuplicateTerminalEventsDoNotMutateFinalState|TestQueue_RestartReclaimsExpiredRunningJob|TestJobStatusTransitionMatrix'",
-    "cd cli && go test ./internal/daemon"
+    "cd cli && go test ./internal/daemon ./cmd/ao -run 'TestDaemonJobsList|TestDaemonJobsShow|TestDaemonJobsWaitCompleted|TestDaemonJobsWaitTimeout|TestDaemonJobsCancelWritesTerminalEvent|TestDaemonJobsCancelStaticRouteUsesMutationPolicy|TestDaemonJobsJSONTextParity|TestThreatModel|TestMutationPolicy'",
+    "cd cli && go test ./internal/daemon ./internal/wikiworker ./internal/agentworker ./internal/gascity ./cmd/ao -run 'TestWikiForgeExecutor|TestWikiForgeRunner|TestWikiWorker|TestGasCityAgentWorker|TestDoctorProductRuntime|TestForgeTier1_AgentWorker'",
+    "cd cli && go test ./internal/daemon ./internal/overnight ./cmd/ao -run 'TestDreamExecutor|TestDreamExecutorExecutionTimeoutFailsJob|TestOvernightDaemonSubmitQueueOnly|TestOvernightDaemonWaitCompleted|TestOvernightDaemonWaitTimeoutDoesNotMarkSuccess|TestOvernightDaemonWaitFailed|TestRunLoop_HarvestPromotionCandidatesStayBounded'",
+    "cd cli && go test ./cmd/ao ./internal/daemon -run 'TestDaemonSoakQueueOnly|TestDaemonSoakRequireTerminalFailsOnQueuedJobs|TestDaemonSoakFakeExecutorWritesProof|TestOpenClawJobsReflectTerminalStatus'",
+    "ao daemon soak --scenario fake-executor --duration 2m --interval 15s --require-terminal --json"
   ],
-  "complexity": "fast",
+  "complexity": "full",
   "pre_mortem_verdict": "WARN",
   "test_levels": {
-    "required": ["L1", "L2"],
-    "recommended": [],
-    "rationale": "Internal queue API plus append-only ledger replay and file-backed store behavior."
+    "required": [
+      "L1",
+      "L2",
+      "L3"
+    ],
+    "recommended": [
+      "BF1",
+      "BF4"
+    ],
+    "rationale": "Remaining slices cross CLI, HTTP mutation policy, daemon queue execution, AgentWorker/GasCity, Dream runtime, and soak proof surfaces."
   },
-  "discovery_timestamp": "2026-04-29T11:05:59-04:00"
+  "discovery_timestamp": "2026-04-29T13:30:45-04:00"
 }
