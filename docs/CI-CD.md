@@ -1,12 +1,12 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs a 30-job validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs 32 validation jobs plus a summary aggregator. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (30 jobs) |
+| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (32 validation jobs + summary) |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
@@ -30,13 +30,13 @@ and scheduling semantics.
 
 ## validate.yml Architecture
 
-The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
+The validate workflow runs **32 validation jobs plus the summary aggregator** across 4 tiers of parallelism. Most validation jobs run independently with no `needs` dependencies, maximizing throughput.
 
 ### Job Dependency Graph
 
 ```text
                     ┌───────────────────────────────────────────────┐
-                    │         27 independent parallel jobs          │
+                    │         30 independent parallel jobs          │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
                     │  hook-preflight      validate-hooks-doc-parity│
@@ -50,6 +50,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                     │  skill-dependency-check                       │
                     │  contract-compatibility-gate                  │
                     │  memrl-health        plugin-load-test         │
+                    │  retrieval-quality                            │
                     │  go-build            windows-smoke            │
                     │  cli-integration                              │
                     │  file-manifest-overlap                        │
@@ -68,7 +69,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                       │            │              │
                     ┌─┴────────────┴──────────────┴─┐
                     │           summary             │
-                    │  (needs: ALL 30 jobs)         │
+                    │  (needs: ALL 32 validation jobs) │
                     │  if: always()                 │
                     └───────────────────────────────┘
 ```
@@ -77,7 +78,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, and `check-test-staleness` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
+Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `retrieval-quality`, `doctor-check`, and `check-test-staleness` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
 
 ## Blocking vs Soft Gates
 
@@ -89,12 +90,13 @@ These jobs run but their failure does **not** block merges:
 |-----|--------|
 | `agentops-eval-advisory` | Public eval canaries run on every PR, but baseline ratchets start advisory until variance and promotion policy are stable |
 | `security-toolchain-gate` | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check |
+| `retrieval-quality` | Offline retrieval precision is visible on every run while the flywheel benchmark baseline ratchets toward a blocking threshold |
 | `doctor-check` | Reports stale CLI references; CI environment lacks some expected tools |
 | `check-test-staleness` | Advisory -- flags tests that may need updating |
 
 ### Blocking Gates (all others)
 
-Every other job is blocking. If any of these fail, `summary` exits non-zero and the PR/push is rejected.
+Every other validation job is blocking. If any of these fail, `summary` exits non-zero and the PR/push is rejected.
 
 ## What Breaks CI
 

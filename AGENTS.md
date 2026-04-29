@@ -66,7 +66,7 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
+All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), retrieval-quality (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including `codex-runtime-sections`.
 
 ### Local Pre-Push Checklist
@@ -208,6 +208,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
+| **retrieval-quality** | Offline retrieval benchmark precision for the local knowledge flywheel | Non-blocking (`continue-on-error: true`); advisory while the precision baseline is still ratcheting |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
 | **security-toolchain-gate** | Semgrep, gosec, gitleaks, etc. | Non-blocking (`continue-on-error: true`) |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |

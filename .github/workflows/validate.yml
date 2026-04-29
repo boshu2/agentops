@@ -525,6 +525,7 @@ jobs:
   retrieval-quality:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
 
@@ -806,7 +807,7 @@ jobs:
       - name: Run ao doctor
         run: |
           echo "=== Running ao doctor ==="
-          /tmp/ao-test doctor 2>/dev/null || true
+          /tmp/ao-test doctor 2>/dev/null
           echo ""
           echo "Note: doctor may report warnings for CI-expected missing tools."
           echo "This job catches stale references and dead commands."
@@ -891,7 +892,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -918,6 +919,7 @@ jobs:
           echo "contract-compatibility-gate: ${{ needs.contract-compatibility-gate.result }}"
           echo "memrl-health: ${{ needs.memrl-health.result }}"
           echo "plugin-load-test: ${{ needs.plugin-load-test.result }}"
+          echo "retrieval-quality: ${{ needs.retrieval-quality.result }}"
           echo "go-build: ${{ needs.go-build.result }}"
           echo "windows-smoke: ${{ needs.windows-smoke.result }}"
           echo "cli-integration: ${{ needs.cli-integration.result }}"
