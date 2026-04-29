@@ -8,9 +8,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-HOOKS_DIR="$REPO_ROOT/hooks"
-HOOKS_JSON="$HOOKS_DIR/hooks.json"
-CODEX_HOOKS_JSON="$HOOKS_DIR/codex-hooks.json"
+HOOKS_DIR="${AGENTOPS_HOOKS_DIR:-$REPO_ROOT/hooks}"
+HOOKS_JSON="${AGENTOPS_HOOKS_JSON:-$HOOKS_DIR/hooks.json}"
+CODEX_HOOKS_JSON="${AGENTOPS_CODEX_HOOKS_JSON:-$HOOKS_DIR/codex-hooks.json}"
+ORPHAN_JSON_ALLOWLIST="${AGENTOPS_ORPHAN_JSON_ALLOWLIST:-}"
 
 ERRORS=0
 WARNINGS=0
@@ -19,6 +20,20 @@ pass()  { printf '\033[0;32m✓\033[0m %s\n' "$1"; }
 fail()  { printf '\033[0;31m✗\033[0m %s\n' "$1"; ERRORS=$((ERRORS + 1)); }
 warn()  { printf '\033[0;33m⚠\033[0m %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); }
 info()  { printf '\033[0;34mℹ\033[0m %s\n' "$1"; }
+
+is_allowlisted_orphan() {
+    local script="$1"
+    local item
+    IFS=',' read -r -a allowlist <<< "$ORPHAN_JSON_ALLOWLIST"
+    for item in "${allowlist[@]}"; do
+        item="${item#"${item%%[![:space:]]*}"}"
+        item="${item%"${item##*[![:space:]]}"}"
+        if [[ "$item" == "$script" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
 
 # --- Pre-flight ---
 if ! command -v jq >/dev/null 2>&1; then
@@ -68,7 +83,11 @@ for script in "${all_scripts[@]}"; do
         if grep -q 'hookSpecificOutput' "$HOOKS_DIR/$script" 2>/dev/null; then
             json_emitting=$((json_emitting + 1))
             json_emitting_list+=("$script")
-            warn "Unregistered + JSON-emitting: $script (hookSpecificOutput will be silently dropped)"
+            if is_allowlisted_orphan "$script"; then
+                warn "Allowlisted unregistered + JSON-emitting: $script"
+            else
+                fail "Unregistered + JSON-emitting: $script (hookSpecificOutput will be silently dropped)"
+            fi
         else
             non_json=$((non_json + 1))
             non_json_list+=("$script")
@@ -89,7 +108,7 @@ echo ""
 if [[ $json_emitting -eq 0 ]]; then
     pass "No unregistered hooks emitting JSON output in Claude or Codex manifests"
 else
-    warn "$json_emitting unregistered hook(s) emit JSON that goes nowhere"
+    warn "$json_emitting unregistered hook(s) emit JSON; allowlist required for non-blocking exceptions"
 fi
 
 if [[ $WARNINGS -gt 0 || $ERRORS -gt 0 ]]; then
@@ -97,6 +116,7 @@ if [[ $WARNINGS -gt 0 || $ERRORS -gt 0 ]]; then
     echo "Warnings: $WARNINGS  Errors: $ERRORS"
 fi
 
-# Advisory mode: exit 0 even with warnings
-# To promote to hard gate: change to exit $((ERRORS > 0 ? 1 : 0))
+if [[ $ERRORS -gt 0 ]]; then
+    exit 1
+fi
 exit 0

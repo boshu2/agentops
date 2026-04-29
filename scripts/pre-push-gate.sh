@@ -315,7 +315,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_CONTRACT=0
     fi
-    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/validate-ci-policy-parity\.sh$'; then
+    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/(validate-ci-policy-parity|validate-surface-inventory)\.sh$|^scripts/validation-surface-inventory\.json$'; then
         HAS_CI_POLICY=1
     else
         HAS_CI_POLICY=0
@@ -1038,6 +1038,22 @@ if needs_check ci_policy; then
     fi
 else
     skip "CI policy parity"
+fi
+
+# --- 29b. Validation surface inventory ---
+if needs_check ci_policy; then
+    if [[ -x scripts/validate-surface-inventory.sh ]]; then
+        if surface_inventory_output="$(./scripts/validate-surface-inventory.sh 2>&1)"; then
+            pass "validation surface inventory"
+        else
+            fail "validation surface inventory"
+            indent_output "$surface_inventory_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-surface-inventory.sh"
+    fi
+else
+    skip "validation surface inventory"
 fi
 
 # --- 30. ShellCheck on changed scripts ---

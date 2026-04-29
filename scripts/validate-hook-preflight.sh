@@ -9,6 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -16,6 +17,7 @@ errors=0
 
 pass() { echo -e "${GREEN}✓${NC} $1"; }
 fail() { echo -e "${RED}✗${NC} $1"; errors=$((errors + 1)); }
+warn() { echo -e "${YELLOW}!${NC} $1"; }
 section() { echo -e "${BLUE}$1${NC}"; }
 
 search_q() {
@@ -30,23 +32,73 @@ search_q() {
 
 cd "$REPO_ROOT"
 
-HOOK_FILES=(
-  "hooks/session-start.sh"
-  "hooks/session-end-maintenance.sh"
-  "hooks/precompact-snapshot.sh"
-  "hooks/pending-cleaner.sh"
-  "hooks/task-validation-gate.sh"
-  "hooks/dangerous-git-guard.sh"
-  "hooks/git-worker-guard.sh"
-  "hooks/pre-mortem-gate.sh"
-  "hooks/context-guard.sh"
-  "hooks/prompt-nudge.sh"
-  "hooks/ratchet-advance.sh"
-  "hooks/standards-injector.sh"
-  "hooks/stop-team-guard.sh"
+MANIFEST_FILES=(
+  "hooks/hooks.json"
+  "hooks/codex-hooks.json"
 )
 
+extract_registered_hook_files() {
+    jq -r '.. | .command? // empty' "${MANIFEST_FILES[@]}" \
+        | tr ' ' '\n' \
+        | sed -nE 's#.*(\./)?hooks/([A-Za-z0-9._-]+\.sh).*#hooks/\2#p' \
+        | sort -u
+}
+
+kill_switch_exception_reason() {
+    case "$1" in
+        hooks/go-complexity-precommit.sh)
+            printf 'advisory PostToolUse hook exits early on non-Go edits and never blocks'
+            ;;
+        hooks/go-vet-post-edit.sh)
+            printf 'advisory PostToolUse hook exits early on non-Go edits and never blocks'
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+unsafe_shell_exception_reason() {
+    case "$1" in
+        hooks/commit-review-gate.sh)
+            printf 'sed redaction expressions match literal backticks in user text, not command substitutions'
+            ;;
+        hooks/new-user-welcome.sh)
+            printf 'welcome text contains Markdown command examples inside a single-quoted heredoc'
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+HOOK_FILES=()
+if command -v jq >/dev/null 2>&1; then
+    for manifest in "${MANIFEST_FILES[@]}"; do
+        if [[ -f "$manifest" ]]; then
+            pass "$manifest exists"
+        else
+            fail "$manifest missing"
+        fi
+    done
+
+    if [[ "$errors" -eq 0 ]]; then
+        while IFS= read -r hook_file; do
+            [[ -n "$hook_file" ]] || continue
+            HOOK_FILES+=("$hook_file")
+        done < <(extract_registered_hook_files)
+    fi
+else
+    fail "jq is required to derive registered hooks from manifests"
+fi
+
 section "Hook preflight checks"
+
+if [[ "${#HOOK_FILES[@]}" -gt 0 ]]; then
+    pass "derived ${#HOOK_FILES[@]} registered hook script(s) from manifests"
+else
+    fail "no registered hook scripts derived from manifests"
+fi
 
 # 1) File presence
 for file in "${HOOK_FILES[@]}"; do
@@ -73,6 +125,8 @@ fi
 for file in "${HOOK_FILES[@]}"; do
     if search_q "AGENTOPS_HOOKS_DISABLED" "$file"; then
         pass "$file has global kill switch"
+    elif reason="$(kill_switch_exception_reason "$file")"; then
+        pass "$file has documented global kill-switch exception: $reason"
     else
         fail "$file missing AGENTOPS_HOOKS_DISABLED"
     fi
@@ -143,13 +197,17 @@ for file in "${HOOK_FILES[@]}"; do
         unsafe=1
     fi
     if grep -E '(^|[^\\$()])`[^`]+`' "$file" | grep -vE '^\s*#' >/dev/null 2>&1; then
-        fail "$file contains backtick command substitution"
-        unsafe=1
+        if reason="$(unsafe_shell_exception_reason "$file")"; then
+            warn "$file has documented literal-backtick exception: $reason"
+        else
+            fail "$file contains backtick command substitution"
+            unsafe=1
+        fi
     fi
 done
 
 if [[ "$unsafe" -eq 0 ]]; then
-    pass "no unsafe eval/backtick usage detected"
+    pass "no unallowlisted unsafe eval/backtick usage detected"
 fi
 
 # 5) Basic telemetry checks
@@ -183,12 +241,6 @@ fi
 
 section "Hook manifest guardrails"
 
-if [[ -f "hooks/hooks.json" ]]; then
-    pass "hooks/hooks.json exists"
-else
-    fail "hooks/hooks.json missing"
-fi
-
 if command -v jq >/dev/null 2>&1; then
     missing_timeout="$(
         jq -r '
@@ -200,7 +252,7 @@ if command -v jq >/dev/null 2>&1; then
           | select(.command | test("(^|[ ;{])ao "))
           | select((.timeout // 0) <= 0)
           | "\($event): \(.command)"
-        ' hooks/hooks.json
+        ' "${MANIFEST_FILES[@]}"
     )"
     if [[ -n "$missing_timeout" ]]; then
         fail "hooks/hooks.json has ao commands without timeout"
@@ -219,7 +271,7 @@ if command -v jq >/dev/null 2>&1; then
           | select(.command | contains("command -v ao"))
           | select((.command | contains("AGENTOPS_HOOKS_DISABLED")) | not)
           | "\($event): \(.command)"
-        ' hooks/hooks.json
+        ' "${MANIFEST_FILES[@]}"
     )"
     if [[ -n "$inline_missing_guard" ]]; then
         fail "inline ao hook commands missing AGENTOPS_HOOKS_DISABLED guard"
@@ -252,27 +304,16 @@ fi
 
 section "Hook manifest script-existence checks"
 
-if command -v jq >/dev/null 2>&1 && [[ -f "hooks/hooks.json" ]]; then
-    # Extract all command fields from hooks.json, resolve ${CLAUDE_PLUGIN_ROOT} to repo root
-    while IFS= read -r raw_command; do
-        # Resolve ${CLAUDE_PLUGIN_ROOT} to the repo root
-        resolved="${raw_command/\$\{CLAUDE_PLUGIN_ROOT\}/$REPO_ROOT}"
-        # Relative path for display (strip repo root prefix)
-        display="${resolved#$REPO_ROOT/}"
-        if [[ -f "$resolved" ]]; then
-            pass "hooks.json script exists: $display"
+if command -v jq >/dev/null 2>&1; then
+    for candidate in "${HOOK_FILES[@]}"; do
+        if [[ -f "$candidate" ]]; then
+            pass "manifest script exists: $candidate"
         else
-            fail "hooks.json script missing: $display (resolved from: $raw_command)"
+            fail "manifest script missing: $candidate"
         fi
-    done < <(jq -r '
-      .hooks
-      | to_entries[]
-      | .value[]?.hooks[]?
-      | select(.type == "command")
-      | .command
-    ' hooks/hooks.json)
+    done
 else
-    fail "jq or hooks/hooks.json unavailable — cannot validate script existence"
+    fail "jq unavailable — cannot validate manifest script existence"
 fi
 
 echo ""
