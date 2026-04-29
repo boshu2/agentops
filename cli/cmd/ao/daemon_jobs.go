@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -142,6 +143,9 @@ func waitForDaemonJobStatus(ctx context.Context, baseURL, jobID string, timeout 
 	for {
 		status, err := fetchDaemonStatus(ctx, baseURL)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				return daemonpkg.QueueJobState{}, fmt.Errorf("timed out waiting for daemon job %s after %s", jobID, timeout)
+			}
 			return daemonpkg.QueueJobState{}, err
 		}
 		job, ok := findDaemonJob(status.Queue.Jobs, jobID)
