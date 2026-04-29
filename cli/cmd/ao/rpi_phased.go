@@ -43,6 +43,10 @@ var (
 	phasedNoDashboard          bool
 	phasedMixed                bool
 	phasedDiscoveryArtifact    string
+	phasedDaemonSubmit         bool
+	phasedDaemonURL            string
+	phasedDaemonToken          string
+	phasedDaemonFallback       bool
 )
 
 // phaseFailureReason is a thin alias for the internal PhaseFailureReason type.
@@ -107,6 +111,10 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedNoDashboard, "no-dashboard", false, "Disable auto-opening the web dashboard")
 	phasedCmd.Flags().BoolVar(&phasedMixed, "mixed", false, "Enable cross-vendor mixed-model execution (planner and reviewer from different vendors)")
 	phasedCmd.Flags().StringVar(&phasedDiscoveryArtifact, "discovery-artifact", "", "Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation")
+	phasedCmd.Flags().BoolVar(&phasedDaemonSubmit, "daemon-submit", false, "Submit the RPI run to agentopsd instead of executing foreground phases")
+	phasedCmd.Flags().StringVar(&phasedDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
+	phasedCmd.Flags().StringVar(&phasedDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
+	phasedCmd.Flags().BoolVar(&phasedDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue foreground execution")
 	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
 	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux", "gc"))
 
@@ -153,6 +161,10 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		NoDashboard:          phasedNoDashboard,
 		Mixed:                phasedMixed,
 		DiscoveryArtifact:    phasedDiscoveryArtifact,
+		DaemonSubmit:         phasedDaemonSubmit,
+		DaemonURL:            phasedDaemonURL,
+		DaemonToken:          phasedDaemonToken,
+		DaemonFallback:       phasedDaemonFallback,
 	}
 	if phasedNoTestFirst {
 		opts.TestFirst = false
@@ -314,6 +326,11 @@ type phasedRunLifecycle struct {
 }
 
 func runRPIPhasedWithOpts(ctx context.Context, opts phasedEngineOptions, args []string) (retErr error) {
+	handled, err := maybeSubmitRPIPhasedDaemon(ctx, opts, args)
+	if handled || err != nil {
+		return err
+	}
+
 	run, err := preparePhasedRun(&opts, args)
 	if err != nil {
 		return err

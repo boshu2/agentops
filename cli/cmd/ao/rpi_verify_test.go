@@ -88,6 +88,26 @@ func TestRPIVerifyPassJSON(t *testing.T) {
 	}
 }
 
+func TestRPIVerifyLatestFlagAccepted(t *testing.T) {
+	cwd := chdirTemp(t)
+	if _, err := appendRPILedgerEvent(cwd, rpiLedgerEvent{RunID: "run-latest", Phase: "validation", Action: "completed", Details: map[string]any{"ok": true}}); err != nil {
+		t.Fatalf("append event: %v", err)
+	}
+
+	stdout, err := executeCommand("rpi", "verify", "--latest", "--json")
+	if err != nil {
+		t.Fatalf("rpi verify --latest --json returned error: %v; output=%q", err, stdout)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("expected JSON output, decode failed: %v; output=%q", err, stdout)
+	}
+	if payload["status"] != "PASS" {
+		t.Fatalf("expected status PASS, got %v", payload["status"])
+	}
+}
+
 // captureStdout moved to testutil_test.go.
 
 func corruptRPILedger(t *testing.T, cwd string) {

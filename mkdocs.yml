@@ -155,6 +155,7 @@ nav:
       - Security: SECURITY.md
       - Changelog: CHANGELOG.md
       - Upgrading: UPGRADING.md
+      - Daemon Migration: daemon-migration.md
   - Skills:
       - skills/index.md
       - Skills Reference: SKILLS.md
@@ -246,6 +247,10 @@ nav:
       - Codex Skill API: contracts/codex-skill-api.md
       - Context Assembly Interface: contracts/context-assembly-interface.md
       - Session Intelligence Trust Model: contracts/session-intelligence-trust-model.md
+      - AgentOps Daemon: contracts/agentops-daemon.md
+      - GasCity Integration: contracts/gascity-integration.md
+      - AgentWorker Runtime: contracts/agent-worker.md
+      - OpenClaw Consumer API: contracts/openclaw-consumer-api.md
       - Dream Run: contracts/dream-run-contract.md
       - Dream Report: contracts/dream-report.md
       - Swarm Evidence: contracts/swarm-evidence.md

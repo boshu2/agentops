@@ -10,6 +10,27 @@
   "commands": [
     {
       "category": "public-tested",
+      "command": "agents doctor",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "agents inspect",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "agents lint",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "anti-patterns",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -199,6 +220,34 @@
     },
     {
       "category": "public-tested",
+      "command": "daemon ready",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "daemon run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "daemon service install",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "daemon status",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "dedup",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -221,6 +270,41 @@
     {
       "category": "public-tested",
       "command": "doctor",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval baseline",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval compare",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval coverage",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scorecard",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -504,6 +588,13 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by hook helper tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "hooks run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
@@ -968,6 +1059,13 @@
       "reason": "Autonomous loop is long-running and state-modifying."
     },
     {
+      "category": "public-tested",
+      "command": "rpi mark-probed",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "unsafe-live",
       "command": "rpi nudge",
       "coverage_status": "allowlisted",
@@ -1015,6 +1113,13 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by RPI status and verification tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "scenario add",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",

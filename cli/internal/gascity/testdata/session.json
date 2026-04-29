@@ -1,0 +1,17 @@
+{
+  "id": "sess_123",
+  "kind": "agent",
+  "alias": "rpi-phase-1",
+  "state": "active",
+  "template": "agentops/codex",
+  "title": "RPI phase 1",
+  "provider": "codex",
+  "session_name": "agentops-codex-sess-123",
+  "created_at": "2026-04-28T20:15:00Z",
+  "attached": false,
+  "running": true,
+  "submission_capabilities": {
+    "supports_follow_up": true,
+    "supports_interrupt_now": true
+  }
+}

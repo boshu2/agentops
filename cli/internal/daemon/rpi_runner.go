@@ -1,0 +1,839 @@
+package daemon
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+	"time"
+
+	"github.com/boshu2/agentops/cli/internal/gascity"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
+)
+
+var (
+	ErrRPIExecutorRequired = errors.New("daemon rpi runner: executor is required")
+	ErrNoRPIJobs           = errors.New("daemon rpi runner: no claimable RPI jobs")
+)
+
+type RPIRunnerOptions struct {
+	Queue             *Queue
+	Executor          RPIPhaseExecutor
+	RegistryWriter    cliRPI.RunRegistryWriter
+	Actor             string
+	HeartbeatInterval time.Duration
+	PromptBuilder     RPIPromptBuilder
+}
+
+type RPIRunner struct {
+	store             *Store
+	queue             *Queue
+	executor          RPIPhaseExecutor
+	registryWriter    cliRPI.RunRegistryWriter
+	actor             string
+	heartbeatInterval time.Duration
+	promptBuilder     RPIPromptBuilder
+}
+
+type RPIJobRunResult struct {
+	JobID     string            `json:"job_id"`
+	RunID     string            `json:"run_id,omitempty"`
+	JobType   JobType           `json:"job_type"`
+	Status    JobStatus         `json:"status"`
+	Artifacts map[string]string `json:"artifacts,omitempty"`
+	Failure   *JobFailure       `json:"failure,omitempty"`
+}
+
+type RPIPromptBuilder interface {
+	BuildRPIPrompt(RPIPhaseExecutionRequest) (string, error)
+}
+
+type RPIPromptBuilderFunc func(RPIPhaseExecutionRequest) (string, error)
+
+func (f RPIPromptBuilderFunc) BuildRPIPrompt(req RPIPhaseExecutionRequest) (string, error) {
+	return f(req)
+}
+
+type RPIPhaseExecutor interface {
+	ExecuteRPIPhase(context.Context, RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error)
+}
+
+type RPIPhaseExecutionRequest struct {
+	Root                string
+	JobID               string
+	RunID               string
+	Goal                string
+	EpicID              string
+	ExecutionPacketPath string
+	ParentRunJobID      string
+	StartPhase          int
+	MaxPhase            int
+	Phase               int
+	PhaseName           string
+	Attempt             int
+	Backend             RPIBackend
+	GasCityCityName     string
+	GasCitySessionAlias string
+	Prompt              string
+	Progress            RPIPhaseProgressFunc
+}
+
+type RPIPhaseExecutionResult struct {
+	Status              string            `json:"status,omitempty"`
+	Artifacts           map[string]string `json:"artifacts,omitempty"`
+	RequestIDs          map[string]string `json:"request_ids,omitempty"`
+	GasCityCityName     string            `json:"gascity_city_name,omitempty"`
+	GasCitySessionID    string            `json:"gascity_session_id,omitempty"`
+	GasCitySessionAlias string            `json:"gascity_session_alias,omitempty"`
+	EventCursor         string            `json:"event_cursor,omitempty"`
+	EvidencePath        string            `json:"evidence_path,omitempty"`
+}
+
+type RPIPhaseProgress struct {
+	Phase     int
+	Status    string
+	Artifacts map[string]string
+}
+
+type RPIPhaseProgressFunc func(context.Context, RPIPhaseProgress) error
+
+type RPIPhaseExecutionError struct {
+	Code      FailureCode
+	Message   string
+	Retryable bool
+	Cause     error
+}
+
+func (e *RPIPhaseExecutionError) Error() string {
+	if strings.TrimSpace(e.Message) != "" {
+		return e.Message
+	}
+	if e.Cause != nil {
+		return e.Cause.Error()
+	}
+	return string(e.Code)
+}
+
+func (e *RPIPhaseExecutionError) Unwrap() error {
+	return e.Cause
+}
+
+func NewRPIRunner(store *Store, opts RPIRunnerOptions) (*RPIRunner, error) {
+	if store == nil {
+		return nil, errors.New("daemon rpi runner: store is required")
+	}
+	if opts.Executor == nil {
+		return nil, ErrRPIExecutorRequired
+	}
+	queue := opts.Queue
+	if queue == nil {
+		queue = NewQueue(store, QueueOptions{})
+	}
+	actor := strings.TrimSpace(opts.Actor)
+	if actor == "" {
+		actor = "agentopsd-rpi"
+	}
+	promptBuilder := opts.PromptBuilder
+	if promptBuilder == nil {
+		promptBuilder = DefaultRPIPromptBuilder{}
+	}
+	return &RPIRunner{
+		store:             store,
+		queue:             queue,
+		executor:          opts.Executor,
+		registryWriter:    opts.RegistryWriter,
+		actor:             actor,
+		heartbeatInterval: opts.HeartbeatInterval,
+		promptBuilder:     promptBuilder,
+	}, nil
+}
+
+func (r *RPIRunner) RunNextRPIJob(ctx context.Context) (RPIJobRunResult, error) {
+	claim, err := r.claimNextRPIJob()
+	if err != nil {
+		return RPIJobRunResult{}, err
+	}
+	return r.runClaimedJob(ctx, claim)
+}
+
+func (r *RPIRunner) RunRPIJob(ctx context.Context, jobID string) (RPIJobRunResult, error) {
+	snapshot, err := r.queue.Snapshot()
+	if err != nil {
+		return RPIJobRunResult{}, err
+	}
+	job, err := snapshot.jobByID(jobID)
+	if err != nil {
+		return RPIJobRunResult{}, err
+	}
+	if !isRPIJobType(job.JobType) {
+		return RPIJobRunResult{}, fmt.Errorf("%w: job %s type %s", ErrNoRPIJobs, job.JobID, job.JobType)
+	}
+	claim, err := r.queue.ClaimJob(jobID, r.actor, QueueMutationOptions{})
+	if err != nil {
+		return RPIJobRunResult{}, err
+	}
+	return r.runClaimedJob(ctx, claim)
+}
+
+func (r *RPIRunner) claimNextRPIJob() (QueueClaim, error) {
+	snapshot, err := r.queue.Snapshot()
+	if err != nil {
+		return QueueClaim{}, err
+	}
+	for _, job := range snapshot.Jobs {
+		if !isRPIJobType(job.JobType) {
+			continue
+		}
+		claim, err := r.queue.ClaimJob(job.JobID, r.actor, QueueMutationOptions{})
+		if errors.Is(err, ErrNoClaimableJobs) || errors.Is(err, ErrJobAlreadyClaimed) {
+			continue
+		}
+		if err != nil {
+			return QueueClaim{}, err
+		}
+		return claim, nil
+	}
+	return QueueClaim{}, ErrNoRPIJobs
+}
+
+func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueClaim) (RPIJobRunResult, error) {
+	_ = r.writeRPIRegistryProjection()
+	stopHeartbeat := r.startHeartbeat(ctx, claim)
+	defer stopHeartbeat()
+
+	artifacts, runID, execErr := r.executeClaim(ctx, claim)
+	if execErr != nil {
+		failure := r.failureForError(execErr)
+		job, failErr := r.queue.FailJob(FailJobInput{
+			JobID:      claim.Job.JobID,
+			RequestID:  RequestID(claim.Job.RequestID),
+			ClaimToken: claim.ClaimToken,
+			LeaseEpoch: claim.LeaseEpoch,
+			Actor:      r.actor,
+			Failure:    failure,
+		}, QueueMutationOptions{})
+		_ = r.writeRPIRegistryProjection()
+		if failErr != nil {
+			return RPIJobRunResult{}, failErr
+		}
+		return RPIJobRunResult{
+			JobID:   job.JobID,
+			RunID:   runID,
+			JobType: job.JobType,
+			Status:  job.Status,
+			Failure: job.Failure,
+		}, execErr
+	}
+
+	job, err := r.queue.CompleteJob(CompleteJobInput{
+		JobID:      claim.Job.JobID,
+		RequestID:  RequestID(claim.Job.RequestID),
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
+		Actor:      r.actor,
+		Artifacts:  artifacts,
+	}, QueueMutationOptions{})
+	_ = r.writeRPIRegistryProjection()
+	if err != nil {
+		return RPIJobRunResult{}, err
+	}
+	return RPIJobRunResult{
+		JobID:     job.JobID,
+		RunID:     runID,
+		JobType:   job.JobType,
+		Status:    job.Status,
+		Artifacts: job.Artifacts,
+	}, nil
+}
+
+func (r *RPIRunner) executeClaim(ctx context.Context, claim QueueClaim) (map[string]string, string, error) {
+	switch claim.Job.JobType {
+	case JobTypeRPIRun:
+		spec, err := RPIRunJobSpecFromPayload(claim.Job.Payload)
+		if err != nil {
+			return nil, "", err
+		}
+		return r.executeRun(ctx, claim, spec)
+	case JobTypeRPIPhase:
+		spec, err := RPIPhaseJobSpecFromPayload(claim.Job.Payload)
+		if err != nil {
+			return nil, "", err
+		}
+		result, err := r.executePhase(ctx, claim, requestFromPhaseSpec(r.root(), claim, spec))
+		return result.Artifacts, spec.RunID, err
+	default:
+		return nil, "", fmt.Errorf("%w: job %s type %s", ErrNoRPIJobs, claim.Job.JobID, claim.Job.JobType)
+	}
+}
+
+func (r *RPIRunner) executeRun(ctx context.Context, claim QueueClaim, spec RPIRunJobSpec) (map[string]string, string, error) {
+	artifacts := map[string]string{}
+	for phase := spec.StartPhase; phase <= spec.MaxPhase; phase++ {
+		phaseSpec := NewRPIPhaseJobSpec(spec.RunID, spec.Goal, phase)
+		phaseSpec.EpicID = spec.EpicID
+		phaseSpec.ParentRunJobID = claim.Job.JobID
+		phaseSpec.ExecutionPacketPath = spec.ExecutionPacketPath
+		phaseSpec.Attempt = claim.Job.Attempt
+		phaseSpec.Backend = spec.Backend
+		phaseSpec.GasCityCityName = spec.GasCityCityName
+		req := requestFromPhaseSpec(r.root(), claim, phaseSpec)
+		req.StartPhase = spec.StartPhase
+		req.MaxPhase = spec.MaxPhase
+		result, err := r.executePhase(ctx, claim, req)
+		mergeArtifacts(artifacts, result.Artifacts)
+		if err != nil {
+			return artifacts, spec.RunID, err
+		}
+	}
+	return artifacts, spec.RunID, nil
+}
+
+func (r *RPIRunner) executePhase(ctx context.Context, claim QueueClaim, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
+	if strings.TrimSpace(req.Prompt) == "" {
+		prompt, err := r.promptBuilder.BuildRPIPrompt(req)
+		if err != nil {
+			return RPIPhaseExecutionResult{}, err
+		}
+		req.Prompt = prompt
+	}
+	req.Progress = r.recordPhaseProgress(claim)
+	result, err := r.executor.ExecuteRPIPhase(ctx, req)
+	if result.Artifacts == nil {
+		result.Artifacts = map[string]string{}
+	}
+	if result.EvidencePath != "" {
+		result.Artifacts[phaseArtifactKey(req.Phase, "gascity_evidence")] = result.EvidencePath
+	}
+	if result.GasCitySessionID != "" {
+		result.Artifacts[phaseArtifactKey(req.Phase, "gascity_session_id")] = result.GasCitySessionID
+	}
+	if result.EventCursor != "" {
+		result.Artifacts[phaseArtifactKey(req.Phase, "gascity_event_cursor")] = result.EventCursor
+	}
+	return result, err
+}
+
+func (r *RPIRunner) recordPhaseProgress(claim QueueClaim) RPIPhaseProgressFunc {
+	return func(ctx context.Context, progress RPIPhaseProgress) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		artifacts := map[string]string{}
+		if progress.Phase > 0 {
+			artifacts["active_phase"] = fmt.Sprintf("%d", progress.Phase)
+		}
+		if strings.TrimSpace(progress.Status) != "" && progress.Phase > 0 {
+			artifacts[phaseArtifactKey(progress.Phase, "gascity_status")] = progress.Status
+		}
+		mergeArtifacts(artifacts, progress.Artifacts)
+		_, err := r.queue.Heartbeat(HeartbeatInput{
+			JobID:      claim.Job.JobID,
+			RequestID:  RequestID(claim.Job.RequestID),
+			ClaimToken: claim.ClaimToken,
+			LeaseEpoch: claim.LeaseEpoch,
+			Actor:      r.actor,
+			Artifacts:  artifacts,
+		}, QueueMutationOptions{})
+		return err
+	}
+}
+
+func (r *RPIRunner) startHeartbeat(ctx context.Context, claim QueueClaim) func() {
+	interval := r.heartbeatInterval
+	if interval <= 0 {
+		interval = r.queue.opts.LeaseDuration / 2
+	}
+	if interval <= 0 {
+		return func() {}
+	}
+	heartbeatCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-heartbeatCtx.Done():
+				return
+			case <-ticker.C:
+				_, err := r.queue.Heartbeat(HeartbeatInput{
+					JobID:      claim.Job.JobID,
+					RequestID:  RequestID(claim.Job.RequestID),
+					ClaimToken: claim.ClaimToken,
+					LeaseEpoch: claim.LeaseEpoch,
+					Actor:      r.actor,
+				}, QueueMutationOptions{})
+				if err != nil {
+					return
+				}
+			}
+		}
+	}()
+	return func() {
+		cancel()
+		<-done
+	}
+}
+
+func (r *RPIRunner) writeRPIRegistryProjection() error {
+	projection, err := r.store.RebuildRPIRegistryProjection()
+	if err != nil {
+		return err
+	}
+	return WriteRPIRegistryProjection(r.root(), projection, r.registryWriter)
+}
+
+func (r *RPIRunner) failureForError(err error) JobFailure {
+	failure := JobFailure{
+		Code:      FailureRequestRejected,
+		Message:   err.Error(),
+		Retryable: false,
+	}
+	var execErr *RPIPhaseExecutionError
+	if errors.As(err, &execErr) {
+		if execErr.Code != "" {
+			failure.Code = execErr.Code
+		}
+		failure.Retryable = execErr.Retryable
+		if strings.TrimSpace(execErr.Message) != "" {
+			failure.Message = execErr.Message
+		}
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		failure.Code = FailureDaemonUnavailable
+		failure.Retryable = true
+	}
+	if providerFailureLooksRetryable(failure.Code) {
+		failure.Retryable = true
+	}
+	return failure
+}
+
+func (r *RPIRunner) root() string {
+	return r.store.root
+}
+
+type DefaultRPIPromptBuilder struct{}
+
+func (DefaultRPIPromptBuilder) BuildRPIPrompt(req RPIPhaseExecutionRequest) (string, error) {
+	if strings.TrimSpace(req.Goal) == "" {
+		return "", errors.New("rpi phase prompt: goal is required")
+	}
+	phaseName := strings.TrimSpace(req.PhaseName)
+	if phaseName == "" {
+		phaseName = RPIPhaseName(req.Phase)
+	}
+	return fmt.Sprintf(
+		"Run AgentOps RPI phase %d (%s) for run %s.\n\nGoal:\n%s\n\nProduce the expected AgentOps RPI artifacts under .agents/rpi for this phase, preserve durable evidence, and finish with a concise phase summary.",
+		req.Phase,
+		phaseName,
+		req.RunID,
+		req.Goal,
+	), nil
+}
+
+type GasCityRPIClient interface {
+	CityReadiness(context.Context, string) (gascity.ReadinessResponse, error)
+	CreateSession(context.Context, string, gascity.SessionCreateRequest) (gascity.Session, gascity.ResponseMeta, error)
+	SubmitSession(context.Context, string, string, gascity.SessionSubmitRequest) (gascity.SessionSubmitResponse, gascity.ResponseMeta, error)
+	StreamCityEvents(context.Context, string, gascity.EventStreamOptions) (GasCityRPIEventStream, gascity.ResponseMeta, error)
+	SessionTranscript(context.Context, string, string, gascity.TranscriptOptions) (gascity.TranscriptResponse, gascity.ResponseMeta, error)
+}
+
+type GasCityRPIEventStream interface {
+	NextEvent() (gascity.EventStreamFrame, error)
+	Close() error
+}
+
+type GasCityClientAdapter struct {
+	Client *gascity.Client
+}
+
+func (a GasCityClientAdapter) CityReadiness(ctx context.Context, cityName string) (gascity.ReadinessResponse, error) {
+	return a.Client.CityReadiness(ctx, cityName)
+}
+
+func (a GasCityClientAdapter) CreateSession(ctx context.Context, cityName string, req gascity.SessionCreateRequest) (gascity.Session, gascity.ResponseMeta, error) {
+	return a.Client.CreateSession(ctx, cityName, req)
+}
+
+func (a GasCityClientAdapter) SubmitSession(ctx context.Context, cityName string, id string, req gascity.SessionSubmitRequest) (gascity.SessionSubmitResponse, gascity.ResponseMeta, error) {
+	return a.Client.SubmitSession(ctx, cityName, id, req)
+}
+
+func (a GasCityClientAdapter) GetSession(ctx context.Context, cityName string, id string, opts gascity.SessionGetOptions) (gascity.Session, gascity.ResponseMeta, error) {
+	return a.Client.GetSession(ctx, cityName, id, opts)
+}
+
+func (a GasCityClientAdapter) StreamCityEvents(ctx context.Context, cityName string, opts gascity.EventStreamOptions) (GasCityRPIEventStream, gascity.ResponseMeta, error) {
+	return a.Client.StreamCityEvents(ctx, cityName, opts)
+}
+
+func (a GasCityClientAdapter) SessionTranscript(ctx context.Context, cityName string, id string, opts gascity.TranscriptOptions) (gascity.TranscriptResponse, gascity.ResponseMeta, error) {
+	return a.Client.SessionTranscript(ctx, cityName, id, opts)
+}
+
+type GasCityRPIPhaseExecutor struct {
+	Client       GasCityRPIClient
+	CityName     string
+	PhaseTimeout time.Duration
+}
+
+func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
+	if e.Client == nil {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{Code: FailureProviderUnreachable, Message: "gascity client is required", Retryable: true}
+	}
+	cityName := strings.TrimSpace(req.GasCityCityName)
+	if cityName == "" {
+		cityName = strings.TrimSpace(e.CityName)
+	}
+	if cityName == "" {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{Code: FailureRequestRejected, Message: "gascity city name is required"}
+	}
+	ready, err := e.Client.CityReadiness(ctx, cityName)
+	if err != nil {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity city readiness for %q: %v", cityName, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	if !ready.Ready {
+		status := strings.TrimSpace(ready.Status)
+		if status == "" {
+			status = "not ready"
+		}
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity city %q not ready: %s", cityName, status),
+			Retryable: true,
+		}
+	}
+
+	sessionAlias := strings.TrimSpace(req.GasCitySessionAlias)
+	if sessionAlias == "" {
+		sessionAlias = fmt.Sprintf("rpi-%s-p%d", req.RunID, req.Phase)
+	}
+	session, createMeta, err := e.Client.CreateSession(ctx, cityName, gascity.SessionCreateRequest{
+		Kind:  "agent",
+		Name:  "worker",
+		Alias: sessionAlias,
+		Async: true,
+		Title: fmt.Sprintf("RPI %s phase %d", req.RunID, req.Phase),
+	})
+	if err != nil {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity create session %q: %v", sessionAlias, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	sessionID := strings.TrimSpace(session.ID)
+	if sessionID == "" {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
+			Code:    FailureSessionPending,
+			Message: fmt.Sprintf("gascity create session %q returned empty session ID", sessionAlias),
+		}
+	}
+
+	_, submitMeta, err := e.Client.SubmitSession(ctx, cityName, sessionID, gascity.SessionSubmitRequest{
+		Message: req.Prompt,
+		Intent:  "follow_up",
+	})
+	if err != nil {
+		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity submit session %q: %v", sessionID, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+
+	result := RPIPhaseExecutionResult{
+		Status:              gascity.TerminalStatusRunning,
+		RequestIDs:          map[string]string{},
+		GasCityCityName:     cityName,
+		GasCitySessionID:    sessionID,
+		GasCitySessionAlias: sessionAlias,
+	}
+	addRequestID(result.RequestIDs, "create", createMeta.RequestID)
+	addRequestID(result.RequestIDs, "submit", submitMeta.RequestID)
+	if err := emitRPIPhaseProgress(ctx, req, result, gascity.TerminalStatusRunning); err != nil {
+		return result, err
+	}
+
+	streamCtx := ctx
+	cancel := func() {}
+	if e.PhaseTimeout > 0 {
+		streamCtx, cancel = context.WithTimeout(ctx, e.PhaseTimeout)
+	}
+	defer cancel()
+	stream, streamMeta, err := e.Client.StreamCityEvents(streamCtx, cityName, gascity.EventStreamOptions{})
+	if err != nil {
+		return result, &RPIPhaseExecutionError{
+			Code:      FailureEventStreamUnavailable,
+			Message:   fmt.Sprintf("gascity event stream for %q: %v", sessionID, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	addRequestID(result.RequestIDs, "stream", streamMeta.RequestID)
+	defer stream.Close()
+
+	for {
+		frame, err := stream.NextEvent()
+		if err != nil {
+			if streamCtx.Err() != nil {
+				return result, &RPIPhaseExecutionError{
+					Code:      FailureEventStreamUnavailable,
+					Message:   fmt.Sprintf("gascity event wait for %q: %v", sessionID, streamCtx.Err()),
+					Retryable: true,
+					Cause:     streamCtx.Err(),
+				}
+			}
+			if errors.Is(err, io.EOF) {
+				return result, &RPIPhaseExecutionError{
+					Code:      FailureEventStreamUnavailable,
+					Message:   fmt.Sprintf("gascity event stream ended before terminal state for %q", sessionID),
+					Retryable: true,
+					Cause:     err,
+				}
+			}
+			return result, &RPIPhaseExecutionError{
+				Code:      FailureEventStreamUnavailable,
+				Message:   fmt.Sprintf("gascity event stream for %q: %v", sessionID, err),
+				Retryable: true,
+				Cause:     err,
+			}
+		}
+		if cursor := gascity.CursorFromFrame(frame); cursor != "" {
+			result.EventCursor = cursor
+			if err := emitRPIPhaseProgress(ctx, req, result, gascity.TerminalStatusRunning); err != nil {
+				return result, err
+			}
+		}
+		event := frame.CityEvent
+		if !gasCityEventMatchesSession(event, sessionID, sessionAlias) {
+			continue
+		}
+		classification := gascity.ClassifyTerminalState(gascity.TerminalStateInput{
+			EventType:    event.Type,
+			EventPayload: event.Payload,
+		})
+		if !classification.Terminal {
+			continue
+		}
+		result.Status = classification.Status
+		if err := emitRPIPhaseProgress(ctx, req, result, classification.Status); err != nil {
+			return result, err
+		}
+		if classification.Status != gascity.TerminalStatusCompleted || classification.Degraded {
+			code := failureCodeForTerminalStatus(classification.Status)
+			message := fmt.Sprintf("gascity session %q terminal %s", sessionID, classification.Status)
+			if classification.Reason != "" {
+				message += ": " + classification.Reason
+			}
+			return result, &RPIPhaseExecutionError{Code: code, Message: message}
+		}
+		evidencePath, err := captureGasCityRPIEvidence(ctx, e.Client, req, result)
+		if err != nil {
+			return result, err
+		}
+		result.EvidencePath = evidencePath
+		result.Artifacts = map[string]string{
+			phaseArtifactKey(req.Phase, "gascity_evidence"): evidencePath,
+		}
+		return result, nil
+	}
+}
+
+func emitRPIPhaseProgress(ctx context.Context, req RPIPhaseExecutionRequest, result RPIPhaseExecutionResult, status string) error {
+	if req.Progress == nil {
+		return nil
+	}
+	artifacts := map[string]string{}
+	if result.GasCityCityName != "" {
+		artifacts[phaseArtifactKey(req.Phase, "gascity_city_name")] = result.GasCityCityName
+	}
+	if result.GasCitySessionID != "" {
+		artifacts[phaseArtifactKey(req.Phase, "gascity_session_id")] = result.GasCitySessionID
+	}
+	if result.GasCitySessionAlias != "" {
+		artifacts[phaseArtifactKey(req.Phase, "gascity_session_alias")] = result.GasCitySessionAlias
+	}
+	if result.EventCursor != "" {
+		artifacts[phaseArtifactKey(req.Phase, "gascity_event_cursor")] = result.EventCursor
+	}
+	return req.Progress(ctx, RPIPhaseProgress{
+		Phase:     req.Phase,
+		Status:    status,
+		Artifacts: artifacts,
+	})
+}
+
+func captureGasCityRPIEvidence(ctx context.Context, client GasCityRPIClient, req RPIPhaseExecutionRequest, result RPIPhaseExecutionResult) (string, error) {
+	transcript, meta, err := client.SessionTranscript(ctx, result.GasCityCityName, result.GasCitySessionID, gascity.TranscriptOptions{
+		Format: "conversation",
+	})
+	if err != nil {
+		return "", &RPIPhaseExecutionError{
+			Code:    FailureTerminalWithoutTranscript,
+			Message: fmt.Sprintf("gascity transcript for %q: %v", result.GasCitySessionID, err),
+			Cause:   err,
+		}
+	}
+	addRequestID(result.RequestIDs, "transcript", meta.RequestID)
+	artifacts := make([]cliRPI.GasCityTranscriptArtifact, 0, len(transcript.Artifacts))
+	for _, artifact := range transcript.Artifacts {
+		artifacts = append(artifacts, cliRPI.GasCityTranscriptArtifact{
+			Path: artifact.Path,
+			Kind: artifact.Kind,
+		})
+	}
+	path, err := cliRPI.WriteGasCityPhaseEvidence(req.Root, cliRPI.GasCityPhaseEvidence{
+		RunID:                req.RunID,
+		Phase:                req.Phase,
+		PhaseName:            req.PhaseName,
+		CityName:             result.GasCityCityName,
+		SessionID:            result.GasCitySessionID,
+		SessionAlias:         result.GasCitySessionAlias,
+		Status:               result.Status,
+		EventCursor:          result.EventCursor,
+		RequestIDs:           result.RequestIDs,
+		TranscriptID:         firstNonEmpty(transcript.ID, transcript.SessionID, result.GasCitySessionID),
+		TranscriptFormat:     transcript.Format,
+		TranscriptTurnCount:  len(transcript.Turns),
+		TranscriptMsgCount:   len(transcript.Messages),
+		TranscriptArtifacts:  artifacts,
+		TranscriptCapturedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func requestFromPhaseSpec(root string, claim QueueClaim, spec RPIPhaseJobSpec) RPIPhaseExecutionRequest {
+	return RPIPhaseExecutionRequest{
+		Root:                root,
+		JobID:               claim.Job.JobID,
+		RunID:               spec.RunID,
+		Goal:                spec.Goal,
+		EpicID:              spec.EpicID,
+		ExecutionPacketPath: spec.ExecutionPacketPath,
+		ParentRunJobID:      spec.ParentRunJobID,
+		Phase:               spec.Phase,
+		PhaseName:           spec.PhaseName,
+		Attempt:             firstPositive(spec.Attempt, claim.Job.Attempt),
+		Backend:             spec.Backend,
+		GasCityCityName:     spec.GasCityCityName,
+		GasCitySessionAlias: spec.GasCitySessionAlias,
+	}
+}
+
+func isRPIJobType(jobType JobType) bool {
+	return jobType == JobTypeRPIRun || jobType == JobTypeRPIPhase
+}
+
+func providerFailureLooksRetryable(code FailureCode) bool {
+	switch code {
+	case FailureProviderUnreachable, FailureEventStreamUnavailable, FailureDaemonUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+func failureCodeForTerminalStatus(status string) FailureCode {
+	switch status {
+	case gascity.TerminalStatusLost:
+		return FailureSessionLost
+	case gascity.TerminalStatusProviderUnreachable:
+		return FailureProviderUnreachable
+	case gascity.TerminalStatusEventStreamUnavailable:
+		return FailureEventStreamUnavailable
+	case gascity.TerminalStatusTerminalWithoutTranscript:
+		return FailureTerminalWithoutTranscript
+	default:
+		return FailureRequestRejected
+	}
+}
+
+func gasCityEventMatchesSession(event *gascity.EventStreamEnvelope, sessionID, sessionAlias string) bool {
+	if event == nil {
+		return false
+	}
+	for _, candidate := range []string{
+		event.Subject,
+		payloadString(event.Payload, "session_id"),
+		payloadString(event.Payload, "sessionId"),
+		payloadString(event.Payload, "alias"),
+	} {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if candidate == sessionID || candidate == sessionAlias {
+			return true
+		}
+	}
+	return false
+}
+
+func payloadString(payload map[string]any, key string) string {
+	if len(payload) == 0 {
+		return ""
+	}
+	raw, ok := payload[key]
+	if !ok {
+		return ""
+	}
+	switch value := raw.(type) {
+	case string:
+		return value
+	default:
+		return fmt.Sprint(value)
+	}
+}
+
+func addRequestID(ids map[string]string, key, value string) {
+	if strings.TrimSpace(value) != "" {
+		ids[key] = value
+	}
+}
+
+func mergeArtifacts(dst, src map[string]string) {
+	for key, value := range src {
+		if strings.TrimSpace(value) != "" {
+			dst[key] = value
+		}
+	}
+}
+
+func phaseArtifactKey(phase int, label string) string {
+	return fmt.Sprintf("phase_%d_%s", phase, label)
+}
+
+func firstPositive(values ...int) int {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}

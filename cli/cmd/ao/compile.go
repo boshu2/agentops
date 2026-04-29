@@ -645,7 +645,7 @@ func preflightCompileRuntime(runtime string) error {
 
 Pick one:
   export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed
-  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (default http://localhost:11434)
+  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (fallback http://localhost:11434)
   export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY
   export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY
 

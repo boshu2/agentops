@@ -1,0 +1,3 @@
+$ scripts/generate-cli-reference.sh --check
+cli/docs/COMMANDS.md is up to date.
+status=0

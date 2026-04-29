@@ -1,0 +1,4 @@
+{
+  "message": "continue the current RPI phase",
+  "intent": "follow_up"
+}

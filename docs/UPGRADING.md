@@ -66,6 +66,31 @@ The AO↔Olympus bridge has been archived. Removed surfaces:
 
 **Action required:** remove any automation that read from `.ol/` or invoked `ol-*.sh`. Useful patterns from Olympus now live directly inside `ao`.
 
+### Daemon mode is available as an opt-in product runtime
+
+**Affects:** anyone migrating RPI, Dream, wiki/forge, or OpenClaw integrations
+from foreground command ownership to `agentopsd`.
+
+`agentopsd` is the new local always-on AgentOps control plane. It owns the
+daemon ledger under `.agents/daemon`, job acceptance, projection rebuilds,
+OpenClaw snapshots, and authorized mutation gates. Existing foreground commands
+remain valid during this migration; daemon mode is selected explicitly with
+flags such as `--daemon-submit`, `--daemon-url`, `--daemon-token`, and
+`--daemon-fallback`.
+
+**Action required:** do not assume daemon mode is the default yet. Start with
+foreground readiness proof:
+
+```bash
+ao daemon run --addr 127.0.0.1:8765 --token "$AGENTOPS_DAEMON_TOKEN"
+ao daemon ready
+ao doctor --json
+```
+
+Then migrate wrappers one command at a time. See
+[`daemon-migration.md`](daemon-migration.md) for RPI, Dream, wiki/forge,
+GasCity, OpenClaw, and rollback guidance.
+
 ---
 
 ## Upgrading to 2.37.x

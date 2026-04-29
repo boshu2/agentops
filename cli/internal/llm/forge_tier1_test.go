@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/agentworker"
 )
 
 // writeFixtureJSONL writes a minimal Claude JSONL fixture at path and returns
@@ -90,12 +92,13 @@ func TestRunForgeTier1_EndToEnd(t *testing.T) {
 	outDir := filepath.Join(tmp, "out")
 
 	opts := Tier1Options{
-		SourcePaths: []string{fixture},
-		OutputDir:   outDir,
-		Model:       "gemma2:9b",
-		Endpoint:    srv.URL,
-		Quiet:       true,
-		Workspace:   "/fixture/ws",
+		SourcePaths:    []string{fixture},
+		OutputDir:      outDir,
+		Model:          "gemma2:9b",
+		Endpoint:       srv.URL,
+		Quiet:          true,
+		Workspace:      "/fixture/ws",
+		LegacyLocalLLM: true,
 	}
 	result, err := RunForgeTier1(opts)
 	if err != nil {
@@ -144,9 +147,10 @@ func TestRunForgeTier1_EndToEnd(t *testing.T) {
 func TestRunForgeTier1_KillSwitch(t *testing.T) {
 	t.Setenv(KillSwitchEnv, "1")
 	opts := Tier1Options{
-		SourcePaths: []string{"ignored.jsonl"},
-		OutputDir:   t.TempDir(),
-		Model:       "gemma2:9b",
+		SourcePaths:    []string{"ignored.jsonl"},
+		OutputDir:      t.TempDir(),
+		Model:          "gemma2:9b",
+		LegacyLocalLLM: true,
 	}
 	_, err := RunForgeTier1(opts)
 	if err == nil {
@@ -160,8 +164,9 @@ func TestRunForgeTier1_KillSwitch(t *testing.T) {
 func TestRunForgeTier1_MissingOutputDirErrors(t *testing.T) {
 	t.Setenv(KillSwitchEnv, "")
 	opts := Tier1Options{
-		SourcePaths: []string{"file.jsonl"},
-		Model:       "gemma2:9b",
+		SourcePaths:    []string{"file.jsonl"},
+		Model:          "gemma2:9b",
+		LegacyLocalLLM: true,
 	}
 	_, err := RunForgeTier1(opts)
 	if err == nil || !strings.Contains(err.Error(), "OutputDir") {
@@ -172,12 +177,38 @@ func TestRunForgeTier1_MissingOutputDirErrors(t *testing.T) {
 func TestRunForgeTier1_EmptySourcesErrors(t *testing.T) {
 	t.Setenv(KillSwitchEnv, "")
 	opts := Tier1Options{
-		OutputDir: t.TempDir(),
-		Model:     "gemma2:9b",
+		OutputDir:      t.TempDir(),
+		Model:          "gemma2:9b",
+		LegacyLocalLLM: true,
 	}
 	_, err := RunForgeTier1(opts)
 	if err == nil || !strings.Contains(err.Error(), "source") {
 		t.Errorf("want source paths error, got %v", err)
+	}
+}
+
+func TestRunForgeTier1_DefaultDoesNotInstantiateOllama(t *testing.T) {
+	t.Setenv(KillSwitchEnv, "")
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		t.Fatalf("product-path RunForgeTier1 should not call Ollama, got %s", r.URL.Path)
+	}))
+	defer srv.Close()
+
+	opts := Tier1Options{
+		SourcePaths: []string{"unused.jsonl"},
+		OutputDir:   t.TempDir(),
+		Model:       "gemma2:9b",
+		Endpoint:    srv.URL,
+		Quiet:       true,
+	}
+	_, err := RunForgeTier1(opts)
+	if err == nil || !strings.Contains(err.Error(), "legacy-only") {
+		t.Fatalf("want legacy-only error, got %v", err)
+	}
+	if hits != 0 {
+		t.Fatalf("ollama endpoint was called %d time(s)", hits)
 	}
 }
 
@@ -205,5 +236,49 @@ func TestRunForgeTier1_FactoryInjection(t *testing.T) {
 	}
 	if result.FilesProcessed != 1 {
 		t.Errorf("FilesProcessed: want 1, got %d", result.FilesProcessed)
+	}
+}
+
+func TestRunForgeTier1_AgentWorkerGenerator(t *testing.T) {
+	t.Setenv(KillSwitchEnv, "")
+	tmp := t.TempDir()
+	fixture, _ := writeFixtureJSONL(t, tmp, "session-worker.jsonl")
+	worker := &fakeModelWorker{
+		transcript: validSpikeOutput,
+		state:      agentworker.TerminalState{Status: agentworker.StatusCompleted},
+	}
+
+	opts := Tier1Options{
+		SourcePaths:    []string{fixture},
+		OutputDir:      filepath.Join(tmp, "out"),
+		Model:          "codex-headless",
+		Quiet:          true,
+		Workspace:      "/fixture/ws",
+		Worker:         worker,
+		WorkerKind:     agentworker.WorkerKindCodex,
+		WorkerProvider: agentworker.ProviderFake,
+	}
+	result, err := RunForgeTier1(opts)
+	if err != nil {
+		t.Fatalf("RunForgeTier1: %v", err)
+	}
+	if result.FilesProcessed != 1 {
+		t.Errorf("FilesProcessed: want 1, got %d", result.FilesProcessed)
+	}
+	if worker.started.Model != "codex-headless" {
+		t.Fatalf("worker model: %q", worker.started.Model)
+	}
+	if worker.started.CWD != "/fixture/ws" {
+		t.Fatalf("worker cwd: %q", worker.started.CWD)
+	}
+	if len(result.SessionsWrote) != 1 {
+		t.Fatalf("want 1 session page, got %d", len(result.SessionsWrote))
+	}
+	body, err := os.ReadFile(result.SessionsWrote[0])
+	if err != nil {
+		t.Fatalf("read session page: %v", err)
+	}
+	if !strings.Contains(string(body), "model: codex-headless") {
+		t.Fatalf("session page missing worker model:\n%s", string(body))
 	}
 }

@@ -1,6 +1,7 @@
 package overnight
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -94,16 +95,16 @@ func TestFitnessSnapshot_Delta_RegressionUnderFloor(t *testing.T) {
 
 func TestFitnessSnapshot_Delta_MixedImprovementAndRegression(t *testing.T) {
 	prev := &FitnessSnapshot{Metrics: map[string]float64{
-		"up":      0.30,
-		"down":    0.80,
-		"noise":   0.50,
-		"stable":  0.60,
+		"up":     0.30,
+		"down":   0.80,
+		"noise":  0.50,
+		"stable": 0.60,
 	}}
 	curr := FitnessSnapshot{Metrics: map[string]float64{
-		"up":      0.50, // +0.20 improvement
-		"down":    0.60, // -0.20 regression, floor 0.05 breached
-		"noise":   0.48, // -0.02 absorbed into composite
-		"stable":  0.60, // 0 delta
+		"up":     0.50, // +0.20 improvement
+		"down":   0.60, // -0.20 regression, floor 0.05 breached
+		"noise":  0.48, // -0.02 absorbed into composite
+		"stable": 0.60, // 0 delta
 	}}
 
 	composite, regressions, regressed := curr.Delta(prev, nil, 0.05)
@@ -221,6 +222,50 @@ func TestFitnessSnapshot_Delta_Deterministic(t *testing.T) {
 	}
 	if r1[0].Name != "m" || r1[1].Name != "z" {
 		t.Errorf("regression order = [%s, %s], want [m, z]", r1[0].Name, r1[1].Name)
+	}
+}
+
+func TestEvaluateMeasureHalt_StrictRegression(t *testing.T) {
+	prev := &FitnessSnapshot{Metrics: map[string]float64{"precision": 0.90}}
+	curr := FitnessSnapshot{Metrics: map[string]float64{"precision": 0.70}}
+
+	halt := EvaluateMeasureHalt(MeasureHaltInput{
+		Current:         curr,
+		Previous:        prev,
+		RegressionFloor: 0.05,
+		WarnOnly:        false,
+	})
+
+	if !halt.ShouldHalt {
+		t.Fatal("ShouldHalt=false, want true")
+	}
+	if halt.Kind != MeasureHaltRegression {
+		t.Fatalf("Kind=%q, want %q", halt.Kind, MeasureHaltRegression)
+	}
+	if !halt.Regressed || len(halt.Regressions) != 1 || halt.Regressions[0].Name != "precision" {
+		t.Fatalf("regression output = %#v", halt)
+	}
+	if !floatsNear(halt.FitnessDelta, -0.20, 1e-9) {
+		t.Fatalf("FitnessDelta=%v, want -0.20", halt.FitnessDelta)
+	}
+}
+
+func TestEvaluateMeasureHalt_MeasureErrorCap(t *testing.T) {
+	halt := EvaluateMeasureHalt(MeasureHaltInput{
+		MeasureError:               errors.New("synthetic measure failure"),
+		ConsecutiveMeasureFailures: 2,
+		MaxConsecutiveFailures:     2,
+		WarnOnly:                   true,
+	})
+
+	if !halt.ShouldHalt {
+		t.Fatal("ShouldHalt=false, want true")
+	}
+	if halt.Kind != MeasureHaltMeasureError {
+		t.Fatalf("Kind=%q, want %q", halt.Kind, MeasureHaltMeasureError)
+	}
+	if halt.Reason == "" {
+		t.Fatal("expected measure-error halt reason")
 	}
 }
 

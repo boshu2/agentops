@@ -25,16 +25,20 @@ import (
 )
 
 var (
-	forgeLastSession   bool
-	forgeQuiet         bool
-	forgeQueue         bool
-	forgeMdQuiet       bool
-	forgeMdQueue       bool
-	forgeTier          int
-	forgeTier1Model    string
-	forgeLLMEndpoint   string
-	forgeTier1MaxChars int
+	forgeLastSession         bool
+	forgeQuiet               bool
+	forgeQueue               bool
+	forgeMdQuiet             bool
+	forgeMdQueue             bool
+	forgeTier                int
+	forgeTier1Model          string
+	forgeLLMEndpoint         string
+	forgeTier1MaxChars       int
+	forgeTier1LegacyLocalLLM bool
 )
+
+const forgeLegacyLocalLLMEnv = "AGENTOPS_FORGE_LEGACY_LOCAL_LLM"
+const forgeLegacyLocalLLMDeprecationWarning = "WARNING: --legacy-local-llm uses the deprecated local Ollama/Gemma bridge (removal target: v3.0.0); use AgentWorker/GasCity-backed Codex or Claude workers for daemon wiki/forge."
 
 const (
 	// SnippetMaxLength is the maximum length for extracted text snippets.
@@ -151,7 +155,7 @@ func init() {
 	forgeCmd.AddCommand(forgeReviewCmd)
 	forgeReviewCmd.Flags().BoolVar(&forgeReviewDryRun, "dry-run", false, "Show what would be promoted without writing")
 	forgeReviewCmd.Flags().String("eval", "", "Evaluate review decisions against a labeled JSON manifest without writing")
-	forgeReviewCmd.Flags().String("reviewer-endpoint", "", "Ollama HTTP endpoint for --reviewer-model (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
+	forgeReviewCmd.Flags().String("reviewer-endpoint", "", "Ollama HTTP endpoint for --reviewer-model (fallback: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
 	forgeReviewCmd.Flags().String("reviewer-model", "", "LLM model tag for Tier 2 reviewer decisions (e.g. gemma2:9b)")
 	forgeReviewCmd.Flags().String("sessions-dir", "", "Directory containing session pages (default: .agents/ao/sessions)")
 
@@ -159,10 +163,11 @@ func init() {
 	forgeTranscriptCmd.Flags().BoolVar(&forgeLastSession, "last-session", false, "Process only the most recent transcript")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQuiet, "quiet", false, "Suppress all output (for hooks)")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeQueue, "queue", false, "Queue session for learning extraction at next session start")
-	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 transcript processing: enqueue to configured Dream worker, otherwise use local LLM with --model")
-	forgeTranscriptCmd.Flags().StringVar(&forgeTier1Model, "model", "", "LLM model tag for --tier=1 (e.g. gemma2:9b)")
-	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
-	forgeTranscriptCmd.Flags().IntVar(&forgeTier1MaxChars, "max-chars", 0, "Per-chunk character budget for --tier=1 local LLM mode (default: conservative built-in budget)")
+	forgeTranscriptCmd.Flags().IntVar(&forgeTier, "tier", 0, "Tier 1 transcript processing: enqueue to configured Dream worker; local Ollama fallback requires --legacy-local-llm")
+	forgeTranscriptCmd.Flags().StringVar(&forgeTier1Model, "model", "", "Legacy local LLM model tag for --tier=1 (e.g. gemma2:9b)")
+	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Legacy Ollama HTTP endpoint for --tier=1 (fallback: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
+	forgeTranscriptCmd.Flags().IntVar(&forgeTier1MaxChars, "max-chars", 0, "Per-chunk character budget for --tier=1 legacy local LLM mode (default: conservative built-in budget)")
+	forgeTranscriptCmd.Flags().BoolVar(&forgeTier1LegacyLocalLLM, "legacy-local-llm", false, "Allow legacy local Ollama/Gemma fallback for --tier=1 when no AgentWorker queue is configured")
 
 	// Markdown flags
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQuiet, "quiet", false, "Suppress all output (for hooks)")
@@ -1001,27 +1006,43 @@ func runMinePassAdapter(cwd string, sessionsDir string, sinceTime time.Time, qui
 }
 
 // runForgeTier1 dispatches --tier=1. A configured Dream worker queue wins; when
-// absent, the local-LLM fallback remains available through cli/internal/llm.
+// absent, local Ollama/Gemma remains available only through explicit legacy
+// configuration.
 func runForgeTier1(w io.Writer, files []string) error {
 	if handled, err := runForgeTier1ViaCuratorQueue(w, files); handled || err != nil {
 		return err
 	}
+	if !legacyLocalLLMEnabled() {
+		return fmt.Errorf("--tier=1 local Ollama/Gemma fallback is legacy-only; configure an AgentWorker/Dream worker queue or pass --legacy-local-llm")
+	}
 	if forgeTier1Model == "" {
-		return fmt.Errorf("--tier=1 requires --model (e.g. --model=gemma2:9b)")
+		return fmt.Errorf("--legacy-local-llm requires --model (e.g. --model=gemma2:9b)")
+	}
+	if !forgeQuiet {
+		fmt.Fprintln(w, forgeLegacyLocalLLMDeprecationWarning)
 	}
 	cwd, _ := os.Getwd()
 	outDir := filepath.Join(cwd, ".agents", "wiki", "sources")
 	_, err := llm.RunForgeTier1(llm.Tier1Options{
-		SourcePaths: files,
-		OutputDir:   outDir,
-		Model:       forgeTier1Model,
-		Endpoint:    forgeLLMEndpoint,
-		MaxChars:    forgeTier1MaxChars,
-		Quiet:       forgeQuiet,
-		Writer:      w,
-		Workspace:   cwd,
+		SourcePaths:    files,
+		OutputDir:      outDir,
+		Model:          forgeTier1Model,
+		Endpoint:       forgeLLMEndpoint,
+		MaxChars:       forgeTier1MaxChars,
+		Quiet:          forgeQuiet,
+		Writer:         w,
+		Workspace:      cwd,
+		LegacyLocalLLM: true,
 	})
 	return err
+}
+
+func legacyLocalLLMEnabled() bool {
+	if forgeTier1LegacyLocalLLM {
+		return true
+	}
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(forgeLegacyLocalLLMEnv)))
+	return value == "1" || value == "true" || value == "yes"
 }
 
 func runForgeTier1ViaCuratorQueue(w io.Writer, files []string) (bool, error) {

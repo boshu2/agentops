@@ -1,179 +1,181 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/gascity"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
-func TestRPI_Integration_StatusNoRuns(t *testing.T) {
-	dir := chdirTemp(t)
-	setupAgentsDir(t, dir)
-	initMinimalGitRepo(t, dir)
-
-	oldOutput := output
-	oldJsonFlag := jsonFlag
-	output = "table"
-	jsonFlag = false
-	t.Cleanup(func() { output = oldOutput; jsonFlag = oldJsonFlag })
-
-	out, err := captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"rpi", "status"})
-		return rootCmd.Execute()
+func TestRPIDaemonL3SmokeFakeGasCity(t *testing.T) {
+	cwd := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, activation, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr:  "127.0.0.1:0",
+		Token: "secret-token",
+		Now:   func() time.Time { return time.Now().UTC() },
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
 	})
 
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = cwd
+	opts.DaemonSubmit = true
+	opts.DaemonURL = activation.URL
+	opts.DaemonToken = "secret-token"
+	opts.RunID = "l3-run"
+	handled, err := maybeSubmitRPIPhasedDaemon(context.Background(), opts, []string{"exercise daemon RPI smoke"})
 	if err != nil {
-		t.Fatalf("expected rpi status to succeed, got error: %v", err)
+		t.Fatalf("daemon submit: %v", err)
+	}
+	if !handled {
+		t.Fatal("daemon submit was not handled")
 	}
 
-	if !strings.Contains(out, "No active RPI runs") {
-		t.Errorf("expected 'No active RPI runs' message, got:\n%s", out)
+	gasCityServer := newFakeGasCityRPIServer(t)
+	defer gasCityServer.Close()
+	gasCityClient, err := gascity.NewClient(gascity.Config{
+		Endpoint:      gasCityServer.URL,
+		MutationToken: "agentops-test",
+	})
+	if err != nil {
+		t.Fatalf("New GasCity client: %v", err)
+	}
+	store := daemonpkg.NewStore(cwd)
+	queue := daemonpkg.NewQueue(store, daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	runner, err := daemonpkg.NewRPIRunner(store, daemonpkg.RPIRunnerOptions{
+		Queue: queue,
+		Executor: daemonpkg.GasCityRPIPhaseExecutor{
+			Client:       daemonpkg.GasCityClientAdapter{Client: gasCityClient},
+			CityName:     "agentops",
+			PhaseTimeout: time.Second,
+		},
+		Actor: "l3-rpi-runner",
+	})
+	if err != nil {
+		t.Fatalf("NewRPIRunner: %v", err)
+	}
+	result, err := runner.RunNextRPIJob(context.Background())
+	if err != nil {
+		t.Fatalf("RunNextRPIJob: %v", err)
+	}
+	if result.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("runner result = %#v", result)
+	}
+
+	status, err := fetchDaemonStatus(context.Background(), activation.URL)
+	if err != nil {
+		t.Fatalf("fetch daemon status: %v", err)
+	}
+	output := buildRPIStatusOutputFromDaemon(status)
+	if output.Count != 1 || len(output.Historical) != 1 {
+		t.Fatalf("daemon status output = %#v", output)
+	}
+	if output.Historical[0].RunID != "l3-run" || output.Historical[0].Status != string(daemonpkg.JobStatusCompleted) {
+		t.Fatalf("historical daemon run = %#v", output.Historical[0])
+	}
+
+	statePath := filepath.Join(cwd, ".agents", "rpi", "runs", "l3-run", cliRPI.PhasedStateFile)
+	data, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatalf("read RPI run artifact: %v", err)
+	}
+	if !strings.Contains(string(data), `"terminal_status": "completed"`) {
+		t.Fatalf("run artifact missing completed terminal status:\n%s", string(data))
+	}
+	for phase := 1; phase <= 3; phase++ {
+		if _, err := os.Stat(cliRPI.GasCityPhaseEvidencePath(cwd, "l3-run", phase)); err != nil {
+			t.Fatalf("phase %d evidence not written: %v", phase, err)
+		}
 	}
 }
 
-func TestRPI_Integration_StatusWithRunRegistry(t *testing.T) {
-	dir := chdirTemp(t)
-	setupAgentsDir(t, dir)
-	initMinimalGitRepo(t, dir)
-
-	oldOutput := output
-	oldJsonFlag := jsonFlag
-	output = "table"
-	jsonFlag = false
-	t.Cleanup(func() { output = oldOutput; jsonFlag = oldJsonFlag })
-
-	// Create a run registry entry as a subdirectory with phased-state.json
-	runDir := filepath.Join(dir, ".agents", "rpi", "runs", "rpi-abcd1234ef01")
-	if err := os.MkdirAll(runDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	stateJSON := `{
-		"schema_version": 1,
-		"run_id": "rpi-abcd1234ef01",
-		"goal": "test integration goal",
-		"phase": 3,
-		"start_phase": 1,
-		"cycle": 1,
-		"verdicts": {},
-		"attempts": {},
-		"started_at": "2026-04-01T10:00:00Z"
-	}`
-	writeFile(t, filepath.Join(runDir, "phased-state.json"), stateJSON)
-
-	out, err := captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"rpi", "status"})
-		return rootCmd.Execute()
-	})
-
-	if err != nil {
-		t.Fatalf("expected rpi status to succeed, got error: %v\noutput:\n%s", err, out)
-	}
-
-	// Should show the run (either in active or historical section)
-	if !strings.Contains(out, "rpi-abcd1234ef01") && !strings.Contains(out, "test integration goal") {
-		t.Errorf("expected run ID or goal in output, got:\n%s", out)
-	}
-}
-
-func TestRPI_Integration_StatusJSON(t *testing.T) {
-	dir := chdirTemp(t)
-	setupAgentsDir(t, dir)
-	initMinimalGitRepo(t, dir)
-
-	oldOutput := output
-	output = "json"
-	t.Cleanup(func() { output = oldOutput })
-
-	out, err := captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"rpi", "status"})
-		return rootCmd.Execute()
-	})
-
-	if err != nil {
-		t.Fatalf("expected rpi status --json to succeed, got error: %v", err)
-	}
-
-	var result rpiStatusOutput
-	if jsonErr := json.Unmarshal([]byte(out), &result); jsonErr != nil {
-		t.Fatalf("expected valid JSON, got parse error: %v\nraw:\n%s", jsonErr, out)
-	}
-
-	// Count should be 0 in an empty state
-	if result.Count != 0 {
-		t.Errorf("expected count=0 with no runs, got %d", result.Count)
-	}
-}
-
-func TestRPI_Integration_StatusJSONWithRun(t *testing.T) {
-	dir := chdirTemp(t)
-	setupAgentsDir(t, dir)
-	initMinimalGitRepo(t, dir)
-
-	runsDir := filepath.Join(dir, ".agents", "rpi", "runs")
-	if err := os.MkdirAll(runsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	runDir := filepath.Join(runsDir, "rpi-aabb11223344")
-	if err := os.MkdirAll(runDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	writeFile(t, filepath.Join(runDir, "phased-state.json"), `{
-		"schema_version": 1,
-		"run_id": "rpi-aabb11223344",
-		"goal": "JSON test goal",
-		"phase": 3,
-		"start_phase": 1,
-		"cycle": 1,
-		"verdicts": {},
-		"attempts": {},
-		"started_at": "2026-04-01T10:00:00Z"
-	}`)
-
-	oldOutput := output
-	output = "json"
-	t.Cleanup(func() { output = oldOutput })
-
-	out, err := captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"rpi", "status"})
-		return rootCmd.Execute()
-	})
-
-	if err != nil {
-		t.Fatalf("expected success, got: %v", err)
-	}
-
-	var result rpiStatusOutput
-	if jsonErr := json.Unmarshal([]byte(out), &result); jsonErr != nil {
-		t.Fatalf("JSON parse error: %v\nraw:\n%s", jsonErr, out)
-	}
-
-	if result.Count != 1 {
-		t.Errorf("expected count=1, got %d", result.Count)
-	}
-}
-
-func TestRPI_Integration_PhasedDryRun(t *testing.T) {
-	dir := chdirTemp(t)
-	setupAgentsDir(t, dir)
-	initMinimalGitRepo(t, dir)
-
-	oldDryRun := dryRun
-	dryRun = true
-	t.Cleanup(func() { dryRun = oldDryRun })
-
-	out, err := captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"rpi", "phased", "--dry-run", "test dry run goal"})
-		return rootCmd.Execute()
-	})
-
-	// Dry-run should produce output about what would happen without spawning sessions
-	if out == "" && err == nil {
-		t.Error("expected some output from dry-run phased command")
-	}
-
-	// We don't assert specific output since dry-run behavior varies,
-	// but the command should not panic
-	_ = err
+func newFakeGasCityRPIServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	var mu sync.Mutex
+	sessions := map[string]string{}
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(gascity.RequestIDHeader, "req-"+strings.Trim(strings.ReplaceAll(r.URL.Path, "/", "-"), "-"))
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/readiness":
+			_ = json.NewEncoder(w).Encode(gascity.ReadinessResponse{Ready: true, Status: "ready"})
+		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/sessions":
+			if got := r.Header.Get(gascity.MutationHeader); got == "" {
+				t.Fatalf("create missing %s", gascity.MutationHeader)
+			}
+			var req gascity.SessionCreateRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode create: %v", err)
+			}
+			if req.Alias == "" || req.Name != "worker" || !req.Async {
+				t.Fatalf("create request = %#v", req)
+			}
+			sessionID := "sess_" + strings.ReplaceAll(req.Alias, "-", "_")
+			mu.Lock()
+			sessions[sessionID] = req.Alias
+			mu.Unlock()
+			_ = json.NewEncoder(w).Encode(gascity.Session{ID: sessionID, Alias: req.Alias, Running: true})
+		case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/v0/city/agentops/session/") && strings.HasSuffix(r.URL.Path, "/submit"):
+			if got := r.Header.Get(gascity.MutationHeader); got == "" {
+				t.Fatalf("submit missing %s", gascity.MutationHeader)
+			}
+			var req gascity.SessionSubmitRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			if req.Message == "" || req.Intent != "follow_up" {
+				t.Fatalf("submit request = %#v", req)
+			}
+			_ = json.NewEncoder(w).Encode(gascity.SessionSubmitResponse{Queued: true, Intent: req.Intent})
+		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/events/stream":
+			w.Header().Set("Content-Type", "text/event-stream")
+			mu.Lock()
+			defer mu.Unlock()
+			seq := 0
+			for sessionID := range sessions {
+				seq++
+				writeSSEFrame(t, w, sessionID+"-done", gascity.EventStreamEnvelope{
+					Seq:     int64(seq),
+					Type:    "session.completed",
+					Subject: sessionID,
+					Payload: map[string]any{"session_id": sessionID, "status": "completed"},
+				})
+			}
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v0/city/agentops/session/") && strings.HasSuffix(r.URL.Path, "/transcript"):
+			if got := r.URL.Query().Get("format"); got != "conversation" {
+				t.Fatalf("transcript format = %q, want conversation", got)
+			}
+			sessionID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v0/city/agentops/session/"), "/transcript")
+			_ = json.NewEncoder(w).Encode(gascity.TranscriptResponse{
+				ID:        "tx_" + sessionID,
+				SessionID: sessionID,
+				Format:    "conversation",
+				Turns:     []gascity.TranscriptEntry{{Role: "assistant", Text: "done"}},
+				Messages:  []map[string]any{{"role": "assistant", "content": "done"}},
+			})
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
+		}
+	}))
 }

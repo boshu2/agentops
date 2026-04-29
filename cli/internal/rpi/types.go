@@ -9,6 +9,35 @@ import (
 // ErrQueueClaimConflict signals that a next-work item is no longer available.
 var ErrQueueClaimConflict = errors.New("next-work item no longer available for this consumer")
 
+const (
+	// ProviderSessionLost is the normalized RPI/GasCity status when a session
+	// was accepted or expected but is no longer present in provider state.
+	ProviderSessionLost = "lost"
+	// ProviderUnreachable is the normalized status when provider state cannot
+	// be queried before a terminal result is known.
+	ProviderUnreachable = "provider_unreachable"
+)
+
+// ProviderSessionLostError makes missing provider sessions explicit so callers
+// cannot silently promote absence to successful completion.
+type ProviderSessionLostError struct {
+	SessionID    string
+	SessionAlias string
+}
+
+func (e *ProviderSessionLostError) Error() string {
+	if e == nil {
+		return ProviderSessionLost
+	}
+	if e.SessionID != "" {
+		return ProviderSessionLost + ": session " + e.SessionID + " missing after acceptance"
+	}
+	if e.SessionAlias != "" {
+		return ProviderSessionLost + ": session alias " + e.SessionAlias + " missing after acceptance"
+	}
+	return ProviderSessionLost + ": session missing after acceptance"
+}
+
 var (
 	// QueueProofTargetPattern matches bead-style IDs in free text.
 	QueueProofTargetPattern = regexp.MustCompile(`\b[A-Za-z][A-Za-z0-9]*-[A-Za-z0-9][A-Za-z0-9-]*(?:\.[0-9]+)?\b`)

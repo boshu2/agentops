@@ -22,9 +22,11 @@ Checks the ledger chain for corruption and reports a concise PASS/FAIL summary.
 
 Examples:
   ao rpi verify
+  ao rpi verify --latest
   ao rpi verify --json`,
 		RunE: runRPIVerify,
 	}
+	verifyCmd.Flags().Bool("latest", false, "Verify the latest RPI ledger state (compatibility alias; current workspace ledger is latest)")
 	rpiCmd.AddCommand(verifyCmd)
 }
 

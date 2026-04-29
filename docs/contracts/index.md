@@ -25,6 +25,34 @@ skills, the runtime, and external integrations.
 
     RPI run registry specification.
 
+-   :material-server: **[AgentOps Daemon](agentops-daemon.md)**
+
+    ---
+
+    Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
+    trust, projections, and migration from foreground command flows.
+
+-   :material-api: **[GasCity Integration](gascity-integration.md)**
+
+    ---
+
+    Public GasCity API/SSE boundary, mutation headers, request IDs, readiness,
+    replay, versioning, and adapter rules.
+
+-   :material-robot-outline: **[AgentWorker Runtime](agent-worker.md)**
+
+    ---
+
+    Headless Claude/Codex worker session lifecycle contract consumed by
+    wiki/forge and future daemon jobs.
+
+-   :material-application-braces-outline: **[OpenClaw Consumer API](openclaw-consumer-api.md)**
+
+    ---
+
+    Read-only projection resources, snapshot versions, mutation gates, and
+    `.agents` non-ownership rules for OpenClaw clients.
+
 -   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
 
     ---

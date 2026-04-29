@@ -2,13 +2,161 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/gascity"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
+
+type fakeRPIGasCityClient struct {
+	cityReadinessCalls int
+	createCalls        []fakeRPIGasCityCreateCall
+	submitCalls        []fakeRPIGasCitySubmitCall
+	streamCalls        []fakeRPIGasCityStreamCall
+	transcriptCalls    []fakeRPIGasCityTranscriptCall
+	session            gascity.Session
+	createMeta         gascity.ResponseMeta
+	submitMeta         gascity.ResponseMeta
+	streamMeta         gascity.ResponseMeta
+	transcriptMeta     gascity.ResponseMeta
+	transcript         gascity.TranscriptResponse
+	stream             *fakeRPIGasCityEventStream
+}
+
+type fakeRPIGasCityCreateCall struct {
+	cityName string
+	req      gascity.SessionCreateRequest
+}
+
+type fakeRPIGasCitySubmitCall struct {
+	cityName  string
+	sessionID string
+	req       gascity.SessionSubmitRequest
+}
+
+type fakeRPIGasCityStreamCall struct {
+	cityName string
+	opts     gascity.EventStreamOptions
+}
+
+type fakeRPIGasCityTranscriptCall struct {
+	cityName  string
+	sessionID string
+	opts      gascity.TranscriptOptions
+}
+
+type fakeRPIGasCityEventStream struct {
+	frames    []gascity.EventStreamFrame
+	nextCalls int
+	closed    bool
+}
+
+func (s *fakeRPIGasCityEventStream) NextEvent() (gascity.EventStreamFrame, error) {
+	s.nextCalls++
+	if len(s.frames) == 0 {
+		return gascity.EventStreamFrame{}, io.EOF
+	}
+	frame := s.frames[0]
+	s.frames = s.frames[1:]
+	return frame, nil
+}
+
+func (s *fakeRPIGasCityEventStream) Close() error {
+	s.closed = true
+	return nil
+}
+
+func (f *fakeRPIGasCityClient) CityReadiness(context.Context, string) (gascity.ReadinessResponse, error) {
+	f.cityReadinessCalls++
+	return gascity.ReadinessResponse{Ready: true}, nil
+}
+
+func (f *fakeRPIGasCityClient) CreateSession(_ context.Context, cityName string, req gascity.SessionCreateRequest) (gascity.Session, gascity.ResponseMeta, error) {
+	f.createCalls = append(f.createCalls, fakeRPIGasCityCreateCall{cityName: cityName, req: req})
+	session := f.session
+	if session.ID == "" {
+		session.ID = "sess_fake"
+	}
+	meta := f.createMeta
+	if meta.RequestID == "" {
+		meta.RequestID = "req-create"
+	}
+	return session, meta, nil
+}
+
+func (f *fakeRPIGasCityClient) SubmitSession(_ context.Context, cityName string, sessionID string, req gascity.SessionSubmitRequest) (gascity.SessionSubmitResponse, gascity.ResponseMeta, error) {
+	f.submitCalls = append(f.submitCalls, fakeRPIGasCitySubmitCall{cityName: cityName, sessionID: sessionID, req: req})
+	meta := f.submitMeta
+	if meta.RequestID == "" {
+		meta.RequestID = "req-submit"
+	}
+	return gascity.SessionSubmitResponse{Queued: true, Intent: req.Intent}, meta, nil
+}
+
+func (f *fakeRPIGasCityClient) GetSession(context.Context, string, string, gascity.SessionGetOptions) (gascity.Session, gascity.ResponseMeta, error) {
+	return gascity.Session{}, gascity.ResponseMeta{}, nil
+}
+
+func (f *fakeRPIGasCityClient) SessionTranscript(_ context.Context, cityName string, sessionID string, opts gascity.TranscriptOptions) (gascity.TranscriptResponse, gascity.ResponseMeta, error) {
+	f.transcriptCalls = append(f.transcriptCalls, fakeRPIGasCityTranscriptCall{cityName: cityName, sessionID: sessionID, opts: opts})
+	transcript := f.transcript
+	if transcript.ID == "" && transcript.SessionID == "" {
+		transcript.ID = sessionID
+		transcript.SessionID = sessionID
+		transcript.Format = opts.Format
+		transcript.Turns = []gascity.TranscriptEntry{{Role: "assistant", Text: "done"}}
+	}
+	meta := f.transcriptMeta
+	if meta.RequestID == "" {
+		meta.RequestID = "req-transcript"
+	}
+	return transcript, meta, nil
+}
+
+func (f *fakeRPIGasCityClient) ListCityEvents(context.Context, string, gascity.EventListParams) (gascity.EventListResponse, gascity.ResponseMeta, error) {
+	return gascity.EventListResponse{}, gascity.ResponseMeta{}, nil
+}
+
+func (f *fakeRPIGasCityClient) StreamCityEvents(_ context.Context, cityName string, opts gascity.EventStreamOptions) (rpiGasCityEventStream, gascity.ResponseMeta, error) {
+	f.streamCalls = append(f.streamCalls, fakeRPIGasCityStreamCall{cityName: cityName, opts: opts})
+	stream := f.stream
+	if stream == nil {
+		sessionID := f.session.ID
+		if sessionID == "" {
+			sessionID = "sess_fake"
+		}
+		stream = &fakeRPIGasCityEventStream{frames: []gascity.EventStreamFrame{{
+			ID: "1",
+			CityEvent: &gascity.EventStreamEnvelope{
+				Seq:     1,
+				Type:    "session.completed",
+				Subject: sessionID,
+				Payload: map[string]any{"status": "completed", "session_id": sessionID},
+			},
+		}}}
+		f.stream = stream
+	}
+	meta := f.streamMeta
+	if meta.RequestID == "" {
+		meta.RequestID = "req-stream"
+	}
+	return stream, meta, nil
+}
+
+func (f *fakeRPIGasCityClient) EmitCityEvent(context.Context, string, gascity.EventEmitRequest) (gascity.EventEmitResponse, gascity.ResponseMeta, error) {
+	return gascity.EventEmitResponse{}, gascity.ResponseMeta{}, nil
+}
 
 // =============================================================================
 // L1: Unit Tests — gcExecutor fields and simple methods
@@ -18,6 +166,30 @@ func TestGCExecutor_Name(t *testing.T) {
 	e := &gcExecutor{}
 	if e.Name() != "gc" {
 		t.Errorf("gcExecutor.Name() = %q, want %q", e.Name(), "gc")
+	}
+}
+
+func TestGCExecutor_AcceptsInjectedGasCityClient(t *testing.T) {
+	fake := &fakeRPIGasCityClient{}
+	e := &gcExecutor{apiClient: fake, apiCityName: "agentops"}
+
+	client, ok := e.gasCityClient()
+	if !ok {
+		t.Fatal("gasCityClient should report an injected client")
+	}
+	if client != fake {
+		t.Fatal("gasCityClient should return the injected fake client")
+	}
+
+	ready, err := client.CityReadiness(context.Background(), "agentops")
+	if err != nil {
+		t.Fatalf("CityReadiness: %v", err)
+	}
+	if !ready.Ready {
+		t.Fatal("fake readiness should be true")
+	}
+	if fake.cityReadinessCalls != 1 {
+		t.Fatalf("cityReadinessCalls = %d, want 1", fake.cityReadinessCalls)
 	}
 }
 
@@ -188,11 +360,15 @@ func TestGCExecutor_CheckSessionDone_Mocked_NotFound(t *testing.T) {
 
 	e := &gcExecutor{execCommand: mock.execCommand, lookPath: mock.lookPathFn}
 	done, err := e.checkSessionDone("/city", "rpi-missing-p1")
-	if err != nil {
-		t.Fatalf("checkSessionDone error: %v", err)
+	if err == nil {
+		t.Fatal("checkSessionDone should return lost error when session is not found")
 	}
-	if !done {
-		t.Error("checkSessionDone should return true when session not found (treated as complete)")
+	if done {
+		t.Error("checkSessionDone should not return done when session is lost")
+	}
+	var lostErr *cliRPI.ProviderSessionLostError
+	if !errors.As(err, &lostErr) {
+		t.Fatalf("err = %T %v, want ProviderSessionLostError", err, err)
 	}
 }
 
@@ -203,11 +379,11 @@ func TestGCExecutor_CheckSessionDone_Mocked_EmptyList(t *testing.T) {
 
 	e := &gcExecutor{execCommand: mock.execCommand, lookPath: mock.lookPathFn}
 	done, err := e.checkSessionDone("/city", "rpi-any-p1")
-	if err != nil {
-		t.Fatalf("checkSessionDone error: %v", err)
+	if err == nil {
+		t.Fatal("checkSessionDone should return lost error when session list is empty")
 	}
-	if !done {
-		t.Error("checkSessionDone should return true when session list is empty")
+	if done {
+		t.Error("checkSessionDone should not return done when session list is empty")
 	}
 }
 
@@ -441,8 +617,41 @@ func TestSelectExecutorFromCaps_GCBackend(t *testing.T) {
 	if executor.Name() != "gc" {
 		t.Errorf("executor.Name() = %q, want %q", executor.Name(), "gc")
 	}
-	if reason != "runtime=gc" {
-		t.Errorf("reason = %q, want %q", reason, "runtime=gc")
+	if reason != "runtime=gc backend=gc-cli-fallback" {
+		t.Errorf("reason = %q, want %q", reason, "runtime=gc backend=gc-cli-fallback")
+	}
+}
+
+func TestSelectExecutorFromCaps_GCAPIBackendReason(t *testing.T) {
+	caps := backendCapabilities{RuntimeMode: "gc"}
+	opts := defaultPhasedEngineOptions()
+	opts.GasCityClient = &fakeRPIGasCityClient{}
+	opts.GCCityName = "agentops"
+
+	executor, reason := selectExecutorFromCaps(caps, "", nil, opts)
+	gcExec, ok := executor.(*gcExecutor)
+	if !ok {
+		t.Fatal("executor is not *gcExecutor")
+	}
+	if gcExec.backendMode() != "gc-api" {
+		t.Fatalf("backendMode = %q, want gc-api", gcExec.backendMode())
+	}
+	if reason != "runtime=gc backend=gc-api" {
+		t.Fatalf("reason = %q, want runtime=gc backend=gc-api", reason)
+	}
+}
+
+func TestSelectExecutorFromCaps_AutoLogsGCDegradedReason(t *testing.T) {
+	caps := backendCapabilities{RuntimeMode: "auto"}
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = t.TempDir()
+
+	executor, reason := selectExecutorFromCaps(caps, "", nil, opts)
+	if executor.Name() == "gc" {
+		t.Fatal("auto mode should not select gc when no city is available")
+	}
+	if !strings.Contains(reason, "gc-degraded=") || !strings.Contains(reason, "city.toml") {
+		t.Fatalf("reason = %q, want degraded city.toml detail", reason)
 	}
 }
 
@@ -633,6 +842,308 @@ func TestGCExecutor_Execute_Mocked_BridgeNotReady(t *testing.T) {
 	}
 }
 
+func TestGCExecutor_Execute_API_CreatesAndSubmitsSession(t *testing.T) {
+	cityDir := setupCityDir(t, "api-create-submit")
+	fake := &fakeRPIGasCityClient{
+		session:    gascity.Session{ID: "sess_rpi_123"},
+		createMeta: gascity.ResponseMeta{RequestID: "req-create-123"},
+		submitMeta: gascity.ResponseMeta{RequestID: "req-submit-456"},
+	}
+	e := &gcExecutor{
+		cityPath:    cityDir,
+		apiClient:   fake,
+		apiCityName: "agentops",
+	}
+
+	err := e.Execute(context.Background(), "phase prompt", cityDir, "run-api", 3)
+	if err != nil {
+		t.Fatalf("Execute with API client: %v", err)
+	}
+
+	if len(fake.createCalls) != 1 {
+		t.Fatalf("create calls = %d, want 1", len(fake.createCalls))
+	}
+	create := fake.createCalls[0]
+	if create.cityName != "agentops" {
+		t.Fatalf("create cityName = %q, want agentops", create.cityName)
+	}
+	if create.req.Alias != "rpi-run-api-p3" {
+		t.Fatalf("create alias = %q, want rpi-run-api-p3", create.req.Alias)
+	}
+	if create.req.Kind != "agent" || create.req.Name != "worker" || !create.req.Async {
+		t.Fatalf("create request = %#v, want async agent worker", create.req)
+	}
+
+	if len(fake.submitCalls) != 1 {
+		t.Fatalf("submit calls = %d, want 1", len(fake.submitCalls))
+	}
+	submit := fake.submitCalls[0]
+	if submit.cityName != "agentops" || submit.sessionID != "sess_rpi_123" {
+		t.Fatalf("submit target = %s/%s, want agentops/sess_rpi_123", submit.cityName, submit.sessionID)
+	}
+	if submit.req.Message != "phase prompt" || submit.req.Intent != "follow_up" {
+		t.Fatalf("submit request = %#v, want prompt follow_up", submit.req)
+	}
+
+	if e.apiLastPhase.SessionID != "sess_rpi_123" ||
+		e.apiLastPhase.CreateRequestID != "req-create-123" ||
+		e.apiLastPhase.SubmitRequestID != "req-submit-456" {
+		t.Fatalf("apiLastPhase = %#v, want session and request IDs recorded", e.apiLastPhase)
+	}
+}
+
+func TestGCExecutor_Execute_API_WaitsForStartedAndCompleteEvents(t *testing.T) {
+	cityDir := setupCityDir(t, "api-event-wait")
+	stream := &fakeRPIGasCityEventStream{frames: []gascity.EventStreamFrame{
+		{
+			ID: "evt-1",
+			CityEvent: &gascity.EventStreamEnvelope{
+				Seq:     1,
+				Type:    "session.started",
+				Subject: "sess_events",
+				Payload: map[string]any{"session_id": "sess_events", "status": "running"},
+			},
+		},
+		{
+			ID: "evt-2",
+			CityEvent: &gascity.EventStreamEnvelope{
+				Seq:     2,
+				Type:    "session.completed",
+				Subject: "sess_events",
+				Payload: map[string]any{"session_id": "sess_events", "status": "completed"},
+			},
+		},
+	}}
+	fake := &fakeRPIGasCityClient{
+		session:    gascity.Session{ID: "sess_events"},
+		streamMeta: gascity.ResponseMeta{RequestID: "req-stream-events"},
+		stream:     stream,
+	}
+	e := &gcExecutor{
+		cityPath:     cityDir,
+		apiClient:    fake,
+		apiCityName:  "agentops",
+		phaseTimeout: time.Second,
+	}
+
+	err := e.Execute(context.Background(), "event prompt", cityDir, "run-events", 1)
+	if err != nil {
+		t.Fatalf("Execute with API events: %v", err)
+	}
+	if len(fake.streamCalls) != 1 || fake.streamCalls[0].cityName != "agentops" {
+		t.Fatalf("stream calls = %#v, want one agentops stream call", fake.streamCalls)
+	}
+	if stream.nextCalls != 2 {
+		t.Fatalf("stream nextCalls = %d, want 2", stream.nextCalls)
+	}
+	if !stream.closed {
+		t.Fatal("event stream should be closed")
+	}
+	if !e.apiLastPhase.StartedEventSeen {
+		t.Fatal("started event should be recorded")
+	}
+	if e.apiLastPhase.TerminalStatus != gascity.TerminalStatusCompleted {
+		t.Fatalf("terminal status = %q, want completed", e.apiLastPhase.TerminalStatus)
+	}
+	if e.apiLastPhase.LastEventID != "evt-2" {
+		t.Fatalf("last event ID = %q, want evt-2", e.apiLastPhase.LastEventID)
+	}
+	if e.apiLastPhase.EventStreamRequestID != "req-stream-events" {
+		t.Fatalf("stream request ID = %q, want req-stream-events", e.apiLastPhase.EventStreamRequestID)
+	}
+}
+
+func TestGCExecutor_Execute_API_WritesTranscriptEvidenceArtifact(t *testing.T) {
+	cityDir := setupCityDir(t, "api-transcript-evidence")
+	fake := &fakeRPIGasCityClient{
+		session:        gascity.Session{ID: "sess_evidence"},
+		createMeta:     gascity.ResponseMeta{RequestID: "req-create-evidence"},
+		submitMeta:     gascity.ResponseMeta{RequestID: "req-submit-evidence"},
+		streamMeta:     gascity.ResponseMeta{RequestID: "req-stream-evidence"},
+		transcriptMeta: gascity.ResponseMeta{RequestID: "req-transcript-evidence"},
+		transcript: gascity.TranscriptResponse{
+			ID:       "transcript-evidence",
+			Format:   "conversation",
+			Turns:    []gascity.TranscriptEntry{{Role: "assistant", Text: "finished"}},
+			Messages: []map[string]any{{"role": "assistant", "content": "finished"}},
+			Artifacts: []gascity.TranscriptArtifact{{
+				Path: ".agents/rpi/phase-2-summary.md",
+				Kind: "summary",
+			}},
+		},
+		stream: &fakeRPIGasCityEventStream{frames: []gascity.EventStreamFrame{{
+			ID: "evidence-cursor",
+			CityEvent: &gascity.EventStreamEnvelope{
+				Seq:     7,
+				Type:    "session.completed",
+				Subject: "sess_evidence",
+				Payload: map[string]any{"session_id": "sess_evidence", "status": "completed"},
+			},
+		}}},
+	}
+	e := &gcExecutor{
+		cityPath:     cityDir,
+		apiClient:    fake,
+		apiCityName:  "agentops",
+		phaseTimeout: time.Second,
+	}
+
+	err := e.Execute(context.Background(), "capture evidence", cityDir, "run-evidence", 2)
+	if err != nil {
+		t.Fatalf("Execute with transcript evidence: %v", err)
+	}
+	if len(fake.transcriptCalls) != 1 {
+		t.Fatalf("transcript calls = %d, want 1", len(fake.transcriptCalls))
+	}
+	if fake.transcriptCalls[0].opts.Format != "conversation" {
+		t.Fatalf("transcript format = %q, want conversation", fake.transcriptCalls[0].opts.Format)
+	}
+	if e.apiLastPhase.EvidencePath == "" {
+		t.Fatal("EvidencePath should be recorded")
+	}
+
+	data, err := os.ReadFile(e.apiLastPhase.EvidencePath)
+	if err != nil {
+		t.Fatalf("read evidence: %v", err)
+	}
+	var evidence cliRPI.GasCityPhaseEvidence
+	if err := json.Unmarshal(data, &evidence); err != nil {
+		t.Fatalf("unmarshal evidence: %v", err)
+	}
+	if evidence.RunID != "run-evidence" || evidence.Phase != 2 || evidence.SessionID != "sess_evidence" {
+		t.Fatalf("unexpected evidence identity: %#v", evidence)
+	}
+	if evidence.EventCursor != "evidence-cursor" || evidence.RequestIDs["transcript"] != "req-transcript-evidence" {
+		t.Fatalf("unexpected evidence metadata: %#v", evidence)
+	}
+	if evidence.TranscriptID != "transcript-evidence" || evidence.TranscriptTurnCount != 1 || evidence.TranscriptMsgCount != 1 {
+		t.Fatalf("unexpected transcript evidence: %#v", evidence)
+	}
+	if len(evidence.TranscriptArtifacts) != 1 || evidence.TranscriptArtifacts[0].Kind != "summary" {
+		t.Fatalf("unexpected transcript artifacts: %#v", evidence.TranscriptArtifacts)
+	}
+}
+
+func TestGCExecutor_Execute_API_HTTPFixtureEndToEnd(t *testing.T) {
+	cityDir := setupCityDir(t, "api-http-fixture")
+	var sawCreate, sawSubmit, sawStream, sawTranscript bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(gascity.RequestIDHeader, "req-"+strings.Trim(strings.ReplaceAll(r.URL.Path, "/", "-"), "-"))
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/readiness":
+			_ = json.NewEncoder(w).Encode(gascity.ReadinessResponse{Ready: true, Status: "ready"})
+		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/sessions":
+			sawCreate = true
+			if got := r.Header.Get(gascity.MutationHeader); got == "" {
+				t.Fatalf("create missing %s", gascity.MutationHeader)
+			}
+			var req gascity.SessionCreateRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode create: %v", err)
+			}
+			if req.Alias != "rpi-run-http-p2" || req.Name != "worker" || !req.Async {
+				t.Fatalf("create request = %#v", req)
+			}
+			_ = json.NewEncoder(w).Encode(gascity.Session{ID: "sess_http", Alias: req.Alias, Running: true})
+		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/session/sess_http/submit":
+			sawSubmit = true
+			if got := r.Header.Get(gascity.MutationHeader); got == "" {
+				t.Fatalf("submit missing %s", gascity.MutationHeader)
+			}
+			var req gascity.SessionSubmitRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode submit: %v", err)
+			}
+			if req.Message != "http fixture prompt" || req.Intent != "follow_up" {
+				t.Fatalf("submit request = %#v", req)
+			}
+			_ = json.NewEncoder(w).Encode(gascity.SessionSubmitResponse{Queued: true, Intent: req.Intent})
+		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/events/stream":
+			sawStream = true
+			w.Header().Set("Content-Type", "text/event-stream")
+			writeSSEFrame(t, w, "http-1", gascity.EventStreamEnvelope{
+				Seq:     1,
+				Type:    "session.started",
+				Subject: "sess_http",
+				Payload: map[string]any{"session_id": "sess_http", "status": "running"},
+			})
+			writeSSEFrame(t, w, "http-2", gascity.EventStreamEnvelope{
+				Seq:     2,
+				Type:    "session.completed",
+				Subject: "sess_http",
+				Payload: map[string]any{"session_id": "sess_http", "status": "completed"},
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/session/sess_http/transcript":
+			sawTranscript = true
+			if got := r.URL.Query().Get("format"); got != "conversation" {
+				t.Fatalf("transcript format = %q, want conversation", got)
+			}
+			_ = json.NewEncoder(w).Encode(gascity.TranscriptResponse{
+				ID:       "transcript-http",
+				Format:   "conversation",
+				Turns:    []gascity.TranscriptEntry{{Role: "assistant", Text: "done"}},
+				Messages: []map[string]any{{"role": "assistant", "content": "done"}},
+			})
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	client, err := gascity.NewClient(gascity.Config{Endpoint: server.URL, MutationToken: "agentops-test"})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	e := &gcExecutor{
+		cityPath:     cityDir,
+		apiClient:    &rpiGasCityAPIAdapter{client: client},
+		apiCityName:  "agentops",
+		phaseTimeout: time.Second,
+	}
+
+	if err := e.Execute(context.Background(), "http fixture prompt", cityDir, "run-http", 2); err != nil {
+		t.Fatalf("Execute HTTP fixture: %v", err)
+	}
+	for name, saw := range map[string]bool{
+		"create":     sawCreate,
+		"submit":     sawSubmit,
+		"stream":     sawStream,
+		"transcript": sawTranscript,
+	} {
+		if !saw {
+			t.Fatalf("server did not see %s request", name)
+		}
+	}
+	if e.apiLastPhase.TerminalStatus != gascity.TerminalStatusCompleted ||
+		e.apiLastPhase.LastEventID != "http-2" ||
+		e.apiLastPhase.EvidencePath == "" {
+		t.Fatalf("apiLastPhase = %#v", e.apiLastPhase)
+	}
+	data, err := os.ReadFile(e.apiLastPhase.EvidencePath)
+	if err != nil {
+		t.Fatalf("read HTTP fixture evidence: %v", err)
+	}
+	if !strings.Contains(string(data), `"transcript_id": "transcript-http"`) ||
+		!strings.Contains(string(data), `"event_cursor": "http-2"`) {
+		t.Fatalf("evidence missing transcript/cursor:\n%s", string(data))
+	}
+}
+
+func writeSSEFrame(t *testing.T, w http.ResponseWriter, id string, event gascity.EventStreamEnvelope) {
+	t.Helper()
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("marshal SSE event: %v", err)
+	}
+	fmt.Fprintf(w, "id: %s\n", id)
+	fmt.Fprintln(w, "event: event")
+	fmt.Fprintf(w, "data: %s\n\n", data)
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func TestGCExecutor_Execute_Mocked_SessionCreateFails(t *testing.T) {
 	cityDir := setupCityDir(t, "create-fail")
 	mock := newGCMock()
@@ -670,6 +1181,30 @@ func TestGCExecutor_PollSessionCompletion_Mocked_ImmediateComplete(t *testing.T)
 	err := e.pollSessionCompletion(context.Background(), cityDir, "rpi-poll-p1", "run-poll", 1)
 	if err != nil {
 		t.Errorf("pollSessionCompletion error: %v", err)
+	}
+}
+
+func TestGCExecutor_PollSessionCompletion_Mocked_LostSessionReturnsError(t *testing.T) {
+	cityDir := setupCityDir(t, "poll-lost")
+	mock := newGCMock()
+	mock.on("session list --json", gcMockHandler{Stdout: `[]`})
+	mock.install(t)
+
+	e := &gcExecutor{
+		cityPath:     cityDir,
+		pollInterval: 10 * time.Millisecond,
+		phaseTimeout: time.Second,
+		execCommand:  mock.execCommand,
+		lookPath:     mock.lookPathFn,
+	}
+
+	err := e.pollSessionCompletion(context.Background(), cityDir, "rpi-lost-p1", "run-lost", 1)
+	if err == nil {
+		t.Fatal("pollSessionCompletion should return lost error")
+	}
+	var lostErr *cliRPI.ProviderSessionLostError
+	if !errors.As(err, &lostErr) {
+		t.Fatalf("err = %T %v, want ProviderSessionLostError", err, err)
 	}
 }
 
@@ -806,11 +1341,15 @@ func TestGCExecutor_CheckSessionDone_Live(t *testing.T) {
 	e := &gcExecutor{cityPath: cityPath}
 	// Check for a session that almost certainly doesn't exist
 	done, err := e.checkSessionDone(cityPath, "nonexistent-session-xyz")
-	if err != nil {
-		t.Fatalf("checkSessionDone error: %v", err)
+	if err == nil {
+		t.Fatal("checkSessionDone should return lost error for nonexistent session")
 	}
-	if !done {
-		t.Error("nonexistent session should be treated as done")
+	if done {
+		t.Fatal("nonexistent session should not be treated as done")
+	}
+	var lostErr *cliRPI.ProviderSessionLostError
+	if !errors.As(err, &lostErr) {
+		t.Fatalf("err = %T %v, want ProviderSessionLostError", err, err)
 	}
 }
 

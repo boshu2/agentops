@@ -2,9 +2,25 @@ package rpi
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 )
+
+func TestProviderSessionLostError(t *testing.T) {
+	err := &ProviderSessionLostError{SessionAlias: "rpi-run-p1"}
+	if !strings.Contains(err.Error(), ProviderSessionLost) ||
+		!strings.Contains(err.Error(), "rpi-run-p1") {
+		t.Fatalf("lost error = %q", err.Error())
+	}
+	var target *ProviderSessionLostError
+	if !errors.As(err, &target) {
+		t.Fatal("ProviderSessionLostError should be discoverable with errors.As")
+	}
+	if ProviderUnreachable != "provider_unreachable" {
+		t.Fatalf("ProviderUnreachable = %q", ProviderUnreachable)
+	}
+}
 
 // TestNextWorkItem_ProbedFieldsRoundTrip verifies the probed_stale_at /
 // probed_by fields survive a Marshal/Unmarshal round trip and end up in the

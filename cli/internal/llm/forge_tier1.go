@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/agentworker"
 	"github.com/boshu2/agentops/cli/internal/parser"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -56,6 +57,18 @@ type Tier1Options struct {
 	// Generator instead of hitting a real ollama endpoint. Unexported — use
 	// SetGeneratorFactory.
 	clientFactory func(opts OllamaOptions) (Generator, error)
+
+	// Worker routes Tier 1 generation through the shared AgentWorker runtime.
+	// This is the daemon/GasCity-compatible path; Ollama remains the legacy
+	// fallback when Worker is nil.
+	Worker         agentworker.AgentWorker
+	WorkerKind     agentworker.WorkerKind
+	WorkerProvider agentworker.Provider
+	WorkerTimeout  time.Duration
+
+	// LegacyLocalLLM must be set before RunForgeTier1 constructs an Ollama
+	// client. AgentWorker is the default runtime boundary.
+	LegacyLocalLLM bool
 }
 
 // SetGeneratorFactory overrides the LLM backend factory on the options. Used
@@ -94,6 +107,9 @@ func RunForgeTier1(opts Tier1Options) (*Tier1Result, error) {
 	}
 	if opts.Model == "" {
 		return nil, fmt.Errorf("tier1: Model is required")
+	}
+	if opts.Worker == nil && opts.clientFactory == nil && !opts.LegacyLocalLLM {
+		return nil, fmt.Errorf("tier1: local Ollama LLM is legacy-only; set LegacyLocalLLM or provide an AgentWorker")
 	}
 	if opts.Endpoint == "" {
 		opts.Endpoint = ResolveDefaultEndpoint()
@@ -272,9 +288,20 @@ func sanitizeSessionID(s string) string {
 	return b.String()
 }
 
-// buildGenerator constructs the LLM client — either via the injected factory
-// (tests) or via NewOllamaClient (production).
+// buildGenerator constructs the generator. AgentWorker is the product path;
+// Ollama is retained only when LegacyLocalLLM has been explicitly enabled by
+// RunForgeTier1 validation.
 func buildGenerator(opts Tier1Options) (Generator, error) {
+	if opts.Worker != nil {
+		return NewAgentWorkerGenerator(AgentWorkerGeneratorOptions{
+			Worker:     opts.Worker,
+			WorkerKind: opts.WorkerKind,
+			Provider:   opts.WorkerProvider,
+			Model:      opts.Model,
+			CWD:        opts.Workspace,
+			Timeout:    opts.WorkerTimeout,
+		})
+	}
 	ollamaOpts := OllamaOptions{
 		Endpoint:   opts.Endpoint,
 		Model:      opts.Model,

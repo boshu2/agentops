@@ -1,0 +1,76 @@
+$ bash tests/docs/validate-doc-release.sh
+=== Link validation ===
+
+1588 links checked, 0 broken (0 allowlisted, 44 mkdocs-generated)
+PASS: Link validation
+
+=== Skill count validation ===
+=== Actual counts from disk ===
+  Skill directories: 69
+  Codex skill directories: 69
+  Codex override directories: 35
+  SKILL-TIERS.md user-facing table rows: 60
+  SKILL-TIERS.md internal table rows: 9
+  Table total: 69
+
+=== SKILL-TIERS.md header claims ===
+  User-facing claim: 60
+  Internal claim: 9
+
+=== docs/SKILLS.md claims ===
+  Header total: 69
+  Header user-facing: 60
+  Header internal: 9
+  /update total: 69
+
+=== docs/ARCHITECTURE.md claims ===
+  Total: 69
+  User-facing: 60
+  Internal: 9
+
+=== PRODUCT.md claims ===
+  Total: 69
+  Skill layer heading: 69
+  Convergence skill count: 69
+  Distribution shared skills: 69
+  Distribution Codex artifacts: 69
+  Distribution Codex overrides: 35
+
+=== Cross-file consistency ===
+
+PASS: All skill counts consistent (total=69, user-facing=60, internal=9)
+PASS: Skill count validation
+
+=== Skill count sync check ===
+Skill counts from disk:
+  Total:       69
+  User-facing: 60
+  Internal:    9
+  Codex:       69
+  Overrides:   35
+  Hook events: 12
+
+OK:   SKILL-TIERS.md user-facing header
+OK:   SKILL-TIERS.md internal header
+OK:   docs/SKILLS.md header
+OK:   docs/SKILLS.md /update command
+OK:   docs/ARCHITECTURE.md skills tree
+OK:   PRODUCT.md convergence skill count
+OK:   PRODUCT.md skills layer heading
+OK:   PRODUCT.md zero-setup value proposition
+OK:   PRODUCT.md distribution/runtime reach
+
+
+DONE: All counts already in sync.
+PASS: Skill count sync check
+
+=== CLI skills map validation ===
+CLI_SKILLS_MAP: PASS (generated CLI command headings: 58)
+PASS: CLI skills map validation
+
+=== Release message freeze validation ===
+PASS: release message freeze intact
+PASS: Release message freeze validation
+
+PASS: doc-release gate succeeded
+status=0

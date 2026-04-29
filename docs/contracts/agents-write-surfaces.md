@@ -31,6 +31,7 @@ allowlist nor an active skill name fails the gate.
 | `config` | cli (.agents/.config) | persistent | Rig identity (project/crew) — read by harvest path-prefix fallback |
 | `constraints` | cli (constraints subsystem) | persistent | Compiled constraint manifests |
 | `context` | cli (`cli/cmd/ao/inject_context_paths.go`) | rolling | Per-run adhoc context injection paths keyed by run ID |
+| `daemon` | cli (`agentopsd`, daemon store/projections, OpenClaw snapshots) | persistent | Authoritative daemon ledger, queue/job projections, activation state, and consumer snapshots |
 | `defrag` | cli (compile defrag), scripts | rolling | Defrag run state and dry-run reports |
 | `evals` | cli eval runtime, scripts (`eval-agentops`) | persistent | Eval run outputs, promoted baselines, and suite execution state |
 | `findings` | scripts, /forge | persistent | Mined findings awaiting promotion |
@@ -52,6 +53,7 @@ allowlist nor an active skill name fails the gate.
 | `pre-mortem-checks` | /pre-mortem | persistent | Pre-mortem check templates and runs |
 | `products` | /product | persistent | Product validation artifacts |
 | `profile` | cli (profile subsystem) | persistent | Repo execution profile cache |
+| `quarantine` | cli (daemon/wiki worker retry policy) | rolling | Failed daemon worker payloads and retry/quarantine evidence for operator review |
 | `releases` | scripts (`ci-local-release`) | rolling | Local CI release evidence |
 | `retros` | /retro | persistent | Retrospectives |
 | `sessions` | cli (`.agents/ao/sessions`), hooks | rolling | Session transcripts and matches |
@@ -88,6 +90,7 @@ compiled
 config
 constraints
 context
+daemon
 defrag
 evals
 findings
@@ -109,6 +112,7 @@ pool
 pre-mortem-checks
 products
 profile
+quarantine
 releases
 retros
 sessions

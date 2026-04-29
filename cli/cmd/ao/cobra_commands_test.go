@@ -80,6 +80,7 @@ func executeCommand(args ...string) (string, error) {
 	origFindingsPullAll := findingsPullAll
 	origFindingsPullForce := findingsPullForce
 	origFindingsRetireBy := findingsRetireBy
+	origForgeTier1LegacyLocalLLM := forgeTier1LegacyLocalLLM
 	origScenarioListStatus := scenarioListStatus
 	origOvernightGoal := overnightGoal
 	origOvernightOutputDir := overnightOutputDir
@@ -89,6 +90,10 @@ func executeCommand(args ...string) (string, error) {
 	origOvernightRunners := append([]string{}, overnightRunners...)
 	origOvernightModels := overnightModels
 	origOvernightCreative := overnightCreative
+	origOvernightDaemonSubmit := overnightDaemonSubmit
+	origOvernightDaemonURL := overnightDaemonURL
+	origOvernightDaemonToken := overnightDaemonToken
+	origOvernightDaemonFallback := overnightDaemonFallback
 	origOvernightReportFrom := overnightReportFrom
 	origOvernightSetupApply := overnightSetupApply
 	origOvernightSetupScheduler := overnightSetupScheduler
@@ -170,6 +175,7 @@ func executeCommand(args ...string) (string, error) {
 		findingsPullAll = origFindingsPullAll
 		findingsPullForce = origFindingsPullForce
 		findingsRetireBy = origFindingsRetireBy
+		forgeTier1LegacyLocalLLM = origForgeTier1LegacyLocalLLM
 		scenarioListStatus = origScenarioListStatus
 		overnightGoal = origOvernightGoal
 		overnightOutputDir = origOvernightOutputDir
@@ -179,6 +185,10 @@ func executeCommand(args ...string) (string, error) {
 		overnightRunners = append([]string{}, origOvernightRunners...)
 		overnightModels = origOvernightModels
 		overnightCreative = origOvernightCreative
+		overnightDaemonSubmit = origOvernightDaemonSubmit
+		overnightDaemonURL = origOvernightDaemonURL
+		overnightDaemonToken = origOvernightDaemonToken
+		overnightDaemonFallback = origOvernightDaemonFallback
 		overnightReportFrom = origOvernightReportFrom
 		overnightSetupApply = origOvernightSetupApply
 		overnightSetupScheduler = origOvernightSetupScheduler
@@ -255,6 +265,7 @@ func executeCommand(args ...string) (string, error) {
 	findingsPullAll = false
 	findingsPullForce = false
 	findingsRetireBy = ""
+	forgeTier1LegacyLocalLLM = false
 	scenarioListStatus = ""
 	evalRunOutput = ""
 	evalRunID = ""
@@ -281,6 +292,10 @@ func executeCommand(args ...string) (string, error) {
 	overnightRunners = nil
 	overnightModels = ""
 	overnightCreative = false
+	overnightDaemonSubmit = false
+	overnightDaemonURL = ""
+	overnightDaemonToken = ""
+	overnightDaemonFallback = false
 	overnightReportFrom = ""
 	overnightSetupApply = false
 	overnightSetupScheduler = "auto"
@@ -404,7 +419,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",
@@ -427,6 +442,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
+		"daemon":     {"run", "ready", "status", "service"},
 		"eval":       {"run", "compare", "baseline", "scorecard", "coverage"},
 		"factory":    {"start"},
 		"goals":      {"validate", "measure", "drift"},
@@ -463,7 +479,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",

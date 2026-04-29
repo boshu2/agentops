@@ -1,0 +1,16 @@
+{
+  "id": "sess_123",
+  "template": "agentops/codex",
+  "provider": "codex",
+  "format": "conversation",
+  "turns": [
+    {
+      "role": "user",
+      "text": "continue"
+    },
+    {
+      "role": "assistant",
+      "text": "done"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"strings"
+
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+)
+
+func maybeSubmitRPIPhasedDaemon(ctx context.Context, opts phasedEngineOptions, args []string) (bool, error) {
+	if !opts.DaemonSubmit {
+		return false, nil
+	}
+	result, err := submitRPIPhasedDaemon(ctx, opts, args)
+	if err != nil {
+		if opts.DaemonFallback {
+			fmt.Printf("agentopsd unavailable, falling back to foreground RPI: %v\n", err)
+			return false, nil
+		}
+		return true, err
+	}
+	fmt.Printf("RPI daemon submit accepted: job=%s request=%s status=%s\n", result.JobID, result.RequestID, result.Status)
+	return true, nil
+}
+
+func submitRPIPhasedDaemon(ctx context.Context, opts phasedEngineOptions, args []string) (daemonpkg.SubmitJobResponse, error) {
+	cwd := strings.TrimSpace(opts.WorkingDir)
+	if cwd == "" {
+		var err error
+		cwd, err = os.Getwd()
+		if err != nil {
+			return daemonpkg.SubmitJobResponse{}, fmt.Errorf("get working directory: %w", err)
+		}
+	}
+	baseURL, err := resolveDaemonURL(cwd, opts.DaemonURL)
+	if err != nil {
+		return daemonpkg.SubmitJobResponse{}, err
+	}
+	ready, err := fetchDaemonReady(ctx, baseURL)
+	if err != nil {
+		return daemonpkg.SubmitJobResponse{}, fmt.Errorf("daemon ready check failed: %w", err)
+	}
+	if !ready.Ready {
+		return daemonpkg.SubmitJobResponse{}, fmt.Errorf("daemon is not ready: replay=%s projection=%s", ready.LedgerReplayStatus, ready.ProjectionStatus)
+	}
+
+	goal, startPhase, err := resolveGoalAndStartPhase(opts, args, cwd)
+	if err != nil {
+		return daemonpkg.SubmitJobResponse{}, err
+	}
+	runID := strings.TrimSpace(opts.RunID)
+	if runID == "" {
+		runID = generateRunID()
+	}
+	spec := daemonpkg.NewRPIRunJobSpec(runID, goal)
+	spec.StartPhase = startPhase
+	spec.MaxPhase = 3
+	spec.TestFirst = opts.TestFirst
+	spec.Complexity = string(classifyComplexity(goal))
+	spec.Backend = daemonpkg.RPIBackendGasCityAPI
+	job, err := spec.ToJobSpec("job-rpi-" + runID)
+	if err != nil {
+		return daemonpkg.SubmitJobResponse{}, err
+	}
+	req := daemonpkg.SubmitJobRequest{
+		RequestID:      "req-rpi-" + runID,
+		JobID:          job.ID,
+		JobType:        job.Type,
+		IdempotencyKey: "rpi.run:" + runID,
+		Payload:        job.Payload,
+	}
+	return postDaemonSubmitJob(ctx, baseURL, opts.DaemonToken, req)
+}
+
+func postDaemonSubmitJob(ctx context.Context, baseURL, token string, request daemonpkg.SubmitJobRequest) (daemonpkg.SubmitJobResponse, error) {
+	var response daemonpkg.SubmitJobResponse
+	data, err := json.Marshal(request)
+	if err != nil {
+		return response, err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(baseURL, "/")+"/v1/jobs", bytes.NewReader(data))
+	if err != nil {
+		return response, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		httpReq.Header.Set(daemonpkg.DefaultMutationTokenHeader, token)
+	}
+	resp, err := (&http.Client{}).Do(httpReq)
+	if err != nil {
+		return response, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return response, fmt.Errorf("daemon submit returned HTTP %d", resp.StatusCode)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return response, err
+	}
+	return response, nil
+}

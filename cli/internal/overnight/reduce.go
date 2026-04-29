@@ -2,12 +2,16 @@ package overnight
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 )
@@ -103,6 +107,49 @@ type ReduceResult struct {
 	Duration time.Duration
 }
 
+type ReduceStageJobOptions struct {
+	Spec                   daemon.DreamStageJobSpec
+	RunOptions             RunLoopOptions
+	Ingest                 *IngestResult
+	Checkpoint             *Checkpoint
+	CheckpointManifestPath string
+	CloseLoopCallbacks     lifecycle.CloseLoopOpts
+	Log                    io.Writer
+	Now                    func() time.Time
+}
+
+type ReduceStageJobResult struct {
+	SchemaVersion               int               `json:"schema_version"`
+	DreamRunID                  string            `json:"dream_run_id"`
+	IterationID                 string            `json:"iteration_id,omitempty"`
+	Stage                       string            `json:"stage"`
+	Status                      string            `json:"status"`
+	OutputDir                   string            `json:"output_dir"`
+	ResultPath                  string            `json:"result_path"`
+	CheckpointManifestPath      string            `json:"checkpoint_manifest_path,omitempty"`
+	CheckpointPath              string            `json:"checkpoint_path,omitempty"`
+	StartedAt                   string            `json:"started_at"`
+	CompletedAt                 string            `json:"completed_at"`
+	DurationMillis              int64             `json:"duration_millis"`
+	HarvestPromoted             int               `json:"harvest_promoted"`
+	DedupMerged                 int               `json:"dedup_merged"`
+	MaturityTempered            int               `json:"maturity_tempered"`
+	DefragPruned                int               `json:"defrag_pruned"`
+	CloseLoopPromoted           int               `json:"close_loop_promoted"`
+	FindingsRouted              int               `json:"findings_routed"`
+	GeneratorCandidatesRouted   int               `json:"generator_candidates_routed"`
+	GeneratorCandidatesSkipped  int               `json:"generator_candidates_skipped"`
+	GeneratorSidecarsAggregated int               `json:"generator_sidecars_aggregated"`
+	GeneratorSidecarsSoftFailed int               `json:"generator_sidecars_soft_failed"`
+	InjectRefreshed             bool              `json:"inject_refreshed"`
+	MetadataIntegrityPass       bool              `json:"metadata_integrity_pass"`
+	MetadataIntegrityStripCount int               `json:"metadata_integrity_strip_count"`
+	RolledBack                  bool              `json:"rolled_back"`
+	RollbackReason              string            `json:"rollback_reason,omitempty"`
+	Degraded                    []string          `json:"degraded,omitempty"`
+	StageFailures               map[string]string `json:"stage_failures,omitempty"`
+}
+
 // reduceStage is a small struct used by RunReduce to label each ordered
 // step in the stage order. It stays package-private because the stage
 // order is a contract that lives in the RunReduce implementation, not
@@ -182,6 +229,200 @@ func RunReduce(
 	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/reduce: done in %s\n", result.Duration)
 	return result, nil
+}
+
+func RunReduceStageJob(ctx context.Context, opts ReduceStageJobOptions) (ReduceStageJobResult, error) {
+	spec := opts.Spec
+	if err := spec.Validate(); err != nil {
+		return ReduceStageJobResult{}, err
+	}
+	if spec.Stage != daemon.DreamStageReduce {
+		return ReduceStageJobResult{}, fmt.Errorf("overnight/reduce: stage job has stage %q, want %q", spec.Stage, daemon.DreamStageReduce)
+	}
+	now := opts.Now
+	if now == nil {
+		now = func() time.Time { return time.Now().UTC() }
+	}
+	started := now().UTC()
+	runOpts := opts.RunOptions
+	if runOpts.Cwd == "" {
+		return ReduceStageJobResult{}, fmt.Errorf("overnight/reduce: stage job requires RunOptions.Cwd")
+	}
+	if runOpts.OutputDir == "" {
+		runOpts.OutputDir = spec.OutputDir
+	}
+	if runOpts.OutputDir == "" {
+		return ReduceStageJobResult{}, fmt.Errorf("overnight/reduce: stage job requires output_dir")
+	}
+	if runOpts.RunID == "" {
+		runOpts.RunID = spec.DreamRunID
+	}
+	cp, manifestPath, err := reduceStageCheckpoint(spec, runOpts, opts)
+	if err != nil {
+		return ReduceStageJobResult{}, err
+	}
+	result, reduceErr := RunReduce(ctx, runOpts, opts.Ingest, cp, opts.CloseLoopCallbacks, opts.Log)
+	completed := now().UTC()
+	stageResult := buildReduceStageJobResult(spec, runOpts.OutputDir, manifestPath, started, completed, result, reduceErr)
+	path, writeErr := WriteReduceStageJobResult(runOpts.OutputDir, stageResult)
+	stageResult.ResultPath = path
+	if reduceErr != nil {
+		if writeErr != nil {
+			return stageResult, fmt.Errorf("%w; write reduce stage result: %v", reduceErr, writeErr)
+		}
+		return stageResult, reduceErr
+	}
+	if writeErr != nil {
+		return stageResult, writeErr
+	}
+	return stageResult, nil
+}
+
+func ReduceStageJobResultPath(outputDir string) string {
+	return filepath.Join(outputDir, "stages", "reduce-result.json")
+}
+
+func WriteReduceStageJobResult(outputDir string, result ReduceStageJobResult) (string, error) {
+	if outputDir == "" {
+		return "", fmt.Errorf("overnight/reduce: output_dir is required")
+	}
+	path := ReduceStageJobResultPath(outputDir)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", fmt.Errorf("overnight/reduce: mkdir stage result dir: %w", err)
+	}
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("overnight/reduce: marshal stage result: %w", err)
+	}
+	data = append(data, '\n')
+	if err := writeFileAtomic(path, data, 0o644); err != nil {
+		return "", fmt.Errorf("overnight/reduce: write stage result: %w", err)
+	}
+	return path, nil
+}
+
+func reduceStageCheckpoint(
+	spec daemon.DreamStageJobSpec,
+	runOpts RunLoopOptions,
+	opts ReduceStageJobOptions,
+) (*Checkpoint, string, error) {
+	if opts.Checkpoint != nil {
+		manifestPath := opts.CheckpointManifestPath
+		if manifestPath == "" {
+			manifestPath = filepath.Join(runOpts.OutputDir, "stages", CheckpointManifestFileName)
+		}
+		if err := WriteCheckpointManifest(manifestPath, opts.Checkpoint.Manifest()); err != nil {
+			return nil, "", err
+		}
+		return opts.Checkpoint, manifestPath, nil
+	}
+	manifestPath := firstNonEmptyString(opts.CheckpointManifestPath, spec.CheckpointDir)
+	if manifestPath != "" {
+		manifestPath = resolveCheckpointManifestPath(manifestPath)
+		manifest, err := ReadCheckpointManifest(manifestPath)
+		if err != nil {
+			return nil, "", err
+		}
+		cp, err := CheckpointFromManifest(manifest)
+		return cp, manifestPath, err
+	}
+	iterationID := spec.IterationID
+	if iterationID == "" {
+		iterationID = fmt.Sprintf("%s-iter-%d", spec.DreamRunID, firstPositiveInt(spec.Iteration, 1))
+	}
+	cp, err := NewCheckpoint(runOpts.Cwd, iterationID, normalizedCheckpointMaxBytes(runOpts))
+	if err != nil {
+		return nil, "", err
+	}
+	manifestPath = filepath.Join(runOpts.OutputDir, "stages", CheckpointManifestFileName)
+	if err := WriteCheckpointManifest(manifestPath, cp.Manifest()); err != nil {
+		return nil, "", err
+	}
+	return cp, manifestPath, nil
+}
+
+func buildReduceStageJobResult(
+	spec daemon.DreamStageJobSpec,
+	outputDir string,
+	manifestPath string,
+	started time.Time,
+	completed time.Time,
+	reduce *ReduceResult,
+	runErr error,
+) ReduceStageJobResult {
+	status := "completed"
+	if runErr != nil {
+		status = "failed"
+	}
+	result := ReduceStageJobResult{
+		SchemaVersion:          1,
+		DreamRunID:             spec.DreamRunID,
+		IterationID:            spec.IterationID,
+		Stage:                  string(daemon.DreamStageReduce),
+		Status:                 status,
+		OutputDir:              outputDir,
+		CheckpointManifestPath: manifestPath,
+		StartedAt:              started.UTC().Format(time.RFC3339Nano),
+		CompletedAt:            completed.UTC().Format(time.RFC3339Nano),
+		DurationMillis:         completed.Sub(started).Milliseconds(),
+	}
+	if reduce == nil {
+		return result
+	}
+	result.CheckpointPath = reduce.CheckpointPath
+	result.HarvestPromoted = reduce.HarvestPromoted
+	result.DedupMerged = reduce.DedupMerged
+	result.MaturityTempered = reduce.MaturityTempered
+	result.DefragPruned = reduce.DefragPruned
+	result.CloseLoopPromoted = reduce.CloseLoopPromoted
+	result.FindingsRouted = reduce.FindingsRouted
+	result.GeneratorCandidatesRouted = reduce.GeneratorCandidatesRouted
+	result.GeneratorCandidatesSkipped = reduce.GeneratorCandidatesSkipped
+	result.GeneratorSidecarsAggregated = reduce.GeneratorSidecarsAggregated
+	result.GeneratorSidecarsSoftFailed = reduce.GeneratorSidecarsSoftFailed
+	result.InjectRefreshed = reduce.InjectRefreshed
+	result.MetadataIntegrityPass = reduce.MetadataIntegrity.Pass
+	result.MetadataIntegrityStripCount = len(reduce.MetadataIntegrity.StrippedFields)
+	result.RolledBack = reduce.RolledBack
+	result.RollbackReason = reduce.RollbackReason
+	result.Degraded = append([]string(nil), reduce.Degraded...)
+	result.StageFailures = cloneStringMap(reduce.StageFailures)
+	return result
+}
+
+func resolveCheckpointManifestPath(path string) string {
+	if strings.TrimSpace(path) == "" {
+		return ""
+	}
+	if filepath.Ext(path) == ".json" {
+		return path
+	}
+	return filepath.Join(path, CheckpointManifestFileName)
+}
+
+func normalizedCheckpointMaxBytes(opts RunLoopOptions) int64 {
+	if opts.CheckpointMaxBytes > 0 {
+		return opts.CheckpointMaxBytes
+	}
+	return defaultCheckpointMaxBytes
+}
+
+func firstPositiveInt(values ...int) int {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 type reduceRunner struct {

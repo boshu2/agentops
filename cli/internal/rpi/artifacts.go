@@ -1,15 +1,22 @@
 package rpi
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // PhaseArtifactNumberPattern matches phase-N in artifact filenames.
 var PhaseArtifactNumberPattern = regexp.MustCompile(`phase-(\d+)`)
+
+// GasCityPhaseEvidenceFileFmt is the filename pattern for per-phase GasCity
+// session evidence captured after a terminal provider event.
+const GasCityPhaseEvidenceFileFmt = "phase-%d-gascity-evidence.json"
 
 // ArtifactRef is a reference to an RPI artifact on disk.
 type ArtifactRef struct {
@@ -33,6 +40,36 @@ type ArtifactContent struct {
 	Truncated   bool   `json:"truncated,omitempty"`
 }
 
+// GasCityPhaseEvidence records provider correlation and transcript metadata
+// for a GasCity-backed RPI phase. The transcript body may remain in GasCity;
+// this file is the durable AgentOps registry projection.
+type GasCityPhaseEvidence struct {
+	SchemaVersion        int                         `json:"schema_version"`
+	RunID                string                      `json:"run_id"`
+	Phase                int                         `json:"phase"`
+	PhaseName            string                      `json:"phase_name,omitempty"`
+	CityName             string                      `json:"city_name"`
+	SessionID            string                      `json:"session_id"`
+	SessionAlias         string                      `json:"session_alias,omitempty"`
+	Status               string                      `json:"status"`
+	EventCursor          string                      `json:"event_cursor,omitempty"`
+	RequestIDs           map[string]string           `json:"request_ids,omitempty"`
+	TranscriptID         string                      `json:"transcript_id,omitempty"`
+	TranscriptFormat     string                      `json:"transcript_format,omitempty"`
+	TranscriptTurnCount  int                         `json:"transcript_turn_count,omitempty"`
+	TranscriptMsgCount   int                         `json:"transcript_message_count,omitempty"`
+	TranscriptArtifacts  []GasCityTranscriptArtifact `json:"transcript_artifacts,omitempty"`
+	TranscriptCapturedAt string                      `json:"transcript_captured_at,omitempty"`
+	RecordedAt           string                      `json:"recorded_at"`
+}
+
+// GasCityTranscriptArtifact is one artifact reference returned by GasCity's
+// transcript/result evidence endpoint.
+type GasCityTranscriptArtifact struct {
+	Path string `json:"path"`
+	Kind string `json:"kind,omitempty"`
+}
+
 // PathClean normalises a relative path to forward-slash form.
 func PathClean(rel string) string {
 	return filepath.ToSlash(filepath.Clean(filepath.FromSlash(strings.TrimSpace(rel))))
@@ -48,6 +85,47 @@ func IsSafeArtifactRelPath(rel string) bool {
 		return false
 	}
 	return true
+}
+
+// GasCityPhaseEvidencePath returns the registry path for one phase's GasCity
+// evidence. When a run ID is available, evidence is stored under the per-run
+// registry; otherwise it falls back to the legacy .agents/rpi directory.
+func GasCityPhaseEvidencePath(cwd, runID string, phase int) string {
+	file := fmt.Sprintf(GasCityPhaseEvidenceFileFmt, phase)
+	if runDir := RPIRunRegistryDir(cwd, runID); runDir != "" {
+		return filepath.Join(runDir, file)
+	}
+	return filepath.Join(cwd, ".agents", "rpi", file)
+}
+
+// WriteGasCityPhaseEvidence writes GasCity phase evidence atomically and returns
+// the absolute path that was written.
+func WriteGasCityPhaseEvidence(cwd string, evidence GasCityPhaseEvidence) (string, error) {
+	if strings.TrimSpace(cwd) == "" {
+		return "", fmt.Errorf("cwd is required")
+	}
+	if evidence.Phase <= 0 {
+		return "", fmt.Errorf("phase must be positive")
+	}
+	if evidence.SchemaVersion == 0 {
+		evidence.SchemaVersion = 1
+	}
+	if evidence.RecordedAt == "" {
+		evidence.RecordedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	path := GasCityPhaseEvidencePath(cwd, evidence.RunID, evidence.Phase)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", fmt.Errorf("create evidence dir: %w", err)
+	}
+	data, err := json.MarshalIndent(evidence, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal gascity phase evidence: %w", err)
+	}
+	data = append(data, '\n')
+	if err := WritePhasedStateAtomic(path, data); err != nil {
+		return "", fmt.Errorf("write gascity phase evidence: %w", err)
+	}
+	return path, nil
 }
 
 // ClassifyRPIArtifact returns (kind, label, phase) for a relative artifact path.
@@ -73,6 +151,8 @@ func ClassifyRPIArtifact(rel, phasedStateFile, c2EventsFileName string) (kind, l
 		return "phase_summary", fmt.Sprintf("Phase %d summary", phase), phase
 	case strings.Contains(base, "-evaluator.json"):
 		return "phase_evaluator", fmt.Sprintf("Phase %d evaluator", phase), phase
+	case strings.Contains(base, "-gascity-evidence.json"):
+		return "phase_gascity_evidence", fmt.Sprintf("Phase %d GasCity evidence", phase), phase
 	case strings.Contains(rel, "/plans/"):
 		return "plan", "Plan", 0
 	case strings.Contains(rel, "/research/"):

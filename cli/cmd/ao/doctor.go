@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
@@ -46,6 +49,9 @@ func gatherDoctorChecks() []doctorCheck {
 	return []doctorCheck{
 		{Name: "ao CLI", Status: "pass", Detail: formatVersion(version), Required: true},
 		checkCLIDependencies(),
+		checkDaemonRuntime(),
+		checkGasCityBridge(),
+		checkOpenClawConsumer(),
 		checkHookCoverage(),
 		checkKnowledgeBase(),
 		checkKnowledgeFreshness(),
@@ -60,11 +66,11 @@ func gatherDoctorChecks() []doctorCheck {
 }
 
 // Thin wrappers — delegate to quality package, kept for test compatibility.
-func doctorStatusIcon(status string) string               { return quality.StatusIcon(status) }
-func hasRequiredFailure(checks []doctorCheck) bool        { return quality.HasRequiredFailure(checks) }
-func renderDoctorTable(w io.Writer, output doctorOutput)  { quality.RenderTable(w, output) }
-func newestFileModTime(entries []os.DirEntry) time.Time   { return quality.NewestFileModTime(entries) }
-func countEstablished(dir string) int                     { return quality.CountEstablished(dir) }
+func doctorStatusIcon(status string) string              { return quality.StatusIcon(status) }
+func hasRequiredFailure(checks []doctorCheck) bool       { return quality.HasRequiredFailure(checks) }
+func renderDoctorTable(w io.Writer, output doctorOutput) { quality.RenderTable(w, output) }
+func newestFileModTime(entries []os.DirEntry) time.Time  { return quality.NewestFileModTime(entries) }
+func countEstablished(dir string) int                    { return quality.CountEstablished(dir) }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
 	return quality.RunDoctor(quality.DoctorOptions{
@@ -76,6 +82,123 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 func checkCLIDependencies() doctorCheck {
 	return quality.CheckCLIDependencies(exec.LookPath)
+}
+
+func checkDaemonRuntime() doctorCheck {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: "cannot determine working directory", Required: false}
+	}
+	baseURL, err := resolveDaemonURL(cwd, "")
+	if err != nil {
+		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: fmt.Sprintf("activation unavailable: %v", err), Required: false}
+	}
+	return checkDaemonRuntimeURL(baseURL)
+}
+
+func checkDaemonRuntimeURL(baseURL string) doctorCheck {
+	baseURL = strings.TrimRight(baseURL, "/")
+	ready, err := fetchDaemonReady(context.Background(), baseURL)
+	if err != nil {
+		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: fmt.Sprintf("readiness unavailable at %s: %v", baseURL, err), Required: false}
+	}
+	detail := fmt.Sprintf(
+		"%s; replay=%s projection=%s events=%d last_event=%s",
+		baseURL,
+		ready.LedgerReplayStatus,
+		ready.ProjectionStatus,
+		ready.ProjectionLag.EventCount,
+		doctorValueOrDash(ready.ProjectionLag.LastEventID),
+	)
+	if len(ready.DegradedReasons) > 0 {
+		detail += "; degraded=" + strings.Join(ready.DegradedReasons, "; ")
+	}
+	if !ready.Ready {
+		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: "not ready at " + detail, Required: false}
+	}
+	return doctorCheck{Name: "Daemon Runtime", Status: "pass", Detail: "ready at " + detail, Required: false}
+}
+
+func checkGasCityBridge() doctorCheck {
+	cityPath := ""
+	if cwd, err := os.Getwd(); err == nil {
+		cityPath = gcBridgeCityPath(cwd)
+	}
+	return checkGasCityBridgeWith(cityPath, exec.Command, exec.LookPath)
+}
+
+func checkGasCityBridgeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
+	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, true)
+	detail := formatGasCityDiagnostic(diag)
+	if cityPath != "" {
+		detail += "; city=" + cityPath
+	}
+	if diag.Ready {
+		return doctorCheck{Name: "GasCity Bridge", Status: "pass", Detail: detail, Required: false}
+	}
+	return doctorCheck{Name: "GasCity Bridge", Status: "warn", Detail: detail, Required: false}
+}
+
+func formatGasCityDiagnostic(diag gcBridgeDiagnostics) string {
+	parts := []string{
+		fmt.Sprintf("binary=%t", diag.BinaryAvailable),
+		fmt.Sprintf("version=%s", doctorValueOrDash(diag.Version)),
+		fmt.Sprintf("version_ok=%t", diag.VersionOK),
+		fmt.Sprintf("api=%t", diag.APIReachable),
+		fmt.Sprintf("ready=%t", diag.ReadinessReady),
+	}
+	if diag.FallbackEnabled {
+		parts = append(parts, "fallback=enabled")
+	}
+	if diag.Reason != "" {
+		parts = append(parts, "reason="+diag.Reason)
+	}
+	return strings.Join(parts, "; ")
+}
+
+func checkOpenClawConsumer() doctorCheck {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "cannot determine working directory", Required: false}
+	}
+	baseURL, err := resolveDaemonURL(cwd, "")
+	if err != nil {
+		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("daemon activation unavailable: %v", err), Required: false}
+	}
+	return checkOpenClawConsumerURL(baseURL)
+}
+
+func checkOpenClawConsumerURL(baseURL string) doctorCheck {
+	baseURL = strings.TrimRight(baseURL, "/")
+	var health openclaw.HealthResponse
+	if err := fetchDaemonJSON(context.Background(), baseURL+"/openclaw/v1/health", &health); err != nil {
+		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("health unavailable at %s: %v", baseURL, err), Required: false}
+	}
+	detail := fmt.Sprintf(
+		"%s; status=%s snapshot=%s snapshot_status=%s runs=%d jobs=%d wiki=%d last_event=%s",
+		baseURL,
+		doctorValueOrDash(health.Status),
+		doctorValueOrDash(health.SnapshotID),
+		health.SnapshotStatus,
+		health.ResourceCounts.Runs,
+		health.ResourceCounts.Jobs,
+		health.ResourceCounts.Wiki,
+		doctorValueOrDash(health.Source.LastEventID),
+	)
+	if len(health.DegradedReasons) > 0 {
+		detail += "; degraded=" + strings.Join(health.DegradedReasons, "; ")
+	}
+	if health.Status != "ok" || !health.Ready || health.SnapshotStatus != openclaw.SnapshotStatusCurrent {
+		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "not ready at " + detail, Required: false}
+	}
+	return doctorCheck{Name: "OpenClaw Consumer", Status: "pass", Detail: "ready at " + detail, Required: false}
+}
+
+func doctorValueOrDash(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "-"
+	}
+	return value
 }
 
 // checkHookCoverage checks if Claude hooks are installed with event coverage.
@@ -266,7 +389,7 @@ func checkSkillIntegrity() doctorCheck { return quality.CheckSkillIntegrity() }
 func checkOptionalCLI(name, reason string) doctorCheck {
 	return quality.CheckOptionalCLI(name, reason)
 }
-func findHealScript() string      { return quality.FindHealScript() }
+func findHealScript() string                 { return quality.FindHealScript() }
 func sha256File(path string) (string, error) { return quality.SHA256File(path) }
 
 // fileExists is used by other cmd/ao files (codex.go, codex_runtime.go).
@@ -310,8 +433,8 @@ func countUniqueFiles(refs []staleReference) int { return quality.CountUniqueFil
 
 func countHealFindings(output string) int { return quality.CountHealFindings(output) }
 
-func countFiles(dir string) int                              { return quality.CountFiles(dir) }
-func countLearningFiles(dir string) int                      { return quality.CountLearningFiles(dir) }
+func countFiles(dir string) int         { return quality.CountFiles(dir) }
+func countLearningFiles(dir string) int { return quality.CountLearningFiles(dir) }
 func countCheckStatuses(checks []doctorCheck) (int, int, int) {
 	return quality.CountCheckStatuses(checks)
 }

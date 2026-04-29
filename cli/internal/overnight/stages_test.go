@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/mine"
 	"github.com/boshu2/agentops/cli/internal/pool"
@@ -100,6 +101,96 @@ func TestRunIngest_HappyPath_HarvestCatalogBuilt(t *testing.T) {
 	}
 	if res.Duration <= 0 {
 		t.Error("expected positive Duration")
+	}
+}
+
+func TestRunIngestStageJob_DaemonFixture(t *testing.T) {
+	cwd := t.TempDir()
+	writeLearning(t, cwd, "2026-04-29-daemon.md", map[string]string{
+		"type":       "learning",
+		"maturity":   "accepted",
+		"confidence": "0.9",
+	}, "# Daemon\n\nDream ingest daemon fixture.")
+
+	outputDir := filepath.Join(cwd, ".agents", "overnight", "daemon-run")
+	spec := daemon.NewDreamStageJobSpec("daemon-run", outputDir, daemon.DreamStageIngest)
+	jobSpec, err := spec.ToJobSpec("dream-ingest-job")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	store := daemon.NewStore(cwd)
+	queue := daemon.NewQueue(store, daemon.QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(daemon.SubmitJobInput{
+		RequestID: "req-dream-ingest",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemon.QueueMutationOptions{}); err != nil {
+		t.Fatalf("SubmitJob: %v", err)
+	}
+	claim, err := queue.ClaimJob(jobSpec.ID, "dream-stage-test", daemon.QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("ClaimJob: %v", err)
+	}
+
+	stageResult, err := RunIngestStageJob(context.Background(), IngestStageJobOptions{
+		Spec: spec,
+		RunOptions: RunLoopOptions{
+			Cwd:       cwd,
+			OutputDir: outputDir,
+			RunID:     "daemon-run",
+		},
+		Log: io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("RunIngestStageJob: %v", err)
+	}
+	if stageResult.Status != "completed" || stageResult.HarvestArtifactsExtracted == 0 {
+		t.Fatalf("stage result = %#v", stageResult)
+	}
+	data, err := os.ReadFile(stageResult.ResultPath)
+	if err != nil {
+		t.Fatalf("read stage result: %v", err)
+	}
+	var disk IngestStageJobResult
+	if err := json.Unmarshal(data, &disk); err != nil {
+		t.Fatalf("decode stage result: %v", err)
+	}
+	if disk.Stage != string(daemon.DreamStageIngest) || disk.DreamRunID != "daemon-run" {
+		t.Fatalf("disk stage result = %#v", disk)
+	}
+	if _, err := queue.CompleteJob(daemon.CompleteJobInput{
+		JobID:      claim.Job.JobID,
+		RequestID:  daemon.RequestID(claim.Job.RequestID),
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
+		Actor:      "dream-stage-test",
+		Artifacts:  map[string]string{"ingest_result": stageResult.ResultPath},
+	}, daemon.QueueMutationOptions{}); err != nil {
+		t.Fatalf("CompleteJob: %v", err)
+	}
+	snapshot, err := queue.Snapshot()
+	if err != nil {
+		t.Fatalf("Snapshot: %v", err)
+	}
+	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].Status != daemon.JobStatusCompleted {
+		t.Fatalf("snapshot = %#v", snapshot.Jobs)
+	}
+}
+
+func TestRunIngestStageJob_RejectsWrongStage(t *testing.T) {
+	cwd := t.TempDir()
+	spec := daemon.NewDreamStageJobSpec("daemon-run", filepath.Join(cwd, ".agents", "overnight", "daemon-run"), daemon.DreamStageReduce)
+	_, err := RunIngestStageJob(context.Background(), IngestStageJobOptions{
+		Spec: spec,
+		RunOptions: RunLoopOptions{
+			Cwd:       cwd,
+			OutputDir: spec.OutputDir,
+			RunID:     "daemon-run",
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "want \"ingest\"") {
+		t.Fatalf("RunIngestStageJob err = %v, want stage rejection", err)
 	}
 }
 
@@ -599,6 +690,70 @@ func TestRunReduce_StageOrderEnforced(t *testing.T) {
 	}
 }
 
+func TestRunReduceStageJob_AcceptsCheckpointManifest(t *testing.T) {
+	cwd, cp, ingest := newReduceFixture(t)
+	opts := newTestOpts(cwd)
+	rec := &recorder{}
+	manifestPath := filepath.Join(opts.OutputDir, "stages", CheckpointManifestFileName)
+	if err := WriteCheckpointManifest(manifestPath, cp.Manifest()); err != nil {
+		t.Fatalf("WriteCheckpointManifest: %v", err)
+	}
+	spec := daemon.NewDreamStageJobSpec(opts.RunID, opts.OutputDir, daemon.DreamStageReduce)
+	spec.IterationID = cp.IterationID
+	spec.CheckpointDir = manifestPath
+
+	stageResult, err := RunReduceStageJob(context.Background(), ReduceStageJobOptions{
+		Spec: spec,
+		RunOptions: RunLoopOptions{
+			Cwd:       cwd,
+			OutputDir: opts.OutputDir,
+			RunID:     opts.RunID,
+		},
+		Ingest:             ingest,
+		CloseLoopCallbacks: rec.callbacks(),
+		Log:                io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("RunReduceStageJob: %v", err)
+	}
+	if stageResult.Status != "completed" ||
+		stageResult.CheckpointPath != cp.StagingDir ||
+		stageResult.CheckpointManifestPath != manifestPath ||
+		stageResult.RolledBack {
+		t.Fatalf("stage result = %#v", stageResult)
+	}
+	data, err := os.ReadFile(stageResult.ResultPath)
+	if err != nil {
+		t.Fatalf("read reduce stage result: %v", err)
+	}
+	var disk ReduceStageJobResult
+	if err := json.Unmarshal(data, &disk); err != nil {
+		t.Fatalf("decode reduce stage result: %v", err)
+	}
+	if disk.Stage != string(daemon.DreamStageReduce) || !disk.MetadataIntegrityPass {
+		t.Fatalf("disk reduce stage result = %#v", disk)
+	}
+}
+
+func TestRunReduceStageJob_RejectsWrongStage(t *testing.T) {
+	cwd, _, ingest := newReduceFixture(t)
+	opts := newTestOpts(cwd)
+	spec := daemon.NewDreamStageJobSpec(opts.RunID, opts.OutputDir, daemon.DreamStageMeasure)
+	_, err := RunReduceStageJob(context.Background(), ReduceStageJobOptions{
+		Spec: spec,
+		RunOptions: RunLoopOptions{
+			Cwd:       cwd,
+			OutputDir: opts.OutputDir,
+			RunID:     opts.RunID,
+		},
+		Ingest: ingest,
+		Log:    io.Discard,
+	})
+	if err == nil || !strings.Contains(err.Error(), "want \"reduce\"") {
+		t.Fatalf("RunReduceStageJob err = %v, want stage rejection", err)
+	}
+}
+
 func TestRunReduce_AggregatesGeneratorSidecarsIntoStagedNextWork(t *testing.T) {
 	cwd, cp, ingest := newReduceFixture(t)
 	opts := newTestOpts(cwd)
@@ -847,6 +1002,111 @@ func TestRunReduce_CloseLoopStageFailurePropagates(t *testing.T) {
 	}
 }
 
+// --- COMMIT ------------------------------------------------------------
+
+func TestRunCommitStageJob_ManifestCommitsAndWritesDoneMarker(t *testing.T) {
+	cwd := t.TempDir()
+	writeLearning(t, cwd, "2026-04-29-commit.md", map[string]string{
+		"type":     "learning",
+		"maturity": "provisional",
+	}, "# Commit\n\nBefore.")
+
+	opts := newTestOpts(cwd)
+	cp, err := NewCheckpoint(cwd, "daemon-run-iter-1", defaultCheckpointMaxBytes)
+	if err != nil {
+		t.Fatalf("NewCheckpoint: %v", err)
+	}
+	stagedLearning := filepath.Join(cp.StagingDir, ".agents", "learnings", "2026-04-29-commit.md")
+	if err := os.WriteFile(stagedLearning, []byte("---\ntype: \"learning\"\nmaturity: \"accepted\"\n---\n\n# Commit\n\nAfter.\n"), 0o644); err != nil {
+		t.Fatalf("mutate staged learning: %v", err)
+	}
+	manifestPath := filepath.Join(opts.OutputDir, "stages", CheckpointManifestFileName)
+	if err := WriteCheckpointManifest(manifestPath, cp.Manifest()); err != nil {
+		t.Fatalf("WriteCheckpointManifest: %v", err)
+	}
+	spec := daemon.NewDreamStageJobSpec("daemon-run", opts.OutputDir, daemon.DreamStageCommit)
+	spec.IterationID = cp.IterationID
+	spec.CheckpointDir = manifestPath
+
+	stageResult, err := RunCommitStageJob(context.Background(), CommitStageJobOptions{
+		Spec:                   spec,
+		RunOptions:             opts,
+		CheckpointManifestPath: manifestPath,
+		Log:                    io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("RunCommitStageJob: %v", err)
+	}
+	if stageResult.Status != "completed" ||
+		stageResult.MarkerState != markerStateDone ||
+		stageResult.RecoveryRequired ||
+		stageResult.CheckpointPath != cp.StagingDir ||
+		stageResult.CheckpointManifestPath != manifestPath {
+		t.Fatalf("stage result = %#v", stageResult)
+	}
+	liveLearning := filepath.Join(cwd, ".agents", "learnings", "2026-04-29-commit.md")
+	if body := mustRead(t, liveLearning); !strings.Contains(body, "accepted") {
+		t.Fatalf("live learning did not reflect committed staging: %s", body)
+	}
+	if _, err := os.Stat(cp.StagingDir); !os.IsNotExist(err) {
+		t.Fatalf("staging dir still exists after commit: %v", err)
+	}
+	if state, err := readMarkerState(cp.MarkerPath); err != nil || state != markerStateDone {
+		t.Fatalf("marker state = %q err=%v, want DONE", state, err)
+	}
+
+	data, err := os.ReadFile(stageResult.ResultPath)
+	if err != nil {
+		t.Fatalf("read commit stage result: %v", err)
+	}
+	var disk CommitStageJobResult
+	if err := json.Unmarshal(data, &disk); err != nil {
+		t.Fatalf("decode commit stage result: %v", err)
+	}
+	if disk.ResultPath != stageResult.ResultPath || disk.MarkerState != markerStateDone {
+		t.Fatalf("disk commit stage result = %#v", disk)
+	}
+
+	actions, err := RecoverFromCrash(cwd)
+	if err != nil {
+		t.Fatalf("RecoverFromCrash: %v", err)
+	}
+	if len(actions) != 1 || !strings.Contains(actions[0], "DONE") {
+		t.Fatalf("recovery actions = %v, want DONE cleanup", actions)
+	}
+	if _, err := os.Stat(cp.MarkerPath); !os.IsNotExist(err) {
+		t.Fatalf("marker not cleaned by recovery: %v", err)
+	}
+}
+
+func TestRunCommitStageJob_RequiresCheckpointManifest(t *testing.T) {
+	cwd := t.TempDir()
+	opts := newTestOpts(cwd)
+	spec := daemon.NewDreamStageJobSpec("daemon-run", opts.OutputDir, daemon.DreamStageCommit)
+	_, err := RunCommitStageJob(context.Background(), CommitStageJobOptions{
+		Spec:       spec,
+		RunOptions: opts,
+		Log:        io.Discard,
+	})
+	if err == nil || !strings.Contains(err.Error(), "checkpoint manifest is required") {
+		t.Fatalf("RunCommitStageJob err = %v, want checkpoint manifest rejection", err)
+	}
+}
+
+func TestRunCommitStageJob_RejectsWrongStage(t *testing.T) {
+	cwd := t.TempDir()
+	opts := newTestOpts(cwd)
+	spec := daemon.NewDreamStageJobSpec("daemon-run", opts.OutputDir, daemon.DreamStageMeasure)
+	_, err := RunCommitStageJob(context.Background(), CommitStageJobOptions{
+		Spec:       spec,
+		RunOptions: opts,
+		Log:        io.Discard,
+	})
+	if err == nil || !strings.Contains(err.Error(), "want \"commit\"") {
+		t.Fatalf("RunCommitStageJob err = %v, want stage rejection", err)
+	}
+}
+
 // --- MEASURE -----------------------------------------------------------
 
 func TestRunMeasure_CorpusComputeGoes(t *testing.T) {
@@ -880,6 +1140,91 @@ func TestRunMeasure_CorpusComputeGoes(t *testing.T) {
 		if _, ok := res.FitnessSnapshot.Metrics[k]; !ok {
 			t.Errorf("missing snapshot metric %s", k)
 		}
+	}
+}
+
+func TestRunMeasureStageJob_WritesFitnessAndHaltOutput(t *testing.T) {
+	cwd := t.TempDir()
+	writeLearning(t, cwd, "2026-04-29-measure.md", map[string]string{
+		"type":        "learning",
+		"maturity":    "accepted",
+		"source_bead": "ag-s0bf",
+	}, "# Measure\n\nDaemon measure fixture.")
+
+	opts := newTestOpts(cwd)
+	opts.WarnOnly = false
+	opts.RegressionFloor = 0.05
+	opts.PlateauEpsilon = 0.01
+	opts.PlateauWindowK = 2
+	cp, err := NewCheckpoint(cwd, "daemon-run-iter-1", defaultCheckpointMaxBytes)
+	if err != nil {
+		t.Fatalf("NewCheckpoint: %v", err)
+	}
+	manifestPath := filepath.Join(opts.OutputDir, "stages", CheckpointManifestFileName)
+	if err := WriteCheckpointManifest(manifestPath, cp.Manifest()); err != nil {
+		t.Fatalf("WriteCheckpointManifest: %v", err)
+	}
+	spec := daemon.NewDreamStageJobSpec("daemon-run", opts.OutputDir, daemon.DreamStageMeasure)
+	spec.IterationID = "daemon-run-iter-1"
+	spec.Iteration = 1
+	spec.CheckpointDir = manifestPath
+	prev := &FitnessSnapshot{Metrics: map[string]float64{
+		"synthetic_required_metric": 1.0,
+	}}
+
+	stageResult, err := RunMeasureStageJob(context.Background(), MeasureStageJobOptions{
+		Spec:                   spec,
+		RunOptions:             opts,
+		CheckpointManifestPath: manifestPath,
+		PreviousSnapshot:       prev,
+		Log:                    io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("RunMeasureStageJob: %v", err)
+	}
+	if stageResult.Status != "completed" || stageResult.Stage != string(daemon.DreamStageMeasure) {
+		t.Fatalf("stage result = %#v", stageResult)
+	}
+	if stageResult.CheckpointPath != cp.StagingDir || stageResult.CheckpointManifestPath != manifestPath {
+		t.Fatalf("checkpoint fields = path %q manifest %q", stageResult.CheckpointPath, stageResult.CheckpointManifestPath)
+	}
+	if len(stageResult.Fitness.Metrics) == 0 {
+		t.Fatal("expected typed fitness metrics")
+	}
+	if !stageResult.Halt.ShouldHalt || stageResult.Halt.Kind != MeasureHaltRegression {
+		t.Fatalf("halt = %#v, want strict regression halt", stageResult.Halt)
+	}
+	if len(stageResult.Halt.Regressions) != 1 ||
+		stageResult.Halt.Regressions[0].Name != "synthetic_required_metric" {
+		t.Fatalf("regressions = %#v, want synthetic_required_metric", stageResult.Halt.Regressions)
+	}
+
+	data, err := os.ReadFile(stageResult.ResultPath)
+	if err != nil {
+		t.Fatalf("read stage result: %v", err)
+	}
+	var disk MeasureStageJobResult
+	if err := json.Unmarshal(data, &disk); err != nil {
+		t.Fatalf("decode stage result: %v", err)
+	}
+	if disk.Halt.Kind != MeasureHaltRegression || len(disk.Fitness.Metrics) == 0 || disk.ResultPath != stageResult.ResultPath {
+		t.Fatalf("disk stage result = %#v", disk)
+	}
+}
+
+func TestRunMeasureStageJob_RejectsWrongStage(t *testing.T) {
+	cwd := t.TempDir()
+	spec := daemon.NewDreamStageJobSpec("daemon-run", filepath.Join(cwd, ".agents", "overnight", "daemon-run"), daemon.DreamStageReduce)
+	_, err := RunMeasureStageJob(context.Background(), MeasureStageJobOptions{
+		Spec: spec,
+		RunOptions: RunLoopOptions{
+			Cwd:       cwd,
+			OutputDir: spec.OutputDir,
+			RunID:     "daemon-run",
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "want \"measure\"") {
+		t.Fatalf("RunMeasureStageJob err = %v, want stage rejection", err)
 	}
 }
 

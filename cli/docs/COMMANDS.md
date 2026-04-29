@@ -840,6 +840,89 @@ ao codex stop [flags]
 
 ---
 
+### `ao daemon`
+
+Run and inspect the AgentOps daemon
+
+```
+ao daemon [command]
+```
+
+**Subcommands:**
+
+#### `ao daemon ready`
+
+Check daemon readiness
+
+```
+ao daemon ready [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for ready
+      --url string   Daemon base URL (defaults to activation file)
+```
+
+#### `ao daemon run`
+
+Run agentopsd in the foreground
+
+```
+ao daemon run [flags]
+```
+
+**Flags:**
+
+```
+      --addr string         Loopback address for foreground daemon (default "127.0.0.1:8765")
+  -h, --help                help for run
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+```
+
+#### `ao daemon service`
+
+Service lifecycle scaffolding for agentopsd
+
+```
+ao daemon service [command]
+```
+
+##### `ao daemon service install`
+
+Print the service install plan
+
+```
+ao daemon service install [flags]
+```
+
+**Flags:**
+
+```
+      --addr string         Loopback address for service plan (default "127.0.0.1:8765")
+      --executable string   ao executable path for service plan (default "ao")
+  -h, --help                help for install
+```
+
+#### `ao daemon status`
+
+Show daemon status
+
+```
+ao daemon status [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for status
+      --url string   Daemon base URL (defaults to activation file)
+```
+
+---
+
 ### `ao eval`
 
 Run deterministic AgentOps evaluation suites and compare run records.
@@ -1395,6 +1478,10 @@ ao overnight start [flags]
 ```
       --checkpoint-max-mb int     Max total MB of checkpoint storage per run (default 512)
       --creative-lane             Enable the bounded wildcard lane when Dream Council is running
+      --daemon-fallback           When --daemon-submit cannot reach a ready daemon, continue the one-shot local path
+      --daemon-submit             Submit the Dream run to agentopsd instead of executing the one-shot local path
+      --daemon-token string       agentopsd mutation token for --daemon-submit
+      --daemon-url string         agentopsd base URL for --daemon-submit (default: activation file)
       --goal string               Optional goal to include in the morning report and briefing step
   -h, --help                      help for start
       --keep-awake                Force keep-awake assistance on for this run
@@ -1761,6 +1848,10 @@ ao rpi phased <goal> [flags]
       --auto-clean-stale                  Run stale-run cleanup before starting phased execution
       --auto-clean-stale-after duration   Only clean stale runs older than this age when auto-clean is enabled (default 24h0m0s)
       --budget string                     Override phase budgets in seconds (<phase>:<seconds>, comma-separated), e.g. discovery:300,validation:120
+      --daemon-fallback                   When --daemon-submit cannot reach a ready daemon, continue foreground execution
+      --daemon-submit                     Submit the RPI run to agentopsd instead of executing foreground phases
+      --daemon-token string               agentopsd mutation token for --daemon-submit
+      --daemon-url string                 agentopsd base URL for --daemon-submit (default: activation file)
       --discovery-artifact string         Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation
       --fast-path                         Force fast path (--quick for gates)
       --from string                       Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
@@ -1814,8 +1905,11 @@ ao rpi status [flags]
 **Flags:**
 
 ```
-  -h, --help    help for status
-      --watch   Poll every 5s and redraw (Ctrl-C to exit)
+      --daemon              Read RPI status from agentopsd
+      --daemon-fallback     Fall back to local RPI registry when daemon status is unavailable (default true)
+      --daemon-url string   Daemon base URL (defaults to activation file)
+  -h, --help                help for status
+      --watch               Poll every 5s and redraw (Ctrl-C to exit)
 ```
 
 #### `ao rpi stream`
@@ -1841,6 +1935,13 @@ Verify integrity of the RPI ledger.
 
 ```
 ao rpi verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for verify
+      --latest   Verify the latest RPI ledger state (compatibility alias; current workspace ledger is latest)
 ```
 
 ---
@@ -2456,7 +2557,7 @@ ao forge review [flags]
       --dry-run                    Show what would be promoted without writing
       --eval string                Evaluate review decisions against a labeled JSON manifest without writing
   -h, --help                       help for review
-      --reviewer-endpoint string   Ollama HTTP endpoint for --reviewer-model (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --reviewer-endpoint string   Ollama HTTP endpoint for --reviewer-model (fallback: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
       --reviewer-model string      LLM model tag for Tier 2 reviewer decisions (e.g. gemma2:9b)
       --sessions-dir string        Directory containing session pages (default: .agents/ao/sessions)
 ```
@@ -2474,12 +2575,13 @@ ao forge transcript <path-or-glob> [flags]
 ```
   -h, --help                  help for transcript
       --last-session          Process only the most recent transcript
-      --llm-endpoint string   Ollama HTTP endpoint for --tier=1 (default: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
-      --max-chars int         Per-chunk character budget for --tier=1 local LLM mode (default: conservative built-in budget)
-      --model string          LLM model tag for --tier=1 (e.g. gemma2:9b)
+      --legacy-local-llm      Allow legacy local Ollama/Gemma fallback for --tier=1 when no AgentWorker queue is configured
+      --llm-endpoint string   Legacy Ollama HTTP endpoint for --tier=1 (fallback: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)
+      --max-chars int         Per-chunk character budget for --tier=1 legacy local LLM mode (default: conservative built-in budget)
+      --model string          Legacy local LLM model tag for --tier=1 (e.g. gemma2:9b)
       --queue                 Queue session for learning extraction at next session start
       --quiet                 Suppress all output (for hooks)
-      --tier int              Tier 1 transcript processing: enqueue to configured Dream worker, otherwise use local LLM with --model
+      --tier int              Tier 1 transcript processing: enqueue to configured Dream worker; local Ollama fallback requires --legacy-local-llm
 ```
 
 ---

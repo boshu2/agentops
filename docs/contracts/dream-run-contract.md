@@ -76,6 +76,35 @@ Defaults:
 - timeout: `8h`
 - keep-awake: enabled by default, opt-out via config or `--no-keep-awake`
 
+## Daemon Mode And One-Shot Compatibility
+
+Dream keeps two compatible execution modes during the daemon migration:
+
+| Mode | Command Shape | Ownership | Compatibility Rule |
+|------|---------------|-----------|--------------------|
+| one-shot | `ao overnight start` / `ao overnight run` without daemon submit | foreground process owns lock, stages, and report writes | remains supported until the migration guide explicitly changes the default |
+| daemon job | `ao overnight start` with daemon submit enabled | `agentopsd` accepts a `dream.run` job, then executes or supervises stage jobs | must refuse daemon mode when `ao daemon ready` fails and fall back only when configured |
+
+Daemon job mode is a product runtime path, not a different Dream algorithm. It
+uses the same INGEST, REDUCE, MEASURE, and COMMIT semantics, but each accepted
+job and stage transition is recorded in the daemon ledger before being reported
+as accepted or complete.
+
+Required daemon job fields:
+
+| Field | Description |
+|-------|-------------|
+| `job_id` | daemon-owned Dream job ID |
+| `request_id` | request correlation ID |
+| `dream_run_id` | stable Dream output/run identifier |
+| `stage` | `ingest`, `reduce`, `measure`, `commit`, or `report` |
+| `mode` | `daemon` or `one-shot` |
+| `output_dir` | report directory |
+
+The one-shot path remains the compatibility baseline for local runs, tests,
+and fallback operation. Daemon mode must not silently delete or rewrite
+one-shot artifacts.
+
 ## Locking
 
 Dream must prevent overlapping local runs.
@@ -199,6 +228,22 @@ unsupported on Windows until a real bridge command such as `openclaw` or
 No trigger mesh may be unbounded. Every escalation record needs source, severity,
 desired action, escalation target, budget, and a ledger entry. A runner must not
 recursively invoke another runner without an explicit remaining budget.
+
+## Legacy Local LLM Status
+
+Gemma and Ollama are legacy local-curator options. Daemon-backed wiki/forge work
+uses the AgentWorker runtime.
+
+Rules:
+
+- daemon-backed wiki/forge jobs use the `AgentWorker` / `AgentSession`
+  contract
+- Codex and Claude workers are the preferred first-class headless runtimes
+- Gemma/Ollama require explicit legacy configuration
+- setup and diagnose commands may report legacy Gemma/Ollama state, but must not
+  imply that local Ollama is required for Dream daemon mode
+- tests for the daemon product path must not instantiate Ollama or require a Gemma
+  model
 
 ## v2 - Iteration Loop (2026-04-09)
 

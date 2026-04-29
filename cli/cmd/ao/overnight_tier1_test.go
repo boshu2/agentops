@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 )
 
 func TestCollectRecentSessionJSONL_FindsRecentFiles(t *testing.T) {
@@ -85,6 +90,23 @@ func TestRunPostLoopTier1Forge_SkipsWhenNoModel(t *testing.T) {
 	}
 }
 
+func TestRunPostLoopTier1Forge_SkipsModelWithoutLegacyEngine(t *testing.T) {
+	t.Setenv("AGENTOPS_FORGE_TIER1_DISABLE", "")
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(t.TempDir(), "missing-config.yaml"))
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "gemma4:e4b")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "")
+	t.Setenv(forgeLegacyLocalLLMEnv, "")
+	summary := &overnightSummary{}
+	runPostLoopTier1Forge(nil, t.TempDir(), summary, overnightSettings{})
+	if len(summary.Degraded) != 0 {
+		t.Errorf("model without legacy engine should skip silently, got degraded: %v", summary.Degraded)
+	}
+	if _, ok := summary.CloseLoop["tier1_forge"]; ok {
+		t.Fatalf("tier1_forge should not run without explicit legacy config")
+	}
+}
+
 func TestRunPostLoopTier1Forge_QueuesWhenWorkerConfigured(t *testing.T) {
 	tmp := t.TempDir()
 	workerDir := filepath.Join(tmp, "dream-worker")
@@ -149,5 +171,98 @@ func TestRunPostLoopTier1Forge_QueuesWhenWorkerConfigured(t *testing.T) {
 	}
 	if job.Source == nil || job.Source.Path != sourcePath {
 		t.Fatalf("job source = %+v, want path %q", job.Source, sourcePath)
+	}
+}
+
+func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
+	tmp := t.TempDir()
+	repo := filepath.Join(tmp, "repo")
+	if err := os.MkdirAll(repo, 0o755); err != nil {
+		t.Fatalf("mkdir repo: %v", err)
+	}
+	projDir := filepath.Join(tmp, ".claude", "projects", "test-project")
+	if err := os.MkdirAll(projDir, 0o755); err != nil {
+		t.Fatalf("mkdir projects: %v", err)
+	}
+	sourcePath := filepath.Join(projDir, "recent-session.jsonl")
+	data := make([]byte, 2000)
+	for i := range data {
+		data[i] = 'x'
+	}
+	if err := os.WriteFile(sourcePath, data, 0o644); err != nil {
+		t.Fatalf("write session: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, activation, err := startAgentOpsDaemon(ctx, repo, agentopsDaemonRunOptions{
+		Addr:  "127.0.0.1:0",
+		Token: "secret-token",
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
+	})
+
+	t.Setenv("HOME", tmp)
+	t.Setenv("AGENTOPS_DAEMON_TOKEN", "secret-token")
+	t.Setenv("AGENTOPS_FORGE_TIER1_DISABLE", "")
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(tmp, "missing-config.yaml"))
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "")
+
+	summary := &overnightSummary{RunID: "dream-wiki-daemon", OutputDir: filepath.Join(repo, ".agents", "overnight", "dream-wiki-daemon")}
+	runPostLoopTier1Forge(context.Background(), repo, summary, overnightSettings{})
+	if len(summary.Degraded) != 0 {
+		t.Fatalf("expected no degradation, got %v", summary.Degraded)
+	}
+	tier1, ok := summary.CloseLoop["tier1_forge"].(map[string]any)
+	if !ok {
+		t.Fatalf("tier1_forge summary = %#v", summary.CloseLoop["tier1_forge"])
+	}
+	if tier1["mode"] != "daemon-wiki-forge" || tier1["queued"] != 1 {
+		t.Fatalf("tier1 summary = %#v", tier1)
+	}
+	if tier1["daemon_job_id"] != "job-wiki-dream-wiki-daemon" {
+		t.Fatalf("daemon job id = %#v", tier1["daemon_job_id"])
+	}
+	agentWorker, ok := tier1["agent_worker"].(map[string]any)
+	if !ok || agentWorker["provider"] != "gascity" || agentWorker["worker_kind"] != "codex" {
+		t.Fatalf("agent_worker = %#v", tier1["agent_worker"])
+	}
+	if refs, ok := tier1["worker_session_refs"].([]string); !ok || len(refs) != 0 {
+		t.Fatalf("worker_session_refs = %#v", tier1["worker_session_refs"])
+	}
+	if activation.URL == "" {
+		t.Fatal("activation URL should be set")
+	}
+
+	events, err := daemonpkg.NewStore(repo).ReadLedger()
+	if err != nil {
+		t.Fatalf("read daemon ledger: %v", err)
+	}
+	if len(events) != 1 || events[0].EventType != daemonpkg.EventJobAccepted {
+		t.Fatalf("ledger events = %#v", events)
+	}
+	payload, ok := events[0].Payload["job_payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("payload = %#v", events[0].Payload)
+	}
+	spec, err := daemonpkg.WikiForgeJobSpecFromPayload(payload)
+	if err != nil {
+		t.Fatalf("WikiForgeJobSpecFromPayload: %v", err)
+	}
+	if spec.DreamRunID != "dream-wiki-daemon" || len(spec.SourcePaths) != 1 || spec.SourcePaths[0] != sourcePath {
+		t.Fatalf("wiki forge spec = %#v", spec)
+	}
+	if spec.OutputDir != filepath.Join(repo, ".agents", "wiki", "sources") {
+		t.Fatalf("output dir = %q", spec.OutputDir)
 	}
 }

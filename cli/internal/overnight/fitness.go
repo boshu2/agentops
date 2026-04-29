@@ -34,18 +34,18 @@ type FitnessSnapshot struct {
 // negative Drop indicates improvement and never populates this struct.
 type MetricRegression struct {
 	// Name is the metric key from the Metrics map.
-	Name string
+	Name string `json:"name"`
 	// Previous is the prior snapshot's value for this metric.
-	Previous float64
+	Previous float64 `json:"previous"`
 	// Current is the latest snapshot's value for this metric. A missing
 	// key in the current snapshot is treated as 0 for the comparison and
 	// yields a full-value drop.
-	Current float64
+	Current float64 `json:"current"`
 	// Drop is Previous - Current; always positive when Regressed.
-	Drop float64
+	Drop float64 `json:"drop"`
 	// FloorBreached is the per-metric floor that was exceeded. This is
 	// the effective floor after applying any override in the floors map.
-	FloorBreached float64
+	FloorBreached float64 `json:"floor_breached"`
 }
 
 // Delta returns the composite delta between this snapshot and prev, the

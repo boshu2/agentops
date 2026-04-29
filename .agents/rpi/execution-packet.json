@@ -1,86 +1,86 @@
 {
   "schema_version": 1,
-  "id": "execution-packet-2026-04-27-land-eval-environment",
-  "date": "2026-04-27",
-  "run_id": "rpi-2026-04-27-land-eval-environment",
-  "objective": "Land AgentOps eval environment from origin/codex/eval-env-discovery (89 commits, 8b47ba14, +25,748/-266 LOC, 230 files) onto main as 3 stacked PRs gated by 3 prereq beads.",
-  "epic_id": "ag-3lx",
+  "id": "execution-packet-2026-04-28-agentops-daemon-atomic-slices",
+  "date": "2026-04-28",
+  "run_id": "discovery-2026-04-28-agentops-daemon-atomic-slices",
+  "objective": "Implement the AgentOps always-on daemon product architecture for Dream, wiki/forge, RPI, GasCity, headless workers, and OpenClaw consumer snapshots using the 67 atom backlog under ag-hpb.",
+  "epic_id": "ag-hpb",
   "complexity": "full",
   "test_first": true,
-  "plan_path": ".agents/plans/2026-04-27-land-eval-environment.md",
+  "plan_path": ".agents/plans/2026-04-28-agentops-daemon-atomic-slices.md",
   "research_paths": [
-    ".agents/research/2026-04-27-eval-branch-commit-and-conflict-analysis.md",
-    ".agents/research/2026-04-27-eval-closure-integrity-and-foundation-isolation.md"
+    ".agents/research/2026-04-28-agentops-daemon-atomic-slice-fit.md",
+    ".agents/research/2026-04-28-agentops-gascity-deep-research-and-rpi-reverse.md",
+    ".agents/research/2026-04-28-agentops-daemon-gascity-vertical-slices.md"
   ],
-  "pre_mortem_path": ".agents/council/2026-04-27-pre-mortem-land-eval-environment.md",
+  "design_path": ".agents/design/2026-04-28-design-agentops-daemon-atomic-slices.md",
+  "pre_mortem_paths": [
+    ".agents/council/2026-04-28-pre-mortem-agentops-daemon-atomic-slices-attempt-1.md",
+    ".agents/council/2026-04-28-pre-mortem-agentops-daemon-atomic-slices-attempt-2.md"
+  ],
   "pre_mortem_verdict": "WARN",
-  "pre_mortem_fixes_applied": "P1 (3): rollback section, error-rescue map, prereq-A acceptance, documentation-index.md added to PR-1. P2 (3): fresh-session rule, rebase-on-latest, error-rescue table.",
-  "test_levels": ["L0", "L1", "L2", "L3", "BF4", "BF9"],
-  "ranked_packet_path": null,
-  "beads": {
-    "parent_epic": "ag-3lx",
-    "prereqs": ["ag-l0w", "ag-5p8", "ag-aez"],
-    "prs": ["ag-664", "ag-rnb", "ag-xsy"]
+  "pre_mortem_attempts": 2,
+  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "tracker": {
+    "parent_epic": "ag-hpb",
+    "slice_count": 9,
+    "atomic_task_count": 67,
+    "atomic_dependency_edge_count": 159,
+    "graph_path": ".agents/rpi/atomic-slices-graph.json"
+  },
+  "validation": {
+    "required_levels": [
+      "L0",
+      "L1",
+      "L2"
+    ],
+    "recommended_levels": [
+      "L3"
+    ],
+    "live_gascity_env": "AGENTOPS_LIVE_GASCITY=1"
   },
   "waves": [
-    {
-      "wave": 1,
-      "ready_now": ["ag-l0w", "ag-5p8", "ag-aez", "ag-664"],
-      "description": "Fix prereqs in parallel + start PR-1 setup (cherry-pick foundation onto fresh branch)"
-    },
-    {
-      "wave": 2,
-      "blocked_by": "wave 1",
-      "issues": ["ag-664 conflict resolution + verify + push"],
-      "description": "PR-1 hand-merges (validate.yml, AGENTS.md, pre-push-gate pair, docs); push as draft"
-    },
-    {
-      "wave": 3,
-      "blocked_by": ["ag-664"],
-      "issues": ["ag-rnb"],
-      "description": "PR-2 cherry-pick CLI integration 6 commits + regenerate"
-    },
-    {
-      "wave": 4,
-      "blocked_by": ["ag-664", "ag-rnb", "ag-l0w", "ag-5p8", "ag-aez"],
-      "issues": ["ag-xsy"],
-      "description": "PR-3 cherry-pick canaries+closeout 76 commits + state-file resolution + regenerate"
-    },
-    {
-      "wave": 5,
-      "blocked_by": "PR-3 merged",
-      "description": "Archive tag + delete codex/eval-env-discovery (apply f-2026-04-26-003 squash-merge-aware check + f-2026-04-26-004 archive-tag-before-delete)"
-    }
+    "Wave 0: A1.* contracts and product seams",
+    "Wave 1: A2.* GasCity adapter and A3.* RPI API/SSE",
+    "Wave 2: A4.* daemon substrate, A5.* RPI jobs, A6.* Dream jobs",
+    "Wave 3: A7.* wiki/forge workers and A8.* consumer snapshots",
+    "Wave 4: A9.* hardening, migration, docs, and proof"
   ],
-  "contract_surfaces": [
-    "git: branch off main, cherry-pick, rebase, conflict resolution, archive-tag-before-delete",
-    "go: cli/internal/eval/* + cli/cmd/ao/eval.go build & test",
-    "shell: scripts/pre-push-gate.sh, scripts/eval-agentops.sh, scripts/generate-cli-reference.sh, scripts/regen-codex-hashes.sh",
-    "docs: docs/contracts/index.md, docs/documentation-index.md, docs/CI-CD.md, docs/cli-skills-map.md",
-    "ci: .github/workflows/validate.yml job set",
-    "beads: prereqs blocking PR-3, PR-1 blocks PR-2 blocks PR-3"
+  "known_adjustments_before_implementation": [
+    "A1.1/A1.2 and A4.2/A4.3 now make the daemon ledger authoritative and projections rebuildable.",
+    "A1.6 and A7.1-A7.3 now promote headless Codex/Claude lifecycle into first-class AgentWorker/AgentSession contracts.",
+    "A2.1 now freezes the narrow handwritten GasCity adapter strategy with fixture/version/DTO round-trip coverage.",
+    "A4.8 now blocks daemon-submitted RPI, Dream, wiki, and OpenClaw mutation behavior through foreground readiness proof.",
+    "A4.5 now gates local HTTP mutation policy/threat tests before mutation routes land in A4.7.",
+    "Required validation now includes state-machine invariants and boundary failpoints, not just endpoint tests."
   ],
-  "done_criteria": [
-    "All 3 prereqs (ag-l0w, ag-5p8, ag-aez) closed via mechanical acceptance criteria",
-    "PR-1 (ag-664) merged to main with green CI and reviewer approval",
-    "PR-2 (ag-rnb) merged to main with green CI and reviewer approval",
-    "PR-3 (ag-xsy) merged to main with green CI (>=54 suites passing) and reviewer approval",
-    "codex/eval-env-discovery branch archived (archive/codex-eval-env-discovery tag) and deleted from origin",
-    "Parent epic (ag-3lx) closed with reference to all 3 merge commits"
+  "next_phase": "Start implementation with A1.1. Do not implement against ag-hpb directly.",
+  "proof_artifacts": [
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/final-proof-packet.md",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/ao-doctor.json.log",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/ao-rpi-verify-latest.json.log",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/validate-daemon-product-e2e.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/generate-cli-reference-check.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-cmdao-surface-parity.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-agents-write-surfaces.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-contract-compatibility.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/validate-doc-release.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/shellcheck-daemon-product-e2e.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/go-test-cmd-ao-rpi-verify-doctor.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/pre-push-gate-fast-clean-shadow.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/pre-push-gate-fast.txt",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-closeout-gate-allow-dirty.json.log",
+    ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/check-closeout-gate-active-worktree.json.log",
+    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.beads-issue-tracking.run.json",
+    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.cli-command-surface-matrix.run.json",
+    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.cli-contracts.run.json",
+    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.docs-release-governance.run.json",
+    ".agents/evals/runs/a9-8-targeted-20260429T030632Z/20260429T030633Z/agentops-core.hook-gates.run.json"
   ],
-  "applied_findings": [
-    {"id": "f-2026-04-14-001", "how": "PR-2 acceptance includes paired-test rule"},
-    {"id": "f-2026-04-26-003", "how": "Wave 5 uses mergeCommit-aware check, not raw git cherry"},
-    {"id": "f-2026-04-26-004", "how": "Wave 5 archive tags before delete"},
-    {"id": "f-2026-04-27-001", "how": "d749108b reclassified to closeout based on diff content, not commit position"},
-    {"id": "f-2026-04-27-002", "how": "PR-1 treats pre-push-gate.sh + .bats as a coupled hand-merge pair"},
-    {"id": "f-2026-04-27-003", "how": "Subagent claim of wave-6 bead exercise verified false via git ls-tree before incorporating into plan"}
-  ],
-  "risks_acknowledged": [
-    "Main moves daily; rebase-on-latest required before each PR push",
-    "PR-3's 76-commit cherry-pick chain requires fresh session boundary",
-    "Standards-injector removal coupling: pre-push-gate.sh + .bats must be edited together",
-    "Codex artifacts regenerated post-rebase, never 3-way merged (ensures hash parity)"
-  ],
-  "next_phase": "STOP-and-confirm with user before /crank starts cherry-picking. User explicitly said Phase 2 (git surgery) needs separate confirmation."
+  "proof_updated_at": "2026-04-29T03:29:00Z",
+  "final_gate": {
+    "status": "PASS",
+    "packet": ".agents/rpi/runs/discovery-2026-04-28-agentops-daemon-atomic-slices/final-gate-2026-04-29/final-proof-packet.md",
+    "note": "Active worktree is dirty because RPI changes are uncommitted; clean shadow pre-push gate passed."
+  }
 }

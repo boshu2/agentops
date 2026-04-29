@@ -142,6 +142,48 @@ Status classification is registry-first:
 
 Stale reasons include `worktree missing` when state references a removed worktree directory.
 
+## GasCity Session Correlation
+
+Daemon-backed RPI runs that use GasCity must persist the provider correlation
+fields as soon as they are known:
+
+| Field | Required When | Description |
+|-------|---------------|-------------|
+| `request_id` | every GasCity API response that provides `X-GC-Request-Id` | Correlates AgentOps registry state with GasCity server logs |
+| `city_name` | a GasCity city is selected | Runtime city that owns the session |
+| `session_id` | GasCity returns a session identity | Provider session ID used for polling, transcript fetch, cancellation, and event matching |
+| `session_alias` | AgentOps creates a friendly alias | Stable human-readable phase/session alias when available |
+| `event_cursor` | event stream/list APIs are consumed | Last consumed GasCity cursor for replay after reconnect |
+
+These fields are projections of daemon ledger events when RPI runs in daemon
+mode. Foreground legacy runs may still write them directly into the registry.
+
+## Lost Session Semantics
+
+Missing GasCity session state is never success by itself. A lost session is a
+failure/degraded state with evidence, not a successful phase.
+
+RPI must use these terminal or degraded statuses:
+
+| Status | Meaning | Retry/Recovery |
+|--------|---------|----------------|
+| `lost` | AgentOps accepted or observed a `session_id`, but GasCity later cannot find it and no terminal event/result exists | fail the phase with evidence and preserve request/session IDs |
+| `provider_unreachable` | GasCity supervisor, city, or provider readiness cannot be reached before terminal state is known | mark degraded/fail depending on phase policy; retry only when policy allows |
+| `event_stream_unavailable` | SSE/list replay is unavailable but REST status is still reachable | reconcile through REST before deciding terminal state |
+| `terminal_without_transcript` | GasCity reports terminal state but transcript/result evidence cannot be fetched | preserve terminal state and mark evidence degraded |
+
+Precedence rules:
+
+1. A verified terminal event with transcript/result evidence wins.
+2. A verified terminal event without transcript becomes
+   `terminal_without_transcript`, not success-without-evidence.
+3. `lost` wins over stale heartbeat if the provider confirms the session is
+   absent.
+4. `provider_unreachable` wins over optimistic local status when readiness is
+   unknown.
+5. Legacy tmux or foreground liveness never upgrades a missing GasCity session
+   to success.
+
 ## Stale Cleanup Workflow
 
 Use manual cleanup commands:

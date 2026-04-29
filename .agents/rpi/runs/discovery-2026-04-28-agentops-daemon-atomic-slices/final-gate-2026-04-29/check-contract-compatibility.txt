@@ -1,0 +1,126 @@
+$ scripts/check-contract-compatibility.sh
+=== Contract compatibility gate ===
+
+--- Orphan allowlist validation ---
+  OK: No orphan allowlist entries configured
+
+--- documentation-index.md link resolution ---
+  OK: contracts/agent-worker.md
+  OK: contracts/agentops-daemon.md
+  OK: contracts/agents-write-surfaces.md
+  OK: contracts/autodev-program.md
+  OK: contracts/codex-skill-api.md
+  OK: contracts/context-assembly-interface.md
+  OK: contracts/dispatch-checklist.md
+  OK: contracts/dream-report.md
+  OK: contracts/dream-run-contract.md
+  OK: contracts/eval-environment.md
+  OK: contracts/finding-artifact.schema.json
+  OK: contracts/finding-compiler.md
+  OK: contracts/finding-registry.md
+  OK: contracts/finding-registry.schema.json
+  OK: contracts/gascity-integration.md
+  OK: contracts/headless-invocation-standards.md
+  OK: contracts/hook-runtime-contract.md
+  OK: contracts/index.md
+  OK: contracts/memrl-policy.profile.example.json
+  OK: contracts/memrl-policy.schema.json
+  OK: contracts/next-work.schema.md
+  OK: contracts/openclaw-consumer-api.md
+  OK: contracts/repo-execution-profile.md
+  OK: contracts/repo-execution-profile.schema.json
+  OK: contracts/rpi-c2-commands.schema.json
+  OK: contracts/rpi-c2-events.schema.json
+  OK: contracts/rpi-phase-result.schema.json
+  OK: contracts/rpi-run-registry.md
+  OK: contracts/scope-escape-report.md
+  OK: contracts/session-intelligence-trust-model.md
+  OK: contracts/swarm-evidence.md
+  OK: contracts/swarm-worker-result.schema.json
+
+--- Bridge doc reference resolution ---
+WARN: docs/ol-bridge-contracts.md not found (optional)
+
+--- Contract .md cross-references ---
+  OK: eval-environment.md -> eval-run.v1.schema.json
+  OK: eval-environment.md -> eval-suite.v1.schema.json
+  OK: eval-environment.md -> scenario.v1.schema.json
+  OK: finding-compiler.md -> finding-artifact.schema.json
+  OK: finding-registry.md -> finding-artifact.schema.json
+  OK: finding-registry.md -> finding-registry.schema.json
+  OK: index.md -> memrl-policy.schema.json
+  OK: repo-execution-profile.md -> repo-execution-profile.schema.json
+  OK: rpi-run-registry.md -> rpi-c2-commands.schema.json
+  OK: rpi-run-registry.md -> rpi-c2-events.schema.json
+  OK: rpi-run-registry.md -> rpi-phase-result.schema.json
+  OK: swarm-evidence.md -> swarm-evidence.schema.json
+
+--- Schema JSON validation ---
+  OK: finding-artifact.schema.json is valid JSON
+  OK: finding-registry.schema.json is valid JSON
+  OK: memrl-policy.schema.json is valid JSON
+  OK: repo-execution-profile.schema.json is valid JSON
+  OK: rpi-c2-commands.schema.json is valid JSON
+  OK: rpi-c2-events.schema.json is valid JSON
+  OK: rpi-phase-result.schema.json is valid JSON
+  OK: swarm-worker-result.schema.json is valid JSON
+  OK: schemas/codex-marketplace.v1.schema.json is valid JSON
+  OK: schemas/codex-plugin-manifest.v1.schema.json is valid JSON
+  OK: schemas/eval-run.v1.schema.json is valid JSON
+  OK: schemas/eval-suite.v1.schema.json is valid JSON
+  OK: schemas/evidence-only-closure.v1.schema.json is valid JSON
+  OK: schemas/handoff.v1.schema.json is valid JSON
+  OK: schemas/hooks-manifest.v1.schema.json is valid JSON
+  OK: schemas/memory-packet.v1.schema.json is valid JSON
+  OK: schemas/plugin-manifest.v1.schema.json is valid JSON
+  OK: schemas/scenario.v1.schema.json is valid JSON
+  OK: schemas/session-quality-signal.v1.schema.json is valid JSON
+  OK: schemas/skill-frontmatter.v1.schema.json is valid JSON
+  OK: schemas/swarm-evidence.schema.json is valid JSON
+
+--- Example JSON validation ---
+  OK: memrl-policy.profile.example.json is valid JSON
+
+--- Example-to-schema conformance ---
+  OK: memrl-policy.profile.example.json conforms to memrl-policy.schema.json
+
+--- Orphan detection ---
+  OK: docs/contracts/agent-worker.md catalogued in documentation-index.md
+  OK: docs/contracts/agentops-daemon.md catalogued in documentation-index.md
+  OK: docs/contracts/agents-write-surfaces.md catalogued in documentation-index.md
+  OK: docs/contracts/autodev-program.md catalogued in documentation-index.md
+  OK: docs/contracts/codex-skill-api.md catalogued in documentation-index.md
+  OK: docs/contracts/context-assembly-interface.md catalogued in documentation-index.md
+  OK: docs/contracts/dispatch-checklist.md catalogued in documentation-index.md
+  OK: docs/contracts/dream-report.md catalogued in documentation-index.md
+  OK: docs/contracts/dream-run-contract.md catalogued in documentation-index.md
+  OK: docs/contracts/eval-environment.md catalogued in documentation-index.md
+  OK: docs/contracts/finding-artifact.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/finding-compiler.md catalogued in documentation-index.md
+  OK: docs/contracts/finding-registry.md catalogued in documentation-index.md
+  OK: docs/contracts/finding-registry.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/gascity-integration.md catalogued in documentation-index.md
+  OK: docs/contracts/headless-invocation-standards.md catalogued in documentation-index.md
+  OK: docs/contracts/hook-runtime-contract.md catalogued in documentation-index.md
+  OK: docs/contracts/index.md catalogued in documentation-index.md
+  OK: docs/contracts/memrl-policy.profile.example.json catalogued in documentation-index.md
+  OK: docs/contracts/memrl-policy.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/next-work.schema.md catalogued in documentation-index.md
+  OK: docs/contracts/openclaw-consumer-api.md catalogued in documentation-index.md
+  OK: docs/contracts/repo-execution-profile.md catalogued in documentation-index.md
+  OK: docs/contracts/repo-execution-profile.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/rpi-c2-commands.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/rpi-c2-events.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/rpi-phase-result.schema.json catalogued in documentation-index.md
+  OK: docs/contracts/rpi-run-registry.md catalogued in documentation-index.md
+  OK: docs/contracts/scope-escape-report.md catalogued in documentation-index.md
+  OK: docs/contracts/session-intelligence-trust-model.md catalogued in documentation-index.md
+  OK: docs/contracts/swarm-evidence.md catalogued in documentation-index.md
+  OK: docs/contracts/swarm-worker-result.schema.json catalogued in documentation-index.md
+
+=== Summary ===
+Failures: 0
+Warnings: 1
+
+Contract compatibility check passed.
+status=0

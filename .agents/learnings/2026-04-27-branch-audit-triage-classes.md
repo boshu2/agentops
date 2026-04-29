@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.5
 source_epic: branch-audit-2026-04-27
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Branch Audits Need Explicit Disposition Classes

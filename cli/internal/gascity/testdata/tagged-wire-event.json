@@ -1,0 +1,13 @@
+{
+  "city": "agentops",
+  "seq": 21,
+  "type": "session.completed",
+  "subject": "sess_123",
+  "actor": "codex",
+  "message": "phase complete",
+  "ts": "2026-04-28T20:45:00Z",
+  "payload": {
+    "session_id": "sess_123",
+    "status": "completed"
+  }
+}

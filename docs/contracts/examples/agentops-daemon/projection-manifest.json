@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "projection": "rpi-registry",
+  "source_ledger": ".agents/daemon/ledger.jsonl",
+  "last_event_id": "evt_20260428_000001",
+  "status": "current",
+  "rebuilt_at": "2026-04-28T20:45:01Z",
+  "output_paths": [
+    ".agents/rpi/runs/job_20260428_rpi_000001/phased-state.json"
+  ]
+}

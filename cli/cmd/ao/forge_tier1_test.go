@@ -12,29 +12,64 @@ import (
 )
 
 func TestForgeTranscriptTier1FlagsRegistered(t *testing.T) {
-	for _, name := range []string{"tier", "model", "llm-endpoint", "max-chars"} {
+	for _, name := range []string{"tier", "model", "llm-endpoint", "max-chars", "legacy-local-llm"} {
 		if forgeTranscriptCmd.Flags().Lookup(name) == nil {
 			t.Fatalf("forge transcript flag %q is not registered", name)
 		}
 	}
 }
 
-func TestRunForgeTier1RequiresModel(t *testing.T) {
+func TestRunForgeTier1RequiresLegacyLocalLLMByDefault(t *testing.T) {
 	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
 
 	oldModel := forgeTier1Model
 	oldEndpoint := forgeLLMEndpoint
 	oldQuiet := forgeQuiet
+	oldLegacy := forgeTier1LegacyLocalLLM
 	t.Cleanup(func() {
 		forgeTier1Model = oldModel
 		forgeLLMEndpoint = oldEndpoint
 		forgeQuiet = oldQuiet
+		forgeTier1LegacyLocalLLM = oldLegacy
+	})
+
+	forgeTier1Model = "gemma4:e4b"
+	forgeLLMEndpoint = ""
+	forgeQuiet = true
+	forgeTier1LegacyLocalLLM = false
+
+	err := runForgeTier1(io.Discard, []string{"session.jsonl"})
+	if err == nil {
+		t.Fatal("expected legacy-local-llm error")
+	}
+	if !strings.Contains(err.Error(), "--legacy-local-llm") {
+		t.Fatalf("expected --legacy-local-llm error, got %v", err)
+	}
+	if strings.Contains(err.Error(), "removal target") {
+		t.Fatalf("default product path should not emit legacy deprecation warning, got %v", err)
+	}
+}
+
+func TestRunForgeTier1LegacyLocalLLMRequiresModel(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
+
+	oldModel := forgeTier1Model
+	oldEndpoint := forgeLLMEndpoint
+	oldQuiet := forgeQuiet
+	oldLegacy := forgeTier1LegacyLocalLLM
+	t.Cleanup(func() {
+		forgeTier1Model = oldModel
+		forgeLLMEndpoint = oldEndpoint
+		forgeQuiet = oldQuiet
+		forgeTier1LegacyLocalLLM = oldLegacy
 	})
 
 	forgeTier1Model = ""
 	forgeLLMEndpoint = ""
 	forgeQuiet = true
+	forgeTier1LegacyLocalLLM = true
 
 	err := runForgeTier1(io.Discard, []string{"session.jsonl"})
 	if err == nil {
@@ -42,6 +77,59 @@ func TestRunForgeTier1RequiresModel(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--model") {
 		t.Fatalf("expected --model error, got %v", err)
+	}
+}
+
+func TestRunForgeTier1LegacyLocalLLMEmitsDeprecationWarning(t *testing.T) {
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(t.TempDir(), "missing-config.yaml"))
+	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
+	t.Setenv("AGENTOPS_FORGE_TIER1_DISABLE", "")
+
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	sourcePath := filepath.Join(tmp, "session.jsonl")
+	writeLegacyTier1Fixture(t, sourcePath)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/tags":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"models": []map[string]string{{"name": "gemma4:e4b", "digest": "sha256:legacy"}},
+			})
+		case "/api/show":
+			_, _ = io.WriteString(w, `{"model_info":{"gemma.context_length":8192}}`)
+		case "/api/generate":
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"response": `{"title":"Legacy path","summary":"Legacy bridge warning test.","entities":[],"concepts":[],"decisions":[],"open_questions":[],"work_phase":"verify"}`,
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	oldModel := forgeTier1Model
+	oldEndpoint := forgeLLMEndpoint
+	oldQuiet := forgeQuiet
+	oldLegacy := forgeTier1LegacyLocalLLM
+	t.Cleanup(func() {
+		forgeTier1Model = oldModel
+		forgeLLMEndpoint = oldEndpoint
+		forgeQuiet = oldQuiet
+		forgeTier1LegacyLocalLLM = oldLegacy
+	})
+
+	forgeTier1Model = "gemma4:e4b"
+	forgeLLMEndpoint = server.URL
+	forgeQuiet = false
+	forgeTier1LegacyLocalLLM = true
+
+	var out strings.Builder
+	if err := runForgeTier1(&out, []string{sourcePath}); err != nil {
+		t.Fatalf("runForgeTier1: %v", err)
+	}
+	if !strings.Contains(out.String(), forgeLegacyLocalLLMDeprecationWarning) {
+		t.Fatalf("legacy warning missing from output:\n%s", out.String())
 	}
 }
 
@@ -86,17 +174,20 @@ func TestRunForgeTier1MaxCharsPassesLargeBudget(t *testing.T) {
 	oldEndpoint := forgeLLMEndpoint
 	oldQuiet := forgeQuiet
 	oldMaxChars := forgeTier1MaxChars
+	oldLegacy := forgeTier1LegacyLocalLLM
 	t.Cleanup(func() {
 		forgeTier1Model = oldModel
 		forgeLLMEndpoint = oldEndpoint
 		forgeQuiet = oldQuiet
 		forgeTier1MaxChars = oldMaxChars
+		forgeTier1LegacyLocalLLM = oldLegacy
 	})
 
 	forgeTier1Model = "gemma4:e4b"
 	forgeLLMEndpoint = server.URL
 	forgeQuiet = true
 	forgeTier1MaxChars = 8000
+	forgeTier1LegacyLocalLLM = true
 
 	if err := runForgeTier1(io.Discard, []string{sourcePath}); err != nil {
 		t.Fatalf("runForgeTier1: %v", err)
@@ -111,6 +202,14 @@ func TestRunForgeTier1MaxCharsPassesLargeBudget(t *testing.T) {
 	if strings.Contains(capturedPrompt, strings.Repeat("userword ", 500)) ||
 		strings.Contains(capturedPrompt, strings.Repeat("assistantword ", 400)) {
 		t.Fatalf("prompt exceeded the configured 8000-char turn budget")
+	}
+}
+
+func writeLegacyTier1Fixture(t *testing.T, path string) {
+	t.Helper()
+	line := `{"type":"user","sessionId":"legacy-session","cwd":"/fixture/ws","timestamp":"2026-04-13T12:00:00Z","message":{"role":"user","content":"Capture this legacy local LLM session."}}`
+	if err := os.WriteFile(path, []byte(line+"\n"), 0600); err != nil {
+		t.Fatalf("write fixture: %v", err)
 	}
 }
 

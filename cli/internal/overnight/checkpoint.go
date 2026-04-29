@@ -113,6 +113,20 @@ type Checkpoint struct {
 	SizeBytes int64
 }
 
+const CheckpointManifestSchemaVersion = 1
+const CheckpointManifestFileName = "checkpoint-manifest.json"
+
+type CheckpointManifest struct {
+	SchemaVersion int    `json:"schema_version"`
+	IterationID   string `json:"iteration_id"`
+	StagingDir    string `json:"staging_dir"`
+	PrevDir       string `json:"prev_dir"`
+	LiveDir       string `json:"live_dir"`
+	MarkerPath    string `json:"marker_path"`
+	CreatedAt     string `json:"created_at"`
+	SizeBytes     int64  `json:"size_bytes"`
+}
+
 // MetadataIntegrityReport is the result of VerifyMetadataRoundTrip.
 //
 // A report with Pass=false indicates the REDUCE stage dropped one or more
@@ -228,6 +242,139 @@ func NewCheckpoint(cwd, iterationID string, maxBytes int64) (*Checkpoint, error)
 		CreatedAt:   time.Now().UTC(),
 		SizeBytes:   totalBytes,
 	}, nil
+}
+
+func (cp *Checkpoint) Manifest() CheckpointManifest {
+	if cp == nil {
+		return CheckpointManifest{}
+	}
+	return CheckpointManifest{
+		SchemaVersion: CheckpointManifestSchemaVersion,
+		IterationID:   cp.IterationID,
+		StagingDir:    cp.StagingDir,
+		PrevDir:       cp.PrevDir,
+		LiveDir:       cp.LiveDir,
+		MarkerPath:    cp.MarkerPath,
+		CreatedAt:     cp.CreatedAt.UTC().Format(time.RFC3339Nano),
+		SizeBytes:     cp.SizeBytes,
+	}
+}
+
+func CheckpointFromManifest(manifest CheckpointManifest) (*Checkpoint, error) {
+	if err := manifest.Validate(); err != nil {
+		return nil, err
+	}
+	createdAt, err := time.Parse(time.RFC3339Nano, manifest.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("overnight: checkpoint manifest invalid created_at: %w", err)
+	}
+	return &Checkpoint{
+		IterationID: manifest.IterationID,
+		StagingDir:  manifest.StagingDir,
+		PrevDir:     manifest.PrevDir,
+		LiveDir:     manifest.LiveDir,
+		MarkerPath:  manifest.MarkerPath,
+		CreatedAt:   createdAt,
+		SizeBytes:   manifest.SizeBytes,
+	}, nil
+}
+
+func (manifest CheckpointManifest) Validate() error {
+	if manifest.SchemaVersion != CheckpointManifestSchemaVersion {
+		return fmt.Errorf("overnight: checkpoint manifest schema_version mismatch: got %d want %d", manifest.SchemaVersion, CheckpointManifestSchemaVersion)
+	}
+	if err := sanitizeIterationID(manifest.IterationID); err != nil {
+		return err
+	}
+	required := []struct {
+		name  string
+		value string
+	}{
+		{"staging_dir", manifest.StagingDir},
+		{"prev_dir", manifest.PrevDir},
+		{"live_dir", manifest.LiveDir},
+		{"marker_path", manifest.MarkerPath},
+		{"created_at", manifest.CreatedAt},
+	}
+	for _, field := range required {
+		if strings.TrimSpace(field.value) == "" {
+			return fmt.Errorf("overnight: checkpoint manifest %s is required", field.name)
+		}
+	}
+	if manifest.SizeBytes < 0 {
+		return fmt.Errorf("overnight: checkpoint manifest size_bytes must be >= 0")
+	}
+	return nil
+}
+
+func WriteCheckpointManifest(path string, manifest CheckpointManifest) error {
+	if err := manifest.Validate(); err != nil {
+		return err
+	}
+	if strings.TrimSpace(path) == "" {
+		return fmt.Errorf("overnight: checkpoint manifest path is required")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("overnight: mkdir checkpoint manifest dir: %w", err)
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return fmt.Errorf("overnight: marshal checkpoint manifest: %w", err)
+	}
+	data = append(data, '\n')
+	return writeFileAtomic(path, data, 0o644)
+}
+
+func ReadCheckpointManifest(path string) (CheckpointManifest, error) {
+	var manifest CheckpointManifest
+	if strings.TrimSpace(path) == "" {
+		return manifest, fmt.Errorf("overnight: checkpoint manifest path is required")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return manifest, fmt.Errorf("overnight: read checkpoint manifest: %w", err)
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return manifest, fmt.Errorf("overnight: decode checkpoint manifest: %w", err)
+	}
+	if err := manifest.Validate(); err != nil {
+		return manifest, err
+	}
+	return manifest, nil
+}
+
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpPath)
+		}
+	}()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
 }
 
 // Commit atomically swaps staged subpaths into the live .agents/ tree.

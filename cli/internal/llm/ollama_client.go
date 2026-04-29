@@ -162,8 +162,9 @@ func (c *OllamaClient) Generate(prompt string) (string, error) {
 	body := generateRequest{
 		Model:  c.model,
 		Prompt: prompt,
-		// CRITICAL: stream:false. Ollama's default is true which would break
-		// single-shot JSON decode. Asserted by TestOllamaClient_Generate_SendsStreamFalse.
+		// CRITICAL: stream:false. Ollama streams unless told otherwise, which
+		// would break single-shot JSON decode. Asserted by
+		// TestOllamaClient_Generate_SendsStreamFalse.
 		Stream: false,
 		// format:json forces ollama's structured output mode. gemma4:e4b
 		// returns empty responses without this; the JS worker on bushido

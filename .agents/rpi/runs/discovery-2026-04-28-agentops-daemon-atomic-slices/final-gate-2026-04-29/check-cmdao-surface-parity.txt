@@ -1,0 +1,4 @@
+$ scripts/check-cmdao-surface-parity.sh
+CMDAO_SURFACE_PARITY: 170 leaf commands, 74 allowlisted
+CMDAO_SURFACE_PARITY: PASS (all 170 leaf commands covered or allowlisted)
+status=0

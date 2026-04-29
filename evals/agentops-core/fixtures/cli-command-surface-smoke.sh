@@ -17,14 +17,15 @@ top_count="$(rg -c '^### `ao ' "$DOCS_PATH")"
 sub_count="$(rg -c '^#### `ao ' "$DOCS_PATH")"
 all_count="$(rg -c '^#{3,4} `ao ' "$DOCS_PATH")"
 
-if [[ "$top_count" != "57" || "$sub_count" != "132" || "$all_count" != "189" ]]; then
+if [[ "$top_count" != "58" || "$sub_count" != "136" || "$all_count" != "194" ]]; then
   printf 'unexpected command heading counts: top=%s sub=%s all=%s\n' "$top_count" "$sub_count" "$all_count" >&2
   exit 1
 fi
 
+# shellcheck disable=SC2016 # literal backticks delimit generated Markdown command headings.
 mapfile -t commands < <(rg '^#{3,4} `ao ' "$DOCS_PATH" | sed -E 's/^.*`([^`]+)`.*/\1/')
 
-if [[ "${#commands[@]}" -ne 189 ]]; then
+if [[ "${#commands[@]}" -ne 194 ]]; then
   printf 'unexpected command matrix size: %s\n' "${#commands[@]}" >&2
   exit 1
 fi

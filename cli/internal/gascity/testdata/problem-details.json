@@ -1,0 +1,7 @@
+{
+  "type": "about:blank",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "csrf: X-GC-Request header required on mutation endpoints",
+  "instance": "/v0/city/agentops/sessions"
+}

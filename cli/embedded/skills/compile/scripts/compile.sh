@@ -144,7 +144,7 @@ print(json.dumps({
       echo "" >&2
       echo "Pick one of these that matches what you have installed:" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed" >&2
-      echo "  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (default http://localhost:11434)" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (fallback http://localhost:11434)" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY" >&2
       echo "" >&2
@@ -466,6 +466,7 @@ lint_wiki() {
     fi
 
     # Check for stale code references
+    # shellcheck disable=SC2016 # literal backticks are part of the Markdown code-span regex.
     while IFS= read -r ref; do
       if [[ -n "$ref" ]] && [[ ! -e "$ref" ]]; then
         stale_claims+=("$basename_article references $ref")

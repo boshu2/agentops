@@ -1,0 +1,11 @@
+{
+  "seq": 22,
+  "type": "session.woke",
+  "subject": "sess_123",
+  "actor": "supervisor",
+  "message": "session woke",
+  "ts": "2026-04-28T20:45:05Z",
+  "payload": {
+    "session_id": "sess_123"
+  }
+}

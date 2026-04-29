@@ -37,10 +37,12 @@ type phasedEngineOptions struct {
 	BDCommand            string
 	TmuxCommand          string
 	TmuxWorkers          int
-	GCCityPath           string   // explicit city.toml directory for gc backend; empty = auto-discover
-	ExecCommand          gcExecFn `json:"-"` // nil = exec.Command; injectable for testing
-	LookPath             gcLookFn `json:"-"` // nil = exec.LookPath; injectable for testing
-	Mixed                bool     // opt-in cross-vendor mixed-model execution
+	GCCityPath           string           // explicit city.toml directory for gc backend; empty = auto-discover
+	GCCityName           string           `json:"-"` // API city name override; empty = derive from city path
+	GasCityClient        rpiGasCityClient `json:"-"` // injectable GasCity API client
+	ExecCommand          gcExecFn         `json:"-"` // nil = exec.Command; injectable for testing
+	LookPath             gcLookFn         `json:"-"` // nil = exec.LookPath; injectable for testing
+	Mixed                bool             // opt-in cross-vendor mixed-model execution
 	NoBudget             bool
 	BudgetSpec           string
 	WorkingDir           string `json:"-"` // runtime-only; base directory for repo/worktree resolution
@@ -49,6 +51,10 @@ type phasedEngineOptions struct {
 	DiscoveryArtifact    string                // path to pre-validated discovery artifact; skips Phase 1 when set with --from=implementation
 	StdoutWriter         io.Writer             `json:"-"` // runtime-only; suppresses raw Claude output when dashboard active
 	OnSpawnCwdReady      func(spawnCwd string) `json:"-"` // called after worktree resolved; serve mode uses this to update mux root
+	DaemonSubmit         bool                  `json:"-"` // submit to agentopsd instead of running foreground phases
+	DaemonURL            string                `json:"-"` // explicit daemon URL; empty = activation file
+	DaemonToken          string                `json:"-"` // mutation token for daemon-submit
+	DaemonFallback       bool                  `json:"-"` // when daemon is unavailable, continue foreground execution
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.

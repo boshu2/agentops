@@ -5,6 +5,9 @@
 
 | Command | Category | Coverage | Reason |
 |---------|----------|----------|--------|
+| `ao agents doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao agents inspect` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao agents lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao anti-patterns` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao autodev init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao autodev show` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -32,10 +35,19 @@
 | `ao curate catalog` | `public-tested` | `allowlisted` | Covered by curate command tests. |
 | `ao curate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao curate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao daemon ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao daemon run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao daemon service install` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao daemon status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao dedup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao defrag` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval baseline` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval compare` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval coverage` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval scorecard` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao evolve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao extract` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao factory start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -76,6 +88,7 @@
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao hooks init` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
 | `ao hooks install` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
+| `ao hooks run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao hooks show` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
 | `ao hooks test` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -142,6 +155,7 @@
 | `ao rpi cancel` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi cleanup` | `public-tested` | `allowlisted` | Covered by rpi cleanup tests. |
 | `ao rpi loop` | `unsafe-live` | `allowlisted` | Autonomous loop is long-running and state-modifying. |
+| `ao rpi mark-probed` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi nudge` | `unsafe-live` | `allowlisted` | Requires an active RPI tmux session. |
 | `ao rpi parallel` | `unsafe-live` | `allowlisted` | Parallel orchestration is long-running and state-modifying. |
 | `ao rpi phased` | `unsafe-live` | `allowlisted` | Full RPI lifecycle orchestration is long-running and state-modifying. |
@@ -149,6 +163,7 @@
 | `ao rpi status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi stream` | `unsafe-live` | `allowlisted` | Requires an active RPI run event stream. |
 | `ao rpi verify` | `public-tested` | `allowlisted` | Covered by RPI status and verification tests. |
+| `ao scenario add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

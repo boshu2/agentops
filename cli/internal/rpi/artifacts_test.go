@@ -1,6 +1,9 @@
 package rpi
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -58,6 +61,7 @@ func TestClassifyRPIArtifact(t *testing.T) {
 		{".agents/rpi/runs/x/phase-1-handoff.json", "phase_handoff", 1},
 		{".agents/rpi/runs/x/phase-3-summary.md", "phase_summary", 3},
 		{".agents/rpi/runs/x/phase-2-evaluator.json", "phase_evaluator", 2},
+		{".agents/rpi/runs/x/phase-2-gascity-evidence.json", "phase_gascity_evidence", 2},
 		{".agents/rpi/plans/foo.md", "plan", 0},
 		{".agents/rpi/research/x.md", "research", 0},
 		{".agents/rpi/council/pre-mortem-x.md", "council_pre_mortem", 0},
@@ -72,6 +76,49 @@ func TestClassifyRPIArtifact(t *testing.T) {
 				t.Errorf("got (%q, %d), want (%q, %d)", kind, phase, tc.wantKind, tc.wantPhase)
 			}
 		})
+	}
+}
+
+func TestWriteGasCityPhaseEvidence(t *testing.T) {
+	cwd := t.TempDir()
+	path, err := WriteGasCityPhaseEvidence(cwd, GasCityPhaseEvidence{
+		RunID:        "run-123",
+		Phase:        2,
+		PhaseName:    "implementation",
+		CityName:     "agentops",
+		SessionID:    "sess-123",
+		SessionAlias: "rpi-run-123-p2",
+		Status:       "completed",
+		EventCursor:  "evt-9",
+		RequestIDs: map[string]string{
+			"create": "req-create",
+			"stream": "req-stream",
+		},
+		TranscriptID:        "sess-123",
+		TranscriptFormat:    "conversation",
+		TranscriptTurnCount: 2,
+		TranscriptArtifacts: []GasCityTranscriptArtifact{{Path: ".agents/rpi/phase-2-summary.md", Kind: "summary"}},
+	})
+	if err != nil {
+		t.Fatalf("WriteGasCityPhaseEvidence: %v", err)
+	}
+	wantPath := filepath.Join(cwd, ".agents", "rpi", "runs", "run-123", "phase-2-gascity-evidence.json")
+	if path != wantPath {
+		t.Fatalf("path = %q, want %q", path, wantPath)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read evidence: %v", err)
+	}
+	var got GasCityPhaseEvidence
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal evidence: %v", err)
+	}
+	if got.SchemaVersion != 1 || got.SessionID != "sess-123" || got.RequestIDs["stream"] != "req-stream" {
+		t.Fatalf("unexpected evidence: %#v", got)
+	}
+	if got.RecordedAt == "" {
+		t.Fatal("RecordedAt should be populated")
 	}
 }
 

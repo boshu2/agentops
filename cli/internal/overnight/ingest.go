@@ -2,6 +2,7 @@ package overnight
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/forge"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/mine"
@@ -94,6 +96,40 @@ type IngestResult struct {
 	Duration time.Duration
 }
 
+type IngestStageJobOptions struct {
+	Spec       daemon.DreamStageJobSpec
+	RunOptions RunLoopOptions
+	Log        io.Writer
+	Now        func() time.Time
+}
+
+type IngestStageJobResult struct {
+	SchemaVersion              int               `json:"schema_version"`
+	DreamRunID                 string            `json:"dream_run_id"`
+	Stage                      string            `json:"stage"`
+	Status                     string            `json:"status"`
+	OutputDir                  string            `json:"output_dir"`
+	ResultPath                 string            `json:"result_path"`
+	StartedAt                  string            `json:"started_at"`
+	CompletedAt                string            `json:"completed_at"`
+	DurationMillis             int64             `json:"duration_millis"`
+	HarvestPreviewCount        int               `json:"harvest_preview_count"`
+	ForgeArtifactsMined        int               `json:"forge_artifacts_mined"`
+	ProvenanceAudited          int               `json:"provenance_audited"`
+	MineFindingsNew            int               `json:"mine_findings_new"`
+	GeneratorCandidateCount    int               `json:"generator_candidate_count"`
+	GeneratorDuplicateCount    int               `json:"generator_duplicate_count"`
+	GeneratorDuplicateRate     float64           `json:"generator_duplicate_rate"`
+	GeneratorSidecarCount      int               `json:"generator_sidecar_count"`
+	GeneratorSoftFailCount     int               `json:"generator_soft_fail_count"`
+	ExternalWatchlistEmitted   int               `json:"external_watchlist_emitted"`
+	GeneratorSidecarPaths      []string          `json:"generator_sidecar_paths,omitempty"`
+	Degraded                   []string          `json:"degraded,omitempty"`
+	StageFailures              map[string]string `json:"stage_failures,omitempty"`
+	HarvestArtifactsExtracted  int               `json:"harvest_artifacts_extracted,omitempty"`
+	HarvestPromotionCandidates int               `json:"harvest_promotion_candidates,omitempty"`
+}
+
 // RunIngest executes the parallel-safe INGEST stage.
 //
 // RunIngest never mutates the Dream corpus or next-work queue. It runs serial
@@ -152,6 +188,151 @@ func RunIngest(ctx context.Context, opts RunLoopOptions, log io.Writer) (*Ingest
 	result.Duration = stageDurationSince(started)
 	fmt.Fprintf(log, "overnight/ingest: done in %s\n", result.Duration)
 	return result, nil
+}
+
+func RunIngestStageJob(ctx context.Context, opts IngestStageJobOptions) (IngestStageJobResult, error) {
+	spec := opts.Spec
+	if err := spec.Validate(); err != nil {
+		return IngestStageJobResult{}, err
+	}
+	if spec.Stage != daemon.DreamStageIngest {
+		return IngestStageJobResult{}, fmt.Errorf("overnight/ingest: stage job has stage %q, want %q", spec.Stage, daemon.DreamStageIngest)
+	}
+	now := opts.Now
+	if now == nil {
+		now = func() time.Time { return time.Now().UTC() }
+	}
+	started := now().UTC()
+	runOpts := opts.RunOptions
+	if runOpts.Cwd == "" {
+		return IngestStageJobResult{}, fmt.Errorf("overnight/ingest: stage job requires RunOptions.Cwd")
+	}
+	if runOpts.OutputDir == "" {
+		runOpts.OutputDir = spec.OutputDir
+	}
+	if runOpts.OutputDir == "" {
+		return IngestStageJobResult{}, fmt.Errorf("overnight/ingest: stage job requires output_dir")
+	}
+	if runOpts.RunID == "" {
+		runOpts.RunID = spec.DreamRunID
+	}
+	result, err := RunIngest(ctx, runOpts, opts.Log)
+	completed := now().UTC()
+	stageResult := buildIngestStageJobResult(spec, runOpts.OutputDir, started, completed, result, err)
+	path, writeErr := WriteIngestStageJobResult(runOpts.OutputDir, stageResult)
+	stageResult.ResultPath = path
+	if err != nil {
+		if writeErr != nil {
+			return stageResult, fmt.Errorf("%w; write ingest stage result: %v", err, writeErr)
+		}
+		return stageResult, err
+	}
+	if writeErr != nil {
+		return stageResult, writeErr
+	}
+	return stageResult, nil
+}
+
+func IngestStageJobResultPath(outputDir string) string {
+	return filepath.Join(outputDir, "stages", "ingest-result.json")
+}
+
+func WriteIngestStageJobResult(outputDir string, result IngestStageJobResult) (string, error) {
+	if outputDir == "" {
+		return "", fmt.Errorf("overnight/ingest: output_dir is required")
+	}
+	path := IngestStageJobResultPath(outputDir)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", fmt.Errorf("overnight/ingest: mkdir stage result dir: %w", err)
+	}
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("overnight/ingest: marshal stage result: %w", err)
+	}
+	data = append(data, '\n')
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".ingest-result-*.tmp")
+	if err != nil {
+		return "", fmt.Errorf("overnight/ingest: create stage result temp: %w", err)
+	}
+	tmpPath := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpPath)
+		}
+	}()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return "", fmt.Errorf("overnight/ingest: write stage result: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return "", fmt.Errorf("overnight/ingest: sync stage result: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return "", fmt.Errorf("overnight/ingest: close stage result: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return "", fmt.Errorf("overnight/ingest: rename stage result: %w", err)
+	}
+	cleanup = false
+	return path, nil
+}
+
+func buildIngestStageJobResult(
+	spec daemon.DreamStageJobSpec,
+	outputDir string,
+	started time.Time,
+	completed time.Time,
+	ingest *IngestResult,
+	runErr error,
+) IngestStageJobResult {
+	status := "completed"
+	if runErr != nil {
+		status = "failed"
+	}
+	result := IngestStageJobResult{
+		SchemaVersion:  1,
+		DreamRunID:     spec.DreamRunID,
+		Stage:          string(daemon.DreamStageIngest),
+		Status:         status,
+		OutputDir:      outputDir,
+		StartedAt:      started.UTC().Format(time.RFC3339Nano),
+		CompletedAt:    completed.UTC().Format(time.RFC3339Nano),
+		DurationMillis: completed.Sub(started).Milliseconds(),
+	}
+	if ingest == nil {
+		return result
+	}
+	result.HarvestPreviewCount = ingest.HarvestPreviewCount
+	result.ForgeArtifactsMined = ingest.ForgeArtifactsMined
+	result.ProvenanceAudited = ingest.ProvenanceAudited
+	result.MineFindingsNew = ingest.MineFindingsNew
+	result.GeneratorCandidateCount = ingest.GeneratorCandidateCount
+	result.GeneratorDuplicateCount = ingest.GeneratorDuplicateCount
+	result.GeneratorDuplicateRate = ingest.GeneratorDuplicateRate
+	result.GeneratorSidecarCount = ingest.GeneratorSidecarCount
+	result.GeneratorSoftFailCount = ingest.GeneratorSoftFailCount
+	result.ExternalWatchlistEmitted = ingest.ExternalWatchlistEmitted
+	result.GeneratorSidecarPaths = append([]string(nil), ingest.GeneratorSidecarPaths...)
+	result.Degraded = append([]string(nil), ingest.Degraded...)
+	result.StageFailures = cloneStringMap(ingest.StageFailures)
+	if ingest.HarvestCatalog != nil {
+		result.HarvestArtifactsExtracted = ingest.HarvestCatalog.Summary.ArtifactsExtracted
+		result.HarvestPromotionCandidates = ingest.HarvestCatalog.Summary.PromotionCandidates
+	}
+	return result
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(values))
+	for key, value := range values {
+		out[key] = value
+	}
+	return out
 }
 
 type ingestRunner struct {

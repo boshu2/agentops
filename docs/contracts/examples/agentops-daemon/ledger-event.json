@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt_20260428_000001",
+  "request_id": "req_20260428_000001",
+  "job_id": "job_20260428_rpi_000001",
+  "event_type": "job.accepted",
+  "occurred_at": "2026-04-28T20:45:00Z",
+  "actor": "ao",
+  "payload": {
+    "job_type": "rpi.run",
+    "projection_targets": [
+      "rpi-registry",
+      "daemon-status"
+    ]
+  }
+}

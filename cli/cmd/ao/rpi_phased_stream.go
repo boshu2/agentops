@@ -214,16 +214,21 @@ func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhas
 			pollInterval: 10 * time.Second,
 			execCommand:  opts.ExecCommand,
 			lookPath:     opts.LookPath,
-		}, "runtime=gc"
+			apiClient:    opts.GasCityClient,
+			apiCityName:  opts.GCCityName,
+		}, gcExecutorSelectionReason("runtime=gc", opts.GasCityClient, "")
 	default: // auto — prefer gc when available, fall back to stream
-		if gcExecutorAvailable(opts.WorkingDir, opts.ExecCommand, opts.LookPath) {
+		gcReady, gcReason := gcExecutorAvailability(opts.WorkingDir, opts.ExecCommand, opts.LookPath)
+		if gcReady {
 			return &gcExecutor{
 				cityPath:     gcCityPathFromOpts(opts),
 				phaseTimeout: opts.PhaseTimeout,
 				pollInterval: 10 * time.Second,
 				execCommand:  opts.ExecCommand,
 				lookPath:     opts.LookPath,
-			}, "runtime=auto (gc)"
+				apiClient:    opts.GasCityClient,
+				apiCityName:  opts.GCCityName,
+			}, gcExecutorSelectionReason("runtime=auto", opts.GasCityClient, "")
 		}
 		return &streamExecutor{
 			runtimeCommand:       opts.RuntimeCommand,
@@ -234,7 +239,7 @@ func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhas
 			streamStartupTimeout: opts.StreamStartupTimeout,
 			stallCheckInterval:   opts.StallCheckInterval,
 			stdoutWriter:         stdWriter,
-		}, "runtime=auto (stream)"
+		}, fmt.Sprintf("runtime=auto backend=stream gc-degraded=%q", gcReason)
 	}
 }
 
@@ -254,8 +259,12 @@ func selectExecutor(statusPath string, allPhases []PhaseProgress) PhaseExecutor 
 func selectExecutorWithLog(statusPath string, allPhases []PhaseProgress, logPath, runID string, liveStatus bool, opts phasedEngineOptions) PhaseExecutor {
 	caps := probeBackendCapabilities(liveStatus, opts.RuntimeMode)
 	executor, reason := selectExecutorFromCaps(caps, statusPath, allPhases, opts)
-	msg := fmt.Sprintf("backend=%s reason=%q", executor.Name(), reason)
-	fmt.Printf("Executor backend: %s (%s)\n", executor.Name(), reason)
+	displayBackend := executor.Name()
+	if gcExec, ok := executor.(*gcExecutor); ok {
+		displayBackend = gcExec.backendMode()
+	}
+	msg := fmt.Sprintf("backend=%s reason=%q", displayBackend, reason)
+	fmt.Printf("Executor backend: %s (%s)\n", displayBackend, reason)
 	if logPath != "" {
 		logPhaseTransition(logPath, runID, "backend-selection", msg)
 	}
@@ -517,7 +526,6 @@ func mergePhaseProgress(dst *PhaseProgress, src PhaseProgress) {
 		dst.LastError = src.LastError
 	}
 }
-
 
 // classifyStreamResult examines the context, wait error, and parse error to
 // produce the appropriate error for a completed stream-json phase.

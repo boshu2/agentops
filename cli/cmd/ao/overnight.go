@@ -43,6 +43,10 @@ var (
 	overnightPlateauWindowK  int
 	overnightWarnOnly        bool
 	overnightCheckpointMaxMB int64
+	overnightDaemonSubmit    bool
+	overnightDaemonURL       string
+	overnightDaemonToken     string
+	overnightDaemonFallback  bool
 )
 
 var (
@@ -57,18 +61,18 @@ var (
 )
 
 type overnightSettings struct {
-	OutputDir             string
-	RunTimeoutRaw         string
-	RunTimeout            time.Duration
-	LongHaulEnabled       bool
-	LongHaulBudgetRaw     string
-	LongHaulBudget        time.Duration
-	KeepAwake             bool
-	Runners               []string
-	RunnerModels          map[string]string
-	Consensus             string
-	CreativeLane          bool
-	CouncilRunnerTimeout  time.Duration
+	OutputDir            string
+	RunTimeoutRaw        string
+	RunTimeout           time.Duration
+	LongHaulEnabled      bool
+	LongHaulBudgetRaw    string
+	LongHaulBudget       time.Duration
+	KeepAwake            bool
+	Runners              []string
+	RunnerModels         map[string]string
+	Consensus            string
+	CreativeLane         bool
+	CouncilRunnerTimeout time.Duration
 }
 
 type overnightRuntimeSummary struct {
@@ -118,11 +122,11 @@ type overnightSummary struct {
 	// operators see what was suppressed instead of a silent gap. Added
 	// 2026-04-26 nightly retro task 4.
 	CuratorSuppressed []dreamCuratorSuppression `json:"dream-curator-suppressed,omitempty" yaml:"dream-curator-suppressed,omitempty"`
-	Degraded       []string                 `json:"degraded,omitempty" yaml:"degraded,omitempty"`
-	Recommended    []string                 `json:"recommended,omitempty" yaml:"recommended,omitempty"`
-	NextAction     string                   `json:"next_action,omitempty" yaml:"next_action,omitempty"`
-	Yield          *ovn.YieldSummary        `json:"yield,omitempty" yaml:"yield,omitempty"`
-	LongHaul       *ovn.LongHaulSummary     `json:"long_haul,omitempty" yaml:"long_haul,omitempty"`
+	Degraded          []string                  `json:"degraded,omitempty" yaml:"degraded,omitempty"`
+	Recommended       []string                  `json:"recommended,omitempty" yaml:"recommended,omitempty"`
+	NextAction        string                    `json:"next_action,omitempty" yaml:"next_action,omitempty"`
+	Yield             *ovn.YieldSummary         `json:"yield,omitempty" yaml:"yield,omitempty"`
+	LongHaul          *ovn.LongHaulSummary      `json:"long_haul,omitempty" yaml:"long_haul,omitempty"`
 
 	// Dream-report schema v2 fields. These are populated by the nightly
 	// compounder RunLoop (cli/internal/overnight) when v2 mode is active.
@@ -261,6 +265,10 @@ func init() {
 	overnightStartCmd.Flags().IntVar(&overnightPlateauWindowK, "plateau-window", 2, "Plateau window K (consecutive sub-epsilon deltas required to halt)")
 	overnightStartCmd.Flags().BoolVar(&overnightWarnOnly, "warn-only", true, "First-N-runs mode: warn on plateau/regression, don't halt. Default true; flip to false once thresholds are calibrated.")
 	overnightStartCmd.Flags().Int64Var(&overnightCheckpointMaxMB, "checkpoint-max-mb", 512, "Max total MB of checkpoint storage per run")
+	overnightStartCmd.Flags().BoolVar(&overnightDaemonSubmit, "daemon-submit", false, "Submit the Dream run to agentopsd instead of executing the one-shot local path")
+	overnightStartCmd.Flags().StringVar(&overnightDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
+	overnightStartCmd.Flags().StringVar(&overnightDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
+	overnightStartCmd.Flags().BoolVar(&overnightDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue the one-shot local path")
 
 	overnightReportCmd.Flags().StringVar(&overnightReportFrom, "from", "", "Directory containing summary.json, or the summary.json file itself")
 }
@@ -285,6 +293,19 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 
 	if _, err := os.Stat(filepath.Join(cwd, ".agents")); err != nil {
 		return fmt.Errorf("dream run requires a local .agents corpus at %s", filepath.Join(cwd, ".agents"))
+	}
+
+	handled, daemonErr := maybeSubmitOvernightDaemon(cmd.Context(), cwd, &summary, startedAt, overnightDaemonModeOptions{
+		Enabled:  overnightDaemonSubmit,
+		URL:      overnightDaemonURL,
+		Token:    overnightDaemonToken,
+		Fallback: overnightDaemonFallback,
+	})
+	if daemonErr != nil {
+		return daemonErr
+	}
+	if handled {
+		return nil
 	}
 
 	// Crash recovery pass (pm-MISS-01) BEFORE we acquire the lock. Any
@@ -745,9 +766,9 @@ func appendOvernightIterationSteps(summary *overnightSummary, iterations []ovn.I
 // to the local-LLM summarization pipeline using the curator's model/endpoint
 // config. Degrades honestly: all errors land in summary.Degraded; the Dream
 // run never aborts on Tier 1 failure.
-func runPostLoopTier1Forge(_ context.Context, cwd string, summary *overnightSummary, settings overnightSettings) {
+func runPostLoopTier1Forge(ctx context.Context, cwd string, summary *overnightSummary, settings overnightSettings) {
 	outDir := filepath.Join(cwd, ".agents", "wiki", "sources")
-	result, err := runDreamTier1ForgePostLoop(cwd, outDir, "ao-dream-tier1")
+	result, err := runDreamTier1ForgePostLoop(ctx, cwd, outDir, "ao-dream-tier1", summary.RunID)
 	if err != nil {
 		summary.Degraded = append(summary.Degraded, fmt.Sprintf("tier1-forge: %v", err))
 		return
@@ -762,6 +783,21 @@ func runPostLoopTier1Forge(_ context.Context, cwd string, summary *overnightSumm
 }
 
 func tier1ForgeSummaryMap(summary tier1ForgeSummary) map[string]any {
+	if summary.Mode == "daemon-wiki-forge" {
+		return map[string]any{
+			"mode":              summary.Mode,
+			"queued":            summary.Queued,
+			"daemon_job_id":     summary.DaemonJobID,
+			"daemon_request_id": summary.DaemonRequestID,
+			"daemon_status":     summary.DaemonStatus,
+			"projection_status": summary.ProjectionStatus,
+			"agent_worker": map[string]any{
+				"worker_kind": summary.WorkerKind,
+				"provider":    summary.WorkerProvider,
+			},
+			"worker_session_refs": []string{},
+		}
+	}
 	if summary.Mode == "dream-worker-queue" {
 		return map[string]any{
 			"mode":      summary.Mode,

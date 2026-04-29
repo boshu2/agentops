@@ -453,13 +453,6 @@ func (s *runLoopState) handleMeasureError(
 	return false
 }
 
-type fitnessHaltEvaluation struct {
-	regressions       []MetricRegression
-	regressed         bool
-	plateauReached    bool
-	effectiveWarnOnly bool
-}
-
 func (s *runLoopState) applyFitnessHalt(
 	cp *Checkpoint,
 	iter *IterationSummary,
@@ -471,11 +464,11 @@ func (s *runLoopState) applyFitnessHalt(
 	if !ok {
 		return false
 	}
-	if eval.regressed && !eval.effectiveWarnOnly {
+	if eval.Regressed && !eval.EffectiveWarnOnly {
 		s.haltForRegression(cp, iter, iterStart, iterIndex, eval)
 		return true
 	}
-	if eval.plateauReached && !eval.effectiveWarnOnly {
+	if eval.PlateauReached && !eval.EffectiveWarnOnly {
 		s.haltForPlateau(cp, iter, iterStart, iterIndex)
 		return true
 	}
@@ -486,30 +479,25 @@ func (s *runLoopState) applyFitnessHalt(
 func (s *runLoopState) evaluateFitness(
 	iter *IterationSummary,
 	currSnapshot FitnessSnapshot,
-) (fitnessHaltEvaluation, bool) {
+) (MeasureHaltOutput, bool) {
 	iter.FitnessAfter = snapshotToMap(currSnapshot)
 	if s.prevSnapshot == nil {
-		return fitnessHaltEvaluation{}, false
+		return MeasureHaltOutput{}, false
 	}
 	iter.FitnessBefore = snapshotToMap(*s.prevSnapshot)
-	composite, regressions, regressed := currSnapshot.Delta(s.prevSnapshot, nil, s.opts.RegressionFloor)
-	iter.FitnessDelta = composite
-	eval := fitnessHaltEvaluation{
-		regressions:       regressions,
-		regressed:         regressed,
-		effectiveWarnOnly: s.effectiveWarnOnly(),
-	}
-	if !regressed || eval.effectiveWarnOnly {
-		eval.plateauReached = s.plateau.Observe(composite)
-	}
+	eval := EvaluateMeasureHalt(MeasureHaltInput{
+		Current:                 currSnapshot,
+		Previous:                s.prevSnapshot,
+		RegressionFloor:         s.opts.RegressionFloor,
+		Plateau:                 s.plateau,
+		PlateauWindowK:          s.opts.PlateauWindowK,
+		PlateauEpsilon:          s.opts.PlateauEpsilon,
+		WarnOnly:                s.opts.WarnOnly,
+		WarnOnlyBudgetRemaining: warnOnlyBudgetRemaining(s.opts),
+		MaxConsecutiveFailures:  s.opts.MaxConsecutiveMeasureFailures,
+	})
+	iter.FitnessDelta = eval.FitnessDelta
 	return eval, true
-}
-
-func (s *runLoopState) effectiveWarnOnly() bool {
-	if s.opts.WarnOnlyBudget != nil && s.opts.WarnOnlyBudget.Remaining <= 0 {
-		return false
-	}
-	return s.opts.WarnOnly
 }
 
 func (s *runLoopState) haltForRegression(
@@ -517,7 +505,7 @@ func (s *runLoopState) haltForRegression(
 	iter *IterationSummary,
 	iterStart time.Time,
 	iterIndex int,
-	eval fitnessHaltEvaluation,
+	eval MeasureHaltOutput,
 ) {
 	iter.Status = StatusHaltedOnRegressionPreCommit
 	finishIteration(iter, iterStart)
@@ -528,7 +516,7 @@ func (s *runLoopState) haltForRegression(
 	s.persistIterationDuring(*iter, "during pre-commit regression halt")
 	s.result.Iterations = append(s.result.Iterations, *iter)
 	s.result.RegressionReason = fmt.Sprintf("iteration %d: %d metric(s) breached regression floor %g: %v",
-		iterIndex, len(eval.regressions), s.opts.RegressionFloor, regressionNames(eval.regressions))
+		iterIndex, len(eval.Regressions), s.opts.RegressionFloor, regressionNames(eval.Regressions))
 	if s.warnOnlyBudgetExhausted() {
 		s.result.RegressionReason += " (warn-only budget exhausted)"
 	}
@@ -560,14 +548,14 @@ func (s *runLoopState) warnOnlyBudgetExhausted() bool {
 	return s.opts.WarnOnly && s.opts.WarnOnlyBudget != nil && s.opts.WarnOnlyBudget.Remaining <= 0
 }
 
-func (s *runLoopState) consumeWarnOnlyRescue(iter *IterationSummary, eval fitnessHaltEvaluation) {
+func (s *runLoopState) consumeWarnOnlyRescue(iter *IterationSummary, eval MeasureHaltOutput) {
 	consumedRescue := false
-	if eval.regressed {
+	if eval.Regressed {
 		iter.Degraded = append(iter.Degraded,
-			fmt.Sprintf("regression beyond floor (warn-only): %d metric(s)", len(eval.regressions)))
+			fmt.Sprintf("regression beyond floor (warn-only): %d metric(s)", len(eval.Regressions)))
 		consumedRescue = true
 	}
-	if eval.plateauReached {
+	if eval.PlateauReached {
 		iter.Degraded = append(iter.Degraded,
 			fmt.Sprintf("plateau reached (warn-only): %s", s.plateau.Reason()))
 		consumedRescue = true
@@ -654,17 +642,17 @@ func runTestPostCommitFaultInjector(iterIndex int, cwd string) string {
 // pulling in Go types.
 func ingestSummary(r *IngestResult) map[string]any {
 	return map[string]any{
-		"harvest_preview_count":     r.HarvestPreviewCount,
-		"forge_artifacts_mined":     r.ForgeArtifactsMined,
-		"provenance_audited":        r.ProvenanceAudited,
-		"mine_findings_new":         r.MineFindingsNew,
-		"generator_candidate_count": r.GeneratorCandidateCount,
-		"generator_duplicate_count": r.GeneratorDuplicateCount,
-		"generator_duplicate_rate":  r.GeneratorDuplicateRate,
-		"generator_sidecar_count":   r.GeneratorSidecarCount,
-		"generator_soft_fail_count": r.GeneratorSoftFailCount,
-		"generator_sidecar_path":    r.GeneratorSidecarPath,
-		"generator_sidecar_paths":   r.GeneratorSidecarPaths,
+		"harvest_preview_count":      r.HarvestPreviewCount,
+		"forge_artifacts_mined":      r.ForgeArtifactsMined,
+		"provenance_audited":         r.ProvenanceAudited,
+		"mine_findings_new":          r.MineFindingsNew,
+		"generator_candidate_count":  r.GeneratorCandidateCount,
+		"generator_duplicate_count":  r.GeneratorDuplicateCount,
+		"generator_duplicate_rate":   r.GeneratorDuplicateRate,
+		"generator_sidecar_count":    r.GeneratorSidecarCount,
+		"generator_soft_fail_count":  r.GeneratorSoftFailCount,
+		"generator_sidecar_path":     r.GeneratorSidecarPath,
+		"generator_sidecar_paths":    r.GeneratorSidecarPaths,
 		"external_watchlist_emitted": r.ExternalWatchlistEmitted,
 	}
 }

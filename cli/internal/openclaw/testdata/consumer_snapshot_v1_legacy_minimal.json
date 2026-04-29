@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "snap_legacy_minimal",
+  "generated_at": "2026-04-28T21:00:00Z",
+  "source": {
+    "ledger": ".agents/daemon/ledger.jsonl",
+    "last_event_id": "evt_legacy_000001"
+  },
+  "status": "current",
+  "resources": {
+    "runs": [
+      {
+        "resource_id": "job-rpi-legacy",
+        "resource_kind": "run",
+        "job_id": "job-rpi-legacy",
+        "job_type": "rpi.run",
+        "request_id": "req-rpi-legacy",
+        "status": "completed",
+        "last_event_id": "evt_legacy_000001"
+      }
+    ],
+    "jobs": [],
+    "wiki": []
+  }
+}

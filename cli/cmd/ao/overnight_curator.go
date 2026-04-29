@@ -26,7 +26,7 @@ import (
 
 const (
 	defaultCuratorEngine    = "ollama"
-	defaultCuratorOllamaURL = "http://127.0.0.1:11435"
+	legacyCuratorOllamaURL  = "http://127.0.0.1:11435"
 	defaultCuratorModel     = "gemma4:e4b"
 	defaultCuratorHourlyCap = 20
 )
@@ -254,7 +254,7 @@ func applyCuratorDirectoryDefaults(resolved *config.DreamLocalCuratorConfig) {
 
 func resolveCuratorOllamaURL(timeout time.Duration) string {
 	fallbackEndpoint := ""
-	for _, endpoint := range []string{defaultCuratorOllamaURL, "http://127.0.0.1:11434"} {
+	for _, endpoint := range []string{legacyCuratorOllamaURL, "http://127.0.0.1:11434"} {
 		probe := probeOllama(endpoint, timeout)
 		if !probe.Reachable {
 			continue
@@ -269,7 +269,7 @@ func resolveCuratorOllamaURL(timeout time.Duration) string {
 	if fallbackEndpoint != "" {
 		return fallbackEndpoint
 	}
-	return defaultCuratorOllamaURL
+	return legacyCuratorOllamaURL
 }
 
 func resolveCuratorModel(ollamaURL string, timeout time.Duration) string {

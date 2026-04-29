@@ -200,6 +200,10 @@
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
+- [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
+- [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
+- [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
+- [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract

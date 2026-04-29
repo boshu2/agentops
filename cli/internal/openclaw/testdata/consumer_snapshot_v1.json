@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "snap_evt_20260428_000003",
+  "generated_at": "2026-04-28T21:00:00Z",
+  "source": {
+    "ledger": ".agents/daemon/ledger.jsonl",
+    "last_event_id": "evt_20260428_000003"
+  },
+  "status": "current",
+  "resources": {
+    "runs": [
+      {
+        "resource_id": "run-rpi-1",
+        "resource_kind": "run",
+        "run_id": "rpi-run-1",
+        "job_id": "job-rpi-1",
+        "job_type": "rpi.run",
+        "request_id": "req-rpi-1",
+        "request_ids": ["req-rpi-1", "req-rpi-2"],
+        "status": "completed",
+        "result_status": "succeeded",
+        "artifacts": {
+          "summary": ".agents/rpi/runs/rpi-run-1/phase-3-summary.md"
+        },
+        "projection_targets": ["rpi-registry", "openclaw-snapshot"],
+        "created_at": "2026-04-28T20:00:00Z",
+        "updated_at": "2026-04-28T20:05:00Z",
+        "last_event_id": "evt_20260428_000001",
+        "provenance": [
+          {
+            "rel": "source-event",
+            "kind": "daemon-ledger-event",
+            "event_id": "evt_20260428_000001"
+          }
+        ]
+      },
+      {
+        "resource_id": "run-dream-1",
+        "resource_kind": "run",
+        "run_id": "dream-run-1",
+        "job_id": "job-dream-1",
+        "job_type": "dream.run",
+        "request_id": "req-dream-1",
+        "status": "running",
+        "projection_targets": ["dream-runs", "openclaw-snapshot"],
+        "created_at": "2026-04-28T20:10:00Z",
+        "updated_at": "2026-04-28T20:12:00Z",
+        "last_event_id": "evt_20260428_000002"
+      }
+    ],
+    "jobs": [
+      {
+        "resource_id": "job-rpi-1",
+        "resource_kind": "job",
+        "job_id": "job-rpi-1",
+        "job_type": "rpi.run",
+        "request_id": "req-rpi-1",
+        "status": "completed",
+        "result_status": "succeeded",
+        "last_event_id": "evt_20260428_000001"
+      },
+      {
+        "resource_id": "job-dream-1",
+        "resource_kind": "job",
+        "job_id": "job-dream-1",
+        "job_type": "dream.run",
+        "request_id": "req-dream-1",
+        "status": "running",
+        "last_event_id": "evt_20260428_000002"
+      },
+      {
+        "resource_id": "job-wiki-1",
+        "resource_kind": "job",
+        "job_id": "job-wiki-1",
+        "job_type": "wiki.forge",
+        "request_id": "req-wiki-1",
+        "status": "completed",
+        "result_status": "succeeded",
+        "artifacts": {
+          "worker_session_refs": ".agents/daemon/wiki/job-wiki-1-worker-sessions.json"
+        },
+        "last_event_id": "evt_20260428_000003"
+      }
+    ],
+    "wiki": [
+      {
+        "resource_id": "wiki-job-wiki-1",
+        "resource_kind": "wiki",
+        "job_id": "job-wiki-1",
+        "job_type": "wiki.forge",
+        "request_id": "req-wiki-1",
+        "status": "completed",
+        "result_status": "succeeded",
+        "artifacts": {
+          "worker_session_refs": ".agents/daemon/wiki/job-wiki-1-worker-sessions.json"
+        },
+        "projection_targets": ["wiki-jobs", "openclaw-snapshot"],
+        "created_at": "2026-04-28T20:20:00Z",
+        "updated_at": "2026-04-28T20:25:00Z",
+        "last_event_id": "evt_20260428_000003",
+        "provenance": [
+          {
+            "rel": "source-event",
+            "kind": "daemon-ledger-event",
+            "event_id": "evt_20260428_000003"
+          },
+          {
+            "rel": "worker-session-refs",
+            "kind": "artifact",
+            "path": ".agents/daemon/wiki/job-wiki-1-worker-sessions.json",
+            "job_id": "job-wiki-1",
+            "artifact": "worker_session_refs"
+          }
+        ]
+      }
+    ]
+  }
+}

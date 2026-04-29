@@ -220,7 +220,65 @@ func GCPeekArgs(agent string, lines int) []string {
 
 // GCEventEmitArgs returns the command arguments for `gc event emit`.
 func GCEventEmitArgs(eventType, dataJSON string) []string {
-	return []string{"event", "emit", eventType, "--payload", dataJSON}
+	return GCEventEmitArgsWithFields(eventType, "", "", "", dataJSON)
+}
+
+// GCEventEmitArgsWithFields returns the command arguments for `gc event emit`
+// using only non-empty optional fields.
+func GCEventEmitArgsWithFields(eventType, actor, subject, message, dataJSON string) []string {
+	args := []string{"event", "emit", eventType}
+	if actor != "" {
+		args = append(args, "--actor", actor)
+	}
+	if subject != "" {
+		args = append(args, "--subject", subject)
+	}
+	if message != "" {
+		args = append(args, "--message", message)
+	}
+	if dataJSON != "" {
+		args = append(args, "--payload", dataJSON)
+	}
+	return args
+}
+
+// GCEventsArgsConfig controls `gc events` fallback argument construction.
+type GCEventsArgsConfig struct {
+	Type        string
+	Since       string
+	After       string
+	AfterCursor string
+	Watch       bool
+	Follow      bool
+}
+
+// GCEventsArgs returns command arguments for `gc events`.
+func GCEventsArgs(cfg GCEventsArgsConfig) []string {
+	args := []string{"events"}
+	if cfg.Type != "" {
+		args = append(args, "--type", cfg.Type)
+	}
+	if cfg.Since != "" {
+		args = append(args, "--since", cfg.Since)
+	}
+	if cfg.After != "" {
+		args = append(args, "--after", cfg.After)
+	}
+	if cfg.AfterCursor != "" {
+		args = append(args, "--after-cursor", cfg.AfterCursor)
+	}
+	if cfg.Watch {
+		args = append(args, "--watch")
+	}
+	if cfg.Follow {
+		args = append(args, "--follow")
+	}
+	return args
+}
+
+// GCSessionListArgs returns command arguments for `gc session list --json`.
+func GCSessionListArgs() []string {
+	return []string{"session", "list", "--json"}
 }
 
 // GCStatusArgs returns the command arguments for `gc status --json`, optionally scoped to a city.

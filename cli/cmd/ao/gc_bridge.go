@@ -51,6 +51,18 @@ type GCStatusSummary = bridge.GCStatusSummary
 // GCSession is an alias for bridge.GCSession.
 type GCSession = bridge.GCSession
 
+// gcBridgeDiagnostics is the structured readiness result for the gc bridge.
+type gcBridgeDiagnostics struct {
+	BinaryAvailable bool
+	Version         string
+	VersionOK       bool
+	APIReachable    bool
+	ReadinessReady  bool
+	FallbackEnabled bool
+	Ready           bool
+	Reason          string
+}
+
 var gcVersionPattern = regexp.MustCompile(`\bv?\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?\b`)
 
 // gcBridgeAvailable returns true if the gc binary is on PATH.
@@ -118,30 +130,51 @@ func parseSemverParts(v string) [3]int {
 // gcBridgeReady checks both binary availability AND controller running.
 // Returns (ready, reason).
 func gcBridgeReady(cityPath string, execCommand gcExecFn, lookPath gcLookFn) (bool, string) {
+	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, false)
+	return diag.Ready, diag.Reason
+}
+
+func gcBridgeDiagnose(cityPath string, execCommand gcExecFn, lookPath gcLookFn, fallbackEnabled bool) gcBridgeDiagnostics {
+	diag := gcBridgeDiagnostics{FallbackEnabled: fallbackEnabled}
 	if !gcBridgeAvailable(lookPath) {
-		return false, "gc binary not found on PATH"
+		diag.Reason = "gc binary not found on PATH"
+		return diag
 	}
+	diag.BinaryAvailable = true
+
 	v, err := gcBridgeVersion(execCommand)
 	if err != nil {
-		return false, fmt.Sprintf("gc version check failed: %v", err)
+		diag.Reason = fmt.Sprintf("gc version check failed: %v", err)
+		return diag
 	}
+	diag.Version = v
 	if !gcBridgeCompatible(v) {
-		return false, fmt.Sprintf("gc version %s below minimum %s", v, gcMinVersion)
+		diag.Reason = fmt.Sprintf("gc version %s below minimum %s", v, gcMinVersion)
+		return diag
 	}
+	diag.VersionOK = true
+
 	execFn := gcDefaultExec(execCommand)
 	args := bridge.GCStatusArgs(cityPath)
 	out, err := execFn("gc", args...).Output()
 	if err != nil {
-		return false, fmt.Sprintf("gc controller not running: %v", err)
+		diag.Reason = fmt.Sprintf("gc API unavailable: %v", err)
+		return diag
 	}
+	diag.APIReachable = true
 	status, err := parseGCStatus(out)
 	if err != nil {
-		return false, fmt.Sprintf("gc status parse error: %v", err)
+		diag.Reason = fmt.Sprintf("gc API status parse error: %v", err)
+		return diag
 	}
 	if !status.Controller.Running {
-		return false, "gc controller not running"
+		diag.Reason = "gc readiness failed: controller not running"
+		return diag
 	}
-	return true, "gc bridge ready"
+	diag.ReadinessReady = true
+	diag.Ready = true
+	diag.Reason = "gc bridge ready"
+	return diag
 }
 
 // parseGCStatus parses the JSON output of `gc status --json`.
