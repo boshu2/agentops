@@ -45,6 +45,9 @@
     "tier": {
       "$ref": "#/$defs/tier"
     },
+    "evidence_kind": {
+      "$ref": "#/$defs/evidence_kind"
+    },
     "owners": {
       "type": "array",
       "items": {
@@ -248,6 +251,18 @@
         "manual"
       ]
     },
+    "evidence_kind": {
+      "type": "string",
+      "enum": [
+        "contract_canary",
+        "gate_wrapper",
+        "behavior_fixture",
+        "baseline_regression",
+        "scorecard_fixture",
+        "live_runtime",
+        "holdout"
+      ]
+    },
     "dimension": {
       "type": "string",
       "enum": [
@@ -344,6 +359,9 @@
         "objective": {
           "type": "string",
           "minLength": 1
+        },
+        "evidence_kind": {
+          "$ref": "#/$defs/evidence_kind"
         },
         "runtime": {
           "$ref": "#/$defs/runtime"

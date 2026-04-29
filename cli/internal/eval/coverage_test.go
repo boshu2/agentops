@@ -26,6 +26,9 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 	if report.Domains["cli"].SuiteCount != 1 || report.Domains["skill"].SuiteCount != 1 {
 		t.Fatalf("domain coverage = %+v, want cli and skill", report.Domains)
 	}
+	if report.EvidenceKinds[string(EvidenceKindContractCanary)].CaseCount != 2 {
+		t.Fatalf("contract_canary evidence coverage = %+v, want two cases", report.EvidenceKinds[string(EvidenceKindContractCanary)])
+	}
 	if len(report.MissingRequiredDomains) != 1 || report.MissingRequiredDomains[0] != "scenario" {
 		t.Fatalf("missing required domains = %v, want [scenario]", report.MissingRequiredDomains)
 	}
@@ -40,6 +43,29 @@ func TestBuildCoverageReportSummarizesDomains(t *testing.T) {
 	}
 }
 
+func TestBuildCoverageReportEvidenceKinds(t *testing.T) {
+	dir := t.TempDir()
+	writeCoverageSuite(t, filepath.Join(dir, "behavior.json"), "coverage.behavior", "rpi", "shell", string(EvidenceKindBehaviorFixture))
+	writeCoverageSuite(t, filepath.Join(dir, "scorecard.json"), "coverage.rpi-scorecard", "rpi", "static")
+
+	report, err := BuildCoverageReport(CoverageOptions{
+		Roots:                 []string{dir},
+		RequiredEvidenceKinds: []string{string(EvidenceKindBehaviorFixture), string(EvidenceKindLiveRuntime)},
+	})
+	if err != nil {
+		t.Fatalf("BuildCoverageReport failed: %v", err)
+	}
+	if got := report.EvidenceKinds[string(EvidenceKindBehaviorFixture)].CaseCount; got != 1 {
+		t.Fatalf("behavior_fixture case count = %d, want 1", got)
+	}
+	if got := report.EvidenceKinds[string(EvidenceKindScorecardFixture)].CaseCount; got != 1 {
+		t.Fatalf("scorecard_fixture case count = %d, want 1", got)
+	}
+	if len(report.MissingRequiredEvidenceKinds) != 1 || report.MissingRequiredEvidenceKinds[0] != string(EvidenceKindLiveRuntime) {
+		t.Fatalf("missing required evidence kinds = %v, want [live_runtime]", report.MissingRequiredEvidenceKinds)
+	}
+}
+
 func TestBuildCoverageReportMissingRootFails(t *testing.T) {
 	_, err := BuildCoverageReport(CoverageOptions{Roots: []string{filepath.Join(t.TempDir(), "missing")}})
 	if err == nil {
@@ -47,8 +73,13 @@ func TestBuildCoverageReportMissingRootFails(t *testing.T) {
 	}
 }
 
-func writeCoverageSuite(t *testing.T, path, id, domain, runtimeName string) {
+func writeCoverageSuite(t *testing.T, path, id, domain, runtimeName string, evidenceKind ...string) {
 	t.Helper()
+	evidenceField := ""
+	if len(evidenceKind) > 0 && evidenceKind[0] != "" {
+		evidenceField = `,
+      "evidence_kind": "` + evidenceKind[0] + `"`
+	}
 	body := `{
   "schema_version": 1,
   "id": "` + id + `",
@@ -69,7 +100,7 @@ func writeCoverageSuite(t *testing.T, path, id, domain, runtimeName string) {
       "id": "case",
       "title": "case",
       "kind": "artifact_check",
-      "objective": "case",
+      "objective": "case"` + evidenceField + `,
       "runtime": "` + runtimeName + `",
       "expectations": [
         {"type": "file_exists", "target": "fixture.txt"}

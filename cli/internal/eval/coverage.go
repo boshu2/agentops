@@ -37,28 +37,42 @@ var DefaultCoverageRuntimes = []string{
 	string(RuntimeMock),
 }
 
+var DefaultCoverageEvidenceKinds = []string{
+	string(EvidenceKindContractCanary),
+	string(EvidenceKindGateWrapper),
+	string(EvidenceKindBehaviorFixture),
+	string(EvidenceKindBaselineRegression),
+	string(EvidenceKindScorecardFixture),
+	string(EvidenceKindLiveRuntime),
+	string(EvidenceKindHoldout),
+}
+
 type CoverageOptions struct {
-	SuitePaths         []string
-	Roots              []string
-	RequiredDomains    []string
-	RequiredDimensions []string
-	RequiredRuntimes   []string
+	SuitePaths            []string
+	Roots                 []string
+	RequiredDomains       []string
+	RequiredDimensions    []string
+	RequiredRuntimes      []string
+	RequiredEvidenceKinds []string
 }
 
 type CoverageReport struct {
-	SuiteCount                int                       `json:"suite_count"`
-	CaseCount                 int                       `json:"case_count"`
-	CriticalCaseCount         int                       `json:"critical_case_count"`
-	Suites                    []CoverageSuite           `json:"suites"`
-	Domains                   map[string]CoverageBucket `json:"domains"`
-	Dimensions                map[string]int            `json:"dimensions"`
-	Runtimes                  map[string]int            `json:"runtimes"`
-	RequiredDomains           []string                  `json:"required_domains,omitempty"`
-	MissingRequiredDomains    []string                  `json:"missing_required_domains,omitempty"`
-	RequiredDimensions        []string                  `json:"required_dimensions,omitempty"`
-	MissingRequiredDimensions []string                  `json:"missing_required_dimensions,omitempty"`
-	RequiredRuntimes          []string                  `json:"required_runtimes,omitempty"`
-	MissingRequiredRuntimes   []string                  `json:"missing_required_runtimes,omitempty"`
+	SuiteCount                   int                       `json:"suite_count"`
+	CaseCount                    int                       `json:"case_count"`
+	CriticalCaseCount            int                       `json:"critical_case_count"`
+	Suites                       []CoverageSuite           `json:"suites"`
+	Domains                      map[string]CoverageBucket `json:"domains"`
+	EvidenceKinds                map[string]CoverageBucket `json:"evidence_kinds"`
+	Dimensions                   map[string]int            `json:"dimensions"`
+	Runtimes                     map[string]int            `json:"runtimes"`
+	RequiredDomains              []string                  `json:"required_domains,omitempty"`
+	MissingRequiredDomains       []string                  `json:"missing_required_domains,omitempty"`
+	RequiredEvidenceKinds        []string                  `json:"required_evidence_kinds,omitempty"`
+	MissingRequiredEvidenceKinds []string                  `json:"missing_required_evidence_kinds,omitempty"`
+	RequiredDimensions           []string                  `json:"required_dimensions,omitempty"`
+	MissingRequiredDimensions    []string                  `json:"missing_required_dimensions,omitempty"`
+	RequiredRuntimes             []string                  `json:"required_runtimes,omitempty"`
+	MissingRequiredRuntimes      []string                  `json:"missing_required_runtimes,omitempty"`
 }
 
 type CoverageSuite struct {
@@ -66,6 +80,7 @@ type CoverageSuite struct {
 	Domain            string   `json:"domain"`
 	Tier              string   `json:"tier"`
 	Visibility        string   `json:"visibility"`
+	EvidenceKinds     []string `json:"evidence_kinds"`
 	CaseCount         int      `json:"case_count"`
 	CriticalCaseCount int      `json:"critical_case_count"`
 	Dimensions        []string `json:"dimensions"`
@@ -84,9 +99,10 @@ func BuildCoverageReport(opts CoverageOptions) (*CoverageReport, error) {
 		return nil, err
 	}
 	report := &CoverageReport{
-		Domains:    map[string]CoverageBucket{},
-		Dimensions: map[string]int{},
-		Runtimes:   map[string]int{},
+		Domains:       map[string]CoverageBucket{},
+		EvidenceKinds: map[string]CoverageBucket{},
+		Dimensions:    map[string]int{},
+		Runtimes:      map[string]int{},
 	}
 	for _, path := range paths {
 		suite, _, err := LoadSuite(path)
@@ -97,6 +113,8 @@ func BuildCoverageReport(opts CoverageOptions) (*CoverageReport, error) {
 	}
 	report.RequiredDomains = normalizedCoverageValues(opts.RequiredDomains)
 	report.MissingRequiredDomains = missingCoverageDomains(report.Domains, report.RequiredDomains)
+	report.RequiredEvidenceKinds = normalizedCoverageValues(opts.RequiredEvidenceKinds)
+	report.MissingRequiredEvidenceKinds = missingCoverageBuckets(report.EvidenceKinds, report.RequiredEvidenceKinds)
 	report.RequiredDimensions = normalizedCoverageValues(opts.RequiredDimensions)
 	report.MissingRequiredDimensions = missingCoverageDimensions(report.Dimensions, report.RequiredDimensions)
 	report.RequiredRuntimes = normalizedCoverageValues(opts.RequiredRuntimes)
@@ -175,6 +193,7 @@ func addSuiteCoverage(report *CoverageReport, suite *Suite) {
 	report.CaseCount += summary.CaseCount
 	report.CriticalCaseCount += summary.CriticalCaseCount
 	addDomainCoverage(report, summary)
+	addEvidenceKindCoverage(report, suite)
 	for _, dim := range summary.Dimensions {
 		report.Dimensions[dim]++
 	}
@@ -186,6 +205,7 @@ func addSuiteCoverage(report *CoverageReport, suite *Suite) {
 func coverageSuiteSummary(suite *Suite) CoverageSuite {
 	dimensions := coverageDimensions(suite)
 	runtimes := coverageRuntimes(suite)
+	evidenceKinds := coverageEvidenceKinds(suite)
 	critical := 0
 	for _, evalCase := range suite.Cases {
 		if evalCase.Critical {
@@ -197,6 +217,7 @@ func coverageSuiteSummary(suite *Suite) CoverageSuite {
 		Domain:            suite.Domain,
 		Tier:              string(suite.Tier),
 		Visibility:        string(suite.Visibility),
+		EvidenceKinds:     evidenceKinds,
 		CaseCount:         len(suite.Cases),
 		CriticalCaseCount: critical,
 		Dimensions:        dimensions,
@@ -212,6 +233,30 @@ func addDomainCoverage(report *CoverageReport, suite CoverageSuite) {
 	report.Domains[suite.Domain] = bucket
 }
 
+func addEvidenceKindCoverage(report *CoverageReport, suite *Suite) {
+	suiteKinds := map[string]struct{}{}
+	caseBuckets := map[string]CoverageBucket{}
+	for _, evalCase := range suite.Cases {
+		kind := string(resolveEvidenceKind(suite, evalCase))
+		suiteKinds[kind] = struct{}{}
+		bucket := caseBuckets[kind]
+		bucket.CaseCount++
+		if evalCase.Critical {
+			bucket.CriticalCaseCount++
+		}
+		caseBuckets[kind] = bucket
+	}
+	for kind, caseBucket := range caseBuckets {
+		bucket := report.EvidenceKinds[kind]
+		bucket.CaseCount += caseBucket.CaseCount
+		bucket.CriticalCaseCount += caseBucket.CriticalCaseCount
+		if _, ok := suiteKinds[kind]; ok {
+			bucket.SuiteCount++
+		}
+		report.EvidenceKinds[kind] = bucket
+	}
+}
+
 func coverageDimensions(suite *Suite) []string {
 	seen := map[string]struct{}{}
 	for _, dim := range suite.Scoring.Dimensions {
@@ -221,6 +266,14 @@ func coverageDimensions(suite *Suite) []string {
 		for _, dim := range evalCase.Dimensions {
 			seen[string(dim)] = struct{}{}
 		}
+	}
+	return sortedCoverageKeys(seen)
+}
+
+func coverageEvidenceKinds(suite *Suite) []string {
+	seen := map[string]struct{}{}
+	for _, evalCase := range suite.Cases {
+		seen[string(resolveEvidenceKind(suite, evalCase))] = struct{}{}
 	}
 	return sortedCoverageKeys(seen)
 }
@@ -241,6 +294,68 @@ func coverageRuntimes(suite *Suite) []string {
 	return sortedCoverageKeys(seen)
 }
 
+func resolveEvidenceKind(suite *Suite, evalCase Case) EvidenceKind {
+	if evalCase.EvidenceKind != "" {
+		return evalCase.EvidenceKind
+	}
+	if suite.EvidenceKind != "" {
+		return suite.EvidenceKind
+	}
+	marker := evidenceKindMarker(suite, evalCase)
+	switch {
+	case strings.Contains(marker, "baseline-regression") || strings.Contains(marker, "baseline regression"):
+		return EvidenceKindBaselineRegression
+	case strings.Contains(marker, "holdout"):
+		return EvidenceKindHoldout
+	case strings.Contains(marker, "scorecard"):
+		return EvidenceKindScorecardFixture
+	case isLiveEvidence(marker, evalCase.Runtime):
+		return EvidenceKindLiveRuntime
+	case evalCase.Kind == "scenario" || evalCase.Kind == "rpi_flow" || strings.Contains(marker, "behavior"):
+		return EvidenceKindBehaviorFixture
+	case isGateWrapperCase(evalCase.Kind):
+		return EvidenceKindGateWrapper
+	default:
+		return EvidenceKindContractCanary
+	}
+}
+
+func isLiveEvidence(marker string, runtime Runtime) bool {
+	if strings.Contains(marker, "live-runtime") || strings.Contains(marker, "live runtime") {
+		return true
+	}
+	switch runtime {
+	case RuntimeClaude, RuntimeCodex, RuntimeManual:
+		return true
+	default:
+		return false
+	}
+}
+
+func isGateWrapperCase(kind string) bool {
+	switch kind {
+	case "command", "hook_event", "retrieval_query":
+		return true
+	default:
+		return false
+	}
+}
+
+func evidenceKindMarker(suite *Suite, evalCase Case) string {
+	parts := []string{
+		suite.ID,
+		suite.Name,
+		suite.Description,
+		evalCase.ID,
+		evalCase.Title,
+		evalCase.Kind,
+		evalCase.Objective,
+	}
+	parts = append(parts, suite.Tags...)
+	parts = append(parts, evalCase.Tags...)
+	return strings.ToLower(strings.Join(parts, " "))
+}
+
 func normalizedCoverageValues(values []string) []string {
 	seen := map[string]struct{}{}
 	for _, value := range values {
@@ -254,9 +369,13 @@ func normalizedCoverageValues(values []string) []string {
 }
 
 func missingCoverageDomains(domains map[string]CoverageBucket, required []string) []string {
+	return missingCoverageBuckets(domains, required)
+}
+
+func missingCoverageBuckets(buckets map[string]CoverageBucket, required []string) []string {
 	var missing []string
 	for _, domain := range required {
-		if domains[domain].SuiteCount == 0 {
+		if buckets[domain].SuiteCount == 0 {
 			missing = append(missing, domain)
 		}
 	}

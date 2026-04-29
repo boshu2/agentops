@@ -25,7 +25,7 @@
       {"name": "learning_closure", "weight": 1, "threshold": 1}
     ]
   },
-  "baseline_policy": {"mode": "none"},
+  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
       "id": "ratchet-lifecycle-focused-tests",

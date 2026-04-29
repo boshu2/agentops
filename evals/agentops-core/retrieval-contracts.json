@@ -24,7 +24,7 @@
       {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
     ]
   },
-  "baseline_policy": {"mode": "none"},
+  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.retrieval-contracts.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
       "id": "retrieval-cli-docs",

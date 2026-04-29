@@ -94,6 +94,9 @@ func validateSuiteMetadata(suite *Suite) []string {
 	if suite.Tier != TierDeterministic {
 		errs = append(errs, fmt.Sprintf("tier %q is out of deterministic scope", suite.Tier))
 	}
+	if suite.EvidenceKind != "" && !validEvidenceKind(suite.EvidenceKind) {
+		errs = append(errs, fmt.Sprintf("evidence_kind %q is invalid", suite.EvidenceKind))
+	}
 	if strings.TrimSpace(suite.BaselinePolicy.Mode) == "" {
 		errs = append(errs, "baseline_policy.mode is required")
 	}
@@ -144,6 +147,9 @@ func validateSuiteCases(suite *Suite) []string {
 		}
 		if strings.TrimSpace(c.Objective) == "" {
 			errs = append(errs, fmt.Sprintf("cases[%d].objective is required", i))
+		}
+		if c.EvidenceKind != "" && !validEvidenceKind(c.EvidenceKind) {
+			errs = append(errs, fmt.Sprintf("cases[%d].evidence_kind %q is invalid", i, c.EvidenceKind))
 		}
 		if c.Runtime != "" && !validDeterministicRuntime(c.Runtime) {
 			errs = append(errs, fmt.Sprintf("cases[%d].runtime %q is out of deterministic scope", i, c.Runtime))
@@ -287,6 +293,16 @@ func validTier(t Tier) bool {
 
 func validRuntime(r Runtime) bool {
 	return r == RuntimeStatic || r == RuntimeMock || r == RuntimeShell || r == RuntimeClaude || r == RuntimeCodex || r == RuntimeManual
+}
+
+func validEvidenceKind(kind EvidenceKind) bool {
+	switch kind {
+	case EvidenceKindContractCanary, EvidenceKindGateWrapper, EvidenceKindBehaviorFixture,
+		EvidenceKindBaselineRegression, EvidenceKindScorecardFixture, EvidenceKindLiveRuntime, EvidenceKindHoldout:
+		return true
+	default:
+		return false
+	}
 }
 
 func validDeterministicRuntime(r Runtime) bool {

@@ -443,7 +443,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
 		"daemon":     {"run", "ready", "status", "service"},
-		"eval":       {"run", "compare", "baseline", "scorecard", "coverage"},
+		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
 		"factory":    {"start"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
