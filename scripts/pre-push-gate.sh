@@ -10,7 +10,6 @@
 #   2. Go race tests on changed packages (via validate-go-fast.sh)
 #  3d. .agents/ write-surface contract (catalogued top-level subdirs)
 #   3. Command/test pairing for cli/cmd/ao Go changes
-#   4. cmd/ao coverage floor gate
 #  4b. Per-package coverage ratchet (full mode only)
 #   5. Embedded hooks sync (cli/embedded/ matches hooks/)
 #   6. Skill count sync
@@ -42,6 +41,7 @@
 #  27. Hook preflight
 #  28. Hooks/docs parity
 #  29. CI policy parity
+#  29b. Validation surface inventory
 #  30. ShellCheck (fast: changed .sh only)
 #  31. Plugin load test (symlink rejection)
 #  32. Learning coherence

@@ -121,11 +121,23 @@ STUB
     [ "$status" -eq 0 ]
 }
 
-@test "pre-push-gate.sh checks all 24 gates" {
-    # Verify the script references all gate sections
-    run grep -c '# --- [0-9]' "$SCRIPT"
-    [ "$status" -eq 0 ]
-    [ "$output" -ge 24 ]
+@test "pre-push-gate.sh runs surface inventory check for CI policy changes" {
+    make_stub "$FAKE_REPO/scripts/validate-surface-inventory.sh" 1
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "scripts/validation-surface-inventory.json"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"validation surface inventory"* ]]
 }
 
 @test "pre-push-gate.sh exits 1 on go build failure" {
@@ -302,7 +314,6 @@ GIT
 
     make_stub "$FAKE_REPO/scripts/validate-go-fast.sh" 1
     make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh" 1
-    make_stub "$FAKE_REPO/scripts/check-cmdao-coverage-floor.sh" 1
     make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh" 1
 
     # Make hooks differ too
