@@ -100,4 +100,4 @@ bd CLI not available in this session; noted — did not block triage.
 
 ## Commit SHA
 
-Pending (see below).
+`c077a9d4` — PR #176: https://github.com/boshu2/agentops/pull/176
