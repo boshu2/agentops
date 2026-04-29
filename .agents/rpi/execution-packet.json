@@ -1,44 +1,70 @@
 {
   "schema_version": 1,
-  "run_id": "20260429T193010Z",
-  "objective": "Analyze the full AgentOps eval suite and identify what to improve, refactor, merge, or kill.",
-  "epic_id": "ag-v29",
-  "plan_path": ".agents/plans/2026-04-29-eval-suite-triage.md",
-  "contract_surfaces": [
-    "docs/contracts/eval-environment.md",
-    "schemas/eval-suite.v1.schema.json",
-    "schemas/eval-run.v1.schema.json",
-    "scripts/eval-agentops.sh",
-    "evals/agentops-core/"
+  "run_id": "rpi-2026-04-29-ci-tests-hooks-noise-audit",
+  "objective": "Audit AgentOps CI tests and hooks to reduce noisy signals and strengthen explicit validation contracts",
+  "epic_id": "agentops-dtg",
+  "issue_ids": [
+    "agentops-dtg.1",
+    "agentops-dtg.2",
+    "agentops-dtg.3",
+    "agentops-dtg.4",
+    "agentops-dtg.5"
   ],
-  "validation_commands": [
-    "python3 -m json.tool schemas/eval-suite.v1.schema.json >/dev/null",
-    "find evals/agentops-core -maxdepth 1 -name '*.json' -print0 | xargs -0 -n1 python3 -m json.tool >/dev/null",
-    "cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./cmd/ao ./internal/eval",
-    "scripts/eval-agentops.sh --fast",
-    "scripts/pre-push-gate.sh --fast"
-  ],
+  "plan_path": ".agents/plans/2026-04-29-ci-tests-hooks-noise-audit.md",
+  "research_path": ".agents/research/2026-04-29-ci-tests-hooks-noise-audit.md",
+  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-ci-tests-hooks-noise-audit.md",
+  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-04-29-ci-tests-hooks-noise-audit.json",
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd ready and bd list probes succeeded; epic ag-v29 and six child issues were created"
+    "reason": "bd available; created epic agentops-dtg with five child tasks"
   },
+  "contract_surfaces": [
+    ".github/workflows/validate.yml",
+    "AGENTS.md",
+    "docs/CI-CD.md",
+    "docs/TESTING.md",
+    "hooks/hooks.json",
+    "hooks/codex-hooks.json",
+    "scripts/pre-push-gate.sh",
+    "scripts/ci-local-release.sh",
+    "scripts/validate-ci-policy-parity.sh",
+    "scripts/validate-hook-preflight.sh",
+    "tests/hooks",
+    "tests/scripts"
+  ],
   "done_criteria": [
-    "Evidence-kind taxonomy is mechanically enforced",
-    "Baseline policy matches promoted artifacts",
-    "Artifact-only canaries are kept, refactored, merged, or removed with replacement proof",
-    "Fast and full deterministic eval lanes are distinct",
-    "RPI and skill-change scorecards use behavioral fixtures",
-    "Live runtime and holdout lanes remain opt-in and advisory until calibrated"
+    "All workflow jobs are classified by summary policy and documented in AGENTS/docs or explicitly excluded with rationale",
+    "Hook preflight and orphan-hook checks derive coverage from manifests or explicit allowlists",
+    "Local gate tests exercise behavior rather than only checking grep/count structure",
+    "Advisory warnings remain visible but are explicitly marked non-blocking",
+    "Targeted validation commands in the plan pass"
+  ],
+  "validation_commands": [
+    "bash scripts/validate-ci-policy-parity.sh",
+    "bash tests/scripts/test-ci-policy-parity.sh",
+    "bash scripts/validate-hooks-doc-parity.sh",
+    "bash scripts/validate-hook-preflight.sh",
+    "bash tests/hooks/test-orphan-hooks.sh",
+    "bats tests/scripts/pre-push-gate.bats tests/scripts/ci-local-release.bats",
+    "bats tests/hooks/*.bats",
+    "bash tests/docs/validate-doc-release.sh",
+    "bash scripts/pre-push-gate.sh --fast --scope worktree",
+    "bash scripts/ci-local-release.sh --fast"
   ],
   "complexity": "standard",
   "pre_mortem_verdict": "WARN",
   "test_levels": {
-    "required": ["L0", "L1", "L2"],
-    "recommended": ["L3"],
-    "rationale": "The plan touches schemas/contracts (L0), Go runner and CLI behavior (L1), script/CI integration and suite execution (L2), and broad product canary behavior where a component-level full deterministic run is appropriate (L3)."
+    "required": [
+      "L0",
+      "L1",
+      "L2"
+    ],
+    "recommended": [
+      "L3"
+    ],
+    "rationale": "Work touches shell validators, workflow policy, hook manifests/tests, and docs. L3 local release validation is final-wave proof because broad local gates can be noisy during policy normalization."
   },
-  "ranked_packet_path": ".agents/rpi/ranked-packet-eval-suite-triage.md",
-  "discovery_timestamp": "2026-04-29T19:30:10Z"
+  "discovery_timestamp": "2026-04-29T20:43:49Z"
 }
