@@ -47,6 +47,8 @@ var (
 	overnightDaemonURL       string
 	overnightDaemonToken     string
 	overnightDaemonFallback  bool
+	overnightDaemonWait      bool
+	overnightDaemonTimeout   time.Duration
 )
 
 var (
@@ -269,6 +271,8 @@ func init() {
 	overnightStartCmd.Flags().StringVar(&overnightDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
 	overnightStartCmd.Flags().StringVar(&overnightDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
 	overnightStartCmd.Flags().BoolVar(&overnightDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue the one-shot local path")
+	overnightStartCmd.Flags().BoolVar(&overnightDaemonWait, "daemon-wait", false, "Wait for the submitted daemon Dream job to reach terminal state")
+	overnightStartCmd.Flags().DurationVar(&overnightDaemonTimeout, "daemon-timeout", 30*time.Second, "Maximum time to wait for --daemon-wait")
 
 	overnightReportCmd.Flags().StringVar(&overnightReportFrom, "from", "", "Directory containing summary.json, or the summary.json file itself")
 }
@@ -300,6 +304,8 @@ func runOvernightStart(cmd *cobra.Command, args []string) error {
 		URL:      overnightDaemonURL,
 		Token:    overnightDaemonToken,
 		Fallback: overnightDaemonFallback,
+		Wait:     overnightDaemonWait,
+		Timeout:  overnightDaemonTimeout,
 	})
 	if daemonErr != nil {
 		return daemonErr

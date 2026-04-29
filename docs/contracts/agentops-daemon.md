@@ -150,18 +150,20 @@ jobs.
 
 ### Foreground Supervisor
 
-`ao daemon run` may start foreground worker loops with `--workers`. During the
-tracer-bullet phase the only supported executor policy is `--executor-policy=fake`,
-and that policy is intentionally limited to the existing `openclaw.snapshot`
-job type. `--worker-once` exits after each configured worker makes one claim
-attempt, which keeps local validation deterministic while exercising the same
-queue claim, heartbeat, and terminal event path as the long-running worker loop.
+`ao daemon run` may start foreground worker loops with `--workers`.
+`--worker-once` exits after each configured worker makes one claim attempt,
+which keeps local validation deterministic while exercising the same queue
+claim, heartbeat, and terminal event path as the long-running worker loop.
 
-The fake policy also supports `wiki.forge` through the shared `AgentWorker`
-contract with an in-memory worker. Product `wiki.forge` execution uses
-`--executor-policy=gascity` and requires explicit `--gascity-endpoint` and
-`--gascity-city` configuration. The daemon must fail fast when those values are
-missing instead of inferring API readiness from the legacy `gc` CLI bridge.
+The fake policy supports `openclaw.snapshot`, `wiki.forge`, and `dream.run`.
+`wiki.forge` uses the shared `AgentWorker` contract with an in-memory worker.
+`dream.run` executes the existing Dream loop, writes terminal artifacts
+(`summary_json`, `summary_markdown`, `overnight_log`, and `failure_report` on
+failure), and fails the daemon job if the job execution timeout is exhausted.
+Product `wiki.forge` execution uses `--executor-policy=gascity` and requires
+explicit `--gascity-endpoint` and `--gascity-city` configuration. The daemon
+must fail fast when those values are missing instead of inferring API readiness
+from the legacy `gc` CLI bridge.
 
 ## Local Trust
 

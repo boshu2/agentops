@@ -120,22 +120,40 @@ func runAgentOpsDaemonJobsWaitCommand(cmd *cobra.Command, args []string) error {
 	}
 	ctx, cancel := context.WithTimeout(cobraContext(cmd), timeout)
 	defer cancel()
-	jobID := args[0]
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	baseURL, err := resolveDaemonURL(cwd, daemonURL)
+	if err != nil {
+		return err
+	}
+	job, err := waitForDaemonJobStatus(ctx, baseURL, args[0], timeout)
+	if err != nil {
+		return err
+	}
+	return renderDaemonJob(cmd, job)
+}
+
+func waitForDaemonJobStatus(ctx context.Context, baseURL, jobID string, timeout time.Duration) (daemonpkg.QueueJobState, error) {
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
 	for {
-		status, err := loadDaemonStatusWithContext(ctx, cmd)
+		status, err := fetchDaemonStatus(ctx, baseURL)
 		if err != nil {
-			return err
+			return daemonpkg.QueueJobState{}, err
 		}
 		job, ok := findDaemonJob(status.Queue.Jobs, jobID)
 		if !ok {
-			return fmt.Errorf("daemon job not found: %s", jobID)
+			return daemonpkg.QueueJobState{}, fmt.Errorf("daemon job not found: %s", jobID)
 		}
 		if daemonJobIsTerminal(job.Status) {
-			return renderDaemonJob(cmd, job)
+			return job, nil
 		}
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for daemon job %s after %s", jobID, timeout)
+			return job, fmt.Errorf("timed out waiting for daemon job %s after %s", jobID, timeout)
 		case <-time.After(100 * time.Millisecond):
 		}
 	}

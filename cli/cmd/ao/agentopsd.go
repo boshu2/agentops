@@ -300,13 +300,21 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}, wikiExecutor}
+		dreamExecutor, err := buildAgentOpsDaemonDreamExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor}
 	case "gascity":
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor}
+		dreamExecutor, err := buildAgentOpsDaemonDreamExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
@@ -331,6 +339,28 @@ func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, err
 	return daemonpkg.NewWikiForgeExecutor(daemonpkg.WikiForgeExecutorOptions{
 		Store:  daemonpkg.NewStore(cwd),
 		Worker: worker,
+	})
+}
+
+func buildAgentOpsDaemonDreamExecutor(cwd string) (daemonpkg.JobExecutor, error) {
+	return daemonpkg.NewDreamExecutor(daemonpkg.DreamExecutorOptions{
+		Cwd: cwd,
+		RunLoop: func(ctx context.Context, opts daemonpkg.DreamRunLoopOptions) (daemonpkg.DreamRunLoopResult, error) {
+			result, err := ovn.RunLoop(ctx, ovn.RunLoopOptions{
+				Cwd:           opts.Cwd,
+				OutputDir:     opts.OutputDir,
+				RunID:         opts.RunID,
+				MaxIterations: opts.MaxIterations,
+				WarnOnly:      opts.WarnOnly,
+				LogWriter:     opts.LogWriter,
+			})
+			mapped := daemonpkg.DreamRunLoopResult{Raw: result}
+			if result != nil {
+				mapped.IterationCount = len(result.Iterations)
+				mapped.BudgetExhausted = result.BudgetExhausted
+			}
+			return mapped, err
+		},
 	})
 }
 

@@ -3,6 +3,7 @@ package daemon
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 const DreamJobSpecSchemaVersion = 1
@@ -25,13 +26,14 @@ const (
 )
 
 type DreamRunJobSpec struct {
-	SchemaVersion int       `json:"schema_version"`
-	JobType       JobType   `json:"job_type"`
-	DreamRunID    string    `json:"dream_run_id"`
-	Goal          string    `json:"goal,omitempty"`
-	Mode          DreamMode `json:"mode"`
-	OutputDir     string    `json:"output_dir"`
-	MaxIterations int       `json:"max_iterations,omitempty"`
+	SchemaVersion    int       `json:"schema_version"`
+	JobType          JobType   `json:"job_type"`
+	DreamRunID       string    `json:"dream_run_id"`
+	Goal             string    `json:"goal,omitempty"`
+	Mode             DreamMode `json:"mode"`
+	OutputDir        string    `json:"output_dir"`
+	MaxIterations    int       `json:"max_iterations,omitempty"`
+	ExecutionTimeout string    `json:"execution_timeout,omitempty"`
 }
 
 type DreamStageJobSpec struct {
@@ -114,6 +116,9 @@ func (spec DreamRunJobSpec) Validate() error {
 	}
 	if spec.MaxIterations < 0 {
 		return fmt.Errorf("max_iterations must be >= 0")
+	}
+	if err := validateOptionalDuration("execution_timeout", spec.ExecutionTimeout); err != nil {
+		return err
 	}
 	return ValidateDreamMode(spec.Mode)
 }
@@ -239,6 +244,21 @@ func ValidateDreamMode(mode DreamMode) error {
 	default:
 		return fmt.Errorf("invalid Dream mode %q", mode)
 	}
+}
+
+func validateOptionalDuration(field, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return fmt.Errorf("%s is invalid: %w", field, err)
+	}
+	if duration <= 0 {
+		return fmt.Errorf("%s must be > 0", field)
+	}
+	return nil
 }
 
 func ValidateDreamStage(stage DreamStage) error {

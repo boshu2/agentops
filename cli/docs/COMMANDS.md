@@ -1581,8 +1581,10 @@ ao overnight start [flags]
       --creative-lane             Enable the bounded wildcard lane when Dream Council is running
       --daemon-fallback           When --daemon-submit cannot reach a ready daemon, continue the one-shot local path
       --daemon-submit             Submit the Dream run to agentopsd instead of executing the one-shot local path
+      --daemon-timeout duration   Maximum time to wait for --daemon-wait (default 30s)
       --daemon-token string       agentopsd mutation token for --daemon-submit
       --daemon-url string         agentopsd base URL for --daemon-submit (default: activation file)
+      --daemon-wait               Wait for the submitted daemon Dream job to reach terminal state
       --goal string               Optional goal to include in the morning report and briefing step
   -h, --help                      help for start
       --keep-awake                Force keep-awake assistance on for this run

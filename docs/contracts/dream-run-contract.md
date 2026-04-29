@@ -83,12 +83,19 @@ Dream keeps two compatible execution modes during the daemon migration:
 | Mode | Command Shape | Ownership | Compatibility Rule |
 |------|---------------|-----------|--------------------|
 | one-shot | `ao overnight start` / `ao overnight run` without daemon submit | foreground process owns lock, stages, and report writes | remains supported until the migration guide explicitly changes the default |
-| daemon job | `ao overnight start` with daemon submit enabled | `agentopsd` accepts a `dream.run` job, then executes or supervises stage jobs | must refuse daemon mode when `ao daemon ready` fails and fall back only when configured |
+| daemon queue | `ao overnight start --daemon-submit` | `agentopsd` durably accepts a `dream.run` job and the CLI reports `mode=dream.daemon-queue` | must refuse daemon mode when `ao daemon ready` fails and fall back only when configured |
+| daemon run | `ao overnight start --daemon-submit --daemon-wait --daemon-timeout <duration>` | `agentopsd` accepts and executes a `dream.run` job while the CLI waits for terminal state | wait timeout is only a CLI wait budget; it must not mark daemon work successful |
 
 Daemon job mode is a product runtime path, not a different Dream algorithm. It
 uses the same INGEST, REDUCE, MEASURE, and COMMIT semantics, but each accepted
 job and stage transition is recorded in the daemon ledger before being reported
 as accepted or complete.
+
+`dream.run` payloads carry an execution timeout. That timeout is enforced by the
+daemon worker as a hard job execution budget and is distinct from
+`--daemon-timeout`, which only limits how long the submitting CLI waits.
+Terminal daemon runs must surface `summary_json`, `summary_markdown`, and
+`overnight_log`; failed daemon runs must also surface `failure_report`.
 
 Required daemon job fields:
 
@@ -100,6 +107,7 @@ Required daemon job fields:
 | `stage` | `ingest`, `reduce`, `measure`, `commit`, or `report` |
 | `mode` | `daemon` or `one-shot` |
 | `output_dir` | report directory |
+| `execution_timeout` | daemon-side Dream execution budget |
 
 The one-shot path remains the compatibility baseline for local runs, tests,
 and fallback operation. Daemon mode must not silently delete or rewrite
