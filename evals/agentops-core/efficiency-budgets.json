@@ -24,7 +24,7 @@
       {"name": "efficiency", "weight": 2, "threshold": 1, "critical": true}
     ]
   },
-  "baseline_policy": {"mode": "none"},
+  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.efficiency-budgets.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
       "id": "coverage-command-budget",
@@ -50,7 +50,7 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "AgentOps eval canaries"},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "^evals/|^schemas/eval-|^scripts/eval-agentops\\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "scripts/eval-agentops.sh --fast"}
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_args=(--fast)"}
       ],
       "dimensions": ["efficiency", "process_adherence"]
     },

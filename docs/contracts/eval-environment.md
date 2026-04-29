@@ -98,6 +98,27 @@ Suites declare one tier:
 The first blocking tier must be deterministic. Live runtime suites are opt-in and
 advisory until repeated runs establish variance, timeout behavior, and cost.
 
+## Evidence Kinds
+
+Suites and cases may declare `evidence_kind`. When omitted, `ao eval coverage`
+infers the kind from suite metadata, case kind, runtime, tags, and baseline
+policy so older suites can still be audited during migration.
+
+| Evidence kind | What it proves | What it does not prove |
+|---------------|----------------|------------------------|
+| `contract_canary` | A public contract string, file, schema, or documented invariant still exists. | The product behavior is correct end to end. |
+| `gate_wrapper` | A lower-level command, script, linter, or validator still passes inside the eval harness. | The eval itself adds independent behavioral coverage. |
+| `behavior_fixture` | A deterministic fixture exercises product behavior directly. | Live runtime behavior across real agents or models. |
+| `baseline_regression` | A candidate run preserves or improves against a promoted baseline under declared thresholds. | That the baseline itself is still the right target. |
+| `scorecard_fixture` | Scorecard categories, deltas, and failure paths respond to known-good and regressed fixtures. | That category labels alone imply behavior quality. |
+| `live_runtime` | A Claude, Codex, or headless runtime path ran or skipped with recorded runtime metadata. | A stable PR-blocking signal before variance and auth behavior are calibrated. |
+| `holdout` | A public or private scenario/holdout expectation was evaluated. | That hidden scenario text can be disclosed to implementers. |
+
+This taxonomy is intentionally blunt: a passing public canary can be valuable
+without being a behavioral eval. Operators should use `ao eval coverage --json`
+to inspect `evidence_kinds` before interpreting a score as product behavior,
+runtime quality, baseline health, or contract preservation.
+
 ## Runtime Isolation
 
 Live or headless runtime evaluations must record runtime hygiene:
@@ -158,6 +179,18 @@ Promotion requires:
 Live runtime baselines must include repeat count, variance notes, skipped cases,
 and advisory/blocking status. A single live pass is not enough to make a live
 suite blocking.
+
+Suite `baseline_policy.mode` has operational meaning:
+
+- `none`: no promoted baseline is expected; missing-baseline warnings are noise.
+- `compare`: a promoted baseline is expected in the configured baseline
+  directory; missing files are warnings unless `blocking_gate` promotes them.
+- `promotable`: a baseline may be created, but absence is deliberate.
+
+Run `ao eval baseline-audit --json` to compare suite policy with promoted
+baseline files. The audit reports policy mismatches separately from stale suite
+hashes so operators can fix governance drift without claiming old baselines were
+refreshed.
 
 ## Verdict Rules
 

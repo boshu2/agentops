@@ -29,6 +29,18 @@ const (
 	RuntimeManual Runtime = "manual"
 )
 
+type EvidenceKind string
+
+const (
+	EvidenceKindContractCanary     EvidenceKind = "contract_canary"
+	EvidenceKindGateWrapper        EvidenceKind = "gate_wrapper"
+	EvidenceKindBehaviorFixture    EvidenceKind = "behavior_fixture"
+	EvidenceKindBaselineRegression EvidenceKind = "baseline_regression"
+	EvidenceKindScorecardFixture   EvidenceKind = "scorecard_fixture"
+	EvidenceKindLiveRuntime        EvidenceKind = "live_runtime"
+	EvidenceKindHoldout            EvidenceKind = "holdout"
+)
+
 type Dimension string
 
 const (
@@ -86,6 +98,7 @@ type Suite struct {
 	Domain         string           `json:"domain"`
 	Visibility     Visibility       `json:"visibility"`
 	Tier           Tier             `json:"tier"`
+	EvidenceKind   EvidenceKind     `json:"evidence_kind,omitempty"`
 	Owners         []string         `json:"owners,omitempty"`
 	Tags           []string         `json:"tags,omitempty"`
 	Allowed        []Runtime        `json:"allowed_runtimes,omitempty"`
@@ -142,6 +155,7 @@ type Case struct {
 	Title          string         `json:"title"`
 	Kind           string         `json:"kind"`
 	Objective      string         `json:"objective"`
+	EvidenceKind   EvidenceKind   `json:"evidence_kind,omitempty"`
 	Runtime        Runtime        `json:"runtime,omitempty"`
 	TimeoutSeconds int            `json:"timeout_seconds,omitempty"`
 	Fixtures       []string       `json:"fixtures,omitempty"`

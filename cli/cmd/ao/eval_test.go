@@ -241,8 +241,57 @@ func TestEvalCoverageCommandJSON(t *testing.T) {
 	if report.Domains["cli"].SuiteCount != 1 {
 		t.Fatalf("cli domain coverage = %+v, want one suite", report.Domains["cli"])
 	}
+	if report.EvidenceKinds[string(aoeval.EvidenceKindContractCanary)].CaseCount != 1 {
+		t.Fatalf("contract_canary evidence coverage = %+v, want one case", report.EvidenceKinds[string(aoeval.EvidenceKindContractCanary)])
+	}
 	if len(report.MissingRequiredDomains) == 0 {
 		t.Fatalf("missing required domains empty; want gaps for non-cli domains")
+	}
+}
+
+func TestEvalBaselineAuditCommandJSON(t *testing.T) {
+	withEvalCommand(t)
+	dir := t.TempDir()
+	writeEvalCmdFile(t, filepath.Join(dir, "fixture.txt"), "ok\n")
+	writeEvalCmdFile(t, filepath.Join(dir, "suite.json"), `{
+  "schema_version": 1,
+  "id": "baseline.audit",
+  "name": "Baseline Audit",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "allowed_runtimes": ["static"],
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "compare"},
+  "cases": [
+    {
+      "id": "fixture",
+      "title": "fixture",
+      "kind": "artifact_check",
+      "objective": "fixture",
+      "expectations": [
+        {"type": "file_exists", "target": "fixture.txt"}
+      ],
+      "critical": true
+    }
+  ]
+}`)
+
+	out, err := executeCommand("eval", "baseline-audit", "--root", dir, "--baseline-dir", filepath.Join(dir, "baselines"), "--json")
+	if err != nil {
+		t.Fatalf("ao eval baseline-audit failed: %v\noutput: %s", err, out)
+	}
+	var report aoeval.BaselineAuditReport
+	if err := json.Unmarshal([]byte(out), &report); err != nil {
+		t.Fatalf("baseline audit JSON parse failed: %v\noutput: %s", err, out)
+	}
+	if report.PolicyMismatchCount != 1 || len(report.MissingCompareBaselines) != 1 {
+		t.Fatalf("baseline audit report = %+v, want one missing compare baseline", report)
 	}
 }
 

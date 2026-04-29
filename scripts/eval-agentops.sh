@@ -224,6 +224,8 @@ for suite in "${SUITES[@]}"; do
     run_stdout="$run_dir/${suite_id}.run.stdout.json"
     baseline_path="$BASELINE_DIR/${suite_id}.baseline.json"
     compare_path="$run_dir/${suite_id}.compare.json"
+    baseline_mode="$(json_get_default "$suite" "baseline_policy.mode" "none")"
+    baseline_gate="$(json_get_default "$suite" "baseline_policy.blocking_gate" "none")"
 
     echo ""
     echo "== $suite_id =="
@@ -272,7 +274,23 @@ for suite in "${SUITES[@]}"; do
             fi
         fi
     else
-        record_warning "$suite_id has no promoted baseline at $baseline_path"
+        case "$baseline_mode" in
+            compare)
+                if [[ "$baseline_gate" == "pre-push" || "$baseline_gate" == "ci" || "$baseline_gate" == "release" || "$baseline_gate" == "model-upgrade" ]]; then
+                    record_failure "$suite_id requires a promoted baseline at $baseline_path"
+                else
+                    record_warning "$suite_id has no promoted baseline at $baseline_path"
+                fi
+                ;;
+            promotable)
+                record_warning "$suite_id is promotable but has no promoted baseline at $baseline_path"
+                ;;
+            none|"")
+                ;;
+            *)
+                record_warning "$suite_id has unknown baseline_policy.mode=$baseline_mode"
+                ;;
+        esac
     fi
 
     if [[ "$PROMOTE" == "true" ]]; then
@@ -288,6 +306,8 @@ done
 if [[ "$FAST" == "true" ]]; then
     coverage_path="$run_dir/coverage.json"
     coverage_stdout="$run_dir/coverage.stdout.json"
+    baseline_audit_path="$run_dir/baseline-audit.json"
+    baseline_audit_stdout="$run_dir/baseline-audit.stdout.json"
     echo ""
     echo "== eval coverage =="
     if ! "$AO_BIN" eval coverage --root evals/agentops-core --json >"$coverage_path"; then
@@ -299,6 +319,27 @@ if [[ "$FAST" == "true" ]]; then
             record_failure "coverage gaps: $coverage_missing"
         else
             echo "coverage: required domains, dimensions, and runtimes covered"
+        fi
+    fi
+    echo ""
+    echo "== eval baseline audit =="
+    if ! "$AO_BIN" eval baseline-audit --root evals/agentops-core --baseline-dir "$BASELINE_DIR" --json >"$baseline_audit_path"; then
+        record_failure "baseline audit command failed"
+    else
+        cp "$baseline_audit_path" "$baseline_audit_stdout"
+        policy_mismatches="$(json_get "$baseline_audit_path" "policy_mismatch_count")"
+        stale_hashes="$(python3 - "$baseline_audit_path" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as fh:
+    data = json.load(fh)
+print(len(data.get("stale_suite_hashes") or []))
+PY
+)"
+        if [[ "$policy_mismatches" != "0" ]]; then
+            record_failure "baseline policy mismatches: $policy_mismatches"
+        else
+            echo "baseline audit: policy mismatches=0 stale_suite_hashes=$stale_hashes"
         fi
     fi
 fi

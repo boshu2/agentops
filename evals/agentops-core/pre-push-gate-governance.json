@@ -25,7 +25,7 @@
       {"name": "runtime_compatibility", "weight": 1, "threshold": 1}
     ]
   },
-  "baseline_policy": {"mode": "none"},
+  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.pre-push-gate-governance.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
       "id": "pre-push-bats-suite",
@@ -40,10 +40,10 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..19"},
+        {"type": "stdout_contains", "value": "1..27"},
         {"type": "stdout_contains", "value": "ok 5 pre-push-gate.sh passes when no Go changes"},
-        {"type": "stdout_contains", "value": "ok 15 pre-push-gate.sh clears GIT env for skill CLI snippets"},
-        {"type": "stdout_contains", "value": "ok 16 pre-push-gate.sh clears GIT env for CLI docs parity"}
+        {"type": "stdout_contains", "value": "ok 19 pre-push-gate.sh clears GIT env for skill CLI snippets"},
+        {"type": "stdout_contains", "value": "ok 20 pre-push-gate.sh clears GIT env for CLI docs parity"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
@@ -72,7 +72,8 @@
       "objective": "Ensure eval changes trigger the AgentOps fast eval gate and that eval-agentops warnings remain visible in pre-push output.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "scripts/eval-agentops.sh"},
-        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_agentops_output=\"$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh --fast 2>&1)\""},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_args=(--fast)"},
+        {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "eval_agentops_output=\"$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh \"${eval_args[@]}\" 2>&1)\""},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "grep -q '^WARN eval-agentops:'"},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "warn \"AgentOps eval canaries\""},
         {"type": "artifact_contains", "target": "../../scripts/pre-push-gate.sh", "value": "fail \"missing executable: scripts/eval-agentops.sh\""},

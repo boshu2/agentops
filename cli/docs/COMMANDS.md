@@ -1069,6 +1069,22 @@ ao eval baseline <run.json> [flags]
       --rationale string     rationale for promoting the baseline
 ```
 
+#### `ao eval baseline-audit`
+
+Audit eval suite baseline policy against promoted baselines
+
+```
+ao eval baseline-audit [suite.json ...] [flags]
+```
+
+**Flags:**
+
+```
+      --baseline-dir string   promoted baseline directory (default ".agents/evals/baselines")
+  -h, --help                  help for baseline-audit
+      --root string           suite root to scan when no suite paths are provided (default "evals/agentops-core")
+```
+
 #### `ao eval compare`
 
 Compare an eval run against a baseline
@@ -1097,11 +1113,12 @@ ao eval coverage [suite.json ...] [flags]
 **Flags:**
 
 ```
-  -h, --help                            help for coverage
-      --require-dimension stringArray   required score dimension for missing-dimension reporting (default [correctness,process_adherence,artifact_quality,runtime_compatibility,efficiency,safety,learning_closure])
-      --require-domain stringArray      required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed,security])
-      --require-runtime stringArray     required deterministic runtime for missing-runtime reporting (default [static,shell,mock])
-      --root string                     suite root to scan when no suite paths are provided (default "evals/agentops-core")
+  -h, --help                                help for coverage
+      --require-dimension stringArray       required score dimension for missing-dimension reporting (default [correctness,process_adherence,artifact_quality,runtime_compatibility,efficiency,safety,learning_closure])
+      --require-domain stringArray          required product domain for missing-domain reporting (default [cli,hook,skill,rpi,runtime,retrieval,scenario,mixed,security])
+      --require-evidence-kind stringArray   required evidence kind for missing-evidence-kind reporting
+      --require-runtime stringArray         required deterministic runtime for missing-runtime reporting (default [static,shell,mock])
+      --root string                         suite root to scan when no suite paths are provided (default "evals/agentops-core")
 ```
 
 #### `ao eval run`
