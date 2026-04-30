@@ -389,14 +389,7 @@ func TestOutputBatchResult(t *testing.T) {
 
 func TestRunBatchPromote_NoPendingCandidates(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	oldOutput := output
 	output = "text"
@@ -413,7 +406,7 @@ func TestRunBatchPromote_NoPendingCandidates(t *testing.T) {
 	origStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err = runBatchPromote(nil, nil)
+	err := runBatchPromote(nil, nil)
 	w.Close()
 	os.Stdout = origStdout
 	if err != nil {

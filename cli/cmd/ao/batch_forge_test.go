@@ -494,14 +494,7 @@ func TestLoadAndFilterTranscripts_RespectsForgedIndex(t *testing.T) {
 
 func TestRunForgeBatch_NoPendingTranscripts(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	oldBatchDir, oldBatchMax, oldBatchExtract := batchDir, batchMax, batchExtract
 	oldOutput := output
@@ -521,7 +514,7 @@ func TestRunForgeBatch_NoPendingTranscripts(t *testing.T) {
 	origStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err = runForgeBatch(nil, nil)
+	err := runForgeBatch(nil, nil)
 	w.Close()
 	os.Stdout = origStdout
 	if err != nil {
@@ -538,14 +531,7 @@ func TestRunForgeBatch_NoPendingTranscripts(t *testing.T) {
 
 func TestRunForgeBatch_DryRunAppliesMaxLimit(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	transcriptDir := filepath.Join(tmpDir, "transcripts")
 	if err := os.MkdirAll(transcriptDir, 0o755); err != nil {
@@ -602,14 +588,7 @@ func TestRunForgeBatch_DryRunAppliesMaxLimit(t *testing.T) {
 
 func TestRunForgeBatch_ProcessesTranscript(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	transcriptDir := filepath.Join(tmpDir, "transcripts")
 	if err := os.MkdirAll(transcriptDir, 0o755); err != nil {
