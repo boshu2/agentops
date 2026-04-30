@@ -855,14 +855,7 @@ func TestUsesRuntimeManifestContract(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+	t.Chdir(tmp)
 
 	result := checkHookCoverage()
 	if result.Status != "pass" {
@@ -909,14 +902,7 @@ func TestFallbackReasonSurfaced(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+	t.Chdir(tmp)
 
 	result := checkHookCoverage()
 	if !strings.Contains(result.Detail, "coverage contract fallback:") {

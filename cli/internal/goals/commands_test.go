@@ -11,19 +11,6 @@ import (
 	"testing/fstest"
 )
 
-// chdir switches cwd and returns a cleanup function.
-func chdir(t *testing.T, dir string) func() {
-	t.Helper()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	return func() { _ = os.Chdir(prev) }
-}
-
 // writeGoalsMD writes a minimal valid GOALS.md file at path.
 func writeGoalsMD(t *testing.T, path, extra string) {
 	t.Helper()
@@ -137,8 +124,7 @@ func TestDirectivesFromPillars_NoPillars(t *testing.T) {
 
 func TestFindMissingPath(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	_ = os.MkdirAll("scripts", 0o755)
 	_ = os.WriteFile("scripts/real.sh", []byte("#!/bin/sh\n"), 0o600)
@@ -397,8 +383,7 @@ func TestRunSteerAdd_RejectsInvalidSteer(t *testing.T) {
 
 func TestRunSteerAdd_AddsDirective(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 
 	var buf bytes.Buffer
@@ -421,8 +406,7 @@ func TestRunSteerAdd_AddsDirective(t *testing.T) {
 
 func TestRunSteerAdd_DryRun(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 	before, _ := os.ReadFile("GOALS.md")
 
@@ -445,8 +429,7 @@ func TestRunSteerAdd_DryRun(t *testing.T) {
 
 func TestRunSteerRemove_NotFound(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 
 	opts := SteerRemoveOptions{Number: 99, GoalsFile: "GOALS.md"}
@@ -458,8 +441,7 @@ func TestRunSteerRemove_NotFound(t *testing.T) {
 
 func TestRunSteerRemove_RemovesAndRenumbers(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 	// Add a couple extra directives
 	var buf bytes.Buffer
@@ -477,8 +459,7 @@ func TestRunSteerRemove_RemovesAndRenumbers(t *testing.T) {
 
 func TestRunSteerPrioritize_InvalidPosition(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 
 	err := RunSteerPrioritize(SteerPrioritizeOptions{Number: 1, NewPosition: 99, GoalsFile: "GOALS.md"})
@@ -492,8 +473,7 @@ func TestRunSteerPrioritize_InvalidPosition(t *testing.T) {
 
 func TestRunSteerPrioritize_NumberNotFound(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 
 	err := RunSteerPrioritize(SteerPrioritizeOptions{Number: 5, NewPosition: 1, GoalsFile: "GOALS.md"})
@@ -504,8 +484,7 @@ func TestRunSteerPrioritize_NumberNotFound(t *testing.T) {
 
 func TestRunSteerPrioritize_Moves(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", "")
 
 	var buf bytes.Buffer
@@ -525,8 +504,7 @@ func TestRunSteerPrioritize_Moves(t *testing.T) {
 
 func TestRunValidate_ValidFile(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", `
 
 ### build
@@ -558,8 +536,7 @@ func TestRunValidate_MissingFile(t *testing.T) {
 
 func TestRunPrune_NoStale(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", `
 
 ### health
@@ -579,8 +556,7 @@ func TestRunPrune_NoStale(t *testing.T) {
 
 func TestRunPrune_DryRunDoesNotModify(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	writeGoalsMD(t, "GOALS.md", `
 
 ### stale-gate
@@ -604,8 +580,7 @@ func TestRunPrune_DryRunDoesNotModify(t *testing.T) {
 
 func TestRunMigrate_YAMLv1ToV2(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	// v1 YAML
 	yaml := `version: 1
@@ -635,8 +610,7 @@ goals:
 
 func TestRunMigrate_AlreadyV2(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	yaml := `version: 2
 goals:
@@ -659,8 +633,7 @@ goals:
 
 func TestRunInit_CreatesFile(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	var buf bytes.Buffer
 	err := RunInit(InitOptions{
@@ -682,8 +655,7 @@ func TestRunInit_CreatesFile(t *testing.T) {
 
 func TestRunInit_FailsIfExists(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 	_ = os.WriteFile("GOALS.md", []byte("existing"), 0o600)
 
 	var buf bytes.Buffer
@@ -698,8 +670,7 @@ func TestRunInit_FailsIfExists(t *testing.T) {
 
 func TestRunInit_DryRun(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	var buf bytes.Buffer
 	err := RunInit(InitOptions{
@@ -718,8 +689,7 @@ func TestRunInit_DryRun(t *testing.T) {
 
 func TestRunInit_WithTemplate(t *testing.T) {
 	tmp := t.TempDir()
-	cleanup := chdir(t, tmp)
-	defer cleanup()
+	t.Chdir(tmp)
 
 	tmplBody := `name: test
 gates:
