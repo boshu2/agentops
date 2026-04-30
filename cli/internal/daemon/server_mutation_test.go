@@ -53,6 +53,33 @@ func TestMutationRouteAcceptsJobAfterLedgerAppend(t *testing.T) {
 	}
 }
 
+func TestMutationRouteAuditsScopedTokenName(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	policy := DefaultMutationPolicy("", []string{"/v1/jobs", "/v1/jobs/cancel"})
+	policy.Tokens = []MutationToken{{
+		Name:         "phone-readonly-submit",
+		Token:        "phone-token",
+		Capabilities: []MutationCapability{MutationCapabilitySubmitJob},
+	}}
+	router := mutationRouterWithPolicy(store, &now, policy)
+	resp := postJob(t, router, `{"request_id":"req-1","job_id":"job-rpi","job_type":"rpi.run"}`, "phone-token", "")
+	if resp.Code != http.StatusAccepted {
+		t.Fatalf("scoped submit status = %d body=%s, want 202", resp.Code, resp.Body.String())
+	}
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 1 || events[0].Actor != "ao-http:phone-readonly-submit" {
+		t.Fatalf("ledger events = %#v, want scoped actor", events)
+	}
+	resp = postCancel(t, router, `{"request_id":"req-cancel","job_id":"job-rpi"}`, "phone-token", "")
+	if resp.Code != http.StatusForbidden {
+		t.Fatalf("scoped cancel status = %d body=%s, want 403", resp.Code, resp.Body.String())
+	}
+}
+
 func TestMutationAckFailpointBeforeAppendNoSideEffect(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
@@ -129,18 +156,38 @@ func TestMutationProjectionFailpointStillAcknowledgesAcceptedJob(t *testing.T) {
 
 func mutationRouter(t *testing.T, store *Store, now *time.Time) http.Handler {
 	t.Helper()
+	return mutationRouterWithPolicy(store, now, DefaultMutationPolicy("secret-token", []string{
+		"/v1/jobs",
+		"/jobs",
+	}))
+}
+
+func mutationRouterWithPolicy(store *Store, now *time.Time, policy MutationPolicy) http.Handler {
 	return NewDaemonRouter(store, ServerOptions{
-		Now: func() time.Time { return *now },
-		MutationPolicy: DefaultMutationPolicy("secret-token", []string{
-			"/v1/jobs",
-			"/jobs",
-		}),
+		Now:            func() time.Time { return *now },
+		MutationPolicy: policy,
 	})
 }
 
 func postJob(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/v1/jobs", bytes.NewBufferString(payload))
+	req.RemoteAddr = "127.0.0.1:51111"
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set(DefaultMutationTokenHeader, token)
+	}
+	if failpoint != "" {
+		req.Header.Set("X-AgentOps-Failpoint", failpoint)
+	}
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+	return resp
+}
+
+func postCancel(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/jobs/cancel", bytes.NewBufferString(payload))
 	req.RemoteAddr = "127.0.0.1:51111"
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {

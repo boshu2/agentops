@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/openclaw"
@@ -282,7 +283,8 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		return
 	}
 	policy := s.mutationPolicy()
-	if err := AuthorizeMutation(r, policy); err != nil {
+	decision, err := AuthorizeMutationDecision(r, policy)
+	if err != nil {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
 		return
 	}
@@ -315,7 +317,7 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		JobID:          req.JobID,
 		JobType:        jobType,
 		IdempotencyKey: req.IdempotencyKey,
-		Actor:          "openclaw-trigger",
+		Actor:          mutationActor("openclaw-trigger", decision),
 		Payload:        req.Payload,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
@@ -348,7 +350,8 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	policy := s.mutationPolicy()
-	if err := AuthorizeMutation(r, policy); err != nil {
+	decision, err := AuthorizeMutationDecision(r, policy)
+	if err != nil {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
 		return
 	}
@@ -363,7 +366,7 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 		JobID:          req.JobID,
 		JobType:        req.JobType,
 		IdempotencyKey: req.IdempotencyKey,
-		Actor:          "ao-http",
+		Actor:          mutationActor("ao-http", decision),
 		Payload:        req.Payload,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
@@ -411,7 +414,8 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	policy := s.mutationPolicy()
-	if err := AuthorizeMutation(r, policy); err != nil {
+	decision, err := AuthorizeMutationDecision(r, policy)
+	if err != nil {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
 		return
 	}
@@ -424,7 +428,7 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 	cancelled, err := queue.CancelJob(CancelJobInput{
 		RequestID: RequestID(req.RequestID),
 		JobID:     req.JobID,
-		Actor:     "ao-http",
+		Actor:     mutationActor("ao-http", decision),
 		Reason:    req.Reason,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
@@ -627,6 +631,13 @@ func (s *ReadOnlyServer) mutationPolicy() MutationPolicy {
 	}
 	policy.RequireLocalRemote = true
 	return policy
+}
+
+func mutationActor(base string, decision MutationDecision) string {
+	if strings.TrimSpace(decision.TokenName) == "" {
+		return base
+	}
+	return base + ":" + sanitizeIDPart(decision.TokenName)
 }
 
 func openClawTriggerAllowedJobType(jobType JobType) bool {
