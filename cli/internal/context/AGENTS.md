@@ -29,7 +29,6 @@ Context packet assembly: turns `.agents/` artifacts plus session signals into a 
   - `trust_policy.go` — which sources are trusted at which readiness level.
   - `ranked_intel.go` — ranked intel feed (typically driven by `cli/internal/search` results).
 - **Briefing surface:**
-  - `brief_render.go` — render briefing markdown.
   - `explain.go` — explain why an item was/was not included.
 
 ## Non-obvious rules
