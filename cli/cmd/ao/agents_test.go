@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -96,6 +97,86 @@ ao
 				t.Errorf("parseAgentsAllowlist() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestParseAgentsAllowlist_ShellParity locks parity between the Go parser
+// (parseAgentsAllowlist) and the shell parser pipeline embedded in
+// scripts/check-agents-write-surfaces.sh. Per the L58 finding (epic ag-0af),
+// these two parsers MUST produce identical output for the same contract
+// document — otherwise the CI gate (shell) and the `ao agents inspect`
+// command (Go) can disagree about the allowlist.
+//
+// The test feeds a fixture covering every meaningful boundary the parsers
+// must agree on (BEGIN/END markers, blank lines, leading-whitespace lines,
+// inline `# comment` suffixes, full-line `# comment` lines, duplicate
+// entries, sort order) into both parsers and asserts the sorted-deduped
+// output matches. The shell pipeline is the canonical 9-line awk|sed|awk|
+// sort -u from check-agents-write-surfaces.sh; copying it here is the
+// fixture-lock — drift in either parser fails the test.
+func TestParseAgentsAllowlist_ShellParity(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skip("bash not available")
+	}
+	if _, err := exec.LookPath("awk"); err != nil {
+		t.Skip("awk not available")
+	}
+
+	fixture := `# AgentOps Write Surface Contract
+
+Some doc prose.
+
+<!-- BEGIN agents-write-surfaces-allowlist -->
+ao
+learnings   # promoted artifacts
+patterns
+ao
+
+# core runtime
+findings
+overnight   # dream output
+sessions
+<!-- END agents-write-surfaces-allowlist -->
+
+trailing prose.
+`
+
+	goOut := parseAgentsAllowlist(fixture)
+
+	pipeline := `awk '
+  /^[[:space:]]*<!-- BEGIN agents-write-surfaces-allowlist -->[[:space:]]*$/ { inside=1; next }
+  /^[[:space:]]*<!-- END agents-write-surfaces-allowlist -->[[:space:]]*$/   { inside=0; next }
+  inside { print }
+' \
+  | sed -E 's/[[:space:]]+#.*$//' \
+  | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' \
+  | awk 'NF && $1 !~ /^#/' \
+  | sort -u`
+
+	cmd := exec.Command("bash", "-c", pipeline)
+	cmd.Stdin = strings.NewReader(fixture)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("shell pipeline failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	rawShell := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+	shellOut := []string{}
+	for _, l := range rawShell {
+		if l != "" {
+			shellOut = append(shellOut, l)
+		}
+	}
+
+	if !reflect.DeepEqual(goOut, shellOut) {
+		t.Errorf("shell-parser/Go-parser allowlist drift:\n  go:    %v\n  shell: %v", goOut, shellOut)
+	}
+
+	want := []string{"ao", "findings", "learnings", "overnight", "patterns", "sessions"}
+	if !reflect.DeepEqual(goOut, want) {
+		t.Errorf("Go parser fixture-lock failure: got %v, want %v", goOut, want)
 	}
 }
 
