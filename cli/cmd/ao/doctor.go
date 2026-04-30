@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -54,6 +55,7 @@ func gatherDoctorChecks() []doctorCheck {
 		{Name: "ao CLI", Status: "pass", Detail: formatVersion(version), Required: true},
 		checkCLIDependencies(),
 		checkDaemonRuntime(),
+		checkDaemonLedgerHealth(time.Now(), daemon.LedgerHealthDefaultThresholds()),
 		checkGasCityBridge(),
 		checkOpenClawConsumer(),
 		checkHookCoverage(),
@@ -125,6 +127,42 @@ func checkDaemonRuntimeURL(baseURL string) doctorCheck {
 		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: "not ready at " + detail, Required: false}
 	}
 	return doctorCheck{Name: "Daemon Runtime", Status: "pass", Detail: "ready at " + detail, Required: false}
+}
+
+func checkDaemonLedgerHealth(now time.Time, thresholds daemon.LedgerHealthThresholds) doctorCheck {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: "cannot determine working directory", Required: false}
+	}
+	store := daemon.NewStore(cwd)
+	if _, statErr := os.Stat(store.Dir()); os.IsNotExist(statErr) {
+		return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: "no daemon store at " + store.Dir(), Required: false}
+	}
+	health, err := store.LedgerHealth(now, thresholds)
+	if err != nil {
+		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: fmt.Sprintf("ledger health unavailable: %v", err), Required: false}
+	}
+	detail := formatLedgerHealthDetail(health)
+	if len(health.WarnReasons) > 0 {
+		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: detail + "; " + strings.Join(health.WarnReasons, "; "), Required: false}
+	}
+	return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: detail, Required: false}
+}
+
+func formatLedgerHealthDetail(h daemon.LedgerHealth) string {
+	parts := []string{
+		fmt.Sprintf("ledger=%dB/%dB", h.LedgerSizeBytes, h.LedgerMaxBytes),
+	}
+	if h.HasSnapshot {
+		parts = append(parts, fmt.Sprintf("snapshot_age=%s", h.LatestSnapshotAge.Round(time.Second)))
+	} else {
+		parts = append(parts, "snapshot=none")
+	}
+	parts = append(parts, fmt.Sprintf("archives=%d", h.ArchiveCount))
+	if !h.OldestArchiveTime.IsZero() {
+		parts = append(parts, "oldest_archive="+h.OldestArchiveTime.Format(time.RFC3339))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func checkGasCityBridge() doctorCheck {
