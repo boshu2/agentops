@@ -27,6 +27,7 @@ type SupervisorOptions struct {
 	Actor             string
 	PollInterval      time.Duration
 	HeartbeatInterval time.Duration
+	ExecutionTimeout  time.Duration
 }
 
 // SupervisorRunOnceResult reports one supervisor claim attempt.
@@ -42,6 +43,7 @@ type Supervisor struct {
 	actor             string
 	pollInterval      time.Duration
 	heartbeatInterval time.Duration
+	executionTimeout  time.Duration
 	claimMu           sync.Mutex
 }
 
@@ -83,6 +85,7 @@ func NewSupervisor(opts SupervisorOptions) (*Supervisor, error) {
 		actor:             actor,
 		pollInterval:      pollInterval,
 		heartbeatInterval: heartbeatInterval,
+		executionTimeout:  opts.ExecutionTimeout,
 	}, nil
 }
 
@@ -179,13 +182,19 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	execCtx := ctx
+	cancel := func() {}
+	if s.executionTimeout > 0 {
+		execCtx, cancel = context.WithTimeout(ctx, s.executionTimeout)
+	}
+	defer cancel()
 	type execution struct {
 		result JobExecutionResult
 		err    error
 	}
 	done := make(chan execution, 1)
 	go func() {
-		result, err := executor.RunJob(ctx, claim)
+		result, err := executor.RunJob(execCtx, claim)
 		done <- execution{result: result, err: err}
 	}()
 
@@ -194,6 +203,9 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 	for {
 		select {
 		case exec := <-done:
+			if s.executionTimeout > 0 && errors.Is(execCtx.Err(), context.DeadlineExceeded) {
+				return exec.result, fmt.Errorf("executor timed out after %s", s.executionTimeout)
+			}
 			return exec.result, exec.err
 		case <-ticker.C:
 			if _, err := s.queue.Heartbeat(HeartbeatInput{
@@ -207,6 +219,11 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 			}
 		case <-ctx.Done():
 			return JobExecutionResult{}, ctx.Err()
+		case <-execCtx.Done():
+			if s.executionTimeout > 0 && errors.Is(execCtx.Err(), context.DeadlineExceeded) {
+				return JobExecutionResult{}, fmt.Errorf("executor timed out after %s", s.executionTimeout)
+			}
+			return JobExecutionResult{}, execCtx.Err()
 		}
 	}
 }

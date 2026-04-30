@@ -34,6 +34,9 @@ var (
 	daemonGasCityCity       string
 	daemonGasCityToken      string
 	daemonGasCityTokenFile  string
+	daemonWorkerTimeout     time.Duration
+	daemonWorkerMemoryMax   int64
+	daemonWorkerCgroupRoot  string
 )
 
 type agentopsDaemonActivation struct {
@@ -55,6 +58,9 @@ type agentopsDaemonRunOptions struct {
 	GasCityCity       string
 	GasCityToken      string
 	GasCityTokenFile  string
+	WorkerTimeout     time.Duration
+	WorkerMemoryMax   int64
+	WorkerCgroupRoot  string
 	PollInterval      time.Duration
 	HeartbeatInterval time.Duration
 	Now               func() time.Time
@@ -109,7 +115,10 @@ func init() {
 	daemonRunCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonRunCmd.Flags().IntVar(&daemonWorkers, "workers", 0, "Number of daemon worker loops to run in the foreground")
 	daemonRunCmd.Flags().BoolVar(&daemonWorkerOnce, "worker-once", false, "Exit after each worker makes one claim attempt")
-	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake, gascity)")
+	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake, gascity, cli-fallback)")
+	daemonRunCmd.Flags().DurationVar(&daemonWorkerTimeout, "worker-timeout", 0, "Per-job worker wall-clock cap (0 disables)")
+	daemonRunCmd.Flags().Int64Var(&daemonWorkerMemoryMax, "worker-memory-max-bytes", 0, "Linux cgroup v2 memory.max cap for CLI fallback workers in bytes (0 disables)")
+	daemonRunCmd.Flags().StringVar(&daemonWorkerCgroupRoot, "worker-cgroup-root", "", "Linux cgroup v2 root for worker caps (default /sys/fs/cgroup)")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityEndpoint, "gascity-endpoint", "", "GasCity API endpoint for gascity executor policy")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityCity, "gascity-city", "", "GasCity city name for gascity executor policy")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityToken, "gascity-token", "", "GasCity mutation token for gascity executor policy")
@@ -136,6 +145,9 @@ func runAgentOpsDaemonCommand(cmd *cobra.Command, args []string) error {
 		GasCityCity:      daemonGasCityCity,
 		GasCityToken:     daemonGasCityToken,
 		GasCityTokenFile: daemonGasCityTokenFile,
+		WorkerTimeout:    daemonWorkerTimeout,
+		WorkerMemoryMax:  daemonWorkerMemoryMax,
+		WorkerCgroupRoot: daemonWorkerCgroupRoot,
 	}, cmd.OutOrStdout())
 }
 
@@ -315,6 +327,12 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 			return nil, err
 		}
 		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor}
+	case "cli-fallback":
+		wikiExecutor, err := buildAgentOpsDaemonCLIFallbackWikiExecutor(cwd, opts)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
@@ -328,6 +346,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		Actor:             "agentopsd-worker",
 		PollInterval:      opts.PollInterval,
 		HeartbeatInterval: opts.HeartbeatInterval,
+		ExecutionTimeout:  opts.WorkerTimeout,
 	})
 }
 
@@ -392,6 +411,40 @@ func buildAgentOpsDaemonGasCityWikiExecutor(cwd string, opts agentopsDaemonRunOp
 		Store:  daemonpkg.NewStore(cwd),
 		Worker: worker,
 	})
+}
+
+func buildAgentOpsDaemonCLIFallbackWikiExecutor(cwd string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {
+	agent, err := agentworker.NewCLIFallbackWorker(agentworker.CLIFallbackWorkerOptions{
+		WallClockTimeout: opts.WorkerTimeout,
+		MemoryMaxBytes:   opts.WorkerMemoryMax,
+		CgroupRoot:       opts.WorkerCgroupRoot,
+	})
+	if err != nil {
+		return nil, err
+	}
+	worker, err := wikiworker.NewWorker(agent)
+	if err != nil {
+		return nil, err
+	}
+	return daemonpkg.NewWikiForgeExecutor(daemonpkg.WikiForgeExecutorOptions{
+		Store: daemonpkg.NewStore(cwd),
+		Worker: providerOverrideWikiForgeWorker{
+			inner:    worker,
+			provider: agentworker.ProviderCLIFallback,
+		},
+	})
+}
+
+type providerOverrideWikiForgeWorker struct {
+	inner    daemonpkg.WikiForgeWorker
+	provider agentworker.Provider
+}
+
+func (w providerOverrideWikiForgeWorker) RunExtractionWithRetry(ctx context.Context, req wikiworker.ExtractionRequest, opts wikiworker.RetryOptions) (wikiworker.ExtractionResult, error) {
+	if w.provider != "" {
+		req.Provider = w.provider
+	}
+	return w.inner.RunExtractionWithRetry(ctx, req, opts)
 }
 
 func runAgentOpsDaemonWorkersOnce(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int) error {

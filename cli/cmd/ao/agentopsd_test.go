@@ -11,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/agentworker"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/wikiworker"
 	"github.com/spf13/cobra"
 )
 
@@ -284,10 +286,44 @@ func TestResolveAgentOpsDaemonMutationPolicySupportsScopedTokenFile(t *testing.T
 	}
 }
 
+func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
+	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"}); err != nil {
+		t.Fatalf("cli-fallback executor policy: %v", err)
+	}
+}
+
+func TestProviderOverrideWikiForgeWorkerForcesCLIFallback(t *testing.T) {
+	inner := &recordingWikiForgeWorker{}
+	worker := providerOverrideWikiForgeWorker{
+		inner:    inner,
+		provider: agentworker.ProviderCLIFallback,
+	}
+	if _, err := worker.RunExtractionWithRetry(context.Background(), wikiworker.ExtractionRequest{
+		Provider: agentworker.ProviderGasCity,
+		Prompt:   "prompt",
+	}, wikiworker.RetryOptions{}); err != nil {
+		t.Fatalf("RunExtractionWithRetry: %v", err)
+	}
+	if inner.req.Provider != agentworker.ProviderCLIFallback {
+		t.Fatalf("provider = %q, want cli-fallback", inner.req.Provider)
+	}
+}
+
 func TestAgentOpsDaemonWorkerFlagsRegistered(t *testing.T) {
-	for _, flag := range []string{"workers", "worker-once", "executor-policy", "gascity-endpoint", "gascity-city", "gascity-token", "gascity-token-file"} {
+	for _, flag := range []string{"workers", "worker-once", "worker-timeout", "worker-memory-max-bytes", "worker-cgroup-root", "executor-policy", "gascity-endpoint", "gascity-city", "gascity-token", "gascity-token-file"} {
 		if daemonRunCmd.Flags().Lookup(flag) == nil {
 			t.Fatalf("daemon run missing --%s flag", flag)
 		}
 	}
+}
+
+type recordingWikiForgeWorker struct {
+	req wikiworker.ExtractionRequest
+}
+
+func (w *recordingWikiForgeWorker) RunExtractionWithRetry(_ context.Context, req wikiworker.ExtractionRequest, _ wikiworker.RetryOptions) (wikiworker.ExtractionResult, error) {
+	w.req = req
+	return wikiworker.ExtractionResult{
+		Terminal: agentworker.TerminalState{Status: agentworker.StatusCompleted},
+	}, nil
 }

@@ -12,11 +12,17 @@ import (
 // WorkerKind identifies the agent runtime the session executes.
 type WorkerKind string
 
+const (
+	WorkerKindCodex  WorkerKind = "codex"
+	WorkerKindClaude WorkerKind = "claude"
+)
+
 // Provider identifies the transport/provider that owns the session.
 type Provider string
 
 const (
-	ProviderGasCity Provider = "gascity"
+	ProviderGasCity     Provider = "gascity"
+	ProviderCLIFallback Provider = "cli-fallback"
 )
 
 // SessionStatus is the AgentOps status vocabulary for worker sessions.
