@@ -8,6 +8,66 @@ import (
 	"testing"
 )
 
+func TestReadinessResponseIsReadyBothShapes(t *testing.T) {
+	cases := []struct {
+		name      string
+		json      string
+		wantReady bool
+		wantStat  string
+	}{
+		{
+			name:      "legacy_ready_true",
+			json:      `{"ready":true,"status":"ready"}`,
+			wantReady: true,
+			wantStat:  "ready",
+		},
+		{
+			name:      "legacy_ready_false",
+			json:      `{"ready":false,"status":"degraded","degraded":["claude"]}`,
+			wantReady: false,
+			wantStat:  "degraded",
+		},
+		{
+			name:      "gc_v1_items_all_configured",
+			json:      `{"items":{"claude":{"status":"configured"},"codex":{"status":"configured"}}}`,
+			wantReady: true,
+			wantStat:  "ready",
+		},
+		{
+			name:      "gc_v1_items_partial",
+			json:      `{"items":{"claude":{"status":"configured"},"gemini":{"status":"not_installed"}}}`,
+			wantReady: true,
+			wantStat:  "partial (1 configured, 1 missing)",
+		},
+		{
+			name:      "gc_v1_items_degraded_blocks",
+			json:      `{"items":{"claude":{"status":"configured"},"codex":{"status":"degraded"}}}`,
+			wantReady: false,
+			wantStat:  "partial (1 configured, 1 missing)",
+		},
+		{
+			name:      "empty",
+			json:      `{}`,
+			wantReady: false,
+			wantStat:  "no readiness data",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var resp ReadinessResponse
+			if err := json.Unmarshal([]byte(tc.json), &resp); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if got := resp.IsReady(); got != tc.wantReady {
+				t.Fatalf("IsReady() = %v, want %v (response=%#v)", got, tc.wantReady, resp)
+			}
+			if got := resp.EffectiveStatus(); got != tc.wantStat {
+				t.Fatalf("EffectiveStatus() = %q, want %q", got, tc.wantStat)
+			}
+		})
+	}
+}
+
 func TestContractVersion(t *testing.T) {
 	if err := ValidateContractVersion(AdapterContractVersion); err != nil {
 		t.Fatalf("current contract rejected: %v", err)
