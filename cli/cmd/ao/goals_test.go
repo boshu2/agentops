@@ -111,11 +111,7 @@ func TestResolveGoalsFile_PrefersGOALSmd(t *testing.T) {
 	goalsFile = ""
 
 	// Save and restore cwd
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(dir)
 
 	got := resolveGoalsFile()
 	if got != "GOALS.md" {
@@ -135,11 +131,7 @@ func TestResolveGoalsFile_FallsBackToYAML(t *testing.T) {
 	defer func() { goalsFile = old }()
 	goalsFile = ""
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(dir)
 
 	got := resolveGoalsFile()
 	if got != "GOALS.yaml" {
@@ -155,11 +147,7 @@ func TestResolveGoalsFile_DefaultsToGOALSmd(t *testing.T) {
 	defer func() { goalsFile = old }()
 	goalsFile = ""
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(dir)
 
 	got := resolveGoalsFile()
 	if got != "GOALS.md" {
