@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Coding agents don't do their own bookkeeping. AgentOps is the operational layer — memory, validation, and feedback loops that compound between sessions.
+description: Operational discipline for coding agents. Build reliable code with unreliable agents — and turn the context you've earned into a compounding moat.
 hide:
   - navigation
   - toc
@@ -9,8 +9,12 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  Coding agents don't do their own bookkeeping.<br>
-  AgentOps is the operational layer that makes every session start where the last one left off.
+  <strong>Operational discipline for coding agents.</strong><br>
+  The hard problem: ship reliable code with unreliable agents that don't remember anything. AgentOps builds the knowledge and memory into the system <strong>AND</strong> the process — a Meadows compounding system around your codebase.
+</p>
+
+<p class="hero-subtagline" markdown>
+The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.
 </p>
 
 <p class="hero-actions" markdown>
@@ -21,11 +25,11 @@ hide:
 
 ---
 
-## The primary use case
+## The Problem
 
-You hand a coding agent a task. It does the work. Tomorrow you hand a different (or restarted) agent the same kind of task. It rediscovers everything — the landmine in `auth.py`, the timeout bug you debugged for two hours last week, the flag the reviewer always asks you to add. The session ends, and with it, everything the agent learned.
+Every agent session starts from zero. Same mistakes. Same rework. Your agent forgets everything between sessions — the landmine in `auth.py`, the two-hour timeout debug, the flag the reviewer always adds.
 
-**AgentOps fixes that.** It gives coding agents four things they don't have by default:
+**AgentOps solves this** with four operational layers:
 
 | Layer | What changes |
 |-------|--------------|
@@ -46,7 +50,7 @@ flowchart LR
     N --> S
 ```
 
-Local and auditable: `.agents/` is plain text you can grep, diff, review, and commit when you choose. No telemetry, no cloud service.
+All state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and commit. Zero telemetry. Zero cloud dependency.
 
 ---
 
@@ -102,7 +106,7 @@ The `ao` CLI is optional but recommended. It unlocks repo-native bookkeeping, re
 
 ## See It Work
 
-Two commands that show what AgentOps actually does.
+Two commands. Real output.
 
 ### Validate a PR with independent judges
 
@@ -136,7 +140,7 @@ The point is not a bigger prompt. The point is a repo that remembers what worked
 
 ## The headline skills
 
-Every skill works alone. Flows compose them when you want more structure.
+Every skill works alone. Compose flows for end-to-end cycles.
 
 | Skill | Use it when |
 |-------|-------------|
@@ -156,9 +160,9 @@ Every skill works alone. Flows compose them when you want more structure.
 
 ---
 
-## Advanced: Day Loop and Night Loop
+## Unsupervised Cycles
 
-`/evolve` when you want **code improvement**. It reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, and records the cycle.
+**Day: autonomous improvement.** `/evolve` reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, records each cycle.
 
 ```text
 > /evolve
@@ -170,7 +174,7 @@ Every skill works alone. Flows compose them when you want more structure.
 [learn]   Post-mortem feeds the flywheel
 ```
 
-`/dream` when you want **knowledge compounding**. It runs offline-style bookkeeping work over `.agents/`, reports what changed, and never mutates source code, invokes `/rpi`, or performs git operations.
+**Night: knowledge compounding.** `/dream` consolidates learnings, dedupes patterns, defragments the corpus. Purely bookkeeping work over `.agents/` — source code stays untouched, `/rpi` never fires, no git operations.
 
 ```text
 > /dream start
@@ -184,6 +188,16 @@ Morning report: .agents/overnight/<run-id>/summary.md
 ```
 
 Run Dream overnight, then Evolve in the morning against a fresher corpus. Same model, smarter environment.
+
+---
+
+## Next steps
+
+1. **[Install](#install)** — pick your runtime.
+2. **Run** `ao quick-start` in your repo, then `/quickstart` in your agent chat.
+3. **Validate** with `/council validate this PR` on your next change.
+
+Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.
 
 ---
 

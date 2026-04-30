@@ -1,22 +1,20 @@
 ---
-last_reviewed: 2026-04-24
+last_reviewed: 2026-04-30
 ---
 
 # PRODUCT.md
 
 ## Mission
 
-AgentOps is the operational layer for coding agents. Publicly, it gives agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session starts where the last one left off. Technically, it uses a context-compiler architecture: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
-
-The older three-gap model remains the internal proof contract: judgment validation, durable learning, and loop closure are how we verify that the product actually compounds.
+AgentOps is operational discipline for coding agents. The hard problem: ship reliable code with unreliable agents that don't remember anything. Build the knowledge and memory into the system AND the process — a Meadows compounding system. The moat is the context you, your team, and your business have earned: every landmine, every decision, every scar. Atomic changes. Validation gates. Compounding context. Every session writes a learning. Every learning sharpens the next.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
 
 ## Vision
 
-The software factory that gets better with each use. Every session produces code, lessons, and stronger constraints — so the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same; the environment around it compounds.
+The software factory that gets better with each use. Every session produces code, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
 
-This is the direction the industry is converging on. Anthropic's internal Claude Code architecture validates the same three primitives AgentOps shipped months earlier: a learning loop (memory extraction → off-session consolidation → future injection), self-programming skills (pattern extraction into reusable capabilities), and adversarial verification (independent agents auditing other agents' output). AgentOps is already there — the work now is deepening the flywheel and making it autonomous.
+The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
 
 ## Market Convergence
 
@@ -28,7 +26,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 69 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 
-The gap between "architecture exists for compound growth" (what others describe) and "compound growth is actually happening" (what AgentOps delivers with harvest/forge/evolve) is the moat.
+Read the convergence table the right way: AgentOps and every harness like it gets absorbed into the model layer over time. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, with current models, before the harness layer commoditizes.
 
 ## Target Personas
 
@@ -49,98 +47,111 @@ The gap between "architecture exists for compound growth" (what others describe)
 
 ## What the Product Actually Is
 
-AgentOps has three layers:
+The bridge tool has three layers. Each smooths a sharp edge of current models so you can build the moat (the corpus) underneath.
 
 ### 1. Skills (69 skills across 4 runtimes)
 
-Markdown-defined primitives and flows that agents load and execute:
+**The discipline layer.**
 
-- **Validation primitives** — `/pre-mortem`, `/vibe`, `/council`, `/review`. Multi-model consensus validates plans before build and code before commit.
-- **Bookkeeping primitives** — `/retro`, `/forge`, `/inject`, `/flywheel`, `/compile`. Extract, score, curate, and retrieve learnings so solved problems stay solved.
-- **Flows** — `/research`, `/implement`, `/validation`, `/rpi`, `/crank`, `/evolve`. Compose single actions into repeatable paths that can run manually or end to end.
+Markdown-defined primitives and flows that agents load and execute. Atomic, composable, scoped. Engineers recognize the shape: small reviewable units with explicit phase boundaries.
+
+- **Validation primitives** — `/pre-mortem`, `/vibe`, `/council`, `/review`. Multi-model consensus validates plans before build and code before commit. Gates block, not advise.
+- **Bookkeeping primitives** — `/retro`, `/forge`, `/inject`, `/flywheel`, `/compile`. Extract, score, curate, and retrieve learnings so solved problems stay solved. The flywheel runs here.
+- **Flows** — `/research`, `/implement`, `/validation`, `/rpi`, `/crank`, `/evolve`. Compose primitives into auditable phases. Drop in at any phase. No phase compresses into another.
 
 Skills work across Claude Code, Codex CLI, Cursor, and OpenCode through explicit proof tiers. Tier S structural/install proof is active for all four runtimes; Tier I live inventory proof exists for Claude Code and Codex when local CLIs/auth are available; Tier E live execution proof remains opt-in rather than a default CI gate. Codex-native skills ship alongside Claude-native, and `/converter` exports Cursor rules.
 
 ### 2. CLI (`ao`)
 
-A Go binary that provides the repo-native infrastructure skills depend on:
+**The reliability + autonomy layer.**
 
-- **Bookkeeping control plane** — `ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, and `ao memory sync` manage learning capture, retrieval, freshness decay, and promotion.
-- **Goal and issue orchestration** — `ao goals measure` runs fitness gates, `ao goals steer` manages directives, and `bd` provides git-native issue tracking with dependency graphs and epic management.
-- **Context assembly and operator surfaces** — `ao context assemble`, `ao rpi`, and `ao factory` build phase-appropriate packets and terminal-native flows.
+A Go binary that provides the repo-native infrastructure skills depend on. Declarative goals, fitness gates, control loops that reconcile.
+
+- **Bookkeeping control plane** — `ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, `ao memory sync` manage learning capture, retrieval, freshness decay, promotion. The flywheel runs here.
+- **Goals + reconciliation** — `ao goals measure` runs SLO-shaped fitness gates; `ao goals steer` manages directives; `ao evolve` runs the autonomous reconcile loop that closes the worst fitness gap. SRE error-budget logic, applied to a codebase.
+- **Operator surfaces** — `ao context assemble`, `ao rpi`, `ao factory` build phase-appropriate packets and terminal-native flows. Stay in the loop, run on the loop, or drop out entirely. Same machine.
 
 ### 3. Hooks
 
-Session lifecycle hooks that run automatically so the operational layer stays active without agent initiative:
+**The always-on layer.**
+
+Session lifecycle hooks that run automatically so the operational layer stays active without agent initiative. The discipline that fires whether the operator remembered or not.
 
 - **SessionStart / SessionEnd / Stop** — stage runtime state, maintain, and close the bookkeeping loop between sessions.
 - **PreToolUse / PostToolUse** — nudge toward the right primitives and enforce validation constraints.
-- **UserPromptSubmit** — route intent, surface startup guidance, and keep the operator on a productive path.
+- **UserPromptSubmit** — route intent, surface startup guidance, keep the operator on a productive path.
 
 ## Core Value Propositions
 
-The public value proposition should now map to the category we are actually selling:
+The three load-bearing claims, expanded:
 
-- **Bookkeeping That Compounds** — Agent knowledge is managed like code: version-controlled, reviewed, promoted, and decayed instead of trapped in ephemeral chat history or a proprietary store. Each session captures learnings scored on specificity, actionability, novelty, context, and confidence. Learnings promote to patterns; patterns become planning rules.
-- **Validation Before Ship** — Multi-model consensus (Claude + Codex judges debate independently) validates plans before build and code before commit. Validation gates block, not advise.
-- **Primitives + Flows** — Skills are standalone building blocks. Use one (`/council validate this PR`), compose several (`/research` → `/plan` → `/council validate`), or run the full lifecycle (`/rpi`). The same recursive shape repeats at every scale.
-- **Hands-Free Execution** — `/evolve` and `/crank` spawn agents that work toward goals autonomously. Cycle state is disk-based, regression gates are hard-gated, and every cycle writes a verifiable audit trail.
-- **Multi-Runtime, Multi-Model** — Same skills target Claude Code, Codex CLI, Cursor, and OpenCode with documented Tier S/I/E proof levels. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives.
-- **Zero Setup, Zero Telemetry** — All state lives in local `.agents/` directories (git-ignored by default; opt in to commit with `AGENTOPS_GITIGNORE_AUTO=0`) with no cloud dependency. 69 skills, 12 runtime hook event sections, and the flywheel can operate with no external daemon.
+- **Atomic changes** — every primitive is small enough to be cheap to undo. `/implement` is one scoped task. `/council` is one verdict. `/forge` extracts one learning at a time. Compose them; the work stays auditable end to end.
+- **Validation gates** — multi-model consensus (Claude + Codex judges debate independently) validates plans before build and code before commit. Gates block, not advise. The three-gap proof contract — judgment, durable learning, loop closure — defines what reliability means here.
+- **Compounding context** — the knowledge flywheel. Each session captures learnings scored on specificity, actionability, novelty, context, and confidence. Learnings promote to patterns; patterns become planning rules. Next session starts loaded, not cold. Escape velocity is a measurable condition: retrieval × usage > decay.
+- **Hands-free reconciliation** — `/evolve` reads `GOALS.md`, picks the worst fitness gap, fixes it, validates, records the cycle. SRE error budgets meet Kubernetes control loops. `/dream` runs overnight bookkeeping; source code stays untouched.
+- **Multi-runtime, multi-model** — same skills target Claude Code, Codex CLI, Cursor, and OpenCode with documented Tier S/I/E proof levels. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives — the discipline lives in the system, not the model.
+- **Zero setup, zero telemetry** — all state lives in local `.agents/` directories with no cloud dependency. 69 skills, 12 runtime hook event sections, and the flywheel can operate with no external daemon.
 
 ## Strategic Bet
 
-AgentOps bets that the durable advantage in AI coding will come from compounding context between sessions, not from packing more prompts, more agents, or more context into a single session. The winning layer is the bookkeeping/context-compiler layer: raw session signal becomes reusable learnings, compiled prevention, and better next work.
+Knowledge is the moat. AgentOps isn't. Every harness — ours included — gets absorbed into the model. Memory primitives, learning loops, validation gates: frontier vendors will ship them natively. What they won't ship is *your* corpus — what your repo learned, what your team scarred, what your codebase decided. AgentOps is the bridge tool: skills, hooks, and a CLI that smooth the sharp edges of current models so you produce reliable output today and build the moat that stays.
 
 ## Evidence
 
-As of 2026-04-24:
+As of 2026-04-30:
 
 **Traction:**
 
-- GitHub repo: 265 stars, 24 forks, 2 open issues, last pushed 2026-04-08
-- Public surface: GitHub Pages comparison site and search metadata are live
+- GitHub repo: 320 stars, 34 forks, 10 open issues, last pushed 2026-04-30
+- Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
 - Distribution/runtime reach: 69 shared skills, 69 checked-in Codex artifacts, and 35 Codex overrides
 
 **Measured operational proof:**
 
-- Knowledge corpus: 163 learnings, 13 planning rules, 12 patterns
-- `ao doctor --json`: 10 of 12 checks passing, with full 7/7 hook coverage
-- Competitive freshness gate passing: all 5 comparison docs are within the 45-day target
+- Knowledge corpus: 4,940 learnings, 1,195 patterns, 40 planning rules — the flywheel is producing
+- `ao doctor --json`: hook coverage and structural gates passing
+- Competitive freshness gate: comparison docs maintained within the 45-day target
+
+The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evidence: extracted, scored, promoted artifacts are accumulating at a rate that exceeds decay. The corpus is compounding, not just claiming to. Note: this is the maintainer's corpus. The product's job is to help every user start building their own.
 
 ## Known Product Gaps
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| Dream autonomy is still maturing | The private local Dream lane now runs through `/dream` and `ao overnight`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish rather than the existence of the overnight engine. | in-progress |
-| Pattern-to-skill promotion polish remains | The strongest differentiation thesis, self-programming compounding, now has review-only draft generation; the remaining gap is richer synthesis and a clean publish path. | in-progress |
-| Multi-runtime proof is tiered, not complete | Tier S structural proof is active for Claude Code, Codex, Cursor, and OpenCode, but live inventory/execution proof is only partial and still depends on external CLIs/auth. | in-progress |
-| Messaging is not yet fully unified | Public surfaces should now converge on "operational layer," while technical docs still need a clean split between the public category and the internal "context compiler" framing. | open |
-| Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place, but retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
+| Dream autonomy is still maturing | The private local Dream lane runs through `/dream` and `ao overnight`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish. | in-progress |
+| Pattern-to-skill promotion polish remains | The strongest differentiation thesis — self-programming compounding — has review-only draft generation today. Remaining gap: richer synthesis and a clean publish path. | in-progress |
+| Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
+| Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
+| Public messaging now converged on operational-discipline + moat framing | A 2026-04-30 internal positioning council locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
 
 ## Design Principles
 
-**Theoretical foundation — four pillars:**
+**Theoretical foundation — six pillars:**
 
-1. **[Systems theory (Meadows)](https://en.wikipedia.org/wiki/Twelve_leverage_points)** — Target the high-leverage end of the hierarchy: information flows (#6), rules (#5), self-organization (#4), goals (#3). Changing the loop beats tuning the output.
-2. **[DevOps (Three Ways)](docs/the-science.md#part-3-devops-foundation-the-three-ways)** — Flow, feedback, continual learning — applied to the agent loop instead of the deploy pipeline.
-3. **[Brownian Ratchet](docs/brownian-ratchet.md)** — Embrace agent variance, filter aggressively, ratchet successes. Chaos + filter + one-way gate = net forward progress.
-4. **[Knowledge Flywheel (escape velocity)](docs/the-science.md#the-escape-velocity-condition)** — If retrieval rate x usage rate exceeds decay rate, knowledge compounds. If not, it decays to zero. The flywheel exists to stay above that threshold.
+1. **[Systems theory (Meadows)](https://en.wikipedia.org/wiki/Twelve_leverage_points)** — Target the high-leverage end of the hierarchy: information flows (#6), rules (#5), self-organization (#4), goals (#3). Changing the loop beats tuning the output. AgentOps is built as a Meadows compounding system around the user's codebase: information flows captured, rules encoded, self-organization through the flywheel, goals declared.
+2. **[DevOps Three Ways](docs/the-science.md#part-3-devops-foundation-the-three-ways)** — Flow, feedback, continual learning. The discipline lineage. Applied to the agent loop instead of the deploy pipeline.
+3. **SRE (SLOs + error budgets)** — Reliability is a measurable condition, not a vibe. `GOALS.md` carries SLO-shaped fitness gates; `ao goals measure` is the burn-rate equivalent. The reliability lineage. Source: *Site Reliability Engineering* (Beyer, Jones, Petoff, Murphy).
+4. **Kubernetes control loops** — Declared state + reconcile loop. `GOALS.md` declares; `/evolve` reconciles. Errors don't crash the loop; they enter the work queue. The self-correction lineage.
+5. **[Brownian Ratchet](docs/brownian-ratchet.md)** — Embrace agent variance, filter aggressively, ratchet successes. Chaos + filter + one-way gate = net forward progress. The forward-only-progress lineage.
+6. **[Knowledge Flywheel (escape velocity)](docs/the-science.md#the-escape-velocity-condition)** — If retrieval rate × usage rate exceeds decay rate, knowledge compounds. If not, it decays to zero. The compounding-context lineage. *This is the one infrastructure never needed* — software workers persist; agents don't. The corpus is the moat.
 
 **Operational principles:**
 
-1. **Context quality determines output quality.** Every skill, hook, and flywheel component exists to ensure the right context is in the right window at the right time.
-2. **Least-privilege loading.** Agents receive only the context necessary for their task — phase-specific, role-scoped, freshness-weighted.
-3. **The cycle is the product.** No single skill is the value. The compounding loop — research, plan, validate, build, validate, learn, repeat — is what makes the system improve.
-4. **Two-tier execution.** Orchestrators (`/evolve`, `/rpi`, `/crank`) stay in the main session. Workers fork into subagents where results merge back via the filesystem — never accumulated chat context.
-5. **Dormancy is last resort.** When goals pass and backlog is empty, the system generates productive work from validation gaps, bug hunts, drift detection, and feature suggestions before going dormant.
+1. **Agents are ephemeral; the system carries the state.** Every skill, hook, and flywheel component exists because the agent itself can't remember. Build for amnesia.
+2. **The corpus is the user's. The harness is ours.** AgentOps' own commoditization is on the timeline. The user's accumulated knowledge isn't. Optimize the product for what the user keeps.
+3. **Context quality determines output quality.** Right context, right window, right time. Phase-specific. Role-scoped. Freshness-weighted.
+4. **The cycle is the product.** No single skill is the value. The compounding loop — research, plan, validate, build, validate, learn, repeat — is what makes the system improve.
+5. **Two-tier execution.** Orchestrators (`/evolve`, `/rpi`, `/crank`) stay in the main session. Workers fork into subagents where results merge back via the filesystem — never accumulated chat context.
+6. **Atomic changes compose.** Every primitive is cheap to undo. The Brownian Ratchet only works if the ratchet step is small.
+7. **Reconcile, don't push.** Kubernetes-shaped control loops compare actual state to desired state and fix the gap. They don't fire-and-forget. AgentOps loops do the same.
+8. **Dormancy is last resort.** When goals pass and backlog is empty, the system generates productive work from validation gaps, bug hunts, drift detection, and feature suggestions before going dormant.
 
 ## Usage
 
 This file enables product-aware council reviews:
 
-- **`/pre-mortem`** — Automatically includes `product` perspectives (user-value, adoption-barriers, competitive-position) alongside plan-review judges when this file exists.
-- **`/vibe`** — Automatically includes `developer-experience` perspectives (api-clarity, error-experience, discoverability) alongside code-review judges when this file exists.
+- **`/pre-mortem`** — Automatically loads product context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `product` perspective alongside plan-review judges.
+- **`/vibe`** — Automatically loads developer-experience context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `developer-experience` perspective alongside code-review judges.
 - **`/council --preset=product`** — Run product review on demand.
 - **`/council --preset=developer-experience`** — Run DX review on demand.
 
@@ -150,3 +161,5 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 
 - [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of the three gaps (judgment validation, durable learning, loop closure) with evidence map and mechanism inventory.
 - [Scale Without Swarms](docs/scale-without-swarms.md) — why 3-5 focused agents with fresh context and regression gates outperform massive uncoordinated swarms; the AgentOps model of waves, isolation, and gates explained.
+- [Brownian Ratchet](docs/brownian-ratchet.md) — the forward-only-progress lineage in detail.
+- [The Science](docs/the-science.md) — DevOps Three Ways, the escape velocity condition, and the leverage-points map.
