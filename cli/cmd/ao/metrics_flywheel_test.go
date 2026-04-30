@@ -268,14 +268,7 @@ func TestFlywheelStatus_GoldenSignalsAlwaysShown(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, ".agents", "ao", "citations.jsonl"), []byte{}, 0644)
 	os.WriteFile(filepath.Join(dir, ".agents", "ao", "feedback.jsonl"), []byte{}, 0644)
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	defer func() { output = oldOutput }()
@@ -360,14 +353,7 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "json"
@@ -445,14 +431,7 @@ func TestPrintFlywheelStatus_IncludesScorecard(t *testing.T) {
 func TestRunFlywheelStatus_YAMLOutput(t *testing.T) {
 	dir := t.TempDir()
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "yaml"
@@ -483,14 +462,7 @@ func TestRunFlywheelStatus_YAMLOutput(t *testing.T) {
 func TestRunFlywheelStatus_TableOutput(t *testing.T) {
 	dir := t.TempDir()
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "table"

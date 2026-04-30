@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -57,14 +56,7 @@ func TestRunConfig_ShowJSON(t *testing.T) {
 
 func TestRunConfig_ShowTable(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldShow := configShow
 	configShow = true
@@ -100,14 +92,7 @@ func TestRunConfig_ShowTable(t *testing.T) {
 
 func TestRunConfig_ShowTable_NoConfigFiles(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldShow := configShow
 	configShow = true
@@ -132,14 +117,7 @@ func TestRunConfig_ShowTable_NoConfigFiles(t *testing.T) {
 
 func TestRunConfig_ShowTable_WithEnvVars(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	t.Setenv("AGENTOPS_OUTPUT", "json")
 
@@ -165,14 +143,7 @@ func TestRunConfig_ShowTable_WithEnvVars(t *testing.T) {
 
 func TestRunConfigModels_Table(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "table"
@@ -201,14 +172,7 @@ func TestRunConfigModels_Table(t *testing.T) {
 
 func TestRunConfigModels_JSON(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "json"
@@ -236,14 +200,7 @@ func TestRunConfigModels_JSON(t *testing.T) {
 
 func TestRunConfigModels_WithEnvOverride(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	t.Setenv("AGENTOPS_MODEL_TIER", "budget")
 
@@ -268,14 +225,7 @@ func TestRunConfigModels_WithEnvOverride(t *testing.T) {
 
 func TestConfigModels_SetTier(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	// Clear env so project config is used from cwd
 	t.Setenv("AGENTOPS_CONFIG", "")
@@ -312,14 +262,7 @@ func TestConfigModels_SetTier(t *testing.T) {
 
 func TestConfigModels_SetSkill(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	t.Setenv("AGENTOPS_CONFIG", "")
 
@@ -354,14 +297,7 @@ func TestConfigModels_SetSkill(t *testing.T) {
 
 func TestConfigModels_SetTierAndSkill_JSON(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	t.Setenv("AGENTOPS_CONFIG", "")
 
@@ -456,14 +392,7 @@ func TestConfigModels_SetTier_InvalidTier(t *testing.T) {
 
 func TestRunConfig_ShowTable_NoEnvVars(t *testing.T) {
 	dir := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	// Clear all known env vars
 	for _, env := range []string{

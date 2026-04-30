@@ -82,11 +82,7 @@ func TestRunDedup_NoDuplicates(t *testing.T) {
 	}
 
 	// Change to temp dir for the command
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Force JSON output so we can parse the result
 	origOutput := output
@@ -147,11 +143,7 @@ func TestRunDedup_IncludesPatterns(t *testing.T) {
 	}
 
 	// Change to temp dir for the command
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Force JSON output
 	origOutput := output
@@ -225,11 +217,7 @@ func TestRunDedup_FindsDuplicates(t *testing.T) {
 	}
 
 	// Change to temp dir for the command
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Force JSON output so we can parse the result
 	origOutput := output
@@ -291,11 +279,7 @@ func TestRunDedup_MergeKeepsHighestUtility(t *testing.T) {
 	}
 
 	// Change to temp dir
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 
 	// Enable merge flag, disable dry-run
 	origMerge := dedupMerge

@@ -407,21 +407,8 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 			continue
 		}
 
-		field, value, _ := strings.Cut(line, ":")
-		value = strings.TrimPrefix(value, " ")
-		switch field {
-		case "id":
-			frame.id = value
-		case "event":
-			frame.event = value
-		case "retry":
-			retry, parseErr := strconv.Atoi(value)
-			if parseErr != nil {
-				return rawSSEFrame{}, fmt.Errorf("parse SSE retry %q: %w", value, parseErr)
-			}
-			frame.retry = retry
-		case "data":
-			data = append(data, value)
+		if perr := assignSSEField(line, &frame, &data); perr != nil {
+			return rawSSEFrame{}, perr
 		}
 
 		if err == io.EOF {
@@ -429,6 +416,30 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 			return frame, nil
 		}
 	}
+}
+
+// assignSSEField parses a single non-empty, non-comment SSE line of the
+// form `field:value` and folds it into the in-progress frame. Only the
+// retry field can produce a parse error; unknown fields are silently
+// ignored per the SSE spec.
+func assignSSEField(line string, frame *rawSSEFrame, data *[]string) error {
+	field, value, _ := strings.Cut(line, ":")
+	value = strings.TrimPrefix(value, " ")
+	switch field {
+	case "id":
+		frame.id = value
+	case "event":
+		frame.event = value
+	case "retry":
+		retry, parseErr := strconv.Atoi(value)
+		if parseErr != nil {
+			return fmt.Errorf("parse SSE retry %q: %w", value, parseErr)
+		}
+		frame.retry = retry
+	case "data":
+		*data = append(*data, value)
+	}
+	return nil
 }
 
 // DecodeWireEventJSONLines parses JSONL emitted by city-scoped gc events list mode.

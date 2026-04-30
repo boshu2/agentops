@@ -389,11 +389,7 @@ func TestGetManifestPath(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		path, err := getManifestPath()
 		if err != nil {
@@ -407,11 +403,7 @@ func TestGetManifestPath(t *testing.T) {
 	t.Run("returns default path when no .agents exists", func(t *testing.T) {
 		dir := t.TempDir()
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		path, err := getManifestPath()
 		if err != nil {
@@ -434,11 +426,7 @@ func TestGetManifestPath(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(subDir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(subDir)
 
 		path, err := getManifestPath()
 		if err != nil {
@@ -705,11 +693,7 @@ func TestLoadOrCreateManifest(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		manifestPath, entries, err := loadOrCreateManifest()
 		if err != nil {
@@ -739,11 +723,7 @@ func TestLoadOrCreateManifest(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		_, entries, err := loadOrCreateManifest()
 		if err != nil {
@@ -1091,11 +1071,7 @@ func TestRunPlansRegister(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansRegister(cmd, []string{planPath})
@@ -1132,11 +1108,7 @@ func TestRunPlansRegister(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		// Register first time
@@ -1180,11 +1152,7 @@ func TestRunPlansList(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		planProjectPath = ""
 		planStatus = ""
@@ -1213,11 +1181,7 @@ func TestRunPlansList(t *testing.T) {
 			_ = f.Close()
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		planProjectPath = ""
 		planStatus = ""
@@ -1241,11 +1205,7 @@ func TestRunPlansList(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		planProjectPath = ""
 		planStatus = "nonexistent-status"
@@ -1266,11 +1226,7 @@ func TestRunPlansSearch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansSearch(cmd, []string{"anything"})
@@ -1299,11 +1255,7 @@ func TestRunPlansSearch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansSearch(cmd, []string{"auth"})
@@ -1324,11 +1276,7 @@ func TestRunPlansSearch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansSearch(cmd, []string{"zzzznonexistent"})
@@ -1382,11 +1330,7 @@ func TestRunPlansUpdate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansUpdate(cmd, []string{planPath})
@@ -1423,11 +1367,7 @@ func TestRunPlansUpdate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		err := runPlansUpdate(cmd, []string{"/nonexistent/plan.md"})
@@ -1469,11 +1409,7 @@ func TestRunPlansSync(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		oldWD, _ := os.Getwd()
-		if err := os.Chdir(dir); err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.Chdir(oldWD) }()
+		t.Chdir(dir)
 
 		cmd := &cobra.Command{}
 		// This will fail to query beads (bd not available) but should handle gracefully

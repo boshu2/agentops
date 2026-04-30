@@ -1,0 +1,3 @@
+{"date": "2026-04-27", "nightly_pr": 165, "angle": "observability:restore-tags-column", "commit_sha": "unknown-pr-165", "outcome": "metric-unchanged"}
+{"date": "2026-04-28", "nightly_pr": 174, "angle": "observability:rich-diagnostic-script", "commit_sha": "5b8aecfe", "outcome": "metric-unchanged"}
+{"date": "2026-04-29", "nightly_pr": "pending", "angle": "quarantine:weight-reduce-8-to-3", "commit_sha": "TBD", "outcome": "weight-reduced", "finding": "f-2026-04-29-001"}

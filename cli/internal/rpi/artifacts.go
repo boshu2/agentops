@@ -157,15 +157,30 @@ func ClassifyRPIArtifact(rel, phasedStateFile, c2EventsFileName string) (kind, l
 		return "plan", "Plan", 0
 	case strings.Contains(rel, "/research/"):
 		return "research", "Research", 0
-	case strings.Contains(rel, "/council/") && strings.Contains(strings.ToLower(base), "pre-mortem"):
-		return "council_pre_mortem", "Pre-mortem report", 0
-	case strings.Contains(rel, "/council/") && strings.Contains(strings.ToLower(base), "post-mortem"):
-		return "council_post_mortem", "Post-mortem report", 0
-	case strings.Contains(rel, "/council/") && strings.Contains(strings.ToLower(base), "vibe"):
-		return "council_vibe", "Vibe report", 0
-	default:
-		return "artifact", base, phase
 	}
+	if k, l, ok := classifyCouncilArtifact(rel, base); ok {
+		return k, l, 0
+	}
+	return "artifact", base, phase
+}
+
+// classifyCouncilArtifact returns the council kind/label for /council/-rooted
+// artifacts (pre-mortem, post-mortem, vibe). ok is false for non-council
+// paths or unknown council variants.
+func classifyCouncilArtifact(rel, base string) (kind, label string, ok bool) {
+	if !strings.Contains(rel, "/council/") {
+		return "", "", false
+	}
+	lower := strings.ToLower(base)
+	switch {
+	case strings.Contains(lower, "pre-mortem"):
+		return "council_pre_mortem", "Pre-mortem report", true
+	case strings.Contains(lower, "post-mortem"):
+		return "council_post_mortem", "Post-mortem report", true
+	case strings.Contains(lower, "vibe"):
+		return "council_vibe", "Vibe report", true
+	}
+	return "", "", false
 }
 
 // ArtifactPhaseNumber extracts the phase number from a filename like "phase-2-result.json".

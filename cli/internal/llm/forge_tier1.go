@@ -96,37 +96,8 @@ type Tier1Result struct {
 // switch (KillSwitchEnv=1) short-circuits the whole path at the very top so
 // operators can disable Tier 1 instantly without a code change.
 func RunForgeTier1(opts Tier1Options) (*Tier1Result, error) {
-	if os.Getenv(KillSwitchEnv) == "1" {
-		return nil, fmt.Errorf("%s=1 set: tier 1 forge is disabled", KillSwitchEnv)
-	}
-	if len(opts.SourcePaths) == 0 {
-		return nil, fmt.Errorf("tier1: no source paths supplied")
-	}
-	if opts.OutputDir == "" {
-		return nil, fmt.Errorf("tier1: OutputDir is required")
-	}
-	if opts.Model == "" {
-		return nil, fmt.Errorf("tier1: Model is required")
-	}
-	if opts.Worker == nil && opts.clientFactory == nil && !opts.LegacyLocalLLM {
-		return nil, fmt.Errorf("tier1: local Ollama LLM is legacy-only; set LegacyLocalLLM or provide an AgentWorker")
-	}
-	if opts.Endpoint == "" {
-		opts.Endpoint = ResolveDefaultEndpoint()
-	}
-	if opts.MaxChars <= 0 {
-		opts.MaxChars = DefaultMaxChars
-	}
-	if opts.Writer == nil {
-		opts.Writer = os.Stdout
-	}
-	if opts.Workspace == "" {
-		if wd, err := os.Getwd(); err == nil {
-			opts.Workspace = wd
-		}
-	}
-	if opts.IngestedBy == "" {
-		opts.IngestedBy = "ao-forge-tier1"
+	if err := validateAndDefaultTier1Options(&opts); err != nil {
+		return nil, err
 	}
 
 	// Build the LLM client once per invocation (init-phase /api/tags probe
@@ -159,6 +130,46 @@ func RunForgeTier1(opts Tier1Options) (*Tier1Result, error) {
 		}
 	}
 	return result, nil
+}
+
+// validateAndDefaultTier1Options enforces required fields, applies the
+// kill-switch short-circuit, and fills in environment-derived defaults
+// (endpoint, max chars, writer, workspace, ingestor tag). Mutates opts
+// in place so the caller observes the resolved values.
+func validateAndDefaultTier1Options(opts *Tier1Options) error {
+	if os.Getenv(KillSwitchEnv) == "1" {
+		return fmt.Errorf("%s=1 set: tier 1 forge is disabled", KillSwitchEnv)
+	}
+	if len(opts.SourcePaths) == 0 {
+		return fmt.Errorf("tier1: no source paths supplied")
+	}
+	if opts.OutputDir == "" {
+		return fmt.Errorf("tier1: OutputDir is required")
+	}
+	if opts.Model == "" {
+		return fmt.Errorf("tier1: Model is required")
+	}
+	if opts.Worker == nil && opts.clientFactory == nil && !opts.LegacyLocalLLM {
+		return fmt.Errorf("tier1: local Ollama LLM is legacy-only; set LegacyLocalLLM or provide an AgentWorker")
+	}
+	if opts.Endpoint == "" {
+		opts.Endpoint = ResolveDefaultEndpoint()
+	}
+	if opts.MaxChars <= 0 {
+		opts.MaxChars = DefaultMaxChars
+	}
+	if opts.Writer == nil {
+		opts.Writer = os.Stdout
+	}
+	if opts.Workspace == "" {
+		if wd, err := os.Getwd(); err == nil {
+			opts.Workspace = wd
+		}
+	}
+	if opts.IngestedBy == "" {
+		opts.IngestedBy = "ao-forge-tier1"
+	}
+	return nil
 }
 
 func processOneSession(path string, opts Tier1Options, p *parser.Parser, s *Summarizer, gen Generator) (string, error) {
