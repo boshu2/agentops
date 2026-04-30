@@ -602,3 +602,164 @@ func mustParseTime(s string) time.Time {
 	}
 	return parsed
 }
+
+// TestPromote_PreservesSourceRigInFrontmatter_GlobalHub locks in the 4-D
+// provenance tagging contract: when an artifact carries SourceRig="global-hub",
+// the on-disk YAML frontmatter that Promote writes must contain a
+// grep-recoverable `source_rig: global-hub` line. This guards against
+// regressions in the propagation chain Artifact.SourceRig -> promotionSourceRig
+// -> on-disk frontmatter writer.
+func TestPromote_PreservesSourceRigInFrontmatter_GlobalHub(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	srcFile := filepath.Join(srcDir, "hub-note.md")
+	srcContent := "---\ntitle: Hub Note\nconfidence: 0.9\ntype: learning\n---\n\n# Hub Body\n\nFrom the global hub.\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:         "art-global-hub",
+				Type:       "learning",
+				SourceRig:  "global-hub",
+				SourcePath: srcFile,
+				Confidence: 0.9,
+			},
+		},
+	}
+
+	count, err := Promote(cat, destDir, false)
+	if err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 promoted, got %d", count)
+	}
+
+	destFile := filepath.Join(destDir, "learning", "global-hub-hub-note.md")
+	data, err := os.ReadFile(destFile)
+	if err != nil {
+		t.Fatalf("promoted file not found: %v", err)
+	}
+
+	content := string(data)
+	// Contract: source_rig MUST appear in the on-disk YAML frontmatter,
+	// exact match, grep-recoverable.
+	if !strings.Contains(content, "source_rig: global-hub") {
+		t.Errorf("on-disk frontmatter missing %q; full content:\n%s", "source_rig: global-hub", content)
+	}
+	// The frontmatter section is the leading --- ... --- block. source_rig
+	// must land inside it, not somewhere in the body.
+	fmEnd := strings.Index(content[4:], "---")
+	if fmEnd < 0 {
+		t.Fatalf("could not locate end of frontmatter block in:\n%s", content)
+	}
+	headerBlock := content[:fmEnd+4]
+	if !strings.Contains(headerBlock, "source_rig: global-hub") {
+		t.Errorf("source_rig must be inside frontmatter block, got header:\n%s", headerBlock)
+	}
+}
+
+// TestPromote_PreservesSourceRigInFrontmatter_NonGlobalRig is the sanity
+// case for the 4-D contract: the source_rig propagation must work for any
+// non-empty rig identity, not just "global-hub".
+func TestPromote_PreservesSourceRigInFrontmatter_NonGlobalRig(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	srcFile := filepath.Join(srcDir, "nami-note.md")
+	srcContent := "---\ntitle: Nami Note\nconfidence: 0.8\ntype: pattern\n---\n\n# Nami Body\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:         "art-nami",
+				Type:       "pattern",
+				SourceRig:  "agentops-nami",
+				SourcePath: srcFile,
+				Confidence: 0.8,
+			},
+		},
+	}
+
+	count, err := Promote(cat, destDir, false)
+	if err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 promoted, got %d", count)
+	}
+
+	destFile := filepath.Join(destDir, "pattern", "agentops-nami-nami-note.md")
+	data, err := os.ReadFile(destFile)
+	if err != nil {
+		t.Fatalf("promoted file not found: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "source_rig: agentops-nami") {
+		t.Errorf("on-disk frontmatter missing %q; full content:\n%s", "source_rig: agentops-nami", content)
+	}
+}
+
+// TestPromote_PreservesSourceRigInFrontmatter_EmptyRig locks in the
+// behavior when the artifact carries no source_rig. The resolver
+// promotionSourceRig falls back to "unknown" when both art.SourceRig and
+// the source frontmatter's promoted_from are empty, so the on-disk
+// frontmatter should carry source_rig: unknown — never an empty value
+// and never a missing field. That keeps the field always-present so
+// downstream consumers (lint, scoring) can rely on it.
+func TestPromote_PreservesSourceRigInFrontmatter_EmptyRig(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	srcFile := filepath.Join(srcDir, "orphan-note.md")
+	srcContent := "---\ntitle: Orphan\nconfidence: 0.7\ntype: learning\n---\n\n# Orphan Body\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:         "art-orphan",
+				Type:       "learning",
+				SourceRig:  "",
+				SourcePath: srcFile,
+				Confidence: 0.7,
+			},
+		},
+	}
+
+	count, err := Promote(cat, destDir, false)
+	if err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 promoted, got %d", count)
+	}
+
+	destFile := filepath.Join(destDir, "learning", "unknown-orphan-note.md")
+	data, err := os.ReadFile(destFile)
+	if err != nil {
+		t.Fatalf("promoted file not found: %v", err)
+	}
+
+	content := string(data)
+	// Locked-in behavior: empty SourceRig resolves to "unknown" via
+	// promotionSourceRig, and that value is written to disk. Field is
+	// ALWAYS present, never empty, never missing.
+	if !strings.Contains(content, "source_rig: unknown") {
+		t.Errorf("on-disk frontmatter missing %q; full content:\n%s", "source_rig: unknown", content)
+	}
+	// And it must NOT be empty-valued.
+	if strings.Contains(content, "source_rig: \n") || strings.Contains(content, "source_rig:\n") {
+		t.Errorf("source_rig should never be empty-valued; got content:\n%s", content)
+	}
+}
