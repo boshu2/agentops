@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ var (
 	harvestInclude       string
 	harvestQuiet         bool
 	harvestMaxFileSize   int64
+	harvestMaxPromotions int
 )
 
 var harvestCmd = &cobra.Command{
@@ -50,6 +52,26 @@ func init() {
 	harvestCmd.Flags().BoolVar(&harvestQuiet, "quiet", false, "Suppress progress output")
 	harvestCmd.Flags().Int64Var(&harvestMaxFileSize, "max-file-size", 1048576,
 		"Skip files larger than this (bytes)")
+	harvestCmd.Flags().IntVar(&harvestMaxPromotions, "max-promotions", harvest.DefaultMaxPromotions,
+		"Advisory volume gate: emit a stderr WARN when promotions exceed this count "+
+			"(0 disables; AO_MAX_PROMOTIONS env var as fallback). Never blocks.")
+}
+
+// resolveMaxPromotionsThreshold returns the effective volume-gate threshold,
+// honoring the precedence: explicit --max-promotions flag > AO_MAX_PROMOTIONS
+// env var > default. A non-positive resolved value disables the gate.
+func resolveMaxPromotionsThreshold(cmd *cobra.Command) int {
+	if cmd != nil {
+		if f := cmd.Flags().Lookup("max-promotions"); f != nil && f.Changed {
+			return harvestMaxPromotions
+		}
+	}
+	if envVal := strings.TrimSpace(os.Getenv("AO_MAX_PROMOTIONS")); envVal != "" {
+		if n, err := strconv.Atoi(envVal); err == nil {
+			return n
+		}
+	}
+	return harvestMaxPromotions
 }
 
 // failIfDreamHoldsLock refuses to proceed when a live Dream run holds
@@ -155,6 +177,13 @@ func runHarvest(cmd *cobra.Command, args []string) error {
 			catalog.Summary.WarningCount,
 		)
 	}
+
+	// Advisory volume gate (soc-f2q4 / 4-B): emit a stderr WARN when the
+	// promotion count exceeds the configured threshold. Never blocks — the
+	// 2,638-promotion drain from a legitimate post-cleanup run would have
+	// been falsely blocked by a hard gate, so this is signal-only.
+	threshold := resolveMaxPromotionsThreshold(cmd)
+	harvest.EmitVolumeGateWarning(catalog, threshold, os.Stderr)
 
 	promoted, err := promoteHarvestCatalog(catalog)
 	if err != nil {

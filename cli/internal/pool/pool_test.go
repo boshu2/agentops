@@ -4764,3 +4764,118 @@ func TestPromoteRejectedCandidate_SentinelError(t *testing.T) {
 		t.Errorf("expected errors.Is(err, ErrPromoteRejected), got: %v", err)
 	}
 }
+
+// TestPoolPromote_DedupsByContentHash is the pool-side half of the
+// cross-writer dedup contract (4-A from the flywheel-phase4 plan): when two
+// staged candidates carry the same Content body via different IDs, the
+// second Promote must skip the on-disk write so only ONE artifact lands in
+// .agents/learnings. Without this, two parallel close-loop or harvest
+// rewrites of the same insight produce two scoring-equivalent artifacts and
+// re-bloat the global hub.
+func TestPoolPromote_DedupsByContentHash(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewPool(tmpDir)
+
+	// Same Content body, different IDs — the dedup signal is the body, not
+	// the ID. This mirrors the harvest catalog contract where ContentHash
+	// is the only collapse key.
+	body := "Always wrap fmt.Errorf with %w to preserve the underlying chain"
+	for _, id := range []string{"dedup-cand-a", "dedup-cand-b"} {
+		candidate := types.Candidate{
+			ID:      id,
+			Tier:    types.TierSilver,
+			Type:    types.KnowledgeTypeLearning,
+			Content: body,
+		}
+		if err := p.Add(candidate, types.Scoring{}); err != nil {
+			t.Fatalf("Add(%s) failed: %v", id, err)
+		}
+		if err := p.Stage(id, types.TierBronze); err != nil {
+			t.Fatalf("Stage(%s) failed: %v", id, err)
+		}
+	}
+
+	pathA, err := p.Promote("dedup-cand-a")
+	if err != nil {
+		t.Fatalf("first Promote failed: %v", err)
+	}
+	if pathA == "" {
+		t.Fatal("first Promote returned empty path")
+	}
+
+	pathB, err := p.Promote("dedup-cand-b")
+	if err != nil {
+		t.Fatalf("second Promote failed: %v", err)
+	}
+	// Second promote must report the SAME on-disk file as the first — it's
+	// a no-op write because the body hashed identically.
+	if pathB != pathA {
+		t.Fatalf("second Promote path %q != first %q (body-equal candidates must dedup)", pathB, pathA)
+	}
+
+	// Verify the destination directory holds exactly ONE artifact, not two.
+	destDir := filepath.Dir(pathA)
+	entries, err := os.ReadDir(destDir)
+	if err != nil {
+		t.Fatalf("ReadDir(%s): %v", destDir, err)
+	}
+	mdCount := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+			mdCount++
+		}
+	}
+	if mdCount != 1 {
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Fatalf("destDir contains %d .md files, want exactly 1 (entries: %v)", mdCount, names)
+	}
+}
+
+// TestPoolPromote_DistinctContentDoesNotDedup verifies the dedup is content-
+// keyed, not blanket: candidates with different bodies must each promote to
+// their own artifact. Guards against a regression that would over-dedup and
+// silently drop legitimate distinct knowledge.
+func TestPoolPromote_DistinctContentDoesNotDedup(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewPool(tmpDir)
+
+	cases := []struct {
+		id   string
+		body string
+	}{
+		{"distinct-a", "Wrap errors with %w"},
+		{"distinct-b", "Use context.WithCancel for shutdown"},
+	}
+	paths := make(map[string]string, len(cases))
+	for _, c := range cases {
+		candidate := types.Candidate{
+			ID:      c.id,
+			Tier:    types.TierSilver,
+			Type:    types.KnowledgeTypeLearning,
+			Content: c.body,
+		}
+		if err := p.Add(candidate, types.Scoring{}); err != nil {
+			t.Fatalf("Add(%s) failed: %v", c.id, err)
+		}
+		if err := p.Stage(c.id, types.TierBronze); err != nil {
+			t.Fatalf("Stage(%s) failed: %v", c.id, err)
+		}
+		path, err := p.Promote(c.id)
+		if err != nil {
+			t.Fatalf("Promote(%s) failed: %v", c.id, err)
+		}
+		paths[c.id] = path
+	}
+	if paths["distinct-a"] == paths["distinct-b"] {
+		t.Fatalf("distinct-content candidates collapsed to the same artifact path %q", paths["distinct-a"])
+	}
+	// Both files should physically exist.
+	for id, p := range paths {
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("artifact for %s missing on disk at %s: %v", id, p, err)
+		}
+	}
+}
