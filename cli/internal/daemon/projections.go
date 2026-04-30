@@ -30,6 +30,11 @@ const (
 type ProjectionRebuildOptions struct {
 	RebuiltAt    time.Time
 	SourceLedger string
+	// FromSnapshot, when non-nil, makes RebuildProjections start from the
+	// given snapshot's state and apply only events whose EventID is strictly
+	// greater than FromSnapshot.LastEventID. Use this to amortize replay cost
+	// across daemon restarts (Phase 2-B of TB-Δ3).
+	FromSnapshot *ProjectionSet
 }
 
 type ProjectionSet struct {
@@ -126,20 +131,82 @@ func (s *Store) RebuildProjections(opts ProjectionRebuildOptions) (ProjectionSet
 func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (ProjectionSet, error) {
 	opts = normalizeRebuildOptions(opts)
 	rebuiltAt := opts.RebuiltAt.UTC().Format(time.RFC3339Nano)
-	set := ProjectionSet{
-		SchemaVersion: ProjectionSchemaVersion,
-		RebuiltAt:     rebuiltAt,
-		SourceLedger:  opts.SourceLedger,
-		Manifests:     defaultProjectionManifests(opts.SourceLedger, rebuiltAt),
+
+	var (
+		set      ProjectionSet
+		jobsByID map[string]*JobProjection
+		jobOrder []string
+		err      error
+	)
+
+	if opts.FromSnapshot != nil {
+		set, jobsByID, jobOrder = initStateFromSnapshot(*opts.FromSnapshot, opts.SourceLedger, rebuiltAt)
+		delta := filterEventsAfter(events, opts.FromSnapshot.LastEventID)
+		_, err = applyEventsToState(delta, &set, jobsByID, &jobOrder)
+	} else {
+		set = ProjectionSet{
+			SchemaVersion: ProjectionSchemaVersion,
+			RebuiltAt:     rebuiltAt,
+			SourceLedger:  opts.SourceLedger,
+			Manifests:     defaultProjectionManifests(opts.SourceLedger, rebuiltAt),
+		}
+		jobsByID = map[string]*JobProjection{}
+		_, err = applyEventsToState(events, &set, jobsByID, &jobOrder)
 	}
-	jobsByID, jobOrder, err := processLedgerEvents(events, &set)
 	if err != nil {
 		return ProjectionSet{}, err
 	}
+
 	collectJobsIntoSet(jobsByID, jobOrder, &set)
 	finalizeManifests(&set)
 	finalizeOpenClawSnapshot(&set, opts.SourceLedger, rebuiltAt)
 	return set, nil
+}
+
+// filterEventsAfter returns only events whose EventID is strictly greater than
+// lastEventID. EventID semantics: monotonically increasing string IDs assigned
+// at append time. Strict greater-than is correct because lastEventID is the
+// final event already folded into the snapshot.
+func filterEventsAfter(events []LedgerEvent, lastEventID string) []LedgerEvent {
+	if lastEventID == "" {
+		return events
+	}
+	out := make([]LedgerEvent, 0, len(events))
+	for _, event := range events {
+		if event.EventID > lastEventID {
+			out = append(out, event)
+		}
+	}
+	return out
+}
+
+// initStateFromSnapshot seeds the rebuild loop with state recovered from a
+// previous snapshot. Derived buckets (RPI/Dream/Wiki/OpenClaw.Resources) are
+// reset to empty — collectJobsIntoSet rebuilds them from jobsByID after the
+// delta events apply. Manifests are re-derived from defaultProjectionManifests
+// then refreshed by finalizeManifests, so snapshot Manifests are intentionally
+// discarded (they would carry stale RebuiltAt + LastEventID otherwise).
+func initStateFromSnapshot(snapshot ProjectionSet, sourceLedger, rebuiltAt string) (ProjectionSet, map[string]*JobProjection, []string) {
+	set := ProjectionSet{
+		SchemaVersion: ProjectionSchemaVersion,
+		RebuiltAt:     rebuiltAt,
+		SourceLedger:  sourceLedger,
+		LastEventID:   snapshot.LastEventID,
+		Manifests:     defaultProjectionManifests(sourceLedger, rebuiltAt),
+	}
+	jobsByID := make(map[string]*JobProjection, len(snapshot.Jobs))
+	jobOrder := make([]string, 0, len(snapshot.Jobs))
+	for i := range snapshot.Jobs {
+		job := snapshot.Jobs[i]
+		artifacts := make(map[string]string, len(job.Artifacts))
+		for k, v := range job.Artifacts {
+			artifacts[k] = v
+		}
+		job.Artifacts = artifacts
+		jobsByID[job.JobID] = &job
+		jobOrder = append(jobOrder, job.JobID)
+	}
+	return set, jobsByID, jobOrder
 }
 
 func normalizeRebuildOptions(opts ProjectionRebuildOptions) ProjectionRebuildOptions {
@@ -152,31 +219,36 @@ func normalizeRebuildOptions(opts ProjectionRebuildOptions) ProjectionRebuildOpt
 	return opts
 }
 
-func processLedgerEvents(events []LedgerEvent, set *ProjectionSet) (map[string]*JobProjection, []string, error) {
-	jobsByID := map[string]*JobProjection{}
-	var jobOrder []string
+// applyEventsToState folds events into the supplied set/jobsByID/jobOrder,
+// returning the count of events successfully applied. It is shared between
+// full replay (empty initial state) and delta replay (state seeded from a
+// snapshot via initStateFromSnapshot).
+func applyEventsToState(events []LedgerEvent, set *ProjectionSet, jobsByID map[string]*JobProjection, jobOrder *[]string) (int, error) {
+	applied := 0
 	for _, event := range events {
 		normalized, err := NormalizeLedgerEvent(event)
 		if err != nil {
-			return nil, nil, fmt.Errorf("event %q: %w", event.EventID, err)
+			return applied, fmt.Errorf("event %q: %w", event.EventID, err)
 		}
 		event = normalized
 		set.LastEventID = event.EventID
 		if event.EventType == EventProjectionMarkedStale || event.EventType == EventProjectionRebuilt {
 			set.applyProjectionLifecycleEvent(event)
+			applied++
 			continue
 		}
 		job, isNew := ensureJobProjection(jobsByID, event)
 		if isNew {
-			jobOrder = append(jobOrder, event.JobID)
+			*jobOrder = append(*jobOrder, event.JobID)
 		}
 		applyEventMetadataToJob(job, event)
 		if err := applyPayloadToJob(job, event); err != nil {
-			return nil, nil, err
+			return applied, err
 		}
 		applyEventToJobProjection(job, event)
+		applied++
 	}
-	return jobsByID, jobOrder, nil
+	return applied, nil
 }
 
 func ensureJobProjection(jobsByID map[string]*JobProjection, event LedgerEvent) (*JobProjection, bool) {

@@ -470,12 +470,22 @@ func (s *ReadOnlyServer) readState() (readOnlyState, error) {
 	if sourceLedger == "" {
 		sourceLedger = filepath.ToSlash(filepath.Join(StoreDirRel, LedgerFileName))
 	}
-	projections, err := RebuildProjections(replay.Events, ProjectionRebuildOptions{
+	rebuildOpts := ProjectionRebuildOptions{
 		RebuiltAt:    s.now(),
 		SourceLedger: sourceLedger,
-	})
+	}
+	// Skip-and-rebuild on stale/corrupt snapshot: surface the reason via
+	// degraded_reasons rather than blocking the read.
+	snapshot, snapshotPath, snapshotErr := s.store.LoadLatestProjectionSnapshot()
+	if snapshotErr == nil && snapshotPath != "" {
+		rebuildOpts.FromSnapshot = &snapshot
+	}
+	projections, err := RebuildProjections(replay.Events, rebuildOpts)
 	if err != nil {
 		return readOnlyState{}, err
+	}
+	if snapshotErr != nil {
+		projections.markDegraded("ignored stale projection snapshot: " + snapshotErr.Error())
 	}
 	lag := ProjectionLag{
 		LastEventID:        projections.LastEventID,
