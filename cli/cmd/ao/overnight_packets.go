@@ -184,17 +184,38 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 }
 
 // probeDreamPacketStaleness runs a 5-second tractability probe against the
-// candidate packet. It checks two surfaces:
+// candidate packet. It checks four surfaces:
 //  1. TargetFiles entries — if any cited path already exists on disk, the
 //     packet is treated as already done.
-//  2. The morning_command and title — if a unique-looking script reference
-//     in either field resolves to an existing scripts/* file, treat as done.
+//  2. scripts/<x>.sh tokens in the morning_command or title that resolve
+//     to an existing script.
+//  3. schemas/<x>.json tokens in the morning_command or title that resolve
+//     to an existing schema file.
+//  4. "Decompose skills/<name>/SKILL.md to under N-line limit" claims —
+//     if the cited skill exists and is below the actual size-check fail
+//     threshold, the line-limit claim is fictional.
 //
 // On conclusive staleness it returns (reason, match, true). On inconclusive
 // signals it returns (_, _, false) and the curator emits the packet normally.
 func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (string, string, bool) {
 	deadline := time.Now().Add(dreamCuratorProbeTimeout)
-	for _, raw := range packet.TargetFiles {
+	if reason, match, ok := probeTargetFilesExist(cwd, packet.TargetFiles, deadline); ok {
+		return reason, match, true
+	}
+	if reason, match, ok := probeRepoRefTokens(cwd, packet, deadline); ok {
+		return reason, match, true
+	}
+	if reason, match, ok := probeSkillLineLimitClaim(cwd, packet.Title, deadline); ok {
+		return reason, match, true
+	}
+	return "", "", false
+}
+
+// probeTargetFilesExist treats a packet as stale when any cited TargetFiles
+// path already exists in the repo as a regular file. URLs and absolute
+// paths outside the repo are skipped.
+func probeTargetFilesExist(cwd string, targets []string, deadline time.Time) (string, string, bool) {
+	for _, raw := range targets {
 		if time.Now().After(deadline) {
 			return "", "", false
 		}
@@ -202,7 +223,6 @@ func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (strin
 		if path == "" {
 			continue
 		}
-		// Skip absolute paths outside the repo and obvious URLs.
 		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 			continue
 		}
@@ -214,31 +234,85 @@ func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (strin
 			return "target file already tracked", path, true
 		}
 	}
-
-	// Look for "scripts/<name>.sh" tokens in the morning command or title.
-	// These are the most common false-positive surface from the retro.
-	for _, hay := range []string{packet.MorningCommand, packet.Title} {
-		if time.Now().After(deadline) {
-			break
-		}
-		token := extractScriptsRef(hay)
-		if token == "" {
-			continue
-		}
-		candidate := filepath.Join(cwd, token)
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return "scripts/ reference already tracked", token, true
-		}
-	}
-
 	return "", "", false
 }
 
+// probeRepoRefTokens scans the morning command and title for prefix/<name><suffix>
+// tokens (scripts/*.sh, schemas/*.json) that resolve to existing repo files.
+// This is the curator's classic false-positive surface from the 2026-04-26 retro.
+func probeRepoRefTokens(cwd string, packet overnightMorningPacket, deadline time.Time) (string, string, bool) {
+	pathProbes := []struct {
+		prefix string
+		suffix string
+		reason string
+	}{
+		{"scripts/", ".sh", "scripts/ reference already tracked"},
+		{"schemas/", ".json", "schemas/ reference already tracked"},
+	}
+	for _, hay := range []string{packet.MorningCommand, packet.Title} {
+		if time.Now().After(deadline) {
+			return "", "", false
+		}
+		for _, probe := range pathProbes {
+			token := extractRepoRef(hay, probe.prefix, probe.suffix)
+			if token == "" {
+				continue
+			}
+			candidate := filepath.Join(cwd, token)
+			if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+				return probe.reason, token, true
+			}
+		}
+	}
+	return "", "", false
+}
+
+// probeSkillLineLimitClaim treats "Decompose skills/<name>/SKILL.md to under
+// N-line limit" packets as stale when the cited skill exists and is below
+// the canonical size-check FAIL threshold (warn>500 fail>800 per
+// scripts/check-skill-size.sh). Per the 2026-04-30 dream-curator-degraded
+// finding this packet shape was emitted on consecutive nightlies with
+// fictional line limits.
+func probeSkillLineLimitClaim(cwd, title string, deadline time.Time) (string, string, bool) {
+	if !time.Now().Before(deadline) {
+		return "", "", false
+	}
+	path, ok := extractSkillLineLimitClaim(title)
+	if !ok {
+		return "", "", false
+	}
+	candidate := filepath.Join(cwd, path)
+	info, err := os.Stat(candidate)
+	if err != nil || info.IsDir() {
+		return "", "", false
+	}
+	lines := countFileLines(candidate)
+	if lines <= 0 || lines >= skillSizeFailThreshold {
+		return "", "", false
+	}
+	return "skill SKILL.md is below the canonical size-check fail threshold (warn>500 fail>800)", path, true
+}
+
+// skillSizeFailThreshold mirrors scripts/check-skill-size.sh: SKILL.md files
+// that exceed 800 lines fail; below that warns or passes. Used by the dream
+// curator to detect fictional line-limit claims.
+const skillSizeFailThreshold = 800
+
 // extractScriptsRef pulls the first scripts/<...>.sh occurrence from s.
-// Returns "" when no match is found. Kept narrow so we don't false-positive
-// on prose mentions of "scripts" in general.
+// Kept as a thin wrapper for test compatibility; new probes should use
+// extractRepoRef directly.
 func extractScriptsRef(s string) string {
-	const prefix = "scripts/"
+	return extractRepoRef(s, "scripts/", ".sh")
+}
+
+// extractRepoRef pulls the first prefix<...>suffix occurrence from s.
+// Returns "" when no match is found. The prefix is required at the
+// start of the token; whitespace, quotes, parens, and backticks
+// terminate the token.
+func extractRepoRef(s, prefix, suffix string) string {
+	if prefix == "" || suffix == "" {
+		return ""
+	}
 	idx := strings.Index(s, prefix)
 	if idx < 0 {
 		return ""
@@ -255,11 +329,49 @@ func extractScriptsRef(s string) string {
 		}
 	}
 	tok := rest[:end]
-	if !strings.HasSuffix(tok, ".sh") {
+	if !strings.HasSuffix(tok, suffix) {
 		return ""
 	}
 	return tok
 }
+
+// extractSkillLineLimitClaim looks for the curator's "Decompose
+// skills/<name>/SKILL.md to under N-line limit" packet shape. Returns the
+// skill path and true when both the path token and a numeric "<N>-line"
+// phrase appear in the same string. The numeric value itself is not
+// returned because the caller compares against the canonical fail
+// threshold from check-skill-size.sh, not the (often fictional) claim.
+func extractSkillLineLimitClaim(s string) (string, bool) {
+	path := extractRepoRef(s, "skills/", "/SKILL.md")
+	if path == "" {
+		return "", false
+	}
+	// Require the title to actually claim a line limit; "Add a section to
+	// skills/foo/SKILL.md" should not be flagged just because the file
+	// exists. The phrase looks like "<digits>-line".
+	lower := strings.ToLower(s)
+	dashLine := strings.Index(lower, "-line")
+	if dashLine <= 0 {
+		return "", false
+	}
+	// At least one digit must precede "-line" within a small window.
+	window := lower[:dashLine]
+	if len(window) > 6 {
+		window = window[len(window)-6:]
+	}
+	hasDigit := false
+	for _, r := range window {
+		if r >= '0' && r <= '9' {
+			hasDigit = true
+			break
+		}
+	}
+	if !hasDigit {
+		return "", false
+	}
+	return path, true
+}
+
 
 func rankDreamMorningQueueSelections(cwd string, entries []nextWorkEntry, repoFilter string, limit int) []queueSelection {
 	if limit <= 0 || len(entries) == 0 {
