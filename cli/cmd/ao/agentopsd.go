@@ -316,7 +316,11 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor}
+		rpiExecutor, err := buildAgentOpsDaemonFakeRPIExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor}
 	case "gascity":
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
@@ -326,7 +330,11 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor}
+		rpiExecutor, err := buildAgentOpsDaemonGasCityRPIExecutor(cwd, opts)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor, rpiExecutor}
 	case "cli-fallback":
 		wikiExecutor, err := buildAgentOpsDaemonCLIFallbackWikiExecutor(cwd, opts)
 		if err != nil {
@@ -381,6 +389,52 @@ func buildAgentOpsDaemonDreamExecutor(cwd string) (daemonpkg.JobExecutor, error)
 			return mapped, err
 		},
 	})
+}
+
+func buildAgentOpsDaemonFakeRPIExecutor(cwd string) (daemonpkg.JobExecutor, error) {
+	return daemonpkg.NewRPIJobExecutor(daemonpkg.RPIJobExecutorOptions{
+		Store:    daemonpkg.NewStore(cwd),
+		Executor: fakeRPIPhaseExecutor{},
+	})
+}
+
+func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {
+	if opts.GasCityEndpoint == "" || opts.GasCityCity == "" {
+		return nil, errors.New("gascity executor policy requires --gascity-endpoint and --gascity-city for rpi jobs")
+	}
+	token, err := resolveDaemonMutationToken(opts.GasCityToken, opts.GasCityTokenFile)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gascity.NewClient(gascity.Config{Endpoint: opts.GasCityEndpoint, MutationToken: token})
+	if err != nil {
+		return nil, err
+	}
+	rpiPhaseExecutor := daemonpkg.GasCityRPIPhaseExecutor{
+		Client:   daemonpkg.GasCityClientAdapter{Client: client},
+		CityName: opts.GasCityCity,
+	}
+	return daemonpkg.NewRPIJobExecutor(daemonpkg.RPIJobExecutorOptions{
+		Store:    daemonpkg.NewStore(cwd),
+		Executor: rpiPhaseExecutor,
+	})
+}
+
+// fakeRPIPhaseExecutor is a deterministic, CI-safe phase executor that returns
+// pre-baked artifacts. Used by the "fake" daemon executor policy so end-to-end
+// daemon-submit → supervisor → terminal-event tests can exercise the rpi.run
+// / rpi.phase path without needing a real GasCity instance.
+type fakeRPIPhaseExecutor struct{}
+
+func (fakeRPIPhaseExecutor) ExecuteRPIPhase(_ context.Context, req daemonpkg.RPIPhaseExecutionRequest) (daemonpkg.RPIPhaseExecutionResult, error) {
+	return daemonpkg.RPIPhaseExecutionResult{
+		Status: "completed",
+		Artifacts: map[string]string{
+			"executor_policy": "fake",
+			"phase":           fmt.Sprintf("%d", req.Phase),
+			"goal":            req.Goal,
+		},
+	}, nil
 }
 
 func buildAgentOpsDaemonGasCityWikiExecutor(cwd string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {

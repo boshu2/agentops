@@ -262,6 +262,42 @@ func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIPhaseJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	phaseSpec := daemonpkg.NewRPIPhaseJobSpec("run-daemon-fake", "validate daemon rpi executor", 2)
+	jobSpec, err := phaseSpec.ToJobSpec("job-rpi-phase")
+	if err != nil {
+		t.Fatalf("rpi phase job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-rpi-phase",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit rpi phase job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "fake"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed rpi phase job", result)
+	}
+	if got := result.Job.Artifacts["executor_policy"]; got != "fake" {
+		t.Fatalf("executor_policy artifact = %q, want fake", got)
+	}
+	if got := result.Job.Artifacts["phase"]; got != "2" {
+		t.Fatalf("phase artifact = %q, want 2", got)
+	}
+}
+
 func TestAgentOpsDaemonGasCityExecutorPolicyRequiresConfig(t *testing.T) {
 	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "gascity"}); err == nil {
 		t.Fatal("gascity executor policy without endpoint/city succeeded")
