@@ -52,6 +52,80 @@ func TestReadOnlyHealthReadyStatusEvents(t *testing.T) {
 	}
 }
 
+func TestReadOnlyServerLoadsProjectionSnapshotOnReadState(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	// N=2 events get folded into a snapshot.
+	for _, evt := range []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-001", "req-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil),
+		mustNewProjectionTestEvent(t, "evt-002", "req-2", "job-rpi", EventJobClaimed, "", 1, nil),
+	} {
+		if _, err := store.AppendLedgerEvent(evt); err != nil {
+			t.Fatalf("append base event: %v", err)
+		}
+	}
+	baseSet, err := store.RebuildProjections(ProjectionRebuildOptions{RebuiltAt: now})
+	if err != nil {
+		t.Fatalf("rebuild base: %v", err)
+	}
+	if _, err := store.WriteProjectionSnapshot(baseSet); err != nil {
+		t.Fatalf("write snapshot: %v", err)
+	}
+	// M=1 new event arrives after the snapshot.
+	if _, err := store.AppendLedgerEvent(mustNewProjectionTestEvent(t, "evt-003", "req-3", "job-rpi", EventJobCompleted, "", 2, nil)); err != nil {
+		t.Fatalf("append delta event: %v", err)
+	}
+
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+	var status ReadOnlyStatusResponse
+	getJSON(t, router, "/status", &status)
+	if status.Projections.LastEventID != "evt-003" {
+		t.Fatalf("LastEventID after delta replay = %q, want evt-003", status.Projections.LastEventID)
+	}
+	if len(status.Projections.RPI.Runs) != 1 || status.Projections.RPI.Runs[0].Status != JobStatusCompleted {
+		t.Fatalf("RPI run status = %#v, want completed", status.Projections.RPI.Runs)
+	}
+	if status.Projections.RPI.Runs[0].LastEventID != "evt-003" {
+		t.Fatalf("RPI run LastEventID = %q, want evt-003", status.Projections.RPI.Runs[0].LastEventID)
+	}
+}
+
+func TestReadOnlyServerSkipsCorruptSnapshotAndDegradesGracefully(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	if _, err := store.AppendLedgerEvent(mustNewProjectionTestEvent(t, "evt-001", "req-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil)); err != nil {
+		t.Fatalf("append event: %v", err)
+	}
+	// Plant a snapshot file with the wrong schema_version on disk.
+	if err := os.MkdirAll(store.ProjectionSnapshotDir(), 0700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	stale := []byte(`{"schema_version":99,"last_event_id":"evt-001","jobs":[]}` + "\n")
+	if err := os.WriteFile(store.ProjectionSnapshotDir()+"/snapshot-99999999T999999.999999999Z.json", stale, 0600); err != nil {
+		t.Fatalf("plant stale snapshot: %v", err)
+	}
+
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+	var status ReadOnlyStatusResponse
+	getJSON(t, router, "/status", &status)
+	if status.Projections.LastEventID != "evt-001" {
+		t.Fatalf("LastEventID after fallback = %q, want evt-001", status.Projections.LastEventID)
+	}
+	if len(status.Projections.DegradedReasons) == 0 {
+		t.Fatal("expected degraded reason from stale snapshot fallback")
+	}
+	foundStaleReason := false
+	for _, r := range status.Projections.DegradedReasons {
+		if strings.Contains(r, "ignored stale projection snapshot") {
+			foundStaleReason = true
+			break
+		}
+	}
+	if !foundStaleReason {
+		t.Fatalf("degraded reasons = %#v, want stale-snapshot reason", status.Projections.DegradedReasons)
+	}
+}
+
 func TestReadOnlyRoutesExposeDegradedStateWithoutQuarantineSideEffects(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
