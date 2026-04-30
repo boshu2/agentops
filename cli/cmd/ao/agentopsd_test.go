@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -262,6 +263,24 @@ func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
 func TestAgentOpsDaemonGasCityExecutorPolicyRequiresConfig(t *testing.T) {
 	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "gascity"}); err == nil {
 		t.Fatal("gascity executor policy without endpoint/city succeeded")
+	}
+}
+
+func TestResolveAgentOpsDaemonMutationPolicySupportsScopedTokenFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tokens.json")
+	data := `{"tokens":[{"name":"phone-readonly-submit","token":"phone-token","capabilities":["submit_job"]},{"name":"bushido-admin","token":"admin-token","capabilities":["admin"],"local_only":true}]}`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatalf("write scoped token file: %v", err)
+	}
+	policy, err := resolveAgentOpsDaemonMutationPolicy("", path)
+	if err != nil {
+		t.Fatalf("resolve policy: %v", err)
+	}
+	if len(policy.Tokens) != 2 || policy.Tokens[0].Name != "phone-readonly-submit" || policy.Token != "" {
+		t.Fatalf("policy = %#v", policy)
+	}
+	if policy.PathCapabilities["/v1/jobs"] != daemonpkg.MutationCapabilitySubmitJob {
+		t.Fatalf("path capabilities = %#v", policy.PathCapabilities)
 	}
 }
 

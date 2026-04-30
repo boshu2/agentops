@@ -223,12 +223,45 @@ The required controls are:
 - load token files only when group/other permission bits are not set
 - reject mutation requests whose method or path is outside the allowlist for
   that route group
+- scope accepted tokens by route capability. Plaintext token files remain
+  supported as legacy local-only tokens with the current mutation scope.
+  JSON token files may provide multiple credentials:
+
+  ```json
+  {
+    "tokens": [
+      {
+        "name": "phone-readonly-submit",
+        "token": "<secret>",
+        "capabilities": ["submit_job", "openclaw_trigger"]
+      },
+      {
+        "name": "mac-executor",
+        "token": "<secret>",
+        "capabilities": ["submit_job", "cancel_job", "openclaw_trigger"]
+      },
+      {
+        "name": "bushido-admin",
+        "token": "<secret>",
+        "capabilities": ["admin"],
+        "local_only": true
+      }
+    ]
+  }
+  ```
+
+  `submit_job` covers `/jobs` and `/v1/jobs`, `cancel_job` covers
+  `/jobs/cancel` and `/v1/jobs/cancel`, and `openclaw_trigger` covers
+  `/openclaw/v1/triggers/jobs`. `admin` satisfies all currently allowlisted
+  daemon mutation capabilities but does not bypass the path allowlist.
 - reject untrusted `Origin` headers and `Sec-Fetch-Site: cross-site` requests
   even when they are sent from a local browser context
 
 Read-only health/status routes may remain easier to inspect locally, but every
 route that appends to the ledger must pass this mutation policy before the
-append is attempted.
+append is attempted. Accepted mutation events include the token profile name in
+the ledger actor label, e.g. `ao-http:phone-readonly-submit`, so scoped-token
+use is auditable during incident review.
 
 ## External Systems
 

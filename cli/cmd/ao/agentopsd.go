@@ -446,10 +446,6 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 	if err := daemonpkg.ValidateLocalBindAddress(addr); err != nil {
 		return nil, nil, agentopsDaemonActivation{}, err
 	}
-	token, err := resolveDaemonMutationToken(opts.Token, opts.TokenFile)
-	if err != nil {
-		return nil, nil, agentopsDaemonActivation{}, err
-	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, nil, agentopsDaemonActivation{}, err
@@ -464,15 +460,14 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 		return nil, nil, agentopsDaemonActivation{}, fmt.Errorf("daemon startup recovery: %w", err)
 	}
 	store := daemonpkg.NewStore(cwd)
+	mutationPolicy, err := resolveAgentOpsDaemonMutationPolicy(opts.Token, opts.TokenFile)
+	if err != nil {
+		_ = listener.Close()
+		return nil, nil, agentopsDaemonActivation{}, err
+	}
 	router := daemonpkg.NewDaemonRouter(store, daemonpkg.ServerOptions{
-		Now: now,
-		MutationPolicy: daemonpkg.DefaultMutationPolicy(token, []string{
-			"/jobs",
-			"/v1/jobs",
-			"/jobs/cancel",
-			"/v1/jobs/cancel",
-			"/openclaw/v1/triggers/jobs",
-		}),
+		Now:            now,
+		MutationPolicy: mutationPolicy,
 	})
 	server := &http.Server{
 		Handler:           router,
@@ -496,6 +491,33 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 		_ = server.Shutdown(shutdownCtx)
 	}()
 	return server, listener, activation, nil
+}
+
+func agentOpsDaemonMutationPaths() []string {
+	return []string{
+		"/jobs",
+		"/v1/jobs",
+		"/jobs/cancel",
+		"/v1/jobs/cancel",
+		"/openclaw/v1/triggers/jobs",
+	}
+}
+
+func resolveAgentOpsDaemonMutationPolicy(token, tokenFile string) (daemonpkg.MutationPolicy, error) {
+	allowedPaths := agentOpsDaemonMutationPaths()
+	if tokenFile != "" {
+		tokens, err := daemonpkg.LoadMutationTokensFile(tokenFile)
+		if err != nil {
+			return daemonpkg.MutationPolicy{}, err
+		}
+		policy := daemonpkg.DefaultMutationPolicy("", allowedPaths)
+		policy.Tokens = tokens
+		return policy, nil
+	}
+	if token == "" {
+		return daemonpkg.DefaultMutationPolicy("", allowedPaths), nil
+	}
+	return daemonpkg.DefaultMutationPolicy(token, allowedPaths), nil
 }
 
 func resolveDaemonMutationToken(token, tokenFile string) (string, error) {
