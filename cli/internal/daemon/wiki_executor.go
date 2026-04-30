@@ -81,24 +81,31 @@ func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobEx
 			Terminal:   result.Terminal,
 		})
 	}
-	refsPath, err := writeWikiWorkerSessionRefs(e.store.root, claim.Job.JobID, refs)
+	refsArtifact, err := writeWikiWorkerSessionRefs(e.store.root, claim.Job.JobID, refs)
 	if err != nil {
 		return JobExecutionResult{}, err
 	}
-	return JobExecutionResult{Artifacts: wikiForgeSuccessArtifacts(refsPath, refs)}, nil
+	return JobExecutionResult{
+		Artifacts:    wikiForgeSuccessArtifacts(refs),
+		ArtifactRefs: wikiForgeSuccessArtifactRefs(refsArtifact),
+	}, nil
 }
 
-func wikiForgeSuccessArtifacts(refsPath string, refs []WikiWorkerSessionRef) map[string]string {
-	artifacts := map[string]string{"worker_session_refs": refsPath}
+func wikiForgeSuccessArtifacts(refs []WikiWorkerSessionRef) map[string]string {
 	if len(refs) == 0 {
-		return artifacts
+		return nil
 	}
+	artifacts := map[string]string{}
 	last := refs[len(refs)-1]
 	artifacts["provider_request_id"] = last.Session.ProviderRequestID
 	artifacts["session_id"] = last.Session.SessionID
 	artifacts["event_cursor"] = last.Session.EventCursor
 	artifacts["terminal_status"] = string(last.Terminal.Status)
 	return artifacts
+}
+
+func wikiForgeSuccessArtifactRefs(refsArtifact ArtifactRef) map[string]ArtifactRef {
+	return map[string]ArtifactRef{"worker_session_refs": refsArtifact}
 }
 
 func wikiForgeFailureArtifacts(result wikiworker.ExtractionResult, err error) map[string]string {

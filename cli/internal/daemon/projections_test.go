@@ -101,6 +101,38 @@ func TestProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger(t *testing.T) {
 	}
 }
 
+func TestProjectionReplayContentAddressedArtifacts(t *testing.T) {
+	ref := ArtifactRef{
+		Path:      ".agents/handoffs/sha256/aa/bb/" + strings.Repeat("a", 64),
+		SHA256:    strings.Repeat("a", 64),
+		Size:      42,
+		WrittenAt: projectionTestTime(t, 2).Format(time.RFC3339Nano),
+	}
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-wiki-accepted", "req-wiki-1", "job-wiki", EventJobAccepted, JobTypeWikiForge, 0, nil),
+		mustNewProjectionTestEvent(t, "evt-wiki-completed", "req-wiki-2", "job-wiki", EventJobCompleted, "", 1, map[string]any{
+			"artifact_refs": map[string]ArtifactRef{"worker_session_refs": ref},
+		}),
+	}
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{RebuiltAt: projectionTestTime(t, 10)})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	if len(projections.Wiki.Jobs) != 1 {
+		t.Fatalf("wiki jobs = %#v", projections.Wiki.Jobs)
+	}
+	job := projections.Wiki.Jobs[0]
+	if got := job.ArtifactRefs["worker_session_refs"]; got != ref {
+		t.Fatalf("artifact ref = %#v, want %#v", got, ref)
+	}
+	if got := job.Artifacts["worker_session_refs"]; got != ref.Path {
+		t.Fatalf("compat artifact path = %q, want %q", got, ref.Path)
+	}
+	if got := projections.OpenClaw.Resources.Wiki[0].ArtifactRefs["worker_session_refs"]; got != ref {
+		t.Fatalf("openclaw artifact ref = %#v, want %#v", got, ref)
+	}
+}
+
 func TestProjectionReplayFromStoreCarriesRequestIDsAndDegradesOnCorruptLedger(t *testing.T) {
 	store := NewStore(t.TempDir())
 	if _, err := store.AppendLedgerEvent(mustNewProjectionTestEvent(t, "evt-rpi-accepted", "req-rpi-1", "job-rpi", EventJobAccepted, JobTypeRPIPhase, 0, nil)); err != nil {

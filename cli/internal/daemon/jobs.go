@@ -72,25 +72,26 @@ type QueueClaim struct {
 }
 
 type QueueJobState struct {
-	JobID             string            `json:"job_id"`
-	JobType           JobType           `json:"job_type"`
-	RequestID         string            `json:"request_id"`
-	RequestIDs        []string          `json:"request_ids,omitempty"`
-	Status            JobStatus         `json:"status"`
-	IdempotencyKey    string            `json:"idempotency_key,omitempty"`
-	Attempt           int               `json:"attempt"`
-	MaxAttempts       int               `json:"max_attempts"`
-	ClaimToken        string            `json:"claim_token,omitempty"`
-	LeaseEpoch        int               `json:"lease_epoch,omitempty"`
-	LeaseExpiresAt    string            `json:"lease_expires_at,omitempty"`
-	RetryExhausted    bool              `json:"retry_exhausted,omitempty"`
-	Failure           *JobFailure       `json:"failure,omitempty"`
-	Artifacts         map[string]string `json:"artifacts,omitempty"`
-	ProjectionTargets []ProjectionName  `json:"projection_targets,omitempty"`
-	Payload           map[string]any    `json:"payload,omitempty"`
-	LastEventID       string            `json:"last_event_id,omitempty"`
-	CreatedAt         string            `json:"created_at,omitempty"`
-	UpdatedAt         string            `json:"updated_at,omitempty"`
+	JobID             string                 `json:"job_id"`
+	JobType           JobType                `json:"job_type"`
+	RequestID         string                 `json:"request_id"`
+	RequestIDs        []string               `json:"request_ids,omitempty"`
+	Status            JobStatus              `json:"status"`
+	IdempotencyKey    string                 `json:"idempotency_key,omitempty"`
+	Attempt           int                    `json:"attempt"`
+	MaxAttempts       int                    `json:"max_attempts"`
+	ClaimToken        string                 `json:"claim_token,omitempty"`
+	LeaseEpoch        int                    `json:"lease_epoch,omitempty"`
+	LeaseExpiresAt    string                 `json:"lease_expires_at,omitempty"`
+	RetryExhausted    bool                   `json:"retry_exhausted,omitempty"`
+	Failure           *JobFailure            `json:"failure,omitempty"`
+	Artifacts         map[string]string      `json:"artifacts,omitempty"`
+	ArtifactRefs      map[string]ArtifactRef `json:"artifact_refs,omitempty"`
+	ProjectionTargets []ProjectionName       `json:"projection_targets,omitempty"`
+	Payload           map[string]any         `json:"payload,omitempty"`
+	LastEventID       string                 `json:"last_event_id,omitempty"`
+	CreatedAt         string                 `json:"created_at,omitempty"`
+	UpdatedAt         string                 `json:"updated_at,omitempty"`
 }
 
 type QueueSnapshot struct {
@@ -99,31 +100,34 @@ type QueueSnapshot struct {
 }
 
 type HeartbeatInput struct {
-	JobID      string
-	RequestID  RequestID
-	ClaimToken string
-	LeaseEpoch int
-	Actor      string
-	Artifacts  map[string]string
+	JobID        string
+	RequestID    RequestID
+	ClaimToken   string
+	LeaseEpoch   int
+	Actor        string
+	Artifacts    map[string]string
+	ArtifactRefs map[string]ArtifactRef
 }
 
 type CompleteJobInput struct {
-	JobID      string
-	RequestID  RequestID
-	ClaimToken string
-	LeaseEpoch int
-	Actor      string
-	Artifacts  map[string]string
+	JobID        string
+	RequestID    RequestID
+	ClaimToken   string
+	LeaseEpoch   int
+	Actor        string
+	Artifacts    map[string]string
+	ArtifactRefs map[string]ArtifactRef
 }
 
 type FailJobInput struct {
-	JobID      string
-	RequestID  RequestID
-	ClaimToken string
-	LeaseEpoch int
-	Actor      string
-	Failure    JobFailure
-	Artifacts  map[string]string
+	JobID        string
+	RequestID    RequestID
+	ClaimToken   string
+	LeaseEpoch   int
+	Actor        string
+	Failure      JobFailure
+	Artifacts    map[string]string
+	ArtifactRefs map[string]ArtifactRef
 }
 
 // CancelJobInput identifies a job cancellation request.
@@ -258,6 +262,9 @@ func (q *Queue) Heartbeat(input HeartbeatInput, opts QueueMutationOptions) (Queu
 	if err != nil {
 		return QueueJobState{}, err
 	}
+	if err := validateArtifactRefs(input.ArtifactRefs); err != nil {
+		return QueueJobState{}, err
+	}
 	expiresAt := q.now().Add(q.opts.LeaseDuration).UTC()
 	event, err := NewLedgerEvent(LedgerEventInput{
 		EventID:    q.nextEventID(EventJobHeartbeat, input.JobID),
@@ -266,12 +273,11 @@ func (q *Queue) Heartbeat(input HeartbeatInput, opts QueueMutationOptions) (Queu
 		EventType:  EventJobHeartbeat,
 		OccurredAt: q.now(),
 		Actor:      q.actor(input.Actor),
-		Payload: map[string]any{
+		Payload: jobMutationPayload(map[string]any{
 			"claim_token":      input.ClaimToken,
 			"lease_epoch":      input.LeaseEpoch,
 			"lease_expires_at": expiresAt.Format(time.RFC3339Nano),
-			"artifacts":        input.Artifacts,
-		},
+		}, input.Artifacts, input.ArtifactRefs),
 	})
 	if err != nil {
 		return QueueJobState{}, err
@@ -287,6 +293,9 @@ func (q *Queue) CompleteJob(input CompleteJobInput, opts QueueMutationOptions) (
 	if err != nil {
 		return QueueJobState{}, err
 	}
+	if err := validateArtifactRefs(input.ArtifactRefs); err != nil {
+		return QueueJobState{}, err
+	}
 	if isTerminalStatus(job.Status) {
 		return job, nil
 	}
@@ -297,12 +306,11 @@ func (q *Queue) CompleteJob(input CompleteJobInput, opts QueueMutationOptions) (
 		EventType:  EventJobCompleted,
 		OccurredAt: q.now(),
 		Actor:      q.actor(input.Actor),
-		Payload: map[string]any{
+		Payload: jobMutationPayload(map[string]any{
 			"claim_token":   input.ClaimToken,
 			"lease_epoch":   input.LeaseEpoch,
 			"result_status": string(JobResultSucceeded),
-			"artifacts":     input.Artifacts,
-		},
+		}, input.Artifacts, input.ArtifactRefs),
 	})
 	if err != nil {
 		return QueueJobState{}, err
@@ -316,6 +324,9 @@ func (q *Queue) CompleteJob(input CompleteJobInput, opts QueueMutationOptions) (
 func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJobState, error) {
 	job, err := q.terminalClaimJob(input.JobID, input.ClaimToken, input.LeaseEpoch)
 	if err != nil {
+		return QueueJobState{}, err
+	}
+	if err := validateArtifactRefs(input.ArtifactRefs); err != nil {
 		return QueueJobState{}, err
 	}
 	if isTerminalStatus(job.Status) {
@@ -334,7 +345,7 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 		EventType:  EventJobFailed,
 		OccurredAt: q.now(),
 		Actor:      q.actor(input.Actor),
-		Payload: map[string]any{
+		Payload: jobMutationPayload(map[string]any{
 			"claim_token": input.ClaimToken,
 			"lease_epoch": input.LeaseEpoch,
 			"failure": map[string]any{
@@ -342,8 +353,7 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 				"message":   input.Failure.Message,
 				"retryable": input.Failure.Retryable,
 			},
-			"artifacts": input.Artifacts,
-		},
+		}, input.Artifacts, input.ArtifactRefs),
 	})
 	if err != nil {
 		return QueueJobState{}, err
@@ -559,12 +569,13 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 		job := jobsByID[event.JobID]
 		if job == nil {
 			job = &QueueJobState{
-				JobID:       event.JobID,
-				RequestID:   event.RequestID,
-				RequestIDs:  []string{event.RequestID},
-				Status:      JobStatusQueued,
-				MaxAttempts: q.opts.MaxAttempts,
-				Artifacts:   map[string]string{},
+				JobID:        event.JobID,
+				RequestID:    event.RequestID,
+				RequestIDs:   []string{event.RequestID},
+				Status:       JobStatusQueued,
+				MaxAttempts:  q.opts.MaxAttempts,
+				Artifacts:    map[string]string{},
+				ArtifactRefs: map[string]ArtifactRef{},
 			}
 			jobsByID[event.JobID] = job
 			order = append(order, event.JobID)
@@ -583,6 +594,9 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 		if len(job.Artifacts) == 0 {
 			job.Artifacts = nil
 		}
+		if len(job.ArtifactRefs) == 0 {
+			job.ArtifactRefs = nil
+		}
 		if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 			job.Status = JobStatusRetryWaiting
 			if job.Attempt >= job.MaxAttempts {
@@ -598,6 +612,13 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if isTerminalStatus(job.Status) {
 		return false
 	}
+	applyQueueEventMetadata(job, event)
+	applyQueueEventArtifacts(job, event)
+	applyQueueEventStatus(job, event)
+	return true
+}
+
+func applyQueueEventMetadata(job *QueueJobState, event LedgerEvent) {
 	if jobType, ok, err := jobTypeFromPayload(event.Payload); err == nil && ok {
 		job.JobType = jobType
 	}
@@ -615,33 +636,31 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if maxAttempts, ok := intPayload(event.Payload, "max_attempts"); ok {
 		job.MaxAttempts = maxAttempts
 	}
+}
+
+func applyQueueEventArtifacts(job *QueueJobState, event LedgerEvent) {
 	for key, value := range artifactsFromPayload(event.Payload) {
 		job.Artifacts[key] = value
 	}
+	for key, ref := range artifactRefsFromPayload(event.Payload) {
+		if job.ArtifactRefs == nil {
+			job.ArtifactRefs = map[string]ArtifactRef{}
+		}
+		job.ArtifactRefs[key] = ref
+		if ref.Path != "" {
+			job.Artifacts[key] = ref.Path
+		}
+	}
+}
 
+func applyQueueEventStatus(job *QueueJobState, event LedgerEvent) {
 	switch event.EventType {
 	case EventJobAccepted:
 		job.Status = JobStatusQueued
 	case EventJobClaimed:
-		job.Status = JobStatusRunning
-		job.RetryExhausted = false
-		job.ClaimToken, _ = stringPayload(event.Payload, "claim_token")
-		job.LeaseEpoch, _ = intPayload(event.Payload, "lease_epoch")
-		job.LeaseExpiresAt, _ = stringPayload(event.Payload, "lease_expires_at")
-		if attempt, ok := intPayload(event.Payload, "attempt"); ok {
-			job.Attempt = attempt
-		}
+		applyJobClaimedEvent(job, event)
 	case EventJobHeartbeat:
-		job.Status = JobStatusRunning
-		if token, ok := stringPayload(event.Payload, "claim_token"); ok {
-			job.ClaimToken = token
-		}
-		if epoch, ok := intPayload(event.Payload, "lease_epoch"); ok {
-			job.LeaseEpoch = epoch
-		}
-		if expiresAt, ok := stringPayload(event.Payload, "lease_expires_at"); ok {
-			job.LeaseExpiresAt = expiresAt
-		}
+		applyJobHeartbeatEvent(job, event)
 	case EventJobLeaseExpired:
 		job.Status = JobStatusRetryWaiting
 		job.ClaimToken = ""
@@ -654,7 +673,30 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	case EventJobCancelled:
 		job.Status = JobStatusCancelled
 	}
-	return true
+}
+
+func applyJobClaimedEvent(job *QueueJobState, event LedgerEvent) {
+	job.Status = JobStatusRunning
+	job.RetryExhausted = false
+	job.ClaimToken, _ = stringPayload(event.Payload, "claim_token")
+	job.LeaseEpoch, _ = intPayload(event.Payload, "lease_epoch")
+	job.LeaseExpiresAt, _ = stringPayload(event.Payload, "lease_expires_at")
+	if attempt, ok := intPayload(event.Payload, "attempt"); ok {
+		job.Attempt = attempt
+	}
+}
+
+func applyJobHeartbeatEvent(job *QueueJobState, event LedgerEvent) {
+	job.Status = JobStatusRunning
+	if token, ok := stringPayload(event.Payload, "claim_token"); ok {
+		job.ClaimToken = token
+	}
+	if epoch, ok := intPayload(event.Payload, "lease_epoch"); ok {
+		job.LeaseEpoch = epoch
+	}
+	if expiresAt, ok := stringPayload(event.Payload, "lease_expires_at"); ok {
+		job.LeaseExpiresAt = expiresAt
+	}
 }
 
 func (q *Queue) isClaimable(job QueueJobState) bool {
@@ -697,6 +739,16 @@ func (snapshot QueueSnapshot) jobByID(jobID string) (QueueJobState, error) {
 
 func (q *Queue) nextEventID(eventType EventType, jobID string) string {
 	return q.nextID("evt_"+sanitizeIDPart(string(eventType)), jobID)
+}
+
+func jobMutationPayload(base map[string]any, artifacts map[string]string, refs map[string]ArtifactRef) map[string]any {
+	if len(artifacts) > 0 {
+		base["artifacts"] = artifacts
+	}
+	if len(refs) > 0 {
+		base["artifact_refs"] = refs
+	}
+	return base
 }
 
 func (q *Queue) nextID(prefix, seed string) string {

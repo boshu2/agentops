@@ -10,7 +10,8 @@ import (
 
 // JobExecutionResult is the terminal output from a daemon job executor.
 type JobExecutionResult struct {
-	Artifacts map[string]string
+	Artifacts    map[string]string
+	ArtifactRefs map[string]ArtifactRef
 }
 
 // JobExecutor runs claimed daemon jobs for one or more job types.
@@ -108,6 +109,7 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 	}
 	result, execErr := s.runExecutorWithHeartbeat(ctx, executor, claim)
 	artifacts := result.Artifacts
+	artifactRefs := result.ArtifactRefs
 	if execErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil && errors.Is(execErr, ctxErr) {
 			return SupervisorRunOnceResult{Claimed: true, Job: claim.Job}, nil
@@ -122,7 +124,8 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 				Code:    FailureRequestRejected,
 				Message: execErr.Error(),
 			},
-			Artifacts: artifacts,
+			Artifacts:    artifacts,
+			ArtifactRefs: artifactRefs,
 		}, QueueMutationOptions{})
 		if err != nil {
 			return SupervisorRunOnceResult{}, err
@@ -130,12 +133,13 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 		return SupervisorRunOnceResult{Claimed: true, Job: failed}, nil
 	}
 	completed, err := s.queue.CompleteJob(CompleteJobInput{
-		JobID:      claim.Job.JobID,
-		RequestID:  RequestID(claim.Job.RequestID),
-		ClaimToken: claim.ClaimToken,
-		LeaseEpoch: claim.LeaseEpoch,
-		Actor:      s.actor,
-		Artifacts:  artifacts,
+		JobID:        claim.Job.JobID,
+		RequestID:    RequestID(claim.Job.RequestID),
+		ClaimToken:   claim.ClaimToken,
+		LeaseEpoch:   claim.LeaseEpoch,
+		Actor:        s.actor,
+		Artifacts:    artifacts,
+		ArtifactRefs: artifactRefs,
 	}, QueueMutationOptions{})
 	if err != nil {
 		return SupervisorRunOnceResult{}, err

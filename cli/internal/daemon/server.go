@@ -561,6 +561,7 @@ func openClawResourcesFromJobs(jobs []JobProjection, kind openclaw.ResourceKind)
 			ResultStatus:      string(job.ResultStatus),
 			Failure:           openClawFailure(job.Failure),
 			Artifacts:         cloneStringMap(job.Artifacts),
+			ArtifactRefs:      openClawArtifactRefs(job.ArtifactRefs),
 			ProjectionTargets: projectionTargetStrings(job.ProjectionTargets),
 			CreatedAt:         job.CreatedAt,
 			UpdatedAt:         job.UpdatedAt,
@@ -570,6 +571,22 @@ func openClawResourcesFromJobs(jobs []JobProjection, kind openclaw.ResourceKind)
 	}
 	if out == nil {
 		return []openclaw.ResourceSummary{}
+	}
+	return out
+}
+
+func openClawArtifactRefs(in map[string]ArtifactRef) map[string]openclaw.ArtifactRef {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]openclaw.ArtifactRef, len(in))
+	for key, ref := range in {
+		out[key] = openclaw.ArtifactRef{
+			Path:      ref.Path,
+			SHA256:    ref.SHA256,
+			Size:      ref.Size,
+			WrittenAt: ref.WrittenAt,
+		}
 	}
 	return out
 }

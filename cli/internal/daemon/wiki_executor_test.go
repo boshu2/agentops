@@ -55,6 +55,13 @@ func TestWikiForgeExecutorCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 	if result.Job.Artifacts["terminal_status"] != string(agentworker.StatusCompleted) {
 		t.Fatalf("terminal_status = %q", result.Job.Artifacts["terminal_status"])
 	}
+	ref := result.Job.ArtifactRefs["worker_session_refs"]
+	if err := ref.Validate(); err != nil {
+		t.Fatalf("worker_session_refs ref invalid: %v", err)
+	}
+	if result.Job.Artifacts["worker_session_refs"] != ref.Path {
+		t.Fatalf("compat worker_session_refs = %q, want %q", result.Job.Artifacts["worker_session_refs"], ref.Path)
+	}
 }
 
 func TestWikiForgeExecutorInvalidOutputFailsWithQuarantineArtifact(t *testing.T) {

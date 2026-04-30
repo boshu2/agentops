@@ -36,6 +36,7 @@ allowlist nor an active skill name fails the gate.
 | `evals` | cli eval runtime, scripts (`eval-agentops`) | persistent | Eval run outputs, promoted baselines, and suite execution state |
 | `findings` | scripts, /forge | persistent | Mined findings awaiting promotion |
 | `git` | cli (git-aware tooling) | persistent | Git-derived state cached for the runtime |
+| `handoffs` | cli (daemon content-addressed artifacts) | persistent | Content-addressed handoff artifacts keyed by sha256 for daemon job replay |
 | `holdout` | cli (`/scenario`) | persistent | Holdout scenarios stored outside the codebase view |
 | `knowledge` | cli (compile knowledge surface) | persistent | Promoted knowledge artifacts |
 | `learnings` | cli (curate `TierLearning`), /post-mortem, /retro | persistent | Promoted learning artifacts |
@@ -95,6 +96,7 @@ defrag
 evals
 findings
 git
+handoffs
 holdout
 knowledge
 learnings

@@ -127,13 +127,19 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claim wiki job: %v", err)
 	}
+	refsArtifact := ArtifactRef{
+		Path:      ".agents/handoffs/sha256/aa/bb/" + strings.Repeat("a", 64),
+		SHA256:    strings.Repeat("a", 64),
+		Size:      128,
+		WrittenAt: now.Format(time.RFC3339Nano),
+	}
 	if _, err := queue.CompleteJob(CompleteJobInput{
-		JobID:      "job-wiki",
-		RequestID:  "req-wiki-complete",
-		ClaimToken: claim.ClaimToken,
-		LeaseEpoch: claim.LeaseEpoch,
-		Actor:      "wiki-worker",
-		Artifacts:  map[string]string{"worker_session_refs": ".agents/daemon/wiki/job-wiki-worker-sessions.json"},
+		JobID:        "job-wiki",
+		RequestID:    "req-wiki-complete",
+		ClaimToken:   claim.ClaimToken,
+		LeaseEpoch:   claim.LeaseEpoch,
+		Actor:        "wiki-worker",
+		ArtifactRefs: map[string]ArtifactRef{"worker_session_refs": refsArtifact},
 	}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("complete wiki job: %v", err)
 	}
@@ -155,6 +161,12 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	}
 	if len(snapshot.Resources.Wiki) != 1 || snapshot.Resources.Wiki[0].ResourceKind != openclaw.ResourceKindWiki {
 		t.Fatalf("snapshot wiki = %#v", snapshot.Resources.Wiki)
+	}
+	if got := snapshot.Resources.Wiki[0].ArtifactRefs["worker_session_refs"].SHA256; got != refsArtifact.SHA256 {
+		t.Fatalf("snapshot artifact ref sha = %q, want %q", got, refsArtifact.SHA256)
+	}
+	if got := snapshot.Resources.Wiki[0].Artifacts["worker_session_refs"]; got != refsArtifact.Path {
+		t.Fatalf("snapshot compat artifact path = %q, want %q", got, refsArtifact.Path)
 	}
 	if !hasOpenClawProvenance(snapshot.Resources.Wiki[0].Provenance, "source-event", "daemon-ledger-event", "") {
 		t.Fatalf("wiki missing source-event provenance: %#v", snapshot.Resources.Wiki[0].Provenance)

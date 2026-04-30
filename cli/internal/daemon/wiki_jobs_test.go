@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestWikiForgeJobSpecRoundTrip(t *testing.T) {
 	}
 }
 
-func TestWikiForgeRunnerCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
+func TestWikiForgeRunnerCompletesJobWithContentAddressedHash(t *testing.T) {
 	root := t.TempDir()
 	store := NewStore(root)
 	queue := NewQueue(store, QueueOptions{})
@@ -94,7 +95,17 @@ func TestWikiForgeRunnerCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 		}
 	}
 	refsPath := result.Artifacts["worker_session_refs"]
-	data, err := os.ReadFile(refsPath)
+	ref := result.ArtifactRefs["worker_session_refs"]
+	if err := ref.Validate(); err != nil {
+		t.Fatalf("worker_session_refs ref invalid: %v", err)
+	}
+	if refsPath != ref.Path {
+		t.Fatalf("compat refs path = %q, want artifact ref path %q", refsPath, ref.Path)
+	}
+	if filepath.Base(ref.Path) != ref.SHA256 {
+		t.Fatalf("artifact ref path = %q, sha256 = %q", ref.Path, ref.SHA256)
+	}
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(refsPath)))
 	if err != nil {
 		t.Fatalf("read refs artifact: %v", err)
 	}

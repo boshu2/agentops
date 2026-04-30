@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
@@ -63,6 +62,7 @@ type WikiForgeJobRunResult struct {
 	DreamRunID     string                 `json:"dream_run_id,omitempty"`
 	Status         JobStatus              `json:"status"`
 	Artifacts      map[string]string      `json:"artifacts,omitempty"`
+	ArtifactRefs   map[string]ArtifactRef `json:"artifact_refs,omitempty"`
 	WorkerSessions []WikiWorkerSessionRef `json:"worker_sessions,omitempty"`
 	Failure        *JobFailure            `json:"failure,omitempty"`
 }
@@ -214,18 +214,20 @@ func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim Queu
 			Terminal:   result.Terminal,
 		})
 	}
-	refsPath, err := writeWikiWorkerSessionRefs(r.store.root, claim.Job.JobID, refs)
+	refsArtifact, err := writeWikiWorkerSessionRefs(r.store.root, claim.Job.JobID, refs)
 	if err != nil {
 		failure := JobFailure{Code: FailureRequestRejected, Message: err.Error(), Retryable: false}
 		return r.failWikiForgeJob(claim, failure), err
 	}
+	artifactRefs := wikiForgeSuccessArtifactRefs(refsArtifact)
 	job, err := r.queue.CompleteJob(CompleteJobInput{
-		JobID:      claim.Job.JobID,
-		RequestID:  RequestID(claim.Job.RequestID),
-		ClaimToken: claim.ClaimToken,
-		LeaseEpoch: claim.LeaseEpoch,
-		Actor:      r.actor,
-		Artifacts:  map[string]string{"worker_session_refs": refsPath},
+		JobID:        claim.Job.JobID,
+		RequestID:    RequestID(claim.Job.RequestID),
+		ClaimToken:   claim.ClaimToken,
+		LeaseEpoch:   claim.LeaseEpoch,
+		Actor:        r.actor,
+		Artifacts:    wikiForgeSuccessArtifacts(refs),
+		ArtifactRefs: artifactRefs,
 	}, QueueMutationOptions{})
 	if err != nil {
 		return WikiForgeJobRunResult{}, err
@@ -235,6 +237,7 @@ func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim Queu
 		DreamRunID:     spec.DreamRunID,
 		Status:         job.Status,
 		Artifacts:      job.Artifacts,
+		ArtifactRefs:   job.ArtifactRefs,
 		WorkerSessions: refs,
 	}, nil
 }
@@ -324,36 +327,21 @@ func wikiForgePrompt(ctx wikiForgePromptContext) string {
 	}, " ")
 }
 
-func writeWikiWorkerSessionRefs(root, jobID string, refs []WikiWorkerSessionRef) (string, error) {
-	dir := filepath.Join(root, ".agents", "daemon", "wiki")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-	path := filepath.Join(dir, sanitizeWikiArtifactName(jobID)+"-worker-sessions.json")
+func writeWikiWorkerSessionRefs(root, jobID string, refs []WikiWorkerSessionRef) (ArtifactRef, error) {
 	data, err := json.MarshalIndent(struct {
 		SchemaVersion  int                    `json:"schema_version"`
 		JobID          string                 `json:"job_id"`
 		WorkerSessions []WikiWorkerSessionRef `json:"worker_sessions"`
-		WrittenAt      string                 `json:"written_at"`
 	}{
 		SchemaVersion:  1,
 		JobID:          jobID,
 		WorkerSessions: refs,
-		WrittenAt:      time.Now().UTC().Format(time.RFC3339Nano),
 	}, "", "  ")
 	if err != nil {
-		return "", err
+		return ArtifactRef{}, err
 	}
 	data = append(data, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return "", err
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return "", err
-	}
-	return path, nil
+	return NewContentAddressedArtifactStore(root, ArtifactStoreOptions{}).PutBytes(data)
 }
 
 func sanitizeWikiArtifactName(value string) string {

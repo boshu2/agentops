@@ -58,18 +58,19 @@ type ProjectionManifest struct {
 }
 
 type JobProjection struct {
-	JobID             string            `json:"job_id"`
-	JobType           JobType           `json:"job_type,omitempty"`
-	RequestID         string            `json:"request_id"`
-	RequestIDs        []string          `json:"request_ids,omitempty"`
-	Status            JobStatus         `json:"status"`
-	ResultStatus      JobResultStatus   `json:"result_status,omitempty"`
-	Failure           *JobFailure       `json:"failure,omitempty"`
-	Artifacts         map[string]string `json:"artifacts,omitempty"`
-	ProjectionTargets []ProjectionName  `json:"projection_targets,omitempty"`
-	CreatedAt         string            `json:"created_at,omitempty"`
-	UpdatedAt         string            `json:"updated_at,omitempty"`
-	LastEventID       string            `json:"last_event_id,omitempty"`
+	JobID             string                 `json:"job_id"`
+	JobType           JobType                `json:"job_type,omitempty"`
+	RequestID         string                 `json:"request_id"`
+	RequestIDs        []string               `json:"request_ids,omitempty"`
+	Status            JobStatus              `json:"status"`
+	ResultStatus      JobResultStatus        `json:"result_status,omitempty"`
+	Failure           *JobFailure            `json:"failure,omitempty"`
+	Artifacts         map[string]string      `json:"artifacts,omitempty"`
+	ArtifactRefs      map[string]ArtifactRef `json:"artifact_refs,omitempty"`
+	ProjectionTargets []ProjectionName       `json:"projection_targets,omitempty"`
+	CreatedAt         string                 `json:"created_at,omitempty"`
+	UpdatedAt         string                 `json:"updated_at,omitempty"`
+	LastEventID       string                 `json:"last_event_id,omitempty"`
 }
 
 type RPIRegistryProjection struct {
@@ -183,11 +184,12 @@ func ensureJobProjection(jobsByID map[string]*JobProjection, event LedgerEvent) 
 		return job, false
 	}
 	job := &JobProjection{
-		JobID:      event.JobID,
-		RequestID:  event.RequestID,
-		RequestIDs: []string{event.RequestID},
-		Status:     JobStatusQueued,
-		Artifacts:  map[string]string{},
+		JobID:        event.JobID,
+		RequestID:    event.RequestID,
+		RequestIDs:   []string{event.RequestID},
+		Status:       JobStatusQueued,
+		Artifacts:    map[string]string{},
+		ArtifactRefs: map[string]ArtifactRef{},
 	}
 	jobsByID[event.JobID] = job
 	return job, true
@@ -219,6 +221,15 @@ func applyPayloadToJob(job *JobProjection, event LedgerEvent) error {
 	for key, value := range artifactsFromPayload(event.Payload) {
 		job.Artifacts[key] = value
 	}
+	for key, ref := range artifactRefsFromPayload(event.Payload) {
+		if job.ArtifactRefs == nil {
+			job.ArtifactRefs = map[string]ArtifactRef{}
+		}
+		job.ArtifactRefs[key] = ref
+		if ref.Path != "" {
+			job.Artifacts[key] = ref.Path
+		}
+	}
 	return nil
 }
 
@@ -228,6 +239,9 @@ func collectJobsIntoSet(jobsByID map[string]*JobProjection, jobOrder []string, s
 		job := *jobsByID[jobID]
 		if len(job.Artifacts) == 0 {
 			job.Artifacts = nil
+		}
+		if len(job.ArtifactRefs) == 0 {
+			job.ArtifactRefs = nil
 		}
 		set.Jobs = append(set.Jobs, job)
 		classifyJobIntoBuckets(job, set)

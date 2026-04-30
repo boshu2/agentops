@@ -57,28 +57,36 @@ type SnapshotResources struct {
 }
 
 type ResourceSummary struct {
-	ResourceID        string            `json:"resource_id"`
-	ResourceKind      ResourceKind      `json:"resource_kind"`
-	JobID             string            `json:"job_id,omitempty"`
-	JobType           string            `json:"job_type,omitempty"`
-	RunID             string            `json:"run_id,omitempty"`
-	RequestID         string            `json:"request_id,omitempty"`
-	RequestIDs        []string          `json:"request_ids,omitempty"`
-	Status            string            `json:"status"`
-	ResultStatus      string            `json:"result_status,omitempty"`
-	Failure           *FailureSummary   `json:"failure,omitempty"`
-	Artifacts         map[string]string `json:"artifacts,omitempty"`
-	ProjectionTargets []string          `json:"projection_targets,omitempty"`
-	CreatedAt         string            `json:"created_at,omitempty"`
-	UpdatedAt         string            `json:"updated_at,omitempty"`
-	LastEventID       string            `json:"last_event_id,omitempty"`
-	Provenance        []ProvenanceLink  `json:"provenance,omitempty"`
+	ResourceID        string                 `json:"resource_id"`
+	ResourceKind      ResourceKind           `json:"resource_kind"`
+	JobID             string                 `json:"job_id,omitempty"`
+	JobType           string                 `json:"job_type,omitempty"`
+	RunID             string                 `json:"run_id,omitempty"`
+	RequestID         string                 `json:"request_id,omitempty"`
+	RequestIDs        []string               `json:"request_ids,omitempty"`
+	Status            string                 `json:"status"`
+	ResultStatus      string                 `json:"result_status,omitempty"`
+	Failure           *FailureSummary        `json:"failure,omitempty"`
+	Artifacts         map[string]string      `json:"artifacts,omitempty"`
+	ArtifactRefs      map[string]ArtifactRef `json:"artifact_refs,omitempty"`
+	ProjectionTargets []string               `json:"projection_targets,omitempty"`
+	CreatedAt         string                 `json:"created_at,omitempty"`
+	UpdatedAt         string                 `json:"updated_at,omitempty"`
+	LastEventID       string                 `json:"last_event_id,omitempty"`
+	Provenance        []ProvenanceLink       `json:"provenance,omitempty"`
 }
 
 type FailureSummary struct {
 	Code      string `json:"code"`
 	Message   string `json:"message"`
 	Retryable bool   `json:"retryable,omitempty"`
+}
+
+type ArtifactRef struct {
+	Path      string `json:"path"`
+	SHA256    string `json:"sha256"`
+	Size      int64  `json:"size"`
+	WrittenAt string `json:"written_at"`
 }
 
 type ProvenanceLink struct {
