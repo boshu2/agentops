@@ -65,6 +65,33 @@ func TestHarvestCmd_Flags(t *testing.T) {
 	}
 }
 
+// TestNewHarvestWalkOptions_SkipGlobalHubDefault is a regression guard for the
+// 2026-04-30 feedback-loop fix: ao harvest must NOT re-walk ~/.agents/ as a
+// source rig, because doing so re-extracts its own promote-to output. Without
+// SkipGlobalHub: true on harvest's WalkOptions, each harvest pass produces
+// fragments-of-fragments with degenerate filenames; the global hub at
+// ~/.agents/learnings grew to 114k files / 460MB before this gate was added.
+func TestNewHarvestWalkOptions_SkipGlobalHubDefault(t *testing.T) {
+	opts := newHarvestWalkOptions([]string{"/tmp/fake-root"}, []string{"learnings"})
+
+	if !opts.SkipGlobalHub {
+		t.Errorf("newHarvestWalkOptions().SkipGlobalHub = false, want true (feedback-loop regression)")
+	}
+
+	if len(opts.Roots) != 1 || opts.Roots[0] != "/tmp/fake-root" {
+		t.Errorf("Roots = %v, want [/tmp/fake-root]", opts.Roots)
+	}
+	if len(opts.IncludeDirs) != 1 || opts.IncludeDirs[0] != "learnings" {
+		t.Errorf("IncludeDirs = %v, want [learnings]", opts.IncludeDirs)
+	}
+	if opts.MaxFileSize != harvestMaxFileSize {
+		t.Errorf("MaxFileSize = %d, want %d", opts.MaxFileSize, harvestMaxFileSize)
+	}
+	if len(opts.SkipDirs) == 0 {
+		t.Errorf("SkipDirs is empty, want defaults from harvest.DefaultWalkOptions()")
+	}
+}
+
 func TestHarvestCSVListTrimsEntries(t *testing.T) {
 	got := harvestCSVList(" learnings, patterns ,research ")
 	want := []string{"learnings", "patterns", "research"}

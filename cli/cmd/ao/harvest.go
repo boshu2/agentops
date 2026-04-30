@@ -190,12 +190,16 @@ func harvestCSVList(value string) []string {
 	return items
 }
 
+// newHarvestWalkOptions builds discovery options for `ao harvest`. SkipGlobalHub
+// is set to true so harvest does not re-walk ~/.agents/ as a source rig, which
+// would re-extract its own promote-to output and create a feedback loop.
 func newHarvestWalkOptions(roots, includeDirs []string) harvest.WalkOptions {
 	return harvest.WalkOptions{
-		Roots:       roots,
-		MaxFileSize: harvestMaxFileSize,
-		SkipDirs:    harvest.DefaultWalkOptions().SkipDirs,
-		IncludeDirs: includeDirs,
+		Roots:         roots,
+		MaxFileSize:   harvestMaxFileSize,
+		SkipDirs:      harvest.DefaultWalkOptions().SkipDirs,
+		IncludeDirs:   includeDirs,
+		SkipGlobalHub: true,
 	}
 }
 
