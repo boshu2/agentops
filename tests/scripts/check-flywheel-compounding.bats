@@ -57,6 +57,22 @@ EOF
     [[ "$output" == *"dormant"* ]]
     # σ=0 ρ=0 hint must NOT mention only the high-confidence remediation
     [[ "$output" != *"applied|reference"* ]]
+    # σ=0 ρ=0 must surface multi-session-bound diagnostic (per the
+    # 2026-04-30 quarantine-strengthening cycle).
+    [[ "$output" == *"multi-session-bound"* ]]
+}
+
+@test "FAIL with σ=0 AND ρ=0 surfaces verdict + period block when payload provides them" {
+    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"golden_signals":{"trend_verdict":"stagnant","concentration_verdict":"dormant","overall_verdict":"accumulating"},"metrics":{"citations_this_period":0,"total_artifacts":47,"learnings_created":65,"period_start":"2026-04-23T00:00:00Z","period_end":"2026-04-30T00:00:00Z"}}'
+    run env AO_BIN="$FAKE_AO" bash "$SCRIPT"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"trend_verdict=stagnant"* ]]
+    [[ "$output" == *"concentration_verdict=dormant"* ]]
+    [[ "$output" == *"overall_verdict=accumulating"* ]]
+    [[ "$output" == *"citations_this_period=0"* ]]
+    [[ "$output" == *"total_artifacts=47"* ]]
+    [[ "$output" == *"period=[2026-04-23T00:00:00Z .. 2026-04-30T00:00:00Z]"* ]]
+    [[ "$output" == *"f-2026-04-30-002.md"* ]]
 }
 
 @test "FAIL with ρ=0 only (σ>0) emits high-confidence-citation hint" {
