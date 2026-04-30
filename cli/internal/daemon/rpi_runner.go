@@ -202,7 +202,7 @@ func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueClaim) (RPIJob
 	stopHeartbeat := r.startHeartbeat(ctx, claim)
 	defer stopHeartbeat()
 
-	artifacts, runID, execErr := r.executeClaim(ctx, claim)
+	artifacts, runID, execErr := r.ExecuteClaim(ctx, claim)
 	if execErr != nil {
 		failure := r.failureForError(execErr)
 		job, failErr := r.queue.FailJob(FailJobInput{
@@ -247,7 +247,11 @@ func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueClaim) (RPIJob
 	}, nil
 }
 
-func (r *RPIRunner) executeClaim(ctx context.Context, claim QueueClaim) (map[string]string, string, error) {
+// ExecuteClaim runs the user-visible RPI work for a job that has already
+// been claimed by some caller (the supervisor's claim path is one such
+// caller; the operator-driven `ao rpi run` is another). It does not handle
+// claim, heartbeat, or terminal write — those are the caller's responsibility.
+func (r *RPIRunner) ExecuteClaim(ctx context.Context, claim QueueClaim) (map[string]string, string, error) {
 	switch claim.Job.JobType {
 	case JobTypeRPIRun:
 		spec, err := RPIRunJobSpecFromPayload(claim.Job.Payload)
