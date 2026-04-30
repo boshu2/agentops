@@ -44,11 +44,7 @@ func TestExtractSingleEntry(t *testing.T) {
 	}
 
 	// Change to temp dir
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	// Run extract (without --all)
 	extractAll = false
@@ -90,11 +86,7 @@ func TestExtractAllSuccess(t *testing.T) {
 		t.Fatalf("write pending file: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	// Run with --all
 	extractAll = true
@@ -123,11 +115,7 @@ func TestExtractAllEmpty(t *testing.T) {
 		t.Fatalf("write pending file: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	extractAll = true
 	if err := runExtract(nil, nil); err != nil {
@@ -149,11 +137,7 @@ func TestExtractAllDryRun(t *testing.T) {
 		t.Fatalf("write pending file: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	// Enable dry-run
 	dryRun = true
@@ -189,11 +173,7 @@ func TestExtractAllJSON(t *testing.T) {
 		t.Fatalf("write pending file: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	// Capture stdout to verify JSON output
 	output = "json"
@@ -219,11 +199,7 @@ func TestExtractAllJSON(t *testing.T) {
 func TestExtractNoFile(t *testing.T) {
 	tempDir := t.TempDir()
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	// Should succeed silently (no error)
 	if err := runExtract(nil, nil); err != nil {
@@ -244,11 +220,7 @@ func TestExtractClear(t *testing.T) {
 		t.Fatalf("write pending file: %v", err)
 	}
 
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	extractClear = true
 	defer func() { extractClear = false }()
