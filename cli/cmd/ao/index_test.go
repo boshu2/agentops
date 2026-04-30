@@ -418,14 +418,7 @@ func TestProcessIndexDir_Quiet(t *testing.T) {
 
 func TestRunIndex_WriteMode(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	dir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -450,7 +443,7 @@ func TestRunIndex_WriteMode(t *testing.T) {
 	_ = indexCmd.Flags().Set("dir", "")
 	_ = indexCmd.Flags().Set("quiet", "true")
 
-	err = runIndex(indexCmd, nil)
+	err := runIndex(indexCmd, nil)
 	if err != nil {
 		t.Fatalf("runIndex() error = %v", err)
 	}
@@ -458,14 +451,7 @@ func TestRunIndex_WriteMode(t *testing.T) {
 
 func TestRunIndex_CheckMode_Stale(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	dir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -485,7 +471,7 @@ func TestRunIndex_CheckMode_Stale(t *testing.T) {
 	_ = indexCmd.Flags().Set("dir", ".agents/learnings")
 	_ = indexCmd.Flags().Set("quiet", "false")
 
-	err = runIndex(indexCmd, nil)
+	err := runIndex(indexCmd, nil)
 	if err == nil {
 		t.Error("expected error for stale INDEX.md")
 	}
@@ -496,14 +482,7 @@ func TestRunIndex_CheckMode_Stale(t *testing.T) {
 
 func TestRunIndex_JSONOutput(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	dir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -532,7 +511,7 @@ func TestRunIndex_JSONOutput(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err = runIndex(indexCmd, nil)
+	err := runIndex(indexCmd, nil)
 
 	_ = w.Close()
 	os.Stdout = origStdout
@@ -551,14 +530,7 @@ func TestRunIndex_JSONOutput(t *testing.T) {
 
 func TestRunIndex_SingleDir(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	dir := filepath.Join(tmp, ".agents", "patterns")
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -582,7 +554,7 @@ func TestRunIndex_SingleDir(t *testing.T) {
 	_ = indexCmd.Flags().Set("dir", ".agents/patterns")
 	_ = indexCmd.Flags().Set("quiet", "true")
 
-	err = runIndex(indexCmd, nil)
+	err := runIndex(indexCmd, nil)
 	if err != nil {
 		t.Fatalf("runIndex() error = %v", err)
 	}
