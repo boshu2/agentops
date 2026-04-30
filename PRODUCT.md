@@ -122,7 +122,7 @@ The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evid
 | Pattern-to-skill promotion polish remains | The strongest differentiation thesis — self-programming compounding — has review-only draft generation today. Remaining gap: richer synthesis and a clean publish path. | in-progress |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
-| Public messaging now converged on operational-discipline + moat framing | The 2026-04-30 council (`.agents/council/2026-04-30-agentops-product-positioning.md`) locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
+| Public messaging now converged on operational-discipline + moat framing | A 2026-04-30 internal positioning council locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
 
 ## Design Principles
 
@@ -163,4 +163,3 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 - [Scale Without Swarms](docs/scale-without-swarms.md) — why 3-5 focused agents with fresh context and regression gates outperform massive uncoordinated swarms; the AgentOps model of waves, isolation, and gates explained.
 - [Brownian Ratchet](docs/brownian-ratchet.md) — the forward-only-progress lineage in detail.
 - [The Science](docs/the-science.md) — DevOps Three Ways, the escape velocity condition, and the leverage-points map.
-- [`.agents/council/2026-04-30-agentops-product-positioning.md`](.agents/council/2026-04-30-agentops-product-positioning.md) — the 5-judge council that locked the moat-as-knowledge thesis and the bridge-tool framing.
