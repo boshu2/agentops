@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -147,6 +148,58 @@ func TestSupervisor_RunLoopCancelDoesNotFailRunningJob(t *testing.T) {
 	}
 }
 
+func TestSupervisor_KillsHungWorker(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor := &blockingOpenClawExecutor{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	supervisor := newTestSupervisor(t, queue, executor)
+	supervisor.executionTimeout = 20 * time.Millisecond
+
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if result.Job.Status != JobStatusFailed {
+		t.Fatalf("job status = %q, want failed", result.Job.Status)
+	}
+	if result.Job.Failure == nil || !strings.Contains(result.Job.Failure.Message, "executor timed out") {
+		t.Fatalf("failure = %#v, want timeout failure", result.Job.Failure)
+	}
+}
+
+func TestSupervisor_OOMWorkerDoesNotKillDaemon(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-oom", JobID: "job-oom", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit oom job: %v", err)
+	}
+	executor := &oneShotOOMExecutor{}
+	supervisor := newTestSupervisor(t, queue, executor)
+	first, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("first run once: %v", err)
+	}
+	if first.Job.Status != JobStatusFailed {
+		t.Fatalf("first status = %q, want failed", first.Job.Status)
+	}
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-after", JobID: "job-after", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit second job: %v", err)
+	}
+	second, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("second run once: %v", err)
+	}
+	if second.Job.Status != JobStatusCompleted {
+		t.Fatalf("second status = %q, want completed after worker OOM failure", second.Job.Status)
+	}
+}
+
 func newTestSupervisor(t *testing.T, queue *Queue, executor JobExecutor) *Supervisor {
 	t.Helper()
 	supervisor, err := NewSupervisor(SupervisorOptions{
@@ -183,6 +236,22 @@ func (e testOpenClawSnapshotExecutor) RunJob(_ context.Context, claim QueueClaim
 		artifacts[key] = value
 	}
 	return JobExecutionResult{Artifacts: artifacts}, e.Err
+}
+
+type oneShotOOMExecutor struct {
+	calls int
+}
+
+func (e *oneShotOOMExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeOpenClawSnapshot}
+}
+
+func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueClaim) (JobExecutionResult, error) {
+	e.calls++
+	if e.calls == 1 {
+		return JobExecutionResult{}, errors.New("worker killed by cgroup memory.max")
+	}
+	return JobExecutionResult{Artifacts: map[string]string{"executor_policy": "recovered"}}, nil
 }
 
 type blockingOpenClawExecutor struct {
