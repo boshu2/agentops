@@ -1,6 +1,6 @@
 ---
 name: evolve
-description: 'Run autonomous improvement: goals, planning, implementation, validation, repeat.'
+description: 'Run autonomous improvement loops.'
 skill_api_version: 1
 user-invocable: true
 context:

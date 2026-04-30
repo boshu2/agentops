@@ -27,6 +27,7 @@ SKILL_FAIL_LIMIT=10000
 SKILL_WARN_LIMIT=8000
 SESSION_FAIL_LIMIT=8000
 DESC_FAIL_CHARS=180
+CODEX_DESC_TOTAL_FAIL_CHARS=2400
 
 # Token estimation: bytes / 4
 estimate_tokens() {
@@ -135,6 +136,8 @@ echo -e "${BLUE}--- Skill Description Budget ---${NC}"
 echo ""
 
 desc_failures=0
+codex_desc_total=0
+codex_desc_count=0
 while IFS= read -r skill_md; do
     desc_chars=$(awk '
         /^---$/ {
@@ -171,6 +174,12 @@ while IFS= read -r skill_md; do
         echo -e "  ${RED}[FAIL]${NC} ${skill_md#"$REPO_ROOT"/}: ${desc_chars} chars > ${DESC_FAIL_CHARS} description limit"
         ((desc_failures++)) || true
     fi
+    case "${skill_md#"$REPO_ROOT"/}" in
+        skills-codex/*)
+            codex_desc_total=$((codex_desc_total + desc_chars))
+            codex_desc_count=$((codex_desc_count + 1))
+            ;;
+    esac
 done < <(find "${SKILL_ROOTS[@]}" -maxdepth 2 -name SKILL.md -type f | sort)
 
 if [[ "$desc_failures" -eq 0 ]]; then
@@ -178,6 +187,21 @@ if [[ "$desc_failures" -eq 0 ]]; then
     ((passed++)) || true
 else
     failed=$((failed + desc_failures))
+fi
+
+if [[ "$codex_desc_count" -gt 0 ]]; then
+    codex_desc_avg=$((codex_desc_total / codex_desc_count))
+    if [[ "$codex_desc_total" -gt "$CODEX_DESC_TOTAL_FAIL_CHARS" ]]; then
+        echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog: ${codex_desc_total} chars > ${CODEX_DESC_TOTAL_FAIL_CHARS} aggregate limit"
+        ((failed++)) || true
+    else
+        pct=$((codex_desc_total * 100 / CODEX_DESC_TOTAL_FAIL_CHARS))
+        echo -e "  ${GREEN}[PASS]${NC} skills-codex description catalog: ${codex_desc_total} chars (${pct}% of ${CODEX_DESC_TOTAL_FAIL_CHARS}, avg ${codex_desc_avg})"
+        ((passed++)) || true
+    fi
+else
+    echo -e "  ${YELLOW}[SKIP]${NC} no skills-codex descriptions found"
+    ((warned++)) || true
 fi
 
 # ─────────────────────────────────────────────────────────

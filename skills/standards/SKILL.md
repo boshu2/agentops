@@ -1,6 +1,6 @@
 ---
 name: standards
-description: 'Provide language and repo standards for implementation, docs, tests, and review.'
+description: 'Provide repo coding standards.'
 skill_api_version: 1
 context:
   window: isolated

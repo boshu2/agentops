@@ -137,9 +137,58 @@ test_prunes_foreign_handlers() {
   pass "prunes foreign hooks and preserves AgentOps handlers"
 }
 
+test_repairs_legacy_flat_shape() {
+  local codex_home="$TMP_DIR/repair/.codex"
+  local output
+  mkdir -p "$codex_home"
+  cat > "$codex_home/.agentops-codex-install.json" <<'EOF'
+{"plugin_root":"/tmp/agentops-plugin"}
+EOF
+  cat > "$codex_home/hooks.json" <<'EOF'
+{
+  "$schema": "../schemas/hooks-manifest.v1.schema.json",
+  "hooks": [
+    {
+      "name": "agentops-session-start",
+      "event": "SessionStart",
+      "command": "bash /old/hooks/session-start.sh",
+      "timeout": 10000
+    }
+  ]
+}
+EOF
+
+  output="$(bash "$SCRIPT" --codex-home "$codex_home" --repair-shape --json)"
+
+  if ! jq -e '.hooks | type == "object" and length == 5' "$codex_home/hooks.json" >/dev/null; then
+    fail "repair did not write native event-map hooks.json"
+    return
+  fi
+  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$codex_home/hooks.json" >/dev/null; then
+    fail "repair did not restore the canonical handler set"
+    return
+  fi
+  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/tmp/agentops-plugin/hooks/"))] | length == 22' \
+    "$codex_home/hooks.json" >/dev/null; then
+    fail "repair did not render commands with the active plugin root"
+    return
+  fi
+  if ! jq -e '.total_handlers == 22 and .agentops_handlers == 22 and .foreign_handlers == 0' <<< "$output" >/dev/null; then
+    fail "repair audit output had unexpected counts: $output"
+    return
+  fi
+  if ! find "$codex_home" -maxdepth 1 -name 'hooks.json.bak.*' | grep -q .; then
+    fail "repair did not create a backup"
+    return
+  fi
+
+  pass "repairs legacy flat Codex hook manifests"
+}
+
 echo "== test-audit-codex-hooks =="
 test_reports_foreign_handlers
 test_prunes_foreign_handlers
+test_repairs_legacy_flat_shape
 
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"

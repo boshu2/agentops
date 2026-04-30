@@ -1,6 +1,6 @@
 ---
 name: crank
-description: 'Execute an epic hands-free through waves until work is done or blocked.'
+description: 'Execute epics through waves.'
 skill_api_version: 1
 user-invocable: true
 context:

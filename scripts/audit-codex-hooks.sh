@@ -9,6 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 HOOKS_FILE=""
 PRUNE_FOREIGN="false"
+REPAIR_SHAPE="false"
 STRICT="false"
 JSON_OUTPUT="false"
 
@@ -21,6 +22,7 @@ Audit ~/.codex/hooks.json for AgentOps-managed and foreign hook handlers.
 Options:
   --codex-home <dir>   Codex home to inspect (default: $CODEX_HOME or ~/.codex)
   --hooks-file <file>   Hook manifest to inspect (default: <codex-home>/hooks.json)
+  --repair-shape        Replace missing/legacy-flat hooks.json with the native AgentOps event-map manifest
   --prune-foreign      Remove non-AgentOps hook handlers after writing a backup
   --strict             Exit non-zero when foreign hook handlers are present
   --json               Emit machine-readable JSON
@@ -45,6 +47,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --prune-foreign)
       PRUNE_FOREIGN="true"
+      shift
+      ;;
+    --repair-shape)
+      REPAIR_SHAPE="true"
       shift
       ;;
     --strict)
@@ -110,6 +116,60 @@ validate_hooks_shape() {
     echo "ERROR: $HOOKS_FILE must use the Codex event-map schema under .hooks" >&2
     exit 2
   }
+}
+
+active_plugin_root() {
+  local install_meta="$CODEX_HOME/.agentops-codex-install.json"
+  local plugin_root=""
+
+  if [[ -f "$install_meta" ]]; then
+    plugin_root="$(jq -r '.plugin_root // empty' "$install_meta" 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$plugin_root" ]]; then
+    plugin_root="$CODEX_HOME/plugins/cache/agentops-marketplace/agentops/local"
+  fi
+
+  printf '%s\n' "$plugin_root"
+}
+
+repair_hooks_shape() {
+  local source_file="$REPO_ROOT/hooks/codex-hooks.json"
+  local tmp_file backup_file plugin_root
+
+  [[ -f "$source_file" ]] || {
+    echo "ERROR: canonical Codex hooks manifest not found: $source_file" >&2
+    exit 2
+  }
+
+  if [[ -f "$HOOKS_FILE" ]] && jq -e '.hooks | type == "object"' "$HOOKS_FILE" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$HOOKS_FILE")"
+  tmp_file="$(mktemp)"
+  plugin_root="$(active_plugin_root)"
+
+  jq --arg root "$plugin_root" '
+    def replace_root:
+      if type == "object" then
+        with_entries(.value |= replace_root)
+      elif type == "array" then
+        map(replace_root)
+      elif type == "string" then
+        gsub("\\$\\{AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops\\}"; $root)
+      else
+        .
+      end;
+    replace_root
+  ' "$source_file" > "$tmp_file"
+
+  if [[ -f "$HOOKS_FILE" ]]; then
+    backup_file="${HOOKS_FILE}.bak.$(date -u +%Y%m%dT%H%M%SZ)"
+    cp "$HOOKS_FILE" "$backup_file"
+  fi
+
+  mv "$tmp_file" "$HOOKS_FILE"
 }
 
 collect_handlers() {
@@ -231,6 +291,9 @@ print_json_report() {
 }
 
 require_jq
+if [[ "$REPAIR_SHAPE" == "true" ]]; then
+  repair_hooks_shape
+fi
 require_hooks_file
 validate_hooks_shape
 

@@ -1,6 +1,6 @@
 ---
 name: test
-description: 'Generate tests, analyze coverage, and plan TDD validation.'
+description: 'Generate tests and coverage plans.'
 skill_api_version: 1
 context:
   window: fork

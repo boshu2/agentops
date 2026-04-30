@@ -1,6 +1,6 @@
 ---
 name: flywheel
-description: 'Check knowledge flywheel health, velocity, staleness, and pool depth.'
+description: 'Check knowledge flywheel health.'
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku
