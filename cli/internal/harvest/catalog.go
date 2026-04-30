@@ -249,13 +249,18 @@ func Promote(catalog *Catalog, destDir string, dryRun bool) (int, error) {
 		// while adding harvest provenance metadata.
 		now := time.Now().UTC().Format("2006-01-02")
 
-		// Start with provenance fields
+		// Start with provenance fields. source_rig is the 4-D provenance
+		// tag — always present on disk, never empty (resolver falls back
+		// to "unknown"), so downstream consumers can grep for it. Stored
+		// unquoted so the value reads as a clean YAML string scalar
+		// (matches how `type`, `maturity`, etc. are written below).
 		var headerLines []string
 		headerLines = append(headerLines,
 			fmt.Sprintf("promoted_from: %q", sourceRig),
 			fmt.Sprintf("promoted_at: %q", now),
 			fmt.Sprintf("original_path: %q", sourceIdentity),
 			fmt.Sprintf("harvest_confidence: %g", art.Confidence),
+			fmt.Sprintf("source_rig: %s", sourceRig),
 		)
 
 		// Carry forward original metadata fields that the scoring pipeline needs.
