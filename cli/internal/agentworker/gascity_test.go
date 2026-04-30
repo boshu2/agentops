@@ -65,8 +65,15 @@ func TestGasCityAgentWorkerStartsCodexSessionAndStreamsTerminal(t *testing.T) {
 	if len(fake.createCalls) != 1 || fake.createCalls[0].req.Name != "codex" {
 		t.Fatalf("create calls: %#v", fake.createCalls)
 	}
-	if fake.createCalls[0].req.Options["agentops.cwd"] != "/repo" {
-		t.Fatalf("create options: %#v", fake.createCalls[0].req.Options)
+	createReq := fake.createCalls[0].req
+	if len(createReq.Options) != 0 {
+		t.Fatalf("create options should not carry AgentOps metadata: %#v", createReq.Options)
+	}
+	if createReq.Title != "wiki forge" {
+		t.Fatalf("create title = %q, want wiki forge", createReq.Title)
+	}
+	if createReq.Alias != "agentworker-wiki-forge-1" {
+		t.Fatalf("create alias = %q, want agentworker-wiki-forge-1", createReq.Alias)
 	}
 	if len(fake.submitCalls) != 1 || fake.submitCalls[0].req.Message != "extract wiki lessons" {
 		t.Fatalf("submit calls: %#v", fake.submitCalls)

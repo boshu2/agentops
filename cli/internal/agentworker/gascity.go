@@ -141,12 +141,13 @@ func (w *GasCityWorker) Start(ctx context.Context, req StartRequest) (AgentSessi
 
 	alias := w.aliasFunc(req)
 	session, createMeta, err := w.client.CreateSession(ctx, w.cityName, gascity.SessionCreateRequest{
-		Kind:    "agent",
-		Name:    string(req.WorkerKind),
-		Alias:   alias,
-		Async:   true,
-		Options: gasCitySessionOptions(req),
-		Title:   firstNonEmpty(req.Metadata["title"], req.JobID, string(req.WorkerKind)+" worker"),
+		Kind:  "agent",
+		Name:  string(req.WorkerKind),
+		Alias: alias,
+		Async: true,
+		// GasCity validates options against the provider schema. AgentOps job
+		// metadata is arbitrary and remains in AgentOps' durable SessionRef.
+		Title: firstNonEmpty(req.Metadata["title"], req.JobID, string(req.WorkerKind)+" worker"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("gascity create %s session: %w", req.WorkerKind, err)
@@ -339,34 +340,6 @@ func validateGasCityWorkerKind(kind WorkerKind) error {
 	default:
 		return fmt.Errorf("unsupported gascity worker kind %q", kind)
 	}
-}
-
-func gasCitySessionOptions(req StartRequest) map[string]string {
-	options := map[string]string{
-		"agentops.worker_kind": string(req.WorkerKind),
-	}
-	if req.Model != "" {
-		options["agentops.model"] = req.Model
-	}
-	if req.CWD != "" {
-		options["agentops.cwd"] = req.CWD
-	}
-	if req.JobID != "" {
-		options["agentops.job_id"] = req.JobID
-	}
-	if req.AttemptID != "" {
-		options["agentops.attempt_id"] = req.AttemptID
-	}
-	if req.RequestID != "" {
-		options["agentops.request_id"] = req.RequestID
-	}
-	for key, value := range req.Metadata {
-		if strings.TrimSpace(key) == "" {
-			continue
-		}
-		options[key] = value
-	}
-	return options
 }
 
 func gasCitySessionRef(req StartRequest, session gascity.Session, requestID string, status SessionStatus) SessionRef {
