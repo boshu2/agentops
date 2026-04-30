@@ -693,6 +693,26 @@ ao vibe-check [flags]
 
 ---
 
+### `ao watch`
+
+Poll agentopsd /v1/events and print new ledger events as a TTY-friendly stream.
+
+```
+ao watch [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for watch
+      --interval duration   Polling interval (default 1s)
+      --once                Fetch once and exit
+      --since string        Only show events after this event id
+      --url string          Daemon base URL (defaults to activation file)
+```
+
+---
+
 ### `ao autodev`
 
 Define, inspect, and validate the repo-local PROGRAM.md contract.

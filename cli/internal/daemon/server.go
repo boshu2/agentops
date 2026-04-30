@@ -198,11 +198,25 @@ func (s *ReadOnlyServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	events := filterLedgerEventsAfter(state.Replay.Events, r.URL.Query().Get("since"))
 	writeJSON(w, http.StatusOK, ReadOnlyEventsResponse{
-		Events:      state.Replay.Events,
+		Events:      events,
 		Corrupt:     state.Replay.Corrupt,
 		LastEventID: state.Lag.LastEventID,
 	})
+}
+
+func filterLedgerEventsAfter(events []LedgerEvent, after string) []LedgerEvent {
+	after = strings.TrimSpace(after)
+	if after == "" {
+		return events
+	}
+	for i, event := range events {
+		if event.EventID == after {
+			return events[i+1:]
+		}
+	}
+	return nil
 }
 
 func (s *ReadOnlyServer) handleOpenClawHealth(w http.ResponseWriter, r *http.Request) {

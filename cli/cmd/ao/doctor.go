@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/daemon"
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -55,7 +55,8 @@ func gatherDoctorChecks() []doctorCheck {
 		{Name: "ao CLI", Status: "pass", Detail: formatVersion(version), Required: true},
 		checkCLIDependencies(),
 		checkDaemonRuntime(),
-		checkDaemonLedgerHealth(time.Now(), daemon.LedgerHealthDefaultThresholds()),
+		checkDaemonLedgerHealth(time.Now(), daemonpkg.LedgerHealthDefaultThresholds()),
+		checkDaemonTelemetry(),
 		checkGasCityBridge(),
 		checkOpenClawConsumer(),
 		checkHookCoverage(),
@@ -129,12 +130,12 @@ func checkDaemonRuntimeURL(baseURL string) doctorCheck {
 	return doctorCheck{Name: "Daemon Runtime", Status: "pass", Detail: "ready at " + detail, Required: false}
 }
 
-func checkDaemonLedgerHealth(now time.Time, thresholds daemon.LedgerHealthThresholds) doctorCheck {
+func checkDaemonLedgerHealth(now time.Time, thresholds daemonpkg.LedgerHealthThresholds) doctorCheck {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: "cannot determine working directory", Required: false}
 	}
-	store := daemon.NewStore(cwd)
+	store := daemonpkg.NewStore(cwd)
 	if _, statErr := os.Stat(store.Dir()); os.IsNotExist(statErr) {
 		return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: "no daemon store at " + store.Dir(), Required: false}
 	}
@@ -149,7 +150,7 @@ func checkDaemonLedgerHealth(now time.Time, thresholds daemon.LedgerHealthThresh
 	return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: detail, Required: false}
 }
 
-func formatLedgerHealthDetail(h daemon.LedgerHealth) string {
+func formatLedgerHealthDetail(h daemonpkg.LedgerHealth) string {
 	parts := []string{
 		fmt.Sprintf("ledger=%dB/%dB", h.LedgerSizeBytes, h.LedgerMaxBytes),
 	}
@@ -163,6 +164,33 @@ func formatLedgerHealthDetail(h daemon.LedgerHealth) string {
 		parts = append(parts, "oldest_archive="+h.OldestArchiveTime.Format(time.RFC3339))
 	}
 	return strings.Join(parts, "; ")
+}
+
+func checkDaemonTelemetry() doctorCheck {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: "cannot determine working directory", Required: false}
+	}
+	baseURL, err := resolveDaemonURL(cwd, "")
+	if err != nil {
+		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: fmt.Sprintf("activation unavailable: %v", err), Required: false}
+	}
+	return checkDaemonTelemetryURL(baseURL)
+}
+
+func checkDaemonTelemetryURL(baseURL string) doctorCheck {
+	baseURL = strings.TrimRight(baseURL, "/")
+	events, err := fetchDaemonEvents(context.Background(), baseURL)
+	if err != nil {
+		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: fmt.Sprintf("events unavailable at %s: %v", baseURL, err), Required: false}
+	}
+	telemetry := daemonpkg.BuildLedgerTelemetry(events.Events, time.Now().UTC(), daemonpkg.DefaultTelemetryWindow)
+	return doctorCheck{
+		Name:     "Daemon Telemetry",
+		Status:   "pass",
+		Detail:   daemonpkg.FormatLedgerTelemetrySummary(telemetry),
+		Required: false,
+	}
 }
 
 func checkGasCityBridge() doctorCheck {

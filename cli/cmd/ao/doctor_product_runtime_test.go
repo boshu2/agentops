@@ -110,6 +110,57 @@ func TestDoctorLedgerHealthCheckSurfacesArchiveCount(t *testing.T) {
 	}
 }
 
+func TestAoDoctorHistograms(t *testing.T) {
+	now := time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC)
+	store := daemonpkg.NewStore(t.TempDir())
+	queue := daemonpkg.NewQueue(store, daemonpkg.QueueOptions{
+		LeaseDuration: time.Minute,
+		Now:           func() time.Time { return now },
+	})
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-phase",
+		JobID:     "job-phase",
+		JobType:   daemonpkg.JobTypeRPIPhase,
+		Payload:   map[string]any{"phase_name": "discovery"},
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit phase: %v", err)
+	}
+	claim, err := queue.ClaimJob("job-phase", "worker", daemonpkg.QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("claim phase: %v", err)
+	}
+	now = now.Add(12 * time.Second)
+	if _, err := queue.CompleteJob(daemonpkg.CompleteJobInput{
+		JobID:      "job-phase",
+		RequestID:  "req-phase-complete",
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
+		Actor:      "worker",
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("complete phase: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-wiki",
+		JobID:     "job-wiki",
+		JobType:   daemonpkg.JobTypeWikiForge,
+		Payload:   map[string]any{"worker_kind": "codex"},
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit wiki: %v", err)
+	}
+	server := httptest.NewServer(daemonpkg.NewReadOnlyRouter(store, daemonpkg.ServerOptions{Now: func() time.Time { return now }}))
+	t.Cleanup(server.Close)
+
+	check := checkDaemonTelemetryURL(server.URL)
+	if check.Name != "Daemon Telemetry" || check.Status != "pass" {
+		t.Fatalf("telemetry check = %#v, want pass", check)
+	}
+	for _, want := range []string{"phase_latency=discovery", "p50=12s", "worker_kind_24h=codex=1", "failure_rate=rpi.phase 0/1"} {
+		if !strings.Contains(check.Detail, want) {
+			t.Fatalf("telemetry detail = %q, want %q", check.Detail, want)
+		}
+	}
+}
+
 func TestDoctorRuntimeChecksWarnWhenUnavailable(t *testing.T) {
 	baseURL := "http://127.0.0.1:1"
 	for _, check := range []doctorCheck{
