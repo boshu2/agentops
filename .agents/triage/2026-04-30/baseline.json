@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-04-30T05:10:35.656872Z",
+  "branch": "triage/2026-04-30",
+  "unconsumed_item_count": 38,
+  "total_item_count": 221,
+  "batch_count": 60,
+  "morning_packet_count": 0,
+  "morning_packets_note": "no overnight dir: .agents/overnight/latest/morning-packets/ does not exist",
+  "schema_rows_output": "PASS: 60 row(s) in /home/user/agentops/.agents/rpi/next-work.jsonl conform to v1.4 schema enums\n",
+  "schema_rows_exit": 0,
+  "contract_parity_output": "next-work contract parity validation passed.\n",
+  "contract_parity_exit": 0,
+  "smoke_grep_output": "[TEST] Testing flywheel loop (next-work round-trip)...\n  \u2713 next-work.schema.md exists\n  \u2713 next-work contract parity validator passed\n  \u2713 next-work.jsonl: all 60 entries have valid schema\nFAILED - 1 errors, 0 warnings",
+  "smoke_full_output": "[TEST] Validating manifests against schemas...\n  \u2713 Manifest schemas valid\n[TEST] Validating skill structure...\n  \u2713 All 69 skills have valid SKILL.md\n[TEST] Validating council/crank flag allowlists...\n  \u2713 council validate-skill checks passed\n  \u2713 crank validate-skill checks passed\n[TEST] Validating agents structure...\n  \u2713 Found 2 agents\n[TEST] Validating ao CLI...\n  \u2713 ao CLI builds successfully\n[TEST] Validating hook preflight checklist...\n  \u2713 Hook preflight validation passed\n[TEST] Validating runtime smoke surfaces...\n  \u2713 test-runtime-claude-code-smoke.sh passed\n  \u2713 test-runtime-codex-smoke.sh passed\n  \u2717 test-runtime-cursor-smoke.sh failed\n  \u2713 test-runtime-opencode-smoke.sh passed\n  \u2713 test-headless-runtime-skills.sh passed\n[TEST] Checking for issues...\n  \u2713 No placeholder emails\n  \u2713 No TODO/FIXME in skills\n[TEST] Testing Claude CLI plugin load...\n  \u2713 Claude CLI loads plugin\n[TEST] Testing flywheel loop (next-work round-trip)...\n  \u2713 next-work.schema.md exists\n  \u2713 next-work contract parity validator passed\n  \u2713 next-work.jsonl: all 60 entries have valid schema\n[TEST] Testing RPI context-windowing contract...\n  \u2713 RPI context-window contract passed\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nFAILED - 1 errors, 0 warnings\n",
+  "smoke_pre_existing_failures": [
+    "test-runtime-cursor-smoke.sh failed"
+  ]
+}
