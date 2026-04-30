@@ -53,6 +53,11 @@ setup_mock_repo() {
     /bin/cp "$REPO_ROOT/lib/chain-parser.sh" "$dir/lib/chain-parser.sh"
 }
 
+hook_temporarily_disabled() {
+    local hook="$1"
+    grep -q "TEMP: disabled" "$hook" && grep -q '^exit 0$' "$hook"
+}
+
 # ============================================================
 echo "=== prompt-nudge.sh ==="
 # ============================================================
@@ -895,7 +900,8 @@ if [ "$EC" -eq 0 ]; then pass "holdout-isolation-gate passes evaluator Glob"; el
 
 # Test: Kill switch => pass
 EC=0
-echo '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 || EC=$?
+AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/holdout-isolation-gate.sh" >/dev/null 2>&1 \
+    <<< '{"tool_name":"Read","tool_input":{"file_path":".agents/holdout/test.json"}}' || EC=$?
 if [ "$EC" -eq 0 ]; then pass "holdout-isolation-gate respects kill switch"; else fail "holdout-isolation-gate respects kill switch"; fi
 
 # ============================================================
@@ -1215,7 +1221,9 @@ chmod +x "$TMPDIR/mock-session-end-bin/ao"
     PATH="$TMPDIR/mock-session-end-bin:$PATH" \
     bash "$HOOKS_DIR/session-end-maintenance.sh" >/dev/null 2>&1
 ) || true
-if [ -f "$MOCK_SESSION_END/.agents/planning-rules/f-session-end.md" ] && [ -f "$MOCK_SESSION_END/.agents/pre-mortem-checks/f-session-end.md" ]; then
+if hook_temporarily_disabled "$HOOKS_DIR/session-end-maintenance.sh"; then
+    skip "session-end-maintenance compiles findings as a backstop (temporarily disabled)"
+elif [ -f "$MOCK_SESSION_END/.agents/planning-rules/f-session-end.md" ] && [ -f "$MOCK_SESSION_END/.agents/pre-mortem-checks/f-session-end.md" ]; then
     pass "session-end-maintenance compiles findings as a backstop"
 else
     fail "session-end-maintenance compiles findings as a backstop"
@@ -1391,7 +1399,11 @@ test_ao_delegation() {
 
 test_ao_delegation "ao-extract.sh" "^forge transcript"
 test_ao_delegation "ao-feedback-loop.sh" "^feedback-loop"
-test_ao_delegation "ao-flywheel-close.sh" "^flywheel close-loop"
+if hook_temporarily_disabled "$EMBEDDED_HOOKS_DIR/ao-flywheel-close.sh"; then
+    skip "ao-flywheel-close.sh delegation (temporarily disabled)"
+else
+    test_ao_delegation "ao-flywheel-close.sh" "^flywheel close-loop"
+fi
 test_ao_delegation "ao-forge.sh" "^forge transcript"
 test_ao_delegation "ao-inject.sh" "^inject"
 test_ao_delegation "ao-maturity-scan.sh" "^maturity --scan"

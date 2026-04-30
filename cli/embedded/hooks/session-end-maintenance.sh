@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # SessionEnd: forge learnings + maturity maintenance (serialized via lock).
 
+# TEMP: disabled until pend-* triple-ID amplification is verifiably fixed.
+# This script invokes `ao flywheel close-loop`, `ao session close --auto-extract`,
+# and `ao forge transcript`, all of which can re-amplify the stale
+# .agents/knowledge/pending/ queue into pend-*-pend-*-pend-* files in
+# .agents/learnings/. See active-incident learning:
+#   .agents/learnings/2026-04-30-pend-pollution-actively-growing-during-session.md
+# Companion patch in hooks/ao-flywheel-close.sh.
+exit 0
+
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 

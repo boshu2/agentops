@@ -131,6 +131,71 @@ EOF
     chmod +x "$repo_dir/bin/bd"
 }
 
+write_fake_bd_task_queue() {
+    local repo_dir="$1"
+    local target_id="$2"
+    local issue_type="$3"
+    local description="$4"
+    local close_reason="$5"
+
+    cat >"$repo_dir/bin/bd" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+command_name="\$1"
+shift || true
+want_json=0
+for arg in "\$@"; do
+  if [[ "\$arg" == "--json" ]]; then
+    want_json=1
+  fi
+done
+
+case "\$command_name" in
+  children)
+    if [[ "\$want_json" -eq 1 ]]; then
+      printf '[]\n'
+    else
+      exit 1
+    fi
+    ;;
+  show)
+    issue_id="\$1"
+    if [[ "\$issue_id" != "$target_id" ]]; then
+      exit 1
+    fi
+    if [[ "\$want_json" -eq 1 ]]; then
+      cat <<'OUT'
+[{
+  "id": "$target_id",
+  "status": "closed",
+  "issue_type": "$issue_type",
+  "created_at": "2030-01-01T00:00:00Z",
+  "updated_at": "2030-01-01T00:30:00Z",
+  "closed_at": "2030-01-01T00:30:00Z",
+  "description": $(jq -Rn --arg text "$description" '$text'),
+  "close_reason": $(jq -Rn --arg text "$close_reason" '$text')
+}]
+OUT
+    else
+      cat <<'OUT'
+✓ $target_id [$issue_type] · Example queue task   [● P1 · CLOSED]
+Created: 2030-01-01 · Updated: 2030-01-01
+Close reason: $close_reason
+
+DESCRIPTION
+$description
+OUT
+    fi
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+EOF
+    chmod +x "$repo_dir/bin/bd"
+}
+
 write_fake_bd_human_only() {
     local repo_dir="$1"
     local epic_id="$2"
@@ -837,6 +902,95 @@ EOF
     [ "$collection_failed" = "true" ]
     failure_detail=$(printf '%s\n' "$output" | jq -r '.failures[0].detail')
     [[ "$failure_detail" == *"no child issues"* ]]
+}
+
+@test "closure-integrity-audit.sh: no-child task queue accepts PR merge evidence" {
+    local audit_repo="$TMP_TEST_DIR/audit-task-queue-pr"
+    local mode=""
+    local closure_mode=""
+    local matched=""
+    setup_audit_repo "$audit_repo"
+    printf 'merged queue item\n' > "$audit_repo/queue.md"
+    git -C "$audit_repo" add queue.md
+    git -C "$audit_repo" commit -q -m "fix: drain post-mortem PR queue (#42)"
+    write_fake_bd_task_queue "$audit_repo" "ag-queue" "feature" \
+        "Closed the post-mortem queue after merging PR #42." \
+        "Merged #42 and verified the queue is empty."
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope auto ag-queue' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    mode=$(printf '%s\n' "$output" | jq -r '.children[0].evidence_mode')
+    [ "$mode" = "commit" ]
+    closure_mode=$(printf '%s\n' "$output" | jq -r '.children[0].closure_mode')
+    [ "$closure_mode" = "task-queue" ]
+    matched=$(printf '%s\n' "$output" | jq -r '.children[0].matched_files[0]')
+    [[ "$matched" == "#42 "* ]]
+}
+
+@test "closure-integrity-audit.sh: no-child task queue accepts durable packet evidence" {
+    local audit_repo="$TMP_TEST_DIR/audit-task-queue-packet"
+    local mode=""
+    local closure_bucket=""
+    setup_audit_repo "$audit_repo"
+    mkdir -p "$audit_repo/.agents/releases/evidence-only-closures"
+    write_fake_bd_task_queue "$audit_repo" "ag-packet" "task" \
+        "Closed the post-mortem queue with no code delta." \
+        "Durable packet captures the queue-drain proof."
+    jq -n '{
+        schema_version: 1,
+        artifact_id: "evidence-only-closure-ag-packet",
+        target_id: "ag-packet",
+        target_type: "issue",
+        created_at: "2030-01-01T00:30:00Z",
+        producer: "bats",
+        evidence_mode: "auto",
+        validation_commands: ["bash tests/hooks/lib-hook-helpers.bats"],
+        repo_state: {
+            repo_root: ".",
+            git_branch: "main",
+            git_dirty: false,
+            head_sha: "abc123",
+            modified_files: [],
+            staged_files: [],
+            unstaged_files: [],
+            untracked_files: []
+        },
+        evidence: {
+            summary: "Queue drain proof packet.",
+            artifacts: [".agents/releases/evidence-only-closures/ag-packet.json"],
+            notes: []
+        }
+    }' > "$audit_repo/.agents/releases/evidence-only-closures/ag-packet.json"
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope auto ag-packet' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 0 ]
+
+    mode=$(printf '%s\n' "$output" | jq -r '.children[0].evidence_mode')
+    [ "$mode" = "evidence-only-packet" ]
+    closure_bucket=$(printf '%s\n' "$output" | jq -r '.summary.closure_modes["task-queue"][0]')
+    [ "$closure_bucket" = "ag-packet" ]
+}
+
+@test "closure-integrity-audit.sh: no-child task queue without proof still fails collection" {
+    local audit_repo="$TMP_TEST_DIR/audit-task-queue-missing-proof"
+    local collection_failed=""
+    local failure_detail=""
+    setup_audit_repo "$audit_repo"
+    write_fake_bd_task_queue "$audit_repo" "ag-no-proof" "task" \
+        "Closed the post-mortem queue without a replayable proof reference." \
+        "Queue closure noted without PR or packet evidence."
+
+    run bash -c 'cd "$1" && PATH="$1/bin:$PATH" bash "$2" --scope auto ag-no-proof' -- \
+        "$audit_repo" "$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+    [ "$status" -eq 1 ]
+
+    collection_failed=$(printf '%s\n' "$output" | jq -r '.summary.collection_failed')
+    [ "$collection_failed" = "true" ]
+    failure_detail=$(printf '%s\n' "$output" | jq -r '.failures[0].detail')
+    [[ "$failure_detail" == *"task-queue fallback requires"* ]]
 }
 
 @test "write_evidence_only_closure_packet: ignores inherited git env from another repo" {
