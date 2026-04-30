@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -333,6 +334,81 @@ func NormalizeJSONLLine(line string) (string, bool, error) {
 		return "", false, err
 	}
 	return string(encoded), true, nil
+}
+
+// EvictionEntry is a backend-agnostic record fed to EvictUntilUnderBudget.
+// Path is opaque to the helper; Size is the on-disk byte cost the eviction
+// will reclaim; Utility drives the ordering (lowest evicted first).
+type EvictionEntry struct {
+	Path    string
+	Size    int64
+	Utility float64
+}
+
+// EvictUntilUnderBudget returns the prefix of candidates (after sorting by
+// utility ascending) needed to bring currentSize below targetSize. If the hub
+// is already under budget the slice is empty. If the candidates cannot
+// collectively meet the budget, all candidates are returned (best-effort: the
+// caller decides whether to log a warning).
+func EvictUntilUnderBudget(candidates []EvictionEntry, currentSize, targetSize int64) []EvictionEntry {
+	if currentSize < targetSize {
+		return nil
+	}
+	sorted := make([]EvictionEntry, len(candidates))
+	copy(sorted, candidates)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return sorted[i].Utility < sorted[j].Utility
+	})
+	projected := currentSize
+	for i, c := range sorted {
+		projected -= c.Size
+		if projected < targetSize {
+			return sorted[:i+1]
+		}
+	}
+	return sorted
+}
+
+// ParseSizeBudget parses a human-readable byte budget like "250M", "1G",
+// "1024K", "512B", or a plain byte count. Suffix is case-insensitive. Only
+// integer values are accepted (no fractional sizes). Empty input, zero, and
+// any unrecognized suffix return an error.
+func ParseSizeBudget(s string) (int64, error) {
+	trimmed := strings.TrimSpace(s)
+	if trimmed == "" {
+		return 0, fmt.Errorf("size budget is empty")
+	}
+	mult := int64(1)
+	last := trimmed[len(trimmed)-1]
+	switch last {
+	case 'B', 'b':
+		mult = 1
+		trimmed = trimmed[:len(trimmed)-1]
+	case 'K', 'k':
+		mult = 1024
+		trimmed = trimmed[:len(trimmed)-1]
+	case 'M', 'm':
+		mult = 1024 * 1024
+		trimmed = trimmed[:len(trimmed)-1]
+	case 'G', 'g':
+		mult = 1024 * 1024 * 1024
+		trimmed = trimmed[:len(trimmed)-1]
+	default:
+		if last < '0' || last > '9' {
+			return 0, fmt.Errorf("unknown size suffix %q in %q (want B/K/M/G)", string(last), s)
+		}
+	}
+	if trimmed == "" {
+		return 0, fmt.Errorf("size budget %q is missing a number", s)
+	}
+	n, err := strconv.ParseInt(trimmed, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("parse size budget %q: %w", s, err)
+	}
+	if n <= 0 {
+		return 0, fmt.Errorf("size budget %q must be > 0", s)
+	}
+	return n * mult, nil
 }
 
 // ReadLearningJSONLData reads the first JSON line from a .jsonl learning file.

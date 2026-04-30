@@ -357,6 +357,99 @@ func TestNormalizeJSONLLine(t *testing.T) {
 	}
 }
 
+func TestParseSizeBudget(t *testing.T) {
+	cases := []struct {
+		name    string
+		input   string
+		want    int64
+		wantErr bool
+	}{
+		{"bytes plain", "1024", 1024, false},
+		{"kilobytes upper", "1024K", 1024 * 1024, false},
+		{"kilobytes lower", "1024k", 1024 * 1024, false},
+		{"megabytes upper", "250M", 250 * 1024 * 1024, false},
+		{"megabytes lower", "250m", 250 * 1024 * 1024, false},
+		{"gigabytes upper", "1G", 1024 * 1024 * 1024, false},
+		{"gigabytes lower", "1g", 1024 * 1024 * 1024, false},
+		{"explicit B suffix", "512B", 512, false},
+		{"with whitespace", "  250M  ", 250 * 1024 * 1024, false},
+		{"empty", "", 0, true},
+		{"only whitespace", "   ", 0, true},
+		{"zero", "0", 0, true},
+		{"zero with suffix", "0M", 0, true},
+		{"bad unit", "250X", 0, true},
+		{"non-numeric", "bad", 0, true},
+		{"fractional rejected", "1.5G", 0, true},
+		{"negative rejected", "-1G", 0, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ParseSizeBudget(tc.input)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("ParseSizeBudget(%q) = %d, want error", tc.input, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ParseSizeBudget(%q) unexpected err: %v", tc.input, err)
+			}
+			if got != tc.want {
+				t.Errorf("ParseSizeBudget(%q) = %d, want %d", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestEvictUntilUnderBudget(t *testing.T) {
+	// Build candidates with mixed utilities and sizes; expect lowest-utility
+	// first up to (but not beyond) hitting the target.
+	candidates := []EvictionEntry{
+		{Path: "a", Size: 1000, Utility: 0.5},
+		{Path: "b", Size: 1000, Utility: 0.1},
+		{Path: "c", Size: 1000, Utility: 0.3},
+		{Path: "d", Size: 1000, Utility: 0.2},
+	}
+	currentSize := int64(4000)
+	targetSize := int64(2500) // need to drop below 2500: evict at least 1500 worth.
+
+	picked := EvictUntilUnderBudget(candidates, currentSize, targetSize)
+
+	// Lowest utility first => b (0.1), d (0.2). After b: 3000. Still > 2500.
+	// After d: 2000. Now < 2500. Stop.
+	wantPaths := []string{"b", "d"}
+	if len(picked) != len(wantPaths) {
+		t.Fatalf("got %d evictions (%+v), want %d", len(picked), picked, len(wantPaths))
+	}
+	for i, want := range wantPaths {
+		if picked[i].Path != want {
+			t.Errorf("position %d: got %q, want %q", i, picked[i].Path, want)
+		}
+	}
+}
+
+func TestEvictUntilUnderBudget_AlreadyUnderBudget(t *testing.T) {
+	candidates := []EvictionEntry{
+		{Path: "a", Size: 100, Utility: 0.1},
+	}
+	picked := EvictUntilUnderBudget(candidates, 100, 1000)
+	if len(picked) != 0 {
+		t.Errorf("expected no evictions when already under budget, got %d", len(picked))
+	}
+}
+
+func TestEvictUntilUnderBudget_CannotMeetBudget(t *testing.T) {
+	// Only one candidate, but evicting it doesn't get under budget. We should
+	// still return all eligible candidates (best-effort).
+	candidates := []EvictionEntry{
+		{Path: "a", Size: 100, Utility: 0.1},
+	}
+	picked := EvictUntilUnderBudget(candidates, 5000, 1000)
+	if len(picked) != 1 {
+		t.Errorf("expected 1 eviction (best-effort), got %d", len(picked))
+	}
+}
+
 func TestReadLearningJSONLData(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "a.jsonl")

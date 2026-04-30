@@ -26,6 +26,7 @@ var (
 	maturityMigrateMd   bool
 	maturityRecalibrate bool
 	maturityUncitedDays int
+	maturityTargetSize  string
 )
 
 var maturityCmd = &cobra.Command{
@@ -68,6 +69,7 @@ func init() {
 	maturityCmd.Flags().BoolVar(&maturityMigrateMd, "migrate-md", false, "Add default frontmatter to .md learnings missing utility field")
 	maturityCmd.Flags().BoolVar(&maturityRecalibrate, "recalibrate", false, "Reset utility to 0.5 for all learnings")
 	maturityCmd.Flags().IntVar(&maturityUncitedDays, "uncited-days", 60, "Archive provisional/candidate learnings with zero citations older than this many days when used with --curate")
+	maturityCmd.Flags().StringVar(&maturityTargetSize, "target-size", "", "Size-budget eviction: when set with --evict, archive lowest-utility eligible files until the learnings hub falls below the target (e.g. 250M, 1G, 1024K)")
 }
 
 func runMaturitySingle(cwd string, learningID string) error {
@@ -785,6 +787,10 @@ func runMaturityEvict(cmd *cobra.Command) error {
 		return nil
 	}
 
+	if strings.TrimSpace(maturityTargetSize) != "" {
+		return runMaturityEvictTargetSize(cwd, learningsDir)
+	}
+
 	lastCited := buildCitationMap(cwd)
 	files, err := ratchet.GlobLearningFiles(learningsDir)
 	if err != nil {
@@ -803,6 +809,133 @@ func runMaturityEvict(cmd *cobra.Command) error {
 	}
 
 	return archiveEvictionCandidates(cwd, candidates)
+}
+
+// runMaturityEvictTargetSize implements the --target-size code path: archive
+// lowest-utility eligible files until the hub size falls below the target.
+// Eligibility (IsEvictionEligible) is always respected — the size budget is a
+// floor on what to evict, never a license to violate maturity gates.
+func runMaturityEvictTargetSize(cwd, learningsDir string) error {
+	target, err := lifecycle.ParseSizeBudget(maturityTargetSize)
+	if err != nil {
+		return fmt.Errorf("parse --target-size: %w", err)
+	}
+
+	files, err := ratchet.GlobLearningFiles(learningsDir)
+	if err != nil {
+		return fmt.Errorf("glob learnings: %w", err)
+	}
+
+	currentSize, err := dirSizeBytes(learningsDir)
+	if err != nil {
+		return fmt.Errorf("measure hub size: %w", err)
+	}
+
+	if currentSize < target {
+		fmt.Printf("Hub size %s, target %s — no eviction needed\n",
+			humanSize(currentSize), humanSize(target))
+		return nil
+	}
+
+	eligibleByPath, eligibleEntries := collectEligibleEvictionEntries(files)
+
+	picks := lifecycle.EvictUntilUnderBudget(eligibleEntries, currentSize, target)
+	if len(picks) == 0 {
+		fmt.Printf("Hub size %s exceeds target %s but no eligible eviction candidates found\n",
+			humanSize(currentSize), humanSize(target))
+		return nil
+	}
+
+	candidates := make([]evictionCandidate, 0, len(picks))
+	for _, pick := range picks {
+		candidates = append(candidates, eligibleByPath[pick.Path])
+	}
+
+	if !maturityArchive {
+		fmt.Printf("Hub size %s exceeds target %s — would evict %d file(s) (use --archive to apply)\n",
+			humanSize(currentSize), humanSize(target), len(candidates))
+		for _, c := range candidates {
+			fmt.Printf("  %s  utility=%.3f  confidence=%.3f  maturity=%s\n",
+				c.Name, c.Utility, c.Confidence, c.Maturity)
+		}
+		return nil
+	}
+
+	if err := archiveEvictionCandidates(cwd, candidates); err != nil {
+		return err
+	}
+
+	endSize, sizeErr := dirSizeBytes(learningsDir)
+	if sizeErr != nil {
+		// Fall back to a projected size; the archive succeeded so this is
+		// non-fatal.
+		endSize = currentSize
+		for _, p := range picks {
+			endSize -= p.Size
+		}
+	}
+	fmt.Printf("Hub: %s -> %s, evicted %d file(s) (target: %s)\n",
+		humanSize(currentSize), humanSize(endSize), len(candidates), humanSize(target))
+	return nil
+}
+
+// collectEligibleEvictionEntries inspects each learning file, returning the
+// candidate map (path -> evictionCandidate metadata) and a parallel slice of
+// EvictionEntry records consumable by lifecycle.EvictUntilUnderBudget. Only
+// files that pass IsEvictionEligible are included.
+func collectEligibleEvictionEntries(files []string) (map[string]evictionCandidate, []lifecycle.EvictionEntry) {
+	byPath := make(map[string]evictionCandidate, len(files))
+	entries := make([]lifecycle.EvictionEntry, 0, len(files))
+	for _, file := range files {
+		data, ok := readLearningData(file)
+		if !ok {
+			continue
+		}
+		utility := floatValueFromData(data, "utility", 0.5)
+		confidence := floatValueFromData(data, "confidence", 0.5)
+		maturity := nonEmptyStringFromData(data, "maturity", "provisional")
+		if !isEvictionEligible(utility, confidence, maturity) {
+			continue
+		}
+		info, statErr := os.Stat(file)
+		if statErr != nil {
+			continue
+		}
+		byPath[file] = evictionCandidate{
+			Path:       file,
+			Name:       filepath.Base(file),
+			Utility:    utility,
+			Confidence: confidence,
+			Maturity:   maturity,
+		}
+		entries = append(entries, lifecycle.EvictionEntry{
+			Path:    file,
+			Size:    info.Size(),
+			Utility: utility,
+		})
+	}
+	return byPath, entries
+}
+
+// dirSizeBytes returns the total on-disk byte size of all regular files
+// reachable under root (recursive).
+func dirSizeBytes(root string) (int64, error) {
+	var total int64
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		info, infoErr := d.Info()
+		if infoErr != nil {
+			return infoErr
+		}
+		total += info.Size()
+		return nil
+	})
+	return total, err
 }
 
 func collectEvictionCandidates(baseDir string, files []string, lastCited map[string]time.Time, cutoff time.Time) []evictionCandidate {
