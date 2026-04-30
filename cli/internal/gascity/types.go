@@ -38,11 +38,79 @@ type HealthResponse struct {
 
 // ReadinessResponse is the narrow DTO for supervisor, provider, or city
 // readiness probes.
+//
+// Two upstream shapes are accepted:
+//
+//   - Legacy / fixture shape (gascity ≤ 0.13.x): top-level {ready,status,degraded,providers}.
+//   - gc v1.0.0+ shape: {items: {<name>: {status: configured|...}}} with no
+//     top-level ready boolean. Callers should use IsReady / EffectiveStatus
+//     rather than reading Ready directly.
 type ReadinessResponse struct {
-	Ready     bool     `json:"ready"`
-	Status    string   `json:"status,omitempty"`
-	Degraded  []string `json:"degraded,omitempty"`
-	Providers []string `json:"providers,omitempty"`
+	Ready     bool                     `json:"ready"`
+	Status    string                   `json:"status,omitempty"`
+	Degraded  []string                 `json:"degraded,omitempty"`
+	Providers []string                 `json:"providers,omitempty"`
+	Items     map[string]ReadinessItem `json:"items,omitempty"`
+}
+
+// ReadinessItem is one entry in the gc v1.0.0+ items-shape readiness response.
+type ReadinessItem struct {
+	Name        string `json:"name,omitempty"`
+	Kind        string `json:"kind,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	Status      string `json:"status"`
+	Detail      string `json:"detail,omitempty"`
+}
+
+// IsReady reports whether the readiness response signals a usable city / scope.
+// It accepts either the legacy top-level Ready bool or the gc v1.0.0+ items map
+// (ready when at least one item is "configured" or "ready" and none are
+// "degraded"/"error"). Empty responses report not ready.
+func (r ReadinessResponse) IsReady() bool {
+	if r.Ready {
+		return true
+	}
+	if len(r.Items) == 0 {
+		return false
+	}
+	hasConfigured := false
+	for _, item := range r.Items {
+		switch item.Status {
+		case "configured", "ready":
+			hasConfigured = true
+		case "degraded", "error", "unavailable":
+			return false
+		}
+	}
+	return hasConfigured
+}
+
+// EffectiveStatus returns a human-readable status string, preferring the
+// legacy Status field but synthesising from Items when only the gc v1.0.0+
+// shape is present.
+func (r ReadinessResponse) EffectiveStatus() string {
+	if r.Status != "" {
+		return r.Status
+	}
+	if len(r.Items) == 0 {
+		return "no readiness data"
+	}
+	configured, missing := 0, 0
+	for _, item := range r.Items {
+		switch item.Status {
+		case "configured", "ready":
+			configured++
+		default:
+			missing++
+		}
+	}
+	if configured > 0 && missing == 0 {
+		return "ready"
+	}
+	if configured > 0 {
+		return fmt.Sprintf("partial (%d configured, %d missing)", configured, missing)
+	}
+	return "not ready"
 }
 
 // CityCreateRequest is the request body for POST /v0/city.

@@ -131,8 +131,8 @@ func (w *GasCityWorker) Start(ctx context.Context, req StartRequest) (AgentSessi
 	if err != nil {
 		return nil, fmt.Errorf("gascity city readiness for %q: %w", w.cityName, err)
 	}
-	if !ready.Ready {
-		status := strings.TrimSpace(ready.Status)
+	if !ready.IsReady() {
+		status := strings.TrimSpace(ready.EffectiveStatus())
 		if status == "" {
 			status = "not ready"
 		}
