@@ -6,11 +6,11 @@
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### DevOps for the agent.
+### Operational discipline for coding agents.
 
-Coding agents don't do their own bookkeeping. AgentOps is the operational layer that does — four tiers (Bookkeeping, Validation, Primitives, Flows) that turn ad-hoc sessions into compounding cycles.
+The hard problem: ship reliable code with unreliable agents that don't remember anything. AgentOps builds the knowledge and memory into the system AND the process — a Meadows compounding system around your codebase.
 
-**The point is not a bigger prompt. The point is a repo that remembers what worked.**
+**The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
 [Install](#install) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
@@ -74,6 +74,8 @@ AgentOps applies the Three Ways to coding agents:
 Theoretical foundation lives in [docs/the-science.md](docs/the-science.md) (Meadows' leverage points + DevOps Three Ways) and [docs/brownian-ratchet.md](docs/brownian-ratchet.md) (chaos + filter + one-way gate = net forward progress).
 
 The lineage is direct: DevOps is what made software ship. AgentOps is what makes coding agents compound. Same shape, new substrate.
+
+> AgentOps and every harness like it gets absorbed into the model layer over time. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, before the harness layer commoditizes. See [PRODUCT.md](PRODUCT.md) for the full thesis.
 
 ---
 

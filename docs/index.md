@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: DevOps for the agent. Bookkeeping, validation, and flows that compound across coding-agent sessions.
+description: Operational discipline for coding agents. Build reliable code with unreliable agents — and turn the context you've earned into a compounding moat.
 hide:
   - navigation
   - toc
@@ -9,8 +9,12 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  <strong>DevOps for the agent.</strong><br>
-  Coding agents don't do their own bookkeeping. AgentOps is the operational layer that does — four tiers (Bookkeeping, Validation, Primitives, Flows) that turn ad-hoc sessions into compounding cycles.
+  <strong>Operational discipline for coding agents.</strong><br>
+  The hard problem: ship reliable code with unreliable agents that don't remember anything. AgentOps builds the knowledge and memory into the system <strong>AND</strong> the process — a Meadows compounding system around your codebase.
+</p>
+
+<p class="hero-subtagline" markdown>
+The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.
 </p>
 
 <p class="hero-actions" markdown>
