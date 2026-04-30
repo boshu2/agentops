@@ -324,7 +324,22 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 	base := strings.TrimSuffix(filepath.Base(srcPath), filepath.Ext(srcPath))
 	learningID := cmp.Or(strings.ToLower(strings.TrimSpace(b.ID)), "noid")
 
-	id := slugify(fmt.Sprintf("pend-%s-%s-%s", base, sessionHint, learningID))
+	// Dedup the three components when they are equal or already contained.
+	// The unconditional "pend-{base}-{sessionHint}-{learningID}" form produced
+	// triple-ID filenames whenever a learning's source file, session hint, and
+	// frontmatter id all degenerated to the same string — and the resulting id
+	// re-amplified on each close-loop pass.
+	parts := []string{base}
+	if sessionHint != "" && sessionHint != base && !strings.Contains(base, sessionHint) {
+		parts = append(parts, sessionHint)
+	}
+	if learningID != "" && learningID != "noid" {
+		joined := strings.Join(parts, "-")
+		if !strings.Contains(joined, learningID) {
+			parts = append(parts, learningID)
+		}
+	}
+	id := slugify("pend-" + strings.Join(parts, "-"))
 	if len(id) > 120 {
 		// Keep a stable prefix, add a short hash to preserve uniqueness.
 		h := sha256.Sum256([]byte(b.Body))

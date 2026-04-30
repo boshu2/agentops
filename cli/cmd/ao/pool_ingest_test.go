@@ -628,6 +628,60 @@ func TestPoolIngestCoverage_BuildCandidateFromLearningBlock(t *testing.T) {
 			"pending_title":      "Test",
 		})
 	})
+
+	t.Run("dedups id components when base, sessionHint, and learningID collide", func(t *testing.T) {
+		// Regression for soc-ujls: when the source filename, session hint, and
+		// frontmatter id all degenerate to the same string (typical for files
+		// whose only ID is the YYYY-MM-DD-shortsha-N form), the previous unconditional
+		// concatenation produced pend-X-X-X and re-amplified through close-loop.
+		degenerate := "2026-04-24-17cf4b6-1"
+		f := poolIngestCandidateFixture{
+			fileDate:    time.Date(2026, 4, 24, 0, 0, 0, 0, time.UTC),
+			srcPath:     "/test/" + degenerate + ".md",
+			sessionHint: degenerate,
+		}
+		block := learningBlock{
+			Title:      "Sample",
+			ID:         degenerate,
+			Confidence: "medium",
+			Body:       "Body text.",
+		}
+		cand, _, ok := f.build(block)
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		want := "pend-" + degenerate
+		if cand.ID != want {
+			t.Fatalf("expected deduped id %q, got %q", want, cand.ID)
+		}
+		// Defense-in-depth: the degenerate id must NOT appear more than once.
+		if strings.Count(cand.ID, degenerate) != 1 {
+			t.Fatalf("expected exactly one copy of %q in id, got %q", degenerate, cand.ID)
+		}
+	})
+
+	t.Run("preserves distinct components when they differ", func(t *testing.T) {
+		// Sanity: when components are distinct, all three are still concatenated.
+		f := poolIngestCandidateFixture{
+			fileDate:    time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC),
+			srcPath:     "/test/source.md",
+			sessionHint: "ag-xyz",
+		}
+		block := learningBlock{
+			Title:      "Sample",
+			ID:         "L1",
+			Confidence: "medium",
+			Body:       "Body text.",
+		}
+		cand, _, ok := f.build(block)
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		want := "pend-source-ag-xyz-l1"
+		if cand.ID != want {
+			t.Fatalf("expected id %q, got %q", want, cand.ID)
+		}
+	})
 }
 
 type poolIngestCandidateFixture struct {
