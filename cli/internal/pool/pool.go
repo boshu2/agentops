@@ -431,7 +431,27 @@ func (p *Pool) Stage(candidateID string, minTier types.Tier) error {
 	return nil
 }
 
+// promotedIndexFile is the sidecar that records (content_hash → artifact_path)
+// for every successful Promote. It powers the content-dedup check in Promote
+// so two body-identical candidates with different IDs collapse to one
+// on-disk artifact (soc-f2q4 / flywheel phase 4-A cross-writer contract).
+const promotedIndexFile = "promoted-index.jsonl"
+
+// promotedIndexEntry is one line of the promoted-index sidecar.
+type promotedIndexEntry struct {
+	ContentHash  string    `json:"content_hash"`
+	ArtifactPath string    `json:"artifact_path"`
+	CandidateID  string    `json:"candidate_id"`
+	PromotedAt   time.Time `json:"promoted_at"`
+}
+
 // Promote moves a staged candidate to learnings/patterns.
+//
+// Content-hash dedup contract (soc-f2q4 / 4-A): if the candidate's content
+// body has already been promoted by this pool, the existing artifact path
+// is returned and no new file is written. This matches the harvest catalog
+// contract where ContentHash is the only collapse key, and prevents two
+// rewrites of the same insight from re-bloating the global hub.
 func (p *Pool) Promote(candidateID string) (string, error) {
 	entry, err := p.Get(candidateID)
 	if err != nil {
@@ -446,10 +466,38 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 		return "", fmt.Errorf("create destination: %w", err)
 	}
 
+	contentHash := candidateContentHash(entry.Candidate)
+	if existing, ok := p.lookupPromotedHash(contentHash); ok {
+		// Same body already on disk under a different ID. Reuse the
+		// existing artifact and treat this Promote as a no-op write.
+		// Still mark the candidate as archived so it leaves the staged
+		// directory.
+		if err := os.Remove(entry.FilePath); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to remove pool entry: %v\n", err)
+		}
+		p.recordEventOrWarn(ChainEvent{
+			Timestamp:    time.Now(),
+			Operation:    "promote",
+			CandidateID:  candidateID,
+			FromStatus:   entry.Status,
+			ToStatus:     types.PoolStatusArchived,
+			ArtifactPath: existing,
+			Reason:       "dedup: content hash already promoted",
+		})
+		return existing, nil
+	}
+
 	artifactPath := resolveArtifactPath(destDir, candidateID)
 
 	if err := p.writeArtifact(artifactPath, entry); err != nil {
 		return "", fmt.Errorf("write artifact: %w", err)
+	}
+
+	// Best-effort: record the hash → path mapping. A failure here doesn't
+	// abort the promote (artifact is already on disk), but a later Promote
+	// of the same body would write a duplicate. Surface a warning.
+	if err := p.recordPromotedHash(contentHash, artifactPath, candidateID); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to record promoted-hash index: %v\n", err)
 	}
 
 	if err := os.Remove(entry.FilePath); err != nil {
@@ -466,6 +514,76 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 	})
 
 	return artifactPath, nil
+}
+
+// candidateContentHash is the dedup key for pool.Promote. It hashes the
+// candidate Content body (trimmed) so two candidates with different IDs but
+// identical Content collapse to the same artifact. Trimming guards against
+// trailing-newline noise from different ingest paths.
+func candidateContentHash(c types.Candidate) string {
+	body := strings.TrimSpace(c.Content)
+	sum := sha256.Sum256([]byte(body))
+	return hex.EncodeToString(sum[:])
+}
+
+// lookupPromotedHash scans the sidecar index for an existing artifact with
+// the given content hash. Returns (path, true) if found AND the file still
+// exists on disk (a stale index entry from a deleted artifact is treated as
+// a miss so the next Promote rewrites it).
+func (p *Pool) lookupPromotedHash(contentHash string) (string, bool) {
+	indexPath := filepath.Join(p.PoolPath, promotedIndexFile)
+	f, err := os.Open(indexPath)
+	if err != nil {
+		return "", false
+	}
+	defer func() { _ = f.Close() }()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 4096), 1024*1024)
+	for scanner.Scan() {
+		var entry promotedIndexEntry
+		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+			continue
+		}
+		if entry.ContentHash != contentHash {
+			continue
+		}
+		if _, err := os.Stat(entry.ArtifactPath); err != nil {
+			// Stale entry — file no longer exists. Treat as miss; the
+			// next Promote will create a fresh artifact + index entry.
+			continue
+		}
+		return entry.ArtifactPath, true
+	}
+	return "", false
+}
+
+// recordPromotedHash appends an entry to the promoted-hash sidecar so future
+// Promote calls with the same content body can dedup against it.
+func (p *Pool) recordPromotedHash(contentHash, artifactPath, candidateID string) error {
+	if err := os.MkdirAll(p.PoolPath, 0700); err != nil {
+		return fmt.Errorf("ensure pool dir: %w", err)
+	}
+	indexPath := filepath.Join(p.PoolPath, promotedIndexFile)
+	entry := promotedIndexEntry{
+		ContentHash:  contentHash,
+		ArtifactPath: artifactPath,
+		CandidateID:  candidateID,
+		PromotedAt:   time.Now(),
+	}
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return fmt.Errorf("marshal promoted-hash entry: %w", err)
+	}
+	f, err := os.OpenFile(indexPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("open promoted-hash index: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		return fmt.Errorf("write promoted-hash entry: %w", err)
+	}
+	return nil
 }
 
 // validatePromotable checks that a pool entry is eligible for promotion.
