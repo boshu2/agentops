@@ -30,6 +30,12 @@ import (
 // (e.g., the SkipGlobalHub=true / guarded-append pair from agentops
 // 4af82384 + f6fce986) re-bloats the global hub at ~/.agents/learnings/.
 func TestPromote_DedupsAcrossWriters(t *testing.T) {
+	// HOME isolation: harvest.Promote may resolve paths against $HOME via
+	// resolveProjectDir() / global hub roots. Without isolation, this test
+	// would write into the operator's real ~/.agents/learnings/ corpus
+	// (Phase 3 Dream-validation finding; gate enforces this).
+	t.Setenv("HOME", t.TempDir())
+
 	body := "When fmt.Errorf wraps with %w you preserve the underlying error chain"
 	bodySum := sha256.Sum256([]byte(body))
 	contentHash := hex.EncodeToString(bodySum[:])

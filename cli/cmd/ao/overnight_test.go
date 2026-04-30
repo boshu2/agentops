@@ -220,6 +220,46 @@ func TestResolveOvernightSettings_LongHaulDefaultsOff(t *testing.T) {
 	}
 }
 
+// TestOpenOvernightLogAppendsAcrossOpens is a regression for soc-5of.9: a
+// process restart mid-overnight must not truncate prior overnight.log content.
+// Seed the log with sentinel bytes, call openOvernightLog, write more, close,
+// and assert both the sentinel and the new write are present afterwards.
+func TestOpenOvernightLogAppendsAcrossOpens(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "overnight.log")
+	const sentinel = "PARTIAL_LOG_FROM_PRIOR_RUN_DO_NOT_TRUNCATE\n"
+	if err := os.WriteFile(logPath, []byte(sentinel), 0o644); err != nil {
+		t.Fatalf("seed sentinel: %v", err)
+	}
+
+	summary := &overnightSummary{
+		Runtime: overnightRuntimeSummary{LogPath: logPath},
+	}
+	logFile, err := openOvernightLog(summary)
+	if err != nil {
+		t.Fatalf("openOvernightLog: %v", err)
+	}
+	const second = "second-open-output\n"
+	if _, err := logFile.WriteString(second); err != nil {
+		_ = logFile.Close()
+		t.Fatalf("write after re-open: %v", err)
+	}
+	if err := logFile.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	got, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read after re-open: %v", err)
+	}
+	if !strings.Contains(string(got), sentinel) {
+		t.Fatalf("sentinel was truncated; log=%q", got)
+	}
+	if !strings.Contains(string(got), second) {
+		t.Fatalf("second write missing; log=%q", got)
+	}
+}
+
 func TestRunOvernight_LongHaulSkipsWhenTriggersWeak(t *testing.T) {
 	summary := overnightSummary{
 		OutputDir: filepath.Join(t.TempDir(), "overnight"),

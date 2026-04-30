@@ -76,7 +76,9 @@ func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecut
 		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("create dream output dir: %w", err)
 	}
 	startedAt := e.now().UTC()
-	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	// soc-5of.9: O_APPEND (not O_TRUNC) so a daemon restart mid-dream cannot
+	// truncate partial logs — Fournier-class "crash with notes" durability nit.
+	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("open dream log: %w", err)
 	}
