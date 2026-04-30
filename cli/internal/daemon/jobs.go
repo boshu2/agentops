@@ -612,6 +612,13 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if isTerminalStatus(job.Status) {
 		return false
 	}
+	applyQueueEventMetadata(job, event)
+	applyQueueEventArtifacts(job, event)
+	applyQueueEventStatus(job, event)
+	return true
+}
+
+func applyQueueEventMetadata(job *QueueJobState, event LedgerEvent) {
 	if jobType, ok, err := jobTypeFromPayload(event.Payload); err == nil && ok {
 		job.JobType = jobType
 	}
@@ -629,6 +636,9 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if maxAttempts, ok := intPayload(event.Payload, "max_attempts"); ok {
 		job.MaxAttempts = maxAttempts
 	}
+}
+
+func applyQueueEventArtifacts(job *QueueJobState, event LedgerEvent) {
 	for key, value := range artifactsFromPayload(event.Payload) {
 		job.Artifacts[key] = value
 	}
@@ -641,30 +651,16 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 			job.Artifacts[key] = ref.Path
 		}
 	}
+}
 
+func applyQueueEventStatus(job *QueueJobState, event LedgerEvent) {
 	switch event.EventType {
 	case EventJobAccepted:
 		job.Status = JobStatusQueued
 	case EventJobClaimed:
-		job.Status = JobStatusRunning
-		job.RetryExhausted = false
-		job.ClaimToken, _ = stringPayload(event.Payload, "claim_token")
-		job.LeaseEpoch, _ = intPayload(event.Payload, "lease_epoch")
-		job.LeaseExpiresAt, _ = stringPayload(event.Payload, "lease_expires_at")
-		if attempt, ok := intPayload(event.Payload, "attempt"); ok {
-			job.Attempt = attempt
-		}
+		applyJobClaimedEvent(job, event)
 	case EventJobHeartbeat:
-		job.Status = JobStatusRunning
-		if token, ok := stringPayload(event.Payload, "claim_token"); ok {
-			job.ClaimToken = token
-		}
-		if epoch, ok := intPayload(event.Payload, "lease_epoch"); ok {
-			job.LeaseEpoch = epoch
-		}
-		if expiresAt, ok := stringPayload(event.Payload, "lease_expires_at"); ok {
-			job.LeaseExpiresAt = expiresAt
-		}
+		applyJobHeartbeatEvent(job, event)
 	case EventJobLeaseExpired:
 		job.Status = JobStatusRetryWaiting
 		job.ClaimToken = ""
@@ -677,7 +673,30 @@ func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	case EventJobCancelled:
 		job.Status = JobStatusCancelled
 	}
-	return true
+}
+
+func applyJobClaimedEvent(job *QueueJobState, event LedgerEvent) {
+	job.Status = JobStatusRunning
+	job.RetryExhausted = false
+	job.ClaimToken, _ = stringPayload(event.Payload, "claim_token")
+	job.LeaseEpoch, _ = intPayload(event.Payload, "lease_epoch")
+	job.LeaseExpiresAt, _ = stringPayload(event.Payload, "lease_expires_at")
+	if attempt, ok := intPayload(event.Payload, "attempt"); ok {
+		job.Attempt = attempt
+	}
+}
+
+func applyJobHeartbeatEvent(job *QueueJobState, event LedgerEvent) {
+	job.Status = JobStatusRunning
+	if token, ok := stringPayload(event.Payload, "claim_token"); ok {
+		job.ClaimToken = token
+	}
+	if epoch, ok := intPayload(event.Payload, "lease_epoch"); ok {
+		job.LeaseEpoch = epoch
+	}
+	if expiresAt, ok := stringPayload(event.Payload, "lease_expires_at"); ok {
+		job.LeaseExpiresAt = expiresAt
+	}
 }
 
 func (q *Queue) isClaimable(job QueueJobState) bool {
