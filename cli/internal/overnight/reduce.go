@@ -14,6 +14,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 // reduceStageRecorder is an optional test hook called at the start of
@@ -295,7 +296,7 @@ func WriteReduceStageJobResult(outputDir string, result ReduceStageJobResult) (s
 		return "", fmt.Errorf("overnight/reduce: marshal stage result: %w", err)
 	}
 	data = append(data, '\n')
-	if err := writeFileAtomic(path, data, 0o644); err != nil {
+	if err := quest.AtomicWriteFileWithPerm(path, data, 0o644); err != nil {
 		return "", fmt.Errorf("overnight/reduce: write stage result: %w", err)
 	}
 	return path, nil

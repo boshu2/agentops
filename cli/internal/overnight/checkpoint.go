@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 	"gopkg.in/yaml.v3"
 )
 
@@ -322,7 +323,7 @@ func WriteCheckpointManifest(path string, manifest CheckpointManifest) error {
 		return fmt.Errorf("overnight: marshal checkpoint manifest: %w", err)
 	}
 	data = append(data, '\n')
-	return writeFileAtomic(path, data, 0o644)
+	return quest.AtomicWriteFileWithPerm(path, data, 0o644)
 }
 
 func ReadCheckpointManifest(path string) (CheckpointManifest, error) {
@@ -341,40 +342,6 @@ func ReadCheckpointManifest(path string) (CheckpointManifest, error) {
 		return manifest, err
 	}
 	return manifest, nil
-}
-
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.tmp")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	cleanup := true
-	defer func() {
-		if cleanup {
-			_ = os.Remove(tmpPath)
-		}
-	}()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Chmod(perm); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return err
-	}
-	cleanup = false
-	return nil
 }
 
 // Commit atomically swaps staged subpaths into the live .agents/ tree.

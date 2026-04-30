@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/corpus"
 	"github.com/boshu2/agentops/cli/internal/daemon"
+	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 // MeasureResult is the output of a single MEASURE stage.
@@ -381,7 +382,7 @@ func WriteMeasureStageJobResult(outputDir string, result MeasureStageJobResult) 
 		return "", fmt.Errorf("overnight/measure: marshal stage result: %w", err)
 	}
 	data = append(data, '\n')
-	if err := writeFileAtomic(path, data, 0o644); err != nil {
+	if err := quest.AtomicWriteFileWithPerm(path, data, 0o644); err != nil {
 		return "", fmt.Errorf("overnight/measure: write stage result: %w", err)
 	}
 	return path, nil

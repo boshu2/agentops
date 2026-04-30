@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 const SnapshotDirRel = ".agents/daemon/projections/openclaw"
@@ -107,10 +109,10 @@ func (s *SnapshotStore) Write(snapshot ConsumerSnapshot) error {
 	if err := os.MkdirAll(s.Dir(), 0700); err != nil {
 		return fmt.Errorf("create OpenClaw snapshot dir: %w", err)
 	}
-	if err := writeFileAtomic(versionPath, data, 0600); err != nil {
+	if err := quest.AtomicWriteFileWithPerm(versionPath, data, 0o600); err != nil {
 		return err
 	}
-	if err := writeFileAtomic(s.LatestPath(), data, 0600); err != nil {
+	if err := quest.AtomicWriteFileWithPerm(s.LatestPath(), data, 0o600); err != nil {
 		return err
 	}
 	return nil
@@ -181,42 +183,4 @@ func snapshotFilename(snapshotID string) (string, error) {
 		return "", fmt.Errorf("%w: unsafe snapshot_id %q", ErrInvalidSnapshotSchema, snapshotID)
 	}
 	return snapshotID + ".json", nil
-}
-
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("create dir for %s: %w", path, err)
-	}
-	tmp, err := os.CreateTemp(dir, ".tmp-openclaw-*")
-	if err != nil {
-		return fmt.Errorf("create temp file for %s: %w", path, err)
-	}
-	tmpPath := tmp.Name()
-	cleanup := true
-	defer func() {
-		if cleanup {
-			_ = os.Remove(tmpPath)
-		}
-	}()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("write temp file for %s: %w", path, err)
-	}
-	if err := tmp.Chmod(perm); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("chmod temp file for %s: %w", path, err)
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("sync temp file for %s: %w", path, err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close temp file for %s: %w", path, err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return fmt.Errorf("replace %s: %w", path, err)
-	}
-	cleanup = false
-	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/daemon"
+	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 type CommitStageJobOptions struct {
@@ -121,7 +122,7 @@ func WriteCommitStageJobResult(outputDir string, result CommitStageJobResult) (s
 		return "", fmt.Errorf("overnight/commit: marshal stage result: %w", err)
 	}
 	data = append(data, '\n')
-	if err := writeFileAtomic(path, data, 0o644); err != nil {
+	if err := quest.AtomicWriteFileWithPerm(path, data, 0o644); err != nil {
 		return "", fmt.Errorf("overnight/commit: write stage result: %w", err)
 	}
 	return path, nil

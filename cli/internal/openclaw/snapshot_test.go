@@ -116,6 +116,27 @@ func TestSnapshotStoreRejectsUnsafeSnapshotID(t *testing.T) {
 	}
 }
 
+func TestSnapshot_PermsPreservedAt0o600(t *testing.T) {
+	store := NewSnapshotStore(t.TempDir())
+	snapshot := mustBuildSnapshot(t)
+	if err := store.Write(snapshot); err != nil {
+		t.Fatalf("write snapshot: %v", err)
+	}
+	versionPath, err := store.VersionPath(snapshot.SnapshotID)
+	if err != nil {
+		t.Fatalf("version path: %v", err)
+	}
+	for _, path := range []string{versionPath, store.LatestPath()} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat %s: %v", path, err)
+		}
+		if got := info.Mode().Perm(); got != 0o600 {
+			t.Fatalf("perm %s = %o, want 0o600", path, got)
+		}
+	}
+}
+
 func TestSnapshotStoreReadMissingLatest(t *testing.T) {
 	store := NewSnapshotStore(t.TempDir())
 	_, err := store.ReadLatest()
