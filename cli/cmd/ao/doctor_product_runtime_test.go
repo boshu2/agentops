@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -38,6 +40,73 @@ func TestDoctorOpenClawConsumerCheckPassesWithReadyServer(t *testing.T) {
 	}
 	if !strings.Contains(check.Detail, "snapshot_status=current") || !strings.Contains(check.Detail, "jobs=0") {
 		t.Fatalf("OpenClaw detail = %q, want snapshot/count details", check.Detail)
+	}
+}
+
+func TestDoctorLedgerHealthCheckPassesOnFreshStore(t *testing.T) {
+	t.Chdir(t.TempDir())
+	check := checkDaemonLedgerHealth(time.Now(), daemonpkg.LedgerHealthDefaultThresholds())
+	if check.Name != "Daemon Ledger Health" {
+		t.Fatalf("Name = %q", check.Name)
+	}
+	if check.Status != "pass" {
+		t.Fatalf("Status = %q, want pass on missing daemon dir", check.Status)
+	}
+	if !strings.Contains(check.Detail, "no daemon store") {
+		t.Fatalf("Detail = %q, want missing-store message", check.Detail)
+	}
+}
+
+func TestDoctorLedgerHealthCheckWarnsOnStaleSnapshot(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	store := daemonpkg.NewStore(dir)
+	rebuiltAt := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	now := rebuiltAt.Add(72 * time.Hour)
+	set := daemonpkg.ProjectionSet{
+		SchemaVersion: daemonpkg.ProjectionSchemaVersion,
+		RebuiltAt:     rebuiltAt.Format(time.RFC3339Nano),
+		LastEventID:   "evt-snap",
+		Manifests:     map[daemonpkg.ProjectionName]daemonpkg.ProjectionManifest{},
+	}
+	if _, err := store.WriteProjectionSnapshot(set); err != nil {
+		t.Fatalf("write snapshot: %v", err)
+	}
+
+	check := checkDaemonLedgerHealth(now, daemonpkg.LedgerHealthDefaultThresholds())
+	if check.Status != "warn" {
+		t.Fatalf("Status = %q, want warn (72h old snapshot vs 24h threshold)", check.Status)
+	}
+	if !strings.Contains(check.Detail, "snapshot_age=") {
+		t.Fatalf("Detail = %q, want snapshot_age in detail", check.Detail)
+	}
+	if !strings.Contains(check.Detail, "snapshot age") {
+		t.Fatalf("Detail = %q, want snapshot-age warn reason", check.Detail)
+	}
+}
+
+func TestDoctorLedgerHealthCheckSurfacesArchiveCount(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	store := daemonpkg.NewStore(dir)
+	if err := os.MkdirAll(store.Dir(), 0700); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for _, ts := range []string{"20260101T000000.000000000Z", "20260102T000000.000000000Z"} {
+		path := filepath.Join(store.Dir(), "ledger."+ts+".jsonl")
+		if err := os.WriteFile(path, []byte("{}\n"), 0600); err != nil {
+			t.Fatalf("plant archive: %v", err)
+		}
+	}
+	check := checkDaemonLedgerHealth(time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC), daemonpkg.LedgerHealthDefaultThresholds())
+	if check.Status != "pass" {
+		t.Fatalf("Status = %q, want pass with 2 archives under threshold of 20", check.Status)
+	}
+	if !strings.Contains(check.Detail, "archives=2") {
+		t.Fatalf("Detail = %q, want archives=2", check.Detail)
+	}
+	if !strings.Contains(check.Detail, "oldest_archive=2026-01-01") {
+		t.Fatalf("Detail = %q, want oldest_archive timestamp", check.Detail)
 	}
 }
 
