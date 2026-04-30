@@ -195,6 +195,8 @@
 - [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
+- [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for cycle-1 autonomy runtime work (ported from olympus)
+- [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
@@ -239,3 +241,16 @@
 ## Migration Trackers
 
 - [resolve-project-dir.md](migration-trackers/resolve-project-dir.md) — os.Getwd() → resolveProjectDir() migration status
+
+## Reference: Olympus v4 Specs
+
+> Verbatim port of `olympus/docs/specs/v4/` for cross-reference during the Olympus → agentopsd extraction. **NOT canonical for agentopsd.** Where these disagree with `.agents/design/2026-04-28-design-agentops-daemon-gascity-vertical-slices.md`, agentopsd canonical wins.
+
+- [Architecture](design/olympus-v4-specs/architecture.md) — Olympus v4 architecture (reference)
+- [CLI](design/olympus-v4-specs/cli.md) — `ol` CLI specification (reference)
+- [Consensus](design/olympus-v4-specs/consensus.md) — Multi-model consensus before ratchet locks (reference)
+- [Context](design/olympus-v4-specs/context.md) — Context as control plane (reference)
+- [Daemon](design/olympus-v4-specs/daemon.md) — Daemon Phase 0 mechanical spec (reference)
+- [Execution](design/olympus-v4-specs/execution.md) — Execution model (reference)
+- [Knowledge](design/olympus-v4-specs/knowledge.md) — Knowledge compounding via constraint tests (reference)
+- [Validation](design/olympus-v4-specs/validation.md) — Validation contract (reference)

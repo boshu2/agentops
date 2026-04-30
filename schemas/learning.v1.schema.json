@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/learning.v1.schema.json",
+  "title": "Learning",
+  "description": "Knowledge artifact extracted by Hephaestus",
+  "type": "object",
+  "required": ["learning_id", "content", "category", "confidence", "utility_score", "briefing_count", "source_session", "created_at", "tombstoned", "schema_version"],
+  "properties": {
+    "learning_id": {
+      "type": "string",
+      "pattern": "^learn-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9]+$",
+      "description": "Format: learn-YYYY-MM-DD-xxx"
+    },
+    "content": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "enum": ["architecture", "debugging", "process", "testing", "security"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Decays 10%/week without use"
+    },
+    "utility_score": {
+      "type": "integer",
+      "description": "v2: PASS +1, FAIL -2. v1: always 0"
+    },
+    "briefing_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of briefings that included this learning"
+    },
+    "source_session": {
+      "type": "string"
+    },
+    "source_bead": {
+      "type": ["string", "null"],
+      "description": "Bead ID that produced this learning"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "supersedes": {
+      "type": ["string", "null"],
+      "description": "Learning ID this supersedes"
+    },
+    "tombstoned": {
+      "type": "boolean",
+      "description": "If true, excluded from briefings"
+    },
+    "tombstone_reason": {
+      "type": ["string", "null"]
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    }
+  },
+  "additionalProperties": false
+}

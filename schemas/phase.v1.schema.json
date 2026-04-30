@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/phase.v1.schema.json",
+  "title": "Phase State Machine",
+  "description": "Defines legal state transitions for beads",
+  "type": "object",
+  "required": ["allowed_transitions", "schema_version"],
+  "properties": {
+    "allowed_transitions": {
+      "type": "object",
+      "properties": {
+        "unclaimed": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["claimed"]},
+          "description": "unclaimed can only transition to claimed"
+        },
+        "claimed": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["done", "failed"]},
+          "description": "claimed can transition to done or failed"
+        },
+        "done": {
+          "type": "array",
+          "maxItems": 0,
+          "description": "done is terminal"
+        },
+        "failed": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["unclaimed"]},
+          "description": "failed can be retried (back to unclaimed)"
+        }
+      },
+      "required": ["unclaimed", "claimed", "done", "failed"],
+      "additionalProperties": false
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    }
+  },
+  "additionalProperties": false
+}

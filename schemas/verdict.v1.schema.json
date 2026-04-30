@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/verdict.v1.schema.json",
+  "title": "Verdict",
+  "description": "Athena validation verdict for a bead",
+  "type": "object",
+  "required": ["verdict_id", "bead_id", "verdict", "confidence", "briefing_learnings", "findings", "not_checked", "validated_at", "validator_session", "schema_version"],
+  "properties": {
+    "verdict_id": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z]{26}$"
+    },
+    "bead_id": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z]{26}$"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    },
+    "briefing_learnings": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Learning IDs that were in the briefing for this bead"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "description", "location"],
+        "properties": {
+          "severity": {"type": "string", "enum": ["critical", "significant", "minor"]},
+          "description": {"type": "string"},
+          "location": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "not_checked": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Aspects explicitly not validated (disclosure of validation gaps)"
+    },
+    "validated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validator_session": {
+      "type": "string",
+      "description": "Session ID of the validator (must differ from worker)"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/briefing.v1.schema.json",
+  "title": "Briefing",
+  "description": "Hermes-assembled context packet for an agent",
+  "type": "object",
+  "required": ["briefing_id", "bead_id", "sections", "token_count", "assembled_at", "schema_version"],
+  "properties": {
+    "briefing_id": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z]{26}$"
+    },
+    "bead_id": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z]{26}$"
+    },
+    "sections": {
+      "type": "object",
+      "required": ["task", "context"],
+      "properties": {
+        "task": {"type": "string", "description": "Bead description + dependencies"},
+        "context": {"type": "string", "description": "Quest goal + AGENTS.md sections"},
+        "learnings": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Learning IDs included in this briefing"
+        },
+        "constraints": {
+          "type": "string",
+          "description": "From .ol/constraints/ (v2+)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "token_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Approximate token count of the assembled briefing"
+    },
+    "assembled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    }
+  },
+  "additionalProperties": false
+}

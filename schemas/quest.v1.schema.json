@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/quest.v1.schema.json",
+  "title": "Quest",
+  "description": "A quest groups related beads into a single goal",
+  "type": "object",
+  "required": ["quest_id", "title", "goal", "status", "beads", "created_at", "schema_version"],
+  "properties": {
+    "quest_id": {
+      "type": "string",
+      "description": "ULID identifier",
+      "pattern": "^[0-9A-Za-z]{26}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable quest title"
+    },
+    "goal": {
+      "type": "string",
+      "description": "What this quest aims to achieve"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "in_progress", "done", "failed"],
+      "description": "Current quest status"
+    },
+    "beads": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9A-Za-z]{26}$"},
+      "description": "Bead IDs belonging to this quest"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 last update timestamp"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for migration"
+    }
+  },
+  "additionalProperties": false
+}
