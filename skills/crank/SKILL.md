@@ -341,6 +341,10 @@ Worker prompt signpost:
 
 Read `.agents/crank/SHARED_TASK_NOTES.md` and inject its contents into every worker's TaskCreate description (after the issue body). Include a `DISCOVERY REPORTING` instruction so workers report new findings for the orchestrator to harvest. See [references/shared-task-notes.md](references/shared-task-notes.md) for the injection template, size management rules, and discovery reporting format.
 
+### Step 3b.3: Parallel-Wave Isolation (wave size ≥ 2)
+
+**Skip if wave has only 1 worker.** Parallel workers in a shared clone can clobber each other's staged work when sibling workers run `git checkout` mid-task. Three-tier protection (prompt rule → conditional ephemeral worktrees → disposition gate) prevents this without re-introducing worktree sprawl. Read [references/parallel-wave-isolation.md](references/parallel-wave-isolation.md) for the full tier definitions, the worker prompt template, the `preflight-swarm.sh` escalation criterion, and the `check-worktree-disposition.sh` cleanup gate.
+
 ### Step 4: Execute Wave via Swarm
 
 **GREEN mode (--test-first only):** If `--test-first` is set and SPEC/TEST waves have completed, modify worker prompts for spec-eligible issues:
@@ -638,6 +642,7 @@ If unsure whether a step is orchestrator-owned or delegatable, the default is **
 ## Reference Documents
 
 - [references/de-sloppify.md](references/de-sloppify.md)
+- [references/parallel-wave-isolation.md](references/parallel-wave-isolation.md)
 - [references/plan-mutations.md](references/plan-mutations.md)
 - [references/shared-task-notes.md](references/shared-task-notes.md)
 - [references/claude-code-latest-features.md](references/claude-code-latest-features.md)
