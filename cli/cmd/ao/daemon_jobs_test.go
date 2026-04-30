@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -254,5 +257,112 @@ func TestDaemonJobTerminalStatusHelper(t *testing.T) {
 	}
 	if daemonJobIsTerminal(daemonpkg.JobStatusQueued) || daemonJobIsTerminal(daemonpkg.JobStatusRunning) {
 		t.Fatal("non-terminal status reported terminal")
+	}
+}
+
+func TestDaemonJobsSubmitPostsJob(t *testing.T) {
+	cwd, server, queue := newDaemonJobsCommandFixture(t)
+	prevType, prevPayload := daemonJobSubmitType, daemonJobSubmitPayload
+	daemonJobSubmitType = string(daemonpkg.JobTypeOpenClawSnapshot)
+	daemonJobSubmitPayload = `{"smoke":true}`
+	t.Cleanup(func() {
+		daemonJobSubmitType = prevType
+		daemonJobSubmitPayload = prevPayload
+	})
+
+	out := runDaemonJobsCommandForTest(t, cwd, server.URL, "secret-token", "json", func(cmd *cobra.Command) error {
+		return runAgentOpsDaemonJobsSubmitCommand(cmd, nil)
+	})
+
+	var response submitDaemonJobResponse
+	if err := json.Unmarshal([]byte(out), &response); err != nil {
+		t.Fatalf("decode submit output: %v\n%s", err, out)
+	}
+	if !response.Accepted {
+		t.Fatalf("submit not accepted: %+v", response)
+	}
+	if response.JobType != daemonpkg.JobTypeOpenClawSnapshot {
+		t.Fatalf("submit job_type = %q, want %q", response.JobType, daemonpkg.JobTypeOpenClawSnapshot)
+	}
+	if response.JobID == "" {
+		t.Fatal("submit returned empty job_id")
+	}
+	if response.Status != daemonpkg.JobStatusQueued {
+		t.Fatalf("submit status = %q, want queued", response.Status)
+	}
+
+	snapshot, err := queue.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].JobID != response.JobID {
+		t.Fatalf("queue does not contain submitted job; jobs=%+v", snapshot.Jobs)
+	}
+}
+
+func TestValidateSubmitJobTypeAcceptsKnown(t *testing.T) {
+	for _, jt := range knownDaemonJobTypes {
+		if err := validateSubmitJobType(string(jt)); err != nil {
+			t.Errorf("validateSubmitJobType(%q) returned error: %v", jt, err)
+		}
+	}
+}
+
+func TestValidateSubmitJobTypeRejectsUnknown(t *testing.T) {
+	err := validateSubmitJobType("not-a-real-type")
+	if err == nil {
+		t.Fatal("validateSubmitJobType accepted unknown type")
+	}
+	var unk unknownJobTypeError
+	if !errors.As(err, &unk) {
+		t.Fatalf("validateSubmitJobType error type = %T, want unknownJobTypeError", err)
+	}
+	if unk.got != "not-a-real-type" {
+		t.Errorf("unknownJobTypeError.got = %q, want %q", unk.got, "not-a-real-type")
+	}
+	for _, want := range []string{"rpi.run", "wiki.forge", "openclaw.snapshot"} {
+		if !strings.Contains(unk.Error(), want) {
+			t.Errorf("error %q missing known-type %q", unk.Error(), want)
+		}
+	}
+}
+
+func TestReadSubmitPayloadInline(t *testing.T) {
+	got, err := readSubmitPayload(`{"k":1}`)
+	if err != nil {
+		t.Fatalf("inline payload: %v", err)
+	}
+	if got["k"] != float64(1) {
+		t.Errorf("payload k = %v, want 1", got["k"])
+	}
+}
+
+func TestReadSubmitPayloadFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "payload.json")
+	if err := os.WriteFile(path, []byte(`{"file":true}`), 0o600); err != nil {
+		t.Fatalf("write payload: %v", err)
+	}
+	got, err := readSubmitPayload("@" + path)
+	if err != nil {
+		t.Fatalf("file payload: %v", err)
+	}
+	if got["file"] != true {
+		t.Errorf("payload file = %v, want true", got["file"])
+	}
+}
+
+func TestReadSubmitPayloadRejectsEmpty(t *testing.T) {
+	if _, err := readSubmitPayload(""); err == nil {
+		t.Fatal("empty payload accepted")
+	}
+	if _, err := readSubmitPayload("   "); err == nil {
+		t.Fatal("whitespace payload accepted")
+	}
+}
+
+func TestReadSubmitPayloadRejectsNonJSON(t *testing.T) {
+	if _, err := readSubmitPayload("not json"); err == nil {
+		t.Fatal("non-JSON payload accepted")
 	}
 }
