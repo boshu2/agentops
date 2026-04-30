@@ -155,10 +155,10 @@ jobs:
       - name: Install AgentOps eval dependencies
         run: |
           sudo apt-get install -y jq ripgrep
-          sudo npm install -g bats
-          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          sudo npm install -g bats@1.12.0
+          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
-          bash scripts/install-bd.sh --version v1.0.3
+          GOBIN="$HOME/.local/bin" go install github.com/steveyegge/beads/cmd/bd@v1.0.3
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           bd_eval_root="$RUNNER_TEMP/agentops-bd"
           mkdir -p "$bd_eval_root"
@@ -672,7 +672,7 @@ jobs:
           BASE_REF_NAME: ${{ github.base_ref }}
         run: |
           echo "=== Enforcing Go complexity budget ==="
-          GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          GOBIN=/usr/local/bin go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             git fetch --no-tags --depth=1 origin "$BASE_REF_NAME"
             BASE_REF="origin/$BASE_REF_NAME"
@@ -843,7 +843,7 @@ jobs:
 
       - name: Install bats
         run: |
-          sudo npm install -g bats
+          sudo npm install -g bats@1.12.0
 
       - name: Run bats tests
         run: |
