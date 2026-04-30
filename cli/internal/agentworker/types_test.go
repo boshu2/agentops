@@ -12,8 +12,8 @@ func TestAgentWorkerLifecycleFakeSession(t *testing.T) {
 	worker := newFakeLifecycleWorker()
 
 	session, err := worker.Start(ctx, StartRequest{
-		WorkerKind: WorkerKindCodex,
-		Provider:   ProviderFake,
+		WorkerKind: WorkerKind("codex"),
+		Provider:   Provider("fake"),
 		JobID:      "job-1",
 		AttemptID:  "attempt-1",
 		RequestID:  "req-1",
@@ -128,7 +128,7 @@ func TestStartRequestValidate(t *testing.T) {
 		t.Fatal("empty request should fail validation")
 	}
 	err := (StartRequest{
-		WorkerKind: WorkerKindClaude,
+		WorkerKind: WorkerKind("claude"),
 		Provider:   ProviderGasCity,
 		Prompt:     "build wiki page",
 	}).Validate()

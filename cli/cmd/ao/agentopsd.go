@@ -304,7 +304,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{daemonpkg.FakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor}
+		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor}
 	case "gascity":
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
@@ -332,7 +332,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 }
 
 func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, error) {
-	worker, err := wikiworker.NewWorker(daemonpkg.NewFakeWikiAgentWorker())
+	worker, err := wikiworker.NewWorker(newDaemonFakeWikiAgentWorker())
 	if err != nil {
 		return nil, err
 	}

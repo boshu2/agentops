@@ -1,60 +1,53 @@
 {
   "schema_version": 1,
-  "run_id": "rpi-2026-04-29-ci-tests-hooks-noise-audit",
-  "objective": "Audit AgentOps CI tests and hooks to reduce noisy signals and strengthen explicit validation contracts",
-  "epic_id": "agentops-dtg",
+  "run_id": "rpi-20260430-jobspec-compat-delete-stubs",
+  "objective": "Add JobSpec v0 golden compatibility tests and execute the delete-stubs cleanup slice without changing current agentopsd behavior.",
+  "epic_id": null,
   "issue_ids": [
-    "agentops-dtg.1",
-    "agentops-dtg.2",
-    "agentops-dtg.3",
-    "agentops-dtg.4",
-    "agentops-dtg.5"
+    "task-1-jobspec-v0-golden-compat-tests",
+    "task-2-delete-stubs-cleanup"
   ],
-  "plan_path": ".agents/plans/2026-04-29-ci-tests-hooks-noise-audit.md",
-  "research_path": ".agents/research/2026-04-29-ci-tests-hooks-noise-audit.md",
-  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-ci-tests-hooks-noise-audit.md",
-  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-04-29-ci-tests-hooks-noise-audit.json",
-  "tracker_mode": "beads",
+  "plan_path": ".agents/rpi/phase-1-summary-2026-04-30-jobspec-compat-delete-stubs.md",
+  "research_path": "/Users/bo/dev/dotfiles/.agents/handoff/2026-04-30-agentops-scope-locked.md",
+  "pre_mortem_path": ".agents/rpi/phase-1-summary-2026-04-30-jobspec-compat-delete-stubs.md#pre-mortem",
+  "ranked_packet_path": "ao lookup: JobSpec compatibility tests delete stubs provider fake worker kinds",
+  "tracker_mode": "tasklist",
   "tracker_health": {
     "healthy": true,
-    "mode": "beads",
-    "reason": "bd available; created epic agentops-dtg with five child tasks"
+    "mode": "tasklist",
+    "reason": "bd is available, but ready beads are unrelated to the requested JobSpec compatibility and delete-stubs scope."
   },
   "contract_surfaces": [
-    ".github/workflows/validate.yml",
-    "AGENTS.md",
-    "docs/CI-CD.md",
-    "docs/TESTING.md",
-    "hooks/hooks.json",
-    "hooks/codex-hooks.json",
-    "scripts/pre-push-gate.sh",
-    "scripts/ci-local-release.sh",
-    "scripts/validate-ci-policy-parity.sh",
-    "scripts/validate-hook-preflight.sh",
-    "tests/hooks",
-    "tests/scripts"
+    "cli/internal/daemon/server.go",
+    "cli/internal/daemon/jobs.go",
+    "cli/internal/daemon/supervisor.go",
+    "cli/internal/daemon/wiki_jobs.go",
+    "cli/internal/daemon/wiki_executor.go",
+    "cli/internal/agentworker/types.go",
+    "cli/internal/agentworker/gascity.go",
+    "cli/internal/wikiworker/worker.go",
+    "docs/contracts/jobspec-openapi-v0.yaml"
   ],
   "done_criteria": [
-    "All workflow jobs are classified by summary policy and documented in AGENTS/docs or explicitly excluded with rationale",
-    "Hook preflight and orphan-hook checks derive coverage from manifests or explicit allowlists",
-    "Local gate tests exercise behavior rather than only checking grep/count structure",
-    "Advisory warnings remain visible but are explicitly marked non-blocking",
-    "Targeted validation commands in the plan pass"
+    "JobSpec v0 tests lock durable /v1/jobs submission, idempotent retry, status/events projection, cancel outcomes, lease retry exhaustion, and OpenClaw trigger allowlist behavior.",
+    "Delete-stubs cleanup removes dead public declarations where safe and does not remove current behavior required by existing daemon jobs.",
+    "Current JobSpec OpenAPI/RFC docs remain parseable and compatibility checks still pass.",
+    "Targeted Go tests pass for daemon, agentworker, wikiworker, and LLM surfaces touched by the cleanup."
   ],
   "validation_commands": [
-    "bash scripts/validate-ci-policy-parity.sh",
-    "bash tests/scripts/test-ci-policy-parity.sh",
-    "bash scripts/validate-hooks-doc-parity.sh",
-    "bash scripts/validate-hook-preflight.sh",
-    "bash tests/hooks/test-orphan-hooks.sh",
-    "bats tests/scripts/pre-push-gate.bats tests/scripts/ci-local-release.bats",
-    "bats tests/hooks/*.bats",
-    "bash tests/docs/validate-doc-release.sh",
-    "bash scripts/pre-push-gate.sh --fast --scope worktree",
-    "bash scripts/ci-local-release.sh --fast"
+    "cd cli && go test ./internal/daemon ./internal/agentworker ./internal/wikiworker ./internal/llm",
+    "cd cli && go test ./cmd/ao",
+    "scripts/check-contract-compatibility.sh",
+    "ruby -e 'require \"yaml\"; YAML.load_file(\"docs/contracts/jobspec-openapi-v0.yaml\")'",
+    "git diff --check"
   ],
   "complexity": "standard",
   "pre_mortem_verdict": "WARN",
+  "known_risks": [
+    "Do not delete WorkerKind string values from runtime payload validation; they are still current GasCity remote agent labels even if the shared exported constants are too broad.",
+    "Mutation route tests must keep the exact-path allowlist behavior covered; prior finding f-2026-04-29-005 applies.",
+    "Fake production fixtures may be current CLI behavior, not just dead code; remove only the stub/public-contract surface unless tests and docs prove a behavior can be retired."
+  ],
   "test_levels": {
     "required": [
       "L0",
@@ -64,7 +57,7 @@
     "recommended": [
       "L3"
     ],
-    "rationale": "Work touches shell validators, workflow policy, hook manifests/tests, and docs. L3 local release validation is final-wave proof because broad local gates can be noisy during policy normalization."
+    "rationale": "The change touches HTTP contract tests, queue replay behavior, and shared Go runtime types. Targeted package tests are required; broader CLI gates are advisory if production fake-policy behavior is changed."
   },
-  "discovery_timestamp": "2026-04-29T20:43:49Z"
+  "discovery_timestamp": "2026-04-30T00:00:00-04:00"
 }

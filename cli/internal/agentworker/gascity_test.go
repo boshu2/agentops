@@ -50,7 +50,7 @@ func TestGasCityAgentWorkerStartsCodexSessionAndStreamsTerminal(t *testing.T) {
 	}
 
 	session, err := worker.Start(context.Background(), StartRequest{
-		WorkerKind: WorkerKindCodex,
+		WorkerKind: WorkerKind("codex"),
 		JobID:      "wiki.forge:1",
 		AttemptID:  "attempt-1",
 		RequestID:  "req-1",
@@ -129,7 +129,7 @@ func TestGasCityAgentWorkerUsesConfiguredTemplateName(t *testing.T) {
 		t.Fatalf("NewGasCityWorker: %v", err)
 	}
 	if _, err := worker.Start(context.Background(), StartRequest{
-		WorkerKind: WorkerKindCodex,
+		WorkerKind: WorkerKind("codex"),
 		JobID:      "wiki.forge:1",
 		AttemptID:  "attempt-1",
 		RequestID:  "req-1",
@@ -154,7 +154,7 @@ func TestGasCityAgentWorkerClaudeTerminalLost(t *testing.T) {
 	}
 
 	session, err := worker.Attach(context.Background(), SessionRef{
-		WorkerKind: WorkerKindClaude,
+		WorkerKind: WorkerKind("claude"),
 		Provider:   ProviderGasCity,
 		SessionID:  "sess_claude",
 		Status:     StatusRunning,
@@ -179,7 +179,7 @@ func TestGasCityAgentWorkerRejectsUnreadyCity(t *testing.T) {
 	}
 
 	_, err = worker.Start(context.Background(), StartRequest{
-		WorkerKind: WorkerKindCodex,
+		WorkerKind: WorkerKind("codex"),
 		Prompt:     "extract",
 	})
 	if err == nil {

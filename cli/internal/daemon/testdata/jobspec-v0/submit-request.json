@@ -1,0 +1,9 @@
+{
+  "request_id": "req-golden-submit",
+  "job_id": "job-golden-rpi",
+  "job_type": "rpi.run",
+  "idempotency_key": "idem-golden-rpi",
+  "payload": {
+    "goal": "ship daemon conformance"
+  }
+}

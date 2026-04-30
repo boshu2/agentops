@@ -1,0 +1,1038 @@
+openapi: 3.1.0
+info:
+  title: AgentOps JobSpec API
+  version: 0.0.0
+  summary: Current agentopsd job submission, queue, projection, and consumer API.
+  description: |
+    Draft JobSpec OpenAPI v0 for the current AgentOps daemon behavior.
+
+    This document is descriptive, not aspirational. It reflects the HTTP
+    surface implemented by `cli/internal/daemon/server.go` and the queue
+    lifecycle implemented by `cli/internal/daemon/jobs.go` as of 2026-04-30.
+
+    The canonical versioned paths are `/v1/*`. Current daemon routers also
+    expose unversioned aliases for `/health`, `/ready`, `/status`, `/events`,
+    `/jobs`, and `/jobs/cancel`.
+  x-agentops-contract-version: jobspec.v0
+  x-agentops-current-behavior: true
+servers:
+  - url: http://127.0.0.1:8765
+    description: Default loopback daemon address from `ao daemon run`.
+tags:
+  - name: Readiness
+    description: Read-only daemon health and projection readiness.
+  - name: Jobs
+    description: Local-token-protected job mutation and queue state.
+  - name: Events
+    description: Read-only daemon ledger replay.
+  - name: OpenClaw
+    description: OpenClaw consumer projection and safe trigger surface.
+paths:
+  /v1/health:
+    get:
+      tags: [Readiness]
+      operationId: getDaemonHealth
+      summary: Check daemon process health.
+      x-agentops-aliases: [/health]
+      responses:
+        "200":
+          description: Daemon process answered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+  /v1/ready:
+    get:
+      tags: [Readiness]
+      operationId: getDaemonReady
+      summary: Check whether ledger replay and projections are usable.
+      x-agentops-aliases: [/ready]
+      responses:
+        "200":
+          description: Readiness response, including degraded projection reasons.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /v1/status:
+    get:
+      tags: [Readiness, Jobs]
+      operationId: getDaemonStatus
+      summary: Return queue state and all rebuilt projections.
+      x-agentops-aliases: [/status]
+      responses:
+        "200":
+          description: Current daemon read model rebuilt from the ledger.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /v1/events:
+    get:
+      tags: [Events]
+      operationId: listDaemonEvents
+      summary: Return replayed daemon ledger events.
+      x-agentops-aliases: [/events]
+      responses:
+        "200":
+          description: Ledger events, corrupt records observed during read-only replay, and latest event id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventsResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /v1/jobs:
+    post:
+      tags: [Jobs]
+      operationId: submitJob
+      summary: Submit a durable daemon job.
+      description: |
+        Appends `job.accepted` to `.agents/daemon/ledger.jsonl` before
+        returning success. Reusing an existing `job_id` or `idempotency_key`
+        returns the existing queue job instead of appending a duplicate event.
+      x-agentops-aliases: [/jobs]
+      security:
+        - DaemonMutationToken: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitJobRequest"
+            examples:
+              rpi:
+                value:
+                  request_id: req_20260430_000001
+                  job_id: job_rpi_000001
+                  job_type: rpi.run
+                  idempotency_key: rpi:demo:cycle-1
+                  payload:
+                    goal: Draft current-behavior JobSpec v0
+      responses:
+        "202":
+          description: Job accepted or idempotently recovered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitJobResponse"
+        "400":
+          $ref: "#/components/responses/InvalidJSON"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "503":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+  /v1/jobs/cancel:
+    post:
+      tags: [Jobs]
+      operationId: cancelJob
+      summary: Cancel a non-terminal daemon job.
+      description: |
+        Appends `job.cancelled` for non-terminal jobs. Terminal jobs are not
+        mutated and return an `already_terminal_*` outcome.
+      x-agentops-aliases: [/jobs/cancel]
+      security:
+        - DaemonMutationToken: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelJobRequest"
+            examples:
+              cancel:
+                value:
+                  request_id: req_cancel_000001
+                  job_id: job_rpi_000001
+                  reason: operator stop
+      responses:
+        "202":
+          description: Cancellation outcome.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelJobResponse"
+        "400":
+          $ref: "#/components/responses/InvalidJSON"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "503":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/health:
+    get:
+      tags: [OpenClaw]
+      operationId: getOpenClawHealth
+      summary: Return OpenClaw consumer projection health.
+      responses:
+        "200":
+          description: OpenClaw snapshot health summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenClawHealthResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/snapshot/latest:
+    get:
+      tags: [OpenClaw]
+      operationId: getOpenClawSnapshotLatest
+      summary: Return the latest OpenClaw consumer snapshot.
+      responses:
+        "200":
+          description: Versioned read-only consumer snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenClawConsumerSnapshot"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/runs:
+    get:
+      tags: [OpenClaw]
+      operationId: listOpenClawRuns
+      summary: Return OpenClaw run resources.
+      responses:
+        "200":
+          description: Run resources derived from daemon projections.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [runs]
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OpenClawResourceSummary"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/jobs:
+    get:
+      tags: [OpenClaw]
+      operationId: listOpenClawJobs
+      summary: Return OpenClaw job resources.
+      responses:
+        "200":
+          description: Job resources derived from daemon projections.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [jobs]
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OpenClawResourceSummary"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/wiki:
+    get:
+      tags: [OpenClaw]
+      operationId: listOpenClawWiki
+      summary: Return OpenClaw wiki resources.
+      responses:
+        "200":
+          description: Wiki resources derived from daemon projections.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [wiki]
+                properties:
+                  wiki:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OpenClawResourceSummary"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/Error"
+  /openclaw/v1/triggers/jobs:
+    post:
+      tags: [OpenClaw]
+      operationId: triggerOpenClawJob
+      summary: Submit an OpenClaw-allowlisted daemon job.
+      description: |
+        Requires daemon readiness before submission. Only
+        `openclaw.snapshot`, `rpi.run`, `dream.run`, and `wiki.forge` are
+        allowlisted through this endpoint.
+      security:
+        - DaemonMutationToken: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenClawTriggerJobRequest"
+      responses:
+        "202":
+          description: Job accepted through the OpenClaw-safe trigger gate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenClawTriggerJobResponse"
+        "400":
+          description: Invalid JSON or non-allowlisted job type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "503":
+          description: Daemon not ready or queue failpoint.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/OpenClawDaemonNotReady"
+        "500":
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    DaemonMutationToken:
+      type: apiKey
+      in: header
+      name: X-AgentOps-Daemon-Token
+    BearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    InvalidJSON:
+      description: Request body was not valid JSON.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: invalid json
+    Forbidden:
+      description: Mutation policy denied the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "daemon mutation denied: mutation token mismatch"
+    MethodNotAllowed:
+      description: HTTP method is outside this endpoint contract.
+      headers:
+        Allow:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: method not allowed
+    Error:
+      description: Daemon error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    HealthResponse:
+      type: object
+      required: [status, daemon, read_only, now]
+      properties:
+        status:
+          type: string
+          const: ok
+        daemon:
+          type: string
+          const: agentopsd
+        read_only:
+          type: boolean
+          const: true
+        now:
+          type: string
+          format: date-time
+    ReadyResponse:
+      type: object
+      required: [ready, ledger_replay_status, projection_status, projection_lag]
+      properties:
+        ready:
+          type: boolean
+        ledger_replay_status:
+          $ref: "#/components/schemas/SnapshotReplayStatus"
+        projection_status:
+          $ref: "#/components/schemas/ProjectionStatus"
+        projection_lag:
+          $ref: "#/components/schemas/ProjectionLag"
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    StatusResponse:
+      type: object
+      required: [ready, projection_lag, queue, projections]
+      properties:
+        ready:
+          type: boolean
+        projection_lag:
+          $ref: "#/components/schemas/ProjectionLag"
+        queue:
+          $ref: "#/components/schemas/QueueSnapshot"
+        projections:
+          $ref: "#/components/schemas/ProjectionSet"
+    EventsResponse:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerEvent"
+        corrupt:
+          type: array
+          items:
+            $ref: "#/components/schemas/CorruptRecord"
+        last_event_id:
+          type: string
+    SubmitJobRequest:
+      type: object
+      required: [job_type]
+      properties:
+        request_id:
+          type: string
+          description: Optional request correlation id. Must not contain whitespace when supplied.
+        job_id:
+          type: string
+          description: Optional caller-supplied durable job id.
+        job_type:
+          $ref: "#/components/schemas/JobType"
+        idempotency_key:
+          type: string
+          description: Optional key used to recover after lost acknowledgements.
+        payload:
+          type: object
+          additionalProperties: true
+    SubmitJobResponse:
+      type: object
+      required: [accepted, request_id, job_id, status, projection_status, projection_lag]
+      properties:
+        accepted:
+          type: boolean
+          const: true
+        request_id:
+          type: string
+        job_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        last_event_id:
+          type: string
+        projection_status:
+          $ref: "#/components/schemas/ProjectionStatus"
+        projection_lag:
+          $ref: "#/components/schemas/ProjectionLag"
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+        idempotency_key:
+          type: string
+    CancelJobRequest:
+      type: object
+      required: [job_id]
+      properties:
+        request_id:
+          type: string
+        job_id:
+          type: string
+        reason:
+          type: string
+    CancelJobResponse:
+      type: object
+      required: [cancelled, outcome, job, projection_status, projection_lag]
+      properties:
+        cancelled:
+          type: boolean
+        outcome:
+          $ref: "#/components/schemas/CancelJobOutcome"
+        job:
+          $ref: "#/components/schemas/QueueJobState"
+        projection_status:
+          $ref: "#/components/schemas/ProjectionStatus"
+        projection_lag:
+          $ref: "#/components/schemas/ProjectionLag"
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    QueueSnapshot:
+      type: object
+      required: [jobs]
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueueJobState"
+        last_event_id:
+          type: string
+    QueueJobState:
+      type: object
+      required: [job_id, job_type, request_id, status, attempt, max_attempts]
+      properties:
+        job_id:
+          type: string
+        job_type:
+          $ref: "#/components/schemas/JobType"
+        request_id:
+          type: string
+        request_ids:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        idempotency_key:
+          type: string
+        attempt:
+          type: integer
+          minimum: 0
+        max_attempts:
+          type: integer
+          minimum: 1
+        claim_token:
+          type: string
+        lease_epoch:
+          type: integer
+          minimum: 0
+        lease_expires_at:
+          type: string
+          format: date-time
+        retry_exhausted:
+          type: boolean
+        failure:
+          $ref: "#/components/schemas/JobFailure"
+        artifacts:
+          type: object
+          additionalProperties:
+            type: string
+        projection_targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectionName"
+        payload:
+          type: object
+          additionalProperties: true
+        last_event_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LedgerEvent:
+      type: object
+      required: [schema_version, event_id, request_id, job_id, event_type, occurred_at, actor]
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        event_id:
+          type: string
+        request_id:
+          type: string
+        job_id:
+          type: string
+        event_type:
+          $ref: "#/components/schemas/EventType"
+        occurred_at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    CorruptRecord:
+      type: object
+      required: [line_number, error]
+      properties:
+        line_number:
+          type: integer
+          minimum: 1
+        error:
+          type: string
+        quarantine_path:
+          type: string
+    ProjectionLag:
+      type: object
+      required: [event_count, corrupt_record_count, degraded]
+      properties:
+        last_event_id:
+          type: string
+        event_count:
+          type: integer
+          minimum: 0
+        corrupt_record_count:
+          type: integer
+          minimum: 0
+        degraded:
+          type: boolean
+    ProjectionSet:
+      type: object
+      required: [schema_version, rebuilt_at, source_ledger, manifests, jobs, rpi, dream, wiki, openclaw]
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        rebuilt_at:
+          type: string
+          format: date-time
+        source_ledger:
+          type: string
+        last_event_id:
+          type: string
+        manifests:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ProjectionManifest"
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobProjection"
+        rpi:
+          type: object
+          required: [runs]
+          properties:
+            runs:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+        dream:
+          type: object
+          required: [runs]
+          properties:
+            runs:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+        wiki:
+          type: object
+          required: [jobs]
+          properties:
+            jobs:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+        openclaw:
+          $ref: "#/components/schemas/OpenClawSnapshotProjection"
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    ProjectionManifest:
+      type: object
+      required: [schema_version, projection, source_ledger, status, rebuilt_at]
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        projection:
+          $ref: "#/components/schemas/ProjectionName"
+        source_ledger:
+          type: string
+        last_event_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/ProjectionStatus"
+        rebuilt_at:
+          type: string
+          format: date-time
+        output_paths:
+          type: array
+          items:
+            type: string
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    JobProjection:
+      type: object
+      required: [job_id, request_id, status]
+      properties:
+        job_id:
+          type: string
+        job_type:
+          $ref: "#/components/schemas/JobType"
+        request_id:
+          type: string
+        request_ids:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        result_status:
+          $ref: "#/components/schemas/JobResultStatus"
+        failure:
+          $ref: "#/components/schemas/JobFailure"
+        artifacts:
+          type: object
+          additionalProperties:
+            type: string
+        projection_targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectionName"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_event_id:
+          type: string
+    OpenClawSnapshotProjection:
+      type: object
+      required: [schema_version, snapshot_id, generated_at, source, resources, status]
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        snapshot_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        source:
+          $ref: "#/components/schemas/OpenClawSnapshotSource"
+        resources:
+          type: object
+          required: [runs, jobs, wiki]
+          properties:
+            runs:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+            jobs:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+            wiki:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobProjection"
+        status:
+          $ref: "#/components/schemas/ProjectionStatus"
+    OpenClawHealthResponse:
+      type: object
+      required: [status, ready, snapshot_id, generated_at, source, snapshot_status, resource_counts]
+      properties:
+        status:
+          type: string
+          const: ok
+        ready:
+          type: boolean
+        snapshot_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        source:
+          $ref: "#/components/schemas/OpenClawSnapshotSource"
+        snapshot_status:
+          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+        resource_counts:
+          type: object
+          required: [runs, jobs, wiki]
+          properties:
+            runs:
+              type: integer
+              minimum: 0
+            jobs:
+              type: integer
+              minimum: 0
+            wiki:
+              type: integer
+              minimum: 0
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    OpenClawConsumerSnapshot:
+      type: object
+      required: [schema_version, snapshot_id, generated_at, source, status, resources]
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        snapshot_id:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        source:
+          $ref: "#/components/schemas/OpenClawSnapshotSource"
+        status:
+          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+        resources:
+          type: object
+          required: [runs, jobs, wiki]
+          properties:
+            runs:
+              type: array
+              items:
+                $ref: "#/components/schemas/OpenClawResourceSummary"
+            jobs:
+              type: array
+              items:
+                $ref: "#/components/schemas/OpenClawResourceSummary"
+            wiki:
+              type: array
+              items:
+                $ref: "#/components/schemas/OpenClawResourceSummary"
+    OpenClawSnapshotSource:
+      type: object
+      required: [ledger]
+      properties:
+        ledger:
+          type: string
+        last_event_id:
+          type: string
+    OpenClawResourceSummary:
+      type: object
+      required: [resource_id, resource_kind, status]
+      properties:
+        resource_id:
+          type: string
+        resource_kind:
+          type: string
+          enum: [run, job, wiki]
+        job_id:
+          type: string
+        job_type:
+          type: string
+        run_id:
+          type: string
+        request_id:
+          type: string
+        request_ids:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        result_status:
+          type: string
+        failure:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryable:
+              type: boolean
+        artifacts:
+          type: object
+          additionalProperties:
+            type: string
+        projection_targets:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_event_id:
+          type: string
+        provenance:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenClawProvenanceLink"
+    OpenClawProvenanceLink:
+      type: object
+      required: [rel, kind]
+      properties:
+        rel:
+          type: string
+        kind:
+          type: string
+        uri:
+          type: string
+        path:
+          type: string
+        job_id:
+          type: string
+        run_id:
+          type: string
+        event_id:
+          type: string
+        artifact:
+          type: string
+    OpenClawTriggerJobRequest:
+      allOf:
+        - $ref: "#/components/schemas/SubmitJobRequest"
+        - type: object
+          properties:
+            job_type:
+              type: string
+              enum: [openclaw.snapshot, rpi.run, dream.run, wiki.forge]
+    OpenClawTriggerJobResponse:
+      type: object
+      required: [accepted, request_id, job_id, job_type, status, snapshot_status]
+      properties:
+        accepted:
+          type: boolean
+          const: true
+        request_id:
+          type: string
+        job_id:
+          type: string
+        job_type:
+          type: string
+        status:
+          type: string
+        last_event_id:
+          type: string
+        snapshot_status:
+          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+        idempotency_key:
+          type: string
+    OpenClawDaemonNotReady:
+      type: object
+      required: [error, projection_lag]
+      properties:
+        error:
+          type: string
+          const: daemon is not ready
+        projection_lag:
+          $ref: "#/components/schemas/ProjectionLag"
+        degraded_reasons:
+          type: array
+          items:
+            type: string
+    JobFailure:
+      type: object
+      required: [code]
+      properties:
+        code:
+          $ref: "#/components/schemas/FailureCode"
+        message:
+          type: string
+        retryable:
+          type: boolean
+    JobType:
+      type: string
+      enum:
+        - rpi.run
+        - rpi.phase
+        - dream.run
+        - dream.stage
+        - wiki.build
+        - wiki.forge
+        - openclaw.snapshot
+    JobStatus:
+      type: string
+      enum:
+        - queued
+        - running
+        - retry_waiting
+        - completed
+        - failed
+        - cancelled
+        - degraded
+    JobResultStatus:
+      type: string
+      enum: [succeeded, failed, cancelled]
+    CancelJobOutcome:
+      type: string
+      enum:
+        - cancelled
+        - already_terminal_completed
+        - already_terminal_failed
+        - already_terminal_cancelled
+    EventType:
+      type: string
+      enum:
+        - job.accepted
+        - job.claimed
+        - job.heartbeat
+        - job.lease_expired
+        - job.completed
+        - job.failed
+        - job.cancelled
+        - projection.marked_stale
+        - projection.rebuilt
+    FailureCode:
+      type: string
+      enum:
+        - daemon_unavailable
+        - provider_unreachable
+        - session_pending
+        - lost
+        - event_stream_unavailable
+        - terminal_without_transcript
+        - request_rejected
+        - projection_degraded
+        - retry_exhausted
+    ProjectionName:
+      type: string
+      enum:
+        - rpi-registry
+        - dream-runs
+        - wiki-jobs
+        - openclaw-snapshot
+        - daemon-status
+        - daemon-job-status
+    ProjectionStatus:
+      type: string
+      enum: [current, stale, degraded]
+    SnapshotReplayStatus:
+      type: string
+      enum: [complete, corrupt]
+    OpenClawSnapshotStatus:
+      type: string
+      enum: [current, stale, degraded]

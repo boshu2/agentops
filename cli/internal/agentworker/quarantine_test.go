@@ -22,7 +22,7 @@ func TestQuarantineWriterWritesRecordWithSessionRefs(t *testing.T) {
 		AttemptID: "attempt-1",
 		RequestID: "req-1",
 		Session: SessionRef{
-			WorkerKind: WorkerKindCodex,
+			WorkerKind: WorkerKind("codex"),
 			Provider:   ProviderGasCity,
 			JobID:      "wiki.forge:1",
 			AttemptID:  "attempt-1",

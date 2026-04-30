@@ -1,5 +1,5 @@
 // Package agentworker defines the shared runtime contract for headless agent
-// providers such as Codex, Claude, and future GasCity-backed workers.
+// providers such as GasCity-backed worker sessions.
 package agentworker
 
 import (
@@ -12,18 +12,11 @@ import (
 // WorkerKind identifies the agent runtime the session executes.
 type WorkerKind string
 
-const (
-	WorkerKindCodex  WorkerKind = "codex"
-	WorkerKindClaude WorkerKind = "claude"
-)
-
 // Provider identifies the transport/provider that owns the session.
 type Provider string
 
 const (
-	ProviderGasCity     Provider = "gascity"
-	ProviderCLIFallback Provider = "cli-fallback"
-	ProviderFake        Provider = "fake"
+	ProviderGasCity Provider = "gascity"
 )
 
 // SessionStatus is the AgentOps status vocabulary for worker sessions.

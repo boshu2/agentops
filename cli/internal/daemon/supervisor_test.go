@@ -13,7 +13,7 @@ func TestSupervisor_CompletesFakeJob(t *testing.T) {
 	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	supervisor := newTestSupervisor(t, queue, FakeOpenClawSnapshotExecutor{})
+	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
 
 	result, err := supervisor.RunOnce(context.Background())
 	if err != nil {
@@ -36,7 +36,7 @@ func TestSupervisor_FailsFakeJob(t *testing.T) {
 	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	supervisor := newTestSupervisor(t, queue, FakeOpenClawSnapshotExecutor{Err: errors.New("snapshot failed")})
+	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{Err: errors.New("snapshot failed")})
 
 	result, err := supervisor.RunOnce(context.Background())
 	if err != nil {
@@ -89,7 +89,7 @@ func TestSupervisor_HeartbeatsLongJob(t *testing.T) {
 func TestSupervisor_RunLoopStopsOnCancel(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	supervisor := newTestSupervisor(t, queue, FakeOpenClawSnapshotExecutor{})
+	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
 	supervisor.pollInterval = 5 * time.Millisecond
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
@@ -160,6 +160,29 @@ func newTestSupervisor(t *testing.T, queue *Queue, executor JobExecutor) *Superv
 		t.Fatalf("new supervisor: %v", err)
 	}
 	return supervisor
+}
+
+type testOpenClawSnapshotExecutor struct {
+	Err       error
+	Artifacts map[string]string
+}
+
+func (e testOpenClawSnapshotExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeOpenClawSnapshot}
+}
+
+func (e testOpenClawSnapshotExecutor) RunJob(_ context.Context, claim QueueClaim) (JobExecutionResult, error) {
+	if claim.Job.JobType != JobTypeOpenClawSnapshot {
+		return JobExecutionResult{}, errors.New("test executor received unsupported job type")
+	}
+	artifacts := map[string]string{
+		"executor_policy": "fake",
+		"snapshot_status": "validated",
+	}
+	for key, value := range e.Artifacts {
+		artifacts[key] = value
+	}
+	return JobExecutionResult{Artifacts: artifacts}, e.Err
 }
 
 type blockingOpenClawExecutor struct {

@@ -17,8 +17,8 @@ func TestAgentWorkerGeneratorLifecycleReturnsTranscript(t *testing.T) {
 	}
 	gen, err := NewAgentWorkerGenerator(AgentWorkerGeneratorOptions{
 		Worker:        worker,
-		WorkerKind:    agentworker.WorkerKindCodex,
-		Provider:      agentworker.ProviderFake,
+		WorkerKind:    agentworker.WorkerKind("codex"),
+		Provider:      agentworker.Provider("fake"),
 		Model:         "codex-headless",
 		JobID:         "wiki.forge:1",
 		AttemptID:     "attempt-1",
@@ -65,8 +65,8 @@ func TestAgentWorkerGeneratorTerminalFailureReturnsError(t *testing.T) {
 	}
 	gen, err := NewAgentWorkerGenerator(AgentWorkerGeneratorOptions{
 		Worker:     worker,
-		WorkerKind: agentworker.WorkerKindClaude,
-		Provider:   agentworker.ProviderFake,
+		WorkerKind: agentworker.WorkerKind("claude"),
+		Provider:   agentworker.Provider("fake"),
 		Model:      "claude-headless",
 	})
 	if err != nil {
@@ -90,8 +90,8 @@ func TestAgentWorkerGeneratorUsesTerminalStateAfterStreamReplay(t *testing.T) {
 	}
 	gen, err := NewAgentWorkerGenerator(AgentWorkerGeneratorOptions{
 		Worker:     worker,
-		WorkerKind: agentworker.WorkerKindCodex,
-		Provider:   agentworker.ProviderFake,
+		WorkerKind: agentworker.WorkerKind("codex"),
+		Provider:   agentworker.Provider("fake"),
 		Model:      "codex-headless",
 	})
 	if err != nil {

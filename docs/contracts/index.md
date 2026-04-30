@@ -32,6 +32,13 @@ skills, the runtime, and external integrations.
     Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
     trust, projections, and migration from foreground command flows.
 
+-   :material-file-code: **[JobSpec OpenAPI v0](jobspec-openapi-v0.yaml)**
+
+    ---
+
+    Machine-readable OpenAPI contract for the current `agentopsd` job,
+    readiness, ledger replay, projection, and OpenClaw consumer HTTP surface.
+
 -   :material-api: **[GasCity Integration](gascity-integration.md)**
 
     ---

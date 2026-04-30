@@ -17,6 +17,8 @@ import (
 const WikiJobSpecSchemaVersion = 1
 const maxWikiForgePromptSourceBytes = 60 * 1024
 
+const defaultWikiForgeWorkerKind agentworker.WorkerKind = "codex"
+
 type WikiForgeJobSpec struct {
 	SchemaVersion int                    `json:"schema_version"`
 	JobType       JobType                `json:"job_type"`
@@ -72,7 +74,7 @@ func NewWikiForgeJobSpec(dreamRunID, outputDir string, sourcePaths []string) Wik
 		DreamRunID:    dreamRunID,
 		SourcePaths:   append([]string{}, sourcePaths...),
 		OutputDir:     outputDir,
-		WorkerKind:    agentworker.WorkerKindCodex,
+		WorkerKind:    defaultWikiForgeWorkerKind,
 		Provider:      agentworker.ProviderGasCity,
 		MaxAttempts:   2,
 	}
@@ -97,7 +99,7 @@ func (spec WikiForgeJobSpec) Validate() error {
 		return fmt.Errorf("output_dir is required")
 	}
 	switch spec.WorkerKind {
-	case agentworker.WorkerKindCodex, agentworker.WorkerKindClaude:
+	case agentworker.WorkerKind("codex"), agentworker.WorkerKind("claude"):
 	default:
 		return fmt.Errorf("unsupported worker_kind %q", spec.WorkerKind)
 	}

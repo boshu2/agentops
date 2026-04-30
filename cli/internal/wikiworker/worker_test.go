@@ -29,14 +29,14 @@ func TestWikiWorkerRunsGasCityCodexAgentWorker(t *testing.T) {
 		JobID:     "wiki.forge:1",
 		AttemptID: "attempt-1",
 		RequestID: "req-1",
-		Worker:    agentworker.WorkerKindCodex,
+		Worker:    agentworker.WorkerKind("codex"),
 		Provider:  agentworker.ProviderGasCity,
 		Model:     "codex-headless",
 	})
 	if err != nil {
 		t.Fatalf("RunExtraction: %v", err)
 	}
-	if agent.started.WorkerKind != agentworker.WorkerKindCodex || agent.started.Provider != agentworker.ProviderGasCity {
+	if agent.started.WorkerKind != agentworker.WorkerKind("codex") || agent.started.Provider != agentworker.ProviderGasCity {
 		t.Fatalf("started request: %#v", agent.started)
 	}
 	if result.Extraction.Title != "GasCity worker extracts wiki" {
@@ -63,7 +63,7 @@ func TestWikiWorkerRejectsClaudeTerminalFailure(t *testing.T) {
 
 	result, err := worker.RunExtraction(context.Background(), ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindClaude,
+		Worker:   agentworker.WorkerKind("claude"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if err == nil {
@@ -116,7 +116,7 @@ func TestWikiWorkerCompletesFromValidTranscriptWhileGasCitySessionRunning(t *tes
 
 	result, err := worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func TestWikiWorkerReturnsValidationErrorFromInvalidTranscriptWhileGasCitySessio
 
 	result, err := worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	var validationErr *ExtractionValidationError
@@ -202,7 +202,7 @@ func TestWikiWorkerDoesNotValidateToolChunkBeforeActiveTranscriptLag(t *testing.
 
 	_, err = worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if !errors.Is(err, context.DeadlineExceeded) {
@@ -241,7 +241,7 @@ func TestWikiWorkerDoesNotCloseIdleSessionForAssistantPlaceholders(t *testing.T)
 
 	_, err = worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if !errors.Is(err, context.DeadlineExceeded) {
@@ -279,7 +279,7 @@ func TestWikiWorkerIgnoresOutputOnlyTranscriptWhileGasCitySessionRunning(t *test
 
 	_, err = worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if !errors.Is(err, context.DeadlineExceeded) {
@@ -322,7 +322,7 @@ func TestWikiWorkerClosesIdleActiveSessionAfterAssistantActivity(t *testing.T) {
 
 	result, err := worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if err != nil {
@@ -373,7 +373,7 @@ func TestWikiWorkerClosesIdleActiveSessionAfterOutputOnlyActivity(t *testing.T) 
 
 	result, err := worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	if err != nil {
@@ -415,7 +415,7 @@ func TestWikiWorkerReturnsValidationErrorFromUnstructuredTranscriptAfterActiveLa
 
 	result, err := worker.RunExtraction(ctx, ExtractionRequest{
 		Prompt:   "extract wiki",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	})
 	var validationErr *ExtractionValidationError
@@ -444,7 +444,7 @@ func TestWikiWorkerRetrySucceedsBeforeQuarantine(t *testing.T) {
 	result, err := worker.RunExtractionWithRetry(context.Background(), ExtractionRequest{
 		Prompt:   "extract wiki",
 		JobID:    "wiki.forge:retry",
-		Worker:   agentworker.WorkerKindCodex,
+		Worker:   agentworker.WorkerKind("codex"),
 		Provider: agentworker.ProviderGasCity,
 	}, RetryOptions{MaxAttempts: 2, QuarantineDir: quarantineDir})
 	if err != nil {
@@ -481,7 +481,7 @@ func TestWikiWorkerQuarantineAfterRetryCap(t *testing.T) {
 		JobID:     "wiki.forge:quarantine",
 		AttemptID: "attempt-7",
 		RequestID: "req-7",
-		Worker:    agentworker.WorkerKindCodex,
+		Worker:    agentworker.WorkerKind("codex"),
 		Provider:  agentworker.ProviderGasCity,
 	}, RetryOptions{
 		MaxAttempts:   2,

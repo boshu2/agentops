@@ -21,7 +21,7 @@ func TestWikiForgeJobSpecRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("WikiForgeJobSpecFromPayload: %v", err)
 	}
-	if got.JobType != JobTypeWikiForge || got.WorkerKind != agentworker.WorkerKindCodex || got.Provider != agentworker.ProviderGasCity {
+	if got.JobType != JobTypeWikiForge || got.WorkerKind != agentworker.WorkerKind("codex") || got.Provider != agentworker.ProviderGasCity {
 		t.Fatalf("spec roundtrip: %#v", got)
 	}
 }
@@ -114,7 +114,7 @@ func TestWikiForgePromptRequiresStructuredOutputEnvelope(t *testing.T) {
 		JobID:      "job-wiki-123",
 		AttemptID:  "2",
 		RequestID:  "req-wiki-123",
-		WorkerKind: agentworker.WorkerKindCodex,
+		WorkerKind: agentworker.WorkerKind("codex"),
 		Provider:   agentworker.ProviderGasCity,
 		SourcePath: "transcripts/session.jsonl",
 		SourceText: "decision: avoid shell argv payloads",

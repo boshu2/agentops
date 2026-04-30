@@ -2,13 +2,10 @@ package daemon
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
-	"time"
 
-	"github.com/boshu2/agentops/cli/internal/agentworker"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
 )
 
@@ -122,110 +119,4 @@ func wikiForgeFailureArtifacts(result wikiworker.ExtractionResult, err error) ma
 		return nil
 	}
 	return artifacts
-}
-
-// NewFakeWikiAgentWorker returns an in-memory AgentWorker for deterministic
-// daemon wiki executor tests and fake foreground policy.
-func NewFakeWikiAgentWorker() agentworker.AgentWorker {
-	return fakeWikiAgentWorker{}
-}
-
-type fakeWikiAgentWorker struct{}
-
-func (fakeWikiAgentWorker) Start(_ context.Context, req agentworker.StartRequest) (agentworker.AgentSession, error) {
-	if err := req.Validate(); err != nil {
-		return nil, err
-	}
-	return &fakeWikiAgentSession{req: req}, nil
-}
-
-func (fakeWikiAgentWorker) Attach(_ context.Context, ref agentworker.SessionRef) (agentworker.AgentSession, error) {
-	if err := ref.Validate(); err != nil {
-		return nil, err
-	}
-	return &fakeWikiAgentSession{ref: ref}, nil
-}
-
-type fakeWikiAgentSession struct {
-	req agentworker.StartRequest
-	ref agentworker.SessionRef
-}
-
-func (s *fakeWikiAgentSession) Ref() agentworker.SessionRef {
-	if s.ref.SessionID != "" {
-		return s.ref
-	}
-	return agentworker.SessionRef{
-		WorkerKind:        s.req.WorkerKind,
-		Provider:          agentworker.ProviderFake,
-		JobID:             s.req.JobID,
-		AttemptID:         s.req.AttemptID,
-		RequestID:         s.req.RequestID,
-		ProviderRequestID: "fake-wiki-request-" + sanitizeWikiArtifactName(s.req.JobID),
-		SessionID:         "fake-wiki-session-" + sanitizeWikiArtifactName(s.req.JobID),
-		EventCursor:       "fake-cursor-terminal",
-		Status:            agentworker.StatusCompleted,
-	}
-}
-
-func (s *fakeWikiAgentSession) Nudge(context.Context, agentworker.NudgeRequest) error {
-	return nil
-}
-
-func (s *fakeWikiAgentSession) Cancel(context.Context, agentworker.CancelRequest) error {
-	return nil
-}
-
-func (s *fakeWikiAgentSession) Stream(context.Context, agentworker.StreamOptions) (<-chan agentworker.Event, error) {
-	ch := make(chan agentworker.Event, 1)
-	ch <- agentworker.Event{
-		Cursor: "fake-cursor-terminal",
-		At:     time.Now().UTC(),
-		Type:   agentworker.EventTerminal,
-		State:  agentworker.TerminalState{Status: agentworker.StatusCompleted},
-	}
-	close(ch)
-	return ch, nil
-}
-
-func (s *fakeWikiAgentSession) Transcript(context.Context) (agentworker.Transcript, error) {
-	payload := map[string]any{
-		"schema_version": 1,
-		"title":          "Fake daemon wiki extraction",
-		"summary":        "The fake AgentWorker produced deterministic wiki extraction output.",
-		"entities":       []string{"AgentOps", "AgentWorker"},
-		"concepts":       []string{"daemon wiki executor"},
-		"decisions":      []string{"Use AgentWorker for daemon wiki jobs"},
-		"open_questions": []string{},
-		"work_phase":     "implement",
-	}
-	envelope := map[string]any{
-		"schema_version": 1,
-		"session":        s.Ref(),
-		"status":         string(agentworker.StatusCompleted),
-		"payload":        payload,
-		"artifacts": []map[string]string{{
-			"kind":              "wiki-note",
-			"path":              ".agents/wiki/sources/fake-daemon-wiki.md",
-			"validation_status": "valid",
-		}},
-	}
-	data, err := json.Marshal(envelope)
-	if err != nil {
-		return agentworker.Transcript{}, err
-	}
-	return agentworker.Transcript{Text: string(data)}, nil
-}
-
-func (s *fakeWikiAgentSession) Artifacts(context.Context) ([]agentworker.Artifact, error) {
-	return []agentworker.Artifact{{
-		Kind:             "wiki-note",
-		Path:             ".agents/wiki/sources/fake-daemon-wiki.md",
-		SessionID:        s.Ref().SessionID,
-		ValidationStatus: "valid",
-	}}, nil
-}
-
-func (s *fakeWikiAgentSession) TerminalState(context.Context) (agentworker.TerminalState, error) {
-	return agentworker.TerminalState{Status: agentworker.StatusCompleted}, nil
 }

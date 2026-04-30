@@ -111,7 +111,7 @@ func (w *Worker) RunExtraction(ctx context.Context, req ExtractionRequest) (Extr
 		return ExtractionResult{}, fmt.Errorf("prompt is required")
 	}
 	if req.Worker == "" {
-		req.Worker = agentworker.WorkerKindCodex
+		req.Worker = agentworker.WorkerKind("codex")
 	}
 	if req.Provider == "" {
 		req.Provider = agentworker.ProviderGasCity

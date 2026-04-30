@@ -255,8 +255,8 @@ func TestRunForgeTier1_AgentWorkerGenerator(t *testing.T) {
 		Quiet:          true,
 		Workspace:      "/fixture/ws",
 		Worker:         worker,
-		WorkerKind:     agentworker.WorkerKindCodex,
-		WorkerProvider: agentworker.ProviderFake,
+		WorkerKind:     agentworker.WorkerKind("codex"),
+		WorkerProvider: agentworker.Provider("fake"),
 	}
 	result, err := RunForgeTier1(opts)
 	if err != nil {

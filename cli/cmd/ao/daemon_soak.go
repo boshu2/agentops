@@ -229,7 +229,7 @@ func runDaemonSoakScenario(ctx context.Context, cwd string, queue *daemonpkg.Que
 		}, daemonpkg.QueueMutationOptions{}); err != nil {
 			return []string{jobID}, err
 		}
-		executor := daemonpkg.FakeOpenClawSnapshotExecutor{Artifacts: map[string]string{
+		executor := daemonFakeOpenClawSnapshotExecutor{Artifacts: map[string]string{
 			"soak_run_id": opts.RunID,
 			"soak_report": filepath.Join(proofDir, "soak-report.json"),
 		}}

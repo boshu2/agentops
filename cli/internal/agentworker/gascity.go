@@ -13,6 +13,11 @@ import (
 
 const defaultGasCityTranscriptFormat = "conversation"
 
+const (
+	gasCityCodexRuntime  WorkerKind = "codex"
+	gasCityClaudeRuntime WorkerKind = "claude"
+)
+
 // GasCityClient is the narrow GasCity surface AgentWorker needs.
 type GasCityClient interface {
 	CityReadiness(context.Context, string) (gascity.ReadinessResponse, error)
@@ -354,7 +359,7 @@ func (s *GasCitySession) TerminalState(ctx context.Context) (TerminalState, erro
 
 func validateGasCityWorkerKind(kind WorkerKind) error {
 	switch kind {
-	case WorkerKindCodex, WorkerKindClaude:
+	case gasCityCodexRuntime, gasCityClaudeRuntime:
 		return nil
 	default:
 		return fmt.Errorf("unsupported gascity worker kind %q", kind)

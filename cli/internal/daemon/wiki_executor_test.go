@@ -21,7 +21,7 @@ func TestWikiForgeExecutorCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 		t.Fatalf("write source: %v", err)
 	}
 	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{sourcePath})
-	spec.Provider = agentworker.ProviderFake
+	spec.Provider = agentworker.Provider("fake")
 	jobSpec, err := spec.ToJobSpec("job-wiki")
 	if err != nil {
 		t.Fatalf("ToJobSpec: %v", err)
@@ -34,11 +34,7 @@ func TestWikiForgeExecutorCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 	}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	worker, err := wikiworker.NewWorker(NewFakeWikiAgentWorker())
-	if err != nil {
-		t.Fatalf("NewWorker: %v", err)
-	}
-	executor, err := NewWikiForgeExecutor(WikiForgeExecutorOptions{Store: store, Worker: worker})
+	executor, err := NewWikiForgeExecutor(WikiForgeExecutorOptions{Store: store, Worker: successfulWikiForgeWorker{}})
 	if err != nil {
 		t.Fatalf("NewWikiForgeExecutor: %v", err)
 	}
@@ -104,6 +100,26 @@ func TestWikiForgeExecutorInvalidOutputFailsWithQuarantineArtifact(t *testing.T)
 	if result.Job.Artifacts["terminal_status"] != string(agentworker.StatusCompleted) {
 		t.Fatalf("terminal artifact = %#v", result.Job.Artifacts)
 	}
+}
+
+type successfulWikiForgeWorker struct{}
+
+func (successfulWikiForgeWorker) RunExtractionWithRetry(_ context.Context, req wikiworker.ExtractionRequest, _ wikiworker.RetryOptions) (wikiworker.ExtractionResult, error) {
+	result := wikiworker.ExtractionResult{
+		Session: agentworker.SessionRef{
+			WorkerKind:        req.Worker,
+			Provider:          req.Provider,
+			JobID:             req.JobID,
+			AttemptID:         req.AttemptID,
+			RequestID:         req.RequestID,
+			ProviderRequestID: "provider-request",
+			SessionID:         "session-valid",
+			EventCursor:       "cursor-valid",
+			Status:            agentworker.StatusCompleted,
+		},
+		Terminal: agentworker.TerminalState{Status: agentworker.StatusCompleted},
+	}
+	return result, nil
 }
 
 type failingWikiForgeWorker struct {

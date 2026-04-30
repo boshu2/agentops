@@ -1,0 +1,15 @@
+{
+  "accepted": true,
+  "request_id": "req-golden-submit",
+  "job_id": "job-golden-rpi",
+  "status": "queued",
+  "last_event_id": "evt_job_accepted_job-golden-rpi_000001",
+  "projection_status": "current",
+  "projection_lag": {
+    "last_event_id": "evt_job_accepted_job-golden-rpi_000001",
+    "event_count": 1,
+    "corrupt_record_count": 0,
+    "degraded": false
+  },
+  "idempotency_key": "idem-golden-rpi"
+}

@@ -26,12 +26,17 @@ func TestBdCLITimeout(t *testing.T) {
 func TestGateCheckerWithMissingBd(t *testing.T) {
 	// This test verifies that findEpic handles command errors gracefully.
 	// When bd is not installed or not in PATH, we should get an error but not hang.
+	restrictSearchOrder(t)
+
 	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".agents"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", t.TempDir())
+
 	checker, err := NewGateChecker(tmpDir)
 	if err != nil {
-		// NewGateChecker may fail if the directory structure is not set up,
-		// which is expected for this test
-		t.Skip("GateChecker requires specific directory structure")
+		t.Fatalf("NewGateChecker: %v", err)
 	}
 
 	// Call findEpic - it will fail but should not hang
