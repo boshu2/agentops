@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DefaultMutationTokenHeader = "X-AgentOps-Daemon-Token"
+	DefaultMutationTokenHeader = "X-AgentOps-Daemon-Token" // #nosec G101 -- HTTP header name, not a credential.
 )
 
 var (

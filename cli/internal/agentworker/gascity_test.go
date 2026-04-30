@@ -72,11 +72,14 @@ func TestGasCityAgentWorkerStartsCodexSessionAndStreamsTerminal(t *testing.T) {
 	if createReq.Title != "wiki forge" {
 		t.Fatalf("create title = %q, want wiki forge", createReq.Title)
 	}
+	if createReq.Message != "extract wiki lessons" {
+		t.Fatalf("create message = %q, want prompt", createReq.Message)
+	}
 	if createReq.Alias != "agentworker-wiki-forge-1" {
 		t.Fatalf("create alias = %q, want agentworker-wiki-forge-1", createReq.Alias)
 	}
-	if len(fake.submitCalls) != 1 || fake.submitCalls[0].req.Message != "extract wiki lessons" {
-		t.Fatalf("submit calls: %#v", fake.submitCalls)
+	if len(fake.submitCalls) != 0 {
+		t.Fatalf("start should use create-time message, got submit calls: %#v", fake.submitCalls)
 	}
 	if session.Ref().Provider != ProviderGasCity || session.Ref().SessionID != "sess_codex" {
 		t.Fatalf("session ref: %#v", session.Ref())
@@ -109,6 +112,33 @@ func TestGasCityAgentWorkerStartsCodexSessionAndStreamsTerminal(t *testing.T) {
 	}
 	if len(artifacts) != 1 || artifacts[0].SessionID != "sess_codex" {
 		t.Fatalf("artifacts: %#v", artifacts)
+	}
+}
+
+func TestGasCityAgentWorkerUsesConfiguredTemplateName(t *testing.T) {
+	fake := &fakeGasCityWorkerClient{
+		ready:   gascity.ReadinessResponse{Ready: true, Status: "ready"},
+		session: gascity.Session{ID: "sess_worker", Alias: "alias-worker", State: "running"},
+	}
+	worker, err := NewGasCityWorker(GasCityWorkerOptions{
+		Client:       fake,
+		CityName:     "agentops",
+		TemplateName: "agentops-worker",
+	})
+	if err != nil {
+		t.Fatalf("NewGasCityWorker: %v", err)
+	}
+	if _, err := worker.Start(context.Background(), StartRequest{
+		WorkerKind: WorkerKindCodex,
+		JobID:      "wiki.forge:1",
+		AttemptID:  "attempt-1",
+		RequestID:  "req-1",
+		Prompt:     "extract wiki lessons",
+	}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if len(fake.createCalls) != 1 || fake.createCalls[0].req.Name != "agentops-worker" {
+		t.Fatalf("create calls: %#v", fake.createCalls)
 	}
 }
 
@@ -224,6 +254,10 @@ func (f *fakeGasCityWorkerClient) SubmitSession(_ context.Context, cityName stri
 		meta.RequestID = "req-submit"
 	}
 	return gascity.SessionSubmitResponse{Status: "queued", ID: sessionID, Queued: true, Intent: req.Intent}, meta, nil
+}
+
+func (f *fakeGasCityWorkerClient) CloseSession(context.Context, string, string) (gascity.ResponseMeta, error) {
+	return gascity.ResponseMeta{RequestID: "req-close"}, nil
 }
 
 func (f *fakeGasCityWorkerClient) StreamCityEvents(context.Context, string, gascity.EventStreamOptions) (GasCityEventStream, gascity.ResponseMeta, error) {

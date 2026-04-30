@@ -19,6 +19,7 @@ type GasCityClient interface {
 	CreateSession(context.Context, string, gascity.SessionCreateRequest) (gascity.Session, gascity.ResponseMeta, error)
 	GetSession(context.Context, string, string, gascity.SessionGetOptions) (gascity.Session, gascity.ResponseMeta, error)
 	SubmitSession(context.Context, string, string, gascity.SessionSubmitRequest) (gascity.SessionSubmitResponse, gascity.ResponseMeta, error)
+	CloseSession(context.Context, string, string) (gascity.ResponseMeta, error)
 	StreamCityEvents(context.Context, string, gascity.EventStreamOptions) (GasCityEventStream, gascity.ResponseMeta, error)
 	SessionTranscript(context.Context, string, string, gascity.TranscriptOptions) (gascity.TranscriptResponse, gascity.ResponseMeta, error)
 }
@@ -50,6 +51,10 @@ func (a GasCityClientAdapter) SubmitSession(ctx context.Context, cityName string
 	return a.Client.SubmitSession(ctx, cityName, id, req)
 }
 
+func (a GasCityClientAdapter) CloseSession(ctx context.Context, cityName string, id string) (gascity.ResponseMeta, error) {
+	return a.Client.CloseSession(ctx, cityName, id)
+}
+
 func (a GasCityClientAdapter) StreamCityEvents(ctx context.Context, cityName string, opts gascity.EventStreamOptions) (GasCityEventStream, gascity.ResponseMeta, error) {
 	stream, meta, err := a.Client.StreamCityEvents(ctx, cityName, opts)
 	if err != nil {
@@ -78,6 +83,7 @@ func (s gasCityEventStreamAdapter) Close() error {
 type GasCityWorkerOptions struct {
 	Client           GasCityClient
 	CityName         string
+	TemplateName     string
 	TranscriptFormat string
 	AliasFunc        func(StartRequest) string
 }
@@ -88,6 +94,7 @@ type GasCityWorker struct {
 	cityName         string
 	transcriptFormat string
 	aliasFunc        func(StartRequest) string
+	templateName     string
 }
 
 // NewGasCityWorker constructs a GasCity-backed AgentWorker.
@@ -107,11 +114,13 @@ func NewGasCityWorker(opts GasCityWorkerOptions) (*GasCityWorker, error) {
 	if aliasFunc == nil {
 		aliasFunc = defaultGasCityAlias
 	}
+	templateName := strings.TrimSpace(opts.TemplateName)
 	return &GasCityWorker{
 		client:           opts.Client,
 		cityName:         cityName,
 		transcriptFormat: format,
 		aliasFunc:        aliasFunc,
+		templateName:     templateName,
 	}, nil
 }
 
@@ -140,11 +149,16 @@ func (w *GasCityWorker) Start(ctx context.Context, req StartRequest) (AgentSessi
 	}
 
 	alias := w.aliasFunc(req)
+	templateName := w.templateName
+	if templateName == "" {
+		templateName = string(req.WorkerKind)
+	}
 	session, createMeta, err := w.client.CreateSession(ctx, w.cityName, gascity.SessionCreateRequest{
-		Kind:  "agent",
-		Name:  string(req.WorkerKind),
-		Alias: alias,
-		Async: true,
+		Kind:    "agent",
+		Name:    templateName,
+		Alias:   alias,
+		Message: req.Prompt,
+		Async:   true,
 		// GasCity validates options against the provider schema. AgentOps job
 		// metadata is arbitrary and remains in AgentOps' durable SessionRef.
 		Title: firstNonEmpty(req.Metadata["title"], req.JobID, string(req.WorkerKind)+" worker"),
@@ -156,17 +170,9 @@ func (w *GasCityWorker) Start(ctx context.Context, req StartRequest) (AgentSessi
 	if sessionID == "" {
 		return nil, fmt.Errorf("gascity create %s session returned empty session id", req.WorkerKind)
 	}
-	_, submitMeta, err := w.client.SubmitSession(ctx, w.cityName, sessionID, gascity.SessionSubmitRequest{
-		Message: req.Prompt,
-		Intent:  "follow_up",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("gascity submit %s session %q: %w", req.WorkerKind, sessionID, err)
-	}
-
 	ref := gasCitySessionRef(req, session, createMeta.RequestID, StatusRunning)
 	ref.SessionID = sessionID
-	ref.ProviderRequestID = firstNonEmpty(submitMeta.RequestID, createMeta.RequestID)
+	ref.ProviderRequestID = createMeta.RequestID
 	if ref.EventCursor == "" {
 		ref.EventCursor = gascity.CursorFromFrame(gascity.EventStreamFrame{})
 	}
@@ -246,6 +252,19 @@ func (s *GasCitySession) Cancel(ctx context.Context, req CancelRequest) error {
 	}
 	if err == nil {
 		s.ref.Status = StatusCancelled
+	}
+	return err
+}
+
+// Close asks GasCity to close the provider session successfully so transcript
+// evidence is flushed for one-shot AgentWorker jobs.
+func (s *GasCitySession) Close(ctx context.Context) error {
+	meta, err := s.client.CloseSession(ctx, s.cityName, s.ref.SessionID)
+	if meta.RequestID != "" {
+		s.ref.ProviderRequestID = meta.RequestID
+	}
+	if err == nil {
+		s.ref.Status = StatusCompleted
 	}
 	return err
 }

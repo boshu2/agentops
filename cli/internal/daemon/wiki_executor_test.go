@@ -3,6 +3,8 @@ package daemon
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -14,7 +16,11 @@ func TestWikiForgeExecutorCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session-a.jsonl"})
+	sourcePath := filepath.Join(t.TempDir(), "session-a.jsonl")
+	if err := os.WriteFile(sourcePath, []byte("decision: restore fake baseline after smoke\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{sourcePath})
 	spec.Provider = agentworker.ProviderFake
 	jobSpec, err := spec.ToJobSpec("job-wiki")
 	if err != nil {
@@ -59,7 +65,11 @@ func TestWikiForgeExecutorInvalidOutputFailsWithQuarantineArtifact(t *testing.T)
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session-a.jsonl"})
+	sourcePath := filepath.Join(t.TempDir(), "session-a.jsonl")
+	if err := os.WriteFile(sourcePath, []byte("decision: quarantine invalid worker output\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{sourcePath})
 	jobSpec, err := spec.ToJobSpec("job-wiki")
 	if err != nil {
 		t.Fatalf("ToJobSpec: %v", err)

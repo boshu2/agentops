@@ -90,6 +90,343 @@ func TestWikiWorkerRejectsInvalidGasCityWorkerOutput(t *testing.T) {
 	}
 }
 
+func TestWikiWorkerCompletesFromValidTranscriptWhileGasCitySessionRunning(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\n" + validWorkerEnvelope("codex", validExtractionPayload()),
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: validWorkerEnvelope("codex", validExtractionPayload())},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "assistant turn complete but session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if err != nil {
+		t.Fatalf("RunExtraction: %v", err)
+	}
+	if agent.closeCount != 1 {
+		t.Fatalf("close count = %d, want 1", agent.closeCount)
+	}
+	if result.Terminal.Status != agentworker.StatusCompleted {
+		t.Fatalf("terminal: %#v", result.Terminal)
+	}
+	if result.Extraction.Title != "GasCity worker extracts wiki" {
+		t.Fatalf("title: %q", result.Extraction.Title)
+	}
+}
+
+func TestWikiWorkerReturnsValidationErrorFromInvalidTranscriptWhileGasCitySessionRunning(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\n" + `{"schema_version":1,"refusal":"not enough wiki context"}`,
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: `{"schema_version":1,"refusal":"not enough wiki context"}`},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	var validationErr *ExtractionValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("want ExtractionValidationError, got result=%#v err=%v", result, err)
+	}
+	if validationErr.Terminal.Status != agentworker.StatusRunning {
+		t.Fatalf("validation terminal: %#v", validationErr.Terminal)
+	}
+	if !strings.Contains(validationErr.RawOutput, "not enough wiki context") {
+		t.Fatalf("raw output: %q", validationErr.RawOutput)
+	}
+}
+
+func TestWikiWorkerDoesNotValidateToolChunkBeforeActiveTranscriptLag(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Hour)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\n[exec_command]",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: "[exec_command]"},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("want context deadline before validation lag, got %v", err)
+	}
+}
+
+func TestWikiWorkerDoesNotCloseIdleSessionForAssistantPlaceholders(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreCloseIdle := setActiveTranscriptCloseIdleForTest(time.Millisecond)
+	defer restoreCloseIdle()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Millisecond)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\n[thinking]\n\nASSISTANT:\n[exec_command]",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: "[thinking]"},
+			{Role: "assistant", Content: "[exec_command]"},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("want context deadline while only placeholders are present, got %v", err)
+	}
+	if agent.closeCount != 0 {
+		t.Fatalf("close count = %d, want 0", agent.closeCount)
+	}
+}
+
+func TestWikiWorkerIgnoresOutputOnlyTranscriptWhileGasCitySessionRunning(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Millisecond)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "OUTPUT:\nOpenAI Codex\n> prompt text still in the terminal input area",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "output", Content: "OpenAI Codex\n> prompt text still in the terminal input area"},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	_, err = worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("want context deadline for output-only active transcript, got %v", err)
+	}
+}
+
+func TestWikiWorkerClosesIdleActiveSessionAfterAssistantActivity(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreCloseIdle := setActiveTranscriptCloseIdleForTest(time.Millisecond)
+	defer restoreCloseIdle()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Hour)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\nWorking on extraction.",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: "Working on extraction."},
+		},
+		transcriptAfterClose: "USER:\nextract wiki\n\nASSISTANT:\n" + validWorkerEnvelope("codex", validExtractionPayload()),
+		transcriptMessagesAfterClose: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: validWorkerEnvelope("codex", validExtractionPayload())},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if err != nil {
+		t.Fatalf("RunExtraction: %v", err)
+	}
+	if agent.closeCount != 1 {
+		t.Fatalf("close count = %d, want 1", agent.closeCount)
+	}
+	if result.Terminal.Status != agentworker.StatusCompleted {
+		t.Fatalf("terminal: %#v", result.Terminal)
+	}
+	if result.Extraction.Title != "GasCity worker extracts wiki" {
+		t.Fatalf("title: %q", result.Extraction.Title)
+	}
+}
+
+func TestWikiWorkerClosesIdleActiveSessionAfterOutputOnlyActivity(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreCloseIdle := setActiveTranscriptCloseIdleForTest(time.Millisecond)
+	defer restoreCloseIdle()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Hour)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "OUTPUT:\n- Ran gc prime\n- Working",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "output", Content: "- Ran gc prime\n- Working"},
+		},
+		transcriptAfterClose: "USER:\nextract wiki\n\nASSISTANT:\n" + validWorkerEnvelope("codex", validExtractionPayload()),
+		transcriptMessagesAfterClose: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: validWorkerEnvelope("codex", validExtractionPayload())},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	if err != nil {
+		t.Fatalf("RunExtraction: %v", err)
+	}
+	if agent.closeCount != 1 {
+		t.Fatalf("close count = %d, want 1", agent.closeCount)
+	}
+	if result.Extraction.Title != "GasCity worker extracts wiki" {
+		t.Fatalf("title: %q", result.Extraction.Title)
+	}
+}
+
+func TestWikiWorkerReturnsValidationErrorFromUnstructuredTranscriptAfterActiveLag(t *testing.T) {
+	restorePollInterval := setActiveTranscriptPollIntervalForTest(time.Millisecond)
+	defer restorePollInterval()
+	restoreValidationLag := setActiveTranscriptValidationLagForTest(time.Millisecond)
+	defer restoreValidationLag()
+
+	agent := &fakeWikiAgentWorker{
+		transcript: "USER:\nextract wiki\n\nASSISTANT:\nI found no reusable knowledge in this smoke file.",
+		transcriptMessages: []agentworker.TranscriptMessage{
+			{Role: "user", Content: "extract wiki"},
+			{Role: "assistant", Content: "I found no reusable knowledge in this smoke file."},
+		},
+		terminal: agentworker.TerminalState{Status: agentworker.StatusRunning, Reason: "session still active"},
+		streamEvents: []agentworker.Event{{
+			Type:  agentworker.EventOutput,
+			State: agentworker.TerminalState{Status: agentworker.StatusRunning},
+		}},
+		holdStreamOpen: true,
+	}
+	worker, err := NewWorker(agent)
+	if err != nil {
+		t.Fatalf("NewWorker: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := worker.RunExtraction(ctx, ExtractionRequest{
+		Prompt:   "extract wiki",
+		Worker:   agentworker.WorkerKindCodex,
+		Provider: agentworker.ProviderGasCity,
+	})
+	var validationErr *ExtractionValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("want ExtractionValidationError, got result=%#v err=%v", result, err)
+	}
+	if !strings.Contains(validationErr.RawOutput, "I found no reusable knowledge") {
+		t.Fatalf("raw output: %q", validationErr.RawOutput)
+	}
+}
+
 func TestWikiWorkerRetrySucceedsBeforeQuarantine(t *testing.T) {
 	quarantineDir := filepath.Join(t.TempDir(), "quarantine")
 	agent := &fakeWikiAgentWorker{
@@ -177,11 +514,18 @@ func TestWikiWorkerQuarantineAfterRetryCap(t *testing.T) {
 }
 
 type fakeWikiAgentWorker struct {
-	started     agentworker.StartRequest
-	startCount  int
-	transcript  string
-	transcripts []string
-	terminal    agentworker.TerminalState
+	started                      agentworker.StartRequest
+	startCount                   int
+	transcript                   string
+	transcriptMessages           []agentworker.TranscriptMessage
+	transcriptAfterClose         string
+	transcriptMessagesAfterClose []agentworker.TranscriptMessage
+	transcripts                  []string
+	terminal                     agentworker.TerminalState
+	streamEvents                 []agentworker.Event
+	holdStreamOpen               bool
+	closed                       bool
+	closeCount                   int
 }
 
 func (f *fakeWikiAgentWorker) Start(_ context.Context, req agentworker.StartRequest) (agentworker.AgentSession, error) {
@@ -229,10 +573,32 @@ func (s *fakeWikiAgentSession) Cancel(context.Context, agentworker.CancelRequest
 	return nil
 }
 
-func (s *fakeWikiAgentSession) Stream(context.Context, agentworker.StreamOptions) (<-chan agentworker.Event, error) {
-	ch := make(chan agentworker.Event, 1)
-	ch <- agentworker.Event{Type: agentworker.EventTerminal, State: s.worker.terminal}
-	close(ch)
+func (s *fakeWikiAgentSession) Close(context.Context) error {
+	s.worker.closed = true
+	s.worker.closeCount++
+	s.worker.terminal = agentworker.TerminalState{Status: agentworker.StatusCompleted}
+	return nil
+}
+
+func (s *fakeWikiAgentSession) Stream(ctx context.Context, _ agentworker.StreamOptions) (<-chan agentworker.Event, error) {
+	events := s.worker.streamEvents
+	if events == nil {
+		events = []agentworker.Event{{Type: agentworker.EventTerminal, State: s.worker.terminal}}
+	}
+	ch := make(chan agentworker.Event, len(events))
+	go func() {
+		defer close(ch)
+		for _, event := range events {
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- event:
+			}
+		}
+		if s.worker.holdStreamOpen {
+			<-ctx.Done()
+		}
+	}()
 	return ch, nil
 }
 
@@ -247,7 +613,10 @@ func (s *fakeWikiAgentSession) Transcript(context.Context) (agentworker.Transcri
 		}
 		return agentworker.Transcript{Text: s.worker.transcripts[index]}, nil
 	}
-	return agentworker.Transcript{Text: s.worker.transcript}, nil
+	if s.worker.closed && s.worker.transcriptAfterClose != "" {
+		return agentworker.Transcript{Text: s.worker.transcriptAfterClose, Messages: s.worker.transcriptMessagesAfterClose}, nil
+	}
+	return agentworker.Transcript{Text: s.worker.transcript, Messages: s.worker.transcriptMessages}, nil
 }
 
 func (s *fakeWikiAgentSession) Artifacts(context.Context) ([]agentworker.Artifact, error) {
@@ -289,4 +658,28 @@ func validExtractionPayload() string {
 		"open_questions": [],
 		"work_phase": "implement"
 	}`
+}
+
+func setActiveTranscriptPollIntervalForTest(interval time.Duration) func() {
+	previous := activeTranscriptPollInterval
+	activeTranscriptPollInterval = interval
+	return func() {
+		activeTranscriptPollInterval = previous
+	}
+}
+
+func setActiveTranscriptCloseIdleForTest(idle time.Duration) func() {
+	previous := activeTranscriptCloseIdle
+	activeTranscriptCloseIdle = idle
+	return func() {
+		activeTranscriptCloseIdle = previous
+	}
+}
+
+func setActiveTranscriptValidationLagForTest(lag time.Duration) func() {
+	previous := activeTranscriptValidationLag
+	activeTranscriptValidationLag = lag
+	return func() {
+		activeTranscriptValidationLag = previous
+	}
 }

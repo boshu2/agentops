@@ -270,6 +270,7 @@ func runDaemonSoakClaimedJob(ctx context.Context, queue *daemonpkg.Queue, jobID 
 		return err
 	}
 	result, execErr := executor.RunJob(ctx, claim)
+	artifacts := result.Artifacts
 	if execErr != nil {
 		_, err := queue.FailJob(daemonpkg.FailJobInput{
 			JobID:      claim.Job.JobID,
@@ -281,7 +282,7 @@ func runDaemonSoakClaimedJob(ctx context.Context, queue *daemonpkg.Queue, jobID 
 				Code:    daemonpkg.FailureRequestRejected,
 				Message: execErr.Error(),
 			},
-			Artifacts: result.Artifacts,
+			Artifacts: artifacts,
 		}, daemonpkg.QueueMutationOptions{})
 		return err
 	}
@@ -291,7 +292,7 @@ func runDaemonSoakClaimedJob(ctx context.Context, queue *daemonpkg.Queue, jobID 
 		ClaimToken: claim.ClaimToken,
 		LeaseEpoch: claim.LeaseEpoch,
 		Actor:      "daemon-soak",
-		Artifacts:  result.Artifacts,
+		Artifacts:  artifacts,
 	}, daemonpkg.QueueMutationOptions{})
 	return err
 }

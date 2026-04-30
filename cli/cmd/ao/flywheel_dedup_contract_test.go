@@ -30,6 +30,8 @@ import (
 // (e.g., the SkipGlobalHub=true / guarded-append pair from agentops
 // 4af82384 + f6fce986) re-bloats the global hub at ~/.agents/learnings/.
 func TestPromote_DedupsAcrossWriters(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
 	body := "When fmt.Errorf wraps with %w you preserve the underlying error chain"
 	bodySum := sha256.Sum256([]byte(body))
 	contentHash := hex.EncodeToString(bodySum[:])

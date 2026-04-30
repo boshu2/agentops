@@ -377,8 +377,9 @@ func buildAgentOpsDaemonGasCityWikiExecutor(cwd string, opts agentopsDaemonRunOp
 		return nil, err
 	}
 	agent, err := agentworker.NewGasCityWorker(agentworker.GasCityWorkerOptions{
-		Client:   agentworker.GasCityClientAdapter{Client: client},
-		CityName: opts.GasCityCity,
+		Client:       agentworker.GasCityClientAdapter{Client: client},
+		CityName:     opts.GasCityCity,
+		TemplateName: os.Getenv("AGENTOPS_GASCITY_WORKER_TEMPLATE"),
 	})
 	if err != nil {
 		return nil, err

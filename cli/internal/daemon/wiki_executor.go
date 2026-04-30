@@ -52,8 +52,12 @@ func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobEx
 	}
 	refs := make([]WikiWorkerSessionRef, 0, len(spec.SourcePaths))
 	for _, sourcePath := range spec.SourcePaths {
+		promptCtx, err := newWikiForgePromptContext(claim, spec, sourcePath)
+		if err != nil {
+			return JobExecutionResult{}, err
+		}
 		result, err := e.worker.RunExtractionWithRetry(ctx, wikiworker.ExtractionRequest{
-			Prompt:    wikiForgePrompt(sourcePath),
+			Prompt:    wikiForgePrompt(promptCtx),
 			JobID:     claim.Job.JobID,
 			AttemptID: fmt.Sprintf("%d", claim.Job.Attempt),
 			RequestID: claim.Job.RequestID,
