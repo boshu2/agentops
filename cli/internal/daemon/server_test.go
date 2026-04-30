@@ -50,6 +50,11 @@ func TestReadOnlyHealthReadyStatusEvents(t *testing.T) {
 	if len(events.Events) != 2 || events.LastEventID == "" {
 		t.Fatalf("events = %#v, want two events and last event id", events)
 	}
+	var eventsAfter ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events?since="+events.Events[0].EventID, &eventsAfter)
+	if len(eventsAfter.Events) != 1 || eventsAfter.Events[0].EventID != events.Events[1].EventID {
+		t.Fatalf("events after = %#v, want only %s", eventsAfter, events.Events[1].EventID)
+	}
 }
 
 func TestReadOnlyServerLoadsProjectionSnapshotOnReadState(t *testing.T) {
