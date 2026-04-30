@@ -24,9 +24,7 @@ func TestConstraintLockPath(t *testing.T) {
 
 func TestLoadConstraintIndex_Missing(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	_, err := LoadConstraintIndex()
 	if err == nil {
@@ -39,9 +37,7 @@ func TestLoadConstraintIndex_Missing(t *testing.T) {
 
 func TestLoadConstraintIndex_Valid(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	_ = os.MkdirAll(filepath.Join(".agents", "constraints"), 0o755)
 	idx := ConstraintIndex{SchemaVersion: 1, Constraints: []ConstraintEntry{{ID: "c1", Title: "t"}}}
@@ -59,9 +55,7 @@ func TestLoadConstraintIndex_Valid(t *testing.T) {
 
 func TestLoadConstraintIndex_Malformed(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	_ = os.MkdirAll(filepath.Join(".agents", "constraints"), 0o755)
 	_ = os.WriteFile(ConstraintIndexPath(), []byte("not json"), 0o600)
@@ -118,9 +112,7 @@ func TestFilterStaleConstraints(t *testing.T) {
 
 func TestSaveConstraintIndexUnlocked(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	idx := &ConstraintIndex{SchemaVersion: 1, Constraints: []ConstraintEntry{{ID: "x", Title: "Saved"}}}
 	if err := SaveConstraintIndexUnlocked(idx); err != nil {
@@ -138,9 +130,7 @@ func TestSaveConstraintIndexUnlocked(t *testing.T) {
 
 func TestWithConstraintLock_RunsOnce(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	called := 0
 	err := WithConstraintLock(func() error {
@@ -165,9 +155,7 @@ func TestWithConstraintLock_RunsOnce(t *testing.T) {
 
 func TestWithConstraintLock_PropagatesError(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	defer func() { _ = os.Chdir(prev) }()
-	_ = os.Chdir(tmp)
+	t.Chdir(tmp)
 
 	sentinel := errors.New("boom")
 	err := WithConstraintLock(func() error { return sentinel })

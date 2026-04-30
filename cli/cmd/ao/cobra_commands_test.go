@@ -585,9 +585,7 @@ func TestCobraStatusCommand(t *testing.T) {
 
 	t.Run("json_not_initialized", func(t *testing.T) {
 		tmp2 := t.TempDir()
-		orig, _ := os.Getwd()
-		_ = os.Chdir(tmp2)
-		defer func() { _ = os.Chdir(orig) }()
+		t.Chdir(tmp2)
 
 		// Reset the output flag
 		output = "json"
@@ -2336,9 +2334,7 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		orig, _ := os.Getwd()
-		_ = os.Chdir(tmp)
-		defer func() { _ = os.Chdir(orig) }()
+		t.Chdir(tmp)
 
 		// Capture stdout
 		old := os.Stdout

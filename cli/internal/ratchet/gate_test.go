@@ -335,19 +335,7 @@ func prependFakeCommand(t *testing.T, name string, body string) {
 
 func chdirTemp(t *testing.T, dir string) {
 	t.Helper()
-
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir %s: %v", dir, err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(wd); err != nil {
-			t.Fatalf("restore wd: %v", err)
-		}
-	})
+	t.Chdir(dir)
 }
 
 func TestGateChecker_CheckPreMortem_NoArtifact_CrewOnly(t *testing.T) {

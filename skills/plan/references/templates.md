@@ -285,6 +285,12 @@ Wave 2 (Depends on Wave 1):
 | `{{base_path}}{{service_name}}/config.py` | **NEW** — configuration handling |
 | `tests/unit/test_{{service_name}}.py` | **NEW** — unit tests |
 
+> **Skills-codex parity:** when a plan modifies `skills/<name>/SKILL.md`,
+> default-include `skills-codex/<name>/SKILL.md` (and any
+> `skills-codex-overrides/<name>/`) in this section. The codex mirror is
+> manually maintained and silently drifts if a plan touches the canonical
+> skill without listing the mirror.
+
 ## Implementation
 
 ### 1. Core Module

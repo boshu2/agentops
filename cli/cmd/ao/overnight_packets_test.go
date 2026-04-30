@@ -405,6 +405,123 @@ esac
 	}
 }
 
+// TestProbeDreamPacketStaleness_SchemaRef checks that schemas/<x>.json
+// references in the morning command get the same staleness treatment as
+// scripts/<x>.sh references — both are repo paths whose existence
+// indicates the curator is suggesting work that's already shipped.
+func TestProbeDreamPacketStaleness_SchemaRef(t *testing.T) {
+	tmpDir := t.TempDir()
+	schemaRel := filepath.Join("schemas", "next-work.v1.4.json")
+	if err := os.MkdirAll(filepath.Join(tmpDir, "schemas"), 0o755); err != nil {
+		t.Fatalf("mkdir schemas: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, schemaRel), []byte("{}\n"), 0o644); err != nil {
+		t.Fatalf("write schema: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:             "schema-stale",
+		Title:          "Add domain enum to schemas/next-work.v1.4.json",
+		MorningCommand: `ao rpi phased "Add domain enum to schemas/next-work.v1.4.json"`,
+	}
+	reason, match, ok := probeDreamPacketStaleness(tmpDir, packet)
+	if !ok {
+		t.Fatalf("expected probe to flag stale schema ref; got reason=%q match=%q", reason, match)
+	}
+	if !strings.Contains(reason, "schemas/") {
+		t.Errorf("reason = %q, want it to mention schemas/", reason)
+	}
+	if match != "schemas/next-work.v1.4.json" {
+		t.Errorf("match = %q, want schemas/next-work.v1.4.json", match)
+	}
+}
+
+// TestProbeDreamPacketStaleness_SkillLineLimitClaim verifies the curator
+// rejects "Decompose skills/<name>/SKILL.md to under N-line limit" packets
+// when the cited skill exists and is below the canonical fail threshold
+// (warn>500 fail>800 from scripts/check-skill-size.sh). This is the
+// 2026-04-30 dream-curator-degraded finding pattern.
+func TestProbeDreamPacketStaleness_SkillLineLimitClaim(t *testing.T) {
+	tmpDir := t.TempDir()
+	skillDir := filepath.Join(tmpDir, "skills", "crank")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill: %v", err)
+	}
+	// Write a 400-line SKILL.md — well below the 800 fail threshold.
+	body := strings.Repeat("line of skill content\n", 400)
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(body), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:    "fictional-line-limit",
+		Title: "Decompose skills/crank/SKILL.md to under 248-line limit",
+	}
+	reason, match, ok := probeDreamPacketStaleness(tmpDir, packet)
+	if !ok {
+		t.Fatalf("expected probe to flag fictional line-limit claim; got reason=%q match=%q", reason, match)
+	}
+	if !strings.Contains(reason, "fail threshold") {
+		t.Errorf("reason = %q, want it to mention fail threshold", reason)
+	}
+	if match != "skills/crank/SKILL.md" {
+		t.Errorf("match = %q, want skills/crank/SKILL.md", match)
+	}
+}
+
+// TestProbeDreamPacketStaleness_SkillRefWithoutLineLimit verifies the
+// probe does NOT flag a packet that mentions skills/<name>/SKILL.md but
+// has no numeric line-limit phrase — modifying an existing skill is
+// legitimate work, only the fictional-line-limit pattern is stale.
+func TestProbeDreamPacketStaleness_SkillRefWithoutLineLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+	skillDir := filepath.Join(tmpDir, "skills", "crank")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# crank\n"), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:    "legit-skill-edit",
+		Title: "Add a section to skills/crank/SKILL.md describing wave-6 enrichment",
+	}
+	if reason, match, ok := probeDreamPacketStaleness(tmpDir, packet); ok {
+		t.Fatalf("probe should NOT flag this packet: reason=%q match=%q", reason, match)
+	}
+}
+
+// TestExtractRepoRef_TerminationCharacters confirms the helper terminates
+// on whitespace, quotes, parens, and backticks but not on alphanumerics —
+// the same surface area extractScriptsRef previously covered, now
+// generalized.
+func TestExtractRepoRef_TerminationCharacters(t *testing.T) {
+	cases := []struct {
+		name    string
+		in      string
+		prefix  string
+		suffix  string
+		want    string
+	}{
+		{"plain", "see scripts/foo.sh now", "scripts/", ".sh", "scripts/foo.sh"},
+		{"quoted", `run "scripts/bar.sh" later`, "scripts/", ".sh", "scripts/bar.sh"},
+		{"paren-trail", "ao rpi phased(scripts/baz.sh)", "scripts/", ".sh", "scripts/baz.sh"},
+		{"missing-suffix", "see scripts/foo.txt", "scripts/", ".sh", ""},
+		{"no-match", "no path here", "scripts/", ".sh", ""},
+		{"schema", "see schemas/foo.json", "schemas/", ".json", "schemas/foo.json"},
+		{"empty-prefix", "anything", "", ".sh", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractRepoRef(tc.in, tc.prefix, tc.suffix)
+			if got != tc.want {
+				t.Errorf("extractRepoRef(%q,%q,%q) = %q, want %q", tc.in, tc.prefix, tc.suffix, got, tc.want)
+			}
+		})
+	}
+}
+
 func newDreamPacketTestSummary(t *testing.T, repoRoot, goal string) overnightSummary {
 	t.Helper()
 
