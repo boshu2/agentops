@@ -402,17 +402,18 @@ ao maturity [learning-id] [flags]
 **Flags:**
 
 ```
-      --apply              Apply maturity transitions
-      --archive            Move expired/evicted/curated files to archive (requires --expire, --evict, or --curate)
-      --curate             Normalize metadata and identify low-signal or uncited stale learnings
-      --evict              Identify eviction candidates (composite criteria)
-      --expire             Scan for expired learnings
-      --global             Operate on ~/.agents/learnings instead of the local workspace learnings
-  -h, --help               help for maturity
-      --migrate-md         Add default frontmatter to .md learnings missing utility field
-      --recalibrate        Reset utility to 0.5 for all learnings
-      --scan               Scan all learnings for pending transitions
-      --uncited-days int   Archive provisional/candidate learnings with zero citations older than this many days when used with --curate (default 60)
+      --apply                Apply maturity transitions
+      --archive              Move expired/evicted/curated files to archive (requires --expire, --evict, or --curate)
+      --curate               Normalize metadata and identify low-signal or uncited stale learnings
+      --evict                Identify eviction candidates (composite criteria)
+      --expire               Scan for expired learnings
+      --global               Operate on ~/.agents/learnings instead of the local workspace learnings
+  -h, --help                 help for maturity
+      --migrate-md           Add default frontmatter to .md learnings missing utility field
+      --recalibrate          Reset utility to 0.5 for all learnings
+      --scan                 Scan all learnings for pending transitions
+      --target-size string   Size-budget eviction: when set with --evict, archive lowest-utility eligible files until the learnings hub falls below the target (e.g. 250M, 1G, 1024K)
+      --uncited-days int     Archive provisional/candidate learnings with zero citations older than this many days when used with --curate (default 60)
 ```
 
 ---
@@ -2738,6 +2739,7 @@ ao harvest [flags]
   -h, --help                   help for harvest
       --include string         Artifact types to include (comma-separated) (default "learnings,patterns,research")
       --max-file-size int      Skip files larger than this (bytes) (default 1048576)
+      --max-promotions int     Advisory volume gate: emit a stderr WARN when promotions exceed this count (0 disables; AO_MAX_PROMOTIONS env var as fallback). Never blocks. (default 500)
       --min-confidence float   Minimum confidence for promotion (default 0.5)
       --output-dir string      Directory for harvest catalog output (default ".agents/harvest")
       --promote-to string      Promotion destination for high-value artifacts (default ~/.agents/learnings)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -198,7 +199,11 @@ func TestDaemonRunWorkerOnceCompletesFakeJob(t *testing.T) {
 func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
-	spec := daemonpkg.NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session-a.jsonl"})
+	sourcePath := cwd + "/session-a.jsonl"
+	if err := os.WriteFile(sourcePath, []byte("decision: fake wiki forge jobs write session refs\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	spec := daemonpkg.NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{sourcePath})
 	jobSpec, err := spec.ToJobSpec("job-wiki")
 	if err != nil {
 		t.Fatalf("wiki job spec: %v", err)

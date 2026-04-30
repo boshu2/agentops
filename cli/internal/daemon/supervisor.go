@@ -107,6 +107,7 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 		return SupervisorRunOnceResult{}, fmt.Errorf("daemon supervisor: no executor for job type %s", claim.Job.JobType)
 	}
 	result, execErr := s.runExecutorWithHeartbeat(ctx, executor, claim)
+	artifacts := result.Artifacts
 	if execErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil && errors.Is(execErr, ctxErr) {
 			return SupervisorRunOnceResult{Claimed: true, Job: claim.Job}, nil
@@ -121,7 +122,7 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 				Code:    FailureRequestRejected,
 				Message: execErr.Error(),
 			},
-			Artifacts: result.Artifacts,
+			Artifacts: artifacts,
 		}, QueueMutationOptions{})
 		if err != nil {
 			return SupervisorRunOnceResult{}, err
@@ -134,7 +135,7 @@ func (s *Supervisor) RunOnce(ctx context.Context) (SupervisorRunOnceResult, erro
 		ClaimToken: claim.ClaimToken,
 		LeaseEpoch: claim.LeaseEpoch,
 		Actor:      s.actor,
-		Artifacts:  result.Artifacts,
+		Artifacts:  artifacts,
 	}, QueueMutationOptions{})
 	if err != nil {
 		return SupervisorRunOnceResult{}, err

@@ -85,6 +85,9 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 				Queued: true,
 				Intent: "follow_up",
 			})
+		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/session/sess_123/close":
+			assertMutationHeader(t, r)
+			writeJSON(t, w, map[string]any{"ok": true})
 		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/session/sess_123/transcript":
 			if got, want := r.URL.Query().Get("format"), "conversation"; got != want {
 				t.Fatalf("format query = %q, want %q", got, want)
@@ -182,6 +185,9 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if !submit.Queued || submit.Intent != "follow_up" {
 		t.Fatalf("submit not decoded: %#v", submit)
 	}
+	if _, err := client.CloseSession(ctx, "agentops", "sess_123"); err != nil {
+		t.Fatalf("CloseSession: %v", err)
+	}
 
 	tail := 0
 	transcript, _, err := client.SessionTranscript(ctx, "agentops", "sess_123", TranscriptOptions{
@@ -203,6 +209,7 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 		"GET /v0/city/agentops/sessions",
 		"GET /v0/city/agentops/session/sess_123",
 		"POST /v0/city/agentops/session/sess_123/submit",
+		"POST /v0/city/agentops/session/sess_123/close",
 		"GET /v0/city/agentops/session/sess_123/transcript",
 	} {
 		if seen[key] != 1 {

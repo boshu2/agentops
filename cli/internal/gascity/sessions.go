@@ -128,6 +128,19 @@ func (c *Client) SubmitSession(
 	return out, meta, nil
 }
 
+// CloseSession calls POST /v0/city/{cityName}/session/{id}/close.
+func (c *Client) CloseSession(ctx context.Context, cityName string, id string) (ResponseMeta, error) {
+	sessionPath, err := cityPath(cityName, "session", id, "close")
+	if err != nil {
+		return ResponseMeta{}, err
+	}
+	meta, err := c.doJSON(ctx, http.MethodPost, sessionPath, nil, nil)
+	if err != nil {
+		return meta, err
+	}
+	return meta, nil
+}
+
 // SessionTranscript calls GET /v0/city/{cityName}/session/{id}/transcript.
 func (c *Client) SessionTranscript(
 	ctx context.Context,
