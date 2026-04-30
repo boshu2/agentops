@@ -544,6 +544,21 @@ else
     skip "skill counts"
 fi
 
+# --- 6b. CLI skills map count parity ---
+# Always-on (cost ~50ms). Catches the 59a1efa3 -> 0f047c53 regression pattern
+# where docs/cli-skills-map.md's "<N> generated CLI command headings" line
+# drifted from the actual count in cli/docs/COMMANDS.md (declared 212, real 58).
+if [[ -x scripts/validate-cli-skills-map.sh ]]; then
+    if cli_map_output="$(scripts/validate-cli-skills-map.sh 2>&1)"; then
+        pass "cli-skills-map count parity"
+    else
+        fail "cli-skills-map count parity"
+        indent_output "$cli_map_output"
+    fi
+else
+    fail "missing executable: scripts/validate-cli-skills-map.sh"
+fi
+
 # --- 7. Worktree disposition ---
 # Full/release gates still enforce repository worktree governance. Local fast
 # pre-push skips it by default because stale unrelated worktrees should not
