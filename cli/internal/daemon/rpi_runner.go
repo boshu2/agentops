@@ -484,87 +484,20 @@ type GasCityRPIPhaseExecutor struct {
 }
 
 func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
-	if e.Client == nil {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{Code: FailureProviderUnreachable, Message: "gascity client is required", Retryable: true}
-	}
-	cityName := strings.TrimSpace(req.GasCityCityName)
-	if cityName == "" {
-		cityName = strings.TrimSpace(e.CityName)
-	}
-	if cityName == "" {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{Code: FailureRequestRejected, Message: "gascity city name is required"}
-	}
-	ready, err := e.Client.CityReadiness(ctx, cityName)
+	cityName, err := resolveAndCheckCityReadiness(ctx, e, req)
 	if err != nil {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
-			Code:      FailureProviderUnreachable,
-			Message:   fmt.Sprintf("gascity city readiness for %q: %v", cityName, err),
-			Retryable: true,
-			Cause:     err,
-		}
+		return RPIPhaseExecutionResult{}, err
 	}
-	if !ready.Ready {
-		status := strings.TrimSpace(ready.Status)
-		if status == "" {
-			status = "not ready"
-		}
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
-			Code:      FailureProviderUnreachable,
-			Message:   fmt.Sprintf("gascity city %q not ready: %s", cityName, status),
-			Retryable: true,
-		}
-	}
-
-	sessionAlias := strings.TrimSpace(req.GasCitySessionAlias)
-	if sessionAlias == "" {
-		sessionAlias = fmt.Sprintf("rpi-%s-p%d", req.RunID, req.Phase)
-	}
-	session, createMeta, err := e.Client.CreateSession(ctx, cityName, gascity.SessionCreateRequest{
-		Kind:  "agent",
-		Name:  "worker",
-		Alias: sessionAlias,
-		Async: true,
-		Title: fmt.Sprintf("RPI %s phase %d", req.RunID, req.Phase),
-	})
+	sessionID, sessionAlias, createMeta, err := createGasCitySession(ctx, e, cityName, req)
 	if err != nil {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
-			Code:      FailureProviderUnreachable,
-			Message:   fmt.Sprintf("gascity create session %q: %v", sessionAlias, err),
-			Retryable: true,
-			Cause:     err,
-		}
+		return RPIPhaseExecutionResult{}, err
 	}
-	sessionID := strings.TrimSpace(session.ID)
-	if sessionID == "" {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
-			Code:    FailureSessionPending,
-			Message: fmt.Sprintf("gascity create session %q returned empty session ID", sessionAlias),
-		}
-	}
-
-	_, submitMeta, err := e.Client.SubmitSession(ctx, cityName, sessionID, gascity.SessionSubmitRequest{
-		Message: req.Prompt,
-		Intent:  "follow_up",
-	})
+	submitMeta, err := submitGasCitySession(ctx, e, cityName, sessionID, req.Prompt)
 	if err != nil {
-		return RPIPhaseExecutionResult{}, &RPIPhaseExecutionError{
-			Code:      FailureProviderUnreachable,
-			Message:   fmt.Sprintf("gascity submit session %q: %v", sessionID, err),
-			Retryable: true,
-			Cause:     err,
-		}
+		return RPIPhaseExecutionResult{}, err
 	}
-
-	result := RPIPhaseExecutionResult{
-		Status:              gascity.TerminalStatusRunning,
-		RequestIDs:          map[string]string{},
-		GasCityCityName:     cityName,
-		GasCitySessionID:    sessionID,
-		GasCitySessionAlias: sessionAlias,
-	}
-	addRequestID(result.RequestIDs, "create", createMeta.RequestID)
-	addRequestID(result.RequestIDs, "submit", submitMeta.RequestID)
-	if err := emitRPIPhaseProgress(ctx, req, result, gascity.TerminalStatusRunning); err != nil {
+	result, err := buildInitialResult(ctx, req, cityName, sessionID, sessionAlias, createMeta, submitMeta)
+	if err != nil {
 		return result, err
 	}
 
@@ -586,71 +519,205 @@ func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPha
 	addRequestID(result.RequestIDs, "stream", streamMeta.RequestID)
 	defer stream.Close()
 
+	return processGasCityEventStreamFrames(ctx, streamCtx, stream, sessionID, sessionAlias, req, e, result)
+}
+
+// resolveAndCheckCityReadiness validates the executor client, resolves the
+// effective city name, and confirms the city is ready to accept RPI work.
+func resolveAndCheckCityReadiness(ctx context.Context, e GasCityRPIPhaseExecutor, req RPIPhaseExecutionRequest) (string, error) {
+	if e.Client == nil {
+		return "", &RPIPhaseExecutionError{Code: FailureProviderUnreachable, Message: "gascity client is required", Retryable: true}
+	}
+	cityName := strings.TrimSpace(req.GasCityCityName)
+	if cityName == "" {
+		cityName = strings.TrimSpace(e.CityName)
+	}
+	if cityName == "" {
+		return "", &RPIPhaseExecutionError{Code: FailureRequestRejected, Message: "gascity city name is required"}
+	}
+	ready, err := e.Client.CityReadiness(ctx, cityName)
+	if err != nil {
+		return "", &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity city readiness for %q: %v", cityName, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	if !ready.Ready {
+		status := strings.TrimSpace(ready.Status)
+		if status == "" {
+			status = "not ready"
+		}
+		return "", &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity city %q not ready: %s", cityName, status),
+			Retryable: true,
+		}
+	}
+	return cityName, nil
+}
+
+// createGasCitySession resolves the session alias and creates the GasCity
+// session for the requested phase. Returns the session ID, alias, and metadata.
+func createGasCitySession(ctx context.Context, e GasCityRPIPhaseExecutor, cityName string, req RPIPhaseExecutionRequest) (string, string, gascity.ResponseMeta, error) {
+	sessionAlias := strings.TrimSpace(req.GasCitySessionAlias)
+	if sessionAlias == "" {
+		sessionAlias = fmt.Sprintf("rpi-%s-p%d", req.RunID, req.Phase)
+	}
+	session, createMeta, err := e.Client.CreateSession(ctx, cityName, gascity.SessionCreateRequest{
+		Kind:  "agent",
+		Name:  "worker",
+		Alias: sessionAlias,
+		Async: true,
+		Title: fmt.Sprintf("RPI %s phase %d", req.RunID, req.Phase),
+	})
+	if err != nil {
+		return "", "", gascity.ResponseMeta{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity create session %q: %v", sessionAlias, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	sessionID := strings.TrimSpace(session.ID)
+	if sessionID == "" {
+		return "", "", gascity.ResponseMeta{}, &RPIPhaseExecutionError{
+			Code:    FailureSessionPending,
+			Message: fmt.Sprintf("gascity create session %q returned empty session ID", sessionAlias),
+		}
+	}
+	return sessionID, sessionAlias, createMeta, nil
+}
+
+// submitGasCitySession submits the prompt to the previously-created session
+// and returns the submit metadata.
+func submitGasCitySession(ctx context.Context, e GasCityRPIPhaseExecutor, cityName, sessionID, prompt string) (gascity.ResponseMeta, error) {
+	_, submitMeta, err := e.Client.SubmitSession(ctx, cityName, sessionID, gascity.SessionSubmitRequest{
+		Message: prompt,
+		Intent:  "follow_up",
+	})
+	if err != nil {
+		return gascity.ResponseMeta{}, &RPIPhaseExecutionError{
+			Code:      FailureProviderUnreachable,
+			Message:   fmt.Sprintf("gascity submit session %q: %v", sessionID, err),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	return submitMeta, nil
+}
+
+// buildInitialResult constructs the initial RPIPhaseExecutionResult, seeds
+// RequestIDs with create/submit metadata, and emits the first running progress.
+func buildInitialResult(ctx context.Context, req RPIPhaseExecutionRequest, cityName, sessionID, sessionAlias string, createMeta, submitMeta gascity.ResponseMeta) (RPIPhaseExecutionResult, error) {
+	result := RPIPhaseExecutionResult{
+		Status:              gascity.TerminalStatusRunning,
+		RequestIDs:          map[string]string{},
+		GasCityCityName:     cityName,
+		GasCitySessionID:    sessionID,
+		GasCitySessionAlias: sessionAlias,
+	}
+	addRequestID(result.RequestIDs, "create", createMeta.RequestID)
+	addRequestID(result.RequestIDs, "submit", submitMeta.RequestID)
+	if err := emitRPIPhaseProgress(ctx, req, result, gascity.TerminalStatusRunning); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+// processGasCityEventStreamFrames consumes frames from the event stream until
+// the session reaches a terminal state, returning the final result. The caller
+// owns the stream lifecycle (defer Close + defer cancel of streamCtx). ctx is
+// the outer request context used for progress callbacks and evidence capture;
+// streamCtx is the (possibly timeout-bound) stream context used to classify
+// stream-level errors.
+func processGasCityEventStreamFrames(ctx, streamCtx context.Context, stream GasCityRPIEventStream, sessionID, sessionAlias string, req RPIPhaseExecutionRequest, e GasCityRPIPhaseExecutor, result RPIPhaseExecutionResult) (RPIPhaseExecutionResult, error) {
 	for {
 		frame, err := stream.NextEvent()
 		if err != nil {
-			if streamCtx.Err() != nil {
-				return result, &RPIPhaseExecutionError{
-					Code:      FailureEventStreamUnavailable,
-					Message:   fmt.Sprintf("gascity event wait for %q: %v", sessionID, streamCtx.Err()),
-					Retryable: true,
-					Cause:     streamCtx.Err(),
-				}
-			}
-			if errors.Is(err, io.EOF) {
-				return result, &RPIPhaseExecutionError{
-					Code:      FailureEventStreamUnavailable,
-					Message:   fmt.Sprintf("gascity event stream ended before terminal state for %q", sessionID),
-					Retryable: true,
-					Cause:     err,
-				}
-			}
-			return result, &RPIPhaseExecutionError{
-				Code:      FailureEventStreamUnavailable,
-				Message:   fmt.Sprintf("gascity event stream for %q: %v", sessionID, err),
-				Retryable: true,
-				Cause:     err,
-			}
+			return result, classifyStreamFrameError(streamCtx, sessionID, err)
 		}
-		if cursor := gascity.CursorFromFrame(frame); cursor != "" {
-			result.EventCursor = cursor
-			if err := emitRPIPhaseProgress(ctx, req, result, gascity.TerminalStatusRunning); err != nil {
-				return result, err
-			}
-		}
-		event := frame.CityEvent
-		if !gasCityEventMatchesSession(event, sessionID, sessionAlias) {
-			continue
-		}
-		classification := gascity.ClassifyTerminalState(gascity.TerminalStateInput{
-			EventType:    event.Type,
-			EventPayload: event.Payload,
-		})
-		if !classification.Terminal {
-			continue
-		}
-		result.Status = classification.Status
-		if err := emitRPIPhaseProgress(ctx, req, result, classification.Status); err != nil {
-			return result, err
-		}
-		if classification.Status != gascity.TerminalStatusCompleted || classification.Degraded {
-			code := failureCodeForTerminalStatus(classification.Status)
-			message := fmt.Sprintf("gascity session %q terminal %s", sessionID, classification.Status)
-			if classification.Reason != "" {
-				message += ": " + classification.Reason
-			}
-			return result, &RPIPhaseExecutionError{Code: code, Message: message}
-		}
-		evidencePath, err := captureGasCityRPIEvidence(ctx, e.Client, req, result)
+		done, err := processStreamFrame(ctx, frame, sessionID, sessionAlias, req, e, &result)
 		if err != nil {
 			return result, err
 		}
-		result.EvidencePath = evidencePath
-		result.Artifacts = map[string]string{
-			phaseArtifactKey(req.Phase, "gascity_evidence"): evidencePath,
+		if done {
+			return result, nil
 		}
-		return result, nil
 	}
+}
+
+// classifyStreamFrameError maps a stream-read error onto a RPIPhaseExecutionError
+// with the right retry semantics, distinguishing context expiry, EOF, and
+// generic stream failures.
+func classifyStreamFrameError(streamCtx context.Context, sessionID string, err error) *RPIPhaseExecutionError {
+	if streamCtx.Err() != nil {
+		return &RPIPhaseExecutionError{
+			Code:      FailureEventStreamUnavailable,
+			Message:   fmt.Sprintf("gascity event wait for %q: %v", sessionID, streamCtx.Err()),
+			Retryable: true,
+			Cause:     streamCtx.Err(),
+		}
+	}
+	if errors.Is(err, io.EOF) {
+		return &RPIPhaseExecutionError{
+			Code:      FailureEventStreamUnavailable,
+			Message:   fmt.Sprintf("gascity event stream ended before terminal state for %q", sessionID),
+			Retryable: true,
+			Cause:     err,
+		}
+	}
+	return &RPIPhaseExecutionError{
+		Code:      FailureEventStreamUnavailable,
+		Message:   fmt.Sprintf("gascity event stream for %q: %v", sessionID, err),
+		Retryable: true,
+		Cause:     err,
+	}
+}
+
+// processStreamFrame applies a single stream frame to the result. Returns
+// done=true when a terminal completed state has been reached and evidence
+// has been captured. Mutates result in place.
+func processStreamFrame(ctx context.Context, frame gascity.EventStreamFrame, sessionID, sessionAlias string, req RPIPhaseExecutionRequest, e GasCityRPIPhaseExecutor, result *RPIPhaseExecutionResult) (bool, error) {
+	if cursor := gascity.CursorFromFrame(frame); cursor != "" {
+		result.EventCursor = cursor
+		if err := emitRPIPhaseProgress(ctx, req, *result, gascity.TerminalStatusRunning); err != nil {
+			return false, err
+		}
+	}
+	event := frame.CityEvent
+	if !gasCityEventMatchesSession(event, sessionID, sessionAlias) {
+		return false, nil
+	}
+	classification := gascity.ClassifyTerminalState(gascity.TerminalStateInput{
+		EventType:    event.Type,
+		EventPayload: event.Payload,
+	})
+	if !classification.Terminal {
+		return false, nil
+	}
+	result.Status = classification.Status
+	if err := emitRPIPhaseProgress(ctx, req, *result, classification.Status); err != nil {
+		return false, err
+	}
+	if classification.Status != gascity.TerminalStatusCompleted || classification.Degraded {
+		code := failureCodeForTerminalStatus(classification.Status)
+		message := fmt.Sprintf("gascity session %q terminal %s", sessionID, classification.Status)
+		if classification.Reason != "" {
+			message += ": " + classification.Reason
+		}
+		return false, &RPIPhaseExecutionError{Code: code, Message: message}
+	}
+	evidencePath, err := captureGasCityRPIEvidence(ctx, e.Client, req, *result)
+	if err != nil {
+		return false, err
+	}
+	result.EvidencePath = evidencePath
+	result.Artifacts = map[string]string{
+		phaseArtifactKey(req.Phase, "gascity_evidence"): evidencePath,
+	}
+	return true, nil
 }
 
 func emitRPIPhaseProgress(ctx context.Context, req RPIPhaseExecutionRequest, result RPIPhaseExecutionResult, status string) error {

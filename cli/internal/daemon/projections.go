@@ -123,12 +123,7 @@ func (s *Store) RebuildProjections(opts ProjectionRebuildOptions) (ProjectionSet
 }
 
 func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (ProjectionSet, error) {
-	if opts.RebuiltAt.IsZero() {
-		opts.RebuiltAt = time.Now().UTC()
-	}
-	if opts.SourceLedger == "" {
-		opts.SourceLedger = filepath.ToSlash(filepath.Join(StoreDirRel, LedgerFileName))
-	}
+	opts = normalizeRebuildOptions(opts)
 	rebuiltAt := opts.RebuiltAt.UTC().Format(time.RFC3339Nano)
 	set := ProjectionSet{
 		SchemaVersion: ProjectionSchemaVersion,
@@ -136,13 +131,33 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 		SourceLedger:  opts.SourceLedger,
 		Manifests:     defaultProjectionManifests(opts.SourceLedger, rebuiltAt),
 	}
+	jobsByID, jobOrder, err := processLedgerEvents(events, &set)
+	if err != nil {
+		return ProjectionSet{}, err
+	}
+	collectJobsIntoSet(jobsByID, jobOrder, &set)
+	finalizeManifests(&set)
+	finalizeOpenClawSnapshot(&set, opts.SourceLedger, rebuiltAt)
+	return set, nil
+}
 
+func normalizeRebuildOptions(opts ProjectionRebuildOptions) ProjectionRebuildOptions {
+	if opts.RebuiltAt.IsZero() {
+		opts.RebuiltAt = time.Now().UTC()
+	}
+	if opts.SourceLedger == "" {
+		opts.SourceLedger = filepath.ToSlash(filepath.Join(StoreDirRel, LedgerFileName))
+	}
+	return opts
+}
+
+func processLedgerEvents(events []LedgerEvent, set *ProjectionSet) (map[string]*JobProjection, []string, error) {
 	jobsByID := map[string]*JobProjection{}
 	var jobOrder []string
 	for _, event := range events {
 		normalized, err := NormalizeLedgerEvent(event)
 		if err != nil {
-			return ProjectionSet{}, fmt.Errorf("event %q: %w", event.EventID, err)
+			return nil, nil, fmt.Errorf("event %q: %w", event.EventID, err)
 		}
 		event = normalized
 		set.LastEventID = event.EventID
@@ -150,45 +165,64 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 			set.applyProjectionLifecycleEvent(event)
 			continue
 		}
-
-		job := jobsByID[event.JobID]
-		if job == nil {
-			job = &JobProjection{
-				JobID:      event.JobID,
-				RequestID:  event.RequestID,
-				RequestIDs: []string{event.RequestID},
-				Status:     JobStatusQueued,
-				Artifacts:  map[string]string{},
-			}
-			jobsByID[event.JobID] = job
+		job, isNew := ensureJobProjection(jobsByID, event)
+		if isNew {
 			jobOrder = append(jobOrder, event.JobID)
 		}
-		appendRequestID(job, event.RequestID)
-		if job.RequestID == "" {
-			job.RequestID = event.RequestID
-		}
-		if job.CreatedAt == "" && event.EventType == EventJobAccepted {
-			job.CreatedAt = event.OccurredAt
-		}
-		job.UpdatedAt = event.OccurredAt
-		job.LastEventID = event.EventID
-
-		if jobType, ok, err := jobTypeFromPayload(event.Payload); err != nil {
-			return ProjectionSet{}, fmt.Errorf("event %q: %w", event.EventID, err)
-		} else if ok {
-			job.JobType = jobType
-		}
-		if targets := projectionTargetsFromPayload(event.Payload); len(targets) > 0 {
-			job.ProjectionTargets = targets
-		} else if len(job.ProjectionTargets) == 0 && job.JobType != "" {
-			job.ProjectionTargets = defaultProjectionTargetsForJobType(job.JobType)
-		}
-		for key, value := range artifactsFromPayload(event.Payload) {
-			job.Artifacts[key] = value
+		applyEventMetadataToJob(job, event)
+		if err := applyPayloadToJob(job, event); err != nil {
+			return nil, nil, err
 		}
 		applyEventToJobProjection(job, event)
 	}
+	return jobsByID, jobOrder, nil
+}
 
+func ensureJobProjection(jobsByID map[string]*JobProjection, event LedgerEvent) (*JobProjection, bool) {
+	if job, ok := jobsByID[event.JobID]; ok {
+		return job, false
+	}
+	job := &JobProjection{
+		JobID:      event.JobID,
+		RequestID:  event.RequestID,
+		RequestIDs: []string{event.RequestID},
+		Status:     JobStatusQueued,
+		Artifacts:  map[string]string{},
+	}
+	jobsByID[event.JobID] = job
+	return job, true
+}
+
+func applyEventMetadataToJob(job *JobProjection, event LedgerEvent) {
+	appendRequestID(job, event.RequestID)
+	if job.RequestID == "" {
+		job.RequestID = event.RequestID
+	}
+	if job.CreatedAt == "" && event.EventType == EventJobAccepted {
+		job.CreatedAt = event.OccurredAt
+	}
+	job.UpdatedAt = event.OccurredAt
+	job.LastEventID = event.EventID
+}
+
+func applyPayloadToJob(job *JobProjection, event LedgerEvent) error {
+	if jobType, ok, err := jobTypeFromPayload(event.Payload); err != nil {
+		return fmt.Errorf("event %q: %w", event.EventID, err)
+	} else if ok {
+		job.JobType = jobType
+	}
+	if targets := projectionTargetsFromPayload(event.Payload); len(targets) > 0 {
+		job.ProjectionTargets = targets
+	} else if len(job.ProjectionTargets) == 0 && job.JobType != "" {
+		job.ProjectionTargets = defaultProjectionTargetsForJobType(job.JobType)
+	}
+	for key, value := range artifactsFromPayload(event.Payload) {
+		job.Artifacts[key] = value
+	}
+	return nil
+}
+
+func collectJobsIntoSet(jobsByID map[string]*JobProjection, jobOrder []string, set *ProjectionSet) {
 	set.Jobs = make([]JobProjection, 0, len(jobOrder))
 	for _, jobID := range jobOrder {
 		job := *jobsByID[jobID]
@@ -196,32 +230,41 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 			job.Artifacts = nil
 		}
 		set.Jobs = append(set.Jobs, job)
-		switch job.JobType {
-		case JobTypeRPIRun, JobTypeRPIPhase:
-			set.RPI.Runs = append(set.RPI.Runs, job)
-			set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
-		case JobTypeDreamRun, JobTypeDreamStage:
-			set.Dream.Runs = append(set.Dream.Runs, job)
-			set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
-		case JobTypeWikiBuild, JobTypeWikiForge:
-			set.Wiki.Jobs = append(set.Wiki.Jobs, job)
-			set.OpenClaw.Resources.Wiki = append(set.OpenClaw.Resources.Wiki, job)
-		}
+		classifyJobIntoBuckets(job, set)
 		set.OpenClaw.Resources.Jobs = append(set.OpenClaw.Resources.Jobs, job)
 	}
+}
+
+func classifyJobIntoBuckets(job JobProjection, set *ProjectionSet) {
+	switch job.JobType {
+	case JobTypeRPIRun, JobTypeRPIPhase:
+		set.RPI.Runs = append(set.RPI.Runs, job)
+		set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
+	case JobTypeDreamRun, JobTypeDreamStage:
+		set.Dream.Runs = append(set.Dream.Runs, job)
+		set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
+	case JobTypeWikiBuild, JobTypeWikiForge:
+		set.Wiki.Jobs = append(set.Wiki.Jobs, job)
+		set.OpenClaw.Resources.Wiki = append(set.OpenClaw.Resources.Wiki, job)
+	}
+}
+
+func finalizeManifests(set *ProjectionSet) {
 	for name, manifest := range set.Manifests {
 		manifest.LastEventID = set.LastEventID
 		set.Manifests[name] = manifest
 	}
+}
+
+func finalizeOpenClawSnapshot(set *ProjectionSet, sourceLedger, rebuiltAt string) {
 	set.OpenClaw.SchemaVersion = ProjectionSchemaVersion
 	set.OpenClaw.SnapshotID = "snap_empty"
 	if set.LastEventID != "" {
 		set.OpenClaw.SnapshotID = "snap_" + set.LastEventID
 	}
 	set.OpenClaw.GeneratedAt = rebuiltAt
-	set.OpenClaw.Source = ProjectionSource{Ledger: opts.SourceLedger, LastEventID: set.LastEventID}
+	set.OpenClaw.Source = ProjectionSource{Ledger: sourceLedger, LastEventID: set.LastEventID}
 	set.OpenClaw.Status = set.Manifests[ProjectionOpenClaw].Status
-	return set, nil
 }
 
 func applyEventToJobProjection(job *JobProjection, event LedgerEvent) {
