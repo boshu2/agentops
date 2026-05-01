@@ -193,6 +193,10 @@ func ensureJobProjection(jobsByID map[string]*JobProjection, event LedgerEvent) 
 	return job, true
 }
 
+// applyEventMetadataToJob updates job's request-id list, timestamps, and
+// last-event marker. It is event-type-agnostic — only EventJobAccepted gates
+// CreatedAt; everything else runs for every event. Event-type-conditional
+// logic belongs in applyPayloadToJob or applyEventToJobProjection.
 func applyEventMetadataToJob(job *JobProjection, event LedgerEvent) {
 	appendRequestID(job, event.RequestID)
 	if job.RequestID == "" {
@@ -205,6 +209,11 @@ func applyEventMetadataToJob(job *JobProjection, event LedgerEvent) {
 	job.LastEventID = event.EventID
 }
 
+// applyPayloadToJob applies payload-derived fields (job type, projection
+// targets, artifacts) to job. It is event-type-conditional — events whose
+// payload omits those keys leave job unchanged. New payload-derived fields
+// belong here, or in a new helper dispatched from processLedgerEvents.
+// Metadata that must run for every event belongs in applyEventMetadataToJob.
 func applyPayloadToJob(job *JobProjection, event LedgerEvent) error {
 	if jobType, ok, err := jobTypeFromPayload(event.Payload); err != nil {
 		return fmt.Errorf("event %q: %w", event.EventID, err)
