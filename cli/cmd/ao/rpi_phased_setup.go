@@ -4,14 +4,23 @@ import (
 	"cmp"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 )
+
+var rpiIssueIDPattern = regexp.MustCompile(`^[a-z][a-z0-9]*-[a-z0-9][a-z0-9.]*$`)
+
+func isIssueIDLike(goal string) bool {
+	return rpiIssueIDPattern.MatchString(strings.TrimSpace(goal))
+}
 
 func preflightRuntimeAvailability(runtimeCommand string, lookPathFn gcLookFn) error {
 	if GetDryRun() {
@@ -49,7 +58,101 @@ func resolveGoalAndStartPhase(opts phasedEngineOptions, args []string, cwd strin
 		return "", 0, fmt.Errorf("goal is required (provide as argument)")
 	}
 
+	if startPhase == 1 {
+		routedGoal, ok, err := resolveIssueStartRoute(goal, opts.BDCommand)
+		if ok {
+			if err != nil {
+				tracker := detectTrackerHealth(opts.BDCommand, opts.LookPath)
+				if tracker.Healthy {
+					VerbosePrintf("Warning: issue-like goal %s was not resolvable via bd show; treating it as a discovery goal: %v\n", goal, err)
+					return goal, startPhase, nil
+				}
+				VerbosePrintf("Warning: tracker degraded while resolving %s; starting at implementation with original issue id: %v\n", goal, err)
+				return strings.TrimSpace(goal), 2, nil
+			}
+			return routedGoal, 2, nil
+		}
+	}
+
 	return goal, startPhase, nil
+}
+
+func resolveIssueStartRoute(goal, bdCommand string) (string, bool, error) {
+	goal = strings.TrimSpace(goal)
+	if !isIssueIDLike(goal) {
+		return "", false, nil
+	}
+
+	cmd := exec.Command(effectiveBDCommand(bdCommand), "show", goal, "--json")
+	out, err := cmd.Output()
+	if err != nil {
+		return goal, true, fmt.Errorf("bd show %s --json: %w", goal, err)
+	}
+
+	isEpic, err := parseIssueTypeFromShowJSON(out)
+	if err != nil {
+		return goal, true, err
+	}
+	if isEpic {
+		return goal, true, nil
+	}
+	if parent := parseParentIssueIDFromShowJSON(out); parent != "" {
+		return parent, true, nil
+	}
+	return goal, true, nil
+}
+
+func parseParentIssueIDFromShowJSON(data []byte) string {
+	var single map[string]any
+	if err := json.Unmarshal(data, &single); err == nil {
+		return parentIssueIDFromMap(single)
+	}
+
+	var multiple []map[string]any
+	if err := json.Unmarshal(data, &multiple); err == nil {
+		for _, entry := range multiple {
+			if parent := parentIssueIDFromMap(entry); parent != "" {
+				return parent
+			}
+		}
+	}
+	return ""
+}
+
+func parentIssueIDFromMap(payload map[string]any) string {
+	if payload == nil {
+		return ""
+	}
+	for _, key := range []string{"parent", "parent_id", "parentId", "parent_epic", "parentEpic", "epic_id", "epicId"} {
+		if parent := issueIDFromJSONValue(payload[key]); parent != "" {
+			return parent
+		}
+	}
+	for _, key := range []string{"issue", "metadata"} {
+		if nested, ok := payload[key].(map[string]any); ok {
+			if parent := parentIssueIDFromMap(nested); parent != "" {
+				return parent
+			}
+		}
+	}
+	return ""
+}
+
+func issueIDFromJSONValue(value any) string {
+	switch typed := value.(type) {
+	case string:
+		id := strings.TrimSpace(typed)
+		if isIssueIDLike(id) {
+			return id
+		}
+	case map[string]any:
+		for _, key := range []string{"id", "issue_id", "issueId"} {
+			if id := issueIDFromJSONValue(typed[key]); id != "" {
+				return id
+			}
+		}
+	}
+	return ""
 }
 
 func newPhasedState(opts phasedEngineOptions, startPhase int, goal string) *phasedState {
@@ -73,6 +176,9 @@ func newPhasedState(opts phasedEngineOptions, startPhase int, goal string) *phas
 	if opts.RunID != "" {
 		s.RunID = opts.RunID
 	}
+	if startPhase >= 2 && isIssueIDLike(goal) {
+		s.EpicID = strings.TrimSpace(goal)
+	}
 	return s
 }
 
@@ -85,12 +191,11 @@ func mergeExistingStateFields(state *phasedState, existing *phasedState, opts ph
 	if goal == "" {
 		state.EpicID = existing.EpicID
 		state.Goal = existing.Goal
-	} else if strings.HasPrefix(goal, "ag-") && len(goal) > 3 {
+	} else if isIssueIDLike(goal) {
 		// Explicit bead ID as goal overrides carried epic_id.
-		// len > 3 guards against bare "ag-" prefix with no actual ID suffix.
 		state.EpicID = goal
 	} else {
-		// Explicit free-text goal (or bare "ag-" without ID): clear stale
+		// Explicit free-text goal (or malformed issue-like ID): clear stale
 		// epic_id so downstream discovery or crank can resolve the correct one.
 		state.EpicID = ""
 	}

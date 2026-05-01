@@ -8,7 +8,11 @@
 
 ### Operational discipline for coding agents.
 
-The hard problem: ship reliable code with unreliable agents that don't remember anything. AgentOps builds the knowledge and memory into the system AND the process — a Meadows compounding system around your codebase.
+Ship reliable code with unreliable agents.
+
+**AgentOps is source control for what your agents have learned.**
+
+Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 **The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
@@ -24,20 +28,20 @@ AgentOps gives your coding agent four things it does not have by default:
 
 | Layer | What changes |
 |-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` files |
-| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
-| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks |
-| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end |
+| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in `.agents/` — the corpus. `ao compile`, `ao maturity --evict`, decay, and lint keep it from rotting. *Removes the toil of re-explaining context every session.* |
+| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship. *Removes the toil of catching the same mistake twice.* |
+| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks. *Removes the toil of re-implementing the same flow per agent.* |
+| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end. *Removes the toil of running the same multi-step process by hand.* |
 
-Session 1: your agent spends two hours debugging a timeout bug. Session 15: a new agent finds the lesson in seconds because the repo kept it.
+Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
 
 ```mermaid
 flowchart LR
     S[Session work] --> B[Bookkeeping]
     S --> V[Validation]
-    B --> F[Knowledge flywheel]
-    V --> F
-    F --> N[Next session]
+    B --> C[The corpus]
+    V --> C
+    C --> N[Next session]
     N --> S
 ```
 
@@ -76,6 +80,16 @@ Theoretical foundation lives in [docs/the-science.md](docs/the-science.md) (Mead
 The lineage is direct: DevOps is what made software ship. AgentOps is what makes coding agents compound. Same shape, new substrate.
 
 > AgentOps and every harness like it gets absorbed into the model layer over time. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, before the harness layer commoditizes. See [PRODUCT.md](PRODUCT.md) for the full thesis.
+
+---
+
+## The lineage
+
+Software shipped because we codified the work. Iteration. Test discipline. Pipelines. Toil reduction. Flow and waste. Each generation gave teams an artifact: the wiki (Ward Cunningham, 1995, in the same circle as XP), the runbook, the postmortem, the toil budget.
+
+AgentOps gives your agents the same kind of artifact: **the corpus** — a typed, versioned, agent-readable wiki maintained alongside the code. Same lineage. New substrate.
+
+The pattern is broader than code; the product is focused on coding agents.
 
 ---
 

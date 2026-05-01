@@ -31,11 +31,7 @@ Applied findings:
 | `path/to/file.go` | Description of change |
 | `path/to/new_file.go` | **NEW** — description |
 
-> **Skills-codex parity:** when modifying `skills/<name>/SKILL.md`, default-include
-> `skills-codex/<name>/SKILL.md` (and any `skills-codex-overrides/<name>/`)
-> in this section. The codex mirror is manually maintained and silently drifts
-> if a plan touches the canonical skill without listing the mirror.
-> See `scripts/audit-codex-parity.sh --skill <name>` for the parity check.
+> **Codex parity rule:** Whenever this table includes a `skills/<name>/` path, default-include the matching `skills-codex/<name>/` path on the same row (or a paired row) and add `scripts/regen-codex-hashes.sh` to the validation step. Skipping the codex mirror produces silent parity drift caught only by CI.
 
 ## Boundaries
 

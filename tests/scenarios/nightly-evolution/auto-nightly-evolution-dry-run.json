@@ -1,0 +1,33 @@
+{
+  "id": "auto-nightly-evolution-dry-run",
+  "version": 1,
+  "date": "2026-05-01",
+  "goal": "Nightly evolution defaults to a non-mutating dry-run that records requested phases as planned.",
+  "narrative": "An operator previews the private local nightly chain before allowing any agent work to run.",
+  "expected_outcome": "The digest is written, mode is dry-run, requested Dream and evolve phases are marked planned, and neither the Dream start command nor the evolve supervisor is invoked.",
+  "acceptance_vectors": [
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'dry-run with requested phases records planned without executing'"
+    },
+    {
+      "dimension": "observability",
+      "threshold": 0.9,
+      "check": "digest.json includes mode and phase statuses"
+    }
+  ],
+  "satisfaction_threshold": 0.9,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "dry-run phase planning",
+      "digest generation"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}

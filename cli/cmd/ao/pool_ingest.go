@@ -121,29 +121,23 @@ func runPoolIngest(cmd *cobra.Command, args []string) error {
 	}
 
 	res := poolIngestResult{FilesScanned: len(files)}
-	var processedFiles []string
 
-	for _, f := range files {
-		data, rerr := os.ReadFile(f)
-		if rerr != nil {
+	pool.IterateIngestFiles(files, pool.IngestOrchestratorOpts{
+		IngestFile: func(path string, data []byte) bool {
+			fileDate, sessionHint := parsePendingFileHeader(string(data), path)
+			blocks := parseLearningBlocks(string(data))
+			res.CandidatesFound += len(blocks)
+			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res)
+		},
+		TrackProcessed: !GetDryRun(),
+		MoveProcessed: func(processed []string) {
+			moveIngestedFiles(cwd, processed)
+		},
+		OnReadError: func(path string, err error) {
 			res.Errors++
-			VerbosePrintf("Warning: read %s: %v\n", filepath.Base(f), rerr)
-			continue
-		}
-
-		fileDate, sessionHint := parsePendingFileHeader(string(data), f)
-		blocks := parseLearningBlocks(string(data))
-		res.CandidatesFound += len(blocks)
-
-		hadError := ingestFileBlocks(p, blocks, f, fileDate, sessionHint, &res)
-		if !hadError && !GetDryRun() {
-			processedFiles = append(processedFiles, f)
-		}
-	}
-
-	if len(processedFiles) > 0 {
-		moveIngestedFiles(cwd, processedFiles)
-	}
+			VerbosePrintf("Warning: read %s: %v\n", filepath.Base(path), err)
+		},
+	})
 
 	return outputPoolIngestResult(res)
 }

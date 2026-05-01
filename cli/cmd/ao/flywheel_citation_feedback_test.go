@@ -712,6 +712,111 @@ Summary.
 	}
 }
 
+func TestFlywheelCitationFeedback_SidecarOnlyDoesNotMutateTrackedArtifacts(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	findingsDir := filepath.Join(tmp, ".agents", SectionFindings)
+	for _, dir := range []string{aoDir, learningsDir, findingsDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	learningPath := filepath.Join(learningsDir, "sidecar-learning.md")
+	learningText := `---
+id: sidecar-learning
+type: learning
+utility: 0.5000
+reward_count: 0
+---
+
+# Sidecar Learning
+
+Keep citation feedback out of tracked markdown during closeout.
+`
+	if err := os.WriteFile(learningPath, []byte(learningText), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	findingPath := filepath.Join(findingsDir, "f-sidecar.md")
+	findingText := `---
+id: f-sidecar
+title: Sidecar finding
+status: active
+hit_count: 1
+---
+
+# Sidecar finding
+
+Summary.
+`
+	if err := os.WriteFile(findingPath, []byte(findingText), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	citations := []types.CitationEvent{
+		{
+			ArtifactPath: filepath.Join(".agents", "learnings", "sidecar-learning.md"),
+			SessionID:    "session-1",
+			CitationType: "applied",
+			CitedAt:      time.Date(2026, 3, 10, 1, 0, 0, 0, time.UTC),
+		},
+		{
+			ArtifactPath: filepath.Join(".agents", SectionFindings, "f-sidecar.md"),
+			SessionID:    "session-1",
+			CitationType: "applied",
+			CitedAt:      time.Date(2026, 3, 10, 1, 1, 0, 0, time.UTC),
+		},
+	}
+	var lines []string
+	for _, citation := range citations {
+		data, err := json.Marshal(citation)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, string(data))
+	}
+	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	total, rewarded, skipped := processCitationFeedbackWithOptions(tmp, citationFeedbackOptions{MutateArtifacts: false})
+	if total != 2 || rewarded != 2 || skipped != 0 {
+		t.Fatalf("expected (2,2,0), got (%d,%d,%d)", total, rewarded, skipped)
+	}
+
+	gotLearning, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotLearning) != learningText {
+		t.Fatalf("learning artifact mutated under sidecar-only feedback:\n%s", gotLearning)
+	}
+	gotFinding, err := os.ReadFile(findingPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotFinding) != findingText {
+		t.Fatalf("finding artifact mutated under sidecar-only feedback:\n%s", gotFinding)
+	}
+
+	feedback, err := os.ReadFile(filepath.Join(aoDir, "feedback.jsonl"))
+	if err != nil {
+		t.Fatalf("expected sidecar feedback events: %v", err)
+	}
+	if count := strings.Count(string(feedback), "\n"); count != 2 {
+		t.Fatalf("feedback event count = %d, want 2:\n%s", count, feedback)
+	}
+	citationsAfter, err := os.ReadFile(filepath.Join(aoDir, "citations.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count := strings.Count(string(citationsAfter), `"feedback_given":true`); count != 2 {
+		t.Fatalf("feedback_given count = %d, want 2:\n%s", count, citationsAfter)
+	}
+}
+
 func TestPromoteCitedLearnings_NoFeedbackFile(t *testing.T) {
 	dir := t.TempDir()
 	count := promoteCitedLearnings(dir, true)

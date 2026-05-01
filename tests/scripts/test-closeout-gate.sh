@@ -18,6 +18,12 @@ make_repo() {
   cat > "$dir/.agents/rpi/execution-packet.json" <<'JSON'
 {
   "run_id": "latest-closeout",
+  "epic_id": "ag-closeout",
+  "bead_id": "ag-closeout",
+  "tracking_repo_root": "__ROOT__",
+  "beads_dir": "__ROOT__/.beads",
+  "pr_url": "https://github.com/example/agentops/pull/204",
+  "merge_commit": "abc123",
   "proof_updated_at": "2026-04-29T00:00:00Z",
   "proof_artifacts": [
     ".agents/daemon/ledger.jsonl",
@@ -25,6 +31,13 @@ make_repo() {
   ]
 }
 JSON
+  python3 - "$dir/.agents/rpi/execution-packet.json" "$dir" <<'PY'
+import pathlib
+import sys
+path = pathlib.Path(sys.argv[1])
+root = sys.argv[2]
+path.write_text(path.read_text().replace("__ROOT__", root))
+PY
   cat > "$dir/.agents/rpi/runs/run-closeout/execution-packet.json" <<'JSON'
 {
   "run_id": "run-closeout",
@@ -59,6 +72,8 @@ test_passes_with_proof_and_clean_worktree() {
   "$script_path" --root "$dir" --json > "$out"
   assert_json_value "$out" "data['result'] == 'PASS'"
   assert_json_value "$out" "data['closure_replay']['proof_ref_count'] == 2"
+  assert_json_value "$out" "data['provenance']['packet_count'] >= 1"
+  assert_json_value "$out" "data['provenance']['refs'][0]['pr_url'] == 'https://github.com/example/agentops/pull/204'"
   assert_json_value "$out" "data['worktree']['clean'] is True"
 }
 

@@ -814,7 +814,7 @@ let me force the revert because the goals agent is still running and re-wrote it
 
 	t.Chdir(repo)
 
-	out, err := executeCommand("codex", "ensure-stop", "--json")
+	out, err := executeCommand("codex", "ensure-stop", "--json", "--close-loop")
 	if err != nil {
 		t.Fatalf("codex ensure-stop --json: %v\noutput: %s", err, out)
 	}

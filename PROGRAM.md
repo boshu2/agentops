@@ -59,6 +59,9 @@ when the slice is intended to land.
 
 - Start from `bd ready --json` or a user-selected bead; create a discovered bead
   before editing when the work is new.
+- For Nightly, evolve, or RPI-auto maintenance work, inspect the last 14 days of
+  Nightly PR/run evidence before selecting the slice, and separate code-driven
+  failures from runtime-artifact-only or corpus-state-only movement.
 - Keep a slice only when the changed files are inside mutable scope, the
   acceptance criteria are satisfied, and the applicable validation commands pass.
 - Prefer source-of-truth order from AGENTS.md when docs disagree: executable code

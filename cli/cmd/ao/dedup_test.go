@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -864,5 +865,301 @@ func TestBuildDedupResult_RelativePathFallback(t *testing.T) {
 	}
 	if len(result.Groups[0].Files) != 2 {
 		t.Errorf("files = %d", len(result.Groups[0].Files))
+	}
+}
+
+// makeDedupGroup writes 2*n files in pairs sharing identical bodies so each
+// pair forms one duplicate group. Returns the directory and the keeper paths.
+func makeDedupGroup(t *testing.T, dir string, pairs int) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for i := 0; i < pairs; i++ {
+		body := "shared body number " + strings.Repeat("x", i+1)
+		hi := filepath.Join(dir, "hi-"+itoaPad(i)+".md")
+		lo := filepath.Join(dir, "lo-"+itoaPad(i)+".md")
+		if err := os.WriteFile(hi, []byte("---\nutility: 0.9\n---\n"+body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(lo, []byte("---\nutility: 0.1\n---\n"+body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func itoaPad(i int) string {
+	s := ""
+	for v := i; v > 0; v /= 10 {
+		s = string(rune('0'+v%10)) + s
+	}
+	if s == "" {
+		s = "0"
+	}
+	return strings.Repeat("0", 4-len(s)) + s
+}
+
+func TestRunDedup_MergePrintsManifestPath(t *testing.T) {
+	tmp := t.TempDir()
+	makeDedupGroup(t, filepath.Join(tmp, ".agents", "learnings"), 2)
+	t.Chdir(tmp)
+
+	origMerge := dedupMerge
+	dedupMerge = true
+	defer func() { dedupMerge = origMerge }()
+	origDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = origDryRun }()
+	origYes := dedupYes
+	dedupYes = true // skip prompt; we're not testing the prompt here
+	defer func() { dedupYes = origYes }()
+
+	r, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+	err := runDedup(nil, nil)
+	_ = w.Close()
+	os.Stdout = origStdout
+	if err != nil {
+		t.Fatalf("runDedup error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	out := string(buf[:n])
+	if !strings.Contains(out, "Manifest:") {
+		t.Errorf("expected 'Manifest:' in output, got: %q", out)
+	}
+	if !strings.Contains(out, "-manifest.json") {
+		t.Errorf("expected manifest filename in output, got: %q", out)
+	}
+
+	// And the manifest exists on disk.
+	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
+	entries, err := os.ReadDir(archiveDir)
+	if err != nil {
+		t.Fatalf("read archive dir: %v", err)
+	}
+	found := false
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), "-manifest.json") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("no -manifest.json in archive dir")
+	}
+}
+
+func TestRunDedup_ThresholdPauseAbortsOnNo(t *testing.T) {
+	tmp := t.TempDir()
+	// 3 duplicate groups -> 3 archive candidates
+	makeDedupGroup(t, filepath.Join(tmp, ".agents", "learnings"), 3)
+	t.Chdir(tmp)
+
+	origMerge := dedupMerge
+	dedupMerge = true
+	defer func() { dedupMerge = origMerge }()
+	origDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = origDryRun }()
+	origYes := dedupYes
+	dedupYes = false // require prompt
+	defer func() { dedupYes = origYes }()
+
+	// Lower the threshold so 3 archive candidates triggers the pause.
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "1")
+
+	// Feed "n\n" to the prompt.
+	origReader := dedupConfirmReader
+	dedupConfirmReader = strings.NewReader("n\n")
+	defer func() { dedupConfirmReader = origReader }()
+
+	r, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+	err := runDedup(nil, nil)
+	_ = w.Close()
+	os.Stdout = origStdout
+	if err != nil {
+		t.Fatalf("runDedup error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	out := string(buf[:n])
+	if !strings.Contains(out, "Large merge detected") {
+		t.Errorf("expected threshold prompt, got: %q", out)
+	}
+	if !strings.Contains(out, "Aborted.") {
+		t.Errorf("expected 'Aborted.' on 'n' response, got: %q", out)
+	}
+	// Verify NO files were moved (all duplicate files still exist).
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	files, _ := os.ReadDir(learningsDir)
+	if len(files) != 6 {
+		t.Errorf("expected 6 files preserved on abort, got %d", len(files))
+	}
+	// Verify NO manifest written.
+	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
+	if _, err := os.Stat(archiveDir); err == nil {
+		t.Errorf("archive dir should not exist after abort")
+	}
+}
+
+func TestRunDedup_YesFlagSkipsPause(t *testing.T) {
+	tmp := t.TempDir()
+	makeDedupGroup(t, filepath.Join(tmp, ".agents", "learnings"), 3)
+	t.Chdir(tmp)
+
+	origMerge := dedupMerge
+	dedupMerge = true
+	defer func() { dedupMerge = origMerge }()
+	origDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = origDryRun }()
+	origYes := dedupYes
+	dedupYes = true // skip prompt
+	defer func() { dedupYes = origYes }()
+
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "1")
+
+	// Provide an empty reader; if the prompt fires it would treat empty as "no".
+	origReader := dedupConfirmReader
+	dedupConfirmReader = strings.NewReader("")
+	defer func() { dedupConfirmReader = origReader }()
+
+	r, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+	err := runDedup(nil, nil)
+	_ = w.Close()
+	os.Stdout = origStdout
+	if err != nil {
+		t.Fatalf("runDedup error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	out := string(buf[:n])
+	if strings.Contains(out, "Large merge detected") {
+		t.Errorf("--yes should suppress threshold prompt, got: %q", out)
+	}
+	if strings.Contains(out, "Aborted.") {
+		t.Errorf("--yes should not abort, got: %q", out)
+	}
+	// Verify duplicates were merged (3 keepers + manifest dir).
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	files, _ := os.ReadDir(learningsDir)
+	if len(files) != 3 {
+		t.Errorf("expected 3 keeper files after merge, got %d", len(files))
+	}
+}
+
+func TestRunDedup_ThresholdPauseAcceptsOnYes(t *testing.T) {
+	tmp := t.TempDir()
+	makeDedupGroup(t, filepath.Join(tmp, ".agents", "learnings"), 2)
+	t.Chdir(tmp)
+
+	origMerge := dedupMerge
+	dedupMerge = true
+	defer func() { dedupMerge = origMerge }()
+	origDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = origDryRun }()
+	origYes := dedupYes
+	dedupYes = false
+	defer func() { dedupYes = origYes }()
+
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "1")
+
+	origReader := dedupConfirmReader
+	dedupConfirmReader = strings.NewReader("y\n")
+	defer func() { dedupConfirmReader = origReader }()
+
+	_, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+	err := runDedup(nil, nil)
+	_ = w.Close()
+	os.Stdout = origStdout
+	if err != nil {
+		t.Fatalf("runDedup error: %v", err)
+	}
+	// Verify duplicates were merged after 'y' confirmation.
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	files, _ := os.ReadDir(learningsDir)
+	if len(files) != 2 {
+		t.Errorf("expected 2 keeper files after confirm-yes, got %d", len(files))
+	}
+}
+
+func TestRunDedup_DryRunSkipsThresholdPause(t *testing.T) {
+	tmp := t.TempDir()
+	makeDedupGroup(t, filepath.Join(tmp, ".agents", "learnings"), 3)
+	t.Chdir(tmp)
+
+	origMerge := dedupMerge
+	dedupMerge = true
+	defer func() { dedupMerge = origMerge }()
+	origDryRun := dryRun
+	dryRun = true // dry-run is non-destructive
+	defer func() { dryRun = origDryRun }()
+	origYes := dedupYes
+	dedupYes = false
+	defer func() { dedupYes = origYes }()
+
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "1")
+
+	// If the prompt incorrectly fires under dry-run, this empty reader will
+	// abort. The test asserts the prompt never appears.
+	origReader := dedupConfirmReader
+	dedupConfirmReader = strings.NewReader("")
+	defer func() { dedupConfirmReader = origReader }()
+
+	r, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+	err := runDedup(nil, nil)
+	_ = w.Close()
+	os.Stdout = origStdout
+	if err != nil {
+		t.Fatalf("runDedup error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	out := string(buf[:n])
+	if strings.Contains(out, "Large merge detected") {
+		t.Errorf("dry-run should NOT trigger threshold prompt, got: %q", out)
+	}
+	if !strings.Contains(out, "dry-run") {
+		t.Errorf("expected dry-run output, got: %q", out)
+	}
+}
+
+func TestResolveDedupConfirmThreshold_Default(t *testing.T) {
+	// Empty env -> default constant.
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "")
+	if got := resolveDedupConfirmThreshold(); got != dedupConfirmThreshold {
+		t.Errorf("default = %d, want %d", got, dedupConfirmThreshold)
+	}
+}
+
+func TestResolveDedupConfirmThreshold_EnvOverride(t *testing.T) {
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "5000")
+	if got := resolveDedupConfirmThreshold(); got != 5000 {
+		t.Errorf("env override = %d, want 5000", got)
+	}
+}
+
+func TestResolveDedupConfirmThreshold_InvalidEnvFallsBack(t *testing.T) {
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "garbage")
+	if got := resolveDedupConfirmThreshold(); got != dedupConfirmThreshold {
+		t.Errorf("invalid env should fall back to default, got %d", got)
+	}
+}
+
+func TestResolveDedupConfirmThreshold_NegativeRejected(t *testing.T) {
+	t.Setenv("AGENTOPS_DEDUP_CONFIRM_THRESHOLD", "-1")
+	if got := resolveDedupConfirmThreshold(); got != dedupConfirmThreshold {
+		t.Errorf("negative env should fall back to default, got %d", got)
 	}
 }

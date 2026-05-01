@@ -163,6 +163,7 @@ func TestCtx_BuildPromptForPhase_Phase2_WithHandoffs(t *testing.T) {
 	state := &phasedState{
 		Goal:     "handoff goal",
 		EpicID:   "ep-200",
+		RunID:    "r1",
 		Phase:    2,
 		Verdicts: map[string]string{"pre-mortem": "PASS"},
 		Attempts: map[string]int{},
@@ -222,6 +223,7 @@ func TestCtx_BuildPromptForPhase_Phase3(t *testing.T) {
 	state := &phasedState{
 		Goal:       "add caching",
 		EpicID:     "ep-300",
+		RunID:      "r2",
 		FastPath:   true,
 		SwarmFirst: false,
 		Verdicts:   map[string]string{},
@@ -244,6 +246,74 @@ func TestCtx_BuildPromptForPhase_Phase3(t *testing.T) {
 	}
 	if strings.Contains(prompt, "Do not skip prevention context") || strings.Contains(prompt, "Validate before implementation") {
 		t.Errorf("phase 3 prompt should not include raw planning rules or known risks")
+	}
+}
+
+func TestCtx_BuildPromptForPhase_SkipsStaleLegacySummaryWhenRunIDSet(t *testing.T) {
+	tmp := t.TempDir()
+	rpiDir := filepath.Join(tmp, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(rpiDir, "phase-1-summary-2026-04-01-old.md"), []byte("stale goal from another run"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	state := &phasedState{
+		Goal:     "current goal",
+		EpicID:   "ep-current",
+		RunID:    "current-run",
+		Verdicts: map[string]string{},
+		Attempts: map[string]int{},
+		Opts:     defaultPhasedEngineOptions(),
+	}
+
+	prompt, err := buildPromptForPhase(tmp, 2, state, nil)
+	if err != nil {
+		t.Fatalf("buildPromptForPhase(2): %v", err)
+	}
+	if strings.Contains(prompt, "stale goal from another run") {
+		t.Fatalf("prompt leaked stale legacy summary:\n%s", prompt)
+	}
+	if strings.Contains(prompt, "structured handoffs") {
+		t.Fatalf("prompt should not render handoff context without current-run handoffs:\n%s", prompt)
+	}
+}
+
+func TestCtx_BuildPromptForPhase_SkipsStructuredHandoffFromDifferentRun(t *testing.T) {
+	tmp := t.TempDir()
+	rpiDir := filepath.Join(tmp, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	handoff := `{
+		"schema_version": 1,
+		"run_id": "old-run",
+		"phase": 1,
+		"phase_name": "discovery",
+		"status": "completed",
+		"goal": "old goal",
+		"narrative": "old narrative"
+	}`
+	if err := os.WriteFile(filepath.Join(rpiDir, "phase-1-handoff.json"), []byte(handoff), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	state := &phasedState{
+		Goal:     "current goal",
+		EpicID:   "ep-current",
+		RunID:    "current-run",
+		Verdicts: map[string]string{},
+		Attempts: map[string]int{},
+		Opts:     defaultPhasedEngineOptions(),
+	}
+
+	prompt, err := buildPromptForPhase(tmp, 2, state, nil)
+	if err != nil {
+		t.Fatalf("buildPromptForPhase(2): %v", err)
+	}
+	if strings.Contains(prompt, "old goal") || strings.Contains(prompt, "old narrative") {
+		t.Fatalf("prompt leaked handoff from another run:\n%s", prompt)
 	}
 }
 

@@ -31,6 +31,10 @@ setup() {
     echo "content" > "$FAKE_REPO/cli/embedded/hooks/hooks.json"
 
     GATE="$FAKE_REPO/scripts/pre-push-gate.sh"
+    make_stub "$FAKE_REPO/scripts/validate-go-fast.sh"
+    make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
+    make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh"
+    make_stub "$FAKE_REPO/scripts/check-agents-write-surfaces.sh"
     make_stub "$FAKE_REPO/scripts/check-worktree-disposition.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-runtime-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-skill-parity.sh"
@@ -47,8 +51,10 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
+    make_stub "$FAKE_REPO/scripts/docs-build.sh"
     make_stub "$FAKE_REPO/skills/heal-skill/scripts/heal.sh"
     make_stub "$FAKE_REPO/tests/skills/run-all.sh"
+    make_stub "$FAKE_REPO/tests/validate-learning-coherence.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-schema.sh"
     make_stub "$FAKE_REPO/scripts/validate-manifests.sh"
     make_stub "$FAKE_REPO/scripts/generate-cli-reference.sh"
@@ -66,6 +72,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh"
     make_stub "$FAKE_REPO/scripts/validate-cli-skills-map.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
+    make_stub "$FAKE_REPO/tests/docs/validate-skill-citation-parity.sh"
     make_stub "$FAKE_REPO/tests/hooks/test-orphan-hooks.sh"
     # Check 3b (HOME isolation) and 3c (agents hash snapshot) need executable
     # stubs when tests exercise the Go/hash paths.
@@ -126,6 +133,26 @@ STUB
     run grep -c '# --- [0-9]' "$SCRIPT"
     [ "$status" -eq 0 ]
     [ "$output" -ge 24 ]
+}
+
+@test "fake repo setup stubs every pre-push helper script reference" {
+    cd "$FAKE_REPO"
+
+    run bash -c '
+        set -euo pipefail
+        missing=0
+        while IFS= read -r helper; do
+            case "$helper" in
+                scripts/pre-push-gate.sh) continue ;;
+            esac
+            if [[ ! -e "$helper" ]]; then
+                echo "$helper"
+                missing=1
+            fi
+        done < <(grep -oE "(scripts|tests|skills)/[A-Za-z0-9_./-]+[.]sh" scripts/pre-push-gate.sh | sort -u)
+        exit "$missing"
+    '
+    [ "$status" -eq 0 ]
 }
 
 @test "pre-push-gate.sh exits 1 on go build failure" {
@@ -252,6 +279,31 @@ GIT
     export PATH="$MOCK_BIN:$PATH"
 
     run bash "$GATE"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"embedded hooks stale"* ]]
+}
+
+@test "fast mode runs embedded sync when generated embedded hooks changed" {
+    make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh" 1
+
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+exit 0
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/embedded/hooks/session-start.sh"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run bash "$GATE" --fast --scope upstream
     [ "$status" -eq 1 ]
     [[ "$output" == *"embedded hooks stale"* ]]
 }

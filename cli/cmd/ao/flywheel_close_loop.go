@@ -114,6 +114,10 @@ func runFlywheelCloseLoop(cmd *cobra.Command, args []string) error {
 // memory promotion, maturity transitions) into the in-process entry point and
 // then converts the lifecycle result to the cmd/ao-local JSON shape.
 func performFlywheelCloseLoop(cwd, pendingDir string, threshold time.Duration, quiet bool) (flywheelCloseLoopResult, error) {
+	return performFlywheelCloseLoopWithCitationMutation(cwd, pendingDir, threshold, quiet, true)
+}
+
+func performFlywheelCloseLoopWithCitationMutation(cwd, pendingDir string, threshold time.Duration, quiet bool, mutateCitationArtifacts bool) (flywheelCloseLoopResult, error) {
 	opts := lifecycle.CloseLoopOpts{
 		PendingDir:  pendingDir,
 		Threshold:   threshold,
@@ -130,10 +134,14 @@ func performFlywheelCloseLoop(cwd, pendingDir string, threshold time.Duration, q
 			raw, err := autoPromoteAndPromoteToArtifacts(p, th, includeGold)
 			return lifecycle.CloseLoopAutoPromoteResult(raw), err
 		},
-		ProcessCitationFeedback: processCitationFeedback,
-		PromoteCitedLearnings:   promoteCitedLearnings,
-		PromoteToMemory:         promoteToMemory,
-		StoreIndexUpsertFn:      storeIndexUpsert,
+		ProcessCitationFeedback: func(cwd string) (int, int, int) {
+			return processCitationFeedbackWithOptions(cwd, citationFeedbackOptions{
+				MutateArtifacts: mutateCitationArtifacts,
+			})
+		},
+		PromoteCitedLearnings: promoteCitedLearnings,
+		PromoteToMemory:       promoteToMemory,
+		StoreIndexUpsertFn:    storeIndexUpsert,
 		ApplyMaturityFn: func(cwd string) (lifecycle.MaturityTransitionSummary, error) {
 			s, err := applyAllMaturityTransitions(cwd)
 			return lifecycle.MaturityTransitionSummary{
@@ -275,38 +283,26 @@ func ingestPendingFilesToPool(cwd string, files []string) (poolIngestResult, err
 		return res, nil
 	}
 
-	for _, f := range files {
-		data, rerr := os.ReadFile(f)
-		if rerr != nil {
+	// Successfully-ingested files are moved to .agents/knowledge/processed so
+	// they are not re-ingested on the next close-loop pass. Once a candidate
+	// is promoted out of the pool, p.Get(cand.ID) no longer sees it, so a
+	// stale pending file would re-add and re-promote with hash-suffixed
+	// duplicate artifact names. See mol-qwx4 (Olympus learning explosion).
+	pool.IterateIngestFiles(files, pool.IngestOrchestratorOpts{
+		IngestFile: func(path string, data []byte) bool {
+			fileDate, sessionHint := parsePendingFileHeader(string(data), path)
+			blocks := parseLearningBlocks(string(data))
+			res.CandidatesFound += len(blocks)
+			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res)
+		},
+		TrackProcessed: !GetDryRun(),
+		MoveProcessed: func(processed []string) {
+			moveIngestedFiles(cwd, processed)
+		},
+		OnReadError: func(_ string, _ error) {
 			res.Errors++
-			continue
-		}
-		fileDate, sessionHint := parsePendingFileHeader(string(data), f)
-		blocks := parseLearningBlocks(string(data))
-		res.CandidatesFound += len(blocks)
-		for _, b := range blocks {
-			cand, scoring, ok := buildCandidateFromLearningBlock(b, f, fileDate, sessionHint)
-			if !ok {
-				res.SkippedMalformed++
-				continue
-			}
-			if _, gerr := p.Get(cand.ID); gerr == nil {
-				res.SkippedExisting++
-				continue
-			}
-			if GetDryRun() {
-				res.Added++
-				res.AddedIDs = append(res.AddedIDs, cand.ID)
-				continue
-			}
-			if err := p.AddAt(cand, scoring, cand.ExtractedAt); err != nil {
-				res.Errors++
-				continue
-			}
-			res.Added++
-			res.AddedIDs = append(res.AddedIDs, cand.ID)
-		}
-	}
+		},
+	})
 
 	return res, nil
 }

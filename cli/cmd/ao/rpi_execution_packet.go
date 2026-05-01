@@ -21,6 +21,11 @@ type executionPacket struct {
 	Objective               string                  `json:"objective"`
 	RunID                   string                  `json:"run_id,omitempty"`
 	EpicID                  string                  `json:"epic_id,omitempty"`
+	BeadID                  string                  `json:"bead_id,omitempty"`
+	TrackingRepoRoot        string                  `json:"tracking_repo_root,omitempty"`
+	BeadsDir                string                  `json:"beads_dir,omitempty"`
+	PRURL                   string                  `json:"pr_url,omitempty"`
+	MergeCommit             string                  `json:"merge_commit,omitempty"`
 	PlanPath                string                  `json:"plan_path,omitempty"`
 	ContractSurfaces        []string                `json:"contract_surfaces"`
 	ValidationCommands      []string                `json:"validation_commands,omitempty"`
@@ -31,7 +36,7 @@ type executionPacket struct {
 	ProofArtifacts          []string                `json:"proof_artifacts,omitempty"`
 	EvaluatorArtifacts      map[string]string       `json:"evaluator_artifacts,omitempty"`
 	ProofUpdatedAt          string                  `json:"proof_updated_at,omitempty"`
-	AutodevProgram          *executionPacketProgram  `json:"autodev_program,omitempty"`
+	AutodevProgram          *executionPacketProgram `json:"autodev_program,omitempty"`
 	MixedModeRequested      bool                    `json:"mixed_mode_requested,omitempty"`
 	MixedModeEffective      bool                    `json:"mixed_mode_effective,omitempty"`
 	PlannerVendor           string                  `json:"planner_vendor,omitempty"`
@@ -42,13 +47,18 @@ type executionPacket struct {
 func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 	tracker := detectTrackerHealth(state.Opts.BDCommand, state.Opts.LookPath)
 	packet := executionPacket{
-		SchemaVersion:    1,
-		Objective:        state.Goal,
-		RunID:            state.RunID,
-		EpicID:           state.EpicID,
-		ContractSurfaces: []string{},
-		TrackerMode:      tracker.Mode,
-		TrackerHealth:    &tracker,
+		SchemaVersion:      1,
+		Objective:          state.Goal,
+		RunID:              state.RunID,
+		EpicID:             state.EpicID,
+		BeadID:             executionPacketBeadID(state),
+		TrackingRepoRoot:   executionPacketTrackingRepoRoot(cwd),
+		BeadsDir:           executionPacketBeadsDir(cwd),
+		PRURL:              firstNonEmptyTrimmed(os.Getenv("AGENTOPS_PR_URL"), os.Getenv("GITHUB_PR_URL"), os.Getenv("PR_URL")),
+		MergeCommit:        firstNonEmptyTrimmed(os.Getenv("AGENTOPS_MERGE_COMMIT"), os.Getenv("GITHUB_MERGE_COMMIT")),
+		ContractSurfaces:   []string{},
+		TrackerMode:        tracker.Mode,
+		TrackerHealth:      &tracker,
 		Complexity:         string(state.Complexity),
 		MixedModeRequested: state.Opts.Mixed,
 	}
@@ -90,6 +100,38 @@ func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 		return fmt.Errorf("write execution packet: %w", err)
 	}
 	return nil
+}
+
+func executionPacketBeadID(state *phasedState) string {
+	if state == nil || isPlanFileEpic(state.EpicID) {
+		return ""
+	}
+	return strings.TrimSpace(state.EpicID)
+}
+
+func executionPacketTrackingRepoRoot(cwd string) string {
+	root := strings.TrimSpace(cwd)
+	if root == "" {
+		root = "."
+	}
+	if abs, err := filepath.Abs(root); err == nil {
+		root = abs
+	}
+	return filepath.Clean(root)
+}
+
+func executionPacketBeadsDir(cwd string) string {
+	if env := strings.TrimSpace(os.Getenv("BEADS_DIR")); env != "" {
+		if abs, err := filepath.Abs(env); err == nil {
+			return filepath.Clean(abs)
+		}
+		return filepath.Clean(env)
+	}
+	candidate := filepath.Join(executionPacketTrackingRepoRoot(cwd), ".beads")
+	if _, err := os.Stat(candidate); err == nil {
+		return filepath.Clean(candidate)
+	}
+	return ""
 }
 
 func writeExecutionPacketData(cwd string, state *phasedState, runID string, data []byte) error {

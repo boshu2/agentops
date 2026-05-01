@@ -1,63 +1,43 @@
 {
   "schema_version": 1,
-  "run_id": "rpi-20260430-jobspec-compat-delete-stubs",
-  "objective": "Add JobSpec v0 golden compatibility tests and execute the delete-stubs cleanup slice without changing current agentopsd behavior.",
-  "epic_id": null,
-  "issue_ids": [
-    "task-1-jobspec-v0-golden-compat-tests",
-    "task-2-delete-stubs-cleanup"
-  ],
-  "plan_path": ".agents/rpi/phase-1-summary-2026-04-30-jobspec-compat-delete-stubs.md",
-  "research_path": "/Users/bo/dev/dotfiles/.agents/handoff/2026-04-30-agentops-scope-locked.md",
-  "pre_mortem_path": ".agents/rpi/phase-1-summary-2026-04-30-jobspec-compat-delete-stubs.md#pre-mortem",
-  "ranked_packet_path": "ao lookup: JobSpec compatibility tests delete stubs provider fake worker kinds",
-  "tracker_mode": "tasklist",
-  "tracker_health": {
-    "healthy": true,
-    "mode": "tasklist",
-    "reason": "bd is available, but ready beads are unrelated to the requested JobSpec compatibility and delete-stubs scope."
-  },
+  "run_id": "cross-vendor-nightly-2026-05-01",
+  "objective": "Build a cross-vendor private local nightly automation roadmap and first iteration for AgentOps, using Bushido as the execution host, Claude and Codex as headless workers, the local wiki/Dream cycle as private knowledge input, GitHub as proof/evidence, and Mt. Olympus/Gas City as a later durable backend.",
+  "epic_id": "soc-b8jo",
+  "plan_path": ".agents/plans/2026-05-01-cross-vendor-nightly-automation.md",
   "contract_surfaces": [
-    "cli/internal/daemon/server.go",
-    "cli/internal/daemon/jobs.go",
-    "cli/internal/daemon/supervisor.go",
-    "cli/internal/daemon/wiki_jobs.go",
-    "cli/internal/daemon/wiki_executor.go",
-    "cli/internal/agentworker/types.go",
-    "cli/internal/agentworker/gascity.go",
-    "cli/internal/wikiworker/worker.go",
-    "docs/contracts/jobspec-openapi-v0.yaml"
-  ],
-  "done_criteria": [
-    "JobSpec v0 tests lock durable /v1/jobs submission, idempotent retry, status/events projection, cancel outcomes, lease retry exhaustion, and OpenClaw trigger allowlist behavior.",
-    "Delete-stubs cleanup removes dead public declarations where safe and does not remove current behavior required by existing daemon jobs.",
-    "Current JobSpec OpenAPI/RFC docs remain parseable and compatibility checks still pass.",
-    "Targeted Go tests pass for daemon, agentworker, wikiworker, and LLM surfaces touched by the cleanup."
+    "docs/CI-CD.md",
+    "docs/contracts/dream-run-contract.md",
+    "docs/contracts/remote-compute.md",
+    "docs/contracts/rpi-run-registry.md",
+    "docs/contracts/hook-runtime-contract.md",
+    "scripts/ao-rpi-autonomous-cycle.sh",
+    "scripts/nightly-evolution.sh"
   ],
   "validation_commands": [
-    "cd cli && go test ./internal/daemon ./internal/agentworker ./internal/wikiworker ./internal/llm",
-    "cd cli && go test ./cmd/ao",
-    "scripts/check-contract-compatibility.sh",
-    "ruby -e 'require \"yaml\"; YAML.load_file(\"docs/contracts/jobspec-openapi-v0.yaml\")'",
-    "git diff --check"
+    "bash -n scripts/nightly-evolution.sh",
+    "shellcheck --severity=error scripts/nightly-evolution.sh",
+    "bats tests/scripts/nightly-evolution.bats",
+    "scripts/pre-push-gate.sh --fast --scope worktree"
   ],
-  "complexity": "standard",
-  "pre_mortem_verdict": "WARN",
-  "known_risks": [
-    "Do not delete WorkerKind string values from runtime payload validation; they are still current GasCity remote agent labels even if the shared exported constants are too broad.",
-    "Mutation route tests must keep the exact-path allowlist behavior covered; prior finding f-2026-04-29-005 applies.",
-    "Fake production fixtures may be current CLI behavior, not just dead code; remove only the stub/public-contract surface unless tests and docs prove a behavior can be retired."
-  ],
-  "test_levels": {
-    "required": [
-      "L0",
-      "L1",
-      "L2"
-    ],
-    "recommended": [
-      "L3"
-    ],
-    "rationale": "The change touches HTTP contract tests, queue replay behavior, and shared Go runtime types. Targeted package tests are required; broader CLI gates are advisory if production fake-policy behavior is changed."
+  "tracker_mode": "beads",
+  "tracker_health": {
+    "healthy": true,
+    "mode": "beads",
+    "reason": "bd ready --json succeeded and existing epic soc-b8jo owns the local nightly automation chain"
   },
-  "discovery_timestamp": "2026-04-30T00:00:00-04:00"
+  "done_criteria": [
+    "Local dry-run wrapper produces structured digest artifacts without source mutation",
+    "Wrapper records Claude/Codex readiness and Dream setup state",
+    "Wrapper emits systemd user timer templates without installing them automatically",
+    "Docs explain GitHub proof, local scheduler, headless Claude/Codex, local wiki/Dream, and future Mt. Olympus/Gas City roles"
+  ],
+  "complexity": "full",
+  "pre_mortem_verdict": "WARN",
+  "test_levels": {
+    "required": ["L0", "L1", "L2"],
+    "recommended": ["L3"],
+    "rationale": "Cross-vendor local orchestration touches shell, external CLIs, GitHub I/O, local auth/readiness, Dream, RPI/evolve, and future Gas City boundaries."
+  },
+  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "discovery_timestamp": "2026-05-01T14:42:19Z"
 }

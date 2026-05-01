@@ -220,6 +220,7 @@ ao dedup [flags]
 ```
   -h, --help    help for dedup
       --merge   Auto-resolve duplicates: keep highest utility, archive the rest
+      --yes     Skip the interactive confirmation prompt for large merges (for hooks/CI)
 ```
 
 ---
@@ -613,6 +614,22 @@ Move a staged candidate to the knowledge base (.agents/learnings/ or .agents/pat
 ao pool promote <candidate-id> [flags]
 ```
 
+#### `ao pool reindex`
+
+Walk .agents/learnings/*.md and .agents/patterns/*.md, compute the
+
+```
+ao pool reindex [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Print counts only; do not write to the index
+  -h, --help      help for reindex
+      --json      Emit structured JSON output
+```
+
 #### `ao pool reject`
 
 Mark a candidate as rejected and move to rejected directory.
@@ -802,6 +819,7 @@ ao codex ensure-stop [flags]
 
 ```
       --auto-extract          Write lightweight learnings and handoff artifacts during closeout (default true)
+      --close-loop            Run mutating flywheel close-loop maintenance after forging
   -h, --help                  help for ensure-stop
       --no-close-loop         Skip flywheel close-loop maintenance after forging
       --no-history-fallback   Disable history.jsonl fallback when no archived Codex transcript exists
@@ -853,6 +871,7 @@ ao codex stop [flags]
 
 ```
       --auto-extract          Write lightweight learnings and handoff artifacts during closeout (default true)
+      --close-loop            Run mutating flywheel close-loop maintenance after forging
   -h, --help                  help for stop
       --no-close-loop         Skip flywheel close-loop maintenance after forging
       --no-history-fallback   Disable history.jsonl fallback when no archived Codex transcript exists

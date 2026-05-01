@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Operational discipline for coding agents. Build reliable code with unreliable agents — and turn the context you've earned into a compounding moat.
+description: Operational discipline for coding agents. AgentOps is source control for what your agents have learned — a typed, versioned, agent-readable corpus that compounds across sessions.
 hide:
   - navigation
   - toc
@@ -9,12 +9,13 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  <strong>Operational discipline for coding agents.</strong><br>
-  The hard problem: ship reliable code with unreliable agents that don't remember anything. AgentOps builds the knowledge and memory into the system <strong>AND</strong> the process — a Meadows compounding system around your codebase.
+  Operational discipline for coding agents.<br>
+  Ship reliable code with unreliable agents.<br>
+  <strong>AgentOps is source control for what your agents have learned.</strong>
 </p>
 
-<p class="hero-subtagline" markdown>
-The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.
+<p class="hero-subtagline">
+  Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Vendor memory follows the chat. The corpus follows the team.
 </p>
 
 <p class="hero-actions" markdown>

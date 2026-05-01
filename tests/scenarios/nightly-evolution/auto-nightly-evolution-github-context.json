@@ -1,0 +1,33 @@
+{
+  "id": "auto-nightly-evolution-github-context",
+  "version": 1,
+  "date": "2026-05-01",
+  "goal": "Nightly branch planning accounts for existing remote nightly branches and preserves advisory failures in the digest.",
+  "narrative": "Multiple nightly runs occur on the same UTC date and the advisory brief command returns non-zero.",
+  "expected_outcome": "The planned branch gets the next free -vN suffix, and a failed Nightly RPI brief is recorded as a digest phase without aborting the dry-run.",
+  "acceptance_vectors": [
+    {
+      "dimension": "coordination",
+      "threshold": 0.9,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'branch suffix skips existing remote nightly heads'"
+    },
+    {
+      "dimension": "observability",
+      "threshold": 0.9,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'nightly brief failure is advisory and recorded'"
+    }
+  ],
+  "satisfaction_threshold": 0.9,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "nightly branch suffix selection",
+      "advisory phase digest recording"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}

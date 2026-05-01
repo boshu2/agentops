@@ -12,6 +12,7 @@ set -euo pipefail
 exit 0
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0
+[ "${AGENTOPS_HOOK_CLOSE_LOOP:-0}" = "1" ] || exit 0
 
 if command -v ao >/dev/null 2>&1; then
     ao flywheel close-loop --quiet >/dev/null 2>/dev/null || {

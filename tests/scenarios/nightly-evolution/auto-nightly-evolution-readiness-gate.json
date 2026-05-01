@@ -1,0 +1,33 @@
+{
+  "id": "auto-nightly-evolution-readiness-gate",
+  "version": 1,
+  "date": "2026-05-01",
+  "goal": "Execute mode refuses to start agent work when local AI readiness is not sane unless the operator explicitly overrides the gate.",
+  "narrative": "A scheduled nightly starts on Bushido while the local AI runtime is degraded.",
+  "expected_outcome": "Without an override, the wrapper exits before Dream or evolve starts. With --no-require-ai-sane, the wrapper records the degraded readiness state and only runs explicitly requested phases.",
+  "acceptance_vectors": [
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'execute blocks when ai-sane is not ok'"
+    },
+    {
+      "dimension": "operator_control",
+      "threshold": 0.9,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'execute can override ai-sane gate explicitly'"
+    }
+  ],
+  "satisfaction_threshold": 0.9,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "ai-sane execute gate",
+      "explicit readiness override"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}

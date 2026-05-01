@@ -200,6 +200,7 @@
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
+- [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract

@@ -521,9 +521,40 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 // identical Content collapse to the same artifact. Trimming guards against
 // trailing-newline noise from different ingest paths.
 func candidateContentHash(c types.Candidate) string {
-	body := strings.TrimSpace(c.Content)
-	sum := sha256.Sum256([]byte(body))
+	return ContentHash(c.Content)
+}
+
+// ContentHash computes the dedup key used by Promote for a given candidate
+// content body. Exported so reindex/backfill paths can compute the same hash
+// from on-disk artifact bodies without constructing a synthetic Candidate.
+// Identical to candidateContentHash(types.Candidate{Content: body}).
+func ContentHash(body string) string {
+	trimmed := strings.TrimSpace(body)
+	sum := sha256.Sum256([]byte(trimmed))
 	return hex.EncodeToString(sum[:])
+}
+
+// PromotedIndexFile is the basename of the promoted-content-hash sidecar
+// inside .agents/pool. Exposed so external callers (e.g. reindex) can write
+// to the same file Promote reads.
+const PromotedIndexFile = promotedIndexFile
+
+// PromotedIndexEntry is one line of the promoted-index sidecar. Exposed so
+// reindex can read existing entries and append new ones with the same shape
+// Promote writes.
+type PromotedIndexEntry = promotedIndexEntry
+
+// PromotedIndexPath returns the absolute path to the promoted-content-hash
+// sidecar for this pool.
+func (p *Pool) PromotedIndexPath() string {
+	return filepath.Join(p.PoolPath, promotedIndexFile)
+}
+
+// AppendPromotedIndexEntry appends a single entry to the promoted-content-hash
+// sidecar. Mirrors the write path used by Promote so reindex/backfill writes
+// are byte-compatible with regular promotions.
+func (p *Pool) AppendPromotedIndexEntry(contentHash, artifactPath, candidateID string) error {
+	return p.recordPromotedHash(contentHash, artifactPath, candidateID)
 }
 
 // lookupPromotedHash scans the sidecar index for an existing artifact with

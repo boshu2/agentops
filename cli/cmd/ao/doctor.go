@@ -184,13 +184,37 @@ func checkDaemonTelemetryURL(baseURL string) doctorCheck {
 	if err != nil {
 		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: fmt.Sprintf("events unavailable at %s: %v", baseURL, err), Required: false}
 	}
-	telemetry := daemonpkg.BuildLedgerTelemetry(events.Events, time.Now().UTC(), daemonpkg.DefaultTelemetryWindow)
+	telemetry := daemonpkg.BuildLedgerTelemetry(events.Events, daemonTelemetryClock(baseURL, events.Events), daemonpkg.DefaultTelemetryWindow)
 	return doctorCheck{
 		Name:     "Daemon Telemetry",
 		Status:   "pass",
 		Detail:   daemonpkg.FormatLedgerTelemetrySummary(telemetry),
 		Required: false,
 	}
+}
+
+func daemonTelemetryClock(baseURL string, events []daemonpkg.LedgerEvent) time.Time {
+	var health daemonpkg.ReadOnlyHealthResponse
+	if err := fetchDaemonJSON(context.Background(), strings.TrimRight(baseURL, "/")+"/health", &health); err == nil {
+		if parsed, parseErr := time.Parse(time.RFC3339Nano, health.Now); parseErr == nil {
+			return parsed.UTC()
+		}
+	}
+	latest := time.Time{}
+	for _, event := range events {
+		occurredAt, err := time.Parse(time.RFC3339Nano, event.OccurredAt)
+		if err != nil {
+			continue
+		}
+		occurredAt = occurredAt.UTC()
+		if latest.IsZero() || occurredAt.After(latest) {
+			latest = occurredAt
+		}
+	}
+	if !latest.IsZero() {
+		return latest
+	}
+	return time.Now().UTC()
 }
 
 func checkGasCityBridge() doctorCheck {

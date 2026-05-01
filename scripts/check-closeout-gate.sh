@@ -68,6 +68,8 @@ python3 - <<'PY'
 import glob
 import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -81,6 +83,8 @@ packet_paths = [root / ".agents" / "rpi" / "execution-packet.json"]
 packet_paths.extend(Path(p) for p in glob.glob(str(root / ".agents" / "rpi" / "runs" / "*" / "execution-packet.json")))
 
 proof_refs = []
+provenance_refs = []
+provenance_warnings = []
 parse_errors = []
 for packet_path in sorted(set(packet_paths)):
     if not packet_path.exists():
@@ -90,6 +94,48 @@ for packet_path in sorted(set(packet_paths)):
     except Exception as exc:
         parse_errors.append({"packet": str(packet_path.relative_to(root)), "error": str(exc)})
         continue
+    packet_rel = str(packet_path.relative_to(root))
+    issue_ids = []
+    for key in ("bead_id", "epic_id"):
+        value = str(data.get(key) or "").strip()
+        if value and value not in issue_ids:
+            issue_ids.append(value)
+    raw_issue_ids = data.get("issue_ids") or []
+    if isinstance(raw_issue_ids, list):
+        for item in raw_issue_ids:
+            value = str(item).strip()
+            if value and value not in issue_ids:
+                issue_ids.append(value)
+    ref = {
+        "packet": packet_rel,
+        "run_id": data.get("run_id") or packet_path.parent.name,
+        "epic_id": data.get("epic_id", ""),
+        "bead_id": data.get("bead_id", ""),
+        "issue_ids": issue_ids,
+        "tracking_repo_root": data.get("tracking_repo_root", ""),
+        "beads_dir": data.get("beads_dir", ""),
+        "pr_url": data.get("pr_url", ""),
+        "merge_commit": data.get("merge_commit", ""),
+        "warnings": [],
+    }
+    beads_dir = str(ref["beads_dir"]).strip()
+    if beads_dir and not Path(beads_dir).exists():
+        ref["warnings"].append(f"beads_dir missing: {beads_dir}")
+    bd = shutil.which("bd")
+    if bd and issue_ids:
+        for issue_id in issue_ids:
+            probe = subprocess.run(
+                [bd, "show", issue_id, "--json"],
+                cwd=str(root),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            if probe.returncode != 0:
+                ref["warnings"].append(f"bead not resolved in active DB: {issue_id}")
+    if any(ref.get(key) for key in ("epic_id", "bead_id", "tracking_repo_root", "beads_dir", "pr_url", "merge_commit")) or issue_ids:
+        provenance_refs.append(ref)
+        provenance_warnings.extend(f"{packet_rel}: {warning}" for warning in ref["warnings"])
     artifacts = data.get("proof_artifacts") or []
     if not isinstance(artifacts, list) or not artifacts:
         continue
@@ -121,6 +167,11 @@ report = {
         "proof_refs": proof_refs,
         "parse_errors": parse_errors,
     },
+    "provenance": {
+        "packet_count": len(provenance_refs),
+        "refs": provenance_refs,
+        "warnings": provenance_warnings,
+    },
     "worktree": {
         "clean": not dirty_paths and not git_error,
         "allow_dirty": allow_dirty,
@@ -141,6 +192,15 @@ else:
         print(f"- {ref['packet']} run={ref['run_id']} artifacts={len(ref['artifacts'])}")
     if parse_errors:
         print(f"parse_errors: {len(parse_errors)}")
+    if provenance_refs:
+        print(f"provenance_refs: {len(provenance_refs)}")
+        for ref in provenance_refs:
+            label = ref.get("epic_id") or ref.get("bead_id") or ",".join(ref.get("issue_ids", [])[:3])
+            print(f"- {ref['packet']} issue={label or 'n/a'} pr={ref.get('pr_url') or 'n/a'}")
+    if provenance_warnings:
+        print("provenance warnings:")
+        for warning in provenance_warnings[:20]:
+            print(f"- {warning}")
     if git_error:
         print(f"worktree: unavailable ({git_error})")
     elif dirty_paths:

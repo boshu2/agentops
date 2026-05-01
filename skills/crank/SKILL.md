@@ -162,6 +162,10 @@ If input is a description string:
 2. Set up dependencies
 3. Proceed to Step 3
 
+### Step 1.5: Branch Isolation Gate
+
+Before wave-1 commit, refuse to crank on `main`/`master`. Cut `crank/<epic-id>` to prevent parallel-session reset clobbers. See [references/branch-isolation.md](references/branch-isolation.md) for the gate script and override flag.
+
 ### Step 1a: Initialize Wave Counter
 
 **Beads mode:**

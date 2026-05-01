@@ -144,6 +144,14 @@ type CancelJobResult struct {
 	Outcome CancelJobOutcome `json:"outcome"`
 }
 
+// NewQueue constructs a Queue bound to store with the given options.
+//
+// HTTP handlers must call NewQueue per request rather than reusing a shared
+// instance: the returned Queue carries an in-memory sequence counter
+// initialized from the durable store, and opts may be request-scoped (Now,
+// failpoints, actor). The store itself is shared and concurrency-safe; the
+// Queue wrapper is the per-request boundary. See cli/internal/daemon/server.go
+// handlers for the canonical pattern.
 func NewQueue(store *Store, opts QueueOptions) *Queue {
 	if opts.LeaseDuration <= 0 {
 		opts.LeaseDuration = time.Minute
@@ -608,6 +616,13 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 	return snapshot, nil
 }
 
+// applyQueueEvent folds a single ledger event into job's in-memory state and
+// returns whether the job was mutated.
+//
+// Cyclomatic complexity is in the warn band (currently ~22; CI fail threshold
+// is 25 per scripts/check-go-complexity.sh). Adding another event-type branch
+// pushes this past the threshold — refactor by extracting per-event handlers
+// or a dispatch table before adding a new case.
 func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if isTerminalStatus(job.Status) {
 		return false

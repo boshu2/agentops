@@ -17,6 +17,16 @@ import (
 // applies positive MemRL feedback for each cited learning, and marks them as processed.
 // Returns (total processed, rewarded count, skipped count).
 func processCitationFeedback(cwd string) (int, int, int) {
+	return processCitationFeedbackWithOptions(cwd, citationFeedbackOptions{
+		MutateArtifacts: true,
+	})
+}
+
+type citationFeedbackOptions struct {
+	MutateArtifacts bool
+}
+
+func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions) (int, int, int) {
 	citationsPath := filepath.Join(cwd, ratchet.CitationsFilePath)
 	citations, err := ratchet.LoadCitations(cwd)
 	if err != nil || len(citations) == 0 {
@@ -80,9 +90,25 @@ func processCitationFeedback(cwd string) (int, int, int) {
 			if citedAt.IsZero() {
 				citedAt = time.Now()
 			}
-			if err := updateFindingCitationFields(path, citedAt); err != nil {
-				skipped++
-				continue
+			if opts.MutateArtifacts {
+				if err := updateFindingCitationFields(path, citedAt); err != nil {
+					skipped++
+					continue
+				}
+			} else {
+				feedbackEvents = append(feedbackEvents, FeedbackEvent{
+					SessionID:       sessionID,
+					ArtifactPath:    path,
+					CitationType:    citationType,
+					MetricNamespace: metricNamespace,
+					Decision:        decision,
+					Reason:          reason,
+					Reward:          citationEventConfidence(c),
+					UtilityBefore:   0,
+					UtilityAfter:    0,
+					Alpha:           0,
+					RecordedAt:      time.Now(),
+				})
 			}
 			rewarded++
 			continue
@@ -125,6 +151,24 @@ func processCitationFeedback(cwd string) (int, int, int) {
 
 		rewardCount := getLearningRewardCount(path)
 		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
+		if !opts.MutateArtifacts {
+			currentUtility := parseUtilityFromFile(path)
+			feedbackEvents = append(feedbackEvents, FeedbackEvent{
+				SessionID:       sessionID,
+				ArtifactPath:    path,
+				CitationType:    citationType,
+				MetricNamespace: metricNamespace,
+				Decision:        decision,
+				Reason:          reason,
+				Reward:          reward,
+				UtilityBefore:   currentUtility,
+				UtilityAfter:    currentUtility,
+				Alpha:           0,
+				RecordedAt:      time.Now(),
+			})
+			rewarded++
+			continue
+		}
 
 		oldUtility, newUtility, err := updateLearningUtility(path, reward, alpha)
 		if err != nil {

@@ -269,13 +269,13 @@ func buildPromptForPhase(cwd string, phaseNum int, state *phasedState, _ *retryC
 
 	// Cross-phase context for phases 2+ — prefer structured handoffs, fall back to raw summaries
 	if phaseNum >= 2 {
-		handoffs, _ := readAllHandoffs(cwd, phaseNum)
+		handoffs, _ := readAllHandoffsForRun(cwd, phaseNum, state.RunID)
 		if len(handoffs) > 0 {
 			manifest := defaultPhaseManifests[phaseNum]
 			ctx := buildHandoffContext(handoffs, manifest)
 			prompt.WriteString(ctx)
 			prompt.WriteString("\n\n")
-		} else {
+		} else if strings.TrimSpace(state.RunID) == "" {
 			// Fallback: legacy summary-based context (for runs that predate structured handoffs)
 			ctx := buildPhaseContext(cwd, state, phaseNum)
 			if ctx != "" {

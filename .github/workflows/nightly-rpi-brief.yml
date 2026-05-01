@@ -1,0 +1,88 @@
+name: Nightly RPI Brief
+
+on:
+  schedule:
+    - cron: '30 11 * * *'  # after the main Nightly proof harness usually settles
+  workflow_dispatch:
+    inputs:
+      since_date:
+        description: 'Start date for Nightly evidence, YYYY-MM-DD'
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  brief:
+    name: Build RPI auto prompt brief
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SINCE_DATE_INPUT: ${{ inputs.since_date }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate rolling Nightly RPI brief
+        run: |
+          set -euo pipefail
+
+          since_date="$SINCE_DATE_INPUT"
+          if [[ -z "$since_date" ]]; then
+            since_date="$(date -u -d '14 days ago' +%F)"
+          fi
+
+          output_dir="${RUNNER_TEMP}/nightly-rpi-brief"
+          scripts/nightly-rpi-brief.sh \
+            --since "$since_date" \
+            --output-dir "$output_dir"
+
+          cat "$output_dir/brief.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload RPI brief artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nightly-rpi-brief
+          path: ${{ runner.temp }}/nightly-rpi-brief/
+          retention-days: 14
+
+      - name: Create or update RPI auto prompt issue
+        run: |
+          set -euo pipefail
+
+          title="Nightly RPI auto prompt"
+          output_dir="${RUNNER_TEMP}/nightly-rpi-brief"
+          body_file="${output_dir}/issue-body.md"
+          {
+            cat "${output_dir}/brief.md"
+            printf '\n---\n\n'
+            printf 'Run: %s\n' "$RUN_URL"
+          } > "$body_file"
+
+          label_args=()
+          for label in nightly rpi; do
+            if gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "$label"; then
+              label_args+=(--label "$label")
+            fi
+          done
+
+          existing="$(
+            gh issue list \
+              --state open \
+              --search "\"$title\" in:title" \
+              --json number,title \
+              --jq 'map(select(.title == "'"$title"'")) | .[0].number' \
+              2>/dev/null || true
+          )"
+
+          if [[ -z "$existing" || "$existing" == "null" ]]; then
+            gh issue create --title "$title" --body-file "$body_file" "${label_args[@]}"
+          else
+            gh issue edit "$existing" --title "$title" --body-file "$body_file"
+          fi

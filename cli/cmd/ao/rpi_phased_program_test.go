@@ -423,6 +423,54 @@ func TestExecutionPacket_MixedProvenanceFields(t *testing.T) {
 	}
 }
 
+func TestWriteExecutionPacketSeed_RecordsLifecycleProvenance(t *testing.T) {
+	tmpDir := t.TempDir()
+	beadsDir := filepath.Join(tmpDir, ".beads")
+	if err := os.MkdirAll(beadsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BEADS_DIR", beadsDir)
+	t.Setenv("AGENTOPS_PR_URL", "https://github.com/example/agentops/pull/204")
+	t.Setenv("AGENTOPS_MERGE_COMMIT", "abc123")
+
+	state := &phasedState{
+		Goal:   "record provenance",
+		EpicID: "ag-204",
+		RunID:  "provenance-run",
+		Opts:   phasedEngineOptions{},
+	}
+
+	if err := writeExecutionPacketSeed(tmpDir, state); err != nil {
+		t.Fatalf("writeExecutionPacketSeed: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(tmpDir, ".agents", "rpi", "execution-packet.json"))
+	if err != nil {
+		t.Fatalf("read packet: %v", err)
+	}
+
+	var packet executionPacket
+	if err := json.Unmarshal(data, &packet); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if packet.BeadID != "ag-204" {
+		t.Fatalf("BeadID = %q, want ag-204", packet.BeadID)
+	}
+	if packet.TrackingRepoRoot != tmpDir {
+		t.Fatalf("TrackingRepoRoot = %q, want %q", packet.TrackingRepoRoot, tmpDir)
+	}
+	if packet.BeadsDir != beadsDir {
+		t.Fatalf("BeadsDir = %q, want %q", packet.BeadsDir, beadsDir)
+	}
+	if packet.PRURL != "https://github.com/example/agentops/pull/204" {
+		t.Fatalf("PRURL = %q", packet.PRURL)
+	}
+	if packet.MergeCommit != "abc123" {
+		t.Fatalf("MergeCommit = %q", packet.MergeCommit)
+	}
+}
+
 func TestExecutionPacket_MixedNotSetByDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 	state := &phasedState{

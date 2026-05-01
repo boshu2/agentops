@@ -6,7 +6,11 @@ last_reviewed: 2026-04-30
 
 ## Mission
 
-AgentOps is operational discipline for coding agents. The hard problem: ship reliable code with unreliable agents that don't remember anything. Build the knowledge and memory into the system AND the process — a Meadows compounding system. The moat is the context you, your team, and your business have earned: every landmine, every decision, every scar. Atomic changes. Validation gates. Compounding context. Every session writes a learning. Every learning sharpens the next.
+AgentOps is source control for what your agents have learned. It gives coding agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
+
+The corpus is the descendant of the wiki (Ward Cunningham, 1995), the runbook, the postmortem, the toil budget — every prior generation's codified team knowledge, made agent-readable and maintained like code. Same lineage. New substrate.
+
+The internal proof contract remains the three-gap model: judgment validation, durable learning, and loop closure are how we verify that the corpus actually compounds and that toil actually drops.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
 
