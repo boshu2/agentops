@@ -67,6 +67,7 @@ func executeCommand(args ...string) (string, error) {
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
 	origCodexStopNoHistoryFallback := codexStopNoHistoryFallback
+	origCodexStopCloseLoop := codexStopCloseLoop
 	origCodexStopNoCloseLoop := codexStopNoCloseLoop
 	origCodexStatusDays := codexStatusDays
 	origAutodevFile := autodevFile
@@ -162,6 +163,7 @@ func executeCommand(args ...string) (string, error) {
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract
 		codexStopNoHistoryFallback = origCodexStopNoHistoryFallback
+		codexStopCloseLoop = origCodexStopCloseLoop
 		codexStopNoCloseLoop = origCodexStopNoCloseLoop
 		codexStatusDays = origCodexStatusDays
 		autodevFile = origAutodevFile
@@ -252,6 +254,7 @@ func executeCommand(args ...string) (string, error) {
 	codexStopTranscriptPath = ""
 	codexStopAutoExtract = true
 	codexStopNoHistoryFallback = false
+	codexStopCloseLoop = false
 	codexStopNoCloseLoop = false
 	codexStatusDays = 7
 	autodevFile = ""

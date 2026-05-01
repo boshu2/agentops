@@ -37,7 +37,9 @@ run_maintenance() {
         # Run the full flywheel close-loop: ingest → auto-promote → citation feedback
         # → maturity transitions → store index → memory promotion
         # Replaces separate pool ingest + maturity --scan --apply calls
-        run_ao_quick 15 flywheel close-loop --quiet || true
+        if [ "${AGENTOPS_SESSION_END_CLOSE_LOOP:-0}" = "1" ]; then
+            run_ao_quick 15 flywheel close-loop --quiet || true
+        fi
 
         # Capture metric baseline for velocity trend tracking (golden signals)
         run_ao_quick 5 metrics baseline -o json || true

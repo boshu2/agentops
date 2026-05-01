@@ -6,9 +6,13 @@
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### Coding agents don't do their own bookkeeping.
+### Operational discipline for coding agents.
 
-AgentOps is the operational layer for coding agents. It adds bookkeeping, validation, primitives, and flows so every session starts where the last one left off.
+Ship reliable code with unreliable agents.
+
+**AgentOps is source control for what your agents have learned.**
+
+Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 [Install](#install) · [Quick Start](#quick-start) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
@@ -22,26 +26,34 @@ AgentOps gives your coding agent four things it does not have by default:
 
 | Layer | What changes |
 |-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` files |
-| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
-| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks |
-| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end |
+| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in `.agents/` — the corpus. `ao compile`, `ao maturity --evict`, decay, and lint keep it from rotting. *Removes the toil of re-explaining context every session.* |
+| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship. *Removes the toil of catching the same mistake twice.* |
+| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks. *Removes the toil of re-implementing the same flow per agent.* |
+| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end. *Removes the toil of running the same multi-step process by hand.* |
 
 Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
-
-Under the hood, AgentOps acts as a context compiler: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
 
 ```mermaid
 flowchart LR
     S[Session work] --> B[Bookkeeping]
     S --> V[Validation]
-    B --> F[Knowledge flywheel]
-    V --> F
-    F --> N[Next session]
+    B --> C[The corpus]
+    V --> C
+    C --> N[Next session]
     N --> S
 ```
 
 Local and auditable: `.agents/` is plain text you can grep, diff, review, and commit when you choose. There is no telemetry or cloud service requirement.
+
+---
+
+## The lineage
+
+Software shipped because we codified the work. Iteration. Test discipline. Pipelines. Toil reduction. Flow and waste. Each generation gave teams an artifact: the wiki (Ward Cunningham, 1995, in the same circle as XP), the runbook, the postmortem, the toil budget.
+
+AgentOps gives your agents the same kind of artifact: **the corpus** — a typed, versioned, agent-readable wiki maintained alongside the code. Same lineage. New substrate.
+
+The pattern is broader than code; the product is focused on coding agents.
 
 ---
 

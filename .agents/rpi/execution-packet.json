@@ -1,57 +1,62 @@
 {
   "schema_version": 1,
-  "run_id": "rpi-2026-04-29-ci-tests-hooks-noise-audit",
-  "objective": "Audit AgentOps CI tests and hooks to reduce noisy signals and strengthen explicit validation contracts",
-  "epic_id": "agentops-dtg",
+  "run_id": "2026-05-01-pr-validation-toil-reduction",
+  "objective": "Reduce PR validation and closeout toil after PR #204 by converting repeated surprises into local gates, dirty-safe closeout behavior, and durable provenance.",
+  "epic_id": "soc-eh1z",
+  "bead_id": "soc-eh1z",
+  "tracking_repo_root": "/home/boful/dev/personal/agentops",
+  "beads_dir": "/home/boful/dev/personal/agentops/.beads",
+  "pr_url": "https://github.com/boshu2/agentops/pull/204",
+  "merge_commit": "733f4443d69008961cd4b05550661f59dec08469",
   "issue_ids": [
-    "agentops-dtg.1",
-    "agentops-dtg.2",
-    "agentops-dtg.3",
-    "agentops-dtg.4",
-    "agentops-dtg.5"
+    "soc-eh1z.1",
+    "soc-eh1z.2",
+    "soc-eh1z.3",
+    "soc-eh1z.4",
+    "soc-0pzj"
   ],
-  "plan_path": ".agents/plans/2026-04-29-ci-tests-hooks-noise-audit.md",
-  "research_path": ".agents/research/2026-04-29-ci-tests-hooks-noise-audit.md",
-  "pre_mortem_path": ".agents/council/2026-04-29-pre-mortem-ci-tests-hooks-noise-audit.md",
-  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-04-29-ci-tests-hooks-noise-audit.json",
+  "related_issue_ids": [
+    "soc-v7s8"
+  ],
+  "brainstorm_path": ".agents/brainstorm/2026-05-01-pr-validation-toil-reduction.md",
+  "design_path": ".agents/design/2026-05-01-design-pr-validation-toil-reduction.md",
+  "research_path": ".agents/research/2026-05-01-pr-validation-toil-reduction.md",
+  "plan_path": ".agents/plans/2026-05-01-pr-validation-toil-reduction.md",
+  "pre_mortem_path": ".agents/council/2026-05-01-pre-mortem-pr-validation-toil-reduction.md",
+  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-05-01-pr-validation-toil-reduction.md",
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd available; created epic agentops-dtg with five child tasks"
+    "reason": "bd available; created epic soc-eh1z with four new child tasks and grouped existing eval follow-up soc-0pzj"
   },
   "contract_surfaces": [
-    ".github/workflows/validate.yml",
-    "AGENTS.md",
-    "docs/CI-CD.md",
-    "docs/TESTING.md",
-    "hooks/hooks.json",
-    "hooks/codex-hooks.json",
     "scripts/pre-push-gate.sh",
-    "scripts/ci-local-release.sh",
-    "scripts/validate-ci-policy-parity.sh",
-    "scripts/validate-hook-preflight.sh",
-    "tests/hooks",
-    "tests/scripts"
+    "tests/scripts/pre-push-gate.bats",
+    "scripts/validate-embedded-sync.sh",
+    ".github/workflows/validate.yml",
+    "scripts/eval-agentops.sh",
+    "scripts/test-codex-hookless-lifecycle.sh",
+    "scripts/check-agents-hash-snapshot.sh",
+    "scripts/check-closeout-gate.sh",
+    "cli/internal/search/bead_context.go",
+    "cli/internal/rpi"
   ],
   "done_criteria": [
-    "All workflow jobs are classified by summary policy and documented in AGENTS/docs or explicitly excluded with rationale",
-    "Hook preflight and orphan-hook checks derive coverage from manifests or explicit allowlists",
-    "Local gate tests exercise behavior rather than only checking grep/count structure",
-    "Advisory warnings remain visible but are explicitly marked non-blocking",
-    "Targeted validation commands in the plan pass"
+    "Stale embedded hook output fails locally before CI",
+    "Missing pre-push helper fixture fails a focused test",
+    "Closeout no longer dirties tracked knowledge markdown by default",
+    "Execution packets preserve bead, PR, merge commit, and proof provenance",
+    "Warn-only eval advisory failures are filed or linked with artifact paths"
   ],
   "validation_commands": [
-    "bash scripts/validate-ci-policy-parity.sh",
-    "bash tests/scripts/test-ci-policy-parity.sh",
-    "bash scripts/validate-hooks-doc-parity.sh",
-    "bash scripts/validate-hook-preflight.sh",
-    "bash tests/hooks/test-orphan-hooks.sh",
-    "bats tests/scripts/pre-push-gate.bats tests/scripts/ci-local-release.bats",
-    "bats tests/hooks/*.bats",
-    "bash tests/docs/validate-doc-release.sh",
+    "bats tests/scripts/pre-push-gate.bats",
+    "bash scripts/validate-embedded-sync.sh",
     "bash scripts/pre-push-gate.sh --fast --scope worktree",
-    "bash scripts/ci-local-release.sh --fast"
+    "bash scripts/test-codex-hookless-lifecycle.sh",
+    "go test ./cli/internal/rpi ./cli/internal/search",
+    "bash scripts/check-closeout-gate.sh",
+    "scripts/eval-agentops.sh --fast --advisory"
   ],
   "complexity": "standard",
   "pre_mortem_verdict": "WARN",
@@ -64,7 +69,20 @@
     "recommended": [
       "L3"
     ],
-    "rationale": "Work touches shell validators, workflow policy, hook manifests/tests, and docs. L3 local release validation is final-wave proof because broad local gates can be noisy during policy normalization."
+    "rationale": "The plan touches shell gates, Bats fixtures, closeout lifecycle behavior, RPI execution packets, and eval advisory routing. Broad local pre-push remains recommended after focused tests because gate changes can interact across scopes."
   },
-  "discovery_timestamp": "2026-04-29T20:43:49Z"
+  "proof_artifacts": [
+    ".agents/brainstorm/2026-05-01-pr-validation-toil-reduction.md",
+    ".agents/design/2026-05-01-design-pr-validation-toil-reduction.md",
+    ".agents/research/2026-05-01-pr-validation-toil-reduction.md",
+    ".agents/plans/2026-05-01-pr-validation-toil-reduction.md",
+    ".agents/council/2026-05-01-pre-mortem-pr-validation-toil-reduction.md",
+    ".agents/council/2026-05-01-vibe-soc-eh1z.md",
+    ".agents/council/2026-05-01-post-mortem-soc-eh1z.md",
+    ".agents/rpi/ranked-packet-2026-05-01-pr-validation-toil-reduction.md",
+    ".agents/rpi/runs/2026-05-01-pr-validation-toil-reduction/phase-1-summary.md",
+    ".agents/rpi/phase-3-summary-2026-05-01-soc-eh1z.md"
+  ],
+  "proof_updated_at": "2026-05-01T01:12:47Z",
+  "discovery_timestamp": "2026-05-01T00:42:00Z"
 }

@@ -26,6 +26,7 @@ var (
 	codexStopTranscriptPath    string
 	codexStopAutoExtract       bool
 	codexStopNoHistoryFallback bool
+	codexStopCloseLoop         bool
 	codexStopNoCloseLoop       bool
 	codexStatusDays            int
 )
@@ -165,7 +166,7 @@ Codex CLI v0.115.0+ supports native hooks — prefer those for automatic lifecyc
 These commands remain as a fallback for older Codex versions without native hook support.
 
   ao codex start   Surface prior context and run safe maintenance
-  ao codex stop    Forge the current session, queue learnings, and close the loop
+  ao codex stop    Forge the current session and queue closeout learnings
   ao codex status  Show lifecycle health and flywheel status`,
 }
 
@@ -220,11 +221,13 @@ func init() {
 	codexStopCmd.Flags().StringVar(&codexStopTranscriptPath, "transcript", "", "Explicit transcript path to forge instead of runtime discovery")
 	codexStopCmd.Flags().BoolVar(&codexStopAutoExtract, "auto-extract", true, "Write lightweight learnings and handoff artifacts during closeout")
 	codexStopCmd.Flags().BoolVar(&codexStopNoHistoryFallback, "no-history-fallback", false, "Disable history.jsonl fallback when no archived Codex transcript exists")
+	codexStopCmd.Flags().BoolVar(&codexStopCloseLoop, "close-loop", false, "Run mutating flywheel close-loop maintenance after forging")
 	codexStopCmd.Flags().BoolVar(&codexStopNoCloseLoop, "no-close-loop", false, "Skip flywheel close-loop maintenance after forging")
 	codexEnsureStopCmd.Flags().StringVar(&codexStopSessionID, "session", "", "Codex session ID to close (defaults to the active thread)")
 	codexEnsureStopCmd.Flags().StringVar(&codexStopTranscriptPath, "transcript", "", "Explicit transcript path to forge instead of runtime discovery")
 	codexEnsureStopCmd.Flags().BoolVar(&codexStopAutoExtract, "auto-extract", true, "Write lightweight learnings and handoff artifacts during closeout")
 	codexEnsureStopCmd.Flags().BoolVar(&codexStopNoHistoryFallback, "no-history-fallback", false, "Disable history.jsonl fallback when no archived Codex transcript exists")
+	codexEnsureStopCmd.Flags().BoolVar(&codexStopCloseLoop, "close-loop", false, "Run mutating flywheel close-loop maintenance after forging")
 	codexEnsureStopCmd.Flags().BoolVar(&codexStopNoCloseLoop, "no-close-loop", false, "Skip flywheel close-loop maintenance after forging")
 
 	codexStatusCmd.Flags().IntVar(&codexStatusDays, "days", 7, "Citation window in days for Codex lifecycle health")
@@ -333,7 +336,7 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 		if err != nil {
 			return codexStartResult{}, fmt.Errorf("parse default close-loop threshold: %w", err)
 		}
-		result, err := performFlywheelCloseLoop(cwd, filepath.Join(".agents", "knowledge", "pending"), threshold, true)
+		result, err := performFlywheelCloseLoopWithCitationMutation(cwd, filepath.Join(".agents", "knowledge", "pending"), threshold, true, false)
 		if err != nil {
 			return codexStartResult{}, fmt.Errorf("run codex startup maintenance: %w", err)
 		}
@@ -466,19 +469,22 @@ func performCodexStop(cwd string) (codexStopResult, error) {
 	}
 
 	var closeLoop *flywheelCloseLoopResult
-	if !codexStopNoCloseLoop {
+	runCloseLoop := codexStopCloseLoop && !codexStopNoCloseLoop
+	if runCloseLoop {
 		threshold, err := time.ParseDuration(defaultAutoPromoteThreshold)
 		if err != nil {
 			return codexStopResult{}, fmt.Errorf("parse default close-loop threshold: %w", err)
 		}
-		result, err := performFlywheelCloseLoop(cwd, filepath.Join(".agents", "knowledge", "pending"), threshold, true)
+		result, err := performFlywheelCloseLoopWithCitationMutation(cwd, filepath.Join(".agents", "knowledge", "pending"), threshold, true, true)
 		if err != nil {
 			return codexStopResult{}, fmt.Errorf("run codex close-loop maintenance: %w", err)
 		}
 		closeLoop = &result
 	}
-	if err := performHooklessSessionEndMaintenance(cwd); err != nil {
-		VerbosePrintf("Warning: codex session-end maintenance: %v\n", err)
+	if runCloseLoop {
+		if err := performHooklessSessionEndMaintenance(cwd); err != nil {
+			VerbosePrintf("Warning: codex session-end maintenance: %v\n", err)
+		}
 	}
 
 	memoryPath, err := syncCodexMemory(cwd)

@@ -3,7 +3,7 @@ id: learning-2026-04-27-ci-contract-scanners-need-syntax-parity
 type: learning
 date: 2026-04-27
 category: testing
-confidence: 0.1667
+confidence: 0.1584
 maturity: provisional
 utility: 0.7300
 helpful_count: 1
@@ -11,7 +11,7 @@ harmful_count: 0
 reward_count: 1
 last_reward: 0.80
 last_reward_at: 2026-04-27T17:01:45-04:00
-last_decay_at: 2026-04-27T17:01:45-04:00
+last_decay_at: 2026-05-01T08:27:55-04:00
 ---
 
 # Learning: CI Contract Scanners Need Syntax Parity

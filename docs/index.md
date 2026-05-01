@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Coding agents don't do their own bookkeeping. AgentOps is the operational layer — memory, validation, and feedback loops that compound between sessions.
+description: Operational discipline for coding agents. AgentOps is source control for what your agents have learned — a typed, versioned, agent-readable corpus that compounds across sessions.
 hide:
   - navigation
   - toc
@@ -9,8 +9,13 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  Coding agents don't do their own bookkeeping.<br>
-  AgentOps is the operational layer that makes every session start where the last one left off.
+  Operational discipline for coding agents.<br>
+  Ship reliable code with unreliable agents.<br>
+  <strong>AgentOps is source control for what your agents have learned.</strong>
+</p>
+
+<p class="hero-subtagline">
+  Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Vendor memory follows the chat. The corpus follows the team.
 </p>
 
 <p class="hero-actions" markdown>

@@ -6,9 +6,11 @@ last_reviewed: 2026-04-24
 
 ## Mission
 
-AgentOps is the operational layer for coding agents. Publicly, it gives agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session starts where the last one left off. Technically, it uses a context-compiler architecture: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
+AgentOps is source control for what your agents have learned. It gives coding agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
-The older three-gap model remains the internal proof contract: judgment validation, durable learning, and loop closure are how we verify that the product actually compounds.
+The corpus is the descendant of the wiki (Ward Cunningham, 1995), the runbook, the postmortem, the toil budget — every prior generation's codified team knowledge, made agent-readable and maintained like code. Same lineage. New substrate.
+
+The internal proof contract remains the three-gap model: judgment validation, durable learning, and loop closure are how we verify that the corpus actually compounds and that toil actually drops.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
 

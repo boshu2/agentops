@@ -782,6 +782,7 @@ ao codex ensure-stop [flags]
 
 ```
       --auto-extract          Write lightweight learnings and handoff artifacts during closeout (default true)
+      --close-loop            Run mutating flywheel close-loop maintenance after forging
   -h, --help                  help for ensure-stop
       --no-close-loop         Skip flywheel close-loop maintenance after forging
       --no-history-fallback   Disable history.jsonl fallback when no archived Codex transcript exists
@@ -833,6 +834,7 @@ ao codex stop [flags]
 
 ```
       --auto-extract          Write lightweight learnings and handoff artifacts during closeout (default true)
+      --close-loop            Run mutating flywheel close-loop maintenance after forging
   -h, --help                  help for stop
       --no-close-loop         Skip flywheel close-loop maintenance after forging
       --no-history-fallback   Disable history.jsonl fallback when no archived Codex transcript exists
