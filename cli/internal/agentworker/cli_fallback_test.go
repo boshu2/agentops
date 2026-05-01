@@ -153,10 +153,36 @@ func newShellFallbackWorker(t *testing.T, script string) *CLIFallbackWorker {
 func processAliveEventually(pid int) bool {
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if syscall.Kill(pid, 0) != nil {
+		if !processAlive(pid) {
 			return false
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	return true
+	return processAlive(pid)
+}
+
+// processAlive returns true only when pid refers to a process that has not
+// yet exited. A zombie that is awaiting reaping by init counts as dead: the
+// process group has been killed, the child is no longer running, and the only
+// reason kill(pid, 0) still succeeds is that the kernel has not yet released
+// the PID slot.
+func processAlive(pid int) bool {
+	if syscall.Kill(pid, 0) != nil {
+		return false
+	}
+	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat")
+	if err != nil {
+		// /proc may be unavailable (non-Linux POSIX); fall back to kill(0)
+		// which already returned nil, so treat as alive.
+		return true
+	}
+	// /proc/<pid>/stat is "<pid> (<comm>) <state> ...". comm can contain
+	// spaces and parens, so locate the LAST ')' before reading state.
+	text := string(data)
+	rparen := strings.LastIndexByte(text, ')')
+	if rparen < 0 || rparen+2 >= len(text) {
+		return true
+	}
+	state := text[rparen+2]
+	return state != 'Z'
 }
