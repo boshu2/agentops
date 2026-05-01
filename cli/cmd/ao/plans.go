@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	plansPkg "github.com/boshu2/agentops/cli/internal/plans"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -26,6 +31,11 @@ var (
 	planBeadsID     string
 	planStatus      string
 	planName        string
+	// plansSyncViaDaemon (atom-3 / soc-fmgx) routes `ao plans sync` through the
+	// daemon's plans.projection job-type instead of the legacy direct shellout
+	// to bd. Default false in atom-3; flipped to true in atom-5 (soc-4sal)
+	// after the foundation §9 release-N+1 soak window passes.
+	plansSyncViaDaemon bool
 )
 
 var plansCmd = &cobra.Command{
@@ -133,6 +143,12 @@ func init() {
 	plansUpdateCmd.Flags().StringVar(&planStatus, "status", "", "New status for the plan")
 	plansUpdateCmd.Flags().StringVar(&planBeadsID, "beads-id", "", "Update beads ID")
 	_ = plansUpdateCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("active", "completed", "abandoned", "superseded"))
+
+	// Sync flags (atom-3 / soc-fmgx).
+	plansSyncCmd.Flags().BoolVar(&plansSyncViaDaemon, "via-daemon", false,
+		"Route plans sync through the agentopsd plans.projection job-type. "+
+			"Default false in this release; flipped to true in a later release after the soak window. "+
+			"With --via-daemon=false the command takes the legacy direct path (file-locked).")
 }
 
 // computePlanChecksum returns first 8 bytes of SHA256 as hex
@@ -463,16 +479,63 @@ func printSyncSummary(synced, drift int) {
 }
 
 // runPlansSync syncs manifest with beads (F6: beads is source of truth).
+//
+// 3-case fallback decision (atom-3 / soc-fmgx; G3 dual-write safety):
+//
+//	case A: --via-daemon=false (default in atom-3) → legacy direct path,
+//	        guarded by a manifest.lock LOCK_EX file lock so concurrent
+//	        writers can't race against each other or against the daemon
+//	        executor during the dual-write window.
+//	case B: --via-daemon=true AND daemon-up → POST /v1/jobs with a
+//	        plans.projection spec, await terminal event via /v1/events,
+//	        then re-load the snapshot the daemon wrote.
+//	case C: --via-daemon=true AND daemon-down → fall back to the legacy
+//	        direct path with file lock and emit a warning. This is the
+//	        "stop the bleeding" knob noted in the atom-5 rollback section.
+//
+// atom-5 (soc-4sal) flips the default to true and removes the legacy
+// direct path entirely; the file lock retires with it.
 func runPlansSync(cmd *cobra.Command, args []string) error {
 	if GetDryRun() {
 		fmt.Println("[dry-run] Would sync manifest with beads")
 		return nil
 	}
 
+	if plansSyncViaDaemon {
+		err := plansSyncViaDaemonPath(cmd)
+		if err == nil {
+			return nil
+		}
+		// case C: daemon path failed. Surface a warning and fall through
+		// to the direct path. The daemon-unreachable error is the only
+		// fall-through case; payload-level failures already emit their
+		// own diagnostic via plansSyncViaDaemonPath.
+		if !errors.Is(err, errDaemonUnavailable) {
+			return err
+		}
+		VerbosePrintf("Warning: daemon unreachable (%v); falling back to direct path\n", err)
+		fmt.Println("Daemon unreachable; using direct path with file lock.")
+	}
+
+	return plansSyncDirectPath()
+}
+
+// plansSyncDirectPath is the legacy "shell out to bd, append to manifest"
+// implementation, wrapped in a manifest.lock LOCK_EX file lock so concurrent
+// writers (e.g., a parallel `ao plans sync` invocation, or the daemon
+// executor during the dual-write window) cannot collide. atom-5 deletes
+// this function and the lock helper together.
+func plansSyncDirectPath() error {
 	manifestPath, err := getManifestPath()
 	if err != nil {
 		return fmt.Errorf("get manifest path: %w", err)
 	}
+
+	unlock, err := acquireManifestLock(manifestPath)
+	if err != nil {
+		return fmt.Errorf("acquire manifest lock: %w", err)
+	}
+	defer unlock()
 
 	entries, err := loadManifest(manifestPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -496,6 +559,120 @@ func runPlansSync(cmd *cobra.Command, args []string) error {
 
 	printSyncSummary(synced, drift)
 	return nil
+}
+
+// errDaemonUnavailable is the sentinel returned by plansSyncViaDaemonPath
+// when the daemon is not reachable. runPlansSync uses errors.Is to decide
+// whether to fall through to the direct path or surface the error to the
+// caller.
+var errDaemonUnavailable = errors.New("agentopsd daemon is not reachable")
+
+// plansSyncViaDaemonPath submits a plans.projection job to the agentopsd
+// daemon and waits for it to terminate, then prints the manifest snapshot
+// path. Returns errDaemonUnavailable when the daemon health probe fails;
+// other errors (job submission, terminal failure) bubble up as-is.
+func plansSyncViaDaemonPath(cmd *cobra.Command) error {
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return fmt.Errorf("resolve project dir: %w", err)
+	}
+	baseURL, err := resolveDaemonURL(cwd, daemonURL)
+	if err != nil {
+		return fmt.Errorf("resolve daemon URL: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(cobraContext(cmd), 60*time.Second)
+	defer cancel()
+
+	if _, err := fetchDaemonStatus(ctx, baseURL); err != nil {
+		return fmt.Errorf("%w: %v", errDaemonUnavailable, err)
+	}
+
+	projectID, issuePrefix, manifestDir := plansDaemonRequestParams()
+	spec := daemonpkg.NewPlansProjectionJobSpec(projectID, issuePrefix, manifestDir)
+
+	specRaw, err := json.Marshal(spec)
+	if err != nil {
+		return fmt.Errorf("marshal plans.projection spec: %w", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(specRaw, &payload); err != nil {
+		return fmt.Errorf("unmarshal plans.projection spec: %w", err)
+	}
+
+	token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+	if err != nil {
+		return fmt.Errorf("resolve daemon mutation token: %w", err)
+	}
+
+	request := daemonpkg.SubmitJobRequest{
+		JobType:        daemonpkg.JobTypePlansProjection,
+		IdempotencyKey: spec.IdempotencyKey(),
+		Payload:        payload,
+	}
+	var response daemonpkg.SubmitJobResponse
+	if err := postDaemonJSON(ctx, baseURL+"/v1/jobs", token, request, &response); err != nil {
+		return fmt.Errorf("submit plans.projection job: %w", err)
+	}
+	if !response.Accepted {
+		return fmt.Errorf("daemon rejected plans.projection job (status=%s, degraded=%v)",
+			response.Status, response.DegradedReasons)
+	}
+
+	job, err := waitForDaemonJobStatus(ctx, baseURL, response.JobID, 30*time.Second)
+	if err != nil {
+		return fmt.Errorf("await plans.projection job %s: %w", response.JobID, err)
+	}
+	if job.Status != daemonpkg.JobStatusCompleted {
+		return fmt.Errorf("plans.projection job %s terminated with status=%s", response.JobID, job.Status)
+	}
+	manifestPath := job.Artifacts["manifest_jsonl"]
+	manifestCount := job.Artifacts["manifest_count"]
+	fmt.Fprintf(cmd.OutOrStdout(),
+		"Daemon synced plans.projection: job=%s manifest=%s entries=%s\n",
+		response.JobID, manifestPath, manifestCount)
+	return nil
+}
+
+// plansDaemonRequestParams returns the (project_id, issue_prefix, output_dir)
+// triple used by plansSyncViaDaemonPath. The defaults match the shared
+// bushido bd workspace; tests override via the package-level seam below.
+func plansDaemonRequestParams() (projectID, issuePrefix, outputDir string) {
+	if plansDaemonParamsFn != nil {
+		return plansDaemonParamsFn()
+	}
+	manifestPath, _ := getManifestPath()
+	dir := filepath.Dir(manifestPath)
+	return "default", "", dir
+}
+
+// plansDaemonParamsFn is a test seam — set in unit tests to inject
+// deterministic project/prefix/output values without touching .beads/.
+var plansDaemonParamsFn func() (string, string, string)
+
+// acquireManifestLock opens (creating if needed) <manifest>.lock and
+// acquires an exclusive flock. Returns an unlock function that releases the
+// lock and closes the lock file. The lock is intentionally a separate file
+// (not the manifest itself) so partial-write recovery on the manifest
+// doesn't break the lock contract. atom-5 deletes this helper together
+// with the legacy direct path.
+func acquireManifestLock(manifestPath string) (func(), error) {
+	lockPath := manifestPath + ".lock"
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return nil, fmt.Errorf("manifest.lock mkdir: %w", err)
+	}
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return nil, fmt.Errorf("manifest.lock open %s: %w", lockPath, err)
+	}
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("manifest.lock flock %s: %w", lockPath, err)
+	}
+	unlock := func() {
+		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		_ = f.Close()
+	}
+	return unlock, nil
 }
 
 // beadsEpic represents a beads epic for sync.

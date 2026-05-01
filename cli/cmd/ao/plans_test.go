@@ -2,13 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
 	"strings"
 
+	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -1422,3 +1426,144 @@ func TestRunPlansSync(t *testing.T) {
 
 // buildBeadsStatusIndex, detectStatusDrifts, detectOrphanedEntries, saveManifest
 // tests are declared earlier in this file (lines 276-400). Duplicates removed.
+
+// TestPlansCommand_ThreeCaseFallback exercises the atom-3 / soc-fmgx 3-case
+// decision tree on `ao plans sync`:
+//
+//	case A: --via-daemon=false           → direct path, file-locked
+//	case B: --via-daemon=true, daemon-up → daemon-routed (HTTP POST + wait)
+//	case C: --via-daemon=true, daemon-down → fallback to direct path + warning
+func TestPlansCommand_ThreeCaseFallback(t *testing.T) {
+	prevDryRun := dryRun
+	prevVia := plansSyncViaDaemon
+	prevURL := daemonURL
+	prevParamsFn := plansDaemonParamsFn
+	t.Cleanup(func() {
+		dryRun = prevDryRun
+		plansSyncViaDaemon = prevVia
+		daemonURL = prevURL
+		plansDaemonParamsFn = prevParamsFn
+	})
+	dryRun = false
+
+	t.Run("flag-off → direct path takes file lock and returns ok", func(t *testing.T) {
+		dir := t.TempDir()
+		plansDir := filepath.Join(dir, ".agents", "plans")
+		if err := os.MkdirAll(plansDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Chdir(dir)
+		plansSyncViaDaemon = false
+		daemonURL = "http://127.0.0.1:1" // would fail if accidentally used
+		err := runPlansSync(&cobra.Command{}, nil)
+		if err != nil {
+			t.Fatalf("flag-off run: %v", err)
+		}
+		// File lock should have been created and released; the .lock file
+		// remains as a sentinel (cheap, not a problem).
+		if _, statErr := os.Stat(filepath.Join(plansDir, "manifest.jsonl.lock")); statErr != nil {
+			t.Fatalf("manifest.jsonl.lock should exist after flag-off direct path: %v", statErr)
+		}
+	})
+
+	t.Run("flag-on AND daemon-down → falls back to direct path with warning", func(t *testing.T) {
+		dir := t.TempDir()
+		plansDir := filepath.Join(dir, ".agents", "plans")
+		if err := os.MkdirAll(plansDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Chdir(dir)
+		plansSyncViaDaemon = true
+		// Use an unreachable port to force the fetchDaemonStatus health
+		// probe to fail with errDaemonUnavailable.
+		daemonURL = "http://127.0.0.1:1"
+		err := runPlansSync(&cobra.Command{}, nil)
+		if err != nil {
+			t.Fatalf("flag-on+daemon-down should fall through to direct path, got: %v", err)
+		}
+		if _, statErr := os.Stat(filepath.Join(plansDir, "manifest.jsonl.lock")); statErr != nil {
+			t.Fatalf("manifest.jsonl.lock should exist after fallback: %v", statErr)
+		}
+	})
+
+	t.Run("flag-on AND daemon-up → submits plans.projection job and prints manifest path", func(t *testing.T) {
+		dir := t.TempDir()
+		plansDir := filepath.Join(dir, ".agents", "plans")
+		if err := os.MkdirAll(plansDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Chdir(dir)
+		plansSyncViaDaemon = true
+
+		// Inject deterministic params so the daemon spec is well-formed.
+		plansDaemonParamsFn = func() (string, string, string) {
+			return "test-project", "soc", filepath.Join(dir, ".agents", "plans")
+		}
+
+		// Spin up a fake daemon: /v1/status reports ready + (after submission)
+		// the submitted job in completed state with manifest artifacts.
+		var (
+			mu          sync.Mutex
+			submittedID string
+		)
+		artifactPath := filepath.Join(dir, ".agents", "plans", "manifest.jsonl")
+		mux := http.NewServeMux()
+		statusHandler := func(w http.ResponseWriter, _ *http.Request) {
+			mu.Lock()
+			defer mu.Unlock()
+			jobs := []daemonpkg.QueueJobState{}
+			if submittedID != "" {
+				jobs = append(jobs, daemonpkg.QueueJobState{
+					JobID:   submittedID,
+					JobType: daemonpkg.JobTypePlansProjection,
+					Status:  daemonpkg.JobStatusCompleted,
+					Artifacts: map[string]string{
+						"manifest_jsonl": artifactPath,
+						"manifest_count": "0",
+					},
+				})
+			}
+			_ = json.NewEncoder(w).Encode(daemonpkg.ReadOnlyStatusResponse{
+				Ready: true,
+				Queue: daemonpkg.QueueSnapshot{Jobs: jobs},
+			})
+		}
+		mux.HandleFunc("/v1/status", statusHandler)
+		mux.HandleFunc("/status", statusHandler)
+		jobsHandler := func(w http.ResponseWriter, r *http.Request) {
+			var req daemonpkg.SubmitJobRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			mu.Lock()
+			submittedID = "job-plans-test"
+			mu.Unlock()
+			_ = json.NewEncoder(w).Encode(daemonpkg.SubmitJobResponse{
+				Accepted: true,
+				JobID:    "job-plans-test",
+				Status:   daemonpkg.JobStatusCompleted,
+			})
+		}
+		mux.HandleFunc("/v1/jobs", jobsHandler)
+		mux.HandleFunc("/jobs", jobsHandler)
+		fake := httptest.NewServer(mux)
+		defer fake.Close()
+		daemonURL = fake.URL
+
+		var stdout strings.Builder
+		cmd := &cobra.Command{}
+		cmd.SetOut(&stdout)
+		cmd.SetErr(&stdout)
+		err := runPlansSync(cmd, nil)
+		if err != nil {
+			t.Fatalf("flag-on+daemon-up: %v", err)
+		}
+		if submittedID == "" {
+			t.Fatalf("daemon never received a job submission (stdout=%q)", stdout.String())
+		}
+		if !strings.Contains(stdout.String(), "Daemon synced plans.projection") {
+			t.Fatalf("stdout missing daemon-synced banner: %q", stdout.String())
+		}
+		if !strings.Contains(stdout.String(), submittedID) {
+			t.Fatalf("stdout missing job id %q: %q", submittedID, stdout.String())
+		}
+	})
+}
