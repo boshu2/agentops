@@ -1,0 +1,33 @@
+{
+  "id": "auto-nightly-evolution-scheduler-guards",
+  "version": 1,
+  "date": "2026-05-01",
+  "goal": "Local scheduling guardrails prevent overlapping or explicitly stopped nightly runs.",
+  "narrative": "A systemd timer or cron entry fires while another run is active or while a kill switch has been set.",
+  "expected_outcome": "The wrapper exits before phase execution when the lock directory already exists or when a supported kill switch file is present.",
+  "acceptance_vectors": [
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'active lock blocks overlapping runs'"
+    },
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'kill switch prevents nightly run'"
+    }
+  ],
+  "satisfaction_threshold": 0.95,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "run locking",
+      "kill switch enforcement"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}

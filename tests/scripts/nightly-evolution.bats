@@ -98,6 +98,48 @@ STUB
     chmod +x "$MOCK_BIN/codex"
 }
 
+stub_bushido_status() {
+    local status="$1"
+    cat >"$MOCK_BIN/bushido-box" <<STUB
+#!/usr/bin/env bash
+set -euo pipefail
+printf '{"command":"ai-sane","status":"${status}","result":{"summary":{"ok":0,"warn":1,"fail":0}}}\n'
+STUB
+    chmod +x "$MOCK_BIN/bushido-box"
+}
+
+stub_nightly_brief_failure() {
+    cat >"$FAKE_REPO/scripts/nightly-rpi-brief.sh" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+exit 42
+STUB
+    chmod +x "$FAKE_REPO/scripts/nightly-rpi-brief.sh"
+}
+
+add_remote_nightly_branches() {
+    git init --bare -q "$TMP_DIR/origin.git"
+    git -C "$FAKE_REPO" remote add origin "$TMP_DIR/origin.git"
+    git -C "$FAKE_REPO" push -q origin HEAD:refs/heads/nightly/2026-05-01
+    git -C "$FAKE_REPO" push -q origin HEAD:refs/heads/nightly/2026-05-01-v2
+}
+
+@test "public validation scenario fixtures are schema-shaped" {
+    for scenario in "$REPO_ROOT"/tests/scenarios/nightly-evolution/*.json; do
+        jq -e '
+          .version == 1 and
+          (.id | test("^auto-.+")) and
+          (.date | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")) and
+          .goal and .narrative and .expected_outcome and
+          (.satisfaction_threshold >= 0 and .satisfaction_threshold <= 1) and
+          (.source == "agent") and
+          (.status == "active") and
+          (.acceptance_vectors | type == "array" and length > 0) and
+          (.scope.files | index("scripts/nightly-evolution.sh"))
+        ' "$scenario"
+    done
+}
+
 @test "dry-run writes digest without running Dream or evolve" {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
@@ -113,6 +155,25 @@ STUB
     [ -f "$TMP_DIR/out/digest.json" ]
     [ -f "$TMP_DIR/out/digest.md" ]
     jq -e '.mode == "dry-run" and .phases.dream == "not-requested" and .phases.evolve == "not-requested"' "$TMP_DIR/out/digest.json"
+    ! grep -q 'overnight start' "$AO_LOG"
+    [ ! -s "$AO_RPI_LOG" ]
+}
+
+@test "dry-run with requested phases records planned without executing" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --run-dream \
+        --run-evolve
+
+    [ "$status" -eq 0 ]
+    jq -e '.mode == "dry-run" and .phases.dream == "planned" and .phases.evolve == "planned"' "$TMP_DIR/out/digest.json"
     ! grep -q 'overnight start' "$AO_LOG"
     [ ! -s "$AO_RPI_LOG" ]
 }
@@ -138,6 +199,46 @@ STUB
     jq -e '.artifacts.systemd_dir != null' "$TMP_DIR/out/digest.json"
 }
 
+@test "execute blocks when ai-sane is not ok" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    stub_bushido_status "warn"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"bushido-box ai-sane is required for execute mode, got: warn"* ]]
+    [ ! -f "$AO_LOG" ] || ! grep -q 'overnight start' "$AO_LOG"
+    [ ! -s "$AO_RPI_LOG" ]
+}
+
+@test "execute can override ai-sane gate explicitly" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    stub_bushido_status "warn"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream \
+        --no-require-ai-sane
+
+    [ "$status" -eq 0 ]
+    grep -q 'overnight start' "$AO_LOG"
+    jq -e '.readiness.ai_sane_status == "warn" and .phases.dream == "ok"' "$TMP_DIR/out/digest.json"
+}
+
 @test "execute run-dream invokes ao overnight with both runners" {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
@@ -156,6 +257,74 @@ STUB
     grep -q -- '--runner claude' "$AO_LOG"
     grep -q -- '--runner codex' "$AO_LOG"
     jq -e '.mode == "execute" and .phases.dream == "ok"' "$TMP_DIR/out/digest.json"
+}
+
+@test "kill switch prevents nightly run" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    mkdir -p "$FAKE_REPO/.agents/evolve"
+    touch "$FAKE_REPO/.agents/evolve/STOP"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"nightly kill switch is present"* ]]
+    [ ! -f "$AO_LOG" ]
+    [ ! -s "$AO_RPI_LOG" ]
+}
+
+@test "active lock blocks overlapping runs" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    mkdir -p "$FAKE_REPO/.agents/nightly/nightly-evolution.lock"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"another nightly evolution run appears active"* ]]
+    [ ! -f "$AO_LOG" ]
+    [ ! -s "$AO_RPI_LOG" ]
+}
+
+@test "nightly brief failure is advisory and recorded" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    stub_nightly_brief_failure
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01
+
+    [ "$status" -eq 0 ]
+    jq -e '.phases.nightly_brief == "failed" and .phases.dream == "not-requested"' "$TMP_DIR/out/digest.json"
+}
+
+@test "branch suffix skips existing remote nightly heads" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    add_remote_nightly_branches
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.planned_branch == "nightly/2026-05-01-v3"' "$TMP_DIR/out/digest.json"
 }
 
 @test "execute run-evolve passes runtime env and branch to supervisor wrapper" {
