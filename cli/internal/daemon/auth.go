@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -9,7 +10,108 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
+
+// mutationRoutes is the authoritative list of mutation paths registered through
+// registerMutationRoute. The build-time guard at
+// scripts/check-mutation-route-coverage.sh asserts every mux.HandleFunc call
+// site for a mutation path goes through this helper.
+//
+// PER PRE-MORTEM AMENDMENT A2 (soc-8inr.5): this slice is the parity-test
+// surface; the bash script is the bypass guard. Together they close the
+// loophole where a developer could call mux.HandleFunc("/v1/foo", handler)
+// directly and bypass auth.
+var (
+	mutationRoutesMu sync.Mutex
+	mutationRoutes   []string
+)
+
+// MutationRoutesForTest returns a copy of the registered mutation paths.
+// Used by TestMutation_AllRegisteredRoutesEnforcePolicy and similar parity
+// checks to assert every tracked route enforces auth.
+func MutationRoutesForTest() []string {
+	mutationRoutesMu.Lock()
+	defer mutationRoutesMu.Unlock()
+	out := make([]string, len(mutationRoutes))
+	copy(out, mutationRoutes)
+	return out
+}
+
+// resetMutationRoutesForTest is a test-only escape hatch so independent test
+// runs see a stable route list. Production code never resets the slice; routes
+// are registered once per router build and the guard script asserts the
+// authoritative list via static analysis.
+func resetMutationRoutesForTest() {
+	mutationRoutesMu.Lock()
+	defer mutationRoutesMu.Unlock()
+	mutationRoutes = nil
+}
+
+// MutationPolicyProvider lazily resolves the policy at request time. The
+// daemon defaults are evaluated per-request because tests inject options after
+// the router is built.
+type MutationPolicyProvider func() MutationPolicy
+
+type mutationDecisionKey struct{}
+
+// MutationDecisionFromContext returns the decision attached by
+// registerMutationRoute. Handlers that need TokenName for ledger actor
+// attribution should call this rather than re-running the policy check.
+func MutationDecisionFromContext(ctx context.Context) (MutationDecision, bool) {
+	d, ok := ctx.Value(mutationDecisionKey{}).(MutationDecision)
+	return d, ok
+}
+
+// registerMutationRoute wraps handler in mutation-auth enforcement and
+// atomically appends path to the tracked mutationRoutes slice. EVERY mutation
+// route MUST be registered through this helper.
+//
+// The build-time guard (scripts/check-mutation-route-coverage.sh) asserts no
+// other call site to mux.HandleFunc registers a mutation path — it greps the
+// daemon package and fails if any HandleFunc lives outside auth.go.
+func registerMutationRoute(mux *http.ServeMux, path string, policy MutationPolicyProvider, handler http.HandlerFunc) {
+	mutationRoutesMu.Lock()
+	mutationRoutes = append(mutationRoutes, path)
+	mutationRoutesMu.Unlock()
+	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		// Auth only enforces on mutation methods. Non-mutation methods (e.g.,
+		// GET on a POST-only route) fall through to the handler so it can
+		// return 405 Method Not Allowed via requireMethod. This preserves the
+		// pre-helper behavioral contract verified by
+		// TestDaemonJobsCancelStaticRouteUsesMutationPolicy.
+		p := policy()
+		methods := p.AllowedMethods
+		if len(methods) == 0 {
+			methods = []string{http.MethodPost, http.MethodPatch, http.MethodDelete}
+		}
+		if !stringInSet(r.Method, methods) {
+			handler(w, r)
+			return
+		}
+		decision, err := AuthorizeMutationDecision(r, p)
+		if err != nil {
+			writeMutationForbidden(w, err)
+			return
+		}
+		ctx := context.WithValue(r.Context(), mutationDecisionKey{}, decision)
+		handler(w, r.WithContext(ctx))
+	})
+}
+
+// registerReadOnlyRoute registers a route that intentionally does not require
+// mutation auth. It exists so all mux.HandleFunc call sites in the daemon
+// package live in auth.go (the build-time guard rejects HandleFunc anywhere
+// else). Read-only by contract: handlers MUST NOT mutate ledger state.
+func registerReadOnlyRoute(mux *http.ServeMux, path string, handler http.HandlerFunc) {
+	mux.HandleFunc(path, handler)
+}
+
+func writeMutationForbidden(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+}
 
 const (
 	DefaultMutationTokenHeader = "X-AgentOps-Daemon-Token" // #nosec G101 -- HTTP header name, not a credential.
@@ -78,6 +180,10 @@ func DefaultMutationPathCapabilities() map[string]MutationCapability {
 		"/openclaw/v1/triggers/jobs":    MutationCapabilityOpenClawTrigger,
 		"/v1/openclaw/triggers/jobs":    MutationCapabilityOpenClawTrigger,
 		"/v1/openclaw/v1/triggers/jobs": MutationCapabilityOpenClawTrigger,
+		// Schedule routes (soc-8inr.5) require admin capability — schedules are
+		// privileged operator surface, not per-job submission.
+		"/v1/schedules":   MutationCapabilityAdmin,
+		"/v1/schedules/*": MutationCapabilityAdmin,
 	}
 }
 
@@ -182,10 +288,10 @@ func EvaluateMutationPolicy(r *http.Request, policy MutationPolicy) MutationDeci
 	if !stringInSet(r.Method, policy.AllowedMethods) {
 		return deny("method outside mutation scope")
 	}
-	if len(policy.AllowedPaths) > 0 && !stringInSet(r.URL.Path, policy.AllowedPaths) {
+	if len(policy.AllowedPaths) > 0 && !mutationPathInSet(r.URL.Path, policy.AllowedPaths) {
 		return deny("path outside mutation scope")
 	}
-	required := policy.PathCapabilities[r.URL.Path]
+	required := mutationCapabilityForPath(r.URL.Path, policy.PathCapabilities)
 	if required == "" {
 		required = MutationCapabilityAdmin
 	}
@@ -259,10 +365,15 @@ func legacyMutationToken(token string) MutationToken {
 }
 
 func defaultMutationCapabilities() []MutationCapability {
+	// Legacy tokens (single-token mode, local-only by construction) carry full
+	// admin authority. This includes the schedule-management surface added in
+	// soc-8inr.5; scoped tokens that need only submit/cancel must be declared
+	// explicitly via the JSON token-file format.
 	return []MutationCapability{
 		MutationCapabilitySubmitJob,
 		MutationCapabilityCancelJob,
 		MutationCapabilityOpenClawTrigger,
+		MutationCapabilityAdmin,
 	}
 }
 
@@ -333,6 +444,43 @@ func stringInSet(value string, allowed []string) bool {
 		}
 	}
 	return false
+}
+
+// mutationPathInSet matches r.URL.Path against a list of allowed patterns.
+// Patterns ending in "/*" match any path under the prefix segment (e.g.,
+// "/v1/schedules/*" matches "/v1/schedules/foo" and "/v1/schedules/foo/bar"
+// but NOT "/v1/schedules" itself; that requires an exact-match entry).
+func mutationPathInSet(path string, allowed []string) bool {
+	for _, pattern := range allowed {
+		if pattern == path {
+			return true
+		}
+		if strings.HasSuffix(pattern, "/*") {
+			prefix := strings.TrimSuffix(pattern, "/*")
+			if strings.HasPrefix(path, prefix+"/") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// mutationCapabilityForPath looks up the required capability for r.URL.Path,
+// honoring "/*" wildcard entries in PathCapabilities the same way
+// mutationPathInSet does.
+func mutationCapabilityForPath(path string, capabilities map[string]MutationCapability) MutationCapability {
+	if cap, ok := capabilities[path]; ok {
+		return cap
+	}
+	for pattern, cap := range capabilities {
+		if strings.HasSuffix(pattern, "/*") {
+			prefix := strings.TrimSuffix(pattern, "/*")
+			if strings.HasPrefix(path, prefix+"/") {
+				return cap
+			}
+		}
+	}
+	return ""
 }
 
 func deny(reason string) MutationDecision {

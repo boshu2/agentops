@@ -456,6 +456,22 @@ else
     skip "command/test pairing"
 fi
 
+# --- 3a. Mutation-route bypass guard (soc-8inr.5 amendment A2) ---
+# Asserts cli/internal/daemon/ never registers a mutation route via direct
+# mux.HandleFunc — registerMutationRoute / registerReadOnlyRoute is the only
+# allowed registration path. Always-on (cost ~50ms): a bypass landing on main
+# would silently expose ledger mutations without auth.
+if [[ -x scripts/check-mutation-route-coverage.sh ]]; then
+    if mutation_route_output="$(scripts/check-mutation-route-coverage.sh 2>&1)"; then
+        pass "mutation route bypass guard"
+    else
+        fail "mutation route bypass guard"
+        indent_output "$mutation_route_output"
+    fi
+else
+    fail "missing executable: scripts/check-mutation-route-coverage.sh"
+fi
+
 # --- 3b. HOME isolation in harvest.*/RunIngest tests ---
 if needs_check go; then
     if [[ -x scripts/check-home-isolation.sh ]]; then

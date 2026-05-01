@@ -550,3 +550,208 @@ func getJSON(t *testing.T, handler http.Handler, target string, out any) {
 		t.Fatalf("decode GET %s response: %v\nbody=%s", target, err, resp.Body.String())
 	}
 }
+
+// schedulesRouter builds a daemon router with a default-token mutation policy
+// suitable for schedule-route tests.
+func schedulesRouter(t *testing.T, store *Store, now *time.Time) http.Handler {
+	t.Helper()
+	return NewDaemonRouter(store, ServerOptions{
+		Now:            func() time.Time { return *now },
+		MutationPolicy: DefaultMutationPolicy("secret-token", nil),
+	})
+}
+
+func postSchedule(t *testing.T, handler http.Handler, payload, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/schedules", strings.NewReader(payload))
+	req.RemoteAddr = "127.0.0.1:51111"
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set(DefaultMutationTokenHeader, token)
+	}
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+	return resp
+}
+
+func deleteSchedule(t *testing.T, handler http.Handler, name, token string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodDelete, "/v1/schedules/"+name, nil)
+	req.RemoteAddr = "127.0.0.1:51111"
+	if token != "" {
+		req.Header.Set(DefaultMutationTokenHeader, token)
+	}
+	resp := httptest.NewRecorder()
+	handler.ServeHTTP(resp, req)
+	return resp
+}
+
+// TestRoute_PostSchedules_Creates posts a valid RecurringJobTemplate and
+// asserts the schedule lands in the store.
+func TestRoute_PostSchedules_Creates(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	payload := `{"name":"daily-llmwiki","cron":"0 3 * * *","job_type":"llmwiki.loop","backpressure":{"skip_if_running":true}}`
+	resp := postSchedule(t, router, payload, "secret-token")
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("POST /v1/schedules status = %d body=%s, want 201", resp.Code, resp.Body.String())
+	}
+	var body CreateScheduleResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Name != "daily-llmwiki" {
+		t.Fatalf("response name = %q, want daily-llmwiki", body.Name)
+	}
+	saved, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	if len(saved) != 1 || saved[0].Name != "daily-llmwiki" || saved[0].Cron != "0 3 * * *" || saved[0].JobType != JobTypeLLMWikiLoop {
+		t.Fatalf("ListSchedules = %#v, want one daily-llmwiki schedule", saved)
+	}
+}
+
+// TestRoute_PostSchedules_DuplicateNameReturns409 verifies the name-uniqueness
+// contract bubbles up as 409.
+func TestRoute_PostSchedules_DuplicateNameReturns409(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	payload := `{"name":"dup","cron":"0 3 * * *","job_type":"llmwiki.loop"}`
+	resp := postSchedule(t, router, payload, "secret-token")
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("first POST status = %d body=%s, want 201", resp.Code, resp.Body.String())
+	}
+	resp = postSchedule(t, router, payload, "secret-token")
+	if resp.Code != http.StatusConflict {
+		t.Fatalf("duplicate POST status = %d body=%s, want 409", resp.Code, resp.Body.String())
+	}
+}
+
+// TestRoute_PostSchedules_MalformedJSONReturns400 ensures the daemon
+// surfaces a clear 400 on invalid JSON (see amendment A2 fail-loud posture).
+func TestRoute_PostSchedules_MalformedJSONReturns400(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	resp := postSchedule(t, router, `{not json`, "secret-token")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("malformed JSON status = %d body=%s, want 400", resp.Code, resp.Body.String())
+	}
+	if !strings.Contains(resp.Body.String(), "error") {
+		t.Fatalf("400 body missing error field: %s", resp.Body.String())
+	}
+}
+
+// TestRoute_PostSchedules_MissingFieldsReturns400 covers required fields.
+func TestRoute_PostSchedules_MissingFieldsReturns400(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	cases := []struct {
+		name    string
+		payload string
+	}{
+		{"missing name", `{"cron":"0 3 * * *","job_type":"llmwiki.loop"}`},
+		{"missing cron", `{"name":"x","job_type":"llmwiki.loop"}`},
+		{"missing job_type", `{"name":"x","cron":"0 3 * * *"}`},
+		{"invalid cron", `{"name":"x","cron":"not-a-cron","job_type":"llmwiki.loop"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := postSchedule(t, router, tc.payload, "secret-token")
+			if resp.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d body=%s, want 400", resp.Code, resp.Body.String())
+			}
+		})
+	}
+}
+
+// TestRoute_GetSchedules_ReturnsList saves two schedules directly via the
+// store and verifies GET surfaces both. GET is read-only and bypasses auth.
+func TestRoute_GetSchedules_ReturnsList(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	if err := store.SaveSchedule(RecurringJobTemplate{Name: "alpha", Cron: "0 3 * * *", JobType: JobTypeLLMWikiLoop}); err != nil {
+		t.Fatalf("save alpha: %v", err)
+	}
+	if err := store.SaveSchedule(RecurringJobTemplate{Name: "beta", Cron: "0 4 * * *", JobType: JobTypeWikiBuild}); err != nil {
+		t.Fatalf("save beta: %v", err)
+	}
+	var body ListSchedulesResponse
+	getJSON(t, router, "/v1/schedules", &body)
+	if len(body.Schedules) != 2 {
+		t.Fatalf("schedules = %#v, want 2", body.Schedules)
+	}
+	names := map[string]bool{}
+	for _, s := range body.Schedules {
+		names[s.Name] = true
+	}
+	if !names["alpha"] || !names["beta"] {
+		t.Fatalf("names = %v, want alpha+beta", names)
+	}
+}
+
+// TestRoute_DeleteSchedule_Removes saves a schedule, deletes via HTTP, and
+// asserts the next ListSchedules omits it.
+func TestRoute_DeleteSchedule_Removes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	if err := store.SaveSchedule(RecurringJobTemplate{Name: "gone-soon", Cron: "0 5 * * *", JobType: JobTypeLLMWikiLoop}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	resp := deleteSchedule(t, router, "gone-soon", "secret-token")
+	if resp.Code != http.StatusOK {
+		t.Fatalf("DELETE status = %d body=%s, want 200", resp.Code, resp.Body.String())
+	}
+	saved, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	for _, s := range saved {
+		if s.Name == "gone-soon" {
+			t.Fatalf("schedule still present after DELETE: %#v", saved)
+		}
+	}
+}
+
+// TestRoute_DeleteSchedule_AuthRequired asserts DELETE rejects an
+// unauthenticated request with 403 (the registerMutationRoute wrapper).
+func TestRoute_DeleteSchedule_AuthRequired(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	if err := store.SaveSchedule(RecurringJobTemplate{Name: "guarded", Cron: "0 5 * * *", JobType: JobTypeLLMWikiLoop}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	resp := deleteSchedule(t, router, "guarded", "")
+	if resp.Code != http.StatusForbidden {
+		t.Fatalf("DELETE without token status = %d body=%s, want 403", resp.Code, resp.Body.String())
+	}
+	// The schedule must still be there — auth rejected the request before any
+	// store mutation could land.
+	saved, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	found := false
+	for _, s := range saved {
+		if s.Name == "guarded" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("unauthorized DELETE removed the schedule: %#v", saved)
+	}
+}

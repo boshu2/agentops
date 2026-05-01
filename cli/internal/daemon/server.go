@@ -112,26 +112,32 @@ func NewDaemonRouter(store *Store, opts ServerOptions) http.Handler {
 	server := &ReadOnlyServer{store: store, opts: opts}
 	mux := http.NewServeMux()
 	server.registerReadOnlyRoutes(mux)
+	policy := server.mutationPolicy
 	for _, prefix := range []string{"", "/v1"} {
-		mux.HandleFunc(prefix+"/jobs", server.handleSubmitJob)
-		mux.HandleFunc(prefix+"/jobs/cancel", server.handleCancelJob)
+		registerMutationRoute(mux, prefix+"/jobs", policy, server.handleSubmitJob)
+		registerMutationRoute(mux, prefix+"/jobs/cancel", policy, server.handleCancelJob)
 	}
-	mux.HandleFunc(openclaw.TriggerJobsPath, server.handleOpenClawTriggerJob)
+	registerMutationRoute(mux, openclaw.TriggerJobsPath, policy, server.handleOpenClawTriggerJob)
+	// Schedule routes (soc-8inr.5).
+	registerMutationRoute(mux, "POST /v1/schedules", policy, server.handlePostSchedule)
+	registerMutationRoute(mux, "DELETE /v1/schedules/{name}", policy, server.handleDeleteSchedule)
+	// GET /v1/schedules is intentionally read-only — no mutation auth.
+	registerReadOnlyRoute(mux, "GET /v1/schedules", server.handleListSchedules)
 	return mux
 }
 
 func (s *ReadOnlyServer) registerReadOnlyRoutes(mux *http.ServeMux) {
 	for _, prefix := range []string{"", "/v1"} {
-		mux.HandleFunc(prefix+"/health", s.handleHealth)
-		mux.HandleFunc(prefix+"/ready", s.handleReady)
-		mux.HandleFunc(prefix+"/status", s.handleStatus)
-		mux.HandleFunc(prefix+"/events", s.handleEvents)
+		registerReadOnlyRoute(mux, prefix+"/health", s.handleHealth)
+		registerReadOnlyRoute(mux, prefix+"/ready", s.handleReady)
+		registerReadOnlyRoute(mux, prefix+"/status", s.handleStatus)
+		registerReadOnlyRoute(mux, prefix+"/events", s.handleEvents)
 	}
-	mux.HandleFunc("/openclaw/v1/health", s.handleOpenClawHealth)
-	mux.HandleFunc("/openclaw/v1/snapshot/latest", s.handleOpenClawSnapshotLatest)
-	mux.HandleFunc("/openclaw/v1/runs", s.handleOpenClawRuns)
-	mux.HandleFunc("/openclaw/v1/jobs", s.handleOpenClawJobs)
-	mux.HandleFunc("/openclaw/v1/wiki", s.handleOpenClawWiki)
+	registerReadOnlyRoute(mux, "/openclaw/v1/health", s.handleOpenClawHealth)
+	registerReadOnlyRoute(mux, "/openclaw/v1/snapshot/latest", s.handleOpenClawSnapshotLatest)
+	registerReadOnlyRoute(mux, "/openclaw/v1/runs", s.handleOpenClawRuns)
+	registerReadOnlyRoute(mux, "/openclaw/v1/jobs", s.handleOpenClawJobs)
+	registerReadOnlyRoute(mux, "/openclaw/v1/wiki", s.handleOpenClawWiki)
 }
 
 func (s *ReadOnlyServer) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -296,12 +302,7 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
-	policy := s.mutationPolicy()
-	decision, err := AuthorizeMutationDecision(r, policy)
-	if err != nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
-		return
-	}
+	decision, _ := MutationDecisionFromContext(r.Context())
 	state, err := s.readState()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -363,12 +364,7 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
-	policy := s.mutationPolicy()
-	decision, err := AuthorizeMutationDecision(r, policy)
-	if err != nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
-		return
-	}
+	decision, _ := MutationDecisionFromContext(r.Context())
 	var req SubmitJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
@@ -427,12 +423,7 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
-	policy := s.mutationPolicy()
-	decision, err := AuthorizeMutationDecision(r, policy)
-	if err != nil {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": err.Error()})
-		return
-	}
+	decision, _ := MutationDecisionFromContext(r.Context())
 	var req CancelJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
@@ -473,6 +464,105 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 		ProjectionLag:    lag,
 		DegradedReasons:  degradedReasons,
 	})
+}
+
+// ListSchedulesResponse is the body of GET /v1/schedules.
+type ListSchedulesResponse struct {
+	Schedules []RecurringJobTemplate `json:"schedules"`
+}
+
+// CreateScheduleResponse is the body of a successful POST /v1/schedules.
+type CreateScheduleResponse struct {
+	Name string `json:"name"`
+}
+
+// DeleteScheduleResponse is the body of a successful DELETE /v1/schedules/{name}.
+type DeleteScheduleResponse struct {
+	Name    string `json:"name"`
+	Deleted bool   `json:"deleted"`
+}
+
+// handlePostSchedule serves POST /v1/schedules. Body is a JSON
+// RecurringJobTemplate. Auth is enforced by registerMutationRoute (admin
+// capability per DefaultMutationPathCapabilities).
+//
+// Returns:
+//   - 201 Created on success
+//   - 400 Bad Request on malformed JSON or missing required fields
+//   - 409 Conflict when a schedule with the same name already exists
+//   - 500 Internal Server Error on store failure
+func (s *ReadOnlyServer) handlePostSchedule(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) {
+		return
+	}
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	var template RecurringJobTemplate
+	if err := dec.Decode(&template); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json: " + err.Error()})
+		return
+	}
+	if strings.TrimSpace(template.Name) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name is required"})
+		return
+	}
+	if strings.TrimSpace(template.Cron) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cron is required"})
+		return
+	}
+	if _, err := ParseCron(template.Cron); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if strings.TrimSpace(string(template.JobType)) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is required"})
+		return
+	}
+	if err := s.store.SaveSchedule(template); err != nil {
+		// Duplicate-name path is a 409; everything else is 500.
+		if strings.Contains(err.Error(), "already exists") {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, CreateScheduleResponse{Name: template.Name})
+}
+
+// handleListSchedules serves GET /v1/schedules. Read-only — no mutation auth
+// (registered via registerReadOnlyRoute).
+func (s *ReadOnlyServer) handleListSchedules(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
+	schedules, err := s.store.ListSchedules()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if schedules == nil {
+		schedules = []RecurringJobTemplate{}
+	}
+	writeJSON(w, http.StatusOK, ListSchedulesResponse{Schedules: schedules})
+}
+
+// handleDeleteSchedule serves DELETE /v1/schedules/{name}. Auth is enforced
+// by registerMutationRoute. DeleteSchedule is idempotent at the store layer.
+func (s *ReadOnlyServer) handleDeleteSchedule(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodDelete) {
+		return
+	}
+	name := strings.TrimSpace(r.PathValue("name"))
+	if name == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name is required"})
+		return
+	}
+	if err := s.store.DeleteSchedule(name); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, DeleteScheduleResponse{Name: name, Deleted: true})
 }
 
 func (s *ReadOnlyServer) readState() (readOnlyState, error) {
@@ -665,10 +755,19 @@ func (s *ReadOnlyServer) mutationPolicy() MutationPolicy {
 		policy.TokenHeader = DefaultMutationTokenHeader
 	}
 	if len(policy.AllowedPaths) == 0 {
-		policy.AllowedPaths = []string{"/jobs", "/v1/jobs", "/jobs/cancel", "/v1/jobs/cancel", openclaw.TriggerJobsPath}
+		policy.AllowedPaths = []string{
+			"/jobs", "/v1/jobs",
+			"/jobs/cancel", "/v1/jobs/cancel",
+			openclaw.TriggerJobsPath,
+			"/v1/schedules",   // POST + GET (GET bypasses auth via registerReadOnlyRoute)
+			"/v1/schedules/*", // DELETE /v1/schedules/{name}
+		}
 	}
 	if len(policy.AllowedMethods) == 0 {
-		policy.AllowedMethods = []string{http.MethodPost}
+		policy.AllowedMethods = []string{http.MethodPost, http.MethodDelete}
+	}
+	if len(policy.PathCapabilities) == 0 {
+		policy.PathCapabilities = DefaultMutationPathCapabilities()
 	}
 	policy.RequireLocalRemote = true
 	return policy

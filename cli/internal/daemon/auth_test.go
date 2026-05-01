@@ -6,7 +6,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestAuthRequiresMutationTokenHeader(t *testing.T) {
@@ -217,4 +219,147 @@ func mutationRequest(method, target, remoteAddr string) *http.Request {
 	req := httptest.NewRequest(method, target, nil)
 	req.RemoteAddr = remoteAddr
 	return req
+}
+
+// TestRegisterMutationRoute_AppendsAndWraps verifies the helper:
+//  1. tracks the registered path in the mutationRoutes slice (so the parity
+//     test can audit coverage), and
+//  2. wraps the handler in mutation-auth enforcement (no token = 403, valid
+//     token = handler runs and decision is in context).
+//
+// PER PRE-MORTEM AMENDMENT A2 (soc-8inr.5): registerMutationRoute is the
+// single registration choke-point. This test pins the contract.
+func TestRegisterMutationRoute_AppendsAndWraps(t *testing.T) {
+	resetMutationRoutesForTest()
+	t.Cleanup(resetMutationRoutesForTest)
+
+	mux := http.NewServeMux()
+	policy := MutationPolicy{
+		Token:        "secret-token",
+		TokenHeader:  DefaultMutationTokenHeader,
+		AllowedPaths: []string{"/v1/test"},
+		AllowedMethods: []string{
+			http.MethodPost,
+		},
+		PathCapabilities: map[string]MutationCapability{
+			"/v1/test": MutationCapabilityAdmin,
+		},
+		RequireLocalRemote: true,
+	}
+	handlerCalls := 0
+	var seenDecision MutationDecision
+	registerMutationRoute(mux, "/v1/test", func() MutationPolicy { return policy }, func(w http.ResponseWriter, r *http.Request) {
+		handlerCalls++
+		if d, ok := MutationDecisionFromContext(r.Context()); ok {
+			seenDecision = d
+		}
+		w.WriteHeader(http.StatusAccepted)
+	})
+
+	// 1. Path appended to tracked slice.
+	tracked := MutationRoutesForTest()
+	found := false
+	for _, p := range tracked {
+		if p == "/v1/test" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("registered path not in MutationRoutesForTest(): %v", tracked)
+	}
+
+	// 2a. POST without token → 403.
+	req := httptest.NewRequest(http.MethodPost, "/v1/test", nil)
+	req.RemoteAddr = "127.0.0.1:51111"
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("missing token status = %d body=%s, want 403", rec.Code, rec.Body.String())
+	}
+	if handlerCalls != 0 {
+		t.Fatalf("handler invoked despite missing token: %d calls", handlerCalls)
+	}
+
+	// 2b. POST with valid token → handler runs, decision in context.
+	req = httptest.NewRequest(http.MethodPost, "/v1/test", nil)
+	req.RemoteAddr = "127.0.0.1:51111"
+	req.Header.Set(DefaultMutationTokenHeader, "secret-token")
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("authorized status = %d body=%s, want 202", rec.Code, rec.Body.String())
+	}
+	if handlerCalls != 1 {
+		t.Fatalf("handler call count = %d, want 1", handlerCalls)
+	}
+	if !seenDecision.Allowed || seenDecision.RequiredCapability != MutationCapabilityAdmin {
+		t.Fatalf("decision passed to handler = %#v, want allowed admin", seenDecision)
+	}
+}
+
+// TestMutation_AllRegisteredRoutesEnforcePolicy is the parity test required
+// by amendment A2: every path in MutationRoutesForTest() must reject an
+// unauthenticated POST with 403. This catches bypass loopholes where a route
+// is registered through the helper but accidentally exposes a code path that
+// runs before auth.
+func TestMutation_AllRegisteredRoutesEnforcePolicy(t *testing.T) {
+	resetMutationRoutesForTest()
+	t.Cleanup(resetMutationRoutesForTest)
+
+	store := NewStore(t.TempDir())
+	now := time.Now().UTC()
+	router := NewDaemonRouter(store, ServerOptions{
+		Now:            func() time.Time { return now },
+		MutationPolicy: DefaultMutationPolicy("secret-token", nil),
+	})
+	tracked := MutationRoutesForTest()
+	if len(tracked) == 0 {
+		t.Fatal("no mutation routes registered; expected NewDaemonRouter to populate the tracked list")
+	}
+	for _, pattern := range tracked {
+		// mux.HandleFunc supports method-prefixed patterns ("POST /v1/foo").
+		// Pull the URL path back out so the parity probe hits the same path.
+		method := http.MethodPost
+		path := pattern
+		if idx := strings.IndexByte(pattern, ' '); idx >= 0 {
+			method = pattern[:idx]
+			path = pattern[idx+1:]
+		}
+		// Replace mux pattern wildcards ("{name}") with a literal probe value.
+		path = strings.ReplaceAll(path, "{name}", "probe-name")
+
+		req := httptest.NewRequest(method, path, nil)
+		req.RemoteAddr = "127.0.0.1:51111"
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("route %q (method %s) without token returned %d (body=%s), want 403",
+				pattern, method, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+// TestMutation_GetSchedulesIsReadOnly asserts GET /v1/schedules bypasses
+// mutation auth — it is intentionally registered via registerReadOnlyRoute.
+func TestMutation_GetSchedulesIsReadOnly(t *testing.T) {
+	store := NewStore(t.TempDir())
+	now := time.Now().UTC()
+	router := NewDaemonRouter(store, ServerOptions{
+		Now:            func() time.Time { return now },
+		MutationPolicy: DefaultMutationPolicy("secret-token", nil),
+	})
+	req := httptest.NewRequest(http.MethodGet, "/v1/schedules", nil)
+	req.RemoteAddr = "127.0.0.1:51111"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /v1/schedules without token status = %d body=%s, want 200 (read-only)", rec.Code, rec.Body.String())
+	}
+	// GET path must NOT be in the tracked mutation slice (it's read-only).
+	for _, pattern := range MutationRoutesForTest() {
+		if pattern == "GET /v1/schedules" || pattern == "/v1/schedules" {
+			t.Fatalf("GET /v1/schedules accidentally registered as a mutation route: %v", MutationRoutesForTest())
+		}
+	}
 }
