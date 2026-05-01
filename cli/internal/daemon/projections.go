@@ -27,19 +27,6 @@ var knownEventTypes = map[EventType]struct{}{
 	EventScheduleDeleted:       {},
 }
 
-// isJobLifecycleEvent reports whether the event type drives the job-projection
-// state machine (accepted/claimed/.../cancelled). Schedule and projection
-// lifecycle events do not touch JobProjection state.
-func isJobLifecycleEvent(t EventType) bool {
-	switch t {
-	case EventJobAccepted, EventJobClaimed, EventJobHeartbeat,
-		EventJobLeaseExpired, EventJobCompleted, EventJobFailed,
-		EventJobCancelled:
-		return true
-	}
-	return false
-}
-
 func isScheduleEvent(t EventType) bool {
 	switch t {
 	case EventScheduleCreated, EventScheduleFired, EventScheduleSkipped, EventScheduleDeleted:
@@ -309,8 +296,8 @@ func applyEventsToState(events []LedgerEvent, set *ProjectionSet, jobsByID map[s
 			// state machine. Per learning 2026-04-30-applyqueue-helper-
 			// invariants, do NOT extend applyEventMetadataToJob or
 			// applyPayloadToJob with schedule logic. The schedule list
-			// is rebuilt en bloc in finalizeSchedules from the full
-			// event slice — see ScheduleStateFromEvents in store.go.
+			// is rebuilt en bloc by ScheduleStateFromEvents (store.go),
+			// invoked from RebuildProjections after applyEventsToState.
 			applied++
 			continue
 		}
