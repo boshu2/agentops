@@ -1,0 +1,15 @@
+schedules:
+  - name: nightly-wiki
+    cron: "0 3 * * *"
+    job_type: llmwiki.loop
+    timeout: 30m
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 5
+    payload:
+      mode: forge
+  - name: hourly-rebuild
+    cron: "@hourly"
+    job_type: wiki.build
+    backpressure:
+      max_queue_depth: 10

@@ -1,0 +1,4 @@
+schedules:
+  - name: bad-cron
+    cron: "not a cron"
+    job_type: llmwiki.loop

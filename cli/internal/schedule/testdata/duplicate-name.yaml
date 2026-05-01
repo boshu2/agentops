@@ -1,0 +1,7 @@
+schedules:
+  - name: nightly-wiki
+    cron: "0 3 * * *"
+    job_type: llmwiki.loop
+  - name: nightly-wiki
+    cron: "0 4 * * *"
+    job_type: wiki.build

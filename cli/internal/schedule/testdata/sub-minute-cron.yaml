@@ -1,0 +1,4 @@
+schedules:
+  - name: every-minute
+    cron: "* * * * *"
+    job_type: llmwiki.loop

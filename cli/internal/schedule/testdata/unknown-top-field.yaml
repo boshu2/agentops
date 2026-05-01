@@ -1,0 +1,5 @@
+bogus: 42
+schedules:
+  - name: ok
+    cron: "0 3 * * *"
+    job_type: llmwiki.loop

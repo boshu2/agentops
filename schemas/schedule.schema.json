@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/boshu2/agentops/schemas/schedule.schema.json",
+  "title": "AgentOps schedule.yaml",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schedules"],
+  "properties": {
+    "schedules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "cron", "job_type"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "cron": {"type": "string"},
+          "job_type": {"type": "string", "pattern": "^[a-z]+\\.[a-z]+$"},
+          "payload": {},
+          "timeout": {"type": "string"},
+          "backpressure": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "skip_if_running": {"type": "boolean"},
+              "max_queue_depth": {"type": "integer", "minimum": 1, "maximum": 1000}
+            }
+          }
+        }
+      }
+    }
+  }
+}

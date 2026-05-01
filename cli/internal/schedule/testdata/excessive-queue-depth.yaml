@@ -1,0 +1,6 @@
+schedules:
+  - name: too-deep
+    cron: "0 3 * * *"
+    job_type: llmwiki.loop
+    backpressure:
+      max_queue_depth: 9999
