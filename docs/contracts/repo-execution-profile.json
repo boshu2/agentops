@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "startup_reads": [
+    "docs/newcomer-guide.md",
+    "docs/index.md",
+    "docs/documentation-index.md",
+    "PRODUCT.md",
+    "GOALS.md",
+    "PROGRAM.md",
+    "CLAUDE.md"
+  ],
+  "goals_source": {
+    "primary": "GOALS.md",
+    "compatibility_mirrors": [
+      "GOALS.yaml"
+    ]
+  },
+  "validation_commands": [
+    "cd cli && env -u AGENTOPS_RPI_RUNTIME go build ./...",
+    "cd cli && env -u AGENTOPS_RPI_RUNTIME go vet ./...",
+    "cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./...",
+    "env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict",
+    "bash scripts/check-worktree-disposition.sh",
+    "env -u AGENTOPS_RPI_RUNTIME scripts/pre-push-gate.sh --fast"
+  ],
+  "tracker_commands": {
+    "shell_prefix": "",
+    "ready": "bd ready --json",
+    "show": "bd show <id> --json",
+    "update": "bd update <id> --status in_progress --json",
+    "close": "bd close <id> --reason \"Completed\" --json",
+    "doctor": "bd doctor",
+    "vc_status": "git status --short"
+  },
+  "work_selection_order": [
+    "harvested",
+    "beads",
+    "goal",
+    "directive",
+    "testing",
+    "validation",
+    "bug-hunt",
+    "drift",
+    "feature"
+  ],
+  "definition_of_done": {
+    "predicates": [
+      "active bead is closed or updated with concrete remaining blockers",
+      "validation_commands all pass for landed slices",
+      "scripts/pre-push-gate.sh --fast is green",
+      "ao autodev validate reports valid: true for PROGRAM.md",
+      "git status is clean for the slice (operator-noted pre-existing dirty files excluded)",
+      "new follow-up work discovered during the cycle is tracked in bd"
+    ],
+    "required_validations": [
+      "scripts/pre-push-gate.sh --fast"
+    ],
+    "require_clean_git": false
+  }
+}
