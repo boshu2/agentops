@@ -17,6 +17,7 @@ const (
 	ProjectionOpenClaw        ProjectionName = "openclaw-snapshot"
 	ProjectionDaemonStatus    ProjectionName = "daemon-status"
 	ProjectionDaemonJobStatus ProjectionName = "daemon-job-status"
+	ProjectionPlansManifest   ProjectionName = "plans-manifest"
 )
 
 type ProjectionStatus string
@@ -473,6 +474,8 @@ func defaultProjectionTargetsForJobType(jobType JobType) []ProjectionName {
 		targets = append([]ProjectionName{ProjectionWikiJobs, ProjectionOpenClaw}, targets...)
 	case JobTypeOpenClawSnapshot:
 		targets = append([]ProjectionName{ProjectionOpenClaw}, targets...)
+	case JobTypePlansProjection:
+		targets = append([]ProjectionName{ProjectionPlansManifest}, targets...)
 	}
 	return targets
 }

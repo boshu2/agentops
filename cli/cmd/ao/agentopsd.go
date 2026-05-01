@@ -344,6 +344,10 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
+	// TODO(atom-2 / soc-acwf): wire PlansProjectionExecutor here once
+	// cli/internal/daemon/plans_executor.go lands. atom-1 registers the
+	// JobType and read-side routes only; the executor instance is added in
+	// the next atom of the soc-7ftl chain.
 	queueOpts := daemonpkg.QueueOptions{}
 	if opts.Now != nil {
 		queueOpts.Now = opts.Now

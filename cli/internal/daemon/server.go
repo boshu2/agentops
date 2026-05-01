@@ -132,6 +132,12 @@ func (s *ReadOnlyServer) registerReadOnlyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/openclaw/v1/runs", s.handleOpenClawRuns)
 	mux.HandleFunc("/openclaw/v1/jobs", s.handleOpenClawJobs)
 	mux.HandleFunc("/openclaw/v1/wiki", s.handleOpenClawWiki)
+
+	// Plans projection (atom-1 registers the read-side routes; atom-2 fills the
+	// projection body). Read-side absorption per foundation §6 site 3 (alt) —
+	// no entry in DefaultMutationPathCapabilities.
+	mux.HandleFunc("/v1/plans/manifest", s.handlePlansManifest)
+	mux.HandleFunc("/v1/plans/diff", s.handlePlansDiff)
 }
 
 func (s *ReadOnlyServer) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -203,6 +209,38 @@ func (s *ReadOnlyServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 		Events:      events,
 		Corrupt:     state.Replay.Corrupt,
 		LastEventID: state.Lag.LastEventID,
+	})
+}
+
+func (s *ReadOnlyServer) handlePlansManifest(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
+	// atom-1 stub: the Plans field on ProjectionSet is added in atom-2. Until
+	// then, return an empty manifest envelope so callers can wire against the
+	// shape without depending on the executor.
+	writeJSON(w, http.StatusOK, map[string]any{
+		"schema_version": ProjectionSchemaVersion,
+		"entries":        []any{},
+	})
+}
+
+func (s *ReadOnlyServer) handlePlansDiff(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
+	state, err := s.readState()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	// atom-1 stub: filter the ledger by the same `since` cursor convention used
+	// by /v1/events. atom-2 will scope to plans-relevant events once the
+	// executor publishes them.
+	events := filterLedgerEventsAfter(state.Replay.Events, r.URL.Query().Get("since"))
+	writeJSON(w, http.StatusOK, map[string]any{
+		"events":        events,
+		"last_event_id": state.Lag.LastEventID,
 	})
 }
 

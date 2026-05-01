@@ -509,6 +509,34 @@ func openClawTriggerRouter(t *testing.T, store *Store, now *time.Time) http.Hand
 	})
 }
 
+func TestDaemonRouter_PlansRoutes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := NewDaemonRouter(store, ServerOptions{Now: func() time.Time { return now }})
+
+	var manifest map[string]any
+	getJSON(t, router, "/v1/plans/manifest", &manifest)
+	entries, ok := manifest["entries"].([]any)
+	if !ok {
+		t.Fatalf("manifest entries field type = %T, want []any (atom-1 stub envelope)", manifest["entries"])
+	}
+	if len(entries) != 0 {
+		t.Fatalf("manifest entries len = %d, want 0 (atom-1 stub returns empty until atom-2)", len(entries))
+	}
+	if _, ok := manifest["schema_version"]; !ok {
+		t.Fatalf("manifest missing schema_version key: %#v", manifest)
+	}
+
+	var diff map[string]any
+	getJSON(t, router, "/v1/plans/diff", &diff)
+	if _, ok := diff["events"]; !ok {
+		t.Fatalf("diff missing events key: %#v", diff)
+	}
+	if _, ok := diff["last_event_id"]; !ok {
+		t.Fatalf("diff missing last_event_id key: %#v", diff)
+	}
+}
+
 func postOpenClawTrigger(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, openclaw.TriggerJobsPath, strings.NewReader(payload))

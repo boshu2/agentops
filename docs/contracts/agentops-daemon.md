@@ -144,6 +144,15 @@ Initial job families:
 - `dream.run` and Dream stage jobs
 - `wiki.forge`
 - OpenClaw-safe trigger jobs
+- `plans.projection` — read-side bd-subscription job that rebuilds the plans
+  manifest projection from the shared bushido Dolt source. Read-only HTTP
+  surface: `GET /v1/plans/manifest` and `GET /v1/plans/diff?since=<cursor>`.
+  See spec at
+  `.agents/plans/2026-05-01-daemon-absorption-spec/02-pilot-plans-projection.md`
+  and the foundation §6 site 3 (alt) carve-out for read-side endpoints
+  (`.agents/plans/2026-05-01-daemon-absorption-spec/00-foundation-contract.md`).
+  The atom-4 acceptance criteria add a curl example block under the
+  Read-Side Endpoints section below.
 
 Queue workers must use leases and heartbeats rather than in-memory ownership.
 The queue must tolerate daemon restart and worker crash without losing accepted

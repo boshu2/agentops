@@ -12,6 +12,7 @@ const (
 	JobTypeWikiBuild        JobType = "wiki.build"
 	JobTypeWikiForge        JobType = "wiki.forge"
 	JobTypeOpenClawSnapshot JobType = "openclaw.snapshot"
+	JobTypePlansProjection  JobType = "plans.projection"
 )
 
 type EventType string
@@ -244,6 +245,7 @@ var jobTypeSet = map[string]struct{}{
 	string(JobTypeWikiBuild):        {},
 	string(JobTypeWikiForge):        {},
 	string(JobTypeOpenClawSnapshot): {},
+	string(JobTypePlansProjection):  {},
 }
 
 var eventTypeSet = map[string]struct{}{
