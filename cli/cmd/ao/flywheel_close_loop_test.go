@@ -891,3 +891,39 @@ func TestIngestPendingFilesToPool_ReadErrorDoesNotMove(t *testing.T) {
 		t.Errorf("missing file should not appear in processed/, got: %v", err)
 	}
 }
+
+// TestIngestPendingFilesToPool_MixedBatchPreservesPerFileIndependence verifies
+// that within a single ingest call, one file's failure does not block another
+// file's lifecycle. Exercises the refactored shared-helper path: the readable
+// file should be moved to processed/ even when a sibling file in the same call
+// fails to read.
+func TestIngestPendingFilesToPool_MixedBatchPreservesPerFileIndependence(t *testing.T) {
+	tmp := t.TempDir()
+
+	good := writeRegressionPendingLearning(t, tmp, "mixed-good")
+	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
+	missing := filepath.Join(pendingDir, "mixed-missing.md")
+
+	res, err := ingestPendingFilesToPool(tmp, []string{good, missing})
+	if err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	if res.Added != 1 {
+		t.Errorf("Added=%d, want 1 (good file's block)", res.Added)
+	}
+	if res.Errors != 1 {
+		t.Errorf("Errors=%d, want 1 (missing file)", res.Errors)
+	}
+
+	if _, err := os.Stat(good); !os.IsNotExist(err) {
+		t.Errorf("good file should have been moved out of pending/, err=%v", err)
+	}
+	dst := filepath.Join(tmp, ".agents", "knowledge", "processed", filepath.Base(good))
+	if _, err := os.Stat(dst); err != nil {
+		t.Errorf("good file should be in processed/, err=%v", err)
+	}
+	stale := filepath.Join(tmp, ".agents", "knowledge", "processed", "mixed-missing.md")
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Errorf("missing file should not appear in processed/, got: %v", err)
+	}
+}
