@@ -70,7 +70,7 @@ CI catches codex drift at push time, but 40% of fix commits in the March 2026 in
 
 Today harvest/forge/inject are on-demand — an operator runs them when they remember to. Anthropic's "dream cycle" concept validates what we've known: consolidation should happen automatically between sessions. Ship a GitHub Action (or scheduled Claude task) that runs nightly: harvest new learnings from recent sessions, forge patterns from accumulated learnings, defrag stale knowledge, and report flywheel health. The dream cycle is what turns the flywheel from "useful when invoked" to "always compounding."
 
-**Progress:** Implemented in nightly CI. `.github/workflows/nightly.yml` now runs a dedicated dream-cycle proof job (`harvest -> forge -> close-loop -> defrag -> metrics health`) against the checked-in knowledge corpus, uploads the full report artifact, and updates a rolling GitHub issue with a visible compounding summary.
+**Progress:** Implemented in nightly CI. `.github/workflows/nightly.yml` now runs a dedicated dream-cycle proof job (`harvest -> forge -> close-loop -> defrag -> metrics health`) against the checked-in knowledge corpus, uploads the full report artifact, and updates a rolling GitHub issue with a visible compounding summary. v1.0+: end-user repos can run the same loop locally via `ao daemon run --schedule-file .agents/schedule.yaml`. Substrate via soc-8inr (recurrence + JobTypeLLMWikiLoop + scheduling primitives, shipped 2026-05-01); operator-facing dogfood via soc-hxnr (stock .agents/schedule.yaml.example + ao init --with-schedule + operator runtime templates).
 
 **Steer:** increase (automated consolidation runs per week)
 
@@ -113,6 +113,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | ID | Check | Weight | Description | Tags |
 |----|-------|--------|-------------|------|
 | flywheel-compounding | `bash scripts/check-flywheel-compounding.sh` | 3 | Knowledge flywheel above escape velocity (σρ > δ); requires multi-session citation activity, not movable by single-session automation — see `.agents/findings/f-2026-04-29-001.md` | long-cycle, corpus-state |
+| dream-end-user-coverage | `bash scripts/check-schedule-example.sh` | 3 | Stock .agents/schedule.yaml.example exists, parses, and uses real-bodied job types (dream.run, wiki.forge). Closes Directive #8 end-user-repo gap. |  |
 | flywheel-proof | `bash scripts/proof-run.sh` | 7 | Flywheel compounds across sessions (automated proof) |  |
 | skill-frontmatter | `bash -c 'for f in skills/*/SKILL.md; do head -5 "$f" \| grep -q "^---" && head -10 "$f" \| grep -q "^name:" && head -10 "$f" \| grep -q "^description:" \|\| { echo FAIL:$f; exit 1; }; done'` | 6 | Every skill has valid YAML frontmatter |  |
 | hook-preflight | `timeout 60 ./scripts/validate-hook-preflight.sh` | 6 | All hooks pass safety checks |  |
