@@ -132,11 +132,19 @@ func readLegacySummaryAsHandoff(cwd string, phaseNum int) (*phaseHandoff, error)
 // readAllHandoffs reads handoffs for phases 1 through upToPhase-1.
 // Missing phases are silently skipped.
 func readAllHandoffs(cwd string, upToPhase int) ([]*phaseHandoff, error) {
+	return readAllHandoffsForRun(cwd, upToPhase, "")
+}
+
+func readAllHandoffsForRun(cwd string, upToPhase int, runID string) ([]*phaseHandoff, error) {
 	var handoffs []*phaseHandoff
+	runID = strings.TrimSpace(runID)
 	for i := 1; i < upToPhase; i++ {
 		h, err := readPhaseHandoff(cwd, i)
 		if err != nil {
 			continue // skip missing phases
+		}
+		if runID != "" && h.RunID != runID {
+			continue
 		}
 		handoffs = append(handoffs, h)
 	}

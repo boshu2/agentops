@@ -23,6 +23,66 @@ func TestResolveGoalAndStartPhase_Phase1WithGoal(t *testing.T) {
 	}
 }
 
+func TestResolveGoalAndStartPhase_EpicIssueRoutesToImplementation(t *testing.T) {
+	fakeBD := writeFakeBDShowJSON(t, `{"id":"soc-b8jo","issue_type":"epic"}`)
+
+	goal, startPhase, err := resolveGoalAndStartPhase(phasedEngineOptions{From: "discovery", BDCommand: fakeBD}, []string{"soc-b8jo"}, t.TempDir())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if goal != "soc-b8jo" {
+		t.Errorf("goal = %q, want soc-b8jo", goal)
+	}
+	if startPhase != 2 {
+		t.Errorf("startPhase = %d, want 2", startPhase)
+	}
+}
+
+func TestResolveGoalAndStartPhase_ChildIssueRoutesToParentImplementation(t *testing.T) {
+	fakeBD := writeFakeBDShowJSON(t, `{"id":"soc-b8jo.2","issue_type":"task","parent":"soc-b8jo"}`)
+
+	goal, startPhase, err := resolveGoalAndStartPhase(phasedEngineOptions{From: "discovery", BDCommand: fakeBD}, []string{"soc-b8jo.2"}, t.TempDir())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if goal != "soc-b8jo" {
+		t.Errorf("goal = %q, want soc-b8jo", goal)
+	}
+	if startPhase != 2 {
+		t.Errorf("startPhase = %d, want 2", startPhase)
+	}
+}
+
+func TestResolveGoalAndStartPhase_IssueLikeGoalRoutesDespiteTrackerFailure(t *testing.T) {
+	fakeBD := writeFakeBDFailure(t)
+
+	goal, startPhase, err := resolveGoalAndStartPhase(phasedEngineOptions{From: "discovery", BDCommand: fakeBD}, []string{"soc-b8jo"}, t.TempDir())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if goal != "soc-b8jo" {
+		t.Errorf("goal = %q, want soc-b8jo", goal)
+	}
+	if startPhase != 2 {
+		t.Errorf("startPhase = %d, want 2", startPhase)
+	}
+}
+
+func TestResolveGoalAndStartPhase_IssueLikeMissingFromHealthyTrackerStaysDiscovery(t *testing.T) {
+	fakeBD := writeFakeBDHealthyShowFailure(t)
+
+	goal, startPhase, err := resolveGoalAndStartPhase(phasedEngineOptions{From: "discovery", BDCommand: fakeBD}, []string{"fix-auth"}, t.TempDir())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if goal != "fix-auth" {
+		t.Errorf("goal = %q, want fix-auth", goal)
+	}
+	if startPhase != 1 {
+		t.Errorf("startPhase = %d, want 1", startPhase)
+	}
+}
+
 func TestResolveGoalAndStartPhase_Phase1WithoutGoal(t *testing.T) {
 	_, _, err := resolveGoalAndStartPhase(phasedEngineOptions{From: "discovery"}, nil, t.TempDir())
 	if err == nil {
@@ -141,6 +201,13 @@ func TestNewPhasedState_RunIDEmpty(t *testing.T) {
 	}
 }
 
+func TestNewPhasedState_IssueLikeImplementationGoalSetsEpicID(t *testing.T) {
+	state := newPhasedState(phasedEngineOptions{}, 2, "soc-b8jo")
+	if state.EpicID != "soc-b8jo" {
+		t.Errorf("EpicID = %q, want soc-b8jo", state.EpicID)
+	}
+}
+
 // --- mergeExistingStateFields ---
 
 func TestMergeExistingStateFields_CopiesFields(t *testing.T) {
@@ -189,6 +256,25 @@ func TestMergeExistingStateFields_ExplicitBeadOverridesCarried(t *testing.T) {
 	}
 	if state.Goal != "ag-pv9" {
 		t.Errorf("Goal = %q, want %q", state.Goal, "ag-pv9")
+	}
+}
+
+func TestMergeExistingStateFields_ExplicitPrefixAgnosticBeadOverridesCarried(t *testing.T) {
+	state := newPhasedState(phasedEngineOptions{}, 2, "soc-b8jo")
+	existing := &phasedState{
+		EpicID:   "ag-md3",
+		Goal:     "old goal from previous run",
+		Verdicts: map[string]string{},
+		Attempts: map[string]int{},
+	}
+
+	mergeExistingStateFields(state, existing, phasedEngineOptions{}, "soc-b8jo")
+
+	if state.EpicID != "soc-b8jo" {
+		t.Errorf("EpicID = %q, want soc-b8jo", state.EpicID)
+	}
+	if state.Goal != "soc-b8jo" {
+		t.Errorf("Goal = %q, want soc-b8jo", state.Goal)
 	}
 }
 
@@ -645,6 +731,39 @@ func TestWorktreeMergedAndRemovedEvents(t *testing.T) {
 	if !foundRemoved {
 		t.Error("expected worktree.removed event in events.jsonl")
 	}
+}
+
+func writeFakeBDShowJSON(t *testing.T, payload string) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bd")
+	script := "#!/usr/bin/env bash\nset -euo pipefail\nif [[ \"$1\" == \"show\" ]]; then\n  cat <<'JSON'\n" + payload + "\nJSON\nelse\n  echo '[]'\nfi\n"
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func writeFakeBDFailure(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bd")
+	script := "#!/usr/bin/env bash\nset -euo pipefail\necho 'db unavailable' >&2\nexit 1\n"
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func writeFakeBDHealthyShowFailure(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bd")
+	script := "#!/usr/bin/env bash\nset -euo pipefail\ncase \"${1:-}\" in\n  ready) echo '[]' ;;\n  list) echo '[{\"id\":\"soc-b8jo\",\"issue_type\":\"epic\"}]' ;;\n  show) echo 'issue not found' >&2; exit 1 ;;\n  *) echo '[]' ;;\nesac\n"
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 // --- preflightRuntimeAvailability ---
