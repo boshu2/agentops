@@ -44,6 +44,30 @@ if [[ -n "$staged_embed" ]]; then
     fi
 fi
 
+# --- Codex mirror delta check (when skills/ files are staged but skills-codex/ is not) ---
+staged_skills_src=$(git diff --cached --name-only -- 'skills/*' 2>/dev/null || true)
+if [[ -n "$staged_skills_src" ]]; then
+    affected_skills=$(echo "$staged_skills_src" | awk -F/ 'NF>=2 && $1=="skills" {print $2}' | sort -u)
+    drift_warned=0
+    for skill in $affected_skills; do
+        codex_dir="$REPO_ROOT/skills-codex/$skill"
+        [[ -d "$codex_dir" ]] || continue
+        staged_codex=$(git diff --cached --name-only -- "skills-codex/$skill/" 2>/dev/null || true)
+        if [[ -z "$staged_codex" ]]; then
+            if [[ "$drift_warned" -eq 0 ]]; then
+                echo "pre-commit: WARN — codex mirror parity drift detected:" >&2
+                drift_warned=1
+            fi
+            echo "  - skills/$skill/ has staged changes but skills-codex/$skill/ does not." >&2
+        fi
+    done
+    if [[ "$drift_warned" -eq 1 ]]; then
+        echo "  Run: bash scripts/regen-codex-hashes.sh    # update hashes only" >&2
+        echo "  Or:  bash scripts/refresh-codex-artifacts.sh  # full re-sync (regen + audit)" >&2
+        echo "  Then: git add skills-codex/" >&2
+    fi
+fi
+
 # --- Dual changelog sync (auto-copy new release entries to docs/CHANGELOG.md) ---
 if git diff --cached --name-only -- 'CHANGELOG.md' 2>/dev/null | grep -q '^CHANGELOG.md$'; then
     if [[ -f "$REPO_ROOT/docs/CHANGELOG.md" ]]; then
