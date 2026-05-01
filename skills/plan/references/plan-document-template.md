@@ -31,6 +31,8 @@ Applied findings:
 | `path/to/file.go` | Description of change |
 | `path/to/new_file.go` | **NEW** — description |
 
+> **Codex parity rule:** Whenever this table includes a `skills/<name>/` path, default-include the matching `skills-codex/<name>/` path on the same row (or a paired row) and add `scripts/regen-codex-hashes.sh` to the validation step. Skipping the codex mirror produces silent parity drift caught only by CI.
+
 ## Boundaries
 
 **Always:** <non-negotiable requirements — security, backward compat, testing, etc.>
