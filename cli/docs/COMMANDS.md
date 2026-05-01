@@ -614,6 +614,22 @@ Move a staged candidate to the knowledge base (.agents/learnings/ or .agents/pat
 ao pool promote <candidate-id> [flags]
 ```
 
+#### `ao pool reindex`
+
+Walk .agents/learnings/*.md and .agents/patterns/*.md, compute the
+
+```
+ao pool reindex [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Print counts only; do not write to the index
+  -h, --help      help for reindex
+      --json      Emit structured JSON output
+```
+
 #### `ao pool reject`
 
 Mark a candidate as rejected and move to rejected directory.
