@@ -42,6 +42,7 @@ allowlist nor an active skill name fails the gate.
 | `ledger` | cli (audit ledger) | persistent | Append-only audit ledger |
 | `memory` | cli (memory subsystem) | persistent | Memory-rl artifacts |
 | `mine` | cli (compile mine), /forge | rolling | Mined raw signal awaiting promotion |
+| `nightly` | scripts (`nightly-evolution`) | rolling | Private local nightly run digests, readiness snapshots, scheduler templates, and phase logs |
 | `opencode-tests` | scripts (opencode runtime tests) | regenerated | Opencode runtime test fixtures and outputs |
 | `overnight` | scripts (nightly dream cycle), /dream | rolling | Overnight run state and morning packets |
 | `packets` | cli (`context_explain.go`, `context_packet_status.go`) | rolling | Source manifests and promoted packets feeding the context-explain surface |
@@ -101,6 +102,7 @@ learnings
 ledger
 memory
 mine
+nightly
 opencode-tests
 overnight
 packets

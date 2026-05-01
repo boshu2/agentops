@@ -33,7 +33,9 @@ Nightly drift while avoiding hidden source-code mutation from GitHub Actions.
 If you want scheduled private Dream runs, use `ao overnight setup` to inspect the
 host, persist `dream.*` config, and generate host-specific `launchd`, `cron`, or
 `systemd` assistance artifacts. The host scheduler still owns the actual wake
-and scheduling semantics.
+and scheduling semantics. For the cross-vendor private local chain that combines
+Dream, Claude/Codex runners, RPI/evolve, and PR digest output, see
+[`docs/runbooks/nightly-evolution.md`](runbooks/nightly-evolution.md).
 
 ## validate.yml Architecture
 

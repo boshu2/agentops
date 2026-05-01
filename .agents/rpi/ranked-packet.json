@@ -1,34 +1,46 @@
 {
   "schema_version": 1,
-  "goal": "String together a safe set of nightly automations for AgentOps.",
-  "generated_at": "2026-05-01T14:09:00Z",
+  "goal": "Build cross-vendor local nightly automation for AgentOps.",
+  "generated_at": "2026-05-01T14:42:19Z",
   "items": [
     {
       "rank": 1,
       "source": "research",
-      "path": ".agents/research/2026-05-01-nightly-automation-chain.md",
-      "reason": "Maps current proof, evidence, Dream, and RPI/evolve surfaces."
+      "path": ".agents/research/2026-05-01-cross-vendor-nightly-automation.md",
+      "reason": "Maps local, GitHub, Claude, Codex, Dream/wiki, and Gas City options."
     },
     {
       "rank": 2,
+      "source": "contract",
+      "path": "docs/contracts/remote-compute.md",
+      "reason": "Defines Bushido as private target label and Gas City as future product backend."
+    },
+    {
+      "rank": 3,
+      "source": "contract",
+      "path": "docs/contracts/rpi-run-registry.md",
+      "reason": "Runtime selection already flows through --runtime, --runtime-cmd, config, and env."
+    },
+    {
+      "rank": 4,
       "source": "finding",
       "path": ".agents/findings/f-2026-04-25-001.md",
       "reason": "Long autonomous loops need closeout/disposition verification."
     },
     {
-      "rank": 3,
+      "rank": 5,
       "source": "finding",
       "path": ".agents/findings/f-2026-04-03-002.md",
       "reason": "Stale next-work suppression needs explicit proof."
     },
     {
-      "rank": 4,
+      "rank": 6,
       "source": "workflow",
       "path": ".github/workflows/nightly.yml",
       "reason": "Existing public proof harness."
     },
     {
-      "rank": 5,
+      "rank": 7,
       "source": "workflow",
       "path": ".github/workflows/nightly-rpi-brief.yml",
       "reason": "Existing evidence prompt-packet lane."
