@@ -3,6 +3,7 @@ package overnight
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -12,6 +13,9 @@ import (
 // underlying writer (quest.AtomicWriteFileWithPerm) has its own perm test;
 // these are integration covers so a future caller swapping writer or perm
 // arg is caught at the call site.
+//
+// Windows does not preserve POSIX read bits exactly; Go maps Chmod to the
+// read-only attribute, so a requested 0o644 writable file is observed as 0o666.
 
 func TestWriteCheckpointManifest_PermsPreservedAt0o644(t *testing.T) {
 	dir := t.TempDir()
@@ -79,7 +83,11 @@ func assertPerm(t *testing.T, path string, want os.FileMode) {
 	if err != nil {
 		t.Fatalf("stat %s: %v", path, err)
 	}
-	if got := info.Mode().Perm(); got != want {
-		t.Fatalf("perm %s = %o, want %o", path, got, want)
+	visibleWant := want
+	if runtime.GOOS == "windows" && want == 0o644 {
+		visibleWant = 0o666
+	}
+	if got := info.Mode().Perm(); got != visibleWant {
+		t.Fatalf("perm %s = %o, want observable %o for requested %o", path, got, visibleWant, want)
 	}
 }
