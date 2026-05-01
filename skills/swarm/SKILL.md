@@ -260,6 +260,8 @@ done
 
 > **Platform pitfalls:** Include relevant pitfalls from `references/worker-pitfalls.md` in worker prompts for the target language/platform. For example, inject the Bash section for shell script tasks, the Go section for Go tasks, etc. This prevents common worker failures from known platform gotchas.
 
+> **Pre-task checks:** Inject the Quick-Reference Inject Block from `references/worker-pre-task-checks.md` into every worker dispatch prompt — grep-for-existing-impls, file-manifest existence, deletion-adjacent symbol verify. Prevents workers from duplicating existing utilities or operating on stale plan symbols.
+
 #### gc Worker Dispatch (when `SWARM_BACKEND="gc"`)
 
 When gc is the selected backend, dispatch and monitor workers through gc sessions instead of Claude teams or Codex sub-agents:
@@ -775,4 +777,5 @@ Solution: Check which spawn backend was selected (look for "Using: <backend>" me
 - [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
 - [references/scope-escape-template.md](references/scope-escape-template.md)
+- [references/worker-pre-task-checks.md](references/worker-pre-task-checks.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)

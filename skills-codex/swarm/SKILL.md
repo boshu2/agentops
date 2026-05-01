@@ -219,3 +219,4 @@ This is slower but functionally identical.
 - [references/worker-pitfalls.md](references/worker-pitfalls.md)
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
 - [references/scope-escape-template.md](references/scope-escape-template.md)
+- [references/worker-pre-task-checks.md](references/worker-pre-task-checks.md)
