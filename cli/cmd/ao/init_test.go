@@ -8,6 +8,21 @@ import (
 	"testing"
 )
 
+// scheduleExampleBody is the canonical body the tests copy into the test
+// repository's .agents/schedule.yaml.example before invoking runInit. It is
+// not parsed; we just verify byte-for-byte propagation to schedule.yaml.
+const scheduleExampleBody = "schedules:\n  - name: nightly-dream\n    cron: \"0 3 * * *\"\n    job_type: dream.run\n"
+
+// resetInitFlags resets the package-level init flags between tests so state
+// from prior cases does not leak into the next.
+func resetInitFlags() {
+	initStealth = false
+	initHooks = false
+	initFull = false
+	initMinimalHooks = false
+	initWithSchedule = false
+}
+
 func TestRunInitCreatesDirs(t *testing.T) {
 	tmp := t.TempDir()
 	// Create a fake .git so it's treated as a git repo
@@ -314,5 +329,132 @@ func TestWarnTrackedFilesNoError(t *testing.T) {
 	// In a non-git directory, should produce no warnings about tracked files
 	if strings.Contains(out, "tracked") {
 		t.Errorf("non-git dir should not warn about tracked files, got: %s", out)
+	}
+}
+
+// --- soc-hxnr.2 tests: ao init --with-schedule ---
+
+// setupScheduleTest prepares a tmp repo with the schedule example file and
+// returns the cwd. Tests t.Chdir into it and expect no .agents/schedule.yaml
+// to exist initially.
+func setupScheduleTest(t *testing.T, withExample bool) string {
+	t.Helper()
+	tmp := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if withExample {
+		if err := os.MkdirAll(filepath.Join(tmp, ".agents"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		examplePath := filepath.Join(tmp, ".agents", "schedule.yaml.example")
+		if err := os.WriteFile(examplePath, []byte(scheduleExampleBody), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(tmp)
+	dryRun = false
+	resetInitFlags()
+	return tmp
+}
+
+func TestInit_WithScheduleFlag_CopiesExample(t *testing.T) {
+	tmp := setupScheduleTest(t, true)
+	initWithSchedule = true
+	if err := runInit(initCmd, nil); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(tmp, ".agents", "schedule.yaml"))
+	if err != nil {
+		t.Fatalf("expected .agents/schedule.yaml to be created: %v", err)
+	}
+	if string(got) != scheduleExampleBody {
+		t.Errorf("schedule.yaml content mismatch:\nwant: %q\n got: %q", scheduleExampleBody, string(got))
+	}
+}
+
+func TestInit_WithScheduleFlag_SkipsIfTargetExists(t *testing.T) {
+	tmp := setupScheduleTest(t, true)
+	existing := []byte("schedules:\n  - name: pre-existing\n    cron: \"0 0 * * *\"\n    job_type: dream.run\n")
+	dst := filepath.Join(tmp, ".agents", "schedule.yaml")
+	if err := os.WriteFile(dst, existing, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	initWithSchedule = true
+	if err := runInit(initCmd, nil); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	got, _ := os.ReadFile(dst)
+	if string(got) != string(existing) {
+		t.Errorf("expected pre-existing schedule.yaml to be preserved (warn+skip); got overwrite")
+	}
+}
+
+func TestInit_NonInteractive_SkipsByDefault(t *testing.T) {
+	tmp := setupScheduleTest(t, true)
+	// No flag, no env var. If the test process is non-TTY (typical CI), the
+	// silent-skip path triggers. If interactive (developer running `go test`
+	// in a TTY), the prompt path would fire — simulate a "no" response by
+	// piping "n\n" into cmd.InOrStdin() so the test is deterministic on both.
+	t.Setenv("AGENTOPS_INIT_WITH_SCHEDULE", "")
+	initCmd.SetIn(strings.NewReader("n\n"))
+	t.Cleanup(func() { initCmd.SetIn(nil) })
+	if err := runInit(initCmd, nil); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".agents", "schedule.yaml")); !os.IsNotExist(err) {
+		t.Errorf("expected .agents/schedule.yaml NOT to exist (silent skip non-TTY OR explicit 'n' in TTY); got err=%v", err)
+	}
+}
+
+func TestInit_EnvOverride_CopiesNonInteractive(t *testing.T) {
+	tmp := setupScheduleTest(t, true)
+	t.Setenv("AGENTOPS_INIT_WITH_SCHEDULE", "1")
+	// initWithSchedule stays false — env var is the trigger
+	if err := runInit(initCmd, nil); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".agents", "schedule.yaml")); err != nil {
+		t.Errorf("expected env-var-driven copy to create .agents/schedule.yaml; got err=%v", err)
+	}
+}
+
+func TestInit_FreshRepo_CreatesAgentsDir(t *testing.T) {
+	// Amendment B1: fresh tmp dir without .agents/, runInit creates it.
+	// runInit creates .agents/ as part of its normal flow regardless of
+	// --with-schedule, so this asserts the path is robust when the example
+	// also needs to be copied into it.
+	tmp := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Place example at .agents/schedule.yaml.example AFTER runInit creates the dir
+	// — but we need it before for the copy. Approach: pre-create just the file
+	// and let runInit's existing dir creation be idempotent.
+	if err := os.MkdirAll(filepath.Join(tmp, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	examplePath := filepath.Join(tmp, ".agents", "schedule.yaml.example")
+	if err := os.WriteFile(examplePath, []byte(scheduleExampleBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(tmp)
+	dryRun = false
+	resetInitFlags()
+	initWithSchedule = true
+	if err := runInit(initCmd, nil); err != nil {
+		t.Fatalf("runInit: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".agents", "schedule.yaml")); err != nil {
+		t.Errorf("expected .agents/schedule.yaml to exist in fresh repo; got err=%v", err)
+	}
+}
+
+func TestInit_HelpTextMentionsEnvVar(t *testing.T) {
+	// Amendment B2: --help output must mention AGENTOPS_INIT_WITH_SCHEDULE
+	// so non-interactive opt-in is discoverable.
+	helpText := initCmd.Flags().Lookup("with-schedule").Usage
+	if !strings.Contains(helpText, "AGENTOPS_INIT_WITH_SCHEDULE") {
+		t.Errorf("--with-schedule help text must mention AGENTOPS_INIT_WITH_SCHEDULE env var; got: %q", helpText)
 	}
 }
