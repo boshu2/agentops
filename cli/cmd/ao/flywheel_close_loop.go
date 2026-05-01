@@ -283,32 +283,26 @@ func ingestPendingFilesToPool(cwd string, files []string) (poolIngestResult, err
 		return res, nil
 	}
 
-	// Track files that ingested without read or add errors so we can move them
-	// to .agents/knowledge/processed afterwards. Without this lifecycle step,
-	// every close-loop pass re-ingests the same pending files; once a candidate
-	// has been promoted out of the pool, p.Get(cand.ID) no longer sees it, so
-	// the same candidate is re-added and re-promoted with a hash-suffixed
-	// duplicate artifact name. See mol-qwx4 (Olympus learning explosion).
-	var processedFiles []string
-
-	for _, f := range files {
-		data, rerr := os.ReadFile(f)
-		if rerr != nil {
+	// Successfully-ingested files are moved to .agents/knowledge/processed so
+	// they are not re-ingested on the next close-loop pass. Once a candidate
+	// is promoted out of the pool, p.Get(cand.ID) no longer sees it, so a
+	// stale pending file would re-add and re-promote with hash-suffixed
+	// duplicate artifact names. See mol-qwx4 (Olympus learning explosion).
+	pool.IterateIngestFiles(files, pool.IngestOrchestratorOpts{
+		IngestFile: func(path string, data []byte) bool {
+			fileDate, sessionHint := parsePendingFileHeader(string(data), path)
+			blocks := parseLearningBlocks(string(data))
+			res.CandidatesFound += len(blocks)
+			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res)
+		},
+		TrackProcessed: !GetDryRun(),
+		MoveProcessed: func(processed []string) {
+			moveIngestedFiles(cwd, processed)
+		},
+		OnReadError: func(_ string, _ error) {
 			res.Errors++
-			continue
-		}
-		fileDate, sessionHint := parsePendingFileHeader(string(data), f)
-		blocks := parseLearningBlocks(string(data))
-		res.CandidatesFound += len(blocks)
-		hadError := ingestFileBlocks(p, blocks, f, fileDate, sessionHint, &res)
-		if !hadError && !GetDryRun() {
-			processedFiles = append(processedFiles, f)
-		}
-	}
-
-	if len(processedFiles) > 0 {
-		moveIngestedFiles(cwd, processedFiles)
-	}
+		},
+	})
 
 	return res, nil
 }
