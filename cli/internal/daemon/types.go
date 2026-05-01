@@ -1,6 +1,12 @@
 package daemon
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/robfig/cron/v3"
+)
 
 type JobType string
 
@@ -12,7 +18,50 @@ const (
 	JobTypeWikiBuild        JobType = "wiki.build"
 	JobTypeWikiForge        JobType = "wiki.forge"
 	JobTypeOpenClawSnapshot JobType = "openclaw.snapshot"
+	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
+	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
+	JobTypeLLMWikiLoop JobType = "llmwiki.loop"
 )
+
+// RecurringJobTemplate is a schedule entry that materializes a Job on each cron tick.
+type RecurringJobTemplate struct {
+	Name         string                 `json:"name"`
+	Cron         string                 `json:"cron"`
+	JobType      JobType                `json:"job_type"`
+	Payload      json.RawMessage        `json:"payload,omitempty"`
+	Timeout      time.Duration          `json:"timeout,omitempty"`
+	Backpressure RecurrenceBackpressure `json:"backpressure"`
+}
+
+// RecurrenceBackpressure controls how the supervisor handles in-flight schedules.
+type RecurrenceBackpressure struct {
+	SkipIfRunning bool `json:"skip_if_running"`
+	MaxQueueDepth int  `json:"max_queue_depth"`
+}
+
+// CronParseError preserves the operator's original input for actionable errors.
+type CronParseError struct {
+	Original string
+	Reason   string
+}
+
+func (e *CronParseError) Error() string {
+	return fmt.Sprintf("invalid cron %q: %s", e.Original, e.Reason)
+}
+
+// ParseCron validates a cron expression using the 5-field standard with descriptors
+// (e.g., "0 3 * * *", "@daily"). 6-field expressions with seconds are rejected per
+// pre-mortem amendment B4 (DoS protection: prevents sub-minute schedules).
+func ParseCron(expr string) (cron.Schedule, error) {
+	parser := cron.NewParser(
+		cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
+	)
+	sched, err := parser.Parse(expr)
+	if err != nil {
+		return nil, &CronParseError{Original: expr, Reason: err.Error()}
+	}
+	return sched, nil
+}
 
 type EventType string
 

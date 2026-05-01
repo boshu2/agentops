@@ -1,6 +1,11 @@
 package daemon
 
-import "testing"
+import (
+	"encoding/json"
+	"errors"
+	"testing"
+	"time"
+)
 
 func TestEnumValidation(t *testing.T) {
 	validators := []struct {
@@ -127,5 +132,85 @@ func TestSnapshotTruthTable(t *testing.T) {
 				t.Fatalf("ProjectSnapshotResult(%#v) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestRecurringJobTemplate_RoundTripJSON(t *testing.T) {
+	orig := RecurringJobTemplate{
+		Name:    "nightly-wiki",
+		Cron:    "0 3 * * *",
+		JobType: JobTypeLLMWikiLoop,
+		Payload: json.RawMessage(`{"vault":"~/wiki"}`),
+		Timeout: 4 * time.Hour,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+			MaxQueueDepth: 5,
+		},
+	}
+	blob, err := json.Marshal(orig)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var got RecurringJobTemplate
+	if err := json.Unmarshal(blob, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Name != orig.Name || got.Cron != orig.Cron || got.JobType != orig.JobType {
+		t.Fatalf("mismatch: got=%+v want=%+v", got, orig)
+	}
+	if got.Timeout != orig.Timeout {
+		t.Fatalf("timeout mismatch: got=%v want=%v", got.Timeout, orig.Timeout)
+	}
+	if got.Backpressure != orig.Backpressure {
+		t.Fatalf("backpressure mismatch: got=%+v want=%+v", got.Backpressure, orig.Backpressure)
+	}
+}
+
+func TestParseCron_Valid5Field(t *testing.T) {
+	cases := []string{"0 3 * * *", "*/5 * * * *", "@daily", "@hourly", "0 0 1 * *"}
+	for _, c := range cases {
+		if _, err := ParseCron(c); err != nil {
+			t.Errorf("expected %q to parse; got error: %v", c, err)
+		}
+	}
+}
+
+func TestParseCron_Rejects6FieldWithSeconds(t *testing.T) {
+	// 6-field with seconds is the DoS vector per amendment B4 — must be rejected.
+	_, err := ParseCron("* * * * * *")
+	if err == nil {
+		t.Fatal("expected 6-field cron to be rejected; got nil")
+	}
+	var cpe *CronParseError
+	if !errors.As(err, &cpe) {
+		t.Fatalf("expected CronParseError; got %T: %v", err, err)
+	}
+	if cpe.Original != "* * * * * *" {
+		t.Errorf("expected original to be preserved; got %q", cpe.Original)
+	}
+}
+
+func TestParseCron_RejectsInvalid(t *testing.T) {
+	_, err := ParseCron("not a cron")
+	if err == nil {
+		t.Fatal("expected invalid cron to error")
+	}
+	var cpe *CronParseError
+	if !errors.As(err, &cpe) {
+		t.Fatalf("expected CronParseError; got %T", err)
+	}
+	if cpe.Original != "not a cron" {
+		t.Errorf("expected original preserved; got %q", cpe.Original)
+	}
+}
+
+func TestRecurrenceBackpressure_DefaultsAreSane(t *testing.T) {
+	// Zero-value: SkipIfRunning=false, MaxQueueDepth=0 means "no backpressure"
+	var bp RecurrenceBackpressure
+	if bp.SkipIfRunning {
+		t.Error("expected SkipIfRunning=false on zero value")
+	}
+	if bp.MaxQueueDepth != 0 {
+		t.Errorf("expected MaxQueueDepth=0 on zero value; got %d", bp.MaxQueueDepth)
 	}
 }
