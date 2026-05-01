@@ -318,6 +318,10 @@ func configureEvalCommand() {
 	_ = evalScorecardCmd.RegisterFlagCompletionFunc("kind", staticCompletionFunc(string(aoeval.ScorecardKindRPI), string(aoeval.ScorecardKindSkillChange)))
 
 	evalCmd.AddCommand(evalRunCmd, evalCompareCmd, evalBaselineCmd, evalBaselineAuditCmd, evalScorecardCmd, evalCoverageCmd)
+
+	registerEvalTaskCmd()
+	registerEvalCleanupCmd()
+	evalCmd.AddCommand(evalTaskCmd, evalCleanupCmd)
 }
 
 func parseEvalRuntime(value string) (aoeval.Runtime, error) {
