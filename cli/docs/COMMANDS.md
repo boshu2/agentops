@@ -1065,7 +1065,7 @@ ao daemon soak [flags]
   -h, --help                help for soak
       --interval duration   Polling interval for scenario checks (default 15s)
       --require-terminal    Fail unless scenario jobs reach terminal daemon state
-      --scenario string     Soak scenario (queue-only, fake-executor, dream) (default "queue-only")
+      --scenario string     Soak scenario (queue-only, fake-executor, dream, plans-projection) (default "queue-only")
 ```
 
 #### `ao daemon status`
@@ -2401,6 +2401,13 @@ Sync pulls plan metadata from beads to prevent drift.
 
 ```
 ao plans sync [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for sync
+      --via-daemon   Route plans sync through the agentopsd plans.projection job-type. Default false in this release; flipped to true in a later release after the soak window. With --via-daemon=false the command takes the legacy direct path (file-locked).
 ```
 
 #### `ao plans update`
