@@ -93,6 +93,18 @@ During plan creation (Step 2), evaluate each issue and wave against all 7 rules.
 
 ---
 
+## PR-008: Pre-Decomposition Symbol Verify
+
+**Rule:** Plans that touch code with deletion patches in the last 30 days must symbol-verify every named function, type, file, and import path against current HEAD before decomposition. Stale inventory silently invalidates wave acceptance criteria.
+
+**Evidence:** agentops-zm8 was the 5th inventory-vs-reality drift strike in 24 hours — the plan named symbols (functions, helpers, type identifiers) that had been deleted in recent commits. Decomposition assumed they existed; Wave 1 workers couldn't find the symbol and the wave failed mid-cycle. Pattern: plan author scanned an older snapshot or stale doc, not HEAD.
+
+**Detection Question:** Does the plan touch a region with deletions in `git log --since='30 days ago' --diff-filter=D --name-only`? If yes, has every symbol named in the plan been grep-verified against HEAD?
+
+**Checklist Item:** For deletion-adjacent plans, run `git log --since='30 days ago' --diff-filter=D --name-only` to identify the touched region, then `grep -rn '<symbol>' <region>` for each named symbol before Wave 1. Plans where any named symbol grep returns zero hits are rejected back to research.
+
+---
+
 ## Quick-Reference Checklist
 
 Use this during plan review:
@@ -110,3 +122,4 @@ Use this during plan review:
 | 6 | Cross-Layer Consistency | Do all layers agree on shared parameters? |
 | 7 | Phased Rollout | Are changes phased by risk with validation between waves? |
 | 7b | Phased Rollout | Is the 40% context budget respected? (Sessions that load >40% context for knowledge leave insufficient room for implementation work) |
+| 8 | Pre-Decomposition Symbol Verify | Are all named symbols grep-verified against current HEAD before decomposition? (Required for plans touching deletion-adjacent code in the last 30 days) |
