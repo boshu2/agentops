@@ -1,43 +1,49 @@
 {
   "schema_version": 1,
-  "run_id": "cross-vendor-nightly-2026-05-01",
-  "objective": "Build a cross-vendor private local nightly automation roadmap and first iteration for AgentOps, using Bushido as the execution host, Claude and Codex as headless workers, the local wiki/Dream cycle as private knowledge input, GitHub as proof/evidence, and Mt. Olympus/Gas City as a later durable backend.",
-  "epic_id": "soc-b8jo",
-  "plan_path": ".agents/plans/2026-05-01-cross-vendor-nightly-automation.md",
+  "run_id": "20260501T131505-0400",
+  "objective": "Analyze all open bd issues and route them into an incident-first portfolio execution strategy.",
+  "epic_id": "soc-o6eb",
+  "plan_path": ".agents/plans/2026-05-01-open-issue-portfolio-discovery.md",
   "contract_surfaces": [
-    "docs/CI-CD.md",
-    "docs/contracts/dream-run-contract.md",
-    "docs/contracts/remote-compute.md",
-    "docs/contracts/rpi-run-registry.md",
-    "docs/contracts/hook-runtime-contract.md",
-    "scripts/ao-rpi-autonomous-cycle.sh",
-    "scripts/nightly-evolution.sh"
+    "AGENTS.md",
+    "docs/contracts/repo-execution-profile.md",
+    "PRODUCT.md",
+    ".beads/issues.jsonl",
+    ".agents/rpi/next-work.jsonl"
   ],
   "validation_commands": [
-    "bash -n scripts/nightly-evolution.sh",
-    "shellcheck --severity=error scripts/nightly-evolution.sh",
-    "bats tests/scripts/nightly-evolution.bats",
-    "scripts/pre-push-gate.sh --fast --scope worktree"
+    "python3 -m json.tool .agents/rpi/ranked-packet-2026-05-01-open-issue-portfolio-discovery.json >/dev/null",
+    "python3 -m json.tool .agents/rpi/execution-packet.json >/dev/null",
+    "python3 -m json.tool .agents/rpi/runs/20260501T131505-0400/execution-packet.json >/dev/null",
+    "bd dep cycles",
+    "bd show soc-o6eb --json",
+    "git status --short"
   ],
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd ready --json succeeded and existing epic soc-b8jo owns the local nightly automation chain"
+    "reason": "bd list, bd ready, bd create, and bd dep operations succeeded; soc-o6eb owns the routing discovery."
   },
   "done_criteria": [
-    "Local dry-run wrapper produces structured digest artifacts without source mutation",
-    "Wrapper records Claude/Codex readiness and Dream setup state",
-    "Wrapper emits systemd user timer templates without installing them automatically",
-    "Docs explain GitHub proof, local scheduler, headless Claude/Codex, local wiki/Dream, and future Mt. Olympus/Gas City roles"
+    "soc-o6eb.1 stabilizes P0 flywheel and tracker hygiene before broad execution",
+    "soc-o6eb.2 records duplicate, stale, orphan, and deferred issue routing",
+    "soc-o6eb.3 selects next work for active local epics without duplicating them",
+    "soc-o6eb.4 selects exactly one daemon/Dream/Mt. Olympus migration lane",
+    "soc-o6eb.5 routes cross-repo/security and P3/P4 deferrals with owner and validation"
   ],
   "complexity": "full",
   "pre_mortem_verdict": "WARN",
   "test_levels": {
-    "required": ["L0", "L1", "L2"],
-    "recommended": ["L3"],
-    "rationale": "Cross-vendor local orchestration touches shell, external CLIs, GitHub I/O, local auth/readiness, Dream, RPI/evolve, and future Gas City boundaries."
+    "required": [
+      "L0",
+      "L1"
+    ],
+    "recommended": [
+      "L2"
+    ],
+    "rationale": "This discovery changes tracker and .agents artifacts only. L0 JSON/markdown sanity and L1 bd graph validation are required; L2 applies when routed implementation issues touch code, shell, daemon, or cross-repo workflows."
   },
-  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "discovery_timestamp": "2026-05-01T14:42:19Z"
+  "ranked_packet_path": ".agents/rpi/ranked-packet-2026-05-01-open-issue-portfolio-discovery.json",
+  "discovery_timestamp": "2026-05-01T13:16:56-04:00"
 }
