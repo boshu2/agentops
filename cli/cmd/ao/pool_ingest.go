@@ -28,6 +28,7 @@ type poolIngestResult struct {
 	CandidatesFound  int      `json:"candidates_found"`
 	Added            int      `json:"added"`
 	SkippedExisting  int      `json:"skipped_existing"`
+	SkippedPromoted  int      `json:"skipped_promoted,omitempty"`
 	SkippedMalformed int      `json:"skipped_malformed"`
 	Errors           int      `json:"errors"`
 	AddedIDs         []string `json:"added_ids,omitempty"`
@@ -59,12 +60,22 @@ func init() {
 
 // ingestFileBlocks processes all learning blocks from one file, updating res.
 // Returns true if any block had an add error (not skipped or malformed).
-func ingestFileBlocks(p *pool.Pool, blocks []learningBlock, f string, fileDate time.Time, sessionHint string, res *poolIngestResult) bool {
+func ingestFileBlocks(p *pool.Pool, blocks []learningBlock, f string, fileDate time.Time, sessionHint string, res *poolIngestResult, promotedContent map[string]bool, auditSkips bool) bool {
 	hadError := false
 	for _, b := range blocks {
 		cand, scoring, ok := buildCandidateFromLearningBlock(b, f, fileDate, sessionHint)
 		if !ok {
 			res.SkippedMalformed++
+			continue
+		}
+		if promotedContent[pool.ContentHash(cand.Content)] {
+			res.SkippedPromoted++
+			if auditSkips && !GetDryRun() {
+				reason := "dedup: " + duplicatePromotedContentReason
+				if err := p.RecordSkip(cand.ID, reason, "pool-ingest"); err != nil {
+					VerbosePrintf("Warning: record duplicate skip %s: %v\n", cand.ID, err)
+				}
+			}
 			continue
 		}
 		// Idempotency: skip if already present in any pool directory.
@@ -121,13 +132,14 @@ func runPoolIngest(cmd *cobra.Command, args []string) error {
 	}
 
 	res := poolIngestResult{FilesScanned: len(files)}
+	promotedContent := loadPromotedContent(cwd)
 
 	pool.IterateIngestFiles(files, pool.IngestOrchestratorOpts{
 		IngestFile: func(path string, data []byte) bool {
 			fileDate, sessionHint := parsePendingFileHeader(string(data), path)
 			blocks := parseLearningBlocks(string(data))
 			res.CandidatesFound += len(blocks)
-			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res)
+			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res, promotedContent, true)
 		},
 		TrackProcessed: !GetDryRun(),
 		MoveProcessed: func(processed []string) {
@@ -152,6 +164,9 @@ func outputPoolIngestResult(res poolIngestResult) error {
 		fmt.Printf("Ingested %d candidate(s) from %d file(s)\n", res.Added, res.FilesScanned)
 		if res.SkippedExisting > 0 {
 			fmt.Printf("Skipped (existing): %d\n", res.SkippedExisting)
+		}
+		if res.SkippedPromoted > 0 {
+			fmt.Printf("Skipped (already promoted): %d\n", res.SkippedPromoted)
 		}
 		if res.SkippedMalformed > 0 {
 			fmt.Printf("Skipped (malformed): %d\n", res.SkippedMalformed)
@@ -445,7 +460,7 @@ func inferKnowledgeType(b learningBlock) types.KnowledgeType {
 	return types.KnowledgeTypeLearning
 }
 
-func confidenceToScore(s string) float64           { return pool.ConfidenceToScore(s) }
+func confidenceToScore(s string) float64            { return pool.ConfidenceToScore(s) }
 func isSlugAlphanumeric(r rune) bool                { return pool.IsSlugAlphanumeric(r) }
 func computeSpecificityScore(b, l string) float64   { return pool.ComputeSpecificityScore(b, l) }
 func computeActionabilityScore(body string) float64 { return pool.ComputeActionabilityScore(body) }
@@ -471,7 +486,7 @@ func rubricWeightedSum(r types.RubricScores, w taxonomy.RubricWeights) float64 {
 		r.Confidence*w.Confidence
 }
 
-func slugify(s string) string                          { return pool.Slugify(s) }
+func slugify(s string) string                           { return pool.Slugify(s) }
 func parseYAMLFrontmatter(raw string) map[string]string { return pool.ParseYAMLFrontmatter(raw) }
 func extractFirstHeadingText(body string) string        { return pool.ExtractFirstHeadingText(body) }
 func parseLegacyFrontmatterLearning(md string) (learningBlock, bool) {

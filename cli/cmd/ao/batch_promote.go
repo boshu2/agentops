@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,6 +19,8 @@ var (
 	batchPromoteForce  bool
 	batchPromoteMinAge string
 )
+
+const duplicatePromotedContentReason = "duplicate of already-promoted content"
 
 // skipReason records why a candidate was skipped.
 type skipReason struct {
@@ -95,6 +95,9 @@ func processPromotionCandidate(p *pool.Pool, entry pool.PoolEntry, cwd string, m
 
 	if reason := checkPromotionCriteria(cwd, entry, minAge, citationCounts, promotedContent, true); reason != "" {
 		recordPromoteSkip(result, entry.Candidate.ID, reason)
+		if isDuplicatePromotedReason(reason) {
+			rejectDuplicatePromotedCandidate(p, entry, reason, "batch-promote")
+		}
 		return false
 	}
 
@@ -181,10 +184,31 @@ func checkPromotionCriteria(baseDir string, entry pool.PoolEntry, minAge time.Du
 	// Check for duplicate content
 	contentKey := normalizeContent(entry.Candidate.Content)
 	if promotedContent[contentKey] {
-		return "duplicate of already-promoted content"
+		return duplicatePromotedContentReason
 	}
 
 	return ""
+}
+
+func isDuplicatePromotedReason(reason string) bool {
+	return strings.Contains(reason, duplicatePromotedContentReason)
+}
+
+func rejectDuplicatePromotedCandidate(p *pool.Pool, entry pool.PoolEntry, reason, reviewer string) {
+	if GetDryRun() {
+		return
+	}
+	if err := p.Init(); err != nil {
+		VerbosePrintf("Warning: init pool before duplicate reject %s: %v\n", entry.Candidate.ID, err)
+		return
+	}
+	auditReason := "dedup: " + reason
+	if err := p.Reject(entry.Candidate.ID, auditReason, reviewer); err != nil {
+		VerbosePrintf("Warning: reject duplicate %s: %v\n", entry.Candidate.ID, err)
+		if skipErr := p.RecordSkip(entry.Candidate.ID, auditReason, reviewer); skipErr != nil {
+			VerbosePrintf("Warning: record duplicate skip %s: %v\n", entry.Candidate.ID, skipErr)
+		}
+	}
 }
 
 // promoteEntry promotes a single entry, respecting dry-run.
@@ -236,43 +260,16 @@ func buildCitationCounts(citations []types.CitationEvent, baseDir string) map[st
 // loadPromotedContent loads content from already-promoted artifacts for duplicate detection.
 func loadPromotedContent(baseDir string) map[string]bool {
 	content := make(map[string]bool)
-
-	dirs := []string{
-		filepath.Join(baseDir, ".agents", "learnings"),
-		filepath.Join(baseDir, ".agents", "patterns"),
+	for hash := range pool.LoadKnownPromotedContentHashes(baseDir) {
+		content[hash] = true
 	}
-
-	for _, dir := range dirs {
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			continue
-		}
-
-		files, err := filepath.Glob(filepath.Join(dir, "*.md"))
-		if err != nil {
-			continue
-		}
-
-		for _, f := range files {
-			data, err := os.ReadFile(f)
-			if err != nil {
-				continue
-			}
-			key := normalizeContent(string(data))
-			content[key] = true
-		}
-	}
-
 	return content
 }
 
-// normalizeContent creates a normalized key for content comparison using content hashing.
-// Lowercases, collapses whitespace, then SHA256 hashes the full normalized content.
-// This avoids false positives from naive prefix truncation.
+// normalizeContent returns the canonical promoted-body content hash used by
+// Pool.Promote, pool reindex, batch promotion, and close-loop promotion.
 func normalizeContent(s string) string {
-	s = strings.ToLower(s)
-	s = strings.Join(strings.Fields(s), " ")
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:])
+	return pool.ContentHash(s)
 }
 
 // outputBatchResult prints the batch-promote summary.
