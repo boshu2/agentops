@@ -2,9 +2,51 @@ package daemon
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
 	"time"
 )
+
+// knownEventTypes is the set of event types the projection reducer knows how
+// to fold. Members are registered by file-init() in this package and in
+// store.go (schedule.* events). Unknown event types do NOT crash replay —
+// see applyEventsToState's forward-compat path (pre-mortem amendment B3).
+var knownEventTypes = map[EventType]struct{}{
+	EventJobAccepted:           {},
+	EventJobClaimed:            {},
+	EventJobHeartbeat:          {},
+	EventJobLeaseExpired:       {},
+	EventJobCompleted:          {},
+	EventJobFailed:             {},
+	EventJobCancelled:          {},
+	EventProjectionMarkedStale: {},
+	EventProjectionRebuilt:     {},
+	EventScheduleCreated:       {},
+	EventScheduleFired:         {},
+	EventScheduleSkipped:       {},
+	EventScheduleDeleted:       {},
+}
+
+// isJobLifecycleEvent reports whether the event type drives the job-projection
+// state machine (accepted/claimed/.../cancelled). Schedule and projection
+// lifecycle events do not touch JobProjection state.
+func isJobLifecycleEvent(t EventType) bool {
+	switch t {
+	case EventJobAccepted, EventJobClaimed, EventJobHeartbeat,
+		EventJobLeaseExpired, EventJobCompleted, EventJobFailed,
+		EventJobCancelled:
+		return true
+	}
+	return false
+}
+
+func isScheduleEvent(t EventType) bool {
+	switch t {
+	case EventScheduleCreated, EventScheduleFired, EventScheduleSkipped, EventScheduleDeleted:
+		return true
+	}
+	return false
+}
 
 const ProjectionSchemaVersion = 1
 
@@ -48,6 +90,7 @@ type ProjectionSet struct {
 	Dream           DreamRunsProjection                   `json:"dream"`
 	Wiki            WikiJobsProjection                    `json:"wiki"`
 	OpenClaw        OpenClawSnapshotProjection            `json:"openclaw"`
+	Schedules       []RecurringJobTemplate                `json:"schedules,omitempty"`
 	DegradedReasons []string                              `json:"degraded_reasons,omitempty"`
 }
 
@@ -160,6 +203,7 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 	collectJobsIntoSet(jobsByID, jobOrder, &set)
 	finalizeManifests(&set)
 	finalizeOpenClawSnapshot(&set, opts.SourceLedger, rebuiltAt)
+	set.Schedules = ScheduleStateFromEvents(events)
 	return set, nil
 }
 
@@ -223,17 +267,50 @@ func normalizeRebuildOptions(opts ProjectionRebuildOptions) ProjectionRebuildOpt
 // returning the count of events successfully applied. It is shared between
 // full replay (empty initial state) and delta replay (state seeded from a
 // snapshot via initStateFromSnapshot).
+//
+// Forward-compat (pre-mortem amendment B3): event types not in
+// knownEventTypes are skipped-and-logged, NOT errored. This lets older
+// daemon binaries replay newer ledgers without crashing — additive event
+// vocabulary is an explicit non-breaking change vector.
 func applyEventsToState(events []LedgerEvent, set *ProjectionSet, jobsByID map[string]*JobProjection, jobOrder *[]string) (int, error) {
 	applied := 0
 	for _, event := range events {
 		normalized, err := NormalizeLedgerEvent(event)
 		if err != nil {
+			// NormalizeLedgerEvent rejects unknown event types via
+			// ValidateLedgerEvent → ValidateEventType. To preserve
+			// forward-compat (B3), unknown event types must be skipped,
+			// not errored. Try a relaxed normalize path for that case.
+			if relaxed, ok := relaxedNormalizeForUnknownEvent(event); ok {
+				log.Printf("[projection] unknown event_type=%s skipped (event_id=%s)", event.EventType, event.EventID)
+				set.LastEventID = relaxed.EventID
+				continue
+			}
 			return applied, fmt.Errorf("event %q: %w", event.EventID, err)
 		}
 		event = normalized
 		set.LastEventID = event.EventID
+
+		if _, known := knownEventTypes[event.EventType]; !known {
+			// Defense in depth: even if the validator above accepted the
+			// event (e.g., another package registered the type), the
+			// projection reducer skip-and-logs anything it doesn't know
+			// how to fold. State is left unchanged.
+			log.Printf("[projection] unknown event_type=%s skipped (event_id=%s)", event.EventType, event.EventID)
+			continue
+		}
 		if event.EventType == EventProjectionMarkedStale || event.EventType == EventProjectionRebuilt {
 			set.applyProjectionLifecycleEvent(event)
+			applied++
+			continue
+		}
+		if isScheduleEvent(event.EventType) {
+			// Schedule events do not flow through the job-projection
+			// state machine. Per learning 2026-04-30-applyqueue-helper-
+			// invariants, do NOT extend applyEventMetadataToJob or
+			// applyPayloadToJob with schedule logic. The schedule list
+			// is rebuilt en bloc in finalizeSchedules from the full
+			// event slice — see ScheduleStateFromEvents in store.go.
 			applied++
 			continue
 		}
@@ -249,6 +326,30 @@ func applyEventsToState(events []LedgerEvent, set *ProjectionSet, jobsByID map[s
 		applied++
 	}
 	return applied, nil
+}
+
+// relaxedNormalizeForUnknownEvent re-runs the normalize+validate dance with
+// the event-type check skipped, returning the trimmed event if the only
+// validation failure was an unknown event_type. This preserves forward-compat
+// (pre-mortem B3) without weakening the standard validation path that
+// ValidateLedgerEvent enforces for known events.
+func relaxedNormalizeForUnknownEvent(event LedgerEvent) (LedgerEvent, bool) {
+	if _, known := knownEventTypes[event.EventType]; known {
+		return LedgerEvent{}, false
+	}
+	if event.SchemaVersion == 0 {
+		event.SchemaVersion = LedgerSchemaVersion
+	}
+	if event.SchemaVersion != LedgerSchemaVersion {
+		return LedgerEvent{}, false
+	}
+	if event.EventID == "" || event.RequestID == "" || event.JobID == "" || event.Actor == "" {
+		// Even unknown events must have basic identity so downstream
+		// observers can index them. Without these, treat as malformed
+		// rather than forward-compat-skippable.
+		return LedgerEvent{}, false
+	}
+	return event, true
 }
 
 func ensureJobProjection(jobsByID map[string]*JobProjection, event LedgerEvent) (*JobProjection, bool) {

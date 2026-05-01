@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +14,40 @@ import (
 	"sync"
 	"time"
 )
+
+// Schedule event types are additive event-type vocabulary (LedgerSchemaVersion
+// stays at 1). Older daemon binaries replaying ledgers with these events must
+// skip-and-log instead of erroring — see projections.go's reducer for the
+// forward-compat contract (pre-mortem amendment B3).
+const (
+	EventScheduleCreated EventType = "schedule.created"
+	EventScheduleFired   EventType = "schedule.fired"
+	EventScheduleSkipped EventType = "schedule.skipped"
+	EventScheduleDeleted EventType = "schedule.deleted"
+)
+
+// scheduleActor is the actor recorded on schedule-* ledger events when no
+// per-call actor is supplied. The supervisor (soc-8inr.4) overwrites this on
+// fired/skipped events; created/deleted come from the schedule storage layer
+// itself.
+const scheduleActor = "agentopsd-scheduler"
+
+// scheduleSentinelJobID is used on schedule.created and schedule.deleted
+// events that have no associated job execution. ledger validation requires a
+// non-empty job_id; using a stable sentinel keeps the contract intact while
+// signalling "this event is schedule-scoped, not job-scoped".
+const scheduleSentinelJobID = "schedule"
+
+func init() {
+	// Register the new schedule.* event types and the llmwiki.loop job type
+	// (added by Worker 1's commit ab563061 but not yet wired into the
+	// validation sets). Done via init() so types.go stays untouched.
+	eventTypeSet[string(EventScheduleCreated)] = struct{}{}
+	eventTypeSet[string(EventScheduleFired)] = struct{}{}
+	eventTypeSet[string(EventScheduleSkipped)] = struct{}{}
+	eventTypeSet[string(EventScheduleDeleted)] = struct{}{}
+	jobTypeSet[string(JobTypeLLMWikiLoop)] = struct{}{}
+}
 
 const (
 	StoreDirRel         = ".agents/daemon"
@@ -370,6 +405,296 @@ func ValidateLedgerEvent(event LedgerEvent) error {
 		return fmt.Errorf("invalid occurred_at: %w", err)
 	}
 	return nil
+}
+
+// SaveSchedule persists a recurring job template by appending a
+// schedule.created event to the ledger. Returns an error if a schedule with
+// the same Name already exists (no upsert; callers must DeleteSchedule first
+// to replace).
+//
+// The full RecurringJobTemplate is serialized into the event payload under
+// the "template" key so replay can reconstruct the schedule list.
+func (s *Store) SaveSchedule(t RecurringJobTemplate) error {
+	name := strings.TrimSpace(t.Name)
+	if name == "" {
+		return fmt.Errorf("schedule name is required")
+	}
+	if strings.TrimSpace(t.Cron) == "" {
+		return fmt.Errorf("schedule %q: cron is required", name)
+	}
+	if strings.TrimSpace(string(t.JobType)) == "" {
+		return fmt.Errorf("schedule %q: job_type is required", name)
+	}
+
+	existing, err := s.ListSchedules()
+	if err != nil {
+		return fmt.Errorf("save schedule %q: %w", name, err)
+	}
+	for _, s := range existing {
+		if s.Name == name {
+			return fmt.Errorf("schedule %q already exists", name)
+		}
+	}
+
+	event, err := scheduleCreatedEvent(t)
+	if err != nil {
+		return fmt.Errorf("save schedule %q: %w", name, err)
+	}
+	if _, err := s.AppendLedgerEvent(event); err != nil {
+		return fmt.Errorf("save schedule %q: %w", name, err)
+	}
+	return nil
+}
+
+// ListSchedules returns the current set of recurring schedules derived from
+// ledger replay. A schedule is present iff its most recent schedule.created
+// has not been followed by a matching schedule.deleted. Order matches the
+// order schedules were created (stable, from the ledger).
+func (s *Store) ListSchedules() ([]RecurringJobTemplate, error) {
+	replay, err := s.ReplayLedgerReadOnly()
+	if err != nil {
+		return nil, fmt.Errorf("list schedules: %w", err)
+	}
+	return ScheduleStateFromEvents(replay.Events), nil
+}
+
+// DeleteSchedule removes a schedule by appending a schedule.deleted event.
+// Idempotent: deleting a non-existent schedule is a no-op (logs a warning
+// but returns nil) so callers don't have to guard against races.
+func (s *Store) DeleteSchedule(name string) error {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fmt.Errorf("schedule name is required")
+	}
+	existing, err := s.ListSchedules()
+	if err != nil {
+		return fmt.Errorf("delete schedule %q: %w", name, err)
+	}
+	found := false
+	for _, sched := range existing {
+		if sched.Name == name {
+			found = true
+			break
+		}
+	}
+	if !found {
+		log.Printf("[store] DeleteSchedule: schedule %q not found, treating as no-op", name)
+		return nil
+	}
+
+	event, err := scheduleDeletedEvent(name, time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("delete schedule %q: %w", name, err)
+	}
+	if _, err := s.AppendLedgerEvent(event); err != nil {
+		return fmt.Errorf("delete schedule %q: %w", name, err)
+	}
+	return nil
+}
+
+// RecordScheduleFired appends a schedule.fired event linking a recurrence
+// tick to the submission_id of the job it enqueued. Used by the recurrence
+// supervisor (soc-8inr.4).
+func (s *Store) RecordScheduleFired(name, submissionID string, tickAt time.Time) error {
+	name = strings.TrimSpace(name)
+	submissionID = strings.TrimSpace(submissionID)
+	if name == "" {
+		return fmt.Errorf("schedule name is required")
+	}
+	if submissionID == "" {
+		return fmt.Errorf("submission_id is required")
+	}
+	event, err := scheduleFiredEvent(name, submissionID, tickAt)
+	if err != nil {
+		return fmt.Errorf("record schedule fired %q: %w", name, err)
+	}
+	if _, err := s.AppendLedgerEvent(event); err != nil {
+		return fmt.Errorf("record schedule fired %q: %w", name, err)
+	}
+	return nil
+}
+
+// RecordScheduleSkipped appends a schedule.skipped event when the supervisor
+// elects not to enqueue a tick (e.g., backpressure: SkipIfRunning,
+// MaxQueueDepth exceeded). reason is free-form so future backpressure
+// strategies can record their own labels without a schema change.
+func (s *Store) RecordScheduleSkipped(name, reason string, tickAt time.Time) error {
+	name = strings.TrimSpace(name)
+	reason = strings.TrimSpace(reason)
+	if name == "" {
+		return fmt.Errorf("schedule name is required")
+	}
+	if reason == "" {
+		return fmt.Errorf("reason is required")
+	}
+	event, err := scheduleSkippedEvent(name, reason, tickAt)
+	if err != nil {
+		return fmt.Errorf("record schedule skipped %q: %w", name, err)
+	}
+	if _, err := s.AppendLedgerEvent(event); err != nil {
+		return fmt.Errorf("record schedule skipped %q: %w", name, err)
+	}
+	return nil
+}
+
+// scheduleCreatedEvent builds a schedule.created LedgerEvent from a template.
+// The template is serialized via json.Marshal/Unmarshal-into-map so the
+// resulting payload is plain JSON (string-keyed maps, no Go types) and
+// survives a round-trip through the ledger.
+func scheduleCreatedEvent(t RecurringJobTemplate) (LedgerEvent, error) {
+	templateMap, err := templateToMap(t)
+	if err != nil {
+		return LedgerEvent{}, fmt.Errorf("marshal template: %w", err)
+	}
+	return LedgerEvent{
+		SchemaVersion: LedgerSchemaVersion,
+		EventID:       fmt.Sprintf("evt-schedule-created-%s-%d", t.Name, time.Now().UTC().UnixNano()),
+		RequestID:     fmt.Sprintf("schedule-%s", t.Name),
+		JobID:         scheduleSentinelJobID,
+		EventType:     EventScheduleCreated,
+		OccurredAt:    time.Now().UTC().Format(time.RFC3339Nano),
+		Actor:         scheduleActor,
+		Payload: map[string]any{
+			"name":     t.Name,
+			"template": templateMap,
+		},
+	}, nil
+}
+
+func scheduleDeletedEvent(name string, deletedAt time.Time) (LedgerEvent, error) {
+	deletedAtStr := deletedAt.UTC().Format(time.RFC3339Nano)
+	return LedgerEvent{
+		SchemaVersion: LedgerSchemaVersion,
+		EventID:       fmt.Sprintf("evt-schedule-deleted-%s-%d", name, deletedAt.UTC().UnixNano()),
+		RequestID:     fmt.Sprintf("schedule-%s", name),
+		JobID:         scheduleSentinelJobID,
+		EventType:     EventScheduleDeleted,
+		OccurredAt:    deletedAtStr,
+		Actor:         scheduleActor,
+		Payload: map[string]any{
+			"name":       name,
+			"deleted_at": deletedAtStr,
+		},
+	}, nil
+}
+
+func scheduleFiredEvent(name, submissionID string, tickAt time.Time) (LedgerEvent, error) {
+	tickAtStr := tickAt.UTC().Format(time.RFC3339Nano)
+	return LedgerEvent{
+		SchemaVersion: LedgerSchemaVersion,
+		EventID:       fmt.Sprintf("evt-schedule-fired-%s-%d", name, tickAt.UTC().UnixNano()),
+		RequestID:     fmt.Sprintf("schedule-%s", name),
+		JobID:         submissionID,
+		EventType:     EventScheduleFired,
+		OccurredAt:    tickAtStr,
+		Actor:         scheduleActor,
+		Payload: map[string]any{
+			"name":          name,
+			"submission_id": submissionID,
+			"tick_at":       tickAtStr,
+		},
+	}, nil
+}
+
+func scheduleSkippedEvent(name, reason string, tickAt time.Time) (LedgerEvent, error) {
+	tickAtStr := tickAt.UTC().Format(time.RFC3339Nano)
+	return LedgerEvent{
+		SchemaVersion: LedgerSchemaVersion,
+		EventID:       fmt.Sprintf("evt-schedule-skipped-%s-%d", name, tickAt.UTC().UnixNano()),
+		RequestID:     fmt.Sprintf("schedule-%s", name),
+		JobID:         scheduleSentinelJobID,
+		EventType:     EventScheduleSkipped,
+		OccurredAt:    tickAtStr,
+		Actor:         scheduleActor,
+		Payload: map[string]any{
+			"name":    name,
+			"reason":  reason,
+			"tick_at": tickAtStr,
+		},
+	}, nil
+}
+
+// templateToMap converts a RecurringJobTemplate to a JSON-shaped map so it
+// can ride inside a LedgerEvent.Payload (which is map[string]any). Going via
+// json.Marshal/Unmarshal preserves field tags + omitempty semantics.
+func templateToMap(t RecurringJobTemplate) (map[string]any, error) {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]any{}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// templateFromMap is the inverse of templateToMap. Used by the projection
+// reducer + ListSchedules to reconstruct typed templates from ledger
+// payloads.
+func templateFromMap(raw any) (RecurringJobTemplate, error) {
+	if raw == nil {
+		return RecurringJobTemplate{}, fmt.Errorf("template missing from payload")
+	}
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return RecurringJobTemplate{}, err
+	}
+	var out RecurringJobTemplate
+	if err := json.Unmarshal(data, &out); err != nil {
+		return RecurringJobTemplate{}, err
+	}
+	return out, nil
+}
+
+// ScheduleStateFromEvents reduces a ledger event slice to the active
+// schedule list. Insertion order is preserved (the slice key is creation
+// time). schedule.deleted removes the entry by name. Unknown event types
+// are ignored — schedule reduction only cares about its own vocabulary.
+//
+// Exposed for tests + projection helpers in projections.go.
+func ScheduleStateFromEvents(events []LedgerEvent) []RecurringJobTemplate {
+	type slot struct {
+		template RecurringJobTemplate
+		index    int
+	}
+	byName := map[string]slot{}
+	order := 0
+	for _, ev := range events {
+		switch ev.EventType {
+		case EventScheduleCreated:
+			tmpl, err := templateFromMap(ev.Payload["template"])
+			if err != nil {
+				log.Printf("[store] schedule.created event %q has malformed template payload: %v", ev.EventID, err)
+				continue
+			}
+			if tmpl.Name == "" {
+				if name, ok := ev.Payload["name"].(string); ok {
+					tmpl.Name = name
+				}
+			}
+			if tmpl.Name == "" {
+				log.Printf("[store] schedule.created event %q has no name; skipping", ev.EventID)
+				continue
+			}
+			byName[tmpl.Name] = slot{template: tmpl, index: order}
+			order++
+		case EventScheduleDeleted:
+			name, _ := ev.Payload["name"].(string)
+			if name == "" {
+				continue
+			}
+			delete(byName, name)
+		}
+	}
+	out := make([]RecurringJobTemplate, 0, len(byName))
+	for _, sl := range byName {
+		out = append(out, sl.template)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return byName[out[i].Name].index < byName[out[j].Name].index
+	})
+	return out
 }
 
 func (s *Store) quarantineCorruptLine(lineNumber int, line string, cause error) CorruptRecord {

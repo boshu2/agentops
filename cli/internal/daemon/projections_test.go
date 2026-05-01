@@ -310,6 +310,109 @@ func mustNewProjectionTestEvent(t *testing.T, eventID, requestID, jobID string, 
 	return event
 }
 
+// TestProjections_UnknownEventType_LeavesStateUnchanged exercises the
+// forward-compat path (pre-mortem amendment B3): if an older daemon binary
+// replays a ledger that contains an event_type it does not recognize, the
+// projection reducer must skip-and-log the event, not error or panic.
+//
+// Setup: build a hand-crafted LedgerEvent with event_type "future.unknown.event"
+// (bypassing NewLedgerEvent's validation, which would reject it). Feed it to
+// RebuildProjections together with one known event; assert (a) no error,
+// (b) state reflects only the known event, (c) the unknown-event slot has
+// not mutated set.Jobs / set.Schedules / set.RPI / etc.
+func TestProjections_UnknownEventType_LeavesStateUnchanged(t *testing.T) {
+	known := mustNewProjectionTestEvent(t, "evt-rpi-1", "req-rpi-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil)
+
+	// Snapshot what state should look like with ONLY the known event.
+	baseline, err := RebuildProjections([]LedgerEvent{known}, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 5),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("baseline rebuild: %v", err)
+	}
+
+	// Hand-craft an event whose event_type is unknown to this binary. We
+	// bypass NewLedgerEvent because it runs ValidateEventType (which would
+	// reject this in our test). Replay-from-disk is exactly this scenario:
+	// raw JSON unmarshal succeeds, then projection must decide what to do.
+	unknown := LedgerEvent{
+		SchemaVersion: LedgerSchemaVersion,
+		EventID:       "evt-unknown-1",
+		RequestID:     "req-future",
+		JobID:         "job-future",
+		EventType:     EventType("future.unknown.event"),
+		OccurredAt:    projectionTestTime(t, 1).Format(time.RFC3339Nano),
+		Actor:         "future-daemon",
+		Payload:       map[string]any{"experimental_field": "v2"},
+	}
+
+	withUnknown, err := RebuildProjections([]LedgerEvent{known, unknown}, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 5),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild with unknown event must not error: %v", err)
+	}
+
+	if len(withUnknown.Jobs) != len(baseline.Jobs) {
+		t.Fatalf("unknown event mutated job count: got %d, baseline %d", len(withUnknown.Jobs), len(baseline.Jobs))
+	}
+	if len(withUnknown.RPI.Runs) != len(baseline.RPI.Runs) {
+		t.Fatalf("unknown event mutated RPI runs: got %d, baseline %d", len(withUnknown.RPI.Runs), len(baseline.RPI.Runs))
+	}
+	if len(withUnknown.Schedules) != len(baseline.Schedules) {
+		t.Fatalf("unknown event mutated schedules: got %d, baseline %d", len(withUnknown.Schedules), len(baseline.Schedules))
+	}
+	// LastEventID DOES advance to the unknown event — the reducer "saw" it,
+	// just didn't fold it into derived state. This is intentional: snapshot
+	// resume with FromSnapshot relies on LastEventID monotonicity.
+	if withUnknown.LastEventID != "evt-unknown-1" {
+		t.Fatalf("LastEventID = %q, want evt-unknown-1 (cursor must advance past unknown events)", withUnknown.LastEventID)
+	}
+	if len(withUnknown.DegradedReasons) != 0 {
+		t.Fatalf("unknown event marked projection degraded: %#v", withUnknown.DegradedReasons)
+	}
+}
+
+// TestProjections_ScheduleEventsRebuildScheduleList exercises the schedule
+// reducer alongside the existing job projection: ledger contains a mix of
+// schedule.* and job.* events, projection must surface both.
+func TestProjections_ScheduleEventsRebuildScheduleList(t *testing.T) {
+	store := NewStore(t.TempDir())
+	tmpl := RecurringJobTemplate{
+		Name:    "wiki-daily",
+		Cron:    "@daily",
+		JobType: JobTypeLLMWikiLoop,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+			MaxQueueDepth: 2,
+		},
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("save schedule: %v", err)
+	}
+	if err := store.RecordScheduleFired("wiki-daily", "submission-001", time.Date(2026, 5, 1, 23, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("record fired: %v", err)
+	}
+
+	set, err := store.RebuildProjections(ProjectionRebuildOptions{
+		RebuiltAt: projectionTestTime(t, 0),
+	})
+	if err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+	if len(set.Schedules) != 1 {
+		t.Fatalf("got %d schedules, want 1: %#v", len(set.Schedules), set.Schedules)
+	}
+	if set.Schedules[0].Name != "wiki-daily" {
+		t.Fatalf("schedule name = %q, want wiki-daily", set.Schedules[0].Name)
+	}
+	if set.Schedules[0].JobType != JobTypeLLMWikiLoop {
+		t.Fatalf("schedule job_type = %q, want %q", set.Schedules[0].JobType, JobTypeLLMWikiLoop)
+	}
+}
+
 func projectionTestTime(t *testing.T, minuteOffset int) time.Time {
 	t.Helper()
 	base, err := time.Parse(time.RFC3339, fixedLedgerTime)

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 const fixedLedgerTime = "2026-04-28T12:00:00Z"
@@ -350,5 +351,227 @@ func TestReplayReadsArchivesInChronologicalOrder(t *testing.T) {
 		if events[i].EventID != want {
 			t.Fatalf("events[%d].EventID = %q, want %q", i, events[i].EventID, want)
 		}
+	}
+}
+
+// --- soc-8inr.2: schedule storage tests --------------------------------------
+
+func testRecurringTemplate(name string) RecurringJobTemplate {
+	return RecurringJobTemplate{
+		Name:    name,
+		Cron:    "@daily",
+		JobType: JobTypeLLMWikiLoop,
+		Payload: json.RawMessage(`{"topic":"agentops"}`),
+		Timeout: 30 * time.Minute,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+			MaxQueueDepth: 3,
+		},
+	}
+}
+
+// templatesEqual compares two RecurringJobTemplates without depending on a
+// reflect.DeepEqual mismatch on json.RawMessage byte ordering. Returns
+// (equal, message) where message describes the first divergence found.
+func templatesEqual(want, got RecurringJobTemplate) (bool, string) {
+	if want.Name != got.Name {
+		return false, fmt.Sprintf("name: want %q got %q", want.Name, got.Name)
+	}
+	if want.Cron != got.Cron {
+		return false, fmt.Sprintf("cron: want %q got %q", want.Cron, got.Cron)
+	}
+	if want.JobType != got.JobType {
+		return false, fmt.Sprintf("job_type: want %q got %q", want.JobType, got.JobType)
+	}
+	if want.Timeout != got.Timeout {
+		return false, fmt.Sprintf("timeout: want %s got %s", want.Timeout, got.Timeout)
+	}
+	if want.Backpressure != got.Backpressure {
+		return false, fmt.Sprintf("backpressure: want %#v got %#v", want.Backpressure, got.Backpressure)
+	}
+	// json.RawMessage round-trips through map[string]any in our event payload,
+	// then back to RawMessage. Compare structural JSON, not bytes.
+	if len(want.Payload) == 0 && len(got.Payload) == 0 {
+		return true, ""
+	}
+	var wantAny, gotAny any
+	if err := json.Unmarshal(want.Payload, &wantAny); err != nil {
+		return false, fmt.Sprintf("want payload not valid json: %v", err)
+	}
+	if err := json.Unmarshal(got.Payload, &gotAny); err != nil {
+		return false, fmt.Sprintf("got payload not valid json: %v", err)
+	}
+	wantBytes, _ := json.Marshal(wantAny)
+	gotBytes, _ := json.Marshal(gotAny)
+	if string(wantBytes) != string(gotBytes) {
+		return false, fmt.Sprintf("payload: want %s got %s", wantBytes, gotBytes)
+	}
+	return true, ""
+}
+
+func TestStore_SaveScheduleRoundTrip(t *testing.T) {
+	store := NewStore(t.TempDir())
+	tmpl := testRecurringTemplate("nightly-loop")
+
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("save schedule: %v", err)
+	}
+
+	got, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("list schedules: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d schedules, want 1: %#v", len(got), got)
+	}
+	if eq, msg := templatesEqual(tmpl, got[0]); !eq {
+		t.Fatalf("round-trip mismatch: %s", msg)
+	}
+}
+
+func TestStore_DeleteSchedulePersists(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	tmpl := testRecurringTemplate("nightly-loop")
+
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := store.DeleteSchedule(tmpl.Name); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	got, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("list after delete: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("after delete got %d schedules, want 0: %#v", len(got), got)
+	}
+
+	// Reload store from same ledger directory: deletion must persist.
+	reloaded := NewStore(dir)
+	got2, err := reloaded.ListSchedules()
+	if err != nil {
+		t.Fatalf("list after reload: %v", err)
+	}
+	if len(got2) != 0 {
+		t.Fatalf("after reload got %d schedules, want 0 (delete did not persist): %#v", len(got2), got2)
+	}
+
+	// Idempotency: deleting a non-existent schedule is a no-op (returns nil).
+	if err := reloaded.DeleteSchedule("does-not-exist"); err != nil {
+		t.Fatalf("delete non-existent: %v (expected no-op)", err)
+	}
+}
+
+func TestStore_ReplayReconstructsSchedules(t *testing.T) {
+	dir := t.TempDir()
+	store := NewStore(dir)
+	names := []string{"alpha", "beta", "gamma"}
+	for _, n := range names {
+		if err := store.SaveSchedule(testRecurringTemplate(n)); err != nil {
+			t.Fatalf("save %q: %v", n, err)
+		}
+	}
+
+	// Restart store from same ledger directory.
+	reloaded := NewStore(dir)
+	got, err := reloaded.ListSchedules()
+	if err != nil {
+		t.Fatalf("list after reload: %v", err)
+	}
+	if len(got) != len(names) {
+		t.Fatalf("after reload got %d schedules, want %d: %#v", len(got), len(names), got)
+	}
+	gotNames := map[string]bool{}
+	for _, sched := range got {
+		gotNames[sched.Name] = true
+	}
+	for _, want := range names {
+		if !gotNames[want] {
+			t.Fatalf("schedule %q missing after reload; got names %#v", want, gotNames)
+		}
+	}
+}
+
+func TestStore_DuplicateScheduleNameReturnsError(t *testing.T) {
+	store := NewStore(t.TempDir())
+	tmpl := testRecurringTemplate("dup-name")
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if err := store.SaveSchedule(tmpl); err == nil {
+		t.Fatal("second save with same name unexpectedly succeeded")
+	}
+	got, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("after duplicate save got %d schedules, want 1", len(got))
+	}
+}
+
+func TestStore_RecordScheduleFiredAppendsEvent(t *testing.T) {
+	store := NewStore(t.TempDir())
+	tickAt := time.Date(2026, 5, 1, 23, 0, 0, 0, time.UTC)
+	const subID = "job-12345"
+
+	if err := store.RecordScheduleFired("nightly-loop", subID, tickAt); err != nil {
+		t.Fatalf("record fired: %v", err)
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
+	}
+	ev := events[0]
+	if ev.EventType != EventScheduleFired {
+		t.Fatalf("event_type = %q, want %q", ev.EventType, EventScheduleFired)
+	}
+	if got := ev.Payload["name"]; got != "nightly-loop" {
+		t.Fatalf("payload.name = %#v, want nightly-loop", got)
+	}
+	if got := ev.Payload["submission_id"]; got != subID {
+		t.Fatalf("payload.submission_id = %#v, want %s", got, subID)
+	}
+	if got := ev.Payload["tick_at"]; got == "" || got == nil {
+		t.Fatalf("payload.tick_at missing: %#v", ev.Payload)
+	}
+	if ev.JobID != subID {
+		t.Fatalf("job_id = %q, want %q (fired event ties job_id to submission)", ev.JobID, subID)
+	}
+}
+
+func TestStore_RecordScheduleSkippedAppendsEvent(t *testing.T) {
+	store := NewStore(t.TempDir())
+	tickAt := time.Date(2026, 5, 1, 23, 0, 0, 0, time.UTC)
+
+	if err := store.RecordScheduleSkipped("nightly-loop", "skip_if_running", tickAt); err != nil {
+		t.Fatalf("record skipped: %v", err)
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("got %d events, want 1", len(events))
+	}
+	ev := events[0]
+	if ev.EventType != EventScheduleSkipped {
+		t.Fatalf("event_type = %q, want %q", ev.EventType, EventScheduleSkipped)
+	}
+	if got := ev.Payload["name"]; got != "nightly-loop" {
+		t.Fatalf("payload.name = %#v, want nightly-loop", got)
+	}
+	if got := ev.Payload["reason"]; got != "skip_if_running" {
+		t.Fatalf("payload.reason = %#v, want skip_if_running", got)
+	}
+	if got := ev.Payload["tick_at"]; got == "" || got == nil {
+		t.Fatalf("payload.tick_at missing: %#v", ev.Payload)
 	}
 }
