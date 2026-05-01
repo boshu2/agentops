@@ -50,57 +50,80 @@ func (s *Store) LedgerHealth(now time.Time, thresholds LedgerHealthThresholds) (
 	if thresholds.LedgerSizeWarnRatio == 0 {
 		thresholds = LedgerHealthDefaultThresholds()
 	}
-	out := LedgerHealth{
-		LedgerMaxBytes: s.ledgerMaxBytes,
-	}
+	out := LedgerHealth{LedgerMaxBytes: s.ledgerMaxBytes}
 
-	if info, err := os.Stat(s.LedgerPath()); err == nil {
+	if err := s.populateLedgerSize(&out); err != nil {
+		return LedgerHealth{}, err
+	}
+	s.populateSnapshotFacts(&out, now)
+	if err := s.populateArchiveFacts(&out); err != nil {
+		return LedgerHealth{}, err
+	}
+	out.WarnReasons = append(out.WarnReasons, ledgerWarnReasons(out, thresholds)...)
+	return out, nil
+}
+
+func (s *Store) populateLedgerSize(out *LedgerHealth) error {
+	info, err := os.Stat(s.LedgerPath())
+	switch {
+	case err == nil:
 		out.LedgerSizeBytes = info.Size()
-	} else if !os.IsNotExist(err) {
-		return LedgerHealth{}, fmt.Errorf("stat ledger: %w", err)
+	case !os.IsNotExist(err):
+		return fmt.Errorf("stat ledger: %w", err)
 	}
 	if out.LedgerMaxBytes > 0 {
 		out.LedgerSizeRatio = float64(out.LedgerSizeBytes) / float64(out.LedgerMaxBytes)
 	}
+	return nil
+}
 
+func (s *Store) populateSnapshotFacts(out *LedgerHealth, now time.Time) {
 	snapshot, snapshotPath, snapErr := s.LoadLatestProjectionSnapshot()
 	if snapErr != nil && !os.IsNotExist(snapErr) {
-		// Surface as a warn reason; don't fail the whole check.
 		out.WarnReasons = append(out.WarnReasons, "snapshot load error: "+snapErr.Error())
+		return
 	}
-	if snapshotPath != "" && snapErr == nil {
-		out.HasSnapshot = true
-		out.LatestSnapshotPath = snapshotPath
-		if snapshot.RebuiltAt != "" {
-			if rebuiltAt, err := time.Parse(time.RFC3339Nano, snapshot.RebuiltAt); err == nil {
-				out.LatestSnapshotAge = now.Sub(rebuiltAt)
-			}
-		}
+	if snapshotPath == "" || snapErr != nil {
+		return
 	}
+	out.HasSnapshot = true
+	out.LatestSnapshotPath = snapshotPath
+	if snapshot.RebuiltAt == "" {
+		return
+	}
+	if rebuiltAt, err := time.Parse(time.RFC3339Nano, snapshot.RebuiltAt); err == nil {
+		out.LatestSnapshotAge = now.Sub(rebuiltAt)
+	}
+}
 
+func (s *Store) populateArchiveFacts(out *LedgerHealth) error {
 	archives, err := s.LedgerArchivePaths()
 	if err != nil {
-		return LedgerHealth{}, fmt.Errorf("list archives: %w", err)
+		return fmt.Errorf("list archives: %w", err)
 	}
 	out.ArchiveCount = len(archives)
 	if len(archives) > 0 {
 		out.OldestArchiveTime = parseArchiveTimestamp(archives[0])
 	}
+	return nil
+}
 
-	if out.LedgerMaxBytes > 0 && out.LedgerSizeRatio >= thresholds.LedgerSizeWarnRatio {
-		out.WarnReasons = append(out.WarnReasons,
+func ledgerWarnReasons(h LedgerHealth, thresholds LedgerHealthThresholds) []string {
+	var reasons []string
+	if h.LedgerMaxBytes > 0 && h.LedgerSizeRatio >= thresholds.LedgerSizeWarnRatio {
+		reasons = append(reasons,
 			fmt.Sprintf("ledger %d/%d bytes (%.0f%% of cap)",
-				out.LedgerSizeBytes, out.LedgerMaxBytes, out.LedgerSizeRatio*100))
+				h.LedgerSizeBytes, h.LedgerMaxBytes, h.LedgerSizeRatio*100))
 	}
-	if thresholds.SnapshotMaxAge > 0 && out.HasSnapshot && out.LatestSnapshotAge >= thresholds.SnapshotMaxAge {
-		out.WarnReasons = append(out.WarnReasons,
-			fmt.Sprintf("snapshot age %s (>= %s)", out.LatestSnapshotAge.Round(time.Second), thresholds.SnapshotMaxAge))
+	if thresholds.SnapshotMaxAge > 0 && h.HasSnapshot && h.LatestSnapshotAge >= thresholds.SnapshotMaxAge {
+		reasons = append(reasons,
+			fmt.Sprintf("snapshot age %s (>= %s)", h.LatestSnapshotAge.Round(time.Second), thresholds.SnapshotMaxAge))
 	}
-	if thresholds.ArchiveCountWarn > 0 && out.ArchiveCount >= thresholds.ArchiveCountWarn {
-		out.WarnReasons = append(out.WarnReasons,
-			fmt.Sprintf("archives=%d (>= %d)", out.ArchiveCount, thresholds.ArchiveCountWarn))
+	if thresholds.ArchiveCountWarn > 0 && h.ArchiveCount >= thresholds.ArchiveCountWarn {
+		reasons = append(reasons,
+			fmt.Sprintf("archives=%d (>= %d)", h.ArchiveCount, thresholds.ArchiveCountWarn))
 	}
-	return out, nil
+	return reasons
 }
 
 // parseArchiveTimestamp extracts the UTC timestamp encoded in

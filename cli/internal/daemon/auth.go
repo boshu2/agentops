@@ -166,39 +166,17 @@ func AuthorizeMutationDecision(r *http.Request, policy MutationPolicy) (Mutation
 }
 
 func EvaluateMutationPolicy(r *http.Request, policy MutationPolicy) MutationDecision {
-	if strings.TrimSpace(policy.TokenHeader) == "" {
-		policy.TokenHeader = DefaultMutationTokenHeader
-	}
-	if len(policy.AllowedMethods) == 0 {
-		policy.AllowedMethods = []string{http.MethodPost, http.MethodPatch, http.MethodDelete}
-	}
-	if len(policy.PathCapabilities) == 0 {
-		policy.PathCapabilities = DefaultMutationPathCapabilities()
-	}
+	policy = applyMutationPolicyDefaults(policy)
 	tokens := normalizedMutationTokens(policy)
 	if len(tokens) == 0 {
 		return deny("mutation token not configured")
 	}
-	if !stringInSet(r.Method, policy.AllowedMethods) {
-		return deny("method outside mutation scope")
-	}
-	if len(policy.AllowedPaths) > 0 && !stringInSet(r.URL.Path, policy.AllowedPaths) {
-		return deny("path outside mutation scope")
+	if reason, ok := checkMutationRequestScope(r, policy); !ok {
+		return deny(reason)
 	}
 	required := policy.PathCapabilities[r.URL.Path]
 	if required == "" {
 		required = MutationCapabilityAdmin
-	}
-	if policy.RequireLocalRemote && r.RemoteAddr != "" {
-		if !isLoopbackRemote(r.RemoteAddr) {
-			return deny("remote address is not local")
-		}
-	}
-	if origin := strings.TrimSpace(r.Header.Get("Origin")); origin != "" && !stringInSet(origin, policy.AllowedOrigins) {
-		return deny("browser origin is not trusted")
-	}
-	if fetchSite := strings.ToLower(strings.TrimSpace(r.Header.Get("Sec-Fetch-Site"))); fetchSite == "cross-site" {
-		return deny("browser fetch site is not trusted")
 	}
 	credential, ok := matchMutationToken(extractMutationToken(r, policy.TokenHeader), tokens)
 	if !ok {
@@ -217,6 +195,41 @@ func EvaluateMutationPolicy(r *http.Request, policy MutationPolicy) MutationDeci
 		RequiredCapability: required,
 		LocalOnly:          credential.LocalOnly,
 	}
+}
+
+func applyMutationPolicyDefaults(policy MutationPolicy) MutationPolicy {
+	if strings.TrimSpace(policy.TokenHeader) == "" {
+		policy.TokenHeader = DefaultMutationTokenHeader
+	}
+	if len(policy.AllowedMethods) == 0 {
+		policy.AllowedMethods = []string{http.MethodPost, http.MethodPatch, http.MethodDelete}
+	}
+	if len(policy.PathCapabilities) == 0 {
+		policy.PathCapabilities = DefaultMutationPathCapabilities()
+	}
+	return policy
+}
+
+// checkMutationRequestScope validates method/path/remote/origin/fetch-site
+// constraints. Returns the deny reason and false on the first failure;
+// returns ("", true) when the request is in scope.
+func checkMutationRequestScope(r *http.Request, policy MutationPolicy) (string, bool) {
+	if !stringInSet(r.Method, policy.AllowedMethods) {
+		return "method outside mutation scope", false
+	}
+	if len(policy.AllowedPaths) > 0 && !stringInSet(r.URL.Path, policy.AllowedPaths) {
+		return "path outside mutation scope", false
+	}
+	if policy.RequireLocalRemote && r.RemoteAddr != "" && !isLoopbackRemote(r.RemoteAddr) {
+		return "remote address is not local", false
+	}
+	if origin := strings.TrimSpace(r.Header.Get("Origin")); origin != "" && !stringInSet(origin, policy.AllowedOrigins) {
+		return "browser origin is not trusted", false
+	}
+	if fetchSite := strings.ToLower(strings.TrimSpace(r.Header.Get("Sec-Fetch-Site"))); fetchSite == "cross-site" {
+		return "browser fetch site is not trusted", false
+	}
+	return "", true
 }
 
 func extractMutationToken(r *http.Request, tokenHeader string) string {
