@@ -9,6 +9,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 | Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (30 jobs) |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
+| Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
 | Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
 | Label PRs | `labeler.yml` | PR opened/synced/reopened | Auto-label PRs by changed paths |
 
@@ -22,6 +23,12 @@ AgentOps has two different overnight surfaces:
 They share primitive steps and report shapes, but they are not the same pipeline.
 
 Important constraint: GitHub Actions cannot see the private `.agents/` corpus when that directory is gitignored. The nightly workflow is therefore a proof harness, not the user's primary Dream runtime.
+
+The Nightly RPI Brief workflow is a prompt packet lane, not a CI-side agent
+runner. It reads recent Nightly PR bodies and scheduled Nightly workflow results,
+then updates the "Nightly RPI auto prompt" issue with a ready `$agentops:rpi
+--auto` command. This keeps autonomous RPI selection grounded in observed
+Nightly drift while avoiding hidden source-code mutation from GitHub Actions.
 
 If you want scheduled private Dream runs, use `ao overnight setup` to inspect the
 host, persist `dream.*` config, and generate host-specific `launchd`, `cron`, or

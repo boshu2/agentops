@@ -12,6 +12,9 @@ Run the full RPI lifecycle in a Codex-native way: direct in-session orchestratio
 6. Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.
 7. Prefer Codex sub-agents only for bounded sidecar work inside a phase, not for the lead orchestration path.
 8. Re-read `.agents/rpi/next-work.jsonl` after each cycle and honor claim, release, and consume semantics exactly.
+9. When the goal references Nightly, evolve, or an auto prompt, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.
+10. Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.
+11. Treat `bd` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt to route or fix, not as background noise.
 
 ## Guardrails
 
@@ -19,4 +22,6 @@ Run the full RPI lifecycle in a Codex-native way: direct in-session orchestratio
 2. Preserve queue correctness: claim before work, consume on success, release on failure or interruption.
 3. Treat harvested work as durable state on disk, not ephemeral chat context.
 4. Do not stop after a partial phase result; only stop on `<promise>BLOCKED</promise>`, retry-budget exhaustion, or final completion.
-5. If a Codex-native override and the source skill diverge, keep behavior aligned with the source contract and then update the override.
+5. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request.
+6. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle.
+7. If a Codex-native override and the source skill diverge, keep behavior aligned with the source contract and then update the override.
