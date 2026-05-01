@@ -49,6 +49,7 @@ type ProjectionSet struct {
 	Dream           DreamRunsProjection                   `json:"dream"`
 	Wiki            WikiJobsProjection                    `json:"wiki"`
 	OpenClaw        OpenClawSnapshotProjection            `json:"openclaw"`
+	Plans           DaemonPlansProjection                 `json:"plans"`
 	DegradedReasons []string                              `json:"degraded_reasons,omitempty"`
 }
 

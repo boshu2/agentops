@@ -64,6 +64,10 @@ type agentopsDaemonRunOptions struct {
 	PollInterval      time.Duration
 	HeartbeatInterval time.Duration
 	Now               func() time.Time
+	// PlansBdSource (optional, atom-2 / soc-acwf) wires the plans.projection
+	// executor against a real bd source. Nil disables the plans executor —
+	// production callers pass NewDbBdSource(dsn); tests pass an in-memory fake.
+	PlansBdSource daemonpkg.PlansBdSource
 }
 
 var daemonCmd = &cobra.Command{
@@ -344,10 +348,26 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
-	// TODO(atom-2 / soc-acwf): wire PlansProjectionExecutor here once
-	// cli/internal/daemon/plans_executor.go lands. atom-1 registers the
-	// JobType and read-side routes only; the executor instance is added in
-	// the next atom of the soc-7ftl chain.
+	// Plans projection executor (atom-2 / soc-acwf). Registered for the
+	// fake + gascity policies (read-side absorption #6 / plans.projection).
+	// Cli-fallback policy intentionally omitted per pilot spec §c (G2): that
+	// policy strips down to the wiki executor and does not run plans jobs.
+	// dbBdSource lazy-init: nil here means tests don't open a Dolt connection;
+	// production callers can call NewDbBdSource and re-register. atom-2 ships
+	// with executors that need bd connectivity gated by opts.PlansBdSource.
+	if policy == "fake" || policy == "gascity" {
+		if opts.PlansBdSource != nil {
+			plansExec, err := daemonpkg.NewPlansProjectionExecutor(daemonpkg.PlansProjectionExecutorOptions{
+				Store:    daemonpkg.NewStore(cwd),
+				BdSource: opts.PlansBdSource,
+				Now:      opts.Now,
+			})
+			if err != nil {
+				return nil, err
+			}
+			executors = append(executors, plansExec)
+		}
+	}
 	queueOpts := daemonpkg.QueueOptions{}
 	if opts.Now != nil {
 		queueOpts.Now = opts.Now
