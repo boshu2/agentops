@@ -74,7 +74,7 @@ type daemonSoakReport struct {
 
 func init() {
 	daemonCmd.AddCommand(daemonSoakCmd)
-	daemonSoakCmd.Flags().StringVar(&daemonSoakScenario, "scenario", "queue-only", "Soak scenario (queue-only, fake-executor, dream)")
+	daemonSoakCmd.Flags().StringVar(&daemonSoakScenario, "scenario", "queue-only", "Soak scenario (queue-only, fake-executor, dream, plans-projection)")
 	daemonSoakCmd.Flags().DurationVar(&daemonSoakDuration, "duration", 2*time.Minute, "Maximum scenario duration")
 	daemonSoakCmd.Flags().DurationVar(&daemonSoakInterval, "interval", 15*time.Second, "Polling interval for scenario checks")
 	daemonSoakCmd.Flags().BoolVar(&daemonSoakRequireTerminal, "require-terminal", false, "Fail unless scenario jobs reach terminal daemon state")
@@ -259,9 +259,60 @@ func runDaemonSoakScenario(ctx context.Context, cwd string, queue *daemonpkg.Que
 			return []string{jobID}, err
 		}
 		return []string{jobID}, runDaemonSoakClaimedJob(ctx, queue, jobID, executor)
+	case "plans-projection":
+		jobID := "job-" + opts.RunID + "-plans"
+		outputDir := filepath.Join(cwd, ".agents", "plans", "soak", opts.RunID)
+		spec := daemonpkg.NewPlansProjectionJobSpec("soak-project", "soc", outputDir)
+		specRaw, err := json.Marshal(spec)
+		if err != nil {
+			return []string{jobID}, err
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(specRaw, &payload); err != nil {
+			return []string{jobID}, err
+		}
+		if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+			RequestID:      daemonpkg.RequestID("req-" + opts.RunID + "-plans"),
+			JobID:          jobID,
+			JobType:        daemonpkg.JobTypePlansProjection,
+			IdempotencyKey: "daemon-soak:" + opts.RunID + ":plans",
+			Actor:          "ao daemon soak",
+			Payload:        payload,
+		}, daemonpkg.QueueMutationOptions{}); err != nil {
+			return []string{jobID}, err
+		}
+		// Soak scenario uses an in-process fake bd source that returns a small
+		// deterministic epic set so the executor exercises the full
+		// query → projection → atomic-write path without depending on Dolt.
+		bdSource := plansProjectionSoakBdSource{}
+		executor, err := daemonpkg.NewPlansProjectionExecutor(daemonpkg.PlansProjectionExecutorOptions{
+			Store:    daemonpkg.NewStore(cwd),
+			BdSource: bdSource,
+			Now:      opts.Now,
+		})
+		if err != nil {
+			return []string{jobID}, err
+		}
+		return []string{jobID}, runDaemonSoakClaimedJob(ctx, queue, jobID, executor)
 	default:
 		return nil, fmt.Errorf("unsupported daemon soak scenario %q", opts.Scenario)
 	}
+}
+
+// plansProjectionSoakBdSource is the in-process bd source used by the
+// plans-projection soak scenario. Returns a fixed 2-row epic set so the
+// soak run is deterministic and free of Dolt connectivity assumptions.
+type plansProjectionSoakBdSource struct{}
+
+func (plansProjectionSoakBdSource) QueryEpics(ctx context.Context, projectID, issuePrefix string) ([]daemonpkg.PlansProjectionEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	return []daemonpkg.PlansProjectionEntry{
+		{BeadsID: "soc-soak-1", Title: "soak fixture epic 1", Status: "open", IssueType: "epic", UpdatedAt: now},
+		{BeadsID: "soc-soak-2", Title: "soak fixture epic 2", Status: "closed", IssueType: "epic", UpdatedAt: now},
+	}, nil
 }
 
 func runDaemonSoakClaimedJob(ctx context.Context, queue *daemonpkg.Queue, jobID string, executor daemonpkg.JobExecutor) error {

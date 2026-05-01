@@ -151,8 +151,24 @@ Initial job families:
   `.agents/plans/2026-05-01-daemon-absorption-spec/02-pilot-plans-projection.md`
   and the foundation §6 site 3 (alt) carve-out for read-side endpoints
   (`.agents/plans/2026-05-01-daemon-absorption-spec/00-foundation-contract.md`).
-  The atom-4 acceptance criteria add a curl example block under the
-  Read-Side Endpoints section below.
+
+### Read-Side Endpoints — `plans.projection` curl example (F-PM-3)
+
+```sh
+# Manifest snapshot (atom-1 stub: empty entries until atom-2 fills the projection)
+curl -s http://localhost:7077/v1/plans/manifest | jq .
+# {"entries": [{"beads_id": "soc-aaa", "title": "...", "status": "open", ...}],
+#  "schema_version": 1}
+
+# Incremental diff since a known cursor (matches /v1/events `since=` convention)
+curl -s "http://localhost:7077/v1/plans/diff?since=evt-0042" | jq .
+# {"events": [{"event_id": "evt-0043", "event_type": "projection.rebuilt", ...}],
+#  "last_event_id": "evt-0099"}
+```
+
+Sample bodies above are harvested from the L2 BDD test fixture at
+`cli/cmd/ao/plans_bdd_test.go`. The host/port substitution is
+configuration-dependent — `ao daemon status` reports the active address.
 
 Queue workers must use leases and heartbeats rather than in-memory ownership.
 The queue must tolerate daemon restart and worker crash without losing accepted
