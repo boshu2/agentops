@@ -162,6 +162,56 @@ func TestParser_RejectsExcessiveQueueDepth(t *testing.T) {
 	}
 }
 
+func TestParser_LoadStockExample(t *testing.T) {
+	// Validates that .agents/schedule.yaml.example, the user-facing starter
+	// shipped with agentops, loads without error and has the two expected
+	// schedules (nightly-dream, hourly-forge). This protects against silent
+	// breakage of the starter file via future schema changes.
+	//
+	// Use the testdata copy to keep the test hermetic (repo policy forbids
+	// symlinks; the copy at testdata/example-validation.yaml is kept in sync
+	// with .agents/schedule.yaml.example).
+	templates, err := Load(fixture(t, "example-validation.yaml"))
+	if err != nil {
+		t.Fatalf("expected example to load; got error: %v", err)
+	}
+	if len(templates) != 2 {
+		t.Fatalf("expected 2 schedules; got %d", len(templates))
+	}
+
+	names := make([]string, len(templates))
+	for i, tmpl := range templates {
+		names[i] = tmpl.Name
+	}
+
+	expected := []string{"nightly-dream", "hourly-forge"}
+	for _, want := range expected {
+		found := false
+		for _, got := range names {
+			if got == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected schedule %q in starter; got names %v", want, names)
+		}
+	}
+
+	// Verify both job types are real-bodied (dream.run + wiki.forge —
+	// NOT llmwiki.loop, whose stage handlers are stubs in v1.0).
+	for _, tmpl := range templates {
+		switch tmpl.JobType {
+		case daemon.JobTypeDreamRun, daemon.JobTypeWikiForge:
+			// OK
+		case daemon.JobTypeLLMWikiLoop:
+			t.Errorf("starter must NOT include llmwiki.loop (stubs in v1.0); found in schedule %q", tmpl.Name)
+		default:
+			t.Errorf("starter has unexpected job_type %q in schedule %q", tmpl.JobType, tmpl.Name)
+		}
+	}
+}
+
 func TestParser_HonorsMinPeriodCeilingEnvOverride(t *testing.T) {
 	// First, with default ceiling (1000), the excessive fixture (9999) must fail.
 	if _, err := Load(fixture(t, "excessive-queue-depth.yaml")); err == nil {

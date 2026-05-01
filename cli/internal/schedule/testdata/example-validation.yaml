@@ -1,0 +1,31 @@
+# Mirror of .agents/schedule.yaml.example for hermetic parser tests.
+# Repo policy forbids symlinks (see CLAUDE.md), so this is a content copy.
+# Keep in sync with .agents/schedule.yaml.example.
+
+schedules:
+  - name: nightly-dream
+    cron: "0 3 * * *"
+    job_type: dream.run
+    payload:
+      output_dir: ".agents/overnight"
+      max_iterations: 5
+      execution_timeout: "4h"
+      goal: "Nightly knowledge consolidation"
+    timeout: "4h30m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
+
+  - name: hourly-forge
+    cron: "5 * * * *"
+    job_type: wiki.forge
+    payload:
+      tier: "forge-transcript"
+      source_paths:
+        - ".agents/sessions/"
+      worker_kind: "claude"
+      provider: "anthropic"
+      model: "claude-sonnet-4"
+    backpressure:
+      skip_if_running: false
+      max_queue_depth: 5
