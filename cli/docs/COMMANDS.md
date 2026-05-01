@@ -1017,6 +1017,7 @@ ao daemon run [flags]
       --gascity-token string          GasCity mutation token for gascity executor policy
       --gascity-token-file string     Path to GasCity mutation token file
   -h, --help                          help for run
+      --schedule-file string          Path to .agents/schedule.yaml. If empty, auto-detect at .agents/schedule.yaml relative to cwd. Skip schedule loading entirely if neither flag nor default file exists.
       --token string                  Mutation token for daemon write routes
       --token-file string             Path to mutation token file
       --worker-cgroup-root string     Linux cgroup v2 root for worker caps (default /sys/fs/cgroup)
@@ -3240,6 +3241,89 @@ Validate holdout scenarios against schema
 
 ```
 ao scenario validate [flags]
+```
+
+---
+
+### `ao schedule`
+
+Manage daemon schedules
+
+```
+ao schedule [command]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for schedule
+      --url string   Daemon base URL (defaults to activation file)
+```
+
+**Subcommands:**
+
+#### `ao schedule add`
+
+Add schedules from a YAML file
+
+```
+ao schedule add [flags]
+```
+
+**Flags:**
+
+```
+      --file string         Path to schedule YAML file (required)
+  -h, --help                help for add
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+```
+
+#### `ao schedule list`
+
+List active schedules
+
+```
+ao schedule list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for list
+      --json   Emit machine-readable JSON output
+```
+
+#### `ao schedule remove`
+
+Remove a schedule by name
+
+```
+ao schedule remove <name> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for remove
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+```
+
+#### `ao schedule run`
+
+One-shot test fire of a named schedule (immediate Queue.Submit)
+
+```
+ao schedule run <name> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for run
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
 ```
 
 ---

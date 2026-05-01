@@ -427,7 +427,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
-		"scenario", "search", "seed", "session", "session-outcome", "sessions", "status",
+		"scenario", "schedule", "search", "seed", "session", "session-outcome", "sessions", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "version", "vibe-check", "watch", "worktree",
 	}
@@ -487,7 +487,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"index", "init", "inject", "knowledge", "lookup", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
-		"scenario", "search", "seed", "session", "session-outcome", "sessions", "status",
+		"scenario", "schedule", "search", "seed", "session", "session-outcome", "sessions", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "version", "vibe-check", "watch", "worktree",
 	}
