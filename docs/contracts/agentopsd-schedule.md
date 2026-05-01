@@ -513,6 +513,8 @@ boundary rather than a skip-and-log.
 
 ## Executor Idempotency Contract
 
+> ⚠️ **Status: experimental — stubs only.** The `llmwiki.loop` job type's stage handlers (Ingest, Query, Lint, Promote) ship as stubs in v1.0; they produce frontmatter-only output until the real-bodies follow-up lands (see `f-2026-05-01-011` in `.agents/findings/registry.jsonl`). For production schedules in v1.0, use `dream.run` (real-bodied via `overnight.RunLoop`) and `wiki.forge` (real-bodied via `wikiworker.Worker`).
+
 `JobTypeLLMWikiLoop` (`llmwiki.loop`) materializes the Karpathy LLM-Wiki
 pattern as a daemon job. The executor at
 `cli/internal/llmwiki/executor.go` selects one of four stages per tick and
@@ -763,6 +765,122 @@ This contract is valid when it names:
 - `JobTypeLLMWikiLoop` as the new job-type constant
 - the four ledger event types: `schedule.created`, `schedule.fired`,
   `schedule.skipped`, `schedule.deleted`
+
+## Operator Runtime — launchd / systemd templates
+
+These are templates; operator chooses platform/time. agentops repo doesn't
+ship platform-specific service files — substrate-independence by design.
+Copy + adapt to your environment.
+
+> **Note (per amendment B4):** If you also run a separate nightly-evolution
+> wrapper (e.g., from a systemd timer or cron — see `soc-b8jo` family of
+> tooling), that's fine. Both can coexist: agentopsd handles cron-cadence
+> durable jobs via the queue/ledger; your wrapper handles whatever it
+> handled before. They share the same `.agents/` corpus and don't conflict.
+
+### Mac — launchd
+
+Save as `~/Library/LaunchAgents/<reverse-dns-prefix>.agentopsd.plist`.
+
+**Replace `<reverse-dns-prefix>` with your own reverse-DNS identifier**
+(e.g., `com.example`, `local.<username>`). Do NOT use `com.boshu2` — that's
+the maintainer's namespace.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- BundleID — REPLACE <reverse-dns-prefix> with your own (e.g., com.example, local.myname) -->
+    <key>Label</key>
+    <string><reverse-dns-prefix>.agentopsd</string>
+
+    <!-- Replace /path/to/repo with the absolute path of the repo this daemon serves -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/ao</string>
+        <string>daemon</string>
+        <string>run</string>
+        <string>--workers</string>
+        <string>2</string>
+        <string>--schedule-file</string>
+        <string>/path/to/repo/.agents/schedule.yaml</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/path/to/repo</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Logs land in ~/Library/Logs/agentopsd/ — adjust as desired -->
+    <key>StandardOutPath</key>
+    <string>/Users/YOUR_USERNAME/Library/Logs/agentopsd/stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/YOUR_USERNAME/Library/Logs/agentopsd/stderr.log</string>
+</dict>
+</plist>
+```
+
+Activate:
+
+```bash
+mkdir -p ~/Library/Logs/agentopsd
+launchctl load ~/Library/LaunchAgents/<reverse-dns-prefix>.agentopsd.plist
+launchctl start <reverse-dns-prefix>.agentopsd
+```
+
+### Linux — systemd-user
+
+Save as `~/.config/systemd/user/agentopsd.service`.
+
+```ini
+[Unit]
+Description=AgentOps daemon (continuous knowledge worker)
+After=network.target
+
+[Service]
+Type=simple
+
+# Replace /home/USER/path/to/repo with the absolute path of the repo
+WorkingDirectory=/home/USER/path/to/repo
+
+ExecStart=/usr/local/bin/ao daemon run --workers 2 --schedule-file /home/USER/path/to/repo/.agents/schedule.yaml
+
+Restart=on-failure
+RestartSec=10
+
+# Logs go to journalctl --user -u agentopsd by default
+
+[Install]
+WantedBy=default.target
+```
+
+> **WorkingDirectory is REQUIRED** (per amendment A2). Without it,
+> systemd-user units default to operator-undefined cwd, and `ao daemon`
+> fails to find the schedule file silently.
+
+Activate:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now agentopsd.service
+systemctl --user status agentopsd
+journalctl --user -u agentopsd -f   # tail logs
+```
+
+### Verifying it works
+
+After activation, verify the daemon is running and serving the schedule:
+
+```bash
+ao daemon status                    # should show running + schedule loaded
+ao schedule list                    # should show schedules from .agents/schedule.yaml
+ao daemon events tail | head -20    # should show schedule.fired events on cron tick
+```
 
 ## See Also
 
