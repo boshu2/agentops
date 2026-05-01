@@ -220,6 +220,7 @@ ao dedup [flags]
 ```
   -h, --help    help for dedup
       --merge   Auto-resolve duplicates: keep highest utility, archive the rest
+      --yes     Skip the interactive confirmation prompt for large merges (for hooks/CI)
 ```
 
 ---

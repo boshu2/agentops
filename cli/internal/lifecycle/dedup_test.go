@@ -1,11 +1,13 @@
 package lifecycle
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCollectDedupFiles_NoDirs(t *testing.T) {
@@ -283,6 +285,201 @@ func TestMergeDedupGroups_ActuallyArchives(t *testing.T) {
 	archived := filepath.Join(tmp, ".agents", "archive", "dedup", "b.md")
 	if _, err := os.Stat(archived); err != nil {
 		t.Errorf("b should exist at archive path %q: %v", archived, err)
+	}
+}
+
+func TestMergeDedupGroups_WritesManifest(t *testing.T) {
+	tmp := t.TempDir()
+	a := filepath.Join(tmp, "a.md")
+	b := filepath.Join(tmp, "b.md")
+	c := filepath.Join(tmp, "c.md")
+	d := filepath.Join(tmp, "d.md")
+	// Group 1: a,b have identical body. a has higher utility.
+	_ = os.WriteFile(a, []byte("---\nutility: 0.9\n---\nbody one\n"), 0o600)
+	_ = os.WriteFile(b, []byte("---\nutility: 0.1\n---\nbody one\n"), 0o600)
+	// Group 2: c,d have identical body. d has higher utility.
+	_ = os.WriteFile(c, []byte("---\nutility: 0.2\n---\nbody two\n"), 0o600)
+	_ = os.WriteFile(d, []byte("---\nutility: 0.7\n---\nbody two\n"), 0o600)
+
+	groups := map[string][]string{
+		"hash_aaaaaaaaaaaa": {a, b},
+		"hash_bbbbbbbbbbbb": {c, d},
+	}
+
+	if err := MergeDedupGroups(groups, tmp, false); err != nil {
+		t.Fatalf("err = %v", err)
+	}
+
+	// Find the manifest in archive dir.
+	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
+	entries, err := os.ReadDir(archiveDir)
+	if err != nil {
+		t.Fatalf("read archive dir: %v", err)
+	}
+	var manifestFiles []string
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), "-manifest.json") {
+			manifestFiles = append(manifestFiles, filepath.Join(archiveDir, e.Name()))
+		}
+	}
+	if len(manifestFiles) != 1 {
+		t.Fatalf("expected exactly 1 manifest, got %d (%v)", len(manifestFiles), manifestFiles)
+	}
+
+	// Load the manifest and check shape.
+	raw, err := os.ReadFile(manifestFiles[0])
+	if err != nil {
+		t.Fatalf("read manifest: %v", err)
+	}
+	var manifest DedupManifest
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		t.Fatalf("unmarshal manifest: %v", err)
+	}
+
+	if manifest.Version != 1 {
+		t.Errorf("Version = %d, want 1", manifest.Version)
+	}
+	if manifest.MergeStrategy != "highest-utility" {
+		t.Errorf("MergeStrategy = %q, want highest-utility", manifest.MergeStrategy)
+	}
+	if manifest.Timestamp == "" {
+		t.Errorf("Timestamp should be non-empty")
+	}
+	// Confirm timestamp parses as RFC3339.
+	if _, err := time.Parse(time.RFC3339, manifest.Timestamp); err != nil {
+		t.Errorf("Timestamp %q should parse as RFC3339: %v", manifest.Timestamp, err)
+	}
+	if manifest.Totals.Groups != 2 {
+		t.Errorf("Totals.Groups = %d, want 2", manifest.Totals.Groups)
+	}
+	if manifest.Totals.ArchivedFiles != 2 {
+		t.Errorf("Totals.ArchivedFiles = %d, want 2", manifest.Totals.ArchivedFiles)
+	}
+	if manifest.Totals.KeptFiles != 2 {
+		t.Errorf("Totals.KeptFiles = %d, want 2", manifest.Totals.KeptFiles)
+	}
+	if len(manifest.Groups) != 2 {
+		t.Fatalf("Groups len = %d, want 2", len(manifest.Groups))
+	}
+	// Each group should have exactly 1 archived entry and one kept.
+	totalArchived := 0
+	for _, g := range manifest.Groups {
+		if g.Kept == "" {
+			t.Errorf("group %s has empty Kept", g.ContentHash)
+		}
+		if len(g.Archived) != 1 {
+			t.Errorf("group %s archived len = %d, want 1", g.ContentHash, len(g.Archived))
+		}
+		for _, ar := range g.Archived {
+			if ar.Src == "" || ar.Dst == "" {
+				t.Errorf("archived entry missing src/dst: %+v", ar)
+			}
+			if !strings.HasPrefix(ar.Dst, filepath.Join(".agents", "archive", "dedup")) {
+				t.Errorf("Dst should be under archive dir, got %q", ar.Dst)
+			}
+		}
+		totalArchived += len(g.Archived)
+	}
+	if totalArchived != 2 {
+		t.Errorf("total archived = %d, want 2", totalArchived)
+	}
+
+	// Stable hash truncation to 12 chars.
+	for _, g := range manifest.Groups {
+		if len(g.ContentHash) != 12 {
+			t.Errorf("ContentHash should be 12 chars, got %q (len %d)", g.ContentHash, len(g.ContentHash))
+		}
+	}
+
+	// Verify the keeper files are still present and the archived files moved.
+	if _, err := os.Stat(a); err != nil {
+		t.Errorf("a (kept) should exist: %v", err)
+	}
+	if _, err := os.Stat(d); err != nil {
+		t.Errorf("d (kept) should exist: %v", err)
+	}
+	if _, err := os.Stat(b); err == nil {
+		t.Errorf("b should be archived from origin")
+	}
+	if _, err := os.Stat(c); err == nil {
+		t.Errorf("c should be archived from origin")
+	}
+}
+
+func TestMergeDedupGroups_DryRunSkipsManifest(t *testing.T) {
+	tmp := t.TempDir()
+	a := filepath.Join(tmp, "a.md")
+	b := filepath.Join(tmp, "b.md")
+	_ = os.WriteFile(a, []byte("---\nutility: 0.5\n---\nbody\n"), 0o600)
+	_ = os.WriteFile(b, []byte("---\nutility: 0.5\n---\nbody\n"), 0o600)
+
+	groups := map[string][]string{"h": {a, b}}
+	if err := MergeDedupGroups(groups, tmp, true); err != nil {
+		t.Fatalf("err = %v", err)
+	}
+
+	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
+	if _, err := os.Stat(archiveDir); err == nil {
+		t.Errorf("dry-run should NOT create archive dir")
+	}
+	// Make sure no -manifest.json exists anywhere under tmp.
+	walkErr := filepath.Walk(tmp, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), "-manifest.json") {
+			t.Errorf("dry-run wrote manifest: %s", path)
+		}
+		return nil
+	})
+	if walkErr != nil {
+		t.Fatalf("walk: %v", walkErr)
+	}
+}
+
+func TestBuildDedupManifest_StableOrder(t *testing.T) {
+	tmp := t.TempDir()
+	for _, name := range []string{"a.md", "b.md", "c.md", "d.md"} {
+		_ = os.WriteFile(filepath.Join(tmp, name), []byte("---\nutility: 0.5\n---\nbody\n"), 0o600)
+	}
+	groups := map[string][]string{
+		"zzzz_hash": {filepath.Join(tmp, "a.md"), filepath.Join(tmp, "b.md")},
+		"aaaa_hash": {filepath.Join(tmp, "c.md"), filepath.Join(tmp, "d.md")},
+	}
+	now := time.Date(2026, 5, 1, 12, 34, 56, 0, time.UTC)
+	m1 := BuildDedupManifest(groups, tmp, ".agents/archive/dedup", now)
+	m2 := BuildDedupManifest(groups, tmp, ".agents/archive/dedup", now)
+	if len(m1.Groups) != 2 || len(m2.Groups) != 2 {
+		t.Fatalf("group count: %d/%d", len(m1.Groups), len(m2.Groups))
+	}
+	if m1.Groups[0].ContentHash != m2.Groups[0].ContentHash {
+		t.Errorf("ordering not stable: %q vs %q", m1.Groups[0].ContentHash, m2.Groups[0].ContentHash)
+	}
+	// "aaaa_hash" sorts first; truncated to 12 chars => "aaaa_hash" (already <12 here)
+	if m1.Groups[0].ContentHash != "aaaa_hash" {
+		t.Errorf("first group hash = %q, want sorted-first aaaa_hash", m1.Groups[0].ContentHash)
+	}
+}
+
+func TestCountArchiveCandidates(t *testing.T) {
+	groups := map[string][]string{
+		"h1":     {"a", "b", "c"}, // 2 archived
+		"h2":     {"d"},           // 0 archived (single)
+		"h3":     {"e", "f"},      // 1 archived
+		"empty":  nil,             // 0 archived
+	}
+	got := CountArchiveCandidates(groups)
+	if got != 3 {
+		t.Errorf("CountArchiveCandidates = %d, want 3", got)
+	}
+}
+
+func TestDedupManifestPath(t *testing.T) {
+	now := time.Date(2026, 5, 1, 12, 34, 56, 0, time.UTC)
+	got := DedupManifestPath("/tmp/x", now)
+	want := filepath.Join("/tmp/x", ".agents", "archive", "dedup", "20260501T123456Z-manifest.json")
+	if got != want {
+		t.Errorf("DedupManifestPath = %q, want %q", got, want)
 	}
 }
 
