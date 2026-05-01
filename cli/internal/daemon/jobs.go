@@ -602,6 +602,13 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 	return snapshot, nil
 }
 
+// applyQueueEvent folds a single ledger event into job's in-memory state and
+// returns whether the job was mutated.
+//
+// Cyclomatic complexity is in the warn band (currently ~22; CI fail threshold
+// is 25 per scripts/check-go-complexity.sh). Adding another event-type branch
+// pushes this past the threshold — refactor by extracting per-event handlers
+// or a dispatch table before adding a new case.
 func (q *Queue) applyQueueEvent(job *QueueJobState, event LedgerEvent) bool {
 	if isTerminalStatus(job.Status) {
 		return false
