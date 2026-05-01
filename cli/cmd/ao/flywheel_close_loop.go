@@ -282,6 +282,7 @@ func ingestPendingFilesToPool(cwd string, files []string) (poolIngestResult, err
 	if len(files) == 0 {
 		return res, nil
 	}
+	promotedContent := loadPromotedContent(cwd)
 
 	// Successfully-ingested files are moved to .agents/knowledge/processed so
 	// they are not re-ingested on the next close-loop pass. Once a candidate
@@ -293,7 +294,7 @@ func ingestPendingFilesToPool(cwd string, files []string) (poolIngestResult, err
 			fileDate, sessionHint := parsePendingFileHeader(string(data), path)
 			blocks := parseLearningBlocks(string(data))
 			res.CandidatesFound += len(blocks)
-			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res)
+			return ingestFileBlocks(p, blocks, path, fileDate, sessionHint, &res, promotedContent, true)
 		},
 		TrackProcessed: !GetDryRun(),
 		MoveProcessed: func(processed []string) {
@@ -335,6 +336,9 @@ func (c *promotionContext) processCandidate(e pool.PoolEntry, result *poolAutoPr
 		result.Skipped++
 		result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
 		VerbosePrintf("Skipping %s: %s\n", e.Candidate.ID, reason)
+		if isDuplicatePromotedReason(reason) {
+			rejectDuplicatePromotedCandidate(c.pool, e, reason, "close-loop")
+		}
 		return
 	}
 	result.Considered++

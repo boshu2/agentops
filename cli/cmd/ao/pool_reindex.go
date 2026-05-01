@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -132,23 +131,7 @@ func poolReindexRun(cwd string, dryRun bool) (poolReindexResult, error) {
 // collectReindexFiles walks .agents/learnings and .agents/patterns under cwd,
 // returning all *.md files. Sorted for deterministic output.
 func collectReindexFiles(cwd string) ([]string, error) {
-	dirs := []string{
-		filepath.Join(cwd, ".agents", "learnings"),
-		filepath.Join(cwd, ".agents", "patterns"),
-	}
-	var files []string
-	for _, dir := range dirs {
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			continue
-		}
-		matches, err := filepath.Glob(filepath.Join(dir, "*.md"))
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, matches...)
-	}
-	sort.Strings(files)
-	return files, nil
+	return pool.CollectPromotedArtifactFiles(cwd)
 }
 
 // loadExistingPromotedHashes reads the sidecar and returns the set of
@@ -198,76 +181,13 @@ func loadExistingPromotedHashes(indexPath string) (map[string]string, error) {
 //
 //	## Context | ## Source | (EOF)
 //
-// We extract the text between "## What We Learned" and the next "## "
-// heading (or EOF). For artifacts that don't follow this template (older
-// hand-authored learnings), we fall back to the post-frontmatter body so
-// reindex still records *some* hash — that hash won't collide with a fresh
-// Promote, but it preserves the "no holes" property of the sidecar for
-// already-on-disk content. Returns (body, true) on success, ("", false) if
-// the file is unreadable.
+// The shared pool extractor canonicalizes the semantic body used by Promote.
+// For artifacts that don't follow this template (older hand-authored
+// learnings), it falls back to the post-frontmatter body so reindex still
+// records surviving on-disk content. Returns (body, true) on success, ("",
+// false) if the file is unreadable.
 func extractPromotedArtifactBody(path string) (string, bool) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", false
-	}
-	text := string(data)
-
-	postFrontmatter := stripYAMLFrontmatter(text)
-	if section, ok := extractSection(postFrontmatter, "## What We Learned"); ok {
-		return section, true
-	}
-	// Fallback: strip the heading line if present, return the rest.
-	body := strings.TrimSpace(postFrontmatter)
-	if body == "" {
-		return "", false
-	}
-	return body, true
-}
-
-// stripYAMLFrontmatter returns the document body after a leading ---/--- block.
-// If the document doesn't open with a frontmatter delimiter, returns text
-// unchanged.
-func stripYAMLFrontmatter(text string) string {
-	lines := strings.Split(text, "\n")
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
-		return text
-	}
-	for i := 1; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == "---" {
-			return strings.Join(lines[i+1:], "\n")
-		}
-	}
-	return text
-}
-
-// extractSection returns the body under a given "## Heading" line, stopping
-// at the next "## " heading or end of document. Returns (body, true) if the
-// heading was found.
-func extractSection(text, heading string) (string, bool) {
-	lines := strings.Split(text, "\n")
-	start := -1
-	for i, line := range lines {
-		if strings.TrimSpace(line) == heading {
-			start = i + 1
-			break
-		}
-	}
-	if start == -1 {
-		return "", false
-	}
-	end := len(lines)
-	for j := start; j < len(lines); j++ {
-		trimmed := strings.TrimSpace(lines[j])
-		if strings.HasPrefix(trimmed, "## ") {
-			end = j
-			break
-		}
-	}
-	body := strings.TrimSpace(strings.Join(lines[start:end], "\n"))
-	if body == "" {
-		return "", false
-	}
-	return body, true
+	return pool.ExtractPromotedArtifactBodyFile(path)
 }
 
 // writePoolReindexResult prints the result either as JSON or human-readable.

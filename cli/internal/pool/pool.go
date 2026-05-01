@@ -467,24 +467,20 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 	}
 
 	contentHash := candidateContentHash(entry.Candidate)
-	if existing, ok := p.lookupPromotedHash(contentHash); ok {
-		// Same body already on disk under a different ID. Reuse the
-		// existing artifact and treat this Promote as a no-op write.
-		// Still mark the candidate as archived so it leaves the staged
-		// directory.
-		if err := os.Remove(entry.FilePath); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to remove pool entry: %v\n", err)
-		}
-		p.recordEventOrWarn(ChainEvent{
-			Timestamp:    time.Now(),
-			Operation:    "promote",
-			CandidateID:  candidateID,
-			FromStatus:   entry.Status,
-			ToStatus:     types.PoolStatusArchived,
-			ArtifactPath: existing,
-			Reason:       "dedup: content hash already promoted",
-		})
+	if existing, ok := p.lookupPromotedHashIndex(contentHash); ok {
+		p.finishDedupPromotion(entry, candidateID, existing, "dedup: content hash already promoted")
 		return existing, nil
+	}
+	if existing, ok := p.lookupPromotedHashArtifacts(contentHash); ok {
+		if err := p.recordPromotedHash(contentHash, existing, candidateID); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to backfill promoted-hash index: %v\n", err)
+		}
+		p.finishDedupPromotion(entry, candidateID, existing, "dedup: content hash already promoted")
+		return existing, nil
+	}
+	if archived, ok := p.lookupArchivedHashArtifacts(contentHash); ok {
+		p.finishDedupPromotion(entry, candidateID, archived, "dedup: content hash already archived")
+		return archived, nil
 	}
 
 	artifactPath := resolveArtifactPath(destDir, candidateID)
@@ -516,10 +512,27 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 	return artifactPath, nil
 }
 
+func (p *Pool) finishDedupPromotion(entry *PoolEntry, candidateID, existing, reason string) {
+	// Same body already on disk under a different ID. Reuse the existing
+	// artifact and treat this Promote as a no-op write. Still remove the
+	// staged candidate so it cannot be reconsidered on the next close-loop.
+	if err := os.Remove(entry.FilePath); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to remove pool entry: %v\n", err)
+	}
+	p.recordEventOrWarn(ChainEvent{
+		Timestamp:    time.Now(),
+		Operation:    "promote",
+		CandidateID:  candidateID,
+		FromStatus:   entry.Status,
+		ToStatus:     types.PoolStatusArchived,
+		ArtifactPath: existing,
+		Reason:       reason,
+	})
+}
+
 // candidateContentHash is the dedup key for pool.Promote. It hashes the
-// candidate Content body (trimmed) so two candidates with different IDs but
-// identical Content collapse to the same artifact. Trimming guards against
-// trailing-newline noise from different ingest paths.
+// canonical candidate Content body so two candidates with different IDs but
+// identical semantic bodies collapse to the same artifact.
 func candidateContentHash(c types.Candidate) string {
 	return ContentHash(c.Content)
 }
@@ -529,8 +542,9 @@ func candidateContentHash(c types.Candidate) string {
 // from on-disk artifact bodies without constructing a synthetic Candidate.
 // Identical to candidateContentHash(types.Candidate{Content: body}).
 func ContentHash(body string) string {
-	trimmed := strings.TrimSpace(body)
-	sum := sha256.Sum256([]byte(trimmed))
+	canonicalBody := CanonicalContentBody(body)
+	normalized := strings.ToLower(strings.Join(strings.Fields(canonicalBody), " "))
+	sum := sha256.Sum256([]byte(normalized))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -557,11 +571,11 @@ func (p *Pool) AppendPromotedIndexEntry(contentHash, artifactPath, candidateID s
 	return p.recordPromotedHash(contentHash, artifactPath, candidateID)
 }
 
-// lookupPromotedHash scans the sidecar index for an existing artifact with
+// lookupPromotedHashIndex scans the sidecar index for an existing artifact with
 // the given content hash. Returns (path, true) if found AND the file still
 // exists on disk (a stale index entry from a deleted artifact is treated as
 // a miss so the next Promote rewrites it).
-func (p *Pool) lookupPromotedHash(contentHash string) (string, bool) {
+func (p *Pool) lookupPromotedHashIndex(contentHash string) (string, bool) {
 	indexPath := filepath.Join(p.PoolPath, promotedIndexFile)
 	f, err := os.Open(indexPath)
 	if err != nil {
@@ -585,6 +599,26 @@ func (p *Pool) lookupPromotedHash(contentHash string) (string, bool) {
 			continue
 		}
 		return entry.ArtifactPath, true
+	}
+	return "", false
+}
+
+// lookupPromotedHashArtifacts live-scans promoted artifacts so a missing or
+// stale promoted-index.jsonl cannot permit duplicate artifact writes.
+func (p *Pool) lookupPromotedHashArtifacts(contentHash string) (string, bool) {
+	for hash, artifactPath := range LoadPromotedContentHashes(p.BaseDir) {
+		if hash == contentHash {
+			return artifactPath, true
+		}
+	}
+	return "", false
+}
+
+func (p *Pool) lookupArchivedHashArtifacts(contentHash string) (string, bool) {
+	for hash, artifactPath := range LoadArchivedContentHashes(p.BaseDir) {
+		if hash == contentHash {
+			return artifactPath, true
+		}
 	}
 	return "", false
 }
@@ -615,6 +649,22 @@ func (p *Pool) recordPromotedHash(contentHash, artifactPath, candidateID string)
 		return fmt.Errorf("write promoted-hash entry: %w", err)
 	}
 	return nil
+}
+
+// RecordSkip appends an auditable skip event for candidates rejected before a
+// pool entry exists, such as pending knowledge whose body already has a
+// promoted artifact on disk.
+func (p *Pool) RecordSkip(candidateID, reason, reviewer string) error {
+	if err := os.MkdirAll(p.PoolPath, 0700); err != nil {
+		return fmt.Errorf("ensure pool dir: %w", err)
+	}
+	return p.recordEvent(ChainEvent{
+		Timestamp:   time.Now(),
+		Operation:   "skip",
+		CandidateID: candidateID,
+		Reason:      reason,
+		Reviewer:    reviewer,
+	})
 }
 
 // validatePromotable checks that a pool entry is eligible for promotion.

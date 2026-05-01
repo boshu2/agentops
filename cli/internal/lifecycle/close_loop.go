@@ -31,6 +31,7 @@ type CloseLoopIngestResult struct {
 	CandidatesFound  int      `json:"candidates_found"`
 	Added            int      `json:"added"`
 	SkippedExisting  int      `json:"skipped_existing"`
+	SkippedPromoted  int      `json:"skipped_promoted,omitempty"`
 	SkippedMalformed int      `json:"skipped_malformed"`
 	Errors           int      `json:"errors"`
 	AddedIDs         []string `json:"added_ids,omitempty"`
