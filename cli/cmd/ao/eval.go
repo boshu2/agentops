@@ -321,7 +321,8 @@ func configureEvalCommand() {
 
 	registerEvalTaskCmd()
 	registerEvalCleanupCmd()
-	evalCmd.AddCommand(evalTaskCmd, evalCleanupCmd)
+	registerEvalSuiteCmd()
+	evalCmd.AddCommand(evalTaskCmd, evalCleanupCmd, evalSuiteCmd)
 }
 
 func parseEvalRuntime(value string) (aoeval.Runtime, error) {

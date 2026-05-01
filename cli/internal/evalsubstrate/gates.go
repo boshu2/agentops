@@ -9,14 +9,15 @@ import (
 // GateInputs aggregates everything needed to run the Day-2 manifest-checkable
 // gates. Day 4 will extend with Judge calibration + holdout-burn-ledger inputs.
 type GateInputs struct {
-	Suite       *Suite
-	Task        *Task
-	Harness     *Harness            // declared content_hash from harness.yaml
-	HarnessLock *HarnessLock        // computed lock file
-	HarnessDir  string              // source dir for re-verification (gate #8)
-	GroundTruth []GroundTruthRow    // current GT rows
-	GTRequested string              // ground_truth_id requested by the run
-	AllowWeak   bool                // --allow-weak-labels passthrough
+	Suite             *Suite
+	Task              *Task
+	Harness           *Harness         // declared content_hash from harness.yaml
+	HarnessLock       *HarnessLock     // computed lock file
+	HarnessDir        string           // source dir for re-verification (gate #8)
+	GroundTruth       []GroundTruthRow // current GT rows
+	GTRequested       string           // ground_truth_id requested by the run
+	AllowWeak         bool             // --allow-weak-labels passthrough
+	NRequiredOverride int              // Day-3 power-derived n_required (overrides Task.stats.min_n_samples)
 }
 
 // RunGates executes Day-2 gates 1, 6, 7, 8, 9 in §6 order.
@@ -63,15 +64,21 @@ func gate1NoHeldConstant(in GateInputs) *Refusal {
 }
 
 // gate6Underpowered: §6 #6 — n_samples < n_required.
-// Day-2 fallback: n_required = max(Suite.n_samples_request, Task.stats.min_n_samples).
-// Day-3 graduates to power-derived n_required (§6.5).
+//
+// Day-3 (this commit): when caller provides a power-derived n_required via
+// GateInputs.NRequiredOverride > 0, that wins. Otherwise fall back to
+// Task.stats.min_n_samples (Day-2 behavior). Day-3 makes the CLI compute
+// the override via `ao eval suite n-required`.
 func gate6Underpowered(in GateInputs) *Refusal {
 	if in.Suite == nil || in.Task == nil {
 		return nil
 	}
 	required := in.Task.Stats.MinNSamples
+	if in.NRequiredOverride > 0 {
+		required = in.NRequiredOverride
+	}
 	if required <= 0 {
-		return nil // task has no stat config; cannot enforce
+		return nil // no enforceable floor available
 	}
 	if in.Suite.NSamples >= required {
 		return nil
