@@ -1,0 +1,45 @@
+{
+  "wave": 1,
+  "epic_id": "soc-o6eb",
+  "tasks": [
+    {
+      "issue_id": "soc-o6eb.3",
+      "subject": "W2 local execution epic routing",
+      "description": "Select the next issue, validation command, and stop condition for soc-8412, soc-b8jo, and soc-eh1z. Include local AgentOps hygiene candidates noted by W1 without mass reparenting.",
+      "files": [
+        ".agents/decisions/2026-05-01-w2-active-local-execution-epics.md",
+        ".agents/crank/results/soc-o6eb.3.md"
+      ],
+      "validation_cmd": "test -f .agents/decisions/2026-05-01-w2-active-local-execution-epics.md && rg 'soc-8412|soc-b8jo|soc-eh1z' .agents/decisions/2026-05-01-w2-active-local-execution-epics.md",
+      "metadata": {
+        "issue_type": "task"
+      }
+    },
+    {
+      "issue_id": "soc-o6eb.4",
+      "subject": "W3 daemon Dream migration lane selection",
+      "description": "Choose exactly one migration lane among soc-q4c, soc-ni8g, psite-agu, soc-y8b, and soc-v64.2. Record selected lane, paused lanes, blockers, and activation smoke.",
+      "files": [
+        ".agents/decisions/2026-05-01-w3-daemon-dream-migration-lane.md",
+        ".agents/crank/results/soc-o6eb.4.md"
+      ],
+      "validation_cmd": "test -f .agents/decisions/2026-05-01-w3-daemon-dream-migration-lane.md && rg 'Selected lane|Paused lanes|Activation smoke|Blockers' .agents/decisions/2026-05-01-w3-daemon-dream-migration-lane.md",
+      "metadata": {
+        "issue_type": "task"
+      }
+    },
+    {
+      "issue_id": "soc-o6eb.5",
+      "subject": "W4 cross-repo security and deferral routing",
+      "description": "Route cross-repo/security/user-sim/Dolt/operator-gated/P3-P4 items into execute, delegate, defer, or close decisions with owners and validation commands where required.",
+      "files": [
+        ".agents/triage/2026-05-01-w4-cross-repo-security-deferrals.md",
+        ".agents/crank/results/soc-o6eb.5.md"
+      ],
+      "validation_cmd": "test -f .agents/triage/2026-05-01-w4-cross-repo-security-deferrals.md && rg 'security|user-sim|Dolt|P3|P4' .agents/triage/2026-05-01-w4-cross-repo-security-deferrals.md",
+      "metadata": {
+        "issue_type": "task"
+      }
+    }
+  ]
+}

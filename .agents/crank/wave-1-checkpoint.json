@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "wave": 1,
+  "epic_id": "soc-o6eb",
+  "timestamp": "2026-05-01T19:48:27Z",
+  "tasks_completed": [
+    "soc-o6eb.3",
+    "soc-o6eb.4",
+    "soc-o6eb.5"
+  ],
+  "tasks_failed": [],
+  "files_changed": [
+    ".agents/crank/wave-1-tasks.json",
+    ".agents/rpi/plan-mutations.jsonl",
+    ".agents/decisions/2026-05-01-w2-active-local-execution-epics.md",
+    ".agents/decisions/2026-05-01-w3-daemon-dream-migration-lane.md",
+    ".agents/triage/2026-05-01-w4-cross-repo-security-deferrals.md",
+    ".agents/crank/results/soc-o6eb.3.md",
+    ".agents/crank/results/soc-o6eb.4.md",
+    ".agents/crank/results/soc-o6eb.5.md",
+    ".agents/crank/archives/SHARED_TASK_NOTES-soc-o6eb-20260501-194827.md",
+    ".agents/crank/wave-1-checkpoint.json"
+  ],
+  "git_sha": "47882c30ff072ce5a449c29421e29d912a0a4393",
+  "acceptance_verdict": "PASS",
+  "commit_strategy": "wave-batch",
+  "mutations_this_wave": 0,
+  "total_mutations": 0,
+  "mutation_budget": {
+    "task_added": {
+      "used": 0,
+      "limit": 5
+    },
+    "task_reordered": {
+      "used": 0,
+      "limit": 3
+    }
+  }
+}
