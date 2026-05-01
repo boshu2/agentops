@@ -747,3 +747,147 @@ func TestPerformFlywheelCloseLoop_GeneratesSkillDrafts(t *testing.T) {
 		t.Fatalf("expected generated skill draft at %s: %v", draftPath, err)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// ingestPendingFilesToPool — pending file lifecycle (mol-qwx4 regression)
+// ---------------------------------------------------------------------------
+
+// writeRegressionPendingLearning writes a parseable pending learning under
+// .agents/knowledge/pending/<name>.md with content unique to <name>.
+func writeRegressionPendingLearning(t *testing.T, tmp, name string) string {
+	t.Helper()
+	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
+	if err := os.MkdirAll(pendingDir, 0o755); err != nil {
+		t.Fatalf("mkdir pending: %v", err)
+	}
+	pendingFile := filepath.Join(pendingDir, name+".md")
+	body := "# Learnings: ag-" + name + "\n\n" +
+		"**Date:** 2026-01-01\n\n" +
+		"# Learning: " + name + " title\n\n" +
+		"**ID**: L-" + name + "\n" +
+		"**Category**: process\n" +
+		"**Confidence**: high\n\n" +
+		"## What We Learned\n\n" +
+		"Body content for " + name + " regression test.\n\n" +
+		"## Source\n\nSession: ag-" + name + "\n"
+	if err := os.WriteFile(pendingFile, []byte(body), 0o600); err != nil {
+		t.Fatalf("write pending file: %v", err)
+	}
+	return pendingFile
+}
+
+func TestIngestPendingFilesToPool_MovesProcessedOnSuccess(t *testing.T) {
+	tmp := t.TempDir()
+	pendingFile := writeRegressionPendingLearning(t, tmp, "movetest")
+
+	res, err := ingestPendingFilesToPool(tmp, []string{pendingFile})
+	if err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	if res.Added != 1 {
+		t.Fatalf("Added=%d, want 1 (res=%+v)", res.Added, res)
+	}
+
+	// Source pending file should have been moved out of pending/.
+	if _, err := os.Stat(pendingFile); !os.IsNotExist(err) {
+		t.Errorf("pending file still present after ingest: err=%v", err)
+	}
+
+	// And present under processed/.
+	dst := filepath.Join(tmp, ".agents", "knowledge", "processed", filepath.Base(pendingFile))
+	if _, err := os.Stat(dst); err != nil {
+		t.Errorf("expected processed file at %s: %v", dst, err)
+	}
+}
+
+func TestIngestPendingFilesToPool_SecondRunIsIdempotent(t *testing.T) {
+	tmp := t.TempDir()
+	pendingFile := writeRegressionPendingLearning(t, tmp, "idem")
+
+	res1, err := ingestPendingFilesToPool(tmp, []string{pendingFile})
+	if err != nil {
+		t.Fatalf("first ingest: %v", err)
+	}
+	if res1.Added != 1 {
+		t.Fatalf("first ingest Added=%d, want 1", res1.Added)
+	}
+
+	// Second pass simulates a recurring close-loop with the same source
+	// directory. If lifecycle is correct, the file is no longer at the
+	// pending path, so a glob-based pass would miss it. Even if a stale path
+	// is passed in directly, the read should fail and Added must be 0.
+	if _, err := os.Stat(pendingFile); !os.IsNotExist(err) {
+		t.Fatalf("pending file should have been moved, still at %s", pendingFile)
+	}
+
+	// Re-resolve from the pending dir the way close-loop actually does.
+	resolved, err := resolveIngestFiles(tmp, filepath.Join(".agents", "knowledge", "pending"), nil)
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	res2, err := ingestPendingFilesToPool(tmp, resolved)
+	if err != nil {
+		t.Fatalf("second ingest: %v", err)
+	}
+	if res2.Added != 0 {
+		t.Errorf("second ingest Added=%d, want 0 (res=%+v)", res2.Added, res2)
+	}
+	if res2.CandidatesFound != 0 {
+		t.Errorf("second ingest CandidatesFound=%d, want 0 (file should not be re-discovered)", res2.CandidatesFound)
+	}
+}
+
+func TestIngestPendingFilesToPool_DryRunDoesNotMove(t *testing.T) {
+	tmp := t.TempDir()
+	pendingFile := writeRegressionPendingLearning(t, tmp, "dryrun")
+
+	dryRun = true
+	defer func() { dryRun = false }()
+
+	res, err := ingestPendingFilesToPool(tmp, []string{pendingFile})
+	if err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	if res.Added != 1 {
+		t.Fatalf("Added=%d, want 1 (dry-run still counts)", res.Added)
+	}
+
+	// Pending file must remain in place under dry-run.
+	if _, err := os.Stat(pendingFile); err != nil {
+		t.Errorf("pending file should remain under dry-run, got: %v", err)
+	}
+	processedPath := filepath.Join(tmp, ".agents", "knowledge", "processed", filepath.Base(pendingFile))
+	if _, err := os.Stat(processedPath); !os.IsNotExist(err) {
+		t.Errorf("processed file should NOT be created under dry-run, found: %v", err)
+	}
+}
+
+func TestIngestPendingFilesToPool_ReadErrorDoesNotMove(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Path that does not exist — os.ReadFile will fail and the function
+	// must increment Errors and skip the file (no move attempt).
+	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
+	if err := os.MkdirAll(pendingDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(pendingDir, "missing.md")
+
+	res, err := ingestPendingFilesToPool(tmp, []string{missing})
+	if err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	if res.Errors != 1 {
+		t.Errorf("Errors=%d, want 1", res.Errors)
+	}
+	if res.Added != 0 {
+		t.Errorf("Added=%d, want 0", res.Added)
+	}
+
+	// processed/ dir may be created lazily, but the missing file must not
+	// appear under it (we never had it to move in the first place).
+	stale := filepath.Join(tmp, ".agents", "knowledge", "processed", "missing.md")
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Errorf("missing file should not appear in processed/, got: %v", err)
+	}
+}

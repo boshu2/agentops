@@ -77,9 +77,11 @@ if command -v ao &>/dev/null; then
 fi
 
 # Auto-promote pending forge candidates (Tier 0 → Tier 1)
-# Closes the gap where forge extracts knowledge at session end but promotion
-# to .agents/learnings/ only happens when explicitly triggered.
-if command -v ao &>/dev/null; then
+# Opt-in only: corpus-mutating maintenance must not run on every session start.
+# Set AGENTOPS_STARTUP_CLOSE_LOOP=1 to enable. See learning explosion postmortem
+# (mol-qwx4): unconditional startup close-loop + non-idempotent pending lifecycle
+# turned a 47-file batch into 11k+ duplicate artifacts.
+if [ "${AGENTOPS_STARTUP_CLOSE_LOOP:-0}" = "1" ] && command -v ao &>/dev/null; then
     ao flywheel close-loop --quiet >/dev/null 2>&1 || true
 fi
 
