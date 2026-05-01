@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/gascity"
 	"github.com/boshu2/agentops/cli/internal/llmwiki"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
+	"github.com/boshu2/agentops/cli/internal/schedule"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +40,7 @@ var (
 	daemonWorkerTimeout     time.Duration
 	daemonWorkerMemoryMax   int64
 	daemonWorkerCgroupRoot  string
+	daemonScheduleFile      string
 )
 
 type agentopsDaemonActivation struct {
@@ -62,6 +65,7 @@ type agentopsDaemonRunOptions struct {
 	WorkerTimeout     time.Duration
 	WorkerMemoryMax   int64
 	WorkerCgroupRoot  string
+	ScheduleFile      string
 	PollInterval      time.Duration
 	HeartbeatInterval time.Duration
 	Now               func() time.Time
@@ -120,6 +124,7 @@ func init() {
 	daemonRunCmd.Flags().DurationVar(&daemonWorkerTimeout, "worker-timeout", 0, "Per-job worker wall-clock cap (0 disables)")
 	daemonRunCmd.Flags().Int64Var(&daemonWorkerMemoryMax, "worker-memory-max-bytes", 0, "Linux cgroup v2 memory.max cap for CLI fallback workers in bytes (0 disables)")
 	daemonRunCmd.Flags().StringVar(&daemonWorkerCgroupRoot, "worker-cgroup-root", "", "Linux cgroup v2 root for worker caps (default /sys/fs/cgroup)")
+	daemonRunCmd.Flags().StringVar(&daemonScheduleFile, "schedule-file", "", "Path to .agents/schedule.yaml. If empty, auto-detect at .agents/schedule.yaml relative to cwd. Skip schedule loading entirely if neither flag nor default file exists.")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityEndpoint, "gascity-endpoint", "", "GasCity API endpoint for gascity executor policy")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityCity, "gascity-city", "", "GasCity city name for gascity executor policy")
 	daemonRunCmd.Flags().StringVar(&daemonGasCityToken, "gascity-token", "", "GasCity mutation token for gascity executor policy")
@@ -149,6 +154,7 @@ func runAgentOpsDaemonCommand(cmd *cobra.Command, args []string) error {
 		WorkerTimeout:    daemonWorkerTimeout,
 		WorkerMemoryMax:  daemonWorkerMemoryMax,
 		WorkerCgroupRoot: daemonWorkerCgroupRoot,
+		ScheduleFile:     daemonScheduleFile,
 	}, cmd.OutOrStdout())
 }
 
@@ -584,6 +590,10 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 		return nil, nil, agentopsDaemonActivation{}, fmt.Errorf("daemon startup recovery: %w", err)
 	}
 	store := daemonpkg.NewStore(cwd)
+	if err := loadAgentOpsDaemonScheduleFile(cwd, opts.ScheduleFile, store); err != nil {
+		_ = listener.Close()
+		return nil, nil, agentopsDaemonActivation{}, err
+	}
 	mutationPolicy, err := resolveAgentOpsDaemonMutationPolicy(opts.Token, opts.TokenFile)
 	if err != nil {
 		_ = listener.Close()
@@ -649,6 +659,40 @@ func resolveDaemonMutationToken(token, tokenFile string) (string, error) {
 		return daemonpkg.LoadMutationTokenFile(tokenFile)
 	}
 	return token, nil
+}
+
+// loadAgentOpsDaemonScheduleFile resolves the schedule file path (flag wins over
+// auto-detect at .agents/schedule.yaml), parses it, and saves each schedule
+// into the Store. Per amendment C9, malformed YAML is fail-closed: the daemon
+// refuses to start so operators see the error rather than silently running
+// with zero schedules. If neither the flag is set nor the default file exists,
+// schedule loading is skipped entirely (bit-identical pre-upgrade behavior).
+func loadAgentOpsDaemonScheduleFile(cwd, flagPath string, store *daemonpkg.Store) error {
+	schedulePath := flagPath
+	if schedulePath == "" {
+		autoPath := filepath.Join(cwd, ".agents", "schedule.yaml")
+		if _, err := os.Stat(autoPath); err == nil {
+			schedulePath = autoPath
+		}
+	}
+	if schedulePath == "" {
+		return nil
+	}
+	templates, err := schedule.Load(schedulePath)
+	if err != nil {
+		return fmt.Errorf("schedule load failed at %s: %w (daemon refuses to start with malformed schedule.yaml; fix the file or remove --schedule-file)", schedulePath, err)
+	}
+	for _, t := range templates {
+		if saveErr := store.SaveSchedule(t); saveErr != nil {
+			// Idempotent re-save: an existing schedule with the same name
+			// returns an "already exists" error from the store. Treat that
+			// as warn-and-continue rather than crash so daemon restarts that
+			// replay an existing ledger remain functional.
+			log.Printf("schedule %q: SaveSchedule warning: %v", t.Name, saveErr)
+		}
+	}
+	log.Printf("schedule-file: loaded %d schedule(s) from %s", len(templates), schedulePath)
+	return nil
 }
 
 func writeDaemonActivation(cwd string, activation agentopsDaemonActivation) error {

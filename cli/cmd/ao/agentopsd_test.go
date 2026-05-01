@@ -463,3 +463,179 @@ func TestLLMWikiHarvestAdapter_RequiresArgs(t *testing.T) {
 		t.Fatal("expected error when destDir empty")
 	}
 }
+
+// TestAgentopsdLoadsScheduleFileOnStart verifies that --schedule-file=<path>
+// causes the daemon to parse the file and persist its schedules into the
+// Store before serving. (soc-8inr.17, amendment B5)
+func TestAgentopsdLoadsScheduleFileOnStart(t *testing.T) {
+	cwd := t.TempDir()
+	schedulePath := filepath.Join(cwd, "custom-schedule.yaml")
+	if err := os.WriteFile(schedulePath, []byte("schedules:\n  - name: alpha\n    cron: \"*/5 * * * *\"\n    job_type: llmwiki.loop\n"), 0o600); err != nil {
+		t.Fatalf("write schedule file: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, _, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr:         "127.0.0.1:0",
+		ScheduleFile: schedulePath,
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
+	})
+
+	store := daemonpkg.NewStore(cwd)
+	schedules, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	if len(schedules) != 1 {
+		t.Fatalf("len(schedules) = %d, want 1 (got %#v)", len(schedules), schedules)
+	}
+	if schedules[0].Name != "alpha" {
+		t.Fatalf("schedules[0].Name = %q, want %q", schedules[0].Name, "alpha")
+	}
+	if schedules[0].JobType != daemonpkg.JobTypeLLMWikiLoop {
+		t.Fatalf("schedules[0].JobType = %q, want %q", schedules[0].JobType, daemonpkg.JobTypeLLMWikiLoop)
+	}
+}
+
+// TestAgentopsdNoScheduleFile_BehavesIdenticallyToPreUpgrade verifies that
+// when no --schedule-file flag is set AND no default .agents/schedule.yaml
+// exists, the daemon starts cleanly with zero schedules — bit-identical to
+// pre-upgrade behavior. (soc-8inr.17, binding test)
+func TestAgentopsdNoScheduleFile_BehavesIdenticallyToPreUpgrade(t *testing.T) {
+	cwd := t.TempDir()
+	// Sanity: ensure default file does NOT exist.
+	if _, err := os.Stat(filepath.Join(cwd, ".agents", "schedule.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("precondition: default schedule.yaml should not exist (err=%v)", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, activation, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr: "127.0.0.1:0",
+		// ScheduleFile intentionally empty.
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
+	})
+
+	if !activation.Ready || activation.URL == "" {
+		t.Fatalf("activation = %#v, want ready URL", activation)
+	}
+	store := daemonpkg.NewStore(cwd)
+	schedules, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	if len(schedules) != 0 {
+		t.Fatalf("len(schedules) = %d, want 0 (no-schedule-file path must not load anything)", len(schedules))
+	}
+}
+
+// TestAgentopsdMalformedScheduleFile_FailsClosed verifies that a malformed
+// schedule.yaml causes the daemon start function to return an error
+// (refuses to boot) rather than silently starting with zero schedules.
+// Amendment C9 requirement.
+func TestAgentopsdMalformedScheduleFile_FailsClosed(t *testing.T) {
+	cwd := t.TempDir()
+	schedulePath := filepath.Join(cwd, "malformed.yaml")
+	// `schedules: not-a-list` — strict decoder should reject this because
+	// the field is typed as a slice of structs.
+	if err := os.WriteFile(schedulePath, []byte("schedules: not-a-list\n"), 0o600); err != nil {
+		t.Fatalf("write malformed schedule file: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	server, listener, _, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr:         "127.0.0.1:0",
+		ScheduleFile: schedulePath,
+	})
+	if err == nil {
+		// Should not have returned a server.
+		if listener != nil {
+			_ = listener.Close()
+		}
+		if server != nil {
+			_ = server.Close()
+		}
+		t.Fatalf("expected start to fail-closed on malformed schedule.yaml, got nil error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, schedulePath) {
+		t.Fatalf("error message %q must contain schedule path %q", msg, schedulePath)
+	}
+	// Per amendment C9, the operator-facing message must mention "fix" or
+	// "malformed" so it's actionable.
+	if !strings.Contains(msg, "fix") && !strings.Contains(msg, "malformed") {
+		t.Fatalf("error message %q must mention 'fix' or 'malformed' (amendment C9)", msg)
+	}
+}
+
+// TestAgentopsdScheduleFileFlag_OverridesAutoDetect verifies that when both
+// .agents/schedule.yaml and a flag-supplied path exist, the flag wins.
+// (soc-8inr.17 precedence rule)
+func TestAgentopsdScheduleFileFlag_OverridesAutoDetect(t *testing.T) {
+	cwd := t.TempDir()
+	// File A: default location, schedule named "alpha"
+	defaultDir := filepath.Join(cwd, ".agents")
+	if err := os.MkdirAll(defaultDir, 0o755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(defaultDir, "schedule.yaml"), []byte("schedules:\n  - name: alpha\n    cron: \"*/5 * * * *\"\n    job_type: llmwiki.loop\n"), 0o600); err != nil {
+		t.Fatalf("write default schedule file: %v", err)
+	}
+	// File B: custom path, schedule named "beta"
+	customPath := filepath.Join(cwd, "custom.yaml")
+	if err := os.WriteFile(customPath, []byte("schedules:\n  - name: beta\n    cron: \"*/5 * * * *\"\n    job_type: llmwiki.loop\n"), 0o600); err != nil {
+		t.Fatalf("write custom schedule file: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, _, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr:         "127.0.0.1:0",
+		ScheduleFile: customPath, // flag wins
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
+	})
+
+	store := daemonpkg.NewStore(cwd)
+	schedules, err := store.ListSchedules()
+	if err != nil {
+		t.Fatalf("ListSchedules: %v", err)
+	}
+	if len(schedules) != 1 {
+		t.Fatalf("len(schedules) = %d, want 1; flag must win over auto-detect (got %#v)", len(schedules), schedules)
+	}
+	if schedules[0].Name != "beta" {
+		t.Fatalf("schedules[0].Name = %q, want %q (flag must win over auto-detect)", schedules[0].Name, "beta")
+	}
+}
