@@ -998,7 +998,7 @@
       "name": "swarm",
       "source_skill": "skills/swarm",
       "source_hash": "fe5abbc8873c805485273cc85d2d480c615f8f016fa14445f8c170bcfabd0fdf",
-      "generated_hash": "4fd225cede8e180f923ab8e94df916535ee4e8549519b39bfb7beb505889a282"
+      "generated_hash": "e83ae85d680b8cdc76438ead03a1829c4f7ad0bcade939c4a3a6daead2a2b59a"
     },
     {
       "name": "test",

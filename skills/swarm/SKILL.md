@@ -320,6 +320,8 @@ When a worker discovers work outside their assigned scope, they MUST NOT modify 
 {"worker": "<worker-id>", "finding": "<description>", "suggested_files": ["path/to/file"], "timestamp": "<ISO8601>"}
 ```
 
+For richer scope-escape narration (status classification, concrete next step, evidence), see [references/scope-escape-template.md](references/scope-escape-template.md). Use the template when a single-line JSONL entry is insufficient for the operator to act on.
+
 The lead reviews scope escapes after each wave and creates follow-up tasks as needed.
 
 ## Key Points
@@ -772,4 +774,5 @@ Solution: Check which spawn backend was selected (look for "Using: <backend>" me
 - [../shared/references/backend-inline.md](../shared/references/backend-inline.md)
 - [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
+- [references/scope-escape-template.md](references/scope-escape-template.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)
