@@ -336,7 +336,8 @@ func TestWarnTrackedFilesNoError(t *testing.T) {
 
 // setupScheduleTest prepares a tmp repo with the schedule example file and
 // returns the cwd. Tests t.Chdir into it and expect no .agents/schedule.yaml
-// to exist initially.
+// to exist initially. Registers t.Cleanup to reset package-level init flags
+// so prompt state does NOT leak into subsequent tests.
 func setupScheduleTest(t *testing.T, withExample bool) string {
 	t.Helper()
 	tmp := t.TempDir()
@@ -355,6 +356,14 @@ func setupScheduleTest(t *testing.T, withExample bool) string {
 	t.Chdir(tmp)
 	dryRun = false
 	resetInitFlags()
+	// Pre-register cleanup so package-level flag state never leaks even if
+	// the test body sets initWithSchedule=true partway through. Also pipe a
+	// "n" response into cmd.InOrStdin() so the prompt — if triggered by some
+	// later test path that doesn't override stdin — doesn't hang on TTY input.
+	t.Cleanup(func() {
+		resetInitFlags()
+		initCmd.SetIn(nil)
+	})
 	return tmp
 }
 

@@ -131,6 +131,12 @@ func shouldCopySchedule(cmd *cobra.Command, flagSet bool) (bool, bool) {
 	if os.Getenv("AGENTOPS_INIT_WITH_SCHEDULE") == "1" {
 		return true, false
 	}
+	// Detect `go test` binary by name suffix — skip prompt to avoid blocking
+	// on stdin in test processes (where stdin may still be a TTY but tests
+	// don't expect interactive prompts).
+	if len(os.Args) > 0 && strings.HasSuffix(os.Args[0], ".test") {
+		return false, false
+	}
 	if !isStdinTerminal() {
 		// Silent skip in non-TTY runs unless the env var opts in.
 		return false, false
