@@ -140,6 +140,14 @@ type CancelJobResult struct {
 	Outcome CancelJobOutcome `json:"outcome"`
 }
 
+// NewQueue constructs a Queue bound to store with the given options.
+//
+// HTTP handlers must call NewQueue per request rather than reusing a shared
+// instance: the returned Queue carries an in-memory sequence counter
+// initialized from the durable store, and opts may be request-scoped (Now,
+// failpoints, actor). The store itself is shared and concurrency-safe; the
+// Queue wrapper is the per-request boundary. See cli/internal/daemon/server.go
+// handlers for the canonical pattern.
 func NewQueue(store *Store, opts QueueOptions) *Queue {
 	if opts.LeaseDuration <= 0 {
 		opts.LeaseDuration = time.Minute
