@@ -300,30 +300,7 @@ func ingestPendingFilesToPool(cwd string, files []string) (poolIngestResult, err
 		fileDate, sessionHint := parsePendingFileHeader(string(data), f)
 		blocks := parseLearningBlocks(string(data))
 		res.CandidatesFound += len(blocks)
-		hadError := false
-		for _, b := range blocks {
-			cand, scoring, ok := buildCandidateFromLearningBlock(b, f, fileDate, sessionHint)
-			if !ok {
-				res.SkippedMalformed++
-				continue
-			}
-			if _, gerr := p.Get(cand.ID); gerr == nil {
-				res.SkippedExisting++
-				continue
-			}
-			if GetDryRun() {
-				res.Added++
-				res.AddedIDs = append(res.AddedIDs, cand.ID)
-				continue
-			}
-			if err := p.AddAt(cand, scoring, cand.ExtractedAt); err != nil {
-				res.Errors++
-				hadError = true
-				continue
-			}
-			res.Added++
-			res.AddedIDs = append(res.AddedIDs, cand.ID)
-		}
+		hadError := ingestFileBlocks(p, blocks, f, fileDate, sessionHint, &res)
 		if !hadError && !GetDryRun() {
 			processedFiles = append(processedFiles, f)
 		}
