@@ -14,6 +14,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/agentworker"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/gascity"
+	"github.com/boshu2/agentops/cli/internal/llmwiki"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
 	"github.com/spf13/cobra"
@@ -305,6 +306,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	if policy == "" {
 		policy = "fake"
 	}
+	llmwikiExecutor := buildAgentOpsDaemonLLMWikiExecutor()
 	var executors []daemonpkg.JobExecutor
 	switch policy {
 	case "fake":
@@ -320,7 +322,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor}
+		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
 	case "gascity":
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
@@ -334,13 +336,13 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor, rpiExecutor}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
 	case "cli-fallback":
 		wikiExecutor, err := buildAgentOpsDaemonCLIFallbackWikiExecutor(cwd, opts)
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, llmwikiExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
@@ -356,6 +358,21 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		HeartbeatInterval: opts.HeartbeatInterval,
 		ExecutionTimeout:  opts.WorkerTimeout,
 	})
+}
+
+// buildAgentOpsDaemonLLMWikiExecutor wires the Karpathy llmwiki loop executor
+// with its four stage handlers. The PROMOTE stage's HarvestPromoter is the
+// adapter in llmwiki_adapter.go that bridges to the harvest package's
+// catalog-based API. Registered under all three policies (fake/gascity/cli-fallback)
+// because the stages are deterministic and policy-agnostic — actual LLM
+// extraction is stubbed inside the stage handlers and lands in a follow-up.
+func buildAgentOpsDaemonLLMWikiExecutor() daemonpkg.JobExecutor {
+	return &llmwiki.LLMWikiLoopExecutor{
+		Ingest:  &llmwiki.IngestStage{},
+		Query:   &llmwiki.QueryStage{},
+		Lint:    &llmwiki.LintStage{},
+		Promote: &llmwiki.PromoteStage{Harvest: llmwikiHarvestAdapter{}},
+	}
 }
 
 func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, error) {

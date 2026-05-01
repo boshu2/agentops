@@ -363,3 +363,103 @@ func (w *recordingWikiForgeWorker) RunExtractionWithRetry(_ context.Context, req
 		Terminal: agentworker.TerminalState{Status: agentworker.StatusCompleted},
 	}, nil
 }
+
+// TestAgentopsdRegistersLLMWikiLoopExecutor verifies that the daemon's
+// supervisor registers an executor for JobTypeLLMWikiLoop under each policy.
+// The executors map is unexported, so we assert via behavior: submit an
+// llmwiki.loop job, run RunOnce, and confirm the supervisor claimed and
+// executed it (rather than returning ErrNoClaimableJobs).
+func TestAgentopsdRegistersLLMWikiLoopExecutor(t *testing.T) {
+	cases := []struct {
+		name   string
+		policy string
+		opts   agentopsDaemonRunOptions
+	}{
+		{name: "fake", policy: "fake"},
+		{
+			name:   "gascity",
+			policy: "gascity",
+			opts: agentopsDaemonRunOptions{
+				GasCityEndpoint: "http://127.0.0.1:0",
+				GasCityCity:     "test-city",
+			},
+		},
+		{name: "cli-fallback", policy: "cli-fallback"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cwd := t.TempDir()
+			vault := filepath.Join(cwd, "vault")
+			if err := os.MkdirAll(vault, 0o755); err != nil {
+				t.Fatalf("mkdir vault: %v", err)
+			}
+			queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+			if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+				RequestID: "req-llmwiki",
+				JobID:     "job-llmwiki",
+				JobType:   daemonpkg.JobTypeLLMWikiLoop,
+				Payload: map[string]any{
+					"vault":  vault,
+					"stages": []string{"lint"},
+				},
+			}, daemonpkg.QueueMutationOptions{}); err != nil {
+				t.Fatalf("submit llmwiki job: %v", err)
+			}
+
+			opts := tc.opts
+			opts.ExecutorPolicy = tc.policy
+			supervisor, err := buildAgentOpsDaemonSupervisor(cwd, opts)
+			if err != nil {
+				t.Fatalf("build supervisor (%s): %v", tc.policy, err)
+			}
+			result, err := supervisor.RunOnce(context.Background())
+			if err != nil {
+				t.Fatalf("run once (%s): %v", tc.policy, err)
+			}
+			if !result.Claimed {
+				t.Fatalf("supervisor did not claim llmwiki.loop job under policy %s", tc.policy)
+			}
+			if result.Job.JobType != daemonpkg.JobTypeLLMWikiLoop {
+				t.Fatalf("claimed job type = %s, want %s", result.Job.JobType, daemonpkg.JobTypeLLMWikiLoop)
+			}
+			if result.Job.Status != daemonpkg.JobStatusCompleted {
+				t.Fatalf("llmwiki.loop status = %s, want completed (artifacts=%v)", result.Job.Status, result.Job.Artifacts)
+			}
+			if got := result.Job.Artifacts["stage"]; got != "lint" {
+				t.Fatalf("stage artifact = %q, want lint", got)
+			}
+		})
+	}
+}
+
+// TestLLMWikiHarvestAdapter_PromoteDryRun is an L1 sanity check on the
+// adapter that bridges PromoteStage to harvest.Promote. With dry-run set
+// and no source artifacts, the adapter must succeed without writing to
+// destDir.
+func TestLLMWikiHarvestAdapter_PromoteDryRun(t *testing.T) {
+	src := t.TempDir()
+	dst := t.TempDir()
+	count, err := llmwikiHarvestAdapter{}.Promote(src, dst, true)
+	if err != nil {
+		t.Fatalf("adapter promote dry-run: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("dry-run promoted count = %d, want 0", count)
+	}
+	entries, err := os.ReadDir(dst)
+	if err != nil {
+		t.Fatalf("read dst: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("dry-run wrote %d entries to destDir, want 0", len(entries))
+	}
+}
+
+func TestLLMWikiHarvestAdapter_RequiresArgs(t *testing.T) {
+	if _, err := (llmwikiHarvestAdapter{}).Promote("", "/tmp/x", true); err == nil {
+		t.Fatal("expected error when sourceDir empty")
+	}
+	if _, err := (llmwikiHarvestAdapter{}).Promote("/tmp/x", "", true); err == nil {
+		t.Fatal("expected error when destDir empty")
+	}
+}
