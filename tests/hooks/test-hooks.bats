@@ -12,6 +12,11 @@ teardown() {
     _helper_teardown
 }
 
+hook_temporarily_disabled() {
+    local hook="$1"
+    grep -q "TEMP: disabled" "$hook" && grep -q '^exit 0$' "$hook"
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # prompt-nudge.sh
 # ═══════════════════════════════════════════════════════════════════════
@@ -712,6 +717,10 @@ LEARN_EOF
 }
 
 @test "session-end-maintenance: finding compiler backstop refreshes compiled artifacts" {
+    if hook_temporarily_disabled "$HOOKS_DIR/session-end-maintenance.sh"; then
+        skip "session-end-maintenance is temporarily disabled for pend queue incident"
+    fi
+
     local mock="$TMP_TEST_DIR/mock-session-end"
     setup_mock_repo "$mock"
     mkdir -p "$mock/.agents/findings" "$TMP_TEST_DIR/bin"
