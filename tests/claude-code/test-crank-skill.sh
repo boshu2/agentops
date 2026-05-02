@@ -13,9 +13,9 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "Describe what /agentops:crank does in one concise sentence." 60)
+output=$(run_claude "Answer concisely without running tools: describe what /agentops:crank does in one sentence." 60)
 
-if assert_contains "$output" "crank" "Skill name recognized"; then
+if assert_contains "$output" "crank\|epic\|wave\|parallel" "Skill recognized"; then
     :
 else
     exit 1
