@@ -59,6 +59,8 @@ _site/
 # Local temp artifacts (generated during skill self-tests / hooks)
 .tmp/
 skills/.tmp/
+.x/
+cli/.x/
 hook-output.txt
 skills/vibe/README.md
 
