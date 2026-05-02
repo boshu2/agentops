@@ -51,6 +51,7 @@ bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
 bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automatic)
+bd dolt push          # Only if a real Dolt remote is configured
 
 # CLI development
 cd cli && make build  # Build ao binary
@@ -288,10 +289,13 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **PUSH TO REMOTE** - Git push is mandatory; bd push is conditional:
    ```bash
    git pull --rebase
-   bd vc status  # Optional visibility check; bd auto-sync handles JSONL import/export
+   bd vc status
+   bd dolt commit -m "tracker: <summary>"  # if tracker changes are pending
+   bd dolt remote list
+   bd dolt push  # only if a real Dolt remote is configured
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -305,6 +309,9 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 - NEVER leave a foreign branch-attached worktree without a recorded disposition
+- If `bd dolt push` says no remote is configured, do not treat that as a
+  session failure. Record it as unavailable, then continue with the mandatory
+  Git push. See [bd server-mode tracker closeout](docs/runbooks/bd-server-mode-closeout.md).
 
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)
