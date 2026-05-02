@@ -275,7 +275,7 @@ func renderInjectOutput(cwd string, opts *search.InjectOptions, knowledge *injec
 		return output, nil
 	}
 
-	profilePath := filepath.Join(cwd, ".agents", "profile.md")
+	profilePath := filepath.Join(agentsDirIn(cwd), "profile.md")
 	if data, readErr := os.ReadFile(profilePath); readErr == nil {
 		output = "## Identity\n\n" + string(data) + "\n\n" + output
 	}

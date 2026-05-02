@@ -17,14 +17,48 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Default directories to index under .agents/
-var defaultIndexDirs = []string{
-	".agents/learnings",
-	".agents/findings",
-	".agents/research",
-	".agents/plans",
-	".agents/retro",
-	".agents/patterns",
+// defaultIndexSubdirs are the subdirectories under .agents/ that the index
+// command rebuilds. Each entry is joined with the resolved agents-dir at
+// runtime by buildDefaultIndexDirs() so the index honors AO_AGENTS_DIR /
+// AO_HOME (lib/ao-paths.sh + cli/internal/paths from soc-irg1.1).
+var defaultIndexSubdirs = []string{
+	"learnings",
+	"findings",
+	"research",
+	"plans",
+	"retro",
+	"patterns",
+}
+
+// defaultIndexDirs is the legacy ".agents/<sub>" prefixed list, retained as
+// a back-compat alias for tests and any external caller that constructed
+// fixture directories from this slice. New code should call
+// buildDefaultIndexDirs(cwd) so AO_AGENTS_DIR overrides work end-to-end.
+var defaultIndexDirs = func() []string {
+	out := make([]string, len(defaultIndexSubdirs))
+	for i, sub := range defaultIndexSubdirs {
+		out[i] = filepath.Join(".agents", sub)
+	}
+	return out
+}()
+
+// buildDefaultIndexDirs returns the list of full directory paths to index,
+// resolved relative to the AgentsDir for the given cwd. The returned paths
+// remain relative when no env override is in effect (".agents/learnings" etc.)
+// to preserve display strings on stdout/JSON output unchanged.
+func buildDefaultIndexDirs(cwd string) []string {
+	agentsDir := agentsDirIn(cwd)
+	rel, err := filepath.Rel(cwd, agentsDir)
+	// When the resolved AgentsDir is outside cwd (or rel resolution fails),
+	// fall back to absolute paths so the indexer still finds the directory.
+	if err != nil || strings.HasPrefix(rel, "..") {
+		rel = agentsDir
+	}
+	dirs := make([]string, len(defaultIndexSubdirs))
+	for i, sub := range defaultIndexSubdirs {
+		dirs[i] = filepath.Join(rel, sub)
+	}
+	return dirs
 }
 
 var dateFromFilenameRe = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})`)
@@ -131,7 +165,7 @@ func runIndex(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	dirs := defaultIndexDirs
+	dirs := buildDefaultIndexDirs(cwd)
 	if dirFlag != "" {
 		dirs = []string{dirFlag}
 	}

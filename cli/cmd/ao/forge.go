@@ -224,7 +224,7 @@ func resolveForgeReviewSessionsDir(cmd *cobra.Command, cwd string) (string, erro
 		return "", err
 	}
 	if strings.TrimSpace(sessionsDir) == "" {
-		sessionsDir = filepath.Join(cwd, ".agents", "ao", "sessions")
+		sessionsDir = filepath.Join(agentsDirIn(cwd), "ao", "sessions")
 	}
 	if filepath.IsAbs(sessionsDir) {
 		return filepath.Clean(sessionsDir), nil
@@ -1022,7 +1022,7 @@ func runForgeTier1(w io.Writer, files []string) error {
 		fmt.Fprintln(w, forgeLegacyLocalLLMDeprecationWarning)
 	}
 	cwd, _ := os.Getwd()
-	outDir := filepath.Join(cwd, ".agents", "wiki", "sources")
+	outDir := filepath.Join(agentsDirIn(cwd), "wiki", "sources")
 	_, err := llm.RunForgeTier1(llm.Tier1Options{
 		SourcePaths:    files,
 		OutputDir:      outDir,

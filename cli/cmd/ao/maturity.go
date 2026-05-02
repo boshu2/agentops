@@ -11,9 +11,35 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
+
+// agentsDirIn returns the AgentsDir resolved relative to the given base
+// directory, honoring AO_AGENTS_DIR / AO_HOME env overrides (the same
+// precedence implemented by lib/ao-paths.sh and cli/internal/paths from
+// soc-irg1.1). When neither env is set, the result is the legacy
+// filepath.Join(base, ".agents") — preserving prior call-site behavior.
+//
+// Why a base-aware shim instead of paths.Resolve(): callers already know
+// the *root* (cwd or $HOME for --global), so they want
+// $base/.agents semantics rather than the paths package's repo-root
+// auto-detect. Honoring the env vars threads the same overrides through.
+func agentsDirIn(base string) string {
+	if v := strings.TrimSpace(os.Getenv("AO_AGENTS_DIR")); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(os.Getenv("AO_HOME")); v != "" {
+		return v
+	}
+	return filepath.Join(base, ".agents")
+}
+
+// Compile-time guard: the cli/internal/paths package is the canonical Go
+// resolver. Importing it ensures the migration's paths-package dependency
+// stays linked even if direct call sites are later refactored away.
+var _ = paths.Resolve
 
 var (
 	maturityApply       bool
@@ -114,8 +140,9 @@ func runMaturity(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	learningsDir := filepath.Join(cwd, ".agents", "learnings")
-	patternsDir := filepath.Join(cwd, ".agents", "patterns")
+	agentsDir := agentsDirIn(cwd)
+	learningsDir := filepath.Join(agentsDir, "learnings")
+	patternsDir := filepath.Join(agentsDir, "patterns")
 
 	if !dirExists(learningsDir) && !dirExists(patternsDir) {
 		fmt.Println("No learnings or patterns directory found.")
@@ -440,7 +467,7 @@ func runMaturityExpire(cmd *cobra.Command) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	learningsDir := filepath.Join(cwd, ".agents", "learnings")
+	learningsDir := filepath.Join(agentsDirIn(cwd), "learnings")
 	if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
 		fmt.Println("No learnings directory found.")
 		return nil
@@ -499,7 +526,7 @@ func classifyExpiryEntry(entry os.DirEntry, learningsDir string, cats *expiryCat
 
 // archiveExpiredLearnings moves newly expired learnings to the archive directory.
 func archiveExpiredLearnings(cwd, learningsDir string, expired []string) error {
-	archiveDir := filepath.Join(cwd, ".agents", "archive", "learnings")
+	archiveDir := filepath.Join(agentsDirIn(cwd), "archive", "learnings")
 
 	if GetDryRun() {
 		fmt.Println()
@@ -551,13 +578,13 @@ type curationCandidate struct {
 
 func resolveMaturityRoot(cwd string) (string, string, error) {
 	if !maturityGlobal {
-		return cwd, filepath.Join(cwd, ".agents", "learnings"), nil
+		return cwd, filepath.Join(agentsDirIn(cwd), "learnings"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", "", fmt.Errorf("resolve home directory: %w", err)
 	}
-	return home, filepath.Join(home, ".agents", "learnings"), nil
+	return home, filepath.Join(agentsDirIn(home), "learnings"), nil
 }
 
 // buildCitationMap returns a map of canonical artifact path to latest cited_at.
@@ -748,7 +775,7 @@ func reportCurationCandidates(files []string, normalized int, candidates []curat
 }
 
 func archiveCurationCandidates(baseDir string, candidates []curationCandidate) error {
-	archiveDir := filepath.Join(baseDir, ".agents", "archive", "learnings")
+	archiveDir := filepath.Join(agentsDirIn(baseDir), "archive", "learnings")
 	if GetDryRun() {
 		fmt.Println()
 		for _, c := range candidates {
@@ -781,7 +808,7 @@ func runMaturityEvict(cmd *cobra.Command) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	learningsDir := filepath.Join(cwd, ".agents", "learnings")
+	learningsDir := filepath.Join(agentsDirIn(cwd), "learnings")
 	if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
 		fmt.Println("No learnings directory found.")
 		return nil
@@ -1032,7 +1059,7 @@ func reportEvictionCandidates(files []string, candidates []evictionCandidate) (b
 }
 
 func archiveEvictionCandidates(cwd string, candidates []evictionCandidate) error {
-	archiveDir := filepath.Join(cwd, ".agents", "archive", "learnings")
+	archiveDir := filepath.Join(agentsDirIn(cwd), "archive", "learnings")
 
 	if GetDryRun() {
 		fmt.Println()
@@ -1096,7 +1123,7 @@ func runAntiPatterns(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	learningsDir := filepath.Join(cwd, ".agents", "learnings")
+	learningsDir := filepath.Join(agentsDirIn(cwd), "learnings")
 	if _, err := os.Stat(learningsDir); os.IsNotExist(err) {
 		if GetOutput() == "json" {
 			fmt.Println("[]")
