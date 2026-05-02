@@ -15,12 +15,18 @@ FAIL=0
 pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
 fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
 
-# 1. Working tree clean
-if [ -z "$(git status --porcelain)" ]; then
-    pass "git working tree clean"
+# 1. Working tree clean — IGNORE tool-auto-mutated paths
+# .agents/ao/last-processed mutates whenever any ao command runs
+# .agents/findings/registry.jsonl mutates on bd ready / ao lookup
+# .agents/ao/citations.jsonl mutates on ao metrics cite
+DIRTY="$(git status --porcelain | \
+    grep -vE '\.agents/ao/last-processed|\.agents/findings/registry\.jsonl|\.agents/ao/citations\.jsonl' \
+    || true)"
+if [ -z "$DIRTY" ]; then
+    pass "git working tree clean (ignoring tool-auto-mutated paths)"
 else
     fail "git working tree dirty (stash or commit before launch)"
-    git status --short | head -5
+    printf '%s\n' "$DIRTY" | head -5
 fi
 
 # 2. ao on PATH + responds
