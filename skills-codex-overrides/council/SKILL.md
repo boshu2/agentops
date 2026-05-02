@@ -12,7 +12,7 @@ This override captures the Codex-native execution model for council-style judgin
 - `--quick`: inline review, no sub-agents
 - default: 2 judges via `spawn_agent(...)`
 - `--deep`: 3 judges via `spawn_agent(...)`
-- `--mixed`: 3 runtime-native judges via `spawn_agent(...)` plus 3 Codex CLI judges via `codex exec`
+- `--mixed`: spawn N runtime-native judges via `spawn_agent(...)` AND N Codex CLI judges via `codex exec`, paired per perspective so the same perspective runs once on each vendor (default N=3 → 6 judges; scales to 2N when a preset has N != 3 perspectives). Same prompt, same packet, same persona — only the vendor differs.
 
 `--mixed` is a strict cross-vendor contract. If `codex` is missing, `codex --version` fails, or a requested `COUNCIL_CODEX_MODEL` cannot run, stop before spawning any judges and tell the operator to install/fix Codex CLI or drop `--mixed`. Never silently convert `--mixed` into runtime-native-only judging.
 
