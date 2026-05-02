@@ -175,8 +175,16 @@ func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim Queu
 		return r.failWikiForgeJob(claim, JobFailure{Code: FailureRequestRejected, Message: err.Error()}), err
 	}
 
-	refs := make([]WikiWorkerSessionRef, 0, len(spec.SourcePaths))
-	for _, sourcePath := range spec.SourcePaths {
+	expandedSources, err := expandWikiForgeSourcePaths(spec.SourcePaths)
+	if err != nil {
+		return r.failWikiForgeJob(claim, JobFailure{
+			Code:      "source_read_failed",
+			Message:   err.Error(),
+			Retryable: false,
+		}), nil
+	}
+	refs := make([]WikiWorkerSessionRef, 0, len(expandedSources))
+	for _, sourcePath := range expandedSources {
 		promptCtx, err := newWikiForgePromptContext(claim, spec, sourcePath)
 		if err != nil {
 			return r.failWikiForgeJob(claim, JobFailure{
@@ -267,6 +275,38 @@ type wikiForgePromptContext struct {
 	SourceText string
 	Truncated  bool
 	DreamRunID string
+}
+
+// expandWikiForgeSourcePaths flattens directory entries in spec.SourcePaths
+// into the regular files they contain. Top-level only — nested subdirectories
+// are skipped (operators who want recursion can list specific subdirs). Stable
+// alphabetical order so re-runs are deterministic. Files in spec.SourcePaths
+// pass through unchanged. Returns an error only when stat fails on a listed
+// path; an empty (zero-file) directory expansion is allowed and produces no
+// entries for that source.
+func expandWikiForgeSourcePaths(paths []string) ([]string, error) {
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			return nil, fmt.Errorf("stat wiki forge source %q: %w", p, err)
+		}
+		if !info.IsDir() {
+			out = append(out, p)
+			continue
+		}
+		entries, err := os.ReadDir(p)
+		if err != nil {
+			return nil, fmt.Errorf("read wiki forge source dir %q: %w", p, err)
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			out = append(out, filepath.Join(p, e.Name()))
+		}
+	}
+	return out, nil
 }
 
 func newWikiForgePromptContext(claim QueueClaim, spec WikiForgeJobSpec, sourcePath string) (wikiForgePromptContext, error) {

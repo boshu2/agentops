@@ -64,6 +64,48 @@ func TestWikiForgeExecutorCompletesJobWithAgentWorkerSessionRefs(t *testing.T) {
 	}
 }
 
+// TestWikiForgeExecutor_ExpandsDirectorySourcePaths verifies that listing a
+// directory in source_paths walks its top-level files. Starter schedules
+// commonly point at .agents/sessions/ rather than enumerating each transcript
+// by hand; the executor must expand the directory before reading.
+func TestWikiForgeExecutor_ExpandsDirectorySourcePaths(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	srcDir := t.TempDir()
+	for _, name := range []string{"a.jsonl", "b.jsonl"} {
+		if err := os.WriteFile(filepath.Join(srcDir, name), []byte("decision: noop\n"), 0o644); err != nil {
+			t.Fatalf("write source %s: %v", name, err)
+		}
+	}
+	spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{srcDir})
+	spec.Provider = agentworker.Provider("fake")
+	jobSpec, err := spec.ToJobSpec("job-wiki-dir")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	if _, err := queue.SubmitJob(SubmitJobInput{
+		RequestID: "req-wiki-dir",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor, err := NewWikiForgeExecutor(WikiForgeExecutorOptions{Store: store, Worker: successfulWikiForgeWorker{}})
+	if err != nil {
+		t.Fatalf("NewWikiForgeExecutor: %v", err)
+	}
+	supervisor := newTestSupervisor(t, queue, executor)
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("RunOnce: %v", err)
+	}
+	if result.Job.Status != JobStatusCompleted {
+		t.Fatalf("job status = %q, want completed (failure: %+v)", result.Job.Status, result.Job.Failure)
+	}
+}
+
 func TestWikiForgeExecutorInvalidOutputFailsWithQuarantineArtifact(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())

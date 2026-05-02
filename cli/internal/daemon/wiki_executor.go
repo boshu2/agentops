@@ -47,8 +47,12 @@ func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobEx
 	if err != nil {
 		return JobExecutionResult{}, err
 	}
-	refs := make([]WikiWorkerSessionRef, 0, len(spec.SourcePaths))
-	for _, sourcePath := range spec.SourcePaths {
+	expandedSources, err := expandWikiForgeSourcePaths(spec.SourcePaths)
+	if err != nil {
+		return JobExecutionResult{}, err
+	}
+	refs := make([]WikiWorkerSessionRef, 0, len(expandedSources))
+	for _, sourcePath := range expandedSources {
 		promptCtx, err := newWikiForgePromptContext(claim, spec, sourcePath)
 		if err != nil {
 			return JobExecutionResult{}, err
