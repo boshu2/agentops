@@ -45,7 +45,7 @@ echo ""
 # Test 3: Verify output artifacts
 echo "Test 3: Output artifacts..."
 
-output=$(run_claude "Answer concisely without running tools: where does /agentops:research write its output?" 60)
+output=$(run_claude "Answer concisely without running tools or invoking any skill: for the AgentOps research skill, what output directory path does it use?" 60)
 
 if assert_contains "$output" ".agents\|research" "Mentions .agents/research directory"; then
     : # pass
