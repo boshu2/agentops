@@ -128,7 +128,7 @@ if [[ "$(cd "$(dirname "$schema_source")" && pwd)/$(basename "$schema_source")" 
   cp "$schema_source" "$schema_target"
 fi
 
-ROOT="$TARGET_ROOT"
+export ROOT="$TARGET_ROOT"
 source "$WORKSPACE_ROOT/lib/hook-helpers.sh"
 
 run_git_target() {
