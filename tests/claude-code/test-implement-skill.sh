@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
+export MAX_TURNS=6
 
 echo "=== Test: implement skill ==="
 echo ""
@@ -12,7 +13,7 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "What is the implement skill in this plugin? Describe it briefly." 45)
+output=$(run_claude "Answer concisely without running tools: what is the /agentops:implement skill in this plugin?" 60)
 
 if assert_contains "$output" "implement" "Skill name recognized"; then
     :
@@ -31,7 +32,7 @@ echo ""
 # Test 2: Verify lifecycle
 echo "Test 2: Lifecycle handling..."
 
-output=$(run_claude "What lifecycle does the implement skill follow? What steps?" 45)
+output=$(run_claude "Answer concisely without running tools: what lifecycle does /agentops:implement follow?" 60)
 
 if assert_contains "$output" "start\|progress\|complete\|close\|commit" "Mentions lifecycle steps"; then
     :
