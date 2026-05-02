@@ -965,6 +965,12 @@
       "generated_hash": "1736927301013e0f0aa5492ac60c2b909caee1a7ec232752998d85f1c9767de5"
     },
     {
+      "name": "scope",
+      "source_skill": "skills/scope",
+      "source_hash": "a0119b7e546bb87bcc44d00821e37b646ef4fc7d97fdecb374ae1284cf37637a",
+      "generated_hash": "c5a697842e2416367e0106cfe2b737a4540b3fa72108ec671979632016507e11"
+    },
+    {
       "name": "security",
       "source_skill": "skills/security",
       "source_hash": "417bf5eede34edc7c78d736d72268e96fb0f0a27fb6064977c8f89398ce76f95",
