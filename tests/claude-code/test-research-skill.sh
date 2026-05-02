@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
+export MAX_TURNS=6
 
 echo "=== Test: research skill ==="
 echo ""
@@ -12,7 +13,7 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "What is the research skill in this plugin? Describe it briefly." 45)
+output=$(run_claude "Answer concisely without running tools: what is the /agentops:research skill in this plugin?" 60)
 
 if assert_contains "$output" "research" "Skill name recognized"; then
     : # pass
@@ -31,7 +32,7 @@ echo ""
 # Test 2: Verify skill mentions Explore agents
 echo "Test 2: Explore agent dispatch..."
 
-output=$(run_claude "Does the research skill use Explore agents? How does it work?" 45)
+output=$(run_claude "Answer concisely without running tools: does /agentops:research use Explore agents, and how?" 60)
 
 if assert_contains "$output" "explore\|agent\|dispatch\|task" "Mentions agent dispatch"; then
     : # pass
@@ -44,7 +45,7 @@ echo ""
 # Test 3: Verify output artifacts
 echo "Test 3: Output artifacts..."
 
-output=$(run_claude "Where does the research skill write its output? What directory?" 45)
+output=$(run_claude "Answer concisely without running tools: where does /agentops:research write its output?" 60)
 
 if assert_contains "$output" ".agents\|research" "Mentions .agents/research directory"; then
     : # pass
