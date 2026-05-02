@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -664,12 +663,12 @@ func acquireManifestLock(manifestPath string) (func(), error) {
 	if err != nil {
 		return nil, fmt.Errorf("manifest.lock open %s: %w", lockPath, err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+	if err := flockLock(f); err != nil {
 		_ = f.Close()
 		return nil, fmt.Errorf("manifest.lock flock %s: %w", lockPath, err)
 	}
 	unlock := func() {
-		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		_ = flockUnlock(f)
 		_ = f.Close()
 	}
 	return unlock, nil
