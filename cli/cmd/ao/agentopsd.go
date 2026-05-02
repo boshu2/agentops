@@ -73,6 +73,14 @@ type agentopsDaemonRunOptions struct {
 	// executor against a real bd source. Nil disables the plans executor —
 	// production callers pass NewDbBdSource(dsn); tests pass an in-memory fake.
 	PlansBdSource daemonpkg.PlansBdSource
+	// RecurrenceClock (optional) overrides the cron supervisor's clock. nil
+	// → RealClock in production; tests inject a FakeClock to drive ticks
+	// deterministically (soc-63n0).
+	RecurrenceClock daemonpkg.Clock
+	// RecurrencePollInterval (optional) overrides the cron supervisor's poll
+	// cadence. nil/0 → 1 minute default. Tests use a small value to advance
+	// schedule firing within a single test run.
+	RecurrencePollInterval time.Duration
 }
 
 var daemonCmd = &cobra.Command{
@@ -244,6 +252,13 @@ func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 	go func() {
 		errCh <- server.Serve(listener)
 	}()
+	// Cron supervisor: runs regardless of Workers setting because schedule
+	// firing is independent of job execution — it appends schedule.fired
+	// events and submits jobs into the queue, which workers (if present)
+	// consume. Without this goroutine the daemon emits schedule.created on
+	// load and then never fires anything (soc-63n0 — RecurrenceSupervisor
+	// was implemented but unwired in the daemon-run path).
+	startAgentOpsDaemonRecurrence(ctx, cwd, opts)
 	if opts.Workers > 0 {
 		return serveAgentOpsDaemonWithWorkers(ctx, cwd, opts, server, errCh)
 	}
@@ -261,6 +276,36 @@ func serveAgentOpsDaemonWithWorkers(ctx context.Context, cwd string, opts agento
 		return serveAgentOpsDaemonWorkersOnce(ctx, supervisor, opts.Workers, server, errCh)
 	}
 	return serveAgentOpsDaemonWorkerLoops(ctx, supervisor, opts.Workers, server, errCh)
+}
+
+// startAgentOpsDaemonRecurrence builds a RecurrenceSupervisor over the
+// daemon's store + queue and runs Start(ctx) in a goroutine. The supervisor
+// shares persistence with the worker pool via O_APPEND atomicity (each
+// NewQueue/NewStore is cheap and lightweight; the daemon already follows
+// this pattern in NewSupervisor and the HTTP handlers). Returns the
+// supervisor for tests that want to assert wiring; production callers
+// ignore the return.
+func startAgentOpsDaemonRecurrence(ctx context.Context, cwd string, opts agentopsDaemonRunOptions) *daemonpkg.RecurrenceSupervisor {
+	store := daemonpkg.NewStore(cwd)
+	queueOpts := daemonpkg.QueueOptions{}
+	if opts.Now != nil {
+		queueOpts.Now = opts.Now
+	}
+	queue := daemonpkg.NewQueue(store, queueOpts)
+	clock := opts.RecurrenceClock
+	if clock == nil {
+		clock = daemonpkg.RealClock{}
+	}
+	sup := daemonpkg.NewRecurrenceSupervisor(store, queue, clock)
+	if opts.RecurrencePollInterval > 0 {
+		sup.WithPollInterval(opts.RecurrencePollInterval)
+	}
+	go func() {
+		if err := sup.Start(ctx); err != nil {
+			log.Printf("[recurrence] supervisor exited: %v", err)
+		}
+	}()
+	return sup
 }
 
 func serveAgentOpsDaemonWorkersOnce(ctx context.Context, supervisor *daemonpkg.Supervisor, workers int, server *http.Server, errCh <-chan error) error {

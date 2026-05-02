@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/spf13/cobra"
@@ -201,6 +202,93 @@ func TestSchedule_AuthRequiredOnAdd(t *testing.T) {
 	if !strings.Contains(err.Error(), "add schedule") {
 		t.Fatalf("error missing context: %v", err)
 	}
+}
+
+// boundaryClock is a minimal daemonpkg.Clock fake used by the recurrence
+// wiring test below. It pins Now() to a fixed cron-boundary time so the
+// supervisor's first tick fires immediately, and returns a never-firing
+// channel from After() so the supervisor blocks until ctx is cancelled.
+// The real daemonpkg.FakeClock lives in clock_test.go and is package-private
+// to daemon tests, hence this local minimum.
+type boundaryClock struct{ at time.Time }
+
+func (c boundaryClock) Now() time.Time                         { return c.at }
+func (c boundaryClock) After(d time.Duration) <-chan time.Time { return make(chan time.Time) }
+
+// TestServeAgentOpsDaemon_WiresRecurrenceSupervisor pins the production
+// wiring of the cron supervisor into ao daemon run. Regression for soc-63n0
+// where RecurrenceSupervisor was fully implemented but never instantiated
+// in the run path — the daemon emitted schedule.created on load and then
+// never fired anything. The test calls serveAgentOpsDaemon (the actual
+// daemon-run entry point) and asserts a schedule.fired event lands in the
+// ledger. If the call to startAgentOpsDaemonRecurrence is ever removed
+// from serveAgentOpsDaemonWithWorkers, this test fails.
+func TestServeAgentOpsDaemon_WiresRecurrenceSupervisor(t *testing.T) {
+	cwd := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o700); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	yaml := `schedules:
+  - name: fast-fire
+    cron: "* * * * *"
+    job_type: "rpi.run"
+    payload:
+      epic_id: "soc-test"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 5
+`
+	schedulePath := filepath.Join(cwd, ".agents", "schedule.yaml")
+	if err := os.WriteFile(schedulePath, []byte(yaml), 0o600); err != nil {
+		t.Fatalf("write schedule.yaml: %v", err)
+	}
+
+	// Anchor the clock on a cron-boundary minute so the first tick fires
+	// "fast-fire" immediately. The fake's After() returns a never-firing
+	// channel; the supervisor blocks on it after the first tick, then exits
+	// when ctx is cancelled.
+	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- serveAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+			Addr:            "127.0.0.1:0", // ephemeral; avoid port collisions
+			Workers:         0,
+			ScheduleFile:    schedulePath,
+			RecurrenceClock: boundaryClock{at: start},
+		}, &bytes.Buffer{})
+	}()
+
+	// Poll the ledger for schedule.fired with the matching name. Allow
+	// generous wall-clock time because serveAgentOpsDaemon spins up a
+	// listener + ledger + HTTP router before the recurrence goroutine
+	// gets to its first tick.
+	store := daemonpkg.NewStore(cwd)
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		replay, err := store.ReplayLedgerReadOnly()
+		if err == nil {
+			for _, e := range replay.Events {
+				if e.EventType == daemonpkg.EventScheduleFired && e.Payload["name"] == "fast-fire" {
+					cancel()
+					<-serveErr
+					return
+				}
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+
+	cancel()
+	<-serveErr
+	replay, _ := store.ReplayLedgerReadOnly()
+	var seen []string
+	for _, e := range replay.Events {
+		seen = append(seen, string(e.EventType))
+	}
+	t.Fatalf("schedule.fired for 'fast-fire' never appeared via serveAgentOpsDaemon (soc-63n0: cron supervisor not wired into daemon-run path). Events seen: %v", seen)
 }
 
 func TestSchedule_ListJSONOutput(t *testing.T) {
