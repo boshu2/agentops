@@ -15,8 +15,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 
-AGENTS_DIR="$ROOT/.agents"
-FINDINGS_DIR="$AGENTS_DIR/findings"
+# Source the canonical state-path resolver (soc-irg1.1) so AO_HOME /
+# CLAUDE_PLUGIN_DATA precedence is honored. Fail-open if the resolver is
+# missing — fall back to the legacy ${ROOT}/.agents layout.
+if [ -z "${AO_AGENTS_DIR:-}" ] && [ -f "$ROOT/lib/ao-paths.sh" ]; then
+    eval "$(bash "$ROOT/lib/ao-paths.sh" 2>/dev/null)" 2>/dev/null || true
+fi
+
+AGENTS_DIR="${AO_AGENTS_DIR:-$ROOT/.agents}"
+FINDINGS_DIR="${AO_FINDINGS_DIR:-$AGENTS_DIR/findings}"
 PLANNING_RULES_DIR="$AGENTS_DIR/planning-rules"
 PREMORTEM_CHECKS_DIR="$AGENTS_DIR/pre-mortem-checks"
 CONSTRAINT_DIR="$AGENTS_DIR/constraints"

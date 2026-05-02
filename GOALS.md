@@ -132,3 +132,4 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |
 | install-smoke | `timeout 30 bash tests/install/test-install-smoke.sh` | 5 | Install scripts pass syntax and structure validation |  |
 | flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |  |
+| state-path-resolver-coverage | `bash scripts/check-paths-resolver-coverage.sh` | 3 | Tracks executable-code sites that still hardcode `.agents/` paths instead of sourcing the canonical resolver (lib/ao-paths.sh / cli/internal/paths from soc-irg1.1). Warn-only initially per warn-then-fail-ratchet pattern; flip to blocking is a separate follow-up issue under epic soc-irg1 after 2 weeks of baseline data. See `.agents/patterns/2026-05-01-state-path-resolver.md`. | warn-only |
