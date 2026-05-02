@@ -9,88 +9,144 @@ import (
 	"testing"
 )
 
-func TestClientEventListEmitAndStreams(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(RequestIDHeader, "req-events")
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/events":
-			if got, want := r.URL.Query().Get("type"), "session.woke"; got != want {
-				t.Fatalf("type query = %q, want %q", got, want)
-			}
-			writeJSON(t, w, TaggedEventListResponse{
-				Items: []TaggedWireEvent{{
-					City: "agentops",
-					WireEvent: WireEvent{
-						Seq:     4,
-						Type:    "session.woke",
-						Subject: "sess_123",
-					},
-				}},
-				Total: 1,
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/events":
-			query := r.URL.Query()
-			if got, want := query.Get("cursor"), "cursor-1"; got != want {
-				t.Fatalf("cursor query = %q, want %q", got, want)
-			}
-			if got, want := query.Get("index"), "3"; got != want {
-				t.Fatalf("index query = %q, want %q", got, want)
-			}
-			writeJSON(t, w, EventListResponse{
-				Items: []WireEvent{{
-					Seq:     5,
-					Type:    "session.completed",
-					Subject: "sess_123",
-				}},
-				Total:      1,
-				NextCursor: "cursor-2",
-			})
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/events":
-			assertMutationHeader(t, r)
-			var req EventEmitRequest
-			decodeRequest(t, r, &req)
-			if req.Type != "agentops.test" || req.Actor != "codex" {
-				t.Fatalf("emit request = %#v", req)
-			}
-			w.WriteHeader(http.StatusCreated)
-			writeJSON(t, w, EventEmitResponse{Status: "recorded"})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/events/stream":
-			if got, want := r.Header.Get(lastEventIDHeader), "alpha:4"; got != want {
-				t.Fatalf("Last-Event-ID = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("after_cursor"), "alpha:3"; got != want {
-				t.Fatalf("after_cursor query = %q, want %q", got, want)
-			}
-			writeSSE(t, w, ""+
-				"id: alpha:4\n"+
-				"event: heartbeat\n"+
-				"data: {\"timestamp\":\"2026-04-28T20:45:10Z\"}\n\n"+
-				"id: alpha:5\n"+
-				"event: tagged_event\n"+
-				"data: {\"city\":\"agentops\",\"seq\":5,\"type\":\"session.completed\",\"subject\":\"sess_123\"}\n\n")
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/events/stream":
-			if got, want := r.Header.Get(lastEventIDHeader), "5"; got != want {
-				t.Fatalf("Last-Event-ID = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("after_seq"), "4"; got != want {
-				t.Fatalf("after_seq query = %q, want %q", got, want)
-			}
-			writeSSE(t, w, ""+
-				"id: 6\n"+
-				"event: event\n"+
-				"data: {\"seq\":6,\"type\":\"session.woke\",\"subject\":\"sess_123\"}\n\n")
-		default:
-			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
-		}
-	}))
-	defer server.Close()
-
-	client, err := NewClient(Config{Endpoint: server.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestClientEventListAndEmitMethods(t *testing.T) {
+	client, fixture, cleanup := newGasCityEventsFixture(t)
+	defer cleanup()
 	ctx := context.Background()
 
+	assertListEvents(t, ctx, client)
+	assertListCityEvents(t, ctx, client)
+	assertEmitCityEvent(t, ctx, client)
+	fixture.assertSeen(
+		"GET /v0/events",
+		"GET /v0/city/agentops/events",
+		"POST /v0/city/agentops/events",
+	)
+}
+
+func TestClientEventStreamMethods(t *testing.T) {
+	client, fixture, cleanup := newGasCityEventsFixture(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	assertStreamEvents(t, ctx, client)
+	assertStreamCityEvents(t, ctx, client)
+	fixture.assertSeen("GET /v0/events/stream", "GET /v0/city/agentops/events/stream")
+}
+
+type gasCityEventsFixture struct {
+	t      *testing.T
+	seen   map[string]int
+	routes map[string]http.HandlerFunc
+}
+
+func newGasCityEventsFixture(t *testing.T) (*Client, *gasCityEventsFixture, func()) {
+	t.Helper()
+	fixture := &gasCityEventsFixture{
+		t:    t,
+		seen: make(map[string]int),
+	}
+	fixture.routes = map[string]http.HandlerFunc{
+		"GET /v0/events":                      fixture.handleListEvents,
+		"GET /v0/city/agentops/events":        fixture.handleListCityEvents,
+		"POST /v0/city/agentops/events":       fixture.handleEmitCityEvent,
+		"GET /v0/events/stream":               fixture.handleStreamEvents,
+		"GET /v0/city/agentops/events/stream": fixture.handleStreamCityEvents,
+	}
+
+	server := httptest.NewServer(fixture)
+	client, err := NewClient(Config{Endpoint: server.URL})
+	if err != nil {
+		server.Close()
+		t.Fatal(err)
+	}
+	return client, fixture, server.Close
+}
+
+func (f *gasCityEventsFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	key := r.Method + " " + r.URL.Path
+	f.seen[key]++
+	w.Header().Set(RequestIDHeader, "req-events")
+
+	handler, ok := f.routes[key]
+	if !ok {
+		f.t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
+	}
+	handler(w, r)
+}
+
+func (f *gasCityEventsFixture) assertSeen(keys ...string) {
+	f.t.Helper()
+	for _, key := range keys {
+		if f.seen[key] != 1 {
+			f.t.Fatalf("%s seen %d times", key, f.seen[key])
+		}
+	}
+}
+
+func (f *gasCityEventsFixture) handleListEvents(w http.ResponseWriter, r *http.Request) {
+	assertQueryParam(f.t, r, "type", "session.woke")
+	writeJSON(f.t, w, TaggedEventListResponse{
+		Items: []TaggedWireEvent{{
+			City: "agentops",
+			WireEvent: WireEvent{
+				Seq:     4,
+				Type:    "session.woke",
+				Subject: "sess_123",
+			},
+		}},
+		Total: 1,
+	})
+}
+
+func (f *gasCityEventsFixture) handleListCityEvents(w http.ResponseWriter, r *http.Request) {
+	assertQueryParam(f.t, r, "cursor", "cursor-1")
+	assertQueryParam(f.t, r, "index", "3")
+	writeJSON(f.t, w, EventListResponse{
+		Items: []WireEvent{{
+			Seq:     5,
+			Type:    "session.completed",
+			Subject: "sess_123",
+		}},
+		Total:      1,
+		NextCursor: "cursor-2",
+	})
+}
+
+func (f *gasCityEventsFixture) handleEmitCityEvent(w http.ResponseWriter, r *http.Request) {
+	assertMutationHeader(f.t, r)
+	var req EventEmitRequest
+	decodeRequest(f.t, r, &req)
+	if req.Type != "agentops.test" || req.Actor != "codex" {
+		f.t.Fatalf("emit request = %#v", req)
+	}
+	w.WriteHeader(http.StatusCreated)
+	writeJSON(f.t, w, EventEmitResponse{Status: "recorded"})
+}
+
+func (f *gasCityEventsFixture) handleStreamEvents(w http.ResponseWriter, r *http.Request) {
+	assertHeader(f.t, r, lastEventIDHeader, "alpha:4")
+	assertQueryParam(f.t, r, "after_cursor", "alpha:3")
+	writeSSE(f.t, w, ""+
+		"id: alpha:4\n"+
+		"event: heartbeat\n"+
+		"data: {\"timestamp\":\"2026-04-28T20:45:10Z\"}\n\n"+
+		"id: alpha:5\n"+
+		"event: tagged_event\n"+
+		"data: {\"city\":\"agentops\",\"seq\":5,\"type\":\"session.completed\",\"subject\":\"sess_123\"}\n\n")
+}
+
+func (f *gasCityEventsFixture) handleStreamCityEvents(w http.ResponseWriter, r *http.Request) {
+	assertHeader(f.t, r, lastEventIDHeader, "5")
+	assertQueryParam(f.t, r, "after_seq", "4")
+	writeSSE(f.t, w, ""+
+		"id: 6\n"+
+		"event: event\n"+
+		"data: {\"seq\":6,\"type\":\"session.woke\",\"subject\":\"sess_123\"}\n\n")
+}
+
+func assertListEvents(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	supervisorEvents, _, err := client.ListEvents(ctx, EventListParams{
 		Type:  "session.woke",
 		Limit: 1,
@@ -101,7 +157,10 @@ func TestClientEventListEmitAndStreams(t *testing.T) {
 	if supervisorEvents.Total != 1 || supervisorEvents.Items[0].City != "agentops" {
 		t.Fatalf("supervisor events not decoded: %#v", supervisorEvents)
 	}
+}
 
+func assertListCityEvents(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	cityEvents, _, err := client.ListCityEvents(ctx, "agentops", EventListParams{
 		Type:   "session.completed",
 		Cursor: "cursor-1",
@@ -115,7 +174,10 @@ func TestClientEventListEmitAndStreams(t *testing.T) {
 	if cityEvents.NextCursor != "cursor-2" || cityEvents.Items[0].Seq != 5 {
 		t.Fatalf("city events not decoded: %#v", cityEvents)
 	}
+}
 
+func assertEmitCityEvent(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	emit, _, err := client.EmitCityEvent(ctx, "agentops", EventEmitRequest{
 		Type:    "agentops.test",
 		Actor:   "codex",
@@ -128,7 +190,10 @@ func TestClientEventListEmitAndStreams(t *testing.T) {
 	if emit.Status != "recorded" {
 		t.Fatalf("emit not decoded: %#v", emit)
 	}
+}
 
+func assertStreamEvents(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	stream, _, err := client.StreamEvents(ctx, EventStreamOptions{
 		LastEventID: "alpha:4",
 		AfterCursor: "alpha:3",
@@ -151,7 +216,10 @@ func TestClientEventListEmitAndStreams(t *testing.T) {
 	if event.TaggedEvent == nil || event.TaggedEvent.City != "agentops" {
 		t.Fatalf("tagged event not decoded: %#v", event)
 	}
+}
 
+func assertStreamCityEvents(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	cityStream, _, err := client.StreamCityEvents(ctx, "agentops", EventStreamOptions{
 		LastEventID: "5",
 		AfterSeq:    "4",
@@ -166,6 +234,13 @@ func TestClientEventListEmitAndStreams(t *testing.T) {
 	}
 	if cityEvent.CityEvent == nil || cityEvent.CityEvent.Seq != 6 {
 		t.Fatalf("city event not decoded: %#v", cityEvent)
+	}
+}
+
+func assertHeader(t *testing.T, r *http.Request, key, want string) {
+	t.Helper()
+	if got := r.Header.Get(key); got != want {
+		t.Fatalf("%s = %q, want %q", key, got, want)
 	}
 }
 
