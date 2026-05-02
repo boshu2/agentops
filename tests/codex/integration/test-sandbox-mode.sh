@@ -42,7 +42,7 @@ pass "Codex CLI found"
 CODEX_OK=false
 for attempt in 1 2; do
     echo -e "${BLUE}  Running codex exec -s read-only with -o (attempt $attempt, up to 120s)...${NC}"
-    if timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
+    if AGENTOPS_INTENT_ECHO_DISABLED=1 timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
         -o "$OUTPUT_RO" \
         "List the files in the skills/ directory and summarize what you see" \
         > /dev/null 2>&1; then

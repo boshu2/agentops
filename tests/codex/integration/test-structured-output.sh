@@ -46,7 +46,7 @@ attempt=1
 run_succeeded=0
 last_exit=0
 while [[ $attempt -le $max_attempts ]]; do
-    if timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
+    if AGENTOPS_INTENT_ECHO_DISABLED=1 timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
         --output-schema "$SCHEMA" \
         -o "$OUTPUT" \
         "Review skills/council/schemas/verdict.json and return a PASS verdict with one minor finding about schema design" \

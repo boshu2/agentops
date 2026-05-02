@@ -192,7 +192,7 @@ ${sanitized_context}"
         if [[ "$TEAM_RUNTIME" == "claude" ]]; then
             echo "[DRY RUN] (cd ${REPO_PATH} && claude -p --model ${CLAUDE_MODEL} --plugin-dir ${REPO_PATH} --dangerously-skip-permissions --max-turns ${CLAUDE_MAX_TURNS} --no-session-persistence --max-budget-usd ${CLAUDE_MAX_BUDGET_USD} --output-format stream-json --verbose --json-schema '${schema_json}' \"${prompt:0:80}...\")" >&2
         else
-            echo "[DRY RUN] codex exec ${sandbox_args[*]} --json -m ${CODEX_MODEL} -C ${REPO_PATH} --output-schema ${schema_path} -o ${output_file} \"${prompt:0:80}...\"" >&2
+            echo "[DRY RUN] AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec ${sandbox_args[*]} --json -m ${CODEX_MODEL} -C ${REPO_PATH} --output-schema ${schema_path} -o ${output_file} \"${prompt:0:80}...\"" >&2
         fi
         echo 0 > "$exit_file"
         echo '{"status":"completed","token_usage":{"input":0,"output":0},"duration_ms":0,"events_count":0}' > "$status_file"
@@ -223,7 +223,7 @@ ${sanitized_context}"
         ) | CLAUDE_IDLE_TIMEOUT="$CLAUDE_IDLE_TIMEOUT" bash "$WATCHER" "$status_file" "$output_file" &
     else
         (
-            timeout "$timeout_s" codex exec "${sandbox_args[@]}" --json \
+            AGENTOPS_INTENT_ECHO_DISABLED=1 timeout "$timeout_s" codex exec "${sandbox_args[@]}" --json \
                 -m "$CODEX_MODEL" \
                 -C "$REPO_PATH" \
                 --output-schema "$schema_path" \

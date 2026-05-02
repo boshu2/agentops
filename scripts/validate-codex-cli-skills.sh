@@ -59,7 +59,7 @@ cleanup() {
 trap cleanup EXIT
 
 PROMPT="List the available skill names you can see in this session. Return only a comma-separated list."
-if ! codex exec \
+if ! AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec \
   --skip-git-repo-check \
   --sandbox read-only \
   --profile "$PROFILE" \
