@@ -1,0 +1,931 @@
+{
+  "cli": {
+    "bin": {
+      "browse": "./browse/dist/browse",
+      "make-pdf": "./make-pdf/dist/pdf"
+    },
+    "language": "node",
+    "package_dir": ".",
+    "package_json": "package.json",
+    "package_name": "gstack"
+  },
+  "config_files": [
+    "browse/src/config.ts"
+  ],
+  "env_vars": [
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "ALL_URLS"
+    },
+    {
+      "files": [
+        "scripts/preflight-agent-sdk.ts",
+        "test/helpers/benchmark-judge.ts",
+        "test/helpers/e2e-helpers.ts",
+        "test/helpers/providers/claude.ts",
+        "test/skill-e2e-overlay-harness.test.ts",
+        "test/skill-e2e.test.ts"
+      ],
+      "name": "ANTHROPIC_API_KEY"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "APP_DIR"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "APP_NAME"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "APP_SIZE"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "AWS_SECRET_ACCESS_KEY"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.17.0.0.sh"
+      ],
+      "name": "BIN_DIR"
+    },
+    {
+      "files": [
+        "make-pdf/src/browseClient.ts",
+        "make-pdf/test/browseClient.test.ts"
+      ],
+      "name": "BROWSE_BIN"
+    },
+    {
+      "files": [
+        "browse/src/content-security.ts",
+        "browse/test/content-security.test.ts"
+      ],
+      "name": "BROWSE_CONTENT_FILTER"
+    },
+    {
+      "files": [
+        "browse/src/browser-manager.ts"
+      ],
+      "name": "BROWSE_EXTENSIONS_DIR"
+    },
+    {
+      "files": [
+        "browse/src/terminal-agent.ts"
+      ],
+      "name": "BROWSE_EXTENSION_ID"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_HEADED"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_HEADLESS_SKIP"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_IDLE_TIMEOUT"
+    },
+    {
+      "files": [
+        "browse/src/cli.ts"
+      ],
+      "name": "BROWSE_NO_AUTOSTART"
+    },
+    {
+      "files": [
+        "browse/src/cli.ts",
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_PARENT_PID"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_PORT"
+    },
+    {
+      "files": [
+        "browse/src/terminal-agent.ts"
+      ],
+      "name": "BROWSE_SERVER_PORT"
+    },
+    {
+      "files": [
+        "browse/src/browse-client.ts",
+        "browse/src/browser-manager.ts",
+        "browse/src/terminal-agent.ts",
+        "browser-skills/hackernews-frontpage/_lib/browse-client.ts"
+      ],
+      "name": "BROWSE_STATE_FILE"
+    },
+    {
+      "files": [
+        "browse/src/browse-client.ts",
+        "browse/src/cli.ts",
+        "browse/test/browse-client.test.ts",
+        "browser-skills/hackernews-frontpage/_lib/browse-client.ts"
+      ],
+      "name": "BROWSE_TAB"
+    },
+    {
+      "files": [
+        "browse/src/terminal-agent.ts",
+        "test/helpers/claude-pty-runner.ts"
+      ],
+      "name": "BROWSE_TERMINAL_BINARY"
+    },
+    {
+      "files": [
+        "browse/src/server.ts",
+        "browse/test/dual-listener.test.ts"
+      ],
+      "name": "BROWSE_TUNNEL"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "BROWSE_TUNNEL_LOCAL_ONLY"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "BUILD_DIR"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "BUNDLE_ID"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "BUN_TEST_NO_SPAWN"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "CHROME_APP"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "CHROMIUM_DIR"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "CHROMIUM_PLIST"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "CHROMIUM_RESOURCES"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "CHROMIUM_STRINGS"
+    },
+    {
+      "files": [
+        "browse/src/browser-manager.ts",
+        "browse/src/cli.ts"
+      ],
+      "name": "CI"
+    },
+    {
+      "files": [
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "CLAUDE_PLUGIN_DATA"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "CMD"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "CMD_LOWER"
+    },
+    {
+      "files": [
+        "bin/gstack-global-discover.ts"
+      ],
+      "name": "CODEX_SESSIONS_DIR"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.17.0.0.sh"
+      ],
+      "name": "CONFIG_BIN"
+    },
+    {
+      "files": [
+        "browse/src/browser-manager.ts"
+      ],
+      "name": "CONTAINER"
+    },
+    {
+      "files": [
+        "browse/scripts/build-node-server.sh"
+      ],
+      "name": "DIST_DIR"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "DMG_PATH"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "DMG_SIZE"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "DMG_TMP"
+    },
+    {
+      "files": [
+        "browse/src/domain-skill-commands.ts"
+      ],
+      "name": "EDITOR"
+    },
+    {
+      "files": [
+        "test/codex-e2e-plan-format.test.ts",
+        "test/codex-e2e.test.ts",
+        "test/gemini-e2e.test.ts",
+        "test/helpers/e2e-helpers.ts",
+        "test/skill-e2e-ask-user-question-format-compliance.test.ts",
+        "test/skill-e2e-auto-decide-preserved.test.ts",
+        "test/skill-e2e-autoplan-auto-mode.test.ts",
+        "test/skill-e2e-autoplan-chain.test.ts",
+        "test/skill-e2e-benchmark-providers.test.ts",
+        "test/skill-e2e-brain-privacy-gate.test.ts",
+        "test/skill-e2e-office-hours-auto-mode.test.ts",
+        "test/skill-e2e-opus-47.test.ts",
+        "test/skill-e2e-overlay-harness.test.ts",
+        "test/skill-e2e-plan-ceo-finding-count.test.ts",
+        "test/skill-e2e-plan-ceo-mode-routing.test.ts",
+        "test/skill-e2e-plan-ceo-plan-mode.test.ts",
+        "test/skill-e2e-plan-design-finding-count.test.ts",
+        "test/skill-e2e-plan-design-plan-mode.test.ts",
+        "test/skill-e2e-plan-design-with-ui.test.ts",
+        "test/skill-e2e-plan-devex-finding-count.test.ts",
+        "test/skill-e2e-plan-devex-plan-mode.test.ts",
+        "test/skill-e2e-plan-eng-finding-count.test.ts",
+        "test/skill-e2e-plan-eng-plan-mode.test.ts",
+        "test/skill-e2e-plan-mode-no-op.test.ts",
+        "test/skill-e2e-ship-idempotency.test.ts",
+        "test/skill-e2e.test.ts",
+        "test/skill-llm-eval.test.ts",
+        "test/skill-routing-e2e.test.ts"
+      ],
+      "name": "EVALS"
+    },
+    {
+      "files": [
+        "test/codex-e2e-plan-format.test.ts",
+        "test/codex-e2e.test.ts",
+        "test/gemini-e2e.test.ts",
+        "test/helpers/e2e-helpers.ts",
+        "test/skill-e2e.test.ts",
+        "test/skill-llm-eval.test.ts",
+        "test/skill-routing-e2e.test.ts"
+      ],
+      "name": "EVALS_ALL"
+    },
+    {
+      "files": [
+        "test/codex-e2e-plan-format.test.ts",
+        "test/codex-e2e.test.ts",
+        "test/gemini-e2e.test.ts",
+        "test/helpers/e2e-helpers.ts",
+        "test/skill-e2e.test.ts",
+        "test/skill-llm-eval.test.ts",
+        "test/skill-routing-e2e.test.ts"
+      ],
+      "name": "EVALS_BASE"
+    },
+    {
+      "files": [
+        "test/helpers/session-runner.ts"
+      ],
+      "name": "EVALS_MODEL"
+    },
+    {
+      "files": [
+        "test/helpers/e2e-helpers.ts",
+        "test/skill-e2e-ask-user-question-format-compliance.test.ts",
+        "test/skill-e2e-auto-decide-preserved.test.ts",
+        "test/skill-e2e-autoplan-auto-mode.test.ts",
+        "test/skill-e2e-autoplan-chain.test.ts",
+        "test/skill-e2e-brain-privacy-gate.test.ts",
+        "test/skill-e2e-office-hours-auto-mode.test.ts",
+        "test/skill-e2e-overlay-harness.test.ts",
+        "test/skill-e2e-plan-ceo-finding-count.test.ts",
+        "test/skill-e2e-plan-ceo-mode-routing.test.ts",
+        "test/skill-e2e-plan-ceo-plan-mode.test.ts",
+        "test/skill-e2e-plan-design-finding-count.test.ts",
+        "test/skill-e2e-plan-design-plan-mode.test.ts",
+        "test/skill-e2e-plan-design-with-ui.test.ts",
+        "test/skill-e2e-plan-devex-finding-count.test.ts",
+        "test/skill-e2e-plan-devex-plan-mode.test.ts",
+        "test/skill-e2e-plan-eng-finding-count.test.ts",
+        "test/skill-e2e-plan-eng-plan-mode.test.ts",
+        "test/skill-e2e-plan-mode-no-op.test.ts",
+        "test/skill-e2e-ship-idempotency.test.ts",
+        "test/skill-routing-e2e.test.ts"
+      ],
+      "name": "EVALS_TIER"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "EXISTING_URLS"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.0.0.0.sh"
+      ],
+      "name": "EXPLAIN_LEVEL_SET"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "FAIL"
+    },
+    {
+      "files": [
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "FILE_PATH"
+    },
+    {
+      "files": [
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "FREEZE_DIR"
+    },
+    {
+      "files": [
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "FREEZE_FILE"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "GITHUB_TOKEN"
+    },
+    {
+      "files": [
+        "test/helpers/providers/gemini.ts"
+      ],
+      "name": "GOOGLE_API_KEY"
+    },
+    {
+      "files": [
+        "scripts/garry-output-comparison.ts"
+      ],
+      "name": "GSTACK_AUTHOR_EMAILS"
+    },
+    {
+      "files": [
+        "browse/test/security-bench-ensemble-live.test.ts"
+      ],
+      "name": "GSTACK_BENCH_ENSEMBLE"
+    },
+    {
+      "files": [
+        "browse/test/security-bench-ensemble-live.test.ts"
+      ],
+      "name": "GSTACK_BENCH_ENSEMBLE_CASES"
+    },
+    {
+      "files": [
+        "browse/test/security-bench-ensemble-live.test.ts"
+      ],
+      "name": "GSTACK_BENCH_ENSEMBLE_CONCURRENCY"
+    },
+    {
+      "files": [
+        "browse/test/security-bench-ensemble-live.test.ts"
+      ],
+      "name": "GSTACK_BENCH_STOP_LOSS_ITER"
+    },
+    {
+      "files": [
+        "browse/src/write-commands.ts"
+      ],
+      "name": "GSTACK_BROWSE_MAX_HTML_BYTES"
+    },
+    {
+      "files": [
+        "test/helpers-unit.test.ts",
+        "test/helpers/eval-store.ts"
+      ],
+      "name": "GSTACK_BUDGET_RATIO"
+    },
+    {
+      "files": [
+        "browse/src/browser-manager.ts"
+      ],
+      "name": "GSTACK_CHROMIUM_PATH"
+    },
+    {
+      "files": [
+        "browse/scripts/build-node-server.sh"
+      ],
+      "name": "GSTACK_DIR"
+    },
+    {
+      "files": [
+        "browse/src/security-classifier.ts"
+      ],
+      "name": "GSTACK_HAIKU_TIMEOUT_MS"
+    },
+    {
+      "files": [
+        "browse/src/domain-skills.ts",
+        "browse/src/telemetry.ts",
+        "browse/test/cdp-e2e.test.ts",
+        "browse/test/domain-skills-e2e.test.ts",
+        "browse/test/domain-skills-storage.test.ts",
+        "browse/test/telemetry.test.ts",
+        "gstack-upgrade/migrations/v0.16.2.0.sh",
+        "gstack-upgrade/migrations/v1.0.0.0.sh",
+        "test/skill-e2e-brain-privacy-gate.test.ts"
+      ],
+      "name": "GSTACK_HOME"
+    },
+    {
+      "files": [
+        "browse/src/browse-client.ts",
+        "browse/test/browse-client.test.ts",
+        "browse/test/browser-skill-commands.test.ts",
+        "browser-skills/hackernews-frontpage/_lib/browse-client.ts"
+      ],
+      "name": "GSTACK_PORT"
+    },
+    {
+      "files": [
+        "browse/src/project-slug.ts",
+        "browse/test/domain-skills-e2e.test.ts"
+      ],
+      "name": "GSTACK_PROJECT_SLUG"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.1.3.0.sh"
+      ],
+      "name": "GSTACK_ROOT_REAL"
+    },
+    {
+      "files": [
+        "test/helpers/agent-sdk-runner.ts"
+      ],
+      "name": "GSTACK_SDK_MAX_CONCURRENCY"
+    },
+    {
+      "files": [
+        "test/learnings-injection.test.ts"
+      ],
+      "name": "GSTACK_SEARCH_CROSS"
+    },
+    {
+      "files": [
+        "test/learnings-injection.test.ts"
+      ],
+      "name": "GSTACK_SEARCH_LIMIT"
+    },
+    {
+      "files": [
+        "test/learnings-injection.test.ts"
+      ],
+      "name": "GSTACK_SEARCH_QUERY"
+    },
+    {
+      "files": [
+        "test/learnings-injection.test.ts"
+      ],
+      "name": "GSTACK_SEARCH_SLUG"
+    },
+    {
+      "files": [
+        "test/learnings-injection.test.ts"
+      ],
+      "name": "GSTACK_SEARCH_TYPE"
+    },
+    {
+      "files": [
+        "browse/src/security-classifier.ts"
+      ],
+      "name": "GSTACK_SECURITY_ENSEMBLE"
+    },
+    {
+      "files": [
+        "browse/src/security-classifier.ts",
+        "browse/test/security-adversarial-fixes.test.ts"
+      ],
+      "name": "GSTACK_SECURITY_OFF"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "GSTACK_SKILL_ROOT"
+    },
+    {
+      "files": [
+        "browse/src/browse-client.ts",
+        "browse/test/browse-client.test.ts",
+        "browse/test/browser-skill-commands.test.ts",
+        "browser-skills/hackernews-frontpage/_lib/browse-client.ts"
+      ],
+      "name": "GSTACK_SKILL_TOKEN"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "GSTACK_SLUG"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "GSTACK_SUPABASE_ANON_KEY"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "GSTACK_SUPABASE_URL"
+    },
+    {
+      "files": [
+        "browse/src/telemetry.ts",
+        "browse/test/cdp-e2e.test.ts",
+        "browse/test/telemetry.test.ts"
+      ],
+      "name": "GSTACK_TELEMETRY_OFF"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "GSTACK_TOKEN"
+    },
+    {
+      "files": [
+        "browse/src/browser-manager.ts",
+        "browse/src/cli.ts",
+        "browse/src/server.ts",
+        "browse/src/terminal-agent.ts",
+        "browse/test/browser-skill-commands.test.ts",
+        "browse/test/security-review-flow.test.ts",
+        "design/prototype.ts",
+        "design/src/auth.ts",
+        "freeze/bin/check-freeze.sh",
+        "gstack-upgrade/migrations/v0.16.2.0.sh",
+        "gstack-upgrade/migrations/v1.0.0.0.sh",
+        "gstack-upgrade/migrations/v1.1.3.0.sh",
+        "gstack-upgrade/migrations/v1.17.0.0.sh",
+        "scripts/build-app.sh",
+        "scripts/gen-skill-docs.ts",
+        "test/helpers/claude-pty-runner.ts"
+      ],
+      "name": "HOME"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "ICON_SRC"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh",
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "INPUT"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "KEY"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "LANG"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "MY_PASSWORD"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "NEW_URLS"
+    },
+    {
+      "files": [
+        "bin/gstack-pr-title-rewrite.sh"
+      ],
+      "name": "NEW_VERSION"
+    },
+    {
+      "files": [
+        "browse/src/cli.ts",
+        "browse/src/server.ts"
+      ],
+      "name": "NGROK_AUTHTOKEN"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "NGROK_DOMAIN"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts"
+      ],
+      "name": "NPM_TOKEN"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.1.3.0.sh"
+      ],
+      "name": "OLD_NAMESPACED"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.1.3.0.sh"
+      ],
+      "name": "OLD_TOPLEVEL"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts",
+        "design/prototype.ts",
+        "design/src/auth.ts"
+      ],
+      "name": "OPENAI_API_KEY"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "ORIG_ICON"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "PASS"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts",
+        "test/benchmark-cli.test.ts",
+        "test/codex-hardening.test.ts",
+        "test/context-save-hardening.test.ts",
+        "test/gstack-gbrain-source-wireup.test.ts",
+        "test/gstack-paths.test.ts",
+        "test/skill-e2e-brain-privacy-gate.test.ts"
+      ],
+      "name": "PATH"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "PATTERN"
+    },
+    {
+      "files": [
+        "make-pdf/src/pdftotext.ts"
+      ],
+      "name": "PDFTOTEXT_BIN"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.0.0.0.sh"
+      ],
+      "name": "PENDING_FLAG"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "PROFILE_FILE"
+    },
+    {
+      "files": [
+        "browse/src/cookie-import-browser.ts"
+      ],
+      "name": "PROGRAMFILES"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.0.0.0.sh"
+      ],
+      "name": "PROMPTED_FLAG"
+    },
+    {
+      "files": [
+        "scripts/compare-pr-version.ts"
+      ],
+      "name": "PR_VERSION"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "PW_CACHE"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "RESOURCE_FILES"
+    },
+    {
+      "files": [
+        "bin/gstack-pr-title-rewrite.sh"
+      ],
+      "name": "REST"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "RM_ARGS"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "ROOT"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "SAFE_ONLY"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.15.2.0.sh",
+        "scripts/build-app.sh",
+        "supabase/verify-rls.sh"
+      ],
+      "name": "SCRIPT_DIR"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.1.3.0.sh",
+        "gstack-upgrade/migrations/v1.17.0.0.sh"
+      ],
+      "name": "SKILLS_DIR"
+    },
+    {
+      "files": [
+        "browse/scripts/build-node-server.sh"
+      ],
+      "name": "SRC_DIR"
+    },
+    {
+      "files": [
+        "freeze/bin/check-freeze.sh"
+      ],
+      "name": "STATE_DIR"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.17.0.0.sh"
+      ],
+      "name": "SYNC_MODE"
+    },
+    {
+      "files": [
+        "browse/test/browser-skill-commands.test.ts",
+        "test/benchmark-cli.test.ts"
+      ],
+      "name": "TERM"
+    },
+    {
+      "files": [
+        "bin/gstack-pr-title-rewrite.sh"
+      ],
+      "name": "TITLE"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "TOTAL"
+    },
+    {
+      "files": [
+        "test/skill-llm-eval.test.ts"
+      ],
+      "name": "UPDATE_BASELINES"
+    },
+    {
+      "files": [
+        "supabase/verify-rls.sh"
+      ],
+      "name": "URL"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v0.16.2.0.sh"
+      ],
+      "name": "URL_ARRAY"
+    },
+    {
+      "files": [
+        "browse/src/server.ts"
+      ],
+      "name": "USERPROFILE"
+    },
+    {
+      "files": [
+        "scripts/build-app.sh"
+      ],
+      "name": "VERSION"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "WARN"
+    },
+    {
+      "files": [
+        "careful/bin/check-careful.sh"
+      ],
+      "name": "WARN_ESCAPED"
+    },
+    {
+      "files": [
+        "gstack-upgrade/migrations/v1.17.0.0.sh"
+      ],
+      "name": "WIREUP_BIN"
+    }
+  ],
+  "product_name": "gstack",
+  "schema_files": [],
+  "schema_version": 1,
+  "upstream_commit": "6e1625c0d735f97346ecc3a111d84f8527e04416"
+}
