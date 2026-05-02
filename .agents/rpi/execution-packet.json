@@ -1,51 +1,44 @@
 {
-  "run_id": "14c943ef2ac4",
-  "schema_version": 1,
-  "type": "discovery-portfolio",
-  "objective": "Plan as many epics as possible from the 2026-05-01 daemon-self-improvement post-mortem",
-  "mode": "portfolio-discovery",
-  "compression_note": "Single catalog instead of 7 separate /discovery flows. Per-epic strict delegation deferred to /rpi <epic> invocations.",
-  "date": "2026-05-01",
-  "source": {
-    "post_mortem_commits": ["b60f3d63", "e1d0ded6"],
-    "bd_issues_open": ["soc-hf4i", "soc-66uq", "soc-25d0", "soc-xyb4", "soc-wd3v"],
-    "untracked_findings": [
-      "/v1/schedules POST returns 403 path-outside-mutation-scope from default token policy",
-      "TestCobraConformance fails on main (cli/docs/COMMANDS.md stale)",
-      "loadFlywheelBrief goroutine leak (cli/cmd/ao/status.go:130)"
-    ],
-    "learnings_today": [
-      ".agents/learnings/2026-05-01-bufio-scanner-cap-poisons-append-only-logs.md",
-      ".agents/learnings/2026-05-01-helper-test-vs-wiring-test-distinction.md",
-      ".agents/learnings/2026-05-01-dogfood-via-job-markers-not-execution.md"
-    ]
+  "run_id": "rpi-2026-05-01-council-mixed-symmetric-personas",
+  "objective": "Default /council --mixed to symmetric persona assignment: same N personas/perspectives applied to BOTH Claude and Codex (2N judges = N perspectives × 2 vendors) for true cross-vendor head-to-head comparison.",
+  "epic_id": "soc-500o",
+  "complexity": "standard",
+  "test_levels": ["L2"],
+  "test_first": true,
+  "scope_mode": "hold",
+  "plan_path": ".agents/plans/2026-05-01-council-mixed-symmetric-personas.md",
+  "research_path": ".agents/research/2026-05-01-council-mixed-symmetric-personas.md",
+  "design_path": ".agents/design/2026-05-01-design-council-mixed-symmetric-personas.md",
+  "pre_mortem_path": ".agents/council/2026-05-01-pre-mortem-council-mixed-symmetric-personas.md",
+  "ranked_packet_path": null,
+  "applied_findings": [],
+  "phase_verdicts": {
+    "design": "PASS",
+    "research": "DONE",
+    "plan": "DONE",
+    "pre_mortem": "WARN"
   },
-  "epics": [
-    {"id": "E1", "title": "Daemon Idempotency Contract", "priority": "P1", "size": "S/M", "drives": ["soc-hf4i"], "depends_on": []},
-    {"id": "E2", "title": "Daemon HTTP API Hygiene", "priority": "P2", "size": "M", "drives": ["soc-25d0", "soc-xyb4", "soc-wd3v", "untracked: /v1/schedules policy gap"], "depends_on": []},
-    {"id": "E3", "title": "Daemon CLI Token Resolution", "priority": "P1", "size": "S", "drives": ["soc-66uq"], "depends_on": []},
-    {"id": "E4", "title": "Cron Supervisor Hardening (post-soc-63n0)", "priority": "P2", "size": "M", "drives": ["new bds: telemetry, payload validator, soak test, restart re-fire"], "depends_on": ["E1"]},
-    {"id": "E5", "title": "CI / Repo Hygiene Sweep", "priority": "P2", "size": "S", "drives": ["TestCobraConformance fail, loadFlywheelBrief goroutine leak"], "depends_on": []},
-    {"id": "E6", "title": "Wiring-Test Audit (cross-cutting)", "priority": "P2", "size": "M", "drives": ["audit 7 daemon absorptions for production-entry-point wiring tests"], "depends_on": ["E4"]},
-    {"id": "E7", "title": "Complexity Budget Cleanup (top-5 CC>=25)", "priority": "P3", "size": "L", "drives": ["next-work.jsonl high-severity tech-debt items"], "depends_on": []}
+  "issues": [
+    {"id": "soc-500o.1", "wave": 1, "title": "W1-I1: Claude-side --mixed spawning contract"},
+    {"id": "soc-500o.2", "wave": 1, "title": "W1-I2: Claude-side per-perspective consolidation"},
+    {"id": "soc-500o.3", "wave": 2, "title": "W2-I3: Mirror to Codex skills"},
+    {"id": "soc-500o.4", "wave": 3, "title": "W3-I4: validate-council assertion + audit gates"}
   ],
-  "recommended_first_cycle": ["E5", "E1"],
-  "recommended_next": ["E2", "E3"],
-  "deferred": ["E6", "E7"],
-  "catalog_path": ".agents/rpi/runs/14c943ef2ac4/epic-catalog.md",
-  "test_levels_per_epic": {
-    "E1": ["L1", "L2"],
-    "E2": ["L1", "L2"],
-    "E3": ["L1"],
-    "E4": ["L1", "L2", "L3 (soak)"],
-    "E5": ["L1"],
-    "E6": ["L2"],
-    "E7": ["L1"]
-  },
-  "verdicts": {
-    "design_gate": "skipped (no feature/capability work)",
-    "research": "inline (sources cited from bd + next-work + today's learnings)",
-    "plan": "portfolio catalog (epic-catalog.md), not per-epic plan",
-    "pre_mortem": "inline per-epic (risks + mitigations listed in catalog)"
-  }
+  "contract_surfaces": [
+    "skills/council/SKILL.md",
+    "skills/council/references/cli-spawning.md",
+    "skills/council/references/flags-reference.md",
+    "skills/council/references/agent-prompts.md",
+    "skills/council/references/consensus-and-output.md",
+    "skills-codex/council/SKILL.md",
+    "skills-codex-overrides/council/SKILL.md",
+    "skills/council/scripts/validate-council.sh"
+  ],
+  "done_criteria": [
+    "skills/council/SKILL.md mode-table row for --mixed documents symmetric persona pairing",
+    "skills/council/references/{cli-spawning,flags-reference,agent-prompts,consensus-and-output}.md updated per plan acceptance",
+    "skills-codex/council/SKILL.md and skills-codex-overrides/council/SKILL.md mirrored",
+    "skills/council/scripts/validate-council.sh passes with new symmetric-pairing assertion",
+    "scripts/audit-codex-parity.sh --skill council exits 0 (no drift)"
+  ]
 }
