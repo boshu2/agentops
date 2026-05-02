@@ -48,6 +48,7 @@ var (
 	injectPredecessor       string
 	injectIndexOnly         bool
 	injectQuarantineFlagged bool
+	injectUtilityWeight     float64 // W1-06: utility-weighted ranking multiplier (eval-as-self-pruning-corpus consumer surface)
 	injectForSkill          string
 	injectSessionType       string
 	injectProfile           bool
@@ -108,6 +109,7 @@ func init() {
 	injectCmd.Flags().StringVar(&injectPredecessor, "predecessor", "", "Path to predecessor handoff file for context injection")
 	injectCmd.Flags().BoolVar(&injectIndexOnly, "index-only", false, "Output compact knowledge index table instead of full content")
 	injectCmd.Flags().BoolVar(&injectQuarantineFlagged, "quarantine-flagged", false, "Quarantine flagged learnings from quality report")
+	injectCmd.Flags().Float64Var(&injectUtilityWeight, "utility-weight", 1.0, "Multiplier on utility's contribution to ranking (0=disable, 1=default, >1=emphasize). Reads `utility:` frontmatter; closes the eval-verdict-compiler loop.")
 	injectCmd.Flags().StringVar(&injectForSkill, "for", "", "Skill name — assembles context per skill's context declaration")
 	injectCmd.Flags().StringVar(&injectSessionType, "session-type", "", "Session type for scoring boost (career, research, debug, implement, brainstorm)")
 	injectCmd.Flags().BoolVar(&injectProfile, "profile", false, "Include .agents/profile.md identity artifact in output")
@@ -220,6 +222,18 @@ func applyInjectModifiers(cwd string, opts *search.InjectOptions, knowledge *inj
 	if opts.SessionType != "" {
 		for i := range knowledge.Learnings {
 			knowledge.Learnings[i].CompositeScore *= sessionTypeBoost(knowledge.Learnings[i], opts.SessionType)
+		}
+		search.ResortLearnings(knowledge.Learnings)
+	}
+
+	// W1-06: utility-weighted re-ranking (eval-as-self-pruning-corpus consumer surface).
+	// When eval-verdict-compiler.sh has mutated `utility:` frontmatter on learnings,
+	// this is the surface that propagates the signal into retrieval ranking.
+	// Scale: new = old * (1 + weight * (utility - 0.5)). Default weight=1.0; 0 disables.
+	if injectUtilityWeight != 0.0 {
+		for i := range knowledge.Learnings {
+			u := knowledge.Learnings[i].Utility
+			knowledge.Learnings[i].CompositeScore *= 1.0 + injectUtilityWeight*(u-0.5)
 		}
 		search.ResortLearnings(knowledge.Learnings)
 	}
