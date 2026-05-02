@@ -35,7 +35,9 @@ while IFS= read -r manifest; do
         (.artifact_dir | type == "string" and length > 0) and
         (.sbom_cyclonedx | type == "string" and length > 0) and
         (.sbom_spdx | type == "string" and length > 0) and
-        (.security_report | type == "string" and length > 0)
+        (.security_report | type == "string" and length > 0) and
+        (.release_readiness | type == "string" and length > 0) and
+        (.hil_evidence | type == "string" and length > 0)
     ' "$manifest" >/dev/null 2>&1; then
         continue
     fi
@@ -44,10 +46,22 @@ while IFS= read -r manifest; do
     sbom_cyclonedx="$(jq -r '.sbom_cyclonedx' "$manifest")"
     sbom_spdx="$(jq -r '.sbom_spdx' "$manifest")"
     security_report="$(jq -r '.security_report' "$manifest")"
+    release_readiness="$(jq -r '.release_readiness' "$manifest")"
+    hil_evidence="$(jq -r '.hil_evidence' "$manifest")"
 
     if [[ -f "$REPO_ROOT/$artifact_dir/$sbom_cyclonedx" && \
           -f "$REPO_ROOT/$artifact_dir/$sbom_spdx" && \
-          -f "$REPO_ROOT/$artifact_dir/$security_report" ]]; then
+          -f "$REPO_ROOT/$artifact_dir/$security_report" && \
+          -f "$REPO_ROOT/$artifact_dir/$release_readiness" && \
+          -f "$REPO_ROOT/$artifact_dir/$hil_evidence" ]] && \
+        jq -e '
+          .schema_version == 1 and
+          .release_status == "pass" and
+          (.release_readiness_score >= 8) and
+          .dimensions.sil.status == "pass" and
+          .dimensions.vil.status == "pass" and
+          (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
+        ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null 2>&1; then
         cat "$manifest"
         exit 0
     fi

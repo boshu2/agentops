@@ -39,11 +39,11 @@ check "deep-audit-protocol.md exists" \
 check "Has file chunking rules" \
   "grep -q 'File Chunking Rules' '$PROTOCOL'"
 
-check "Has 7-category checklist" \
-  "grep -q '7-Category Checklist' '$PROTOCOL'"
+check "Has 8-category checklist" \
+  "grep -q '8-Category Checklist' '$PROTOCOL'"
 
-check "Lists all 7 categories" \
-  "[ \$(grep -cE '^[0-9]+\. \*\*' '$PROTOCOL') -ge 7 ]"
+check "Lists all 8 categories" \
+  "[ \$(grep -cE '^[0-9]+\. \*\*' '$PROTOCOL') -ge 8 ]"
 
 check "Has explorer prompt template" \
   "grep -q 'Explorer Prompt Template' '$PROTOCOL'"
@@ -73,11 +73,11 @@ VIBE="$REPO_ROOT/skills/vibe/SKILL.md"
 check "--sweep flag in Quick Start" \
   "grep -q '\-\-sweep recent' '$VIBE'"
 
-check "Step 2e has Path A (deep audit sweep)" \
-  "grep -q 'Deep Audit Sweep' '$VIBE'"
+check "Deep audit sweep documented for vibe" \
+  "grep -q 'sweep manifest' '$VIBE' && grep -q 'deep-audit-protocol.md' '$VIBE'"
 
-check "Step 2e has Path B (lightweight bug hunt)" \
-  "grep -q 'Lightweight Bug Hunt' '$VIBE'"
+check "Lightweight bug hunt path still documented" \
+  "grep -q 'Step 2e: Bug Hunt' '$VIBE'"
 
 check "Step 2e references deep-audit-protocol.md" \
   "grep -q 'deep-audit-protocol.md' '$VIBE'"
@@ -85,8 +85,8 @@ check "Step 2e references deep-audit-protocol.md" \
 check "Council receives sweep manifest" \
   "grep -q 'sweep_manifest' '$VIBE'"
 
-check "All Findings section in report template" \
-  "grep -q '## All Findings' '$VIBE'"
+check "All findings section in report template" \
+  "grep -qi 'all findings' '$VIBE'"
 
 check "No 'top 5' cap in Step 9" \
   "! grep -q 'top 5 findings' '$VIBE'"
@@ -138,14 +138,14 @@ check "Step 2.6 title mentions deep audit" \
 check "--skip-sweep flag documented" \
   "grep -q '\-\-skip-sweep' '$PM'"
 
-check "7-category checklist mentioned" \
-  "grep -q '7-category checklist' '$PM'"
+check "8-category checklist mentioned" \
+  "grep -q '8-category checklist' '$PM'"
 
 check "No 'at least 5 improvements' cap in Step 5.5" \
   "! grep -q 'at least \*\*5\*\*' '$PM'"
 
-check "ALL improvements (no cap) in Step 5.5" \
-  "grep -q 'ALL\*\* improvements' '$PM'"
+check "ALL improvements (no cap) in reporting" \
+  "grep -q 'ALL proactive improvements' '$PM'"
 
 check "No 'top 3' cap in Step 7 report" \
   "! grep -q '(top 3)' '$PM'"
@@ -184,7 +184,7 @@ check "Vibe and post-mortem both reference sweep manifest" \
   "grep -q 'sweep.manifest' '$VIBE' && grep -q 'sweep manifest' '$PM'"
 
 check "Vibe and protocol agree on batch sizes (3-5)" \
-  "grep -q 'batch.* 3' '$PROTOCOL' && grep -q '3–5' '$VIBE'"
+  "grep -q 'batch.* 3' '$PROTOCOL' && grep -Eq '3[-–]5' '$VIBE'"
 
 check "Council prompts and protocol agree on adjudication term" \
   "grep -q 'adjudication mode' '$PROMPTS' && grep -q 'adjudication mode' '$PROTOCOL'"

@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
+export MAX_TURNS=6
 
 echo "=== Test: crank skill ==="
 echo ""
@@ -12,7 +13,7 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "What is the crank skill in this plugin? Describe it briefly." 45)
+output=$(run_claude "Answer concisely without running tools: what is the crank skill in this plugin?" 60)
 
 if assert_contains "$output" "crank" "Skill name recognized"; then
     :
@@ -31,7 +32,7 @@ echo ""
 # Test 2: Verify epic completion
 echo "Test 2: Epic completion behavior..."
 
-output=$(run_claude "When does the crank skill stop? What triggers completion?" 45)
+output=$(run_claude "Answer concisely without running tools: when does the crank skill stop, and what triggers completion?" 60)
 
 if assert_contains "$output" "close\|complet\|finish\|children" "Mentions completion condition"; then
     :

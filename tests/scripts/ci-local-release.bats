@@ -31,6 +31,8 @@ teardown() {
     [[ "$output" == *"Usage"* ]]
     [[ "$output" == *"--fast"* ]]
     [[ "$output" == *"--security-mode"* ]]
+    [[ "$output" == *"--readiness-mode"* ]]
+    [[ "$output" == *"--hil-target"* ]]
 }
 
 @test "-h prints usage and exits 0" {
@@ -89,10 +91,28 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "--readiness-mode rejects invalid values" {
+    run bash "$SCRIPT" --readiness-mode garbage
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Invalid --readiness-mode"* ]]
+}
+
+@test "--readiness-mode accepts official (help-exit path)" {
+    run bash "$SCRIPT" --readiness-mode official --help
+    [ "$status" -eq 0 ]
+}
+
 @test "script references ARTIFACT_DIR for release-grade artifact tracking" {
     # Verifies the RUN_ID / ARTIFACT_DIR pattern is present, since release
     # provenance depends on artifacts being written to a dated directory.
     run grep -q 'ARTIFACT_DIR=' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "script wires HIL and release readiness gates" {
+    run grep -q 'check-release-hil.sh' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'check-release-readiness.sh' "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 

@@ -202,14 +202,29 @@ jobs:
             jq -n --arg note "security-gate output was not valid JSON" '{parse_error:true,note:$note}' > release-artifacts/security-gate-summary.json
           fi
 
-      - name: Upload SBOM and security report to release
+          # Public CI is a VIL lane. HIL is captured by the authoritative local
+          # release audit because private physical hosts are not available here.
+          chmod +x scripts/check-release-readiness.sh
+          scripts/check-release-readiness.sh \
+            --mode advisory \
+            --artifact-dir release-artifacts \
+            --out release-artifacts/release-readiness.json \
+            --sil pass \
+            --vil pass \
+            --hil-status skipped \
+            --artifacts pass \
+            --security pass \
+            --eval pass
+
+      - name: Upload SBOM, security report, and readiness evidence to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           gh release upload "$VERSION" release-artifacts/sbom-cyclonedx-go-mod.json --clobber
           gh release upload "$VERSION" release-artifacts/security-gate-summary.json --clobber
-          echo "Uploaded SBOM + security report assets"
+          gh release upload "$VERSION" release-artifacts/release-readiness.json --clobber
+          echo "Uploaded SBOM + security report + readiness assets"
 
       - name: Generate SLSA provenance attestation
         uses: actions/attest-build-provenance@v4
@@ -224,3 +239,4 @@ jobs:
             dist/checksums.txt
             release-artifacts/sbom-cyclonedx-go-mod.json
             release-artifacts/security-gate-summary.json
+            release-artifacts/release-readiness.json

@@ -5,10 +5,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 SCHEMA="$REPO_ROOT/skills/council/schemas/verdict.json"
 CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"
 OUTPUT="/tmp/codex-schema-test-$$.json"
+RUN_LOG="/tmp/codex-schema-test-$$.log"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -25,7 +26,7 @@ fail() { echo -e "${RED}  ✗${NC} $1"; ((failed++)) || true; }
 skip() { echo -e "${YELLOW}  ⊘${NC} $1"; ((skipped++)) || true; }
 
 cleanup() {
-    rm -f "$OUTPUT"
+    rm -f "$OUTPUT" "$RUN_LOG"
 }
 trap cleanup EXIT
 
@@ -46,20 +47,25 @@ attempt=1
 run_succeeded=0
 last_exit=0
 while [[ $attempt -le $max_attempts ]]; do
-    if AGENTOPS_INTENT_ECHO_DISABLED=1 timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
+    set +e
+    AGENTOPS_INTENT_ECHO_DISABLED=1 timeout 120 codex exec -s read-only -m "$CODEX_MODEL" -C "$REPO_ROOT" \
         --output-schema "$SCHEMA" \
         -o "$OUTPUT" \
         "Review skills/council/schemas/verdict.json and return a PASS verdict with one minor finding about schema design" \
-        > /dev/null 2>&1; then
+        > "$RUN_LOG" 2>&1
+    last_exit=$?
+    set -e
+
+    if [[ $last_exit -eq 0 ]]; then
         run_succeeded=1
         break
     fi
 
-    last_exit=$?
     if [[ $last_exit -eq 124 ]]; then
         echo -e "${YELLOW}  Timeout on attempt $attempt/$max_attempts${NC}"
     else
         fail "codex exec with --output-schema failed (exit $last_exit)"
+        sed -n '1,80p' "$RUN_LOG" | sed 's/^/    /' >&2
         echo -e "${RED}FAILED${NC} - Codex command failed"
         exit 1
     fi

@@ -79,6 +79,29 @@ skip() {
     TOTAL=$((TOTAL + 1))
 }
 
+output_matches() {
+    local output="$1"
+    local pattern="$2"
+    grep -qEi "$pattern" <<<"$output"
+}
+
+output_word_matches() {
+    local output="$1"
+    local word="$2"
+    grep -qw -- "$word" <<<"$output"
+}
+
+print_output_head() {
+    local output="$1"
+    local lines="${2:-3}"
+    sed -n "1,${lines}p" <<<"$output" | sed 's/^/    /'
+}
+
+print_panic_lines() {
+    local output="$1"
+    awk '/panic:|runtime error:|goroutine/ { print; count++; if (count >= 5) exit }' <<<"$output" | sed 's/^/    /'
+}
+
 section() {
     echo ""
     echo -e "${BLUE}── $1 ──${NC}"
@@ -94,9 +117,9 @@ AO="$REPO_ROOT/cli/bin/ao"
 check_no_panic() {
     local output="$1"
     local label="$2"
-    if echo "$output" | grep -qE '(^panic:|runtime error:|^goroutine [0-9]+ \[)'; then
+    if grep -qE '(^panic:|runtime error:|^goroutine [0-9]+ \[)' <<<"$output"; then
         fail "$label — PANIC/CRASH DETECTED"
-        echo "$output" | grep -E '(panic:|runtime error:|goroutine)' | head -5 | sed 's/^/    /'
+        print_panic_lines "$output"
         return 1
     fi
     return 0
@@ -123,7 +146,7 @@ test_exec() {
         pass "$label"
     else
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
     fi
 }
 
@@ -143,15 +166,15 @@ test_exec_output() {
 
     if [[ "$rc" -ne 0 ]]; then
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
         return 0
     fi
 
-    if echo "$output" | grep -qEi "$pattern"; then
+    if output_matches "$output" "$pattern"; then
         pass "$label"
     else
         fail "$label — output missing pattern: $pattern"
-        echo "$output" | head -5 | sed 's/^/    /'
+        print_output_head "$output" 5
     fi
 }
 
@@ -171,14 +194,14 @@ test_exec_exact() {
 
     if [[ "$rc" -ne 0 ]]; then
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
         return 0
     fi
 
     if [[ "$output" == "$expected" ]]; then
         pass "$label"
     else
-        fail "$label — expected exactly '$expected', got '$(echo "$output" | head -1)'"
+        fail "$label — expected exactly '$expected', got '$(sed -n '1p' <<<"$output")'"
     fi
 }
 
@@ -197,15 +220,15 @@ test_help() {
 
     if [[ "$rc" -ne 0 ]]; then
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
         return 0
     fi
 
-    if echo "$output" | grep -qEi '(Usage|usage|Available Commands|Flags)'; then
+    if output_matches "$output" '(Usage|usage|Available Commands|Flags)'; then
         pass "$label"
     else
         fail "$label — help output missing Usage/Commands/Flags"
-        echo "$output" | head -5 | sed 's/^/    /'
+        print_output_head "$output" 5
     fi
 }
 
@@ -224,15 +247,15 @@ test_json() {
 
     if [[ "$rc" -ne 0 ]]; then
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
         return 0
     fi
 
-    if echo "$output" | jq . >/dev/null 2>&1; then
+    if jq . >/dev/null 2>&1 <<<"$output"; then
         pass "$label"
     else
         fail "$label — output is not valid JSON"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
     fi
 }
 
@@ -254,7 +277,7 @@ test_exec_tolerant() {
         pass "$label"
     else
         fail "$label (exit $rc)"
-        echo "$output" | head -3 | sed 's/^/    /'
+        print_output_head "$output" 3
     fi
 }
 
@@ -514,7 +537,7 @@ EXPECTED_COMMANDS=(
 )
 
 for cmd in "${EXPECTED_COMMANDS[@]}"; do
-    if echo "$TOP_HELP" | grep -qw "$cmd"; then
+    if output_word_matches "$TOP_HELP" "$cmd"; then
         pass "ao --help lists '$cmd'"
     else
         fail "ao --help missing '$cmd'"

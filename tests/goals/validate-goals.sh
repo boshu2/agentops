@@ -80,8 +80,9 @@ if [[ "$GOALS_FORMAT" == "md" ]]; then
     # Parse weight from second-to-last column (pipes in Check column break naive awk)
     bad_weights=0
     while IFS= read -r line; do
-        # Reverse the fields: split on ' | ', weight is second-to-last
-        w=$(echo "$line" | rev | cut -d'|' -f3 | rev | tr -d ' ')
+        # Split on markdown table pipes after hiding escaped pipes in commands.
+        safe_line="${line//\\|/__AGENTOPS_ESCAPED_PIPE__}"
+        w=$(echo "$safe_line" | awk -F'|' '{gsub(/ /, "", $4); print $4}')
         if [[ -n "$w" ]] && { ! [[ "$w" =~ ^[0-9]+$ ]] || [[ "$w" -lt 1 ]] || [[ "$w" -gt 10 ]]; }; then
             bad_weights=$((bad_weights + 1))
         fi

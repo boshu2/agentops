@@ -1521,6 +1521,56 @@ else
 fi
 
 echo ""
+echo "=== eval-verdict-compiler.sh ==="
+# ============================================================
+
+EVAL_FIX_DIR="$REPO_ROOT/tests/fixtures/eval-verdicts"
+MOCK_EVAL="$TMPDIR/mock-eval-verdict"
+setup_mock_repo "$MOCK_EVAL"
+mkdir -p "$MOCK_EVAL/evals/runs/run-improved"
+EVAL_LEARNING="$MOCK_EVAL/learning.md"
+EVAL_MANIFEST="$MOCK_EVAL/evals/runs/run-improved/manifest.json"
+/bin/cp "$EVAL_FIX_DIR/learning-existing.md" "$EVAL_LEARNING"
+jq --arg path "$EVAL_LEARNING" '.verdict.applicable_artifacts = [$path]' \
+    "$EVAL_FIX_DIR/manifest-improved.json" > "$EVAL_MANIFEST"
+
+BEFORE="$(shasum "$EVAL_LEARNING" | awk '{print $1}')"
+if (cd "$MOCK_EVAL" && AGENTOPS_EVALS_ROOT="$MOCK_EVAL/evals" AGENTOPS_VERDICT_QUIET=1 \
+    bash "$HOOKS_DIR/eval-verdict-compiler.sh" --dry-run --manifest "$EVAL_MANIFEST" >/dev/null 2>&1); then
+    AFTER="$(shasum "$EVAL_LEARNING" | awk '{print $1}')"
+    if [ "$BEFORE" = "$AFTER" ] && [ ! -f "$MOCK_EVAL/evals/processed.jsonl" ]; then
+        pass "eval-verdict-compiler dry-run is read-only"
+    else
+        fail "eval-verdict-compiler dry-run is read-only"
+    fi
+else
+    fail "eval-verdict-compiler dry-run exits zero"
+fi
+
+if (cd "$MOCK_EVAL" && AGENTOPS_EVALS_ROOT="$MOCK_EVAL/evals" AGENTOPS_VERDICT_QUIET=1 \
+    bash "$HOOKS_DIR/eval-verdict-compiler.sh" --manifest "$EVAL_MANIFEST" >/dev/null 2>&1); then
+    GOT_UTILITY="$(awk '/^utility:/ {gsub(/^utility:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$EVAL_LEARNING")"
+    GOT_REWARD="$(awk '/^reward_count:/ {gsub(/^reward_count:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$EVAL_LEARNING")"
+    if [ "$GOT_UTILITY" = "0.605000" ] && [ "$GOT_REWARD" = "1" ]; then
+        pass "eval-verdict-compiler improved verdict mutates learning metadata"
+    else
+        fail "eval-verdict-compiler improved verdict mutates learning metadata"
+    fi
+else
+    fail "eval-verdict-compiler improved verdict exits zero"
+fi
+
+MOCK_EVAL_EMPTY="$TMPDIR/mock-eval-verdict-empty"
+setup_mock_repo "$MOCK_EVAL_EMPTY"
+mkdir -p "$MOCK_EVAL_EMPTY/evals/runs"
+if (cd "$MOCK_EVAL_EMPTY" && AGENTOPS_EVALS_ROOT="$MOCK_EVAL_EMPTY/evals" AGENTOPS_VERDICT_QUIET=1 \
+    bash "$HOOKS_DIR/eval-verdict-compiler.sh" >/dev/null 2>&1); then
+    pass "eval-verdict-compiler exits quietly with no manifests"
+else
+    fail "eval-verdict-compiler exits quietly with no manifests"
+fi
+
+echo ""
 echo "=== constraint-compiler.sh ==="
 # ============================================================
 
@@ -1960,6 +2010,45 @@ if jq -e '.hooks.PreToolUse[] | select(.matcher == "Edit") | .hooks[] | select(.
     pass "edit-knowledge-surface.sh wired in hooks.json under PreToolUse with Edit matcher"
 else
     fail "edit-knowledge-surface.sh not found in hooks.json under PreToolUse with Edit matcher"
+fi
+
+echo ""
+echo "=== edit-audit.sh ==="
+
+MOCK_EDIT_AUDIT="$TMPDIR/mock-edit-audit"
+setup_mock_repo "$MOCK_EDIT_AUDIT"
+printf 'audit me\n' > "$MOCK_EDIT_AUDIT/note.txt"
+EDIT_AUDIT_INPUT=$(jq -n '{"tool_name":"Edit","tool_input":{"file_path":"note.txt"}}')
+(
+    cd "$MOCK_EDIT_AUDIT"
+    printf '%s\n' "$EDIT_AUDIT_INPUT" | bash "$HOOKS_DIR/edit-audit.sh" >/dev/null 2>&1
+)
+EDIT_AUDIT_LOG="$MOCK_EDIT_AUDIT/.agents/ao/edit-audit.log"
+if [ -s "$EDIT_AUDIT_LOG" ] && jq -e '.tool == "Edit" and .file == "note.txt" and (.sha256 | length) > 0' "$EDIT_AUDIT_LOG" >/dev/null 2>&1; then
+    pass "edit-audit writes valid JSON audit row for Edit"
+else
+    fail "edit-audit writes valid JSON audit row for Edit"
+fi
+
+rm -f "$EDIT_AUDIT_LOG"
+(
+    cd "$MOCK_EDIT_AUDIT"
+    jq -n '{"tool_name":"Read","tool_input":{"file_path":"note.txt"}}' | bash "$HOOKS_DIR/edit-audit.sh" >/dev/null 2>&1
+)
+if [ ! -e "$EDIT_AUDIT_LOG" ]; then
+    pass "edit-audit ignores non-edit tools"
+else
+    fail "edit-audit ignores non-edit tools"
+fi
+
+(
+    cd "$MOCK_EDIT_AUDIT"
+    printf '%s\n' "$EDIT_AUDIT_INPUT" | AGENTOPS_EDIT_AUDIT_DISABLED=1 bash "$HOOKS_DIR/edit-audit.sh" >/dev/null 2>&1
+)
+if [ ! -e "$EDIT_AUDIT_LOG" ]; then
+    pass "edit-audit kill switch suppresses audit row"
+else
+    fail "edit-audit kill switch suppresses audit row"
 fi
 
 # ============================================================

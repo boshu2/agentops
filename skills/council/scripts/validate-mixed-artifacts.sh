@@ -56,11 +56,14 @@ write_codex_judge() {
       "recommendation": "Keep the six-artifact mixed-mode contract covered without live vendor spend.",
       "fix": "Run this smoke from council validators.",
       "why": "Static docs checks cannot prove the consolidator has one artifact per requested judge.",
-      "ref": "skills/council/references/cli-spawning.md"
+      "ref": "skills/council/references/cli-spawning.md",
+      "id": null
     }
   ],
   "recommendation": "Pass mocked mixed-mode artifact coverage.",
-  "schema_version": 4
+  "schema_version": 4,
+  "satisfaction_score": null,
+  "satisfaction_breakdown": null
 }
 EOF
 }

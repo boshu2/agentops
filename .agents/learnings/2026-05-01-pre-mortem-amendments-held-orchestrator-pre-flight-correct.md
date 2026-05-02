@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.7
 source_epic: soc-irg1
+helpful_count: 0
+harmful_count: 0
+reward_count: 0
 ---
 
 # Learning: Pre-mortem amendments held 4/4 when implemented as bd issue notes

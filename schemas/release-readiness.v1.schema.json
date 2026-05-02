@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/release-readiness.v1.schema.json",
+  "title": "AgentOps Release Readiness",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "mode",
+    "threshold",
+    "release_readiness_score",
+    "release_status",
+    "dimensions",
+    "hil_evidence",
+    "recommendations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 20
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["official", "advisory", "fast"]
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0
+    },
+    "release_readiness_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "release_status": {
+      "type": "string",
+      "enum": ["pass", "warn", "fail"]
+    },
+    "artifact_dir": {
+      "type": ["string", "null"]
+    },
+    "dimensions": {
+      "type": "object",
+      "required": ["sil", "vil", "hil", "artifacts", "security", "evals"],
+      "additionalProperties": false,
+      "properties": {
+        "sil": {
+          "$ref": "#/$defs/dimension"
+        },
+        "vil": {
+          "$ref": "#/$defs/dimension"
+        },
+        "hil": {
+          "$ref": "#/$defs/dimension"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/dimension"
+        },
+        "security": {
+          "$ref": "#/$defs/dimension"
+        },
+        "evals": {
+          "$ref": "#/$defs/dimension"
+        }
+      }
+    },
+    "hil_evidence": {
+      "type": "object",
+      "required": ["status", "artifact", "waiver"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "skipped", "waived"]
+        },
+        "artifact": {
+          "type": ["string", "null"]
+        },
+        "waiver": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "required": ["status", "weight", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "skipped", "waived"]
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "points": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

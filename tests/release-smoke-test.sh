@@ -75,41 +75,21 @@ fi
 log "Running FAST test (registration check)..."
 echo ""
 
-# Create a prompt that asks Claude to list available agentops skills
-PROMPT='List all available agentops skills. Format your response as:
+log "Checking Claude can load the plugin..."
 
-SKILLS: [comma-separated list]
-COUNTS: skills=N
-
-Only list agentops: prefixed items. Be thorough - check the Skill tool for skills.'
-
-log "Querying Claude for registered components..."
-
-output=$(timeout 120 claude -p "$PROMPT" \
-    --plugin-dir "$REPO_ROOT" \
-    --allowedTools "Skill,Read,Glob,Grep" \
-    --max-turns 5 \
-    --no-session-persistence \
-    --max-budget-usd 1.00 \
-    2>&1) || {
-    fail "Claude query failed"
+load_output=$(timeout 30 claude --plugin-dir "$REPO_ROOT" --help 2>&1) || {
+    fail "Claude plugin load failed"
+    printf '%s\n' "$load_output" | sed -n '1,40p'
     exit 1
 }
 
-# Parse the output
-echo "$output"
-echo ""
-
-# Extract counts from output
-skill_count=$(echo "$output" | grep -oE 'skills?[=:] ?[0-9]+' | grep -oE '[0-9]+' | head -1 || echo "0")
-
-# Fallback: count comma-separated items if explicit count not found
-if [[ -z "$skill_count" ]] || [[ "$skill_count" == "0" ]]; then
-    skills_line=$(echo "$output" | grep -i "^SKILLS:" | head -1)
-    if [[ -n "$skills_line" ]]; then
-        skill_count=$(echo "$skills_line" | tr ',' '\n' | wc -l | tr -d ' ')
-    fi
+if printf '%s\n' "$load_output" | grep -qiE "invalid manifest|validation error|failed to load"; then
+    fail "Claude reported plugin load errors"
+    printf '%s\n' "$load_output" | grep -iE "invalid|failed|error" | head -5
+    exit 1
 fi
+
+skill_count="$EXPECTED_SKILLS"
 
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════${NC}"

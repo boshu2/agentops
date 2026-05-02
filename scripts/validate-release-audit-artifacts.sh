@@ -24,11 +24,20 @@ extract_artifact_dir() {
     printf '%s\n' "$artifact"
 }
 
+release_readiness_required_for_audit() {
+    local audit="$1"
+    local audit_date
+
+    audit_date="$(basename "$audit" | sed -n 's/^\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)-v.*/\1/p')"
+    [[ -n "$audit_date" && "$audit_date" > "2026-05-01" ]]
+}
+
 validate_manifest_artifacts() {
     local audit="$1"
     local version="$2"
     local artifact_dir="$3"
     local manifest="$4"
+    local strict_readiness="$5"
     local schema_version
     local release_version
     local manifest_artifact_dir
@@ -36,6 +45,8 @@ validate_manifest_artifacts() {
     local sbom_cyclonedx
     local sbom_spdx
     local security_report
+    local release_readiness
+    local hil_evidence
 
     schema_version="$(jq -r '.schema_version // empty' "$manifest")"
     release_version="$(jq -r '.release_version // empty' "$manifest")"
@@ -44,6 +55,8 @@ validate_manifest_artifacts() {
     sbom_cyclonedx="$(jq -r '.sbom_cyclonedx // empty' "$manifest")"
     sbom_spdx="$(jq -r '.sbom_spdx // empty' "$manifest")"
     security_report="$(jq -r '.security_report // empty' "$manifest")"
+    release_readiness="$(jq -r '.release_readiness // empty' "$manifest")"
+    hil_evidence="$(jq -r '.hil_evidence // empty' "$manifest")"
     manifest_artifact_dir="${manifest_artifact_dir%/}"
 
     if [[ "$schema_version" != "1" ]]; then
@@ -72,6 +85,31 @@ validate_manifest_artifacts() {
             return 1
         fi
     done
+
+    if [[ "$strict_readiness" == "true" || -n "$release_readiness" || -n "$hil_evidence" ]]; then
+        if [[ -z "$release_readiness" || ! -f "$REPO_ROOT/$artifact_dir/$release_readiness" ]]; then
+            printf '%s: missing release readiness artifact %s under %s\n' "$audit" "${release_readiness:-<blank>}" "$artifact_dir"
+            return 1
+        fi
+        if [[ -z "$hil_evidence" || ! -f "$REPO_ROOT/$artifact_dir/$hil_evidence" ]]; then
+            printf '%s: missing HIL evidence artifact %s under %s\n' "$audit" "${hil_evidence:-<blank>}" "$artifact_dir"
+            return 1
+        fi
+        if ! jq -e '
+            .schema_version == 1 and
+            (.release_readiness_score | type == "number") and
+            (.release_readiness_score >= 8) and
+            .release_status == "pass" and
+            .dimensions.sil.status == "pass" and
+            .dimensions.vil.status == "pass" and
+            (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
+        ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null; then
+            printf '%s: release readiness artifact did not pass >=8 SIL/VIL/HIL gate: %s/%s\n' "$audit" "$artifact_dir" "$release_readiness"
+            return 1
+        fi
+    fi
+
+    return 0
 }
 
 validate_legacy_artifacts() {
@@ -114,7 +152,11 @@ for audit in "${audit_files[@]}"; do
     fi
 
     if [[ -f "$manifest" ]]; then
-        if ! output="$(validate_manifest_artifacts "$audit" "$version" "$artifact_dir" "$manifest")"; then
+        strict_readiness=false
+        if release_readiness_required_for_audit "$audit"; then
+            strict_readiness=true
+        fi
+        if ! output="$(validate_manifest_artifacts "$audit" "$version" "$artifact_dir" "$manifest" "$strict_readiness")"; then
             failures+=("$output")
         fi
     elif ! output="$(validate_legacy_artifacts "$audit" "$version" "$artifact_dir")"; then

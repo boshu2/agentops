@@ -54,7 +54,7 @@ else
 fi
 
 # Test 5: Required fields at root
-REQUIRED='["verdict","confidence","key_insight","findings","recommendation","schema_version"]'
+REQUIRED='["verdict","confidence","key_insight","findings","recommendation","schema_version","satisfaction_score","satisfaction_breakdown"]'
 if jq -e --argjson expected "$REQUIRED" '.required | sort == ($expected | sort)' "$SCHEMA" > /dev/null 2>&1; then
     pass "Root required fields match"
 else
@@ -76,21 +76,22 @@ else
 fi
 
 # Test 8: findings items required fields
-if jq -e '.properties.findings.items.required == ["severity","category","description","location","recommendation","fix","why","ref"]' "$SCHEMA" > /dev/null 2>&1; then
+if jq -e '.properties.findings.items.required == ["severity","category","description","location","recommendation","fix","why","ref","id"]' "$SCHEMA" > /dev/null 2>&1; then
     pass "findings items required: all properties (OpenAI structured output requirement)"
 else
     fail "findings items required fields mismatch"
 fi
 
 # Test 9: Conforming sample validates structurally
-GOOD_SAMPLE='{"verdict":"PASS","confidence":"HIGH","key_insight":"test","findings":[{"severity":"minor","category":"style","description":"test","location":"test.go:1","recommendation":"none","fix":"none","why":"example","ref":"test.go:1"}],"recommendation":"none","schema_version":2}'
+GOOD_SAMPLE='{"verdict":"PASS","confidence":"HIGH","key_insight":"test","findings":[{"severity":"minor","category":"style","description":"test","location":"test.go:1","recommendation":"none","fix":"none","why":"example","ref":"test.go:1","id":null}],"recommendation":"none","schema_version":4,"satisfaction_score":null,"satisfaction_breakdown":null}'
 if echo "$GOOD_SAMPLE" | jq -e '
   .verdict as $v | .confidence as $c |
   ($v == "PASS" or $v == "WARN" or $v == "FAIL") and
   ($c == "HIGH" or $c == "MEDIUM" or $c == "LOW") and
   (.findings | type == "array") and
-  (.findings | all(.severity and .category and .description and .location and .recommendation and (.fix != null) and (.why != null) and (.ref != null))) and
-  (.schema_version == 1 or .schema_version == 2)
+  (.findings | all(.severity and .category and .description and .location and .recommendation and (.fix != null) and (.why != null) and (.ref != null) and has("id"))) and
+  (.schema_version == 1 or .schema_version == 2 or .schema_version == 3 or .schema_version == 4) and
+  has("satisfaction_score") and has("satisfaction_breakdown")
 ' > /dev/null 2>&1; then
     pass "Conforming sample passes structural validation"
 else

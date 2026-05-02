@@ -1,49 +1,32 @@
 {
   "schema_version": 1,
-  "goal": "Build cross-vendor local nightly automation for AgentOps.",
-  "generated_at": "2026-05-01T14:42:19Z",
-  "items": [
+  "goal": "Release readiness >=8/10 with SIL/VIL/HIL evidence in the release process",
+  "generated_at": "2026-05-02T15:08:39-04:00",
+  "applied_findings": [
     {
-      "rank": 1,
-      "source": "research",
-      "path": ".agents/research/2026-05-01-cross-vendor-nightly-automation.md",
-      "reason": "Maps local, GitHub, Claude, Codex, Dream/wiki, and Gas City options."
+      "path": ".agents/findings/f-2026-05-01-024.md",
+      "reason": "Live daemon/service proof maps to HIL and L3 release evidence."
     },
     {
-      "rank": 2,
-      "source": "contract",
-      "path": "docs/contracts/remote-compute.md",
-      "reason": "Defines Bushido as private target label and Gas City as future product backend."
+      "path": ".agents/findings/f-2026-05-01-021.md",
+      "reason": "Cross-host install-and-smoke pattern maps to remote HIL targets."
     },
     {
-      "rank": 3,
-      "source": "contract",
-      "path": "docs/contracts/rpi-run-registry.md",
-      "reason": "Runtime selection already flows through --runtime, --runtime-cmd, config, and env."
+      "path": ".agents/findings/f-2026-05-01-025.md",
+      "reason": "Use quick lifecycle gates for multi-phase discovery."
     },
     {
-      "rank": 4,
-      "source": "finding",
-      "path": ".agents/findings/f-2026-04-25-001.md",
-      "reason": "Long autonomous loops need closeout/disposition verification."
-    },
-    {
-      "rank": 5,
-      "source": "finding",
-      "path": ".agents/findings/f-2026-04-03-002.md",
-      "reason": "Stale next-work suppression needs explicit proof."
-    },
-    {
-      "rank": 6,
-      "source": "workflow",
-      "path": ".github/workflows/nightly.yml",
-      "reason": "Existing public proof harness."
-    },
-    {
-      "rank": 7,
-      "source": "workflow",
-      "path": ".github/workflows/nightly-rpi-brief.yml",
-      "reason": "Existing evidence prompt-packet lane."
+      "path": ".agents/findings/f-2026-05-02-005.md",
+      "reason": "Implementation must verify tracked file edits and diffs after edits."
     }
-  ]
+  ],
+  "prior_art": [
+    ".agents/research/2026-04-24-agentops-evaluation-environment.md",
+    ".agents/research/2026-04-29-eval-suite-triage.md",
+    ".agents/research/2026-04-26-state-since-v2.38.0.md",
+    "docs/contracts/eval-environment.md",
+    "docs/RELEASING.md",
+    "docs/CI-CD.md"
+  ],
+  "next_work": []
 }

@@ -17,9 +17,10 @@ setup() {
 write_audit() {
     local version="$1"
     local run_id="$2"
+    local audit_date="${3:-2026-03-22}"
     local dir="$FAKE_REPO/docs/releases"
     mkdir -p "$dir"
-    cat > "$dir/2026-03-22-v${version}-audit.md" <<EOF
+    cat > "$dir/${audit_date}-v${version}-audit.md" <<EOF
 # Release v${version} - Audit
 
 **Local CI Artifacts:** \`.agents/releases/local-ci/$run_id/\`
@@ -51,7 +52,9 @@ write_manifest() {
   "security_mode": "full",
   "sbom_cyclonedx": "sbom-v$version.cyclonedx.json",
   "sbom_spdx": "sbom-v$version.spdx.json",
-  "security_report": "security-gate-full.json"
+  "security_report": "security-gate-full.json",
+  "release_readiness": "release-readiness.json",
+  "hil_evidence": "hil-evidence.json"
 }
 EOF
 }
@@ -63,6 +66,19 @@ write_artifact_files() {
     printf '{"bomFormat":"CycloneDX"}\n' > "$dir/sbom-v$version.cyclonedx.json"
     printf '{"spdxVersion":"SPDX-2.3"}\n' > "$dir/sbom-v$version.spdx.json"
     printf '{"gate_status":"pass"}\n' > "$dir/security-gate-full.json"
+    cat > "$dir/release-readiness.json" <<'EOF'
+{
+  "schema_version": 1,
+  "release_readiness_score": 10,
+  "release_status": "pass",
+  "dimensions": {
+    "sil": {"status": "pass"},
+    "vil": {"status": "pass"},
+    "hil": {"status": "pass"}
+  }
+}
+EOF
+    printf '{"schema_version":1,"status":"pass","targets":[{"name":"loop","status":"pass"}]}\n' > "$dir/hil-evidence.json"
 }
 
 @test "resolve-release-artifacts picks the newest complete manifest for a version" {
@@ -144,6 +160,27 @@ write_artifact_files() {
     run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"manifest schema_version=2, expected 1"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects missing readiness evidence for latest audit" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/release-readiness.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing release readiness artifact release-readiness.json"* ]]
+}
+
+@test "resolve-release-artifacts rejects manifests without readiness evidence" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/hil-evidence.json"
+
+    run "$FAKE_REPO/scripts/resolve-release-artifacts.sh" "2.29.0"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no full local CI artifacts found for release version 2.29.0"* ]]
 }
 
 @test "validate-release-audit-artifacts accepts legacy versioned artifact dirs" {

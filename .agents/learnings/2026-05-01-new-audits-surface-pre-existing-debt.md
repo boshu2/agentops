@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.6
 source_epic: soc-irg1
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: New audit tools surface pre-existing debt; classify before treating as a regression

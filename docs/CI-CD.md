@@ -125,15 +125,18 @@ Consolidated checklist of rules enforced by the pipeline:
 
 ### scripts/ci-local-release.sh
 
-The local CI gate mirrors the remote pipeline and runs in 5 phases:
+The local CI gate mirrors the remote pipeline and runs in 7 phases:
 
 | Phase | Description | Parallelism |
 |-------|-------------|-------------|
 | 1 | Required tool check (bash, git, jq, go, shellcheck, markdownlint) | Sequential |
 | 2 | Quick independent checks: doc-release gate, manifest validation, hook preflight, parity checks, secret scans, MemRL health, etc. | Parallel (capped at half CPU cores, min 4) |
 | 3 | Medium-weight checks: CLI docs parity, ShellCheck, markdownlint, smoke tests, integration tests, coverage floor | Parallel |
+| 3b | Remote-parity checks also covered by `validate.yml` | Parallel |
 | 4 | Heavy checks: Go build + race tests, hook integration tests, SBOM generation, security toolchain gate | Parallel |
 | 5 | CLI smoke tests: hook install smoke, `ao init --hooks` + RPI smoke, release smoke test | Parallel |
+| 6 | Post-hoc `$HOME/.agents` content-hash gate | Sequential |
+| 7 | Release readiness evidence: HIL capture plus 8/10 readiness score | Sequential |
 
 ### Flags
 
@@ -142,9 +145,12 @@ scripts/ci-local-release.sh              # Full gate (~100s)
 scripts/ci-local-release.sh --fast       # Skip race tests, security gate, SBOM, hook integration (~20s)
 scripts/ci-local-release.sh --jobs 8     # Override parallel job cap
 scripts/ci-local-release.sh --security-mode quick  # Quick security scan
+scripts/ci-local-release.sh --release-version 2.X.Y --hil-target 'local:bushido:ao version'
+scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavailable'
 ```
 
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
+When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with SIL/VIL pass and HIL pass or waiver.
 
 ### Minimum Checks Before Any Push
 
@@ -253,8 +259,8 @@ The release workflow (`release.yml`) triggers on version tags (`v*`) or manual d
 3. **Validation:** Verifies tag exists, Homebrew token is valid
 4. **Release notes:** Extracts from CHANGELOG.md via `scripts/extract-release-notes.sh`
 5. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
-6. **Post-publish:** Applies curated release notes, generates CycloneDX SBOM, runs full security gate, uploads SBOM + security report as release assets
-7. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v3` covering all tarballs, checksums, SBOM, and security report
+6. **Post-publish:** Applies curated release notes, generates CycloneDX SBOM, runs full security gate, writes advisory VIL readiness, uploads SBOM + security report + readiness as release assets
+7. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness
 8. **Homebrew:** GoReleaser auto-updates `boshu2/homebrew-agentops` tap
 
 Manual dispatch is a rerun path, not the primary publish path for a new version. For a fresh release, push the tag. For post-tag fixes, use `scripts/retag-release.sh vX.Y.Z`. Do not start a manual dispatch in parallel with the tag-push workflow for the same tag.
@@ -275,7 +281,7 @@ git tag v2.X.0 && git push origin v2.X.0
 scripts/retag-release.sh v2.X.0
 
 # Local validation before tagging
-scripts/ci-local-release.sh
+scripts/ci-local-release.sh --release-version 2.X.0 --hil-target 'local:bushido:ao version'
 ```
 
 ## Script Categories

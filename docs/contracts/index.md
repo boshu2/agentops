@@ -94,6 +94,13 @@ skills, the runtime, and external integrations.
     Deterministic search-eval backend comparison, promotion thresholds,
     optional rerank behavior, and deferred vector/graph-store policy.
 
+-   :material-clipboard-check-outline: **[Release Readiness](release-readiness.md)**
+
+    ---
+
+    8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest
+    requirements, and HIL waiver policy.
+
 -   :material-brain: **[MemRL Policy Schema](memrl-policy.schema.json)**
 
     ---

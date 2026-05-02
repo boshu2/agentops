@@ -7,6 +7,9 @@ confidence: high
 maturity: provisional
 utility: 0.8
 source_epic: soc-irg1
+harmful_count: 0
+reward_count: 0
+helpful_count: 0
 ---
 
 # Learning: When pre-mortem flags an undersized surface, refine scope at orchestration time before dispatching the worker

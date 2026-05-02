@@ -9,6 +9,7 @@ set -euo pipefail
 #   ./scripts/ci-local-release.sh              # full gate (parallel where possible)
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
+#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version'
 #
 # Exit codes:
 #   0 = all checks passed
@@ -27,6 +28,9 @@ FAST_MODE=false
 RELEASE_VERSION_OVERRIDE=""
 
 USER_MAX_JOBS=""
+RELEASE_READINESS_MODE="${AGENTOPS_RELEASE_READINESS_MODE:-}"
+RELEASE_HIL_WAIVER="${AGENTOPS_RELEASE_HIL_WAIVER:-}"
+RELEASE_HIL_TARGET_ARGS=()
 
 usage() {
     cat <<'USAGE'
@@ -35,6 +39,9 @@ Usage: scripts/ci-local-release.sh [options]
 Options:
   --fast               Skip heavy checks (race tests, security gate, SBOM, hook integration)
   --release-version V  Record artifacts against the target release version (for release audits)
+  --readiness-mode M   official|advisory|fast (default: official only with --release-version)
+  --hil-target SPEC    Add HIL target evidence; repeatable (local:<name>:<cmd> or ssh:<name>:<host>:<cmd>)
+  --hil-waiver TEXT    Record an explicit HIL waiver for release readiness
   --security-mode      quick|full (default: full)
   --jobs N             Max parallel jobs (default: half CPU cores, min 4)
   -h, --help           Show this help
@@ -49,6 +56,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --release-version)
             RELEASE_VERSION_OVERRIDE="${2:-}"
+            shift 2
+            ;;
+        --readiness-mode)
+            RELEASE_READINESS_MODE="${2:-}"
+            shift 2
+            ;;
+        --hil-target)
+            RELEASE_HIL_TARGET_ARGS+=("${2:-}")
+            shift 2
+            ;;
+        --hil-waiver)
+            RELEASE_HIL_WAIVER="${2:-}"
             shift 2
             ;;
         --security-mode)
@@ -73,6 +92,14 @@ done
 
 if [[ "$SECURITY_MODE" != "quick" && "$SECURITY_MODE" != "full" ]]; then
     echo "Invalid --security-mode: $SECURITY_MODE (expected quick or full)" >&2
+    exit 1
+fi
+
+if [[ -n "$RELEASE_READINESS_MODE" && \
+      "$RELEASE_READINESS_MODE" != "official" && \
+      "$RELEASE_READINESS_MODE" != "advisory" && \
+      "$RELEASE_READINESS_MODE" != "fast" ]]; then
+    echo "Invalid --readiness-mode: $RELEASE_READINESS_MODE (expected official, advisory, or fast)" >&2
     exit 1
 fi
 
@@ -307,6 +334,9 @@ run_security_scan_patterns() {
             --exclude-dir=.claude \
             --exclude-dir=.agents \
             --exclude-dir=.tmp \
+            --exclude-dir=.venv \
+            --exclude-dir=.venv-docs \
+            --exclude-dir=venv \
             --exclude-dir=tests \
             --exclude-dir=testdata \
             --exclude-dir=cli/testdata \
@@ -426,6 +456,8 @@ write_release_artifact_manifest() {
     local sbom_cyclonedx=""
     local sbom_spdx=""
     local security_report=""
+    local release_readiness=""
+    local hil_evidence=""
     local fast_mode_json=false
 
     version="$(release_version)"
@@ -446,6 +478,12 @@ write_release_artifact_manifest() {
     if [[ -f "$ARTIFACT_DIR/security-gate-${SECURITY_MODE}.json" ]]; then
         security_report="security-gate-${SECURITY_MODE}.json"
     fi
+    if [[ -f "$ARTIFACT_DIR/release-readiness.json" ]]; then
+        release_readiness="release-readiness.json"
+    fi
+    if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
+        hil_evidence="hil-evidence.json"
+    fi
 
     jq -n \
         --arg run_id "$RUN_ID" \
@@ -458,6 +496,8 @@ write_release_artifact_manifest() {
         --arg sbom_cyclonedx "$sbom_cyclonedx" \
         --arg sbom_spdx "$sbom_spdx" \
         --arg security_report "$security_report" \
+        --arg release_readiness "$release_readiness" \
+        --arg hil_evidence "$hil_evidence" \
         --argjson fast_mode "$fast_mode_json" \
         '{
           schema_version: 1,
@@ -471,7 +511,9 @@ write_release_artifact_manifest() {
           security_mode: $security_mode,
           sbom_cyclonedx: (if $sbom_cyclonedx == "" then null else $sbom_cyclonedx end),
           sbom_spdx: (if $sbom_spdx == "" then null else $sbom_spdx end),
-          security_report: (if $security_report == "" then null else $security_report end)
+          security_report: (if $security_report == "" then null else $security_report end),
+          release_readiness: (if $release_readiness == "" then null else $release_readiness end),
+          hil_evidence: (if $hil_evidence == "" then null else $hil_evidence end)
         }' > "$manifest_file"
 
     echo "Release artifact manifest: $manifest_file"
@@ -575,6 +617,73 @@ run_init_hooks_rpi_smoke() {
 
     rm -rf "$tmp_home" "$tmp_repo"
     return "$rc"
+}
+
+release_readiness_mode() {
+    if [[ -n "$RELEASE_READINESS_MODE" ]]; then
+        printf '%s\n' "$RELEASE_READINESS_MODE"
+    elif [[ "$FAST_MODE" == "true" ]]; then
+        printf 'fast\n'
+    elif [[ -n "$RELEASE_VERSION_OVERRIDE" ]]; then
+        printf 'official\n'
+    else
+        printf 'advisory\n'
+    fi
+}
+
+run_release_hil_evidence() {
+    local mode
+    local args=("--out" "$ARTIFACT_DIR/hil-evidence.json")
+
+    mode="$(release_readiness_mode)"
+    if [[ "$mode" == "official" ]]; then
+        args+=("--required")
+    fi
+    if [[ -n "$RELEASE_HIL_WAIVER" ]]; then
+        args+=("--waiver" "$RELEASE_HIL_WAIVER")
+    fi
+    for target in "${RELEASE_HIL_TARGET_ARGS[@]}"; do
+        args+=("--target" "$target")
+    done
+
+    ./scripts/check-release-hil.sh "${args[@]}"
+}
+
+check_release_readiness() {
+    local mode
+    local security_status="pass"
+    local artifact_status="pass"
+    local vil_status="pass"
+    local args
+
+    mode="$(release_readiness_mode)"
+    if [[ "$FAST_MODE" == "true" ]]; then
+        security_status="skipped"
+        artifact_status="skipped"
+        vil_status="skipped"
+    fi
+
+    args=(
+        "--artifact-dir" "$ARTIFACT_DIR"
+        "--out" "$ARTIFACT_DIR/release-readiness.json"
+        "--mode" "$mode"
+        "--threshold" "8"
+        "--sil" "pass"
+        "--vil" "$vil_status"
+        "--artifacts" "$artifact_status"
+        "--security" "$security_status"
+        "--eval" "pass"
+    )
+
+    if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
+        args+=("--hil-file" "$ARTIFACT_DIR/hil-evidence.json")
+    elif [[ -n "$RELEASE_HIL_WAIVER" ]]; then
+        args+=("--hil-status" "waived" "--hil-waiver" "$RELEASE_HIL_WAIVER")
+    else
+        args+=("--hil-status" "skipped")
+    fi
+
+    ./scripts/check-release-readiness.sh "${args[@]}"
 }
 
 # ═══════════════════════════════════════════════════════
@@ -729,6 +838,12 @@ collect_parallel
 # Fails if any protected subtree under $HOME/.agents was mutated since
 # the snapshot was captured in Phase 1.
 run_step "Agents-hub content-hash gate" check_agents_hash_gate
+
+# ── Phase 7: Release readiness evidence ──
+# Official release audits (--release-version) require HIL evidence or an
+# explicit waiver. Normal local runs and --fast runs still write advisory JSON.
+run_step "HIL release evidence" run_release_hil_evidence
+run_step "Release readiness score gate" check_release_readiness
 
 # ═══════════════════════════════════════════════════════
 #  Summary

@@ -7,8 +7,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
 
-# Override MAX_TURNS for complex prompts
-export MAX_TURNS=5
+# Override MAX_TURNS for live metadata prompts.
+export MAX_TURNS=6
 
 echo "=== Test: swarm skill ==="
 echo ""
@@ -40,7 +40,7 @@ run_claude_retry() {
     local retries=2
 
     for ((i=0; i<retries; i++)); do
-        output=$(run_claude "$prompt" "$timeout" 2>&1) || true
+        output=$(run_claude "Answer concisely without running tools: $prompt" "$timeout" 2>&1) || true
         if [[ -n "$output" ]] && [[ "$output" != *"Reached max turns"* ]]; then
             echo "$output"
             return 0
@@ -73,7 +73,7 @@ test_skill_recognition() {
 # Create 3 independent tasks -> all spawn within 5s, TaskCreate returns task IDs
 # =============================================================================
 test_parallel_spawn() {
-    local prompt='Do independent tasks in swarm run in parallel or sequentially?'
+    local prompt='Do independent tasks in AgentOps swarm run in parallel or sequentially?'
 
     output=$(run_claude_retry "$prompt" 90)
 
@@ -91,7 +91,7 @@ test_parallel_spawn() {
 # Create task2 blocked by task1 -> task2 status=pending until task1 completes
 # =============================================================================
 test_dependency_blocking() {
-    local prompt='In swarm, if Task B is blocked by Task A, what happens? Does B wait for A?'
+    local prompt='In AgentOps swarm, if Task B is blocked by Task A, what happens? Does B wait for A?'
 
     output=$(run_claude_retry "$prompt" 90)
 
@@ -109,7 +109,7 @@ test_dependency_blocking() {
 # Complete Wave 1 tasks -> Wave 2 tasks become ready within 10s
 # =============================================================================
 test_wave_transitions() {
-    local prompt='What is a wave in swarm? How do tasks move from Wave 1 to Wave 2?'
+    local prompt='What is a wave in AgentOps swarm? How do tasks move from Wave 1 to Wave 2?'
 
     output=$(run_claude_retry "$prompt" 90)
 
@@ -127,7 +127,7 @@ test_wave_transitions() {
 # 1 of 3 tasks fails -> other 2 reach completed state
 # =============================================================================
 test_error_isolation() {
-    local prompt='In swarm, if one of 3 parallel tasks fails, what happens to the other 2 tasks? Do they continue or stop?'
+    local prompt='In AgentOps swarm, if one of 3 parallel tasks fails, what happens to the other 2 tasks? Do they continue or stop?'
 
     output=$(run_claude_retry "$prompt" 90)
 
@@ -145,7 +145,7 @@ test_error_isolation() {
 # 0 tasks ready -> return "No tasks ready for wave 1"
 # =============================================================================
 test_empty_wave() {
-    local prompt='What does swarm report when there are no pending tasks?'
+    local prompt='What should AgentOps swarm report when there are no pending tasks ready for the next wave?'
 
     output=$(run_claude_retry "$prompt" 60)
 
@@ -163,7 +163,7 @@ test_empty_wave() {
 # All tasks have blockers -> error "Cannot start - all tasks have blockers"
 # =============================================================================
 test_all_blocked() {
-    local prompt='What happens in swarm with a circular dependency between tasks?'
+    local prompt='What happens in AgentOps swarm with a circular dependency between tasks?'
 
     output=$(run_claude_retry "$prompt" 90)
 
@@ -181,7 +181,7 @@ test_all_blocked() {
 # Verify the skill is invocable
 # =============================================================================
 test_skill_invocation() {
-    output=$(run_claude_retry "Summarize what /swarm does in one paragraph." 60)
+    output=$(run_claude_retry "Summarize what /agentops:swarm does in one paragraph." 60)
 
     # Verify basic swarm concept
     if ! echo "$output" | grep -qiE "(swarm|parallel|task|agent|spawn|execut|wave|isolated|fresh)"; then

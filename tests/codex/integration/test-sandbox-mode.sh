@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"
 OUTPUT_RO="/tmp/codex-sandbox-ro-$$.md"
 

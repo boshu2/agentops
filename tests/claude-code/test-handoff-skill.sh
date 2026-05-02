@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
+export MAX_TURNS=6
 
 echo "=== Test: handoff skill ==="
 echo ""
@@ -12,7 +13,7 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "What is the handoff skill in this plugin? Describe it briefly." 45)
+output=$(run_claude "Answer concisely without running tools: what is the handoff skill in this plugin?" 60)
 
 if assert_contains "$output" "handoff" "Skill name recognized"; then
     :
@@ -31,7 +32,7 @@ echo ""
 # Test 2: Verify handoff document creation
 echo "Test 2: Handoff document creation..."
 
-output=$(run_claude "Where does the handoff skill write its output? What directory?" 45)
+output=$(run_claude "Answer concisely without running tools: where does the handoff skill write its output?" 60)
 
 if assert_contains "$output" ".agents\|handoff" "Mentions output directory"; then
     :
@@ -44,7 +45,7 @@ echo ""
 # Test 3: Verify context preservation
 echo "Test 3: Context preservation..."
 
-output=$(run_claude "What does the handoff skill capture for the next session?" 45)
+output=$(run_claude "Answer concisely without running tools: what does the handoff skill capture for the next session?" 60)
 
 if assert_contains "$output" "accomplish\|commit\|file\|change\|context\|state" "Captures session context"; then
     :
