@@ -239,75 +239,48 @@ func TestQueue_ClaimNextMatchingSkipsUnsupported(t *testing.T) {
 }
 
 func TestQueue_CancelJob(t *testing.T) {
-	now := projectionTestTime(t, 0)
-	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	t.Run("queued job appends cancellation event and repeated cancel is idempotent", func(t *testing.T) {
+		assertCancelQueuedJob(t)
+	})
+	t.Run("running job cancels and rejects stale heartbeat", func(t *testing.T) {
+		assertCancelRunningJob(t)
+	})
+	t.Run("completed job returns terminal outcome without appending", func(t *testing.T) {
+		assertCancelCompletedJob(t)
+	})
+	t.Run("failed job returns terminal outcome without appending", func(t *testing.T) {
+		assertCancelFailedJob(t)
+	})
+}
 
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit-queued", JobID: "job-queued", JobType: JobTypeDreamRun}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit queued job: %v", err)
-	}
-	cancelled, err := queue.CancelJob(CancelJobInput{
+func assertCancelQueuedJob(t *testing.T) {
+	t.Helper()
+	queue := newCancelJobTestQueue(t)
+	submitCancelTestJob(t, queue, "req-submit-queued", "job-queued", JobTypeDreamRun)
+	cancelled := cancelTestJob(t, queue, CancelJobInput{
 		JobID:     "job-queued",
 		RequestID: "req-cancel-queued",
 		Actor:     "operator",
 		Reason:    "superseded",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("cancel queued job: %v", err)
-	}
-	if cancelled.Outcome != CancelJobOutcomeCancelled || cancelled.Job.Status != JobStatusCancelled {
-		t.Fatalf("cancel queued result = %#v, want cancelled outcome and status", cancelled)
-	}
+	})
+	assertCancelResult(t, cancelled, CancelJobOutcomeCancelled, JobStatusCancelled)
 	events := readTestQueueEvents(t, queue)
-	cancelEvent := events[len(events)-1]
-	if cancelEvent.EventType != EventJobCancelled {
-		t.Fatalf("last event type = %q, want job.cancelled", cancelEvent.EventType)
-	}
-	if got, _ := stringPayload(cancelEvent.Payload, "result_status"); got != string(JobResultCancelled) {
-		t.Fatalf("result_status = %q, want cancelled", got)
-	}
-	if got, _ := stringPayload(cancelEvent.Payload, "reason"); got != "superseded" {
-		t.Fatalf("reason = %q, want superseded", got)
-	}
+	assertCancelEventPayload(t, events[len(events)-1], "superseded")
+	assertRepeatCancelDoesNotAppend(t, queue, cancelled, len(events))
+}
 
-	beforeRepeat := len(events)
-	repeated, err := queue.CancelJob(CancelJobInput{
-		JobID:     "job-queued",
-		RequestID: "req-cancel-queued-again",
-		Actor:     "operator",
-		Reason:    "repeat",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("cancel already cancelled job: %v", err)
-	}
-	if repeated.Outcome != CancelJobOutcomeAlreadyTerminalCancelled {
-		t.Fatalf("repeat outcome = %q, want already_terminal_cancelled", repeated.Outcome)
-	}
-	if repeated.Job.LastEventID != cancelled.Job.LastEventID {
-		t.Fatalf("repeat cancel changed last event: before=%s after=%s", cancelled.Job.LastEventID, repeated.Job.LastEventID)
-	}
-	if after := len(readTestQueueEvents(t, queue)); after != beforeRepeat {
-		t.Fatalf("repeat cancel appended events: before=%d after=%d", beforeRepeat, after)
-	}
-
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit-running", JobID: "job-running", JobType: JobTypeWikiForge}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit running job: %v", err)
-	}
-	claim, err := queue.ClaimJob("job-running", "worker-1", QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("claim running job: %v", err)
-	}
-	runningCancelled, err := queue.CancelJob(CancelJobInput{
+func assertCancelRunningJob(t *testing.T) {
+	t.Helper()
+	queue := newCancelJobTestQueue(t)
+	submitCancelTestJob(t, queue, "req-submit-running", "job-running", JobTypeWikiForge)
+	claim := claimCancelTestJob(t, queue, "job-running", "worker-1")
+	runningCancelled := cancelTestJob(t, queue, CancelJobInput{
 		JobID:     "job-running",
 		RequestID: "req-cancel-running",
 		Actor:     "operator",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("cancel running job: %v", err)
-	}
-	if runningCancelled.Outcome != CancelJobOutcomeCancelled || runningCancelled.Job.Status != JobStatusCancelled {
-		t.Fatalf("cancel running result = %#v, want cancelled outcome and status", runningCancelled)
-	}
-	events = readTestQueueEvents(t, queue)
+	})
+	assertCancelResult(t, runningCancelled, CancelJobOutcomeCancelled, JobStatusCancelled)
+	events := readTestQueueEvents(t, queue)
 	if got, _ := stringPayload(events[len(events)-1].Payload, "reason"); got == "" {
 		t.Fatalf("cancel event reason is empty")
 	}
@@ -320,70 +293,145 @@ func TestQueue_CancelJob(t *testing.T) {
 	}, QueueMutationOptions{}); !errors.Is(err, ErrNoClaimableJobs) {
 		t.Fatalf("heartbeat after cancel error = %v, want ErrNoClaimableJobs", err)
 	}
+}
 
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit-complete", JobID: "job-complete", JobType: JobTypeRPIPhase}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit complete job: %v", err)
-	}
-	completeClaim, err := queue.ClaimJob("job-complete", "worker-2", QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("claim complete job: %v", err)
-	}
-	completed, err := queue.CompleteJob(CompleteJobInput{
-		JobID:      "job-complete",
-		RequestID:  "req-complete",
-		ClaimToken: completeClaim.ClaimToken,
-		LeaseEpoch: completeClaim.LeaseEpoch,
-		Actor:      "worker-2",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("complete job: %v", err)
-	}
-	terminalCancel, err := queue.CancelJob(CancelJobInput{
+func assertCancelCompletedJob(t *testing.T) {
+	t.Helper()
+	queue := newCancelJobTestQueue(t)
+	submitCancelTestJob(t, queue, "req-submit-complete", "job-complete", JobTypeRPIPhase)
+	completed := completeCancelTestJob(t, queue, "job-complete")
+	terminalCancel := cancelTestJob(t, queue, CancelJobInput{
 		JobID:     "job-complete",
 		RequestID: "req-cancel-complete",
 		Reason:    "late",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("cancel completed job: %v", err)
-	}
+	})
 	if terminalCancel.Outcome != CancelJobOutcomeAlreadyTerminalCompleted {
 		t.Fatalf("cancel completed outcome = %q, want already_terminal_completed", terminalCancel.Outcome)
 	}
-	if terminalCancel.Job.LastEventID != completed.LastEventID {
-		t.Fatalf("cancel completed changed last event: before=%s after=%s", completed.LastEventID, terminalCancel.Job.LastEventID)
-	}
+	assertCancelDidNotChangeLastEvent(t, terminalCancel.Job, completed)
+}
 
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit-fail", JobID: "job-fail", JobType: JobTypeRPIPhase}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit fail job: %v", err)
+func assertCancelFailedJob(t *testing.T) {
+	t.Helper()
+	queue := newCancelJobTestQueue(t)
+	submitCancelTestJob(t, queue, "req-submit-fail", "job-fail", JobTypeRPIPhase)
+	failed := failCancelTestJob(t, queue, "job-fail")
+	failedCancel := cancelTestJob(t, queue, CancelJobInput{
+		JobID:     "job-fail",
+		RequestID: "req-cancel-fail",
+		Reason:    "late",
+	})
+	if failedCancel.Outcome != CancelJobOutcomeAlreadyTerminalFailed {
+		t.Fatalf("cancel failed outcome = %q, want already_terminal_failed", failedCancel.Outcome)
 	}
-	failClaim, err := queue.ClaimJob("job-fail", "worker-3", QueueMutationOptions{})
+	assertCancelDidNotChangeLastEvent(t, failedCancel.Job, failed)
+}
+
+func newCancelJobTestQueue(t *testing.T) *Queue {
+	t.Helper()
+	now := projectionTestTime(t, 0)
+	return newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+}
+
+func submitCancelTestJob(t *testing.T, queue *Queue, requestID, jobID string, jobType JobType) {
+	t.Helper()
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: RequestID(requestID), JobID: jobID, JobType: jobType}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit %s: %v", jobID, err)
+	}
+}
+
+func cancelTestJob(t *testing.T, queue *Queue, input CancelJobInput) CancelJobResult {
+	t.Helper()
+	result, err := queue.CancelJob(input, QueueMutationOptions{})
 	if err != nil {
-		t.Fatalf("claim fail job: %v", err)
+		t.Fatalf("cancel %s: %v", input.JobID, err)
 	}
+	return result
+}
+
+func assertCancelResult(t *testing.T, result CancelJobResult, wantOutcome CancelJobOutcome, wantStatus JobStatus) {
+	t.Helper()
+	if result.Outcome != wantOutcome || result.Job.Status != wantStatus {
+		t.Fatalf("cancel result = %#v, want outcome %s and status %s", result, wantOutcome, wantStatus)
+	}
+}
+
+func assertCancelEventPayload(t *testing.T, event LedgerEvent, wantReason string) {
+	t.Helper()
+	if event.EventType != EventJobCancelled {
+		t.Fatalf("last event type = %q, want job.cancelled", event.EventType)
+	}
+	if got, _ := stringPayload(event.Payload, "result_status"); got != string(JobResultCancelled) {
+		t.Fatalf("result_status = %q, want cancelled", got)
+	}
+	if got, _ := stringPayload(event.Payload, "reason"); got != wantReason {
+		t.Fatalf("reason = %q, want %s", got, wantReason)
+	}
+}
+
+func assertRepeatCancelDoesNotAppend(t *testing.T, queue *Queue, cancelled CancelJobResult, beforeRepeat int) {
+	t.Helper()
+	repeated := cancelTestJob(t, queue, CancelJobInput{
+		JobID:     cancelled.Job.JobID,
+		RequestID: "req-cancel-queued-again",
+		Actor:     "operator",
+		Reason:    "repeat",
+	})
+	if repeated.Outcome != CancelJobOutcomeAlreadyTerminalCancelled {
+		t.Fatalf("repeat outcome = %q, want already_terminal_cancelled", repeated.Outcome)
+	}
+	assertCancelDidNotChangeLastEvent(t, repeated.Job, cancelled.Job)
+	if after := len(readTestQueueEvents(t, queue)); after != beforeRepeat {
+		t.Fatalf("repeat cancel appended events: before=%d after=%d", beforeRepeat, after)
+	}
+}
+
+func claimCancelTestJob(t *testing.T, queue *Queue, jobID, actor string) QueueClaim {
+	t.Helper()
+	claim, err := queue.ClaimJob(jobID, actor, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("claim %s: %v", jobID, err)
+	}
+	return claim
+}
+
+func completeCancelTestJob(t *testing.T, queue *Queue, jobID string) QueueJobState {
+	t.Helper()
+	claim := claimCancelTestJob(t, queue, jobID, "worker-2")
+	completed, err := queue.CompleteJob(CompleteJobInput{
+		JobID:      jobID,
+		RequestID:  "req-complete",
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
+		Actor:      "worker-2",
+	}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("complete %s: %v", jobID, err)
+	}
+	return completed
+}
+
+func failCancelTestJob(t *testing.T, queue *Queue, jobID string) QueueJobState {
+	t.Helper()
+	claim := claimCancelTestJob(t, queue, jobID, "worker-3")
 	failed, err := queue.FailJob(FailJobInput{
-		JobID:      "job-fail",
+		JobID:      jobID,
 		RequestID:  "req-fail",
-		ClaimToken: failClaim.ClaimToken,
-		LeaseEpoch: failClaim.LeaseEpoch,
+		ClaimToken: claim.ClaimToken,
+		LeaseEpoch: claim.LeaseEpoch,
 		Actor:      "worker-3",
 		Failure:    JobFailure{Code: FailureRequestRejected, Message: "rejected"},
 	}, QueueMutationOptions{})
 	if err != nil {
-		t.Fatalf("fail job: %v", err)
+		t.Fatalf("fail %s: %v", jobID, err)
 	}
-	failedCancel, err := queue.CancelJob(CancelJobInput{
-		JobID:     "job-fail",
-		RequestID: "req-cancel-fail",
-		Reason:    "late",
-	}, QueueMutationOptions{})
-	if err != nil {
-		t.Fatalf("cancel failed job: %v", err)
-	}
-	if failedCancel.Outcome != CancelJobOutcomeAlreadyTerminalFailed {
-		t.Fatalf("cancel failed outcome = %q, want already_terminal_failed", failedCancel.Outcome)
-	}
-	if failedCancel.Job.LastEventID != failed.LastEventID {
-		t.Fatalf("cancel failed changed last event: before=%s after=%s", failed.LastEventID, failedCancel.Job.LastEventID)
+	return failed
+}
+
+func assertCancelDidNotChangeLastEvent(t *testing.T, after, before QueueJobState) {
+	t.Helper()
+	if after.LastEventID != before.LastEventID {
+		t.Fatalf("cancel changed last event: before=%s after=%s", before.LastEventID, after.LastEventID)
 	}
 }
 
