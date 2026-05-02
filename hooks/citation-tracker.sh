@@ -48,8 +48,17 @@ echo "$ARTIFACT_PATH" >> "$DEDUP_FILE"
 # Resolve repo root
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
 
+# Source the canonical state-path resolver (soc-irg1.1) so AO_HOME /
+# CLAUDE_PLUGIN_DATA precedence is honored. Fail-open: if the resolver is not
+# present, fall back to the legacy ${REPO_ROOT}/.agents layout.
+if [ -z "${AO_AGENTS_DIR:-}" ] && [ -f "$REPO_ROOT/lib/ao-paths.sh" ]; then
+    eval "$(bash "$REPO_ROOT/lib/ao-paths.sh" 2>/dev/null)" 2>/dev/null || true
+fi
+AO_DIR="${AO_AGENTS_DIR:-$REPO_ROOT/.agents}/ao"
+CITATIONS_FILE="$AO_DIR/citations.jsonl"
+
 # Ensure output directory exists
-mkdir -p "$REPO_ROOT/.agents/ao" 2>/dev/null
+mkdir -p "$AO_DIR" 2>/dev/null
 
 # Append citation event
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -60,11 +69,11 @@ if command -v jq >/dev/null 2>&1; then
         --arg ts "$TIMESTAMP" \
         --arg ct "passive_read" \
         '{artifact_path: $path, session_id: $sid, cited_at: $ts, citation_type: $ct}' \
-        >> "$REPO_ROOT/.agents/ao/citations.jsonl"
+        >> "$CITATIONS_FILE"
 else
     printf '{"artifact_path":"%s","session_id":"%s","cited_at":"%s","citation_type":"passive_read"}\n' \
         "$ARTIFACT_PATH" "$SESSION_ID" "$TIMESTAMP" \
-        >> "$REPO_ROOT/.agents/ao/citations.jsonl"
+        >> "$CITATIONS_FILE"
 fi
 
 exit 0
