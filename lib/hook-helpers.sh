@@ -32,7 +32,7 @@ check_hook_failure_budget() {
     # Don't count when hooks are globally disabled
     [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && return 0
 
-    local state_dir="${ROOT:-.}/.agents/ao"
+    local state_dir="${AO_AGENTS_DIR:-${ROOT:-.}/.agents}/ao"
     local counter_file="$state_dir/.hook-failures-${hook_name}"
     mkdir -p "$state_dir" 2>/dev/null || return 0
 
@@ -52,7 +52,7 @@ record_hook_failure() {
     local hook_name="$1"
     [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && return 0
 
-    local state_dir="${ROOT:-.}/.agents/ao"
+    local state_dir="${AO_AGENTS_DIR:-${ROOT:-.}/.agents}/ao"
     local counter_file="$state_dir/.hook-failures-${hook_name}"
     mkdir -p "$state_dir" 2>/dev/null || return 0
 
@@ -70,7 +70,7 @@ record_hook_failure() {
 # Resets the consecutive failure counter on success.
 record_hook_success() {
     local hook_name="$1"
-    local state_dir="${ROOT:-.}/.agents/ao"
+    local state_dir="${AO_AGENTS_DIR:-${ROOT:-.}/.agents}/ao"
     local counter_file="$state_dir/.hook-failures-${hook_name}"
     rm -f "$counter_file" 2>/dev/null || true
 }
@@ -81,11 +81,26 @@ if [[ -z "${ROOT:-}" ]]; then
   ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 fi
 
-_HOOK_HELPERS_ERROR_LOG_DIR="${ROOT}/.agents/ao"
-_HOOK_PACKET_ROOT="${ROOT}/.agents/ao/packets"
+# Source the canonical state-path resolver (lib/ao-paths.sh from soc-irg1.1).
+# The resolver exports AO_AGENTS_DIR (and friends) honoring AO_HOME /
+# CLAUDE_PLUGIN_DATA / repo-root precedence. Guard the source so a missing
+# resolver file does NOT fail closed — fall back to the legacy ${ROOT}/.agents
+# layout. This keeps the hook surface backwards-compatible during migration.
+if [[ -z "${AO_AGENTS_DIR:-}" ]]; then
+  if [[ -x "${ROOT}/lib/ao-paths.sh" ]]; then
+    eval "$("${ROOT}/lib/ao-paths.sh" 2>/dev/null)" 2>/dev/null || true
+  elif [[ -f "${ROOT}/lib/ao-paths.sh" ]]; then
+    eval "$(bash "${ROOT}/lib/ao-paths.sh" 2>/dev/null)" 2>/dev/null || true
+  fi
+fi
+
+# Path constants — prefer the resolver, fall back to the legacy layout when the
+# resolver could not be sourced (e.g. detached install, missing file).
+_HOOK_HELPERS_ERROR_LOG_DIR="${AO_AGENTS_DIR:-${ROOT}/.agents}/ao"
+_HOOK_PACKET_ROOT="${AO_AGENTS_DIR:-${ROOT}/.agents}/ao/packets"
 _HOOK_PACKET_PENDING_DIR="${_HOOK_PACKET_ROOT}/pending"
-_EVIDENCE_ONLY_CLOSURE_DIR="${ROOT}/.agents/council/evidence-only-closures"
-_EVIDENCE_ONLY_CLOSURE_RELEASE_DIR="${ROOT}/.agents/releases/evidence-only-closures"
+_EVIDENCE_ONLY_CLOSURE_DIR="${AO_COUNCIL_DIR:-${AO_AGENTS_DIR:-${ROOT}/.agents}/council}/evidence-only-closures"
+_EVIDENCE_ONLY_CLOSURE_RELEASE_DIR="${AO_AGENTS_DIR:-${ROOT}/.agents}/releases/evidence-only-closures"
 
 to_repo_relative_path() {
     local abs="$1"
