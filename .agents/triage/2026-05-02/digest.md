@@ -137,4 +137,4 @@ Root failure: `test-runtime-cursor-smoke.sh failed` — unrelated to next-work, 
 
 ## Commit SHA
 
-(see below after push)
+579f6696 — PR: https://github.com/boshu2/agentops/pull/207
