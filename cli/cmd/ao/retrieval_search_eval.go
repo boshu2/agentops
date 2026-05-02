@@ -10,7 +10,10 @@ import (
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
-const defaultSearchEvalK = 5
+const (
+	defaultSearchEvalK       = 5
+	defaultSearchEvalBackend = "local-lexical"
+)
 
 type searchEvalManifest struct {
 	ID          string           `json:"id"`
@@ -33,6 +36,7 @@ type legacySearchEvalCase struct {
 
 type searchEvalReport struct {
 	ID                 string             `json:"id"`
+	Backend            string             `json:"backend"`
 	ManifestPath       string             `json:"manifest_path"`
 	SearchRoot         string             `json:"search_root"`
 	Queries            int                `json:"queries"`
@@ -41,11 +45,22 @@ type searchEvalReport struct {
 	MissingGroundTruth int                `json:"missing_ground_truth"`
 	AnyRelevantAtK     float64            `json:"any_relevant_at_k"`
 	AvgPrecisionAtK    float64            `json:"avg_precision_at_k"`
+	MeanReciprocalRank float64            `json:"mean_reciprocal_rank"`
 	Results            []searchEvalResult `json:"results"`
+}
+
+type searchEvalComparisonReport struct {
+	ID           string             `json:"id"`
+	ManifestPath string             `json:"manifest_path"`
+	SearchRoot   string             `json:"search_root"`
+	Queries      int                `json:"queries"`
+	K            int                `json:"k"`
+	Backends     []searchEvalReport `json:"backends"`
 }
 
 type searchEvalResult struct {
 	ID                 string   `json:"id"`
+	Backend            string   `json:"backend"`
 	Query              string   `json:"query"`
 	Intent             string   `json:"intent,omitempty"`
 	GroundTruth        []string `json:"ground_truth"`
@@ -54,10 +69,30 @@ type searchEvalResult struct {
 	HitPaths           []string `json:"hit_paths,omitempty"`
 	AnyRelevant        bool     `json:"any_relevant"`
 	PrecisionAtK       float64  `json:"precision_at_k"`
+	FirstRelevantRank  int      `json:"first_relevant_rank,omitempty"`
+	ReciprocalRank     float64  `json:"reciprocal_rank"`
 }
 
-func runSearchEval(k int, asJSON bool, repoRoot, manifestPath string) error {
-	report, err := buildSearchEvalReport(repoRoot, manifestPath, k)
+func runSearchEval(k int, asJSON bool, repoRoot, manifestPath, backend, compareBackends string) error {
+	backends, compare, err := resolveSearchEvalRunBackends(backend, compareBackends)
+	if err != nil {
+		return err
+	}
+	if compare {
+		report, err := buildSearchEvalComparisonReport(repoRoot, manifestPath, k, backends)
+		if err != nil {
+			return err
+		}
+		if asJSON {
+			enc := json.NewEncoder(os.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(report)
+		}
+		printSearchEvalComparisonReport(report)
+		return nil
+	}
+
+	report, err := buildSearchEvalReportForBackend(repoRoot, manifestPath, k, backends[0])
 	if err != nil {
 		return err
 	}
@@ -71,6 +106,7 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath string) error {
 	fmt.Println("AO Search Retrieval Eval")
 	fmt.Println("========================")
 	fmt.Printf("Eval set:       %s\n", report.ID)
+	fmt.Printf("Backend:        %s\n", report.Backend)
 	fmt.Printf("Manifest:       %s\n", report.ManifestPath)
 	fmt.Printf("Search root:    %s\n", report.SearchRoot)
 	fmt.Printf("Queries:        %d\n", report.Queries)
@@ -80,6 +116,7 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath string) error {
 	}
 	fmt.Printf("Any-relevant@%d: %.0f%% (%d/%d)\n", report.K, report.AnyRelevantAtK*100, report.Hits, report.Queries)
 	fmt.Printf("Avg precision@%d: %.2f\n", report.K, report.AvgPrecisionAtK)
+	fmt.Printf("MRR:            %.2f\n", report.MeanReciprocalRank)
 	fmt.Println()
 	fmt.Println("Per-query breakdown:")
 	for _, result := range report.Results {
@@ -87,7 +124,7 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath string) error {
 		if result.AnyRelevant {
 			status = "HIT"
 		}
-		fmt.Printf("  %-5s %-4s precision@%d=%.2f  %q\n", result.ID, status, report.K, result.PrecisionAtK, result.Query)
+		fmt.Printf("  %-5s %-4s precision@%d=%.2f mrr=%.2f  %q\n", result.ID, status, report.K, result.PrecisionAtK, result.ReciprocalRank, result.Query)
 		if len(result.HitPaths) > 0 {
 			fmt.Printf("        hits=%v\n", result.HitPaths)
 		}
@@ -100,8 +137,16 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath string) error {
 }
 
 func buildSearchEvalReport(repoRoot, manifestPath string, k int) (searchEvalReport, error) {
+	return buildSearchEvalReportForBackend(repoRoot, manifestPath, k, defaultSearchEvalBackend)
+}
+
+func buildSearchEvalReportForBackend(repoRoot, manifestPath string, k int, backend string) (searchEvalReport, error) {
 	if k <= 0 {
 		k = defaultSearchEvalK
+	}
+	backend, err := normalizeSearchEvalBackend(backend)
+	if err != nil {
+		return searchEvalReport{}, err
 	}
 
 	root, err := resolveSearchEvalRoot(repoRoot)
@@ -117,6 +162,7 @@ func buildSearchEvalReport(repoRoot, manifestPath string, k int) (searchEvalRepo
 
 	report := searchEvalReport{
 		ID:           manifest.ID,
+		Backend:      backend,
 		ManifestPath: manifestFile,
 		SearchRoot:   root,
 		Queries:      len(manifest.Queries),
@@ -126,7 +172,7 @@ func buildSearchEvalReport(repoRoot, manifestPath string, k int) (searchEvalRepo
 
 	sessionsDir := filepath.Join(root, storage.DefaultBaseDir, storage.SessionsDir)
 	for _, evalCase := range manifest.Queries {
-		result, err := runSearchEvalCase(root, sessionsDir, evalCase, k)
+		result, err := runSearchEvalCase(root, sessionsDir, evalCase, k, backend)
 		if err != nil {
 			return searchEvalReport{}, err
 		}
@@ -136,18 +182,47 @@ func buildSearchEvalReport(repoRoot, manifestPath string, k int) (searchEvalRepo
 		}
 		report.MissingGroundTruth += len(result.MissingGroundTruth)
 		report.AvgPrecisionAtK += result.PrecisionAtK
+		report.MeanReciprocalRank += result.ReciprocalRank
 	}
 
 	if report.Queries > 0 {
 		report.AnyRelevantAtK = float64(report.Hits) / float64(report.Queries)
 		report.AvgPrecisionAtK /= float64(report.Queries)
+		report.MeanReciprocalRank /= float64(report.Queries)
 	}
 
 	return report, nil
 }
 
-func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k int) (searchEvalResult, error) {
-	results, err := searchRepoLocalKnowledge(evalCase.Query, sessionsDir, k)
+func buildSearchEvalComparisonReport(repoRoot, manifestPath string, k int, backends []string) (searchEvalComparisonReport, error) {
+	backends, err := normalizeSearchEvalBackends(backends)
+	if err != nil {
+		return searchEvalComparisonReport{}, err
+	}
+	reports := make([]searchEvalReport, 0, len(backends))
+	for _, backend := range backends {
+		report, err := buildSearchEvalReportForBackend(repoRoot, manifestPath, k, backend)
+		if err != nil {
+			return searchEvalComparisonReport{}, err
+		}
+		reports = append(reports, report)
+	}
+	if len(reports) == 0 {
+		return searchEvalComparisonReport{}, fmt.Errorf("no search eval backends configured")
+	}
+	first := reports[0]
+	return searchEvalComparisonReport{
+		ID:           first.ID,
+		ManifestPath: first.ManifestPath,
+		SearchRoot:   first.SearchRoot,
+		Queries:      first.Queries,
+		K:            first.K,
+		Backends:     reports,
+	}, nil
+}
+
+func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k int, backend string) (searchEvalResult, error) {
+	results, err := searchEvalBackendResults(backend, evalCase.Query, sessionsDir, k)
 	if err != nil {
 		return searchEvalResult{}, fmt.Errorf("search eval case %s: %w", evalCase.ID, err)
 	}
@@ -166,8 +241,12 @@ func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k 
 	}
 
 	hitPaths := make([]string, 0)
-	for _, path := range topPaths {
+	firstRelevantRank := 0
+	for i, path := range topPaths {
 		if expected[path] {
+			if firstRelevantRank == 0 {
+				firstRelevantRank = i + 1
+			}
 			hitPaths = append(hitPaths, path)
 		}
 	}
@@ -180,9 +259,14 @@ func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k 
 	if denominator > 0 {
 		precision = float64(len(hitPaths)) / float64(denominator)
 	}
+	reciprocalRank := 0.0
+	if firstRelevantRank > 0 {
+		reciprocalRank = 1 / float64(firstRelevantRank)
+	}
 
 	return searchEvalResult{
 		ID:                 evalCase.ID,
+		Backend:            backend,
 		Query:              evalCase.Query,
 		Intent:             evalCase.Intent,
 		GroundTruth:        groundTruth,
@@ -191,7 +275,96 @@ func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k 
 		HitPaths:           hitPaths,
 		AnyRelevant:        len(hitPaths) > 0,
 		PrecisionAtK:       precision,
+		FirstRelevantRank:  firstRelevantRank,
+		ReciprocalRank:     reciprocalRank,
 	}, nil
+}
+
+func searchEvalBackendResults(backend, query, sessionsDir string, k int) ([]searchResult, error) {
+	switch backend {
+	case defaultSearchEvalBackend:
+		return searchRepoLocalKnowledge(query, sessionsDir, k)
+	default:
+		return nil, fmt.Errorf("unsupported search eval backend %q", backend)
+	}
+}
+
+func resolveSearchEvalRunBackends(backend, compareBackends string) ([]string, bool, error) {
+	compareBackends = strings.TrimSpace(compareBackends)
+	if compareBackends == "" {
+		normalized, err := normalizeSearchEvalBackend(backend)
+		if err != nil {
+			return nil, false, err
+		}
+		return []string{normalized}, false, nil
+	}
+	parts := strings.Split(compareBackends, ",")
+	backends := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			backends = append(backends, part)
+		}
+	}
+	normalized, err := normalizeSearchEvalBackends(backends)
+	if err != nil {
+		return nil, true, err
+	}
+	return normalized, true, nil
+}
+
+func normalizeSearchEvalBackends(backends []string) ([]string, error) {
+	if len(backends) == 0 {
+		backends = []string{defaultSearchEvalBackend}
+	}
+	seen := make(map[string]struct{}, len(backends))
+	normalized := make([]string, 0, len(backends))
+	for _, backend := range backends {
+		value, err := normalizeSearchEvalBackend(backend)
+		if err != nil {
+			return nil, err
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		normalized = append(normalized, value)
+	}
+	return normalized, nil
+}
+
+func normalizeSearchEvalBackend(backend string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(backend)) {
+	case "", "local", "lexical", defaultSearchEvalBackend:
+		return defaultSearchEvalBackend, nil
+	default:
+		return "", fmt.Errorf("unsupported search eval backend %q: supported backends: %s", backend, defaultSearchEvalBackend)
+	}
+}
+
+func printSearchEvalComparisonReport(report searchEvalComparisonReport) {
+	fmt.Println("AO Search Retrieval Eval Comparison")
+	fmt.Println("===================================")
+	fmt.Printf("Eval set:       %s\n", report.ID)
+	fmt.Printf("Manifest:       %s\n", report.ManifestPath)
+	fmt.Printf("Search root:    %s\n", report.SearchRoot)
+	fmt.Printf("Queries:        %d\n", report.Queries)
+	fmt.Printf("K:              %d\n", report.K)
+	fmt.Println()
+	fmt.Println("Backends:")
+	for _, backend := range report.Backends {
+		fmt.Printf("  %-14s any-relevant@%d=%.0f%% hits=%d/%d avg_precision@%d=%.2f mrr=%.2f missing_ground_truth=%d\n",
+			backend.Backend,
+			backend.K,
+			backend.AnyRelevantAtK*100,
+			backend.Hits,
+			backend.Queries,
+			backend.K,
+			backend.AvgPrecisionAtK,
+			backend.MeanReciprocalRank,
+			backend.MissingGroundTruth,
+		)
+	}
 }
 
 func loadSearchEvalManifest(path string) (searchEvalManifest, error) {

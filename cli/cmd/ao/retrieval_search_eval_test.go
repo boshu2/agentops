@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -54,6 +55,90 @@ func TestBuildSearchEvalReport_FixtureAnyRelevantAtFive(t *testing.T) {
 	}
 	if report.Results[1].AnyRelevant {
 		t.Fatalf("q02 AnyRelevant = true, want false")
+	}
+}
+
+func TestBuildSearchEvalReport_DefaultBackendAndMRR(t *testing.T) {
+	root := t.TempDir()
+	writeSearchEvalFixtureFile(t, root, ".agents/learnings/backend.md", "backend aware reciprocal rank search eval")
+
+	manifestPath := filepath.Join(root, "eval.json")
+	writeSearchEvalManifest(t, manifestPath, searchEvalManifest{
+		ID: "backend-mrr",
+		Queries: []searchEvalCase{
+			{
+				ID:          "q01",
+				Query:       "backend aware reciprocal rank",
+				GroundTruth: []string{".agents/learnings/backend.md"},
+			},
+		},
+	})
+
+	report, err := buildSearchEvalReport(root, manifestPath, 5)
+	if err != nil {
+		t.Fatalf("buildSearchEvalReport: %v", err)
+	}
+
+	if report.Backend != defaultSearchEvalBackend {
+		t.Fatalf("backend = %q, want %q", report.Backend, defaultSearchEvalBackend)
+	}
+	if report.MeanReciprocalRank != 1 {
+		t.Fatalf("MRR = %.2f, want 1.00; report=%+v", report.MeanReciprocalRank, report)
+	}
+	result := report.Results[0]
+	if result.Backend != defaultSearchEvalBackend {
+		t.Fatalf("result backend = %q, want %q", result.Backend, defaultSearchEvalBackend)
+	}
+	if result.FirstRelevantRank != 1 || result.ReciprocalRank != 1 {
+		t.Fatalf("rank metrics = rank %d rr %.2f, want rank 1 rr 1.00", result.FirstRelevantRank, result.ReciprocalRank)
+	}
+}
+
+func TestBuildSearchEvalComparisonReport_JSONIncludesBackendMetrics(t *testing.T) {
+	root := t.TempDir()
+	writeSearchEvalFixtureFile(t, root, ".agents/learnings/backend.md", "backend comparison deterministic json")
+
+	manifestPath := filepath.Join(root, "eval.json")
+	writeSearchEvalManifest(t, manifestPath, searchEvalManifest{
+		ID: "backend-comparison",
+		Queries: []searchEvalCase{
+			{
+				ID:          "q01",
+				Query:       "backend comparison deterministic",
+				GroundTruth: []string{".agents/learnings/backend.md"},
+			},
+		},
+	})
+
+	report, err := buildSearchEvalComparisonReport(root, manifestPath, 5, []string{defaultSearchEvalBackend})
+	if err != nil {
+		t.Fatalf("buildSearchEvalComparisonReport: %v", err)
+	}
+	if len(report.Backends) != 1 {
+		t.Fatalf("backends = %d, want 1", len(report.Backends))
+	}
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatalf("marshal comparison: %v", err)
+	}
+	jsonText := string(data)
+	for _, want := range []string{`"backends"`, `"backend":"local-lexical"`, `"mean_reciprocal_rank":1`} {
+		if !strings.Contains(jsonText, want) {
+			t.Fatalf("comparison JSON missing %s: %s", want, jsonText)
+		}
+	}
+}
+
+func TestResolveSearchEvalRunBackends_ComparisonDeduplicatesAliases(t *testing.T) {
+	backends, compare, err := resolveSearchEvalRunBackends(defaultSearchEvalBackend, "local-lexical, local, lexical")
+	if err != nil {
+		t.Fatalf("resolveSearchEvalRunBackends: %v", err)
+	}
+	if !compare {
+		t.Fatal("compare = false, want true")
+	}
+	if len(backends) != 1 || backends[0] != defaultSearchEvalBackend {
+		t.Fatalf("backends = %v, want [%s]", backends, defaultSearchEvalBackend)
 	}
 }
 

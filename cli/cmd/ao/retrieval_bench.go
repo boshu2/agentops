@@ -14,13 +14,15 @@ import (
 )
 
 var (
-	benchCorpus     string
-	benchJSON       bool
-	benchK          int
-	benchLive       bool
-	benchGlobal     bool
-	benchSearchEval string
-	benchSearchRoot string
+	benchCorpus                string
+	benchJSON                  bool
+	benchK                     int
+	benchLive                  bool
+	benchGlobal                bool
+	benchSearchEval            string
+	benchSearchRoot            string
+	benchSearchBackend         string
+	benchSearchCompareBackends string
 )
 
 // benchCase defines a benchmark query and its labeled evaluation metadata.
@@ -622,7 +624,7 @@ detection.`,
 			if !cmd.Flags().Changed("k") {
 				k = defaultSearchEvalK
 			}
-			return runSearchEval(k, benchJSON, benchSearchRoot, benchSearchEval)
+			return runSearchEval(k, benchJSON, benchSearchRoot, benchSearchEval, benchSearchBackend, benchSearchCompareBackends)
 		}
 
 		if benchLive {
@@ -698,4 +700,6 @@ func init() {
 	retrievalBenchCmd.Flags().BoolVar(&benchGlobal, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
 	retrievalBenchCmd.Flags().StringVar(&benchSearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
 	retrievalBenchCmd.Flags().StringVar(&benchSearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
+	retrievalBenchCmd.Flags().StringVar(&benchSearchBackend, "search-backend", defaultSearchEvalBackend, "Search backend for --search-eval (local-lexical)")
+	retrievalBenchCmd.Flags().StringVar(&benchSearchCompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
 }
