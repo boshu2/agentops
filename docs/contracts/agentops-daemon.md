@@ -76,6 +76,27 @@ Submit retry deduplication is keyed by `idempotency_key`; `request_id` is
 trace-only. See [Daemon Idempotency](daemon-idempotency.md) for the full
 contract.
 
+## HTTP API Semantics
+
+The daemon's local HTTP API is strict about caller-correctable errors:
+
+- `POST /v1/jobs` returns `400 Bad Request` for validation failures such as an
+  empty or unknown `job_type`, `503 Service Unavailable` for explicit daemon
+  failpoints, and `500 Internal Server Error` only for server-side failures.
+- `GET /v1/events` supports `since=<event_id>` and `after_id=<event_id>` cursor
+  filters. Unknown cursors return `400 Bad Request` instead of silently
+  returning an empty event set.
+- `GET /v1/events?limit=N` returns at most `N` events, rejects non-integer or
+  negative limits with `400 Bad Request`, and caps very large limits at the
+  daemon maximum.
+- job cancellation is available at both `POST /v1/jobs/cancel` with `job_id` in
+  the body and `POST /v1/jobs/{id}/cancel` with the job id in the path. The
+  path form may omit the body; if a body supplies a different `job_id`, the
+  daemon returns `400 Bad Request`. Missing jobs return `404 Not Found`.
+- schedule mutations are privileged operator actions: `POST /v1/schedules` and
+  `DELETE /v1/schedules/{name}` are admin-capability mutation paths, while
+  `GET /v1/schedules` remains read-only.
+
 Examples:
 
 - [job request](examples/agentops-daemon/job-request.json)
@@ -283,8 +304,10 @@ The required controls are:
   ```
 
   `submit_job` covers `/jobs` and `/v1/jobs`, `cancel_job` covers
-  `/jobs/cancel` and `/v1/jobs/cancel`, and `openclaw_trigger` covers
-  `/openclaw/v1/triggers/jobs`. `admin` satisfies all currently allowlisted
+  `/jobs/cancel`, `/v1/jobs/cancel`, and `/v1/jobs/{id}/cancel`,
+  `openclaw_trigger` covers `/openclaw/v1/triggers/jobs`, and `admin` covers
+  schedule mutations such as `POST /v1/schedules` and
+  `DELETE /v1/schedules/{name}`. `admin` satisfies all currently allowlisted
   daemon mutation capabilities but does not bypass the path allowlist.
 - reject untrusted `Origin` headers and `Sec-Fetch-Site: cross-site` requests
   even when they are sent from a local browser context

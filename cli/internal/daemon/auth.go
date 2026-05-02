@@ -177,6 +177,7 @@ func DefaultMutationPathCapabilities() map[string]MutationCapability {
 		"/v1/jobs":                      MutationCapabilitySubmitJob,
 		"/jobs/cancel":                  MutationCapabilityCancelJob,
 		"/v1/jobs/cancel":               MutationCapabilityCancelJob,
+		"/v1/jobs/*/cancel":             MutationCapabilityCancelJob,
 		"/openclaw/v1/triggers/jobs":    MutationCapabilityOpenClawTrigger,
 		"/v1/openclaw/triggers/jobs":    MutationCapabilityOpenClawTrigger,
 		"/v1/openclaw/v1/triggers/jobs": MutationCapabilityOpenClawTrigger,
@@ -449,35 +450,54 @@ func stringInSet(value string, allowed []string) bool {
 // mutationPathInSet matches r.URL.Path against a list of allowed patterns.
 // Patterns ending in "/*" match any path under the prefix segment (e.g.,
 // "/v1/schedules/*" matches "/v1/schedules/foo" and "/v1/schedules/foo/bar"
-// but NOT "/v1/schedules" itself; that requires an exact-match entry).
+// but NOT "/v1/schedules" itself; that requires an exact-match entry). A "*"
+// path segment matches exactly one path segment, e.g. "/v1/jobs/*/cancel".
 func mutationPathInSet(path string, allowed []string) bool {
 	for _, pattern := range allowed {
-		if pattern == path {
+		if mutationPathMatches(path, pattern) {
 			return true
-		}
-		if strings.HasSuffix(pattern, "/*") {
-			prefix := strings.TrimSuffix(pattern, "/*")
-			if strings.HasPrefix(path, prefix+"/") {
-				return true
-			}
 		}
 	}
 	return false
 }
 
+func mutationPathMatches(path, pattern string) bool {
+	if pattern == path {
+		return true
+	}
+	if strings.HasSuffix(pattern, "/*") {
+		prefix := strings.TrimSuffix(pattern, "/*")
+		return strings.HasPrefix(path, prefix+"/")
+	}
+	if !strings.Contains(pattern, "*") {
+		return false
+	}
+	pathParts := strings.Split(strings.Trim(path, "/"), "/")
+	patternParts := strings.Split(strings.Trim(pattern, "/"), "/")
+	if len(pathParts) != len(patternParts) {
+		return false
+	}
+	for i, patternPart := range patternParts {
+		if patternPart == "*" {
+			continue
+		}
+		if patternPart != pathParts[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // mutationCapabilityForPath looks up the required capability for r.URL.Path,
-// honoring "/*" wildcard entries in PathCapabilities the same way
+// honoring wildcard entries in PathCapabilities the same way
 // mutationPathInSet does.
 func mutationCapabilityForPath(path string, capabilities map[string]MutationCapability) MutationCapability {
 	if cap, ok := capabilities[path]; ok {
 		return cap
 	}
 	for pattern, cap := range capabilities {
-		if strings.HasSuffix(pattern, "/*") {
-			prefix := strings.TrimSuffix(pattern, "/*")
-			if strings.HasPrefix(path, prefix+"/") {
-				return cap
-			}
+		if mutationPathMatches(path, pattern) {
+			return cap
 		}
 	}
 	return ""

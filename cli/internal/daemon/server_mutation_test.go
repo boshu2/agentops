@@ -53,6 +53,23 @@ func TestMutationRouteAcceptsJobAfterLedgerAppend(t *testing.T) {
 	}
 }
 
+func TestMutationSubmitInvalidJobTypeReturnsBadRequest(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+	resp := postJob(t, router, `{"request_id":"req-bad","job_id":"job-bad","job_type":"not-a-job"}`, "secret-token", "")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("invalid job_type status = %d body=%s, want 400", resp.Code, resp.Body.String())
+	}
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("invalid job_type wrote %d events, want 0", len(events))
+	}
+}
+
 func TestMutationRouteAuditsScopedTokenName(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
@@ -77,6 +94,63 @@ func TestMutationRouteAuditsScopedTokenName(t *testing.T) {
 	resp = postCancel(t, router, `{"request_id":"req-cancel","job_id":"job-rpi"}`, "phone-token", "")
 	if resp.Code != http.StatusForbidden {
 		t.Fatalf("scoped cancel status = %d body=%s, want 403", resp.Code, resp.Body.String())
+	}
+}
+
+func TestMutationCancelValidationStatusCodes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	policy := DefaultMutationPolicy("secret-token", []string{
+		"/v1/jobs/cancel",
+	})
+	router := mutationRouterWithPolicy(store, &now, policy)
+
+	resp := postCancel(t, router, `{"request_id":"req-missing"}`, "secret-token", "")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("missing job_id status = %d body=%s, want 400", resp.Code, resp.Body.String())
+	}
+	resp = postCancel(t, router, `{"request_id":"req-missing-job","job_id":"does-not-exist"}`, "secret-token", "")
+	if resp.Code != http.StatusNotFound {
+		t.Fatalf("missing job status = %d body=%s, want 404", resp.Code, resp.Body.String())
+	}
+}
+
+func TestMutationCancelRESTAliasUsesPathJobID(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-rest-cancel", JobType: JobTypeRPIRun}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	policy := DefaultMutationPolicy("secret-token", []string{
+		"/v1/jobs/*/cancel",
+	})
+	router := mutationRouterWithPolicy(store, &now, policy)
+
+	resp := postCancelAt(t, router, "/v1/jobs/job-rest-cancel/cancel", "", "secret-token", "")
+	if resp.Code != http.StatusAccepted {
+		t.Fatalf("REST cancel alias status = %d body=%s, want 202", resp.Code, resp.Body.String())
+	}
+	var body CancelJobResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode cancel response: %v", err)
+	}
+	if !body.Cancelled || body.Job.JobID != "job-rest-cancel" || body.Job.Status != JobStatusCancelled {
+		t.Fatalf("REST cancel response = %#v, want cancelled job-rest-cancel", body)
+	}
+}
+
+func TestMutationCancelRESTAliasRejectsBodyJobIDMismatch(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	policy := DefaultMutationPolicy("secret-token", []string{
+		"/v1/jobs/*/cancel",
+	})
+	router := mutationRouterWithPolicy(store, &now, policy)
+
+	resp := postCancelAt(t, router, "/v1/jobs/job-rest-cancel/cancel", `{"job_id":"other-job"}`, "secret-token", "")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("mismatched REST cancel status = %d body=%s, want 400", resp.Code, resp.Body.String())
 	}
 }
 
@@ -259,7 +333,12 @@ func postJob(t *testing.T, handler http.Handler, payload, token, failpoint strin
 
 func postCancel(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, "/v1/jobs/cancel", bytes.NewBufferString(payload))
+	return postCancelAt(t, handler, "/v1/jobs/cancel", payload, token, failpoint)
+}
+
+func postCancelAt(t *testing.T, handler http.Handler, path, payload, token, failpoint string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(payload))
 	req.RemoteAddr = "127.0.0.1:51111"
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {

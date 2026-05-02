@@ -408,6 +408,22 @@ func TestResolveAgentOpsDaemonMutationPolicySupportsScopedTokenFile(t *testing.T
 	}
 }
 
+func TestAgentOpsDaemonMutationPathsIncludeRESTAliasAndSchedules(t *testing.T) {
+	paths := map[string]bool{}
+	for _, path := range agentOpsDaemonMutationPaths() {
+		paths[path] = true
+	}
+	for _, want := range []string{
+		"/v1/jobs/*/cancel",
+		"/v1/schedules",
+		"/v1/schedules/*",
+	} {
+		if !paths[want] {
+			t.Fatalf("agentOpsDaemonMutationPaths missing %q: %v", want, agentOpsDaemonMutationPaths())
+		}
+	}
+}
+
 func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"}); err != nil {
 		t.Fatalf("cli-fallback executor policy: %v", err)

@@ -124,6 +124,35 @@ func TestScopedMutationPolicyMacExecutorCanCancel(t *testing.T) {
 	}
 }
 
+func TestScopedMutationPolicyMacExecutorCanCancelRESTAlias(t *testing.T) {
+	policy := MutationPolicy{
+		Tokens: []MutationToken{{
+			Name:         "mac-executor",
+			Token:        "mac-token",
+			Capabilities: []MutationCapability{MutationCapabilityCancelJob},
+		}},
+		AllowedPaths:       []string{"/v1/jobs/*/cancel"},
+		AllowedMethods:     []string{http.MethodPost},
+		PathCapabilities:   DefaultMutationPathCapabilities(),
+		RequireLocalRemote: true,
+	}
+	req := mutationRequest(http.MethodPost, "/v1/jobs/job-cancel/cancel", "127.0.0.1:51111")
+	req.Header.Set(DefaultMutationTokenHeader, "mac-token")
+	decision, err := AuthorizeMutationDecision(req, policy)
+	if err != nil {
+		t.Fatalf("REST alias cancel rejected: %v", err)
+	}
+	if decision.RequiredCapability != MutationCapabilityCancelJob {
+		t.Fatalf("required capability = %q, want cancel_job", decision.RequiredCapability)
+	}
+
+	req = mutationRequest(http.MethodPost, "/v1/jobs/job-cancel/retry", "127.0.0.1:51111")
+	req.Header.Set(DefaultMutationTokenHeader, "mac-token")
+	if err := AuthorizeMutation(req, policy); !errors.Is(err, ErrMutationDenied) {
+		t.Fatalf("unexpected path error = %v, want ErrMutationDenied", err)
+	}
+}
+
 func TestScopedMutationPolicyBushidoAdminLocalOnly(t *testing.T) {
 	policy := MutationPolicy{
 		Tokens: []MutationToken{{
@@ -326,8 +355,9 @@ func TestMutation_AllRegisteredRoutesEnforcePolicy(t *testing.T) {
 			method = pattern[:idx]
 			path = pattern[idx+1:]
 		}
-		// Replace mux pattern wildcards ("{name}") with a literal probe value.
+		// Replace mux pattern wildcards with literal probe values.
 		path = strings.ReplaceAll(path, "{name}", "probe-name")
+		path = strings.ReplaceAll(path, "{id}", "probe-id")
 
 		req := httptest.NewRequest(method, path, nil)
 		req.RemoteAddr = "127.0.0.1:51111"
