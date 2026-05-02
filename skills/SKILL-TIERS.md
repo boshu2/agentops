@@ -415,7 +415,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | Vendor | CLI | Command |
 |--------|-----|---------|
 | Claude | `claude` | `claude --print "prompt" > output.md` |
-| Codex | `codex` | `codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
+| Codex | `codex` | `AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
 | OpenCode | `opencode` | (similar pattern) |
 
 ### Default Models
@@ -432,7 +432,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 # Each judge receives a prompt, writes output to .agents/council/, signals completion
 
 # Codex CLI judges (--mixed mode, via shell)
-codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-output.md "..."
+AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-output.md "..."
 ```
 
 ### Consolidated Output
