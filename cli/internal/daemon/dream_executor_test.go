@@ -125,21 +125,19 @@ func TestDreamExecutorAppendsOvernightLogAcrossRuns(t *testing.T) {
 		t.Fatalf("read log after run: %v", err)
 	}
 	got := string(data)
-	if !contains(got, sentinel) {
+	if !containsSubstring(got, sentinel) {
 		t.Fatalf("sentinel from prior run was truncated; log=%q", got)
 	}
-	if !contains(got, "second-run-output") {
+	if !containsSubstring(got, "second-run-output") {
 		t.Fatalf("second run output missing; log=%q", got)
 	}
 }
 
-// contains is a small substring helper local to this file to avoid adding a
-// strings import for one site (kept terse on purpose).
-func contains(haystack, needle string) bool {
-	return len(haystack) >= len(needle) && indexOf(haystack, needle) >= 0
+func containsSubstring(haystack, needle string) bool {
+	return len(haystack) >= len(needle) && indexOfSubstring(haystack, needle) >= 0
 }
 
-func indexOf(s, sub string) int {
+func indexOfSubstring(s, sub string) int {
 	for i := 0; i+len(sub) <= len(s); i++ {
 		if s[i:i+len(sub)] == sub {
 			return i
