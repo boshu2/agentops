@@ -66,6 +66,88 @@ func TestDreamExecutorCompletesJobWithArtifacts(t *testing.T) {
 	}
 }
 
+// TestDreamExecutorAppendsOvernightLogAcrossRuns is a regression for soc-5of.9:
+// a daemon restart mid-dream must not truncate prior overnight.log content. We
+// pre-populate the log with sentinel bytes, run the executor, and assert the
+// sentinel is still present alongside the new run's output.
+func TestDreamExecutorAppendsOvernightLogAcrossRuns(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	cwd := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	spec := NewDreamRunJobSpec("dream-append", filepath.Join(cwd, ".agents", "overnight", "dream-append"))
+	spec.MaxIterations = 1
+	spec.ExecutionTimeout = "30s"
+
+	if err := os.MkdirAll(spec.OutputDir, 0o755); err != nil {
+		t.Fatalf("mkdir spec.OutputDir: %v", err)
+	}
+	logPath := filepath.Join(spec.OutputDir, "overnight.log")
+	const sentinel = "PARTIAL_LOG_FROM_PRIOR_RUN_DO_NOT_TRUNCATE\n"
+	if err := os.WriteFile(logPath, []byte(sentinel), 0o644); err != nil {
+		t.Fatalf("seed sentinel: %v", err)
+	}
+
+	jobSpec, err := spec.ToJobSpec("job-dream-append")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	if _, err := queue.SubmitJob(SubmitJobInput{
+		RequestID: "req-dream-append",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor, err := NewDreamExecutor(DreamExecutorOptions{
+		Cwd: cwd,
+		RunLoop: func(ctx context.Context, opts DreamRunLoopOptions) (DreamRunLoopResult, error) {
+			_, _ = io.WriteString(opts.LogWriter, "second-run-output\n")
+			return DreamRunLoopResult{IterationCount: 1}, nil
+		},
+		Now: func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("NewDreamExecutor: %v", err)
+	}
+	supervisor := newTestSupervisor(t, queue, executor)
+
+	if _, err := supervisor.RunOnce(context.Background()); err != nil {
+		t.Fatalf("RunOnce: %v", err)
+	}
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log after run: %v", err)
+	}
+	got := string(data)
+	if !contains(got, sentinel) {
+		t.Fatalf("sentinel from prior run was truncated; log=%q", got)
+	}
+	if !contains(got, "second-run-output") {
+		t.Fatalf("second run output missing; log=%q", got)
+	}
+}
+
+// contains is a small substring helper local to this file to avoid adding a
+// strings import for one site (kept terse on purpose).
+func contains(haystack, needle string) bool {
+	return len(haystack) >= len(needle) && indexOf(haystack, needle) >= 0
+}
+
+func indexOf(s, sub string) int {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return i
+		}
+	}
+	return -1
+}
+
 func TestDreamExecutorExecutionTimeoutFailsJob(t *testing.T) {
 	cwd := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o755); err != nil {

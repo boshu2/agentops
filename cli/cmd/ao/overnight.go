@@ -519,7 +519,9 @@ func prepareOvernightLock(summary *overnightSummary) (*os.File, error) {
 }
 
 func openOvernightLog(summary *overnightSummary) (*os.File, error) {
-	logFile, err := os.OpenFile(summary.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	// soc-5of.9: O_APPEND (not O_TRUNC) so a daemon/process restart mid-overnight
+	// cannot truncate partial logs — Fournier-class durability nit.
+	logFile, err := os.OpenFile(summary.Runtime.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("open dream log: %w", err)
 	}
