@@ -4,6 +4,10 @@ source: post-mortem-quick
 date: 2026-04-29
 maturity: provisional
 utility: 0.6
+confidence: 0.0000
+reward_count: 0
+helpful_count: 0
+harmful_count: 0
 ---
 
 # Learning: Eval Triage Closeout Needs Explicit Disposition
