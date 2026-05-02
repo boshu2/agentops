@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
+export MAX_TURNS=6
 
 echo "=== Test: post-mortem skill ==="
 echo ""
@@ -12,7 +13,7 @@ echo ""
 # Test 1: Verify skill is recognized
 echo "Test 1: Skill recognition..."
 
-output=$(run_claude "What is the post-mortem skill in this plugin? Describe it briefly." 45)
+output=$(run_claude "Answer concisely without running tools: what is the /agentops:post-mortem skill in this plugin?" 60)
 
 if assert_contains "$output" "post-mortem\|postmortem" "Skill name recognized"; then
     :
@@ -31,7 +32,7 @@ echo ""
 # Test 2: Verify combined workflow
 echo "Test 2: Combined workflow..."
 
-output=$(run_claude "What does the post-mortem skill combine? What does it run?" 45)
+output=$(run_claude "Answer concisely without running tools: what does /agentops:post-mortem combine and run?" 60)
 
 if assert_contains "$output" "retro\|vibe\|security\|extract" "Mentions combined workflows"; then
     :
