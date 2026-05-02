@@ -801,11 +801,18 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "coverage: all hook scripts referenced in tests" {
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     MISSING_HOOKS=""
     for hook_file in "$HOOKS_DIR"/*.sh; do
         hook_name=$(basename "$hook_file" .sh)
-        # Count any explicit coverage in the hooks test suite, including dedicated per-hook tests.
-        if ! grep -F -q "$hook_name" "$BATS_TEST_DIRNAME"/*.bats "$BATS_TEST_DIRNAME"/*.sh 2>/dev/null; then
+        # Count any explicit coverage in the hooks test suite, including
+        # dedicated per-hook tests living under tests/skills/ or tests/scripts/.
+        if ! grep -F -q "$hook_name" \
+            "$BATS_TEST_DIRNAME"/*.bats \
+            "$BATS_TEST_DIRNAME"/*.sh \
+            "$REPO_ROOT/tests/skills"/test-"$hook_name"*.sh \
+            "$REPO_ROOT/tests/scripts"/test-"$hook_name"*.sh \
+            2>/dev/null; then
             MISSING_HOOKS="$MISSING_HOOKS $hook_name"
         fi
     done
