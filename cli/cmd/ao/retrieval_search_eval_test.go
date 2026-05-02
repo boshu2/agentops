@@ -72,6 +72,69 @@ func TestLoadSearchEvalManifest_RequiresGroundTruth(t *testing.T) {
 	}
 }
 
+func TestLoadSearchEvalManifest_AcceptsLegacyArray(t *testing.T) {
+	root := t.TempDir()
+	manifestPath := filepath.Join(root, "legacy.json")
+	legacy := `[
+  {"query":"parallel session hazards","relevant":["learnings/parallel.md"],"category":"process"},
+  {"query":"empty labels are ignored","relevant":[],"category":"tooling"}
+]`
+	if err := os.WriteFile(manifestPath, []byte(legacy), 0o644); err != nil {
+		t.Fatalf("write legacy manifest: %v", err)
+	}
+
+	manifest, err := loadSearchEvalManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("loadSearchEvalManifest: %v", err)
+	}
+
+	if manifest.ID != "legacy-search-eval" {
+		t.Fatalf("manifest ID = %q, want legacy-search-eval", manifest.ID)
+	}
+	if len(manifest.Queries) != 1 {
+		t.Fatalf("queries = %d, want 1", len(manifest.Queries))
+	}
+	got := manifest.Queries[0]
+	if got.ID != "q1" || got.Query != "parallel session hazards" || got.Intent != "process" {
+		t.Fatalf("legacy query normalization = %+v", got)
+	}
+	if len(got.GroundTruth) != 1 || got.GroundTruth[0] != "learnings/parallel.md" {
+		t.Fatalf("ground truth = %v, want legacy relevant path", got.GroundTruth)
+	}
+}
+
+func TestBuildSearchEvalReport_NormalizesLegacyAgentsGroundTruth(t *testing.T) {
+	root := t.TempDir()
+	writeSearchEvalFixtureFile(t, root, ".agents/learnings/parallel.md", "parallel session hazards file changes corruption")
+
+	manifestPath := filepath.Join(root, "eval.json")
+	writeSearchEvalManifest(t, manifestPath, searchEvalManifest{
+		ID: "legacy-paths",
+		Queries: []searchEvalCase{
+			{
+				ID:          "q01",
+				Query:       "parallel session hazards",
+				GroundTruth: []string{"learnings/parallel.md"},
+			},
+		},
+	})
+
+	report, err := buildSearchEvalReport(root, manifestPath, 5)
+	if err != nil {
+		t.Fatalf("buildSearchEvalReport: %v", err)
+	}
+
+	if report.MissingGroundTruth != 0 {
+		t.Fatalf("missing ground truth = %d, want 0; results=%+v", report.MissingGroundTruth, report.Results)
+	}
+	if report.Hits != 1 {
+		t.Fatalf("hits = %d, want 1; results=%+v", report.Hits, report.Results)
+	}
+	if got := report.Results[0].GroundTruth; len(got) != 1 || got[0] != ".agents/learnings/parallel.md" {
+		t.Fatalf("normalized ground truth = %v, want .agents/learnings/parallel.md", got)
+	}
+}
+
 func TestNormalizeSearchEvalResultPath_RelativeToRoot(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, ".agents", "research", "note.md")

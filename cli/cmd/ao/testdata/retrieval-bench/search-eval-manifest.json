@@ -1,0 +1,108 @@
+{
+  "id": "retrieval-ratchet-fallback",
+  "description": "Object-form fallback search-eval manifest for the retrieval quality ratchet.",
+  "queries": [
+    {
+      "id": "q1",
+      "query": "Why do agents generate outdated Go code even when they know about newer features?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-02-22-go-modern-standards.md"]
+    },
+    {
+      "id": "q2",
+      "query": "How should version-specific language features be documented in coding standards?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-02-22-go-modern-standards.md"]
+    },
+    {
+      "id": "q3",
+      "query": "What pattern prevents two parallel Claude sessions from corrupting each other's file changes?",
+      "intent": "process",
+      "ground_truth": [".agents/learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"]
+    },
+    {
+      "id": "q4",
+      "query": "My files keep disappearing when I have multiple sessions running. What is happening?",
+      "intent": "debugging",
+      "ground_truth": [".agents/learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"]
+    },
+    {
+      "id": "q5",
+      "query": "How do you safely commit work when another agent might be switching branches concurrently?",
+      "intent": "process",
+      "ground_truth": [".agents/learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"]
+    },
+    {
+      "id": "q6",
+      "query": "When should you bridge to an existing system versus building a new implementation?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-04-12-yagni-bridge-not-clone.md"]
+    },
+    {
+      "id": "q7",
+      "query": "We already have a JS worker that does this. Should I write a Go version from scratch?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-04-12-yagni-bridge-not-clone.md"]
+    },
+    {
+      "id": "q8",
+      "query": "How can a --json output flag accidentally break command correctness?",
+      "intent": "testing",
+      "ground_truth": [".agents/learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md"]
+    },
+    {
+      "id": "q9",
+      "query": "What rule governs how output format flags like --json should interact with side effects?",
+      "intent": "testing",
+      "ground_truth": [".agents/learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md"]
+    },
+    {
+      "id": "q10",
+      "query": "How do you run 14 parallel workers without getting merge conflicts?",
+      "intent": "process",
+      "ground_truth": [".agents/learnings/2026-02-23-tdd-five-by-five.md"]
+    },
+    {
+      "id": "q11",
+      "query": "Why should TDD be applied to validators rather than just features?",
+      "intent": "testing",
+      "ground_truth": [".agents/learnings/2026-02-23-tdd-five-by-five.md"]
+    },
+    {
+      "id": "q12",
+      "query": "What is the Brownian Ratchet pattern and how does it enable aggressive refactoring?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-02-22-evolve-release-learnings.md"]
+    },
+    {
+      "id": "q13",
+      "query": "How do you force error-path coverage in Go tests without mocking the filesystem?",
+      "intent": "testing",
+      "ground_truth": [".agents/learnings/2026-02-22-evolve-release-learnings.md"]
+    },
+    {
+      "id": "q14",
+      "query": "What happened when hardcoded reward values were used in the MemRL feedback loop?",
+      "intent": "debugging",
+      "ground_truth": [".agents/learnings/2026-02-24-memrl-feedback-loop-fix.md"]
+    },
+    {
+      "id": "q15",
+      "query": "How does pre-reading source files during parallel agent execution save time?",
+      "intent": "process",
+      "ground_truth": [".agents/learnings/2026-02-24-memrl-feedback-loop-fix.md"]
+    },
+    {
+      "id": "q16",
+      "query": "What is needed beyond creating a source skill file to make CI stay green?",
+      "intent": "tooling",
+      "ground_truth": [".agents/learnings/2026-04-12-llm-wiki-generated-artifact-drift.md"]
+    },
+    {
+      "id": "q17",
+      "query": "Why should autodev and evolve remain separate commands in v2?",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-04-11-autodev-v2-command-split.md"]
+    }
+  ]
+}

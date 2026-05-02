@@ -25,6 +25,12 @@ type searchEvalCase struct {
 	GroundTruth []string `json:"ground_truth"`
 }
 
+type legacySearchEvalCase struct {
+	Query    string   `json:"query"`
+	Relevant []string `json:"relevant"`
+	Category string   `json:"category,omitempty"`
+}
+
 type searchEvalReport struct {
 	ID                 string             `json:"id"`
 	ManifestPath       string             `json:"manifest_path"`
@@ -194,10 +200,49 @@ func loadSearchEvalManifest(path string) (searchEvalManifest, error) {
 		return searchEvalManifest{}, fmt.Errorf("read search eval manifest %s: %w", path, err)
 	}
 
-	var manifest searchEvalManifest
-	if err := json.Unmarshal(data, &manifest); err != nil {
+	manifest, err := parseSearchEvalManifest(data)
+	if err != nil {
 		return searchEvalManifest{}, fmt.Errorf("parse search eval manifest %s: %w", path, err)
 	}
+	return validateSearchEvalManifest(path, manifest)
+}
+
+func parseSearchEvalManifest(data []byte) (searchEvalManifest, error) {
+	if strings.HasPrefix(strings.TrimSpace(string(data)), "[") {
+		return parseLegacySearchEvalManifest(data)
+	}
+	var manifest searchEvalManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return searchEvalManifest{}, err
+	}
+	return manifest, nil
+}
+
+func parseLegacySearchEvalManifest(data []byte) (searchEvalManifest, error) {
+	var legacy []legacySearchEvalCase
+	if err := json.Unmarshal(data, &legacy); err != nil {
+		return searchEvalManifest{}, err
+	}
+	manifest := searchEvalManifest{
+		ID:          "legacy-search-eval",
+		Description: "Generated from legacy retrieval eval query array",
+		Queries:     make([]searchEvalCase, 0, len(legacy)),
+	}
+	for i, evalCase := range legacy {
+		if len(evalCase.Relevant) == 0 {
+			continue
+		}
+		manifest.Queries = append(manifest.Queries, searchEvalCase{
+			ID:          fmt.Sprintf("q%d", i+1),
+			Query:       strings.TrimSpace(evalCase.Query),
+			Intent:      strings.TrimSpace(evalCase.Category),
+			GroundTruth: append([]string(nil), evalCase.Relevant...),
+		})
+	}
+	return manifest, nil
+}
+
+func validateSearchEvalManifest(path string, manifest searchEvalManifest) (searchEvalManifest, error) {
 	if strings.TrimSpace(manifest.ID) == "" {
 		return searchEvalManifest{}, fmt.Errorf("search eval manifest %s missing id", path)
 	}
@@ -266,7 +311,24 @@ func missingSearchEvalGroundTruth(repoRoot string, paths []string) []string {
 }
 
 func normalizeSearchEvalExpectedPath(path string) string {
-	return strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
+	normalized := strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
+	if shouldPrefixAgentsKnowledgePath(normalized) {
+		return ".agents/" + normalized
+	}
+	return normalized
+}
+
+func shouldPrefixAgentsKnowledgePath(path string) bool {
+	if path == "" || path == "." || strings.HasPrefix(path, "/") || strings.HasPrefix(path, ".agents/") {
+		return false
+	}
+	top, _, _ := strings.Cut(path, "/")
+	switch top {
+	case "learnings", "patterns", "findings", "research", "compiled", "plans", "brainstorm", "council", "design", "wiki":
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizeSearchEvalResultPath(repoRoot, path string) string {
