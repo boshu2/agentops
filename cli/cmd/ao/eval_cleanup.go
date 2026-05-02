@@ -54,95 +54,131 @@ func runEvalCleanup(cmd *cobra.Command, args []string) error {
 	runsRoot := filepath.Join(root, "runs")
 	report := CleanupReport{Touched: []string{}}
 
+	if err := cleanupStaleTransitions(root, runsRoot, &report); err != nil {
+		return err
+	}
+
+	if evalCleanupDelete {
+		if err := cleanupDeleteRuns(root, runsRoot, &report); err != nil {
+			return err
+		}
+	}
+
+	if evalCleanupTmpFiles {
+		if err := cleanupSweepTmpFiles(root, &report); err != nil {
+			return err
+		}
+	}
+
+	return writeCleanupReport(cmd, &report)
+}
+
+// cleanupStaleTransitions walks every run dir, ages its manifest, and applies
+// the §4 stale → aborted/failed transitions when the cutoff has been crossed.
+func cleanupStaleTransitions(root, runsRoot string, report *CleanupReport) error {
 	entries, err := os.ReadDir(runsRoot)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("eval cleanup: read runs/: %w", err)
 	}
-
-	stalePendingCutoff := time.Duration(60) * time.Second
-	staleRunningCutoff := time.Duration(5) * time.Minute
-
+	stalePendingCutoff := 60 * time.Second
+	staleRunningCutoff := 5 * time.Minute
+	now := time.Now().UTC()
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
 		runID := e.Name()
-		path := evalsub.ManifestPath(root, runID)
-		m, err := evalsub.LoadManifest(path)
+		m, err := evalsub.LoadManifest(evalsub.ManifestPath(root, runID))
 		if err != nil {
-			// Manifest missing or corrupt — skip but record touch
 			report.Touched = append(report.Touched, runID+":unreadable")
 			continue
 		}
-		now := time.Now().UTC()
-		startedAt := time.Unix(m.StartedAtUnixMs/1000, 0).UTC()
-		ageSinceStart := now.Sub(startedAt)
-
-		switch m.Status {
-		case evalsub.StatusPending:
-			if ageSinceStart >= stalePendingCutoff {
-				if err := transitionStale(root, runID, evalsub.StatusAborted, "never_started"); err != nil {
-					return err
-				}
-				report.TransitionsAborted++
-				report.Touched = append(report.Touched, runID+":pending->aborted")
-			}
-		case evalsub.StatusRunning:
-			if ageSinceStart >= staleRunningCutoff {
-				if err := transitionStale(root, runID, evalsub.StatusFailed, "orphaned_process"); err != nil {
-					return err
-				}
-				report.TransitionsFailed++
-				report.Touched = append(report.Touched, runID+":running->failed")
-			}
+		ageSinceStart := now.Sub(time.Unix(m.StartedAtUnixMs/1000, 0).UTC())
+		if err := applyStaleTransition(root, runID, m.Status, ageSinceStart, stalePendingCutoff, staleRunningCutoff, report); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	if evalCleanupDelete {
-		// Re-walk, now that transitions are applied, removing failed/aborted.
-		entries, err := os.ReadDir(runsRoot)
-		if err == nil {
-			for _, e := range entries {
-				if !e.IsDir() {
-					continue
-				}
-				runID := e.Name()
-				path := evalsub.ManifestPath(root, runID)
-				m, err := evalsub.LoadManifest(path)
-				if err != nil {
-					continue
-				}
-				if m.Status == evalsub.StatusFailed || m.Status == evalsub.StatusAborted {
-					target := filepath.Join(runsRoot, runID)
-					if evalCleanupDryRun {
-						report.Touched = append(report.Touched, runID+":would-delete")
-						continue
-					}
-					if err := os.RemoveAll(target); err != nil {
-						return fmt.Errorf("eval cleanup: remove %q: %w", target, err)
-					}
-					report.RunsDeleted++
-					report.Touched = append(report.Touched, runID+":deleted")
-				}
-			}
+// applyStaleTransition routes a single run through the §4 cleanup state
+// machine. Returns nil when no transition is required.
+func applyStaleTransition(root, runID string, status evalsub.RunStatus, age, pendingCutoff, runningCutoff time.Duration, report *CleanupReport) error {
+	switch status {
+	case evalsub.StatusPending:
+		if age < pendingCutoff {
+			return nil
 		}
+		if err := transitionStale(root, runID, evalsub.StatusAborted, "never_started"); err != nil {
+			return err
+		}
+		report.TransitionsAborted++
+		report.Touched = append(report.Touched, runID+":pending->aborted")
+	case evalsub.StatusRunning:
+		if age < runningCutoff {
+			return nil
+		}
+		if err := transitionStale(root, runID, evalsub.StatusFailed, "orphaned_process"); err != nil {
+			return err
+		}
+		report.TransitionsFailed++
+		report.Touched = append(report.Touched, runID+":running->failed")
 	}
+	return nil
+}
 
-	if evalCleanupTmpFiles {
+// cleanupDeleteRuns sweeps run directories whose status is failed or aborted.
+// Retracted runs are never auto-removed (audit trail).
+func cleanupDeleteRuns(root, runsRoot string, report *CleanupReport) error {
+	entries, err := os.ReadDir(runsRoot)
+	if err != nil {
+		return nil
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		runID := e.Name()
+		m, err := evalsub.LoadManifest(evalsub.ManifestPath(root, runID))
+		if err != nil {
+			continue
+		}
+		if m.Status != evalsub.StatusFailed && m.Status != evalsub.StatusAborted {
+			continue
+		}
+		target := filepath.Join(runsRoot, runID)
 		if evalCleanupDryRun {
-			report.Touched = append(report.Touched, "tmp-files: dry-run preview not implemented (sweep is a write op)")
-		} else {
-			swept, err := evalsub.SweepTempFiles(root, evalCleanupAge)
-			if err != nil {
-				return fmt.Errorf("eval cleanup: sweep tmp: %w", err)
-			}
-			report.TmpFilesSwept = len(swept)
-			for _, s := range swept {
-				report.Touched = append(report.Touched, "tmp:"+s)
-			}
+			report.Touched = append(report.Touched, runID+":would-delete")
+			continue
 		}
+		if err := os.RemoveAll(target); err != nil {
+			return fmt.Errorf("eval cleanup: remove %q: %w", target, err)
+		}
+		report.RunsDeleted++
+		report.Touched = append(report.Touched, runID+":deleted")
 	}
+	return nil
+}
 
+// cleanupSweepTmpFiles sweeps orphaned manifest.json.tmp files older than
+// --tmp-age. Dry-run mode records a placeholder touch only.
+func cleanupSweepTmpFiles(root string, report *CleanupReport) error {
+	if evalCleanupDryRun {
+		report.Touched = append(report.Touched, "tmp-files: dry-run preview not implemented (sweep is a write op)")
+		return nil
+	}
+	swept, err := evalsub.SweepTempFiles(root, evalCleanupAge)
+	if err != nil {
+		return fmt.Errorf("eval cleanup: sweep tmp: %w", err)
+	}
+	report.TmpFilesSwept = len(swept)
+	for _, s := range swept {
+		report.Touched = append(report.Touched, "tmp:"+s)
+	}
+	return nil
+}
+
+func writeCleanupReport(cmd *cobra.Command, report *CleanupReport) error {
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")

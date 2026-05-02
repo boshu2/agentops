@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Usage:
+#   scripts/validate-cli-skills-map.sh         # Validate; exit 1 if drifted
+#   scripts/validate-cli-skills-map.sh --fix   # Rewrite the count line in
+#                                              # docs/cli-skills-map.md to
+#                                              # match the generated count.
+
+FIX=false
+if [[ "${1:-}" == "--fix" ]]; then
+  FIX=true
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 MAP_PATH="${CLI_SKILLS_MAP_PATH:-$REPO_ROOT/docs/cli-skills-map.md}"
@@ -28,7 +39,17 @@ if [[ "$errors" -eq 0 ]]; then
   if [[ -z "$declared_count" ]]; then
     fail "top audit line must declare '<N> generated CLI command headings'"
   elif [[ "$declared_count" != "$generated_count" ]]; then
-    fail "declared generated CLI command headings=$declared_count, cli/docs/COMMANDS.md has $generated_count"
+    if $FIX; then
+      # Portable sed -i: BSD sed (macOS) needs an explicit empty arg, GNU
+      # sed accepts -i alone. Use a temp-file rewrite to avoid the split.
+      tmp_map="$(mktemp)"
+      sed -E "s/([^0-9])${declared_count}( generated CLI command headings)/\\1${generated_count}\\2/" "$MAP_PATH" > "$tmp_map"
+      mv "$tmp_map" "$MAP_PATH"
+      echo "CLI_SKILLS_MAP: --fix updated declared count $declared_count -> $generated_count in ${MAP_PATH#"$REPO_ROOT"/}"
+      declared_count="$generated_count"
+    else
+      fail "declared generated CLI command headings=$declared_count, cli/docs/COMMANDS.md has $generated_count"
+    fi
   fi
 
   if grep -Fq 'tests/rpi-e2e/run-full-rpi.sh' "$MAP_PATH"; then

@@ -1,7 +1,7 @@
 # Triage Digest — 2026-05-01
 
-Run started: 2026-05-01T00:00:00Z (epoch 1777612244)  
-Branch: `triage/2026-05-01` (no collision)  
+Run started: 2026-05-01T00:00:00Z (epoch 1777612244)
+Branch: `triage/2026-05-01` (no collision)
 bd: unavailable (not installed in this environment; no blocking on it)
 
 ---

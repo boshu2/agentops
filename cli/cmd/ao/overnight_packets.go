@@ -184,7 +184,7 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 }
 
 // probeDreamPacketStaleness runs a 5-second tractability probe against the
-// candidate packet. It checks four surfaces:
+// candidate packet. It checks five surfaces:
 //  1. TargetFiles entries — if any cited path already exists on disk, the
 //     packet is treated as already done.
 //  2. scripts/<x>.sh tokens in the morning_command or title that resolve
@@ -194,6 +194,9 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 //  4. "Decompose skills/<name>/SKILL.md to under N-line limit" claims —
 //     if the cited skill exists and is below the actual size-check fail
 //     threshold, the line-limit claim is fictional.
+//  5. "Add <phrase> to /<skill> skill" claims — if the cited skill's
+//     SKILL.md already contains the proposed phrase verbatim (modulo
+//     hyphen/case normalization), the addition has already shipped.
 //
 // On conclusive staleness it returns (reason, match, true). On inconclusive
 // signals it returns (_, _, false) and the curator emits the packet normally.
@@ -206,6 +209,9 @@ func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (strin
 		return reason, match, true
 	}
 	if reason, match, ok := probeSkillLineLimitClaim(cwd, packet.Title, deadline); ok {
+		return reason, match, true
+	}
+	if reason, match, ok := probeAddToSkillClaim(cwd, packet.Title, deadline); ok {
 		return reason, match, true
 	}
 	return "", "", false
@@ -297,6 +303,110 @@ func probeSkillLineLimitClaim(cwd, title string, deadline time.Time) (string, st
 // that exceed 800 lines fail; below that warns or passes. Used by the dream
 // curator to detect fictional line-limit claims.
 const skillSizeFailThreshold = 800
+
+// probeAddToSkillClaim treats "Add <phrase> to /<skill> skill" titles as
+// stale when the cited skill's SKILL.md already contains <phrase>
+// verbatim (case-insensitive, hyphens/underscores collapsed to whitespace).
+// Today's stale dream packet shape: "Add binary-deployment gate to
+// /implement skill" cites a council finding from 2026-05-01 even though
+// skills/implement/SKILL.md already ships the gate. This probe is
+// conservative: the entire phrase between "Add " and " to /<skill> skill"
+// must appear verbatim in the SKILL.md, not just one keyword.
+func probeAddToSkillClaim(cwd, title string, deadline time.Time) (string, string, bool) {
+	if !time.Now().Before(deadline) {
+		return "", "", false
+	}
+	skillPath, phrase, ok := extractAddToSkillClaim(title)
+	if !ok {
+		return "", "", false
+	}
+	candidate := filepath.Join(cwd, skillPath)
+	data, err := os.ReadFile(candidate)
+	if err != nil {
+		return "", "", false
+	}
+	if !skillContainsAddPhrase(string(data), phrase) {
+		return "", "", false
+	}
+	return "skill SKILL.md already implements the proposed addition", skillPath, true
+}
+
+// extractAddToSkillClaim parses titles of the shape
+//
+//	Add <phrase> to /<skillname> skill
+//	Add <phrase> to the /<skillname> skill
+//
+// and returns the skill's SKILL.md path plus the phrase. It is tolerant
+// of leading/trailing whitespace and multi-word phrases. Verbs other than
+// "Add" (Wire, Implement, Refactor, Fix) are intentionally rejected — the
+// "phrase already in SKILL.md" heuristic is only safe for additions.
+func extractAddToSkillClaim(title string) (string, string, bool) {
+	trimmed := strings.TrimSpace(title)
+	lower := strings.ToLower(trimmed)
+	if !strings.HasPrefix(lower, "add ") {
+		return "", "", false
+	}
+	rest := trimmed[4:]
+	lowerRest := strings.ToLower(rest)
+	suffixes := []string{
+		" to the /",
+		" to /",
+	}
+	var phrase, afterTo string
+	for _, sfx := range suffixes {
+		if idx := strings.Index(lowerRest, sfx); idx > 0 {
+			phrase = strings.TrimSpace(rest[:idx])
+			afterTo = rest[idx+len(sfx):]
+			break
+		}
+	}
+	if phrase == "" || afterTo == "" {
+		return "", "", false
+	}
+	skill := ""
+	for i, r := range afterTo {
+		if r == ' ' || r == '\t' {
+			skill = afterTo[:i]
+			afterTo = afterTo[i:]
+			break
+		}
+	}
+	if skill == "" {
+		return "", "", false
+	}
+	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(afterTo)), "skill") {
+		return "", "", false
+	}
+	for _, r := range skill {
+		if !(r >= 'a' && r <= 'z') && !(r >= '0' && r <= '9') && r != '-' && r != '_' {
+			return "", "", false
+		}
+	}
+	if skill == "" {
+		return "", "", false
+	}
+	return "skills/" + skill + "/SKILL.md", phrase, true
+}
+
+// skillContainsAddPhrase normalizes both content and phrase by lowercasing,
+// collapsing hyphens/underscores to spaces, and collapsing whitespace, then
+// reports whether the phrase is a substring of the content. The
+// normalization lets "binary-deployment gate" match "Binary-Deployment
+// Gate" and "binary deployment gate" interchangeably.
+func skillContainsAddPhrase(content, phrase string) bool {
+	norm := func(s string) string {
+		s = strings.ToLower(s)
+		s = strings.ReplaceAll(s, "-", " ")
+		s = strings.ReplaceAll(s, "_", " ")
+		s = strings.Join(strings.Fields(s), " ")
+		return s
+	}
+	np := norm(phrase)
+	if np == "" {
+		return false
+	}
+	return strings.Contains(norm(content), np)
+}
 
 // extractScriptsRef pulls the first scripts/<...>.sh occurrence from s.
 // Kept as a thin wrapper for test compatibility; new probes should use

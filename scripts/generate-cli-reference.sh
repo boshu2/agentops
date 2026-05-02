@@ -249,3 +249,10 @@ fi
 mkdir -p "$(dirname "$OUTPUT")"
 generate > "$OUTPUT"
 echo "Generated $OUTPUT"
+
+# Auto-sync the declared CLI heading count in docs/cli-skills-map.md so a
+# fresh COMMANDS.md regen can never leave the count gate red. validate-cli-
+# skills-map.sh --fix is a no-op when counts already match.
+if [[ -x "$SCRIPT_DIR/validate-cli-skills-map.sh" ]]; then
+  bash "$SCRIPT_DIR/validate-cli-skills-map.sh" --fix >/dev/null
+fi

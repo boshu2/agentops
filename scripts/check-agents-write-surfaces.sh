@@ -35,7 +35,11 @@ case "${1:-}" in
   *) usage; exit 2 ;;
 esac
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ -n "${AGENTS_WRITE_SURFACES_REPO_ROOT:-}" ]]; then
+  REPO_ROOT="$(cd "$AGENTS_WRITE_SURFACES_REPO_ROOT" && pwd)"
+else
+  REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
 CONTRACT_DOC="$REPO_ROOT/docs/contracts/agents-write-surfaces.md"
 SKILLS_DIR="$REPO_ROOT/skills"
 
