@@ -40,6 +40,15 @@ Disagreement handling:
 
 **DISAGREE resolution:** When vendors disagree, the spawner presents both positions with reasoning and defers to the user. No automatic tie-breaking — cross-vendor disagreement is a signal worth human attention.
 
+### Mixed-mode pairing
+
+When `--mixed` is set, perspectives are paired across vendors (one Claude judge + one Codex judge per perspective; see SKILL.md "Mixed-mode perspective assignment" and `cli-spawning.md` "Mixed-Mode Perspective Distribution"). DISAGREE resolution operates **per-perspective**:
+
+- Pair each perspective's Claude verdict with its Codex verdict.
+- The overall verdict still aggregates per-perspective verdicts using the existing PASS/WARN/FAIL combination table above.
+- A perspective whose Claude judge says PASS and Codex judge says FAIL is reported as DISAGREE for that perspective — the per-perspective DISAGREE is itself the high-signal finding (vendor disagreement on identical input). The any-FAIL rule still applies, so that perspective's contribution to overall verdict is FAIL.
+- Per-perspective consensus (both vendors agree on PASS or both agree on FAIL) is the strongest signal in the report; surface it prominently in the consolidation.
+
 ## Finding Extraction (Flywheel Closure)
 
 After writing the council report, extract significant findings for the knowledge flywheel:

@@ -20,7 +20,7 @@
 | Flag | Description |
 |------|-------------|
 | `--deep` | 3 Claude agents instead of 2 |
-| `--mixed` | Add 3 Codex agents |
+| `--mixed` | Spawn matched Claude + Codex pairs per perspective (default 3 perspectives = 6 judges). Same prompt, same packet, same persona — only the vendor differs. Scales to 2N judges when a preset has N != 3 perspectives. |
 | `--debate` | Enable adversarial debate round (2 rounds via backend messaging, same agents). Incompatible with `--quick`. |
 | `--evidence` | **Falsifiable-assertion mode** (alias: `--tdd`). Requires every finding to include `test_assertions` — concrete, mechanical checks (grep, stat, go test, etc.) that would prove the finding is real. Consolidation clamps verdict to at least WARN if any finding lacks assertions. Works with all modes; strongest pairing is `validate`. See [evidence-mode.md](evidence-mode.md). |
 | `--commit-ready` | **Also write the consolidated report to `docs/council-log/YYYY-MM-DD-<mode>-<target-slug>.md`** in addition to the usual `.agents/council/` transient path. Use when the verdict is load-bearing for a merged commit or a decision that should survive rebases. See `docs/council-log/README.md`. |
