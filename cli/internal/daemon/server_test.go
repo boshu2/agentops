@@ -226,6 +226,21 @@ func TestEventsReadOnlyRejectsPost(t *testing.T) {
 }
 
 func TestOpenClawReadOnlyEndpoints(t *testing.T) {
+	fixture := setupOpenClawReadOnlyFixture(t)
+
+	var snapshot openclaw.ConsumerSnapshot
+	getJSON(t, fixture.router, "/openclaw/v1/snapshot/latest", &snapshot)
+	assertOpenClawSnapshot(t, snapshot, fixture.refsArtifact)
+	assertOpenClawCollectionEndpoints(t, fixture.router)
+}
+
+type openClawReadOnlyFixture struct {
+	router       http.Handler
+	refsArtifact ArtifactRef
+}
+
+func setupOpenClawReadOnlyFixture(t *testing.T) openClawReadOnlyFixture {
+	t.Helper()
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
@@ -258,10 +273,14 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("complete wiki job: %v", err)
 	}
-	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+	return openClawReadOnlyFixture{
+		router:       NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }}),
+		refsArtifact: refsArtifact,
+	}
+}
 
-	var snapshot openclaw.ConsumerSnapshot
-	getJSON(t, router, "/openclaw/v1/snapshot/latest", &snapshot)
+func assertOpenClawSnapshot(t *testing.T, snapshot openclaw.ConsumerSnapshot, refsArtifact ArtifactRef) {
+	t.Helper()
 	if snapshot.SchemaVersion != openclaw.ConsumerSnapshotSchemaVersion {
 		t.Fatalf("snapshot schema = %d", snapshot.SchemaVersion)
 	}
@@ -289,7 +308,10 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	if !hasOpenClawProvenance(snapshot.Resources.Wiki[0].Provenance, "artifact", "artifact", "worker_session_refs") {
 		t.Fatalf("wiki missing artifact provenance: %#v", snapshot.Resources.Wiki[0].Provenance)
 	}
+}
 
+func assertOpenClawCollectionEndpoints(t *testing.T, router http.Handler) {
+	t.Helper()
 	var runs openclaw.RunsResponse
 	getJSON(t, router, "/openclaw/v1/runs", &runs)
 	if len(runs.Runs) != 2 || runs.Runs[0].ResourceKind != openclaw.ResourceKindRun {
