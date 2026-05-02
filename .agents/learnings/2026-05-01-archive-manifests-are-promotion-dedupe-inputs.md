@@ -6,9 +6,9 @@ category: architecture
 confidence: high
 maturity: provisional
 utility: 0.7
+harmful_count: 0
 reward_count: 0
 helpful_count: 0
-harmful_count: 0
 ---
 
 # Learning: Cleanup Archives Are Promotion Dedupe Inputs

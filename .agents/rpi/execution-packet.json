@@ -1,44 +1,59 @@
 {
-  "run_id": "rpi-2026-05-01-council-mixed-symmetric-personas",
-  "objective": "Default /council --mixed to symmetric persona assignment: same N personas/perspectives applied to BOTH Claude and Codex (2N judges = N perspectives × 2 vendors) for true cross-vendor head-to-head comparison.",
-  "epic_id": "soc-500o",
+  "schema_version": "1.0",
+  "run_id": "rpi-2026-05-01-gstack-absorption-tier1",
+  "objective": "Absorb the highest-leverage gstack patterns into agentops skills (+ skills-codex parity), hooks, and ao CLI/agentopsd. Tier 1 must-port set: state-path resolver foundation, ao skills check health dashboard, edit-scope guard (port /freeze + /unfreeze + /guard), browse contract design doc. Plus Wave-2 mass refactor migrating consumers to the new resolver under a warn-only ratchet.",
+  "epic_id": "soc-irg1",
+  "tracker_mode": "beads",
+  "tracker_health": "healthy",
   "complexity": "standard",
-  "test_levels": ["L2"],
   "test_first": true,
-  "scope_mode": "hold",
-  "plan_path": ".agents/plans/2026-05-01-council-mixed-symmetric-personas.md",
-  "research_path": ".agents/research/2026-05-01-council-mixed-symmetric-personas.md",
-  "design_path": ".agents/design/2026-05-01-design-council-mixed-symmetric-personas.md",
-  "pre_mortem_path": ".agents/council/2026-05-01-pre-mortem-council-mixed-symmetric-personas.md",
-  "ranked_packet_path": null,
-  "applied_findings": [],
-  "phase_verdicts": {
-    "design": "PASS",
-    "research": "DONE",
-    "plan": "DONE",
-    "pre_mortem": "WARN"
+  "discovery_completed": "2026-05-01",
+  "input_research_artifact": ".agents/research/gstack-absorption.md",
+  "discovery_phase": {
+    "design_gate": {
+      "verdict": "SKIPPED",
+      "rationale": "Goal is meta-discovery (selecting which gstack features to absorb), not a single feature decision. Individual features in the resulting plan can be design-gated downstream as they emerge."
+    },
+    "brainstorm": {
+      "verdict": "SKIPPED",
+      "rationale": "Goal was specific (>50 chars, no vague keywords); skipped per /discovery STEP 1 contract."
+    },
+    "research_artifact": ".agents/research/gstack-absorption.md",
+    "plan_path": ".agents/plans/2026-05-01-gstack-absorption-tier1.md",
+    "pre_mortem_artifact": ".agents/council/2026-05-01-pre-mortem-gstack-absorption-tier1.md",
+    "pre_mortem_verdict": "WARN",
+    "pre_mortem_amendments_propagated": [
+      {"issue": "soc-irg1.3", "findings": ["F2-hook-activation-test", "F3-malformed-input-defense"]},
+      {"issue": "soc-irg1.5", "findings": ["F1-surface-enumeration-cli-embedded", "F4-commit-cadence"]}
+    ],
+    "scope_mode": "expansion"
   },
   "issues": [
-    {"id": "soc-500o.1", "wave": 1, "title": "W1-I1: Claude-side --mixed spawning contract"},
-    {"id": "soc-500o.2", "wave": 1, "title": "W1-I2: Claude-side per-perspective consolidation"},
-    {"id": "soc-500o.3", "wave": 2, "title": "W2-I3: Mirror to Codex skills"},
-    {"id": "soc-500o.4", "wave": 3, "title": "W3-I4: validate-council assertion + audit gates"}
+    {"id": "soc-irg1",   "type": "epic",    "title": "[epic] gstack absorption — Tier 1 must-port candidates"},
+    {"id": "soc-irg1.1", "type": "task",    "wave": 1, "title": "[I1] State-path resolver foundation (lib/ao-paths.sh + cli/internal/paths/)"},
+    {"id": "soc-irg1.2", "type": "feature", "wave": 1, "title": "[I2] ao skills check Go subcommand (health dashboard)"},
+    {"id": "soc-irg1.3", "type": "feature", "wave": 1, "title": "[I3] Edit-scope guard (port /freeze + /unfreeze + /guard)"},
+    {"id": "soc-irg1.4", "type": "task",    "wave": 1, "title": "[I4] Browse contract design doc (decision artifact, no code)"},
+    {"id": "soc-irg1.5", "type": "task",    "wave": 2, "blocked_by": ["soc-irg1.1", "soc-irg1.3"], "title": "[I5] Migrate consumers to source state-path resolver (warn-only ratchet)"}
   ],
-  "contract_surfaces": [
-    "skills/council/SKILL.md",
-    "skills/council/references/cli-spawning.md",
-    "skills/council/references/flags-reference.md",
-    "skills/council/references/agent-prompts.md",
-    "skills/council/references/consensus-and-output.md",
-    "skills-codex/council/SKILL.md",
-    "skills-codex-overrides/council/SKILL.md",
-    "skills/council/scripts/validate-council.sh"
+  "test_levels": ["L0", "L1", "L2"],
+  "ranked_packet_path": null,
+  "applied_findings": [
+    "f-2026-05-01-005",
+    "f-2026-05-01-017"
   ],
-  "done_criteria": [
-    "skills/council/SKILL.md mode-table row for --mixed documents symmetric persona pairing",
-    "skills/council/references/{cli-spawning,flags-reference,agent-prompts,consensus-and-output}.md updated per plan acceptance",
-    "skills-codex/council/SKILL.md and skills-codex-overrides/council/SKILL.md mirrored",
-    "skills/council/scripts/validate-council.sh passes with new symmetric-pairing assertion",
-    "scripts/audit-codex-parity.sh --skill council exits 0 (no drift)"
-  ]
+  "pending_findings": [
+    "f-2026-05-01-021", "f-2026-05-01-022", "f-2026-05-01-023",
+    "f-2026-05-01-024", "f-2026-05-01-025", "f-2026-05-01-026"
+  ],
+  "pending_findings_sidecar": ".agents/findings/pending-2026-05-01-gstack-absorption.jsonl",
+  "registry_uu_state": "unmerged-from-prior-session; sidecar holds new findings until resolved",
+  "constraints_carried_forward": [
+    ".agents/ vs raw+wiki knowledge separation (f-2026-05-01-005)",
+    "hooks vs agentopsd compose, do not compete (f-2026-05-01-017)",
+    "4-runtime parity: every new skill ships in skills/ AND skills-codex/",
+    "Atomic-write reuse: cli/internal/llmwiki/scope_guard.go:76 SafeAtomicWrite (no new locking)",
+    "Bun is gstack-specific; not adopted (Go for ao CLI; markdown for skills; shell for hooks)"
+  ],
+  "next_step": "/crank soc-irg1 (or apply pre-mortem amendments to plan first if operator prefers)"
 }
