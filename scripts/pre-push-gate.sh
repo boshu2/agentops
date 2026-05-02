@@ -790,6 +790,26 @@ else
     skip "retrieval quality ratchet (local fast; set PRE_PUSH_AGENT_HEALTH=1)"
 fi
 
+# --- 19d. Retrieval manifest path validation (fast: always-on) ---
+if [[ -x scripts/check-retrieval-manifest-paths.sh ]]; then
+    retrieval_manifests=()
+    while IFS= read -r m; do
+        retrieval_manifests+=("$m")
+    done < <(find cli/cmd/ao/testdata/retrieval-bench -maxdepth 2 -name '*manifest*.json' -type f 2>/dev/null | sort)
+    if [[ ${#retrieval_manifests[@]} -gt 0 ]]; then
+        if retrieval_paths_output="$(scripts/check-retrieval-manifest-paths.sh "${retrieval_manifests[@]}" 2>&1)"; then
+            pass "retrieval manifest paths"
+        else
+            fail "retrieval manifest paths"
+            indent_output "$retrieval_paths_output"
+        fi
+    else
+        skip "retrieval manifest paths (no manifests found)"
+    fi
+else
+    skip "retrieval manifest paths (script missing)"
+fi
+
 # --- 20. Skill runtime formats ---
 if needs_check skill; then
     if [[ -x scripts/validate-skill-runtime-formats.sh ]]; then

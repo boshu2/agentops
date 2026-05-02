@@ -245,6 +245,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/write-time-quality.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
+            "timeout": 3
           }
         ]
       },
@@ -255,6 +260,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/write-time-quality.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
+            "timeout": 3
           }
         ]
       },
