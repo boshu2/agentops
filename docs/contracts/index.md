@@ -80,6 +80,13 @@ skills, the runtime, and external integrations.
 
     Evaluation suite, run, scorecard, baseline, canary, and holdout contract.
 
+-   :material-magnify-scan: **[Retrieval Comparison](retrieval-comparison.md)**
+
+    ---
+
+    Deterministic search-eval backend comparison, promotion thresholds,
+    optional rerank behavior, and deferred vector/graph-store policy.
+
 -   :material-brain: **[MemRL Policy Schema](memrl-policy.schema.json)**
 
     ---

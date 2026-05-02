@@ -214,6 +214,7 @@
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
+- [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
 - [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile
 - [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
