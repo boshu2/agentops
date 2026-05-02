@@ -19,6 +19,7 @@ schedules:
     cron: "0 3 * * *"
     job_type: dream.run
     payload:
+      schema_version: 1   # REQUIRED — see cli/internal/daemon/dream_jobs.go DreamJobSpecSchemaVersion
       output_dir: ".agents/overnight"
       max_iterations: 5
       execution_timeout: "4h"
@@ -32,9 +33,10 @@ schedules:
     cron: "5 * * * *"
     job_type: wiki.forge
     payload:
-      tier: "forge-transcript"
+      schema_version: 1   # REQUIRED — see cli/internal/daemon/wiki_jobs.go WikiJobSpecSchemaVersion
       source_paths:
         - ".agents/sessions/"
+      output_dir: ".agents/wiki/forge"
       worker_kind: "claude"
       provider: "anthropic"
       model: "claude-sonnet-4"

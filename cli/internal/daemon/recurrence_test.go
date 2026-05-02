@@ -293,6 +293,53 @@ func TestRecurrence_CrashBetweenLedgerAndSubmit_DoesNotDoubleFire(t *testing.T) 
 	}
 }
 
+// TestRecurrence_AutoFillsSpecRequiredFields exercises the submitJob auto-fill
+// pass: starter schedule payloads (which omit job_type / dream_run_id / mode)
+// must still produce spec-valid jobs in the queue.
+func TestRecurrence_AutoFillsSpecRequiredFields(t *testing.T) {
+	now := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &now)
+	tmpl := RecurringJobTemplate{
+		Name:    "nightly-dream",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeDreamRun,
+		Payload: mustEncodePayload(t, map[string]any{
+			"schema_version": 1,
+			"output_dir":     ".agents/overnight",
+		}),
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+	sup := NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("tick: %v", err)
+	}
+	jobs := realQueueJobs(t, queue)
+	if len(jobs) != 1 {
+		t.Fatalf("want 1 real job; got %d", len(jobs))
+	}
+	got, ok := jobs[0].Payload["job_type"].(string)
+	if !ok || got != string(JobTypeDreamRun) {
+		t.Fatalf("payload job_type = %v, want %q", jobs[0].Payload["job_type"], JobTypeDreamRun)
+	}
+	if drID, _ := jobs[0].Payload["dream_run_id"].(string); drID == "" {
+		t.Fatalf("payload dream_run_id is empty; auto-fill missed")
+	}
+	if mode, _ := jobs[0].Payload["mode"].(string); mode != string(DreamModeDaemon) {
+		t.Fatalf("payload mode = %v, want %q", jobs[0].Payload["mode"], DreamModeDaemon)
+	}
+}
+
+func mustEncodePayload(t *testing.T, m map[string]any) []byte {
+	t.Helper()
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	return b
+}
+
 // --- test helpers ---
 
 func newRecurrenceTestRig(t *testing.T, now *time.Time) (*Store, *Queue) {

@@ -15,10 +15,6 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-// recurrenceActor is the supervisor's actor label on schedule.fired/skipped
-// events. The store helpers (RecordScheduleFired/Skipped) bake in the more
-// generic scheduleActor label, so for now we rely on those helpers.
-//
 // Pre-mortem amendment A4 contract (write-order + cancel precedence):
 //
 //  1. Compute submission_id = sha256("<schedule_name>:<tick_unix_seconds>")
@@ -231,6 +227,23 @@ func (s *RecurrenceSupervisor) submitJob(t RecurringJobTemplate, subID string, t
 	payload["tick_at"] = tickAt.UTC().Format(time.RFC3339Nano)
 	if t.Timeout > 0 {
 		payload["timeout"] = t.Timeout.String()
+	}
+	// Auto-fill spec-required fields from schedule context so starter payloads
+	// don't have to duplicate the dispatch target. The template's top-level
+	// JobType is authoritative for routing; copy it into the payload only when
+	// absent so explicit operator overrides still win.
+	if v, ok := payload["job_type"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+		payload["job_type"] = string(t.JobType)
+	}
+	// Dream specs additionally require a dream_run_id and mode. Synthesize
+	// defaults from schedule context so each tick gets a stable, unique run id.
+	if t.JobType == JobTypeDreamRun || t.JobType == JobTypeDreamStage {
+		if v, ok := payload["dream_run_id"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+			payload["dream_run_id"] = fmt.Sprintf("schedule-%s-%s", t.Name, subID)
+		}
+		if v, ok := payload["mode"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+			payload["mode"] = string(DreamModeDaemon)
+		}
 	}
 	_, err = s.queue.SubmitJob(SubmitJobInput{
 		JobType:        t.JobType,

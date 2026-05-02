@@ -248,13 +248,26 @@ func buildSubmitFromTemplate(tmpl daemonpkg.RecurringJobTemplate) (daemonpkg.Sub
 		JobType:        tmpl.JobType,
 		IdempotencyKey: fmt.Sprintf("schedule-run:%s:%d", tmpl.Name, time.Now().UnixNano()),
 	}
+	payload := map[string]any{}
 	if len(tmpl.Payload) > 0 {
-		var payload map[string]any
 		if err := json.Unmarshal(tmpl.Payload, &payload); err != nil {
 			return daemonpkg.SubmitJobRequest{}, fmt.Errorf("decode payload for schedule %q: %w", tmpl.Name, err)
 		}
-		req.Payload = payload
 	}
+	// Mirror recurrence.submitJob: auto-fill spec-required fields from schedule
+	// context so starter payloads don't have to duplicate dispatch metadata.
+	if v, ok := payload["job_type"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+		payload["job_type"] = string(tmpl.JobType)
+	}
+	if tmpl.JobType == daemonpkg.JobTypeDreamRun || tmpl.JobType == daemonpkg.JobTypeDreamStage {
+		if v, ok := payload["dream_run_id"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+			payload["dream_run_id"] = fmt.Sprintf("schedule-run-%s-%d", tmpl.Name, time.Now().UnixNano())
+		}
+		if v, ok := payload["mode"]; !ok || strings.TrimSpace(fmt.Sprint(v)) == "" {
+			payload["mode"] = string(daemonpkg.DreamModeDaemon)
+		}
+	}
+	req.Payload = payload
 	return req, nil
 }
 

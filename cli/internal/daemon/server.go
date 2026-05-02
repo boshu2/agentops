@@ -203,10 +203,23 @@ func (s *ReadOnlyServer) handleStatus(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
+	// Filter the schedule.* sentinel rows out of the status queue projection so
+	// `ao daemon jobs list` never shows the placeholder phantom (job_id="schedule",
+	// empty job_type) created by ScheduleCreated/Deleted ledger events.
+	queue := state.Queue
+	if len(queue.Jobs) > 0 {
+		filtered := make([]QueueJobState, 0, len(queue.Jobs))
+		for _, j := range queue.Jobs {
+			if isRealQueueJob(j) {
+				filtered = append(filtered, j)
+			}
+		}
+		queue.Jobs = filtered
+	}
 	writeJSON(w, http.StatusOK, ReadOnlyStatusResponse{
 		Ready:         state.Ready,
 		ProjectionLag: state.Lag,
-		Queue:         state.Queue,
+		Queue:         queue,
 		Projections:   state.Projections,
 	})
 }

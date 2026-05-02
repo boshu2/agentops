@@ -703,6 +703,8 @@ func agentOpsDaemonMutationPaths() []string {
 		"/jobs/cancel",
 		"/v1/jobs/cancel",
 		"/openclaw/v1/triggers/jobs",
+		"/v1/schedules",
+		"/v1/schedules/*",
 	}
 }
 
