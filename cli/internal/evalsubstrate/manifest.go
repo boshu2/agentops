@@ -165,60 +165,34 @@ var RequiredManifestFields = []string{
 // ValidateForComplete returns the list of missing rc2-required fields
 // that would prevent a `complete` Run from being authoritative per §4.
 func ValidateForComplete(m *Manifest) []string {
+	checks := []struct {
+		name   string
+		absent bool
+	}{
+		{"schema_version", m.SchemaVersion == 0},
+		{"id", m.ID == ""},
+		{"status", m.Status == ""},
+		{"started_at_unix_ms", m.StartedAtUnixMs == 0},
+		{"task_ref", m.TaskRef == ""},
+		{"harness_ref", m.HarnessRef == ""},
+		{"harness_content_hash", m.HarnessContentHash == ""},
+		{"model_spec_ref", m.ModelSpecRef == ""},
+		{"model_spec_hash", m.ModelSpecHash == ""},
+		{"ground_truth_ref", m.GroundTruthRef == ""},
+		{"ground_truth_hash", m.GroundTruthHash == ""},
+		{"sample_split", m.SampleSplit == ""},
+		{"n_samples", m.NSamples == 0},
+		{"seeds(>=3)", len(m.Seeds) < 3},
+		{"inspect_command", m.InspectCommand == ""},
+		{"inspect_version", m.InspectVersion == ""},
+		{"rig_id", m.RigID == ""},
+		{"validity_gates_passed", m.ValidityGatesPassed == nil},
+	}
 	var missing []string
-	if m.SchemaVersion == 0 {
-		missing = append(missing, "schema_version")
-	}
-	if m.ID == "" {
-		missing = append(missing, "id")
-	}
-	if m.Status == "" {
-		missing = append(missing, "status")
-	}
-	if m.StartedAtUnixMs == 0 {
-		missing = append(missing, "started_at_unix_ms")
-	}
-	if m.TaskRef == "" {
-		missing = append(missing, "task_ref")
-	}
-	if m.HarnessRef == "" {
-		missing = append(missing, "harness_ref")
-	}
-	if m.HarnessContentHash == "" {
-		missing = append(missing, "harness_content_hash")
-	}
-	if m.ModelSpecRef == "" {
-		missing = append(missing, "model_spec_ref")
-	}
-	if m.ModelSpecHash == "" {
-		missing = append(missing, "model_spec_hash")
-	}
-	if m.GroundTruthRef == "" {
-		missing = append(missing, "ground_truth_ref")
-	}
-	if m.GroundTruthHash == "" {
-		missing = append(missing, "ground_truth_hash")
-	}
-	if m.SampleSplit == "" {
-		missing = append(missing, "sample_split")
-	}
-	if m.NSamples == 0 {
-		missing = append(missing, "n_samples")
-	}
-	if len(m.Seeds) < 3 {
-		missing = append(missing, "seeds(>=3)")
-	}
-	if m.InspectCommand == "" {
-		missing = append(missing, "inspect_command")
-	}
-	if m.InspectVersion == "" {
-		missing = append(missing, "inspect_version")
-	}
-	if m.RigID == "" {
-		missing = append(missing, "rig_id")
-	}
-	if m.ValidityGatesPassed == nil {
-		missing = append(missing, "validity_gates_passed")
+	for _, c := range checks {
+		if c.absent {
+			missing = append(missing, c.name)
+		}
 	}
 	return missing
 }

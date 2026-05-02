@@ -185,51 +185,9 @@ directory.`,
 }
 
 func runEvalTaskRun(cmd *cobra.Command, args []string) error {
-	taskID := args[0]
-	task, err := loadTask(taskID)
+	gateInputs, suite, task, seeds, err := prepareTaskRunInputs(args[0])
 	if err != nil {
 		return err
-	}
-	if evalTaskRunSuiteRef == "" {
-		return fmt.Errorf("eval task run: --suite is required")
-	}
-	suite, err := loadSuite(evalTaskRunSuiteRef)
-	if err != nil {
-		return err
-	}
-	seeds, err := parseSeeds(evalTaskRunSeeds)
-	if err != nil {
-		return err
-	}
-	if len(seeds) < 3 {
-		return fmt.Errorf("eval task run: --seeds requires >=3 values, got %d (per §4 manifest required field)", len(seeds))
-	}
-
-	gateInputs := evalsub.GateInputs{
-		Suite:       suite,
-		Task:        task,
-		AllowWeak:   evalTaskRunAllowWeak,
-		GTRequested: evalTaskRunGTRef,
-	}
-	if evalTaskRunHarnessDir != "" {
-		expanded := evalTaskRunHarnessDir
-		if strings.HasPrefix(expanded, "~") {
-			home, _ := os.UserHomeDir()
-			expanded = filepath.Join(home, strings.TrimPrefix(expanded, "~"))
-		}
-		harness, lock, snapErr := evalsub.SnapshotHarness(expanded, evalTaskRunHarnessRef, "ao eval task run")
-		if snapErr != nil {
-			return fmt.Errorf("eval task run: harness snapshot: %w", snapErr)
-		}
-		gateInputs.Harness = harness
-		gateInputs.HarnessLock = lock
-		gateInputs.HarnessDir = expanded
-	}
-	if evalTaskRunGTRef != "" {
-		gtRows, gtErr := loadGroundTruthFile()
-		if gtErr == nil {
-			gateInputs.GroundTruth = gtRows
-		}
 	}
 
 	refusals := evalsub.RunGates(gateInputs)
@@ -248,6 +206,91 @@ func runEvalTaskRun(cmd *cobra.Command, args []string) error {
 		rigID = "unknown-rig"
 	}
 	runID := evalsub.GenerateRunID(rigID)
+	manifest := buildTaskRunManifest(task, suite, seeds, rigID, gateInputs)
+
+	w, err := evalsub.NewRunWriter(evalsRoot(), runID, manifest)
+	if err != nil {
+		return fmt.Errorf("eval task run: open run: %w", err)
+	}
+	if err := w.Transition(evalsub.StatusRunning, func(m *evalsub.Manifest) {
+		m.ValidityGatesPassed = []string{
+			"held_constant_declared",
+			"min_n_samples",
+			"ground_truth_immutable",
+			"harness_lock_match",
+			"multi_comparison_correction",
+		}
+	}); err != nil {
+		return fmt.Errorf("eval task run: transition->running: %w", err)
+	}
+
+	return writeTaskRunOutput(cmd, w)
+}
+
+// prepareTaskRunInputs loads the task + suite, parses seeds, and assembles the
+// gate-input bundle (harness snapshot + GT) for runEvalTaskRun.
+func prepareTaskRunInputs(taskID string) (evalsub.GateInputs, *evalsub.Suite, *evalsub.Task, []int, error) {
+	task, err := loadTask(taskID)
+	if err != nil {
+		return evalsub.GateInputs{}, nil, nil, nil, err
+	}
+	if evalTaskRunSuiteRef == "" {
+		return evalsub.GateInputs{}, nil, nil, nil, fmt.Errorf("eval task run: --suite is required")
+	}
+	suite, err := loadSuite(evalTaskRunSuiteRef)
+	if err != nil {
+		return evalsub.GateInputs{}, nil, nil, nil, err
+	}
+	seeds, err := parseSeeds(evalTaskRunSeeds)
+	if err != nil {
+		return evalsub.GateInputs{}, nil, nil, nil, err
+	}
+	if len(seeds) < 3 {
+		return evalsub.GateInputs{}, nil, nil, nil, fmt.Errorf("eval task run: --seeds requires >=3 values, got %d (per §4 manifest required field)", len(seeds))
+	}
+
+	gateInputs := evalsub.GateInputs{
+		Suite:       suite,
+		Task:        task,
+		AllowWeak:   evalTaskRunAllowWeak,
+		GTRequested: evalTaskRunGTRef,
+	}
+	if err := attachHarnessSnapshot(&gateInputs); err != nil {
+		return evalsub.GateInputs{}, nil, nil, nil, err
+	}
+	if evalTaskRunGTRef != "" {
+		if gtRows, gtErr := loadGroundTruthFile(); gtErr == nil {
+			gateInputs.GroundTruth = gtRows
+		}
+	}
+	return gateInputs, suite, task, seeds, nil
+}
+
+// attachHarnessSnapshot snapshots --harness-dir (when set) into the gate
+// inputs, expanding ~ and recording the lock + content hash.
+func attachHarnessSnapshot(gateInputs *evalsub.GateInputs) error {
+	if evalTaskRunHarnessDir == "" {
+		return nil
+	}
+	expanded := evalTaskRunHarnessDir
+	if strings.HasPrefix(expanded, "~") {
+		home, _ := os.UserHomeDir()
+		expanded = filepath.Join(home, strings.TrimPrefix(expanded, "~"))
+	}
+	harness, lock, err := evalsub.SnapshotHarness(expanded, evalTaskRunHarnessRef, "ao eval task run")
+	if err != nil {
+		return fmt.Errorf("eval task run: harness snapshot: %w", err)
+	}
+	gateInputs.Harness = harness
+	gateInputs.HarnessLock = lock
+	gateInputs.HarnessDir = expanded
+	return nil
+}
+
+// buildTaskRunManifest assembles the §4 Run manifest from the gathered inputs,
+// including model-spec/ground-truth hashes and multi-comparison fields when
+// the suite arm count exceeds 2.
+func buildTaskRunManifest(task *evalsub.Task, suite *evalsub.Suite, seeds []int, rigID string, gateInputs evalsub.GateInputs) evalsub.Manifest {
 	manifest := evalsub.Manifest{
 		TaskRef:        task.ID,
 		SuiteRef:       suite.ID,
@@ -279,23 +322,10 @@ func runEvalTaskRun(cmd *cobra.Command, args []string) error {
 		manifest.ReferenceArm = suite.Stats.ReferenceArm
 		manifest.FamilySizeK = evalsub.FamilySizeK(suite.Stats.ComparisonFamily, n)
 	}
+	return manifest
+}
 
-	w, err := evalsub.NewRunWriter(evalsRoot(), runID, manifest)
-	if err != nil {
-		return fmt.Errorf("eval task run: open run: %w", err)
-	}
-	if err := w.Transition(evalsub.StatusRunning, func(m *evalsub.Manifest) {
-		m.ValidityGatesPassed = []string{
-			"held_constant_declared",
-			"min_n_samples",
-			"ground_truth_immutable",
-			"harness_lock_match",
-			"multi_comparison_correction",
-		}
-	}); err != nil {
-		return fmt.Errorf("eval task run: transition->running: %w", err)
-	}
-
+func writeTaskRunOutput(cmd *cobra.Command, w *evalsub.RunWriter) error {
 	out := w.Manifest()
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
