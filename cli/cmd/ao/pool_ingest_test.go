@@ -660,6 +660,35 @@ func TestPoolIngestCoverage_BuildCandidateFromLearningBlock(t *testing.T) {
 		}
 	})
 
+	t.Run("does not amplify already-pending candidate ID prefix", func(t *testing.T) {
+		// Regression for soc-2ctn: archived pollution sources can already be
+		// named like pool candidate IDs. Ingest must keep that ID stable instead
+		// of turning pend-X into pend-pend-X on replay.
+		canonical := "pend-2026-04-30-fix20260430t090800-1"
+		f := poolIngestCandidateFixture{
+			fileDate:    time.Date(2026, 4, 30, 0, 0, 0, 0, time.UTC),
+			srcPath:     "/test/" + canonical + "-fce4cb8b.md",
+			sessionHint: canonical + "-fce4cb8b",
+		}
+		block := learningBlock{
+			Title:      "Sample",
+			ID:         canonical,
+			Confidence: "medium",
+			Body:       "Body text.",
+		}
+		cand, _, ok := f.build(block)
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		want := canonical + "-fce4cb8b"
+		if cand.ID != want {
+			t.Fatalf("expected stable polluted id %q, got %q", want, cand.ID)
+		}
+		if strings.Contains(cand.ID, "pend-pend-") {
+			t.Fatalf("candidate id amplified pend prefix: %q", cand.ID)
+		}
+	})
+
 	t.Run("preserves distinct components when they differ", func(t *testing.T) {
 		// Sanity: when components are distinct, all three are still concatenated.
 		f := poolIngestCandidateFixture{

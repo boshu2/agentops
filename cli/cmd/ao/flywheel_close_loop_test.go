@@ -927,3 +927,67 @@ func TestIngestPendingFilesToPool_MixedBatchPreservesPerFileIndependence(t *test
 		t.Errorf("missing file should not appear in processed/, got: %v", err)
 	}
 }
+
+func TestCloseLoop_ReplayedPollutedPendingQueueDoesNotAmplify(t *testing.T) {
+	tmp := t.TempDir()
+	name := "pend-2026-04-30-fix20260430t090800-1-fce4cb8b"
+	pendingFile := writePollutedPendingLearning(t, tmp, name, "pend-2026-04-30-fix20260430t090800-1")
+
+	first, err := performFlywheelCloseLoop(tmp, filepath.Join(".agents", "knowledge", "pending"), 0, true)
+	if err != nil {
+		t.Fatalf("first close-loop: %v", err)
+	}
+	if first.Ingest.Added != 1 {
+		t.Fatalf("first ingest Added=%d, want 1 (res=%+v)", first.Ingest.Added, first.Ingest)
+	}
+	if len(first.Ingest.AddedIDs) != 1 {
+		t.Fatalf("first AddedIDs=%v, want one id", first.Ingest.AddedIDs)
+	}
+	if strings.Contains(first.Ingest.AddedIDs[0], "pend-pend-") {
+		t.Fatalf("close-loop amplified polluted pending id: %q", first.Ingest.AddedIDs[0])
+	}
+	if _, err := os.Stat(pendingFile); !os.IsNotExist(err) {
+		t.Fatalf("pending file should move after first close-loop, err=%v", err)
+	}
+	processed := filepath.Join(tmp, ".agents", "knowledge", "processed", filepath.Base(pendingFile))
+	if _, err := os.Stat(processed); err != nil {
+		t.Fatalf("processed polluted source missing: %v", err)
+	}
+
+	second, err := performFlywheelCloseLoop(tmp, filepath.Join(".agents", "knowledge", "pending"), 0, true)
+	if err != nil {
+		t.Fatalf("second close-loop: %v", err)
+	}
+	if second.Ingest.Added != 0 || second.Ingest.CandidatesFound != 0 || second.AutoPromote.Promoted != 0 {
+		t.Fatalf("second close-loop should be stable/no-growth, got %+v", second)
+	}
+}
+
+func writePollutedPendingLearning(t *testing.T, tmp, name, learningID string) string {
+	t.Helper()
+	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
+	if err := os.MkdirAll(pendingDir, 0o755); err != nil {
+		t.Fatalf("mkdir pending: %v", err)
+	}
+	pendingFile := filepath.Join(pendingDir, name+".md")
+	body := strings.Join([]string{
+		"# Learnings: " + name,
+		"",
+		"**Date:** 2026-04-30",
+		"",
+		"# Learning: Polluted pending replay stability",
+		"",
+		"**ID**: " + learningID,
+		"**Category**: process",
+		"**Confidence**: high",
+		"",
+		"## What We Learned",
+		"",
+		"Replay archived pending queues through close-loop only after the source file is moved to processed/. This prevents pend prefix amplification and keeps the candidate set stable across recurring hook invocations.",
+		"",
+	}, "\n")
+	if err := os.WriteFile(pendingFile, []byte(body), 0o600); err != nil {
+		t.Fatalf("write pending file: %v", err)
+	}
+	return pendingFile
+}

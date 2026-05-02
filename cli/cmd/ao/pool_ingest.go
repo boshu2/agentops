@@ -348,7 +348,7 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 			parts = append(parts, learningID)
 		}
 	}
-	id := slugify("pend-" + strings.Join(parts, "-"))
+	id := stablePendingCandidateID(parts)
 	if len(id) > 120 {
 		// Keep a stable prefix, add a short hash to preserve uniqueness.
 		h := sha256.Sum256([]byte(b.Body))
@@ -419,6 +419,17 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 	}
 
 	return cand, scoring, true
+}
+
+func stablePendingCandidateID(parts []string) string {
+	id := slugify(strings.Join(parts, "-"))
+	for strings.HasPrefix(id, "pend-pend-") {
+		id = strings.TrimPrefix(id, "pend-")
+	}
+	if id == "pend" || strings.HasPrefix(id, "pend-") {
+		return id
+	}
+	return slugify("pend-" + id)
 }
 
 // inferKnowledgeType classifies a learning block by its category and content signals.
