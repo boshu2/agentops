@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 60 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 62 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
 
