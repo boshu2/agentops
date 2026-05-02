@@ -47,6 +47,7 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 	var rewarded, skipped int
 	sessionID := canonicalSessionID("")
 	var feedbackEvents []FeedbackEvent
+	mutateArtifacts := opts.MutateArtifacts && !GetDryRun()
 
 	for _, c := range unique {
 		citationType := effectiveCitationFeedbackType(c.CitationType)
@@ -90,7 +91,7 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 			if citedAt.IsZero() {
 				citedAt = time.Now()
 			}
-			if opts.MutateArtifacts {
+			if mutateArtifacts {
 				if err := updateFindingCitationFields(path, citedAt); err != nil {
 					skipped++
 					continue
@@ -151,7 +152,7 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 
 		rewardCount := getLearningRewardCount(path)
 		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
-		if !opts.MutateArtifacts {
+		if !mutateArtifacts {
 			currentUtility := parseUtilityFromFile(path)
 			feedbackEvents = append(feedbackEvents, FeedbackEvent{
 				SessionID:       sessionID,
@@ -206,7 +207,7 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 		rewarded++
 	}
 
-	if len(feedbackEvents) > 0 {
+	if !GetDryRun() && len(feedbackEvents) > 0 {
 		_ = writeFeedbackEvents(cwd, feedbackEvents)
 	}
 
