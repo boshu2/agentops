@@ -250,6 +250,9 @@ The required controls are:
 - require `X-AgentOps-Daemon-Token` or `Authorization: Bearer <token>` for
   every mutation
 - load token files only when group/other permission bits are not set
+- resolve daemon client mutation tokens in this order: explicit `--token`,
+  explicit `--token-file`, `AGENTOPSD_TOKEN`, `AGENTOPS_DAEMON_TOKEN`, then
+  activation-file token metadata
 - reject mutation requests whose method or path is outside the allowlist for
   that route group
 - scope accepted tokens by route capability. Plaintext token files remain

@@ -204,6 +204,37 @@ func TestSchedule_AuthRequiredOnAdd(t *testing.T) {
 	}
 }
 
+func TestScheduleMutationsUseAgentOpsDTokenEnv(t *testing.T) {
+	cwd, server := newScheduleCommandFixture(t)
+	yamlPath := writeScheduleYAML(t, cwd, "env-token-test")
+	t.Setenv("AGENTOPSD_TOKEN", scheduleTestToken)
+
+	prevFile := scheduleFile
+	scheduleFile = yamlPath
+	t.Cleanup(func() { scheduleFile = prevFile })
+
+	out, err := runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleAddCommand(cmd, nil)
+	})
+	if err != nil {
+		t.Fatalf("add with env token failed: %v\noutput=%s", err, out)
+	}
+
+	out, err = runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleRunCommand(cmd, []string{"env-token-test"})
+	})
+	if err != nil {
+		t.Fatalf("run with env token failed: %v\noutput=%s", err, out)
+	}
+
+	out, err = runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleRemoveCommand(cmd, []string{"env-token-test"})
+	})
+	if err != nil {
+		t.Fatalf("remove with env token failed: %v\noutput=%s", err, out)
+	}
+}
+
 // boundaryClock is a minimal daemonpkg.Clock fake used by the recurrence
 // wiring test below. It pins Now() to a fixed cron-boundary time so the
 // supervisor's first tick fires immediately, and returns a never-firing

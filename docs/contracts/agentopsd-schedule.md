@@ -257,7 +257,9 @@ operator docs use `X-Agentops-Mutation-Token` or similar — those are wrong.
 
 1. `--token <value>` flag (highest priority)
 2. `--token-file <path>` flag
-3. environment defaults inherited from `agentopsd` activation
+3. `AGENTOPSD_TOKEN`
+4. `AGENTOPS_DAEMON_TOKEN` legacy environment fallback
+5. token metadata from `.agents/daemon/activation.json`
 
 The token file must have mode ≤ `0600` (owner-only); permissive modes fail
 with `ErrUnsafeTokenFileMode`.

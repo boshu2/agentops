@@ -107,6 +107,92 @@ func TestDaemonReadyCommandUsesActivationFile(t *testing.T) {
 	}
 }
 
+func TestResolveAgentOpsDaemonClientMutationTokenPrecedence(t *testing.T) {
+	cwd := t.TempDir()
+	tokenFile := filepath.Join(cwd, "token")
+	if err := os.WriteFile(tokenFile, []byte("file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	activationTokenFile := filepath.Join(cwd, "activation-token")
+	if err := os.WriteFile(activationTokenFile, []byte("activation-file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonActivation(cwd, agentopsDaemonActivation{
+		URL:       "http://127.0.0.1:8765",
+		Address:   "127.0.0.1:8765",
+		PID:       123,
+		Ready:     true,
+		StartedAt: "2026-05-01T00:00:00Z",
+		Token:     "activation-token",
+		TokenFile: activationTokenFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("AGENTOPSD_TOKEN", "env-token")
+	t.Setenv("AGENTOPS_DAEMON_TOKEN", "legacy-env-token")
+
+	got, err := resolveAgentOpsDaemonClientMutationToken(cwd, "flag-token", tokenFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "flag-token" {
+		t.Fatalf("flag precedence token = %q", got)
+	}
+
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", tokenFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "file-token" {
+		t.Fatalf("token-file precedence token = %q", got)
+	}
+
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "env-token" {
+		t.Fatalf("env precedence token = %q", got)
+	}
+
+	t.Setenv("AGENTOPSD_TOKEN", "")
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "legacy-env-token" {
+		t.Fatalf("legacy env precedence token = %q", got)
+	}
+
+	t.Setenv("AGENTOPS_DAEMON_TOKEN", "")
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "activation-token" {
+		t.Fatalf("activation fallback token = %q", got)
+	}
+
+	if err := writeDaemonActivation(cwd, agentopsDaemonActivation{
+		URL:       "http://127.0.0.1:8765",
+		Address:   "127.0.0.1:8765",
+		PID:       123,
+		Ready:     true,
+		StartedAt: "2026-05-01T00:00:00Z",
+		TokenFile: activationTokenFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "activation-file-token" {
+		t.Fatalf("activation token-file fallback token = %q", got)
+	}
+}
+
 func TestDaemonLifecycleDryRunCommand(t *testing.T) {
 	// Covers ao daemon service install.
 	cwd := t.TempDir()

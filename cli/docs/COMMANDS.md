@@ -933,8 +933,10 @@ ao daemon jobs [command]
 **Flags:**
 
 ```
-  -h, --help         help for jobs
-      --url string   Daemon base URL (defaults to activation file)
+  -h, --help                help for jobs
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+      --url string          Daemon base URL (defaults to activation file)
 ```
 
 ##### `ao daemon jobs cancel`
@@ -948,10 +950,8 @@ ao daemon jobs cancel <job-id> [flags]
 **Flags:**
 
 ```
-  -h, --help                help for cancel
-      --reason string       Cancellation reason
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
+  -h, --help            help for cancel
+      --reason string   Cancellation reason
 ```
 
 ##### `ao daemon jobs list`
