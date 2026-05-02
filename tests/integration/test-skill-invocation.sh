@@ -4,8 +4,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude-code" && pwd)/test-helpers.sh"
+HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude-code" && pwd)"
+# shellcheck source=tests/claude-code/test-helpers.sh
+source "$HELPERS_DIR/test-helpers.sh"
 
 # Guard: skip if Claude CLI not available
 if ! command -v claude &> /dev/null; then

@@ -11,6 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=tests/claude-code/test-helpers.sh
 source "$SCRIPT_DIR/test-helpers.sh"
 
 VERBOSE="${1:-}"
@@ -35,7 +36,7 @@ run_scenario() {
     echo "--- $name ---"
 
     local log_file
-    MAX_TURNS=$turns log_file=$(run_claude_json "$prompt" "$tout") || true
+    log_file=$(MAX_TURNS=$turns run_claude_json "$prompt" "$tout") || true
 
     if [[ ! -f "$log_file" ]]; then
         echo -e "  ${RED}[FAIL]${NC} Log file not created"

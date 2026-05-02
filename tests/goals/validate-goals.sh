@@ -125,10 +125,7 @@ else
         fail "Missing mission field"
     fi
 
-    goal_count=0
-    while IFS= read -r id; do
-        goal_count=$((goal_count + 1))
-    done < <(grep '^\s*- id:' "$GOALS_FILE" | sed 's/.*id:\s*//' | tr -d '"' | tr -d "'")
+    goal_count=$(grep -c '^[[:space:]]*- id:' "$GOALS_FILE" || true)
 
     if [[ $goal_count -gt 0 ]]; then
         pass "Found $goal_count goals"
