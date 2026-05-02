@@ -3,14 +3,6 @@
 # Closes the flywheel loop at stop.
 set -euo pipefail
 
-# TEMP: disabled until pend-* triple-ID amplification is verifiably fixed.
-# Active incident 2026-04-30: this hook fired on every Stop event and ingested
-# the stale .agents/knowledge/pending/ queue, producing 700+ pend-*-pend-*-pend-*
-# files in .agents/learnings/ during a single session. The pool-side dedup fix
-# (PR #163, commits 4af82384 + f6fce986) did not stop this driver path.
-# See: .agents/learnings/2026-04-30-pend-pollution-actively-growing-during-session.md
-exit 0
-
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0
 [ "${AGENTOPS_HOOK_CLOSE_LOOP:-0}" = "1" ] || exit 0
 
