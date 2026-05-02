@@ -81,7 +81,7 @@ if ! jq -e --argjson min "$MIN_BACKENDS" '
         and (.search_root | type == "string" and length > 0)
         and (.queries | type == "number" and . > 0)
         and (.hits | type == "number")
-        and (.missing_ground_truth | type == "number")
+        and (.missing_ground_truth == 0)
         and (.any_relevant_at_k | type == "number")
         and (.avg_precision_at_k | type == "number")
         and (.mean_reciprocal_rank | type == "number")
