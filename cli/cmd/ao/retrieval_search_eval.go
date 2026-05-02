@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,6 +24,12 @@ type searchEvalCase struct {
 	Query       string   `json:"query"`
 	Intent      string   `json:"intent,omitempty"`
 	GroundTruth []string `json:"ground_truth"`
+}
+
+type legacySearchEvalCase struct {
+	Query    string   `json:"query"`
+	Relevant []string `json:"relevant"`
+	Category string   `json:"category,omitempty"`
 }
 
 type searchEvalReport struct {
@@ -151,7 +158,7 @@ func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k 
 		topPaths = append(topPaths, normalizeSearchEvalResultPath(repoRoot, result.Path))
 	}
 
-	groundTruth := normalizedSearchEvalExpectedPaths(evalCase.GroundTruth)
+	groundTruth := normalizedSearchEvalExpectedPaths(repoRoot, evalCase.GroundTruth)
 	missingGroundTruth := missingSearchEvalGroundTruth(repoRoot, groundTruth)
 
 	expected := make(map[string]bool, len(groundTruth))
@@ -194,10 +201,54 @@ func loadSearchEvalManifest(path string) (searchEvalManifest, error) {
 		return searchEvalManifest{}, fmt.Errorf("read search eval manifest %s: %w", path, err)
 	}
 
+	manifest, err := parseSearchEvalManifest(path, data)
+	if err != nil {
+		return searchEvalManifest{}, err
+	}
+	return validateSearchEvalManifest(path, manifest)
+}
+
+func parseSearchEvalManifest(path string, data []byte) (searchEvalManifest, error) {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return searchEvalManifest{}, fmt.Errorf("parse search eval manifest %s: empty file", path)
+	}
+	if trimmed[0] == '[' {
+		var legacy []legacySearchEvalCase
+		if err := json.Unmarshal(trimmed, &legacy); err != nil {
+			return searchEvalManifest{}, fmt.Errorf("parse search eval manifest %s: %w", path, err)
+		}
+		return convertLegacySearchEvalManifest(legacy), nil
+	}
+
 	var manifest searchEvalManifest
-	if err := json.Unmarshal(data, &manifest); err != nil {
+	if err := json.Unmarshal(trimmed, &manifest); err != nil {
 		return searchEvalManifest{}, fmt.Errorf("parse search eval manifest %s: %w", path, err)
 	}
+	return manifest, nil
+}
+
+func convertLegacySearchEvalManifest(cases []legacySearchEvalCase) searchEvalManifest {
+	manifest := searchEvalManifest{
+		ID:          "retrieval-ratchet-fallback",
+		Description: "Generated from legacy retrieval eval query array",
+		Queries:     make([]searchEvalCase, 0, len(cases)),
+	}
+	for i, legacyCase := range cases {
+		if len(legacyCase.Relevant) == 0 {
+			continue
+		}
+		manifest.Queries = append(manifest.Queries, searchEvalCase{
+			ID:          fmt.Sprintf("q%d", i+1),
+			Query:       legacyCase.Query,
+			Intent:      legacyCase.Category,
+			GroundTruth: legacyCase.Relevant,
+		})
+	}
+	return manifest
+}
+
+func validateSearchEvalManifest(path string, manifest searchEvalManifest) (searchEvalManifest, error) {
 	if strings.TrimSpace(manifest.ID) == "" {
 		return searchEvalManifest{}, fmt.Errorf("search eval manifest %s missing id", path)
 	}
@@ -243,10 +294,10 @@ func resolveSearchEvalManifestPath(repoRoot, manifestPath string) string {
 	return filepath.Clean(filepath.Join(repoRoot, manifestPath))
 }
 
-func normalizedSearchEvalExpectedPaths(paths []string) []string {
+func normalizedSearchEvalExpectedPaths(repoRoot string, paths []string) []string {
 	normalized := make([]string, 0, len(paths))
 	for _, path := range paths {
-		normalized = append(normalized, normalizeSearchEvalExpectedPath(path))
+		normalized = append(normalized, normalizeSearchEvalExpectedPath(repoRoot, path))
 	}
 	return normalized
 }
@@ -265,8 +316,35 @@ func missingSearchEvalGroundTruth(repoRoot string, paths []string) []string {
 	return missing
 }
 
-func normalizeSearchEvalExpectedPath(path string) string {
+func normalizeSearchEvalExpectedPath(repoRoot, path string) string {
+	path = cleanSearchEvalPath(path)
+	if shouldPrefixLegacyAgentsPath(repoRoot, path) {
+		return ".agents/" + path
+	}
+	return path
+}
+
+func cleanSearchEvalPath(path string) string {
 	return strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
+}
+
+func shouldPrefixLegacyAgentsPath(repoRoot, path string) bool {
+	if path == "" || path == "." || filepath.IsAbs(path) || strings.HasPrefix(path, ".agents/") {
+		return false
+	}
+	first, _, _ := strings.Cut(path, "/")
+	switch first {
+	case "learnings", "patterns", "findings", "research", "compiled", "plans", "brainstorm", "council", "design", "wiki":
+	default:
+		return false
+	}
+	if strings.TrimSpace(repoRoot) == "" {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(repoRoot, filepath.FromSlash(path))); err == nil {
+		return false
+	}
+	return true
 }
 
 func normalizeSearchEvalResultPath(repoRoot, path string) string {
@@ -276,5 +354,5 @@ func normalizeSearchEvalResultPath(repoRoot, path string) string {
 		}
 		return filepath.ToSlash(filepath.Clean(path))
 	}
-	return normalizeSearchEvalExpectedPath(path)
+	return cleanSearchEvalPath(path)
 }

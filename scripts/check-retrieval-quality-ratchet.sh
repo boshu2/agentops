@@ -11,7 +11,8 @@ SEARCH_ROOT="${AGENTOPS_RETRIEVAL_RATCHET_SEARCH_ROOT:-$REPO_ROOT}"
 TURNS_DIR="${AGENTOPS_RETRIEVAL_RATCHET_TURNS_DIR:-.agents/ao/sessions/turns}"
 THRESHOLD="${AGENTOPS_RETRIEVAL_RATCHET_MIN_ANY_RELEVANT:-0.60}"
 STRICT_TURNS="${AGENTOPS_RETRIEVAL_RATCHET_STRICT_TURNS:-500}"
-DEFAULT_FALLBACK_MANIFEST="cli/cmd/ao/testdata/retrieval-bench/eval-queries.json"
+DEFAULT_FALLBACK_MANIFEST="cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"
+LEGACY_FALLBACK_MANIFEST="cli/cmd/ao/testdata/retrieval-bench/eval-queries.json"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "FAIL retrieval quality ratchet: jq is required" >&2
@@ -29,8 +30,14 @@ if [[ "$manifest_path" != /* ]]; then
 fi
 if [[ ! -f "$manifest_path" ]]; then
     fallback_manifest="$REPO_ROOT/$DEFAULT_FALLBACK_MANIFEST"
-    if [[ -z "${AGENTOPS_RETRIEVAL_RATCHET_MANIFEST:-}" && -f "$fallback_manifest" ]]; then
+    legacy_fallback_manifest="$REPO_ROOT/$LEGACY_FALLBACK_MANIFEST"
+    if [[ -n "${AGENTOPS_RETRIEVAL_RATCHET_MANIFEST:-}" ]]; then
+        echo "FAIL retrieval quality ratchet: read search eval manifest $manifest_path: no such file or directory" >&2
+        exit 1
+    elif [[ -f "$fallback_manifest" ]]; then
         manifest_path="$fallback_manifest"
+    elif [[ -f "$legacy_fallback_manifest" ]]; then
+        manifest_path="$legacy_fallback_manifest"
     else
         echo "FAIL retrieval quality ratchet: read search eval manifest $manifest_path: no such file or directory" >&2
         exit 1
@@ -90,7 +97,7 @@ fi
 meets_threshold="$(awk -v got="$metric" -v want="$THRESHOLD" 'BEGIN { print (got + 0 >= want + 0) ? 1 : 0 }')"
 strict_active="$(awk -v got="$turn_count" -v want="$STRICT_TURNS" 'BEGIN { print (got + 0 >= want + 0) ? 1 : 0 }')"
 
-summary="any_relevant_at_k=$metric threshold=$THRESHOLD hits=$hits/$queries avg_precision_at_k=$avg_precision missing_ground_truth=$missing indexed_turns=$turn_count strict_after=$STRICT_TURNS"
+summary="backend=local-lexical any_relevant_at_k=$metric threshold=$THRESHOLD hits=$hits/$queries avg_precision_at_k=$avg_precision missing_ground_truth=$missing indexed_turns=$turn_count strict_after=$STRICT_TURNS"
 
 if [[ "$meets_threshold" -eq 1 ]]; then
     echo "PASS retrieval quality ratchet: $summary"

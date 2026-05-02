@@ -1,0 +1,30 @@
+{
+  "id": "retrieval-ratchet-fallback-v1",
+  "description": "Fallback search-eval manifest over checked-in AgentOps learning paths that exist in this repository.",
+  "queries": [
+    {
+      "id": "q1",
+      "query": "parallel sessions shared worktree untracked files",
+      "intent": "process",
+      "ground_truth": [".agents/learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"]
+    },
+    {
+      "id": "q2",
+      "query": "git checkout main wiped untracked files",
+      "intent": "debugging",
+      "ground_truth": [".agents/learnings/2026-04-12-tier1-forge-parallel-session-hazards.md"]
+    },
+    {
+      "id": "q3",
+      "query": "bridge existing system instead of building clone",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-04-12-yagni-bridge-not-clone.md"]
+    },
+    {
+      "id": "q4",
+      "query": "working system exists bridge before cloning",
+      "intent": "architecture",
+      "ground_truth": [".agents/learnings/2026-04-12-yagni-bridge-not-clone.md"]
+    }
+  ]
+}

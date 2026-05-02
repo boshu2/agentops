@@ -72,6 +72,101 @@ func TestLoadSearchEvalManifest_RequiresGroundTruth(t *testing.T) {
 	}
 }
 
+func TestLoadSearchEvalManifest_AcceptsLegacyArray(t *testing.T) {
+	root := t.TempDir()
+	manifestPath := filepath.Join(root, "legacy-eval.json")
+	writeSearchEvalRawFile(t, manifestPath, `[
+  {
+    "query": "parallel sessions shared worktree",
+    "relevant": ["learnings/parallel-session.md"],
+    "category": "process"
+  },
+  {
+    "query": "ignored query without labels",
+    "relevant": [],
+    "category": "tooling"
+  },
+  {
+    "query": "bridge existing systems",
+    "relevant": ["learnings/yagni-bridge.md"],
+    "category": "architecture"
+  }
+]`)
+
+	manifest, err := loadSearchEvalManifest(manifestPath)
+	if err != nil {
+		t.Fatalf("loadSearchEvalManifest: %v", err)
+	}
+
+	if manifest.ID != "retrieval-ratchet-fallback" {
+		t.Fatalf("manifest ID = %q, want retrieval-ratchet-fallback", manifest.ID)
+	}
+	if len(manifest.Queries) != 2 {
+		t.Fatalf("query count = %d, want 2", len(manifest.Queries))
+	}
+	if manifest.Queries[0].ID != "q1" || manifest.Queries[1].ID != "q3" {
+		t.Fatalf("query IDs = %q/%q, want q1/q3", manifest.Queries[0].ID, manifest.Queries[1].ID)
+	}
+	if got := manifest.Queries[0].GroundTruth[0]; got != "learnings/parallel-session.md" {
+		t.Fatalf("legacy ground truth = %q", got)
+	}
+	if got := manifest.Queries[1].Intent; got != "architecture" {
+		t.Fatalf("legacy intent = %q, want architecture", got)
+	}
+}
+
+func TestNormalizeSearchEvalExpectedPath_LegacyAgentsPrefix(t *testing.T) {
+	root := t.TempDir()
+
+	got := normalizeSearchEvalExpectedPath(root, "learnings/parallel-session.md")
+	if got != ".agents/learnings/parallel-session.md" {
+		t.Fatalf("legacy learning path = %q, want .agents/learnings/parallel-session.md", got)
+	}
+
+	writeSearchEvalFixtureFile(t, root, "learnings/local.md", "local fixture")
+	got = normalizeSearchEvalExpectedPath(root, "learnings/local.md")
+	if got != "learnings/local.md" {
+		t.Fatalf("existing unprefixed path = %q, want learnings/local.md", got)
+	}
+
+	got = normalizeSearchEvalExpectedPath(root, ".agents/learnings/existing.md")
+	if got != ".agents/learnings/existing.md" {
+		t.Fatalf("already-prefixed path = %q, want .agents/learnings/existing.md", got)
+	}
+}
+
+func TestBuildSearchEvalReport_LegacyGroundTruthMatchesAgentsPath(t *testing.T) {
+	root := t.TempDir()
+	writeSearchEvalFixtureFile(t, root, ".agents/learnings/parallel-session.md", "parallel sessions shared worktree untracked files")
+
+	manifestPath := filepath.Join(root, "legacy-eval.json")
+	writeSearchEvalRawFile(t, manifestPath, `[
+  {
+    "query": "parallel sessions shared worktree",
+    "relevant": ["learnings/parallel-session.md"],
+    "category": "process"
+  }
+]`)
+
+	report, err := buildSearchEvalReport(root, "legacy-eval.json", 5)
+	if err != nil {
+		t.Fatalf("buildSearchEvalReport: %v", err)
+	}
+
+	if report.MissingGroundTruth != 0 {
+		t.Fatalf("missing ground truth = %d, want 0; report=%+v", report.MissingGroundTruth, report)
+	}
+	if report.Hits != 1 {
+		t.Fatalf("hits = %d, want 1; report=%+v", report.Hits, report)
+	}
+	if got := report.Results[0].GroundTruth[0]; got != ".agents/learnings/parallel-session.md" {
+		t.Fatalf("normalized ground truth = %q, want .agents/learnings/parallel-session.md", got)
+	}
+	if got := report.Results[0].HitPaths; len(got) != 1 || got[0] != ".agents/learnings/parallel-session.md" {
+		t.Fatalf("hit paths = %v, want .agents/learnings/parallel-session.md", got)
+	}
+}
+
 func TestNormalizeSearchEvalResultPath_RelativeToRoot(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, ".agents", "research", "note.md")
@@ -104,5 +199,15 @@ func writeSearchEvalManifest(t *testing.T, path string, manifest searchEvalManif
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
+	}
+}
+
+func writeSearchEvalRawFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir raw manifest dir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(content+"\n"), 0o644); err != nil {
+		t.Fatalf("write raw manifest: %v", err)
 	}
 }

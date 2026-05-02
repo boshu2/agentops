@@ -72,7 +72,8 @@
       "kind": "artifact_check",
       "objective": "Keep the standalone retrieval quality ratchet wired to any-relevant@K, strictness thresholds, and a deterministic fallback manifest.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "DEFAULT_FALLBACK_MANIFEST=\"cli/cmd/ao/testdata/retrieval-bench/eval-queries.json\""},
+        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "DEFAULT_FALLBACK_MANIFEST=\"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json\""},
+        {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "LEGACY_FALLBACK_MANIFEST=\"cli/cmd/ao/testdata/retrieval-bench/eval-queries.json\""},
         {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "AGENTOPS_RETRIEVAL_RATCHET_MIN_ANY_RELEVANT"},
         {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "any_relevant_at_k"},
         {"type": "artifact_contains", "target": "../../scripts/check-retrieval-quality-ratchet.sh", "value": "STRICT_TURNS"},
