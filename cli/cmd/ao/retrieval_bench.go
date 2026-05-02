@@ -700,6 +700,6 @@ func init() {
 	retrievalBenchCmd.Flags().BoolVar(&benchGlobal, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
 	retrievalBenchCmd.Flags().StringVar(&benchSearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
 	retrievalBenchCmd.Flags().StringVar(&benchSearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
-	retrievalBenchCmd.Flags().StringVar(&benchSearchBackend, "search-backend", defaultSearchEvalBackend, "Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand)")
+	retrievalBenchCmd.Flags().StringVar(&benchSearchBackend, "search-backend", defaultSearchEvalBackend, "Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp)")
 	retrievalBenchCmd.Flags().StringVar(&benchSearchCompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
 }

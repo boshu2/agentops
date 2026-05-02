@@ -334,6 +334,8 @@ func normalizeSearchEvalBackend(backend string) (string, error) {
 		return searchEvalBackendAgenticRG, nil
 	case searchEvalBackendWikiLinkExpand:
 		return searchEvalBackendWikiLinkExpand, nil
+	case searchEvalBackendRerankLlamaCPP:
+		return searchEvalBackendRerankLlamaCPP, nil
 	default:
 		return "", fmt.Errorf("unsupported search eval backend %q: supported backends: %s", backend, supportedSearchEvalBackends())
 	}
