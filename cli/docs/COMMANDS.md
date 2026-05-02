@@ -50,6 +50,7 @@ ao init [flags]
       --hooks           Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)
       --minimal-hooks   With --hooks, install SessionStart + SessionEnd + Stop hooks (lightweight)
       --stealth         Use .git/info/exclude instead of .gitignore
+      --with-schedule   Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). In a TTY, ao init prompts [Y/n] when this flag is unset. In non-TTY runs, scheduling is silently skipped unless AGENTOPS_INIT_WITH_SCHEDULE=1 is set to opt-in.
 ```
 
 ---
@@ -1066,7 +1067,7 @@ ao daemon soak [flags]
   -h, --help                help for soak
       --interval duration   Polling interval for scenario checks (default 15s)
       --require-terminal    Fail unless scenario jobs reach terminal daemon state
-      --scenario string     Soak scenario (queue-only, fake-executor, dream) (default "queue-only")
+      --scenario string     Soak scenario (queue-only, fake-executor, dream, plans-projection) (default "queue-only")
 ```
 
 #### `ao daemon status`
@@ -1127,6 +1128,24 @@ ao eval baseline-audit [suite.json ...] [flags]
       --baseline-dir string   promoted baseline directory (default ".agents/evals/baselines")
   -h, --help                  help for baseline-audit
       --root string           suite root to scan when no suite paths are provided (default "evals/agentops-core")
+```
+
+#### `ao eval cleanup`
+
+Per SCHEMA.md §4 cleanup state-transition rule (rc2):
+
+```
+ao eval cleanup [flags]
+```
+
+**Flags:**
+
+```
+      --delete        Remove Run directories whose status is failed or aborted (never retracted)
+      --dry-run       Preview without mutations
+  -h, --help          help for cleanup
+      --tmp-age int   Minimum tmp-file age in seconds before sweep (0 = sweep all) (default 60)
+      --tmp-files     Sweep orphan *.tmp files older than --tmp-age
 ```
 
 #### `ao eval compare`
@@ -1198,6 +1217,113 @@ ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
       --kind string                     scorecard kind (rpi, skill-change) (default "rpi")
       --max-category-regression float   allowed per-category regression before verdict becomes regression
       --out string                      write scorecard JSON to path
+```
+
+#### `ao eval suite`
+
+Suite-level operations against the §6.5 statistical contract.
+
+```
+ao eval suite [command]
+```
+
+##### `ao eval suite n-required`
+
+Compute power-derived n_required (gate #6 input on Day 3+)
+
+```
+ao eval suite n-required [flags]
+```
+
+**Flags:**
+
+```
+      --alpha float           Type-I error rate (default 0.05)
+      --baseline-rate float   Baseline rate (binomial worst-case fallback) (default 0.5)
+  -h, --help                  help for n-required
+      --mde float             Minimum detectable effect (default 0.05)
+      --paired                Paired comparison (default true)
+      --power float           Statistical power (1-beta) (default 0.8)
+```
+
+##### `ao eval suite verdict`
+
+Compute the §6.5 paired cluster-bootstrap verdict
+
+```
+ao eval suite verdict <suite-id> --arms a,b --inputs <bootstrap-inputs.json> [flags]
+```
+
+**Flags:**
+
+```
+      --B int            Bootstrap resamples (default 10000)
+      --arms string      Comma-separated arm ids (default: from suite varied_axis)
+  -h, --help             help for verdict
+      --inputs string    Path to canonical bootstrap-inputs JSON (REQUIRED)
+      --mde float        Minimum detectable effect (used for inconclusive_high_variance)
+      --n-required int   Override n_required (default: derived from suite power block)
+```
+
+#### `ao eval task`
+
+Operate on the §3 Task primitive of the eval substrate.
+
+```
+ao eval task [command]
+```
+
+##### `ao eval task add`
+
+Register a Task by copying its yaml + samples into the substrate
+
+```
+ao eval task add <task.yaml> [flags]
+```
+
+##### `ao eval task list`
+
+List registered Task ids
+
+```
+ao eval task list [flags]
+```
+
+##### `ao eval task run`
+
+Opens a new Run under $AGENTOPS_EVALS_ROOT/runs/<run-id>/manifest.json
+
+```
+ao eval task run <task-id> [flags]
+```
+
+**Flags:**
+
+```
+      --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
+      --cross-spec               Allow ModelSpec drift (Day-4 gate #4)
+      --dry-run                  Run gates and exit without writing a Run manifest
+      --ground-truth string      Ground-truth row id (head of supersession chain)
+      --harness string           Harness id (recorded into manifest)
+      --harness-dir string       Path to harness source dir for snapshot + gate #8
+  -h, --help                     help for run
+      --inspect-command string   Recorded inspect_command (Day-2 placeholder; Day-3 wires real launch)
+      --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
+      --model-spec string        ModelSpec id (already captured via ao eval models capture)
+      --n-samples int            Override Suite.n_samples
+      --quick                    Mark Run as quick_session=true (excluded from --vs auto-baseline pool)
+      --rig-id string            Rig identifier stamped into the Run manifest
+      --sample-split string      Sample split (dev|holdout); default from suite
+      --seeds string             Comma-separated seeds (>=3, per §4)
+      --suite string             Suite id or path to suite.yaml (required)
+```
+
+##### `ao eval task show`
+
+Print a registered Task summary
+
+```
+ao eval task show <task-id> [flags]
 ```
 
 ---
@@ -2402,6 +2528,13 @@ Sync pulls plan metadata from beads to prevent drift.
 
 ```
 ao plans sync [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for sync
+      --via-daemon   Route plans sync through the agentopsd plans.projection job-type. Default false in this release; flipped to true in a later release after the soak window. With --via-daemon=false the command takes the legacy direct path (file-locked).
 ```
 
 #### `ao plans update`

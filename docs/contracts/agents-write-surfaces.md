@@ -58,6 +58,7 @@ allowlist nor an active skill name fails the gate.
 | `quarantine` | cli (daemon/wiki worker retry policy) | rolling | Failed daemon worker payloads and retry/quarantine evidence for operator review |
 | `releases` | scripts (`ci-local-release`) | rolling | Local CI release evidence |
 | `retros` | /retro | persistent | Retrospectives |
+| `schedule` | cli (`cli/internal/schedule`, `cli/cmd/ao/agentopsd.go`, `cli/cmd/ao/init.go`), scripts (`check-schedule-example.sh`) | persistent | Daemon schedule entries (cron/interval triggers) consumed by `ao schedule` and `agentopsd --schedule-file` |
 | `sessions` | cli (`.agents/ao/sessions`), hooks | rolling | Session transcripts and matches |
 | `signals` | hooks (quality-signals) | rolling | Append-only quality signal log |
 | `skill-drafts` | cli (`cli/internal/ratchet/skill_drafts.go`) | rolling | Auto-generated SKILL.md drafts emitted by the ratchet (per-slug) |
@@ -119,6 +120,7 @@ profile
 quarantine
 releases
 retros
+schedule
 sessions
 signals
 skill-drafts
