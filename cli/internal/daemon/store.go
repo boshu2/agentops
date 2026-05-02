@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -57,11 +58,22 @@ const (
 	// DefaultLedgerMaxBytes is the size threshold at which ledger.jsonl is
 	// rotated. Operators may override via Store.WithLedgerMaxBytes.
 	DefaultLedgerMaxBytes int64 = 50 * 1024 * 1024
+	// MaxLedgerLineBytes caps the size of a single ledger event line on
+	// replay. Lines that exceed this are recorded as corrupt and skipped, so
+	// a single oversized record cannot panic the daemon at startup. Paired
+	// with the submission-time cap in server.go (MaxJobSubmissionBytes); the
+	// replay cap is intentionally higher because daemon-emitted events can
+	// be larger than client-supplied job payloads.
+	MaxLedgerLineBytes = 16 * 1024 * 1024
 	// ledgerArchivePrefix is the filename prefix for rotated ledger archives.
 	// Format: ledger.<RFC3339-no-colons>.jsonl[.gz].
 	ledgerArchivePrefix = "ledger."
 	ledgerArchiveSuffix = ".jsonl"
 )
+
+// errLedgerLineTooLong signals that a ledger line exceeded MaxLedgerLineBytes.
+// Replay treats this as a corrupt-record condition, not a fatal scan error.
+var errLedgerLineTooLong = errors.New("ledger event line exceeds MaxLedgerLineBytes")
 
 // Store persists daemon ledger events to ~/<root>/.agents/daemon/ledger.jsonl.
 // Concurrent writers are serialized through s.mu; readers (Replay*) operate on
@@ -346,11 +358,30 @@ func (s *Store) replayLedgerFile(path string, lineCounter *int, seen map[string]
 		reader = zr
 	}
 
-	scanner := bufio.NewScanner(reader)
-	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-	for scanner.Scan() {
+	br := bufio.NewReaderSize(reader, 64*1024)
+	for {
+		line, lineErr := readLedgerLine(br, MaxLedgerLineBytes)
+		if lineErr == io.EOF {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				return nil
+			}
+			// Trailing partial line without newline (truncated write or
+			// power loss). Record as corrupt and finish.
+			*lineCounter++
+			result.Corrupt = append(result.Corrupt, s.corruptRecord(*lineCounter, line,
+				errors.New("partial trailing line at EOF"), quarantine))
+			return nil
+		}
 		*lineCounter++
-		line := strings.TrimSpace(scanner.Text())
+		if errors.Is(lineErr, errLedgerLineTooLong) {
+			result.Corrupt = append(result.Corrupt, s.corruptRecord(*lineCounter, line, lineErr, quarantine))
+			continue
+		}
+		if lineErr != nil {
+			return fmt.Errorf("scan ledger %s: %w", filepath.Base(path), lineErr)
+		}
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
@@ -369,10 +400,36 @@ func (s *Store) replayLedgerFile(path string, lineCounter *int, seen map[string]
 		seen[event.EventID] = struct{}{}
 		result.Events = append(result.Events, event)
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("scan ledger %s: %w", filepath.Base(path), err)
+}
+
+// readLedgerLine reads a single ledger line up to and including the next
+// newline. If the line (excluding the trailing newline) would exceed
+// maxBytes, the rest of the line is consumed-and-discarded and the function
+// returns the prefix collected so far together with errLedgerLineTooLong, so
+// callers can record a corrupt entry and continue scanning the next line.
+// On clean EOF with no trailing partial line, returns ("", io.EOF).
+func readLedgerLine(r *bufio.Reader, maxBytes int) (string, error) {
+	var sb strings.Builder
+	collected := 0
+	for {
+		b, err := r.ReadByte()
+		if err != nil {
+			return sb.String(), err
+		}
+		if b == '\n' {
+			return sb.String(), nil
+		}
+		collected++
+		if collected > maxBytes {
+			for {
+				bb, derr := r.ReadByte()
+				if derr != nil || bb == '\n' {
+					return sb.String(), errLedgerLineTooLong
+				}
+			}
+		}
+		sb.WriteByte(b)
 	}
-	return nil
 }
 
 func ValidateLedgerEvent(event LedgerEvent) error {

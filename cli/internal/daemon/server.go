@@ -18,6 +18,14 @@ type ServerOptions struct {
 	MutationPolicy MutationPolicy
 }
 
+// MaxJobSubmissionBytes caps how large a /v1/jobs (and /v1/jobs/cancel)
+// request body may be. Submissions larger than this return 413 instead of
+// being decoded, which prevents oversized job payloads from making it into
+// the append-only ledger as events that would later overflow the replay
+// reader. Paired with MaxLedgerLineBytes in store.go (replay tolerates
+// larger lines than submission so daemon-emitted events have headroom).
+const MaxJobSubmissionBytes = 1 * 1024 * 1024
+
 type ReadOnlyServer struct {
 	store *Store
 	opts  ServerOptions
@@ -404,9 +412,18 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
 	decision, _ := MutationDecisionFromContext(r.Context())
 	var req SubmitJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+				"error":     "request body exceeds MaxJobSubmissionBytes",
+				"max_bytes": MaxJobSubmissionBytes,
+			})
+			return
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
 		return
 	}
@@ -463,9 +480,18 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
 	decision, _ := MutationDecisionFromContext(r.Context())
 	var req CancelJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+				"error":     "request body exceeds MaxJobSubmissionBytes",
+				"max_bytes": MaxJobSubmissionBytes,
+			})
+			return
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
 		return
 	}

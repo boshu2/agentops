@@ -200,3 +200,65 @@ func postCancel(t *testing.T, handler http.Handler, payload, token, failpoint st
 	handler.ServeHTTP(resp, req)
 	return resp
 }
+
+// TestSubmitJobRejectsBodyOverMaxBytes asserts that a POST larger than
+// MaxJobSubmissionBytes is short-circuited to 413 before any ledger write
+// happens. Regression for the daemon crash where an unbounded POST body
+// landed in ledger.jsonl as a multi-megabyte event line, then panicked the
+// daemon at next replay with "bufio.Scanner: token too long".
+func TestSubmitJobRejectsBodyOverMaxBytes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+
+	// Build a valid-shape submission with a goal-string padded past the cap.
+	prefix := `{"request_id":"req-big","job_id":"job-big","job_type":"dream.run","payload":{"schema_version":1,"job_type":"dream.run","dream_run_id":"big","mode":"daemon","output_dir":".x","goal":"`
+	suffix := `"}}`
+	pad := bytes.Repeat([]byte("x"), MaxJobSubmissionBytes+1024)
+	body := prefix + string(pad) + suffix
+
+	resp := postJob(t, router, body, "secret-token", "")
+	if resp.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized POST status = %d, want 413; body=%s", resp.Code, resp.Body.String())
+	}
+	var responseBody map[string]any
+	if err := json.Unmarshal(resp.Body.Bytes(), &responseBody); err != nil {
+		t.Fatalf("decode 413 body: %v", err)
+	}
+	if got := responseBody["max_bytes"]; got == nil {
+		t.Fatalf("413 body missing max_bytes hint: %s", resp.Body.String())
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("oversized POST wrote %d events, want 0 (size-cap must short-circuit before ledger append)", len(events))
+	}
+}
+
+// TestCancelJobRejectsBodyOverMaxBytes mirrors the submit-side cap on the
+// cancel route — the cap lives on every mutation entry-point because any
+// of them can append to the ledger.
+func TestCancelJobRejectsBodyOverMaxBytes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	policy := DefaultMutationPolicy("secret-token", []string{
+		"/v1/jobs",
+		"/v1/jobs/cancel",
+		"/jobs",
+		"/jobs/cancel",
+	})
+	router := mutationRouterWithPolicy(store, &now, policy)
+
+	prefix := `{"request_id":"req-big","job_id":"job-big","reason":"`
+	suffix := `"}`
+	pad := bytes.Repeat([]byte("x"), MaxJobSubmissionBytes+1024)
+	body := prefix + string(pad) + suffix
+
+	resp := postCancel(t, router, body, "secret-token", "")
+	if resp.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized cancel status = %d, want 413; body=%s", resp.Code, resp.Body.String())
+	}
+}

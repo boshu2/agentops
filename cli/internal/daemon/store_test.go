@@ -187,6 +187,56 @@ func TestCorruptLedgerRecordsAreQuarantined(t *testing.T) {
 	}
 }
 
+// TestReplayLedgerSurvivesOversizedLine writes a ledger that contains a
+// poison line longer than MaxLedgerLineBytes between two valid records, and
+// asserts that replay marks the poison line corrupt without aborting and
+// still returns the surrounding valid events. Regression for the daemon
+// crash where a single oversized POST body, once written to ledger.jsonl,
+// caused every subsequent restart to panic with "bufio.Scanner: token too
+// long" before the projection finished initializing.
+func TestReplayLedgerSurvivesOversizedLine(t *testing.T) {
+	store := NewStore(t.TempDir())
+	if err := os.MkdirAll(store.Dir(), 0700); err != nil {
+		t.Fatalf("create store dir: %v", err)
+	}
+	first := testLedgerEvent("evt-1", EventJobAccepted)
+	last := testLedgerEvent("evt-2", EventJobCompleted)
+
+	poison := strings.Repeat("x", MaxLedgerLineBytes+1024)
+	data := strings.Join([]string{
+		mustLedgerLine(t, first),
+		poison,
+		mustLedgerLine(t, last),
+		"",
+	}, "\n")
+	if err := os.WriteFile(store.LedgerPath(), []byte(data), 0600); err != nil {
+		t.Fatalf("write poisoned ledger fixture: %v", err)
+	}
+
+	replay, err := store.ReplayLedger()
+	if err != nil {
+		t.Fatalf("replay ledger panicked on oversized line: %v", err)
+	}
+	if len(replay.Events) != 2 {
+		t.Fatalf("replayed %d valid events, want 2 (oversized line eaten the surrounding records?): %#v", len(replay.Events), replay.Events)
+	}
+	if replay.Events[0].EventID != "evt-1" || replay.Events[1].EventID != "evt-2" {
+		t.Fatalf("replay returned wrong events around poison line: %#v", replay.Events)
+	}
+	if len(replay.Corrupt) != 1 {
+		t.Fatalf("found %d corrupt records, want exactly 1 (the poison line): %#v", len(replay.Corrupt), replay.Corrupt)
+	}
+	if replay.Corrupt[0].LineNumber != 2 {
+		t.Fatalf("corrupt record line number = %d, want 2", replay.Corrupt[0].LineNumber)
+	}
+	if !strings.Contains(replay.Corrupt[0].Error, "MaxLedgerLineBytes") {
+		t.Fatalf("corrupt record error = %q, want it to mention MaxLedgerLineBytes", replay.Corrupt[0].Error)
+	}
+	if replay.Corrupt[0].QuarantinePath == "" {
+		t.Fatalf("oversized line was not quarantined: %#v", replay.Corrupt[0])
+	}
+}
+
 func testLedgerEvent(eventID string, eventType EventType) LedgerEvent {
 	return LedgerEvent{
 		SchemaVersion: LedgerSchemaVersion,
