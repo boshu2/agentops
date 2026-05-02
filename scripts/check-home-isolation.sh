@@ -49,7 +49,7 @@ HOME_ISOLATION_PATTERN='t\.Setenv\("HOME"|os\.Setenv\("HOME"'
 # need per-test calls.
 #
 # Detect this by checking each test file's parent directory for any
-# file named "*testmain*_test.go" that contains TestMain + Setenv HOME.
+# test file that contains TestMain + Setenv HOME.
 
 failed=0
 offending_files=()
@@ -68,7 +68,7 @@ while IFS= read -r file; do
     # Package-level TestMain with HOME isolation? Walk the package dir.
     pkg_dir="$(dirname "$file")"
     testmain_isolated=0
-    for tm in "$pkg_dir"/*testmain*_test.go; do
+    for tm in "$pkg_dir"/*_test.go; do
         [[ -f "$tm" ]] || continue
         if grep -q "TestMain" "$tm" 2>/dev/null && \
            grep -qE "$HOME_ISOLATION_PATTERN" "$tm" 2>/dev/null; then
