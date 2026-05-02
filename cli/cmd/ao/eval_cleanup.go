@@ -54,6 +54,23 @@ func runEvalCleanup(cmd *cobra.Command, args []string) error {
 	runsRoot := filepath.Join(root, "runs")
 	report := CleanupReport{Touched: []string{}}
 
+	if err := transitionStaleEvalRuns(root, runsRoot, &report); err != nil {
+		return err
+	}
+	if evalCleanupDelete {
+		if err := deleteEvalCleanupRuns(root, runsRoot, &report); err != nil {
+			return err
+		}
+	}
+	if evalCleanupTmpFiles {
+		if err := sweepEvalCleanupTmpFiles(root, &report); err != nil {
+			return err
+		}
+	}
+	return writeEvalCleanupReport(cmd, report)
+}
+
+func transitionStaleEvalRuns(root, runsRoot string, report *CleanupReport) error {
 	entries, err := os.ReadDir(runsRoot)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("eval cleanup: read runs/: %w", err)
@@ -74,75 +91,101 @@ func runEvalCleanup(cmd *cobra.Command, args []string) error {
 			report.Touched = append(report.Touched, runID+":unreadable")
 			continue
 		}
-		now := time.Now().UTC()
-		startedAt := time.Unix(m.StartedAtUnixMs/1000, 0).UTC()
-		ageSinceStart := now.Sub(startedAt)
-
-		switch m.Status {
-		case evalsub.StatusPending:
-			if ageSinceStart >= stalePendingCutoff {
-				if err := transitionStale(root, runID, evalsub.StatusAborted, "never_started"); err != nil {
-					return err
-				}
-				report.TransitionsAborted++
-				report.Touched = append(report.Touched, runID+":pending->aborted")
-			}
-		case evalsub.StatusRunning:
-			if ageSinceStart >= staleRunningCutoff {
-				if err := transitionStale(root, runID, evalsub.StatusFailed, "orphaned_process"); err != nil {
-					return err
-				}
-				report.TransitionsFailed++
-				report.Touched = append(report.Touched, runID+":running->failed")
-			}
+		if err := maybeTransitionStaleEvalRun(root, runID, m, report, stalePendingCutoff, staleRunningCutoff); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	if evalCleanupDelete {
-		// Re-walk, now that transitions are applied, removing failed/aborted.
-		entries, err := os.ReadDir(runsRoot)
-		if err == nil {
-			for _, e := range entries {
-				if !e.IsDir() {
-					continue
-				}
-				runID := e.Name()
-				path := evalsub.ManifestPath(root, runID)
-				m, err := evalsub.LoadManifest(path)
-				if err != nil {
-					continue
-				}
-				if m.Status == evalsub.StatusFailed || m.Status == evalsub.StatusAborted {
-					target := filepath.Join(runsRoot, runID)
-					if evalCleanupDryRun {
-						report.Touched = append(report.Touched, runID+":would-delete")
-						continue
-					}
-					if err := os.RemoveAll(target); err != nil {
-						return fmt.Errorf("eval cleanup: remove %q: %w", target, err)
-					}
-					report.RunsDeleted++
-					report.Touched = append(report.Touched, runID+":deleted")
-				}
-			}
+func maybeTransitionStaleEvalRun(
+	root, runID string,
+	manifest *evalsub.Manifest,
+	report *CleanupReport,
+	stalePendingCutoff, staleRunningCutoff time.Duration,
+) error {
+	startedAt := time.Unix(manifest.StartedAtUnixMs/1000, 0).UTC()
+	ageSinceStart := time.Now().UTC().Sub(startedAt)
+
+	switch manifest.Status {
+	case evalsub.StatusPending:
+		if ageSinceStart < stalePendingCutoff {
+			return nil
+		}
+		if err := transitionStale(root, runID, evalsub.StatusAborted, "never_started"); err != nil {
+			return err
+		}
+		report.TransitionsAborted++
+		report.Touched = append(report.Touched, runID+":pending->aborted")
+	case evalsub.StatusRunning:
+		if ageSinceStart < staleRunningCutoff {
+			return nil
+		}
+		if err := transitionStale(root, runID, evalsub.StatusFailed, "orphaned_process"); err != nil {
+			return err
+		}
+		report.TransitionsFailed++
+		report.Touched = append(report.Touched, runID+":running->failed")
+	}
+	return nil
+}
+
+func deleteEvalCleanupRuns(root, runsRoot string, report *CleanupReport) error {
+	// Re-walk, now that transitions are applied, removing failed/aborted.
+	entries, err := os.ReadDir(runsRoot)
+	if err != nil {
+		return nil
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		if err := maybeDeleteEvalCleanupRun(root, runsRoot, e.Name(), report); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	if evalCleanupTmpFiles {
-		if evalCleanupDryRun {
-			report.Touched = append(report.Touched, "tmp-files: dry-run preview not implemented (sweep is a write op)")
-		} else {
-			swept, err := evalsub.SweepTempFiles(root, evalCleanupAge)
-			if err != nil {
-				return fmt.Errorf("eval cleanup: sweep tmp: %w", err)
-			}
-			report.TmpFilesSwept = len(swept)
-			for _, s := range swept {
-				report.Touched = append(report.Touched, "tmp:"+s)
-			}
-		}
+func maybeDeleteEvalCleanupRun(root, runsRoot, runID string, report *CleanupReport) error {
+	path := evalsub.ManifestPath(root, runID)
+	manifest, err := evalsub.LoadManifest(path)
+	if err != nil {
+		return nil
 	}
+	if manifest.Status != evalsub.StatusFailed && manifest.Status != evalsub.StatusAborted {
+		return nil
+	}
+	target := filepath.Join(runsRoot, runID)
+	if evalCleanupDryRun {
+		report.Touched = append(report.Touched, runID+":would-delete")
+		return nil
+	}
+	if err := os.RemoveAll(target); err != nil {
+		return fmt.Errorf("eval cleanup: remove %q: %w", target, err)
+	}
+	report.RunsDeleted++
+	report.Touched = append(report.Touched, runID+":deleted")
+	return nil
+}
 
+func sweepEvalCleanupTmpFiles(root string, report *CleanupReport) error {
+	if evalCleanupDryRun {
+		report.Touched = append(report.Touched, "tmp-files: dry-run preview not implemented (sweep is a write op)")
+		return nil
+	}
+	swept, err := evalsub.SweepTempFiles(root, evalCleanupAge)
+	if err != nil {
+		return fmt.Errorf("eval cleanup: sweep tmp: %w", err)
+	}
+	report.TmpFilesSwept = len(swept)
+	for _, s := range swept {
+		report.Touched = append(report.Touched, "tmp:"+s)
+	}
+	return nil
+}
+
+func writeEvalCleanupReport(cmd *cobra.Command, report CleanupReport) error {
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
@@ -201,4 +244,3 @@ func registerEvalCleanupCmd() {
 	evalCleanupCmd.Flags().Int64Var(&evalCleanupAge, "tmp-age", 60, "Minimum tmp-file age in seconds before sweep (0 = sweep all)")
 	evalCleanupCmd.Flags().BoolVar(&evalCleanupDryRun, "dry-run", false, "Preview without mutations")
 }
-
