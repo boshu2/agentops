@@ -8,112 +8,190 @@ import (
 	"testing"
 )
 
-func TestClientCityAndSessionMethods(t *testing.T) {
-	seen := make(map[string]int)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		seen[r.Method+" "+r.URL.Path]++
-		w.Header().Set(RequestIDHeader, "req-"+r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
+func TestClientCityMethods(t *testing.T) {
+	client, fixture, cleanup := newGasCitySessionFixture(t)
+	defer cleanup()
+	ctx := context.Background()
 
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city":
-			assertMutationHeader(t, r)
-			var req CityCreateRequest
-			decodeRequest(t, r, &req)
-			if req.Dir != "/tmp/agentops-city" || req.Provider != "codex" {
-				t.Fatalf("create city request = %#v", req)
-			}
-			writeJSON(t, w, CityResponse{OK: true, Name: "agentops", Path: req.Dir})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/cities":
-			writeJSON(t, w, CityListResponse{
-				Items: []CityInfo{{Name: "agentops", Path: "/tmp/agentops-city", Running: true}},
-				Total: 1,
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops":
-			writeJSON(t, w, CityGetResponse{
-				Name:            "agentops",
-				Path:            "/tmp/agentops-city",
-				AgentCount:      2,
-				RigCount:        1,
-				Provider:        "codex",
-				SessionTemplate: "agentops/codex",
-			})
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/sessions":
-			assertMutationHeader(t, r)
-			var req SessionCreateRequest
-			decodeRequest(t, r, &req)
-			if req.Kind != "agent" || req.Name != "agentops/codex" || req.Alias != "rpi" {
-				t.Fatalf("create session request = %#v", req)
-			}
-			writeJSON(t, w, testSession())
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/sessions":
-			if got, want := r.URL.Query().Get("state"), "active"; got != want {
-				t.Fatalf("state query = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("template"), "agentops/codex"; got != want {
-				t.Fatalf("template query = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("cursor"), "cursor-1"; got != want {
-				t.Fatalf("cursor query = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("limit"), "2"; got != want {
-				t.Fatalf("limit query = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("peek"), "true"; got != want {
-				t.Fatalf("peek query = %q, want %q", got, want)
-			}
-			writeJSON(t, w, SessionListResponse{
-				Items:      []Session{testSession()},
-				Total:      1,
-				NextCursor: "cursor-2",
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/session/sess_123":
-			if got, want := r.URL.Query().Get("peek"), "true"; got != want {
-				t.Fatalf("peek query = %q, want %q", got, want)
-			}
-			writeJSON(t, w, testSession())
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/session/sess_123/submit":
-			assertMutationHeader(t, r)
-			var req SessionSubmitRequest
-			decodeRequest(t, r, &req)
-			if req.Message != "continue" || req.Intent != "follow_up" {
-				t.Fatalf("submit request = %#v", req)
-			}
-			writeJSON(t, w, SessionSubmitResponse{
-				Status: "accepted",
-				ID:     "sess_123",
-				Queued: true,
-				Intent: "follow_up",
-			})
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/session/sess_123/close":
-			assertMutationHeader(t, r)
-			writeJSON(t, w, map[string]any{"ok": true})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/session/sess_123/transcript":
-			if got, want := r.URL.Query().Get("format"), "conversation"; got != want {
-				t.Fatalf("format query = %q, want %q", got, want)
-			}
-			if got, want := r.URL.Query().Get("tail"), "0"; got != want {
-				t.Fatalf("tail query = %q, want %q", got, want)
-			}
-			writeJSON(t, w, TranscriptResponse{
-				ID:       "sess_123",
-				Template: "agentops/codex",
-				Provider: "codex",
-				Format:   "conversation",
-				Turns:    []TranscriptEntry{{Role: "assistant", Text: "done"}},
-			})
-		default:
-			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
-		}
-	}))
-	defer server.Close()
+	assertCreateCity(t, ctx, client)
+	assertListCities(t, ctx, client)
+	assertGetCity(t, ctx, client)
+	fixture.assertSeen("POST /v0/city", "GET /v0/cities", "GET /v0/city/agentops")
+}
 
-	client, err := NewClient(Config{Endpoint: server.URL})
-	if err != nil {
-		t.Fatal(err)
+func TestClientSessionLifecycleMethods(t *testing.T) {
+	client, fixture, cleanup := newGasCitySessionFixture(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	assertCreateSession(t, ctx, client)
+	assertListSessions(t, ctx, client)
+	assertGetSession(t, ctx, client)
+	assertSubmitSession(t, ctx, client)
+	assertCloseSession(t, ctx, client)
+	fixture.assertSeen(
+		"POST /v0/city/agentops/sessions",
+		"GET /v0/city/agentops/sessions",
+		"GET /v0/city/agentops/session/sess_123",
+		"POST /v0/city/agentops/session/sess_123/submit",
+		"POST /v0/city/agentops/session/sess_123/close",
+	)
+}
+
+func TestClientSessionTranscriptMethod(t *testing.T) {
+	client, fixture, cleanup := newGasCitySessionFixture(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	assertSessionTranscript(t, ctx, client)
+	fixture.assertSeen("GET /v0/city/agentops/session/sess_123/transcript")
+}
+
+type gasCitySessionFixture struct {
+	t      *testing.T
+	seen   map[string]int
+	routes map[string]http.HandlerFunc
+}
+
+func newGasCitySessionFixture(t *testing.T) (*Client, *gasCitySessionFixture, func()) {
+	t.Helper()
+	fixture := &gasCitySessionFixture{
+		t:    t,
+		seen: make(map[string]int),
+	}
+	fixture.routes = map[string]http.HandlerFunc{
+		"POST /v0/city":                                     fixture.handleCreateCity,
+		"GET /v0/cities":                                    fixture.handleListCities,
+		"GET /v0/city/agentops":                             fixture.handleGetCity,
+		"POST /v0/city/agentops/sessions":                   fixture.handleCreateSession,
+		"GET /v0/city/agentops/sessions":                    fixture.handleListSessions,
+		"GET /v0/city/agentops/session/sess_123":            fixture.handleGetSession,
+		"POST /v0/city/agentops/session/sess_123/submit":    fixture.handleSubmitSession,
+		"POST /v0/city/agentops/session/sess_123/close":     fixture.handleCloseSession,
+		"GET /v0/city/agentops/session/sess_123/transcript": fixture.handleSessionTranscript,
 	}
 
-	ctx := context.Background()
+	server := httptest.NewServer(fixture)
+	client, err := NewClient(Config{Endpoint: server.URL})
+	if err != nil {
+		server.Close()
+		t.Fatal(err)
+	}
+	return client, fixture, server.Close
+}
+
+func (f *gasCitySessionFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	key := r.Method + " " + r.URL.Path
+	f.seen[key]++
+	w.Header().Set(RequestIDHeader, "req-"+r.URL.Path)
+	w.Header().Set("Content-Type", "application/json")
+
+	handler, ok := f.routes[key]
+	if !ok {
+		f.t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
+	}
+	handler(w, r)
+}
+
+func (f *gasCitySessionFixture) assertSeen(keys ...string) {
+	f.t.Helper()
+	for _, key := range keys {
+		if f.seen[key] != 1 {
+			f.t.Fatalf("%s seen %d times", key, f.seen[key])
+		}
+	}
+}
+
+func (f *gasCitySessionFixture) handleCreateCity(w http.ResponseWriter, r *http.Request) {
+	assertMutationHeader(f.t, r)
+	var req CityCreateRequest
+	decodeRequest(f.t, r, &req)
+	if req.Dir != "/tmp/agentops-city" || req.Provider != "codex" {
+		f.t.Fatalf("create city request = %#v", req)
+	}
+	writeJSON(f.t, w, CityResponse{OK: true, Name: "agentops", Path: req.Dir})
+}
+
+func (f *gasCitySessionFixture) handleListCities(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(f.t, w, CityListResponse{
+		Items: []CityInfo{{Name: "agentops", Path: "/tmp/agentops-city", Running: true}},
+		Total: 1,
+	})
+}
+
+func (f *gasCitySessionFixture) handleGetCity(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(f.t, w, CityGetResponse{
+		Name:            "agentops",
+		Path:            "/tmp/agentops-city",
+		AgentCount:      2,
+		RigCount:        1,
+		Provider:        "codex",
+		SessionTemplate: "agentops/codex",
+	})
+}
+
+func (f *gasCitySessionFixture) handleCreateSession(w http.ResponseWriter, r *http.Request) {
+	assertMutationHeader(f.t, r)
+	var req SessionCreateRequest
+	decodeRequest(f.t, r, &req)
+	if req.Kind != "agent" || req.Name != "agentops/codex" || req.Alias != "rpi" {
+		f.t.Fatalf("create session request = %#v", req)
+	}
+	writeJSON(f.t, w, testSession())
+}
+
+func (f *gasCitySessionFixture) handleListSessions(w http.ResponseWriter, r *http.Request) {
+	assertQueryParam(f.t, r, "state", "active")
+	assertQueryParam(f.t, r, "template", "agentops/codex")
+	assertQueryParam(f.t, r, "cursor", "cursor-1")
+	assertQueryParam(f.t, r, "limit", "2")
+	assertQueryParam(f.t, r, "peek", "true")
+	writeJSON(f.t, w, SessionListResponse{
+		Items:      []Session{testSession()},
+		Total:      1,
+		NextCursor: "cursor-2",
+	})
+}
+
+func (f *gasCitySessionFixture) handleGetSession(w http.ResponseWriter, r *http.Request) {
+	assertQueryParam(f.t, r, "peek", "true")
+	writeJSON(f.t, w, testSession())
+}
+
+func (f *gasCitySessionFixture) handleSubmitSession(w http.ResponseWriter, r *http.Request) {
+	assertMutationHeader(f.t, r)
+	var req SessionSubmitRequest
+	decodeRequest(f.t, r, &req)
+	if req.Message != "continue" || req.Intent != "follow_up" {
+		f.t.Fatalf("submit request = %#v", req)
+	}
+	writeJSON(f.t, w, SessionSubmitResponse{
+		Status: "accepted",
+		ID:     "sess_123",
+		Queued: true,
+		Intent: "follow_up",
+	})
+}
+
+func (f *gasCitySessionFixture) handleCloseSession(w http.ResponseWriter, r *http.Request) {
+	assertMutationHeader(f.t, r)
+	writeJSON(f.t, w, map[string]any{"ok": true})
+}
+
+func (f *gasCitySessionFixture) handleSessionTranscript(w http.ResponseWriter, r *http.Request) {
+	assertQueryParam(f.t, r, "format", "conversation")
+	assertQueryParam(f.t, r, "tail", "0")
+	writeJSON(f.t, w, TranscriptResponse{
+		ID:       "sess_123",
+		Template: "agentops/codex",
+		Provider: "codex",
+		Format:   "conversation",
+		Turns:    []TranscriptEntry{{Role: "assistant", Text: "done"}},
+	})
+}
+
+func assertCreateCity(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	city, meta, err := client.CreateCity(ctx, CityCreateRequest{
 		Dir:      "/tmp/agentops-city",
 		Provider: "codex",
@@ -124,7 +202,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if !city.OK || meta.RequestID == "" {
 		t.Fatalf("city/meta not decoded: city=%#v meta=%#v", city, meta)
 	}
+}
 
+func assertListCities(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	cities, _, err := client.ListCities(ctx)
 	if err != nil {
 		t.Fatalf("ListCities: %v", err)
@@ -132,7 +213,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if cities.Total != 1 || cities.Items[0].Name != "agentops" {
 		t.Fatalf("cities not decoded: %#v", cities)
 	}
+}
 
+func assertGetCity(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	cityStatus, _, err := client.GetCity(ctx, "agentops")
 	if err != nil {
 		t.Fatalf("GetCity: %v", err)
@@ -140,7 +224,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if cityStatus.SessionTemplate != "agentops/codex" {
 		t.Fatalf("city status not decoded: %#v", cityStatus)
 	}
+}
 
+func assertCreateSession(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	session, _, err := client.CreateSession(ctx, "agentops", SessionCreateRequest{
 		Kind:  "agent",
 		Name:  "agentops/codex",
@@ -152,7 +239,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if session.ID != "sess_123" || !session.Running {
 		t.Fatalf("session not decoded: %#v", session)
 	}
+}
 
+func assertListSessions(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	list, _, err := client.ListSessions(ctx, "agentops", SessionListParams{
 		State:    "active",
 		Template: "agentops/codex",
@@ -166,7 +256,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if list.Total != 1 || list.NextCursor != "cursor-2" {
 		t.Fatalf("session list not decoded: %#v", list)
 	}
+}
 
+func assertGetSession(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	got, _, err := client.GetSession(ctx, "agentops", "sess_123", SessionGetOptions{Peek: true})
 	if err != nil {
 		t.Fatalf("GetSession: %v", err)
@@ -174,7 +267,10 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if got.Provider != "codex" {
 		t.Fatalf("session get not decoded: %#v", got)
 	}
+}
 
+func assertSubmitSession(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	submit, _, err := client.SubmitSession(ctx, "agentops", "sess_123", SessionSubmitRequest{
 		Message: "continue",
 		Intent:  "follow_up",
@@ -185,10 +281,17 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	if !submit.Queued || submit.Intent != "follow_up" {
 		t.Fatalf("submit not decoded: %#v", submit)
 	}
+}
+
+func assertCloseSession(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	if _, err := client.CloseSession(ctx, "agentops", "sess_123"); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
+}
 
+func assertSessionTranscript(t *testing.T, ctx context.Context, client *Client) {
+	t.Helper()
 	tail := 0
 	transcript, _, err := client.SessionTranscript(ctx, "agentops", "sess_123", TranscriptOptions{
 		Format: "conversation",
@@ -199,22 +302,6 @@ func TestClientCityAndSessionMethods(t *testing.T) {
 	}
 	if len(transcript.Turns) != 1 || transcript.Turns[0].Text != "done" {
 		t.Fatalf("transcript not decoded: %#v", transcript)
-	}
-
-	for _, key := range []string{
-		"POST /v0/city",
-		"GET /v0/cities",
-		"GET /v0/city/agentops",
-		"POST /v0/city/agentops/sessions",
-		"GET /v0/city/agentops/sessions",
-		"GET /v0/city/agentops/session/sess_123",
-		"POST /v0/city/agentops/session/sess_123/submit",
-		"POST /v0/city/agentops/session/sess_123/close",
-		"GET /v0/city/agentops/session/sess_123/transcript",
-	} {
-		if seen[key] != 1 {
-			t.Fatalf("%s seen %d times", key, seen[key])
-		}
 	}
 }
 
@@ -255,6 +342,13 @@ func assertMutationHeader(t *testing.T, r *http.Request) {
 	t.Helper()
 	if got, want := r.Header.Get(MutationHeader), "agentops"; got != want {
 		t.Fatalf("%s = %q, want %q", MutationHeader, got, want)
+	}
+}
+
+func assertQueryParam(t *testing.T, r *http.Request, key, want string) {
+	t.Helper()
+	if got := r.URL.Query().Get(key); got != want {
+		t.Fatalf("%s query = %q, want %q", key, got, want)
 	}
 }
 
