@@ -492,6 +492,168 @@ func TestProbeDreamPacketStaleness_SkillRefWithoutLineLimit(t *testing.T) {
 	}
 }
 
+// TestProbeDreamPacketStaleness_AddToSkillClaim_AlreadyImplemented covers
+// the 2026-05-02 stale-packet shape: "Add binary-deployment gate to
+// /implement skill" while skills/implement/SKILL.md already documents
+// the gate. The probe should mark the packet stale because the cited
+// phrase already appears verbatim (modulo case/hyphen normalization)
+// in the SKILL.md.
+func TestProbeDreamPacketStaleness_AddToSkillClaim_AlreadyImplemented(t *testing.T) {
+	tmpDir := t.TempDir()
+	skillDir := filepath.Join(tmpDir, "skills", "implement")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill: %v", err)
+	}
+	body := "# /implement\n\n## Step 5.5: Binary-Deployment Gate (CLI/Hook Bug Fixes) — MANDATORY\n"
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(body), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:    "add-to-skill-already-done",
+		Title: "Add binary-deployment gate to /implement skill",
+	}
+	reason, match, ok := probeDreamPacketStaleness(tmpDir, packet)
+	if !ok {
+		t.Fatalf("expected probe to flag stale add-to-skill claim; got reason=%q match=%q", reason, match)
+	}
+	if match != "skills/implement/SKILL.md" {
+		t.Errorf("match = %q, want skills/implement/SKILL.md", match)
+	}
+	if !strings.Contains(reason, "already implements") {
+		t.Errorf("reason = %q, want it to mention 'already implements'", reason)
+	}
+}
+
+// TestProbeDreamPacketStaleness_AddToSkillClaim_NewAddition confirms the
+// probe does NOT flag a packet whose phrase is genuinely missing from
+// the cited skill's SKILL.md — that's legitimate work, not staleness.
+func TestProbeDreamPacketStaleness_AddToSkillClaim_NewAddition(t *testing.T) {
+	tmpDir := t.TempDir()
+	skillDir := filepath.Join(tmpDir, "skills", "implement")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# /implement\n\nplain content\n"), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:    "add-to-skill-new",
+		Title: "Add binary-deployment gate to /implement skill",
+	}
+	if reason, match, ok := probeDreamPacketStaleness(tmpDir, packet); ok {
+		t.Fatalf("probe should NOT flag a genuinely missing addition: reason=%q match=%q", reason, match)
+	}
+}
+
+// TestProbeDreamPacketStaleness_AddToSkillClaim_NonAddVerb confirms the
+// probe rejects titles that don't start with "Add ..." — the
+// "phrase-already-in-SKILL.md" heuristic is only safe for additions, not
+// for refactor/fix/wire/implement verbs.
+func TestProbeDreamPacketStaleness_AddToSkillClaim_NonAddVerb(t *testing.T) {
+	tmpDir := t.TempDir()
+	skillDir := filepath.Join(tmpDir, "skills", "implement")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill: %v", err)
+	}
+	body := "# /implement\n\n## Binary-Deployment Gate\n"
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(body), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	for _, title := range []string{
+		"Refactor binary-deployment gate in /implement skill",
+		"Fix binary-deployment gate in /implement skill",
+		"Wire binary-deployment gate to /implement skill",
+	} {
+		t.Run(title, func(t *testing.T) {
+			packet := overnightMorningPacket{ID: "non-add-verb", Title: title}
+			if reason, match, ok := probeDreamPacketStaleness(tmpDir, packet); ok {
+				t.Fatalf("probe should NOT flag non-Add verbs: reason=%q match=%q", reason, match)
+			}
+		})
+	}
+}
+
+// TestExtractAddToSkillClaim_ParseShapes pins the title parser surface so
+// the probe can rely on it.
+func TestExtractAddToSkillClaim_ParseShapes(t *testing.T) {
+	cases := []struct {
+		name       string
+		in         string
+		wantPath   string
+		wantPhrase string
+		wantOK     bool
+	}{
+		{
+			"canonical",
+			"Add binary-deployment gate to /implement skill",
+			"skills/implement/SKILL.md", "binary-deployment gate", true,
+		},
+		{
+			"with-the",
+			"Add closure proof to the /post-mortem skill",
+			"skills/post-mortem/SKILL.md", "closure proof", true,
+		},
+		{
+			"non-add-verb",
+			"Wire foo to /bar skill",
+			"", "", false,
+		},
+		{
+			"missing-skill-suffix",
+			"Add foo to /bar",
+			"", "", false,
+		},
+		{
+			"slash-only",
+			"Add foo to /",
+			"", "", false,
+		},
+		{
+			"empty",
+			"",
+			"", "", false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotPath, gotPhrase, gotOK := extractAddToSkillClaim(tc.in)
+			if gotOK != tc.wantOK || gotPath != tc.wantPath || gotPhrase != tc.wantPhrase {
+				t.Errorf("extractAddToSkillClaim(%q) = (%q, %q, %v), want (%q, %q, %v)",
+					tc.in, gotPath, gotPhrase, gotOK, tc.wantPath, tc.wantPhrase, tc.wantOK)
+			}
+		})
+	}
+}
+
+// TestSkillContainsAddPhrase_Normalization pins the matcher's normalization
+// rules: case-insensitive, hyphens/underscores treated as spaces, repeated
+// whitespace collapsed.
+func TestSkillContainsAddPhrase_Normalization(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		phrase  string
+		want    bool
+	}{
+		{"exact", "binary-deployment gate", "binary-deployment gate", true},
+		{"case", "Binary-Deployment Gate", "binary-deployment gate", true},
+		{"hyphen-vs-space", "binary deployment gate", "binary-deployment gate", true},
+		{"underscore-vs-space", "binary_deployment gate", "binary-deployment gate", true},
+		{"missing", "deployment only", "binary-deployment gate", false},
+		{"partial-token", "binary thing only", "binary-deployment gate", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := skillContainsAddPhrase(tc.content, tc.phrase); got != tc.want {
+				t.Errorf("skillContainsAddPhrase(%q, %q) = %v, want %v", tc.content, tc.phrase, got, tc.want)
+			}
+		})
+	}
+}
+
 // TestExtractRepoRef_TerminationCharacters confirms the helper terminates
 // on whitespace, quotes, parens, and backticks but not on alphanumerics —
 // the same surface area extractScriptsRef previously covered, now
