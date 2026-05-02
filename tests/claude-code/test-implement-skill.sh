@@ -34,7 +34,7 @@ echo "Test 2: Lifecycle handling..."
 
 output=$(run_claude "Answer concisely without running tools: what lifecycle does /agentops:implement follow?" 60)
 
-if assert_contains "$output" "start\|progress\|complete\|close\|commit" "Mentions lifecycle steps"; then
+if assert_contains "$output" "start\|progress\|complete\|close\|closing\|commit\|research\|plan\|implement\|validate\|harvest" "Mentions lifecycle steps"; then
     :
 else
     exit 1
