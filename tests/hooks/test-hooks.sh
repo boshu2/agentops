@@ -2105,6 +2105,57 @@ fi
 
 # ============================================================
 echo ""
+echo "=== edit-audit.sh ==="
+# ============================================================
+
+# Diagnostic-only PostToolUse hook: appends one JSON line per Edit/Write to
+# .agents/ao/edit-audit.log. Always exits 0 — never blocks.
+
+EDIT_AUDIT_MOCK="$TMPDIR/edit-audit-mock"
+setup_mock_repo "$EDIT_AUDIT_MOCK"
+echo "hello world" > "$EDIT_AUDIT_MOCK/sample.txt"
+
+OUTPUT=$(jq -n --arg file "$EDIT_AUDIT_MOCK/sample.txt" \
+    '{"tool_name":"Edit","tool_input":{"file_path":$file}}' \
+    | (cd "$EDIT_AUDIT_MOCK" && bash "$HOOKS_DIR/edit-audit.sh") 2>&1)
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    pass "edit-audit.sh exits 0 on Edit"
+else
+    fail "edit-audit.sh exits 0 on Edit (rc=$RC, output=$OUTPUT)"
+fi
+
+if [ -s "$EDIT_AUDIT_MOCK/.agents/ao/edit-audit.log" ] \
+    && jq -e '.tool == "Edit" and (.sha256 | length) > 0' \
+        "$EDIT_AUDIT_MOCK/.agents/ao/edit-audit.log" >/dev/null 2>&1; then
+    pass "edit-audit.sh appends a valid JSON record"
+else
+    fail "edit-audit.sh appends a valid JSON record"
+fi
+
+# Non-Edit/Write tools must produce no log entry
+LOG_BEFORE=$(wc -c < "$EDIT_AUDIT_MOCK/.agents/ao/edit-audit.log")
+echo '{"tool_name":"Read","tool_input":{"file_path":"'"$EDIT_AUDIT_MOCK/sample.txt"'"}}' \
+    | (cd "$EDIT_AUDIT_MOCK" && bash "$HOOKS_DIR/edit-audit.sh") >/dev/null 2>&1
+LOG_AFTER=$(wc -c < "$EDIT_AUDIT_MOCK/.agents/ao/edit-audit.log")
+if [ "$LOG_BEFORE" -eq "$LOG_AFTER" ]; then
+    pass "edit-audit.sh ignores non-Edit/Write tools"
+else
+    fail "edit-audit.sh ignores non-Edit/Write tools"
+fi
+
+# Kill switch
+echo '{"tool_name":"Edit","tool_input":{"file_path":"'"$EDIT_AUDIT_MOCK/sample.txt"'"}}' \
+    | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/edit-audit.sh" >/dev/null 2>&1
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    pass "edit-audit.sh respects AGENTOPS_HOOKS_DISABLED"
+else
+    fail "edit-audit.sh respects AGENTOPS_HOOKS_DISABLED"
+fi
+
+# ============================================================
+echo ""
 echo "=== Coverage check ==="
 # ============================================================
 
@@ -2114,7 +2165,10 @@ for hook_file in "$HOOKS_DIR"/*.sh; do
     hook_name=$(basename "$hook_file" .sh)
     # Check if this hook name appears in any test file (this script or BATS tests)
     COVERAGE_FILES=("$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats")
-    for candidate in "$SCRIPT_DIR/test-${hook_name}"*.sh; do
+    for candidate in \
+        "$SCRIPT_DIR/test-${hook_name}"*.sh \
+        "$REPO_ROOT/tests/skills/test-${hook_name}"*.sh \
+        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.sh; do
         [ -e "$candidate" ] && COVERAGE_FILES+=("$candidate")
     done
     if ! grep -rq "$hook_name" "${COVERAGE_FILES[@]}" 2>/dev/null; then

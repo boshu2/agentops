@@ -34,6 +34,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-go-fast.sh"
     make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
     make_stub "$FAKE_REPO/scripts/check-mutation-route-coverage.sh"
+    make_stub "$FAKE_REPO/scripts/check-retrieval-manifest-paths.sh"
     make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh"
     make_stub "$FAKE_REPO/scripts/check-agents-write-surfaces.sh"
     make_stub "$FAKE_REPO/scripts/check-worktree-disposition.sh"
