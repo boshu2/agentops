@@ -1376,6 +1376,7 @@ test_ao_delegation() {
     EC=0
     PATH="$AO_MOCK_DIR:/usr/bin:/bin" \
         AO_MOCK_LOG="$AO_MOCK_LOG" \
+        AGENTOPS_HOOK_CLOSE_LOOP=1 \
         CLAUDE_SESSION_ID="delegation-test" \
         bash "$hook_path" >/dev/null 2>&1 || EC=$?
 
@@ -2112,7 +2113,11 @@ MISSING_HOOKS=""
 for hook_file in "$HOOKS_DIR"/*.sh; do
     hook_name=$(basename "$hook_file" .sh)
     # Check if this hook name appears in any test file (this script or BATS tests)
-    if ! grep -rq "$hook_name" "$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats" "$SCRIPT_DIR/test-${hook_name}.sh" 2>/dev/null; then
+    COVERAGE_FILES=("$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats")
+    for candidate in "$SCRIPT_DIR/test-${hook_name}"*.sh; do
+        [ -e "$candidate" ] && COVERAGE_FILES+=("$candidate")
+    done
+    if ! grep -rq "$hook_name" "${COVERAGE_FILES[@]}" 2>/dev/null; then
         MISSING_HOOKS="$MISSING_HOOKS $hook_name"
     fi
 done
