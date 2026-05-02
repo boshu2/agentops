@@ -204,6 +204,7 @@
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
+- [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
 - [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations

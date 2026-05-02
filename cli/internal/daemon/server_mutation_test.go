@@ -127,6 +127,78 @@ func TestMutationAckFailpointAfterAppendBeforeAckRecoverable(t *testing.T) {
 	}
 }
 
+func TestMutationRequestIDIsTraceOnlyWithoutIdempotencyKey(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+	payload := `{"request_id":"req-reused","job_type":"rpi.run","payload":{"goal":"daemon"}}`
+
+	first := postJob(t, router, payload, "secret-token", "")
+	if first.Code != http.StatusAccepted {
+		t.Fatalf("first submit status = %d body=%s, want 202", first.Code, first.Body.String())
+	}
+	second := postJob(t, router, payload, "secret-token", "")
+	if second.Code != http.StatusAccepted {
+		t.Fatalf("second submit status = %d body=%s, want 202", second.Code, second.Body.String())
+	}
+
+	var firstBody, secondBody SubmitJobResponse
+	if err := json.Unmarshal(first.Body.Bytes(), &firstBody); err != nil {
+		t.Fatalf("decode first response: %v", err)
+	}
+	if err := json.Unmarshal(second.Body.Bytes(), &secondBody); err != nil {
+		t.Fatalf("decode second response: %v", err)
+	}
+	if firstBody.JobID == "" || secondBody.JobID == "" || firstBody.JobID == secondBody.JobID {
+		t.Fatalf("request_id deduped unexpectedly: first=%#v second=%#v", firstBody, secondBody)
+	}
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 2 {
+		t.Fatalf("reused request_id wrote %d events, want 2 distinct accepted jobs", len(events))
+	}
+}
+
+func TestMutationIdempotencyKeyDedupsRetryWithoutJobID(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+	firstPayload := `{"request_id":"req-first","job_type":"rpi.run","idempotency_key":"idem-retry","payload":{"goal":"daemon"}}`
+	secondPayload := `{"request_id":"req-second","job_type":"rpi.run","idempotency_key":"idem-retry","payload":{"goal":"daemon"}}`
+
+	first := postJob(t, router, firstPayload, "secret-token", "")
+	if first.Code != http.StatusAccepted {
+		t.Fatalf("first submit status = %d body=%s, want 202", first.Code, first.Body.String())
+	}
+	second := postJob(t, router, secondPayload, "secret-token", "")
+	if second.Code != http.StatusAccepted {
+		t.Fatalf("second submit status = %d body=%s, want 202", second.Code, second.Body.String())
+	}
+
+	var firstBody, secondBody SubmitJobResponse
+	if err := json.Unmarshal(first.Body.Bytes(), &firstBody); err != nil {
+		t.Fatalf("decode first response: %v", err)
+	}
+	if err := json.Unmarshal(second.Body.Bytes(), &secondBody); err != nil {
+		t.Fatalf("decode second response: %v", err)
+	}
+	if firstBody.JobID == "" || secondBody.JobID != firstBody.JobID {
+		t.Fatalf("idempotency key did not dedup retry: first=%#v second=%#v", firstBody, secondBody)
+	}
+	if secondBody.IdempotencyKey != "idem-retry" {
+		t.Fatalf("second idempotency_key = %q, want idem-retry", secondBody.IdempotencyKey)
+	}
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("idempotent retry appended %d events, want still 1", len(events))
+	}
+}
+
 func TestMutationProjectionFailpointStillAcknowledgesAcceptedJob(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())

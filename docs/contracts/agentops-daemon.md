@@ -72,6 +72,10 @@ If the projection update fails after step 5, the mutation remains accepted and
 the affected projection is marked stale until replay rebuilds it. If the ledger
 append fails before step 5, the mutation is not accepted.
 
+Submit retry deduplication is keyed by `idempotency_key`; `request_id` is
+trace-only. See [Daemon Idempotency](daemon-idempotency.md) for the full
+contract.
+
 Examples:
 
 - [job request](examples/agentops-daemon/job-request.json)

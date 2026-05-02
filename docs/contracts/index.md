@@ -32,6 +32,13 @@ skills, the runtime, and external integrations.
     Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
     trust, projections, and migration from foreground command flows.
 
+-   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
+
+    ---
+
+    Submit retry contract for `request_id`, `idempotency_key`, and
+    daemon-submitting CLI helpers.
+
 -   :material-file-code: **[JobSpec OpenAPI v0](jobspec-openapi-v0.yaml)**
 
     ---
