@@ -3148,7 +3148,7 @@ ao retrieval-bench [flags]
       --json                             JSON output
       --k int                            K for Precision@K (default 3)
       --live                             Benchmark against real .agents/learnings/ instead of synthetic corpus
-      --search-backend string            Search backend for --search-eval (local-lexical) (default "local-lexical")
+      --search-backend string            Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand) (default "local-lexical")
       --search-compare-backends string   Comma-separated search backends to compare for --search-eval
       --search-eval string               Path to an ao-search eval manifest with queries and ground_truth paths
       --search-root string               Repo root to search for --search-eval (defaults to current directory)

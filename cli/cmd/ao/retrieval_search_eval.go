@@ -222,7 +222,7 @@ func buildSearchEvalComparisonReport(repoRoot, manifestPath string, k int, backe
 }
 
 func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k int, backend string) (searchEvalResult, error) {
-	results, err := searchEvalBackendResults(backend, evalCase.Query, sessionsDir, k)
+	results, err := searchEvalBackendResults(repoRoot, backend, evalCase.Query, sessionsDir, k)
 	if err != nil {
 		return searchEvalResult{}, fmt.Errorf("search eval case %s: %w", evalCase.ID, err)
 	}
@@ -280,15 +280,6 @@ func runSearchEvalCase(repoRoot, sessionsDir string, evalCase searchEvalCase, k 
 	}, nil
 }
 
-func searchEvalBackendResults(backend, query, sessionsDir string, k int) ([]searchResult, error) {
-	switch backend {
-	case defaultSearchEvalBackend:
-		return searchRepoLocalKnowledge(query, sessionsDir, k)
-	default:
-		return nil, fmt.Errorf("unsupported search eval backend %q", backend)
-	}
-}
-
 func resolveSearchEvalRunBackends(backend, compareBackends string) ([]string, bool, error) {
 	compareBackends = strings.TrimSpace(compareBackends)
 	if compareBackends == "" {
@@ -337,8 +328,14 @@ func normalizeSearchEvalBackend(backend string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(backend)) {
 	case "", "local", "lexical", defaultSearchEvalBackend:
 		return defaultSearchEvalBackend, nil
+	case searchEvalBackendAOAuto:
+		return searchEvalBackendAOAuto, nil
+	case searchEvalBackendAgenticRG:
+		return searchEvalBackendAgenticRG, nil
+	case searchEvalBackendWikiLinkExpand:
+		return searchEvalBackendWikiLinkExpand, nil
 	default:
-		return "", fmt.Errorf("unsupported search eval backend %q: supported backends: %s", backend, defaultSearchEvalBackend)
+		return "", fmt.Errorf("unsupported search eval backend %q: supported backends: %s", backend, supportedSearchEvalBackends())
 	}
 }
 
