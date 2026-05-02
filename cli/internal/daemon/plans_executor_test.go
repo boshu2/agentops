@@ -99,205 +99,221 @@ func TestPlansProjectionExecutor(t *testing.T) {
 	clock := func() time.Time { return now }
 
 	t.Run("Given empty bd state, When subscription starts, Then empty projection emitted with zero manifest entries", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: &fakePlansBdSource{entries: nil},
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-empty", spec)
-		result, runErr := exec.RunJob(context.Background(), claim)
-		if runErr != nil {
-			t.Fatalf("run: %v", runErr)
-		}
-		if got := result.Artifacts["manifest_count"]; got != "0" {
-			t.Fatalf("manifest_count = %q, want 0", got)
-		}
-		if got := result.Artifacts["manifest_jsonl"]; got == "" {
-			t.Fatalf("manifest_jsonl artifact missing: %#v", result.Artifacts)
-		}
-		readBack := loadManifestEntries(t, result.Artifacts["manifest_jsonl"])
-		if len(readBack) != 0 {
-			t.Fatalf("manifest entries = %d, want 0", len(readBack))
-		}
+		assertPlansProjectionExecutorEmptyState(t, clock)
 	})
 
 	t.Run("Given populated bd state, When subscription starts, Then manifest snapshot rebuilt with N sorted entries", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		entries := []PlansProjectionEntry{
-			{BeadsID: "soc-zzz", Title: "z-issue", Status: "open", IssueType: "epic", UpdatedAt: now},
-			{BeadsID: "soc-aaa", Title: "a-issue", Status: "open", IssueType: "epic", UpdatedAt: now},
-			{BeadsID: "soc-mmm", Title: "m-issue", Status: "closed", IssueType: "epic", UpdatedAt: now},
-		}
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: &fakePlansBdSource{entries: entries},
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-populated", spec)
-		result, runErr := exec.RunJob(context.Background(), claim)
-		if runErr != nil {
-			t.Fatalf("run: %v", runErr)
-		}
-		if got := result.Artifacts["manifest_count"]; got != "3" {
-			t.Fatalf("manifest_count = %q, want 3", got)
-		}
-		readBack := loadManifestEntries(t, result.Artifacts["manifest_jsonl"])
-		if len(readBack) != 3 {
-			t.Fatalf("manifest entries = %d, want 3", len(readBack))
-		}
-		// WriteDaemonPlansProjection sorts by BeadsID.
-		want := []string{"soc-aaa", "soc-mmm", "soc-zzz"}
-		for i, expected := range want {
-			if readBack[i].BeadsID != expected {
-				t.Fatalf("entries[%d].BeadsID = %q, want %q", i, readBack[i].BeadsID, expected)
-			}
-			if readBack[i].Checksum == "" {
-				t.Fatalf("entries[%d].Checksum is empty (executor should fill)", i)
-			}
-		}
+		assertPlansProjectionExecutorPopulatedState(t, clock, now)
 	})
 
 	t.Run("Given bd query fails transiently, When executor runs, Then error surfaces and no snapshot is written", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: &fakePlansBdSource{err: errors.New("dolt unreachable")},
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-transient", spec)
-		_, runErr := exec.RunJob(context.Background(), claim)
-		if runErr == nil {
-			t.Fatalf("expected error when bd source fails")
-		}
-		// Ensure no manifest.jsonl written when query fails (atomic-write contract).
-		if _, statErr := os.Stat(filepath.Join(outDir, "manifest.jsonl")); statErr == nil {
-			t.Fatalf("manifest.jsonl should not exist on bd query failure")
-		}
+		assertPlansProjectionExecutorTransientFailure(t, clock)
 	})
 
 	t.Run("Given context cancellation mid-run, When executor checks ctx, Then ctx.Err() is returned without writing snapshot", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		ctx, cancel := context.WithCancel(context.Background())
-		bdSource := &fakePlansBdSource{
-			entries: []PlansProjectionEntry{{BeadsID: "soc-x", Title: "x", Status: "open", IssueType: "epic"}},
-			delayUntil: func(c context.Context) error {
-				cancel()
-				select {
-				case <-c.Done():
-					return c.Err()
-				case <-time.After(time.Second):
-					return errors.New("delay timeout")
-				}
-			},
-		}
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: bdSource,
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-cancel", spec)
-		_, runErr := exec.RunJob(ctx, claim)
-		if !errors.Is(runErr, context.Canceled) {
-			t.Fatalf("run error = %v, want context.Canceled", runErr)
-		}
-		if _, statErr := os.Stat(filepath.Join(outDir, "manifest.jsonl")); statErr == nil {
-			t.Fatalf("manifest.jsonl should not exist on cancellation")
-		}
+		assertPlansProjectionExecutorCancellation(t, clock)
 	})
 
 	t.Run("Given identical bd state across runs, When executor runs twice, Then second run is replay-idempotent (same entries written)", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		entries := []PlansProjectionEntry{
-			{BeadsID: "soc-1", Title: "one", Status: "open", IssueType: "epic", UpdatedAt: now},
-			{BeadsID: "soc-2", Title: "two", Status: "closed", IssueType: "epic", UpdatedAt: now},
-		}
-		bdSource := &fakePlansBdSource{entries: entries}
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: bdSource,
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-idem", spec)
-		first, runErr := exec.RunJob(context.Background(), claim)
-		if runErr != nil {
-			t.Fatalf("first run: %v", runErr)
-		}
-		second, runErr := exec.RunJob(context.Background(), claim)
-		if runErr != nil {
-			t.Fatalf("second run: %v", runErr)
-		}
-		if first.Artifacts["manifest_jsonl"] != second.Artifacts["manifest_jsonl"] {
-			t.Fatalf("manifest path drifted across runs: %q -> %q",
-				first.Artifacts["manifest_jsonl"], second.Artifacts["manifest_jsonl"])
-		}
-		readBack := loadManifestEntries(t, second.Artifacts["manifest_jsonl"])
-		if len(readBack) != 2 {
-			t.Fatalf("entries after second run = %d, want 2 (idempotent)", len(readBack))
-		}
-		if bdSource.calls != 2 {
-			t.Fatalf("bd query calls = %d, want 2 (each run queries once)", bdSource.calls)
-		}
+		assertPlansProjectionExecutorIdempotent(t, clock, now)
 	})
 
 	t.Run("Given a stale snapshot from a prior crash, When executor runs after restart, Then snapshot is overwritten atomically with current bd state", func(t *testing.T) {
-		dir := t.TempDir()
-		outDir := filepath.Join(dir, "plans")
-		// Pre-seed a stale manifest.jsonl as if a crashed run left it behind.
-		if err := os.MkdirAll(outDir, 0o755); err != nil {
-			t.Fatalf("seed mkdir: %v", err)
-		}
-		stale := filepath.Join(outDir, "manifest.jsonl")
-		if err := os.WriteFile(stale, []byte(`{"beads_id":"soc-stale","title":"stale"}`+"\n"), 0o644); err != nil {
-			t.Fatalf("seed stale: %v", err)
-		}
-		bdSource := &fakePlansBdSource{entries: []PlansProjectionEntry{
-			{BeadsID: "soc-fresh", Title: "fresh", Status: "open", IssueType: "epic", UpdatedAt: now},
-		}}
-		exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
-			Store:    NewStore(dir),
-			BdSource: bdSource,
-			Now:      clock,
-		})
-		if err != nil {
-			t.Fatalf("new executor: %v", err)
-		}
-		spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
-		claim := claimForPlansSpec(t, "job-recover", spec)
-		_, runErr := exec.RunJob(context.Background(), claim)
-		if runErr != nil {
-			t.Fatalf("run: %v", runErr)
-		}
-		readBack := loadManifestEntries(t, stale)
-		if len(readBack) != 1 || readBack[0].BeadsID != "soc-fresh" {
-			t.Fatalf("post-recover entries = %#v, want exactly soc-fresh", readBack)
-		}
+		assertPlansProjectionExecutorRecoversStaleSnapshot(t, clock, now)
 	})
+}
+
+func assertPlansProjectionExecutorEmptyState(t *testing.T, clock func() time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	exec := newPlansProjectionExecutorForTest(t, dir, &fakePlansBdSource{entries: nil}, clock)
+	result, runErr := runPlansProjectionJob(t, exec, "job-empty", outDir, context.Background())
+	if runErr != nil {
+		t.Fatalf("run: %v", runErr)
+	}
+	if got := result.Artifacts["manifest_count"]; got != "0" {
+		t.Fatalf("manifest_count = %q, want 0", got)
+	}
+	manifestPath := result.Artifacts["manifest_jsonl"]
+	if manifestPath == "" {
+		t.Fatalf("manifest_jsonl artifact missing: %#v", result.Artifacts)
+	}
+	readBack := loadManifestEntries(t, manifestPath)
+	if len(readBack) != 0 {
+		t.Fatalf("manifest entries = %d, want 0", len(readBack))
+	}
+}
+
+func assertPlansProjectionExecutorPopulatedState(t *testing.T, clock func() time.Time, now time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	entries := []PlansProjectionEntry{
+		{BeadsID: "soc-zzz", Title: "z-issue", Status: "open", IssueType: "epic", UpdatedAt: now},
+		{BeadsID: "soc-aaa", Title: "a-issue", Status: "open", IssueType: "epic", UpdatedAt: now},
+		{BeadsID: "soc-mmm", Title: "m-issue", Status: "closed", IssueType: "epic", UpdatedAt: now},
+	}
+	exec := newPlansProjectionExecutorForTest(t, dir, &fakePlansBdSource{entries: entries}, clock)
+	result, runErr := runPlansProjectionJob(t, exec, "job-populated", outDir, context.Background())
+	if runErr != nil {
+		t.Fatalf("run: %v", runErr)
+	}
+	if got := result.Artifacts["manifest_count"]; got != "3" {
+		t.Fatalf("manifest_count = %q, want 3", got)
+	}
+	readBack := loadManifestEntries(t, result.Artifacts["manifest_jsonl"])
+	assertPlansProjectionEntriesSorted(t, readBack, []string{"soc-aaa", "soc-mmm", "soc-zzz"})
+}
+
+func assertPlansProjectionExecutorTransientFailure(t *testing.T, clock func() time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	exec := newPlansProjectionExecutorForTest(t, dir, &fakePlansBdSource{err: errors.New("dolt unreachable")}, clock)
+	_, runErr := runPlansProjectionJob(t, exec, "job-transient", outDir, context.Background())
+	if runErr == nil {
+		t.Fatalf("expected error when bd source fails")
+	}
+	assertNoPlansManifest(t, outDir, "bd query failure")
+}
+
+func assertPlansProjectionExecutorCancellation(t *testing.T, clock func() time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	ctx, cancel := context.WithCancel(context.Background())
+	bdSource := &fakePlansBdSource{
+		entries: []PlansProjectionEntry{{BeadsID: "soc-x", Title: "x", Status: "open", IssueType: "epic"}},
+		delayUntil: func(c context.Context) error {
+			cancel()
+			select {
+			case <-c.Done():
+				return c.Err()
+			case <-time.After(time.Second):
+				return errors.New("delay timeout")
+			}
+		},
+	}
+	exec := newPlansProjectionExecutorForTest(t, dir, bdSource, clock)
+	_, runErr := runPlansProjectionJob(t, exec, "job-cancel", outDir, ctx)
+	if !errors.Is(runErr, context.Canceled) {
+		t.Fatalf("run error = %v, want context.Canceled", runErr)
+	}
+	assertNoPlansManifest(t, outDir, "cancellation")
+}
+
+func assertPlansProjectionExecutorIdempotent(t *testing.T, clock func() time.Time, now time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	bdSource := &fakePlansBdSource{entries: []PlansProjectionEntry{
+		{BeadsID: "soc-1", Title: "one", Status: "open", IssueType: "epic", UpdatedAt: now},
+		{BeadsID: "soc-2", Title: "two", Status: "closed", IssueType: "epic", UpdatedAt: now},
+	}}
+	exec := newPlansProjectionExecutorForTest(t, dir, bdSource, clock)
+	first, runErr := runPlansProjectionJob(t, exec, "job-idem", outDir, context.Background())
+	if runErr != nil {
+		t.Fatalf("first run: %v", runErr)
+	}
+	second, runErr := runPlansProjectionJob(t, exec, "job-idem", outDir, context.Background())
+	if runErr != nil {
+		t.Fatalf("second run: %v", runErr)
+	}
+	if first.Artifacts["manifest_jsonl"] != second.Artifacts["manifest_jsonl"] {
+		t.Fatalf("manifest path drifted across runs: %q -> %q",
+			first.Artifacts["manifest_jsonl"], second.Artifacts["manifest_jsonl"])
+	}
+	readBack := loadManifestEntries(t, second.Artifacts["manifest_jsonl"])
+	if len(readBack) != 2 {
+		t.Fatalf("entries after second run = %d, want 2 (idempotent)", len(readBack))
+	}
+	if bdSource.calls != 2 {
+		t.Fatalf("bd query calls = %d, want 2 (each run queries once)", bdSource.calls)
+	}
+}
+
+func assertPlansProjectionExecutorRecoversStaleSnapshot(t *testing.T, clock func() time.Time, now time.Time) {
+	t.Helper()
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "plans")
+	stale := seedStalePlansManifest(t, outDir)
+	bdSource := &fakePlansBdSource{entries: []PlansProjectionEntry{
+		{BeadsID: "soc-fresh", Title: "fresh", Status: "open", IssueType: "epic", UpdatedAt: now},
+	}}
+	exec := newPlansProjectionExecutorForTest(t, dir, bdSource, clock)
+	_, runErr := runPlansProjectionJob(t, exec, "job-recover", outDir, context.Background())
+	if runErr != nil {
+		t.Fatalf("run: %v", runErr)
+	}
+	readBack := loadManifestEntries(t, stale)
+	if len(readBack) != 1 || readBack[0].BeadsID != "soc-fresh" {
+		t.Fatalf("post-recover entries = %#v, want exactly soc-fresh", readBack)
+	}
+}
+
+func newPlansProjectionExecutorForTest(
+	t *testing.T,
+	dir string,
+	bdSource PlansBdSource,
+	clock func() time.Time,
+) *PlansProjectionExecutor {
+	t.Helper()
+	exec, err := NewPlansProjectionExecutor(PlansProjectionExecutorOptions{
+		Store:    NewStore(dir),
+		BdSource: bdSource,
+		Now:      clock,
+	})
+	if err != nil {
+		t.Fatalf("new executor: %v", err)
+	}
+	return exec
+}
+
+func runPlansProjectionJob(
+	t *testing.T,
+	exec *PlansProjectionExecutor,
+	jobID, outDir string,
+	ctx context.Context,
+) (JobExecutionResult, error) {
+	t.Helper()
+	spec := NewPlansProjectionJobSpec("proj-1", "soc", outDir)
+	claim := claimForPlansSpec(t, jobID, spec)
+	return exec.RunJob(ctx, claim)
+}
+
+func assertPlansProjectionEntriesSorted(t *testing.T, entries []PlansProjectionEntry, want []string) {
+	t.Helper()
+	if len(entries) != len(want) {
+		t.Fatalf("manifest entries = %d, want %d", len(entries), len(want))
+	}
+	for i, expected := range want {
+		if entries[i].BeadsID != expected {
+			t.Fatalf("entries[%d].BeadsID = %q, want %q", i, entries[i].BeadsID, expected)
+		}
+		if entries[i].Checksum == "" {
+			t.Fatalf("entries[%d].Checksum is empty (executor should fill)", i)
+		}
+	}
+}
+
+func assertNoPlansManifest(t *testing.T, outDir, reason string) {
+	t.Helper()
+	if _, statErr := os.Stat(filepath.Join(outDir, "manifest.jsonl")); statErr == nil {
+		t.Fatalf("manifest.jsonl should not exist on %s", reason)
+	}
+}
+
+func seedStalePlansManifest(t *testing.T, outDir string) string {
+	t.Helper()
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		t.Fatalf("seed mkdir: %v", err)
+	}
+	stale := filepath.Join(outDir, "manifest.jsonl")
+	if err := os.WriteFile(stale, []byte(`{"beads_id":"soc-stale","title":"stale"}`+"\n"), 0o644); err != nil {
+		t.Fatalf("seed stale: %v", err)
+	}
+	return stale
 }
 
 // TestDaemonPlansProjection_RebuildAndValidate exercises the projection
