@@ -76,7 +76,10 @@ fi
 } | tee "$LOG"
 
 # The actual evolve invocation. Stdin closed (no interactive prompts).
-"$TIMEOUT_BIN" 8h ao evolve --quality --max-cycles=10 --test-first </dev/null 2>&1 | tee -a "$LOG"
+# ao evolve v2 supervisor flags. --max-cycles caps; --ensure-cleanup runs
+# stale-run cleanup after each cycle. The skill-doc --quality/--test-first
+# flags belong to the Claude-side /evolve skill invocation, not the Go CLI.
+"$TIMEOUT_BIN" 8h ao evolve --max-cycles 10 --ensure-cleanup </dev/null 2>&1 | tee -a "$LOG"
 EXIT_CODE="${PIPESTATUS[0]}"
 
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
