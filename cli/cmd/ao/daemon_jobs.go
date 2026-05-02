@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -16,10 +18,28 @@ import (
 )
 
 var (
-	daemonJobWaitTimeout  time.Duration
-	daemonJobCancelReason string
-	daemonEventsAfter     string
+	daemonJobWaitTimeout   time.Duration
+	daemonJobCancelReason  string
+	daemonEventsAfter      string
+	daemonJobSubmitType    string
+	daemonJobSubmitPayload string
 )
+
+// daemonJobSubmitUnknownTypeExitCode mirrors `timeout(1)`-style enum-validation
+// failures: callers (scripts, evolve loops) can branch on it without parsing stderr.
+const daemonJobSubmitUnknownTypeExitCode = 2
+
+// knownDaemonJobTypes enumerates the JobType values a non-CLI client may submit.
+// Sourced from cli/internal/daemon/types.go.
+var knownDaemonJobTypes = []daemonpkg.JobType{
+	daemonpkg.JobTypeRPIRun,
+	daemonpkg.JobTypeRPIPhase,
+	daemonpkg.JobTypeDreamRun,
+	daemonpkg.JobTypeDreamStage,
+	daemonpkg.JobTypeWikiBuild,
+	daemonpkg.JobTypeWikiForge,
+	daemonpkg.JobTypeOpenClawSnapshot,
+}
 
 var daemonJobsCmd = &cobra.Command{
 	Use:   "jobs",
@@ -54,6 +74,22 @@ var daemonJobsCancelCmd = &cobra.Command{
 	RunE:  runAgentOpsDaemonJobsCancelCommand,
 }
 
+var daemonJobsSubmitCmd = &cobra.Command{
+	Use:   "submit",
+	Short: "Submit a job to the daemon queue",
+	Long: `Submit a job to the daemon queue.
+
+The payload is sent verbatim under the JSON 'payload' key. --type must be one
+of the known JobType values (cli/internal/daemon/types.go).
+
+Examples:
+  ao daemon jobs submit --type openclaw.snapshot --payload '{}' --json
+  ao daemon jobs submit --type wiki.forge --payload @./payload.json
+  ao daemon jobs submit --type rpi.phase --payload '{"phase":"discovery"}' --token-file ~/.agents/daemon/.token`,
+	Args: cobra.NoArgs,
+	RunE: runAgentOpsDaemonJobsSubmitCommand,
+}
+
 var daemonEventsCmd = &cobra.Command{
 	Use:   "events",
 	Short: "Inspect daemon events",
@@ -68,7 +104,7 @@ var daemonEventsTailCmd = &cobra.Command{
 
 func init() {
 	daemonCmd.AddCommand(daemonJobsCmd, daemonEventsCmd)
-	daemonJobsCmd.AddCommand(daemonJobsListCmd, daemonJobsShowCmd, daemonJobsWaitCmd, daemonJobsCancelCmd)
+	daemonJobsCmd.AddCommand(daemonJobsListCmd, daemonJobsShowCmd, daemonJobsWaitCmd, daemonJobsCancelCmd, daemonJobsSubmitCmd)
 	daemonEventsCmd.AddCommand(daemonEventsTailCmd)
 
 	daemonJobsCmd.PersistentFlags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
@@ -76,6 +112,10 @@ func init() {
 	daemonJobsCancelCmd.Flags().StringVar(&daemonJobCancelReason, "reason", "", "Cancellation reason")
 	daemonJobsCancelCmd.Flags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
 	daemonJobsCancelCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
+	daemonJobsSubmitCmd.Flags().StringVar(&daemonJobSubmitType, "type", "", "Job type (required; one of "+strings.Join(daemonJobTypeStrings(), ", ")+")")
+	daemonJobsSubmitCmd.Flags().StringVar(&daemonJobSubmitPayload, "payload", "", "JSON payload (required; '@-' for stdin, '@path' for file)")
+	daemonJobsSubmitCmd.Flags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
+	daemonJobsSubmitCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonEventsCmd.PersistentFlags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonEventsTailCmd.Flags().StringVar(&daemonEventsAfter, "after", "", "Only show events after this event id")
 }
@@ -161,6 +201,144 @@ func waitForDaemonJobStatus(ctx context.Context, baseURL, jobID string, timeout 
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
+}
+
+// daemonJobTypeStrings returns the known JobType values as a sorted []string,
+// for use in flag help text and unknown-type error messages.
+func daemonJobTypeStrings() []string {
+	out := make([]string, 0, len(knownDaemonJobTypes))
+	for _, t := range knownDaemonJobTypes {
+		out = append(out, string(t))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// unknownJobTypeError is a sentinel for the RunE wrapper so it can map invalid
+// --type values to a distinct process exit code.
+type unknownJobTypeError struct {
+	got   string
+	known []string
+}
+
+func (e unknownJobTypeError) Error() string {
+	return fmt.Sprintf("unknown job type %q; known: %s", e.got, strings.Join(e.known, ", "))
+}
+
+func validateSubmitJobType(value string) error {
+	for _, t := range knownDaemonJobTypes {
+		if string(t) == value {
+			return nil
+		}
+	}
+	return unknownJobTypeError{got: value, known: daemonJobTypeStrings()}
+}
+
+// readSubmitPayload accepts inline JSON, '@-' for stdin, or '@path' for a file.
+func readSubmitPayload(raw string) (map[string]any, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, errors.New("--payload is required")
+	}
+	var data []byte
+	switch {
+	case trimmed == "@-":
+		buf, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, fmt.Errorf("read payload from stdin: %w", err)
+		}
+		data = buf
+	case strings.HasPrefix(trimmed, "@"):
+		buf, err := os.ReadFile(trimmed[1:])
+		if err != nil {
+			return nil, fmt.Errorf("read payload file: %w", err)
+		}
+		data = buf
+	default:
+		data = []byte(trimmed)
+	}
+	if len(bytes.TrimSpace(data)) == 0 {
+		return nil, errors.New("--payload resolved to empty content")
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, fmt.Errorf("payload is not a JSON object: %w", err)
+	}
+	return payload, nil
+}
+
+func runAgentOpsDaemonJobsSubmitCommand(cmd *cobra.Command, args []string) error {
+	if strings.TrimSpace(daemonJobSubmitType) == "" {
+		return errors.New("--type is required")
+	}
+	if err := validateSubmitJobType(daemonJobSubmitType); err != nil {
+		var unk unknownJobTypeError
+		if errors.As(err, &unk) {
+			fmt.Fprintln(cmd.ErrOrStderr(), unk.Error())
+			os.Exit(daemonJobSubmitUnknownTypeExitCode)
+		}
+		return err
+	}
+	payload, err := readSubmitPayload(daemonJobSubmitPayload)
+	if err != nil {
+		return err
+	}
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	baseURL, err := resolveDaemonURL(cwd, daemonURL)
+	if err != nil {
+		return err
+	}
+	token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+	if err != nil {
+		return err
+	}
+	response, err := submitDaemonJob(cobraContext(cmd), baseURL, token, daemonpkg.JobType(daemonJobSubmitType), payload)
+	if err != nil {
+		return err
+	}
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(response)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", response.JobID, response.JobType, response.Status)
+	return nil
+}
+
+// submitDaemonJobResponse is the operator-facing shape for `ao daemon jobs submit`.
+// Mirrors daemonpkg.SubmitJobResponse but adds JobType for clean tabular output
+// (the daemon does not echo the requested type back).
+type submitDaemonJobResponse struct {
+	Accepted    bool                       `json:"accepted"`
+	JobID       string                     `json:"job_id"`
+	JobType     daemonpkg.JobType          `json:"job_type"`
+	Status      daemonpkg.JobStatus        `json:"status"`
+	RequestID   string                     `json:"request_id,omitempty"`
+	LastEventID string                     `json:"last_event_id,omitempty"`
+	Projection  daemonpkg.ProjectionStatus `json:"projection_status,omitempty"`
+}
+
+func submitDaemonJob(ctx context.Context, baseURL, token string, jobType daemonpkg.JobType, payload map[string]any) (submitDaemonJobResponse, error) {
+	var raw daemonpkg.SubmitJobResponse
+	request := daemonpkg.SubmitJobRequest{
+		JobType: jobType,
+		Payload: payload,
+	}
+	if err := postDaemonJSON(ctx, baseURL+"/v1/jobs", token, request, &raw); err != nil {
+		return submitDaemonJobResponse{}, err
+	}
+	return submitDaemonJobResponse{
+		Accepted:    raw.Accepted,
+		JobID:       raw.JobID,
+		JobType:     jobType,
+		Status:      raw.Status,
+		RequestID:   raw.RequestID,
+		LastEventID: raw.LastEventID,
+		Projection:  raw.ProjectionStatus,
+	}, nil
 }
 
 func runAgentOpsDaemonJobsCancelCommand(cmd *cobra.Command, args []string) error {

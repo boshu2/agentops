@@ -970,6 +970,24 @@ Show a daemon job
 ao daemon jobs show <job-id> [flags]
 ```
 
+##### `ao daemon jobs submit`
+
+Submit a job to the daemon queue.
+
+```
+ao daemon jobs submit [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for submit
+      --payload string      JSON payload (required; '@-' for stdin, '@path' for file)
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+      --type string         Job type (required; one of dream.run, dream.stage, openclaw.snapshot, rpi.phase, rpi.run, wiki.build, wiki.forge)
+```
+
 ##### `ao daemon jobs wait`
 
 Wait for a daemon job to reach terminal state
