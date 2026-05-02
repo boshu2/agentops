@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (60)
+### User-Facing Skills (61)
 
 **Judgment:**
 
@@ -260,6 +260,7 @@ These are how skills chain in practice:
 | **perf** | execution | Performance profiling, benchmarking, regression detection, and optimization |
 | **scaffold** | execution | Project scaffolding, component generation, and boilerplate setup |
 | **scenario** | execution | Author and manage holdout scenarios for behavioral validation |
+| **scope** | execution | Edit-scope guard — freeze/unfreeze directories with hard-block PreToolUse hook |
 
 **Knowledge:**
 

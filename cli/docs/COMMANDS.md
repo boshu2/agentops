@@ -50,6 +50,7 @@ ao init [flags]
       --hooks           Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)
       --minimal-hooks   With --hooks, install SessionStart + SessionEnd + Stop hooks (lightweight)
       --stealth         Use .git/info/exclude instead of .gitignore
+      --with-schedule   Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). In a TTY, ao init prompts [Y/n] when this flag is unset. In non-TTY runs, scheduling is silently skipped unless AGENTOPS_INIT_WITH_SCHEDULE=1 is set to opt-in.
 ```
 
 ---
@@ -1066,7 +1067,7 @@ ao daemon soak [flags]
   -h, --help                help for soak
       --interval duration   Polling interval for scenario checks (default 15s)
       --require-terminal    Fail unless scenario jobs reach terminal daemon state
-      --scenario string     Soak scenario (queue-only, fake-executor, dream) (default "queue-only")
+      --scenario string     Soak scenario (queue-only, fake-executor, dream, plans-projection) (default "queue-only")
 ```
 
 #### `ao daemon status`
@@ -2404,6 +2405,13 @@ Sync pulls plan metadata from beads to prevent drift.
 ao plans sync [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help         help for sync
+      --via-daemon   Route plans sync through the agentopsd plans.projection job-type. Default false in this release; flipped to true in a later release after the soak window. With --via-daemon=false the command takes the legacy direct path (file-locked).
+```
+
 #### `ao plans update`
 
 Update a plan's status or metadata
@@ -3324,6 +3332,79 @@ ao schedule run <name> [flags]
   -h, --help                help for run
       --token string        Mutation token for daemon write routes
       --token-file string   Path to mutation token file
+```
+
+---
+
+### `ao scope`
+
+Declare which directories are in scope for the current work session.
+
+```
+ao scope [command]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for scope
+      --json          Emit JSON output
+      --lock string   Override scope-lock path (defaults to $AO_SCOPE_LOCK or .agents/scope.lock)
+```
+
+**Subcommands:**
+
+#### `ao scope freeze`
+
+Freeze one or more directories (additive)
+
+```
+ao scope freeze <dir> [<dir>...] [flags]
+```
+
+#### `ao scope status`
+
+Show current scope-lock state
+
+```
+ao scope status [flags]
+```
+
+#### `ao scope unfreeze`
+
+Unfreeze one (or all if no arg) directories
+
+```
+ao scope unfreeze [<dir>...] [flags]
+```
+
+---
+
+### `ao skills`
+
+Tooling for the skills/ source-of-truth and its skills-codex/
+
+```
+ao skills [command]
+```
+
+**Subcommands:**
+
+#### `ao skills check`
+
+Walk skills/ and skills-codex/, validating each skill's YAML
+
+```
+ao skills check [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for check
+      --json           Emit machine-readable JSON
+      --skill string   Restrict the audit to a single skill name
+      --strict         Exit non-zero on any finding (CI mode)
 ```
 
 ---

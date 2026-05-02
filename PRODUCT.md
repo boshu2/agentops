@@ -27,7 +27,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 69 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 70 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 
 Read the convergence table the right way: AgentOps and every harness like it gets absorbed into the model layer over time. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, with current models, before the harness layer commoditizes.
@@ -53,7 +53,7 @@ Read the convergence table the right way: AgentOps and every harness like it get
 
 The bridge tool has three layers. Each smooths a sharp edge of current models so you can build the moat (the corpus) underneath.
 
-### 1. Skills (69 skills across 4 runtimes)
+### 1. Skills (70 skills across 4 runtimes)
 
 **The discipline layer.**
 
@@ -94,7 +94,7 @@ The three load-bearing claims, expanded:
 - **Compounding context** — the knowledge flywheel. Each session captures learnings scored on specificity, actionability, novelty, context, and confidence. Learnings promote to patterns; patterns become planning rules. Next session starts loaded, not cold. Escape velocity is a measurable condition: retrieval × usage > decay.
 - **Hands-free reconciliation** — `/evolve` reads `GOALS.md`, picks the worst fitness gap, fixes it, validates, records the cycle. SRE error budgets meet Kubernetes control loops. `/dream` runs overnight bookkeeping; source code stays untouched.
 - **Multi-runtime, multi-model** — same skills target Claude Code, Codex CLI, Cursor, and OpenCode with documented Tier S/I/E proof levels. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives — the discipline lives in the system, not the model.
-- **Zero setup, zero telemetry** — all state lives in local `.agents/` directories with no cloud dependency. 69 skills, 12 runtime hook event sections, and the flywheel can operate with no external daemon.
+- **Zero setup, zero telemetry** — all state lives in local `.agents/` directories with no cloud dependency. 70 skills, 12 runtime hook event sections, and the flywheel can operate with no external daemon.
 
 ## Strategic Bet
 
@@ -108,7 +108,7 @@ As of 2026-04-30:
 
 - GitHub repo: 320 stars, 34 forks, 10 open issues, last pushed 2026-04-30
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 69 shared skills, 69 checked-in Codex artifacts, and 35 Codex overrides
+- Distribution/runtime reach: 70 shared skills, 70 checked-in Codex artifacts, and 35 Codex overrides
 
 **Measured operational proof:**
 
