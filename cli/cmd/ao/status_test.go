@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -305,8 +306,10 @@ func TestLoadFlywheelBrief_TimesOut(t *testing.T) {
 	})
 
 	statusFlywheelTimeout = 5 * time.Millisecond
-	statusComputeFlywheelBrief = func(string) *flywheelBrief {
-		time.Sleep(500 * time.Millisecond)
+	cancelObserved := make(chan struct{})
+	statusComputeFlywheelBrief = func(ctx context.Context, _ string) *flywheelBrief {
+		<-ctx.Done()
+		close(cancelObserved)
 		return &flywheelBrief{Status: "SHOULD_NOT_BLOCK"}
 	}
 
@@ -319,6 +322,11 @@ func TestLoadFlywheelBrief_TimesOut(t *testing.T) {
 	}
 	if elapsed > 100*time.Millisecond {
 		t.Fatalf("loadFlywheelBrief took %s, want bounded timeout", elapsed)
+	}
+	select {
+	case <-cancelObserved:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("compute goroutine did not observe timeout cancellation")
 	}
 }
 

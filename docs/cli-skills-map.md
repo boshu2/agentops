@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 59 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-05-01. 60 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
 
@@ -12,7 +12,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 | Category | Count |
 |----------|-------|
-| Generated CLI command headings | 59 |
+| Generated CLI command headings | 60 |
 | CLI command entries with skill/hook callers | 34 |
 | Orphan/hidden command entries (user utilities, hidden, CI-only) | 21 |
 | Known phantom subcommands | 0 |
