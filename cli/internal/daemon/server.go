@@ -3,8 +3,10 @@ package daemon
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +27,8 @@ type ServerOptions struct {
 // reader. Paired with MaxLedgerLineBytes in store.go (replay tolerates
 // larger lines than submission so daemon-emitted events have headroom).
 const MaxJobSubmissionBytes = 1 * 1024 * 1024
+
+const maxReadOnlyEventsLimit = 1000
 
 type ReadOnlyServer struct {
 	store *Store
@@ -125,6 +129,7 @@ func NewDaemonRouter(store *Store, opts ServerOptions) http.Handler {
 		registerMutationRoute(mux, prefix+"/jobs", policy, server.handleSubmitJob)
 		registerMutationRoute(mux, prefix+"/jobs/cancel", policy, server.handleCancelJob)
 	}
+	registerMutationRoute(mux, "POST /v1/jobs/{id}/cancel", policy, server.handleCancelJobByPath)
 	registerMutationRoute(mux, openclaw.TriggerJobsPath, policy, server.handleOpenClawTriggerJob)
 	// Schedule routes (soc-8inr.5).
 	registerMutationRoute(mux, "POST /v1/schedules", policy, server.handlePostSchedule)
@@ -233,7 +238,16 @@ func (s *ReadOnlyServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	events := filterLedgerEventsAfter(state.Replay.Events, r.URL.Query().Get("since"))
+	events, ok := filterLedgerEventsAfterCursor(state.Replay.Events, eventCursorFromRequest(r))
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "event cursor not found"})
+		return
+	}
+	events, err = applyReadOnlyEventsLimit(events, r.URL.Query().Get("limit"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
 	writeJSON(w, http.StatusOK, ReadOnlyEventsResponse{
 		Events:      events,
 		Corrupt:     state.Replay.Corrupt,
@@ -274,16 +288,47 @@ func (s *ReadOnlyServer) handlePlansDiff(w http.ResponseWriter, r *http.Request)
 }
 
 func filterLedgerEventsAfter(events []LedgerEvent, after string) []LedgerEvent {
+	filtered, _ := filterLedgerEventsAfterCursor(events, after)
+	return filtered
+}
+
+func filterLedgerEventsAfterCursor(events []LedgerEvent, after string) ([]LedgerEvent, bool) {
 	after = strings.TrimSpace(after)
 	if after == "" {
-		return events
+		return events, true
 	}
 	for i, event := range events {
 		if event.EventID == after {
-			return events[i+1:]
+			return events[i+1:], true
 		}
 	}
-	return nil
+	return nil, false
+}
+
+func eventCursorFromRequest(r *http.Request) string {
+	query := r.URL.Query()
+	if since := strings.TrimSpace(query.Get("since")); since != "" {
+		return since
+	}
+	return strings.TrimSpace(query.Get("after_id"))
+}
+
+func applyReadOnlyEventsLimit(events []LedgerEvent, rawLimit string) ([]LedgerEvent, error) {
+	rawLimit = strings.TrimSpace(rawLimit)
+	if rawLimit == "" {
+		return events, nil
+	}
+	limit, err := strconv.Atoi(rawLimit)
+	if err != nil || limit < 0 {
+		return nil, errors.New("limit must be a non-negative integer")
+	}
+	if limit > maxReadOnlyEventsLimit {
+		limit = maxReadOnlyEventsLimit
+	}
+	if limit < len(events) {
+		return events[:limit], nil
+	}
+	return events, nil
 }
 
 func (s *ReadOnlyServer) handleOpenClawHealth(w http.ResponseWriter, r *http.Request) {
@@ -397,11 +442,7 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		Payload:        req.Payload,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, ErrFailpoint) {
-			status = http.StatusServiceUnavailable
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeJSON(w, queueSubmitErrorStatus(err), map[string]string{"error": err.Error()})
 		return
 	}
 	state, err = s.readState()
@@ -450,11 +491,7 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 		Payload:        req.Payload,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, ErrFailpoint) {
-			status = http.StatusServiceUnavailable
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeJSON(w, queueSubmitErrorStatus(err), map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -494,20 +531,61 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
-	decision, _ := MutationDecisionFromContext(r.Context())
 	var req CancelJobRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
-			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
-				"error":     "request body exceeds MaxJobSubmissionBytes",
-				"max_bytes": MaxJobSubmissionBytes,
-			})
-			return
-		}
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+	if !decodeCancelJobRequest(w, r, &req, false) {
 		return
 	}
+	s.cancelJob(w, r, req)
+}
+
+func (s *ReadOnlyServer) handleCancelJobByPath(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
+	pathJobID := strings.TrimSpace(r.PathValue("id"))
+	if pathJobID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+	var req CancelJobRequest
+	if !decodeCancelJobRequest(w, r, &req, true) {
+		return
+	}
+	if strings.TrimSpace(req.JobID) != "" && strings.TrimSpace(req.JobID) != pathJobID {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id does not match path"})
+		return
+	}
+	req.JobID = pathJobID
+	s.cancelJob(w, r, req)
+}
+
+func decodeCancelJobRequest(w http.ResponseWriter, r *http.Request, req *CancelJobRequest, allowEmpty bool) bool {
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err == nil {
+		return true
+	}
+	if allowEmpty && errors.Is(err, io.EOF) {
+		return true
+	}
+	var maxErr *http.MaxBytesError
+	if errors.As(err, &maxErr) {
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+			"error":     "request body exceeds MaxJobSubmissionBytes",
+			"max_bytes": MaxJobSubmissionBytes,
+		})
+		return false
+	}
+	writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+	return false
+}
+
+func (s *ReadOnlyServer) cancelJob(w http.ResponseWriter, r *http.Request, req CancelJobRequest) {
+	if strings.TrimSpace(req.JobID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_id is required"})
+		return
+	}
+	decision, _ := MutationDecisionFromContext(r.Context())
 	queue := NewQueue(s.store, s.queueOptions())
 	cancelled, err := queue.CancelJob(CancelJobInput{
 		RequestID: RequestID(req.RequestID),
@@ -516,11 +594,7 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 		Reason:    req.Reason,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, ErrFailpoint) {
-			status = http.StatusServiceUnavailable
-		}
-		writeJSON(w, status, map[string]string{"error": err.Error()})
+		writeJSON(w, queueCancelErrorStatus(err), map[string]string{"error": err.Error()})
 		return
 	}
 	projectionStatus := ProjectionStatusCurrent
@@ -543,6 +617,39 @@ func (s *ReadOnlyServer) handleCancelJob(w http.ResponseWriter, r *http.Request)
 		ProjectionLag:    lag,
 		DegradedReasons:  degradedReasons,
 	})
+}
+
+func queueSubmitErrorStatus(err error) int {
+	if errors.Is(err, ErrFailpoint) {
+		return http.StatusServiceUnavailable
+	}
+	if isQueueValidationError(err) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
+}
+
+func queueCancelErrorStatus(err error) int {
+	if errors.Is(err, ErrFailpoint) {
+		return http.StatusServiceUnavailable
+	}
+	if errors.Is(err, ErrJobNotFound) {
+		return http.StatusNotFound
+	}
+	if isQueueValidationError(err) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
+}
+
+func isQueueValidationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.HasPrefix(msg, "invalid job type ") ||
+		strings.HasPrefix(msg, "request_id ") ||
+		msg == "request_id is required"
 }
 
 // ListSchedulesResponse is the body of GET /v1/schedules.
@@ -595,6 +702,10 @@ func (s *ReadOnlyServer) handlePostSchedule(w http.ResponseWriter, r *http.Reque
 	}
 	if strings.TrimSpace(string(template.JobType)) == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is required"})
+		return
+	}
+	if err := ValidateRecurringJobTemplatePayload(template); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload: " + err.Error()})
 		return
 	}
 	if err := s.store.SaveSchedule(template); err != nil {
@@ -836,7 +947,7 @@ func (s *ReadOnlyServer) mutationPolicy() MutationPolicy {
 	if len(policy.AllowedPaths) == 0 {
 		policy.AllowedPaths = []string{
 			"/jobs", "/v1/jobs",
-			"/jobs/cancel", "/v1/jobs/cancel",
+			"/jobs/cancel", "/v1/jobs/cancel", "/v1/jobs/*/cancel",
 			openclaw.TriggerJobsPath,
 			"/v1/schedules",   // POST + GET (GET bypasses auth via registerReadOnlyRoute)
 			"/v1/schedules/*", // DELETE /v1/schedules/{name}

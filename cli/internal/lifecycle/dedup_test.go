@@ -290,43 +290,60 @@ func TestMergeDedupGroups_ActuallyArchives(t *testing.T) {
 
 func TestMergeDedupGroups_WritesManifest(t *testing.T) {
 	tmp := t.TempDir()
+	fixture := writeDedupManifestFixture(t, tmp)
+	if err := MergeDedupGroups(fixture.groups, tmp, false); err != nil {
+		t.Fatalf("err = %v", err)
+	}
+
+	manifest := loadSingleDedupManifest(t, tmp)
+	assertDedupManifestMetadata(t, manifest)
+	assertDedupManifestTotals(t, manifest)
+	assertDedupManifestGroups(t, manifest)
+	assertDedupManifestHashTruncation(t, manifest)
+	assertDedupManifestFileMoves(t, fixture)
+}
+
+type dedupManifestFixture struct {
+	groups   map[string][]string
+	kept     []string
+	archived []string
+}
+
+func writeDedupManifestFixture(t *testing.T, tmp string) dedupManifestFixture {
+	t.Helper()
 	a := filepath.Join(tmp, "a.md")
 	b := filepath.Join(tmp, "b.md")
 	c := filepath.Join(tmp, "c.md")
 	d := filepath.Join(tmp, "d.md")
-	// Group 1: a,b have identical body. a has higher utility.
-	_ = os.WriteFile(a, []byte("---\nutility: 0.9\n---\nbody one\n"), 0o600)
-	_ = os.WriteFile(b, []byte("---\nutility: 0.1\n---\nbody one\n"), 0o600)
-	// Group 2: c,d have identical body. d has higher utility.
-	_ = os.WriteFile(c, []byte("---\nutility: 0.2\n---\nbody two\n"), 0o600)
-	_ = os.WriteFile(d, []byte("---\nutility: 0.7\n---\nbody two\n"), 0o600)
-
-	groups := map[string][]string{
-		"hash_aaaaaaaaaaaa": {a, b},
-		"hash_bbbbbbbbbbbb": {c, d},
+	writes := map[string]string{
+		// Group 1: a,b have identical body. a has higher utility.
+		a: "---\nutility: 0.9\n---\nbody one\n",
+		b: "---\nutility: 0.1\n---\nbody one\n",
+		// Group 2: c,d have identical body. d has higher utility.
+		c: "---\nutility: 0.2\n---\nbody two\n",
+		d: "---\nutility: 0.7\n---\nbody two\n",
 	}
-
-	if err := MergeDedupGroups(groups, tmp, false); err != nil {
-		t.Fatalf("err = %v", err)
-	}
-
-	// Find the manifest in archive dir.
-	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
-	entries, err := os.ReadDir(archiveDir)
-	if err != nil {
-		t.Fatalf("read archive dir: %v", err)
-	}
-	var manifestFiles []string
-	for _, e := range entries {
-		if strings.HasSuffix(e.Name(), "-manifest.json") {
-			manifestFiles = append(manifestFiles, filepath.Join(archiveDir, e.Name()))
+	for path, body := range writes {
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+			t.Fatalf("write fixture %s: %v", path, err)
 		}
 	}
+	return dedupManifestFixture{
+		groups: map[string][]string{
+			"hash_aaaaaaaaaaaa": {a, b},
+			"hash_bbbbbbbbbbbb": {c, d},
+		},
+		kept:     []string{a, d},
+		archived: []string{b, c},
+	}
+}
+
+func loadSingleDedupManifest(t *testing.T, tmp string) DedupManifest {
+	t.Helper()
+	manifestFiles := findDedupManifestFiles(t, tmp)
 	if len(manifestFiles) != 1 {
 		t.Fatalf("expected exactly 1 manifest, got %d (%v)", len(manifestFiles), manifestFiles)
 	}
-
-	// Load the manifest and check shape.
 	raw, err := os.ReadFile(manifestFiles[0])
 	if err != nil {
 		t.Fatalf("read manifest: %v", err)
@@ -335,7 +352,27 @@ func TestMergeDedupGroups_WritesManifest(t *testing.T) {
 	if err := json.Unmarshal(raw, &manifest); err != nil {
 		t.Fatalf("unmarshal manifest: %v", err)
 	}
+	return manifest
+}
 
+func findDedupManifestFiles(t *testing.T, tmp string) []string {
+	t.Helper()
+	archiveDir := filepath.Join(tmp, ".agents", "archive", "dedup")
+	entries, err := os.ReadDir(archiveDir)
+	if err != nil {
+		t.Fatalf("read archive dir: %v", err)
+	}
+	var manifestFiles []string
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), "-manifest.json") {
+			manifestFiles = append(manifestFiles, filepath.Join(archiveDir, entry.Name()))
+		}
+	}
+	return manifestFiles
+}
+
+func assertDedupManifestMetadata(t *testing.T, manifest DedupManifest) {
+	t.Helper()
 	if manifest.Version != 1 {
 		t.Errorf("Version = %d, want 1", manifest.Version)
 	}
@@ -349,6 +386,10 @@ func TestMergeDedupGroups_WritesManifest(t *testing.T) {
 	if _, err := time.Parse(time.RFC3339, manifest.Timestamp); err != nil {
 		t.Errorf("Timestamp %q should parse as RFC3339: %v", manifest.Timestamp, err)
 	}
+}
+
+func assertDedupManifestTotals(t *testing.T, manifest DedupManifest) {
+	t.Helper()
 	if manifest.Totals.Groups != 2 {
 		t.Errorf("Totals.Groups = %d, want 2", manifest.Totals.Groups)
 	}
@@ -361,7 +402,10 @@ func TestMergeDedupGroups_WritesManifest(t *testing.T) {
 	if len(manifest.Groups) != 2 {
 		t.Fatalf("Groups len = %d, want 2", len(manifest.Groups))
 	}
-	// Each group should have exactly 1 archived entry and one kept.
+}
+
+func assertDedupManifestGroups(t *testing.T, manifest DedupManifest) {
+	t.Helper()
 	totalArchived := 0
 	for _, g := range manifest.Groups {
 		if g.Kept == "" {
@@ -383,26 +427,28 @@ func TestMergeDedupGroups_WritesManifest(t *testing.T) {
 	if totalArchived != 2 {
 		t.Errorf("total archived = %d, want 2", totalArchived)
 	}
+}
 
-	// Stable hash truncation to 12 chars.
+func assertDedupManifestHashTruncation(t *testing.T, manifest DedupManifest) {
+	t.Helper()
 	for _, g := range manifest.Groups {
 		if len(g.ContentHash) != 12 {
 			t.Errorf("ContentHash should be 12 chars, got %q (len %d)", g.ContentHash, len(g.ContentHash))
 		}
 	}
+}
 
-	// Verify the keeper files are still present and the archived files moved.
-	if _, err := os.Stat(a); err != nil {
-		t.Errorf("a (kept) should exist: %v", err)
+func assertDedupManifestFileMoves(t *testing.T, fixture dedupManifestFixture) {
+	t.Helper()
+	for _, path := range fixture.kept {
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("%s (kept) should exist: %v", filepath.Base(path), err)
+		}
 	}
-	if _, err := os.Stat(d); err != nil {
-		t.Errorf("d (kept) should exist: %v", err)
-	}
-	if _, err := os.Stat(b); err == nil {
-		t.Errorf("b should be archived from origin")
-	}
-	if _, err := os.Stat(c); err == nil {
-		t.Errorf("c should be archived from origin")
+	for _, path := range fixture.archived {
+		if _, err := os.Stat(path); err == nil {
+			t.Errorf("%s should be archived from origin", filepath.Base(path))
+		}
 	}
 }
 
@@ -463,10 +509,10 @@ func TestBuildDedupManifest_StableOrder(t *testing.T) {
 
 func TestCountArchiveCandidates(t *testing.T) {
 	groups := map[string][]string{
-		"h1":     {"a", "b", "c"}, // 2 archived
-		"h2":     {"d"},           // 0 archived (single)
-		"h3":     {"e", "f"},      // 1 archived
-		"empty":  nil,             // 0 archived
+		"h1":    {"a", "b", "c"}, // 2 archived
+		"h2":    {"d"},           // 0 archived (single)
+		"h3":    {"e", "f"},      // 1 archived
+		"empty": nil,             // 0 archived
 	}
 	got := CountArchiveCandidates(groups)
 	if got != 3 {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -125,25 +126,38 @@ func loadRecentSessions(baseDir string, status *statusOutput) {
 func loadFlywheelBrief(cwd string) *flywheelBrief {
 	timeout := statusFlywheelTimeout
 	compute := statusComputeFlywheelBrief
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	ch := make(chan *flywheelBrief, 1)
 	go func() {
-		ch <- compute(cwd)
+		brief := compute(ctx, cwd)
+		select {
+		case ch <- brief:
+		case <-ctx.Done():
+		}
 	}()
 
 	select {
 	case brief := <-ch:
 		return brief
-	case <-time.After(timeout):
+	case <-ctx.Done():
 		return nil
 	}
 }
 
-func computeStatusFlywheelBrief(cwd string) *flywheelBrief {
+func computeStatusFlywheelBrief(ctx context.Context, cwd string) *flywheelBrief {
+	if ctx.Err() != nil {
+		return nil
+	}
 	metrics, err := computeMetrics(cwd, 7)
-	if err != nil {
+	if err != nil || ctx.Err() != nil {
 		return nil
 	}
 	populateGoldenSignals(cwd, 7, metrics)
+	if ctx.Err() != nil {
+		return nil
+	}
 	brief := &flywheelBrief{
 		Status:         metrics.HealthStatus(),
 		TotalArtifacts: metrics.TotalArtifacts,

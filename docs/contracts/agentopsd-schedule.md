@@ -140,6 +140,30 @@ The parser (`cli/internal/schedule/parser.go`, `Load(path)`) enforces:
    load.
 8. **Payload re-encoding** — YAML payload is decoded to `any` and re-marshalled
    as JSON so the daemon receives canonical bytes.
+9. **Payload contract validation** — the parser materializes the same defaults
+   the recurrence supervisor applies at fire time, then validates the resulting
+   job payload for job types with typed daemon specs. Bad schedule payloads fail
+   at load time instead of first cron fire.
+
+### Payload Defaults And Requirements
+
+Before submission, the recurrence supervisor injects `schedule_name`,
+`submission_id`, `tick_at`, and `timeout` (when configured). It also fills
+job-type defaults so schedule YAML can stay operator-sized while the queue sees
+a typed daemon payload.
+
+| `job_type` | Defaults injected | Required in `payload` |
+|---|---|---|
+| `rpi.run` | `schema_version`, `job_type`, `run_id`, `goal`, `start_phase`, `max_phase`, `test_first`, `backend` | none; override defaults when the run needs a specific goal, run id, backend, or phase range |
+| `rpi.phase` | `schema_version`, `job_type`, `run_id`, `goal`, `phase`, `phase_name`, `backend` | none; set `phase` and `goal` explicitly for production phase schedules |
+| `dream.run` | `schema_version`, `job_type`, `dream_run_id`, `mode` | `output_dir` |
+| `dream.stage` | `schema_version`, `job_type`, `dream_run_id`, `stage`, `mode` | `output_dir` |
+| `wiki.forge` | `schema_version`, `job_type`, `output_dir`, `worker_kind`, `provider`, `max_attempts` | `source_paths` |
+| `plans.projection` | `schema_version`, `job_type`, `refresh_trigger` | `project_id`, `output_dir` |
+| `llmwiki.loop`, `wiki.build`, `openclaw.snapshot` | schedule metadata only | none at the schedule layer |
+
+Typed validation rejects malformed values, for example `rpi.run` with
+`start_phase: "two"` or `wiki.forge` without any `source_paths`.
 
 ### Environment overrides
 
@@ -257,7 +281,9 @@ operator docs use `X-Agentops-Mutation-Token` or similar — those are wrong.
 
 1. `--token <value>` flag (highest priority)
 2. `--token-file <path>` flag
-3. environment defaults inherited from `agentopsd` activation
+3. `AGENTOPSD_TOKEN`
+4. `AGENTOPS_DAEMON_TOKEN` legacy environment fallback
+5. token metadata from `.agents/daemon/activation.json`
 
 The token file must have mode ≤ `0600` (owner-only); permissive modes fail
 with `ErrUnsafeTokenFileMode`.
@@ -463,9 +489,22 @@ the next tick via the deterministic `submission_id` idempotency key.
 16 hex chars. Deterministic per (name, tick) so retries collapse on the queue's
 idempotency layer.
 
+For operator visibility, each new `schedule.fired` ledger event also emits a
+single stderr log line:
+
+```text
+[recurrence] fired <name> submission_id=<id> tick_at=<RFC3339Nano>
+```
+
 ### `schedule.skipped`
 
 Emitted when backpressure causes the supervisor to skip a tick.
+
+Each skip also emits:
+
+```text
+[recurrence] skipped <name> reason=<reason> tick_at=<RFC3339Nano>
+```
 
 ```json
 {

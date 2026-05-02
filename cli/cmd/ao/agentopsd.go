@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
@@ -49,6 +50,8 @@ type agentopsDaemonActivation struct {
 	PID       int    `json:"pid"`
 	Ready     bool   `json:"ready"`
 	StartedAt string `json:"started_at"`
+	Token     string `json:"token,omitempty"`
+	TokenFile string `json:"token_file,omitempty"`
 }
 
 type agentopsDaemonRunOptions struct {
@@ -301,8 +304,27 @@ func startAgentOpsDaemonRecurrence(ctx context.Context, cwd string, opts agentop
 		sup.WithPollInterval(opts.RecurrencePollInterval)
 	}
 	go func() {
-		if err := sup.Start(ctx); err != nil {
-			log.Printf("[recurrence] supervisor exited: %v", err)
+		for ctx.Err() == nil {
+			recovered := false
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						recovered = true
+						log.Printf("[recurrence] supervisor panic recovered: %v", r)
+					}
+				}()
+				if err := sup.Start(ctx); err != nil {
+					log.Printf("[recurrence] supervisor exited: %v", err)
+				}
+			}()
+			if !recovered || ctx.Err() != nil {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-clock.After(sup.PollInterval()):
+			}
 		}
 	}()
 	return sup
@@ -682,6 +704,8 @@ func startAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 		PID:       os.Getpid(),
 		Ready:     true,
 		StartedAt: now().UTC().Format(time.RFC3339Nano),
+		Token:     opts.Token,
+		TokenFile: opts.TokenFile,
 	}
 	if err := writeDaemonActivation(cwd, activation); err != nil {
 		_ = listener.Close()
@@ -702,6 +726,7 @@ func agentOpsDaemonMutationPaths() []string {
 		"/v1/jobs",
 		"/jobs/cancel",
 		"/v1/jobs/cancel",
+		"/v1/jobs/*/cancel",
 		"/openclaw/v1/triggers/jobs",
 		"/v1/schedules",
 		"/v1/schedules/*",
@@ -730,6 +755,41 @@ func resolveDaemonMutationToken(token, tokenFile string) (string, error) {
 		return daemonpkg.LoadMutationTokenFile(tokenFile)
 	}
 	return token, nil
+}
+
+func resolveAgentOpsDaemonClientMutationToken(cwd, token, tokenFile string) (string, error) {
+	if strings.TrimSpace(token) != "" {
+		return token, nil
+	}
+	if strings.TrimSpace(tokenFile) != "" {
+		return daemonpkg.LoadMutationTokenFile(tokenFile)
+	}
+	if envToken := strings.TrimSpace(os.Getenv("AGENTOPSD_TOKEN")); envToken != "" {
+		return envToken, nil
+	}
+	if envToken := strings.TrimSpace(os.Getenv("AGENTOPS_DAEMON_TOKEN")); envToken != "" {
+		return envToken, nil
+	}
+	if strings.TrimSpace(cwd) == "" {
+		return "", nil
+	}
+	if _, err := os.Stat(daemonActivationPath(cwd)); err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	activation, err := readDaemonActivation(cwd)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(activation.Token) != "" {
+		return activation.Token, nil
+	}
+	if strings.TrimSpace(activation.TokenFile) != "" {
+		return daemonpkg.LoadMutationTokenFile(activation.TokenFile)
+	}
+	return "", nil
 }
 
 // loadAgentOpsDaemonScheduleFile resolves the schedule file path (flag wins over

@@ -175,11 +175,44 @@ func TestRunPostLoopTier1Forge_QueuesWhenWorkerConfigured(t *testing.T) {
 }
 
 func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
+	fixture := setupTier1DaemonWikiForgeFixture(t)
+	configureTier1DaemonWikiForgeEnv(t, fixture.tmp)
+
+	summary := runTier1DaemonWikiForge(t, fixture.repo)
+	tier1 := assertTier1DaemonWikiForgeSummary(t, summary)
+	assertTier1DaemonWikiForgeAgentWorker(t, tier1)
+	if fixture.activation.URL == "" {
+		t.Fatal("activation URL should be set")
+	}
+	assertTier1DaemonWikiForgeLedger(t, fixture.repo, fixture.sourcePath)
+}
+
+type tier1DaemonWikiForgeFixture struct {
+	tmp        string
+	repo       string
+	sourcePath string
+	activation agentopsDaemonActivation
+}
+
+func setupTier1DaemonWikiForgeFixture(t *testing.T) tier1DaemonWikiForgeFixture {
+	t.Helper()
 	tmp := t.TempDir()
 	repo := filepath.Join(tmp, "repo")
 	if err := os.MkdirAll(repo, 0o755); err != nil {
 		t.Fatalf("mkdir repo: %v", err)
 	}
+	sourcePath := writeTier1RecentSession(t, tmp)
+	activation := startTier1DaemonWikiForgeDaemon(t, repo)
+	return tier1DaemonWikiForgeFixture{
+		tmp:        tmp,
+		repo:       repo,
+		sourcePath: sourcePath,
+		activation: activation,
+	}
+}
+
+func writeTier1RecentSession(t *testing.T, tmp string) string {
+	t.Helper()
 	projDir := filepath.Join(tmp, ".claude", "projects", "test-project")
 	if err := os.MkdirAll(projDir, 0o755); err != nil {
 		t.Fatalf("mkdir projects: %v", err)
@@ -192,7 +225,11 @@ func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
 	if err := os.WriteFile(sourcePath, data, 0o644); err != nil {
 		t.Fatalf("write session: %v", err)
 	}
+	return sourcePath
+}
 
+func startTier1DaemonWikiForgeDaemon(t *testing.T, repo string) agentopsDaemonActivation {
+	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	server, listener, activation, err := startAgentOpsDaemon(ctx, repo, agentopsDaemonRunOptions{
 		Addr:  "127.0.0.1:0",
@@ -210,19 +247,31 @@ func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
 			t.Fatalf("daemon serve returned unexpected error: %v", err)
 		}
 	})
+	return activation
+}
 
+func configureTier1DaemonWikiForgeEnv(t *testing.T, tmp string) {
+	t.Helper()
 	t.Setenv("HOME", tmp)
 	t.Setenv("AGENTOPS_DAEMON_TOKEN", "secret-token")
 	t.Setenv("AGENTOPS_FORGE_TIER1_DISABLE", "")
 	t.Setenv("AGENTOPS_CONFIG", filepath.Join(tmp, "missing-config.yaml"))
 	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
 	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "")
+}
 
+func runTier1DaemonWikiForge(t *testing.T, repo string) *overnightSummary {
+	t.Helper()
 	summary := &overnightSummary{RunID: "dream-wiki-daemon", OutputDir: filepath.Join(repo, ".agents", "overnight", "dream-wiki-daemon")}
 	runPostLoopTier1Forge(context.Background(), repo, summary, overnightSettings{})
 	if len(summary.Degraded) != 0 {
 		t.Fatalf("expected no degradation, got %v", summary.Degraded)
 	}
+	return summary
+}
+
+func assertTier1DaemonWikiForgeSummary(t *testing.T, summary *overnightSummary) map[string]any {
+	t.Helper()
 	tier1, ok := summary.CloseLoop["tier1_forge"].(map[string]any)
 	if !ok {
 		t.Fatalf("tier1_forge summary = %#v", summary.CloseLoop["tier1_forge"])
@@ -233,6 +282,11 @@ func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
 	if tier1["daemon_job_id"] != "job-wiki-dream-wiki-daemon" {
 		t.Fatalf("daemon job id = %#v", tier1["daemon_job_id"])
 	}
+	return tier1
+}
+
+func assertTier1DaemonWikiForgeAgentWorker(t *testing.T, tier1 map[string]any) {
+	t.Helper()
 	agentWorker, ok := tier1["agent_worker"].(map[string]any)
 	if !ok || agentWorker["provider"] != "gascity" || agentWorker["worker_kind"] != "codex" {
 		t.Fatalf("agent_worker = %#v", tier1["agent_worker"])
@@ -240,10 +294,10 @@ func TestRunPostLoopTier1Forge_QueuesDaemonWikiForgeWhenReady(t *testing.T) {
 	if refs, ok := tier1["worker_session_refs"].([]string); !ok || len(refs) != 0 {
 		t.Fatalf("worker_session_refs = %#v", tier1["worker_session_refs"])
 	}
-	if activation.URL == "" {
-		t.Fatal("activation URL should be set")
-	}
+}
 
+func assertTier1DaemonWikiForgeLedger(t *testing.T, repo, sourcePath string) {
+	t.Helper()
 	events, err := daemonpkg.NewStore(repo).ReadLedger()
 	if err != nil {
 		t.Fatalf("read daemon ledger: %v", err)

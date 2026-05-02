@@ -1,0 +1,6 @@
+schedules:
+  - name: invalid-rpi
+    cron: "*/5 * * * *"
+    job_type: rpi.run
+    payload:
+      start_phase: "not-a-number"

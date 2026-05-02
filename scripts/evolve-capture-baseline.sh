@@ -19,6 +19,7 @@ Options:
   --active-path <path>        Optional active baseline pointer path
   --index-path <path>         Optional baseline index path
   --timeout <seconds>         ao goals measure timeout (default: 60)
+  --total-timeout <seconds>   Whole measurement timeout (default: 75; 0 disables)
   --force                     Allow another snapshot in an existing label directory
   -h, --help                  Show help
 EOF
@@ -71,6 +72,7 @@ LEGACY_PATH=""
 ACTIVE_PATH=""
 INDEX_PATH=""
 TIMEOUT="60"
+TOTAL_TIMEOUT="75"
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
@@ -103,6 +105,10 @@ while [[ $# -gt 0 ]]; do
       TIMEOUT="${2:-}"
       shift 2
       ;;
+    --total-timeout)
+      TOTAL_TIMEOUT="${2:-}"
+      shift 2
+      ;;
     --force)
       FORCE=true
       shift
@@ -123,6 +129,7 @@ require_cmd jq
 [[ -n "$LABEL" ]] || die "--label is required"
 [[ "$LABEL" =~ ^[A-Za-z0-9._-]+$ ]] || die "--label must contain only letters, numbers, ., _, or -"
 [[ "$TIMEOUT" =~ ^[0-9]+$ ]] || die "--timeout must be numeric"
+[[ "$TOTAL_TIMEOUT" =~ ^[0-9]+$ ]] || die "--total-timeout must be numeric"
 if [[ -n "$INDEX_PATH" ]]; then
   require_cmd git
 fi
@@ -167,7 +174,7 @@ trap 'rm -f "$TMP_FILE"' EXIT
 
 (
   cd "$REPO_ROOT"
-  ao goals measure --json --timeout "$TIMEOUT" > "$TMP_FILE"
+  ao goals measure --json --timeout "$TIMEOUT" --total-timeout "$TOTAL_TIMEOUT" > "$TMP_FILE"
 )
 
 jq -e '.goals | type == "array"' "$TMP_FILE" >/dev/null 2>&1 || die "baseline snapshot is not valid goals JSON"

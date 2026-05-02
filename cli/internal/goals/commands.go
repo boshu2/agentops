@@ -73,16 +73,17 @@ func RunHistory(opts HistoryOptions) error {
 
 // MeasureOptions configures the goals measure command.
 type MeasureOptions struct {
-	GoalID     string
-	ExcludeTag string // Filter out goals whose Tags include this value (e.g. "long-cycle").
-	Directives bool
-	GoalsFile  string
-	Timeout    time.Duration
-	JSON       bool
-	Verbose    bool
-	SnapDir    string
-	Stdout     io.Writer
-	Stderr     io.Writer
+	GoalID       string
+	ExcludeTag   string // Filter out goals whose Tags include this value (e.g. "long-cycle").
+	Directives   bool
+	GoalsFile    string
+	Timeout      time.Duration
+	TotalTimeout time.Duration
+	JSON         bool
+	Verbose      bool
+	SnapDir      string
+	Stdout       io.Writer
+	Stderr       io.Writer
 }
 
 // goalHasTag reports whether g.Tags contains the given tag (case-insensitive).
@@ -164,7 +165,7 @@ func RunMeasure(opts MeasureOptions) error {
 		return err
 	}
 
-	snap := Measure(gf, opts.Timeout)
+	snap := MeasureWithTotalTimeout(gf, opts.Timeout, opts.TotalTimeout)
 
 	path, err := SaveSnapshot(snap, opts.SnapDir)
 	if err != nil {

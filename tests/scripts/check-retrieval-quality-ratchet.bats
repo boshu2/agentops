@@ -10,7 +10,7 @@ setup() {
     mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/cli/cmd/ao/testdata/retrieval-bench" "$MOCK_BIN"
     /bin/cp "$SCRIPT" "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
     chmod +x "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
-    printf '[{\"query\":\"dream\"}]\n' > "$FAKE_REPO/cli/cmd/ao/testdata/retrieval-bench/eval-queries.json"
+    printf '{"id":"fallback","queries":[{"id":"q1","query":"dream","ground_truth":[".agents/learnings/dream.md"]}]}\n' > "$FAKE_REPO/cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"
 
     REPORT_FILE="$TMP_DIR/report.json"
     export REPORT_FILE

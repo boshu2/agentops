@@ -237,4 +237,3 @@ func registerEvalCleanupCmd() {
 	evalCleanupCmd.Flags().Int64Var(&evalCleanupAge, "tmp-age", 60, "Minimum tmp-file age in seconds before sweep (0 = sweep all)")
 	evalCleanupCmd.Flags().BoolVar(&evalCleanupDryRun, "dry-run", false, "Preview without mutations")
 }
-

@@ -64,6 +64,11 @@ func chdir(t *testing.T, dir string) {
 func TestResolve_EnvPrecedence(t *testing.T) {
 	// Cannot run table cases in parallel: env mutation is process-global.
 	tmp := t.TempDir()
+	// macOS resolves /var → /private/var via os.Getwd; align expected paths
+	// with what Resolve() will observe after chdir.
+	if resolved, err := filepath.EvalSymlinks(tmp); err == nil {
+		tmp = resolved
+	}
 	pluginRoot := filepath.Join(tmp, "plugin-root")
 	homeOverride := filepath.Join(tmp, "explicit-home")
 	cwdRoot := filepath.Join(tmp, "cwd-root")

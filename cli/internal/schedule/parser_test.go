@@ -108,6 +108,16 @@ func TestParser_RejectsUnknownJobType(t *testing.T) {
 	}
 }
 
+func TestParser_RejectsInvalidTypedPayload(t *testing.T) {
+	_, err := Load(fixture(t, "invalid-rpi-payload.yaml"))
+	if err == nil {
+		t.Fatalf("expected error for invalid rpi.run payload, got nil")
+	}
+	if !strings.Contains(err.Error(), "payload") || !strings.Contains(err.Error(), "start_phase") {
+		t.Fatalf("expected payload/start_phase error, got: %v", err)
+	}
+}
+
 func TestParser_RejectsUnknownTopLevelField(t *testing.T) {
 	_, err := Load(fixture(t, "unknown-top-field.yaml"))
 	if err == nil {

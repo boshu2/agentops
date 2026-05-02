@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,5 +101,41 @@ func TestRPIPhasedDaemonDisabledDoesNothing(t *testing.T) {
 	}
 	if handled {
 		t.Fatal("disabled daemon submit should not handle the run")
+	}
+}
+
+func TestEnsureDaemonSubmitRetryIdempotencyKeyGeneratesStableKey(t *testing.T) {
+	first := daemonpkg.SubmitJobRequest{
+		RequestID: "req-retry",
+		JobID:     "job-retry",
+		JobType:   daemonpkg.JobTypeRPIRun,
+		Payload:   map[string]any{"goal": "ship daemon"},
+	}
+	second := first
+	if err := ensureDaemonSubmitRetryIdempotencyKey(&first); err != nil {
+		t.Fatalf("first idempotency key: %v", err)
+	}
+	if err := ensureDaemonSubmitRetryIdempotencyKey(&second); err != nil {
+		t.Fatalf("second idempotency key: %v", err)
+	}
+	if first.IdempotencyKey == "" {
+		t.Fatal("expected generated idempotency key")
+	}
+	if !strings.HasPrefix(first.IdempotencyKey, "cli-submit:rpi.run:") {
+		t.Fatalf("idempotency key = %q, want cli-submit:rpi.run prefix", first.IdempotencyKey)
+	}
+	if second.IdempotencyKey != first.IdempotencyKey {
+		t.Fatalf("generated keys differ: %q vs %q", first.IdempotencyKey, second.IdempotencyKey)
+	}
+
+	explicit := daemonpkg.SubmitJobRequest{
+		JobType:        daemonpkg.JobTypeRPIRun,
+		IdempotencyKey: "rpi.run:explicit",
+	}
+	if err := ensureDaemonSubmitRetryIdempotencyKey(&explicit); err != nil {
+		t.Fatalf("explicit idempotency key: %v", err)
+	}
+	if explicit.IdempotencyKey != "rpi.run:explicit" {
+		t.Fatalf("explicit idempotency key was overwritten: %q", explicit.IdempotencyKey)
 	}
 }

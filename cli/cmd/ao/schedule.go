@@ -106,7 +106,7 @@ func resolveScheduleClient(includeToken bool) (scheduleClient, error) {
 	}
 	c := scheduleClient{baseURL: baseURL}
 	if includeToken {
-		token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+		token, err := resolveAgentOpsDaemonClientMutationToken(cwd, daemonToken, daemonTokenFile)
 		if err != nil {
 			return scheduleClient{}, err
 		}

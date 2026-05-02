@@ -55,6 +55,42 @@ func TestReadOnlyHealthReadyStatusEvents(t *testing.T) {
 	if len(eventsAfter.Events) != 1 || eventsAfter.Events[0].EventID != events.Events[1].EventID {
 		t.Fatalf("events after = %#v, want only %s", eventsAfter, events.Events[1].EventID)
 	}
+	var eventsAfterID ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events?after_id="+events.Events[0].EventID, &eventsAfterID)
+	if len(eventsAfterID.Events) != 1 || eventsAfterID.Events[0].EventID != events.Events[1].EventID {
+		t.Fatalf("events after_id = %#v, want only %s", eventsAfterID, events.Events[1].EventID)
+	}
+	var limitedEvents ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events?limit=1", &limitedEvents)
+	if len(limitedEvents.Events) != 1 {
+		t.Fatalf("events limit=1 returned %d events, want 1", len(limitedEvents.Events))
+	}
+}
+
+func TestReadOnlyEventsRejectsInvalidCursorAndLimit(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-rpi", JobType: JobTypeRPIRun}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+
+	for _, target := range []string{
+		"/v1/events?since=missing-event",
+		"/v1/events?after_id=missing-event",
+		"/v1/events?limit=abc",
+		"/v1/events?limit=-1",
+	} {
+		t.Run(target, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, target, nil)
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+			if resp.Code != http.StatusBadRequest {
+				t.Fatalf("GET %s status = %d body=%s, want 400", target, resp.Code, resp.Body.String())
+			}
+		})
+	}
 }
 
 func TestReadOnlyServerLoadsProjectionSnapshotOnReadState(t *testing.T) {
@@ -190,6 +226,21 @@ func TestEventsReadOnlyRejectsPost(t *testing.T) {
 }
 
 func TestOpenClawReadOnlyEndpoints(t *testing.T) {
+	fixture := setupOpenClawReadOnlyFixture(t)
+
+	var snapshot openclaw.ConsumerSnapshot
+	getJSON(t, fixture.router, "/openclaw/v1/snapshot/latest", &snapshot)
+	assertOpenClawSnapshot(t, snapshot, fixture.refsArtifact)
+	assertOpenClawCollectionEndpoints(t, fixture.router)
+}
+
+type openClawReadOnlyFixture struct {
+	router       http.Handler
+	refsArtifact ArtifactRef
+}
+
+func setupOpenClawReadOnlyFixture(t *testing.T) openClawReadOnlyFixture {
+	t.Helper()
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
@@ -222,10 +273,14 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("complete wiki job: %v", err)
 	}
-	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+	return openClawReadOnlyFixture{
+		router:       NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }}),
+		refsArtifact: refsArtifact,
+	}
+}
 
-	var snapshot openclaw.ConsumerSnapshot
-	getJSON(t, router, "/openclaw/v1/snapshot/latest", &snapshot)
+func assertOpenClawSnapshot(t *testing.T, snapshot openclaw.ConsumerSnapshot, refsArtifact ArtifactRef) {
+	t.Helper()
 	if snapshot.SchemaVersion != openclaw.ConsumerSnapshotSchemaVersion {
 		t.Fatalf("snapshot schema = %d", snapshot.SchemaVersion)
 	}
@@ -253,7 +308,10 @@ func TestOpenClawReadOnlyEndpoints(t *testing.T) {
 	if !hasOpenClawProvenance(snapshot.Resources.Wiki[0].Provenance, "artifact", "artifact", "worker_session_refs") {
 		t.Fatalf("wiki missing artifact provenance: %#v", snapshot.Resources.Wiki[0].Provenance)
 	}
+}
 
+func assertOpenClawCollectionEndpoints(t *testing.T, router http.Handler) {
+	t.Helper()
 	var runs openclaw.RunsResponse
 	getJSON(t, router, "/openclaw/v1/runs", &runs)
 	if len(runs.Runs) != 2 || runs.Runs[0].ResourceKind != openclaw.ResourceKindRun {
@@ -460,7 +518,6 @@ func TestDaemonJobsCancelStaticRouteUsesMutationPolicy(t *testing.T) {
 		{name: "bad method", method: http.MethodGet, path: "/v1/jobs/cancel", token: "secret-token", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusMethodNotAllowed},
 		{name: "cross origin", method: http.MethodPost, path: "/v1/jobs/cancel", token: "secret-token", origin: "https://example.com", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusForbidden},
 		{name: "non local remote", method: http.MethodPost, path: "/v1/jobs/cancel", token: "secret-token", remoteAddr: "192.0.2.1:51111", wantStatus: http.StatusForbidden},
-		{name: "bad path", method: http.MethodPost, path: "/v1/jobs/job-cancel/cancel", token: "secret-token", remoteAddr: "127.0.0.1:51111", wantStatus: http.StatusNotFound},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(`{"job_id":"job-cancel","reason":"operator"}`))
@@ -698,6 +755,20 @@ func TestRoute_PostSchedules_MissingFieldsReturns400(t *testing.T) {
 				t.Fatalf("status = %d body=%s, want 400", resp.Code, resp.Body.String())
 			}
 		})
+	}
+}
+
+func TestRoute_PostSchedules_InvalidPayloadReturns400(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	resp := postSchedule(t, router, `{"name":"bad-forge","cron":"0 3 * * *","job_type":"wiki.forge","payload":{"source_paths":[]}}`, "secret-token")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("invalid payload status = %d body=%s, want 400", resp.Code, resp.Body.String())
+	}
+	if !strings.Contains(resp.Body.String(), "source_paths") {
+		t.Fatalf("invalid payload body = %s, want source_paths detail", resp.Body.String())
 	}
 }
 

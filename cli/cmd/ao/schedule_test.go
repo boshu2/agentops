@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -204,6 +205,37 @@ func TestSchedule_AuthRequiredOnAdd(t *testing.T) {
 	}
 }
 
+func TestScheduleMutationsUseAgentOpsDTokenEnv(t *testing.T) {
+	cwd, server := newScheduleCommandFixture(t)
+	yamlPath := writeScheduleYAML(t, cwd, "env-token-test")
+	t.Setenv("AGENTOPSD_TOKEN", scheduleTestToken)
+
+	prevFile := scheduleFile
+	scheduleFile = yamlPath
+	t.Cleanup(func() { scheduleFile = prevFile })
+
+	out, err := runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleAddCommand(cmd, nil)
+	})
+	if err != nil {
+		t.Fatalf("add with env token failed: %v\noutput=%s", err, out)
+	}
+
+	out, err = runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleRunCommand(cmd, []string{"env-token-test"})
+	})
+	if err != nil {
+		t.Fatalf("run with env token failed: %v\noutput=%s", err, out)
+	}
+
+	out, err = runScheduleCommandForTest(t, cwd, server.URL, "", false, func(cmd *cobra.Command) error {
+		return runScheduleRemoveCommand(cmd, []string{"env-token-test"})
+	})
+	if err != nil {
+		t.Fatalf("remove with env token failed: %v\noutput=%s", err, out)
+	}
+}
+
 // boundaryClock is a minimal daemonpkg.Clock fake used by the recurrence
 // wiring test below. It pins Now() to a fixed cron-boundary time so the
 // supervisor's first tick fires immediately, and returns a never-firing
@@ -214,6 +246,26 @@ type boundaryClock struct{ at time.Time }
 
 func (c boundaryClock) Now() time.Time                         { return c.at }
 func (c boundaryClock) After(d time.Duration) <-chan time.Time { return make(chan time.Time) }
+
+type panicOnceClock struct {
+	mu       sync.Mutex
+	at       time.Time
+	panicked bool
+}
+
+func (c *panicOnceClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.panicked {
+		c.panicked = true
+		panic("clock boom")
+	}
+	return c.at
+}
+
+func (c *panicOnceClock) After(d time.Duration) <-chan time.Time {
+	return time.After(time.Millisecond)
+}
 
 // TestServeAgentOpsDaemon_WiresRecurrenceSupervisor pins the production
 // wiring of the cron supervisor into ao daemon run. Regression for soc-63n0
@@ -289,6 +341,50 @@ func TestServeAgentOpsDaemon_WiresRecurrenceSupervisor(t *testing.T) {
 		seen = append(seen, string(e.EventType))
 	}
 	t.Fatalf("schedule.fired for 'fast-fire' never appeared via serveAgentOpsDaemon (soc-63n0: cron supervisor not wired into daemon-run path). Events seen: %v", seen)
+}
+
+func TestStartAgentOpsDaemonRecurrence_RecoversAndContinuesAfterPanic(t *testing.T) {
+	cwd := t.TempDir()
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	store := daemonpkg.NewStore(cwd)
+	if err := store.SaveSchedule(daemonpkg.RecurringJobTemplate{
+		Name:    "recover-fire",
+		Cron:    "* * * * *",
+		JobType: daemonpkg.JobTypeLLMWikiLoop,
+	}); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	startAgentOpsDaemonRecurrence(ctx, cwd, agentopsDaemonRunOptions{
+		RecurrenceClock:        &panicOnceClock{at: now},
+		RecurrencePollInterval: time.Millisecond,
+	})
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if ledgerHasScheduleFired(t, store, "recover-fire") {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	replay, _ := store.ReplayLedgerReadOnly()
+	t.Fatalf("recurrence goroutine did not continue after panic; events=%v", replay.Events)
+}
+
+func ledgerHasScheduleFired(t *testing.T, store *daemonpkg.Store, name string) bool {
+	t.Helper()
+	replay, err := store.ReplayLedgerReadOnly()
+	if err != nil {
+		return false
+	}
+	for _, event := range replay.Events {
+		if event.EventType == daemonpkg.EventScheduleFired && event.Payload["name"] == name {
+			return true
+		}
+	}
+	return false
 }
 
 func TestSchedule_ListJSONOutput(t *testing.T) {

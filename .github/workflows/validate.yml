@@ -553,6 +553,9 @@ jobs:
             echo "⚠️ WARN: Retrieval precision below 0.1 — flywheel may be degraded"
           fi
 
+      - name: Run retrieval comparison smoke
+        run: AGENTOPS_RETRIEVAL_SMOKE_AO=/tmp/ao-test bash scripts/retrieval-quality-smoke.sh
+
   go-build:
     runs-on: ubuntu-latest
     timeout-minutes: 15

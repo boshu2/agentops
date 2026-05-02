@@ -116,6 +116,28 @@ func TestDaemonJobsCancelWritesTerminalEvent(t *testing.T) {
 	}
 }
 
+func TestDaemonJobsCancelUsesAgentOpsDTokenEnv(t *testing.T) {
+	cwd, server, queue := newDaemonJobsCommandFixture(t)
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{RequestID: "req-rpi", JobID: "job-rpi", JobType: daemonpkg.JobTypeRPIRun}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	t.Setenv("AGENTOPSD_TOKEN", "secret-token")
+	daemonJobCancelReason = "operator stop"
+	out := runDaemonJobsCommandForTest(t, cwd, server.URL, "", "table", func(cmd *cobra.Command) error {
+		return runAgentOpsDaemonJobsCancelCommand(cmd, []string{"job-rpi"})
+	})
+	if !strings.Contains(out, "cancelled") {
+		t.Fatalf("cancel output = %q, want cancelled", out)
+	}
+	snapshot, err := queue.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	if snapshot.Jobs[0].Status != daemonpkg.JobStatusCancelled {
+		t.Fatalf("cancel status = %q, want cancelled", snapshot.Jobs[0].Status)
+	}
+}
+
 func TestDaemonJobsJSONTextParity(t *testing.T) {
 	for _, format := range []string{"table", "json"} {
 		t.Run(format, func(t *testing.T) {

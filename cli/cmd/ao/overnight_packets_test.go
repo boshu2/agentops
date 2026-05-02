@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -369,6 +370,121 @@ func TestExecuteDreamMorningPackets_SuppressesPacketWhenTargetFileExists(t *test
 	}
 }
 
+func TestExecuteDreamMorningPackets_PersistsProbeResultsAndDegradesOnStaleRate(t *testing.T) {
+	tmpDir := t.TempDir()
+	nextWorkPath := filepath.Join(tmpDir, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for _, rel := range []string{
+		"cli/cmd/ao/already-one.go",
+		"cli/cmd/ao/already-two.go",
+		"cli/cmd/ao/already-three.go",
+	} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, rel)), 0o755); err != nil {
+			t.Fatalf("mkdir target %s: %v", rel, err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpDir, rel), []byte("// shipped\n"), 0o644); err != nil {
+			t.Fatalf("write target %s: %v", rel, err)
+		}
+	}
+
+	queue := strings.Join([]string{
+		`{"id":"stale-1","title":"Ship stale one","type":"task","severity":"high","source":"council-finding","description":"Already exists.","target_files":["cli/cmd/ao/already-one.go"],"consumed":false,"claim_status":"available"}`,
+		`{"id":"stale-2","title":"Ship stale two","type":"task","severity":"high","source":"council-finding","description":"Already exists.","target_files":["cli/cmd/ao/already-two.go"],"consumed":false,"claim_status":"available"}`,
+		`{"id":"stale-3","title":"Ship stale three","type":"task","severity":"high","source":"council-finding","description":"Already exists.","target_files":["cli/cmd/ao/already-three.go"],"consumed":false,"claim_status":"available"}`,
+	}, ",")
+	if err := os.WriteFile(nextWorkPath, []byte(`{"source_epic":"dream-stale","timestamp":"2026-04-26T12:00:00Z","items":[`+queue+`],"consumed":false,"claim_status":"available"}`+"\n"), 0o644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+
+	binDir := t.TempDir()
+	writeExecutable(t, binDir, "bd", "#!/bin/sh\nexit 0\n")
+	t.Setenv("PATH", binDir)
+
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	executeDreamMorningPackets(tmpDir, &summary)
+
+	if len(summary.CuratorSuppressed) != 3 {
+		t.Fatalf("expected 3 suppressions, got %d: %+v", len(summary.CuratorSuppressed), summary.CuratorSuppressed)
+	}
+	if !strings.Contains(strings.Join(summary.Degraded, "\n"), "dream-curator-degraded") {
+		t.Fatalf("summary degraded = %v, want dream-curator-degraded finding", summary.Degraded)
+	}
+
+	probePath := filepath.Join(tmpDir, ".agents", "dream", "probe-results.jsonl")
+	data, err := os.ReadFile(probePath)
+	if err != nil {
+		t.Fatalf("read probe results: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("probe results lines = %d, want 3\n%s", len(lines), data)
+	}
+	var record map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &record); err != nil {
+		t.Fatalf("unmarshal probe result: %v", err)
+	}
+	if record["packet_id"] != "stale-1" || record["stale"] != true || record["reason"] == "" || record["match"] == "" {
+		t.Fatalf("unexpected first probe result: %#v", record)
+	}
+}
+
+func TestBuildDreamMorningPacketPlans_CapsProbeResults(t *testing.T) {
+	tmpDir := t.TempDir()
+	nextWorkPath := filepath.Join(tmpDir, ".agents", "rpi", "next-work.jsonl")
+	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for _, rel := range []string{
+		"cli/cmd/ao/stale-one.go",
+		"cli/cmd/ao/stale-two.go",
+		"cli/cmd/ao/stale-three.go",
+	} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, rel)), 0o755); err != nil {
+			t.Fatalf("mkdir target %s: %v", rel, err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpDir, rel), []byte("// shipped\n"), 0o644); err != nil {
+			t.Fatalf("write target %s: %v", rel, err)
+		}
+	}
+	queue := strings.Join([]string{
+		`{"id":"stale-1","title":"Ship stale one","type":"task","severity":"high","source":"council-finding","target_files":["cli/cmd/ao/stale-one.go"],"consumed":false,"claim_status":"available"}`,
+		`{"id":"stale-2","title":"Ship stale two","type":"task","severity":"high","source":"council-finding","target_files":["cli/cmd/ao/stale-two.go"],"consumed":false,"claim_status":"available"}`,
+		`{"id":"stale-3","title":"Ship stale three","type":"task","severity":"high","source":"council-finding","target_files":["cli/cmd/ao/stale-three.go"],"consumed":false,"claim_status":"available"}`,
+	}, ",")
+	if err := os.WriteFile(nextWorkPath, []byte(`{"source_epic":"dream-stale","timestamp":"2026-04-26T12:00:00Z","items":[`+queue+`],"consumed":false,"claim_status":"available"}`+"\n"), 0o644); err != nil {
+		t.Fatalf("write queue: %v", err)
+	}
+
+	summary := newDreamPacketTestSummary(t, tmpDir, "advance goal")
+	summary.RetrievalLive = map[string]any{"coverage": 0.1}
+	summary.MetricsHealth = map[string]any{"escape_velocity": false}
+	summary.Degraded = []string{"retrieval failed"}
+	for _, key := range []string{"retrieval_live", "metrics_health", "summary_json"} {
+		path := summary.Artifacts[key]
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir artifact %s: %v", key, err)
+		}
+		if err := os.WriteFile(path, []byte("{}\n"), 0o644); err != nil {
+			t.Fatalf("write artifact %s: %v", key, err)
+		}
+	}
+
+	_, _, probeResults, err := buildDreamMorningPacketPlans(tmpDir, summary)
+	if err != nil {
+		t.Fatalf("buildDreamMorningPacketPlans: %v", err)
+	}
+	if len(probeResults) != maxDreamPacketProbeResults {
+		t.Fatalf("probe result count = %d, want capped count %d", len(probeResults), maxDreamPacketProbeResults)
+	}
+	for _, result := range probeResults {
+		if result.Source == "dream-degraded" {
+			t.Fatalf("dream-degraded fallback was probed after cap: %+v", result)
+		}
+	}
+}
+
 // TestExecuteDreamMorningPackets_EmitsWhenProbeInconclusive verifies that
 // the probe does NOT suppress when no cited surface resolves on disk —
 // inconclusive evidence should let the packet through normally.
@@ -660,11 +776,11 @@ func TestSkillContainsAddPhrase_Normalization(t *testing.T) {
 // generalized.
 func TestExtractRepoRef_TerminationCharacters(t *testing.T) {
 	cases := []struct {
-		name    string
-		in      string
-		prefix  string
-		suffix  string
-		want    string
+		name   string
+		in     string
+		prefix string
+		suffix string
+		want   string
 	}{
 		{"plain", "see scripts/foo.sh now", "scripts/", ".sh", "scripts/foo.sh"},
 		{"quoted", `run "scripts/bar.sh" later`, "scripts/", ".sh", "scripts/bar.sh"},

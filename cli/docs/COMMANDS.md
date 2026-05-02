@@ -933,8 +933,10 @@ ao daemon jobs [command]
 **Flags:**
 
 ```
-  -h, --help         help for jobs
-      --url string   Daemon base URL (defaults to activation file)
+  -h, --help                help for jobs
+      --token string        Mutation token for daemon write routes
+      --token-file string   Path to mutation token file
+      --url string          Daemon base URL (defaults to activation file)
 ```
 
 ##### `ao daemon jobs cancel`
@@ -948,10 +950,8 @@ ao daemon jobs cancel <job-id> [flags]
 **Flags:**
 
 ```
-  -h, --help                help for cancel
-      --reason string       Cancellation reason
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
+  -h, --help            help for cancel
+      --reason string   Cancellation reason
 ```
 
 ##### `ao daemon jobs list`
@@ -981,11 +981,9 @@ ao daemon jobs submit [flags]
 **Flags:**
 
 ```
-  -h, --help                help for submit
-      --payload string      JSON payload (required; '@-' for stdin, '@path' for file)
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
-      --type string         Job type (required; one of dream.run, dream.stage, openclaw.snapshot, rpi.phase, rpi.run, wiki.build, wiki.forge)
+  -h, --help             help for submit
+      --payload string   JSON payload (required; '@-' for stdin, '@path' for file)
+      --type string      Job type (required; one of dream.run, dream.stage, openclaw.snapshot, rpi.phase, rpi.run, wiki.build, wiki.forge)
 ```
 
 ##### `ao daemon jobs wait`
@@ -1481,6 +1479,7 @@ ao goals measure [flags]
       --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
       --goal string          Measure a single goal by ID
   -h, --help                 help for measure
+      --total-timeout int    Overall measurement timeout in seconds (0 disables)
 ```
 
 #### `ao goals validate`
@@ -2954,20 +2953,21 @@ ao inject [context] [flags]
 **Flags:**
 
 ```
-      --apply-decay           Apply confidence decay before ranking
-      --bead string           Bead ID for work-scoped knowledge injection
-      --context string        Context query for filtering (alternative to positional arg)
-      --for string            Skill name — assembles context per skill's context declaration
-      --format string         Output format: markdown, json (default "markdown")
-  -h, --help                  help for inject
-      --index-only            Output compact knowledge index table instead of full content
-      --max-tokens int        Maximum tokens to output (default 1500)
-      --no-cite               Disable citation recording
-      --predecessor string    Path to predecessor handoff file for context injection
-      --profile               Include .agents/profile.md identity artifact in output
-      --quarantine-flagged    Quarantine flagged learnings from quality report
-      --session string        Session ID for citation tracking (auto-generated if empty)
-      --session-type string   Session type for scoring boost (career, research, debug, implement, brainstorm)
+      --apply-decay               Apply confidence decay before ranking
+      --bead string               Bead ID for work-scoped knowledge injection
+      --context string            Context query for filtering (alternative to positional arg)
+      --for string                Skill name — assembles context per skill's context declaration
+      --format string             Output format: markdown, json (default "markdown")
+  -h, --help                      help for inject
+      --index-only                Output compact knowledge index table instead of full content
+      --max-tokens int            Maximum tokens to output (default 1500)
+      --no-cite                   Disable citation recording
+      --predecessor string        Path to predecessor handoff file for context injection
+      --profile                   Include .agents/profile.md identity artifact in output
+      --quarantine-flagged        Quarantine flagged learnings from quality report
+      --session string            Session ID for citation tracking (auto-generated if empty)
+      --session-type string       Session type for scoring boost (career, research, debug, implement, brainstorm)
+      --utility-weight utility:   Multiplier on utility's contribution to ranking (0=disable, 1=default, >1=emphasize). Reads utility: frontmatter; closes the eval-verdict-compiler loop. (default 1)
 ```
 
 ---
@@ -3160,14 +3160,16 @@ ao retrieval-bench [flags]
 **Flags:**
 
 ```
-      --corpus string        Path to benchmark corpus directory
-      --global               Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
-  -h, --help                 help for retrieval-bench
-      --json                 JSON output
-      --k int                K for Precision@K (default 3)
-      --live                 Benchmark against real .agents/learnings/ instead of synthetic corpus
-      --search-eval string   Path to an ao-search eval manifest with queries and ground_truth paths
-      --search-root string   Repo root to search for --search-eval (defaults to current directory)
+      --corpus string                    Path to benchmark corpus directory
+      --global                           Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
+  -h, --help                             help for retrieval-bench
+      --json                             JSON output
+      --k int                            K for Precision@K (default 3)
+      --live                             Benchmark against real .agents/learnings/ instead of synthetic corpus
+      --search-backend string            Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp) (default "local-lexical")
+      --search-compare-backends string   Comma-separated search backends to compare for --search-eval
+      --search-eval string               Path to an ao-search eval manifest with queries and ground_truth paths
+      --search-root string               Repo root to search for --search-eval (defaults to current directory)
 ```
 
 ---

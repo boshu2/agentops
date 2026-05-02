@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -104,6 +105,92 @@ func TestDaemonReadyCommandUsesActivationFile(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), activation.URL) {
 		t.Fatalf("ready output %q does not contain activation URL %q", out.String(), activation.URL)
+	}
+}
+
+func TestResolveAgentOpsDaemonClientMutationTokenPrecedence(t *testing.T) {
+	cwd := t.TempDir()
+	tokenFile := filepath.Join(cwd, "token")
+	if err := os.WriteFile(tokenFile, []byte("file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	activationTokenFile := filepath.Join(cwd, "activation-token")
+	if err := os.WriteFile(activationTokenFile, []byte("activation-file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonActivation(cwd, agentopsDaemonActivation{
+		URL:       "http://127.0.0.1:8765",
+		Address:   "127.0.0.1:8765",
+		PID:       123,
+		Ready:     true,
+		StartedAt: "2026-05-01T00:00:00Z",
+		Token:     "activation-token",
+		TokenFile: activationTokenFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("AGENTOPSD_TOKEN", "env-token")
+	t.Setenv("AGENTOPS_DAEMON_TOKEN", "legacy-env-token")
+
+	got, err := resolveAgentOpsDaemonClientMutationToken(cwd, "flag-token", tokenFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "flag-token" {
+		t.Fatalf("flag precedence token = %q", got)
+	}
+
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", tokenFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "file-token" {
+		t.Fatalf("token-file precedence token = %q", got)
+	}
+
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "env-token" {
+		t.Fatalf("env precedence token = %q", got)
+	}
+
+	t.Setenv("AGENTOPSD_TOKEN", "")
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "legacy-env-token" {
+		t.Fatalf("legacy env precedence token = %q", got)
+	}
+
+	t.Setenv("AGENTOPS_DAEMON_TOKEN", "")
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "activation-token" {
+		t.Fatalf("activation fallback token = %q", got)
+	}
+
+	if err := writeDaemonActivation(cwd, agentopsDaemonActivation{
+		URL:       "http://127.0.0.1:8765",
+		Address:   "127.0.0.1:8765",
+		PID:       123,
+		Ready:     true,
+		StartedAt: "2026-05-01T00:00:00Z",
+		TokenFile: activationTokenFile,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err = resolveAgentOpsDaemonClientMutationToken(cwd, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "activation-file-token" {
+		t.Fatalf("activation token-file fallback token = %q", got)
 	}
 }
 
@@ -262,6 +349,46 @@ func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIRunJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-fake", "validate daemon rpi run")
+	spec.MaxPhase = 1
+	jobSpec, err := spec.ToJobSpec("job-rpi-run")
+	if err != nil {
+		t.Fatalf("rpi run job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-rpi-run",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit rpi run job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "fake"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed rpi.run job", result)
+	}
+	if result.Job.JobType != daemonpkg.JobTypeRPIRun {
+		t.Fatalf("job type = %s, want %s", result.Job.JobType, daemonpkg.JobTypeRPIRun)
+	}
+	if got := result.Job.Artifacts["executor_policy"]; got != "fake" {
+		t.Fatalf("executor_policy artifact = %q, want fake", got)
+	}
+	if got := result.Job.Artifacts["phase"]; got != "1" {
+		t.Fatalf("phase artifact = %q, want 1", got)
+	}
+}
+
 func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIPhaseJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
@@ -298,6 +425,37 @@ func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIPhaseJob(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonFakeExecutorPolicyRoutesDreamRunJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-dream-invalid",
+		JobID:     "job-dream-invalid",
+		JobType:   daemonpkg.JobTypeDreamRun,
+		Payload:   map[string]any{"schema_version": 1, "job_type": string(daemonpkg.JobTypeDreamRun)},
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit dream job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "fake"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed {
+		t.Fatal("supervisor did not claim dream.run job under fake policy")
+	}
+	if result.Job.JobType != daemonpkg.JobTypeDreamRun || result.Job.Status != daemonpkg.JobStatusFailed {
+		t.Fatalf("dream result = %#v, want failed dream.run job", result.Job)
+	}
+	if result.Job.Failure == nil || !strings.Contains(result.Job.Failure.Message, "dream_run_id is required") {
+		t.Fatalf("dream failure = %#v, want payload validation failure", result.Job.Failure)
+	}
+}
+
 func TestAgentOpsDaemonGasCityExecutorPolicyRequiresConfig(t *testing.T) {
 	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "gascity"}); err == nil {
 		t.Fatal("gascity executor policy without endpoint/city succeeded")
@@ -322,9 +480,74 @@ func TestResolveAgentOpsDaemonMutationPolicySupportsScopedTokenFile(t *testing.T
 	}
 }
 
+func TestAgentOpsDaemonMutationPathsIncludeRESTAliasAndSchedules(t *testing.T) {
+	paths := map[string]bool{}
+	for _, path := range agentOpsDaemonMutationPaths() {
+		paths[path] = true
+	}
+	for _, want := range []string{
+		"/v1/jobs/*/cancel",
+		"/v1/schedules",
+		"/v1/schedules/*",
+	} {
+		if !paths[want] {
+			t.Fatalf("agentOpsDaemonMutationPaths missing %q: %v", want, agentOpsDaemonMutationPaths())
+		}
+	}
+}
+
 func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 	if _, err := buildAgentOpsDaemonSupervisor(t.TempDir(), agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"}); err != nil {
 		t.Fatalf("cli-fallback executor policy: %v", err)
+	}
+}
+
+func TestAgentOpsDaemonPlansProjectionExecutorRegistration(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewPlansProjectionJobSpec("soak-project", "soc", filepath.Join(cwd, ".agents", "plans", "soak"))
+	specRaw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatalf("marshal plans spec: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(specRaw, &payload); err != nil {
+		t.Fatalf("unmarshal plans spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID:      "req-plans-projection",
+		JobID:          "job-plans-projection",
+		JobType:        daemonpkg.JobTypePlansProjection,
+		IdempotencyKey: spec.IdempotencyKey(),
+		Payload:        payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit plans job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		ExecutorPolicy: "fake",
+		PlansBdSource:  plansProjectionSoakBdSource{},
+		Now:            fixedDaemonSoakNow,
+	})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed plans.projection job", result)
+	}
+	if got := result.Job.Artifacts["manifest_count"]; got != "2" {
+		t.Fatalf("manifest_count = %q, want 2", got)
+	}
+	manifestPath := result.Job.Artifacts["manifest_jsonl"]
+	if manifestPath == "" {
+		t.Fatalf("plans artifacts = %#v, want manifest_jsonl", result.Job.Artifacts)
+	}
+	if _, err := os.Stat(filepath.Clean(manifestPath)); err != nil {
+		t.Fatalf("plans manifest %s: %v", manifestPath, err)
 	}
 }
 
@@ -362,6 +585,54 @@ func (w *recordingWikiForgeWorker) RunExtractionWithRetry(_ context.Context, req
 	return wikiworker.ExtractionResult{
 		Terminal: agentworker.TerminalState{Status: agentworker.StatusCompleted},
 	}, nil
+}
+
+func TestAgentOpsDaemonAcceptsWikiBuildIntoReadModels(t *testing.T) {
+	cwd := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	server, listener, activation, err := startAgentOpsDaemon(ctx, cwd, agentopsDaemonRunOptions{
+		Addr:  "127.0.0.1:0",
+		Token: "secret-token",
+	})
+	if err != nil {
+		t.Fatalf("start daemon: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.Serve(listener) }()
+	t.Cleanup(func() {
+		cancel()
+		err := <-errCh
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("daemon serve returned unexpected error: %v", err)
+		}
+	})
+
+	response, err := postDaemonSubmitJob(context.Background(), activation.URL, "secret-token", daemonpkg.SubmitJobRequest{
+		RequestID:      "req-wiki-build",
+		JobID:          "job-wiki-build",
+		JobType:        daemonpkg.JobTypeWikiBuild,
+		IdempotencyKey: "wiki.build:read-model-test",
+	})
+	if err != nil {
+		t.Fatalf("submit wiki.build: %v", err)
+	}
+	if !response.Accepted || response.JobID != "job-wiki-build" {
+		t.Fatalf("submit response = %#v, want accepted wiki.build", response)
+	}
+
+	status, err := fetchDaemonStatus(context.Background(), activation.URL)
+	if err != nil {
+		t.Fatalf("fetch status: %v", err)
+	}
+	if job := findDaemonQueueJob(status.Queue.Jobs, "job-wiki-build"); job == nil || job.JobType != daemonpkg.JobTypeWikiBuild {
+		t.Fatalf("queue jobs = %#v, want queued wiki.build", status.Queue.Jobs)
+	}
+	if len(status.Projections.Wiki.Jobs) != 1 || status.Projections.Wiki.Jobs[0].JobID != "job-wiki-build" {
+		t.Fatalf("wiki projection jobs = %#v, want wiki.build job", status.Projections.Wiki.Jobs)
+	}
+	if len(status.Projections.OpenClaw.Resources.Wiki) != 1 || status.Projections.OpenClaw.Resources.Wiki[0].JobID != "job-wiki-build" {
+		t.Fatalf("openclaw wiki resources = %#v, want wiki.build resource", status.Projections.OpenClaw.Resources.Wiki)
+	}
 }
 
 // TestAgentopsdRegistersLLMWikiLoopExecutor verifies that the daemon's

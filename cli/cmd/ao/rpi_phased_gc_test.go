@@ -1026,75 +1026,8 @@ func TestGCExecutor_Execute_API_WritesTranscriptEvidenceArtifact(t *testing.T) {
 
 func TestGCExecutor_Execute_API_HTTPFixtureEndToEnd(t *testing.T) {
 	cityDir := setupCityDir(t, "api-http-fixture")
-	var sawCreate, sawSubmit, sawStream, sawTranscript bool
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(gascity.RequestIDHeader, "req-"+strings.Trim(strings.ReplaceAll(r.URL.Path, "/", "-"), "-"))
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/readiness":
-			_ = json.NewEncoder(w).Encode(gascity.ReadinessResponse{Ready: true, Status: "ready"})
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/sessions":
-			sawCreate = true
-			if got := r.Header.Get(gascity.MutationHeader); got == "" {
-				t.Fatalf("create missing %s", gascity.MutationHeader)
-			}
-			var req gascity.SessionCreateRequest
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				t.Fatalf("decode create: %v", err)
-			}
-			if req.Alias != "rpi-run-http-p2" || req.Name != "worker" || !req.Async {
-				t.Fatalf("create request = %#v", req)
-			}
-			_ = json.NewEncoder(w).Encode(gascity.Session{ID: "sess_http", Alias: req.Alias, Running: true})
-		case r.Method == http.MethodPost && r.URL.Path == "/v0/city/agentops/session/sess_http/submit":
-			sawSubmit = true
-			if got := r.Header.Get(gascity.MutationHeader); got == "" {
-				t.Fatalf("submit missing %s", gascity.MutationHeader)
-			}
-			var req gascity.SessionSubmitRequest
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				t.Fatalf("decode submit: %v", err)
-			}
-			if req.Message != "http fixture prompt" || req.Intent != "follow_up" {
-				t.Fatalf("submit request = %#v", req)
-			}
-			_ = json.NewEncoder(w).Encode(gascity.SessionSubmitResponse{Queued: true, Intent: req.Intent})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/events/stream":
-			sawStream = true
-			w.Header().Set("Content-Type", "text/event-stream")
-			writeSSEFrame(t, w, "http-1", gascity.EventStreamEnvelope{
-				Seq:     1,
-				Type:    "session.started",
-				Subject: "sess_http",
-				Payload: map[string]any{"session_id": "sess_http", "status": "running"},
-			})
-			writeSSEFrame(t, w, "http-2", gascity.EventStreamEnvelope{
-				Seq:     2,
-				Type:    "session.completed",
-				Subject: "sess_http",
-				Payload: map[string]any{"session_id": "sess_http", "status": "completed"},
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/v0/city/agentops/session/sess_http/transcript":
-			sawTranscript = true
-			if got := r.URL.Query().Get("format"); got != "conversation" {
-				t.Fatalf("transcript format = %q, want conversation", got)
-			}
-			_ = json.NewEncoder(w).Encode(gascity.TranscriptResponse{
-				ID:       "transcript-http",
-				Format:   "conversation",
-				Turns:    []gascity.TranscriptEntry{{Role: "assistant", Text: "done"}},
-				Messages: []map[string]any{{"role": "assistant", "content": "done"}},
-			})
-		default:
-			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
-		}
-	}))
-	defer server.Close()
-
-	client, err := gascity.NewClient(gascity.Config{Endpoint: server.URL, MutationToken: "agentops-test"})
-	if err != nil {
-		t.Fatalf("NewClient: %v", err)
-	}
+	fixture, client, cleanup := newGCExecutorHTTPFixture(t)
+	defer cleanup()
 	e := &gcExecutor{
 		cityPath:     cityDir,
 		apiClient:    &rpiGasCityAPIAdapter{client: client},
@@ -1105,21 +1038,137 @@ func TestGCExecutor_Execute_API_HTTPFixtureEndToEnd(t *testing.T) {
 	if err := e.Execute(context.Background(), "http fixture prompt", cityDir, "run-http", 2); err != nil {
 		t.Fatalf("Execute HTTP fixture: %v", err)
 	}
-	for name, saw := range map[string]bool{
-		"create":     sawCreate,
-		"submit":     sawSubmit,
-		"stream":     sawStream,
-		"transcript": sawTranscript,
-	} {
-		if !saw {
-			t.Fatalf("server did not see %s request", name)
+	fixture.assertSaw("create", "submit", "stream", "transcript")
+	assertGCExecutorHTTPFixturePhase(t, e)
+	assertGCExecutorHTTPFixtureEvidence(t, e)
+}
+
+type gcExecutorHTTPFixture struct {
+	t      *testing.T
+	saw    map[string]bool
+	routes map[string]http.HandlerFunc
+}
+
+func newGCExecutorHTTPFixture(t *testing.T) (*gcExecutorHTTPFixture, *gascity.Client, func()) {
+	t.Helper()
+	fixture := &gcExecutorHTTPFixture{
+		t:   t,
+		saw: make(map[string]bool),
+	}
+	fixture.routes = map[string]http.HandlerFunc{
+		"GET /v0/city/agentops/readiness":                    fixture.handleReadiness,
+		"POST /v0/city/agentops/sessions":                    fixture.handleCreateSession,
+		"POST /v0/city/agentops/session/sess_http/submit":    fixture.handleSubmitSession,
+		"GET /v0/city/agentops/events/stream":                fixture.handleEventStream,
+		"GET /v0/city/agentops/session/sess_http/transcript": fixture.handleTranscript,
+	}
+
+	server := httptest.NewServer(fixture)
+	client, err := gascity.NewClient(gascity.Config{Endpoint: server.URL, MutationToken: "agentops-test"})
+	if err != nil {
+		server.Close()
+		t.Fatalf("NewClient: %v", err)
+	}
+	return fixture, client, server.Close
+}
+
+func (f *gcExecutorHTTPFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	key := r.Method + " " + r.URL.Path
+	w.Header().Set(gascity.RequestIDHeader, "req-"+strings.Trim(strings.ReplaceAll(r.URL.Path, "/", "-"), "-"))
+	handler, ok := f.routes[key]
+	if !ok {
+		f.t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
+	}
+	handler(w, r)
+}
+
+func (f *gcExecutorHTTPFixture) assertSaw(names ...string) {
+	f.t.Helper()
+	for _, name := range names {
+		if !f.saw[name] {
+			f.t.Fatalf("server did not see %s request", name)
 		}
 	}
+}
+
+func (f *gcExecutorHTTPFixture) handleReadiness(w http.ResponseWriter, _ *http.Request) {
+	_ = json.NewEncoder(w).Encode(gascity.ReadinessResponse{Ready: true, Status: "ready"})
+}
+
+func (f *gcExecutorHTTPFixture) handleCreateSession(w http.ResponseWriter, r *http.Request) {
+	f.saw["create"] = true
+	assertGasCityMutationHeader(f.t, r, "create")
+	var req gascity.SessionCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		f.t.Fatalf("decode create: %v", err)
+	}
+	if req.Alias != "rpi-run-http-p2" || req.Name != "worker" || !req.Async {
+		f.t.Fatalf("create request = %#v", req)
+	}
+	_ = json.NewEncoder(w).Encode(gascity.Session{ID: "sess_http", Alias: req.Alias, Running: true})
+}
+
+func (f *gcExecutorHTTPFixture) handleSubmitSession(w http.ResponseWriter, r *http.Request) {
+	f.saw["submit"] = true
+	assertGasCityMutationHeader(f.t, r, "submit")
+	var req gascity.SessionSubmitRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		f.t.Fatalf("decode submit: %v", err)
+	}
+	if req.Message != "http fixture prompt" || req.Intent != "follow_up" {
+		f.t.Fatalf("submit request = %#v", req)
+	}
+	_ = json.NewEncoder(w).Encode(gascity.SessionSubmitResponse{Queued: true, Intent: req.Intent})
+}
+
+func (f *gcExecutorHTTPFixture) handleEventStream(w http.ResponseWriter, _ *http.Request) {
+	f.saw["stream"] = true
+	w.Header().Set("Content-Type", "text/event-stream")
+	writeSSEFrame(f.t, w, "http-1", gascity.EventStreamEnvelope{
+		Seq:     1,
+		Type:    "session.started",
+		Subject: "sess_http",
+		Payload: map[string]any{"session_id": "sess_http", "status": "running"},
+	})
+	writeSSEFrame(f.t, w, "http-2", gascity.EventStreamEnvelope{
+		Seq:     2,
+		Type:    "session.completed",
+		Subject: "sess_http",
+		Payload: map[string]any{"session_id": "sess_http", "status": "completed"},
+	})
+}
+
+func (f *gcExecutorHTTPFixture) handleTranscript(w http.ResponseWriter, r *http.Request) {
+	f.saw["transcript"] = true
+	if got := r.URL.Query().Get("format"); got != "conversation" {
+		f.t.Fatalf("transcript format = %q, want conversation", got)
+	}
+	_ = json.NewEncoder(w).Encode(gascity.TranscriptResponse{
+		ID:       "transcript-http",
+		Format:   "conversation",
+		Turns:    []gascity.TranscriptEntry{{Role: "assistant", Text: "done"}},
+		Messages: []map[string]any{{"role": "assistant", "content": "done"}},
+	})
+}
+
+func assertGasCityMutationHeader(t *testing.T, r *http.Request, route string) {
+	t.Helper()
+	if got := r.Header.Get(gascity.MutationHeader); got == "" {
+		t.Fatalf("%s missing %s", route, gascity.MutationHeader)
+	}
+}
+
+func assertGCExecutorHTTPFixturePhase(t *testing.T, e *gcExecutor) {
+	t.Helper()
 	if e.apiLastPhase.TerminalStatus != gascity.TerminalStatusCompleted ||
 		e.apiLastPhase.LastEventID != "http-2" ||
 		e.apiLastPhase.EvidencePath == "" {
 		t.Fatalf("apiLastPhase = %#v", e.apiLastPhase)
 	}
+}
+
+func assertGCExecutorHTTPFixtureEvidence(t *testing.T, e *gcExecutor) {
+	t.Helper()
 	data, err := os.ReadFile(e.apiLastPhase.EvidencePath)
 	if err != nil {
 		t.Fatalf("read HTTP fixture evidence: %v", err)

@@ -32,6 +32,13 @@ skills, the runtime, and external integrations.
     Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
     trust, projections, and migration from foreground command flows.
 
+-   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
+
+    ---
+
+    Submit retry contract for `request_id`, `idempotency_key`, and
+    daemon-submitting CLI helpers.
+
 -   :material-file-code: **[JobSpec OpenAPI v0](jobspec-openapi-v0.yaml)**
 
     ---
@@ -72,6 +79,20 @@ skills, the runtime, and external integrations.
     ---
 
     Evaluation suite, run, scorecard, baseline, canary, and holdout contract.
+
+-   :material-clipboard-text-clock: **[Eval Verdict Pipeline](eval-verdict-pipeline.md)**
+
+    ---
+
+    Verdict compiler pipeline from eval run manifests to learning utility and
+    retirement signals.
+
+-   :material-magnify-scan: **[Retrieval Comparison](retrieval-comparison.md)**
+
+    ---
+
+    Deterministic search-eval backend comparison, promotion thresholds,
+    optional rerank behavior, and deferred vector/graph-store policy.
 
 -   :material-brain: **[MemRL Policy Schema](memrl-policy.schema.json)**
 

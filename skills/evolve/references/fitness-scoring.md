@@ -39,7 +39,8 @@ if [ -n "$GOALS_FILE" ]; then
   ERA_ID="goals-$(shasum -a 256 "$GOALS_FILE" | awk '{print substr($1, 1, 12)}')"
   bash scripts/evolve-capture-baseline.sh \
     --label "$ERA_ID" \
-    --timeout 60
+    --timeout 60 \
+    --total-timeout 75
 fi
 ```
 

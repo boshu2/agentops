@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -79,6 +80,9 @@ func submitRPIPhasedDaemon(ctx context.Context, opts phasedEngineOptions, args [
 
 func postDaemonSubmitJob(ctx context.Context, baseURL, token string, request daemonpkg.SubmitJobRequest) (daemonpkg.SubmitJobResponse, error) {
 	var response daemonpkg.SubmitJobResponse
+	if err := ensureDaemonSubmitRetryIdempotencyKey(&request); err != nil {
+		return response, err
+	}
 	data, err := json.Marshal(request)
 	if err != nil {
 		return response, err
@@ -103,4 +107,30 @@ func postDaemonSubmitJob(ctx context.Context, baseURL, token string, request dae
 		return response, err
 	}
 	return response, nil
+}
+
+// ensureDaemonSubmitRetryIdempotencyKey gives CLI-originated daemon submissions
+// a stable retry key when the caller did not provide a semantic one.
+func ensureDaemonSubmitRetryIdempotencyKey(request *daemonpkg.SubmitJobRequest) error {
+	if request == nil || strings.TrimSpace(request.IdempotencyKey) != "" {
+		return nil
+	}
+	material := struct {
+		JobType   daemonpkg.JobType `json:"job_type"`
+		JobID     string            `json:"job_id,omitempty"`
+		RequestID string            `json:"request_id,omitempty"`
+		Payload   map[string]any    `json:"payload,omitempty"`
+	}{
+		JobType:   request.JobType,
+		JobID:     strings.TrimSpace(request.JobID),
+		RequestID: strings.TrimSpace(request.RequestID),
+		Payload:   request.Payload,
+	}
+	data, err := json.Marshal(material)
+	if err != nil {
+		return fmt.Errorf("marshal daemon submit idempotency material: %w", err)
+	}
+	sum := sha256.Sum256(data)
+	request.IdempotencyKey = fmt.Sprintf("cli-submit:%s:%x", request.JobType, sum[:12])
+	return nil
 }

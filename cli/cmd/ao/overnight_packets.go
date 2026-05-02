@@ -13,7 +13,11 @@ import (
 	"time"
 )
 
-const maxDreamMorningPackets = 3
+const (
+	maxDreamMorningPackets      = 3
+	maxDreamPacketProbeResults  = maxDreamMorningPackets * 2
+	dreamPacketStaleRatePercent = 50
+)
 
 type overnightMorningPacket struct {
 	ID             string   `json:"id" yaml:"id"`
@@ -72,10 +76,27 @@ type dreamCuratorSuppression struct {
 	Match    string `json:"match,omitempty"`
 }
 
+type dreamPacketProbeResult struct {
+	ProbedAt string `json:"probed_at"`
+	PacketID string `json:"packet_id"`
+	Title    string `json:"title"`
+	Source   string `json:"source,omitempty"`
+	Stale    bool   `json:"stale"`
+	Reason   string `json:"reason,omitempty"`
+	Match    string `json:"match,omitempty"`
+}
+
 func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 	snapshotDreamPacketYield(summary)
-	plans, suppressed, err := buildDreamMorningPacketPlans(cwd, *summary)
+	plans, suppressed, probeResults, err := buildDreamMorningPacketPlans(cwd, *summary)
 	summary.CuratorSuppressed = append(summary.CuratorSuppressed, suppressed...)
+	if len(probeResults) > 0 {
+		summary.Artifacts["dream_probe_results"] = dreamPacketProbeResultsPath(cwd)
+		if err := writeDreamPacketProbeResults(cwd, probeResults); err != nil {
+			summary.Degraded = append(summary.Degraded, fmt.Sprintf("dream-curator-probe-results: %v", err))
+		}
+		appendDreamCuratorDegradedFinding(summary, probeResults)
+	}
 	if err != nil {
 		setOvernightStepStatus(summary, "morning-packets", "soft-fail", summary.Artifacts["morning_packets_json"], err.Error())
 		setOvernightStepStatus(summary, "bead-sync", "soft-fail", "", "packet synthesis aborted")
@@ -108,11 +129,11 @@ func executeDreamMorningPackets(cwd string, summary *overnightSummary) {
 	refreshOvernightTelemetry(summary)
 }
 
-func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dreamMorningPacketPlan, []dreamCuratorSuppression, error) {
+func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dreamMorningPacketPlan, []dreamCuratorSuppression, []dreamPacketProbeResult, error) {
 	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
 	entries, err := readQueueEntries(nextWorkPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	repoFilter := detectRepoName(cwd)
@@ -121,8 +142,12 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 	existingByID := indexDreamExistingQueueItems(entries)
 
 	var suppressed []dreamCuratorSuppression
+	probeResults := make([]dreamPacketProbeResult, 0, maxDreamPacketProbeResults)
 	plans := make([]dreamMorningPacketPlan, 0, maxDreamMorningPackets)
 	for i, sel := range selections {
+		if len(probeResults) >= maxDreamPacketProbeResults {
+			break
+		}
 		packet := buildDreamQueuePacket(summary, sel, i+1)
 		// Curator-side tractability probe: per the 2026-04-26 retro,
 		// the curator emitted the same stale packets ("philosophy doc",
@@ -130,13 +155,15 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		// gate verified the cited surface wasn't already shipped. If
 		// the probe is conclusively stale, suppress and record; if
 		// inconclusive, emit normally.
-		if reason, match, ok := probeDreamPacketStaleness(cwd, packet); ok {
+		result := probeDreamPacket(cwd, packet)
+		probeResults = append(probeResults, result)
+		if result.Stale {
 			suppressed = append(suppressed, dreamCuratorSuppression{
 				PacketID: packet.ID,
 				Title:    strings.TrimSpace(packet.Title),
 				Source:   strings.TrimSpace(packet.Source),
-				Reason:   reason,
-				Match:    match,
+				Reason:   result.Reason,
+				Match:    result.Match,
 			})
 			continue
 		}
@@ -155,16 +182,21 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		if len(plans) >= maxDreamMorningPackets {
 			break
 		}
+		if len(probeResults) >= maxDreamPacketProbeResults {
+			break
+		}
 		if _, exists := selectedIDs[packet.ID]; exists {
 			continue
 		}
-		if reason, match, ok := probeDreamPacketStaleness(cwd, packet); ok {
+		result := probeDreamPacket(cwd, packet)
+		probeResults = append(probeResults, result)
+		if result.Stale {
 			suppressed = append(suppressed, dreamCuratorSuppression{
 				PacketID: packet.ID,
 				Title:    strings.TrimSpace(packet.Title),
 				Source:   strings.TrimSpace(packet.Source),
-				Reason:   reason,
-				Match:    match,
+				Reason:   result.Reason,
+				Match:    result.Match,
 			})
 			continue
 		}
@@ -180,7 +212,20 @@ func buildDreamMorningPacketPlans(cwd string, summary overnightSummary) ([]dream
 		selectedIDs[packet.ID] = struct{}{}
 	}
 
-	return plans, suppressed, nil
+	return plans, suppressed, probeResults, nil
+}
+
+func probeDreamPacket(cwd string, packet overnightMorningPacket) dreamPacketProbeResult {
+	reason, match, stale := probeDreamPacketStaleness(cwd, packet)
+	return dreamPacketProbeResult{
+		ProbedAt: time.Now().UTC().Format(time.RFC3339),
+		PacketID: strings.TrimSpace(packet.ID),
+		Title:    strings.TrimSpace(packet.Title),
+		Source:   strings.TrimSpace(packet.Source),
+		Stale:    stale,
+		Reason:   reason,
+		Match:    match,
+	}
 }
 
 // probeDreamPacketStaleness runs a 5-second tractability probe against the
@@ -481,7 +526,6 @@ func extractSkillLineLimitClaim(s string) (string, bool) {
 	}
 	return path, true
 }
-
 
 func rankDreamMorningQueueSelections(cwd string, entries []nextWorkEntry, repoFilter string, limit int) []queueSelection {
 	if limit <= 0 || len(entries) == 0 {
@@ -966,6 +1010,63 @@ func writeDreamMorningPacketArtifacts(summary *overnightSummary, plans []dreamMo
 		}
 	}
 	return nil
+}
+
+func dreamPacketProbeResultsPath(cwd string) string {
+	return filepath.Join(cwd, ".agents", "dream", "probe-results.jsonl")
+}
+
+func writeDreamPacketProbeResults(cwd string, results []dreamPacketProbeResult) error {
+	if len(results) == 0 {
+		return nil
+	}
+	path := dreamPacketProbeResultsPath(cwd)
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		return fmt.Errorf("ensure dream probe dir: %w", err)
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
+	if err != nil {
+		return fmt.Errorf("open dream probe results: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	enc := json.NewEncoder(f)
+	for _, result := range results {
+		if err := enc.Encode(result); err != nil {
+			return fmt.Errorf("write dream probe result: %w", err)
+		}
+	}
+	if err := f.Sync(); err != nil {
+		return fmt.Errorf("sync dream probe results: %w", err)
+	}
+	return nil
+}
+
+func appendDreamCuratorDegradedFinding(summary *overnightSummary, results []dreamPacketProbeResult) {
+	if summary == nil || len(results) == 0 {
+		return
+	}
+	stale := 0
+	for _, result := range results {
+		if result.Stale {
+			stale++
+		}
+	}
+	if stale == 0 || stale*100 < len(results)*dreamPacketStaleRatePercent {
+		return
+	}
+	for _, degraded := range summary.Degraded {
+		if strings.Contains(degraded, "dream-curator-degraded:") {
+			return
+		}
+	}
+	summary.Degraded = append(summary.Degraded, fmt.Sprintf(
+		"dream-curator-degraded: stale packet rate %d/%d failed threshold %d%%; probe results in %s",
+		stale,
+		len(results),
+		dreamPacketStaleRatePercent,
+		summary.Artifacts["dream_probe_results"],
+	))
 }
 
 func syncDreamMorningPacketsToQueue(cwd string, plans []dreamMorningPacketPlan) error {

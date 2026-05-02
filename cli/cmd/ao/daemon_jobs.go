@@ -108,14 +108,12 @@ func init() {
 	daemonEventsCmd.AddCommand(daemonEventsTailCmd)
 
 	daemonJobsCmd.PersistentFlags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
+	daemonJobsCmd.PersistentFlags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
+	daemonJobsCmd.PersistentFlags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonJobsWaitCmd.Flags().DurationVar(&daemonJobWaitTimeout, "timeout", 30*time.Second, "Maximum time to wait for terminal job state")
 	daemonJobsCancelCmd.Flags().StringVar(&daemonJobCancelReason, "reason", "", "Cancellation reason")
-	daemonJobsCancelCmd.Flags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
-	daemonJobsCancelCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonJobsSubmitCmd.Flags().StringVar(&daemonJobSubmitType, "type", "", "Job type (required; one of "+strings.Join(daemonJobTypeStrings(), ", ")+")")
 	daemonJobsSubmitCmd.Flags().StringVar(&daemonJobSubmitPayload, "payload", "", "JSON payload (required; '@-' for stdin, '@path' for file)")
-	daemonJobsSubmitCmd.Flags().StringVar(&daemonToken, "token", "", "Mutation token for daemon write routes")
-	daemonJobsSubmitCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonEventsCmd.PersistentFlags().StringVar(&daemonURL, "url", "", "Daemon base URL (defaults to activation file)")
 	daemonEventsTailCmd.Flags().StringVar(&daemonEventsAfter, "after", "", "Only show events after this event id")
 }
@@ -291,7 +289,7 @@ func runAgentOpsDaemonJobsSubmitCommand(cmd *cobra.Command, args []string) error
 	if err != nil {
 		return err
 	}
-	token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+	token, err := resolveAgentOpsDaemonClientMutationToken(cwd, daemonToken, daemonTokenFile)
 	if err != nil {
 		return err
 	}
@@ -350,7 +348,7 @@ func runAgentOpsDaemonJobsCancelCommand(cmd *cobra.Command, args []string) error
 	if err != nil {
 		return err
 	}
-	token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+	token, err := resolveAgentOpsDaemonClientMutationToken(cwd, daemonToken, daemonTokenFile)
 	if err != nil {
 		return err
 	}

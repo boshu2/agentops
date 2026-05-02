@@ -49,12 +49,12 @@ if [[ -d "$turns_path" ]]; then
     turn_count="$(find "$turns_path" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
 fi
 
-report_file="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-ratchet.XXXXXX.json")"
+report_file="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-ratchet.XXXXXX")"
 normalized_manifest=""
 trap 'rm -f "$report_file" "$normalized_manifest"' EXIT
 
 if jq -e 'type == "array"' "$manifest_path" >/dev/null 2>&1; then
-    normalized_manifest="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-manifest.XXXXXX.json")"
+    normalized_manifest="$(mktemp "${TMPDIR:-/tmp}/ao-retrieval-manifest.XXXXXX")"
     jq '{
         id: "retrieval-ratchet-fallback",
         description: "Generated from legacy retrieval eval query array",

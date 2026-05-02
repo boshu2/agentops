@@ -817,6 +817,108 @@ Summary.
 	}
 }
 
+func TestProcessCitationFeedback_DryRunDoesNotMutateCitationSurfaces(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	findingsDir := filepath.Join(tmp, ".agents", SectionFindings)
+	for _, dir := range []string{aoDir, learningsDir, findingsDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	learningPath := filepath.Join(learningsDir, "dry-run-learning.md")
+	learningText := `---
+id: dry-run-learning
+type: learning
+utility: 0.5000
+reward_count: 0
+---
+
+# Dry Run Learning
+
+Dry-run close-loop must not update learning utility.
+`
+	if err := os.WriteFile(learningPath, []byte(learningText), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	findingPath := filepath.Join(findingsDir, "f-dry-run.md")
+	findingText := `---
+id: f-dry-run
+title: Dry-run finding
+status: active
+hit_count: 1
+---
+
+# Dry-run finding
+
+Dry-run close-loop must not update finding citation metadata.
+`
+	if err := os.WriteFile(findingPath, []byte(findingText), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	citationsText := writeCitationFeedbackCitations(t, aoDir, []types.CitationEvent{
+		{
+			ArtifactPath: filepath.Join(".agents", "learnings", "dry-run-learning.md"),
+			SessionID:    "session-1",
+			CitationType: "applied",
+			CitedAt:      time.Date(2026, 3, 10, 1, 0, 0, 0, time.UTC),
+		},
+		{
+			ArtifactPath: filepath.Join(".agents", SectionFindings, "f-dry-run.md"),
+			SessionID:    "session-1",
+			CitationType: "applied",
+			CitedAt:      time.Date(2026, 3, 10, 1, 1, 0, 0, time.UTC),
+		},
+	})
+
+	oldDryRun := dryRun
+	dryRun = true
+	t.Cleanup(func() { dryRun = oldDryRun })
+
+	total, rewarded, skipped := processCitationFeedback(tmp)
+	if total != 2 || rewarded != 2 || skipped != 0 {
+		t.Fatalf("expected (2,2,0), got (%d,%d,%d)", total, rewarded, skipped)
+	}
+	assertFileContent(t, learningPath, learningText)
+	assertFileContent(t, findingPath, findingText)
+	assertFileContent(t, filepath.Join(aoDir, "citations.jsonl"), citationsText)
+	if _, err := os.Stat(filepath.Join(aoDir, "feedback.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("dry-run wrote feedback log (err=%v)", err)
+	}
+}
+
+func writeCitationFeedbackCitations(t *testing.T, aoDir string, citations []types.CitationEvent) string {
+	t.Helper()
+	var lines []string
+	for _, citation := range citations {
+		data, err := json.Marshal(citation)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, string(data))
+	}
+	text := strings.Join(lines, "\n") + "\n"
+	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return text
+}
+
+func assertFileContent(t *testing.T, path, want string) {
+	t.Helper()
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != want {
+		t.Fatalf("%s mutated\nwant:\n%s\ngot:\n%s", path, want, got)
+	}
+}
+
 func TestPromoteCitedLearnings_NoFeedbackFile(t *testing.T) {
 	dir := t.TempDir()
 	count := promoteCitedLearnings(dir, true)

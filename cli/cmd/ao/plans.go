@@ -599,7 +599,7 @@ func plansSyncViaDaemonPath(cmd *cobra.Command) error {
 		return fmt.Errorf("unmarshal plans.projection spec: %w", err)
 	}
 
-	token, err := resolveDaemonMutationToken(daemonToken, daemonTokenFile)
+	token, err := resolveAgentOpsDaemonClientMutationToken(cwd, daemonToken, daemonTokenFile)
 	if err != nil {
 		return fmt.Errorf("resolve daemon mutation token: %w", err)
 	}
