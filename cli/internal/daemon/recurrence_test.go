@@ -1,8 +1,11 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"testing"
 	"time"
 )
@@ -130,6 +133,74 @@ func TestRecurrence_TickEnqueuesJob(t *testing.T) {
 	}
 }
 
+func TestRecurrence_MaterializesPartialRPIRunPayload(t *testing.T) {
+	tmpl := RecurringJobTemplate{
+		Name:    "fast-fire",
+		Cron:    "* * * * *",
+		JobType: JobTypeRPIRun,
+		Payload: json.RawMessage(`{"epic_id":"soc-test"}`),
+	}
+	payload, err := materializeRecurringJobPayload(tmpl, "sub-123", fixedTickAt)
+	if err != nil {
+		t.Fatalf("materialize payload: %v", err)
+	}
+	spec, err := RPIRunJobSpecFromPayload(payload)
+	if err != nil {
+		t.Fatalf("RPIRunJobSpecFromPayload: %v", err)
+	}
+	if spec.RunID == "" || spec.Goal == "" || spec.EpicID != "soc-test" {
+		t.Fatalf("materialized RPI spec = %#v, want defaults plus epic_id", spec)
+	}
+}
+
+func TestRecurrence_TickLogsFireAndSkipTelemetry(t *testing.T) {
+	var logs bytes.Buffer
+	prevOutput := log.Writer()
+	prevFlags := log.Flags()
+	log.SetOutput(&logs)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(prevOutput)
+		log.SetFlags(prevFlags)
+	})
+
+	now := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &now)
+	fireTmpl := RecurringJobTemplate{Name: "fire-log", Cron: "*/5 * * * *", JobType: JobTypeLLMWikiLoop}
+	if err := store.SaveSchedule(fireTmpl); err != nil {
+		t.Fatalf("SaveSchedule fire-log: %v", err)
+	}
+	sup := NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("tick fire: %v", err)
+	}
+	subID := submissionID(fireTmpl.Name, now)
+	if got := logs.String(); !contains(got, "[recurrence] fired fire-log submission_id="+subID) {
+		t.Fatalf("fire telemetry log = %q, want fired line with submission_id", got)
+	}
+
+	logs.Reset()
+	skipTmpl := RecurringJobTemplate{
+		Name:    "skip-log",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeLLMWikiLoop,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+		},
+	}
+	if err := store.SaveSchedule(skipTmpl); err != nil {
+		t.Fatalf("SaveSchedule skip-log: %v", err)
+	}
+	preSeedRunningJob(t, queue, skipTmpl.Name, "preseeded-skip-log", JobTypeLLMWikiLoop, now)
+	sup = NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("tick skip: %v", err)
+	}
+	if got := logs.String(); !contains(got, "[recurrence] skipped skip-log reason=skip_if_running:in-flight") {
+		t.Fatalf("skip telemetry log = %q, want skipped line with reason", got)
+	}
+}
+
 func TestRecurrence_BackpressureSkipsWhenInFlight(t *testing.T) {
 	now := fixedTickAt
 	store, queue := newRecurrenceTestRig(t, &now)
@@ -203,6 +274,42 @@ func TestRecurrence_BackpressureSkipsAtMaxQueueDepth(t *testing.T) {
 	reason := lastSkipReason(t, store, tmpl.Name)
 	if !contains(reason, "2") {
 		t.Fatalf("expected skipped reason to include max depth value 2; got %q", reason)
+	}
+}
+
+func TestRecurrence_BackpressureSoakHundredEveryMinuteSchedules(t *testing.T) {
+	now := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &now)
+	for i := 0; i < 100; i++ {
+		tmpl := RecurringJobTemplate{
+			Name:    fmt.Sprintf("soak-%03d", i),
+			Cron:    "* * * * *",
+			JobType: JobTypeLLMWikiLoop,
+			Backpressure: RecurrenceBackpressure{
+				MaxQueueDepth: 1,
+			},
+		}
+		if err := store.SaveSchedule(tmpl); err != nil {
+			t.Fatalf("SaveSchedule %s: %v", tmpl.Name, err)
+		}
+	}
+	sup := NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("first tick: %v", err)
+	}
+	if got := len(realQueueJobs(t, queue)); got != 100 {
+		t.Fatalf("after first tick queue depth = %d, want 100", got)
+	}
+
+	now = now.Add(time.Minute)
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("second tick: %v", err)
+	}
+	if got := len(realQueueJobs(t, queue)); got != 100 {
+		t.Fatalf("backpressure allowed queue growth: depth = %d, want 100", got)
+	}
+	if skips := countSkippedEvents(t, store); skips != 100 {
+		t.Fatalf("skipped event count = %d, want 100", skips)
 	}
 }
 
@@ -361,6 +468,21 @@ func countFiredEvents(t *testing.T, store *Store, name, subID string) int {
 		evName, _ := ev.Payload["name"].(string)
 		evSub, _ := ev.Payload["submission_id"].(string)
 		if evName == name && evSub == subID {
+			n++
+		}
+	}
+	return n
+}
+
+func countSkippedEvents(t *testing.T, store *Store) int {
+	t.Helper()
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("ReadLedger: %v", err)
+	}
+	n := 0
+	for _, ev := range events {
+		if ev.EventType == EventScheduleSkipped {
 			n++
 		}
 	}

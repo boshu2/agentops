@@ -107,7 +107,7 @@ func TestRecurrence_E2EHappyPath(t *testing.T) {
 	now := e2eTickAt
 	store, queue, sup, server := newE2EHarness(t, &now)
 
-	body := `{"name":"wiki-loop","cron":"*/5 * * * *","job_type":"wiki.forge"}`
+	body := `{"name":"wiki-loop","cron":"*/5 * * * *","job_type":"wiki.forge","payload":{"source_paths":[".agents/sessions"],"output_dir":".agents/wiki/forge"}}`
 	resp := postScheduleE2E(t, server, body, recurrenceE2EToken)
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("POST /v1/schedules status = %d, want 201", resp.StatusCode)
@@ -174,7 +174,7 @@ func TestRecurrence_E2EBackpressureSkipsAndResumes(t *testing.T) {
 	now := e2eTickAt
 	store, queue, sup, server := newE2EHarness(t, &now)
 
-	body := `{"name":"wiki-loop","cron":"*/5 * * * *","job_type":"wiki.forge","backpressure":{"skip_if_running":true}}`
+	body := `{"name":"wiki-loop","cron":"*/5 * * * *","job_type":"wiki.forge","payload":{"source_paths":[".agents/sessions"],"output_dir":".agents/wiki/forge"},"backpressure":{"skip_if_running":true}}`
 	resp := postScheduleE2E(t, server, body, recurrenceE2EToken)
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("POST /v1/schedules status = %d, want 201", resp.StatusCode)
@@ -237,7 +237,7 @@ func TestRecurrence_E2EAuthEnforcedOnSchedulesEndpoint(t *testing.T) {
 	now := e2eTickAt
 	_, _, _, server := newE2EHarness(t, &now)
 
-	body := `{"name":"auth-test","cron":"*/5 * * * *","job_type":"wiki.forge"}`
+	body := `{"name":"auth-test","cron":"*/5 * * * *","job_type":"wiki.forge","payload":{"source_paths":[".agents/sessions"],"output_dir":".agents/wiki/forge"}}`
 
 	// 1. POST without token → 403.
 	resp := postScheduleE2E(t, server, body, "")
@@ -279,7 +279,7 @@ func TestRecurrence_E2EDeleteScheduleStopsFiring(t *testing.T) {
 	now := e2eTickAt
 	store, queue, sup, server := newE2EHarness(t, &now)
 
-	body := `{"name":"ephemeral","cron":"*/5 * * * *","job_type":"wiki.forge"}`
+	body := `{"name":"ephemeral","cron":"*/5 * * * *","job_type":"wiki.forge","payload":{"source_paths":[".agents/sessions"],"output_dir":".agents/wiki/forge"}}`
 	if resp := postScheduleE2E(t, server, body, recurrenceE2EToken); resp.StatusCode != http.StatusCreated {
 		t.Fatalf("POST status = %d, want 201", resp.StatusCode)
 	}

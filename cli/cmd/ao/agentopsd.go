@@ -304,8 +304,27 @@ func startAgentOpsDaemonRecurrence(ctx context.Context, cwd string, opts agentop
 		sup.WithPollInterval(opts.RecurrencePollInterval)
 	}
 	go func() {
-		if err := sup.Start(ctx); err != nil {
-			log.Printf("[recurrence] supervisor exited: %v", err)
+		for ctx.Err() == nil {
+			recovered := false
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						recovered = true
+						log.Printf("[recurrence] supervisor panic recovered: %v", r)
+					}
+				}()
+				if err := sup.Start(ctx); err != nil {
+					log.Printf("[recurrence] supervisor exited: %v", err)
+				}
+			}()
+			if !recovered || ctx.Err() != nil {
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-clock.After(sup.PollInterval()):
+			}
 		}
 	}()
 	return sup

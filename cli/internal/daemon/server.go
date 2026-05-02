@@ -691,6 +691,10 @@ func (s *ReadOnlyServer) handlePostSchedule(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is required"})
 		return
 	}
+	if err := ValidateRecurringJobTemplatePayload(template); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload: " + err.Error()})
+		return
+	}
 	if err := s.store.SaveSchedule(template); err != nil {
 		// Duplicate-name path is a 409; everything else is 500.
 		if strings.Contains(err.Error(), "already exists") {

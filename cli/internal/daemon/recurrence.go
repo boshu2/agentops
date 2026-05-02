@@ -78,6 +78,10 @@ func (s *RecurrenceSupervisor) WithPollInterval(d time.Duration) *RecurrenceSupe
 	return s
 }
 
+func (s *RecurrenceSupervisor) PollInterval() time.Duration {
+	return s.pollInterval
+}
+
 // Start runs the supervisor loop until ctx is cancelled. It re-reads the
 // schedule list from store on every iteration to pick up adds/deletes.
 func (s *RecurrenceSupervisor) Start(ctx context.Context) error {
@@ -205,6 +209,7 @@ func (s *RecurrenceSupervisor) fireOne(ctx context.Context, st *scheduleState, t
 		if recErr := s.store.RecordScheduleSkipped(st.template.Name, reason, tickAt); recErr != nil {
 			return fmt.Errorf("record skipped: %w", recErr)
 		}
+		log.Printf("[recurrence] skipped %s reason=%s tick_at=%s", st.template.Name, reason, tickAt.UTC().Format(time.RFC3339Nano))
 		return nil
 	}
 
@@ -213,6 +218,7 @@ func (s *RecurrenceSupervisor) fireOne(ctx context.Context, st *scheduleState, t
 		if recErr := s.store.RecordScheduleFired(st.template.Name, subID, tickAt); recErr != nil {
 			return fmt.Errorf("record fired: %w", recErr)
 		}
+		log.Printf("[recurrence] fired %s submission_id=%s tick_at=%s", st.template.Name, subID, tickAt.UTC().Format(time.RFC3339Nano))
 	}
 	// A4 step 4: THEN Queue.SubmitJob (idempotency key = submission_id).
 	return s.submitJob(st.template, subID, tickAt)
@@ -222,15 +228,9 @@ func (s *RecurrenceSupervisor) fireOne(ctx context.Context, st *scheduleState, t
 // deterministic submission_id so a crash between RecordScheduleFired and
 // SubmitJob retries safely on the next tick.
 func (s *RecurrenceSupervisor) submitJob(t RecurringJobTemplate, subID string, tickAt time.Time) error {
-	payload, err := decodePayload(t.Payload)
+	payload, err := materializeRecurringJobPayload(t, subID, tickAt)
 	if err != nil {
-		return fmt.Errorf("decode payload: %w", err)
-	}
-	payload["schedule_name"] = t.Name
-	payload["submission_id"] = subID
-	payload["tick_at"] = tickAt.UTC().Format(time.RFC3339Nano)
-	if t.Timeout > 0 {
-		payload["timeout"] = t.Timeout.String()
+		return err
 	}
 	_, err = s.queue.SubmitJob(SubmitJobInput{
 		JobType:        t.JobType,

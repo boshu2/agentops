@@ -177,14 +177,18 @@ func Load(path string) ([]daemon.RecurringJobTemplate, error) {
 			payload = b
 		}
 
-		out = append(out, daemon.RecurringJobTemplate{
+		template := daemon.RecurringJobTemplate{
 			Name:         entry.Name,
 			Cron:         entry.Cron,
 			JobType:      daemon.JobType(entry.JobType),
 			Payload:      payload,
 			Timeout:      timeout,
 			Backpressure: bp,
-		})
+		}
+		if err := daemon.ValidateRecurringJobTemplatePayload(template); err != nil {
+			return nil, newErr(path, field+".payload", err)
+		}
+		out = append(out, template)
 	}
 
 	return out, nil

@@ -736,6 +736,20 @@ func TestRoute_PostSchedules_MissingFieldsReturns400(t *testing.T) {
 	}
 }
 
+func TestRoute_PostSchedules_InvalidPayloadReturns400(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	resp := postSchedule(t, router, `{"name":"bad-forge","cron":"0 3 * * *","job_type":"wiki.forge","payload":{"source_paths":[]}}`, "secret-token")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("invalid payload status = %d body=%s, want 400", resp.Code, resp.Body.String())
+	}
+	if !strings.Contains(resp.Body.String(), "source_paths") {
+		t.Fatalf("invalid payload body = %s, want source_paths detail", resp.Body.String())
+	}
+}
+
 // TestRoute_GetSchedules_ReturnsList saves two schedules directly via the
 // store and verifies GET surfaces both. GET is read-only and bypasses auth.
 func TestRoute_GetSchedules_ReturnsList(t *testing.T) {
