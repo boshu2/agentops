@@ -29,13 +29,21 @@ mkdir -p "$DIR"
 # Pre-flight: must run from agentops repo, clean tree
 cd "$HOME/dev/agentops" || { echo "no agentops repo at ~/dev/agentops" >&2; exit 1; }
 
-if [ -n "$(git status --porcelain)" ]; then
+# Working tree clean — IGNORE tool-auto-mutated paths (matches preflight policy).
+# .agents/ao/last-processed mutates whenever any ao command runs.
+# .agents/findings/registry.jsonl mutates on bd ready / ao lookup.
+# .agents/ao/citations.jsonl mutates on ao metrics cite.
+DIRTY="$(git status --porcelain | \
+    grep -vE '\.agents/ao/last-processed|\.agents/findings/registry\.jsonl|\.agents/ao/citations\.jsonl' \
+    || true)"
+if [ -n "$DIRTY" ]; then
     {
         echo "# Overnight Evolve — REFUSED"
         echo
-        echo "Working tree not clean. Stash or commit before launching."
+        echo "Working tree not clean (excluding tool-auto-mutated paths)."
+        echo "Stash or commit before launching."
         echo
-        git status --short
+        printf '%s\n' "$DIRTY"
     } | tee "$SUMMARY"
     exit 1
 fi
