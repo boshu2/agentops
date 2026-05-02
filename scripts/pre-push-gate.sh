@@ -532,20 +532,35 @@ else
     skip ".agents/ write-surface contract"
 fi
 
-# --- 5. Embedded hooks sync (full parity gate) ---
-if needs_check hook; then
-    if [[ -x scripts/validate-embedded-sync.sh ]]; then
-        if embed_output="$(./scripts/validate-embedded-sync.sh 2>&1)"; then
-            pass "embedded hooks in sync"
-        else
-            fail "embedded hooks stale (run: cd cli && make sync-hooks)"
-            indent_output "$embed_output"
-        fi
+# --- 5. Embedded hooks sync (full parity gate, always-on) ---
+# Unconditional: even pure-Go diffs can interact with embedded fixtures, and the
+# CI-side gate is unconditional. ~0.5-1s overhead. Caught 7/20 prior failures.
+if [[ -x scripts/validate-embedded-sync.sh ]]; then
+    if embed_output="$(./scripts/validate-embedded-sync.sh 2>&1)"; then
+        pass "embedded hooks in sync"
     else
-        fail "missing executable: scripts/validate-embedded-sync.sh"
+        fail "embedded hooks stale (run: cd cli && make sync-hooks)"
+        indent_output "$embed_output"
     fi
 else
-    skip "embedded hooks in sync"
+    fail "missing executable: scripts/validate-embedded-sync.sh"
+fi
+
+# --- 5b. Test-fixture parity (hook coverage + pre-push helper stubs) ---
+# Mirror CI assertions at pre-push speed: every hooks/*.sh has test coverage,
+# and every helper-script reference in pre-push-gate.sh has a fake-repo stub.
+# Targets the 17/20 bats-tests + 13/20 cli-integration parity-drift recurrence.
+if needs_check hook || needs_check shell; then
+    if [[ -x scripts/check-test-fixture-parity.sh ]]; then
+        if parity_output="$(./scripts/check-test-fixture-parity.sh 2>&1)"; then
+            pass "test-fixture parity (hooks + pre-push helper stubs)"
+        else
+            fail "test-fixture parity break (see below)"
+            indent_output "$parity_output"
+        fi
+    fi
+else
+    skip "test-fixture parity"
 fi
 
 # --- 6. Skill count sync ---

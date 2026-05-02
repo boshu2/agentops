@@ -1,50 +1,61 @@
 {
-  "schema_version": 1,
-  "run_id": "20260502T190839Z-release-readiness-eight",
-  "objective": "Build an explicit release readiness >=8/10 gate and integrate SIL/VIL/HIL evidence into the release process.",
-  "epic_id": "soc-h22t",
-  "plan_path": ".agents/plans/2026-05-02-release-readiness-eight-sil-vil-hil.md",
-  "contract_surfaces": [
-    "docs/contracts/release-readiness.md",
-    "docs/contracts/eval-environment.md",
-    "docs/RELEASING.md",
-    "docs/CI-CD.md"
-  ],
-  "validation_commands": [
-    "bash -n scripts/check-release-readiness.sh scripts/check-release-hil.sh scripts/ci-local-release.sh scripts/validate-release-audit-artifacts.sh scripts/resolve-release-artifacts.sh",
-    "bats tests/scripts/release-readiness.bats tests/scripts/release-hil.bats tests/scripts/release-artifacts.bats tests/scripts/ci-local-release.bats",
-    "bash scripts/check-contract-compatibility.sh",
-    "bash scripts/validate-ci-policy-parity.sh",
-    "bash scripts/generate-cli-reference.sh --check",
-    "bash scripts/release-smoke-test.sh --skip-build",
-    "ao vibe-check --since 1d --json | jq '{score, grade, findings: ((.findings // []) | length), metrics}'"
-  ],
+  "schema_version": "1.0",
+  "run_id": "rpi-2026-05-02-ci-parity-pre-push-gate",
+  "objective": "Implement preventive guardrails (S1+S2) against recurring main-branch CI parity-drift failures: a new scripts/check-test-fixture-parity.sh validator wired into scripts/pre-push-gate.sh that mirrors the CI-side hook-coverage scan and bats fake-repo stub completeness assertions, plus making embedded-sync unconditional.",
+  "epic_id": "soc-zkhu",
   "tracker_mode": "beads",
-  "tracker_health": {
-    "healthy": true,
-    "mode": "beads",
-    "reason": "bd ready/list succeeded; epic soc-h22t and five child issues created"
-  },
-  "done_criteria": [
-    "Release readiness artifact validates against schema and reports release_readiness_score >= 8.0 in official mode.",
-    "SIL, VIL, and HIL evidence are represented in readiness JSON with pass/fail/skip/waived semantics.",
-    "Official release audit validation rejects missing readiness or required HIL evidence unless waiver is explicit.",
-    "Local release gate and release docs describe the 8/10 requirement.",
-    "Release readiness tests, HIL tests, CI policy parity, contract compatibility, and release smoke pass."
-  ],
+  "tracker_health": "healthy",
   "complexity": "standard",
-  "pre_mortem_verdict": "PASS",
-  "test_levels": {
-    "required": [
-      "L0",
-      "L1",
-      "L2"
+  "test_first": true,
+  "discovery_completed": "2026-05-02",
+  "input_research_artifact": ".agents/research/2026-05-02-ci-failure-prevention.md",
+  "discovery_phase": {
+    "design_gate": {
+      "verdict": "SKIPPED",
+      "rationale": "CI hardening is a chore/ops surface, not a product feature; PRODUCT.md design gate doesn't apply."
+    },
+    "brainstorm": {
+      "verdict": "SKIPPED",
+      "rationale": "Goal was concrete (>50 chars, specific surfaces named) — skipped per /discovery STEP 1 contract."
+    },
+    "research_artifact": ".agents/research/2026-05-02-ci-failure-prevention.md",
+    "plan_path": ".agents/plans/2026-05-02-ci-parity-pre-push-gate.md",
+    "pre_mortem_artifact": ".agents/council/2026-05-02-pre-mortem-ci-parity-pre-push-gate.md",
+    "pre_mortem_verdict": "WARN",
+    "pre_mortem_amendments_propagated": [
+      {"issue": "soc-zkhu.1", "findings": ["W1-helper-extraction-regex", "W2-output-format", "W4-bypass-env-var"]},
+      {"issue": "soc-zkhu.4", "findings": ["W3-fixture-not-checkout"]}
     ],
-    "recommended": [
-      "L3"
-    ],
-    "rationale": "Release-process changes touch scripts, docs, schemas, workflows, and cross-host validation. L3 applies when HIL targets are configured and can be executed."
+    "scope_mode": "hold"
   },
+  "issues": [
+    {"id": "soc-zkhu.1", "title": "I1: Create scripts/check-test-fixture-parity.sh", "wave": 1, "deps": []},
+    {"id": "soc-zkhu.2", "title": "I3: Make embedded-sync unconditional in pre-push-gate.sh", "wave": 1, "deps": []},
+    {"id": "soc-zkhu.3", "title": "I2: Wire parity validator into pre-push-gate.sh", "wave": 2, "deps": ["soc-zkhu.1"]},
+    {"id": "soc-zkhu.4", "title": "I4: Bats coverage for check-test-fixture-parity.sh", "wave": 2, "deps": ["soc-zkhu.1"]}
+  ],
+  "test_levels": ["L1", "L2"],
+  "contract_surfaces": [
+    "scripts/check-test-fixture-parity.sh",
+    "scripts/pre-push-gate.sh",
+    "tests/scripts/test-check-test-fixture-parity.bats",
+    "tests/scripts/fixtures/parity-replay-5da522e9/"
+  ],
+  "done_criteria": [
+    "scripts/check-test-fixture-parity.sh exists and exits 0 on current main",
+    "Replay-regression fixture exits 1 with named missing entries",
+    "Pre-push gate 5b runs under needs_check hook||shell",
+    "Embedded-sync gate at pre-push-gate.sh:535 no longer wrapped in needs_check hook",
+    "tests/scripts/test-check-test-fixture-parity.bats: 4/4 cases pass",
+    "Validate workflow on main: bats-tests + cli-integration green for at least one push"
+  ],
+  "boundaries_out_of_scope": [
+    "S3 cli-docs-parity pre-push",
+    "S4 command/test pairing",
+    "warn-only job triage (agentops-eval-advisory, security-toolchain-gate)",
+    ".github/workflows/validate.yml CI-side changes",
+    "Go code or cli/ changes"
+  ],
   "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "discovery_timestamp": "2026-05-02T15:08:39-04:00"
+  "discovery_runtime_attempts": 1
 }
