@@ -48,7 +48,7 @@ func TestRunWriter_PendingToRunningToComplete(t *testing.T) {
 		t.Fatalf("pending->running: %v", err)
 	}
 	if err := w.Transition(StatusComplete, func(m *Manifest) {
-		m.Verdict = "improved"
+		m.Verdict = &Verdict{Kind: VerdictImproved}
 	}); err != nil {
 		t.Fatalf("running->complete: %v", err)
 	}
@@ -62,8 +62,8 @@ func TestRunWriter_PendingToRunningToComplete(t *testing.T) {
 	if loaded.FinishedAtUnixMs == 0 {
 		t.Fatal("finished_at_unix_ms not stamped")
 	}
-	if loaded.Verdict != "improved" {
-		t.Fatalf("verdict = %q", loaded.Verdict)
+	if loaded.Verdict == nil || loaded.Verdict.Kind != VerdictImproved {
+		t.Fatalf("verdict = %v", loaded.Verdict)
 	}
 }
 

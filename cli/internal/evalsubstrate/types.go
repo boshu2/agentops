@@ -1,9 +1,16 @@
 // Package evalsubstrate implements the Day-2 eval substrate per
-// ~/.agents/evals/SCHEMA.md rc2: §3 primitives, §4 atomic-write contract,
-// §6 manifest-checkable gates (1/6/7/8/9), §7 content-addressing.
+// ~/.agents/evals/SCHEMA.md rc3: §3 primitives, §4 atomic-write contract,
+// §6 manifest-checkable gates (1/6/7/8/9), §7 content-addressing,
+// and (rc3 addition) verdict-driven corpus mutation.
 //
 // Distinct from cli/internal/eval (legacy deterministic-suite RunRecord).
 package evalsubstrate
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+)
 
 const SchemaVersion = 1
 
@@ -185,7 +192,7 @@ type Manifest struct {
 	InspectVersion      string                 `json:"inspect_version"`
 	Metrics             map[string]interface{} `json:"metrics,omitempty"`
 	DiffFrom            string                 `json:"diff_from,omitempty"`
-	Verdict             string                 `json:"verdict,omitempty"`
+	Verdict             *Verdict               `json:"verdict,omitempty"`
 	ValidityGatesPassed []string               `json:"validity_gates_passed"`
 
 	RigID      string `json:"rig_id"`
@@ -198,4 +205,62 @@ type Manifest struct {
 	ReferenceArm          string `json:"reference_arm,omitempty"`
 	FamilySizeK           int    `json:"family_size_k,omitempty"`
 	BootstrapInputsHash   string `json:"bootstrap_inputs_hash,omitempty"`
+}
+
+// VerdictKind enumerates the §6.5 5-verdict outcome set plus rc3 underpowered.
+type VerdictKind string
+
+const (
+	VerdictImproved                 VerdictKind = "improved"
+	VerdictRegressed                VerdictKind = "regressed"
+	VerdictNoChange                 VerdictKind = "no_change"
+	VerdictUnderpowered             VerdictKind = "underpowered"
+	VerdictInconclusiveHighVariance VerdictKind = "inconclusive_high_variance"
+	VerdictInconclusiveDegenerate   VerdictKind = "inconclusive_degenerate"
+)
+
+// Verdict is the rc3 enriched run-verdict record used by the verdict-compiler
+// hook (hooks/eval-verdict-compiler.sh) to drive corpus mutation.
+//
+// The JSON form is either:
+//
+//	"verdict": null
+//	"verdict": "improved"             (legacy rc2 string form — back-compat)
+//	"verdict": {kind: "improved", utility: 0.85, ...}   (rc3 struct form)
+//
+// UnmarshalJSON accepts all three. Marshaling always emits the struct form.
+type Verdict struct {
+	Kind                VerdictKind `json:"kind"`
+	DeltaPoint          float64     `json:"delta_point,omitempty"`
+	CILow               float64     `json:"ci_low,omitempty"`
+	CIHigh              float64     `json:"ci_high,omitempty"`
+	Utility             float64     `json:"utility,omitempty"`
+	ApplicableArtifacts []string    `json:"applicable_artifacts,omitempty"`
+	Notes               string      `json:"notes,omitempty"`
+}
+
+// UnmarshalJSON accepts both the legacy string form and the rc3 struct form.
+// `null` produces a zero-valued Verdict (caller can detect via *Verdict==nil
+// since the field is a pointer; this method is only invoked when the field
+// is present and non-null).
+func (v *Verdict) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+		return nil
+	}
+	if trimmed[0] == '"' {
+		var s string
+		if err := json.Unmarshal(trimmed, &s); err != nil {
+			return fmt.Errorf("verdict: legacy string form: %w", err)
+		}
+		v.Kind = VerdictKind(s)
+		return nil
+	}
+	type rawVerdict Verdict
+	var raw rawVerdict
+	if err := json.Unmarshal(trimmed, &raw); err != nil {
+		return fmt.Errorf("verdict: struct form: %w", err)
+	}
+	*v = Verdict(raw)
+	return nil
 }
