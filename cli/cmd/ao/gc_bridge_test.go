@@ -648,82 +648,84 @@ func TestGCBridgeReady_Mocked_VersionCheckFails(t *testing.T) {
 	}
 }
 
-func TestGCBridgeDiagnose_DistinguishesFailureSurfaces(t *testing.T) {
-	t.Run("binary missing", func(t *testing.T) {
-		mock := newGCMock()
-		mock.binaryAvailable = false
+func TestGCBridgeDiagnose_BinaryMissing(t *testing.T) {
+	mock := newGCMock()
+	mock.binaryAvailable = false
 
-		diag := gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, true)
-		if diag.BinaryAvailable || diag.Ready {
-			t.Fatalf("diag = %#v, want missing binary and not ready", diag)
-		}
-		if !diag.FallbackEnabled {
-			t.Fatalf("diag = %#v, want fallback flag preserved", diag)
-		}
-		if !strings.Contains(diag.Reason, "binary not found") {
-			t.Fatalf("reason = %q, want binary detail", diag.Reason)
-		}
-	})
+	diag := diagnoseGCBridgeWithMock(mock, true)
+	if diag.BinaryAvailable || diag.Ready {
+		t.Fatalf("diag = %#v, want missing binary and not ready", diag)
+	}
+	if !diag.FallbackEnabled {
+		t.Fatalf("diag = %#v, want fallback flag preserved", diag)
+	}
+	if !strings.Contains(diag.Reason, "binary not found") {
+		t.Fatalf("reason = %q, want binary detail", diag.Reason)
+	}
+}
 
-	t.Run("version below minimum", func(t *testing.T) {
-		mock := newGCMock()
-		mock.on("version", gcMockHandler{Stdout: "0.12.0"})
+func TestGCBridgeDiagnose_VersionBelowMinimum(t *testing.T) {
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.12.0"})
 
-		diag := gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, false)
-		if !diag.BinaryAvailable || diag.Version != "0.12.0" || diag.VersionOK || diag.APIReachable {
-			t.Fatalf("diag = %#v, want binary/version but no API", diag)
-		}
-		if !strings.Contains(diag.Reason, "below minimum") {
-			t.Fatalf("reason = %q, want version detail", diag.Reason)
-		}
-	})
+	diag := diagnoseGCBridgeWithMock(mock, false)
+	if !diag.BinaryAvailable || diag.Version != "0.12.0" || diag.VersionOK || diag.APIReachable {
+		t.Fatalf("diag = %#v, want binary/version but no API", diag)
+	}
+	if !strings.Contains(diag.Reason, "below minimum") {
+		t.Fatalf("reason = %q, want version detail", diag.Reason)
+	}
+}
 
-	t.Run("API unavailable", func(t *testing.T) {
-		mock := newGCMock()
-		mock.on("version", gcMockHandler{Stdout: "0.14.0"})
-		mock.on("status --json", gcMockHandler{ExitCode: 1})
+func TestGCBridgeDiagnose_APIUnavailable(t *testing.T) {
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	mock.on("status --json", gcMockHandler{ExitCode: 1})
 
-		diag := gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, true)
-		if !diag.BinaryAvailable || !diag.VersionOK || diag.APIReachable || diag.ReadinessReady {
-			t.Fatalf("diag = %#v, want version ok but API unreachable", diag)
-		}
-		if !diag.FallbackEnabled {
-			t.Fatalf("diag = %#v, want fallback flag", diag)
-		}
-		if !strings.Contains(diag.Reason, "API unavailable") {
-			t.Fatalf("reason = %q, want API detail", diag.Reason)
-		}
-	})
+	diag := diagnoseGCBridgeWithMock(mock, true)
+	if !diag.BinaryAvailable || !diag.VersionOK || diag.APIReachable || diag.ReadinessReady {
+		t.Fatalf("diag = %#v, want version ok but API unreachable", diag)
+	}
+	if !diag.FallbackEnabled {
+		t.Fatalf("diag = %#v, want fallback flag", diag)
+	}
+	if !strings.Contains(diag.Reason, "API unavailable") {
+		t.Fatalf("reason = %q, want API detail", diag.Reason)
+	}
+}
 
-	t.Run("readiness failed", func(t *testing.T) {
-		mock := newGCMock()
-		mock.on("version", gcMockHandler{Stdout: "0.14.0"})
-		statusJSON := `{"city":"test","controller":{"running":false,"pid":0},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
-		mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+func TestGCBridgeDiagnose_ReadinessFailed(t *testing.T) {
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"test","controller":{"running":false,"pid":0},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
 
-		diag := gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, false)
-		if !diag.BinaryAvailable || !diag.VersionOK || !diag.APIReachable || diag.ReadinessReady || diag.Ready {
-			t.Fatalf("diag = %#v, want reachable API but failed readiness", diag)
-		}
-		if !strings.Contains(diag.Reason, "readiness failed") {
-			t.Fatalf("reason = %q, want readiness detail", diag.Reason)
-		}
-	})
+	diag := diagnoseGCBridgeWithMock(mock, false)
+	if !diag.BinaryAvailable || !diag.VersionOK || !diag.APIReachable || diag.ReadinessReady || diag.Ready {
+		t.Fatalf("diag = %#v, want reachable API but failed readiness", diag)
+	}
+	if !strings.Contains(diag.Reason, "readiness failed") {
+		t.Fatalf("reason = %q, want readiness detail", diag.Reason)
+	}
+}
 
-	t.Run("ready", func(t *testing.T) {
-		mock := newGCMock()
-		mock.on("version", gcMockHandler{Stdout: "0.14.0"})
-		statusJSON := `{"city":"test","controller":{"running":true,"pid":99},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
-		mock.on("status --json", gcMockHandler{Stdout: statusJSON})
+func TestGCBridgeDiagnose_Ready(t *testing.T) {
+	mock := newGCMock()
+	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
+	statusJSON := `{"city":"test","controller":{"running":true,"pid":99},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`
+	mock.on("status --json", gcMockHandler{Stdout: statusJSON})
 
-		diag := gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, false)
-		if !diag.Ready || !diag.ReadinessReady || !diag.APIReachable || !diag.VersionOK {
-			t.Fatalf("diag = %#v, want fully ready", diag)
-		}
-		if diag.Reason != "gc bridge ready" {
-			t.Fatalf("reason = %q, want ready", diag.Reason)
-		}
-	})
+	diag := diagnoseGCBridgeWithMock(mock, false)
+	if !diag.Ready || !diag.ReadinessReady || !diag.APIReachable || !diag.VersionOK {
+		t.Fatalf("diag = %#v, want fully ready", diag)
+	}
+	if diag.Reason != "gc bridge ready" {
+		t.Fatalf("reason = %q, want ready", diag.Reason)
+	}
+}
+
+func diagnoseGCBridgeWithMock(mock *gcMock, fallbackEnabled bool) gcBridgeDiagnostics {
+	return gcBridgeDiagnose("", mock.execCommand, mock.lookPathFn, fallbackEnabled)
 }
 
 // =============================================================================
