@@ -319,18 +319,14 @@ func readDryRunExecutionPacket(t *testing.T, tmpDir, runID string) []byte {
 	t.Helper()
 
 	packetPath := filepath.Join(tmpDir, ".agents", "rpi", "execution-packet.json")
-	packetData, err := os.ReadFile(packetPath)
-	if err != nil {
-		t.Fatalf("read execution packet: %v", err)
+	if _, err := os.Stat(packetPath); !os.IsNotExist(err) {
+		t.Fatalf("dry-run left latest execution packet alias at %s (err=%v)", packetPath, err)
 	}
-	archivedPacketData, err := os.ReadFile(filepath.Join(tmpDir, ".agents", "rpi", "runs", runID, executionPacketFile))
+	archivedPacketData, err := os.ReadFile(dryRunExecutionPacketArchivePath(tmpDir, runID))
 	if err != nil {
 		t.Fatalf("read archived execution packet: %v", err)
 	}
-	if string(archivedPacketData) != string(packetData) {
-		t.Fatalf("archived execution packet does not match latest alias:\nlatest:\n%s\narchived:\n%s", packetData, archivedPacketData)
-	}
-	return packetData
+	return archivedPacketData
 }
 
 func decodeDryRunProgramContractPacket(t *testing.T, packetData []byte) dryRunProgramContractPacket {
@@ -365,6 +361,40 @@ func assertDryRunProgramContractPacket(
 	if !containsProgramContract(packet.ContractSurfaces, tc.wantPath) {
 		t.Fatalf("contract_surfaces = %#v, want %s", packet.ContractSurfaces, tc.wantPath)
 	}
+}
+
+func TestRunPhasedEngine_DryRunRestoresExistingExecutionPacketAlias(t *testing.T) {
+	tmpDir := setupDryRunProgramContractWorkspace(t, dryRunProgramContractCases()[0])
+	rpiDir := filepath.Join(tmpDir, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("{\"objective\":\"original tracked alias\"}\n")
+	aliasPath := filepath.Join(rpiDir, executionPacketFile)
+	if err := os.WriteFile(aliasPath, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	state := runDryRunPhasedEngine(t, tmpDir)
+
+	aliasData, err := os.ReadFile(aliasPath)
+	if err != nil {
+		t.Fatalf("read restored execution packet alias: %v", err)
+	}
+	if string(aliasData) != string(original) {
+		t.Fatalf("dry-run mutated existing execution packet alias\nwant:\n%s\ngot:\n%s", original, aliasData)
+	}
+	archiveData, err := os.ReadFile(dryRunExecutionPacketArchivePath(tmpDir, state.RunID))
+	if err != nil {
+		t.Fatalf("read dry-run archive packet: %v", err)
+	}
+	if !strings.Contains(string(archiveData), "drive bounded autodev experiments") {
+		t.Fatalf("dry-run archive packet missing current objective:\n%s", archiveData)
+	}
+}
+
+func dryRunExecutionPacketArchivePath(tmpDir, runID string) string {
+	return filepath.Join(tmpDir, ".agents", "rpi", "runs", runID, executionPacketFile)
 }
 
 func assertDryRunOrchestrationLog(t *testing.T, tmpDir string) {

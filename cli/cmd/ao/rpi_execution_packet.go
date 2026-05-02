@@ -177,3 +177,40 @@ func writeExecutionPacketDataToRoot(root, runID string, data []byte) error {
 	VerbosePrintf("Execution packet saved to %s\n", flatPath)
 	return nil
 }
+
+type executionPacketAliasSnapshot struct {
+	path    string
+	data    []byte
+	existed bool
+}
+
+func captureExecutionPacketAliasSnapshot(root string) (*executionPacketAliasSnapshot, error) {
+	path := filepath.Join(root, ".agents", "rpi", executionPacketFile)
+	data, err := os.ReadFile(path)
+	if err == nil {
+		return &executionPacketAliasSnapshot{path: path, data: data, existed: true}, nil
+	}
+	if os.IsNotExist(err) {
+		return &executionPacketAliasSnapshot{path: path}, nil
+	}
+	return nil, fmt.Errorf("snapshot execution packet latest alias: %w", err)
+}
+
+func (s *executionPacketAliasSnapshot) restore() error {
+	if s == nil {
+		return nil
+	}
+	if !s.existed {
+		if err := os.Remove(s.path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove dry-run execution packet latest alias: %w", err)
+		}
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o750); err != nil {
+		return fmt.Errorf("restore execution packet latest alias directory: %w", err)
+	}
+	if err := writePhasedStateAtomic(s.path, s.data); err != nil {
+		return fmt.Errorf("restore execution packet latest alias: %w", err)
+	}
+	return nil
+}

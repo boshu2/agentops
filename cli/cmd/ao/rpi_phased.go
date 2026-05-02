@@ -342,6 +342,21 @@ func runRPIPhasedWithOpts(ctx context.Context, opts phasedEngineOptions, args []
 			retErr = cleanupErr
 		}
 	}()
+	if GetDryRun() {
+		aliasSnapshot, snapErr := captureExecutionPacketAliasSnapshot(run.spawnCwd)
+		if snapErr != nil {
+			return snapErr
+		}
+		defer func() {
+			if restoreErr := aliasSnapshot.restore(); restoreErr != nil {
+				if retErr == nil {
+					retErr = restoreErr
+				} else {
+					VerbosePrintf("Warning: %v\n", restoreErr)
+				}
+			}
+		}()
+	}
 
 	if err := initializePhasedRun(run, opts); err != nil {
 		return err
