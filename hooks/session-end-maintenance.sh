@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 # SessionEnd: forge learnings + maturity maintenance (serialized via lock).
 
+# Eval-verdict compiler — kill-switch-INDEPENDENT opt-in path (pre-mortem H1).
+if [ "${AGENTOPS_EVAL_VERDICT_ENABLED:-}" = "1" ]; then
+    SE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+    SE_PLUGIN_ROOT="$(cd "${SE_SCRIPT_DIR}/.." && pwd)"
+    SE_EVAL_VERDICT_COMPILER="${SE_PLUGIN_ROOT}/hooks/eval-verdict-compiler.sh"
+    if [ -x "$SE_EVAL_VERDICT_COMPILER" ]; then
+        SE_SINCE="$(date -u -v-1d +%s 2>/dev/null || date -u -d '1 day ago' +%s 2>/dev/null || echo 0)"
+        bash "$SE_EVAL_VERDICT_COMPILER" --since "${SE_SINCE}000" --quiet 2>/dev/null || true
+    fi
+fi
+
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 

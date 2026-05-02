@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "run-fixture-improved",
+  "kind": "task",
+  "status": "complete",
+  "started_at_unix_ms": 1714564800000,
+  "finished_at_unix_ms": 1714565100000,
+  "task_ref": "fixture-task",
+  "harness_ref": "fixture-harness",
+  "harness_content_hash": "sha256:abc",
+  "model_spec_ref": "ms:fixture",
+  "model_spec_hash": "sha256:def",
+  "ground_truth_ref": "gt-fixture",
+  "ground_truth_hash": "sha256:ghi",
+  "sample_split": "dev",
+  "n_samples": 50,
+  "seeds": [1, 2, 3],
+  "inspect_command": "fixture",
+  "inspect_version": "0.0.0",
+  "validity_gates_passed": [],
+  "rig_id": "fixture-rig",
+  "captured_by": "fixture",
+  "quick_session": false,
+  "verdict": {
+    "kind": "improved",
+    "delta_point": 0.05,
+    "ci_low": 0.02,
+    "ci_high": 0.08,
+    "utility": 0.85,
+    "applicable_artifacts": ["tests/fixtures/eval-verdicts/learning-existing.md"],
+    "notes": "fixture: clear improvement"
+  }
+}
