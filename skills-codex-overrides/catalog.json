@@ -616,6 +616,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Stage 4 behavioral validation skill; converter parity is acceptable."
+    },
+    {
+      "name": "scope",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
     }
   ]
 }
