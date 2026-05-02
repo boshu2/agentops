@@ -114,12 +114,12 @@ run_scenario \
     10 120
 
 # ─────────────────────────────────────────────────────────
-# Scenario 3: Multi-skill chain (research + plan) — 12 turns, 180s
+# Scenario 3: Multi-skill chain (research + plan) — 8 turns, 150s
 # ─────────────────────────────────────────────────────────
 run_scenario \
     "Scenario 3: Multi-skill chain (research + plan)" \
-    "First, use the research skill to explore the hooks/ directory in this plugin and summarize what each hook does in one line. Then suggest 3 improvements to the hook system. Keep responses concise." \
-    12 180
+    "First, use the research skill to inspect the hooks/ directory in this plugin and summarize 5 representative hooks in one line each. Then suggest 3 improvements to the hook system. Keep responses concise." \
+    8 150
 
 # ─────────────────────────────────────────────────────────
 # Summary

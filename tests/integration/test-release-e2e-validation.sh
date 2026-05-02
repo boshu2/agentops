@@ -54,7 +54,7 @@ check_marker() {
 }
 
 check_marker "Codex runtime sections"
-check_marker "Codex release bundle parity"
+check_marker "Codex artifact metadata"
 check_marker "Hook install smoke (minimal + full)"
 check_marker "ao init --hooks + ao rpi smoke"
 

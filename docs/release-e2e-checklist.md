@@ -27,6 +27,7 @@ Expect:
 - Exit code `0`
 - Output contains these markers:
   - `Codex runtime sections`
+  - `Codex artifact metadata`
   - `Skill runtime parity`
   - `Hook install smoke (minimal + full)`
   - `ao init --hooks + ao rpi smoke`
