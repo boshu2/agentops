@@ -56,6 +56,25 @@ JSON'
     [ ! -f "$FAKE_REPO/.agents/evolve/fitness-0-baseline.json" ]
 }
 
+@test "evolve-capture-baseline.sh passes whole-run timeout to goals measure" {
+    args_file="$TMP_DIR/ao-args.txt"
+    write_mock_ao 'printf "%s\n" "$*" > "${MOCK_AO_ARGS_FILE:?}"
+cat <<'"'"'JSON'"'"'
+{"goals":[{"id":"one","result":"pass"}]}
+JSON'
+
+    run env PATH="$MOCK_BIN:$PATH" MOCK_AO_ARGS_FILE="$args_file" bash "$FAKE_REPO/scripts/evolve-capture-baseline.sh" \
+        --repo-root "$FAKE_REPO" \
+        --label era-timeout \
+        --timeout 45 \
+        --total-timeout 70
+
+    [ "$status" -eq 0 ]
+    run cat "$args_file"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"goals measure --json --timeout 45 --total-timeout 70"* ]]
+}
+
 @test "evolve-capture-baseline.sh can write legacy compatibility artifacts when requested" {
     write_mock_ao 'cat <<'"'"'JSON'"'"'
 {"goals":[{"id":"one","result":"pass"},{"id":"two","result":"fail"}]}

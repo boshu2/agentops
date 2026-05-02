@@ -90,10 +90,15 @@ mkdir -p "$(dirname "$OUTPUT_ABS")"
 TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/evolve-fitness.XXXXXX")"
 trap 'rm -f "$TMP_FILE"' EXIT
 
+COMMAND_TIMEOUT="$TOTAL_TIMEOUT"
+if [[ "$TOTAL_TIMEOUT" -gt 0 ]]; then
+  COMMAND_TIMEOUT=$((TOTAL_TIMEOUT + 5))
+fi
+
 set +e
 (
   cd "$REPO_ROOT"
-  timeout "$TOTAL_TIMEOUT" ao goals measure --json --timeout "$TIMEOUT" "${PASSTHRU_ARGS[@]}" >"$TMP_FILE"
+  timeout "$COMMAND_TIMEOUT" ao goals measure --json --timeout "$TIMEOUT" --total-timeout "$TOTAL_TIMEOUT" "${PASSTHRU_ARGS[@]}" >"$TMP_FILE"
 )
 rc=$?
 set -e

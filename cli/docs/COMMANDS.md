@@ -1463,6 +1463,7 @@ ao goals measure [flags]
       --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
       --goal string          Measure a single goal by ID
   -h, --help                 help for measure
+      --total-timeout int    Overall measurement timeout in seconds (0 disables)
 ```
 
 #### `ao goals validate`

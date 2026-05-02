@@ -536,3 +536,53 @@ func TestGoalsMeasure_SkippedGoals(t *testing.T) {
 		t.Errorf("Score = %f, want 100.0 (skipped excluded from denominator)", snap.Summary.Score)
 	}
 }
+
+func TestGoalsMeasure_TotalTimeout(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	md := `# Goals
+
+Mission.
+
+## Gates
+
+| ID | Check | Weight | Description |
+|----|-------|--------|-------------|
+| slow-one | ` + "`sleep 5`" + ` | 5 | Slow |
+| slow-two | ` + "`sleep 5`" + ` | 5 | Slow |
+`
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	if err := os.WriteFile(goalsPath, []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	start := time.Now()
+	err := goals.RunMeasure(goals.MeasureOptions{
+		GoalsFile:    goalsPath,
+		JSON:         true,
+		Timeout:      5 * time.Second,
+		TotalTimeout: 150 * time.Millisecond,
+		Stdout:       &buf,
+		SnapDir:      filepath.Join(dir, "baselines"),
+	})
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("measure returned error: %v", err)
+	}
+	if elapsed > 2*time.Second {
+		t.Fatalf("RunMeasure took %s, want under 2s", elapsed)
+	}
+
+	var snap goals.Snapshot
+	if err := json.Unmarshal(buf.Bytes(), &snap); err != nil {
+		t.Fatalf("failed to decode JSON: %v (raw: %s)", err, buf.String())
+	}
+	if snap.Summary.Total != 2 {
+		t.Errorf("Total = %d, want 2", snap.Summary.Total)
+	}
+	if snap.Summary.Skipped != 2 {
+		t.Errorf("Skipped = %d, want 2", snap.Summary.Skipped)
+	}
+}

@@ -32,7 +32,7 @@ type Measurement struct {
 // classifyResult maps command exit status to a result string.
 func classifyResult(ctxErr, cmdErr error) string {
 	switch {
-	case errors.Is(ctxErr, context.DeadlineExceeded):
+	case errors.Is(ctxErr, context.DeadlineExceeded), errors.Is(ctxErr, context.Canceled):
 		return resultSkip
 	case cmdErr != nil:
 		return resultFail
@@ -108,9 +108,21 @@ func untrackChild(pid int) {
 // Exit 0 = pass, non-zero = fail, context deadline exceeded = skip.
 // Uses process groups so child processes are killed on timeout.
 func MeasureOne(goal Goal, timeout time.Duration) Measurement {
-	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags}
+	return MeasureOneContext(context.Background(), goal, timeout)
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+// MeasureOneContext runs a single goal's check command under both a caller
+// context and a per-goal timeout.
+func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration) Measurement {
+	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags}
+	if parent == nil {
+		parent = context.Background()
+	}
+	if err := parent.Err(); err != nil {
+		return skippedMeasurement(goal, err)
+	}
+
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 
 	start := time.Now()
@@ -128,8 +140,8 @@ func MeasureOne(goal Goal, timeout time.Duration) Measurement {
 
 	if err := cmd.Start(); err != nil {
 		m.Duration = time.Since(start).Seconds()
-		m.Result = resultFail
 		m.Output = err.Error()
+		m.Result = classifyResult(ctx.Err(), err)
 		return m
 	}
 
@@ -146,12 +158,42 @@ func MeasureOne(goal Goal, timeout time.Duration) Measurement {
 
 // Measure runs all goals and returns a Snapshot. Meta-goals run first, then all others.
 func Measure(gf *GoalFile, timeout time.Duration) *Snapshot {
-	measurements := runGoals(gf.Goals, timeout)
+	return measureWithContext(context.Background(), gf, timeout)
+}
+
+// MeasureWithTotalTimeout runs all goals under a whole-measurement timeout.
+// A non-positive totalTimeout keeps the historical unbounded whole-run behavior.
+func MeasureWithTotalTimeout(gf *GoalFile, timeout, totalTimeout time.Duration) *Snapshot {
+	ctx := context.Background()
+	var cancel context.CancelFunc
+	if totalTimeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, totalTimeout)
+		defer cancel()
+	}
+	return measureWithContext(ctx, gf, timeout)
+}
+
+func measureWithContext(ctx context.Context, gf *GoalFile, timeout time.Duration) *Snapshot {
+	measurements := runGoalsWithContext(ctx, gf.Goals, timeout)
 	return &Snapshot{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		GitSHA:    gitSHA(),
 		Goals:     measurements,
 		Summary:   computeSummary(measurements),
+	}
+}
+
+func skippedMeasurement(goal Goal, err error) Measurement {
+	output := "measurement skipped"
+	if err != nil {
+		output += ": " + err.Error()
+	}
+	return Measurement{
+		GoalID: goal.ID,
+		Result: resultSkip,
+		Output: output,
+		Weight: goal.Weight,
+		Tags:   goal.Tags,
 	}
 }
 
@@ -174,6 +216,13 @@ var osExitFn = os.Exit
 // runGoals executes meta-goals first (sequential), then non-meta goals (parallel).
 // Installs a signal handler to kill all child process groups on SIGINT/SIGTERM.
 func runGoals(allGoals []Goal, timeout time.Duration) []Measurement {
+	return runGoalsWithContext(context.Background(), allGoals, timeout)
+}
+
+func runGoalsWithContext(ctx context.Context, allGoals []Goal, timeout time.Duration) []Measurement {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	// Install signal handler to kill children on interrupt.
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -196,7 +245,11 @@ func runGoals(allGoals []Goal, timeout time.Duration) []Measurement {
 	var measurements []Measurement
 	for _, g := range allGoals {
 		if g.Type == GoalTypeMeta {
-			measurements = append(measurements, MeasureOne(g, timeout))
+			if err := ctx.Err(); err != nil {
+				measurements = append(measurements, skippedMeasurement(g, err))
+				continue
+			}
+			measurements = append(measurements, MeasureOneContext(ctx, g, timeout))
 		}
 	}
 
@@ -224,24 +277,47 @@ func runGoals(allGoals []Goal, timeout time.Duration) []Measurement {
 				// Acquire semaphore BEFORE exclusive lock to prevent deadlock:
 				// if Lock() is acquired first, readers holding sem slots and
 				// waiting for RLock would block the writer from getting a slot.
-				sem <- struct{}{}
+				if !acquireGoalSlot(ctx, sem) {
+					results[idx] = skippedMeasurement(goal, ctx.Err())
+					return
+				}
 				defer func() { <-sem }()
 				exclusive.Lock()
 				defer exclusive.Unlock()
-				results[idx] = MeasureOne(goal, timeout)
+				if err := ctx.Err(); err != nil {
+					results[idx] = skippedMeasurement(goal, err)
+					return
+				}
+				results[idx] = MeasureOneContext(ctx, goal, timeout)
 				return
 			}
 
-			sem <- struct{}{}
+			if !acquireGoalSlot(ctx, sem) {
+				results[idx] = skippedMeasurement(goal, ctx.Err())
+				return
+			}
 			defer func() { <-sem }()
 			exclusive.RLock()
 			defer exclusive.RUnlock()
-			results[idx] = MeasureOne(goal, timeout)
+			if err := ctx.Err(); err != nil {
+				results[idx] = skippedMeasurement(goal, err)
+				return
+			}
+			results[idx] = MeasureOneContext(ctx, goal, timeout)
 		}(i, g)
 	}
 	wg.Wait()
 
 	return append(measurements, results...)
+}
+
+func acquireGoalSlot(ctx context.Context, sem chan struct{}) bool {
+	select {
+	case sem <- struct{}{}:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // computeSummary aggregates pass/fail/skip counts and weighted score.

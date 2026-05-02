@@ -103,7 +103,8 @@ test_success_writes_atomically() {
   if PATH="$bin_dir:$PATH" MOCK_AO_ARGS_FILE="$args_file" bash "$SCRIPT" \
     --repo-root "$repo" \
     --output .agents/evolve/fitness-latest.json >"$repo/run.log" 2>&1; then
-    if assert_file_contains "$output" '"goals"' && assert_file_contains "$args_file" 'goals measure --json --timeout 60'; then
+    if assert_file_contains "$output" '"goals"' &&
+      assert_file_contains "$args_file" 'goals measure --json --timeout 60 --total-timeout 75'; then
       pass "successful run writes validated JSON to output"
     else
       fail "successful run writes validated JSON to output"

@@ -83,6 +83,16 @@ func TestGoalsCmd_DefaultTimeoutCoversRepoRaceGate(t *testing.T) {
 	}
 }
 
+func TestGoalsMeasureCmd_TotalTimeoutFlag(t *testing.T) {
+	flag := goalsMeasureCmd.Flags().Lookup("total-timeout")
+	if flag == nil {
+		t.Fatal("missing measure flag \"total-timeout\"")
+	}
+	if flag.DefValue != "0" {
+		t.Fatalf("total-timeout default = %q, want 0", flag.DefValue)
+	}
+}
+
 func TestResolveGoalsFile_ExplicitPath(t *testing.T) {
 	// When goalsFile is set explicitly, it should be returned as-is.
 	old := goalsFile

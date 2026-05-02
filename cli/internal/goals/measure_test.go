@@ -260,6 +260,36 @@ func TestMeasure_SkippedGoalsExcludedFromScore(t *testing.T) {
 	}
 }
 
+func TestMeasureWithTotalTimeoutSkipsQueuedGoals(t *testing.T) {
+	gf := &GoalFile{
+		Version: 2,
+		Goals: []Goal{
+			{ID: "slow-1", Check: "sleep 5", Weight: 1, Type: GoalTypeHealth},
+			{ID: "slow-2", Check: "sleep 5", Weight: 1, Type: GoalTypeHealth},
+			{ID: "slow-3", Check: "sleep 5", Weight: 1, Type: GoalTypeHealth},
+		},
+	}
+
+	start := time.Now()
+	snap := MeasureWithTotalTimeout(gf, 5*time.Second, 150*time.Millisecond)
+	elapsed := time.Since(start)
+
+	if elapsed > 2*time.Second {
+		t.Fatalf("MeasureWithTotalTimeout took %s, want under 2s", elapsed)
+	}
+	if snap.Summary.Total != 3 {
+		t.Fatalf("Total = %d, want 3", snap.Summary.Total)
+	}
+	if snap.Summary.Skipped != 3 {
+		t.Fatalf("Skipped = %d, want 3", snap.Summary.Skipped)
+	}
+	for _, m := range snap.Goals {
+		if m.Result != resultSkip {
+			t.Fatalf("%s result = %q, want skip", m.GoalID, m.Result)
+		}
+	}
+}
+
 func TestMeasure_EmptyGoals(t *testing.T) {
 	gf := &GoalFile{Version: 2, Goals: []Goal{}}
 	snap := Measure(gf, 5*time.Second)
