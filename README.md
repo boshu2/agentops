@@ -16,6 +16,75 @@ AgentOps gives agents a shared `ao` control plane, lifecycle hooks, validation g
 
 ---
 
+## Install
+
+Pick the runtime you use.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
+```
+
+**Codex CLI on macOS, Linux, or WSL**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+```
+
+**Codex CLI on Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
+```
+
+**OpenCode**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
+```
+
+**Other skills-compatible agents**
+
+```bash
+npx skills@latest add boshu2/agentops --cursor -g
+```
+
+Restart your agent after install. Then type `/quickstart` in your agent chat.
+
+The `ao` CLI is optional, but recommended. It unlocks repo-native bookkeeping, retrieval, health checks, and terminal workflows.
+
+**macOS**
+
+```bash
+brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew install agentops
+ao version
+```
+
+**Windows PowerShell**
+
+```powershell
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
+ao version
+```
+
+You can also install the CLI from [release binaries](https://github.com/boshu2/agentops/releases) or [build from source](cli/README.md).
+
+| Concern | Answer |
+|---------|--------|
+| What it touches | Installs skills globally and registers runtime hooks when requested; agent work writes local bookkeeping to `.agents/` |
+| Source code changes | None during install |
+| Network behavior | Install and update paths fetch from GitHub; repo artifacts stay local unless you choose external tools or remote model runtimes |
+| Telemetry | None required |
+| Permission surface | Skills can run shell commands and read or write repo files during agent work, so install where you want agents to operate |
+| Reversible | Remove the installed skill directories, delete `.agents/`, and remove hook entries from your runtime settings |
+
+Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md) · Configuration: [docs/ENV-VARS.md](docs/ENV-VARS.md)
+
+---
+
 ## What AgentOps Gives You
 
 AgentOps gives your coding agent four things it does not have by default:
@@ -111,75 +180,6 @@ Software shipped because we codified the work. Iteration. Test discipline. Pipel
 AgentOps gives your agents the same kind of artifact: **the corpus** — a typed, versioned, agent-readable wiki maintained alongside the code. Same lineage. New substrate.
 
 The pattern is broader than code; the product is focused on coding agents.
-
----
-
-## Install
-
-Pick the runtime you use.
-
-**Claude Code**
-
-```bash
-claude plugin marketplace add boshu2/agentops
-claude plugin install agentops@agentops-marketplace
-```
-
-**Codex CLI on macOS, Linux, or WSL**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-```
-
-**Codex CLI on Windows PowerShell**
-
-```powershell
-irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
-```
-
-**OpenCode**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
-```
-
-**Other skills-compatible agents**
-
-```bash
-npx skills@latest add boshu2/agentops --cursor -g
-```
-
-Restart your agent after install. Then type `/quickstart` in your agent chat.
-
-The `ao` CLI is optional, but recommended. It unlocks repo-native bookkeeping, retrieval, health checks, and terminal workflows.
-
-**macOS**
-
-```bash
-brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
-brew install agentops
-ao version
-```
-
-**Windows PowerShell**
-
-```powershell
-irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
-ao version
-```
-
-You can also install the CLI from [release binaries](https://github.com/boshu2/agentops/releases) or [build from source](cli/README.md).
-
-| Concern | Answer |
-|---------|--------|
-| What it touches | Installs skills globally and registers runtime hooks when requested; agent work writes local bookkeeping to `.agents/` |
-| Source code changes | None during install |
-| Network behavior | Install and update paths fetch from GitHub; repo artifacts stay local unless you choose external tools or remote model runtimes |
-| Telemetry | None required |
-| Permission surface | Skills can run shell commands and read or write repo files during agent work, so install where you want agents to operate |
-| Reversible | Remove the installed skill directories, delete `.agents/`, and remove hook entries from your runtime settings |
-
-Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md) · Configuration: [docs/ENV-VARS.md](docs/ENV-VARS.md)
 
 ---
 
