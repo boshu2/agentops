@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
+  "run_id": "eval-20260503T121108Z-agentops-core.supporting-cli-utilities",
   "suite": {
     "id": "agentops-core.supporting-cli-utilities",
-    "path": "evals/agentops-core/supporting-cli-utilities.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/supporting-cli-utilities.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "f316e18e6d538a3b958e3abdbf80c147888528c6f609474e23ac02336af8ae2e"
+    "sha256": "b78b6a6e2bcafbee9b69ebe0c1db67ce98533c399e6941149a3f83b9cf6e1ac9"
   },
-  "started_at": "2026-04-25T08:12:35.692773901Z",
-  "completed_at": "2026-04-25T08:12:36.875137426Z",
+  "started_at": "2026-05-03T12:11:08.695364335Z",
+  "completed_at": "2026-05-03T12:11:10.786728355Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "68c29c809f55",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/supporting-cli-utilities.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
-    "promoted_from_run_id": "agentops-core.supporting-cli-utilities-20260425T081235Z",
-    "promoted_at": "2026-04-25T08:12:36.962734219Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 35 baseline for supporting CLI utilities canary"
+    "baseline_run_id": "eval-20260503T121108Z-agentops-core.supporting-cli-utilities",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121108Z-agentops-core.supporting-cli-utilities",
+    "promoted_at": "2026-05-03T12:13:52.657666054Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -54,7 +54,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 417,
+      "duration_ms": 714,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -69,7 +69,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 761,
+      "duration_ms": 1366,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -84,7 +84,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2,
+      "duration_ms": 8,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao demo`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"Run an interactive demonstration of AgentOps capabilities.\"",
@@ -127,7 +127,7 @@
         "artifact ../../cli/cmd/ao/seed.go contains \"type seedResult struct\"",
         "artifact ../../cli/cmd/ao/badge.go contains \"Display knowledge flywheel health badge\"",
         "artifact ../../cli/cmd/ao/badge.go contains \"escapeVelocityThreshold\"",
-        "artifact ../../cli/cmd/ao/completion.go contains \"ValidArgs:             []string{\\\"bash\\\", \\\"zsh\\\", \\\"fish\\\"}\"",
+        "artifact ../../cli/cmd/ao/completion.go contains \"ValidArgs:             []string{\\\"bash\\\", \\\"zsh\\\", \\\"fish\\\", \\\"powershell\\\"}\"",
         "artifact ../../cli/cmd/ao/completion.go contains \"GenBashCompletionV2\"",
         "artifact ../../cli/cmd/ao/config.go contains \"AGENTOPS_MODEL_TIER\"",
         "artifact ../../cli/cmd/ao/config.go contains \"modelsSetSkill\"",
@@ -177,12 +177,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T081235Z/agentops-core.supporting-cli-utilities.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/supporting-cli-utilities.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.supporting-cli-utilities.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

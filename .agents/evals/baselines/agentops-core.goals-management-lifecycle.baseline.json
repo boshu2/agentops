@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
+  "run_id": "eval-20260503T120707Z-agentops-core.goals-management-lifecycle",
   "suite": {
     "id": "agentops-core.goals-management-lifecycle",
-    "path": "evals/agentops-core/goals-management-lifecycle.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/goals-management-lifecycle.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "45d74bcf960e0c24c491168b84169277e06aadfdb99a88bd6279813e118bf800"
+    "sha256": "1e164801c73400a85ec3f2da314271909624e329be913b7d22e5cb07c014d5ea"
   },
-  "started_at": "2026-04-25T08:32:54.916752517Z",
-  "completed_at": "2026-04-25T08:32:56.830072717Z",
+  "started_at": "2026-05-03T12:07:07.230764573Z",
+  "completed_at": "2026-05-03T12:07:08.881290152Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "d52bb11b43ee",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/goals-management-lifecycle.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
-    "promoted_from_run_id": "agentops-core.goals-management-lifecycle-20260425T083254Z",
-    "promoted_at": "2026-04-25T08:32:56.969382757Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 37 baseline for goals management lifecycle canary"
+    "baseline_run_id": "eval-20260503T120707Z-agentops-core.goals-management-lifecycle",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120707Z-agentops-core.goals-management-lifecycle",
+    "promoted_at": "2026-05-03T12:13:50.257849383Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "learning_closure": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 619,
+      "duration_ms": 561,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -70,7 +70,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 1289,
+      "duration_ms": 1084,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -91,7 +91,7 @@
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao goals`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"Track, measure, and validate project fitness goals.\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals measure`\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--directives    Output directives as JSON (skip gate checks)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--directives           Output directives as JSON (skip gate checks)\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals validate`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals drift`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao goals export`\"",
@@ -180,12 +180,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T083254Z/agentops-core.goals-management-lifecycle.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/goals-management-lifecycle.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.goals-management-lifecycle.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

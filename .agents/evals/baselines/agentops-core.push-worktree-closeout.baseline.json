@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
+  "run_id": "eval-20260503T120932Z-agentops-core.push-worktree-closeout",
   "suite": {
     "id": "agentops-core.push-worktree-closeout",
-    "path": "evals/agentops-core/push-worktree-closeout.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/push-worktree-closeout.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "ec4258847a1338873880a8fbde1fcd90d021484c151570b0d056c7fc76d12616"
+    "sha256": "b3ac57bb46f27e85d1a15ad455c4e4d868b8d939049b288aafa82d65ea0e5ab7"
   },
-  "started_at": "2026-04-25T10:20:08.124811209Z",
-  "completed_at": "2026-04-25T10:20:08.517984863Z",
+  "started_at": "2026-05-03T12:09:32.020965521Z",
+  "completed_at": "2026-05-03T12:09:32.579604342Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "21d7b95ec7ef",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/push-worktree-closeout.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
-    "promoted_from_run_id": "agentops-core.push-worktree-closeout-20260425T102008Z",
-    "promoted_at": "2026-04-25T10:20:08.608245428Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 47 baseline for push and worktree closeout governance canary"
+    "baseline_run_id": "eval-20260503T120932Z-agentops-core.push-worktree-closeout",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120932Z-agentops-core.push-worktree-closeout",
+    "promoted_at": "2026-05-03T12:13:51.280048401Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -54,7 +54,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 15,
+      "duration_ms": 19,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -70,7 +70,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 376,
+      "duration_ms": 538,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -152,12 +152,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T102008Z/agentops-core.push-worktree-closeout.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/push-worktree-closeout.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.push-worktree-closeout.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

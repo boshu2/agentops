@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.scenario-contracts-20260425T040635Z",
+  "run_id": "eval-20260503T121001Z-agentops-core.scenario-contracts",
   "suite": {
     "id": "agentops-core.scenario-contracts",
-    "path": "evals/agentops-core/scenario-contracts.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/scenario-contracts.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "d5e8314033ac85587ad026845fbcea13b065a4f144512001136124edad22e05c"
+    "sha256": "aa26cb0444d991c625509414f1de2ceafb912991fdec49447657cf4c821bed7b"
   },
-  "started_at": "2026-04-25T04:06:48.326886892Z",
-  "completed_at": "2026-04-25T04:06:49.021163897Z",
+  "started_at": "2026-05-03T12:10:01.948643853Z",
+  "completed_at": "2026-05-03T12:10:00.40789138Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "02f8415ea6be",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.scenario-contracts-20260425T040635Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.scenario-contracts.baseline.json",
-    "promoted_from_run_id": "agentops-core.scenario-contracts-20260425T040635Z",
-    "promoted_at": "2026-04-25T04:06:49.111460749Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+    "baseline_run_id": "eval-20260503T121001Z-agentops-core.scenario-contracts",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.scenario-contracts.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121001Z-agentops-core.scenario-contracts",
+    "promoted_at": "2026-05-03T12:13:52.091326294Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -93,7 +96,7 @@
         "correctness": 1,
         "safety": 1
       },
-      "duration_ms": 693,
+      "duration_ms": 941,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -109,12 +112,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.scenario-contracts.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/scenario-contracts.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.scenario-contracts.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.scenario-contracts.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

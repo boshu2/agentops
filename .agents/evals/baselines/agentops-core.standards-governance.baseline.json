@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.standards-governance-20260425T104310Z",
+  "run_id": "eval-20260503T121100Z-agentops-core.standards-governance",
   "suite": {
     "id": "agentops-core.standards-governance",
-    "path": "evals/agentops-core/standards-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/standards-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "a6d79af10821216ff1674a99cf293ffdc1c6ab5c6e89f86efd2f7efd4c6dd4a4"
+    "sha256": "8da07e9600fed4dfd66c845b4371fba296dfe538c3be86e9d9714af7d4ca4267"
   },
-  "started_at": "2026-04-25T10:43:10.26802525Z",
-  "completed_at": "2026-04-25T10:43:10.305537467Z",
+  "started_at": "2026-05-03T12:11:00.123573372Z",
+  "completed_at": "2026-05-03T12:11:00.174871813Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "d54b6f9c4f52",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/standards-governance.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.standards-governance-20260425T104310Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.standards-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.standards-governance-20260425T104310Z",
-    "promoted_at": "2026-04-25T10:43:10.394159645Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 49 standards governance canary baseline after first passing deterministic run"
+    "baseline_run_id": "eval-20260503T121100Z-agentops-core.standards-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.standards-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121100Z-agentops-core.standards-governance",
+    "promoted_at": "2026-05-03T12:13:52.537744676Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 36,
+      "duration_ms": 49,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -189,12 +189,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T104310Z/agentops-core.standards-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/standards-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.standards-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.standards-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

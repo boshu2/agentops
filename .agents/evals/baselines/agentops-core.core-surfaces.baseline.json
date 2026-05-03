@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.core-surfaces-20260425T040635Z",
+  "run_id": "eval-20260503T120553Z-agentops-core.core-surfaces",
   "suite": {
     "id": "agentops-core.core-surfaces",
-    "path": "evals/agentops-core/core-surfaces.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/core-surfaces.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "96c666021dcfb6fa30849aed14db3efa9e59ae166cc4571aeceb1ac3f6534710"
+    "sha256": "4cfb73dc3782d363f79c36d8128163b03447c3b19ecaff7a3a046d9ada347da3"
   },
-  "started_at": "2026-04-25T04:06:40.609167232Z",
-  "completed_at": "2026-04-25T04:06:40.610719104Z",
+  "started_at": "2026-05-03T12:05:53.809553038Z",
+  "completed_at": "2026-05-03T12:05:53.813939824Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "02f8415ea6be",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.core-surfaces-20260425T040635Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
-    "promoted_from_run_id": "agentops-core.core-surfaces-20260425T040635Z",
-    "promoted_at": "2026-04-25T04:06:40.702163113Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+    "baseline_run_id": "eval-20260503T120553Z-agentops-core.core-surfaces",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120553Z-agentops-core.core-surfaces",
+    "promoted_at": "2026-05-03T12:13:49.624578883Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -51,6 +54,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
+      "duration_ms": 3,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -134,12 +138,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.core-surfaces.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/core-surfaces.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.core-surfaces.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

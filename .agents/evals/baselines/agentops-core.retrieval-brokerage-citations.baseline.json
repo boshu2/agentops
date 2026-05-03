@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
+  "run_id": "eval-20260503T120939Z-agentops-core.retrieval-brokerage-citations",
   "suite": {
     "id": "agentops-core.retrieval-brokerage-citations",
-    "path": "evals/agentops-core/retrieval-brokerage-citations.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/retrieval-brokerage-citations.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "0db275fe28f81d9c64134cf7289aa69871ef0fd2e677d11f46356c1f7ddffd2e"
+    "sha256": "a8a802bd3f0991a265a9c1118e1593a1edff3eda230595bf7d145228286165ac"
   },
-  "started_at": "2026-04-25T07:54:58.948313694Z",
-  "completed_at": "2026-04-25T07:55:00.092168559Z",
+  "started_at": "2026-05-03T12:09:39.260690239Z",
+  "completed_at": "2026-05-03T12:09:41.695876084Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "bb832aaf236d",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/retrieval-brokerage-citations.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
-    "promoted_from_run_id": "agentops-core.retrieval-brokerage-citations-20260425T075458Z",
-    "promoted_at": "2026-04-25T07:55:00.185871717Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 33 baseline for retrieval brokerage citation canary"
+    "baseline_run_id": "eval-20260503T120939Z-agentops-core.retrieval-brokerage-citations",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120939Z-agentops-core.retrieval-brokerage-citations",
+    "promoted_at": "2026-05-03T12:13:51.618119836Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "learning_closure": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 418,
+      "duration_ms": 1491,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -70,7 +70,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 721,
+      "duration_ms": 939,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -85,7 +85,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2,
+      "duration_ms": 3,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao search`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"Search workspace session history and repo-local AgentOps knowledge.\"",
@@ -96,9 +96,9 @@
         "artifact ../../cli/docs/COMMANDS.md contains \"--cite string      Citation type to record for returned artifacts: retrieved, reference, applied (default \\\"retrieved\\\")\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--no-cite          Skip citation recording\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao inject`\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--no-cite               Disable citation recording\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--apply-decay           Apply confidence decay before ranking\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--session string        Session ID for citation tracking (auto-generated if empty)\""
+        "artifact ../../cli/docs/COMMANDS.md contains \"--no-cite                   Disable citation recording\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--apply-decay               Apply confidence decay before ranking\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--session string            Session ID for citation tracking (auto-generated if empty)\""
       ]
     },
     {
@@ -179,12 +179,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T075458Z/agentops-core.retrieval-brokerage-citations.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/retrieval-brokerage-citations.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.retrieval-brokerage-citations.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

@@ -1,25 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.operator-workflow-skills-20260425T071109Z",
+  "run_id": "eval-20260503T120856Z-agentops-core.operator-workflow-skills",
   "suite": {
     "id": "agentops-core.operator-workflow-skills",
-    "path": "evals/agentops-core/operator-workflow-skills.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/operator-workflow-skills.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "5558ad3424920f187d425bf8849f22b87521b84b36fc05267bb70f27f5e998bf"
+    "sha256": "5056000b9214cab2c7c0b02013f1094aa12f569462d9bc969d2bce51291251f9"
   },
-  "started_at": "2026-04-25T07:11:10.065862938Z",
-  "completed_at": "2026-04-25T07:11:09.868082587Z",
+  "started_at": "2026-05-03T12:08:56.969224771Z",
+  "completed_at": "2026-05-03T12:08:58.782724769Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "6828f2a5ec56",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/operator-workflow-skills.json",
-      "skills-codex/implement/scripts/validate.sh",
-      "skills-codex/plan/SKILL.md"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -40,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.operator-workflow-skills-20260425T071109Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.operator-workflow-skills.baseline.json",
-    "promoted_from_run_id": "agentops-core.operator-workflow-skills-20260425T071109Z",
-    "promoted_at": "2026-04-25T07:11:10.029029052Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 28 baseline for operator workflow skill canary"
+    "baseline_run_id": "eval-20260503T120856Z-agentops-core.operator-workflow-skills",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.operator-workflow-skills.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120856Z-agentops-core.operator-workflow-skills",
+    "promoted_at": "2026-05-03T12:13:50.9813454Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -57,7 +55,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2282,
+      "duration_ms": 1812,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -188,12 +186,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T071109Z/agentops-core.operator-workflow-skills.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/operator-workflow-skills.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.operator-workflow-skills.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.operator-workflow-skills.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

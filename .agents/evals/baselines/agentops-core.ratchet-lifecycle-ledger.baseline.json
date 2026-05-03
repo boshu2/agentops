@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
+  "run_id": "eval-20260503T120932Z-agentops-core.ratchet-lifecycle-ledger",
   "suite": {
     "id": "agentops-core.ratchet-lifecycle-ledger",
-    "path": "evals/agentops-core/ratchet-lifecycle-ledger.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/ratchet-lifecycle-ledger.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "400a5f80ceb8b6aacf78546de614b471029ea2f8a10bbb32a92ff18525ddfb87"
+    "sha256": "3434b32b7289a04c9664eddcc51ff1a7770225ef3531fa3137a44b6136ee0f01"
   },
-  "started_at": "2026-04-25T08:40:24.192374828Z",
-  "completed_at": "2026-04-25T08:40:25.348010903Z",
+  "started_at": "2026-05-03T12:09:32.702266418Z",
+  "completed_at": "2026-05-03T12:09:34.264407142Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "67c5f4b7a01d",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/ratchet-lifecycle-ledger.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
-    "promoted_from_run_id": "agentops-core.ratchet-lifecycle-ledger-20260425T084024Z",
-    "promoted_at": "2026-04-25T08:40:25.434359385Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 38 baseline for ratchet lifecycle ledger canary"
+    "baseline_run_id": "eval-20260503T120932Z-agentops-core.ratchet-lifecycle-ledger",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120932Z-agentops-core.ratchet-lifecycle-ledger",
+    "promoted_at": "2026-05-03T12:13:51.336027875Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "learning_closure": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 400,
+      "duration_ms": 556,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -70,7 +70,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 751,
+      "duration_ms": 1001,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -85,7 +85,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2,
+      "duration_ms": 3,
       "critical": true,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao ratchet`\"",
@@ -171,12 +171,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T084024Z/agentops-core.ratchet-lifecycle-ledger.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/ratchet-lifecycle-ledger.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.ratchet-lifecycle-ledger.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

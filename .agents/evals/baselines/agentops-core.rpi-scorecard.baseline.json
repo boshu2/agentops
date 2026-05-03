@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.rpi-scorecard-20260425T040635Z",
+  "run_id": "eval-20260503T120958Z-agentops-core.rpi-scorecard",
   "suite": {
     "id": "agentops-core.rpi-scorecard",
-    "path": "evals/agentops-core/rpi-scorecard.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/rpi-scorecard.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "25ac9e2b47361325763eb38eab40c581f90faf5bf5cc6800f471eaf2dbaef708"
+    "sha256": "dbdbef3a4bb5342126be1abdf1c635e2ba81285aaa8166ef5ee4d2f5902550a5"
   },
-  "started_at": "2026-04-25T04:06:47.789363693Z",
-  "completed_at": "2026-04-25T04:06:47.789526222Z",
+  "started_at": "2026-05-03T12:09:58.389082259Z",
+  "completed_at": "2026-05-03T12:09:58.389306643Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "02f8415ea6be",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "static",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.rpi-scorecard-20260425T040635Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.rpi-scorecard.baseline.json",
-    "promoted_from_run_id": "agentops-core.rpi-scorecard-20260425T040635Z",
-    "promoted_at": "2026-04-25T04:06:47.909371029Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+    "baseline_run_id": "eval-20260503T120958Z-agentops-core.rpi-scorecard",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.rpi-scorecard.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120958Z-agentops-core.rpi-scorecard",
+    "promoted_at": "2026-05-03T12:13:51.909728847Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -125,12 +128,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.rpi-scorecard.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/rpi-scorecard.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.rpi-scorecard.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.rpi-scorecard.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.eval-runner-engine-control-plane-20260425T080425Z",
+  "run_id": "eval-20260503T120659Z-agentops-core.eval-runner-engine-control-plane",
   "suite": {
     "id": "agentops-core.eval-runner-engine-control-plane",
-    "path": "evals/agentops-core/eval-runner-engine-control-plane.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/eval-runner-engine-control-plane.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "9edc1e103f09a1a620d35b94fb99fbb0dc1f17eadf3622c31c84f0cf623c58c5"
+    "sha256": "a9844a0b0e8813898ae34d77315a192465e75eaefdc95e1dcf55d00cc31b55e7"
   },
-  "started_at": "2026-04-25T08:04:25.546365188Z",
-  "completed_at": "2026-04-25T08:04:26.650796846Z",
+  "started_at": "2026-05-03T12:06:59.044372911Z",
+  "completed_at": "2026-05-03T12:07:00.503804396Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "e882ac96133c",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/eval-runner-engine-control-plane.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.eval-runner-engine-control-plane-20260425T080425Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.eval-runner-engine-control-plane.baseline.json",
-    "promoted_from_run_id": "agentops-core.eval-runner-engine-control-plane-20260425T080425Z",
-    "promoted_at": "2026-04-25T08:04:26.740850113Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 34 baseline for eval runner engine control-plane canary"
+    "baseline_run_id": "eval-20260503T120659Z-agentops-core.eval-runner-engine-control-plane",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.eval-runner-engine-control-plane.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120659Z-agentops-core.eval-runner-engine-control-plane",
+    "promoted_at": "2026-05-03T12:13:49.9970084Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "learning_closure": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 400,
+      "duration_ms": 539,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -71,7 +71,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 700,
+      "duration_ms": 914,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -86,22 +86,25 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2,
+      "duration_ms": 3,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao eval`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"Run deterministic AgentOps evaluation suites and compare run records.\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval run`\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--baseline string   compare the run against a baseline run record\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--runtime string    deterministic runtime override (static, mock, shell)\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--baseline string        compare the run against a baseline run record\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--runtime string         deterministic runtime override (static, mock, shell)\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval compare`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--max-aggregate-regression float   allowed aggregate regression before verdict becomes regression\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--max-dimension-regression float   allowed per-dimension regression before verdict becomes regression\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval baseline`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--promoted-by string   identity promoting the baseline\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--rationale string     rationale for promoting the baseline\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval baseline-audit`\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--baseline-dir string   promoted baseline directory\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval coverage`\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--require-domain stringArray      required product domain for missing-domain reporting\"",
-        "artifact ../../cli/docs/COMMANDS.md contains \"--require-runtime stringArray     required deterministic runtime for missing-runtime reporting\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--require-domain stringArray          required product domain for missing-domain reporting\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--require-evidence-kind stringArray   required evidence kind for missing-evidence-kind reporting\"",
+        "artifact ../../cli/docs/COMMANDS.md contains \"--require-runtime stringArray         required deterministic runtime for missing-runtime reporting\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao eval scorecard`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"--kind string                     scorecard kind (rpi, skill-change)\""
       ]
@@ -115,12 +118,14 @@
         "learning_closure": 1,
         "safety": 1
       },
+      "duration_ms": 1,
       "critical": true,
       "diagnostics": [
         "artifact ../../cli/cmd/ao/eval.go contains \"Run deterministic AgentOps evaluation suites and compare run records.\"",
         "artifact ../../cli/cmd/ao/eval.go contains \"Live Claude and Codex adapters are evaluated by a later runtime tier.\"",
         "artifact ../../cli/cmd/ao/eval.go contains \"runtime %q is out of deterministic scope (use static, mock, or shell)\"",
         "artifact ../../cli/cmd/ao/eval.go contains \"evalRunCmd.Flags().StringVar(\u0026evalRunBaseline, \\\"baseline\\\", \\\"\\\", \\\"compare the run against a baseline run record\\\")\"",
+        "artifact ../../cli/cmd/ao/eval.go contains \"evalBaselineAuditCmd\"",
         "artifact ../../cli/cmd/ao/eval.go contains \"evalScorecardCmd.Flags().StringVar(\u0026evalScorecardKind, \\\"kind\\\", string(aoeval.ScorecardKindRPI), \\\"scorecard kind (rpi, skill-change)\\\")\"",
         "artifact ../../cli/internal/eval/engine.go contains \"if !validDeterministicRuntime(runtimeName)\"",
         "artifact ../../cli/internal/eval/engine.go contains \"record, err = CompareRuns(record, baseline, compareOptionsFromSuite(*suite))\"",
@@ -136,7 +141,9 @@
         "artifact ../../cli/internal/eval/expectations.go contains \"manual_review is not supported by deterministic evals\"",
         "artifact ../../cli/internal/eval/compare.go contains \"aggregate score regressed by %.4f\"",
         "artifact ../../cli/internal/eval/baseline.go contains \"PromotedFromRunID: run.RunID\"",
+        "artifact ../../cli/internal/eval/baseline_audit.go contains \"AuditBaselinePolicy\"",
         "artifact ../../cli/internal/eval/coverage.go contains \"DefaultCoverageDomains\"",
+        "artifact ../../cli/internal/eval/coverage.go contains \"DefaultCoverageEvidenceKinds\"",
         "artifact ../../cli/internal/eval/coverage.go contains \"MissingRequiredRuntimes\"",
         "artifact ../../cli/internal/eval/scorecard.go contains \"candidate regressed one or more scorecard categories\"",
         "artifact ../../cli/internal/eval/runtime.go contains \"skips instead of invoking external processes unless\"",
@@ -191,6 +198,7 @@
         "artifact ../../scripts/eval-agentops.sh contains \"eval run \\\"$suite\\\" --run-id\"",
         "artifact ../../scripts/eval-agentops.sh contains \"eval compare \\\"$run_path\\\" \\\"$baseline_path\\\"\"",
         "artifact ../../scripts/eval-agentops.sh contains \"eval baseline \\\"$run_path\\\" --out \\\"$baseline_path\\\" --promoted-by \\\"$PROMOTED_BY\\\" --rationale \\\"$RATIONALE\\\"\"",
+        "artifact ../../scripts/eval-agentops.sh contains \"eval baseline-audit --root evals/agentops-core --baseline-dir \\\"$BASELINE_DIR\\\" --json\"",
         "artifact ../../scripts/eval-agentops.sh contains \"eval coverage --root evals/agentops-core --json\"",
         "artifact ../../scripts/eval-agentops.sh contains \"coverage: required domains, dimensions, and runtimes covered\"",
         "artifact ../../scripts/eval-agentops.sh contains \"if [[ \\\"$failures\\\" -gt 0 \u0026\u0026 \\\"$ADVISORY\\\" != \\\"true\\\" ]]\""
@@ -209,12 +217,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T080425Z/agentops-core.eval-runner-engine-control-plane.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/eval-runner-engine-control-plane.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.eval-runner-engine-control-plane.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.eval-runner-engine-control-plane.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

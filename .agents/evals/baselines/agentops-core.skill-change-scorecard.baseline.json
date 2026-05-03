@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
+  "run_id": "eval-20260503T121030Z-agentops-core.skill-change-scorecard",
   "suite": {
     "id": "agentops-core.skill-change-scorecard",
-    "path": "evals/agentops-core/skill-change-scorecard.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/skill-change-scorecard.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "2261e8b9ef4e8bcead4c93a860e16f946a5387f0070111bbb832da344441e657"
+    "sha256": "35d00717fb3665c281e2da9f8393aa4cb4bd4c1d22475c3745b1d1d895786e54"
   },
-  "started_at": "2026-04-25T04:06:58.041435532Z",
-  "completed_at": "2026-04-25T04:06:58.041579254Z",
+  "started_at": "2026-05-03T12:10:30.390261829Z",
+  "completed_at": "2026-05-03T12:10:30.390487383Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "02f8415ea6be",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "static",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
-    "promoted_from_run_id": "agentops-core.skill-change-scorecard-20260425T040635Z",
-    "promoted_at": "2026-04-25T04:06:58.169724415Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial public deterministic AgentOps eval baseline after RPI/evolve coverage expansion validated 10 passing suites across all required product domains."
+    "baseline_run_id": "eval-20260503T121030Z-agentops-core.skill-change-scorecard",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121030Z-agentops-core.skill-change-scorecard",
+    "promoted_at": "2026-05-03T12:13:52.4109896Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -111,12 +114,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T040635Z/agentops-core.skill-change-scorecard.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/skill-change-scorecard.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.skill-change-scorecard.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

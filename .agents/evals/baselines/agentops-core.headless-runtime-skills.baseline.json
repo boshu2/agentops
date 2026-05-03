@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.headless-runtime-skills-20260425T045119Z",
+  "run_id": "eval-20260503T120709Z-agentops-core.headless-runtime-skills",
   "suite": {
     "id": "agentops-core.headless-runtime-skills",
-    "path": "evals/agentops-core/headless-runtime-skills.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/headless-runtime-skills.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "59490f6b9dbf312538a033dd99a30ef95e049182586f7a90d158a162a80c864b"
+    "sha256": "0a5f1cb467d89b535daadbd2e15bb81a3f302c5c84f15a0604be3c2b34b03523"
   },
-  "started_at": "2026-04-25T04:51:19.33853143Z",
-  "completed_at": "2026-04-25T04:51:48.508763974Z",
+  "started_at": "2026-05-03T12:07:09.000948311Z",
+  "completed_at": "2026-05-03T12:08:00.934025817Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "0bb6eb8e7d3f",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -33,12 +36,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.headless-runtime-skills-20260425T045119Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.headless-runtime-skills.baseline.json",
-    "promoted_from_run_id": "agentops-core.headless-runtime-skills-20260425T045119Z",
-    "promoted_at": "2026-04-25T04:51:48.6054917Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial headless runtime skills public canary baseline after deterministic script tests and headless Claude/Codex inventory validation passed."
+    "baseline_run_id": "eval-20260503T120709Z-agentops-core.headless-runtime-skills",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.headless-runtime-skills.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120709Z-agentops-core.headless-runtime-skills",
+    "promoted_at": "2026-05-03T12:13:50.312365224Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -50,7 +53,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 1853,
+      "duration_ms": 2432,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -66,7 +69,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 30247,
+      "duration_ms": 51980,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -101,6 +104,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
+      "duration_ms": 1,
       "critical": true,
       "diagnostics": [
         "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"build_expected_inventory \\\"$REPO_ROOT/skills\\\" \\\"$EXPECTED_CLAUDE_JSON\\\"\"",
@@ -108,7 +112,8 @@
         "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT\"",
         "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"HEADLESS_RUNTIME_SKILL_CODEX_STRICT\"",
         "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"load-check fallback\"",
-        "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"CODEX_HOME=\\\"$CODEX_VALIDATION_HOME\\\"\""
+        "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"CODEX_HOME=\\\"$CODEX_VALIDATION_HOME\\\"\"",
+        "artifact ../../scripts/validate-headless-runtime-skills.sh contains \"AGENTOPS_HOOKS_DISABLED=1\""
       ]
     }
   ],
@@ -122,12 +127,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T045119Z/agentops-core.headless-runtime-skills.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/headless-runtime-skills.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.headless-runtime-skills.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.headless-runtime-skills.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

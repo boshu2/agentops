@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.curation-feedback-governance-20260425T071940Z",
+  "run_id": "eval-20260503T120553Z-agentops-core.curation-feedback-governance",
   "suite": {
     "id": "agentops-core.curation-feedback-governance",
-    "path": "evals/agentops-core/curation-feedback-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/curation-feedback-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "aef2e60e2c055a6bf26978afb8e9debe53dc997ed2e1285f57e96cd41fe3ddd3"
+    "sha256": "0c6e7554197eae53d77f38866f7cc7c7bccfcaf688e57030e79005c7a94f4415"
   },
-  "started_at": "2026-04-25T07:19:40.067115181Z",
-  "completed_at": "2026-04-25T07:19:41.788319818Z",
+  "started_at": "2026-05-03T12:05:53.972933206Z",
+  "completed_at": "2026-05-03T12:05:59.7004254Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "f279f9d7891c",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/curation-feedback-governance.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.curation-feedback-governance-20260425T071940Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.curation-feedback-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.curation-feedback-governance-20260425T071940Z",
-    "promoted_at": "2026-04-25T07:19:41.878107824Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 29 baseline for curation feedback governance canary"
+    "baseline_run_id": "eval-20260503T120553Z-agentops-core.curation-feedback-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.curation-feedback-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120553Z-agentops-core.curation-feedback-governance",
+    "promoted_at": "2026-05-03T12:13:49.686554375Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "learning_closure": 1,
         "safety": 1
       },
-      "duration_ms": 972,
+      "duration_ms": 4231,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -70,7 +70,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 745,
+      "duration_ms": 1492,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -85,7 +85,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 1,
+      "duration_ms": 2,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao pool`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao pool batch-promote`\"",
@@ -129,7 +129,7 @@
         "process_adherence": 1
       },
       "diagnostics": [
-        "artifact ../../PRODUCT.md contains \"ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, and `ao memory sync` manage learning capture, retrieval, freshness decay, and promotion\"",
+        "artifact ../../PRODUCT.md contains \"ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, `ao memory sync` manage learning capture, retrieval, freshness decay, promotion\"",
         "artifact ../../docs/curation-pipeline.md contains \"Each agent is an experiment. Each experiment produces data. The data gets curated.\"",
         "artifact ../../docs/curation-pipeline.md contains \"Existing pool pipeline: pending -\u003e staged -\u003e promoted\"",
         "artifact ../../docs/curation-pipeline.md contains \"After promotion, artifacts enter the MemRL utility tracking system.\"",
@@ -148,12 +148,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T071940Z/agentops-core.curation-feedback-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/curation-feedback-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.curation-feedback-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.curation-feedback-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

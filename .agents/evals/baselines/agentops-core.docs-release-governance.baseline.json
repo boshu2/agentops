@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.docs-release-governance-20260425T095505Z",
+  "run_id": "eval-20260503T120632Z-agentops-core.docs-release-governance",
   "suite": {
     "id": "agentops-core.docs-release-governance",
-    "path": "evals/agentops-core/docs-release-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/docs-release-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "78c6b9cbf39e1a8bf61da049dd7bd47ddbff5e1229830991ad6bf852923b2d0f"
+    "sha256": "5625239454e9362f36ed1f8015db8ac5bf96f804cbaba41cc9fa63aaf009cc15"
   },
-  "started_at": "2026-04-25T09:55:05.832234698Z",
-  "completed_at": "2026-04-25T09:55:11.878423537Z",
+  "started_at": "2026-05-03T12:06:32.18395254Z",
+  "completed_at": "2026-05-03T12:06:36.303717409Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "76dac98b0bcc",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/docs-release-governance.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.docs-release-governance-20260425T095505Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.docs-release-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.docs-release-governance-20260425T095505Z",
-    "promoted_at": "2026-04-25T09:55:11.96725586Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 45 baseline for docs and release governance canary"
+    "baseline_run_id": "eval-20260503T120632Z-agentops-core.docs-release-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.docs-release-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120632Z-agentops-core.docs-release-governance",
+    "promoted_at": "2026-05-03T12:13:49.810651078Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 5756,
+      "duration_ms": 6257,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -75,7 +75,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 180,
+      "duration_ms": 220,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -94,7 +94,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 80,
+      "duration_ms": 93,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -112,7 +112,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 28,
+      "duration_ms": 29,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -172,12 +172,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T095505Z/agentops-core.docs-release-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/docs-release-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.docs-release-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.docs-release-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

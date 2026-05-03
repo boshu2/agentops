@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.distribution-install-update-20260425T060438Z",
+  "run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
   "suite": {
     "id": "agentops-core.distribution-install-update",
-    "path": "evals/agentops-core/distribution-install-update.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/distribution-install-update.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "02ab057ebc10270dbb9be3134dcade77dde08598f794657ee537a00e8c1a2f59"
+    "sha256": "a26d9db0a807d2b61f7867fac7a09913c585bb1428772efc88299c4ae91869f6"
   },
-  "started_at": "2026-04-25T06:04:38.562856331Z",
-  "completed_at": "2026-04-25T06:05:05.993324758Z",
+  "started_at": "2026-05-03T12:05:59.841715551Z",
+  "completed_at": "2026-05-03T12:06:32.076928665Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "8435d914795d",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.distribution-install-update-20260425T060438Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
-    "promoted_from_run_id": "agentops-core.distribution-install-update-20260425T060438Z",
-    "promoted_at": "2026-04-25T06:05:06.136287964Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 22 baseline for deterministic installer/update distribution canary after committed suite pass."
+    "baseline_run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
+    "promoted_at": "2026-05-03T12:13:49.750121945Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -52,7 +55,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 1405,
+      "duration_ms": 1417,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -71,13 +74,13 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 18518,
+      "duration_ms": 18235,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
         "stdout contains \"Results: 3 PASS, 0 FAIL\"",
         "stdout contains \"PASS: Codex-native install flow verified\"",
-        "stdout contains \"skills tested: 69\""
+        "stdout contains \"skills tested: 70\""
       ]
     },
     {
@@ -89,7 +92,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 13371,
+      "duration_ms": 15062,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -170,12 +173,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T060438Z/agentops-core.distribution-install-update.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/distribution-install-update.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
+  "run_id": "eval-20260503T121030Z-agentops-core.skill-quality-gates",
   "suite": {
     "id": "agentops-core.skill-quality-gates",
-    "path": "evals/agentops-core/skill-quality-gates.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/skill-quality-gates.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "fa1d11c2f5e5bda8bd30b14d0842662c321cd06851aa8ddac0ae2f61ea7acf53"
+    "sha256": "e01c56c4b4e152281d093c9e598c1c1fbe9e6a7acb54e333637b47c760b1c454"
   },
-  "started_at": "2026-04-25T05:03:24.936083218Z",
-  "completed_at": "2026-04-25T05:04:00.10492482Z",
+  "started_at": "2026-05-03T12:10:30.502596575Z",
+  "completed_at": "2026-05-03T12:10:59.983110922Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "632212b0e023",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
-    "promoted_from_run_id": "agentops-core.skill-quality-gates-20260425T050324Z",
-    "promoted_at": "2026-04-25T05:04:00.266999212Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial skill quality gate baseline covering lint, schema, runtime format, CLI snippets, and size-warning ratchet."
+    "baseline_run_id": "eval-20260503T121030Z-agentops-core.skill-quality-gates",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121030Z-agentops-core.skill-quality-gates",
+    "promoted_at": "2026-05-03T12:13:52.475380199Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -52,11 +55,11 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 15102,
+      "duration_ms": 11789,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
-        "stdout contains \"69 skills checked\"",
+        "stdout contains \"Total Skills: 76\"",
         "stdout contains \"OVERALL: PASS\""
       ]
     },
@@ -68,7 +71,7 @@
         "artifact_quality": 1,
         "efficiency": 1
       },
-      "duration_ms": 1125,
+      "duration_ms": 519,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -84,11 +87,11 @@
         "artifact_quality": 1,
         "correctness": 1
       },
-      "duration_ms": 12296,
+      "duration_ms": 10461,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
-        "stdout contains \"All 69 skill(s) passed schema validation\""
+        "stdout contains \"All 70 skill(s) passed schema validation\""
       ]
     },
     {
@@ -99,7 +102,7 @@
         "artifact_quality": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 6416,
+      "duration_ms": 6074,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -114,7 +117,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 3146,
+      "duration_ms": 3116,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -148,12 +151,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T050324Z/agentops-core.skill-quality-gates.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/skill-quality-gates.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.skill-quality-gates.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

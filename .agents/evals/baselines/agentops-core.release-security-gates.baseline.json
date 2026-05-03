@@ -1,21 +1,24 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.release-security-gates-20260425T054233Z",
+  "run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
   "suite": {
     "id": "agentops-core.release-security-gates",
-    "path": "evals/agentops-core/release-security-gates.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/release-security-gates.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "a67e114cc324e5afa8cda07f0bd2ac4b7a89b60aaf457eb59434c26cae50f026"
+    "sha256": "03e127f297ee5ec9bea591531621b389ba52312880a28843a6623f378e313a02"
   },
-  "started_at": "2026-04-25T05:42:33.732881901Z",
-  "completed_at": "2026-04-25T05:42:35.661423516Z",
+  "started_at": "2026-05-03T12:09:34.527280675Z",
+  "completed_at": "2026-05-03T12:09:37.36956575Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "f48565ddd256",
-    "dirty": false
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
+    "dirty": true,
+    "dirty_paths": [
+      ".agents/rpi/next-work.jsonl"
+    ]
   },
   "runtime": {
     "name": "shell",
@@ -35,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.release-security-gates-20260425T054233Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
-    "promoted_from_run_id": "agentops-core.release-security-gates-20260425T054233Z",
-    "promoted_at": "2026-04-25T05:42:35.750811344Z",
-    "promoted_by": "codex-rpi",
-    "rationale": "Initial release/security gate baseline covering security-gate tests, security-suite redteam, release artifact BATS contracts, current release E2E flags, and CI/release workflow wiring."
+    "baseline_run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
+    "promoted_at": "2026-05-03T12:13:51.453447294Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -52,7 +55,7 @@
         "correctness": 1,
         "safety": 1
       },
-      "duration_ms": 102,
+      "duration_ms": 107,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -68,7 +71,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 170,
+      "duration_ms": 202,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -84,12 +87,12 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 1647,
+      "duration_ms": 2522,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
-        "stdout contains \"1..27\"",
-        "stdout contains \"ok 27 validate-release-audit-artifacts accepts legacy versioned artifact dirs\""
+        "stdout contains \"1..33\"",
+        "stdout contains \"ok 33 validate-release-audit-artifacts skips older missing local artifact dirs\""
       ]
     },
     {
@@ -100,7 +103,7 @@
         "artifact_quality": 1,
         "process_adherence": 1
       },
-      "duration_ms": 7,
+      "duration_ms": 8,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -115,10 +118,18 @@
         "process_adherence": 1,
         "safety": 1
       },
+      "duration_ms": 1,
       "diagnostics": [
         "artifact ../../.github/workflows/validate.yml contains \"security-scan\"",
         "artifact ../../.github/workflows/validate.yml contains \"security-toolchain-gate\"",
         "artifact ../../.github/workflows/validate.yml contains \"agentops-eval-advisory\"",
+        "artifact ../../.github/workflows/validate.yml contains \"Install AgentOps eval dependencies\"",
+        "artifact ../../.github/workflows/validate.yml contains \"sudo apt-get install -y jq ripgrep\"",
+        "artifact ../../.github/workflows/validate.yml contains \"sudo npm install -g bats@1.12.0\"",
+        "artifact ../../.github/workflows/validate.yml contains \"go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0\"",
+        "artifact ../../.github/workflows/validate.yml contains \"go install github.com/steveyegge/beads/cmd/bd@v1.0.3\"",
+        "artifact ../../.github/workflows/validate.yml contains \"init --non-interactive --skip-agents --skip-hooks --quiet\"",
+        "artifact ../../.github/workflows/validate.yml contains \"BEADS_DIR=$bd_eval_root/.beads\"",
         "artifact ../../.github/workflows/validate.yml contains \"Run release smoke test\"",
         "artifact ../../.github/workflows/release.yml contains \"Generate SBOM and security report assets\"",
         "artifact ../../.github/workflows/release.yml contains \"security-gate-summary.json\"",
@@ -138,12 +149,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T054233Z/agentops-core.release-security-gates.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/release-security-gates.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

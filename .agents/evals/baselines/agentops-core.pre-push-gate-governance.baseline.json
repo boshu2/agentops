@@ -1,24 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.pre-push-gate-governance-20260425T103231Z",
+  "run_id": "eval-20260503T120905Z-agentops-core.pre-push-gate-governance",
   "suite": {
     "id": "agentops-core.pre-push-gate-governance",
-    "path": "evals/agentops-core/pre-push-gate-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/pre-push-gate-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "56a9ea2d5fe8405531192896c0bd8ae99a3e002f6af2efe4e77b43084d4013e7"
+    "sha256": "3bd572d977310dceb8e8c407f5225881068c9ebb355ab1edcef755f18bfc7d46"
   },
-  "started_at": "2026-04-25T10:32:31.973993855Z",
-  "completed_at": "2026-04-25T10:32:51.421092369Z",
+  "started_at": "2026-05-03T12:09:05.58038939Z",
+  "completed_at": "2026-05-03T12:09:31.892268326Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "afd27026dcd9",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/pre-push-gate-governance.json",
-      "tests/scripts/pre-push-gate.bats"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -39,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.pre-push-gate-governance-20260425T103231Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.pre-push-gate-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.pre-push-gate-governance-20260425T103231Z",
-    "promoted_at": "2026-04-25T10:32:51.511450278Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 48 baseline for pre-push gate governance and eval fast gate wiring"
+    "baseline_run_id": "eval-20260503T120905Z-agentops-core.pre-push-gate-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.pre-push-gate-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120905Z-agentops-core.pre-push-gate-governance",
+    "promoted_at": "2026-05-03T12:13:51.217570713Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -56,14 +55,14 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 19442,
+      "duration_ms": 28788,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
-        "stdout contains \"1..17\"",
-        "stdout contains \"ok 5 pre-push-gate.sh passes when no Go changes\"",
-        "stdout contains \"ok 15 pre-push-gate.sh clears GIT env for skill CLI snippets\"",
-        "stdout contains \"ok 16 pre-push-gate.sh clears GIT env for CLI docs parity\""
+        "stdout contains \"1..29\"",
+        "stdout contains \"ok 6 pre-push-gate.sh passes when no Go changes\"",
+        "stdout contains \"ok 21 pre-push-gate.sh clears GIT env for skill CLI snippets\"",
+        "stdout contains \"ok 22 pre-push-gate.sh clears GIT env for CLI docs parity\""
       ]
     },
     {
@@ -92,7 +91,8 @@
       "critical": true,
       "diagnostics": [
         "artifact ../../scripts/pre-push-gate.sh contains \"scripts/eval-agentops.sh\"",
-        "artifact ../../scripts/pre-push-gate.sh contains \"eval_agentops_output=\\\"$(run_without_git_env scripts/eval-agentops.sh --fast 2\u003e\u00261)\\\"\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"eval_args=(--fast)\"",
+        "artifact ../../scripts/pre-push-gate.sh contains \"eval_agentops_output=\\\"$(run_without_git_env_isolated_agents_home scripts/eval-agentops.sh \\\"${eval_args[@]}\\\" 2\u003e\u00261)\\\"\"",
         "artifact ../../scripts/pre-push-gate.sh contains \"grep -q '^WARN eval-agentops:'\"",
         "artifact ../../scripts/pre-push-gate.sh contains \"warn \\\"AgentOps eval canaries\\\"\"",
         "artifact ../../scripts/pre-push-gate.sh contains \"fail \\\"missing executable: scripts/eval-agentops.sh\\\"\"",
@@ -130,12 +130,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T103231Z/agentops-core.pre-push-gate-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/pre-push-gate-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.pre-push-gate-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.pre-push-gate-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

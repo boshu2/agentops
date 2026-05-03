@@ -1,29 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.security-toolchain-governance-20260425T134157Z",
+  "run_id": "eval-20260503T121004Z-agentops-core.security-toolchain-governance",
   "suite": {
     "id": "agentops-core.security-toolchain-governance",
-    "path": "evals/agentops-core/security-toolchain-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/security-toolchain-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "4844c96a8d4ac010e642579e963a04e8fc86eaf2f0164af1785f3e75409f6a99"
+    "sha256": "c2f020c69efc27fe699367cf8241f2ed8c12f5070f842c8be214e7662a2f7edf"
   },
-  "started_at": "2026-04-25T13:41:57.493631323Z",
-  "completed_at": "2026-04-25T13:41:58.365651675Z",
+  "started_at": "2026-05-03T12:10:04.445137433Z",
+  "completed_at": "2026-05-03T12:10:05.473936414Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "7120e0135ea0",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "docs/CI-CD.md",
-      "evals/agentops-core/fixtures/security-toolchain-governance-smoke.sh",
-      "evals/agentops-core/security-toolchain-governance.json",
-      "skills-codex/beads/references/CLI_REFERENCE.md",
-      "skills/beads/references/CLI_REFERENCE.md",
-      "skills/post-mortem/scripts/closure-integrity-audit.sh",
-      "tests/e2e/closure-integrity-grace.sh"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -44,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.security-toolchain-governance-20260425T134157Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.security-toolchain-governance-20260425T134157Z",
-    "promoted_at": "2026-04-25T13:41:58.456085842Z",
-    "promoted_by": "codex",
-    "rationale": "Initial direct security toolchain governance baseline."
+    "baseline_run_id": "eval-20260503T121004Z-agentops-core.security-toolchain-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121004Z-agentops-core.security-toolchain-governance",
+    "promoted_at": "2026-05-03T12:13:52.214367809Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -61,7 +55,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 406,
+      "duration_ms": 471,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -77,7 +71,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 137,
+      "duration_ms": 160,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -93,7 +87,7 @@
         "correctness": 1,
         "safety": 1
       },
-      "duration_ms": 158,
+      "duration_ms": 193,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -109,7 +103,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 130,
+      "duration_ms": 155,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -125,7 +119,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 29,
+      "duration_ms": 33,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -140,7 +134,7 @@
         "artifact_quality": 1,
         "process_adherence": 1
       },
-      "duration_ms": 9,
+      "duration_ms": 13,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -178,12 +172,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T134157Z/agentops-core.security-toolchain-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/security-toolchain-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.security-toolchain-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

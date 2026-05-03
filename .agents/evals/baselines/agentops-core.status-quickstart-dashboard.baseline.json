@@ -1,29 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
+  "run_id": "eval-20260503T121100Z-agentops-core.status-quickstart-dashboard",
   "suite": {
     "id": "agentops-core.status-quickstart-dashboard",
-    "path": "evals/agentops-core/status-quickstart-dashboard.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/status-quickstart-dashboard.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "e0c248511e38c11faa4d752382c7e2ebd1be0fa90a286277cec1b080bbbc7662"
+    "sha256": "d2ea46b741a6b0fbc1e80d99023c311c7d11c9a5ccb31f02fa6b0eb5e81cdb9a"
   },
-  "started_at": "2026-04-25T09:36:34.378268262Z",
-  "completed_at": "2026-04-25T09:36:40.583414024Z",
+  "started_at": "2026-05-03T12:11:00.327495708Z",
+  "completed_at": "2026-05-03T12:11:08.529287572Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "28601cc12912",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "cli/cmd/ao/status.go",
-      "cli/cmd/ao/status_test.go",
-      "evals/agentops-core/status-quickstart-dashboard.json",
-      "skills-codex/.agentops-manifest.json",
-      "skills-codex/quickstart/.agentops-generated.json",
-      "skills-codex/quickstart/scripts/validate.sh",
-      "skills/quickstart/scripts/validate.sh"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -44,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
-    "promoted_from_run_id": "agentops-core.status-quickstart-dashboard-20260425T093634Z",
-    "promoted_at": "2026-04-25T09:36:40.673254449Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 43 baseline for status/quickstart dashboard and live status latency canary"
+    "baseline_run_id": "eval-20260503T121100Z-agentops-core.status-quickstart-dashboard",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121100Z-agentops-core.status-quickstart-dashboard",
+    "promoted_at": "2026-05-03T12:13:52.599919935Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -61,7 +55,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 85,
+      "duration_ms": 114,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -79,7 +73,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 416,
+      "duration_ms": 1875,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -95,7 +89,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 5703,
+      "duration_ms": 6210,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -158,12 +152,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T093634Z/agentops-core.status-quickstart-dashboard.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/status-quickstart-dashboard.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.status-quickstart-dashboard.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

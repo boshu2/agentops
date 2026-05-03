@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
+  "run_id": "eval-20260503T120636Z-agentops-core.dream-software-factory-operator",
   "suite": {
     "id": "agentops-core.dream-software-factory-operator",
-    "path": "evals/agentops-core/dream-software-factory-operator.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/dream-software-factory-operator.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "75cc96e00eb4133c9eb1a9f83aee93e015ef7e9cf45f22c59d20c447f0f9669f"
+    "sha256": "feb8ef504e6c481f2df165e548cb79795ec57a1a0d321fa10af6321909abf228"
   },
-  "started_at": "2026-04-25T07:36:56.112920355Z",
-  "completed_at": "2026-04-25T07:37:00.146389816Z",
+  "started_at": "2026-05-03T12:06:36.450360415Z",
+  "completed_at": "2026-05-03T12:06:58.415892179Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "e7164b6078f8",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "evals/agentops-core/dream-software-factory-operator.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
-    "promoted_from_run_id": "agentops-core.dream-software-factory-operator-20260425T073656Z",
-    "promoted_at": "2026-04-25T07:37:00.235873767Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 31 baseline for Dream software-factory operator canary"
+    "baseline_run_id": "eval-20260503T120636Z-agentops-core.dream-software-factory-operator",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120636Z-agentops-core.dream-software-factory-operator",
+    "promoted_at": "2026-05-03T12:13:49.873563862Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 5470,
+      "duration_ms": 20118,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -71,7 +71,7 @@
         "learning_closure": 1,
         "safety": 1
       },
-      "duration_ms": 315,
+      "duration_ms": 623,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -86,7 +86,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 726,
+      "duration_ms": 1208,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -101,7 +101,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 2,
+      "duration_ms": 13,
       "diagnostics": [
         "artifact ../../cli/docs/COMMANDS.md contains \"### `ao factory`\"",
         "artifact ../../cli/docs/COMMANDS.md contains \"#### `ao factory start`\"",
@@ -151,6 +151,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
+      "duration_ms": 1,
       "diagnostics": [
         "artifact ../../skills/dream/SKILL.md contains \"engine as `ao overnight`; do not invent a parallel workflow\"",
         "artifact ../../skills/dream/SKILL.md contains \"NEVER mutates source code.\"",
@@ -181,12 +182,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T073656Z/agentops-core.dream-software-factory-operator.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/dream-software-factory-operator.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.dream-software-factory-operator.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

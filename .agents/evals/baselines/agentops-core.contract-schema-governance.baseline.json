@@ -1,27 +1,23 @@
 {
   "schema_version": 1,
-  "run_id": "agentops-core.contract-schema-governance-20260425T112729Z",
+  "run_id": "eval-20260503T120532Z-agentops-core.contract-schema-governance",
   "suite": {
     "id": "agentops-core.contract-schema-governance",
-    "path": "evals/agentops-core/contract-schema-governance.json",
+    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/contract-schema-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
-    "sha256": "19895575c62cf65adc9bd9f34ba7a75dcd37f74f1737fc5c0d9c52ff61a87587"
+    "sha256": "c26fd533062b31a96c1e57cffc3294060118b61aa820f99c5b0597a0c1373d87"
   },
-  "started_at": "2026-04-25T11:27:29.276093435Z",
-  "completed_at": "2026-04-25T11:27:36.097389197Z",
+  "started_at": "2026-05-03T12:05:32.591254244Z",
+  "completed_at": "2026-05-03T12:05:44.41800654Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
-    "candidate_ref": "codex/eval-env-discovery",
-    "candidate_sha": "9d1617b9b0ee",
+    "candidate_ref": "main",
+    "candidate_sha": "ad754badb8f3",
     "dirty": true,
     "dirty_paths": [
-      "docs/INDEX.md",
-      "docs/contracts/index.md",
-      "docs/contracts/memrl-policy.profile.example.json",
-      "docs/contracts/memrl-policy.schema.json",
-      "evals/agentops-core/contract-schema-governance.json"
+      ".agents/rpi/next-work.jsonl"
     ]
   },
   "runtime": {
@@ -42,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "agentops-core.contract-schema-governance-20260425T112729Z",
-    "baseline_path": ".agents/evals/baselines/agentops-core.contract-schema-governance.baseline.json",
-    "promoted_from_run_id": "agentops-core.contract-schema-governance-20260425T112729Z",
-    "promoted_at": "2026-04-25T11:27:36.262121414Z",
-    "promoted_by": "codex",
-    "rationale": "Cycle 52 contract schema governance baseline after restoring MemRL policy schema/profile"
+    "baseline_run_id": "eval-20260503T120532Z-agentops-core.contract-schema-governance",
+    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.contract-schema-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T120532Z-agentops-core.contract-schema-governance",
+    "promoted_at": "2026-05-03T12:13:49.444983282Z",
+    "promoted_by": "evolve-cycle-16",
+    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
   },
   "case_results": [
     {
@@ -59,7 +55,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 321,
+      "duration_ms": 639,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -67,7 +63,7 @@
         "stdout contains \"memrl-policy.schema.json is valid JSON\"",
         "stdout contains \"memrl-policy.profile.example.json is valid JSON\"",
         "stdout contains \"memrl-policy.profile.example.json conforms to memrl-policy.schema.json\"",
-        "stdout contains \"docs/contracts/memrl-policy.schema.json catalogued in INDEX.md\"",
+        "stdout contains \"docs/contracts/memrl-policy.schema.json catalogued in documentation-index.md\"",
         "stdout contains \"Failures: 0\""
       ]
     },
@@ -80,7 +76,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 623,
+      "duration_ms": 1125,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -99,7 +95,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 39,
+      "duration_ms": 69,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -120,7 +116,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 5836,
+      "duration_ms": 9992,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -150,8 +146,8 @@
         "artifact ../../docs/contracts/memrl-policy.profile.example.json contains \"\\\"default_mode\\\": \\\"observe\\\"\"",
         "artifact ../../docs/contracts/memrl-policy.profile.example.json contains \"\\\"failure_class\\\": \\\"contract-drift\\\"\"",
         "artifact ../../docs/contracts/memrl-policy.profile.example.json contains \"\\\"rollback_to\\\": \\\"last-known-good-policy\\\"\"",
-        "artifact ../../docs/INDEX.md contains \"[MemRL Policy Schema](contracts/memrl-policy.schema.json)\"",
-        "artifact ../../docs/INDEX.md contains \"[MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json)\"",
+        "artifact ../../docs/documentation-index.md contains \"[MemRL Policy Schema](contracts/memrl-policy.schema.json)\"",
+        "artifact ../../docs/documentation-index.md contains \"[MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json)\"",
         "artifact ../../docs/contracts/index.md contains \"[MemRL Policy Schema](memrl-policy.schema.json)\""
       ]
     }
@@ -166,12 +162,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evals/runs/20260425T112729Z/agentops-core.contract-schema-governance.run.json",
+      "path": ".agents/evolve/baselines/20260503T120414Z-mid/contract-schema-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": ".agents/evals/baselines/agentops-core.contract-schema-governance.baseline.json",
+      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.contract-schema-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }
