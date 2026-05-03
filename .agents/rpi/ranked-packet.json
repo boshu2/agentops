@@ -1,45 +1,58 @@
 {
   "schema_version": 1,
-  "goal": "Create bd issues for all actionable 2026-05-02 audit findings",
-  "generated_at": "2026-05-02T23:01:13-04:00",
-  "applied_findings": [
+  "goal": "fix ao eval baseline A/B default run ID collision",
+  "generated_at": "2026-05-03T12:27:04Z",
+  "tracker_mode": "beads",
+  "tool_health": {
+    "ao_available": true,
+    "bd_available": true,
+    "bd_probe": "bd ready --json and bd list --type epic --status open --json succeeded"
+  },
+  "applied_knowledge": [
     {
-      "path": ".agents/findings/f-2026-04-25-001.md",
-      "reason": "Worktree disposition remains a release blocker after validation evidence passes."
-    },
-    {
-      "path": ".agents/findings/f-2026-05-02-005.md",
-      "reason": "Silent Edit revert should be tracked as upstream evidence filing, not repo-source repair."
-    },
-    {
-      "path": ".agents/findings/f-2026-05-02-006.md",
-      "reason": "Semver tag filtering is a concrete release-helper bug."
+      "path": ".agents/learnings/2026-04-29-quick-eval-evidence-kind-baseline-policy.md",
+      "reason": "Eval artifact semantics and baseline governance should stay distinct; the fix must preserve per-leg scorecard identity rather than only changing console output.",
+      "citation_recorded": true
     }
   ],
-  "existing_tracker_coverage": [
-    "soc-0vm9",
-    "soc-sros",
-    "soc-0pzj",
-    "soc-owed"
+  "related_work": [
+    {
+      "id": "soc-v7s8",
+      "title": "Add eval determinism rerun harness",
+      "status": "open",
+      "relationship": "Adjacent follow-up; do not fold the run-ID collision into this broader harness unless execution explicitly expands scope."
+    }
   ],
-  "created_or_updated_beads": [
-    "soc-ff2p",
-    "soc-ff2p.2",
-    "soc-ff2p.3",
-    "soc-ff2p.4",
-    "soc-ff2p.5",
-    "soc-ff2p.6",
-    "soc-ff2p.7",
-    "soc-ff2p.8",
-    "soc-0pzj"
-  ],
-  "new_issue_candidates": [
-    "Filter release tag discovery to semver release tags",
-    "Make tests/run-all.sh --all reliable under live runtime failures",
-    "Resolve release worktree disposition and .agents churn blocker",
-    "Isolate release validation from .agents/findings metadata churn",
-    "Review security toolchain warning before v2.40 tag",
-    "File upstream Claude Code silent Edit revert report",
-    "Decide historical changelog coverage floor"
+  "bug_scan_evidence": {
+    "introduced_by": "b7d11812bd79653a9dd37dacb47a61af2518b648",
+    "pr": "https://github.com/boshu2/agentops/pull/212",
+    "reproduction": "cd cli && go run ./cmd/ao eval run ../evals/agentops-core/lid-primitives-demo.json --runtime shell --baseline-mode both --json | jq -r '[.skill_on_run_id, .skill_off_run_id, (.skill_on_run_id == .skill_off_run_id)] | @tsv'",
+    "observed": "eval-20260503T122808Z-agentops-core.lid-primitives-demo\teval-20260503T122808Z-agentops-core.lid-primitives-demo\ttrue"
+  },
+  "ranked_context": [
+    {
+      "rank": 1,
+      "path": "cli/internal/eval/baseline_ab.go",
+      "symbols": ["RunBaselineAB", "computeDelta", "appendBaselineSuffix"],
+      "why": "RunBaselineAB only suffixes RunID when opts.RunID is non-empty; default RunSuite IDs collide inside the same second."
+    },
+    {
+      "rank": 2,
+      "path": "cli/internal/eval/baseline_ab_test.go",
+      "symbols": ["TestComputeDeltaProducesPerCaseAndAggregateDelta", "TestAppendBaselineSuffix"],
+      "why": "Existing tests cover explicit run IDs and output suffixing but not default RunBaselineAB execution."
+    },
+    {
+      "rank": 3,
+      "path": "docs/contracts/eval-baseline-ab.md",
+      "symbols": ["DeltaScorecard semantics", "Round-trip / regression guards"],
+      "why": "Contract should state per-leg run IDs remain distinct even when --run-id is omitted."
+    },
+    {
+      "rank": 4,
+      "path": "evals/agentops-core/lid-primitives-demo.json",
+      "symbols": ["skill-active-when-no-hook-suppression", "stable-invariant-across-baselines"],
+      "why": "Smallest executable fixture for CLI-level smoke proof."
+    }
   ]
 }

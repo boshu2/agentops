@@ -1,66 +1,59 @@
 {
   "schema_version": 1,
-  "run_id": "2026-05-02-audit-findings-beads",
-  "objective": "Create bd issues for all actionable 2026-05-02 audit findings",
-  "epic_id": "soc-ff2p",
-  "plan_path": ".agents/plans/2026-05-02-audit-findings-bead-backlog.md",
-  "research_path": ".agents/research/2026-05-02-audit-findings-bead-backlog.md",
-  "pre_mortem_path": ".agents/council/2026-05-02-pre-mortem-audit-findings-bead-backlog.md",
+  "run_id": "20260503T122704Z-baseline-ab-run-id-collision",
+  "objective": "Fix ao eval baseline A/B default run ID collision",
+  "epic_id": null,
+  "tracker_task_ids": ["soc-ocq8"],
+  "plan_path": ".agents/plans/2026-05-03-baseline-ab-run-id-collision.md",
+  "research_path": ".agents/research/2026-05-03-baseline-ab-run-id-collision.md",
+  "pre_mortem_path": ".agents/council/2026-05-03-pre-mortem-baseline-ab-run-id-collision.md",
   "contract_surfaces": [
-    ".beads/issues.jsonl",
-    ".agents/releases/2026-05-02-v2.40.0-prep-state.md",
-    ".agents/rpi/phase-3-summary-2026-05-02-release-readiness-fix-everything.md",
-    ".agents/council/2026-05-02-post-mortem-full-changelog.md",
-    ".agents/research/2026-05-02-silent-revert-root-cause.md"
+    "docs/contracts/eval-baseline-ab.md"
   ],
   "validation_commands": [
-    "bd show soc-ff2p --json",
-    "bd show soc-0pzj --json",
-    "git status --short .beads .agents/research .agents/plans .agents/council .agents/rpi"
+    "cd cli && go test ./internal/eval -run 'TestRunBaselineABDefaultRunIDsAreDistinct|TestComputeDeltaProducesPerCaseAndAggregateDelta|TestAppendBaselineSuffix'",
+    "cd cli && go test ./internal/eval ./cmd/ao -run 'Test(Eval|RunSuite|LiveRuntime|Baseline)'",
+    "cd cli && go run ./cmd/ao eval run ../evals/agentops-core/lid-primitives-demo.json --runtime shell --baseline-mode both --json | jq -e '.skill_on_run_id != .skill_off_run_id and (.skill_on_run_id | endswith(\"-skill-on\")) and (.skill_off_run_id | endswith(\"-skill-off\"))'",
+    "scripts/pre-push-gate.sh --fast"
   ],
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd ready and bd list probes succeeded; children required --force because parent uses existing soc-* prefix while database allocator reports ag-*."
+    "reason": "bd ready --json and bd list --type epic --status open --json succeeded"
   },
   "done_criteria": [
-    "Parent epic exists for audit-resolution routing",
-    "Every uncovered audit finding has a child bead",
-    "Existing canonical blockers are reused instead of duplicated",
-    "soc-0pzj captures the current eval-agentops failure run and release-blocking priority"
+    "RunBaselineAB assigns distinct -skill-on and -skill-off run IDs when --run-id is omitted.",
+    "Scorecard SkillOnRunID and SkillOffRunID match the returned per-leg records.",
+    "Contract docs describe distinct per-leg IDs for supplied and default base IDs.",
+    "Focused unit tests and CLI smoke pass."
   ],
-  "complexity": "full",
-  "pre_mortem_verdict": "WARN",
+  "complexity": "fast",
+  "pre_mortem_verdict": "PASS",
   "test_levels": {
-    "required": [
-      "L0",
-      "L1",
-      "L2"
-    ],
-    "recommended": [
-      "L3 for future release-orchestration implementation issues"
-    ],
-    "rationale": "Tracker creation required source artifact verification; future implementation issues touch release shell scripts, docs, and integration wrappers."
+    "required": ["L1", "L2"],
+    "recommended": [],
+    "rationale": "The defect is in one Go package with CLI-visible behavior. L1 covers the runner logic; L2 confirms the real command emits distinct scorecard IDs."
   },
-  "ranked_packet_path": ".agents/rpi/runs/2026-05-02-audit-findings-beads/ranked-packet.json",
-  "created_or_updated_beads": [
-    "soc-ff2p",
-    "soc-ff2p.2",
-    "soc-ff2p.3",
-    "soc-ff2p.4",
-    "soc-ff2p.5",
-    "soc-ff2p.6",
-    "soc-ff2p.7",
-    "soc-ff2p.8",
-    "soc-0pzj"
+  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
+  "discovery_timestamp": "2026-05-03T12:27:04Z",
+  "recommended_work": [
+    {
+      "title": "Fix baseline A/B default run ID collision",
+      "tracker_id": "soc-ocq8",
+      "priority": 1,
+      "scope": [
+        "cli/internal/eval/baseline_ab.go",
+        "cli/internal/eval/baseline_ab_test.go",
+        "docs/contracts/eval-baseline-ab.md"
+      ]
+    }
   ],
-  "existing_coverage_reused": [
-    "soc-0vm9",
-    "soc-sros",
-    "soc-owed",
-    "soc-owed.6",
-    "soc-owed.7"
-  ],
-  "discovery_timestamp": "2026-05-02T23:01:13-04:00"
+  "deferred_work": [
+    {
+      "id": "soc-v7s8",
+      "title": "Add eval determinism rerun harness",
+      "reason": "Adjacent but broader than the confirmed bug."
+    }
+  ]
 }
