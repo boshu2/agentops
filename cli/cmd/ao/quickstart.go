@@ -97,18 +97,7 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetDryRun() {
-		report, err := lifecycle.PlanRepoSeed(cwd, opts)
-		if err != nil {
-			return err
-		}
-		return outputQuickstartResult(quickstartResult{
-			Path:      cwd,
-			DryRun:    true,
-			Minimal:   minimal,
-			NoBeads:   noBeads,
-			Beads:     beadsReadinessStatus(cwd, noBeads),
-			Readiness: report,
-		})
+		return runQuickstartDryRun(cwd, opts)
 	}
 
 	if !jsonMode {
@@ -121,42 +110,61 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 	}
 
 	if minimal {
-		if !jsonMode {
-			fmt.Println("━━━ STEP 1: Creating .agents/ structure ━━━")
-		}
-		if err := createQuickstartDirs(cwd); err != nil {
-			return err
-		}
-		report, err := lifecycle.InspectRepoReadiness(cwd, opts)
-		if err != nil {
-			return err
-		}
-		if jsonMode {
-			return outputQuickstartResult(quickstartResult{
-				Path:      cwd,
-				Minimal:   true,
-				NoBeads:   noBeads,
-				Beads:     "skipped-minimal",
-				Readiness: report,
-			})
-		}
-		fmt.Println("\n✓ Minimal setup complete!")
-		printReadinessSummary(report)
-		showNextSteps(false)
-		return nil
+		return runQuickstartMinimal(cwd, opts, jsonMode)
 	}
 
+	return runQuickstartFull(cwd, opts, jsonMode)
+}
+
+func runQuickstartDryRun(cwd string, opts lifecycle.ReadinessOptions) error {
+	report, err := lifecycle.PlanRepoSeed(cwd, opts)
+	if err != nil {
+		return err
+	}
+	return outputQuickstartResult(quickstartResult{
+		Path:      cwd,
+		DryRun:    true,
+		Minimal:   minimal,
+		NoBeads:   noBeads,
+		Beads:     beadsReadinessStatus(cwd, noBeads),
+		Readiness: report,
+	})
+}
+
+func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool) error {
+	if !jsonMode {
+		fmt.Println("━━━ STEP 1: Creating .agents/ structure ━━━")
+	}
+	if err := createQuickstartDirs(cwd); err != nil {
+		return err
+	}
+	report, err := lifecycle.InspectRepoReadiness(cwd, opts)
+	if err != nil {
+		return err
+	}
+	if jsonMode {
+		return outputQuickstartResult(quickstartResult{
+			Path:      cwd,
+			Minimal:   true,
+			NoBeads:   noBeads,
+			Beads:     "skipped-minimal",
+			Readiness: report,
+		})
+	}
+	fmt.Println("\n✓ Minimal setup complete!")
+	printReadinessSummary(report)
+	showNextSteps(false)
+	return nil
+}
+
+func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool) error {
 	if !jsonMode {
 		fmt.Println("━━━ STEP 1: Applying core repo seed ━━━")
 	}
 	claudePath := filepath.Join(cwd, "CLAUDE.md")
-	claudeAlreadyExisted := false
-	if _, err := os.Stat(claudePath); os.IsNotExist(err) {
-		if err := createProjectClaudeMd(cwd); err != nil {
-			return err
-		}
-	} else {
-		claudeAlreadyExisted = true
+	claudeAlreadyExisted, err := ensureProjectClaudeMd(cwd, claudePath)
+	if err != nil {
+		return err
 	}
 	report, err := lifecycle.ApplyRepoSeed(cwd, opts)
 	if err != nil {
@@ -185,6 +193,21 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 			Readiness: report,
 		})
 	}
+	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report)
+	return nil
+}
+
+func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
+	if _, err := os.Stat(claudePath); os.IsNotExist(err) {
+		if err := createProjectClaudeMd(cwd); err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport) {
 	quickstartBeadsStep(cwd)
 	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
 	if claudeAlreadyExisted {
@@ -199,8 +222,6 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
 	printReadinessSummary(report)
 	showNextSteps(!noBeads)
-
-	return nil
 }
 
 func outputQuickstartResult(result quickstartResult) error {

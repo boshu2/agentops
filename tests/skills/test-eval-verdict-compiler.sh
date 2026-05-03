@@ -2,6 +2,9 @@
 # Test for hooks/eval-verdict-compiler.sh.
 # Wave-1: 5 critical assertions (shellcheck, improved-mutates-up, legacy-compat,
 # dry-run-readonly, corpus-active-precondition).
+# Wave-1.5: 3 more assertions (regressed-mutates-down, breach-queues-retire,
+# idempotency-via-watermark) — covers the int_ge / threshold-breach branch
+# that gets the bash-native rewrite from wave-1-residual|awk-portability-int-ge.
 
 set -euo pipefail
 
@@ -97,6 +100,90 @@ test_corpus_active() {
     fi
 }
 test_corpus_active
+
+# Test 6: regressed verdict mutates utility downward + increments harmful_count
+test_regressed() {
+    local tmp learning manifest_dir
+    tmp="$(make_temp_root)"
+    learning="$tmp/learning.md"
+    manifest_dir="$tmp/runs/run-regressed"
+    mkdir -p "$manifest_dir"
+    cp "$FIX_DIR/learning-existing.md" "$learning"
+    jq --arg path "$learning" '.verdict.applicable_artifacts = [$path]' \
+        "$FIX_DIR/manifest-regressed.json" > "$manifest_dir/manifest.json"
+    AGENTOPS_EVALS_ROOT="$tmp" AGENTOPS_VERDICT_QUIET=1 \
+        bash "$HOOK" --manifest "$manifest_dir/manifest.json" >/dev/null 2>&1 || {
+            fail "regressed-mutates-downward: hook exited non-zero"; return; }
+    local got harmful
+    got="$(awk '/^utility:/ {gsub(/^utility:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$learning")"
+    harmful="$(awk '/^harmful_count:/ {gsub(/^harmful_count:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$learning")"
+    # EMA(0.7, 0.3) on (0.5, 0.1) = 0.7*0.5 + 0.3*0.1 = 0.380000
+    [ "$got" = "0.380000" ] && pass "regressed-mutates-downward: utility 0.5 -> $got" \
+        || fail "regressed-mutates-downward: expected 0.380000, got $got"
+    [ "$harmful" = "1" ] && pass "regressed-mutates-downward: harmful_count 0 -> $harmful" \
+        || fail "regressed-mutates-downward: expected 1, got $harmful"
+}
+test_regressed
+
+# Test 7: harmful>=3 + utility<0.3 queues a verdict-driven retire candidate.
+# This is the branch the int_ge bash-native rewrite (wave-1-residual|
+# awk-portability-int-ge) protects from BSD-awk syntax noise.
+test_breach_queues_retire() {
+    local tmp learning manifest_dir
+    tmp="$(make_temp_root)"
+    learning="$tmp/learning.md"
+    manifest_dir="$tmp/runs/run-breach"
+    mkdir -p "$manifest_dir"
+    cp "$FIX_DIR/learning-near-breach.md" "$learning"
+    jq --arg path "$learning" '.verdict.applicable_artifacts = [$path]' \
+        "$FIX_DIR/manifest-regressed-breach.json" > "$manifest_dir/manifest.json"
+    # Run from inside $tmp so ROOT (git rev-parse fallback) lands in $tmp,
+    # and the queued retire entry writes to $tmp/.agents/rpi/next-work.jsonl
+    # rather than the actual repo's queue.
+    (cd "$tmp" && AGENTOPS_EVALS_ROOT="$tmp" AGENTOPS_VERDICT_QUIET=1 \
+        bash "$HOOK" --manifest "$manifest_dir/manifest.json" >/dev/null 2>&1) || {
+            fail "breach-queues-retire: hook exited non-zero"; return; }
+    local queue="$tmp/.agents/rpi/next-work.jsonl"
+    if [ -s "$queue" ] && \
+        jq -e '.source == "eval-verdict-compiler" and (.description | contains("verdict-driven retire candidate"))' \
+            "$queue" >/dev/null 2>&1; then
+        pass "breach-queues-retire: next-work entry written with verdict-driven retire"
+    else
+        fail "breach-queues-retire: expected verdict-driven retire entry in $queue"
+    fi
+}
+test_breach_queues_retire
+
+# Test 8: re-running the compiler on a watermarked manifest is a no-op
+# (idempotency via processed.jsonl + find -newer gate).
+test_idempotent() {
+    local tmp learning manifest_dir
+    tmp="$(make_temp_root)"
+    learning="$tmp/learning.md"
+    manifest_dir="$tmp/runs/run-idempotent"
+    mkdir -p "$manifest_dir"
+    cp "$FIX_DIR/learning-existing.md" "$learning"
+    jq --arg path "$learning" '.verdict.applicable_artifacts = [$path]' \
+        "$FIX_DIR/manifest-improved.json" > "$manifest_dir/manifest.json"
+    # First invocation: drives the watermark and mutates utility 0.5 -> 0.605.
+    AGENTOPS_EVALS_ROOT="$tmp" AGENTOPS_VERDICT_QUIET=1 \
+        bash "$HOOK" >/dev/null 2>&1 || {
+            fail "idempotency-via-watermark: first run exited non-zero"; return; }
+    local mid
+    mid="$(awk '/^utility:/ {gsub(/^utility:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$learning")"
+    [ "$mid" = "0.605000" ] || { fail "idempotency-via-watermark: setup expected 0.605000 after first run, got $mid"; return; }
+    # Second invocation without --manifest: corpus-active precondition checks
+    # find -newer "$WATERMARK"; manifest is older, so the loop must skip.
+    local before after
+    before="$(shasum "$learning" | awk '{print $1}')"
+    AGENTOPS_EVALS_ROOT="$tmp" AGENTOPS_VERDICT_QUIET=1 \
+        bash "$HOOK" >/dev/null 2>&1 || {
+            fail "idempotency-via-watermark: second run exited non-zero"; return; }
+    after="$(shasum "$learning" | awk '{print $1}')"
+    [ "$before" = "$after" ] && pass "idempotency-via-watermark: learning bit-identical across re-runs" \
+        || fail "idempotency-via-watermark: learning re-mutated under second run (utility now $(awk '/^utility:/ {gsub(/^utility:[[:space:]]*|[[:space:]]+$/,""); print; exit}' "$learning"))"
+}
+test_idempotent
 
 echo
 echo "Total: PASS=$PASS FAIL=$FAIL"

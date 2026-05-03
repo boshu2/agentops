@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-05-03T03:40:00Z",
-  "git_sha": "61ee3f53",
+  "timestamp": "2026-05-03T06:42:43Z",
+  "git_sha": "ea765c4",
   "goals": [
     {
       "goal_id": "flywheel-compounding",
       "result": "fail",
-      "duration_s": 1.449637403,
-      "output": "FAIL: σ=0 ρ=0 σρ=0 δ=0.0066248985932293005 threshold=6.624898593229301e-05 — σ=0 ρ=0 — zero citations recorded in measurement window; corpus is dormant. Sessions must run 'ao lookup' (any --cite kind)\n…[truncated]…\n measures corpus-level citation activity across all sessions in the window; a single nightly cannot move it. See .agents/findings/f-2026-04-30-002.md for the proposed corpus-active precondition path.",
+      "duration_s": 1.024171486,
+      "output": "FAIL: σ=0 ρ=0 σρ=0 δ=0.006793569765976926 threshold=6.793569765976926e-05 — σ=0 ρ=0 — zero citations recorded in measurement window; corpus is dormant. Sessions must run 'ao lookup' (any --cite kind) \n…[truncated]…\n measures corpus-level citation activity across all sessions in the window; a single nightly cannot move it. See .agents/findings/f-2026-04-30-002.md for the proposed corpus-active precondition path.",
       "weight": 3,
       "tags": [
         "long-cycle",
@@ -16,94 +16,94 @@
     {
       "goal_id": "dream-end-user-coverage",
       "result": "pass",
-      "duration_s": 0.057490711,
+      "duration_s": 0.04101266,
       "output": "OK: /home/user/agentops/.agents/schedule.yaml.example exists, parses, and uses real-bodied job_types",
       "weight": 3
     },
     {
       "goal_id": "flywheel-proof",
       "result": "pass",
-      "duration_s": 0.976298361,
+      "duration_s": 0.456182761,
       "output": "[proof-run] Using pre-built ao binary: /home/user/agentops/cli/bin/ao\n[proof-run] PASS: reused pre-built ao binary\n[proof-run] Creating isolated proof repo\n[proof-run] PASS: initialized isolated repo\n\n…[truncated]…\n\n[proof-run] PASS: nightly summary exists\n[proof-run] PASS: nightly summary exposes retrieval_live\n[proof-run] PASS: nightly retrieval report has coverage\n[proof-run] FLYWHEEL PROOF: PASS (20 checks)",
       "weight": 7
     },
     {
       "goal_id": "skill-frontmatter",
       "result": "pass",
-      "duration_s": 0.487818175,
+      "duration_s": 0.357112548,
       "weight": 6
     },
     {
       "goal_id": "hook-preflight",
       "result": "pass",
-      "duration_s": 0.219778503,
+      "duration_s": 0.196261078,
       "output": "\u001b[0;34mHook preflight checks\u001b[0m\n\u001b[0;32m✓\u001b[0m hooks/session-start.sh exists\n\u001b[0;32m✓\u001b[0m hooks/session-end-maintenance.sh exists\n\u001b[0;32m✓\u001b[0m hooks/precompact-snapshot.sh exists\n\u001b[0;32m✓\u001b[0m hooks/pen\n…[truncated]…\nxists: hooks/worktree-setup.sh\n\u001b[0;32m✓\u001b[0m hooks.json script exists: hooks/worktree-cleanup.sh\n\u001b[0;32m✓\u001b[0m hooks.json script exists: hooks/config-change-monitor.sh\n\n\u001b[0;32mHook preflight PASSED\u001b[0m",
       "weight": 6
     },
     {
       "goal_id": "go-cli-builds",
       "result": "pass",
-      "duration_s": 6.828882475,
+      "duration_s": 4.591385757,
       "weight": 8
     },
     {
       "goal_id": "go-cli-tests",
       "result": "pass",
-      "duration_s": 39.173848906,
-      "output": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao\t36.026s\n?   \tgithub.com/boshu2/agentops/cli/cmd/skill-frontmatter-json\t[no test files]\n?   \tgithub.com/boshu2/agentops/cli/embedded\t[no test files]\nok  \tgith\n…[truncated]…\nvibecheck\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/wikiworker\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/worker\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/pkg/vault\t(cached)",
+      "duration_s": 60.225662216,
+      "output": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao\t31.134s\n?   \tgithub.com/boshu2/agentops/cli/cmd/skill-frontmatter-json\t[no test files]\n?   \tgithub.com/boshu2/agentops/cli/embedded\t[no test files]\nok  \tgith\n…[truncated]…\nvibecheck\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/wikiworker\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/internal/worker\t(cached)\nok  \tgithub.com/boshu2/agentops/cli/pkg/vault\t(cached)",
       "weight": 8
     },
     {
       "goal_id": "go-vet-clean",
       "result": "pass",
-      "duration_s": 3.75627595,
+      "duration_s": 2.514488845,
       "weight": 5
     },
     {
       "goal_id": "go-complexity-ceiling",
       "result": "pass",
-      "duration_s": 0.849108276,
+      "duration_s": 0.68480764,
       "output": "gocyclo not found; auto-installing into /root/go/bin\nAll functions in cli/ are below complexity 20.\ngocyclo not found; auto-installing into /root/go/bin\nAll functions in cli/internal/ are below complexity 18.",
       "weight": 6
     },
     {
       "goal_id": "security-gate",
       "result": "pass",
-      "duration_s": 0.130976027,
+      "duration_s": 0.107620278,
       "output": "================================\nTesting security-gate.sh\n================================\n\nPASS: security-gate.sh is executable\nPASS: --help works\nPASS: invalid mode fails\nPASS: JSON output is valid\nPASS: JSON output has required fields\nPASS: security-gate summary artifact created\n\n================================\nResults: 6 PASS, 0 FAIL\n================================",
       "weight": 6
     },
     {
       "goal_id": "manifest-versions-match",
       "result": "pass",
-      "duration_s": 0.009034163,
+      "duration_s": 0.008175079,
       "weight": 5
     },
     {
       "goal_id": "wiring-closure",
       "result": "pass",
-      "duration_s": 0.418920725,
+      "duration_s": 0.347302288,
       "output": "All wiring checks passed",
       "weight": 7
     },
     {
       "goal_id": "contract-compatibility",
       "result": "pass",
-      "duration_s": 0.530324635,
+      "duration_s": 0.386976854,
       "output": "=== Contract compatibility gate ===\n\n--- Orphan allowlist validation ---\n  OK: No orphan allowlist entries configured\n\n--- documentation-index.md link resolution ---\n  OK: contracts/agent-worker.md\n  \n…[truncated]…\ngued in documentation-index.md\n  OK: docs/contracts/swarm-worker-result.schema.json catalogued in documentation-index.md\n\n=== Summary ===\nFailures: 0\nWarnings: 1\n\nContract compatibility check passed.",
       "weight": 5
     },
     {
       "goal_id": "goals-validate",
       "result": "pass",
-      "duration_s": 1.292724716,
+      "duration_s": 0.976649349,
       "output": "true",
       "weight": 5
     },
     {
       "goal_id": "compile-freshness",
       "result": "pass",
-      "duration_s": 0.029100584,
+      "duration_s": 0.035225208,
       "output": "INFO: .agents/defrag/latest.json not found; falling back to overnight preview .agents/overnight/latest/defrag/latest.json\nPASS: Compile health OK (defrag 0h ago, stale=0/5)",
       "weight": 4,
       "tags": [
@@ -113,7 +113,7 @@
     {
       "goal_id": "compile-no-oscillation",
       "result": "pass",
-      "duration_s": 0.011412687,
+      "duration_s": 0.01946714,
       "output": "INFO: .agents/defrag/latest.json not found; falling back to overnight preview .agents/overnight/latest/defrag/latest.json\nPASS: no oscillating goals in .agents/overnight/latest/defrag/latest.json",
       "weight": 4,
       "tags": [
@@ -123,36 +123,36 @@
     {
       "goal_id": "competitive-freshness",
       "result": "pass",
-      "duration_s": 0.036730781,
+      "duration_s": 0.032156132,
       "output": "PASS: All 6 competitive analyses are fresh (\u003c=45 days)",
       "weight": 3
     },
     {
       "goal_id": "codex-parity-drift",
       "result": "pass",
-      "duration_s": 6.369592212,
+      "duration_s": 4.803244687,
       "output": "PASS: No codex parity drift detected",
       "weight": 5
     },
     {
       "goal_id": "install-smoke",
       "result": "pass",
-      "duration_s": 0.123893273,
+      "duration_s": 0.169135698,
       "output": "=== Install Script Smoke Tests ===\n\nPASS: scripts/install.sh syntax valid\nPASS: scripts/install-codex.sh syntax valid\nPASS: scripts/install-opencode.sh syntax valid\n\nPASS: scripts/install.sh has valid\n…[truncated]…\nheel subcommand registered\nPASS: ao goals subcommand registered\nPASS: ao inject subcommand registered\n\n=================================\nResults: 29 passed, 0 failed\n=================================",
       "weight": 5
     },
     {
       "goal_id": "flywheel-lifecycle",
       "result": "pass",
-      "duration_s": 0.083044211,
-      "output": "=== Flywheel Lifecycle Gate ===\n\nStage 1: Capture\n  PASS: learning file created\n  PASS: learning has frontmatter\n  PASS: learning has marker\n\nStage 2: Retrieval\n  PASS: grep finds learning by marker\n \n…[truncated]…\ns\n  PASS: corpus has 86 learning(s) — citation is structurally possible\n\nResults: 12 passed, 0 failed\nPASS: Flywheel lifecycle gate OK (5 stages: capture → retrieval → inject → round-trip → citation)",
+      "duration_s": 0.067299222,
+      "output": "=== Flywheel Lifecycle Gate ===\n\nStage 1: Capture\n  PASS: learning file created\n  PASS: learning has frontmatter\n  PASS: learning has marker\n\nStage 2: Retrieval\n  PASS: grep finds learning by marker\n \n…[truncated]…\ns\n  PASS: corpus has 90 learning(s) — citation is structurally possible\n\nResults: 12 passed, 0 failed\nPASS: Flywheel lifecycle gate OK (5 stages: capture → retrieval → inject → round-trip → citation)",
       "weight": 6
     },
     {
       "goal_id": "state-path-resolver-coverage",
       "result": "pass",
-      "duration_s": 0.048977399,
-      "output": "state-path-resolver-coverage  total=161  by-surface: cli/cmd/ao=67 cli/internal=57 hooks=10 lib=1 scripts=26",
+      "duration_s": 0.033965572,
+      "output": "state-path-resolver-coverage  total=146  by-surface: cli/cmd/ao=49 cli/internal=59 hooks=10 lib=1 scripts=27",
       "weight": 3,
       "tags": [
         "warn-only"

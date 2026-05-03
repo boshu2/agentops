@@ -1137,12 +1137,21 @@ func TestAtomicWriteFile_Success(t *testing.T) {
 	}
 }
 
-// TestAtomicWriteFile_BadDir verifies atomicWriteFile returns error for non-existent directory.
-func TestAtomicWriteFile_BadDir(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "nonexistent", "subdir", "file.txt")
-	err := atomicWriteFile(path, []byte("data"), 0644)
-	if err == nil {
-		t.Fatal("expected error when writing to non-existent directory, got nil")
+// TestAtomicWriteFile_CreatesParentDirs verifies atomicWriteFile creates
+// missing parent directories so callers don't need to MkdirAll first.
+// (Was BadDir; quest.AtomicWriteFileWithPerm now MkdirAll-s the parent
+// chain, which closed the wave-1-residual writeFileAtomic dedup.)
+func TestAtomicWriteFile_CreatesParentDirs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", "subdir", "file.txt")
+	if err := atomicWriteFile(path, []byte("data"), 0644); err != nil {
+		t.Fatalf("atomicWriteFile() unexpected error = %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if string(got) != "data" {
+		t.Errorf("file content = %q, want %q", string(got), "data")
 	}
 }
 
