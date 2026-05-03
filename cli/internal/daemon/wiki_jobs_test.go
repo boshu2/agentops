@@ -345,6 +345,74 @@ func TestValidateWikiForgeSourcePathsContainment_Unit(t *testing.T) {
 	}
 }
 
+// TestWikiJobs_RejectsEmptyProvider confirms that WikiForgeJobSpec validation
+// rejects an empty Provider at every reachable submission entrypoint:
+// Validate(), ToJobSpec(), and the payload roundtrip path
+// WikiForgeJobSpecFromPayload(). This is the L2 contract test for the bug
+// audit (soc-58q5.11): empty provider must NOT pass validation.
+func TestWikiJobs_RejectsEmptyProvider(t *testing.T) {
+	const wantMsg = "provider is required"
+
+	makeSpec := func() WikiForgeJobSpec {
+		// Construct a spec that is valid in every other field, so the only
+		// reason validation can fail is the empty Provider.
+		spec := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session.jsonl"})
+		spec.Provider = ""
+		return spec
+	}
+
+	t.Run("Validate rejects empty provider", func(t *testing.T) {
+		err := makeSpec().Validate()
+		if err == nil {
+			t.Fatalf("Validate: expected error for empty Provider, got nil")
+		}
+		if got := err.Error(); got != wantMsg {
+			t.Fatalf("Validate: error = %q, want %q", got, wantMsg)
+		}
+	})
+
+	t.Run("ToJobSpec rejects empty provider", func(t *testing.T) {
+		_, err := makeSpec().ToJobSpec("job-wiki-empty-provider")
+		if err == nil {
+			t.Fatalf("ToJobSpec: expected error for empty Provider, got nil")
+		}
+		if got := err.Error(); got != wantMsg {
+			t.Fatalf("ToJobSpec: error = %q, want %q", got, wantMsg)
+		}
+	})
+
+	t.Run("WikiForgeJobSpecFromPayload rejects empty provider", func(t *testing.T) {
+		// Build a payload that mirrors a valid spec but with empty provider.
+		// This simulates a queue payload arriving with a missing provider field.
+		valid := NewWikiForgeJobSpec("dream-1", ".agents/wiki/sources", []string{"session.jsonl"})
+		payload, err := structToMap(valid)
+		if err != nil {
+			t.Fatalf("structToMap: %v", err)
+		}
+		payload["provider"] = ""
+
+		_, err = WikiForgeJobSpecFromPayload(payload)
+		if err == nil {
+			t.Fatalf("WikiForgeJobSpecFromPayload: expected error for empty Provider, got nil")
+		}
+		if got := err.Error(); got != wantMsg {
+			t.Fatalf("WikiForgeJobSpecFromPayload: error = %q, want %q", got, wantMsg)
+		}
+	})
+
+	t.Run("Queue.SubmitJob rejects empty provider via ToJobSpec", func(t *testing.T) {
+		// Full submission path: build the JobSpec the same way real callers do
+		// (spec.ToJobSpec) and assert the failure surfaces before queue write.
+		_, err := makeSpec().ToJobSpec("job-wiki-empty-provider-submit")
+		if err == nil {
+			t.Fatalf("submission path: expected ToJobSpec to fail before queue, got nil")
+		}
+		if !strings.Contains(err.Error(), wantMsg) {
+			t.Fatalf("submission path: error = %q, want substring %q", err.Error(), wantMsg)
+		}
+	})
+}
+
 type fakeWikiForgeWorker struct {
 	sessionID string
 	requests  []wikiworker.ExtractionRequest

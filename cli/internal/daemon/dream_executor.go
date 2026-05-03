@@ -91,7 +91,11 @@ func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecut
 	startedAt := e.now().UTC()
 	// soc-5of.9: O_APPEND (not O_TRUNC) so a daemon restart mid-dream cannot
 	// truncate partial logs — Fournier-class "crash with notes" durability nit.
-	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	// soc-58q5.14 (W-C-19): 0o600 (not 0o644) keeps the per-run overnight log
+	// readable only by the daemon's UID. Logs may capture provider tokens or
+	// other credentials emitted by tooling; world-readable is a leak path to
+	// other local users.
+	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("open dream log: %w", err)
 	}
