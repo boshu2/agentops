@@ -2,6 +2,20 @@
 
 > Which workflow should I use? Find the right one in seconds.
 
+## Golden Paths
+
+Use these as the default user journeys before reaching for the full decision
+tree.
+
+| Situation | Start with | Continue with |
+|-----------|------------|---------------|
+| First repo setup | `ao quick-start` | `/quickstart`, then `/rpi "a small goal"` |
+| Small, obvious change | [Quick Fix](quick-fix.md) | `/implement`, then `/vibe --quick recent` |
+| New feature or broad change | [Complete Cycle](complete-cycle.md) | `/rpi "goal"` or `/plan` -> `/crank <epic-id>` |
+| Existing tracked backlog | `bd ready` | `/implement <issue-id>` or `/crank <epic-id>` |
+| Review-only checkpoint | `/council validate this PR` | `/vibe recent` before merge |
+| Terminal-native operation | `ao factory start --goal "goal"` | `ao rpi phased "goal"` and `ao rpi status` |
+
 ## Decision Tree
 
 | I want to... | Use this workflow | Complexity | Key Skills |
@@ -12,7 +26,7 @@
 | Deploy infrastructure changes | [Infrastructure Deployment](infrastructure-deployment.md) | High | /plan, /implement, /vibe |
 | Work across multiple domains at once | [Multi-Domain](multi-domain.md) | High | /plan, /swarm |
 | Validate research assumptions before planning | [Assumption Validation](assumption-validation.md) | Medium | /research |
-| Understand a new codebase or extract patterns | [Knowledge Synthesis](knowledge-synthesis.md) | Medium | /research, /knowledge |
+| Understand a new codebase or extract patterns | [Knowledge Synthesis](knowledge-synthesis.md) | Medium | /research, /knowledge-activation |
 | Run a retrospective after completing work | [Post-Work Retro](post-work-retro.md) | Low | /retro, /post-mortem |
 | Improve system quality over time | [Continuous Improvement](continuous-improvement.md) | Medium | /retro, /vibe |
 | Manage a session from start to finish | [Session Lifecycle](session-lifecycle.md) | Low | (natural language) |
@@ -53,7 +67,7 @@
 ### [Knowledge Synthesis](knowledge-synthesis.md)
 **When to use:** Onboarding to a new codebase, creating comprehensive docs, extracting patterns from multiple implementations.
 **Complexity:** Medium (30-60 min, single session)
-**Key skills:** /research, /knowledge
+**Key skills:** /research, /knowledge-activation
 
 ### [Post-Work Retro](post-work-retro.md)
 **When to use:** After completing significant work, to capture learnings and identify improvements.

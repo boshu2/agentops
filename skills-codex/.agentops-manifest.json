@@ -860,7 +860,7 @@
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
       "source_hash": "9ed2f0290ccc16ce45a79d0a22b2dae54f525875fa2a8375bf470de54c08912d",
-      "generated_hash": "ba9828b228f13bc6ee3758281342754c1792439be9627b81e2af420b36b11dc5"
+      "generated_hash": "76c803dbb09ebd1f9833a1ca852d366c48f6a2956141b8b9245bfd816e93155c"
     },
     {
       "name": "product",
@@ -884,7 +884,7 @@
       "name": "quickstart",
       "source_skill": "skills/quickstart",
       "source_hash": "68a6463ab7dded893cbdd27d7697c70d871ed4149b5c7cbe8bf20369c1e0a813",
-      "generated_hash": "a5c90f2639ed15029203f7ff1ab8fd2dcfbc2afe260f1e4816317c81fb2cf907"
+      "generated_hash": "47873041d4557d92f938779fe03385b54a32f597aa59aadf711804a83ba190bd"
     },
     {
       "name": "ratchet",

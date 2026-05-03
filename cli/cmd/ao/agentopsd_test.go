@@ -342,7 +342,13 @@ func TestDaemonRunWorkerOnceCompletesWikiForgeFakeJob(t *testing.T) {
 		t.Fatalf("snapshot: %v", err)
 	}
 	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].Status != daemonpkg.JobStatusCompleted {
-		t.Fatalf("jobs = %#v, want completed wiki job", snapshot.Jobs)
+		t.Fatalf(
+			"jobs = %#v, failure = %#v, artifacts = %#v, artifact refs = %#v, want completed wiki job",
+			snapshot.Jobs,
+			snapshot.Jobs[0].Failure,
+			snapshot.Jobs[0].Artifacts,
+			snapshot.Jobs[0].ArtifactRefs,
+		)
 	}
 	if snapshot.Jobs[0].Artifacts["worker_session_refs"] == "" || snapshot.Jobs[0].Artifacts["session_id"] == "" {
 		t.Fatalf("wiki artifacts = %#v, want worker session refs", snapshot.Jobs[0].Artifacts)

@@ -256,7 +256,7 @@ func printReadinessSummary(report *lifecycle.ReadinessReport) {
 		}
 		fmt.Printf("  %-13s %s (%d/%d)\n", string(layer)+":", status, present, total)
 	}
-	fmt.Println("\nNext: /rpi \"your first objective\"")
+	fmt.Println("\nNext: pick a golden path below, or run /rpi \"your first objective\"")
 }
 
 func readinessLayerStatus(report *lifecycle.ReadinessReport, layer lifecycle.ReadinessLayer) (int, int, string) {
@@ -519,40 +519,46 @@ git push              # NEVER stop before pushing
 func showNextSteps(hasBeads bool) {
 	fmt.Print(`
 ═══════════════════════════════════════════════════════════════════
-                          NEXT STEPS
+                          GOLDEN PATHS
 ═══════════════════════════════════════════════════════════════════
 `)
 
 	if hasBeads {
-		fmt.Println(`  1. Start the software-factory lane for a concrete goal:
+		fmt.Println(`  1. First validated change:
      $ ao factory start --goal "your first objective"
+     > /rpi "your first objective"
 
-  2. Create your first issue:
+  2. Tracked work:
+     $ bd ready
      $ bd create "My first task"
 
-  3. Start working:
-     $ claude
-     > /rpi "your first objective"
+  3. Terminal-native lifecycle:
+     $ ao rpi phased "your first objective"
+     $ ao rpi status
 
-  4. When done, close the loop explicitly:
-     $ ao codex stop`)
+  4. Close the learning loop:
+     > /validation
+     $ ao codex stop  # Codex hookless fallback only`)
 	} else {
-		fmt.Println(`  1. Start the software-factory lane for a concrete goal:
+		fmt.Println(`  1. First validated change:
      $ ao factory start --goal "your first objective"
-
-  2. Start Claude in your project:
-     $ claude
-
-  3. Work normally:
      > /rpi "your first objective"
 
-  4. When ready for tracked execution:
+  2. Start your agent in this repo:
+     > /quickstart
+     > /rpi "your first objective"
+
+  3. Terminal-native lifecycle:
+     $ ao rpi phased "your first objective"
+     $ ao rpi status
+
+  4. Add tracked execution when ready:
      $ bd init
      $ bd create "My first task"`)
 	}
 
 	fmt.Print(`
-  5. Your knowledge compounds through briefings, RPI, and flywheel closeout
+  Success signal: the run leaves validation evidence and reusable context in .agents/
 
 ═══════════════════════════════════════════════════════════════════
 

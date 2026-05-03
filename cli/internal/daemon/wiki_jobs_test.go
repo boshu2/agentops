@@ -345,6 +345,23 @@ func TestValidateWikiForgeSourcePathsContainment_Unit(t *testing.T) {
 	}
 }
 
+func TestValidateWikiForgeSourcePathsContainment_AllowsSymlinkRootSpelling(t *testing.T) {
+	realRoot := t.TempDir()
+	linkParent := t.TempDir()
+	linkRoot := filepath.Join(linkParent, "repo")
+	if err := os.Symlink(realRoot, linkRoot); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	sourcePath := filepath.Join(linkRoot, "session.jsonl")
+	if err := os.WriteFile(sourcePath, []byte("decision: accept symlink root spelling\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	if err := validateWikiForgeSourcePathsContainment(linkRoot, []string{sourcePath}); err != nil {
+		t.Fatalf("expected symlink-root path spelling to stay inside root: %v", err)
+	}
+}
+
 // TestWikiJobs_RejectsEmptyProvider confirms that WikiForgeJobSpec validation
 // rejects an empty Provider at every reachable submission entrypoint:
 // Validate(), ToJobSpec(), and the payload roundtrip path

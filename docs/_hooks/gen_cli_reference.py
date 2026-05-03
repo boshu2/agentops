@@ -78,7 +78,7 @@ This installs:
 
 ```bash
 ao --version              # Verify install
-ao rpi "fix the flaky auth test"   # Full Research -> Plan -> Implement -> Validate cycle
+ao rpi phased "fix the flaky auth test"  # Full Research -> Plan -> Implement -> Validate cycle
 ao status                 # Where was I?
 ao goals measure          # Fitness gate
 ```

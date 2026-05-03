@@ -164,34 +164,15 @@ Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md) · Configura
 
 ## Quick Start
 
-Inside a repo, run one command in your agent chat:
+Inside a repo, use the path that matches what you are trying to do.
 
-```text
-/quickstart
-```
+| Path | Run | Done when |
+|------|-----|-----------|
+| **First repo setup** | `ao quick-start`, then `/quickstart` | AgentOps reports repo readiness and a next action |
+| **First validated change** | `/rpi "a small goal"` | Discovery, implementation, validation, and learning closeout leave evidence in `.agents/` |
+| **Review something now** | `/council validate this PR` or `/vibe recent` | You get a PASS/WARN/FAIL verdict before shipping |
 
-That detects setup, explains the system, and gives you the next action.
-
-Then try the smallest useful flow:
-
-```text
-/council validate this PR
-```
-
-Or let AgentOps run the full discovery-to-validation loop:
-
-```text
-/rpi "a small goal"
-```
-
-If you installed the CLI, check your local setup:
-
-```bash
-ao doctor
-ao demo
-```
-
-New project? Use the guided CLI path:
+New project? Use the guided CLI seed first:
 
 ```bash
 ao quick-start     # Canonical
@@ -202,6 +183,19 @@ That command applies the repeatable core seed: `.agents/`, `GOALS.md`,
 AgentOps instructions, starter knowledge, and readiness guidance. Use
 `/bootstrap` after that when you want the product/operations layer:
 `PRODUCT.md`, `README.md`, `PROGRAM.md`/`AUTODEV.md`, and optional hooks.
+
+Already installed? Ask your agent for the next action:
+
+```text
+/quickstart
+```
+
+If you installed the CLI, check your local setup:
+
+```bash
+ao doctor
+ao demo
+```
 
 Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Router](docs/SKILL-ROUTER.md)
 

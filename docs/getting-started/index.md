@@ -2,7 +2,7 @@
 
 New to AgentOps? You're in the right place. This section answers three questions in order: **what is it**, **how do I install it**, and **what's the first useful thing I can run**.
 
-If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [First command](#first-command). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom. If you are upgrading from an older release, read [Upgrading](../UPGRADING.md) first.
+If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [Golden Paths](#golden-paths). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom. If you are upgrading from an older release, read [Upgrading](../UPGRADING.md) first.
 
 <div class="grid cards" markdown>
 
@@ -47,6 +47,45 @@ If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../new
 
 ## Install
 
+Pick the installer for your runtime.
+
+=== "Claude Code"
+
+    ```bash
+    claude plugin marketplace add boshu2/agentops
+    claude plugin install agentops@agentops-marketplace
+    ```
+
+=== "Codex CLI"
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+    ```
+
+=== "OpenCode"
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
+    ```
+
+Then install the `ao` CLI for repo seeding, health checks, and terminal
+workflows.
+
+=== "macOS"
+
+    ```bash
+    brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+    brew install agentops
+    ```
+
+=== "Windows PowerShell"
+
+    ```powershell
+    irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
+    ```
+
+For other skills-compatible agents, install selected skills with:
+
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 ```
@@ -62,13 +101,26 @@ ao --version           # Prints installed ao version
 and non-zero exits on a real problem. If anything looks wrong, see
 [Troubleshooting](../troubleshooting.md) or run `ao doctor --verbose`.
 
-## First command
+## Golden Paths
+
+Pick one path. Each path ends with proof in `.agents/` or an explicit
+PASS/WARN/FAIL verdict.
+
+| I want to... | Run | Success signal |
+|--------------|-----|----------------|
+| Set up a repo for the first time | `ao quick-start`, then `/quickstart` | Readiness summary shows the next action |
+| Make the first validated change | `/rpi "a small goal"` | Discovery, implementation, validation, and learning artifacts exist |
+| Review code before shipping | `/council validate this PR` or `/vibe recent` | Verdict is recorded before merge |
+| Continue tracked work | `bd ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Issue status and validation evidence are updated |
+| Run from the terminal | `ao factory start --goal "goal"`, then `ao rpi phased "goal"` | `ao rpi status` shows the phase result |
+
+## Command Reference
 
 ```bash
 ao quick-start     # Canonical repo seed and readiness repair
 ao quickstart      # Stable alias for the same golden path
 ao status          # Where was I?
-ao rpi "goal"      # Full Research-Plan-Implement-Validate loop
+ao rpi phased "goal"  # Full terminal Research-Plan-Implement-Validate loop
 ```
 
 ## Learning path

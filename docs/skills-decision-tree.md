@@ -37,7 +37,7 @@ Rationale: groups by subject alphabetically in file listings; matches the existi
 | Overnight compounding + fitness-driven corpus improvement | `$dream` |
 | Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` |
 | Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
-| New project / new repo / first-time AgentOps setup | `$quickstart` |
+| New project / new repo / first-time AgentOps setup | `ao quick-start`, then `$quickstart` |
 | Full research → plan → implement → validate cycle | `$rpi` |
 | Validate a plan or spec before implementation | `$pre-mortem` |
 | Validate code quality after implementation | `$vibe` |

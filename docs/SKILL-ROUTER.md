@@ -40,7 +40,8 @@ What are you trying to do?
 │   └─ Generate ideas ────────────► /brainstorm
 │
 ├─ "Learn from past work"
-│   ├─ What do we know about X? ──► /knowledge <query>
+│   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
+│   ├─ Turn corpus into operator surfaces ─► /knowledge-activation
 │   ├─ Save this insight ─────────► /retro --quick "insight"
 │   └─ Run a retrospective ───────► /retro
 │
@@ -56,5 +57,5 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► /quickstart
+└─ "First time here" ────────────► ao quick-start → /quickstart
 ```

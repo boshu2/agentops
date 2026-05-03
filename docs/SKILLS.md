@@ -69,7 +69,7 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► /quickstart
+└─ "First time here" ────────────► ao quick-start → /quickstart
 ```
 
 ## Core Flow Skills

@@ -575,7 +575,7 @@ func TestQuickstart_showNextSteps_withBeads(t *testing.T) {
 		showNextSteps(true)
 	})
 
-	if !strings.Contains(got, "Create your first issue") {
+	if !strings.Contains(got, "Tracked work") {
 		t.Fatalf("expected beads next steps, got: %s", got)
 	}
 }
@@ -585,7 +585,7 @@ func TestQuickstart_showNextSteps_withoutBeads(t *testing.T) {
 		showNextSteps(false)
 	})
 
-	if !strings.Contains(got, "Start Claude in your project") {
+	if !strings.Contains(got, "Start your agent in this repo") {
 		t.Fatalf("expected no-beads next steps, got: %s", got)
 	}
 }
