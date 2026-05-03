@@ -54,6 +54,40 @@ confirm() {
   [[ "$reply" =~ ^[Yy]$ ]]
 }
 
+rustup_target() {
+  case "$(uname -s):$(uname -m)" in
+    Linux:x86_64|Linux:amd64) printf 'x86_64-unknown-linux-gnu' ;;
+    Linux:aarch64|Linux:arm64) printf 'aarch64-unknown-linux-gnu' ;;
+    Darwin:x86_64|Darwin:amd64) printf 'x86_64-apple-darwin' ;;
+    Darwin:aarch64|Darwin:arm64) printf 'aarch64-apple-darwin' ;;
+    *)
+      err "unsupported rustup target for $(uname -s)/$(uname -m)"
+      exit 3
+      ;;
+  esac
+}
+
+install_rustup() {
+  local target
+  target="$(rustup_target)"
+  local tmp_dir tmp_bin
+  tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/rustup-init.XXXXXX")"
+  tmp_bin="$tmp_dir/rustup-init"
+
+  log "downloading rustup-init for $target"
+  curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+    "https://static.rust-lang.org/rustup/dist/$target/rustup-init" \
+    --output "$tmp_bin"
+
+  if [[ -n "${RUSTUP_INIT_SHA256:-}" ]]; then
+    printf '%s  %s\n' "$RUSTUP_INIT_SHA256" "$tmp_bin" | shasum -a 256 -c -
+  fi
+
+  chmod +x "$tmp_bin"
+  "$tmp_bin" -y --default-toolchain stable
+  rm -rf "$tmp_dir"
+}
+
 # --- Rust toolchain ----------------------------------------------------------
 if ! command -v cargo >/dev/null 2>&1; then
   log "cargo not found on PATH."
@@ -62,7 +96,7 @@ if ! command -v cargo >/dev/null 2>&1; then
       err "curl is required to install rustup but is not on PATH."
       exit 3
     fi
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    install_rustup
     # shellcheck disable=SC1091
     source "$HOME/.cargo/env"
   else
