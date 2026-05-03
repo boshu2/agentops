@@ -171,6 +171,69 @@ func TestLoadLatestProjectionSnapshotRejectsSchemaVersionMismatch(t *testing.T) 
 	}
 }
 
+// TestWriteProjectionSnapshot_SyncsParentDir verifies the post-rename
+// syncDir(dir) call does not regress end-to-end write behavior. The fsync
+// syscall on a directory cannot be observed from userspace without
+// privileged tracing, so the strongest practical assertion is that the
+// function still succeeds and produces a valid, decodable snapshot file
+// after the durability call was added. A regression that returned an error
+// from syncDir (e.g., a bad path or file handle) would surface as a
+// non-nil err here. Round-trip decode confirms the snapshot is intact.
+//
+// Note: a fault-injection variant (TestWriteProjectionSnapshot_DirSyncErrorFailsWrite)
+// is intentionally omitted. syncDir is a free function operating on a real
+// filesystem path; making it injectable would require either a package-level
+// function variable (mutable global, racy under -race) or threading a
+// FileSystem interface through Store, both of which complicate production
+// code more than the defense-in-depth value warrants. The error path is
+// instead exercised by the wrapped-error fmt.Errorf format string review
+// during code review.
+func TestWriteProjectionSnapshot_SyncsParentDir(t *testing.T) {
+	store := NewStore(t.TempDir())
+
+	set := ProjectionSet{
+		SchemaVersion: ProjectionSchemaVersion,
+		RebuiltAt:     "2026-05-02T12:00:00Z",
+		SourceLedger:  ".agents/daemon/ledger.jsonl",
+		LastEventID:   "evt-fsync",
+		Manifests:     map[ProjectionName]ProjectionManifest{},
+	}
+
+	path, err := store.WriteProjectionSnapshot(set)
+	if err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat written snapshot: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Fatalf("written snapshot is empty: %s", path)
+	}
+
+	loaded, loadedPath, err := store.LoadLatestProjectionSnapshot()
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if loadedPath != path {
+		t.Fatalf("loaded path = %q, want %q", loadedPath, path)
+	}
+	if loaded.LastEventID != "evt-fsync" {
+		t.Fatalf("loaded LastEventID = %q, want %q", loaded.LastEventID, "evt-fsync")
+	}
+
+	// And: no .tmp leftover from the rename.
+	entries, err := os.ReadDir(store.ProjectionSnapshotDir())
+	if err != nil {
+		t.Fatalf("readdir: %v", err)
+	}
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".tmp") {
+			t.Fatalf("unexpected .tmp leftover: %s", e.Name())
+		}
+	}
+}
+
 // TestProjectionSnapshotIgnoresTmpFiles ensures a crashed write's leftover
 // .tmp file does not get loaded as a snapshot.
 func TestProjectionSnapshotIgnoresTmpFiles(t *testing.T) {
