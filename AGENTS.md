@@ -228,6 +228,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
 | **agentops-eval-advisory** | Runs deterministic public AgentOps eval canaries and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); eval suite or scorecard regression until baselines are ratcheted |
+| **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json` and fails on `stale_suite_hashes>0` or `policy_mismatch_count>0` | Promoting a baseline whose suite SHA later drifted; declaring `baseline_policy.mode=none` while a promoted baseline exists |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
 | **contract-compatibility-gate** | documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance |
@@ -241,6 +242,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
+| **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; `git push --dry-run` smoke proves the hook actually fires | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
 | **security-toolchain-gate** | Semgrep, gosec, gitleaks, etc. | Non-blocking (`continue-on-error: true`) |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |
