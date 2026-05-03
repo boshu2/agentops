@@ -117,3 +117,6 @@ formulas/
 orders/
 hooks/claude.json
 packs/
+
+# AgentOps session artifacts
+.agents/
