@@ -179,6 +179,10 @@ func TestCloseLoopSkipsAndAuditsStalePendingAlreadyPromotedBody(t *testing.T) {
 }
 
 func TestCodexEnsureStartMaintenanceSkipsStalePendingAlreadyPromotedBody(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_THREAD_ID", "codex-stale-pending-promoted-body")
+	t.Setenv("CODEX_INTERNAL_ORIGINATOR_OVERRIDE", "Codex Desktop")
+
 	tmp, pendingFile := setupStalePendingAlreadyPromotedFixture(t)
 	if err := os.WriteFile(filepath.Join(tmp, "AGENTS.md"), []byte("# Test repo\n"), 0o644); err != nil {
 		t.Fatalf("write AGENTS.md: %v", err)
