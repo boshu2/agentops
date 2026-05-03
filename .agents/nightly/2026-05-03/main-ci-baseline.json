@@ -1,0 +1,13 @@
+{
+  "checked_at": "2026-05-03T03:30:00Z",
+  "main_sha": "12fa13b418a9d885a3f40e8fbe50308cddb90dab",
+  "method": "PR #212 body explicitly states 'scope-predicate-positive-negative-cases.md test failure is from prior commit 12fa13b4, not this PR' — confirming the failure is on main HEAD",
+  "inherited_failures": [
+    {
+      "goal_id": "go-cli-tests",
+      "test": "TestSkillContract_ReferencesLinkedInSKILLMD/pre-mortem/scope-predicate-positive-negative-cases.md",
+      "root_cause": "skills/pre-mortem/SKILL.md missing reference to references/scope-predicate-positive-negative-cases.md",
+      "weight": 8
+    }
+  ]
+}
