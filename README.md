@@ -6,15 +6,9 @@
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### Operational discipline for coding agents.
+**Local operating layer for coding agents across Claude, Codex, Cursor, and OpenCode.**
 
-Ship reliable code with unreliable agents.
-
-**AgentOps is a local operating layer for coding agents: control plane, lifecycle hooks, validation gates, and a versioned corpus your team owns.**
-
-The corpus is source control for what your agents have learned. Every coding session reads from it on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
-
-**The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
+AgentOps gives agents a shared `ao` control plane, lifecycle hooks, validation gates, and a repo-owned `.agents/` corpus so work survives chat windows and vendor boundaries.
 
 [Install](#install) · [Quick Start](#quick-start) · [Cross-Vendor](#agentops-is-the-cross-vendor-operating-layer) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
