@@ -234,6 +234,20 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **file-manifest-overlap** | No file path conflicts between workers/skills | Two skills claim the same output file |
 | **json-flag-consistency** | All `--json` flags produce valid JSON with consistent format | Missing `--json` support on a new command |
 
+### Nightly Workflow Jobs
+
+`.github/workflows/nightly.yml` runs at 06:00 UTC daily and on `workflow_dispatch`.
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **cli-tests** | Go CLI tests with `-race` and coverage | Test regression in `cli/internal/**` |
+| **static-validation** | Smoke, doc-release, and hooks/docs parity gates | Skill/doc drift slipping past pre-push |
+| **retrieval-bench** | Synthetic + live corpus retrieval precision/coverage gates | P@3 < 0.67 or live coverage < 0.80 |
+| **security-toolchain** | Full `security-gate.sh` (semgrep, gosec, gitleaks, trivy, hadolint) | Scanner findings or toolchain install flake |
+| **knowledge-cycle** | Deduped compile + dream-cycle + Athena follow-up sharing one substrate (`scripts/nightly-knowledge-cycle.sh`); corpus-empty precondition skip per `f-2026-04-30-002`; single `nightly-knowledge-cycle` triage artifact replaces three (compile-report, dream-cycle-report, Athena) — `soc-2xmg` | Compile health gate fails, dream-cycle proof regresses, or substrate inputs missing |
+
+**Knowledge-cycle precondition:** the `knowledge-cycle` job calls `scripts/nightly-knowledge-cycle.sh precondition` before any compile/dream/Athena stage. When `total_citations_in_window == 0 && total_artifacts > 0`, the cycle SKIPs every downstream stage with reason `corpus-dormant` rather than failing three separate jobs on the same dormant-corpus condition. Override with `NIGHTLY_KNOWLEDGE_CYCLE_FORCE=1` for diagnostic runs. Static Validation (`#39` in the CI failure ranking) remains in its own `static-validation` job by design — see plan `2026-05-03-ci-failures-1-40-handling.md` §nightly-knowledge-cycle-dedupe.
+
 ### Key Constraints Agents Must Follow
 
 **No symlinks.** The plugin-load-test rejects ALL symlinks. If you need the same file in multiple skill `references/` dirs, **copy the file** — do not symlink.

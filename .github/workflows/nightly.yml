@@ -160,10 +160,20 @@ jobs:
           path: ${{ runner.temp }}/agentops-security/
           retention-days: 7
 
-  compile:
-    name: Compile Knowledge Cycle
+  knowledge-cycle:
+    # Deduped nightly knowledge-cycle workstream (compile + dream-cycle + Athena
+    # follow-up) per soc-2xmg / .agents/plans/2026-05-03-ci-failures-1-40-handling.md
+    # §nightly-knowledge-cycle-dedupe. The corpus-empty precondition implements
+    # f-2026-04-30-002 — when the upstream corpus has zero citation activity in
+    # the measurement window AND total_artifacts > 0, the cycle SKIPs every
+    # downstream stage with reason "corpus-dormant" rather than failing three
+    # separate jobs on the same dormant-corpus condition.
+    #
+    # Static Validation (#39) is intentionally DEFER — it runs in its own job
+    # (static-validation, above) and is bundled here only by reference.
+    name: Knowledge Cycle (compile + dream + Athena)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with:
@@ -178,74 +188,129 @@ jobs:
       - name: Build ao
         run: cd cli && make build
 
-      - name: Mine — extract signal from git and .agents/
-        run: ./cli/bin/ao mine --since 26h --sources git,agents --output-dir /tmp/compile/mine
-        continue-on-error: true  # mine failure does not block defrag
+      - name: Knowledge-cycle precondition (corpus-empty skip per f-2026-04-30-002)
+        id: precondition
+        env:
+          AO: ${{ github.workspace }}/cli/bin/ao
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          chmod +x scripts/nightly-knowledge-cycle.sh
+          scripts/nightly-knowledge-cycle.sh precondition | tee -a "$GITHUB_OUTPUT"
 
-      - name: Defrag — prune orphans, dedup, oscillation sweep
+      - name: Compile — mine signal from git and .agents/
+        if: steps.precondition.outputs.decision == 'RUN'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          set +e
+          ./cli/bin/ao mine --since 26h --sources git,agents --output-dir "${RUNNER_TEMP}/knowledge-cycle/compile/mine"
+          rc=$?
+          if [[ $rc -ne 0 ]]; then
+            scripts/nightly-knowledge-cycle.sh record-stage compile-mine warn "ao mine exited $rc (does not block defrag)"
+          else
+            scripts/nightly-knowledge-cycle.sh record-stage compile-mine ok "mined since 26h"
+          fi
+          exit 0
+
+      - name: Compile — defrag (prune, dedup, oscillation sweep)
+        if: steps.precondition.outputs.decision == 'RUN'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
         run: |
           ./cli/bin/ao defrag \
             --prune --dedup --oscillation-sweep \
-            --output-dir /tmp/compile/defrag
+            --output-dir "${RUNNER_TEMP}/knowledge-cycle/compile/defrag"
+          scripts/nightly-knowledge-cycle.sh record-stage compile-defrag ok "defrag wrote $(ls "${RUNNER_TEMP}/knowledge-cycle/compile/defrag" | wc -l | tr -d ' ') file(s)"
 
-      - name: Check Compile health gates
-        run: bash scripts/check-compile-health.sh
+      - name: Compile — health gates
+        if: steps.precondition.outputs.decision == 'RUN'
         env:
-          COMPILE_OUTPUT_DIR: /tmp/compile
+          COMPILE_OUTPUT_DIR: ${{ runner.temp }}/knowledge-cycle/compile
           COMPILE_MAX_AGE_HOURS: 30
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          set +e
+          bash scripts/check-compile-health.sh
+          rc=$?
+          if [[ $rc -ne 0 ]]; then
+            scripts/nightly-knowledge-cycle.sh record-stage compile-health fail "check-compile-health.sh exited $rc"
+            exit $rc
+          fi
+          scripts/nightly-knowledge-cycle.sh record-stage compile-health ok "fresh, stale within budget"
 
-      - name: Upload Compile report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: compile-report
-          path: /tmp/compile/
-          retention-days: 14
-
-  dream-cycle:
-    name: Dream Cycle Proof
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
-          cache-dependency-path: cli/go.sum
-
-      - name: Build ao
-        run: cd cli && make build
-
-      - name: Run nightly dream cycle
+      - name: Dream cycle proof
+        if: steps.precondition.outputs.decision == 'RUN'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
         run: |
           chmod +x scripts/nightly-dream-cycle.sh
+          set +e
           scripts/nightly-dream-cycle.sh \
             --ao "$GITHUB_WORKSPACE/cli/bin/ao" \
             --repo-root "$GITHUB_WORKSPACE" \
-            --output-dir "${RUNNER_TEMP}/dream-cycle"
+            --output-dir "${RUNNER_TEMP}/knowledge-cycle/dream-cycle"
+          rc=$?
+          if [[ $rc -ne 0 ]]; then
+            scripts/nightly-knowledge-cycle.sh record-stage dream-cycle fail "nightly-dream-cycle.sh exited $rc"
+            exit $rc
+          fi
+          scripts/nightly-knowledge-cycle.sh record-stage dream-cycle ok "summary at dream-cycle/summary.md"
 
-      - name: Append dream-cycle summary
-        run: cat "${RUNNER_TEMP}/dream-cycle/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Athena follow-up (placeholder — shares compile substrate)
+        if: steps.precondition.outputs.decision == 'RUN'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          # Athena nightly follow-up is the third member of the deduped trio
+          # (research item #37). It currently piggybacks on the compile/dream
+          # outputs above; the precondition skip already protects it. When a
+          # dedicated Athena step is added, it goes here.
+          scripts/nightly-knowledge-cycle.sh record-stage athena ok "placeholder — shares compile/dream artifacts"
 
-      - name: Upload dream-cycle report
+      - name: Record SKIP into stages (corpus dormant)
+        if: steps.precondition.outputs.decision == 'SKIP'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          scripts/nightly-knowledge-cycle.sh record-stage compile skip "${{ steps.precondition.outputs.reason }}"
+          scripts/nightly-knowledge-cycle.sh record-stage dream-cycle skip "${{ steps.precondition.outputs.reason }}"
+          scripts/nightly-knowledge-cycle.sh record-stage athena skip "${{ steps.precondition.outputs.reason }}"
+
+      - name: Append knowledge-cycle summary to step summary
+        if: always()
+        run: |
+          if [[ -f "${RUNNER_TEMP}/knowledge-cycle/triage.md" ]]; then
+            cat "${RUNNER_TEMP}/knowledge-cycle/triage.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ -f "${RUNNER_TEMP}/knowledge-cycle/dream-cycle/summary.md" ]]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "${RUNNER_TEMP}/knowledge-cycle/dream-cycle/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload knowledge-cycle triage artifact (single, deduped)
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: dream-cycle-report
-          path: ${{ runner.temp }}/dream-cycle/
+          name: nightly-knowledge-cycle
+          path: ${{ runner.temp }}/knowledge-cycle/
           retention-days: 14
 
-      - name: Create or update dream-cycle issue
+      - name: Create or update knowledge-cycle issue
+        if: steps.precondition.outputs.decision == 'RUN'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          TITLE="Nightly dream cycle status"
-          BODY_FILE="${RUNNER_TEMP}/dream-cycle/issue-body.md"
+          TITLE="Nightly knowledge-cycle status"
+          BODY_FILE="${RUNNER_TEMP}/knowledge-cycle/issue-body.md"
           {
-            cat "${RUNNER_TEMP}/dream-cycle/summary.md"
+            if [[ -f "${RUNNER_TEMP}/knowledge-cycle/triage.md" ]]; then
+              cat "${RUNNER_TEMP}/knowledge-cycle/triage.md"
+              echo ""
+            fi
+            if [[ -f "${RUNNER_TEMP}/knowledge-cycle/dream-cycle/summary.md" ]]; then
+              cat "${RUNNER_TEMP}/knowledge-cycle/dream-cycle/summary.md"
+            fi
             echo ""
             echo "---"
             echo ""
@@ -253,7 +318,9 @@ jobs:
           } > "$BODY_FILE"
 
           LABEL_ARGS=()
-          if gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "dream-cycle"; then
+          if gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "knowledge-cycle"; then
+            LABEL_ARGS+=(--label knowledge-cycle)
+          elif gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "dream-cycle"; then
             LABEL_ARGS+=(--label dream-cycle)
           fi
 
@@ -266,7 +333,7 @@ jobs:
 
   summary:
     name: Summary
-    needs: [cli-tests, static-validation, retrieval-bench, security-toolchain, compile, dream-cycle]
+    needs: [cli-tests, static-validation, retrieval-bench, security-toolchain, knowledge-cycle]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -282,13 +349,12 @@ jobs:
           echo "| Static validation | ${{ needs.static-validation.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Retrieval bench | ${{ needs.retrieval-bench.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security toolchain | ${{ needs.security-toolchain.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Compile knowledge cycle | ${{ needs.compile.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dream cycle proof | ${{ needs.dream-cycle.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Knowledge cycle (compile + dream + Athena) | ${{ needs.knowledge-cycle.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Run completed at $(date -u)" >> $GITHUB_STEP_SUMMARY
 
       - name: Create issue on failure
-        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure' || needs.compile.result == 'failure' || needs.dream-cycle.result == 'failure'
+        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure' || needs.knowledge-cycle.result == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -301,8 +367,7 @@ jobs:
           | Static validation | ${{ needs.static-validation.result }} |
           | Retrieval bench | ${{ needs.retrieval-bench.result }} |
           | Security toolchain | ${{ needs.security-toolchain.result }} |
-          | Compile knowledge cycle | ${{ needs.compile.result }} |
-          | Dream cycle proof | ${{ needs.dream-cycle.result }} |
+          | Knowledge cycle (compile + dream + Athena) | ${{ needs.knowledge-cycle.result }} |
 
           **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -322,5 +387,5 @@ jobs:
           fi
 
       - name: Check for failures
-        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure' || needs.compile.result == 'failure' || needs.dream-cycle.result == 'failure'
+        if: needs.cli-tests.result == 'failure' || needs.static-validation.result == 'failure' || needs.retrieval-bench.result == 'failure' || needs.security-toolchain.result == 'failure' || needs.knowledge-cycle.result == 'failure'
         run: exit 1
