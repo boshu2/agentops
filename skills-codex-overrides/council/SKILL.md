@@ -33,13 +33,20 @@ Each judge prompt should include:
 - the expected verdict vocabulary
 - where to write a detailed report if the task is large
 
-For `--mixed`, also start 3 Codex CLI judge processes after the strict pre-flight succeeds:
+For `--mixed`, also start one Codex CLI judge process per selected perspective
+after the strict pre-flight succeeds. With `--preset=leadership-quartet`, that
+means 4 runtime-native judges and 4 Codex CLI judges (8 total):
 
 ```bash
 mkdir -p .agents/council
-AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-1.json "$PACKET"
-AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-2.json "$PACKET"
-AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-3.json "$PACKET"
+for index in "${!PERSPECTIVES[@]}"; do
+  perspective="${PERSPECTIVES[$index]}"
+  judge_number="$((index + 1))"
+  prompt="$(build_packet_for_perspective "$PACKET" "$perspective")"
+  AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -C "$(pwd)" \
+    --output-schema skills/council/schemas/verdict.json \
+    -o ".agents/council/codex-${judge_number}.json" "$prompt"
+done
 ```
 
 Only add `-m "$COUNCIL_CODEX_MODEL"` when that environment variable is explicitly set.
