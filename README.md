@@ -16,7 +16,7 @@ Every coding session reads from the corpus on the way in and writes back on the 
 
 **The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
-[Install](#install) · [Quick Start](#quick-start) · [Council](#council-is-the-judgment-engine) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
+[Install](#install) · [Quick Start](#quick-start) · [Cross-Vendor](#agentops-is-the-cross-vendor-operating-layer) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
 </div>
 
@@ -47,6 +47,8 @@ flowchart LR
 
 All agent runtime state lives in local `.agents/` — auditable and yours, but git-ignored by policy because it can churn and may contain sensitive session context. Plain text you can grep, diff, and review locally. Zero telemetry. Zero cloud dependency.
 
+Those layers are runtime-neutral. Claude Code, Codex CLI, Cursor, and OpenCode can use the same corpus, validation packets, and operating discipline instead of trapping each workflow inside one vendor's chat.
+
 ### Proof: the three-gap contract
 
 AgentOps closes three failure modes most agent setups don't even name:
@@ -61,20 +63,28 @@ Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one
 
 ---
 
-## Council Is the Judgment Engine
+## AgentOps Is the Cross-Vendor Operating Layer
 
-`/council` is the feedback primitive behind AgentOps. Use it directly when the call is too important for one agent's confidence: architecture, security posture, migration strategy, product tradeoffs, release readiness, or a PR that looks plausible but under-reviewed. `/pre-mortem`, `/vibe`, `/post-mortem`, `/discovery`, and `/rpi` all lean on the same validation loop at different points in the lifecycle.
+The plugin is one entrypoint, not the product boundary. AgentOps is a local operating layer around coding agents: shared skills tell agents how to work, the `ao` CLI owns repo-native state and control-plane workflows, hooks keep lifecycle discipline active, and the daemon path moves that work toward always-on local operation.
 
-| Need | Run | What you get |
-|------|-----|--------------|
-| Fast sanity check | `/council --quick validate recent` | Inline PASS/WARN/FAIL without spawning judges |
-| Independent review | `/council validate this PR` | Two runtime-native judges reviewing the same target independently |
-| Hard decision | `/council --mixed validate this architecture decision` | Runtime-native and Codex CLI judges receive the same packet, so disagreement exposes model/runtime bias instead of hiding it |
-| Focused expertise | `/council --preset=security-audit validate the auth system` | Named lenses such as attacker, defender, compliance, and web-security |
-| Adversarial review | `/council --debate validate the migration plan` | Round 1 independent verdicts, then Round 2 challenge and revision |
-| Durable evidence | `/council --evidence --commit-ready validate the release plan` | A consolidated report suitable for committed decision history |
+| Surface | What it does | Why it matters |
+|---------|--------------|----------------|
+| Skills and plugins | Load AgentOps flows into Claude Code, Codex CLI, Cursor, and OpenCode | Agents get the same operating language across vendors |
+| `ao` CLI | Searches, compiles, curates, and assembles repo context; runs RPI, factory, evolve, and daemon commands | The control plane lives outside any one chat window |
+| Hooks | React to runtime events such as session start, user prompts, tool use, and stop | Lifecycle and validation discipline can fire automatically |
+| `.agents/` corpus | Stores learnings, findings, handoffs, council reports, and run evidence locally | The durable asset belongs to the repo and team |
+| Daemon path | Runs queued and scheduled local jobs through `ao daemon` surfaces as that layer matures | AgentOps can move from chat-invoked flows toward always-on operation |
 
-For the hardest decisions, `--mixed` is the point: the same perspectives run on both backends, then the report consolidates consensus or disagreement. That makes council useful for judgment and validation, not just code review. Discovery and RPI build on this by turning a vague goal into researched work, then forcing the plan through the same feedback engine before implementation hardens.
+`/council` is the clearest proof of that system boundary. It is not just a review command; it is a way to make multiple agents and runtimes evaluate the same evidence and return one auditable verdict.
+
+| Command | What it demonstrates |
+|---------|----------------------|
+| `/council validate this PR` | The active runtime can spawn independent judges around one shared packet |
+| `/council --mixed validate this PR` | Claude and Codex can receive the same evidence, apply the same perspectives, and hand their verdicts back to AgentOps for consolidation |
+| `/council --preset=security-audit validate the auth system` | Expertise is configured by the operating layer, not left to a single model's default behavior |
+| `/council --evidence --commit-ready validate the release plan` | The result becomes repo-local decision evidence, not just chat history |
+
+That is the deeper product shape: agents stay replaceable, vendors can cooperate, and the corpus plus control plane remain yours.
 
 ---
 
