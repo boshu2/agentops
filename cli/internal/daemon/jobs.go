@@ -175,9 +175,20 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if strings.TrimSpace(input.JobID) == "" {
 		input.JobID = q.nextID("job", string(input.JobType))
 	}
+	if input.JobID == scheduleSentinelJobID {
+		return QueueJobState{}, fmt.Errorf("job_id %q is reserved", scheduleSentinelJobID)
+	}
 	if input.RequestID == "" {
 		input.RequestID = RequestID(q.nextID("req", input.JobID))
 	}
+	// Best-effort idempotency pre-check (fast path).
+	//
+	// This snapshot scan runs OUTSIDE Store.AppendLedgerEvent's mutex, so it
+	// can be stale under concurrent submission. The authoritative dedup is in
+	// Store.AppendLedgerEvent which scans for an existing JobAccepted event
+	// with the same IdempotencyKey under s.mu and returns the existing event
+	// when found — see TestSubmitJob_DedupRelyOnStoreLock. The pre-check
+	// avoids a redundant ledger replay in the common single-submitter case.
 	snapshot, err := q.Snapshot()
 	if err != nil {
 		return QueueJobState{}, err
@@ -212,14 +223,19 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	committed, err := q.appendQueueEvent(event, opts)
+	if err != nil {
 		return QueueJobState{}, err
 	}
+	// committed.JobID may differ from input.JobID when Store.AppendLedgerEvent
+	// dedup'd by IdempotencyKey (concurrent same-key submission). Use the
+	// durable event's JobID for the post-write snapshot lookup so the caller
+	// receives the existing job, not a "not found" for the never-written one.
 	snapshot, err = q.Snapshot()
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	return snapshot.jobByID(input.JobID)
+	return snapshot.jobByID(committed.JobID)
 }
 
 func (q *Queue) ClaimNext(actor string, opts QueueMutationOptions) (QueueClaim, error) {
@@ -256,6 +272,7 @@ func (q *Queue) ClaimJob(jobID, actor string, opts QueueMutationOptions) (QueueC
 	if isTerminalStatus(job.Status) {
 		return QueueClaim{}, ErrNoClaimableJobs
 	}
+	// Advisory lock-free lease check; authoritative serialization happens in claimJobState via the ledger append.
 	if job.Status == JobStatusRunning && !q.jobLeaseExpired(job) {
 		return QueueClaim{}, ErrJobAlreadyClaimed
 	}
@@ -290,7 +307,7 @@ func (q *Queue) Heartbeat(input HeartbeatInput, opts QueueMutationOptions) (Queu
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -323,7 +340,7 @@ func (q *Queue) CompleteJob(input CompleteJobInput, opts QueueMutationOptions) (
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -366,7 +383,7 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -400,7 +417,7 @@ func (q *Queue) CancelJob(input CancelJobInput, opts QueueMutationOptions) (Canc
 	if err != nil {
 		return CancelJobResult{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return CancelJobResult{}, err
 	}
 	updated, err := q.currentJob(input.JobID)
@@ -425,6 +442,7 @@ func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutatio
 		}
 		return QueueClaim{}, ErrNoClaimableJobs
 	}
+	// Advisory lock-free lease check; the appendLeaseExpired/appendRetryExhausted calls below serialize via the ledger.
 	if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 		if job.Attempt >= job.MaxAttempts {
 			if err := q.appendRetryExhausted(job, actor); err != nil {
@@ -459,7 +477,7 @@ func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutatio
 	if err != nil {
 		return QueueClaim{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueClaim{}, err
 	}
 	updated, err := q.currentJob(job.JobID)
@@ -490,7 +508,8 @@ func (q *Queue) appendLeaseExpired(job QueueJobState, actor string) error {
 	if err != nil {
 		return err
 	}
-	return q.appendQueueEvent(event, QueueMutationOptions{})
+	_, err = q.appendQueueEvent(event, QueueMutationOptions{})
+	return err
 }
 
 func (q *Queue) appendRetryExhausted(job QueueJobState, actor string) error {
@@ -512,7 +531,8 @@ func (q *Queue) appendRetryExhausted(job QueueJobState, actor string) error {
 	if err != nil {
 		return err
 	}
-	return q.appendQueueEvent(event, QueueMutationOptions{})
+	_, err = q.appendQueueEvent(event, QueueMutationOptions{})
+	return err
 }
 
 func (q *Queue) assertLiveClaim(jobID, claimToken string, leaseEpoch int) (QueueJobState, error) {
@@ -526,6 +546,7 @@ func (q *Queue) assertLiveClaim(jobID, claimToken string, leaseEpoch int) (Queue
 	if job.ClaimToken != claimToken || job.LeaseEpoch != leaseEpoch {
 		return QueueJobState{}, ErrClaimFenceMismatch
 	}
+	// Advisory lock-free lease check; ledger append at the call site provides the authoritative ordering.
 	if q.jobLeaseExpired(job) {
 		return QueueJobState{}, ErrLeaseExpired
 	}
@@ -543,23 +564,30 @@ func (q *Queue) terminalClaimJob(jobID, claimToken string, leaseEpoch int) (Queu
 	if job.ClaimToken != claimToken || job.LeaseEpoch != leaseEpoch {
 		return QueueJobState{}, ErrClaimFenceMismatch
 	}
+	// Advisory lock-free lease check; ledger append at the call site provides the authoritative ordering.
 	if q.jobLeaseExpired(job) {
 		return QueueJobState{}, ErrLeaseExpired
 	}
 	return job, nil
 }
 
-func (q *Queue) appendQueueEvent(event LedgerEvent, opts QueueMutationOptions) error {
+// appendQueueEvent appends event to the ledger and returns the durable event
+// (which may differ from the input when the store dedups by EventID or by
+// IdempotencyKey for JobAccepted events — see Store.AppendLedgerEvent).
+// Callers that need to know which event actually committed (e.g. SubmitJob
+// resolving the post-dedup JobID) must inspect the returned event.
+func (q *Queue) appendQueueEvent(event LedgerEvent, opts QueueMutationOptions) (LedgerEvent, error) {
 	if opts.Failpoint == QueueFailpointBeforeAppend {
-		return fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointBeforeAppend)
+		return LedgerEvent{}, fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointBeforeAppend)
 	}
-	if _, err := q.store.AppendLedgerEvent(event); err != nil {
-		return err
+	committed, err := q.store.AppendLedgerEvent(event)
+	if err != nil {
+		return LedgerEvent{}, err
 	}
 	if opts.Failpoint == QueueFailpointAfterAppendBeforeAck {
-		return fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointAfterAppendBeforeAck)
+		return LedgerEvent{}, fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointAfterAppendBeforeAck)
 	}
-	return nil
+	return committed, nil
 }
 
 func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) {
@@ -605,6 +633,7 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 		if len(job.ArtifactRefs) == 0 {
 			job.ArtifactRefs = nil
 		}
+		// Advisory lock-free lease check used to surface lease-expired status in snapshots; not authoritative.
 		if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 			job.Status = JobStatusRetryWaiting
 			if job.Attempt >= job.MaxAttempts {
@@ -719,11 +748,18 @@ func (q *Queue) isClaimable(job QueueJobState) bool {
 		return false
 	}
 	if job.Status == JobStatusRunning {
+		// Advisory lock-free lease check; the real claim attempt re-validates via the ledger.
 		return q.jobLeaseExpired(job)
 	}
 	return job.Status == JobStatusQueued || job.Status == JobStatusRetryWaiting
 }
 
+// jobLeaseExpired reports whether job's lease has elapsed against the
+// queue's clock. The read is intentionally lock-free: callers use this as
+// an advisory pre-check (e.g. should we attempt a re-claim?), and the
+// authoritative serialization happens inside Store.AppendLedgerEvent.
+// Callers that need strict ordering must follow up with a transactional
+// claim attempt — see assertLiveClaim and claimJobState.
 func (q *Queue) jobLeaseExpired(job QueueJobState) bool {
 	if job.LeaseExpiresAt == "" {
 		return false

@@ -447,6 +447,246 @@ func mustEncodePayload(t *testing.T, m map[string]any) []byte {
 	return b
 }
 
+// TestFireOne_QueueSnapshotConsistent guards against the race where fireOne
+// reads the queue twice and the queue drains between reads, producing a skip
+// reason that doesn't match the state we acted on. After W-B-07 (soc-58q5.5),
+// fireOne must take a single queue snapshot at entry and reuse the same
+// (depth, hasInFlight) for both shouldFire and the recorded skip reason.
+//
+// The Queue type is a concrete struct, so this test asserts the invariant
+// behaviorally: it preseeds the queue with two in-flight jobs (depth=2,
+// running=true) for a schedule whose template only has SkipIfRunning set.
+// Then it asserts the recorded skip reason matches the snapshot taken at
+// the start of fireOne (skip_if_running:in-flight). A second snapshot call
+// inside fireOne could in principle observe a different reason if anything
+// drained between calls, so this also serves as a regression sentinel for
+// "fireOne should not re-snapshot mid-decision".
+func TestFireOne_QueueSnapshotConsistent(t *testing.T) {
+	now := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &now)
+	tmpl := RecurringJobTemplate{
+		Name:    "snap-consistent",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeLLMWikiLoop,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+			MaxQueueDepth: 5,
+		},
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+	preSeedRunningJob(t, queue, tmpl.Name, "preseed-a", JobTypeLLMWikiLoop, now)
+	preSeedRunningJob(t, queue, tmpl.Name, "preseed-b", JobTypeLLMWikiLoop, now)
+
+	sup := NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("tick: %v", err)
+	}
+
+	// Verify the skip reason recorded matches what shouldFire would return for
+	// the snapshot taken at fireOne entry. Because SkipIfRunning is checked
+	// first in shouldFire, the reason MUST be skip_if_running:in-flight, not
+	// max_queue_depth:5 or empty. A drain between two snapshot reads could
+	// flip this to max_queue_depth or even allow a fire — which is the bug
+	// W-B-07 prevents.
+	if got := lastSkipReason(t, store, tmpl.Name); got != "skip_if_running:in-flight" {
+		t.Fatalf("skip reason = %q, want %q (snapshot must be consistent across fireOne)", got, "skip_if_running:in-flight")
+	}
+
+	// And no new accepted job for this schedule (skip should not have submitted).
+	count := 0
+	for _, j := range realQueueJobs(t, queue) {
+		if jobBelongsToSchedule(j, tmpl.Name) && j.JobID != "preseed-a" && j.JobID != "preseed-b" {
+			count++
+		}
+	}
+	if count != 0 {
+		t.Fatalf("unexpected new jobs for schedule %q: %d", tmpl.Name, count)
+	}
+}
+
+// TestFireOne_DerivedQueueStateIsPure pins derivedQueueState as a pure
+// function so the single-snapshot invariant in fireOne can rely on reusing
+// the same QueueSnapshot for every backpressure-relevant decision. If a
+// future change makes derivedQueueState read external state, this test
+// becomes the failure surface.
+func TestFireOne_DerivedQueueStateIsPure(t *testing.T) {
+	snap := QueueSnapshot{
+		Jobs: []QueueJobState{
+			{JobID: "a", JobType: "llm-wiki-loop", Status: JobStatusRunning, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "b", JobType: "llm-wiki-loop", Status: JobStatusQueued, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "c", JobType: "llm-wiki-loop", Status: JobStatusCompleted, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "d", JobType: "llm-wiki-loop", Status: JobStatusQueued, Payload: map[string]any{"schedule_name": "other"}},
+		},
+	}
+	depth1, inFlight1 := derivedQueueState(snap, "s")
+	depth2, inFlight2 := derivedQueueState(snap, "s")
+	if depth1 != depth2 || inFlight1 != inFlight2 {
+		t.Fatalf("derivedQueueState not pure: (%d,%v) vs (%d,%v)", depth1, inFlight1, depth2, inFlight2)
+	}
+	if depth1 != 2 {
+		t.Fatalf("depth = %d, want 2 (a running + b queued for schedule s; c terminal; d wrong schedule)", depth1)
+	}
+	if !inFlight1 {
+		t.Fatalf("hasInFlight = false, want true (job a is running)")
+	}
+}
+
+// TestRefreshSchedules_RecomputesNextTickOnCronChange asserts that when a
+// schedule template's Cron field is mutated mid-run, refreshSchedules re-parses
+// the new cron expression and recomputes nextTick from s.clock.Now() so the
+// new cadence takes effect rather than the stale one. (soc-58q5.6 / W-B-10)
+//
+// The contract from the pre-mortem (Gap-5): recomputation MUST use
+// s.clock.Now(), not time.Now(); RecurrenceSupervisor exposes s.clock for
+// exactly this reason and direct time.Now() calls would break test-time clock
+// injection silently.
+func TestRefreshSchedules_RecomputesNextTickOnCronChange(t *testing.T) {
+	t0 := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &t0)
+	clock := NewFakeClock(t0)
+	sup := NewRecurrenceSupervisor(store, queue, clock)
+
+	// Cron A fires every 5 minutes; Cron B fires every hour. Their Next() from
+	// t0 differ enough that the test cannot pass by accident.
+	cronA := "*/5 * * * *"
+	cronB := "0 * * * *"
+	tmpl := RecurringJobTemplate{
+		Name:    "cadence-shift",
+		Cron:    cronA,
+		JobType: JobTypeLLMWikiLoop,
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule cronA: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules cronA: %v", err)
+	}
+
+	sup.mu.Lock()
+	stA, ok := sup.schedules[tmpl.Name]
+	if !ok {
+		sup.mu.Unlock()
+		t.Fatalf("schedule %q missing after first refresh", tmpl.Name)
+	}
+	nextTickA := stA.nextTick
+	schedA := stA.sched
+	sup.mu.Unlock()
+
+	// Sanity: cron A's first tick from t0-1ns matches what we cached.
+	wantA := schedA.Next(t0.Add(-time.Nanosecond))
+	if !nextTickA.Equal(wantA) {
+		t.Fatalf("nextTick for cronA = %v, want %v", nextTickA, wantA)
+	}
+
+	// Operator updates the template's Cron mid-run. Advance the clock too so we
+	// can prove the recompute used s.clock.Now() (not the original t0 nor the
+	// `now` parameter passed to refreshSchedules).
+	clock.Advance(30 * time.Second)
+	updated := tmpl
+	updated.Cron = cronB
+	if err := store.DeleteSchedule(tmpl.Name); err != nil {
+		t.Fatalf("DeleteSchedule: %v", err)
+	}
+	if err := store.SaveSchedule(updated); err != nil {
+		t.Fatalf("SaveSchedule cronB: %v", err)
+	}
+
+	// Pass the original t0 as `now` to refreshSchedules deliberately. The fix
+	// must use s.clock.Now() (which is t0 + 30s) for the recompute, NOT the
+	// passed-in `now`. If the implementation regresses to time.Now() or to
+	// the stale `now` parameter, this assertion catches it.
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules cronB: %v", err)
+	}
+
+	sup.mu.Lock()
+	stB, ok := sup.schedules[tmpl.Name]
+	if !ok {
+		sup.mu.Unlock()
+		t.Fatalf("schedule %q missing after cron change refresh", tmpl.Name)
+	}
+	nextTickB := stB.nextTick
+	schedB := stB.sched
+	gotTemplateCron := stB.template.Cron
+	sup.mu.Unlock()
+
+	if gotTemplateCron != cronB {
+		t.Fatalf("template.Cron = %q after change, want %q", gotTemplateCron, cronB)
+	}
+	if nextTickB.Equal(nextTickA) {
+		t.Fatalf("nextTick unchanged after Cron change: %v (cron field updated but cadence stale)", nextTickB)
+	}
+	wantB := schedB.Next(clock.Now())
+	if !nextTickB.Equal(wantB) {
+		t.Fatalf("nextTick after cron change = %v, want sched_B.Next(clock.Now()) = %v", nextTickB, wantB)
+	}
+	// Also verify the recompute used the live clock (t0+30s), not stale t0.
+	if !nextTickB.Equal(schedB.Next(t0)) && nextTickB.Equal(schedB.Next(t0.Add(-time.Nanosecond))) {
+		t.Fatalf("nextTick used the stale `now` parameter (t0) rather than s.clock.Now() (t0+30s)")
+	}
+}
+
+// TestRefreshSchedules_KeepsPreviousCadenceOnInvalidCronUpdate asserts that
+// when a Cron mutation introduces an invalid expression, the supervisor keeps
+// the previously-parsed schedule + nextTick rather than dropping the entry,
+// so an operator typo cannot break a running schedule mid-flight.
+func TestRefreshSchedules_KeepsPreviousCadenceOnInvalidCronUpdate(t *testing.T) {
+	t0 := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &t0)
+	clock := NewFakeClock(t0)
+	sup := NewRecurrenceSupervisor(store, queue, clock)
+
+	tmpl := RecurringJobTemplate{
+		Name:    "typo-protect",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeLLMWikiLoop,
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules initial: %v", err)
+	}
+	sup.mu.Lock()
+	priorState := sup.schedules[tmpl.Name]
+	if priorState == nil {
+		sup.mu.Unlock()
+		t.Fatalf("schedule missing after initial refresh")
+	}
+	priorSched := priorState.sched
+	priorNext := priorState.nextTick
+	sup.mu.Unlock()
+
+	// Operator typo: change to an unparseable cron.
+	bad := tmpl
+	bad.Cron = "not a cron"
+	if err := store.DeleteSchedule(tmpl.Name); err != nil {
+		t.Fatalf("DeleteSchedule: %v", err)
+	}
+	if err := store.SaveSchedule(bad); err != nil {
+		t.Fatalf("SaveSchedule bad: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules after bad: %v", err)
+	}
+
+	sup.mu.Lock()
+	got := sup.schedules[tmpl.Name]
+	sup.mu.Unlock()
+	if got == nil {
+		t.Fatalf("running schedule was dropped after invalid cron update; want previous cadence kept")
+	}
+	if got.sched != priorSched {
+		t.Fatalf("sched replaced after invalid cron update; want previous parsed schedule retained")
+	}
+	if !got.nextTick.Equal(priorNext) {
+		t.Fatalf("nextTick changed after invalid cron update: got %v want %v", got.nextTick, priorNext)
+	}
+}
+
 // --- test helpers ---
 
 func newRecurrenceTestRig(t *testing.T, now *time.Time) (*Store, *Queue) {

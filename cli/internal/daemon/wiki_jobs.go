@@ -176,10 +176,25 @@ func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim Queu
 		return r.failWikiForgeJob(claim, JobFailure{Code: FailureRequestRejected, Message: err.Error()}), err
 	}
 
+	if err := validateWikiForgeSourcePathsContainment(r.store.root, spec.SourcePaths); err != nil {
+		return r.failWikiForgeJob(claim, JobFailure{
+			Code:      FailureRequestRejected,
+			Message:   err.Error(),
+			Retryable: false,
+		}), nil
+	}
+
 	expandedSources, err := expandWikiForgeSourcePaths(spec.SourcePaths)
 	if err != nil {
 		return r.failWikiForgeJob(claim, JobFailure{
 			Code:      "source_read_failed",
+			Message:   err.Error(),
+			Retryable: false,
+		}), nil
+	}
+	if err := validateWikiForgeSourcePathsContainment(r.store.root, expandedSources); err != nil {
+		return r.failWikiForgeJob(claim, JobFailure{
+			Code:      FailureRequestRejected,
 			Message:   err.Error(),
 			Retryable: false,
 		}), nil
@@ -276,6 +291,58 @@ type wikiForgePromptContext struct {
 	SourceText string
 	Truncated  bool
 	DreamRunID string
+}
+
+// validateWikiForgeSourcePathsContainment rejects operator-supplied source
+// paths that escape the daemon repo root via traversal segments, absolute
+// paths outside the root, or symlinks pointing outside. Called BEFORE the
+// worker session is created so the failure surfaces as a job-validation
+// error, never as a partial worker run.
+//
+// Containment rule: each path, after filepath.Abs + filepath.Clean (and
+// EvalSymlinks if the path exists), must equal the canonical repo root or
+// live underneath it. EvalSymlinks errors on non-existent paths are
+// tolerated — the lexical check still rejects paths whose form escapes
+// the root, and downstream existing-source reads surface missing-file
+// errors with their own context. The repo root itself is canonicalized
+// via EvalSymlinks once so symlinked tmp dirs (e.g. macOS /tmp ->
+// /private/tmp) don't produce false positives.
+func validateWikiForgeSourcePathsContainment(repoRoot string, paths []string) error {
+	if strings.TrimSpace(repoRoot) == "" {
+		return fmt.Errorf("wiki forge source path containment: repo root is empty")
+	}
+	rootAbs, err := filepath.Abs(repoRoot)
+	if err != nil {
+		return fmt.Errorf("wiki forge source path containment: resolve repo root %q: %w", repoRoot, err)
+	}
+	rootCanon := filepath.Clean(rootAbs)
+	if resolved, err := filepath.EvalSymlinks(rootCanon); err == nil {
+		rootCanon = resolved
+	}
+	rootWithSep := rootCanon + string(filepath.Separator)
+	for _, p := range paths {
+		if strings.TrimSpace(p) == "" {
+			return fmt.Errorf("wiki forge source path is empty")
+		}
+		abs, err := filepath.Abs(p)
+		if err != nil {
+			return fmt.Errorf("wiki forge source path %q: resolve absolute: %w", p, err)
+		}
+		clean := filepath.Clean(abs)
+		// Lexical containment first — catches `..` traversal regardless of
+		// whether the target file exists or is a symlink.
+		if clean != rootCanon && !strings.HasPrefix(clean, rootWithSep) {
+			return fmt.Errorf("wiki forge source path %q escapes repo root %q", p, rootCanon)
+		}
+		// Symlink containment second — only enforced when the path exists,
+		// to allow paths-to-be-created and to keep test fixtures simple.
+		if resolved, err := filepath.EvalSymlinks(clean); err == nil {
+			if resolved != rootCanon && !strings.HasPrefix(resolved, rootWithSep) {
+				return fmt.Errorf("wiki forge source path %q resolves via symlink to %q which escapes repo root %q", p, resolved, rootCanon)
+			}
+		}
+	}
+	return nil
 }
 
 // expandWikiForgeSourcePaths flattens directory entries in spec.SourcePaths

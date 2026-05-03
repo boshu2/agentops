@@ -320,6 +320,30 @@ func applyMutationPolicyDefaults(policy MutationPolicy) MutationPolicy {
 // checkMutationRequestScope validates method/path/remote/origin/fetch-site
 // constraints. Returns the deny reason and false on the first failure;
 // returns ("", true) when the request is in scope.
+//
+// Origin / Sec-Fetch-Site enforcement is intentionally present-then-check (a
+// missing header does not deny). The reasoning:
+//
+//   - The daemon binds 127.0.0.1 by default. The loopback bind — not the
+//     header check — is the primary security boundary. Cross-origin browser
+//     requests cannot reach a loopback-only listener at all.
+//   - These header checks are defense-in-depth for non-default deployments
+//     where an operator exposes the daemon on a non-loopback interface
+//     (e.g., behind a reverse proxy or on a tailnet IP). In that case
+//     RequireLocalRemote should also be relaxed deliberately.
+//   - Browsers (fetch / XMLHttpRequest) reliably send Origin and
+//     Sec-Fetch-Site for the realistic XSS-from-malicious-site threat
+//     model, so the present-then-check pattern catches that threat without
+//     false-positiving on legitimate non-browser callers.
+//   - A request with NO Origin / Sec-Fetch-Site header is from a non-browser
+//     context (curl, the agentops CLI, scripted clients, the daemon's own
+//     tooling). Header-based enforcement does not apply there; mutation-
+//     token authentication is the gate that does.
+//
+// If you want strict cross-origin enforcement (e.g., the daemon is exposed
+// to a browser-reachable surface), require the headers at the deployment
+// layer (reverse proxy / browser-side CSP) rather than tightening this
+// check, which would break the CLI and other non-browser callers.
 func checkMutationRequestScope(r *http.Request, policy MutationPolicy) (string, bool) {
 	if !stringInSet(r.Method, policy.AllowedMethods) {
 		return "method outside mutation scope", false
@@ -351,6 +375,30 @@ func extractMutationToken(r *http.Request, tokenHeader string) string {
 	return ""
 }
 
+// constantTimeTokenEqual reports whether got equals want using a timing-safe
+// comparison for the non-empty case. The empty-input short-circuit is a
+// deliberate design choice, not a timing leak worth fixing:
+//
+//   - When got=="" (the client sent no mutation token header / Bearer auth),
+//     EvaluateMutationPolicy already returns a deterministic "mutation token
+//     mismatch" deny reason. The "no token presented" signal is observable
+//     through the 403 response itself, so leaking it via timing reveals
+//     nothing the caller doesn't already know.
+//   - When want=="", the token would never have been registered in the first
+//     place — LoadMutationTokenFile, LoadMutationTokensFile, and
+//     validateMutationToken all reject empty tokens at load time. The check
+//     here is defense-in-depth against a future caller mis-constructing a
+//     MutationToken{Token: ""} literal.
+//   - For the non-empty path that actually authenticates real requests,
+//     subtle.ConstantTimeCompare provides timing-safe comparison for
+//     equal-length inputs. Length differences are NOT timing-safe, but mutation
+//     tokens are operator-issued opaque secrets (no fixed length contract is
+//     promised to clients), so a length-based side channel does not narrow
+//     the search space meaningfully.
+//
+// The pad-then-compare / hash-then-compare pattern would only matter if the
+// daemon accepted variable-length tokens that needed timing-safe length-
+// mismatch comparison against a known target — which is not this surface.
 func constantTimeTokenEqual(got, want string) bool {
 	if got == "" || want == "" {
 		return false

@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,6 +145,42 @@ func TestRPIReconciler_CompletesFromRPIEvidenceFile(t *testing.T) {
 	}
 	if state.TerminalStatus != "completed" || state.Phase != 2 {
 		t.Fatalf("registry state = %#v", state)
+	}
+}
+
+func TestReconcileRPIJobs_RespectsCtxCancel(t *testing.T) {
+	root := t.TempDir()
+	store := NewStore(root)
+	now := time.Date(2026, 4, 28, 20, 0, 0, 0, time.UTC)
+	queue := NewQueue(store, QueueOptions{
+		LeaseDuration: time.Second,
+		Now:           func() time.Time { return now },
+	})
+	submitClaimedRPIPhase(t, queue, "job-cancel-1", "run-cancel-1", 1, "sess-cancel-1")
+	submitClaimedRPIPhase(t, queue, "job-cancel-2", "run-cancel-2", 1, "sess-cancel-2")
+	submitClaimedRPIPhase(t, queue, "job-cancel-3", "run-cancel-3", 1, "sess-cancel-3")
+
+	reconciler, err := NewRPIReconciler(store, RPIReconcilerOptions{
+		Queue: queue,
+		Actor: "test-reconciler",
+	})
+	if err != nil {
+		t.Fatalf("NewRPIReconciler: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	report, err := reconciler.ReconcileRPIJobs(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("ReconcileRPIJobs err = %v, want context.Canceled", err)
+	}
+	if len(report.Jobs) != 0 {
+		t.Fatalf("report.Jobs = %#v, want empty (cancel observed before any reconcileJob)", report.Jobs)
+	}
+	if report.Active != 0 || report.Completed != 0 || report.Lost != 0 || report.Failed != 0 {
+		t.Fatalf("report counters non-zero: active=%d completed=%d lost=%d failed=%d",
+			report.Active, report.Completed, report.Lost, report.Failed)
 	}
 }
 

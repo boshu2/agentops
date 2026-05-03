@@ -60,10 +60,8 @@ func (e *DreamExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeDreamRun}
 }
 
+// RunJob requires a non-nil ctx; callers passing nil will panic on first use.
 func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if claim.Job.JobType != JobTypeDreamRun {
 		return JobExecutionResult{}, fmt.Errorf("dream executor does not support job type %s", claim.Job.JobType)
 	}
@@ -72,13 +70,30 @@ func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecut
 		return JobExecutionResult{}, err
 	}
 	artifacts := dreamRunArtifacts(spec.OutputDir)
-	if err := os.MkdirAll(spec.OutputDir, 0o755); err != nil {
-		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("create dream output dir: %w", err)
+	// soc-58q5.13 (W-C-18): refuse to traverse a symlink at the planned
+	// output_dir. The path is operator-supplied via the job payload, so an
+	// attacker who can pre-create a symlink at OutputDir could redirect
+	// summary/log writes outside the intended sandbox. Lstat (not Stat) so we
+	// see the symlink itself rather than its target.
+	if info, err := os.Lstat(spec.OutputDir); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("dream output_dir is a symlink: %s", spec.OutputDir)
+		}
+	}
+	// soc-58q5.13 (W-C-18): 0o700 (not 0o755) keeps overnight log + summary
+	// readable only by the daemon's UID. Per-run dirs hold goal-bearing
+	// content the operator may want kept private from other local users.
+	if err := os.MkdirAll(spec.OutputDir, 0o700); err != nil {
+		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("create dream output_dir: %w", err)
 	}
 	startedAt := e.now().UTC()
 	// soc-5of.9: O_APPEND (not O_TRUNC) so a daemon restart mid-dream cannot
 	// truncate partial logs — Fournier-class "crash with notes" durability nit.
-	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	// soc-58q5.14 (W-C-19): 0o600 (not 0o644) keeps the per-run overnight log
+	// readable only by the daemon's UID. Logs may capture provider tokens or
+	// other credentials emitted by tooling; world-readable is a leak path to
+	// other local users.
+	logFile, err := os.OpenFile(artifacts["overnight_log"], os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("open dream log: %w", err)
 	}

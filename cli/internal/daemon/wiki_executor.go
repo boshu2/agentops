@@ -40,6 +40,13 @@ func (e *WikiForgeExecutor) JobTypes() []JobType {
 }
 
 func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+	// Honor cancellation issued mid-claim before performing any work
+	// (payload parse, source expansion, or worker spawn). Without this
+	// check, a context canceled between QueueClaim and execution start
+	// is not observed until the underlying call blocks. See bd soc-58q5.12.
+	if err := ctx.Err(); err != nil {
+		return JobExecutionResult{}, err
+	}
 	if claim.Job.JobType != JobTypeWikiForge {
 		return JobExecutionResult{}, fmt.Errorf("wiki forge executor does not support job type %s", claim.Job.JobType)
 	}
@@ -47,12 +54,24 @@ func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobEx
 	if err != nil {
 		return JobExecutionResult{}, err
 	}
+	if err := validateWikiForgeSourcePathsContainment(e.store.root, spec.SourcePaths); err != nil {
+		return JobExecutionResult{}, err
+	}
 	expandedSources, err := expandWikiForgeSourcePaths(spec.SourcePaths)
 	if err != nil {
 		return JobExecutionResult{}, err
 	}
+	if err := validateWikiForgeSourcePathsContainment(e.store.root, expandedSources); err != nil {
+		return JobExecutionResult{}, err
+	}
 	refs := make([]WikiWorkerSessionRef, 0, len(expandedSources))
 	for _, sourcePath := range expandedSources {
+		// Re-check cancellation between worker invocations — a cancel
+		// signaled while a previous source was processing should stop
+		// the next spawn instead of silently continuing.
+		if err := ctx.Err(); err != nil {
+			return JobExecutionResult{}, err
+		}
 		promptCtx, err := newWikiForgePromptContext(claim, spec, sourcePath)
 		if err != nil {
 			return JobExecutionResult{}, err

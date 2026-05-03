@@ -133,7 +133,11 @@ func (s *RecurrenceSupervisor) tick(ctx context.Context, now time.Time) error {
 
 // refreshSchedules reconciles the in-memory schedule cache with the store's
 // current schedule list. New schedules get a parsed cron.Schedule and an
-// initial nextTick computed from now.
+// initial nextTick computed from now. Schedules whose template Cron has
+// changed since the last refresh re-parse the cron expression and recompute
+// nextTick from s.clock.Now(); the old cadence is dropped. Recomputation uses
+// s.clock.Now() rather than time.Now() so test-time clock injection stays
+// honoured (Gap-5 contract).
 func (s *RecurrenceSupervisor) refreshSchedules(now time.Time) error {
 	templates, err := s.store.ListSchedules()
 	if err != nil {
@@ -146,6 +150,23 @@ func (s *RecurrenceSupervisor) refreshSchedules(now time.Time) error {
 		current[t.Name] = struct{}{}
 		existing, ok := s.schedules[t.Name]
 		if ok && existing.template.Cron == t.Cron {
+			existing.template = t
+			continue
+		}
+		if ok {
+			// Existing schedule with a changed Cron expression: re-parse and
+			// recompute nextTick from the supervisor's clock so the new cadence
+			// takes effect immediately on subsequent ticks. If the new cron is
+			// invalid, keep the prior parsed schedule + nextTick to avoid
+			// breaking a running schedule on operator typo.
+			sched, parseErr := ParseCron(t.Cron)
+			if parseErr != nil {
+				log.Printf("[recurrence] reparse cron for schedule %q (%q): %v; keeping previous cadence",
+					t.Name, t.Cron, parseErr)
+				continue
+			}
+			existing.sched = sched
+			existing.nextTick = sched.Next(s.clock.Now())
 			existing.template = t
 			continue
 		}
@@ -188,7 +209,13 @@ func (s *RecurrenceSupervisor) fireOne(ctx context.Context, st *scheduleState, t
 		return fmt.Errorf("dedup check: %w", err)
 	}
 
-	depth, hasInFlight, err := s.queueState(st.template.Name)
+	// Take the queue snapshot ONCE per fireOne invocation. queueDepth and
+	// hasInFlight must come from the same snapshot as the data shouldFire
+	// reasons over; otherwise a queue draining mid-decision can produce a
+	// recorded skip reason that doesn't match the state we acted on.
+	// Idempotency on subID still keeps submission safe, but the ledger
+	// skip reason needs single-snapshot semantics. (soc-58q5.5 / W-B-07)
+	depth, hasInFlight, err := s.queueStateOnce(st.template.Name)
 	if err != nil {
 		return fmt.Errorf("queue state: %w", err)
 	}
@@ -292,6 +319,22 @@ func (s *RecurrenceSupervisor) queueState(scheduleName string) (int, bool, error
 		}
 		return 0, false, err
 	}
+	depth, hasInFlight := derivedQueueState(snap, scheduleName)
+	return depth, hasInFlight, nil
+}
+
+// queueStateOnce is the single-snapshot variant used inside fireOne. It is
+// guaranteed to call Queue.Snapshot at most once per invocation; callers must
+// reuse the returned (depth, hasInFlight) for every backpressure-relevant
+// decision in the same fire path. (soc-58q5.5 / W-B-07)
+func (s *RecurrenceSupervisor) queueStateOnce(scheduleName string) (int, bool, error) {
+	return s.queueState(scheduleName)
+}
+
+// derivedQueueState computes (queueDepth, hasInFlight) from an already-taken
+// snapshot. Pure function so a single Snapshot() result can be reused without
+// re-querying the queue.
+func derivedQueueState(snap QueueSnapshot, scheduleName string) (int, bool) {
 	depth := 0
 	hasInFlight := false
 	for _, job := range snap.Jobs {
@@ -309,7 +352,7 @@ func (s *RecurrenceSupervisor) queueState(scheduleName string) (int, bool, error
 			hasInFlight = true
 		}
 	}
-	return depth, hasInFlight, nil
+	return depth, hasInFlight
 }
 
 // isRealQueueJob filters out phantom snapshot entries created by schedule.*

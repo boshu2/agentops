@@ -142,6 +142,17 @@ type OpenClawResources struct {
 	Wiki []JobProjection `json:"wiki"`
 }
 
+// RebuildProjections rebuilds the projection set by replaying the store's
+// ledger and folding events through the package-level [RebuildProjections].
+//
+// Callers MUST check err before using the returned [ProjectionSet]. On error,
+// the returned set is zero-valued: SchemaVersion == 0, RebuiltAt == "",
+// Manifests == nil, and Jobs/Schedules/derived buckets are nil. Reading any
+// map field (e.g., set.Manifests[name]) on a zero-valued set returns the zero
+// value, but mutating those nil maps (e.g., set.Manifests[name] = ...) WILL
+// panic. The bug-hunt audit (W-B-22 / soc-58q5.7) confirmed all in-tree
+// callers (server.go readState, projections_test.go) check err first; this
+// godoc is a guard for future callers.
 func (s *Store) RebuildProjections(opts ProjectionRebuildOptions) (ProjectionSet, error) {
 	replay, err := s.ReplayLedger()
 	if err != nil {
@@ -160,6 +171,17 @@ func (s *Store) RebuildProjections(opts ProjectionRebuildOptions) (ProjectionSet
 	return projections, nil
 }
 
+// RebuildProjections folds the given ledger events into a fresh
+// [ProjectionSet] (or, if opts.FromSnapshot is set, into a delta replay
+// seeded from that snapshot).
+//
+// Callers MUST check err before using the returned set. On error, the
+// returned set is zero-valued (SchemaVersion == 0, nil Manifests/Jobs/
+// Schedules, empty derived RPI/Dream/Wiki/OpenClaw buckets). Treat the
+// SchemaVersion == 0 sentinel as "do not use this set"; downstream code that
+// indexes into Manifests or appends to Jobs without checking err first risks
+// nil-map panics or silently emitting an empty projection. See the bug-hunt
+// L2 test TestRebuildProjections_ErrorReturnsUnusableSet for the contract.
 func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (ProjectionSet, error) {
 	opts = normalizeRebuildOptions(opts)
 	rebuiltAt := opts.RebuiltAt.UTC().Format(time.RFC3339Nano)
@@ -236,6 +258,18 @@ func initStateFromSnapshot(snapshot ProjectionSet, sourceLedger, rebuiltAt strin
 			artifacts[k] = v
 		}
 		job.Artifacts = artifacts
+		// Symmetric deep-copy of ArtifactRefs (W-B-25 / soc-58q5.9):
+		// without this, the rebuilt jobsByID entry shares the underlying
+		// ArtifactRefs map with the source snapshot's job, so concurrent
+		// writers on either side race. ArtifactRef is a flat value struct
+		// (string/int64 fields only), so a shallow value copy suffices.
+		if job.ArtifactRefs != nil {
+			refs := make(map[string]ArtifactRef, len(job.ArtifactRefs))
+			for k, v := range job.ArtifactRefs {
+				refs[k] = v
+			}
+			job.ArtifactRefs = refs
+		}
 		jobsByID[job.JobID] = &job
 		jobOrder = append(jobOrder, job.JobID)
 	}

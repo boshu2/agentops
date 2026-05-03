@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -281,6 +282,11 @@ func (s *ReadOnlyServer) handlePlansDiff(w http.ResponseWriter, r *http.Request)
 	// by /v1/events. atom-2 will scope to plans-relevant events once the
 	// executor publishes them.
 	events := filterLedgerEventsAfter(state.Replay.Events, r.URL.Query().Get("since"))
+	events, err = applyReadOnlyEventsLimit(events, r.URL.Query().Get("limit"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"events":        events,
 		"last_event_id": state.Lag.LastEventID,
@@ -1023,5 +1029,7 @@ func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		log.Printf("[server] writeJSON encoding error (status=%d): %v", status, err)
+	}
 }

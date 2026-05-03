@@ -1,10 +1,13 @@
 package daemon
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -594,6 +597,88 @@ func TestDaemonRouter_PlansRoutes(t *testing.T) {
 	}
 }
 
+// TestPlansDiff_AppliesEventsLimit guards the read-only response cap on
+// /v1/plans/diff so it mirrors /v1/events. Without the cap the endpoint would
+// stream the full ledger to any caller (soc-58q5.17).
+func TestPlansDiff_AppliesEventsLimit(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+
+	// Append more than maxReadOnlyEventsLimit events to verify both the
+	// explicit ?limit= cap and the cap-on-explicit-limit-only behavior shared
+	// with /v1/events.
+	totalEvents := maxReadOnlyEventsLimit + 5
+	for i := 0; i < totalEvents; i++ {
+		evt := mustNewProjectionTestEvent(
+			t,
+			"evt-"+strconv.Itoa(i),
+			"req-"+strconv.Itoa(i),
+			"job-rpi",
+			EventJobAccepted,
+			JobTypeRPIRun,
+			i,
+			nil,
+		)
+		if _, err := store.AppendLedgerEvent(evt); err != nil {
+			t.Fatalf("append event %d: %v", i, err)
+		}
+	}
+
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+
+	// Cross-check: /v1/events with the same explicit ?limit= returns the same
+	// cap, so /v1/plans/diff matches its sibling endpoint exactly.
+	wantLimit := 7
+	var eventsResp ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events?limit="+strconv.Itoa(wantLimit), &eventsResp)
+	if len(eventsResp.Events) != wantLimit {
+		t.Fatalf("/v1/events?limit=%d returned %d events, want %d", wantLimit, len(eventsResp.Events), wantLimit)
+	}
+
+	var diff map[string]any
+	getJSON(t, router, "/v1/plans/diff?limit="+strconv.Itoa(wantLimit), &diff)
+	gotEvents, ok := diff["events"].([]any)
+	if !ok {
+		t.Fatalf("diff events field type = %T, want []any", diff["events"])
+	}
+	if len(gotEvents) != wantLimit {
+		t.Fatalf("/v1/plans/diff?limit=%d returned %d events, want %d", wantLimit, len(gotEvents), wantLimit)
+	}
+
+	// Default behavior (no ?limit= query) must match /v1/events: both endpoints
+	// today return the full ledger. This guards against /v1/plans/diff drifting
+	// to a different default than its sibling.
+	var eventsDefault ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events", &eventsDefault)
+	var diffDefault map[string]any
+	getJSON(t, router, "/v1/plans/diff", &diffDefault)
+	defaultEvents, ok := diffDefault["events"].([]any)
+	if !ok {
+		t.Fatalf("default diff events field type = %T, want []any", diffDefault["events"])
+	}
+	if len(defaultEvents) != len(eventsDefault.Events) {
+		t.Fatalf("default cap drift: /v1/plans/diff returned %d events, /v1/events returned %d", len(defaultEvents), len(eventsDefault.Events))
+	}
+	if len(defaultEvents) != totalEvents {
+		t.Fatalf("default cap returned %d events, want %d (current default is uncapped — update this test if behavior changes)", len(defaultEvents), totalEvents)
+	}
+
+	// Invalid limit must produce 400, mirroring /v1/events.
+	for _, target := range []string{
+		"/v1/plans/diff?limit=abc",
+		"/v1/plans/diff?limit=-1",
+	} {
+		t.Run(target, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, target, nil)
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+			if resp.Code != http.StatusBadRequest {
+				t.Fatalf("GET %s status = %d body=%s, want 400", target, resp.Code, resp.Body.String())
+			}
+		})
+	}
+}
+
 func postOpenClawTrigger(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, openclaw.TriggerJobsPath, strings.NewReader(payload))
@@ -852,5 +937,50 @@ func TestRoute_DeleteSchedule_AuthRequired(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("unauthorized DELETE removed the schedule: %#v", saved)
+	}
+}
+
+// TestWriteJSON_LogsEncodingError verifies that writeJSON does not silently
+// swallow encoder failures. When a body cannot be JSON-encoded (e.g., a
+// channel value, which encoding/json explicitly rejects via
+// UnsupportedTypeError), the error must be logged at warn level so operators
+// can diagnose malformed handler responses instead of seeing an empty body.
+func TestWriteJSON_LogsEncodingError(t *testing.T) {
+	// Capture log output for the duration of this test, restore in cleanup.
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	originalFlags := log.Flags()
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(originalOutput)
+		log.SetFlags(originalFlags)
+	})
+
+	// channels are not JSON-encodable; encoding/json returns
+	// *json.UnsupportedTypeError when it encounters one.
+	rec := httptest.NewRecorder()
+	writeJSON(rec, http.StatusTeapot, make(chan int))
+
+	if rec.Code != http.StatusTeapot {
+		t.Fatalf("status code = %d, want %d", rec.Code, http.StatusTeapot)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want %q", got, "application/json")
+	}
+
+	logged := buf.String()
+	if logged == "" {
+		t.Fatalf("writeJSON did not log encoding error; log buffer was empty")
+	}
+	wantSubstrings := []string{
+		"writeJSON encoding error",
+		"status=" + strconv.Itoa(http.StatusTeapot),
+		"json: unsupported type",
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(logged, want) {
+			t.Fatalf("log output missing %q; got: %s", want, logged)
+		}
 	}
 }
