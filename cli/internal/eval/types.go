@@ -117,6 +117,7 @@ type SuiteEnvironment struct {
 	IsolateCodexHome bool     `json:"isolate_codex_home,omitempty"`
 	TimeoutSeconds   int      `json:"timeout_seconds,omitempty"`
 	MaxAttempts      int      `json:"max_attempts,omitempty"`
+	DisableHooks     bool     `json:"disable_hooks,omitempty"`
 }
 
 type Fixture struct {
@@ -287,6 +288,11 @@ type RunOptions struct {
 	BaselinePath string
 	WorkDir      string
 	Now          func() time.Time
+	// OverrideDisableHooks forces the run to behave as if the loaded suite
+	// declared Environment.DisableHooks=true, without mutating the suite
+	// file. Used by RunBaselineAB to pair a single suite into skill-on and
+	// skill-off runs.
+	OverrideDisableHooks bool
 }
 
 type CompareOptions struct {

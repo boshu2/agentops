@@ -75,6 +75,13 @@ const (
 // Replay treats this as a corrupt-record condition, not a fatal scan error.
 var errLedgerLineTooLong = errors.New("ledger event line exceeds MaxLedgerLineBytes")
 
+// ledgerSyncFn is the file-sync seam used by AppendLedgerEvent. Tests swap it
+// to assert that fsync errors are propagated to callers (the durability
+// contract: an event is only acknowledged once its bytes are fsync'd to disk).
+// Production code MUST keep the default — overriding this in non-test code
+// would silently weaken the daemon's durability guarantees.
+var ledgerSyncFn = func(f *os.File) error { return f.Sync() }
+
 // Store persists daemon ledger events to ~/<root>/.agents/daemon/ledger.jsonl.
 // Concurrent writers are serialized through s.mu; readers (Replay*) operate on
 // committed file contents and do not contend for the lock — O_APPEND atomicity
@@ -207,7 +214,7 @@ func (s *Store) AppendLedgerEvent(event LedgerEvent) (LedgerEvent, error) {
 	if _, err := file.Write(line); err != nil {
 		return LedgerEvent{}, fmt.Errorf("append ledger: %w", err)
 	}
-	if err := file.Sync(); err != nil {
+	if err := ledgerSyncFn(file); err != nil {
 		return LedgerEvent{}, fmt.Errorf("sync ledger: %w", err)
 	}
 	return event, nil
@@ -236,6 +243,25 @@ func (s *Store) maybeRotate(pendingBytes int64) error {
 // gzip-compresses it. A fresh ledger.jsonl is created implicitly on the next
 // append. Caller must hold s.mu.
 func (s *Store) rotateLedger() error {
+	// Sweep orphan .gz.tmp files left behind by a prior-run crash. The
+	// in-flight gzipFileInPlace error paths already remove their own tmp on
+	// failure; this covers the case where the process died between tmp
+	// creation and rename. The 5-minute grace prevents racing concurrent
+	// in-flight gzip work (a tmp newer than the cutoff may belong to a live
+	// rotation in another goroutine, even though current callers hold s.mu).
+	// Cleanup failures must NOT fail rotation — log at warn and continue.
+	graceCutoff := time.Now().Add(-5 * time.Minute)
+	matches, _ := filepath.Glob(filepath.Join(s.Dir(), "ledger.*.jsonl.gz.tmp"))
+	for _, p := range matches {
+		info, err := os.Stat(p)
+		if err != nil || info.ModTime().After(graceCutoff) {
+			continue
+		}
+		if err := os.Remove(p); err != nil {
+			log.Printf("[store] orphan-tmp cleanup: %s: %v", p, err)
+		}
+	}
+
 	timestamp := time.Now().UTC().Format("20060102T150405.000000000Z")
 	archive := filepath.Join(s.Dir(), ledgerArchivePrefix+timestamp+ledgerArchiveSuffix)
 	if err := os.Rename(s.LedgerPath(), archive); err != nil {

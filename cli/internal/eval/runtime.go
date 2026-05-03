@@ -41,6 +41,10 @@ type LiveRuntimeOptions struct {
 	LookPath       func(string) (string, error)
 	VersionRunner  RuntimeVersionRunner
 	Runner         RuntimeRunner
+	// OverrideDisableHooks forces the run to behave as if Suite.Environment.DisableHooks
+	// were true, without mutating the loaded suite. Used by the baseline A/B runner to
+	// toggle skill-on vs skill-off across two runs over the same suite.
+	OverrideDisableHooks bool
 }
 
 // RuntimeCommand describes one Claude or Codex process invocation.
@@ -179,7 +183,7 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	}
 	result, attempts, runErr := runLiveRuntimeWithAttempts(ctx, runner, RuntimeCommand{
 		Executable:     executablePath,
-		Args:           adapter.DirectArgs(command, liveRuntimePrompt(suite)),
+		Args:           adapter.DirectArgs(command, liveRuntimePrompt(opts, suite)),
 		Env:            env,
 		Dir:            workDir,
 		TimeoutSeconds: record.Runtime.TimeoutSeconds,
@@ -290,7 +294,7 @@ func newLiveRuntimeRecord(opts LiveRuntimeOptions, suite Suite, runtimeName Runt
 			Attempts:       effectiveAttempts(suite),
 			TimeoutSeconds: effectiveTimeout(suite),
 		},
-		Environment:     liveEnvironmentRecord(suite),
+		Environment:     liveEnvironmentRecord(opts, suite),
 		Baseline:        &BaselineRecord{Mode: BaselineModeNone},
 		CaseResults:     inconclusiveCaseResults(suite),
 		AggregateScore:  0,
@@ -298,12 +302,22 @@ func newLiveRuntimeRecord(opts LiveRuntimeOptions, suite Suite, runtimeName Runt
 	}
 }
 
-func liveEnvironmentRecord(suite Suite) EnvironmentRecord {
+// effectiveDisableHooks returns true when either the suite declares
+// DisableHooks or the runtime caller has set OverrideDisableHooks.
+// Used by liveEnvironmentRecord, liveRuntimeEnv, and liveRuntimePrompt
+// so the LID baseline-A/B runner can toggle skill loading without
+// mutating the loaded suite.
+func effectiveDisableHooks(opts LiveRuntimeOptions, suite Suite) bool {
+	return suite.Environment.DisableHooks || opts.OverrideDisableHooks
+}
+
+func liveEnvironmentRecord(opts LiveRuntimeOptions, suite Suite) EnvironmentRecord {
 	return EnvironmentRecord{
 		ScrubbedEnvPrefixes: liveScrubPrefixes(suite),
 		IsolatedHome:        suite.Environment.IsolateHome,
 		IsolatedCodexHome:   suite.Environment.IsolateCodexHome,
 		NetworkAccess:       networkAccess(suite),
+		HooksDisabled:       effectiveDisableHooks(opts, suite),
 	}
 }
 
@@ -344,6 +358,10 @@ func liveRuntimeEnv(opts LiveRuntimeOptions, suite Suite) ([]string, []string, e
 		}
 	}
 	notes = append(notes, fmt.Sprintf("scrubbed env prefixes: %s", strings.Join(liveScrubPrefixes(suite), ",")))
+	if effectiveDisableHooks(opts, suite) {
+		env = append(env, "AGENTOPS_HOOKS_DISABLED=1")
+		notes = append(notes, "hooks disabled (AGENTOPS_HOOKS_DISABLED=1)")
+	}
 	return env, notes, nil
 }
 
@@ -589,20 +607,26 @@ func effectiveAttempts(suite Suite) int {
 	return 1
 }
 
-func liveRuntimePrompt(suite Suite) string {
+func liveRuntimePrompt(opts LiveRuntimeOptions, suite Suite) string {
 	var parts []string
 	for _, evalCase := range suite.Cases {
 		if prompt := strings.TrimSpace(inputString(evalCase.Inputs, "prompt")); prompt != "" {
 			parts = append(parts, prompt)
 		}
 	}
-	if len(parts) > 0 {
-		return strings.Join(parts, "\n\n")
+	var prompt string
+	switch {
+	case len(parts) > 0:
+		prompt = strings.Join(parts, "\n\n")
+	case strings.TrimSpace(suite.Description) != "":
+		prompt = strings.TrimSpace(suite.Description)
+	default:
+		prompt = strings.TrimSpace(suite.Name)
 	}
-	if strings.TrimSpace(suite.Description) != "" {
-		return strings.TrimSpace(suite.Description)
+	if effectiveDisableHooks(opts, suite) {
+		prompt += "\n\nConstraint: Do NOT load additional skills or plugins. Work only with base agent capabilities."
 	}
-	return strings.TrimSpace(suite.Name)
+	return prompt
 }
 
 func runtimeMetadataFromCommand(command string) (string, string) {

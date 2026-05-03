@@ -49,6 +49,13 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 		return nil, fmt.Errorf("runtime %q is out of deterministic scope", runtimeName)
 	}
 
+	// Apply LiveRuntime-style override into the local suite copy so the
+	// deterministic case engine, runtimeRecord, environmentRecord, and
+	// command env all see the same effective DisableHooks state.
+	if opts.OverrideDisableHooks {
+		suite.Environment.DisableHooks = true
+	}
+
 	suiteDir := filepath.Dir(opts.SuitePath)
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
@@ -77,7 +84,7 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 		Verdict:         verdict,
 		Git:             collectGitRecord(workDir),
 		Runtime:         runtimeRecord(runtimeName, *suite),
-		Environment:     environmentRecord(*suite),
+		Environment:     environmentRecord(*suite, suite.Environment.DisableHooks),
 		Baseline:        &BaselineRecord{Mode: BaselineModeNone},
 		CaseResults:     caseResults,
 		AggregateScore:  aggregate,
@@ -207,6 +214,9 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case) (commandOut
 		cmd.Dir = suiteDir
 	}
 	cmd.Env = applyCommandEnv(scrubbedEnv(os.Environ(), scrubPrefixes(suite)), spec.env)
+	if suite.Environment.DisableHooks {
+		cmd.Env = append(cmd.Env, "AGENTOPS_HOOKS_DISABLED=1")
+	}
 	if spec.stdin != "" {
 		cmd.Stdin = strings.NewReader(spec.stdin)
 	}
@@ -363,12 +373,13 @@ func runtimeRecord(name Runtime, suite Suite) RuntimeRecord {
 	}
 }
 
-func environmentRecord(suite Suite) EnvironmentRecord {
+func environmentRecord(suite Suite, disableHooks bool) EnvironmentRecord {
 	return EnvironmentRecord{
 		ScrubbedEnvPrefixes: scrubPrefixes(suite),
 		IsolatedHome:        suite.Environment.IsolateHome,
 		IsolatedCodexHome:   suite.Environment.IsolateCodexHome,
 		NetworkAccess:       networkAccess(suite),
+		HooksDisabled:       disableHooks,
 	}
 }
 

@@ -334,3 +334,117 @@ func TestRunLiveRuntimePropagatesRunnerErrors(t *testing.T) {
 		t.Fatalf("failure = %q, want runtime failed", run.CaseResults[0].FailureMessage)
 	}
 }
+
+// W1.1 — DisableHooks plumbing. Verifies the hook-suppression toggle propagates
+// through liveEnvironmentRecord, liveRuntimeEnv, and liveRuntimePrompt whether
+// it comes from the suite or the LiveRuntimeOptions override.
+
+func TestEffectiveDisableHooksOrsSuiteAndOverride(t *testing.T) {
+	tests := []struct {
+		name         string
+		suiteFlag    bool
+		overrideFlag bool
+		want         bool
+	}{
+		{name: "neither", suiteFlag: false, overrideFlag: false, want: false},
+		{name: "suite only", suiteFlag: true, overrideFlag: false, want: true},
+		{name: "override only", suiteFlag: false, overrideFlag: true, want: true},
+		{name: "both", suiteFlag: true, overrideFlag: true, want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			suite := Suite{Environment: SuiteEnvironment{DisableHooks: tc.suiteFlag}}
+			opts := LiveRuntimeOptions{OverrideDisableHooks: tc.overrideFlag}
+			if got := effectiveDisableHooks(opts, suite); got != tc.want {
+				t.Fatalf("effectiveDisableHooks: got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLiveRuntimeEnvEmitsAgentopsHooksDisabled(t *testing.T) {
+	suite := Suite{Environment: SuiteEnvironment{DisableHooks: true}}
+	opts := LiveRuntimeOptions{Env: []string{}}
+	env, notes, err := liveRuntimeEnv(opts, suite)
+	if err != nil {
+		t.Fatalf("liveRuntimeEnv: %v", err)
+	}
+	assertEnvContains(t, env, "AGENTOPS_HOOKS_DISABLED=1")
+	if !slices.ContainsFunc(notes, func(n string) bool { return strings.Contains(n, "hooks disabled") }) {
+		t.Fatalf("notes missing hooks-disabled entry: %v", notes)
+	}
+}
+
+func TestLiveRuntimeEnvOmitsHooksDisabledWhenInactive(t *testing.T) {
+	suite := Suite{Environment: SuiteEnvironment{}}
+	opts := LiveRuntimeOptions{Env: []string{}}
+	env, _, err := liveRuntimeEnv(opts, suite)
+	if err != nil {
+		t.Fatalf("liveRuntimeEnv: %v", err)
+	}
+	for _, e := range env {
+		if strings.HasPrefix(e, "AGENTOPS_HOOKS_DISABLED=") {
+			t.Fatalf("env unexpectedly contains AGENTOPS_HOOKS_DISABLED entry: %q", e)
+		}
+	}
+}
+
+func TestLiveRuntimeEnvHonorsOverrideDisableHooks(t *testing.T) {
+	suite := Suite{Environment: SuiteEnvironment{}}
+	opts := LiveRuntimeOptions{Env: []string{}, OverrideDisableHooks: true}
+	env, _, err := liveRuntimeEnv(opts, suite)
+	if err != nil {
+		t.Fatalf("liveRuntimeEnv: %v", err)
+	}
+	assertEnvContains(t, env, "AGENTOPS_HOOKS_DISABLED=1")
+}
+
+func TestLiveRuntimePromptAppendsNegationWhenDisabled(t *testing.T) {
+	suite := Suite{
+		Name:        "demo",
+		Description: "Run something.",
+		Cases:       []Case{{Inputs: map[string]any{"prompt": "Do X."}}},
+		Environment: SuiteEnvironment{DisableHooks: true},
+	}
+	prompt := liveRuntimePrompt(LiveRuntimeOptions{}, suite)
+	if !strings.Contains(prompt, "Do X.") {
+		t.Fatalf("prompt missing case prompt: %q", prompt)
+	}
+	if !strings.Contains(prompt, "Do NOT load additional skills or plugins") {
+		t.Fatalf("prompt missing negation constraint: %q", prompt)
+	}
+}
+
+func TestLiveRuntimePromptOmitsNegationWhenEnabled(t *testing.T) {
+	suite := Suite{
+		Name:  "demo",
+		Cases: []Case{{Inputs: map[string]any{"prompt": "Do X."}}},
+	}
+	prompt := liveRuntimePrompt(LiveRuntimeOptions{}, suite)
+	if strings.Contains(prompt, "Do NOT load additional skills") {
+		t.Fatalf("prompt unexpectedly contains negation constraint: %q", prompt)
+	}
+}
+
+func TestLiveEnvironmentRecordReflectsEffectiveDisableHooks(t *testing.T) {
+	tests := []struct {
+		name         string
+		suiteFlag    bool
+		overrideFlag bool
+		want         bool
+	}{
+		{name: "default false", suiteFlag: false, overrideFlag: false, want: false},
+		{name: "suite true", suiteFlag: true, overrideFlag: false, want: true},
+		{name: "override true", suiteFlag: false, overrideFlag: true, want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			suite := Suite{Environment: SuiteEnvironment{DisableHooks: tc.suiteFlag}}
+			opts := LiveRuntimeOptions{OverrideDisableHooks: tc.overrideFlag}
+			rec := liveEnvironmentRecord(opts, suite)
+			if rec.HooksDisabled != tc.want {
+				t.Fatalf("HooksDisabled: got %v, want %v", rec.HooksDisabled, tc.want)
+			}
+		})
+	}
+}
