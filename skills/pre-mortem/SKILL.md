@@ -217,4 +217,5 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 - [references/prediction-tracking.md](references/prediction-tracking.md)
 - [references/spec-verification-checklist.md](references/spec-verification-checklist.md)
 - [references/temporal-interrogation.md](references/temporal-interrogation.md)
+- [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md)
 - Shared stale-scope validation rule — re-validate inherited scope estimates against HEAD before acting on deferred beads or handoff docs.
