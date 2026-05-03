@@ -108,4 +108,4 @@ Line 62 (source_epic likely containing eval/council items) has `consumed=True` o
 
 ## Commit SHA
 
-See git log after push.
+`788d6ea` — PR #221: https://github.com/boshu2/agentops/pull/221
