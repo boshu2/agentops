@@ -1,36 +1,45 @@
 {
   "schema_version": 1,
-  "goal": "AI-native zero-trust release process with SIL/VIL/HIL and digital-twin evidence before build/tag/release",
-  "generated_at": "2026-05-02T23:51:12Z",
+  "goal": "Create bd issues for all actionable 2026-05-02 audit findings",
+  "generated_at": "2026-05-02T23:01:13-04:00",
   "applied_findings": [
     {
-      "path": ".agents/findings/f-2026-05-01-024.md",
-      "reason": "Live daemon/service proof maps to HIL and L3 release evidence."
+      "path": ".agents/findings/f-2026-04-25-001.md",
+      "reason": "Worktree disposition remains a release blocker after validation evidence passes."
     },
     {
-      "path": ".agents/findings/f-2026-05-01-021.md",
-      "reason": "Cross-host install-and-smoke pattern maps to remote HIL targets."
+      "path": ".agents/findings/f-2026-05-02-005.md",
+      "reason": "Silent Edit revert should be tracked as upstream evidence filing, not repo-source repair."
     },
     {
-      "path": ".agents/findings/f-2026-04-30-002.md",
-      "reason": "Release gates should detect missing upstream evidence inputs instead of repeatedly failing on empty state."
+      "path": ".agents/findings/f-2026-05-02-006.md",
+      "reason": "Semver tag filtering is a concrete release-helper bug."
     }
   ],
-  "prior_art": [
-    ".agents/research/2026-05-02-release-readiness-eight-sil-vil-hil.md",
-    ".agents/plans/2026-05-02-release-readiness-eight-sil-vil-hil.md",
-    ".agents/council/2026-05-02-pre-mortem-release-readiness-eight-sil-vil-hil.md",
-    "docs/contracts/release-readiness.md",
-    "docs/contracts/eval-environment.md",
-    "docs/RELEASING.md",
-    "docs/CI-CD.md"
+  "existing_tracker_coverage": [
+    "soc-0vm9",
+    "soc-sros",
+    "soc-0pzj",
+    "soc-owed"
   ],
-  "next_work": [
-    "soc-owed.2",
-    "soc-owed.3",
-    "soc-owed.4",
-    "soc-owed.5",
-    "soc-owed.6",
-    "soc-owed.7"
+  "created_or_updated_beads": [
+    "soc-ff2p",
+    "soc-ff2p.2",
+    "soc-ff2p.3",
+    "soc-ff2p.4",
+    "soc-ff2p.5",
+    "soc-ff2p.6",
+    "soc-ff2p.7",
+    "soc-ff2p.8",
+    "soc-0pzj"
+  ],
+  "new_issue_candidates": [
+    "Filter release tag discovery to semver release tags",
+    "Make tests/run-all.sh --all reliable under live runtime failures",
+    "Resolve release worktree disposition and .agents churn blocker",
+    "Isolate release validation from .agents/findings metadata churn",
+    "Review security toolchain warning before v2.40 tag",
+    "File upstream Claude Code silent Edit revert report",
+    "Decide historical changelog coverage floor"
   ]
 }

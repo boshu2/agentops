@@ -25,10 +25,14 @@ They share primitive steps and report shapes, but they are not the same pipeline
 Important constraint: GitHub Actions cannot see the private `.agents/` corpus when that directory is gitignored. The nightly workflow is therefore a proof harness, not the user's primary Dream runtime.
 
 The Nightly RPI Brief workflow is a prompt packet lane, not a CI-side agent
-runner. It reads recent Nightly PR bodies and scheduled Nightly workflow results,
-then updates the "Nightly RPI auto prompt" issue with a ready `$agentops:rpi
---auto` command. This keeps autonomous RPI selection grounded in observed
-Nightly drift while avoiding hidden source-code mutation from GitHub Actions.
+runner. It reads recent Nightly PR bodies, scheduled Nightly workflow results,
+latest Validate runs, open PR check rollups, open "Nightly build failed" issues,
+and the current "Nightly RPI auto prompt" issue. It emits structured
+`summary.json` fields for `current_ci`, `open_prs`, `open_incidents`,
+`prompt_issue`, and ranked `stabilization_targets`, then updates the prompt
+issue with a ready `$agentops:rpi --auto` command. This keeps autonomous RPI
+selection grounded in observed Nightly drift and current CI blockers while
+avoiding hidden source-code mutation from GitHub Actions.
 
 If you want scheduled private Dream runs, use `ao overnight setup` to inspect the
 host, persist `dream.*` config, and generate host-specific `launchd`, `cron`, or

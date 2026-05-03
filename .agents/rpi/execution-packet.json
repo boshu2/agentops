@@ -1,55 +1,66 @@
 {
   "schema_version": 1,
-  "run_id": "20260502T201600Z-codex-hook-output-parity",
-  "objective": "Implement two scoped agentops bd issues spawned from the 2026-05-02 RTK→Codex hook experiment: soc-mcom (parity matrix doc in docs/HOOKS.md) and soc-40w2 (CI lint scripts/test-hooks-output.sh + fixtures + validate.yml job for hook output JSON shape).",
-  "epic_id": "soc-hiua",
-  "plan_path": ".agents/plans/2026-05-02-codex-hook-output-parity.md",
-  "research_path": ".agents/research/2026-05-02-codex-hook-output-parity.md",
-  "pre_mortem_path": ".agents/pre-mortems/2026-05-02-codex-hook-output-parity.md",
+  "run_id": "2026-05-02-audit-findings-beads",
+  "objective": "Create bd issues for all actionable 2026-05-02 audit findings",
+  "epic_id": "soc-ff2p",
+  "plan_path": ".agents/plans/2026-05-02-audit-findings-bead-backlog.md",
+  "research_path": ".agents/research/2026-05-02-audit-findings-bead-backlog.md",
+  "pre_mortem_path": ".agents/council/2026-05-02-pre-mortem-audit-findings-bead-backlog.md",
   "contract_surfaces": [
-    "docs/HOOKS.md",
-    "scripts/test-hooks-output.sh",
-    "tests/fixtures/hook-inputs/",
-    "tests/fixtures/hook-outputs/",
-    ".github/workflows/validate.yml"
+    ".beads/issues.jsonl",
+    ".agents/releases/2026-05-02-v2.40.0-prep-state.md",
+    ".agents/rpi/phase-3-summary-2026-05-02-release-readiness-fix-everything.md",
+    ".agents/council/2026-05-02-post-mortem-full-changelog.md",
+    ".agents/research/2026-05-02-silent-revert-root-cause.md"
   ],
   "validation_commands": [
-    "bash -n scripts/test-hooks-output.sh",
-    "bash scripts/test-hooks-output.sh",
-    "scripts/pre-push-gate.sh --fast",
-    "grep -q '### Codex/Claude PreToolUse output parity' docs/HOOKS.md",
-    "grep -q 'hook-output-schema-lint:' .github/workflows/validate.yml",
-    "test -x scripts/test-hooks-output.sh"
+    "bd show soc-ff2p --json",
+    "bd show soc-0pzj --json",
+    "git status --short .beads .agents/research .agents/plans .agents/council .agents/rpi"
   ],
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "bd context confirms dolt server backend; epic soc-hiua + children soc-mcom + soc-40w2 wired with parent-child + blocks deps"
+    "reason": "bd ready and bd list probes succeeded; children required --force because parent uses existing soc-* prefix while database allocator reports ag-*."
   },
   "done_criteria": [
-    "docs/HOOKS.md contains '### Codex/Claude PreToolUse output parity' subsection (~25 lines, after lifecycle table)",
-    "scripts/test-hooks-output.sh exists, executable, exits 0 against current hooks/, exits non-zero against negative fixture (self-test)",
-    "tests/fixtures/hook-inputs/{Bash,Edit,Read,Skill,UserPromptSubmit,TaskCompleted,Write,Glob,Grep}.json all exist with minimal valid PreToolUse stdin",
-    "tests/fixtures/hook-outputs/bad-updatedInput.json exists as negative fixture",
-    ".github/workflows/validate.yml contains hook-output-schema-lint job AND it appears in needs[] aggregator AND echo line in summary block",
-    "soc-mcom and soc-40w2 closed in bd"
+    "Parent epic exists for audit-resolution routing",
+    "Every uncovered audit finding has a child bead",
+    "Existing canonical blockers are reused instead of duplicated",
+    "soc-0pzj captures the current eval-agentops failure run and release-blocking priority"
   ],
-  "complexity": "standard",
+  "complexity": "full",
   "pre_mortem_verdict": "WARN",
-  "pre_mortem_amendments": "4 tactical amendments folded into soc-40w2 bd issue notes: (1) extend fixtures with Write/Glob/Grep, (2) wire CI in 3 places not just 1, (3) hook-side-effect sandboxing strategy required, (4) allow-list verified against 10 hooks as of 2026-05-02",
   "test_levels": {
-    "required": ["L0", "L1"],
-    "recommended": [],
-    "rationale": "Doc + CI tooling change. L0 = lint passes own fixtures (positive + negative). L1 = existing CI green. No L2/L3 — no runtime behavior changed."
+    "required": [
+      "L0",
+      "L1",
+      "L2"
+    ],
+    "recommended": [
+      "L3 for future release-orchestration implementation issues"
+    ],
+    "rationale": "Tracker creation required source artifact verification; future implementation issues touch release shell scripts, docs, and integration wrappers."
   },
-  "out_of_scope": [
-    "Hook runtime refactoring",
-    "Full HOOKS.md rewrite or reorganization",
-    "Migration of tests/hooks/hook-stdin-contracts.bats to new lint",
-    "Hook framework abstraction",
-    "New bd beads beyond epic soc-hiua",
-    "Fixtures for matchers no agentops hook fires on (re-evaluated: Write/Glob/Grep ARE used; included)"
+  "ranked_packet_path": ".agents/rpi/runs/2026-05-02-audit-findings-beads/ranked-packet.json",
+  "created_or_updated_beads": [
+    "soc-ff2p",
+    "soc-ff2p.2",
+    "soc-ff2p.3",
+    "soc-ff2p.4",
+    "soc-ff2p.5",
+    "soc-ff2p.6",
+    "soc-ff2p.7",
+    "soc-ff2p.8",
+    "soc-0pzj"
   ],
-  "discovery_timestamp": "2026-05-02T20:16:00Z"
+  "existing_coverage_reused": [
+    "soc-0vm9",
+    "soc-sros",
+    "soc-owed",
+    "soc-owed.6",
+    "soc-owed.7"
+  ],
+  "discovery_timestamp": "2026-05-02T23:01:13-04:00"
 }
