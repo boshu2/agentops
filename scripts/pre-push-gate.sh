@@ -1031,47 +1031,51 @@ elif needs_check eval; then
 fi
 
 if [[ "$run_baseline_audit" == "true" ]]; then
-    ao_bin=""
-    if [[ -x cli/bin/ao ]]; then
-        ao_bin="cli/bin/ao"
-    elif command -v ao >/dev/null 2>&1; then
-        ao_bin="$(command -v ao)"
-    fi
-    if [[ -n "$ao_bin" ]]; then
-        if audit_output="$("$ao_bin" eval baseline-audit --root evals/agentops-core --json 2>&1)"; then
-            stale_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+    if [[ ! -d evals/agentops-core ]]; then
+        skip "AgentOps eval baseline-audit (eval root missing)"
+    else
+        ao_bin=""
+        if [[ -x cli/bin/ao ]]; then
+            ao_bin="cli/bin/ao"
+        elif command -v ao >/dev/null 2>&1; then
+            ao_bin="$(command -v ao)"
+        fi
+        if [[ -n "$ao_bin" ]]; then
+            if audit_output="$("$ao_bin" eval baseline-audit --root evals/agentops-core --json 2>&1)"; then
+                stale_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
     print(len(d.get("stale_suite_hashes",[])))
 except Exception:
     print(-1)' 2>/dev/null)
-            mismatch_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+                mismatch_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
     print(int(d.get("policy_mismatch_count",0)))
 except Exception:
     print(-1)' 2>/dev/null)
-            if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
-                fail "AgentOps eval baseline-audit (could not parse audit output)"
-                indent_output "$audit_output"
-            elif [[ "$stale_count" -gt 0 ]]; then
-                fail "AgentOps eval baseline-audit (stale_suite_hashes=$stale_count)"
-                indent_output "$audit_output"
-            elif [[ "$mismatch_count" -gt 0 ]]; then
-                # Drift-only gate: under the "stop tracking agents runtime
-                # state" policy (commit 3f1566fd) baselines are operator-local,
-                # so missing_compare_baselines on a fresh clone is expected.
-                # Surface as warn so the signal isn't lost without blocking.
-                warn "AgentOps eval baseline-audit (policy_mismatch_count=$mismatch_count; substrate-info, non-blocking)"
+                if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
+                    fail "AgentOps eval baseline-audit (could not parse audit output)"
+                    indent_output "$audit_output"
+                elif [[ "$stale_count" -gt 0 ]]; then
+                    fail "AgentOps eval baseline-audit (stale_suite_hashes=$stale_count)"
+                    indent_output "$audit_output"
+                elif [[ "$mismatch_count" -gt 0 ]]; then
+                    # Drift-only gate: under the "stop tracking agents runtime
+                    # state" policy (commit 3f1566fd) baselines are operator-local,
+                    # so missing_compare_baselines on a fresh clone is expected.
+                    # Surface as warn so the signal isn't lost without blocking.
+                    warn "AgentOps eval baseline-audit (policy_mismatch_count=$mismatch_count; substrate-info, non-blocking)"
+                else
+                    pass "AgentOps eval baseline-audit"
+                fi
             else
-                pass "AgentOps eval baseline-audit"
+                fail "AgentOps eval baseline-audit"
+                indent_output "$audit_output"
             fi
         else
-            fail "AgentOps eval baseline-audit"
-            indent_output "$audit_output"
+            skip "AgentOps eval baseline-audit (no ao binary; build cli/bin/ao first)"
         fi
-    else
-        skip "AgentOps eval baseline-audit (no ao binary; build cli/bin/ao first)"
     fi
 else
     skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
