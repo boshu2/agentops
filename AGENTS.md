@@ -110,6 +110,9 @@ Run `scripts/pre-push-gate.sh --fast` for a smart conditional gate that only che
 # Recommended: smart conditional gate
 scripts/pre-push-gate.sh --fast
 
+# One-command local development bootstrap
+bash scripts/install.sh --dev
+
 # Or individual checks:
 
 # 1. Skill integrity (most common failure)

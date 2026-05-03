@@ -271,6 +271,33 @@ collect_all_changed() {
     esac
 }
 
+select_fast_eval_suites() {
+    local changed="$1"
+    local path
+    local source_count=0
+    local suite_paths=()
+
+    while IFS= read -r path; do
+        [[ -n "$path" ]] || continue
+        case "$path" in
+            .agents/*|.beads/*)
+                continue
+                ;;
+        esac
+        source_count=$((source_count + 1))
+        if [[ "$path" =~ ^evals/agentops-core/[^/]+\.json$ && -f "$path" ]]; then
+            suite_paths+=("$path")
+        else
+            return 1
+        fi
+    done <<<"$changed"
+
+    [[ "$source_count" -gt 0 && "${#suite_paths[@]}" -gt 0 ]] || return 1
+    for path in "${suite_paths[@]}"; do
+        printf '%s\n' "$path"
+    done
+}
+
 # --- Fast mode: detect changed file categories ---
 HAS_GO=1
 HAS_SKILL=1
@@ -987,6 +1014,15 @@ fi
 if [[ "$run_eval_canaries" == "true" ]]; then
     if [[ -x scripts/eval-agentops.sh ]]; then
         eval_args=(--fast)
+        if [[ "$FAST_MODE" == "true" ]] && ! truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+            selected_eval_suites="$(select_fast_eval_suites "$all_changed" || true)"
+            if [[ -n "$selected_eval_suites" ]]; then
+                while IFS= read -r suite_path; do
+                    [[ -n "$suite_path" ]] || continue
+                    eval_args+=(--suite "$suite_path")
+                done <<<"$selected_eval_suites"
+            fi
+        fi
         eval_is_advisory=false
         if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env && ! truthy "${PRE_PUSH_STRICT_EVAL:-0}"; then
             eval_args+=(--advisory)
@@ -1031,47 +1067,51 @@ elif needs_check eval; then
 fi
 
 if [[ "$run_baseline_audit" == "true" ]]; then
-    ao_bin=""
-    if [[ -x cli/bin/ao ]]; then
-        ao_bin="cli/bin/ao"
-    elif command -v ao >/dev/null 2>&1; then
-        ao_bin="$(command -v ao)"
-    fi
-    if [[ -n "$ao_bin" ]]; then
-        if audit_output="$("$ao_bin" eval baseline-audit --root evals/agentops-core --json 2>&1)"; then
-            stale_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+    if [[ ! -d evals/agentops-core ]]; then
+        skip "AgentOps eval baseline-audit (eval root missing)"
+    else
+        ao_bin=""
+        if [[ -x cli/bin/ao ]]; then
+            ao_bin="cli/bin/ao"
+        elif command -v ao >/dev/null 2>&1; then
+            ao_bin="$(command -v ao)"
+        fi
+        if [[ -n "$ao_bin" ]]; then
+            if audit_output="$("$ao_bin" eval baseline-audit --root evals/agentops-core --json 2>&1)"; then
+                stale_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
     print(len(d.get("stale_suite_hashes",[])))
 except Exception:
     print(-1)' 2>/dev/null)
-            mismatch_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+                mismatch_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
     print(int(d.get("policy_mismatch_count",0)))
 except Exception:
     print(-1)' 2>/dev/null)
-            if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
-                fail "AgentOps eval baseline-audit (could not parse audit output)"
-                indent_output "$audit_output"
-            elif [[ "$stale_count" -gt 0 ]]; then
-                fail "AgentOps eval baseline-audit (stale_suite_hashes=$stale_count)"
-                indent_output "$audit_output"
-            elif [[ "$mismatch_count" -gt 0 ]]; then
-                # Drift-only gate: under the "stop tracking agents runtime
-                # state" policy (commit 3f1566fd) baselines are operator-local,
-                # so missing_compare_baselines on a fresh clone is expected.
-                # Surface as warn so the signal isn't lost without blocking.
-                warn "AgentOps eval baseline-audit (policy_mismatch_count=$mismatch_count; substrate-info, non-blocking)"
+                if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
+                    fail "AgentOps eval baseline-audit (could not parse audit output)"
+                    indent_output "$audit_output"
+                elif [[ "$stale_count" -gt 0 ]]; then
+                    fail "AgentOps eval baseline-audit (stale_suite_hashes=$stale_count)"
+                    indent_output "$audit_output"
+                elif [[ "$mismatch_count" -gt 0 ]]; then
+                    # Drift-only gate: under the "stop tracking agents runtime
+                    # state" policy (commit 3f1566fd) baselines are operator-local,
+                    # so missing_compare_baselines on a fresh clone is expected.
+                    # Surface as warn so the signal isn't lost without blocking.
+                    warn "AgentOps eval baseline-audit (policy_mismatch_count=$mismatch_count; substrate-info, non-blocking)"
+                else
+                    pass "AgentOps eval baseline-audit"
+                fi
             else
-                pass "AgentOps eval baseline-audit"
+                fail "AgentOps eval baseline-audit"
+                indent_output "$audit_output"
             fi
         else
-            fail "AgentOps eval baseline-audit"
-            indent_output "$audit_output"
+            skip "AgentOps eval baseline-audit (no ao binary; build cli/bin/ao first)"
         fi
-    else
-        skip "AgentOps eval baseline-audit (no ao binary; build cli/bin/ao first)"
     fi
 else
     skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
