@@ -148,6 +148,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/refactor` | Safe, verified refactoring with regression testing at each step |
 | `/deps` | Dependency audit, update, vulnerability scanning, and license compliance |
 | `/perf` | Performance profiling, benchmarking, regression detection, and optimization |
+| `/system-tuning` | Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene |
 | `/scaffold` | Project scaffolding, component generation, and boilerplate setup |
 | `/scenario` | Author and manage holdout scenarios for behavioral validation |
 

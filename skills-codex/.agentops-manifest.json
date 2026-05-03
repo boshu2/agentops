@@ -618,6 +618,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Stage 4 behavioral validation skill; converter parity is acceptable."
+      },
+      {
+        "name": "system-tuning",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
       }
     ]
   },
@@ -650,7 +656,7 @@
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "",
-      "generated_hash": "5b9997000457b19a4191642646c9e647f789dce1b30043f043136d56203da537"
+      "generated_hash": "3a0f986b39ae6260e136425571827c1597862a1064b8b8530462f6825a4f9406"
     },
     {
       "name": "brainstorm",
@@ -662,7 +668,7 @@
       "name": "bug-hunt",
       "source_skill": "skills/bug-hunt",
       "source_hash": "a1734ccabb2d399dfb55c53b3fc333e4c7a1edab187b730a446ac38a9bbad233",
-      "generated_hash": "9e743a18f17970d642ccd733251a1631abcb3383633f0929e9546f33f22a1403"
+      "generated_hash": "070d2d5a07c98dbf0363b930518becfd16509dbdc5bfc6e8a1bf74837246e4eb"
     },
     {
       "name": "codex-team",
@@ -920,13 +926,13 @@
       "name": "release",
       "source_skill": "skills/release",
       "source_hash": "63fe063bd3603ae67c191fcb3e9fbbe522efb662c3b2bac8ac06f6f35e010de2",
-      "generated_hash": "86396c50b4eefe43aa1c5ce21311dafd8302cefb80049253d41e81a5b3da5c09"
+      "generated_hash": "609ffdff339e43721ecdc6f51a3ec59e4ededde557ac08972cc78299db109628"
     },
     {
       "name": "research",
       "source_skill": "skills/research",
       "source_hash": "eaca810bd9d828fc2ce5fabb9bfce2079a2af35d7be0dfb1c835806a0513d2f0",
-      "generated_hash": "d441641e69739f4d2d0a1ed3e456d6701c663cb15b1c02dad04faba7d15f00a7"
+      "generated_hash": "7f14f84d72e610c613b6a19c1ba0984bd8425c8da2ef54e6c46f593f47c4fef1"
     },
     {
       "name": "retro",
@@ -956,7 +962,7 @@
       "name": "scaffold",
       "source_skill": "skills/scaffold",
       "source_hash": "8b5c25a85dfabd7d7b0b263d1f580c0d33691d3c1b6630b92aabd50f3c5bda6c",
-      "generated_hash": "5766af4912c52cea05c38eaebe89d17dd877ccb116875ef1dbc842d0d01e9496"
+      "generated_hash": "ad2773261ab65794baa7f409d728d0d41fdf33945b13c87ac421d43929ffc713"
     },
     {
       "name": "scenario",
@@ -968,7 +974,7 @@
       "name": "scope",
       "source_skill": "skills/scope",
       "source_hash": "a0119b7e546bb87bcc44d00821e37b646ef4fc7d97fdecb374ae1284cf37637a",
-      "generated_hash": "c5a697842e2416367e0106cfe2b737a4540b3fa72108ec671979632016507e11"
+      "generated_hash": "89dcae12493c4a4a71f8344cad6b9c93eb5ec7616b86f038d03e83ebf0f8c2de"
     },
     {
       "name": "security",
@@ -1005,6 +1011,12 @@
       "source_skill": "skills/swarm",
       "source_hash": "fe5abbc8873c805485273cc85d2d480c615f8f016fa14445f8c170bcfabd0fdf",
       "generated_hash": "6014e1965271b39d3d77781dbd0ba25c4b147676937fb67092c8fcab11d2b7be"
+    },
+    {
+      "name": "system-tuning",
+      "source_skill": "skills/system-tuning",
+      "source_hash": "92a326df11ebac067b70ffa87ca24603b1549ad3bea72a17875e948a6249fb2e",
+      "generated_hash": "7492ea0393b18f688a2b5c211ff96ccdd93df86c3a3791c62ce8b4ff603edfc7"
     },
     {
       "name": "test",
