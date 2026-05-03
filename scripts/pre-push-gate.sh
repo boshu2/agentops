@@ -271,6 +271,33 @@ collect_all_changed() {
     esac
 }
 
+select_fast_eval_suites() {
+    local changed="$1"
+    local path
+    local source_count=0
+    local suite_paths=()
+
+    while IFS= read -r path; do
+        [[ -n "$path" ]] || continue
+        case "$path" in
+            .agents/*|.beads/*)
+                continue
+                ;;
+        esac
+        source_count=$((source_count + 1))
+        if [[ "$path" =~ ^evals/agentops-core/[^/]+\.json$ && -f "$path" ]]; then
+            suite_paths+=("$path")
+        else
+            return 1
+        fi
+    done <<<"$changed"
+
+    [[ "$source_count" -gt 0 && "${#suite_paths[@]}" -gt 0 ]] || return 1
+    for path in "${suite_paths[@]}"; do
+        printf '%s\n' "$path"
+    done
+}
+
 # --- Fast mode: detect changed file categories ---
 HAS_GO=1
 HAS_SKILL=1
@@ -987,6 +1014,15 @@ fi
 if [[ "$run_eval_canaries" == "true" ]]; then
     if [[ -x scripts/eval-agentops.sh ]]; then
         eval_args=(--fast)
+        if [[ "$FAST_MODE" == "true" ]] && ! truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+            selected_eval_suites="$(select_fast_eval_suites "$all_changed" || true)"
+            if [[ -n "$selected_eval_suites" ]]; then
+                while IFS= read -r suite_path; do
+                    [[ -n "$suite_path" ]] || continue
+                    eval_args+=(--suite "$suite_path")
+                done <<<"$selected_eval_suites"
+            fi
+        fi
         eval_is_advisory=false
         if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env && ! truthy "${PRE_PUSH_STRICT_EVAL:-0}"; then
             eval_args+=(--advisory)

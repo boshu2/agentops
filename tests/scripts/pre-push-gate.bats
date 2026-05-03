@@ -92,6 +92,7 @@ setup() {
     # Symmetric per f-2026-04-27-002: stub the new lint so the fake repo
     # exercises the same diff-conditional branch the real gate runs.
     make_stub "$FAKE_REPO/scripts/check-test-home-isolation.sh"
+    make_eval_baseline_audit_stub
 }
 
 teardown() {
@@ -129,6 +130,18 @@ case "${1:-}" in
 esac
 STUB
     chmod +x "$path"
+}
+
+make_eval_baseline_audit_stub() {
+    cat > "$MOCK_BIN/ao" <<'AO'
+#!/usr/bin/env bash
+if [[ "$*" == "eval baseline-audit --root evals/agentops-core --json" ]]; then
+  echo '{"policy_mismatch_count":0,"stale_suite_hashes":[]}'
+  exit 0
+fi
+exit 0
+AO
+    chmod +x "$MOCK_BIN/ao"
 }
 
 @test "pre-push-gate.sh exists and is executable" {
@@ -746,6 +759,8 @@ GIT
 }
 
 @test "pre-push-gate.sh runs local fast eval canaries as advisory when requested" {
+    make_eval_baseline_audit_stub
+
     cat > "$MOCK_BIN/git" <<'GIT'
 #!/usr/bin/env bash
 if [[ "$*" == *"diff --name-only"* ]]; then echo "evals/agentops-core/example.json"; fi
@@ -769,6 +784,71 @@ EVAL
     [[ "$output" == *"WARN"*"AgentOps eval canaries (advisory)"* ]]
     run grep -q -- '--advisory' "$BATS_TEST_TMPDIR/eval-args.txt"
     [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh limits local fast eval canaries to changed suite files" {
+    make_eval_baseline_audit_stub
+
+    mkdir -p "$FAKE_REPO/evals/agentops-core"
+    touch "$FAKE_REPO/evals/agentops-core/context-packet-ab-wave0.json"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then
+  echo "evals/agentops-core/context-packet-ab-wave0.json"
+  echo ".beads/issues.jsonl"
+fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$BATS_TEST_TMPDIR/eval-args.txt"
+exit 0
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"AgentOps eval canaries"* ]]
+    run grep -q -- '--suite evals/agentops-core/context-packet-ab-wave0.json' "$BATS_TEST_TMPDIR/eval-args.txt"
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh keeps broad local fast eval canaries for mixed eval changes" {
+    make_eval_baseline_audit_stub
+
+    mkdir -p "$FAKE_REPO/evals/agentops-core"
+    touch "$FAKE_REPO/evals/agentops-core/context-packet-ab-wave0.json"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then
+  echo "evals/agentops-core/context-packet-ab-wave0.json"
+  echo "scripts/eval-agentops.sh"
+fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$BATS_TEST_TMPDIR/eval-args.txt"
+exit 0
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    run grep -q -- '--suite' "$BATS_TEST_TMPDIR/eval-args.txt"
+    [ "$status" -eq 1 ]
 }
 
 @test "pre-push-gate.sh blocks local fast eval canaries in strict mode" {
