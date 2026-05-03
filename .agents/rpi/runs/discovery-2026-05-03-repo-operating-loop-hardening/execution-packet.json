@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "run_id": "discovery-2026-05-03-repo-operating-loop-hardening",
+  "objective": "Plan hardening for validation mutation, Codex hook install parity, .agents policy, canonical root cleanliness, release audit artifact scoping, and bd/Dolt boundedness.",
+  "epic_id": "soc-0qz1",
+  "plan_path": ".agents/plans/2026-05-03-repo-operating-loop-hardening.md",
+  "research_path": ".agents/research/2026-05-03-repo-operating-loop-hardening.md",
+  "design_path": ".agents/design/2026-05-03-design-repo-operating-loop-hardening.md",
+  "pre_mortem_path": ".agents/pre-mortem/2026-05-03-repo-operating-loop-hardening.md",
+  "contract_surfaces": [
+    "docs/contracts/agents-write-surfaces.md",
+    "docs/contracts/repo-execution-profile.md",
+    "docs/contracts/repo-execution-profile.json",
+    "hooks/codex-hooks.json",
+    "docs/runbooks/bd-server-mode-closeout.md"
+  ],
+  "primary_issues": [
+    "soc-0qz1.2",
+    "soc-0qz1.8",
+    "soc-0qz1.4",
+    "soc-0qz1.6",
+    "soc-0qz1.3",
+    "soc-0qz1.5",
+    "soc-0qz1.7"
+  ],
+  "related_existing_issues": [
+    "soc-eh1z",
+    "soc-ff2p.4",
+    "soc-owed.7"
+  ],
+  "validation_commands": [
+    "bats tests/scripts/check-agents-write-surfaces.bats",
+    "bash scripts/check-agents-write-surfaces.sh",
+    "bash scripts/check-contract-compatibility.sh",
+    "bash tests/scripts/test-codex-plugin-install.sh",
+    "bats tests/hooks/hook-stdin-contracts.bats",
+    "bats tests/scripts/release-artifacts.bats",
+    "bash tests/scripts/test-worktree-disposition.sh",
+    "bash scripts/validate-bd-closeout-contract.sh",
+    "scripts/pre-push-gate.sh --fast --scope worktree"
+  ],
+  "tracker_mode": "beads",
+  "tracker_health": {
+    "healthy": false,
+    "mode": "beads",
+    "reason": "bd commands worked but one create emitted JSON and then timed out under gtimeout; plan includes soc-0qz1.7 to bound this behavior."
+  },
+  "done_criteria": [
+    "Fast validation leaves tracked .agents knowledge stable by default.",
+    "Installed Codex hooks source their helpers correctly from plugin cache.",
+    "Repo-local .agents lifecycle classifications are documented and enforced.",
+    "Canonical root dirty state is classified into generated, tracked-policy, user/operator edit, or unknown categories.",
+    "Release audit validation scopes historical local artifacts without weakening official target-release checks.",
+    "bd/Dolt closeout commands have portable timeout guidance and preserve emitted JSON on timeout."
+  ],
+  "complexity": "full",
+  "pre_mortem_verdict": "WARN",
+  "test_levels": {
+    "required": [
+      "L0",
+      "L1",
+      "L2"
+    ],
+    "recommended": [
+      "L3"
+    ],
+    "rationale": "The initiative spans shell gates, install packaging, hook execution, Git/worktree behavior, release artifacts, docs contracts, and tracker behavior. Installed-plugin and closeout flows should get system-level proof."
+  },
+  "discovery_timestamp": "2026-05-03T13:10:00Z"
+}
