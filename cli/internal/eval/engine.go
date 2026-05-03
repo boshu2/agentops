@@ -77,7 +77,7 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 		Verdict:         verdict,
 		Git:             collectGitRecord(workDir),
 		Runtime:         runtimeRecord(runtimeName, *suite),
-		Environment:     environmentRecord(*suite),
+		Environment:     environmentRecord(*suite, suite.Environment.DisableHooks || opts.OverrideDisableHooks),
 		Baseline:        &BaselineRecord{Mode: BaselineModeNone},
 		CaseResults:     caseResults,
 		AggregateScore:  aggregate,
@@ -363,12 +363,13 @@ func runtimeRecord(name Runtime, suite Suite) RuntimeRecord {
 	}
 }
 
-func environmentRecord(suite Suite) EnvironmentRecord {
+func environmentRecord(suite Suite, disableHooks bool) EnvironmentRecord {
 	return EnvironmentRecord{
 		ScrubbedEnvPrefixes: scrubPrefixes(suite),
 		IsolatedHome:        suite.Environment.IsolateHome,
 		IsolatedCodexHome:   suite.Environment.IsolateCodexHome,
 		NetworkAccess:       networkAccess(suite),
+		HooksDisabled:       disableHooks,
 	}
 }
 

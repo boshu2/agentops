@@ -16,6 +16,8 @@ var (
 	evalRunID             string
 	evalRunRuntime        string
 	evalRunBaseline       string
+	evalRunBaselineMode   string
+	evalRunDeltaOut       string
 	evalCompareOutput     string
 	evalCompareMaxAgg     float64
 	evalCompareMaxDim     float64
@@ -53,13 +55,44 @@ var evalRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		run, err := aoeval.RunSuite(aoeval.RunOptions{
+		mode := aoeval.ABBaselineMode(evalRunBaselineMode)
+		if !aoeval.IsValidBaselineMode(string(mode)) {
+			return fmt.Errorf("invalid --baseline-mode %q (allowed: %s)", evalRunBaselineMode, strings.Join(aoeval.AllBaselineModes(), ", "))
+		}
+		baseOpts := aoeval.RunOptions{
 			SuitePath:    args[0],
 			RunID:        evalRunID,
 			Runtime:      runtimeName,
 			OutputPath:   evalRunOutput,
 			BaselinePath: evalRunBaseline,
-		})
+		}
+		if mode == aoeval.BaselineModeBoth {
+			scorecard, onRun, offRun, err := aoeval.RunBaselineAB(baseOpts)
+			if err != nil {
+				return err
+			}
+			if err := aoeval.WriteDeltaScorecard(scorecard, evalRunDeltaOut); err != nil {
+				return err
+			}
+			if GetOutput() == "json" {
+				return writeEvalJSON(cmd, scorecard)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"Eval baseline-AB %s: skill-on=%.4f (%s) skill-off=%.4f (%s) delta=%+.4f cases=%d\n",
+				scorecard.SuiteID,
+				onRun.AggregateScore, onRun.Status,
+				offRun.AggregateScore, offRun.Status,
+				scorecard.AggregateDelta,
+				len(scorecard.PerCase),
+			)
+			if evalRunDeltaOut != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Delta scorecard: %s\n", evalRunDeltaOut)
+			}
+			return nil
+		}
+		opts := baseOpts
+		opts.OverrideDisableHooks = (mode == aoeval.BaselineModeSkillOff)
+		run, err := aoeval.RunSuite(opts)
 		if err != nil {
 			return err
 		}
@@ -293,7 +326,10 @@ func configureEvalCommand() {
 	evalRunCmd.Flags().StringVar(&evalRunID, "run-id", "", "stable run id to use in the run record")
 	evalRunCmd.Flags().StringVar(&evalRunRuntime, "runtime", "", "deterministic runtime override (static, mock, shell)")
 	evalRunCmd.Flags().StringVar(&evalRunBaseline, "baseline", "", "compare the run against a baseline run record")
+	evalRunCmd.Flags().StringVar(&evalRunBaselineMode, "baseline-mode", string(aoeval.BaselineModeSkillOn), "skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard")
+	evalRunCmd.Flags().StringVar(&evalRunDeltaOut, "delta-out", "", "write delta scorecard JSON to path (only with --baseline-mode=both)")
 	_ = evalRunCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("static", "mock", "shell"))
+	_ = evalRunCmd.RegisterFlagCompletionFunc("baseline-mode", staticCompletionFunc(aoeval.AllBaselineModes()...))
 
 	evalCompareCmd.Flags().StringVar(&evalCompareOutput, "out", "", "write compared eval run record to path")
 	evalCompareCmd.Flags().Float64Var(&evalCompareMaxAgg, "max-aggregate-regression", 0, "allowed aggregate regression before verdict becomes regression")
