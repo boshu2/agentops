@@ -120,6 +120,36 @@ func TestRunDedup_NoDuplicates(t *testing.T) {
 	}
 }
 
+func TestRunDedup_JSONNoDirectories(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+
+	origOutput := output
+	output = "json"
+	defer func() { output = origOutput }()
+
+	r, w, _ := os.Pipe()
+	origStdout := os.Stdout
+	os.Stdout = w
+
+	err := runDedup(nil, nil)
+
+	_ = w.Close()
+	os.Stdout = origStdout
+
+	if err != nil {
+		t.Fatalf("runDedup returned error: %v", err)
+	}
+
+	var result DedupResult
+	if decErr := json.NewDecoder(r).Decode(&result); decErr != nil {
+		t.Fatalf("decoding JSON output: %v", decErr)
+	}
+	if result.TotalFiles != 0 || result.UniqueContent != 0 || result.DuplicateGroups != 0 || result.DuplicateFiles != 0 {
+		t.Fatalf("unexpected non-empty result: %+v", result)
+	}
+}
+
 func TestRunDedup_IncludesPatterns(t *testing.T) {
 	// Create temp directory with both learnings and patterns
 	tmp := t.TempDir()
