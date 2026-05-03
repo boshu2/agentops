@@ -117,6 +117,8 @@ The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is a **
 
 When the window closes green and the gate is promoted, update both this section and the AGENTS.md advisory table. Until then, retrieval-bench red is informational; do not block release on it.
 
+Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, and 39 are tracked in [`AGENTS.md` §DEFERRED CI Hardening](../AGENTS.md#deferred-ci-hardening-soc-mi17), including the promotion triggers that would move each item back to FIX scope.
+
 ### Blocking Gates (all others)
 
 Every other job is blocking. If any of these fail, `summary` exits non-zero and the PR/push is rejected.
