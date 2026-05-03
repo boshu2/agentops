@@ -328,8 +328,29 @@ for skill_dir in "${TARGETS[@]}"; do
   commands_md="$REPO_ROOT/cli/docs/COMMANDS.md"
   if [[ -f "$commands_md" ]]; then
     ao_cmds="$(
-      grep -E '^### `ao [^`]+`' "$commands_md" 2>/dev/null \
-        | sed -E 's/^### `ao ([^` ]+).*$/\1/' \
+      awk '
+        /^### `ao [^`]+`/ {
+          line=$0
+          sub(/^### `ao /, "", line)
+          sub(/`.*$/, "", line)
+          split(line, parts, " ")
+          print parts[1]
+          next
+        }
+        /^\*\*Aliases:\*\*/ {
+          in_aliases=1
+          next
+        }
+        in_aliases && /^[[:space:]]*[a-z][a-z,-]+/ {
+          gsub(/,/, " ")
+          for (i = 1; i <= NF; i++) print $i
+          in_aliases=0
+          next
+        }
+        in_aliases && /^### / {
+          in_aliases=0
+        }
+      ' "$commands_md" 2>/dev/null \
         | sort -u || true
     )"
   fi
