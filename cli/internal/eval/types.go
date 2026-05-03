@@ -90,6 +90,24 @@ const (
 	NetworkUnknown  NetworkAccess = "unknown"
 )
 
+type ContextVariant string
+
+const (
+	ContextVariantOff ContextVariant = "context_off"
+	ContextVariantOn  ContextVariant = "context_on"
+)
+
+type ContextAttribution string
+
+const (
+	ContextAttributionRetrieved    ContextAttribution = "retrieved"
+	ContextAttributionApplied      ContextAttribution = "applied"
+	ContextAttributionContradicted ContextAttribution = "contradicted"
+	ContextAttributionIgnored      ContextAttribution = "ignored"
+	ContextAttributionHelpful      ContextAttribution = "helpful"
+	ContextAttributionHarmful      ContextAttribution = "harmful"
+)
+
 type Suite struct {
 	SchemaVersion  int              `json:"schema_version"`
 	ID             string           `json:"id"`
@@ -260,6 +278,59 @@ type CaseResult struct {
 	Diagnostics     []string              `json:"diagnostics,omitempty"`
 }
 
+type ContextVariantRun struct {
+	Variant          ContextVariant `json:"variant"`
+	ContextRootLabel string         `json:"context_root_label"`
+	RunID            string         `json:"run_id"`
+	AggregateScore   float64        `json:"aggregate_score"`
+	Status           Status         `json:"status,omitempty"`
+}
+
+type ContextCaseVariantResult struct {
+	Variant          ContextVariant `json:"variant"`
+	ContextRootLabel string         `json:"context_root_label"`
+	RunID            string         `json:"run_id"`
+	Status           Status         `json:"status"`
+	Score            float64        `json:"score"`
+}
+
+type ContextEvidence struct {
+	Summary  string `json:"summary"`
+	Artifact string `json:"artifact,omitempty"`
+	Excerpt  string `json:"excerpt,omitempty"`
+}
+
+type ContextArtifactAttribution struct {
+	Artifact    string             `json:"artifact"`
+	Attribution ContextAttribution `json:"attribution"`
+	Evidence    string             `json:"evidence,omitempty"`
+}
+
+type ContextCaseDelta struct {
+	CaseID                 string                       `json:"case_id"`
+	ContextOff             ContextCaseVariantResult     `json:"context_off"`
+	ContextOn              ContextCaseVariantResult     `json:"context_on"`
+	ScoreDelta             float64                      `json:"score_delta"`
+	StatusDelta            int                          `json:"status_delta"`
+	TokenDelta             *int                         `json:"token_delta,omitempty"`
+	ToolCallDelta          *int                         `json:"tool_call_delta,omitempty"`
+	DecisionEvidence       []ContextEvidence            `json:"decision_evidence,omitempty"`
+	IgnoredContextEvidence []ContextEvidence            `json:"ignored_context_evidence,omitempty"`
+	DegradedReason         string                       `json:"degraded_reason,omitempty"`
+	ArtifactAttribution    []ContextArtifactAttribution `json:"artifact_attribution,omitempty"`
+}
+
+type ContextDeltaScorecard struct {
+	SchemaVersion  int                `json:"schema_version"`
+	SuiteID        string             `json:"suite_id"`
+	SuitePath      string             `json:"suite_path"`
+	GeneratedAt    time.Time          `json:"generated_at"`
+	ContextOff     ContextVariantRun  `json:"context_off"`
+	ContextOn      ContextVariantRun  `json:"context_on"`
+	AggregateDelta float64            `json:"aggregate_delta"`
+	PerCase        []ContextCaseDelta `json:"per_case"`
+}
+
 type RunRecord struct {
 	SchemaVersion      int                   `json:"schema_version"`
 	RunID              string                `json:"run_id"`
@@ -288,6 +359,10 @@ type RunOptions struct {
 	BaselinePath string
 	WorkDir      string
 	Now          func() time.Time
+	// Env injects run-scoped variables into deterministic command cases.
+	// Context A/B uses this to set AO_AGENTS_DIR per leg without mutating
+	// process-global environment.
+	Env map[string]string
 	// OverrideDisableHooks forces the run to behave as if the loaded suite
 	// declared Environment.DisableHooks=true, without mutating the suite
 	// file. Used by RunBaselineAB to pair a single suite into skill-on and

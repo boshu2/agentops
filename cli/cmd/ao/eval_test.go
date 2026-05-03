@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,6 +56,125 @@ func TestEvalRunCommandJSON(t *testing.T) {
 	}
 	if run.RunID != "cmd-pass" || run.Status != aoeval.StatusPass {
 		t.Fatalf("run_id/status = %q/%s, want cmd-pass/pass", run.RunID, run.Status)
+	}
+}
+
+func TestEvalRunContextModeABCommandJSON(t *testing.T) {
+	if os.Getenv("GO_WANT_EVAL_CMD_CONTEXT_HELPER_PROCESS") == "1" {
+		root := os.Getenv("AO_AGENTS_DIR")
+		variant := os.Getenv("AO_CONTEXT_VARIANT")
+		data, err := os.ReadFile(filepath.Join(root, "variant.txt"))
+		if err != nil {
+			os.Exit(1)
+		}
+		ok := string(data) == variant+"\n" && os.Getenv("AGENTOPS_HOOKS_DISABLED") != "1"
+		if ok {
+			fmt.Fprintf(os.Stdout, `{"ok":true,"variant":%q}`, variant)
+			os.Exit(0)
+		}
+		fmt.Fprintf(os.Stdout, `{"ok":false,"variant":%q}`, variant)
+		os.Exit(1)
+	}
+
+	withEvalCommand(t)
+	dir := t.TempDir()
+	writeEvalCmdFile(t, filepath.Join(dir, "fixtures", "context-ab", "context-off", "agents", "variant.txt"), string(aoeval.ContextVariantOff)+"\n")
+	writeEvalCmdFile(t, filepath.Join(dir, "fixtures", "context-ab", "context-on", "agents", "variant.txt"), string(aoeval.ContextVariantOn)+"\n")
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+	suitePath := writeEvalCmdSuiteNamed(t, dir, "context-ab.json", fmt.Sprintf(`{
+  "schema_version": 1,
+  "id": "context.ab.cmd",
+  "name": "Context AB command",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "agents-dir",
+      "title": "agents dir is isolated per context leg",
+      "kind": "command",
+      "objective": "Verify context-mode runs with isolated AO_AGENTS_DIR roots.",
+      "runtime": "shell",
+      "inputs": {
+        "argv": [%q, "-test.run=TestEvalRunContextModeABCommandJSON"],
+        "env": {"GO_WANT_EVAL_CMD_CONTEXT_HELPER_PROCESS": "1"}
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.ok", "value": true}
+      ]
+    }
+  ]
+}`, exe))
+	outputPath := filepath.Join(dir, "run.json")
+
+	out, err := executeCommand("eval", "run", suitePath, "--context-mode", "ab", "--run-id", "cmd-context", "--out", outputPath, "--json")
+	if err != nil {
+		t.Fatalf("ao eval run --context-mode=ab failed: %v\noutput: %s", err, out)
+	}
+	var scorecard aoeval.ContextDeltaScorecard
+	if err := json.Unmarshal([]byte(out), &scorecard); err != nil {
+		t.Fatalf("context scorecard JSON parse failed: %v\noutput: %s", err, out)
+	}
+	if scorecard.ContextOff.RunID != "cmd-context-context-off" || scorecard.ContextOn.RunID != "cmd-context-context-on" {
+		t.Fatalf("run ids = off:%q on:%q", scorecard.ContextOff.RunID, scorecard.ContextOn.RunID)
+	}
+	for _, path := range []string{
+		filepath.Join(dir, "run-context-off.json"),
+		filepath.Join(dir, "run-context-on.json"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected context leg output %s: %v", path, err)
+		}
+	}
+}
+
+func TestEvalRunContextModeRejectsSkillOffBaseline(t *testing.T) {
+	withEvalCommand(t)
+	dir := t.TempDir()
+	suitePath := writeEvalCmdSuite(t, dir, `{
+  "schema_version": 1,
+  "id": "context.reject",
+  "name": "Context reject",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "static",
+      "title": "static",
+      "kind": "artifact_check",
+      "objective": "static",
+      "expectations": [
+        {"type": "file_exists", "target": "suite.json"}
+      ]
+    }
+  ]
+}`)
+
+	out, err := executeCommand("eval", "run", suitePath, "--context-mode", "ab", "--baseline-mode", "skill-off")
+	if err == nil {
+		t.Fatalf("ao eval run accepted incompatible context/baseline modes; output: %s", out)
+	}
+	if !strings.Contains(out, "--context-mode=ab cannot be combined") {
+		t.Fatalf("unexpected error output: %s", out)
 	}
 }
 
@@ -571,7 +691,12 @@ func TestEvalTaskRunDryRunCommand(t *testing.T) {
 
 func writeEvalCmdSuite(t *testing.T, dir, body string) string {
 	t.Helper()
-	path := filepath.Join(dir, "suite.json")
+	return writeEvalCmdSuiteNamed(t, dir, "suite.json", body)
+}
+
+func writeEvalCmdSuiteNamed(t *testing.T, dir, name, body string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
 	writeEvalCmdFile(t, path, body)
 	return path
 }
@@ -724,7 +849,20 @@ func fixedEvalCmdTime() time.Time {
 
 func withEvalCommand(t *testing.T) {
 	t.Helper()
+	resetEvalRunGlobals()
 	registerEvalCommand()
+}
+
+func resetEvalRunGlobals() {
+	evalRunOutput = ""
+	evalRunID = ""
+	evalRunRuntime = ""
+	evalRunBaseline = ""
+	evalRunBaselineMode = string(aoeval.BaselineModeSkillOn)
+	evalRunContextMode = string(aoeval.ContextModeNone)
+	evalRunContextOffDir = ""
+	evalRunContextOnDir = ""
+	evalRunDeltaOut = ""
 }
 
 func writeEvalSubManifest(t *testing.T, root, runID string, status evalsub.RunStatus, started time.Time) {

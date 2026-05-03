@@ -1223,13 +1223,16 @@ ao eval run <suite.json> [flags]
 **Flags:**
 
 ```
-      --baseline string        compare the run against a baseline run record
-      --baseline-mode string   skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard (default "skill-on")
-      --delta-out string       write delta scorecard JSON to path (only with --baseline-mode=both)
-  -h, --help                   help for run
-      --out string             write eval run record to path
-      --run-id string          stable run id to use in the run record
-      --runtime string         deterministic runtime override (static, mock, shell)
+      --baseline string                 compare the run against a baseline run record
+      --baseline-mode string            skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard (default "skill-on")
+      --context-mode string             none | ab — run context-off/context-on legs over isolated AO_AGENTS_DIR roots (default "none")
+      --context-off-agents-dir string   AO_AGENTS_DIR root for the context-off leg (defaults to suite fixtures)
+      --context-on-agents-dir string    AO_AGENTS_DIR root for the context-on leg (defaults to suite fixtures)
+      --delta-out string                write delta scorecard JSON to path (with --baseline-mode=both or --context-mode=ab)
+  -h, --help                            help for run
+      --out string                      write eval run record to path
+      --run-id string                   stable run id to use in the run record
+      --runtime string                  deterministic runtime override (static, mock, shell)
 ```
 
 #### `ao eval scorecard`

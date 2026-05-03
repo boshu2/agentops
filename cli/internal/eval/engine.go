@@ -57,9 +57,10 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	}
 
 	suiteDir := filepath.Dir(opts.SuitePath)
+	runEnv := cloneStringMap(opts.Env)
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
-		caseResults = append(caseResults, runCase(*suite, suiteDir, evalCase))
+		caseResults = append(caseResults, runCase(*suite, suiteDir, evalCase, runEnv))
 	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)
 	status := runStatus(*suite, caseResults, aggregate, dimensions)
@@ -114,7 +115,7 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	return record, nil
 }
 
-func runCase(suite Suite, suiteDir string, evalCase Case) CaseResult {
+func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
 	start := time.Now()
 	ctx := caseContext{
 		suite:    &suite,
@@ -123,7 +124,7 @@ func runCase(suite Suite, suiteDir string, evalCase Case) CaseResult {
 		exitCode: 0,
 	}
 	if evalCase.Kind == "command" {
-		output, err := executeCaseCommand(suite, suiteDir, evalCase)
+		output, err := executeCaseCommand(suite, suiteDir, evalCase, runEnv)
 		ctx.stdout = output.stdout
 		ctx.stderr = output.stderr
 		ctx.exitCode = output.exitCode
@@ -187,7 +188,7 @@ type commandOutput struct {
 	infrastructureError bool
 }
 
-func executeCaseCommand(suite Suite, suiteDir string, evalCase Case) (commandOutput, error) {
+func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
 	spec, err := commandSpecFromInputs(evalCase.Inputs)
 	if err != nil {
 		return commandOutput{exitCode: -1, infrastructureError: true}, err
@@ -213,7 +214,7 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case) (commandOut
 	} else {
 		cmd.Dir = suiteDir
 	}
-	cmd.Env = applyCommandEnv(scrubbedEnv(os.Environ(), scrubPrefixes(suite)), spec.env)
+	cmd.Env = applyCommandEnv(scrubbedEnv(os.Environ(), scrubPrefixes(suite)), mergeStringMaps(spec.env, runEnv))
 	if suite.Environment.DisableHooks {
 		cmd.Env = append(cmd.Env, "AGENTOPS_HOOKS_DISABLED=1")
 	}
@@ -504,6 +505,28 @@ func applyCommandEnv(env []string, overrides map[string]string) []string {
 		filtered = append(filtered, key+"="+overrides[key])
 	}
 	return filtered
+}
+
+func cloneStringMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
+
+func mergeStringMaps(base map[string]string, override map[string]string) map[string]string {
+	if len(base) == 0 {
+		return cloneStringMap(override)
+	}
+	out := cloneStringMap(base)
+	for key, value := range override {
+		out[key] = value
+	}
+	return out
 }
 
 func inputString(inputs map[string]any, key string) string {

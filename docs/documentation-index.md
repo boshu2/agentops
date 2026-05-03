@@ -216,6 +216,7 @@
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
 - [Eval Baseline-A/B Contract](contracts/eval-baseline-ab.md) — `ao eval run --baseline-mode` semantics, `DeltaScorecard` schema, hook-suppression scope
+- [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
