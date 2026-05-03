@@ -117,6 +117,7 @@ type SuiteEnvironment struct {
 	IsolateCodexHome bool     `json:"isolate_codex_home,omitempty"`
 	TimeoutSeconds   int      `json:"timeout_seconds,omitempty"`
 	MaxAttempts      int      `json:"max_attempts,omitempty"`
+	DisableHooks     bool     `json:"disable_hooks,omitempty"`
 }
 
 type Fixture struct {
