@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "policy_id": "bad-gascity",
+  "default_lane": "frontier-codex",
+  "max_total_concurrency": 2,
+  "manual_merge_by_default": true,
+  "lanes": [
+    {
+      "id": "frontier-codex",
+      "enabled": true,
+      "authority": "DELEGATED",
+      "provider": "openai",
+      "runtime": "codex",
+      "model": "frontier-default",
+      "task_classes": ["docs_change"],
+      "max_concurrency": 1
+    },
+    {
+      "id": "gascity-production",
+      "enabled": true,
+      "authority": "DELEGATED",
+      "provider": "gascity",
+      "runtime": "mt-olympus",
+      "model": "provider-selected",
+      "task_classes": ["code_change"],
+      "max_concurrency": 1
+    }
+  ]
+}

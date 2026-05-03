@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/routing-policy.v1.schema.json",
+  "title": "AgentOps Routing Policy",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "policy_id",
+    "default_lane",
+    "max_total_concurrency",
+    "manual_merge_by_default",
+    "lanes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "default_lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "max_total_concurrency": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "manual_merge_by_default": {
+      "const": true
+    },
+    "lanes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/lane"
+      }
+    }
+  },
+  "$defs": {
+    "lane": {
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "authority",
+        "provider",
+        "runtime",
+        "model",
+        "task_classes",
+        "max_concurrency"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "authority": {
+          "type": "string",
+          "enum": ["OBSERVE", "ADVISORY", "DELEGATED", "AUTHORITATIVE"]
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_classes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_hint_usd_per_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "latency_hint": {
+          "type": "string"
+        },
+        "quality_prior": {
+          "type": "string"
+        },
+        "yield_gate": {
+          "$ref": "#/$defs/yield_gate"
+        },
+        "promotion_gate": {
+          "$ref": "#/$defs/promotion_gate"
+        },
+        "disabled_reason": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            },
+            "required": ["enabled"]
+          },
+          "then": {
+            "properties": {
+              "max_concurrency": {
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": false
+              }
+            },
+            "required": ["enabled"]
+          },
+          "then": {
+            "required": ["disabled_reason"],
+            "properties": {
+              "disabled_reason": {
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "allOf": [
+              {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                },
+                "required": ["enabled"]
+              },
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "provider": {
+                        "const": "gascity"
+                      }
+                    },
+                    "required": ["provider"]
+                  },
+                  {
+                    "properties": {
+                      "runtime": {
+                        "const": "mt-olympus"
+                      }
+                    },
+                    "required": ["runtime"]
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "task_classes": {
+                    "contains": {
+                      "enum": [
+                        "code_change",
+                        "test_repair",
+                        "docs_change",
+                        "merge_decision"
+                      ]
+                    }
+                  }
+                },
+                "required": ["task_classes"]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "yield_gate": {
+      "type": "object",
+      "required": ["min_accepted_patches_per_hour", "min_sample_size"],
+      "additionalProperties": false,
+      "properties": {
+        "min_accepted_patches_per_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "min_sample_size": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "promotion_gate": {
+      "type": "object",
+      "required": ["requires_yield_evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "requires_yield_evidence": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

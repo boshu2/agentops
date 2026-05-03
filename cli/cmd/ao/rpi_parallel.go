@@ -18,6 +18,7 @@ import (
 var (
 	parallelManifest     string
 	parallelMergeOrder   string
+	parallelAutoMerge    bool
 	parallelNoMerge      bool
 	parallelGateScript   string
 	parallelRuntimeCmd   string
@@ -58,16 +59,23 @@ type worktreeInfo struct {
 func init() {
 	parallelCmd := &cobra.Command{
 		Use:   "parallel [goals...]",
-		Short: "Run N RPI epics in parallel worktrees",
+		Short: "Run legacy RPI epics in parallel worktrees",
 		Long: `Run multiple RPI epics concurrently, each in an isolated git worktree.
+
+Compatibility-only legacy command. Do not use this as the production
+agentopsd control-plane path. Production parallel coding work must go through
+daemon-managed worker slots, routing policy, validation gates, and manual merge
+review.
 
 Each epic gets:
   - Its own git worktree (branch: epic/<name>)
   - A fresh ao rpi phased session
   - Isolated file changes (no conflicts during execution)
 
-After all epics complete, worktrees are merged back to the base branch
-in the specified order. A validation gate runs after all merges.
+By default this command preserves worker branches and worktrees for manual
+review. Passing --auto-merge opts into the older behavior: successful branches
+are merged back to the base branch in the specified order, then an optional
+validation gate runs after all merges. Failed worktrees are retained.
 
 Input: either a manifest file (--manifest) or inline goals as arguments.
 
@@ -79,7 +87,10 @@ Examples:
   ao rpi parallel --manifest epics.json
 
   # Skip auto-merge (leave worktrees for manual review)
-  ao rpi parallel --no-merge "goal 1" "goal 2"
+  ao rpi parallel "goal 1" "goal 2"
+
+  # Compatibility mode: explicitly opt in to legacy auto-merge behavior
+  ao rpi parallel --auto-merge --manifest epics.json
 
 Manifest format (JSON):
   {
@@ -94,7 +105,8 @@ Manifest format (JSON):
 
 	parallelCmd.Flags().StringVar(&parallelManifest, "manifest", "", "Path to epic manifest file (JSON)")
 	parallelCmd.Flags().StringVar(&parallelMergeOrder, "merge-order", "", "Comma-separated epic names for merge order (default: manifest order or arg order)")
-	parallelCmd.Flags().BoolVar(&parallelNoMerge, "no-merge", false, "Skip auto-merge (leave worktrees for manual review)")
+	parallelCmd.Flags().BoolVar(&parallelAutoMerge, "auto-merge", false, "Opt in to legacy merge/cleanup after successful epics")
+	parallelCmd.Flags().BoolVar(&parallelNoMerge, "no-merge", false, "Compatibility alias for the default preserve-for-review behavior")
 	parallelCmd.Flags().StringVar(&parallelGateScript, "gate-script", "", "Validation script to run after all merges (e.g., scripts/ci-local-release.sh)")
 	parallelCmd.Flags().StringVar(&parallelRuntimeCmd, "runtime-cmd", "", "Runtime command for phased sessions (default: claude)")
 	parallelCmd.Flags().DurationVar(&parallelPhaseTimeout, "phase-timeout", 90*time.Minute, "Timeout per epic (kills subprocess if exceeded)")
@@ -104,6 +116,10 @@ Manifest format (JSON):
 }
 
 func runRPIParallel(cmd *cobra.Command, args []string) error {
+	shouldMerge, err := parallelShouldAutoMerge()
+	if err != nil {
+		return err
+	}
 	epics, baseCwd, runtimeCmd, err := validateParallelPrereqs(args)
 	if err != nil {
 		return err
@@ -111,6 +127,11 @@ func runRPIParallel(cmd *cobra.Command, args []string) error {
 
 	if GetDryRun() {
 		fmt.Printf("DRY RUN: would run %d epics in parallel worktrees\n", len(epics))
+		if shouldMerge {
+			fmt.Println("DRY RUN: --auto-merge requested; successful branches would be merged after completion")
+		} else {
+			fmt.Println("DRY RUN: worktrees would be preserved for manual review")
+		}
 		for i, e := range epics {
 			fmt.Printf("  [%d] %s: %s\n", i+1, e.Name, truncateGoal(e.Goal, 80))
 		}
@@ -141,8 +162,8 @@ func runRPIParallel(cmd *cobra.Command, args []string) error {
 
 	allSuccess := reportParallelResults(results, epics, parallelTmux, tmuxSession, tmuxCmd)
 
-	if parallelNoMerge {
-		fmt.Println("--no-merge: worktrees left in place for manual review:")
+	if !shouldMerge {
+		fmt.Println("Manual merge required: worktrees left in place for review:")
 		for i, wt := range worktrees {
 			fmt.Printf("  %s: %s (branch: %s)\n", epics[i].Name, wt.path, wt.branch)
 		}
@@ -171,10 +192,12 @@ func runRPIParallel(cmd *cobra.Command, args []string) error {
 // cleanupParallelWorktrees removes worktrees and deletes branches for successful epics.
 func cleanupParallelWorktrees(worktrees []worktreeInfo, results []parallelResult) {
 	for i, wt := range worktrees {
-		_ = exec.Command("git", "worktree", "remove", "--force", wt.path).Run()
-		if results[i].Success {
-			_ = exec.Command("git", "branch", "-d", wt.branch).Run()
+		if i >= len(results) || !results[i].Success {
+			fmt.Printf("PRESERVE failed worktree: %s (branch: %s)\n", wt.path, wt.branch)
+			continue
 		}
+		_ = exec.Command("git", "worktree", "remove", "--force", wt.path).Run()
+		_ = exec.Command("git", "branch", "-d", wt.branch).Run()
 	}
 }
 
@@ -225,6 +248,13 @@ func validateParallelPrereqs(args []string) ([]parallelEpic, string, string, err
 	return epics, baseCwd, runtimeCmd, nil
 }
 
+func parallelShouldAutoMerge() (bool, error) {
+	if parallelAutoMerge && parallelNoMerge {
+		return false, fmt.Errorf("--auto-merge and --no-merge cannot be used together")
+	}
+	return parallelAutoMerge && !parallelNoMerge, nil
+}
+
 func parallelWorktreeRoot(baseCwd, runtimeCmd string) string {
 	return cliRPI.ParallelWorktreeRoot(baseCwd, runtimeCmd)
 }
@@ -238,10 +268,14 @@ func createParallelWorktrees(baseCwd string, epics []parallelEpic, runtimeCmd st
 		branch := "epic/" + e.Name
 		wtPath := filepath.Join(worktreeRoot, e.Name)
 
-		// Clean up stale worktree if it exists.
-		_ = exec.Command("git", "worktree", "remove", "--force", wtPath).Run()
-		// Clean up stale branch if it exists.
-		_ = exec.Command("git", "branch", "-D", branch).Run()
+		if exists, err := pathExists(wtPath); err != nil {
+			return nil, fmt.Errorf("inspect worktree path for %s: %w", e.Name, err)
+		} else if exists {
+			return nil, fmt.Errorf("refusing to remove existing worktree path for %s: %s", e.Name, wtPath)
+		}
+		if branchExists(branch) {
+			return nil, fmt.Errorf("refusing to delete existing branch for %s: %s", e.Name, branch)
+		}
 
 		out, err := exec.Command("git", "worktree", "add", "-b", branch, wtPath).CombinedOutput()
 		if err != nil {
@@ -257,6 +291,20 @@ func createParallelWorktrees(baseCwd string, epics []parallelEpic, runtimeCmd st
 	}
 	fmt.Println()
 	return worktrees, nil
+}
+
+func pathExists(path string) (bool, error) {
+	if _, err := os.Stat(path); err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
+func branchExists(branch string) bool {
+	return exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch).Run() == nil
 }
 
 // setupTmuxSession sets up a tmux session for parallel epic visibility.
