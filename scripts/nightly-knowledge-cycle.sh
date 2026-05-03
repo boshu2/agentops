@@ -5,10 +5,11 @@
 # Purpose:
 #   1. Provide a single corpus-empty precondition check used by every nightly
 #      knowledge-cycle gate (compile health, dream-cycle proof, Athena follow-up).
-#      Implements f-2026-04-30-002: when the upstream corpus has zero citation
-#      activity in the measurement window AND total_artifacts > 0, return SKIP
-#      with reason "corpus-dormant" rather than FAIL. This stops three separate
-#      jobs from going spuriously red on the same dormant-corpus condition.
+#      Implements f-2026-04-30-002: when the upstream corpus is empty, return
+#      SKIP with reason "corpus-empty"; when it has artifacts but zero citation
+#      activity in the measurement window, return SKIP with reason
+#      "corpus-dormant" rather than FAIL. This stops three separate jobs from
+#      going spuriously red on the same unavailable-corpus condition.
 #
 #   2. Emit a single consolidated triage artifact (nightly-knowledge-cycle/
 #      triage.json + triage.md) so on-call reads one log per nightly, not three.
@@ -100,9 +101,12 @@ cmd_precondition() {
 
   # Capture metrics report. Tolerate non-zero exit (treat as RUN with warning)
   # because a metrics-report failure is itself signal worth running the cycle on.
-  local metrics_json
+  local metrics_json metrics_status
   if ! metrics_json="$("$ao" metrics report --json 2>/dev/null)"; then
     metrics_json='{}'
+    metrics_status="unavailable"
+  else
+    metrics_status="ok"
   fi
 
   local total_artifacts citations_in_window
@@ -117,7 +121,14 @@ cmd_precondition() {
   if [[ "${NIGHTLY_KNOWLEDGE_CYCLE_FORCE:-0}" == "1" ]]; then
     decision="RUN"
     reason="forced via NIGHTLY_KNOWLEDGE_CYCLE_FORCE=1"
-  elif (( citations_in_window == 0 && total_artifacts > 0 )); then
+  elif [[ "$metrics_status" != "ok" ]]; then
+    decision="RUN"
+    reason="metrics-report-unavailable: ao metrics report failed; running nightly knowledge-cycle for diagnostic signal"
+  elif (( total_artifacts == 0 )); then
+    # f-2026-04-30-002 corpus-empty precondition.
+    decision="SKIP"
+    reason="corpus-empty: total_artifacts=0; no checked-in corpus is available for nightly knowledge-cycle work"
+  elif (( citations_in_window == 0 )); then
     # f-2026-04-30-002 corpus-dormant precondition.
     decision="SKIP"
     reason="corpus-dormant: total_citations_in_window=0 with total_artifacts=${total_artifacts}; gate cannot be moved by single-session work"
@@ -130,6 +141,7 @@ cmd_precondition() {
     --arg generated_at "$generated_at" \
     --arg decision "$decision" \
     --arg reason "$reason" \
+    --arg metrics_status "$metrics_status" \
     --argjson total_artifacts "$total_artifacts" \
     --argjson citations_in_window "$citations_in_window" \
     '{
@@ -139,6 +151,7 @@ cmd_precondition() {
       precondition: {
         total_artifacts: $total_artifacts,
         citations_in_window: $citations_in_window,
+        metrics_status: $metrics_status,
         finding: "f-2026-04-30-002"
       },
       stages: []
@@ -152,7 +165,8 @@ cmd_precondition() {
     echo "- Reason: ${reason}"
     echo "- total_artifacts: ${total_artifacts}"
     echo "- citations_in_window: ${citations_in_window}"
-    echo "- Finding: \`f-2026-04-30-002\` (corpus-dormant precondition)"
+    echo "- metrics_status: ${metrics_status}"
+    echo "- Finding: \`f-2026-04-30-002\` (corpus availability precondition)"
     echo ""
     echo "### Stages"
     echo ""
