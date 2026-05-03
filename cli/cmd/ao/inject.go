@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/search"
+	"github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 const (
@@ -428,9 +429,10 @@ func writePredecessorSection(sb *strings.Builder, pred *predecessorContext) {
 	search.WritePredecessorSection(sb, pred)
 }
 
-// Thin wrappers — canonical definitions in internal/search/util.go.
+// Thin wrappers — canonical definitions in internal/search/util.go and
+// internal/types/quest/atomic.go.
 func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
-	return search.AtomicWriteFile(path, data, perm)
+	return quest.AtomicWriteFileWithPerm(path, data, perm)
 }
 func truncateText(s string, maxLen int) string { return search.TruncateText(s, maxLen) }
 
