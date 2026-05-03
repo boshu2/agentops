@@ -141,4 +141,4 @@ Run reports go to `.agents/system-tuning/YYYY-MM-DD-triage.md`. Each report incl
 
 ## Attribution
 
-Methodology pattern-adopted from the jsm `system-performance-remediation` skill. See [LICENSE.md](LICENSE.md) for details. No source text reused.
+Methodology pattern-adopted from the jsm `system-performance-remediation` skill. See `LICENSE.md` in this skill directory for full attribution. No source text reused.

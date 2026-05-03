@@ -1015,8 +1015,8 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "92a326df11ebac067b70ffa87ca24603b1549ad3bea72a17875e948a6249fb2e",
-      "generated_hash": "7492ea0393b18f688a2b5c211ff96ccdd93df86c3a3791c62ce8b4ff603edfc7"
+      "source_hash": "2d8a54fcbd58ecccdb0c16a08e87a5369b8a57597167d928a25efbec28b766df",
+      "generated_hash": "f5699f83ee7d5cb7845c0f5a46f69a74ea5f22b79fc4244c33d03f2a93698178"
     },
     {
       "name": "test",
