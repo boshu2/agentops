@@ -30,7 +30,7 @@ Validation delegates to `/vibe`, `/post-mortem`, `/retro`, and `/forge` (plus li
 
 **Anti-pattern to reject:** spawning judges via `Agent()` in place of `/vibe`, inlining post-mortem analysis, skipping `/forge`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract and supported compression escapes (`--quick`, `--no-retro`, `--no-forge`, `--no-lifecycle`, `--no-behavioral`, `--allow-critical-deps`).
 
-See [`.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md`](../../.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md) for the live compression signature.
+See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
 
 ## DAG — Execute This Sequentially
 

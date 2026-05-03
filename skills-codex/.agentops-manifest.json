@@ -710,7 +710,7 @@
       "name": "discovery",
       "source_skill": "skills/discovery",
       "source_hash": "a1bbd35f1ac413208e7a8090495f41f34e6b793f18a8d4e5cc30d9029631f4e6",
-      "generated_hash": "0c28e910ce1df864901a79e508b3f938bf70a0c84c12181105dc16fb708cd67c"
+      "generated_hash": "c8fabfac00e04d4200a9072c04e46eaeb28e38ffb66b3b340bb58f1dadbce288"
     },
     {
       "name": "dream",
@@ -986,7 +986,7 @@
       "name": "shared",
       "source_skill": "skills/shared",
       "source_hash": "3955166ea6cde6ec5d09e4d8a7f11a7c8303a28c1bab8029ba5e752bd5006cbb",
-      "generated_hash": "b8cae8a1a0e4dd4eb721cbaa1c531af4c0c34c5d9ad6da0ec2e81b76f65a2e2b"
+      "generated_hash": "828ba53361b1c3f482bd4eb62e395ce0f17c85d81982978a4545398c78f70d75"
     },
     {
       "name": "standards",
@@ -1034,7 +1034,7 @@
       "name": "validation",
       "source_skill": "skills/validation",
       "source_hash": "2e71f8dbe94c65971f0dff7f82ac83396649ff036bbea388060174945f660c5c",
-      "generated_hash": "c239b62cd45079e20004f602affdb51f132b2571d105d3e9f3064f5071c4cee7"
+      "generated_hash": "69e2e7d58563ccb41e70d48fd34ba6a651de64a554dcddb220ebcdc558168cd4"
     },
     {
       "name": "vibe",
