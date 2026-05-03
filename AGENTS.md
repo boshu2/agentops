@@ -67,8 +67,22 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
+All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), check-test-staleness (non-blocking), and swarm-evidence (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
+
+#### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
+
+Advisory jobs run on every PR but their failure does NOT block merge. They surface a `(advisory)` suffix on the GitHub check name. Each advisory job has a triage SLA — when the job has been red for longer than its SLA, follow the escalation rule.
+
+| Advisory job | Triage SLA | Escalation rule |
+|---|---|---|
+| **agentops-eval-advisory** | 7d | Release-blocking when stale: a failing eval-advisory older than 7d blocks the next `vX.Y.Z` tag until triaged. |
+| **security-toolchain-gate** | 14d | Open a `bd` issue with label `ci-advisory`. Network/install flake (item 40) is mitigated by 3-attempt exponential-backoff retry on the install step; only persistent toolchain or scanner regressions count toward the SLA. |
+| **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
+| **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
+| **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
+
+The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is currently warn-only with a deferred promotion gate. Promotion criterion: `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**, where `baseline_p_at_5 = 0.30` is pinned in `docs/CI-CD.md` §"Retrieval-bench ratchet" until a durable non-`.agents` baseline artifact is introduced. The 14-consecutive-nightly observation window is intentionally observational — not yet wired into a counter — so flips to blocking remain a manual decision after the window is documented green.
 
 ### Local Pre-Push Checklist
 
@@ -218,7 +232,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **skill-schema** | SKILL frontmatter conforms to schema | Missing/invalid frontmatter fields in SKILL.md |
 | **smoke-test** | Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation | Runtime install/bundle drift or placeholder/TODO regressions |
 | **standards-injector-completeness** | Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md` | Adding a case branch without the reference file (the hook fails open silently) |
-| **swarm-evidence** | Swarm evidence files and file manifests are valid | Missing or malformed swarm evidence artifacts |
+| **swarm-evidence** | Swarm evidence files and file manifests are valid | Non-blocking (`continue-on-error: true`); informational artifact validation only |
 | **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
 | **validate-codex-backbone-prompts** | Codex backbone prompt files are present and well-formed | Backbone prompt file deleted, renamed, or shape regressed |
 | **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |

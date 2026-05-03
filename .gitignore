@@ -46,6 +46,10 @@ wiki/
 /.agents/
 tests/claude-code/.agents/
 
+# Allow test fixtures under .agents/ paths
+!cli/cmd/ao/testdata/**/.agents/
+!cli/cmd/ao/testdata/**/.agents/**
+
 # Runtime state
 state.json
 .runtime/

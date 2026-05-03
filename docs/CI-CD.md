@@ -90,20 +90,32 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, and `check-test-staleness` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
+Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
 
 ## Blocking vs Soft Gates
 
 ### Soft Gates (continue-on-error: true)
 
-These jobs run but their failure does **not** block merges:
+These jobs run but their failure does **not** block merges. Each carries an `(advisory)` suffix in its GitHub check name. Triage SLAs and escalation rules are codified in [`AGENTS.md` §Advisory Job Triage SLAs](../AGENTS.md#ci-validation--passing-the-pipeline) — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
 
-| Job | Reason |
-|-----|--------|
-| `agentops-eval-advisory` | Public eval canaries run on every PR, but baseline ratchets start advisory until variance and promotion policy are stable |
-| `security-toolchain-gate` | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check |
-| `doctor-check` | Reports stale CLI references; CI environment lacks some expected tools |
-| `check-test-staleness` | Advisory -- flags tests that may need updating |
+| Job | Triage SLA | Reason |
+|-----|------------|--------|
+| `agentops-eval-advisory` | 7d (release-blocking when stale) | Public eval canaries run on every PR, but baseline ratchets start advisory until variance and promotion policy are stable |
+| `security-toolchain-gate` | 14d | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check. Install steps use 3-attempt exponential-backoff retry to absorb transient trivy/hadolint network timeouts (item 40, soc-z7qq) |
+| `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
+| `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
+| `swarm-evidence` | none (info-only) | Advisory -- validates swarm evidence artifact shape; missing/malformed swarm artifacts are informational, not blocking (item 34) |
+
+### Retrieval-bench ratchet (nightly)
+
+The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is a **warn-then-fail ratchet** with a deferred promotion. The job currently runs warn-only on every nightly. Promotion to blocking is a manual decision after the following observational window is documented green:
+
+- **Promotion criterion:** `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**.
+- **Baseline source:** pinned fallback `baseline_p_at_5 = 0.30` in this section. Do not store the baseline under repo-root `.agents/`; that tree is local runtime state and is blocked by `scripts/check-no-tracked-agents.sh`.
+- **Future durable source:** if the ratchet needs a machine-readable baseline, add it outside `.agents/` and update this section plus AGENTS.md in the same PR.
+- **Observation window:** intentionally observational. The 14-consecutive-nightly counter is not yet wired into automation; track manually until a separate bead promotes the gate. This avoids accidental promotion during corpus quarantine windows (`f-2026-04-30-002`).
+
+When the window closes green and the gate is promoted, update both this section and the AGENTS.md advisory table. Until then, retrieval-bench red is informational; do not block release on it.
 
 ### Blocking Gates (all others)
 

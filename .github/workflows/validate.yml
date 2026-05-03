@@ -182,7 +182,7 @@ jobs:
           ./scripts/generate-cli-reference.sh --check
 
   agentops-eval-advisory:
-    name: agentops-eval-advisory (warn-only)
+    name: agentops-eval-advisory (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -328,7 +328,7 @@ jobs:
           echo "✅ No dangerous patterns"
 
   security-toolchain-gate:
-    name: security-toolchain-gate (warn-only)
+    name: security-toolchain-gate (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
@@ -347,14 +347,34 @@ jobs:
           python-version: '3.14'
 
       - name: Install scanner tools
+        # 3-attempt exponential-backoff retry per soc-z7qq item 40
+        # (covers transient trivy/hadolint network timeouts).
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install semgrep ruff radon
-          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
-          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
-          GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          curl -sL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o /tmp/hadolint && chmod +x /tmp/hadolint && sudo mv /tmp/hadolint /usr/local/bin/hadolint
+          retry() {
+            local max=3
+            local delay=5
+            local attempt=1
+            while true; do
+              if "$@"; then
+                return 0
+              fi
+              if [[ $attempt -ge $max ]]; then
+                echo "command failed after $max attempts: $*" >&2
+                return 1
+              fi
+              echo "attempt $attempt failed; retrying in ${delay}s..." >&2
+              sleep "$delay"
+              delay=$((delay * 2))
+              attempt=$((attempt + 1))
+            done
+          }
+          retry python -m pip install --upgrade pip
+          retry python -m pip install semgrep ruff radon
+          retry env GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
+          retry env GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
+          retry env GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          retry bash -c 'curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin'
+          retry bash -c 'curl -sL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o /tmp/hadolint && chmod +x /tmp/hadolint && sudo mv /tmp/hadolint /usr/local/bin/hadolint'
 
       - name: Run security toolchain gate
         run: |
@@ -838,7 +858,7 @@ jobs:
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
 
   doctor-check:
-    name: doctor-check (warn-only)
+    name: doctor-check (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: go-build
@@ -907,7 +927,7 @@ jobs:
         run: bash tests/hooks/test-orphan-hooks.sh
 
   check-test-staleness:
-    name: check-test-staleness (warn-only)
+    name: check-test-staleness (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -919,7 +939,9 @@ jobs:
           bash scripts/check-test-staleness.sh
 
   swarm-evidence:
+    name: swarm-evidence (advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
 
@@ -1022,8 +1044,7 @@ jobs:
              [[ "${{ needs.file-manifest-overlap.result }}" != "success" ]] || \
              [[ "${{ needs.skill-lint.result }}" != "success" ]] || \
              [[ "${{ needs.learning-coherence.result }}" != "success" ]] || \
-             [[ "${{ needs.bats-tests.result }}" != "success" ]] || \
-             [[ "${{ needs.swarm-evidence.result }}" != "success" ]]; then
+             [[ "${{ needs.bats-tests.result }}" != "success" ]]; then
             echo ""
             echo "❌ Some checks failed"
             exit 1
