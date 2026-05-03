@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "id": "context-packet-ab-wave0",
+  "name": "Context Packet A/B Wave 0",
+  "description": "Public canary for measuring whether curated .agents context improves deterministic task outcomes while stale, toxic, or irrelevant context stays inert.",
+  "domain": "context",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "evidence_kind": "contract_canary",
+  "owners": ["agentops"],
+  "tags": ["context-packet", "agent-native", "ab", "wave0"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "timeout_seconds": 10
+  },
+  "scoring": {
+    "aggregate_threshold": 0.75,
+    "dimensions": [
+      {"name": "correctness", "weight": 0.7, "threshold": 0.75},
+      {"name": "safety", "weight": 0.3, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "helpful-context-improves-decision",
+      "title": "Helpful context improves decision",
+      "kind": "command",
+      "objective": "Verify context_on can access curated AO_AGENTS_DIR evidence while context_off cannot.",
+      "evidence_kind": "behavior_fixture",
+      "runtime": "shell",
+      "inputs": {
+        "argv": ["fixtures/context-packet-ab-wave0/check-helpful-context.sh"]
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.helpful_context", "value": true},
+        {"type": "json_path", "target": "stdout.hooks_disabled", "value": false}
+      ],
+      "dimensions": ["correctness"],
+      "critical": true
+    },
+    {
+      "id": "stale-toxic-irrelevant-context-stays-inert",
+      "title": "Stale toxic irrelevant context stays inert",
+      "kind": "command",
+      "objective": "Verify stale, toxic, and irrelevant sentinels are present but ignored by the curated context leg.",
+      "evidence_kind": "behavior_fixture",
+      "runtime": "shell",
+      "inputs": {
+        "argv": ["fixtures/context-packet-ab-wave0/check-context-pruning.sh"]
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.curated_only", "value": true},
+        {"type": "json_path", "target": "stdout.stale_sentinel_ignored", "value": true},
+        {"type": "json_path", "target": "stdout.toxic_sentinel_ignored", "value": true},
+        {"type": "json_path", "target": "stdout.irrelevant_context_ignored", "value": true},
+        {"type": "json_path", "target": "stdout.hooks_disabled", "value": false}
+      ],
+      "dimensions": ["safety"],
+      "critical": true
+    }
+  ]
+}

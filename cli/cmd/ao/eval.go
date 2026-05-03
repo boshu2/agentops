@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,9 @@ var (
 	evalRunRuntime        string
 	evalRunBaseline       string
 	evalRunBaselineMode   string
+	evalRunContextMode    string
+	evalRunContextOffDir  string
+	evalRunContextOnDir   string
 	evalRunDeltaOut       string
 	evalCompareOutput     string
 	evalCompareMaxAgg     float64
@@ -59,12 +63,44 @@ var evalRunCmd = &cobra.Command{
 		if !aoeval.IsValidBaselineMode(string(mode)) {
 			return fmt.Errorf("invalid --baseline-mode %q (allowed: %s)", evalRunBaselineMode, strings.Join(aoeval.AllBaselineModes(), ", "))
 		}
+		contextMode := aoeval.ContextMode(evalRunContextMode)
+		if !aoeval.IsValidContextMode(string(contextMode)) {
+			return fmt.Errorf("invalid --context-mode %q (allowed: %s)", evalRunContextMode, strings.Join(aoeval.AllContextModes(), ", "))
+		}
 		baseOpts := aoeval.RunOptions{
 			SuitePath:    args[0],
 			RunID:        evalRunID,
 			Runtime:      runtimeName,
 			OutputPath:   evalRunOutput,
 			BaselinePath: evalRunBaseline,
+		}
+		if contextMode == aoeval.ContextModeAB {
+			if mode != aoeval.BaselineModeSkillOn {
+				return fmt.Errorf("--context-mode=ab cannot be combined with --baseline-mode=%s", mode)
+			}
+			contextOpts := resolveEvalContextABOptions(args[0], evalRunContextOffDir, evalRunContextOnDir)
+			scorecard, offRun, onRun, err := aoeval.RunContextAB(baseOpts, contextOpts)
+			if err != nil {
+				return err
+			}
+			if err := aoeval.WriteContextDeltaScorecard(scorecard, evalRunDeltaOut); err != nil {
+				return err
+			}
+			if GetOutput() == "json" {
+				return writeEvalJSON(cmd, scorecard)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"Eval context-AB %s: context-off=%.4f (%s) context-on=%.4f (%s) delta=%+.4f cases=%d\n",
+				scorecard.SuiteID,
+				offRun.AggregateScore, offRun.Status,
+				onRun.AggregateScore, onRun.Status,
+				scorecard.AggregateDelta,
+				len(scorecard.PerCase),
+			)
+			if evalRunDeltaOut != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Context delta scorecard: %s\n", evalRunDeltaOut)
+			}
+			return nil
 		}
 		if mode == aoeval.BaselineModeBoth {
 			scorecard, onRun, offRun, err := aoeval.RunBaselineAB(baseOpts)
@@ -327,9 +363,13 @@ func configureEvalCommand() {
 	evalRunCmd.Flags().StringVar(&evalRunRuntime, "runtime", "", "deterministic runtime override (static, mock, shell)")
 	evalRunCmd.Flags().StringVar(&evalRunBaseline, "baseline", "", "compare the run against a baseline run record")
 	evalRunCmd.Flags().StringVar(&evalRunBaselineMode, "baseline-mode", string(aoeval.BaselineModeSkillOn), "skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard")
-	evalRunCmd.Flags().StringVar(&evalRunDeltaOut, "delta-out", "", "write delta scorecard JSON to path (only with --baseline-mode=both)")
+	evalRunCmd.Flags().StringVar(&evalRunContextMode, "context-mode", string(aoeval.ContextModeNone), "none | ab — run context-off/context-on legs over isolated AO_AGENTS_DIR roots")
+	evalRunCmd.Flags().StringVar(&evalRunContextOffDir, "context-off-agents-dir", "", "AO_AGENTS_DIR root for the context-off leg (defaults to suite fixtures)")
+	evalRunCmd.Flags().StringVar(&evalRunContextOnDir, "context-on-agents-dir", "", "AO_AGENTS_DIR root for the context-on leg (defaults to suite fixtures)")
+	evalRunCmd.Flags().StringVar(&evalRunDeltaOut, "delta-out", "", "write delta scorecard JSON to path (with --baseline-mode=both or --context-mode=ab)")
 	_ = evalRunCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("static", "mock", "shell"))
 	_ = evalRunCmd.RegisterFlagCompletionFunc("baseline-mode", staticCompletionFunc(aoeval.AllBaselineModes()...))
+	_ = evalRunCmd.RegisterFlagCompletionFunc("context-mode", staticCompletionFunc(aoeval.AllContextModes()...))
 
 	evalCompareCmd.Flags().StringVar(&evalCompareOutput, "out", "", "write compared eval run record to path")
 	evalCompareCmd.Flags().Float64Var(&evalCompareMaxAgg, "max-aggregate-regression", 0, "allowed aggregate regression before verdict becomes regression")
@@ -359,6 +399,38 @@ func configureEvalCommand() {
 	registerEvalCleanupCmd()
 	registerEvalSuiteCmd()
 	evalCmd.AddCommand(evalTaskCmd, evalCleanupCmd, evalSuiteCmd)
+}
+
+func resolveEvalContextABOptions(suitePath, offDir, onDir string) aoeval.ContextABOptions {
+	if offDir == "" {
+		offDir = defaultEvalContextAgentsDir(suitePath, "context-off")
+	}
+	if onDir == "" {
+		onDir = defaultEvalContextAgentsDir(suitePath, "context-on")
+	}
+	return aoeval.ContextABOptions{
+		ContextOffAgentsDir: absoluteEvalContextAgentsDir(offDir),
+		ContextOnAgentsDir:  absoluteEvalContextAgentsDir(onDir),
+		ContextOffLabel:     "context-off",
+		ContextOnLabel:      "context-on",
+	}
+}
+
+func defaultEvalContextAgentsDir(suitePath, leg string) string {
+	base := filepath.Base(suitePath)
+	name := strings.TrimSuffix(base, filepath.Ext(base))
+	return filepath.Join(filepath.Dir(suitePath), "fixtures", name, leg, "agents")
+}
+
+func absoluteEvalContextAgentsDir(path string) string {
+	if path == "" {
+		return ""
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	return abs
 }
 
 func parseEvalRuntime(value string) (aoeval.Runtime, error) {

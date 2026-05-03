@@ -7,13 +7,16 @@ related_findings:
 related_issues:
   - soc-irg1.1
   - soc-irg1.5
-maturity: established
-last_reward_at: 2026-05-03T09:20:16-04:00
-confidence: 0.1667
-last_decay_at: 2026-05-03T09:20:16-04:00
-utility: 0.5000
-last_reward: 0.50
-reward_count: 1
+maturity: candidate
+last_reward_at: 2026-05-03T09:49:11-04:00
+confidence: 0.2857
+last_decay_at: 2026-05-03T09:49:11-04:00
+utility: 0.4186
+last_reward: 0.20
+reward_count: 2
+harmful_count: 1
+maturity_changed_at: 2026-05-03T09:49:11-04:00
+maturity_reason: utility 0.42 < 0.5 (demotion from established)
 ---
 
 # Pattern: State-Path Resolver

@@ -18,7 +18,8 @@ usage() {
 Usage: scripts/eval-agentops.sh [options]
 
 Run AgentOps public evaluation canaries and compare them with promoted baselines
-when baselines exist.
+when baselines exist. Context A/B canaries run through --context-mode=ab and
+produce a context delta scorecard instead of a single run record.
 
 Options:
   --fast                    Run the repo public canary set under evals/agentops-core
@@ -160,6 +161,36 @@ scorecard_kind_for_suite() {
     esac
 }
 
+context_mode_for_suite() {
+    local path="$1"
+    python3 - "$path" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as fh:
+    data = json.load(fh)
+
+tags = set(data.get("tags") or [])
+suite_id = data.get("id", "")
+if suite_id == "context-packet-ab-wave0" or {"context-packet", "ab"}.issubset(tags):
+    print("ab")
+else:
+    print("none")
+PY
+}
+
+number_gt_zero() {
+    python3 - "$1" <<'PY'
+import sys
+
+try:
+    value = float(sys.argv[1])
+except ValueError:
+    raise SystemExit(1)
+raise SystemExit(0 if value > 0 else 1)
+PY
+}
+
 coverage_missing_summary() {
     local path="$1"
     python3 - "$path" <<'PY'
@@ -226,9 +257,28 @@ for suite in "${SUITES[@]}"; do
     compare_path="$run_dir/${suite_id}.compare.json"
     baseline_mode="$(json_get_default "$suite" "baseline_policy.mode" "none")"
     baseline_gate="$(json_get_default "$suite" "baseline_policy.blocking_gate" "none")"
+    context_mode="$(context_mode_for_suite "$suite")"
 
     echo ""
     echo "== $suite_id =="
+    if [[ "$context_mode" == "ab" ]]; then
+        scorecard_path="$run_dir/${suite_id}.context-scorecard.json"
+        context_stdout="$run_dir/${suite_id}.context.stdout.json"
+        if ! "$AO_BIN" eval run "$suite" --context-mode=ab --run-id "${suite_id}-${run_id}" --out "$run_path" --delta-out "$scorecard_path" --json >"$context_stdout"; then
+            record_failure "$suite_id context A/B command failed"
+            continue
+        fi
+
+        off_status="$(json_get "$scorecard_path" "context_off.status")"
+        on_status="$(json_get "$scorecard_path" "context_on.status")"
+        delta="$(json_get "$scorecard_path" "aggregate_delta")"
+        echo "context: off=$off_status on=$on_status aggregate_delta=$delta"
+        if [[ "$on_status" != "pass" ]] || ! number_gt_zero "$delta"; then
+            record_failure "$suite_id context A/B did not show a positive passing context_on delta"
+        fi
+        continue
+    fi
+
     if ! "$AO_BIN" eval run "$suite" --run-id "${suite_id}-${run_id}" --out "$run_path" --json >"$run_stdout"; then
         record_failure "$suite_id run command failed"
         continue

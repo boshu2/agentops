@@ -8,6 +8,21 @@
 This contract defines what `--baseline-mode` does, what the `DeltaScorecard`
 means, and what the `SuiteEnvironment.DisableHooks` toggle is and is not.
 
+## Boundary: skill/hook A/B is not context A/B
+
+`--baseline-mode` is reserved for the skill/hook loading axis:
+`skill-on`, `skill-off`, and `both`. It MUST NOT be overloaded with context
+packet variants such as `context_off` or `context_on`.
+
+Context usefulness evaluation is a separate axis defined by the
+[Context Usefulness Eval Contract](context-usefulness-eval.md). Context modes
+compare isolated context roots while preserving hooks. They MUST NOT set
+`AGENTOPS_HOOKS_DISABLED=1` as a way to create a baseline.
+
+Future runners that need to compose skill/hook A/B with context A/B need a
+separate composition contract. Until then, scorecards should keep
+`DeltaScorecard` skill/hook deltas separate from context-usefulness scorecards.
+
 ## What it is
 
 A primitive borrowed from Linked Intent (LID) iteration-1: run the same
