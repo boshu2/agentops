@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
+  "run_id": "eval-20260503T122032Z-agentops-core.release-security-gates",
   "suite": {
     "id": "agentops-core.release-security-gates",
-    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/release-security-gates.json",
+    "path": "evals/agentops-core/release-security-gates.json",
     "visibility": "public_canary",
     "tier": "deterministic",
     "sha256": "03e127f297ee5ec9bea591531621b389ba52312880a28843a6623f378e313a02"
   },
-  "started_at": "2026-05-03T12:09:34.527280675Z",
-  "completed_at": "2026-05-03T12:09:37.36956575Z",
+  "started_at": "2026-05-03T12:20:32.322153599Z",
+  "completed_at": "2026-05-03T12:20:35.19712852Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "main",
-    "candidate_sha": "ad754badb8f3",
+    "candidate_sha": "a6d7667b7b92",
     "dirty": true,
     "dirty_paths": [
       ".agents/rpi/next-work.jsonl"
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
-    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
-    "promoted_from_run_id": "eval-20260503T120934Z-agentops-core.release-security-gates",
-    "promoted_at": "2026-05-03T12:13:51.453447294Z",
+    "baseline_run_id": "eval-20260503T122032Z-agentops-core.release-security-gates",
+    "baseline_path": ".agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
+    "promoted_from_run_id": "eval-20260503T122032Z-agentops-core.release-security-gates",
+    "promoted_at": "2026-05-03T12:22:28.866046045Z",
     "promoted_by": "evolve-cycle-16",
-    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
+    "rationale": "bulk catch-up: paths repaired (relative); all 57 suites verified passing in fix-pass"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "correctness": 1,
         "safety": 1
       },
-      "duration_ms": 107,
+      "duration_ms": 115,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -71,7 +71,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 202,
+      "duration_ms": 187,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -87,7 +87,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 2522,
+      "duration_ms": 2560,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -118,7 +118,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 1,
+      "duration_ms": 2,
       "diagnostics": [
         "artifact ../../.github/workflows/validate.yml contains \"security-scan\"",
         "artifact ../../.github/workflows/validate.yml contains \"security-toolchain-gate\"",
@@ -149,12 +149,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evolve/baselines/20260503T120414Z-mid/release-security-gates.json",
+      "path": ".agents/evolve/baselines/20260503T121620Z-fix/release-security-gates.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
+      "path": ".agents/evals/baselines/agentops-core.release-security-gates.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

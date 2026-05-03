@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "eval-20260503T120944Z-agentops-core.rpi-behavior",
+  "run_id": "eval-20260503T122041Z-agentops-core.rpi-behavior",
   "suite": {
     "id": "agentops-core.rpi-behavior",
-    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/rpi-behavior.json",
+    "path": "evals/agentops-core/rpi-behavior.json",
     "visibility": "public_canary",
     "tier": "deterministic",
     "sha256": "d8502d93d8338886616631d5d88f7a5ea2f89c37cf56c8eb0b859b56401e2de0"
   },
-  "started_at": "2026-05-03T12:09:44.51296374Z",
-  "completed_at": "2026-05-03T12:09:44.514281262Z",
+  "started_at": "2026-05-03T12:20:41.190583334Z",
+  "completed_at": "2026-05-03T12:20:41.19231318Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "main",
-    "candidate_sha": "ad754badb8f3",
+    "candidate_sha": "a6d7667b7b92",
     "dirty": true,
     "dirty_paths": [
       ".agents/rpi/next-work.jsonl"
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "eval-20260503T120944Z-agentops-core.rpi-behavior",
-    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
-    "promoted_from_run_id": "eval-20260503T120944Z-agentops-core.rpi-behavior",
-    "promoted_at": "2026-05-03T12:13:51.783099924Z",
+    "baseline_run_id": "eval-20260503T122041Z-agentops-core.rpi-behavior",
+    "baseline_path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
+    "promoted_from_run_id": "eval-20260503T122041Z-agentops-core.rpi-behavior",
+    "promoted_at": "2026-05-03T12:22:29.35739984Z",
     "promoted_by": "evolve-cycle-16",
-    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
+    "rationale": "bulk catch-up: paths repaired (relative); all 57 suites verified passing in fix-pass"
   },
   "case_results": [
     {
@@ -54,6 +54,7 @@
         "correctness": 1,
         "runtime_compatibility": 1
       },
+      "duration_ms": 1,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0"
@@ -124,12 +125,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evolve/baselines/20260503T120414Z-mid/rpi-behavior.json",
+      "path": ".agents/evolve/baselines/20260503T121620Z-fix/rpi-behavior.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
+      "path": ".agents/evals/baselines/agentops-core.rpi-behavior.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

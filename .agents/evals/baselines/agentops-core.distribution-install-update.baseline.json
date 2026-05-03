@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
+  "run_id": "eval-20260503T121743Z-agentops-core.distribution-install-update",
   "suite": {
     "id": "agentops-core.distribution-install-update",
-    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/distribution-install-update.json",
+    "path": "evals/agentops-core/distribution-install-update.json",
     "visibility": "public_canary",
     "tier": "deterministic",
     "sha256": "a26d9db0a807d2b61f7867fac7a09913c585bb1428772efc88299c4ae91869f6"
   },
-  "started_at": "2026-05-03T12:05:59.841715551Z",
-  "completed_at": "2026-05-03T12:06:32.076928665Z",
+  "started_at": "2026-05-03T12:17:43.295720306Z",
+  "completed_at": "2026-05-03T12:18:08.555086466Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "main",
-    "candidate_sha": "ad754badb8f3",
+    "candidate_sha": "a6d7667b7b92",
     "dirty": true,
     "dirty_paths": [
       ".agents/rpi/next-work.jsonl"
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
-    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
-    "promoted_from_run_id": "eval-20260503T120559Z-agentops-core.distribution-install-update",
-    "promoted_at": "2026-05-03T12:13:49.750121945Z",
+    "baseline_run_id": "eval-20260503T121743Z-agentops-core.distribution-install-update",
+    "baseline_path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121743Z-agentops-core.distribution-install-update",
+    "promoted_at": "2026-05-03T12:22:26.654289998Z",
     "promoted_by": "evolve-cycle-16",
-    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
+    "rationale": "bulk catch-up: paths repaired (relative); all 57 suites verified passing in fix-pass"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 1417,
+      "duration_ms": 1057,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -74,7 +74,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 18235,
+      "duration_ms": 14551,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -92,7 +92,7 @@
         "correctness": 1,
         "process_adherence": 1
       },
-      "duration_ms": 15062,
+      "duration_ms": 12128,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -131,6 +131,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
+      "duration_ms": 1,
       "diagnostics": [
         "artifact ../../README.md contains \"claude plugin marketplace add boshu2/agentops\"",
         "artifact ../../README.md contains \"curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash\"",
@@ -173,12 +174,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evolve/baselines/20260503T120414Z-mid/distribution-install-update.json",
+      "path": ".agents/evolve/baselines/20260503T121620Z-fix/distribution-install-update.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
+      "path": ".agents/evals/baselines/agentops-core.distribution-install-update.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

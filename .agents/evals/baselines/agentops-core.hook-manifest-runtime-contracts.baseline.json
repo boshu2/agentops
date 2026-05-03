@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "eval-20260503T120838Z-agentops-core.hook-manifest-runtime-contracts",
+  "run_id": "eval-20260503T121939Z-agentops-core.hook-manifest-runtime-contracts",
   "suite": {
     "id": "agentops-core.hook-manifest-runtime-contracts",
-    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/hook-manifest-runtime-contracts.json",
+    "path": "evals/agentops-core/hook-manifest-runtime-contracts.json",
     "visibility": "public_canary",
     "tier": "deterministic",
     "sha256": "7ae870e8f9e0e8f8cbae702edcd2bb81cc7c72935c97c10c891041f33eb3c319"
   },
-  "started_at": "2026-05-03T12:08:38.316794509Z",
-  "completed_at": "2026-05-03T12:08:52.611745009Z",
+  "started_at": "2026-05-03T12:19:39.080423403Z",
+  "completed_at": "2026-05-03T12:19:52.557748178Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "main",
-    "candidate_sha": "ad754badb8f3",
+    "candidate_sha": "a6d7667b7b92",
     "dirty": true,
     "dirty_paths": [
       ".agents/rpi/next-work.jsonl"
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "eval-20260503T120838Z-agentops-core.hook-manifest-runtime-contracts",
-    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
-    "promoted_from_run_id": "eval-20260503T120838Z-agentops-core.hook-manifest-runtime-contracts",
-    "promoted_at": "2026-05-03T12:13:50.668274902Z",
+    "baseline_run_id": "eval-20260503T121939Z-agentops-core.hook-manifest-runtime-contracts",
+    "baseline_path": ".agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
+    "promoted_from_run_id": "eval-20260503T121939Z-agentops-core.hook-manifest-runtime-contracts",
+    "promoted_at": "2026-05-03T12:22:27.759438948Z",
     "promoted_by": "evolve-cycle-16",
-    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
+    "rationale": "bulk catch-up: paths repaired (relative); all 57 suites verified passing in fix-pass"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "process_adherence": 1,
         "safety": 1
       },
-      "duration_ms": 468,
+      "duration_ms": 464,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -78,7 +78,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 13812,
+      "duration_ms": 12997,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -170,7 +170,7 @@
         "process_adherence": 1,
         "runtime_compatibility": 1
       },
-      "duration_ms": 8,
+      "duration_ms": 10,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -188,12 +188,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evolve/baselines/20260503T120414Z-mid/hook-manifest-runtime-contracts.json",
+      "path": ".agents/evolve/baselines/20260503T121620Z-fix/hook-manifest-runtime-contracts.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
+      "path": ".agents/evals/baselines/agentops-core.hook-manifest-runtime-contracts.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }

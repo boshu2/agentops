@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "eval-20260503T120938Z-agentops-core.retag-release-governance",
+  "run_id": "eval-20260503T122036Z-agentops-core.retag-release-governance",
   "suite": {
     "id": "agentops-core.retag-release-governance",
-    "path": "/home/boful/dev/personal/agentops/evals/agentops-core/retag-release-governance.json",
+    "path": "evals/agentops-core/retag-release-governance.json",
     "visibility": "public_canary",
     "tier": "deterministic",
     "sha256": "b0dcc8448813d5ab685f0d7218e90dc9b14dd461a6001b8334df7c2062027342"
   },
-  "started_at": "2026-05-03T12:09:38.197361607Z",
-  "completed_at": "2026-05-03T12:09:39.154481009Z",
+  "started_at": "2026-05-03T12:20:36.002137811Z",
+  "completed_at": "2026-05-03T12:20:36.814872485Z",
   "status": "pass",
   "verdict": "pass",
   "git": {
     "candidate_ref": "main",
-    "candidate_sha": "ad754badb8f3",
+    "candidate_sha": "a6d7667b7b92",
     "dirty": true,
     "dirty_paths": [
       ".agents/rpi/next-work.jsonl"
@@ -38,12 +38,12 @@
   },
   "baseline": {
     "mode": "promote",
-    "baseline_run_id": "eval-20260503T120938Z-agentops-core.retag-release-governance",
-    "baseline_path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.retag-release-governance.baseline.json",
-    "promoted_from_run_id": "eval-20260503T120938Z-agentops-core.retag-release-governance",
-    "promoted_at": "2026-05-03T12:13:51.564554795Z",
+    "baseline_run_id": "eval-20260503T122036Z-agentops-core.retag-release-governance",
+    "baseline_path": ".agents/evals/baselines/agentops-core.retag-release-governance.baseline.json",
+    "promoted_from_run_id": "eval-20260503T122036Z-agentops-core.retag-release-governance",
+    "promoted_at": "2026-05-03T12:22:29.01972705Z",
     "promoted_by": "evolve-cycle-16",
-    "rationale": "bulk catch-up after suite-definition drift accumulated through 2026-04-25 to 2026-05-03; all 57 suites verified passing in mid-baseline pass; cycles 14+15 fixed the 3 prior outliers (skill-catalog, eval-runner-cli-docs, distribution-install-update transitive)"
+    "rationale": "bulk catch-up: paths repaired (relative); all 57 suites verified passing in fix-pass"
   },
   "case_results": [
     {
@@ -55,7 +55,7 @@
         "runtime_compatibility": 1,
         "safety": 1
       },
-      "duration_ms": 956,
+      "duration_ms": 812,
       "critical": true,
       "diagnostics": [
         "exit_code matched 0",
@@ -136,12 +136,12 @@
   },
   "artifacts": [
     {
-      "path": ".agents/evolve/baselines/20260503T120414Z-mid/retag-release-governance.json",
+      "path": ".agents/evolve/baselines/20260503T121620Z-fix/retag-release-governance.json",
       "purpose": "evaluation run record",
       "kind": "run_json"
     },
     {
-      "path": "/home/boful/dev/personal/agentops/.agents/evals/baselines/agentops-core.retag-release-governance.baseline.json",
+      "path": ".agents/evals/baselines/agentops-core.retag-release-governance.baseline.json",
       "purpose": "promoted eval baseline",
       "kind": "baseline"
     }
