@@ -269,6 +269,7 @@ func (q *Queue) ClaimJob(jobID, actor string, opts QueueMutationOptions) (QueueC
 	if isTerminalStatus(job.Status) {
 		return QueueClaim{}, ErrNoClaimableJobs
 	}
+	// Advisory lock-free lease check; authoritative serialization happens in claimJobState via the ledger append.
 	if job.Status == JobStatusRunning && !q.jobLeaseExpired(job) {
 		return QueueClaim{}, ErrJobAlreadyClaimed
 	}
@@ -438,6 +439,7 @@ func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutatio
 		}
 		return QueueClaim{}, ErrNoClaimableJobs
 	}
+	// Advisory lock-free lease check; the appendLeaseExpired/appendRetryExhausted calls below serialize via the ledger.
 	if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 		if job.Attempt >= job.MaxAttempts {
 			if err := q.appendRetryExhausted(job, actor); err != nil {
@@ -541,6 +543,7 @@ func (q *Queue) assertLiveClaim(jobID, claimToken string, leaseEpoch int) (Queue
 	if job.ClaimToken != claimToken || job.LeaseEpoch != leaseEpoch {
 		return QueueJobState{}, ErrClaimFenceMismatch
 	}
+	// Advisory lock-free lease check; ledger append at the call site provides the authoritative ordering.
 	if q.jobLeaseExpired(job) {
 		return QueueJobState{}, ErrLeaseExpired
 	}
@@ -558,6 +561,7 @@ func (q *Queue) terminalClaimJob(jobID, claimToken string, leaseEpoch int) (Queu
 	if job.ClaimToken != claimToken || job.LeaseEpoch != leaseEpoch {
 		return QueueJobState{}, ErrClaimFenceMismatch
 	}
+	// Advisory lock-free lease check; ledger append at the call site provides the authoritative ordering.
 	if q.jobLeaseExpired(job) {
 		return QueueJobState{}, ErrLeaseExpired
 	}
@@ -626,6 +630,7 @@ func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) 
 		if len(job.ArtifactRefs) == 0 {
 			job.ArtifactRefs = nil
 		}
+		// Advisory lock-free lease check used to surface lease-expired status in snapshots; not authoritative.
 		if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 			job.Status = JobStatusRetryWaiting
 			if job.Attempt >= job.MaxAttempts {
@@ -740,11 +745,18 @@ func (q *Queue) isClaimable(job QueueJobState) bool {
 		return false
 	}
 	if job.Status == JobStatusRunning {
+		// Advisory lock-free lease check; the real claim attempt re-validates via the ledger.
 		return q.jobLeaseExpired(job)
 	}
 	return job.Status == JobStatusQueued || job.Status == JobStatusRetryWaiting
 }
 
+// jobLeaseExpired reports whether job's lease has elapsed against the
+// queue's clock. The read is intentionally lock-free: callers use this as
+// an advisory pre-check (e.g. should we attempt a re-claim?), and the
+// authoritative serialization happens inside Store.AppendLedgerEvent.
+// Callers that need strict ordering must follow up with a transactional
+// claim attempt — see assertLiveClaim and claimJobState.
 func (q *Queue) jobLeaseExpired(job QueueJobState) bool {
 	if job.LeaseExpiresAt == "" {
 		return false

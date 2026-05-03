@@ -92,7 +92,14 @@ func (s *Store) populateSnapshotFacts(out *LedgerHealth, now time.Time) {
 		return
 	}
 	if rebuiltAt, err := time.Parse(time.RFC3339Nano, snapshot.RebuiltAt); err == nil {
-		out.LatestSnapshotAge = now.Sub(rebuiltAt)
+		age := now.Sub(rebuiltAt)
+		if age < 0 {
+			// Clamp to zero on clock skew (RebuiltAt parses as future time).
+			// Negative durations leak into the JSON nanoseconds field and
+			// confuse operators / dashboards.
+			age = 0
+		}
+		out.LatestSnapshotAge = age
 	}
 }
 

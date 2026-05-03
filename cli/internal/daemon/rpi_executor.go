@@ -60,10 +60,9 @@ func (e *RPIJobExecutor) JobTypes() []JobType {
 // RunJob executes a claimed RPI job. The supervisor wraps this call with
 // claim/heartbeat/terminal-record bookkeeping; we only contribute the
 // per-job execution.
+//
+// RunJob requires a non-nil ctx; callers passing nil will panic on first use.
 func (e *RPIJobExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if !isRPIJobType(claim.Job.JobType) {
 		return JobExecutionResult{}, fmt.Errorf("rpi executor does not support job type %s", claim.Job.JobType)
 	}

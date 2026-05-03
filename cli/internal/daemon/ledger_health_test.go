@@ -126,6 +126,45 @@ func TestLedgerHealthReportsSnapshotAgeAndArchiveCount(t *testing.T) {
 	}
 }
 
+func TestLedgerHealth_ClampsNegativeAge(t *testing.T) {
+	// Regression for S-24 (soc-58q5.22): when snapshot.RebuiltAt parses as a
+	// future time (clock skew between writer and reader), now.Sub(rebuiltAt)
+	// is negative. The exposed JSON field LatestSnapshotAge must clamp to 0
+	// rather than leak a negative duration to operators / dashboards.
+	store := NewStore(t.TempDir())
+	now := time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC)
+	rebuiltAt := now.Add(time.Hour) // future relative to caller's clock
+	set := ProjectionSet{
+		SchemaVersion: ProjectionSchemaVersion,
+		RebuiltAt:     rebuiltAt.Format(time.RFC3339Nano),
+		LastEventID:   "evt-future",
+		Manifests:     map[ProjectionName]ProjectionManifest{},
+	}
+	if _, err := store.WriteProjectionSnapshot(set); err != nil {
+		t.Fatalf("write snapshot: %v", err)
+	}
+	got, err := store.LedgerHealth(now, LedgerHealthThresholds{
+		LedgerSizeWarnRatio: 0.99,
+		SnapshotMaxAge:      24 * time.Hour,
+		ArchiveCountWarn:    100,
+	})
+	if err != nil {
+		t.Fatalf("LedgerHealth: %v", err)
+	}
+	if !got.HasSnapshot {
+		t.Fatal("HasSnapshot = false, want true (snapshot was written)")
+	}
+	if got.LatestSnapshotAge != 0 {
+		t.Fatalf("LatestSnapshotAge = %s, want 0 (clock skew should clamp negative duration)", got.LatestSnapshotAge)
+	}
+	// Snapshot-age WARN must not fire when clamped to zero (0 < 24h).
+	for _, r := range got.WarnReasons {
+		if strings.Contains(r, "snapshot age") {
+			t.Fatalf("WarnReasons = %#v, must not include snapshot-age warn for clamped duration", got.WarnReasons)
+		}
+	}
+}
+
 func TestLedgerHealthIgnoresDisabledThresholds(t *testing.T) {
 	store := NewStore(t.TempDir()).WithLedgerMaxBytes(0) // rotation disabled
 	if _, err := store.AppendLedgerEvent(mustNewProjectionTestEvent(t, "evt-001", "req-1", "job-1", EventJobAccepted, JobTypeRPIRun, 0, nil)); err != nil {

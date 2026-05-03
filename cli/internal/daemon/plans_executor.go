@@ -69,10 +69,9 @@ func (e *PlansProjectionExecutor) JobTypes() []JobType {
 //  3. builds a DaemonPlansProjection in memory,
 //  4. writes the manifest snapshot atomically (tmp + os.Rename), and
 //  5. returns artifacts mapping the snapshot path and entry count.
+//
+// RunJob requires a non-nil ctx; callers passing nil will panic on first use.
 func (e *PlansProjectionExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if claim.Job.JobType != JobTypePlansProjection {
 		return JobExecutionResult{}, fmt.Errorf("plans.projection executor does not support job type %s", claim.Job.JobType)
 	}

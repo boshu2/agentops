@@ -351,6 +351,30 @@ func extractMutationToken(r *http.Request, tokenHeader string) string {
 	return ""
 }
 
+// constantTimeTokenEqual reports whether got equals want using a timing-safe
+// comparison for the non-empty case. The empty-input short-circuit is a
+// deliberate design choice, not a timing leak worth fixing:
+//
+//   - When got=="" (the client sent no mutation token header / Bearer auth),
+//     EvaluateMutationPolicy already returns a deterministic "mutation token
+//     mismatch" deny reason. The "no token presented" signal is observable
+//     through the 403 response itself, so leaking it via timing reveals
+//     nothing the caller doesn't already know.
+//   - When want=="", the token would never have been registered in the first
+//     place — LoadMutationTokenFile, LoadMutationTokensFile, and
+//     validateMutationToken all reject empty tokens at load time. The check
+//     here is defense-in-depth against a future caller mis-constructing a
+//     MutationToken{Token: ""} literal.
+//   - For the non-empty path that actually authenticates real requests,
+//     subtle.ConstantTimeCompare provides timing-safe comparison for
+//     equal-length inputs. Length differences are NOT timing-safe, but mutation
+//     tokens are operator-issued opaque secrets (no fixed length contract is
+//     promised to clients), so a length-based side channel does not narrow
+//     the search space meaningfully.
+//
+// The pad-then-compare / hash-then-compare pattern would only matter if the
+// daemon accepted variable-length tokens that needed timing-safe length-
+// mismatch comparison against a known target — which is not this surface.
 func constantTimeTokenEqual(got, want string) bool {
 	if got == "" || want == "" {
 		return false

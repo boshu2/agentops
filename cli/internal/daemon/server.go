@@ -281,6 +281,11 @@ func (s *ReadOnlyServer) handlePlansDiff(w http.ResponseWriter, r *http.Request)
 	// by /v1/events. atom-2 will scope to plans-relevant events once the
 	// executor publishes them.
 	events := filterLedgerEventsAfter(state.Replay.Events, r.URL.Query().Get("since"))
+	events, err = applyReadOnlyEventsLimit(events, r.URL.Query().Get("limit"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"events":        events,
 		"last_event_id": state.Lag.LastEventID,

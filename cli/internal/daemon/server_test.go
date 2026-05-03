@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -591,6 +592,88 @@ func TestDaemonRouter_PlansRoutes(t *testing.T) {
 	}
 	if _, ok := diff["last_event_id"]; !ok {
 		t.Fatalf("diff missing last_event_id key: %#v", diff)
+	}
+}
+
+// TestPlansDiff_AppliesEventsLimit guards the read-only response cap on
+// /v1/plans/diff so it mirrors /v1/events. Without the cap the endpoint would
+// stream the full ledger to any caller (soc-58q5.17).
+func TestPlansDiff_AppliesEventsLimit(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+
+	// Append more than maxReadOnlyEventsLimit events to verify both the
+	// explicit ?limit= cap and the cap-on-explicit-limit-only behavior shared
+	// with /v1/events.
+	totalEvents := maxReadOnlyEventsLimit + 5
+	for i := 0; i < totalEvents; i++ {
+		evt := mustNewProjectionTestEvent(
+			t,
+			"evt-"+strconv.Itoa(i),
+			"req-"+strconv.Itoa(i),
+			"job-rpi",
+			EventJobAccepted,
+			JobTypeRPIRun,
+			i,
+			nil,
+		)
+		if _, err := store.AppendLedgerEvent(evt); err != nil {
+			t.Fatalf("append event %d: %v", i, err)
+		}
+	}
+
+	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
+
+	// Cross-check: /v1/events with the same explicit ?limit= returns the same
+	// cap, so /v1/plans/diff matches its sibling endpoint exactly.
+	wantLimit := 7
+	var eventsResp ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events?limit="+strconv.Itoa(wantLimit), &eventsResp)
+	if len(eventsResp.Events) != wantLimit {
+		t.Fatalf("/v1/events?limit=%d returned %d events, want %d", wantLimit, len(eventsResp.Events), wantLimit)
+	}
+
+	var diff map[string]any
+	getJSON(t, router, "/v1/plans/diff?limit="+strconv.Itoa(wantLimit), &diff)
+	gotEvents, ok := diff["events"].([]any)
+	if !ok {
+		t.Fatalf("diff events field type = %T, want []any", diff["events"])
+	}
+	if len(gotEvents) != wantLimit {
+		t.Fatalf("/v1/plans/diff?limit=%d returned %d events, want %d", wantLimit, len(gotEvents), wantLimit)
+	}
+
+	// Default behavior (no ?limit= query) must match /v1/events: both endpoints
+	// today return the full ledger. This guards against /v1/plans/diff drifting
+	// to a different default than its sibling.
+	var eventsDefault ReadOnlyEventsResponse
+	getJSON(t, router, "/v1/events", &eventsDefault)
+	var diffDefault map[string]any
+	getJSON(t, router, "/v1/plans/diff", &diffDefault)
+	defaultEvents, ok := diffDefault["events"].([]any)
+	if !ok {
+		t.Fatalf("default diff events field type = %T, want []any", diffDefault["events"])
+	}
+	if len(defaultEvents) != len(eventsDefault.Events) {
+		t.Fatalf("default cap drift: /v1/plans/diff returned %d events, /v1/events returned %d", len(defaultEvents), len(eventsDefault.Events))
+	}
+	if len(defaultEvents) != totalEvents {
+		t.Fatalf("default cap returned %d events, want %d (current default is uncapped — update this test if behavior changes)", len(defaultEvents), totalEvents)
+	}
+
+	// Invalid limit must produce 400, mirroring /v1/events.
+	for _, target := range []string{
+		"/v1/plans/diff?limit=abc",
+		"/v1/plans/diff?limit=-1",
+	} {
+		t.Run(target, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, target, nil)
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+			if resp.Code != http.StatusBadRequest {
+				t.Fatalf("GET %s status = %d body=%s, want 400", target, resp.Code, resp.Body.String())
+			}
+		})
 	}
 }
 
