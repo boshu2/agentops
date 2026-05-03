@@ -98,6 +98,10 @@ extract_flags() {
   sed -n '/^Flags:/,/^$/{ /^Flags:/d; /^$/d; p; }'
 }
 
+extract_aliases() {
+  sed -n '/^Aliases:/,/^$/{ /^Aliases:/d; /^$/d; p; }'
+}
+
 has_non_help_flags() {
   grep -Ev '^[[:space:]]*-h,[[:space:]]*--help[[:space:]]+help for' | grep -Ev '^[[:space:]]*$'
 }
@@ -161,6 +165,17 @@ emit_command_reference() {
   if [[ -n "$usage" ]]; then
     echo '```'
     echo "$usage"
+    echo '```'
+    echo ""
+  fi
+
+  local aliases
+  aliases="$(echo "$cmd_help" | extract_aliases || true)"
+  if [[ -n "$aliases" ]]; then
+    echo "**Aliases:**"
+    echo ""
+    echo '```'
+    echo "$aliases"
     echo '```'
     echo ""
   fi

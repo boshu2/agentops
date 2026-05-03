@@ -6,18 +6,30 @@
 
 DNA. The same genetic machinery -- the same 4 nucleotides, the same ribosomal translation, the same replication fork -- produces bacteria and blue whales. The difference is not the machinery. The difference is the fitness landscape.
 
-AgentOps is the same. The same 6 seed elements, planted in a Go CLI repo or a Python web app or a Kubernetes operator, produce different systems. The goals define the fitness landscape. The seed provides the machinery. Evolution does the rest.
+AgentOps is the same. The same core seed, planted in a Go CLI repo or a Python web app or a Kubernetes operator, produces different systems. The goals define the fitness landscape. The seed provides the machinery. Evolution does the rest.
 
-## The 6 Seed Elements
+## The Core Seed
 
 ```
 1. GOALS.md           -- what to optimize toward
 2. .agents/           -- where knowledge accumulates
-3. .claude/settings   -- hooks that enforce the rules
+3. Hook readiness     -- optional rules that enforce the flywheel
 4. CLAUDE.md section  -- instructions that start the flywheel
 5. Core skills        -- the capabilities the agent can invoke
 6. Bootstrap learning -- the first turn of the flywheel
 ```
+
+Apply or repair the core seed with the golden path:
+
+```bash
+ao quick-start
+# alias: ao quickstart
+```
+
+Optional layers are deliberately separate: `/bootstrap` adds PRODUCT.md,
+README.md, and PROGRAM.md/AUTODEV.md; `bd init --prefix <prefix>` adds
+tracking; `ao init --hooks` activates hooks; `ao init --with-schedule` opts
+into continuous scheduling.
 
 ### 1. GOALS.md -- Fitness Specification
 
@@ -59,9 +71,9 @@ An append-only ledger with cache-like semantics. Nothing gets overwritten. Every
 
 **Meadows mapping:** #10 (material stocks), #7 (reinforcing feedback loop -- more knowledge enables better retrieval enables more knowledge).
 
-### 3. `.claude/settings.json` -- Hook Configuration
+### 3. Hook Readiness -- Optional Rule Configuration
 
-Hooks that fire on session lifecycle events. The minimum viable set:
+Hooks that fire on session lifecycle events when activated. The minimum viable set:
 
 | Event | Hook | What it does |
 |-------|------|--------------|
@@ -69,7 +81,7 @@ Hooks that fire on session lifecycle events. The minimum viable set:
 | SessionEnd | session-end | Extract learnings (`ao forge`), expire stale artifacts |
 | Stop | stop | Close the feedback loop (`ao flywheel close-loop`) |
 
-**Why it exists:** Hooks are Meadows #5 -- structural rules. Without hooks, knowledge extraction depends on the agent remembering to run `ao forge`. Agents forget. Hooks do not. The flywheel only turns automatically if hooks enforce the extract-and-retrieve cycle.
+**Why it exists:** Hooks are Meadows #5 -- structural rules. Without hooks, knowledge extraction depends on the agent remembering to run `ao forge`. Agents forget. Hooks do not. The core seed keeps hook activation optional so setup is safe in any repo; `ao init --hooks` turns on the structural enforcement when the operator is ready.
 
 **Meadows mapping:** #5 (rules), #6 (information flows -- hooks ensure knowledge moves from session output to persistent storage to next session input).
 

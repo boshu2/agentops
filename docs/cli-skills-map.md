@@ -84,7 +84,7 @@ Which `ao` commands each skill invokes.
 | **post-mortem** | `codex ensure-stop`, `constraint activate`, `flywheel close-loop`, `forge`, `forge markdown`, `session close`, `temper validate` |
 | **pre-mortem** | `lookup`, `ratchet record`, `search` |
 | **provenance** | `search` |
-| **quickstart** | `codex ensure-start`, `codex ensure-stop`, `codex status`, `flywheel status`, `hooks install`, `hooks test`, `init`, `rpi phased`, `seed`, `status` |
+| **quickstart** | `codex ensure-start`, `codex ensure-stop`, `codex status`, `flywheel status`, `hooks install`, `hooks test`, `init`, `quick-start`, `quickstart`, `rpi phased`, `seed`, `status` |
 | **ratchet** | `ratchet check`, `ratchet record`, `ratchet skip`, `ratchet status` |
 | **recover** | `codex ensure-start`, `codex status`, `lookup` |
 | **research** | `codex ensure-start`, `inject`, `lookup`, `rpi phased`, `search` |
@@ -147,7 +147,7 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao doctor` | CI/install | Called by install.sh and release-smoke-test.sh |
 | `ao eval` | CI/test | Public AgentOps canary suites and baseline comparisons |
 | `ao version` | User utility | Version query |
-| `ao quick-start` | User utility | `/quickstart` skill is the orchestrator |
+| `ao quick-start` / `ao quickstart` | User utility | Golden path for repo seed; `/quickstart` routes users to the next action |
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |
 | `ao plans` | User utility | Plan management |
 | `ao trace` | User utility | Artifact tracing |

@@ -195,7 +195,7 @@ Run Dream overnight, then Evolve in the morning against a fresher corpus. Same m
 ## Next steps
 
 1. **[Install](#install)** — pick your runtime.
-2. **Run** `ao quick-start` in your repo, then `/quickstart` in your agent chat.
+2. **Run** `ao quick-start` in your repo (`ao quickstart` also works), then `/quickstart` in your agent chat.
 3. **Validate** with `/council validate this PR` on your next change.
 
 Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.

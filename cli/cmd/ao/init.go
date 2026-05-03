@@ -10,24 +10,14 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // agentsDirs are all .agents/ subdirectories ao init creates.
 // Mirrors session-start.sh AGENTS_DIRS — keep in sync.
 // Note: .agents/ao/{sessions,index,provenance} are created separately via storage.Init().
-var agentsDirs = []string{
-	".agents/research",
-	".agents/products",
-	".agents/retro",
-	".agents/learnings",
-	".agents/patterns",
-	".agents/council",
-	".agents/knowledge/pending",
-	".agents/plans",
-	".agents/rpi",
-	".agents/ao",
-}
+var agentsDirs = lifecycle.CoreAgentDirPaths()
 
 var (
 	initStealth      bool
@@ -319,6 +309,9 @@ func printInitSummary(cwd string, isGitRepo bool) {
 	fmt.Println("Next steps:")
 	if !initHooks {
 		fmt.Println("  ao init --hooks        - Register session hooks")
+	}
+	if report, err := lifecycle.InspectRepoReadiness(cwd, lifecycle.ReadinessOptions{}); err == nil && !report.Ready {
+		fmt.Println("  ao quick-start         - Finish core goals/instructions seed")
 	}
 	fmt.Println("  ao forge transcript <path.jsonl>  - Extract knowledge from transcript")
 }

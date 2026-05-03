@@ -2,18 +2,21 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/spf13/cobra"
 )
 
 var quickstartCmd = &cobra.Command{
-	Use:   "quick-start",
-	Short: "Set up AgentOps in your project (5 minutes)",
+	Use:     "quick-start",
+	Aliases: []string{"quickstart"},
+	Short:   "Set up AgentOps in your project (5 minutes)",
 	Long: `Initialize AgentOps in your current project.
 
 This command:
@@ -33,6 +36,15 @@ var (
 	noBeads bool
 	minimal bool
 )
+
+type quickstartResult struct {
+	Path      string                     `json:"path"`
+	DryRun    bool                       `json:"dry_run"`
+	Minimal   bool                       `json:"minimal"`
+	NoBeads   bool                       `json:"no_beads"`
+	Beads     string                     `json:"beads"`
+	Readiness *lifecycle.ReadinessReport `json:"readiness"`
+}
 
 func init() {
 	quickstartCmd.GroupID = "start"
@@ -76,54 +88,218 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
-
-	fmt.Println(`
-╔══════════════════════════════════════════════════════════════════╗
-║                 AGENTOPS QUICK START                               ║
-║           Setting up your project for knowledge compounding       ║
-╚══════════════════════════════════════════════════════════════════╝`)
-	fmt.Printf("Project: %s\n\n", cwd)
-
-	fmt.Println("━━━ STEP 1: Creating .agents/ structure ━━━")
-	dirs := []string{
-		".agents/briefings",
-		".agents/knowledge",
-		".agents/playbooks",
-		".agents/research",
-		".agents/synthesis",
-		".agents/specs",
-		".agents/learnings",
-		".agents/patterns",
-		".agents/retro",
-		".agents/handoff",
+	jsonMode := GetOutput() == "json"
+	opts := lifecycle.ReadinessOptions{
+		Template: detectTemplate(cwd),
+		DryRun:   GetDryRun(),
+		Minimal:  minimal,
+		NoBeads:  noBeads,
 	}
 
-	for _, dir := range dirs {
-		path := filepath.Join(cwd, dir)
-		if err := os.MkdirAll(path, 0750); err != nil {
-			return fmt.Errorf("failed to create %s: %w", dir, err)
+	if GetDryRun() {
+		report, err := lifecycle.PlanRepoSeed(cwd, opts)
+		if err != nil {
+			return err
 		}
-		fmt.Printf("  ✓ %s/\n", dir)
+		return outputQuickstartResult(quickstartResult{
+			Path:      cwd,
+			DryRun:    true,
+			Minimal:   minimal,
+			NoBeads:   noBeads,
+			Beads:     beadsReadinessStatus(cwd, noBeads),
+			Readiness: report,
+		})
+	}
+
+	if !jsonMode {
+		fmt.Println(`
+╔══════════════════════════════════════════════════════════════════╗
+║                 AGENTOPS QUICK START                            ║
+║           Setting up your project for knowledge compounding      ║
+╚══════════════════════════════════════════════════════════════════╝`)
+		fmt.Printf("Project: %s\n\n", cwd)
 	}
 
 	if minimal {
+		if !jsonMode {
+			fmt.Println("━━━ STEP 1: Creating .agents/ structure ━━━")
+		}
+		if err := createQuickstartDirs(cwd); err != nil {
+			return err
+		}
+		report, err := lifecycle.InspectRepoReadiness(cwd, opts)
+		if err != nil {
+			return err
+		}
+		if jsonMode {
+			return outputQuickstartResult(quickstartResult{
+				Path:      cwd,
+				Minimal:   true,
+				NoBeads:   noBeads,
+				Beads:     "skipped-minimal",
+				Readiness: report,
+			})
+		}
 		fmt.Println("\n✓ Minimal setup complete!")
+		printReadinessSummary(report)
 		showNextSteps(false)
 		return nil
 	}
 
-	fmt.Println("\n━━━ STEP 2: Creating starter knowledge pack ━━━")
+	if !jsonMode {
+		fmt.Println("━━━ STEP 1: Applying core repo seed ━━━")
+	}
+	claudePath := filepath.Join(cwd, "CLAUDE.md")
+	claudeAlreadyExisted := false
+	if _, err := os.Stat(claudePath); os.IsNotExist(err) {
+		if err := createProjectClaudeMd(cwd); err != nil {
+			return err
+		}
+	} else {
+		claudeAlreadyExisted = true
+	}
+	report, err := lifecycle.ApplyRepoSeed(cwd, opts)
+	if err != nil {
+		return err
+	}
+	if err := setupGitProtection(cwd, isGitRepository(cwd)); err != nil {
+		return err
+	}
+	if !jsonMode {
+		fmt.Println("  ✓ Core readiness seed applied")
+		fmt.Println("\n━━━ STEP 2: Creating starter knowledge pack ━━━")
+	}
 	if err := createStarterPack(cwd); err != nil {
-		fmt.Printf("  ⚠ Warning: %v\n", err)
+		if !jsonMode {
+			fmt.Printf("  ⚠ Warning: %v\n", err)
+		}
 	}
 
+	beadsStatus := beadsReadinessStatus(cwd, noBeads)
+	if jsonMode {
+		return outputQuickstartResult(quickstartResult{
+			Path:      cwd,
+			Minimal:   false,
+			NoBeads:   noBeads,
+			Beads:     beadsStatus,
+			Readiness: report,
+		})
+	}
 	quickstartBeadsStep(cwd)
-	quickstartClaudeMdStep(cwd)
+	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
+	if claudeAlreadyExisted {
+		fmt.Println("  ✓ CLAUDE.md already exists")
+	}
+	if lifecycle.HasSeedMarker(readFileBestEffort(claudePath)) {
+		fmt.Println("  ✓ CLAUDE.md has AgentOps instructions")
+	} else {
+		fmt.Println("  ⚠ CLAUDE.md missing AgentOps instructions")
+	}
 
 	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
+	printReadinessSummary(report)
 	showNextSteps(!noBeads)
 
 	return nil
+}
+
+func outputQuickstartResult(result quickstartResult) error {
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(result)
+	}
+	if result.DryRun {
+		fmt.Println("Dry run complete. No files were created.")
+	}
+	if result.Readiness != nil {
+		printReadinessSummary(result.Readiness)
+	}
+	return nil
+}
+
+func createQuickstartDirs(cwd string) error {
+	statePaths, err := lifecycle.ResolveReadinessPaths(cwd)
+	if err != nil {
+		return err
+	}
+	for _, dir := range append(append([]string{}, lifecycle.CoreAgentSubdirs...), lifecycle.CoreStorageSubdirs...) {
+		path := filepath.Join(statePaths.AgentsDir, dir)
+		if err := os.MkdirAll(path, 0o700); err != nil {
+			return fmt.Errorf("failed to create %s: %w", dir, err)
+		}
+		if GetOutput() != "json" {
+			fmt.Printf("  ✓ %s/\n", filepath.ToSlash(filepath.Join(".agents", dir)))
+		}
+	}
+	return nil
+}
+
+func printReadinessSummary(report *lifecycle.ReadinessReport) {
+	fmt.Println("\nAgentOps repo readiness")
+	for _, layer := range []lifecycle.ReadinessLayer{
+		lifecycle.LayerCore,
+		lifecycle.LayerGoals,
+		lifecycle.LayerInstructions,
+		lifecycle.LayerTracking,
+		lifecycle.LayerProduct,
+		lifecycle.LayerProgram,
+		lifecycle.LayerSchedule,
+	} {
+		present, total, action := readinessLayerStatus(report, layer)
+		status := "ready"
+		if present < total {
+			status = "next: " + action
+		}
+		if total == 0 {
+			continue
+		}
+		fmt.Printf("  %-13s %s (%d/%d)\n", string(layer)+":", status, present, total)
+	}
+	fmt.Println("\nNext: /rpi \"your first objective\"")
+}
+
+func readinessLayerStatus(report *lifecycle.ReadinessReport, layer lifecycle.ReadinessLayer) (int, int, string) {
+	var present, total int
+	action := ""
+	for _, item := range report.Items {
+		if item.Layer != layer {
+			continue
+		}
+		total++
+		if item.Present {
+			present++
+			continue
+		}
+		if action == "" {
+			action = item.Action
+		}
+	}
+	if action == "" {
+		action = "already configured"
+	}
+	return present, total, action
+}
+
+func beadsReadinessStatus(cwd string, disabled bool) string {
+	if disabled {
+		return "disabled"
+	}
+	if _, err := os.Stat(filepath.Join(cwd, ".beads")); err == nil {
+		return "ready"
+	}
+	if GetOutput() == "json" {
+		return "skipped-json"
+	}
+	return "pending"
+}
+
+func readFileBestEffort(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 func createStarterPack(cwd string) error {
@@ -215,12 +391,24 @@ Pre-mortem caught 6 critical issues before implementation:
 `,
 	}
 
+	statePaths, err := lifecycle.ResolveReadinessPaths(cwd)
+	if err != nil {
+		return err
+	}
 	for path, content := range patterns {
 		fullPath := filepath.Join(cwd, path)
+		if strings.HasPrefix(path, ".agents/") {
+			fullPath = filepath.Join(statePaths.AgentsDir, strings.TrimPrefix(path, ".agents/"))
+		}
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o700); err != nil {
+			return err
+		}
 		if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 			return err
 		}
-		fmt.Printf("  ✓ %s\n", path)
+		if GetOutput() != "json" {
+			fmt.Printf("  ✓ %s\n", path)
+		}
 	}
 
 	return nil
@@ -273,7 +461,11 @@ func initBeads(cwd string) error {
 }
 
 func createTasksFile(cwd string) {
+	statePaths, err := lifecycle.ResolveReadinessPaths(cwd)
 	tasksPath := filepath.Join(cwd, ".agents/tasks.json")
+	if err == nil {
+		tasksPath = filepath.Join(statePaths.AgentsDir, "tasks.json")
+	}
 	content := `{
   "tasks": [],
   "note": "Beads-optional mode. Use 'bd init' to enable full git-native issues."
@@ -281,7 +473,9 @@ func createTasksFile(cwd string) {
 `
 	//nolint:errcheck // quickstart setup, errors shown implicitly by missing output
 	os.WriteFile(tasksPath, []byte(content), 0600) // #nosec G104
-	fmt.Println("  ✓ Created .agents/tasks.json (beads-optional mode)")
+	if GetOutput() != "json" {
+		fmt.Println("  ✓ Created .agents/tasks.json (beads-optional mode)")
+	}
 }
 
 func createProjectClaudeMd(cwd string) error {
@@ -291,16 +485,16 @@ func createProjectClaudeMd(cwd string) error {
 ## Quick Start
 
 `+"```bash"+`
-bd ready              # See unblocked issues
-/implement <issue>    # Work on an issue
-/crank                # Autonomous epic execution
+ao quick-start        # Repair or inspect the repo seed
+bd ready              # See unblocked issues when beads is enabled
+/rpi "objective"      # Run discovery, implementation, validation
 `+"```"+`
 
 ## Session Protocol
 
 `+"```bash"+`
 # Start
-gt hook               # Check for hooked work
+ao status             # Check AgentOps state
 bd ready              # Find available work
 
 # End
@@ -317,10 +511,7 @@ git push              # NEVER stop before pushing
 | Implementation | Check existing patterns first |
 | Debugging | .agents/learnings/ |
 
-## Beads Prefix
-
-Issue prefix: (set during ol quick-start)
-`, dirName)
+`, dirName) + lifecycle.ClaudeMDSeedSection
 
 	return os.WriteFile(filepath.Join(cwd, "CLAUDE.md"), []byte(content), 0600)
 }

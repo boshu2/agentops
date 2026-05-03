@@ -63,6 +63,12 @@ Initialize AgentOps in your current project.
 ao quick-start [flags]
 ```
 
+**Aliases:**
+
+```
+  quick-start, quickstart
+```
+
 **Flags:**
 
 ```
@@ -697,6 +703,12 @@ Run a comprehensive vibe-check analysis on your repository.
 
 ```
 ao vibe-check [flags]
+```
+
+**Aliases:**
+
+```
+  vibe-check, vibecheck
 ```
 
 **Flags:**
@@ -1472,6 +1484,12 @@ Run goal checks and produce a snapshot
 ao goals measure [flags]
 ```
 
+**Aliases:**
+
+```
+  measure, m
+```
+
 **Flags:**
 
 ```
@@ -1490,12 +1508,24 @@ Validate GOALS.yaml structure and wiring
 ao goals validate [flags]
 ```
 
+**Aliases:**
+
+```
+  validate, v
+```
+
 #### `ao goals drift`
 
 Compare snapshots for regressions
 
 ```
 ao goals drift [flags]
+```
+
+**Aliases:**
+
+```
+  drift, d
 ```
 
 #### `ao goals export`
@@ -1506,12 +1536,24 @@ Export latest snapshot as JSON (for CI)
 ao goals export [flags]
 ```
 
+**Aliases:**
+
+```
+  export, e
+```
+
 #### `ao goals history`
 
 Show goal measurement history
 
 ```
 ao goals history [flags]
+```
+
+**Aliases:**
+
+```
+  history, h
 ```
 
 **Flags:**
@@ -1528,6 +1570,12 @@ Add a new goal
 
 ```
 ao goals add <id> <check-command> [flags]
+```
+
+**Aliases:**
+
+```
+  add, a
 ```
 
 **Flags:**
@@ -1571,6 +1619,12 @@ Migrate goals between formats.
 ao goals migrate [flags]
 ```
 
+**Aliases:**
+
+```
+  migrate, mg
+```
+
 **Flags:**
 
 ```
@@ -1584,6 +1638,12 @@ Remove goals referencing nonexistent files
 
 ```
 ao goals prune [flags]
+```
+
+**Aliases:**
+
+```
+  prune, p
 ```
 
 #### `ao goals steer`
@@ -1796,6 +1856,12 @@ Start a private overnight Dream run against the local repository.
 ao overnight start [flags]
 ```
 
+**Aliases:**
+
+```
+  start, run
+```
+
 **Flags:**
 
 ```
@@ -1867,12 +1933,24 @@ Check if prerequisites are satisfied for a workflow step.
 ao ratchet check <step> [flags]
 ```
 
+**Aliases:**
+
+```
+  check, c
+```
+
 #### `ao ratchet next`
 
 Show the next pending step in the RPI workflow.
 
 ```
 ao ratchet next [flags]
+```
+
+**Aliases:**
+
+```
+  next, n
 ```
 
 **Flags:**
@@ -1896,6 +1974,12 @@ Display the current state of the ratchet chain.
 
 ```
 ao ratchet status [flags]
+```
+
+**Aliases:**
+
+```
+  status, s
 ```
 
 **Flags:**
@@ -1929,6 +2013,12 @@ Record promotion of an artifact to a higher tier.
 
 ```
 ao ratchet promote <artifact> [flags]
+```
+
+**Aliases:**
+
+```
+  promote, p
 ```
 
 **Flags:**

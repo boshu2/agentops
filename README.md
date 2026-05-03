@@ -194,8 +194,14 @@ ao demo
 New project? Use the guided CLI path:
 
 ```bash
-ao quick-start
+ao quick-start     # Canonical
+ao quickstart      # Stable alias
 ```
+
+That command applies the repeatable core seed: `.agents/`, `GOALS.md`,
+AgentOps instructions, starter knowledge, and readiness guidance. Use
+`/bootstrap` after that when you want the product/operations layer:
+`PRODUCT.md`, `README.md`, `PROGRAM.md`/`AUTODEV.md`, and optional hooks.
 
 Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Router](docs/SKILL-ROUTER.md)
 
@@ -285,6 +291,7 @@ The `ao` CLI is the repo-native control plane behind the skills. It handles retr
 
 ```bash
 ao quick-start                            # Set up AgentOps in a repo
+ao quickstart                             # Alias for quick-start
 ao doctor                                 # Check local health
 ao demo                                   # See the value path in 5 minutes
 ao search "query"                         # Search session history and local knowledge
@@ -394,6 +401,7 @@ The AgentOps product implements these principles through skills, the `ao` CLI, a
 # 1. Install (pick your runtime above)
 # 2. Run in your repo
 ao quick-start
+#    or: ao quickstart
 # 3. Validate from your agent chat
 /council validate this PR
 ```

@@ -65,7 +65,8 @@ and non-zero exits on a real problem. If anything looks wrong, see
 ## First command
 
 ```bash
-ao quickstart      # Guided first-run experience
+ao quick-start     # Canonical repo seed and readiness repair
+ao quickstart      # Stable alias for the same golden path
 ao status          # Where was I?
 ao rpi "goal"      # Full Research-Plan-Implement-Validate loop
 ```

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,9 +22,9 @@ func TestQuickstartSkillCoversGlobalCorpus(t *testing.T) {
 		t.Fatalf("abs: %v", err)
 	}
 	cases := []struct {
-		path         string
-		wantMarkers  []string
-		description  string
+		path        string
+		wantMarkers []string
+		description string
 	}{
 		{
 			path: filepath.Join(repoRoot, "skills", "quickstart", "SKILL.md"),
@@ -69,6 +71,9 @@ func TestQuickstart_CommandExists(t *testing.T) {
 	}
 	if quickstartCmd.Use != "quick-start" {
 		t.Errorf("quickstartCmd.Use = %q, want %q", quickstartCmd.Use, "quick-start")
+	}
+	if len(quickstartCmd.Aliases) != 1 || quickstartCmd.Aliases[0] != "quickstart" {
+		t.Errorf("quickstartCmd.Aliases = %#v, want [quickstart]", quickstartCmd.Aliases)
 	}
 	if quickstartCmd.GroupID != "start" {
 		t.Errorf("quickstartCmd.GroupID = %q, want %q", quickstartCmd.GroupID, "start")
@@ -334,6 +339,12 @@ func TestQuickstart_runQuickstart_createsClaudeMd(t *testing.T) {
 	if !strings.Contains(string(content), "Quick Start") {
 		t.Fatal("expected CLAUDE.md to contain Quick Start section")
 	}
+	if strings.Contains(string(content), "gt hook") || strings.Contains(string(content), "ol quick-start") {
+		t.Fatalf("CLAUDE.md contains stale generated instructions:\n%s", string(content))
+	}
+	if !strings.Contains(string(content), claudeMDSeedMarker) {
+		t.Fatalf("expected CLAUDE.md to contain AgentOps seed marker")
+	}
 }
 
 func TestQuickstart_runQuickstart_existingClaudeMd(t *testing.T) {
@@ -366,13 +377,52 @@ func TestQuickstart_runQuickstart_existingClaudeMd(t *testing.T) {
 		t.Fatalf("expected 'already exists' message, got: %s", got)
 	}
 
-	// Verify original content preserved
+	// Verify original content preserved and AgentOps section appended.
 	content, err := os.ReadFile(claudeMdPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(content) != "# Existing\n" {
-		t.Fatal("CLAUDE.md should not have been overwritten")
+	if !strings.Contains(string(content), "# Existing\n") {
+		t.Fatal("CLAUDE.md should preserve existing content")
+	}
+	if !strings.Contains(string(content), claudeMDSeedMarker) {
+		t.Fatal("CLAUDE.md should gain AgentOps seed section")
+	}
+}
+
+func TestQuickstart_DryRunJSONDoesNotWrite(t *testing.T) {
+	tmp := t.TempDir()
+	chdirTo(t, tmp)
+	if _, err := exec.LookPath("git"); err == nil {
+		cmd := exec.Command("git", "init")
+		cmd.Dir = tmp
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git init: %v\n%s", err, out)
+		}
+	}
+
+	out, err := executeCommand("quickstart", "--dry-run", "--json", "--no-beads")
+	if err != nil {
+		t.Fatalf("ao quickstart --dry-run --json: %v\n%s", err, out)
+	}
+	var result quickstartResult
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("dry-run JSON is not parseable: %v\n%s", err, out)
+	}
+	if !result.DryRun {
+		t.Fatal("expected dry_run=true")
+	}
+	if result.Readiness == nil || result.Readiness.Ready {
+		t.Fatalf("expected non-ready readiness report for empty repo: %#v", result.Readiness)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".agents")); err == nil {
+		t.Fatal("dry-run should not create .agents")
+	}
+	if _, err := os.Stat(filepath.Join(tmp, "GOALS.md")); err == nil {
+		t.Fatal("dry-run should not create GOALS.md")
+	}
+	if _, err := os.Stat(filepath.Join(tmp, "CLAUDE.md")); err == nil {
+		t.Fatal("dry-run should not create CLAUDE.md")
 	}
 }
 

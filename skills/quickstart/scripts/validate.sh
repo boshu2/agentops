@@ -11,6 +11,8 @@ check "mentions onboarding" "grep -Eqi 'onboarding|new user' '$SKILL_DIR/SKILL.m
 check "mentions RPI" "grep -qi 'rpi' '$SKILL_DIR/SKILL.md'"
 check "mentions workflow" "grep -qi 'workflow' '$SKILL_DIR/SKILL.md'"
 check "mentions detect project" "grep -qi 'detect' '$SKILL_DIR/SKILL.md'"
+check "mentions golden path command" "grep -q 'ao quick-start' '$SKILL_DIR/SKILL.md'"
+check "mentions quickstart alias" "grep -q 'ao quickstart' '$SKILL_DIR/SKILL.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

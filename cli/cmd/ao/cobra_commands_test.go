@@ -43,6 +43,8 @@ func executeCommand(args ...string) (string, error) {
 	origDemoQuick := demoQuick
 	origConfigShow := configShow
 	origSeedForce := seedForce
+	origNoBeads := noBeads
+	origMinimal := minimal
 	origGoalsJSON := goalsJSON
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
@@ -139,6 +141,8 @@ func executeCommand(args ...string) (string, error) {
 		demoQuick = origDemoQuick
 		configShow = origConfigShow
 		seedForce = origSeedForce
+		noBeads = origNoBeads
+		minimal = origMinimal
 		goalsJSON = origGoalsJSON
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
@@ -233,6 +237,8 @@ func executeCommand(args ...string) (string, error) {
 	demoQuick = false
 	configShow = false
 	seedForce = false
+	noBeads = false
+	minimal = false
 	goalsJSON = false
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10

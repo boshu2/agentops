@@ -64,9 +64,19 @@ func ResolveFromRepo() *Paths {
 	if err != nil {
 		cwd = "."
 	}
-	root := repoRoot(cwd)
+	return ResolveFromRoot(cwd)
+}
+
+// ResolveFromRoot resolves relative to the git repository root containing dir.
+// If dir is not inside a git repository, dir itself is used as the fallback
+// root. Environment overrides keep the same precedence as Resolve().
+func ResolveFromRoot(dir string) *Paths {
+	if strings.TrimSpace(dir) == "" {
+		dir = "."
+	}
+	root := repoRoot(dir)
 	if root == "" {
-		root = cwd
+		root = dir
 	}
 	return resolveFrom(root)
 }

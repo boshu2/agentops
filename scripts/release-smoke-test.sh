@@ -427,6 +427,7 @@ test_help "ao init --help" "$AO" init --help
 test_help "ao seed --help" "$AO" seed --help
 test_help "ao demo --help" "$AO" demo --help
 test_help "ao quick-start --help" "$AO" quick-start --help
+test_help "ao quickstart --help" "$AO" quickstart --help
 test_help "ao forge --help" "$AO" forge --help
 test_help "ao session --help" "$AO" session --help
 test_help "ao hooks --help" "$AO" hooks --help
@@ -543,6 +544,50 @@ for cmd in "${EXPECTED_COMMANDS[@]}"; do
         fail "ao --help missing '$cmd'"
     fi
 done
+
+section "Golden Path Fresh Repo Smoke"
+
+QUICKSTART_REPO="$(mktemp -d)"
+if git -C "$QUICKSTART_REPO" init >/dev/null 2>&1; then
+    QS_RC1=0
+    QS_OUT1=$(cd "$QUICKSTART_REPO" && "$AO" quick-start --no-beads 2>&1) || QS_RC1=$?
+    QS_RC2=0
+    QS_OUT2=$(cd "$QUICKSTART_REPO" && "$AO" quickstart --no-beads 2>&1) || QS_RC2=$?
+
+    if [[ "$QS_RC1" -eq 0 && "$QS_RC2" -eq 0 ]]; then
+        pass "ao quick-start/quickstart run twice in a fresh repo"
+    else
+        fail "ao quick-start/quickstart fresh repo rerun"
+        print_output_head "$QS_OUT1"$'\n'"$QS_OUT2" 8
+    fi
+
+    if [[ -f "$QUICKSTART_REPO/.gitignore" ]] && [[ "$(grep -c '^\.agents/$' "$QUICKSTART_REPO/.gitignore")" -eq 1 ]]; then
+        pass "quickstart keeps .gitignore idempotent"
+    else
+        fail "quickstart keeps .gitignore idempotent"
+    fi
+
+    if [[ -f "$QUICKSTART_REPO/CLAUDE.md" ]] && [[ "$(grep -c '^## AgentOps Knowledge Flywheel$' "$QUICKSTART_REPO/CLAUDE.md")" -eq 1 ]]; then
+        pass "quickstart keeps instruction section idempotent"
+    else
+        fail "quickstart keeps instruction section idempotent"
+    fi
+
+    QS_JSON_RC=0
+    QS_JSON=$(cd "$QUICKSTART_REPO" && "$AO" quickstart --dry-run --json --no-beads 2>&1) || QS_JSON_RC=$?
+    if [[ "$QS_JSON_RC" -eq 0 ]] && (
+        command -v jq >/dev/null 2>&1 && jq -e '.dry_run == true and .readiness.items' >/dev/null <<<"$QS_JSON" ||
+        command -v python3 >/dev/null 2>&1 && python3 -m json.tool >/dev/null <<<"$QS_JSON"
+    ); then
+        pass "ao quickstart --dry-run --json is parseable"
+    else
+        fail "ao quickstart --dry-run --json is parseable"
+        print_output_head "$QS_JSON" 8
+    fi
+else
+    skip "quickstart fresh repo smoke (git init unavailable)"
+fi
+rm -rf "$QUICKSTART_REPO"
 
 # ═══════════════════════════════════════════════════════
 #  Summary

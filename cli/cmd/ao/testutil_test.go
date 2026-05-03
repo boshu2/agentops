@@ -224,6 +224,8 @@ func resetCommandState(t *testing.T) {
 	origDemoQuick := demoQuick
 	origConfigShow := configShow
 	origSeedForce := seedForce
+	origNoBeads := noBeads
+	origMinimal := minimal
 	origGoalsJSON := goalsJSON
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
@@ -299,6 +301,8 @@ func resetCommandState(t *testing.T) {
 		demoQuick = origDemoQuick
 		configShow = origConfigShow
 		seedForce = origSeedForce
+		noBeads = origNoBeads
+		minimal = origMinimal
 		goalsJSON = origGoalsJSON
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
@@ -375,6 +379,8 @@ func resetCommandState(t *testing.T) {
 	demoQuick = false
 	configShow = false
 	seedForce = false
+	noBeads = false
+	minimal = false
 	goalsJSON = false
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10

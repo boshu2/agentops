@@ -6,7 +6,8 @@ Guide new users through AgentOps in a Codex-first flow.
 
 1. Treat `skills/quickstart/SKILL.md` as canonical workflow.
 2. Prefer Codex tooling and command examples first.
-3. Keep optional cross-runtime references brief and non-blocking.
+3. Treat `ao quick-start` as the canonical new-repo seed path and `ao quickstart` as its stable alias.
+4. Keep optional cross-runtime references brief and non-blocking.
 
 ## Guardrails
 
@@ -15,3 +16,4 @@ Guide new users through AgentOps in a Codex-first flow.
 3. Be explicit that current Codex CLI v0.125.0 uses native hooks under `~/.codex/hooks.json`; older installs without native hooks fall back to entry skills ensuring `ao codex ensure-start` once per thread and dedicated closeout skills ensuring `ao codex ensure-stop` once per thread.
 4. Keep `ao codex status` as the manual lifecycle escape hatch, not the primary workflow.
 5. Keep onboarding output action-oriented: next command, expected result, fallback.
+6. Mention `$bootstrap` only as the product/operations expansion after the core seed, not as a competing initializer.

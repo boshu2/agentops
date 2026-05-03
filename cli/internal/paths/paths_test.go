@@ -172,6 +172,36 @@ func TestResolve_Idempotent(t *testing.T) {
 	}
 }
 
+func TestResolveFromRoot_UsesGitRootAndEnvOverrides(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git unavailable")
+	}
+	tmp := t.TempDir()
+	repo := filepath.Join(tmp, "repo")
+	subdir := filepath.Join(repo, "nested")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir subdir: %v", err)
+	}
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repo
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+
+	withEnv(t, nil)
+	got := ResolveFromRoot(subdir)
+	if got.AgentsDir != filepath.Join(repo, ".agents") {
+		t.Fatalf("AgentsDir = %q, want repo root fallback", got.AgentsDir)
+	}
+
+	agentsOverride := filepath.Join(tmp, "agents-override")
+	withEnv(t, map[string]string{"AO_AGENTS_DIR": agentsOverride})
+	got = ResolveFromRoot(subdir)
+	if got.AgentsDir != agentsOverride {
+		t.Fatalf("AgentsDir = %q, want AO_AGENTS_DIR override %q", got.AgentsDir, agentsOverride)
+	}
+}
+
 func TestValidate_CreatesMissingDirs(t *testing.T) {
 	tmp := t.TempDir()
 	home := filepath.Join(tmp, "fresh", ".agents")

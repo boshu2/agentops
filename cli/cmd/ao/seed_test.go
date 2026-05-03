@@ -377,6 +377,40 @@ func TestSeed_IdempotentForce(t *testing.T) {
 	}
 }
 
+func TestSeed_RerunReportsExistingDirsAsSkipped(t *testing.T) {
+	tmp := t.TempDir()
+
+	dryRun = false
+	seedForce = false
+	seedTemplate = "generic"
+	output = "json"
+	defer func() { output = "table" }()
+
+	if err := runSeed(seedCmd, []string{tmp}); err != nil {
+		t.Fatalf("first runSeed: %v", err)
+	}
+
+	out := captureJSONStdout(t, func() {
+		if err := runSeed(seedCmd, []string{tmp}); err != nil {
+			t.Fatalf("second runSeed: %v", err)
+		}
+	})
+
+	var result seedResult
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("parse second seed JSON: %v\n%s", err, out)
+	}
+	if len(result.Skipped) == 0 {
+		t.Fatalf("expected skipped entries on rerun, got %#v", result)
+	}
+	if containsString(result.Created, ".agents/research/") {
+		t.Fatalf("existing .agents/research should be skipped, not created: %#v", result)
+	}
+	if !containsString(result.Skipped, ".agents/research/") {
+		t.Fatalf("expected .agents/research/ skipped on rerun: %#v", result.Skipped)
+	}
+}
+
 func TestSeed_ClaudeMDCreated(t *testing.T) {
 	tmp := t.TempDir()
 

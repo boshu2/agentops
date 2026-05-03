@@ -128,15 +128,17 @@ func executeSeedSteps(absPath, template string, result *seedResult) error {
 		return err
 	}
 
-	isGitRepo := isGitRepository(absPath)
-	if err := setupGitProtection(absPath, isGitRepo); err != nil {
-		return err
-	}
-	if err := ensureNestedAgentsGitignore(absPath); err != nil {
-		return err
-	}
-	if err := initStorage(absPath); err != nil {
-		return err
+	if !(GetDryRun() && GetOutput() == "json") {
+		isGitRepo := isGitRepository(absPath)
+		if err := setupGitProtection(absPath, isGitRepo); err != nil {
+			return err
+		}
+		if err := ensureNestedAgentsGitignore(absPath); err != nil {
+			return err
+		}
+		if err := initStorage(absPath); err != nil {
+			return err
+		}
 	}
 
 	if err := seedCreateGoals(absPath, template, result); err != nil {
@@ -185,7 +187,7 @@ func validateTemplateMapEntries(templates map[string]bool, templatesFS fs.FS) er
 
 // detectTemplate inspects project files to determine the best template.
 func detectTemplate(root string) string {
-	return detectTemplateFromProjectRoot(root)
+	return lifecycle.DetectSeedTemplate(root)
 }
 
 // seedCreateAgentsDirs creates the .agents/ directory structure.
@@ -193,14 +195,26 @@ func seedCreateAgentsDirs(root string, result *seedResult) error {
 	// Use the same directory list as ao init for consistency
 	for _, dir := range agentsDirs {
 		target := filepath.Join(root, dir)
+		exists := false
+		if info, err := os.Stat(target); err == nil && info.IsDir() {
+			exists = true
+		}
 		if GetDryRun() {
-			if _, err := os.Stat(target); os.IsNotExist(err) {
-				fmt.Printf("[dry-run] Would create %s/\n", dir)
+			if !exists {
+				if GetOutput() != "json" {
+					fmt.Printf("[dry-run] Would create %s/\n", dir)
+				}
 				result.Created = append(result.Created, dir+"/")
 			} else {
-				fmt.Printf("[dry-run] Already exists: %s/\n", dir)
+				if GetOutput() != "json" {
+					fmt.Printf("[dry-run] Already exists: %s/\n", dir)
+				}
 				result.Skipped = append(result.Skipped, dir+"/")
 			}
+			continue
+		}
+		if exists {
+			result.Skipped = append(result.Skipped, dir+"/")
 			continue
 		}
 		if err := os.MkdirAll(target, 0700); err != nil {
@@ -218,7 +232,9 @@ func seedCreateGoals(root string, template string, result *seedResult) error {
 	// Check if already exists
 	if _, err := os.Stat(goalsPath); err == nil && !seedForce {
 		if GetDryRun() {
-			fmt.Println("[dry-run] Would skip GOALS.md (already exists)")
+			if GetOutput() != "json" {
+				fmt.Println("[dry-run] Would skip GOALS.md (already exists)")
+			}
 		}
 		result.Skipped = append(result.Skipped, "GOALS.md")
 		return nil
@@ -233,7 +249,9 @@ func seedCreateGoals(root string, template string, result *seedResult) error {
 	content := goals.RenderGoalsMD(gf)
 
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would create GOALS.md (template: %s, %d gates)\n", template, len(gf.Goals))
+		if GetOutput() != "json" {
+			fmt.Printf("[dry-run] Would create GOALS.md (template: %s, %d gates)\n", template, len(gf.Goals))
+		}
 		result.Created = append(result.Created, "GOALS.md")
 		return nil
 	}
@@ -261,7 +279,9 @@ func seedCreateBootstrapLearning(root string, template string, result *seedResul
 	// Check if already exists
 	if _, err := os.Stat(learningPath); err == nil && !seedForce {
 		if GetDryRun() {
-			fmt.Printf("[dry-run] Would skip %s (already exists)\n", relPath)
+			if GetOutput() != "json" {
+				fmt.Printf("[dry-run] Would skip %s (already exists)\n", relPath)
+			}
 		}
 		result.Skipped = append(result.Skipped, relPath)
 		return nil
@@ -292,7 +312,9 @@ Adopted AgentOps knowledge compounding workflow:
 `, dateStr, dateStr, template)
 
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would create %s\n", relPath)
+		if GetOutput() != "json" {
+			fmt.Printf("[dry-run] Would create %s\n", relPath)
+		}
 		result.Created = append(result.Created, relPath)
 		return nil
 	}
@@ -338,7 +360,9 @@ func seedAppendClaudeMD(root string, result *seedResult) error {
 		if hasSeedMarker(string(data)) {
 			if !seedForce {
 				if GetDryRun() {
-					fmt.Println("[dry-run] Would skip CLAUDE.md (seed section already present)")
+					if GetOutput() != "json" {
+						fmt.Println("[dry-run] Would skip CLAUDE.md (seed section already present)")
+					}
 				}
 				result.Skipped = append(result.Skipped, "CLAUDE.md (seed section)")
 				return nil
@@ -348,10 +372,14 @@ func seedAppendClaudeMD(root string, result *seedResult) error {
 
 	if GetDryRun() {
 		if _, err := os.Stat(claudePath); os.IsNotExist(err) {
-			fmt.Println("[dry-run] Would create CLAUDE.md with seed section")
+			if GetOutput() != "json" {
+				fmt.Println("[dry-run] Would create CLAUDE.md with seed section")
+			}
 			result.Created = append(result.Created, "CLAUDE.md")
 		} else {
-			fmt.Println("[dry-run] Would append seed section to CLAUDE.md")
+			if GetOutput() != "json" {
+				fmt.Println("[dry-run] Would append seed section to CLAUDE.md")
+			}
 			result.Created = append(result.Created, "CLAUDE.md (seed section)")
 		}
 		return nil
