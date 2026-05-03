@@ -1,16 +1,81 @@
 # test-windows-smoke.ps1 - Native Windows smoke tests for AgentOps installers and ao.
+#
+# Stabilization (soc-92ka, 2026-05-03):
+#   - Set-StrictMode -Version Latest enforced (catches uninitialized vars,
+#     out-of-bounds indexing, unset properties at runtime instead of producing
+#     silent empty strings that flake downstream).
+#   - All path construction uses Join-Path or
+#     [System.IO.Path]::DirectorySeparatorChar; no hard-coded forward slashes
+#     and no embedded backslash separators in path segments.
+#   - Nested PowerShell invocations re-use the current $PSHOME pwsh (or
+#     fall back to powershell.exe) to avoid execution-policy / host drift
+#     between Windows PowerShell 5.1 and PowerShell 7+.
+#
+# POSIX-symlink-dependent checks: SKIPPED on Windows.
+#   This script intentionally does NOT exercise checks that require POSIX
+#   symlink semantics. Windows GitHub runners do not create symlinks during
+#   `actions/checkout@v6` by default, and the repo policy bans symlinks
+#   anyway (see CLAUDE.md "No symlinks. Ever."). Any future check that
+#   relies on a POSIX symlink (e.g. `Test-Path -PathType SymbolicLink`,
+#   `(Get-Item).LinkType -eq 'SymbolicLink'`, `readlink`-style traversal,
+#   or symlink-aware copy/sync) MUST be guarded by `if (-not $IsWindows)`
+#   or omitted from this script. The canonical symlink audit lives in
+#   the Linux-only `plugin-load-test` job, not here.
 
 [CmdletBinding()]
 param(
   [string]$RepoRoot
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
+# ---------------------------------------------------------------------------
+# Path helpers
+# ---------------------------------------------------------------------------
+
+# Resolve a chain of segments into an absolute path using Join-Path so the
+# host's [System.IO.Path]::DirectorySeparatorChar is always honored. Accepts
+# any number of trailing segments.
+function Join-PathSegments {
+  param(
+    [Parameter(Mandatory = $true)][string]$Base,
+    [Parameter(ValueFromRemainingArguments = $true)][string[]]$Segments
+  )
+  $current = $Base
+  foreach ($segment in $Segments) {
+    if ([string]::IsNullOrEmpty($segment)) { continue }
+    $current = Join-Path -Path $current -ChildPath $segment
+  }
+  return $current
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
-  $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-  $RepoRoot = (Resolve-Path (Join-Path $scriptRoot "..\..")).Path
+  $scriptRoot = if ($PSScriptRoot) {
+    $PSScriptRoot
+  } else {
+    Split-Path -Parent $MyInvocation.MyCommand.Path
+  }
+  $repoRootCandidate = Join-PathSegments -Base $scriptRoot -Segments '..', '..'
+  $RepoRoot = (Resolve-Path -LiteralPath $repoRootCandidate).Path
+}
+
+# Pin the PowerShell host used for nested installer runs. Prefer the same
+# host this script is running under (`pwsh` on CI via `shell: pwsh`);
+# fall back to Windows PowerShell only if pwsh is unavailable. Mixing
+# hosts has been a recurring flake source on Windows runners.
+$nestedPSHost = $null
+$pshExe = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
+if ($pshExe) {
+  $nestedPSHost = $pshExe.Source
+} else {
+  $winPS = Get-Command -Name 'powershell' -ErrorAction SilentlyContinue
+  if ($winPS) {
+    $nestedPSHost = $winPS.Source
+  } else {
+    throw "Neither pwsh nor powershell is available on PATH"
+  }
 }
 
 function Write-Step {
@@ -32,7 +97,8 @@ function Test-PowerShellSyntax {
 function Invoke-GoTest {
   param([string[]]$TestArgs)
 
-  Push-Location (Join-Path $RepoRoot "cli")
+  $cliDir = Join-PathSegments -Base $RepoRoot -Segments 'cli'
+  Push-Location -LiteralPath $cliDir
   try {
     & go test @TestArgs
   }
@@ -44,39 +110,70 @@ function Invoke-GoTest {
   }
 }
 
+function Invoke-NestedScript {
+  param(
+    [Parameter(Mandatory = $true)][string]$ScriptPath,
+    [string[]]$ScriptArgs
+  )
+  $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $ScriptPath)
+  if ($ScriptArgs) {
+    $argList += $ScriptArgs
+  }
+  & $nestedPSHost @argList
+}
+
+function Remove-IfExists {
+  param([string]$Path)
+  if ($Path -and (Test-Path -LiteralPath $Path)) {
+    Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+# ---------------------------------------------------------------------------
+# 1. PowerShell installer syntax
+# ---------------------------------------------------------------------------
+
 Write-Step "Checking PowerShell installer syntax"
-Test-PowerShellSyntax (Join-Path $RepoRoot "scripts\install-ao.ps1")
-Test-PowerShellSyntax (Join-Path $RepoRoot "scripts\install-codex.ps1")
+Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-ao.ps1')
+Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1')
+
+# ---------------------------------------------------------------------------
+# 2. Install ao release binary into a temp directory
+# ---------------------------------------------------------------------------
 
 Write-Step "Installing ao release binary into a temp directory"
-$aoInstallDir = Join-Path ([System.IO.Path]::GetTempPath()) ("agentops-ao-smoke-" + [Guid]::NewGuid().ToString("N"))
+$aoInstallDir = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("agentops-ao-smoke-" + [Guid]::NewGuid().ToString("N"))
 try {
-  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "scripts\install-ao.ps1") -InstallDir $aoInstallDir -NoPathUpdate
+  $installAoScript = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-ao.ps1'
+  Invoke-NestedScript -ScriptPath $installAoScript -ScriptArgs @('-InstallDir', $aoInstallDir, '-NoPathUpdate')
   if ($LASTEXITCODE -ne 0) {
     throw "install-ao.ps1 failed"
   }
-  $releaseAO = Join-Path $aoInstallDir "ao.exe"
+  $releaseAO = Join-PathSegments -Base $aoInstallDir -Segments 'ao.exe'
   & $releaseAO version
   if ($LASTEXITCODE -ne 0) {
     throw "installed ao.exe version smoke failed"
   }
 }
 finally {
-  if (Test-Path -LiteralPath $aoInstallDir) {
-    Remove-Item -LiteralPath $aoInstallDir -Recurse -Force
-  }
+  Remove-IfExists -Path $aoInstallDir
 }
 
+# ---------------------------------------------------------------------------
+# 3. Install Codex plugin into a temp CODEX_HOME
+# ---------------------------------------------------------------------------
+
 Write-Step "Installing Codex plugin into a temp CODEX_HOME"
-$codexHome = Join-Path ([System.IO.Path]::GetTempPath()) ("agentops-codex-smoke-" + [Guid]::NewGuid().ToString("N"))
+$codexHome = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("agentops-codex-smoke-" + [Guid]::NewGuid().ToString("N"))
 try {
-  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "scripts\install-codex.ps1") -RepoRoot $RepoRoot -CodexHome $codexHome
+  $installCodexScript = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1'
+  Invoke-NestedScript -ScriptPath $installCodexScript -ScriptArgs @('-RepoRoot', $RepoRoot, '-CodexHome', $codexHome)
   if ($LASTEXITCODE -ne 0) {
     throw "install-codex.ps1 failed"
   }
-  $pluginRoot = Join-Path $codexHome "plugins\cache\agentops-marketplace\agentops\local"
-  $skillsRoot = Join-Path $pluginRoot "skills-codex"
-  $metadata = Join-Path $codexHome ".agentops-codex-install.json"
+  $pluginRoot = Join-PathSegments -Base $codexHome -Segments 'plugins', 'cache', 'agentops-marketplace', 'agentops', 'local'
+  $skillsRoot = Join-PathSegments -Base $pluginRoot -Segments 'skills-codex'
+  $metadata = Join-PathSegments -Base $codexHome -Segments '.agentops-codex-install.json'
   if (-not (Test-Path -LiteralPath $skillsRoot)) {
     throw "Codex skills root missing after install: $skillsRoot"
   }
@@ -85,17 +182,21 @@ try {
   }
 }
 finally {
-  if (Test-Path -LiteralPath $codexHome) {
-    Remove-Item -LiteralPath $codexHome -Recurse -Force
-  }
+  Remove-IfExists -Path $codexHome
 }
 
+# ---------------------------------------------------------------------------
+# 4. Build local ao and check Windows doctor hints
+# ---------------------------------------------------------------------------
+
 Write-Step "Building local ao and checking Windows doctor hints"
-$builtAO = Join-Path ([System.IO.Path]::GetTempPath()) ("ao-windows-smoke-" + [Guid]::NewGuid().ToString("N") + ".exe")
+$builtAO = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("ao-windows-smoke-" + [Guid]::NewGuid().ToString("N") + ".exe")
 try {
-  Push-Location (Join-Path $RepoRoot "cli")
+  $cliDir = Join-PathSegments -Base $RepoRoot -Segments 'cli'
+  $aoCmdPkg = Join-PathSegments -Base '.' -Segments 'cmd', 'ao'
+  Push-Location -LiteralPath $cliDir
   try {
-    & go build -o $builtAO .\cmd\ao
+    & go build -o $builtAO $aoCmdPkg
   }
   finally {
     Pop-Location
@@ -109,18 +210,20 @@ try {
     throw "ao doctor --json failed"
   }
   $doctorText = ($doctorJSON -join "`n")
-  if ($doctorText -notmatch "install-codex\.ps1") {
+  if ($doctorText -notmatch 'install-codex\.ps1') {
     throw "doctor output did not include the Windows Codex installer hint"
   }
-  if ($doctorText -notmatch "Windows release|WSL/Homebrew") {
+  if ($doctorText -notmatch 'Windows release|WSL/Homebrew') {
     throw "doctor output did not include Windows dependency guidance"
   }
 }
 finally {
-  if (Test-Path -LiteralPath $builtAO) {
-    Remove-Item -LiteralPath $builtAO -Force
-  }
+  Remove-IfExists -Path $builtAO
 }
+
+# ---------------------------------------------------------------------------
+# 5. Focused Windows-sensitive Go tests
+# ---------------------------------------------------------------------------
 
 Write-Step "Running focused Windows-sensitive Go tests"
 Invoke-GoTest -TestArgs @("-timeout", "3m", "./internal/quality")
