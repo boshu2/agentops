@@ -1,0 +1,1 @@
+{"date":"2026-05-03T06:48:00Z","run":"nightly-v2","cycle":1,"target":"go-complexity-ceiling","type":"heavy-goal-fix","commit":"7890788","fitness_before":91.18,"fitness_after":97.06,"goals_flipped":["go-complexity-ceiling"],"notes":"Refactor runQuickstart from CC=21 to CC<=20 by splitting into runQuickstartDryRun/Minimal/Full helpers; +6 code-driven points."}

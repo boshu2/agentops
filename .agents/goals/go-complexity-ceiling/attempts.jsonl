@@ -1,0 +1,1 @@
+{"date":"2026-05-03T06:48:00Z","run":"nightly-2026-05-03-v2","attempt":"refactor","target_function":"runQuickstart","target_file":"cli/cmd/ao/quickstart.go","cc_before":21,"cc_after":5,"goal_result":"flipped fail -> pass","commit":"7890788"}
