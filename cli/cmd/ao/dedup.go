@@ -140,10 +140,20 @@ func runDedup(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if files == nil {
+		if GetOutput() == "json" {
+			enc := json.NewEncoder(os.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(DedupResult{})
+		}
 		fmt.Println("No learnings or patterns directory found.")
 		return nil
 	}
 	if len(files) == 0 {
+		if GetOutput() == "json" {
+			enc := json.NewEncoder(os.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(DedupResult{})
+		}
 		fmt.Println("No learning or pattern files found.")
 		return nil
 	}
