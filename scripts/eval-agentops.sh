@@ -379,8 +379,17 @@ with open(sys.argv[1], encoding="utf-8") as fh:
 print(len(data.get("stale_suite_hashes") or []))
 PY
 )"
-        if [[ "$policy_mismatches" != "0" ]]; then
-            record_failure "baseline policy mismatches: $policy_mismatches"
+        # Drift-only gate (mirrors pre-push-gate.sh block 24d and the
+        # agentops-eval-baseline-audit CI job): fail only on
+        # stale_suite_hashes (a promoted baseline's recorded suite SHA stops
+        # matching the current suite definition). policy_mismatch_count is
+        # informational because under the no-tracked-.agents/ policy
+        # (commit 3f1566fd) baselines are operator-local — fresh clones
+        # legitimately report missing_compare_baselines.
+        if [[ "$stale_hashes" -gt 0 ]]; then
+            record_failure "baseline audit: stale_suite_hashes=$stale_hashes (a promoted baseline's suite SHA drifted)"
+        elif [[ "$policy_mismatches" != "0" ]]; then
+            record_warning "baseline audit: policy_mismatch_count=$policy_mismatches (substrate-info, non-blocking)"
         else
             echo "baseline audit: policy mismatches=0 stale_suite_hashes=$stale_hashes"
         fi
