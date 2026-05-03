@@ -1,0 +1,17 @@
+{
+  "date": "2026-05-03",
+  "timestamp": "2026-05-03T05:08:39Z",
+  "unconsumed_item_count": 172,
+  "morning_packet_count": 0,
+  "morning_packet_note": "no overnight dir — .agents/overnight/latest/morning-packets/ does not exist",
+  "schema_rows_output": "FAIL: line 62 item 4 (Add eval determinism rerun harness and gate baseline-audit i): type=test not in {tech-debt improvement pattern-fix process-improvement feature bug task docs chore}\nFAIL: line 62 item 9 (Add measurement-command audit pre-push gate for numeric doc ): type=test not in {tech-debt improvement pattern-fix process-improvement feature bug task docs chore}\nFAIL: 2 schema violation(s) in /home/user/agentops/.agents/rpi/next-work.jsonl",
+  "schema_rows_exit_code": 1,
+  "contract_parity_output": "next-work contract parity validation passed.",
+  "contract_parity_exit_code": 0,
+  "smoke_grep_output": "[TEST] Testing flywheel loop (next-work round-trip)...\n  ✓ next-work.schema.md exists\n  ✓ next-work contract parity validator passed\n  ✓ next-work.jsonl: all 88 entries have valid schema\nFAILED - 1 errors, 0 warnings",
+  "smoke_grep_exit_code": 1,
+  "pre_existing_failures": [
+    "check-next-work-schema-rows.sh: 2 items with type=test on line 62",
+    "smoke-test.sh: FAILED (1 error — schema rows failure cascade)"
+  ]
+}
