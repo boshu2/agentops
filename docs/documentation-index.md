@@ -205,6 +205,9 @@
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
+- [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
+- [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
+- [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
