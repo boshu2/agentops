@@ -10,9 +10,9 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is source control for what your agents have learned.**
+**AgentOps is a local operating layer for coding agents: control plane, lifecycle hooks, validation gates, and a versioned corpus your team owns.**
 
-Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
+The corpus is source control for what your agents have learned. Every coding session reads from it on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 **The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
@@ -197,7 +197,7 @@ Inside a repo, use the path that matches what you are trying to do.
 |------|-----|-----------|
 | **First repo setup** | `ao quick-start`, then `/quickstart` | AgentOps reports repo readiness and a next action |
 | **First validated change** | `/rpi "a small goal"` | Discovery, implementation, validation, and learning closeout leave evidence in `.agents/` |
-| **Review something now** | `/council validate this PR` or `/vibe recent` | You get a PASS/WARN/FAIL verdict before shipping |
+| **Review something now** | `/council validate this PR` or `/vibe recent` | You get a consolidated verdict and an evidence record in `.agents/` before shipping |
 
 New project? Use the guided CLI seed first:
 
@@ -230,16 +230,18 @@ Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Rou
 
 ## See It Work
 
-**One command: validate a PR**
+**One command: validate a PR across vendors**
 
 ```text
-> /council validate this PR
+> /council --mixed validate this PR
 
-[council] 3 judges spawned independently
-[judge-1] PASS - token bucket implementation correct
-[judge-2] WARN - rate limiting missing on /login endpoint
-[judge-3] PASS - Redis integration follows middleware pattern
-Consensus: WARN - add rate limiting to /login before shipping
+[council] evidence packet sealed -> 6 judges across 2 runtimes
+[claude/judge-1] WARN - rate limiting missing on /login endpoint
+[claude/judge-2] PASS - Redis integration follows middleware pattern
+[codex/judge-1]  WARN - token bucket refill lacks jitter under burst
+[codex/judge-2]  PASS - backoff bounds match retry policy
+Consensus: WARN - fix /login rate limit and add refill jitter before shipping
+Recorded: .agents/council/<run-id>/verdict.md
 ```
 
 **Full loop: research through post-mortem**
@@ -267,7 +269,7 @@ Every skill works alone. Flows compose them when you want more structure.
 | Skill | Use it when |
 |-------|-------------|
 | `/quickstart` | You want the fastest setup check and next action |
-| `/council` | You want independent judges to review a plan, PR, or decision |
+| `/council` | You want independent judges — optionally across Claude and Codex — to evaluate one evidence packet and return a consolidated verdict |
 | `/research` | You need codebase context and prior learnings before changing code |
 | `/pre-mortem` | You want to pressure-test a plan before implementation |
 | `/implement` | You want one scoped task built and validated |
