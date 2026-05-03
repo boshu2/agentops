@@ -175,6 +175,9 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if strings.TrimSpace(input.JobID) == "" {
 		input.JobID = q.nextID("job", string(input.JobType))
 	}
+	if input.JobID == scheduleSentinelJobID {
+		return QueueJobState{}, fmt.Errorf("job_id %q is reserved", scheduleSentinelJobID)
+	}
 	if input.RequestID == "" {
 		input.RequestID = RequestID(q.nextID("req", input.JobID))
 	}

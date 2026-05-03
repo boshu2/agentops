@@ -1,7 +1,9 @@
 package daemon
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -935,5 +937,50 @@ func TestRoute_DeleteSchedule_AuthRequired(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("unauthorized DELETE removed the schedule: %#v", saved)
+	}
+}
+
+// TestWriteJSON_LogsEncodingError verifies that writeJSON does not silently
+// swallow encoder failures. When a body cannot be JSON-encoded (e.g., a
+// channel value, which encoding/json explicitly rejects via
+// UnsupportedTypeError), the error must be logged at warn level so operators
+// can diagnose malformed handler responses instead of seeing an empty body.
+func TestWriteJSON_LogsEncodingError(t *testing.T) {
+	// Capture log output for the duration of this test, restore in cleanup.
+	var buf bytes.Buffer
+	originalOutput := log.Writer()
+	originalFlags := log.Flags()
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(originalOutput)
+		log.SetFlags(originalFlags)
+	})
+
+	// channels are not JSON-encodable; encoding/json returns
+	// *json.UnsupportedTypeError when it encounters one.
+	rec := httptest.NewRecorder()
+	writeJSON(rec, http.StatusTeapot, make(chan int))
+
+	if rec.Code != http.StatusTeapot {
+		t.Fatalf("status code = %d, want %d", rec.Code, http.StatusTeapot)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want %q", got, "application/json")
+	}
+
+	logged := buf.String()
+	if logged == "" {
+		t.Fatalf("writeJSON did not log encoding error; log buffer was empty")
+	}
+	wantSubstrings := []string{
+		"writeJSON encoding error",
+		"status=" + strconv.Itoa(http.StatusTeapot),
+		"json: unsupported type",
+	}
+	for _, want := range wantSubstrings {
+		if !strings.Contains(logged, want) {
+			t.Fatalf("log output missing %q; got: %s", want, logged)
+		}
 	}
 }

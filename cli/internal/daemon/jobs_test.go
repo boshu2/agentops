@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -664,6 +665,56 @@ func TestSubmitJob_DedupRelyOnStoreLock(t *testing.T) {
 	}
 	if accepted != 1 {
 		t.Fatalf("ledger has %d JobAccepted events for one IdempotencyKey, want 1", accepted)
+	}
+}
+
+// TestSubmitJob_RejectsReservedJobID pins the contract that user-supplied
+// JobIDs cannot collide with the schedule sentinel. The schedule.fired and
+// schedule.skipped events use scheduleSentinelJobID ("schedule") as their
+// JobID; allowing a user-submitted JobID with the same value would conflate
+// schedule-scoped events with a real job's lifecycle. Auto-generated JobIDs
+// use a "job_" prefix so they cannot collide; only the exact sentinel value
+// is rejected. The "schedule_" prefix on user-supplied IDs is allowed.
+func TestSubmitJob_RejectsReservedJobID(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute, MaxAttempts: 3})
+
+	_, err := queue.SubmitJob(SubmitJobInput{
+		JobID:   scheduleSentinelJobID,
+		JobType: JobTypeRPIRun,
+		Actor:   "ao",
+		Payload: map[string]any{"goal": "should be rejected"},
+	}, QueueMutationOptions{})
+	if err == nil {
+		t.Fatalf("SubmitJob with reserved JobID %q returned nil error, want rejection", scheduleSentinelJobID)
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "reserved") {
+		t.Fatalf("error message %q does not contain %q", msg, "reserved")
+	}
+	if !strings.Contains(msg, scheduleSentinelJobID) {
+		t.Fatalf("error message %q does not contain sentinel value %q", msg, scheduleSentinelJobID)
+	}
+
+	// Verify no event was appended for the rejected submission.
+	events := readTestQueueEvents(t, queue)
+	if len(events) != 0 {
+		t.Fatalf("rejected SubmitJob appended %d events, want 0: %+v", len(events), events)
+	}
+
+	// Sibling check: a user-supplied JobID with the "schedule_" prefix is
+	// allowed — only the exact sentinel string is reserved.
+	allowed, err := queue.SubmitJob(SubmitJobInput{
+		JobID:   "schedule_user_supplied",
+		JobType: JobTypeRPIRun,
+		Actor:   "ao",
+		Payload: map[string]any{"goal": "should pass"},
+	}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("SubmitJob with schedule_-prefixed JobID returned error: %v", err)
+	}
+	if allowed.JobID != "schedule_user_supplied" {
+		t.Fatalf("allowed.JobID = %q, want %q", allowed.JobID, "schedule_user_supplied")
 	}
 }
 

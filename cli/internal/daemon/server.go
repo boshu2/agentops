@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -1028,5 +1029,7 @@ func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		log.Printf("[server] writeJSON encoding error (status=%d): %v", status, err)
+	}
 }
