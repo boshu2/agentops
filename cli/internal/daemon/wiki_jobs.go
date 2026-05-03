@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
@@ -316,7 +317,15 @@ func newWikiForgePromptContext(claim QueueClaim, spec WikiForgeJobSpec, sourcePa
 	}
 	truncated := false
 	if len(sourceBytes) > maxWikiForgePromptSourceBytes {
-		sourceBytes = sourceBytes[:maxWikiForgePromptSourceBytes]
+		// Truncate at the last valid UTF-8 rune boundary at or before the
+		// byte cap so we never split a multi-byte character. A bare byte slice
+		// at maxWikiForgePromptSourceBytes can land mid-rune and produce
+		// invalid UTF-8 in the prompt.
+		end := maxWikiForgePromptSourceBytes
+		for end > 0 && !utf8.RuneStart(sourceBytes[end]) {
+			end--
+		}
+		sourceBytes = sourceBytes[:end]
 		truncated = true
 	}
 	return wikiForgePromptContext{

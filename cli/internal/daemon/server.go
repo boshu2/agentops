@@ -422,8 +422,17 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		})
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
 	var req openclaw.TriggerJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+				"error":     "request body exceeds MaxJobSubmissionBytes",
+				"max_bytes": MaxJobSubmissionBytes,
+			})
+			return
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
 		return
 	}
@@ -692,6 +701,10 @@ func (s *ReadOnlyServer) handlePostSchedule(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name is required"})
 		return
 	}
+	if strings.ContainsAny(template.Name, "/\\") || strings.Contains(template.Name, "..") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name must not contain path separators or '..'"})
+		return
+	}
 	if strings.TrimSpace(template.Cron) == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cron is required"})
 		return
@@ -746,6 +759,14 @@ func (s *ReadOnlyServer) handleDeleteSchedule(w http.ResponseWriter, r *http.Req
 	name := strings.TrimSpace(r.PathValue("name"))
 	if name == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name is required"})
+		return
+	}
+	// Reject names that look like path traversal or contain path separators —
+	// schedule names are flat keys, not paths. Without this check, a DELETE on
+	// "../../etc/passwd" gets URL-decoded into the {name} pattern and the
+	// store dutifully reports "deleted" for a name no operator ever created.
+	if strings.ContainsAny(name, "/\\") || strings.Contains(name, "..") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "schedule name must not contain path separators or '..'"})
 		return
 	}
 	if err := s.store.DeleteSchedule(name); err != nil {
