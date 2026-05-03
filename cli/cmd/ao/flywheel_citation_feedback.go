@@ -44,167 +44,18 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 	}
 
 	res := resolver.NewFileResolver(cwd)
-	var rewarded, skipped int
 	sessionID := canonicalSessionID("")
-	var feedbackEvents []FeedbackEvent
 	mutateArtifacts := opts.MutateArtifacts && !GetDryRun()
 
+	var rewarded, skipped int
+	var feedbackEvents []FeedbackEvent
 	for _, c := range unique {
-		citationType := effectiveCitationFeedbackType(c.CitationType)
-		decision, reason, rewardable := classifyCitationFeedback(citationType)
-		metricNamespace := canonicalMetricNamespace(c.MetricNamespace)
-
-		if !isPrimaryMetricNamespace(metricNamespace) {
-			artifactPath := canonicalArtifactPath(cwd, c.ArtifactPath)
-			currentUtility := 0.0
-			if !isFindingArtifactPath(cwd, c.ArtifactPath) {
-				learningID := extractLearningID(c.ArtifactPath)
-				if path, err := res.Resolve(learningID); err == nil {
-					artifactPath = path
-					currentUtility = parseUtilityFromFile(path)
-				}
-			}
-			feedbackEvents = append(feedbackEvents, FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    artifactPath,
-				CitationType:    citationType,
-				MetricNamespace: metricNamespace,
-				Decision:        "audited",
-				Reason:          "non-primary-namespace",
-				Reward:          0,
-				UtilityBefore:   currentUtility,
-				UtilityAfter:    currentUtility,
-				Alpha:           0,
-				RecordedAt:      time.Now(),
-			})
-			skipped++
-			continue
+		result := evaluateCitationFeedback(cwd, c, sessionID, reward, mutateArtifacts, res)
+		if result.event != nil {
+			feedbackEvents = append(feedbackEvents, *result.event)
 		}
-
-		if isFindingArtifactPath(cwd, c.ArtifactPath) {
-			if !rewardable {
-				skipped++
-				continue
-			}
-			path := normalizeArtifactPath(cwd, c.ArtifactPath)
-			citedAt := c.CitedAt
-			if citedAt.IsZero() {
-				citedAt = time.Now()
-			}
-			if mutateArtifacts {
-				if err := updateFindingCitationFields(path, citedAt); err != nil {
-					skipped++
-					continue
-				}
-			} else {
-				feedbackEvents = append(feedbackEvents, FeedbackEvent{
-					SessionID:       sessionID,
-					ArtifactPath:    path,
-					CitationType:    citationType,
-					MetricNamespace: metricNamespace,
-					Decision:        decision,
-					Reason:          reason,
-					Reward:          citationEventConfidence(c),
-					UtilityBefore:   0,
-					UtilityAfter:    0,
-					Alpha:           0,
-					RecordedAt:      time.Now(),
-				})
-			}
-			rewarded++
-			continue
-		}
-
-		learningID := extractLearningID(c.ArtifactPath)
-		path, err := res.Resolve(learningID)
-		if err != nil {
-			feedbackEvents = append(feedbackEvents, FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    canonicalArtifactPath(cwd, c.ArtifactPath),
-				CitationType:    citationType,
-				MetricNamespace: metricNamespace,
-				Decision:        "skipped",
-				Reason:          "artifact-not-resolved",
-				RecordedAt:      time.Now(),
-			})
-			skipped++
-			continue
-		}
-
-		if !rewardable {
-			currentUtility := parseUtilityFromFile(path)
-			feedbackEvents = append(feedbackEvents, FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    path,
-				CitationType:    citationType,
-				MetricNamespace: metricNamespace,
-				Decision:        decision,
-				Reason:          reason,
-				Reward:          0,
-				UtilityBefore:   currentUtility,
-				UtilityAfter:    currentUtility,
-				Alpha:           0,
-				RecordedAt:      time.Now(),
-			})
-			skipped++
-			continue
-		}
-
-		rewardCount := getLearningRewardCount(path)
-		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
-		if !mutateArtifacts {
-			currentUtility := parseUtilityFromFile(path)
-			feedbackEvents = append(feedbackEvents, FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    path,
-				CitationType:    citationType,
-				MetricNamespace: metricNamespace,
-				Decision:        decision,
-				Reason:          reason,
-				Reward:          reward,
-				UtilityBefore:   currentUtility,
-				UtilityAfter:    currentUtility,
-				Alpha:           0,
-				RecordedAt:      time.Now(),
-			})
-			rewarded++
-			continue
-		}
-
-		oldUtility, newUtility, err := updateLearningUtility(path, reward, alpha)
-		if err != nil {
-			currentUtility := parseUtilityFromFile(path)
-			feedbackEvents = append(feedbackEvents, FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    path,
-				CitationType:    citationType,
-				MetricNamespace: metricNamespace,
-				Decision:        "skipped",
-				Reason:          "utility-update-failed",
-				Reward:          0,
-				UtilityBefore:   currentUtility,
-				UtilityAfter:    currentUtility,
-				Alpha:           0,
-				RecordedAt:      time.Now(),
-			})
-			skipped++
-			continue
-		}
-
-		feedbackEvents = append(feedbackEvents, FeedbackEvent{
-			SessionID:       sessionID,
-			ArtifactPath:    path,
-			CitationType:    citationType,
-			MetricNamespace: metricNamespace,
-			Decision:        decision,
-			Reason:          reason,
-			Reward:          reward,
-			UtilityBefore:   oldUtility,
-			UtilityAfter:    newUtility,
-			Alpha:           alpha,
-			RecordedAt:      time.Now(),
-		})
-		rewarded++
+		rewarded += result.rewarded
+		skipped += result.skipped
 	}
 
 	if !GetDryRun() && len(feedbackEvents) > 0 {
@@ -214,6 +65,203 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 	markCitationsFeedbackGiven(cwd, citationsPath, citations, feedbackEvents)
 
 	return len(unique), rewarded, skipped
+}
+
+// citationFeedbackResult is the per-citation outcome consumed by
+// processCitationFeedbackWithOptions: an optional event to append and the
+// rewarded/skipped counter deltas.
+type citationFeedbackResult struct {
+	event    *FeedbackEvent
+	rewarded int
+	skipped  int
+}
+
+func evaluateCitationFeedback(
+	cwd string,
+	c types.CitationEvent,
+	sessionID string,
+	reward float64,
+	mutateArtifacts bool,
+	res *resolver.FileResolver,
+) citationFeedbackResult {
+	citationType := effectiveCitationFeedbackType(c.CitationType)
+	decision, reason, rewardable := classifyCitationFeedback(citationType)
+	metricNamespace := canonicalMetricNamespace(c.MetricNamespace)
+
+	if !isPrimaryMetricNamespace(metricNamespace) {
+		return nonPrimaryNamespaceCitationFeedback(cwd, c, citationType, metricNamespace, sessionID, res)
+	}
+	if isFindingArtifactPath(cwd, c.ArtifactPath) {
+		return findingArtifactCitationFeedback(cwd, c, citationType, metricNamespace, decision, reason, rewardable, sessionID, mutateArtifacts)
+	}
+	return learningArtifactCitationFeedback(cwd, c, citationType, metricNamespace, decision, reason, rewardable, sessionID, reward, mutateArtifacts, res)
+}
+
+func nonPrimaryNamespaceCitationFeedback(
+	cwd string,
+	c types.CitationEvent,
+	citationType, metricNamespace, sessionID string,
+	res *resolver.FileResolver,
+) citationFeedbackResult {
+	artifactPath := canonicalArtifactPath(cwd, c.ArtifactPath)
+	currentUtility := 0.0
+	if !isFindingArtifactPath(cwd, c.ArtifactPath) {
+		learningID := extractLearningID(c.ArtifactPath)
+		if path, err := res.Resolve(learningID); err == nil {
+			artifactPath = path
+			currentUtility = parseUtilityFromFile(path)
+		}
+	}
+	event := FeedbackEvent{
+		SessionID:       sessionID,
+		ArtifactPath:    artifactPath,
+		CitationType:    citationType,
+		MetricNamespace: metricNamespace,
+		Decision:        "audited",
+		Reason:          "non-primary-namespace",
+		Reward:          0,
+		UtilityBefore:   currentUtility,
+		UtilityAfter:    currentUtility,
+		Alpha:           0,
+		RecordedAt:      time.Now(),
+	}
+	return citationFeedbackResult{event: &event, skipped: 1}
+}
+
+func findingArtifactCitationFeedback(
+	cwd string,
+	c types.CitationEvent,
+	citationType, metricNamespace, decision, reason string,
+	rewardable bool,
+	sessionID string,
+	mutateArtifacts bool,
+) citationFeedbackResult {
+	if !rewardable {
+		return citationFeedbackResult{skipped: 1}
+	}
+	path := normalizeArtifactPath(cwd, c.ArtifactPath)
+	citedAt := c.CitedAt
+	if citedAt.IsZero() {
+		citedAt = time.Now()
+	}
+	if mutateArtifacts {
+		if err := updateFindingCitationFields(path, citedAt); err != nil {
+			return citationFeedbackResult{skipped: 1}
+		}
+		return citationFeedbackResult{rewarded: 1}
+	}
+	event := FeedbackEvent{
+		SessionID:       sessionID,
+		ArtifactPath:    path,
+		CitationType:    citationType,
+		MetricNamespace: metricNamespace,
+		Decision:        decision,
+		Reason:          reason,
+		Reward:          citationEventConfidence(c),
+		UtilityBefore:   0,
+		UtilityAfter:    0,
+		Alpha:           0,
+		RecordedAt:      time.Now(),
+	}
+	return citationFeedbackResult{event: &event, rewarded: 1}
+}
+
+func learningArtifactCitationFeedback(
+	cwd string,
+	c types.CitationEvent,
+	citationType, metricNamespace, decision, reason string,
+	rewardable bool,
+	sessionID string,
+	reward float64,
+	mutateArtifacts bool,
+	res *resolver.FileResolver,
+) citationFeedbackResult {
+	learningID := extractLearningID(c.ArtifactPath)
+	path, err := res.Resolve(learningID)
+	if err != nil {
+		event := FeedbackEvent{
+			SessionID:       sessionID,
+			ArtifactPath:    canonicalArtifactPath(cwd, c.ArtifactPath),
+			CitationType:    citationType,
+			MetricNamespace: metricNamespace,
+			Decision:        "skipped",
+			Reason:          "artifact-not-resolved",
+			RecordedAt:      time.Now(),
+		}
+		return citationFeedbackResult{event: &event, skipped: 1}
+	}
+
+	if !rewardable {
+		currentUtility := parseUtilityFromFile(path)
+		event := FeedbackEvent{
+			SessionID:       sessionID,
+			ArtifactPath:    path,
+			CitationType:    citationType,
+			MetricNamespace: metricNamespace,
+			Decision:        decision,
+			Reason:          reason,
+			Reward:          0,
+			UtilityBefore:   currentUtility,
+			UtilityAfter:    currentUtility,
+			Alpha:           0,
+			RecordedAt:      time.Now(),
+		}
+		return citationFeedbackResult{event: &event, skipped: 1}
+	}
+
+	rewardCount := getLearningRewardCount(path)
+	alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
+	if !mutateArtifacts {
+		currentUtility := parseUtilityFromFile(path)
+		event := FeedbackEvent{
+			SessionID:       sessionID,
+			ArtifactPath:    path,
+			CitationType:    citationType,
+			MetricNamespace: metricNamespace,
+			Decision:        decision,
+			Reason:          reason,
+			Reward:          reward,
+			UtilityBefore:   currentUtility,
+			UtilityAfter:    currentUtility,
+			Alpha:           0,
+			RecordedAt:      time.Now(),
+		}
+		return citationFeedbackResult{event: &event, rewarded: 1}
+	}
+
+	oldUtility, newUtility, err := updateLearningUtility(path, reward, alpha)
+	if err != nil {
+		currentUtility := parseUtilityFromFile(path)
+		event := FeedbackEvent{
+			SessionID:       sessionID,
+			ArtifactPath:    path,
+			CitationType:    citationType,
+			MetricNamespace: metricNamespace,
+			Decision:        "skipped",
+			Reason:          "utility-update-failed",
+			Reward:          0,
+			UtilityBefore:   currentUtility,
+			UtilityAfter:    currentUtility,
+			Alpha:           0,
+			RecordedAt:      time.Now(),
+		}
+		return citationFeedbackResult{event: &event, skipped: 1}
+	}
+
+	event := FeedbackEvent{
+		SessionID:       sessionID,
+		ArtifactPath:    path,
+		CitationType:    citationType,
+		MetricNamespace: metricNamespace,
+		Decision:        decision,
+		Reason:          reason,
+		Reward:          reward,
+		UtilityBefore:   oldUtility,
+		UtilityAfter:    newUtility,
+		Alpha:           alpha,
+		RecordedAt:      time.Now(),
+	}
+	return citationFeedbackResult{event: &event, rewarded: 1}
 }
 
 func deduplicateCitationFeedbackTargets(cwd string, citations []types.CitationEvent) []types.CitationEvent {
