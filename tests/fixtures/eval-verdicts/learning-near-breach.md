@@ -16,5 +16,8 @@ This fixture sits one regressed verdict away from the harmful>=3 + utility<0.3
 threshold-breach that queues a verdict-driven retire candidate to next-work.
 
 After EMA(0.7, 0.3) update with a fresh utility of 0.05:
-  new_utility = 0.7 * 0.36 + 0.3 * 0.05 = 0.252 + 0.015 = 0.267 (< 0.3)
-  new_harmful = 2 + 1 = 3 (>= 3)
+
+```text
+new_utility = 0.7 * 0.36 + 0.3 * 0.05 = 0.252 + 0.015 = 0.267 (< 0.3)
+new_harmful = 2 + 1 = 3 (>= 3)
+```
