@@ -60,8 +60,8 @@
       "kind": "artifact_check",
       "objective": "Keep the expected public eval runtime visible to operators.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "| AgentOps eval canaries | `scripts/eval-agentops.sh --fast` | ~20s |"},
-        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "Run the fast local"}
+        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "| AgentOps eval advisory corpus | `scripts/eval-agentops.sh --fast` | ~5-10m |"},
+        {"type": "artifact_contains", "target": "../../docs/TESTING.md", "value": "Run it when changing eval contracts"}
       ],
       "dimensions": ["artifact_quality", "efficiency"]
     },
