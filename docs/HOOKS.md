@@ -34,6 +34,19 @@ AgentOps currently ships a full Claude runtime manifest across the supported hoo
 
 Codex uses the same hook scripts where its native event map can support them. Codex keeps startup lean as well: `hooks/codex-hooks.json` intentionally omits `ao-inject.sh`.
 
+### Codex/Claude PreToolUse output parity
+
+Codex CLI 0.128.0 accepts the same `PreToolUse` stdin schema as Claude Code (`tool_input.command`, `tool_input.file_path`, etc.), but only honors a subset of the response shape. Current AgentOps hooks emit only the portable subset.
+
+| Output field | Claude Code | Codex CLI 0.128.0 |
+|---|---|---|
+| `decision: block` + `reason` | yes | yes |
+| `hookSpecificOutput.additionalContext` | yes | yes |
+| `hookSpecificOutput.updatedInput` (rewrite) | yes | NO (silently dropped, hook logged "PreToolUse Failed") |
+| Exit code 2 (block) | yes | yes |
+
+Transparent command rewriting via `updatedInput` is not available on Codex; opt-in nudges in `~/.codex/instructions.md` are the only path. The `scripts/test-hooks-output.sh` CI lint enforces this allow-list against every stdin-consuming hook.
+
 ## Install and uninstall
 
 ### Claude Code

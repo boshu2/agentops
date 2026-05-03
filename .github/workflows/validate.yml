@@ -62,6 +62,16 @@ jobs:
           chmod +x scripts/validate-hooks-doc-parity.sh
           ./scripts/validate-hooks-doc-parity.sh
 
+  hook-output-schema-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate hook output JSON shape (Codex/Claude parity allow-list)
+        run: |
+          chmod +x scripts/test-hooks-output.sh
+          ./scripts/test-hooks-output.sh
+
   validate-ci-policy-parity:
     runs-on: ubuntu-latest
     steps:
@@ -898,7 +908,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, codex-runtime-sections, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -910,6 +920,7 @@ jobs:
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
           echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
           echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"
+          echo "hook-output-schema-lint: ${{ needs.hook-output-schema-lint.result }}"
           echo "validate-ci-policy-parity: ${{ needs.validate-ci-policy-parity.result }}"
           echo "codex-runtime-sections: ${{ needs.codex-runtime-sections.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
@@ -942,6 +953,7 @@ jobs:
              [[ "${{ needs.hook-preflight.result }}" != "success" ]] || \
              [[ "${{ needs.standards-injector-completeness.result }}" != "success" ]] || \
              [[ "${{ needs.validate-hooks-doc-parity.result }}" != "success" ]] || \
+             [[ "${{ needs.hook-output-schema-lint.result }}" != "success" ]] || \
              [[ "${{ needs.validate-ci-policy-parity.result }}" != "success" ]] || \
              [[ "${{ needs.codex-runtime-sections.result }}" != "success" ]] || \
              [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
