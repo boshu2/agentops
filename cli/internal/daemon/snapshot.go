@@ -68,7 +68,22 @@ func (s *Store) WriteProjectionSnapshot(set ProjectionSet) (string, error) {
 		_ = os.Remove(tmp)
 		return "", fmt.Errorf("rename projection snapshot: %w", err)
 	}
+	if err := syncDir(dir); err != nil {
+		return "", fmt.Errorf("sync projection snapshot dir: %w", err)
+	}
 	return dst, nil
+}
+
+// syncDir fsyncs a directory so that a recently-renamed entry within it is
+// durably committed. POSIX requires fsync on the parent directory after
+// rename to guarantee the new name survives a crash.
+func syncDir(dir string) error {
+	f, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return f.Sync()
 }
 
 // ListProjectionSnapshots returns every snapshot file under the snapshot dir,

@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -309,6 +310,60 @@ func TestLedgerRotation(t *testing.T) {
 		if ev.EventID != want {
 			t.Fatalf("events[%d].EventID = %q, want %q (rotation reordered)", i, ev.EventID, want)
 		}
+	}
+}
+
+// TestRotation_CleansOrphanedGzTmp verifies that rotation sweeps stale
+// .gz.tmp files left behind by a prior-run crash. The 5-minute grace window
+// must keep fresh tmp files (which may belong to a concurrent in-flight
+// gzip in another goroutine) so the cleanup never disturbs live work.
+func TestRotation_CleansOrphanedGzTmp(t *testing.T) {
+	store := NewStore(t.TempDir()).WithLedgerMaxBytes(1024)
+	if err := os.MkdirAll(store.Dir(), 0700); err != nil {
+		t.Fatalf("create dir: %v", err)
+	}
+
+	// Pre-seed two orphan .gz.tmp files matching the rotation glob.
+	staleTmp := filepath.Join(store.Dir(), "ledger.20260101T000000.000000000Z.jsonl.gz.tmp")
+	freshTmp := filepath.Join(store.Dir(), "ledger.20260102T000000.000000000Z.jsonl.gz.tmp")
+	for _, p := range []string{staleTmp, freshTmp} {
+		if err := os.WriteFile(p, []byte("orphan"), 0600); err != nil {
+			t.Fatalf("seed %s: %v", p, err)
+		}
+	}
+	tenMinAgo := time.Now().Add(-10 * time.Minute)
+	oneMinAgo := time.Now().Add(-1 * time.Minute)
+	if err := os.Chtimes(staleTmp, tenMinAgo, tenMinAgo); err != nil {
+		t.Fatalf("chtimes stale: %v", err)
+	}
+	if err := os.Chtimes(freshTmp, oneMinAgo, oneMinAgo); err != nil {
+		t.Fatalf("chtimes fresh: %v", err)
+	}
+
+	// Trigger rotation by appending events past the cap.
+	const totalEvents = 30
+	for i := 0; i < totalEvents; i++ {
+		ev := testLedgerEvent(fmt.Sprintf("evt-%03d", i), EventJobAccepted)
+		if _, err := store.AppendLedgerEvent(ev); err != nil {
+			t.Fatalf("append %d: %v", i, err)
+		}
+	}
+
+	// Confirm rotation actually fired (sanity — otherwise the cleanup path
+	// never ran and the assertions below would pass vacuously).
+	archives, err := store.LedgerArchivePaths()
+	if err != nil {
+		t.Fatalf("list archives: %v", err)
+	}
+	if len(archives) == 0 {
+		t.Fatalf("rotation never fired; cleanup assertions would be vacuous")
+	}
+
+	if _, err := os.Stat(staleTmp); !os.IsNotExist(err) {
+		t.Fatalf("stale orphan .gz.tmp still present: stat err = %v", err)
+	}
+	if _, err := os.Stat(freshTmp); err != nil {
+		t.Fatalf("fresh orphan .gz.tmp was removed (grace window violated): %v", err)
 	}
 }
 
@@ -623,5 +678,44 @@ func TestStore_RecordScheduleSkippedAppendsEvent(t *testing.T) {
 	}
 	if got := ev.Payload["tick_at"]; got == "" || got == nil {
 		t.Fatalf("payload.tick_at missing: %#v", ev.Payload)
+	}
+}
+
+// TestAppendLedgerEvent_SyncErrorPropagates is the L2 durability-contract
+// test: AppendLedgerEvent must return a non-nil error wrapping "sync ledger"
+// when the underlying file.Sync() fails. If a future refactor swallows the
+// fsync error (e.g. returns nil after a logged warning), this test catches
+// the regression. The test injects the failure through the package-private
+// ledgerSyncFn seam rather than relying on filesystem-specific tricks
+// (read-only mount, /dev/full, FIFO) so it runs identically on every CI
+// platform.
+//
+// Property: caller MUST observe an error if durability could not be
+// guaranteed. Without this, a caller would treat the event as committed
+// while the bytes are still only in the page cache, violating the daemon's
+// at-least-once delivery contract.
+func TestAppendLedgerEvent_SyncErrorPropagates(t *testing.T) {
+	original := ledgerSyncFn
+	t.Cleanup(func() { ledgerSyncFn = original })
+
+	injected := fmt.Errorf("simulated fsync failure: %w", os.ErrInvalid)
+	ledgerSyncFn = func(_ *os.File) error { return injected }
+
+	store := NewStore(t.TempDir())
+	got, err := store.AppendLedgerEvent(testLedgerEvent("evt-sync-fail", EventJobAccepted))
+
+	if err == nil {
+		t.Fatal("AppendLedgerEvent returned nil error when fsync failed; durability contract violated")
+	}
+	// The wrapper message must be the exact production prefix so log
+	// scanners and operator runbooks can grep for it.
+	if !strings.Contains(err.Error(), "sync ledger:") {
+		t.Fatalf("error message = %q, want prefix \"sync ledger:\"", err.Error())
+	}
+	if !errors.Is(err, injected) {
+		t.Fatalf("returned error does not wrap the injected fsync error; errors.Is = false; got %v", err)
+	}
+	if got.EventID != "" {
+		t.Fatalf("returned LedgerEvent must be zero on failure; got EventID=%q", got.EventID)
 	}
 }
