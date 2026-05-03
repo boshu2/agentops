@@ -45,7 +45,8 @@ Run a specific tier:
 | Push-time local gate | `scripts/pre-push-gate.sh` | ~30-90s |
 | Activate repo hooks | `bash scripts/install-dev-hooks.sh` | ~1s |
 | Go build + vet + changed-scope race | `scripts/validate-go-fast.sh` | ~20s |
-| AgentOps eval canaries | `scripts/eval-agentops.sh --fast` | ~20s |
+| AgentOps contract canaries | `scripts/test-agentops-contract-canaries.sh` | ~2-5m |
+| AgentOps eval advisory corpus | `scripts/eval-agentops.sh --fast` | ~5-10m |
 | BATS hook tests | `bats tests/hooks/*.bats` | ~10s |
 | BATS script tests | `bats tests/scripts/*.bats` | ~10s |
 | Skill validation | `tests/skills/run-all.sh` | ~30s |
@@ -55,12 +56,22 @@ Run a specific tier:
 | Full CI gate (local) | `scripts/ci-local-release.sh` | 5-10 min |
 | Native Windows smoke | `powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1` | ~1-3 min |
 
-### AgentOps eval canaries
+### AgentOps Contract Canaries
 
-Public deterministic eval suites live under `evals/agentops-core/` and cover
-the first AgentOps product surfaces that must not regress: CLI contracts,
-hook/runtime inventory, RPI behavior, and scorecard output. Run the fast local
-set before changing eval contracts, `ao eval`, or the canary suites:
+The official blocking contract canary list lives at
+`tests/canaries/agentops-core-official.txt`. These are deterministic product
+contract tests, not model evals; they use `ao eval run` only as the execution
+and artifact substrate. Run them before changing selected canary suites, core
+contracts, or the CI gate that enforces them:
+
+```bash
+scripts/test-agentops-contract-canaries.sh
+```
+
+The broader public corpus still lives under `evals/agentops-core/` and remains
+advisory while brittle exact-string checks and local-baseline ratchets are
+hardened. Run it when changing eval contracts, `ao eval`, or the advisory
+canary suite:
 
 ```bash
 scripts/eval-agentops.sh --fast
@@ -75,12 +86,14 @@ remote-compute RC slices:
 scripts/eval-agentops.sh --suite evals/agentops-core/remote-compute-contracts.json
 ```
 
-The runner writes artifacts under `.agents/evals/runs/`. If a promoted baseline
-exists under `.agents/evals/baselines/`, the runner compares the new run against
-it and fails on regressions. In `--fast` mode it also writes `coverage.json` and
-fails when required domains, score dimensions, or deterministic runtimes are
-missing. Missing baselines are warnings, not failures, so new canaries can land
-before their ratchet is promoted.
+The contract canary runner writes artifacts under
+`.agents/tests/contract-canaries/` and does not compare local baselines. The
+advisory eval runner writes artifacts under `.agents/evals/runs/`. If a promoted
+baseline exists under `.agents/evals/baselines/`, the advisory runner compares
+the new run against it and fails on regressions. In `--fast` mode it also writes
+`coverage.json` and fails when required domains, score dimensions, or
+deterministic runtimes are missing. Missing baselines are warnings, not
+failures, so new canaries can land before their ratchet is promoted.
 
 Baseline promotion is explicit and requires a rationale:
 
@@ -91,11 +104,11 @@ scripts/eval-agentops.sh --fast \
   --rationale "Intentional behavior improvement after review"
 ```
 
-Local deterministic failures are blocking through `scripts/pre-push-gate.sh
---fast` when eval-related files change. CI also runs `agentops-eval-advisory`,
-which is intentionally non-blocking while the initial baselines and variance
-policy are established. Live Claude/Codex runtime checks remain advisory unless a
-suite explicitly opts into a deterministic mock or fixture.
+CI runs `agentops-contract-canaries` as a blocking test job. CI also runs
+`agentops-eval-advisory`, which is intentionally non-blocking while the broad
+corpus, baselines, and variance policy are stabilized. Live Claude/Codex runtime
+checks remain advisory unless a suite explicitly opts into a deterministic mock
+or fixture.
 
 ## Writing New Tests
 
