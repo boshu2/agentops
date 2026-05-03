@@ -203,8 +203,29 @@ if [[ -z "$canonical_branch" ]]; then
     exit 1
 fi
 
-if [[ "$canonical_branch" != "main" ]]; then
-    echo "FAIL: canonical root $canonical_root is on $canonical_branch; expected main" >&2
+canonical_branch_allowed=0
+if [[ "$canonical_branch" == "main" ]]; then
+    canonical_branch_allowed=1
+elif [[ -n "${WORKTREE_DISPOSITION_ALLOW:-}" ]]; then
+    # WORKTREE_DISPOSITION_ALLOW accepts a comma-separated list of glob patterns
+    # (e.g. "nightly/*,triage/*") that the canonical worktree may be on. This
+    # exists so the nightly routine can run the gate from a checked-out
+    # nightly/<date> worktree without the gate hard-failing on the branch
+    # mismatch alone. Dirty-tree and worktree-allow checks below still apply.
+    IFS=',' read -r -a allow_patterns <<<"$WORKTREE_DISPOSITION_ALLOW"
+    for pattern in "${allow_patterns[@]}"; do
+        pattern="${pattern//[[:space:]]/}"
+        [[ -n "$pattern" ]] || continue
+        # shellcheck disable=SC2053
+        if [[ "$canonical_branch" == $pattern ]]; then
+            canonical_branch_allowed=1
+            break
+        fi
+    done
+fi
+
+if (( canonical_branch_allowed == 0 )); then
+    echo "FAIL: canonical root $canonical_root is on $canonical_branch; expected main (override via WORKTREE_DISPOSITION_ALLOW=<pattern>[,<pattern>])" >&2
     exit 1
 fi
 
@@ -254,4 +275,4 @@ fi
 
 validate_preserved_refs "$canonical_root"
 
-echo "PASS: canonical root $canonical_root is clean on main; current branch $current_branch is attached at $repo_root"
+echo "PASS: canonical root $canonical_root is clean on $canonical_branch; current branch $current_branch is attached at $repo_root"

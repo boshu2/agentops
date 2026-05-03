@@ -41,11 +41,33 @@ reports/
 wiki/
 
 # Claude session artifacts
-.agents/
+# Use .agents/* (children) rather than .agents/ (directory) so the !-exceptions
+# below can re-include force-tracked subpaths. gitignore cannot re-include a
+# child once its parent directory itself is excluded.
+.agents/*
 tests/claude-code/.agents/
 # Allow test fixtures under .agents/ paths
 !cli/cmd/ao/testdata/**/.agents/
 !cli/cmd/ao/testdata/**/.agents/**
+# Force-track persisted nightly + evolve audit trails so they propagate
+# across runs (per nightly-routine prompt: "10 KB/day of audit truth").
+!.agents/rpi/
+.agents/rpi/*
+!.agents/rpi/next-work.jsonl
+!.agents/nightly/
+!.agents/nightly/**
+!.agents/evolve/
+.agents/evolve/*
+!.agents/evolve/cycle-history.jsonl
+!.agents/evolve/fitness-cycle-*.json
+!.agents/goals/
+.agents/goals/*
+!.agents/goals/*/
+.agents/goals/*/*
+!.agents/goals/*/attempts.jsonl
+!.agents/dream/
+.agents/dream/*
+!.agents/dream/probe-results.jsonl
 
 # Runtime state
 state.json

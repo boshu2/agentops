@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-05-03T03:30:00Z",
+  "open_prs_against_main": [
+    {
+      "number": 212,
+      "title": "feat(eval): LID baseline-A/B primitive — Wave 1 (soc-x5yz)",
+      "head": "feat/lid-baseline-ab-wave1",
+      "touched_files": [
+        "cli/cmd/ao/eval.go",
+        "cli/internal/eval/baseline_ab.go",
+        "cli/internal/eval/baseline_ab_test.go",
+        "cli/internal/eval/engine.go",
+        "cli/internal/eval/runtime.go",
+        "cli/internal/eval/runtime_test.go",
+        "cli/internal/eval/types.go",
+        "cli/internal/eval/types_test.go",
+        "docs/code-map/eval-lid-primitives.md",
+        "docs/contracts/eval-baseline-ab.md",
+        "evals/agentops-core/lid-primitives-demo.json"
+      ]
+    }
+  ],
+  "blocked_failing_goals": [],
+  "notes": [
+    "go-cli-tests failure root cause is skills/pre-mortem/SKILL.md missing reference to scope-predicate-positive-negative-cases.md (in skills/pre-mortem/references/). Fix files: skills/pre-mortem/SKILL.md. NOT touched by PR #212.",
+    "go-complexity-ceiling failure root cause is processCitationFeedbackWithOptions in cli/cmd/ao/flywheel_citation_feedback.go (CC=21). NOT touched by PR #212.",
+    "compile-freshness and compile-no-oscillation are runtime-artifact tagged (excluded from headline).",
+    "flywheel-compounding is corpus-state quarantined per finding f-2026-04-30-002 (corpus dormant; single-session work cannot move it)."
+  ]
+}
