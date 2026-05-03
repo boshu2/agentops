@@ -211,6 +211,9 @@ type dryRunProgramContractPacket struct {
 		IsolatedAgentsHome  bool    `json:"isolated_agents_home"`
 		ReleaseOnly         bool    `json:"release_only"`
 		MutationEscapeHatch *string `json:"mutation_escape_hatch"`
+		CostClass           string  `json:"cost_class"`
+		AutoSelect          string  `json:"auto_select"`
+		TimeoutSeconds      int     `json:"timeout_seconds"`
 	} `json:"validation_lanes"`
 	AutodevProgram struct {
 		Path               string   `json:"path"`
@@ -271,7 +274,10 @@ func setupDryRunProgramContractWorkspace(t *testing.T, tc dryRunProgramContractC
       "writes_artifacts": false,
       "isolated_agents_home": true,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "default",
+      "timeout_seconds": 180
     }
   ],
   "tracker_commands": {
@@ -404,6 +410,9 @@ func assertDryRunProgramContractPacket(
 	}
 	if !lane.ReadOnly || lane.WritesArtifacts || !lane.IsolatedAgentsHome || lane.ReleaseOnly || lane.MutationEscapeHatch != nil {
 		t.Fatalf("validation_lanes[0] metadata = %#v, want read-only isolated non-release lane", lane)
+	}
+	if lane.CostClass != "standard" || lane.AutoSelect != "default" || lane.TimeoutSeconds != 180 {
+		t.Fatalf("validation_lanes[0] budget metadata = %#v, want standard default 180s lane", lane)
 	}
 	if !containsProgramContract(packet.ContractSurfaces, tc.wantPath) {
 		t.Fatalf("contract_surfaces = %#v, want %s", packet.ContractSurfaces, tc.wantPath)

@@ -77,6 +77,24 @@ STEP 1.5 ── Four-Surface Closure (mandatory)
 STEP 1.6 ── Test pyramid coverage audit (advisory, append to summary)
               Check L0-L3 + BF1/BF4 per modified file. WARN only, not FAIL.
 
+STEP 1.6b ── Validation lane budget guard (mandatory)
+              If the execution packet or repo profile has `validation_lanes`,
+              select the smallest proof set where `read_only=true`,
+              `writes_artifacts=false`, `release_only=false`, `cost_class` is
+              `cheap` or `standard`, and `auto_select` is `default` or matches
+              the changed surface.
+
+              Do not run `expensive`, `explicit`, or `release-only` lanes
+              unless the operator explicitly requested them, the plan
+              acceptance criteria name the command, or the objective is release
+              readiness. Honor each selected lane's `timeout_seconds`; on
+              timeout, write `[TIME-BOXED]` and continue with narrower evidence
+              unless that lane was the only code-surface proof.
+
+              For unclassified commands, treat `go test -race`, `-shuffle`,
+              `-count=N` where `N > 1`, eval runners, retrieval bench,
+              headless runtime smoke, and release gates as explicit-only.
+
 STEP 1.7 ── Lifecycle Checks (advisory except critical dependency findings)
               Skip entire step if: --no-lifecycle flag.
               Each sub-step uses --quick mode to limit context consumption.
@@ -195,6 +213,14 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | `--no-budget` | off | Disable phase time budgets |
 | `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `/rpi --quality`. |
 | `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
+
+## Expensive Command Policy
+
+Routine validation is targeted by default. Broad proof commands such as
+`go test -race`, `go test -shuffle`, `go test -count=N` with `N > 1`, eval
+runners, retrieval bench, headless runtime smoke, and release gates require
+explicit operator/release/acceptance-criteria context. If one is run, record the
+reason and timeout in the phase summary.
 
 ## Quick Start
 

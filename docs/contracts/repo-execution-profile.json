@@ -32,7 +32,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "changed-surface",
+      "timeout_seconds": 120
     },
     {
       "name": "go-vet-read-only",
@@ -42,7 +45,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "changed-surface",
+      "timeout_seconds": 120
     },
     {
       "name": "go-test-read-only",
@@ -52,7 +58,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "changed-surface",
+      "timeout_seconds": 180
     },
     {
       "name": "skill-integrity-read-only",
@@ -62,7 +71,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "changed-surface",
+      "timeout_seconds": 120
     },
     {
       "name": "worktree-disposition-read-only",
@@ -72,7 +84,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "cheap",
+      "auto_select": "default",
+      "timeout_seconds": 30
     },
     {
       "name": "pre-push-fast",
@@ -82,7 +97,10 @@
       "writes_artifacts": false,
       "isolated_agents_home": true,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "default",
+      "timeout_seconds": 180
     },
     {
       "name": "local-ci-release",
@@ -95,7 +113,11 @@
       ],
       "isolated_agents_home": true,
       "release_only": true,
-      "mutation_escape_hatch": "operator-run-release-validation"
+      "mutation_escape_hatch": "operator-run-release-validation",
+      "cost_class": "expensive",
+      "auto_select": "release-only",
+      "timeout_seconds": 900,
+      "expensive_reason": "Full release readiness gate writes release evidence and can run broad validation; reserve for explicit release work."
     }
   ],
   "tracker_commands": {

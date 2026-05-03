@@ -24,7 +24,10 @@ Write the current packet to:
       "writes_artifacts": false,
       "isolated_agents_home": true,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "standard",
+      "auto_select": "default",
+      "timeout_seconds": 180
     }
   ],
   "tracker_mode": "<beads|tasklist>",

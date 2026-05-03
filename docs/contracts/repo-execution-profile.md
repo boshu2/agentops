@@ -39,13 +39,19 @@ Structured metadata for validation commands. Each lane has a stable `name`, the 
 - `isolated_agents_home` — command should run with isolated `HOME`/`AGENTS_HOME` or equivalent no-citation state
 - `release_only` — command is reserved for release readiness rather than fast everyday validation
 - `mutation_escape_hatch` — named opt-in for intentional mutation, or `null` when mutation is not allowed
+- `cost_class` — `cheap`, `standard`, or `expensive`
+- `auto_select` — `default`, `changed-surface`, `explicit`, or `release-only`
+- `timeout_seconds` — recommended wall-clock cap for routine agent execution
+- `expensive_reason` — rationale for expensive or explicit-only lanes
 
 Agents should select the smallest lane set that proves the slice:
-- Fast local validation uses lanes where `read_only=true`, `writes_artifacts=false`, and `release_only=false`.
+- Fast local validation uses lanes where `read_only=true`, `writes_artifacts=false`, `release_only=false`, and `auto_select` is `default` or the lane matches the changed surface.
+- `expensive`, `explicit`, and `release-only` lanes are not routine validation. Run them only when the operator asks for that lane, the plan acceptance criteria name it, or the objective is release readiness.
 - Release readiness uses `release_only=true` lanes only when preparing a tag, release PR, or explicit release audit.
 - If a lane has `isolated_agents_home=true`, create an isolated agent state directory before running it instead of writing into persistent local agent knowledge.
 - If `writes_artifacts=true`, check `artifact_paths` before and after the run and report the generated files.
 - If `mutation_escape_hatch` is non-null, do not run that lane as routine validation; name the escape hatch in the handoff or release evidence.
+- If a command is not represented by a lane, treat `go test -race`, `-shuffle`, `-count=N` where `N > 1`, eval runners, retrieval bench, headless runtime smoke, and release gates as explicit-only.
 
 ### `tracker_commands`
 Repo-scoped command wrappers for issue tracking. This is where shell/runtime requirements such as `zsh -lc 'cd <repo> && bd ...'` live when a tracker needs a specific execution environment.
@@ -105,7 +111,10 @@ This keeps repo policy additive and phase-stable without replacing the current g
       "writes_artifacts": false,
       "isolated_agents_home": false,
       "release_only": false,
-      "mutation_escape_hatch": null
+      "mutation_escape_hatch": null,
+      "cost_class": "cheap",
+      "auto_select": "default",
+      "timeout_seconds": 30
     },
     {
       "name": "local-ci-release",
@@ -118,7 +127,11 @@ This keeps repo policy additive and phase-stable without replacing the current g
       ],
       "isolated_agents_home": true,
       "release_only": true,
-      "mutation_escape_hatch": "operator-run-release-validation"
+      "mutation_escape_hatch": "operator-run-release-validation",
+      "cost_class": "expensive",
+      "auto_select": "release-only",
+      "timeout_seconds": 900,
+      "expensive_reason": "Full release readiness gate writes release evidence and runs broad validation."
     }
   ],
   "tracker_commands": {

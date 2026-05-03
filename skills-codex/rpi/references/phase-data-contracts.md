@@ -30,10 +30,13 @@ Execution packet retention rule:
 - `.agents/rpi/runs/<run-id>/execution-packet.json` is the durable per-run packet archive when `run_id` exists
 
 Validation lane selection rule:
-- implementation and fast closeout phases prefer lanes where `read_only=true`, `writes_artifacts=false`, and `release_only=false`
+- implementation and fast closeout phases prefer lanes where `read_only=true`, `writes_artifacts=false`, `release_only=false`, `cost_class` is `cheap` or `standard`, and `auto_select` is `default` or matches the changed surface
+- lanes with `cost_class=expensive`, `auto_select=explicit`, or `auto_select=release-only` require an explicit operator request, a named plan acceptance criterion, or a release-readiness objective
+- every selected lane should honor `timeout_seconds`; when a lane times out, record `[TIME-BOXED]` and continue with narrower evidence unless it was the only code-surface proof
 - lanes with `isolated_agents_home=true` require isolated agent state before execution
 - lanes with `writes_artifacts=true` or `release_only=true` are release/audit lanes; run them only when the packet objective or operator explicitly asks for release readiness
 - lanes with a non-null `mutation_escape_hatch` require the escape hatch name in the validation report or handoff
+- unclassified commands containing `go test -race`, `-shuffle`, `-count=N` where `N > 1`, eval runners, retrieval bench, headless runtime smoke, or release gates are explicit-only
 
 Queue lifecycle rule:
 - post-mortem writes new entries as available: entry aggregate `consumed=false`, `claim_status="available"`

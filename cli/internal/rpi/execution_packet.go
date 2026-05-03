@@ -26,4 +26,8 @@ type ValidationLane struct {
 	IsolatedAgentsHome  bool     `json:"isolated_agents_home"`
 	ReleaseOnly         bool     `json:"release_only"`
 	MutationEscapeHatch *string  `json:"mutation_escape_hatch"`
+	CostClass           string   `json:"cost_class,omitempty"`
+	AutoSelect          string   `json:"auto_select,omitempty"`
+	TimeoutSeconds      int      `json:"timeout_seconds,omitempty"`
+	ExpensiveReason     string   `json:"expensive_reason,omitempty"`
 }

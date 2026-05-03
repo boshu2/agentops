@@ -186,7 +186,10 @@
         "writes_artifacts",
         "isolated_agents_home",
         "release_only",
-        "mutation_escape_hatch"
+        "mutation_escape_hatch",
+        "cost_class",
+        "auto_select",
+        "timeout_seconds"
       ],
       "properties": {
         "name": {
@@ -235,6 +238,35 @@
             "null"
           ],
           "description": "Named opt-in that permits intentional mutation, or null when no mutation is allowed."
+        },
+        "cost_class": {
+          "type": "string",
+          "enum": [
+            "cheap",
+            "standard",
+            "expensive"
+          ],
+          "description": "Relative cost of the lane for routine agent validation."
+        },
+        "auto_select": {
+          "type": "string",
+          "enum": [
+            "default",
+            "changed-surface",
+            "explicit",
+            "release-only"
+          ],
+          "description": "When agents may select this lane without an explicit operator request."
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Recommended wall-clock timeout for routine agent execution of this lane."
+        },
+        "expensive_reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required operational rationale when cost_class is expensive or auto_select is explicit/release-only."
         }
       },
       "additionalProperties": false
