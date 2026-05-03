@@ -1,0 +1,21 @@
+{
+  "id": "retro-2026-04-30-agentops-pr-queue",
+  "date": "2026-04-30",
+  "epic_id": "soc-j8d6",
+  "verdict": "PASS_WITH_WARN",
+  "duration_minutes": 125,
+  "learnings_extracted": 2,
+  "next_work_items": 2,
+  "merged_prs": [176, 177, 192, 196, 197, 198, 199, 200, 202, 203],
+  "validation": [
+    "go test ./cmd/ao ./internal/daemon ./internal/agentworker",
+    "check-go-complexity --base e9ac433d --warn 15 --fail 25",
+    "validate-cli-skills-map.sh",
+    "validate-hooks-doc-parity.sh"
+  ],
+  "warnings": [
+    "closure-integrity audit expects child issues for task bead soc-j8d6",
+    "metadata link scan flagged MkDocs-style docs routes",
+    "agentops-eval-advisory warn-only check failed after #198"
+  ]
+}

@@ -32,3 +32,4 @@
 - **Corroborate Before Council**: Dream long-haul should spend budget on cheap packet corroboration before paying for council; strong corroboration can make the expensive lane unnecessary (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
 - **Durable Closure Evidence**: Closed beads should cite committed discovery artifacts or explicit proof packets, not ephemeral seed paths, so closure audits can replay mechanically (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
 - **Timeout-Aware Generators**: Pluggable generators need context-aware IO and stall tests before joining Dream fanout (source: `.agents/learnings/2026-04-26-generator-timeout-contract.md`)
+- **Stack PR Queues Base-First**: Drain stacked PR queues by merging foundations first, then rebasing remaining branches onto the updated target with explicit force-with-lease proof (source: `.agents/learnings/2026-04-30-pr-queue-stack-drain.md`)
