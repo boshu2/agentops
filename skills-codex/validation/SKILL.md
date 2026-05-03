@@ -223,21 +223,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 
 ## Expensive Command Policy
 
-Routine validation is targeted by default. Broad proof commands such as
-`go test -race`, `go test -shuffle`, `go test -count=N` with `N > 1`, eval
-runners, retrieval bench, headless runtime smoke, and release gates require
-explicit operator/release/acceptance-criteria context. If one is run, record the
-reason and timeout in the phase summary.
-
-## Quick Start
-
-```bash
-$validation ag-5k2                        # validate epic with full close-out
-$validation                               # validate recent work (no epic)
-$validation --complexity=full ag-5k2      # force full council ceremony
-$validation --no-retro ag-5k2             # skip retro only
-$validation --no-forge ag-5k2             # skip forge only
-```
+Routine validation is targeted by default. Broad proof commands such as `go test -race`, eval runners, retrieval bench, headless runtime smoke, and release gates require explicit operator/release/acceptance-criteria context; record the reason and timeout when run.
 
 ## Completion Markers
 
@@ -261,7 +247,3 @@ $validation --no-forge ag-5k2             # skip forge only
 - [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
 - [references/forge-scope.md](references/forge-scope.md) — forge session scoping and deduplication
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run behavior and standalone mode
-
-## See Also
-
-Core phases: [vibe](../vibe/SKILL.md), [post-mortem](../post-mortem/SKILL.md), [retro](../retro/SKILL.md), [forge](../forge/SKILL.md), [crank](../crank/SKILL.md), [discovery](../discovery/SKILL.md), [rpi](../rpi/SKILL.md). Lifecycle Step 1.7: [test](../test/SKILL.md), [deps](../deps/SKILL.md), [review](../review/SKILL.md), [perf](../perf/SKILL.md).
