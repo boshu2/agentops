@@ -3,6 +3,69 @@ set -euo pipefail
 
 # AgentOps Installer
 # Usage: bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
+#        bash scripts/install.sh --dev
+
+usage() {
+    cat <<'EOF'
+Usage:
+  bash scripts/install.sh
+  bash scripts/install.sh --dev
+
+Options:
+  --dev       Configure this checkout for AgentOps development: install repo
+              hooks, build cli/bin/ao, and smoke-test pre-push wiring.
+  -h, --help  Show this help.
+EOF
+}
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+install_dev() {
+    local repo_root
+    repo_root="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+    if [[ ! -f "$repo_root/scripts/install-dev-hooks.sh" || ! -d "$repo_root/cli" ]]; then
+        echo "Error: --dev must be run from an AgentOps source checkout." >&2
+        exit 1
+    fi
+
+    echo "Installing AgentOps development wiring..."
+    echo "Step 1/3: Configuring repo-managed git hooks..."
+    bash "$repo_root/scripts/install-dev-hooks.sh"
+
+    echo "Step 2/3: Building cli/bin/ao..."
+    make -C "$repo_root/cli" build
+
+    echo "Step 3/3: Verifying pre-push gate wiring..."
+    bash "$repo_root/scripts/check-pre-push-gate-wired.sh" --dry-run-smoke --check-activation
+
+    echo ""
+    echo "Done! Development checkout ready."
+}
+
+case "${1:-}" in
+    --dev)
+        shift
+        if [[ $# -gt 0 ]]; then
+            echo "Unknown option for --dev: $1" >&2
+            usage >&2
+            exit 2
+        fi
+        install_dev
+        exit 0
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    "")
+        ;;
+    *)
+        echo "Unknown option: $1" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
 
 echo "Installing AgentOps..."
 

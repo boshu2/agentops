@@ -1,12 +1,12 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs a 30-job validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate (30 jobs) |
+| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
@@ -43,7 +43,7 @@ Dream, Claude/Codex runners, RPI/evolve, and PR digest output, see
 
 ## validate.yml Architecture
 
-The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
+The validate workflow runs many focused jobs across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
 
 ### Job Dependency Graph
 
@@ -56,6 +56,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                     │  validate-ci-policy-parity                    │
                     │  codex-runtime-sections                       │
                     │  embedded-sync       cli-docs-parity          │
+                    │  agentops-contract-canaries                  │
                     │  agentops-eval-advisory                      │
                     │  shellcheck          markdownlint             │
                     │  security-scan       security-toolchain-gate  │
@@ -81,7 +82,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
                       │            │              │
                     ┌─┴────────────┴──────────────┴─┐
                     │           summary             │
-                    │  (needs: ALL 30 jobs)         │
+                    │  (needs: all validate jobs)   │
                     │  if: always()                 │
                     └───────────────────────────────┘
 ```
@@ -90,7 +91,7 @@ The validate workflow runs **30 jobs** across 4 tiers of parallelism. Most jobs 
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output.
+Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output. `agentops-contract-canaries` is the blocking deterministic test gate for the stable public canary subset.
 
 ## Blocking vs Soft Gates
 
@@ -100,7 +101,7 @@ These jobs run but their failure does **not** block merges. Each carries an `(ad
 
 | Job | Triage SLA | Reason |
 |-----|------------|--------|
-| `agentops-eval-advisory` | 7d (release-blocking when stale) | Public eval canaries run on every PR, but baseline ratchets start advisory until variance and promotion policy are stable |
+| `agentops-eval-advisory` | 7d (release-blocking when stale) | The broad eval/canary corpus still runs on every PR, but brittle exact-string checks and baseline ratchets stay advisory until promoted |
 | `security-toolchain-gate` | 14d | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check. Install steps use 3-attempt exponential-backoff retry to absorb transient trivy/hadolint network timeouts (item 40, soc-z7qq) |
 | `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
 | `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
