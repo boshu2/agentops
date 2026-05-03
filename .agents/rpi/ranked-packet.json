@@ -1,45 +1,43 @@
 {
   "schema_version": 1,
-  "goal": "Create bd issues for all actionable 2026-05-02 audit findings",
-  "generated_at": "2026-05-02T23:01:13-04:00",
-  "applied_findings": [
+  "generated_at": "2026-05-03T13:01:01Z",
+  "goal": "build context usefulness eval for .agents using outcome-level A/B, harmful-context sentinels, and MemRL feedback integration",
+  "items": [
     {
-      "path": ".agents/findings/f-2026-04-25-001.md",
-      "reason": "Worktree disposition remains a release blocker after validation evidence passes."
+      "rank": 1,
+      "path": ".agents/brainstorm/2026-05-03-agentops-product-direction.md",
+      "type": "brainstorm",
+      "reason": "Prior selected direction: Decision/Context Compiler First."
     },
     {
-      "path": ".agents/findings/f-2026-05-02-005.md",
-      "reason": "Silent Edit revert should be tracked as upstream evidence filing, not repo-source repair."
+      "rank": 2,
+      "path": ".agents/council/2026-05-03-brainstorm-agentops-product-direction.md",
+      "type": "council",
+      "reason": "Validated the product direction and warned that typed packet contracts are needed."
     },
     {
-      "path": ".agents/findings/f-2026-05-02-006.md",
-      "reason": "Semver tag filtering is a concrete release-helper bug."
+      "rank": 3,
+      "path": ".agents/research/2026-05-03-agents-corpus-context-compiler-validation.md",
+      "type": "research",
+      "reason": "Validated `.agents/` as the existing corpus and identified missing compiler contract."
+    },
+    {
+      "rank": 4,
+      "path": ".agents/findings/f-2026-04-30-002.md",
+      "type": "finding",
+      "reason": "Corpus-state gates can correctly fail when citation activity is absent or insufficient."
+    },
+    {
+      "rank": 5,
+      "path": "docs/contracts/eval-baseline-ab.md",
+      "type": "contract",
+      "reason": "Existing A/B primitive can be extended from skill suppression to context suppression."
+    },
+    {
+      "rank": 6,
+      "path": "scripts/validate-learning-coherence.sh",
+      "type": "gate",
+      "reason": "Existing garbage-learning detection should feed the new harmful-context eval."
     }
-  ],
-  "existing_tracker_coverage": [
-    "soc-0vm9",
-    "soc-sros",
-    "soc-0pzj",
-    "soc-owed"
-  ],
-  "created_or_updated_beads": [
-    "soc-ff2p",
-    "soc-ff2p.2",
-    "soc-ff2p.3",
-    "soc-ff2p.4",
-    "soc-ff2p.5",
-    "soc-ff2p.6",
-    "soc-ff2p.7",
-    "soc-ff2p.8",
-    "soc-0pzj"
-  ],
-  "new_issue_candidates": [
-    "Filter release tag discovery to semver release tags",
-    "Make tests/run-all.sh --all reliable under live runtime failures",
-    "Resolve release worktree disposition and .agents churn blocker",
-    "Isolate release validation from .agents/findings metadata churn",
-    "Review security toolchain warning before v2.40 tag",
-    "File upstream Claude Code silent Edit revert report",
-    "Decide historical changelog coverage floor"
   ]
 }
