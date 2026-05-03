@@ -96,7 +96,7 @@
         {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: canonical root $canonical_root is detached; it must stay on main"},
         {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: canonical root $canonical_root is on $canonical_branch; expected main"},
         {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "FAIL: unexpected branch-attached worktrees detected:"},
-        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "PASS: canonical root $canonical_root is clean on main; current branch $current_branch is attached at $repo_root"}
+        {"type": "artifact_contains", "target": "../../scripts/check-worktree-disposition.sh", "value": "PASS: canonical root $canonical_root is clean on $canonical_branch; current branch $current_branch is attached at $repo_root"}
       ],
       "dimensions": ["correctness", "process_adherence", "safety"],
       "critical": true

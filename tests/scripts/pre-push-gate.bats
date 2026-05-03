@@ -83,6 +83,7 @@ setup() {
     # stubs when tests exercise the Go/hash paths.
     make_stub "$FAKE_REPO/scripts/check-home-isolation.sh"
     make_hash_snapshot_stub "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
+    make_ao_stub "$MOCK_BIN/ao"
     make_stub "$FAKE_REPO/scripts/pre-push-proof.sh"
     # soc-h53j: paired stub for prepush-hygiene-gate codex-hooks parity (R2).
     # Symmetric per f-2026-04-27-002: any helper-script reference in
@@ -127,6 +128,24 @@ case "${1:-}" in
     exit 0
     ;;
 esac
+STUB
+    chmod +x "$path"
+}
+
+make_ao_stub() {
+    local path="$1"
+    cat > "$path" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "eval" && "${2:-}" == "baseline-audit" ]]; then
+    printf '{"stale_suite_hashes":[],"policy_mismatch_count":0}\n'
+    exit 0
+fi
+if [[ "${1:-}" == "metrics" && "${2:-}" == "health" ]]; then
+    printf '{"flywheel_status":"STABLE"}\n'
+    exit 0
+fi
+exit 127
 STUB
     chmod +x "$path"
 }
