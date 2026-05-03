@@ -11,7 +11,7 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 metadata:
-  tier: utility
+  tier: execution
   dependencies: []
 output_contract: "stdout: triage report; stderr: warnings on protected processes"
 ---
