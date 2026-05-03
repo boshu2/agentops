@@ -188,7 +188,7 @@ EOF
     [ "$status" -eq 0 ]
 }
 
-@test "fails when allowlisted surface lacks table classification" {
+@test "fails when referenced allowlisted surface lacks table classification" {
     local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
     {
         printf '# .agents/ Write Surfaces\n\n'
@@ -349,7 +349,7 @@ EOF
     [ "$status" -eq 0 ]
 }
 
-@test "fails when allowlisted surface lacks table classification" {
+@test "fails when unreferenced allowlisted surface lacks table classification" {
     local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
     {
         printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
