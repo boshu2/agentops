@@ -16,7 +16,7 @@ Every coding session reads from the corpus on the way in and writes back on the 
 
 **The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
-[Install](#install) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
+[Install](#install) · [Quick Start](#quick-start) · [Council](#council-is-the-judgment-engine) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
 </div>
 
@@ -58,6 +58,23 @@ AgentOps closes three failure modes most agent setups don't even name:
 | **Loop Closure** | Code diff lands. No lesson extracted. No constraint hardened. Next session re-learns from scratch. | `/post-mortem` · finding compiler · `/evolve` |
 
 Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one or more of these. Full contract: [docs/context-lifecycle.md](docs/context-lifecycle.md).
+
+---
+
+## Council Is the Judgment Engine
+
+`/council` is the feedback primitive behind AgentOps. Use it directly when the call is too important for one agent's confidence: architecture, security posture, migration strategy, product tradeoffs, release readiness, or a PR that looks plausible but under-reviewed. `/pre-mortem`, `/vibe`, `/post-mortem`, `/discovery`, and `/rpi` all lean on the same validation loop at different points in the lifecycle.
+
+| Need | Run | What you get |
+|------|-----|--------------|
+| Fast sanity check | `/council --quick validate recent` | Inline PASS/WARN/FAIL without spawning judges |
+| Independent review | `/council validate this PR` | Two runtime-native judges reviewing the same target independently |
+| Hard decision | `/council --mixed validate this architecture decision` | Runtime-native and Codex CLI judges receive the same packet, so disagreement exposes model/runtime bias instead of hiding it |
+| Focused expertise | `/council --preset=security-audit validate the auth system` | Named lenses such as attacker, defender, compliance, and web-security |
+| Adversarial review | `/council --debate validate the migration plan` | Round 1 independent verdicts, then Round 2 challenge and revision |
+| Durable evidence | `/council --evidence --commit-ready validate the release plan` | A consolidated report suitable for committed decision history |
+
+For the hardest decisions, `--mixed` is the point: the same perspectives run on both backends, then the report consolidates consensus or disagreement. That makes council useful for judgment and validation, not just code review. Discovery and RPI build on this by turning a vague goal into researched work, then forcing the plan through the same feedback engine before implementation hardens.
 
 ---
 
