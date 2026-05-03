@@ -622,6 +622,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
+    },
+    {
+      "name": "system-tuning",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
     }
   ]
 }

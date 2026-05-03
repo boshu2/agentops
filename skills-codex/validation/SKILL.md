@@ -16,12 +16,6 @@ See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learn
 
 ## DAG — Execute This Sequentially
 
-```
-mkdir -p .agents/rpi
-detect complexity from execution-packet or --complexity flag (default: standard)
-detect ao CLI availability
-```
-
 ### Step 0: Load Prior Validation Context
 
 Before running the validation pipeline, pull relevant learnings from prior reviews:
@@ -221,9 +215,15 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `$rpi --quality`. |
 | `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
-## Expensive Command Policy
+## Quick Start
 
-Routine validation is targeted by default. Broad proof commands such as `go test -race`, eval runners, retrieval bench, headless runtime smoke, and release gates require explicit operator/release/acceptance-criteria context; record the reason and timeout when run.
+```bash
+$validation ag-5k2                        # validate epic with full close-out
+$validation                               # validate recent work (no epic)
+$validation --complexity=full ag-5k2      # force full council ceremony
+$validation --no-retro ag-5k2             # skip retro only
+$validation --no-forge ag-5k2             # skip forge only
+```
 
 ## Completion Markers
 

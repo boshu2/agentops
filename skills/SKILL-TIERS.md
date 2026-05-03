@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (61)
+### User-Facing Skills (62)
 
 **Judgment:**
 
@@ -261,6 +261,7 @@ These are how skills chain in practice:
 | **scaffold** | execution | Project scaffolding, component generation, and boilerplate setup |
 | **scenario** | execution | Author and manage holdout scenarios for behavioral validation |
 | **scope** | execution | Edit-scope guard — freeze/unfreeze directories with hard-block PreToolUse hook |
+| **system-tuning** | utility | Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene |
 
 **Knowledge:**
 
@@ -405,6 +406,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **perf** | standards, complexity | optional, optional |
 | **scaffold** | standards | required |
 | **scenario** | - | - (standalone) |
+| **system-tuning** | - | - (standalone) |
 
 ---
 
