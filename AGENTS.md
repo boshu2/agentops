@@ -234,6 +234,10 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 
 **Do not track repo-root `.agents/`.** `.agents/` is local agent runtime state for Codex, Claude, AgentOps, and other agents. It can churn and may contain sensitive session context. The pre-push and CI gates run `scripts/check-no-tracked-agents.sh`; use durable docs or release artifacts outside `.agents/` for anything that belongs in git history.
 
+**Treat `ao codex start/stop` lifecycle shims as deprecated.** Do not use `ao codex start`, `ao codex stop`, `ao codex ensure-start`, or `ao codex ensure-stop` for routine validation, RPI closeout, or merge work. These commands are legacy lifecycle shims and can mutate local agent state. Prefer non-mutating validation commands, `bd` notes, and tracked docs/runbooks. If a targeted lifecycle task truly requires one of these commands, run it in an isolated/disposable worktree with isolated agent state, then verify `git status` and `git ls-files .agents` before committing.
+
+**Merge older `.agents` branches defensively.** Branches created before the no-tracked-`.agents` policy may contain RPI packets, summaries, or runtime metadata under `.agents/`. During merge conflict resolution, keep `main`'s deletion of repo-root `.agents/*` unless the user explicitly asks to reintroduce a tracked artifact. After resolving conflicts, run `git ls-files .agents` and expect no output.
+
 **Skill counts must be synced.** When adding or removing a skill directory, run:
 ```bash
 scripts/sync-skill-counts.sh
