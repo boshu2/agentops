@@ -203,3 +203,29 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" == *"release audit artifact validation passed"* ]]
 }
+
+@test "validate-release-audit-artifacts changed mode skips missing latest when no audit changed" {
+    write_audit "2.40.0" "20260427T020612Z" "2026-05-03"
+
+    run env RELEASE_AUDIT_CHANGED_PATHS="scripts/pre-push-gate.sh" \
+        "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" --mode changed
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"no changed release audits to validate"* ]]
+}
+
+@test "validate-release-audit-artifacts changed mode rejects changed audit with missing artifacts" {
+    write_audit "2.40.0" "20260427T020612Z" "2026-05-03"
+
+    run env RELEASE_AUDIT_CHANGED_PATHS="docs/releases/2026-05-03-v2.40.0-audit.md" \
+        "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" --mode changed
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no release-artifacts.json and no complete versioned artifact fallback"* ]]
+}
+
+@test "validate-release-audit-artifacts target mode remains strict for missing target artifacts" {
+    write_audit "2.40.0" "20260427T020612Z" "2026-05-03"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh" --mode target --target-release 2.40.0
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no release-artifacts.json and no complete versioned artifact fallback"* ]]
+}

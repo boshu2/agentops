@@ -40,6 +40,17 @@ is_gate_managed_path() {
     esac
 }
 
+is_tracked_policy_path() {
+    case "$1" in
+        .gitattributes|.gitignore|AGENTS.md|CLAUDE.md|docs/contracts/*|docs/preserved-refs.tsv|docs/runbooks/*|hooks/hooks.json|scripts/check-worktree-disposition.sh|scripts/pre-push-gate.sh|scripts/ci-local-release.sh|scripts/release-smoke-test.sh|scripts/check-release-agent-metadata-stable.sh)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 is_disposition_ignored_path() {
     case "$1" in
         .agents/*|wiki/*)
@@ -72,7 +83,10 @@ print_dirty_diagnostics() {
     local line
     local path
     local -a gate_managed_paths=()
-    local -a other_paths=()
+    local -a ignored_paths=()
+    local -a tracked_policy_paths=()
+    local -a user_operator_paths=()
+    local -a unknown_paths=()
 
     echo "FAIL: canonical root $target_root has uncommitted changes" >&2
     echo "Dirty paths from git status --porcelain:" >&2
@@ -80,22 +94,40 @@ print_dirty_diagnostics() {
         [[ -n "$line" ]] || continue
         printf '  %s\n' "$line" >&2
         path="$(porcelain_path "$line")"
-        if is_gate_managed_path "$path"; then
+        if is_disposition_ignored_path "$path"; then
+            ignored_paths+=("$path")
+        elif is_gate_managed_path "$path"; then
             gate_managed_paths+=("$path")
+        elif is_tracked_policy_path "$path"; then
+            tracked_policy_paths+=("$path")
+        elif [[ "${line:0:2}" == "??" ]]; then
+            unknown_paths+=("$path")
         else
-            other_paths+=("$path")
+            user_operator_paths+=("$path")
         fi
     done <<<"$dirty_status"
 
+    if (( ${#ignored_paths[@]} > 0 )); then
+        echo "Generated/ignored paths detected:" >&2
+        printf '  - %s\n' "${ignored_paths[@]}" >&2
+    fi
     if (( ${#gate_managed_paths[@]} > 0 )); then
         echo "Generated/gate-managed paths detected:" >&2
         printf '  - %s\n' "${gate_managed_paths[@]}" >&2
     fi
-    if (( ${#other_paths[@]} > 0 )); then
-        echo "Other dirty paths detected:" >&2
-        printf '  - %s\n' "${other_paths[@]}" >&2
+    if (( ${#tracked_policy_paths[@]} > 0 )); then
+        echo "Tracked policy paths detected:" >&2
+        printf '  - %s\n' "${tracked_policy_paths[@]}" >&2
     fi
-    echo "Commit intentional changes; if a validation command generated these files, rerun the matching generator or restore them before pushing." >&2
+    if (( ${#user_operator_paths[@]} > 0 )); then
+        echo "User/operator edit paths detected:" >&2
+        printf '  - %s\n' "${user_operator_paths[@]}" >&2
+    fi
+    if (( ${#unknown_paths[@]} > 0 )); then
+        echo "Unknown dirty paths detected:" >&2
+        printf '  - %s\n' "${unknown_paths[@]}" >&2
+    fi
+    echo "Commit tracked-policy and user/operator edits intentionally, preserve/defer unknown work, and rerun or restore generated outputs before pushing." >&2
 }
 
 trim_field() {
@@ -229,9 +261,10 @@ if (( canonical_branch_allowed == 0 )); then
     exit 1
 fi
 
-dirty_status="$(filter_disposition_dirty_status "$(run_git_external "$canonical_root" status --porcelain --untracked-files=all)")"
+full_dirty_status="$(run_git_external "$canonical_root" status --porcelain --untracked-files=all)"
+dirty_status="$(filter_disposition_dirty_status "$full_dirty_status")"
 if [[ -n "$dirty_status" ]]; then
-    print_dirty_diagnostics "$canonical_root" "$dirty_status"
+    print_dirty_diagnostics "$canonical_root" "$full_dirty_status"
     exit 1
 fi
 

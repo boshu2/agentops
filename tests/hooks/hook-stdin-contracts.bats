@@ -170,6 +170,24 @@ AOEOF
     [ "$status" -eq 0 ]
 }
 
+@test "dangerous-git-guard: branch names containing -f are allowed" {
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git push origin feature-fix"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 0 ]
+}
+
+@test "dangerous-git-guard: ref names containing -f are allowed" {
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git push origin refs/heads/fix-forward"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 0 ]
+}
+
+@test "dangerous-git-guard: force after remote is blocked" {
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git push origin -f main"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 2 ]
+}
+
 @test "dangerous-git-guard: hard reset blocked" {
     run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
         -- "$MOCK_REPO" '{"tool_input":{"command":"git reset --hard HEAD~1"}}' "$HOOKS_DIR/dangerous-git-guard.sh"

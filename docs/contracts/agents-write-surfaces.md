@@ -21,59 +21,69 @@ allowlist nor an active skill name fails the gate.
 
 ## Surfaces
 
-| Subdir | Owner | Lifecycle | Purpose |
-|---|---|---|---|
-| `ao` | cli (`cli/internal/storage`, `cli/internal/ratchet`, hooks) | persistent | Core runtime state: chain, citations, baselines, history, search index, factory state, hook-error logs |
-| `archive` | cli (curate, harvest, dedup) | persistent | Archived/superseded artifacts with retention metadata |
-| `archived-worktrees` | scripts (`worktree-disposition`) | persistent | Snapshot of preserved worktrees pending review |
-| `briefings` | scripts (compile, brief generators) | regenerated | Compiled session-start briefings |
-| `candidates` | cli (ratchet `TierObservation`) | rolling | Pre-promotion candidate observations |
-| `compaction-snapshots` | hooks (compaction recovery) | rolling | Pre-compaction context snapshots |
-| `compile` | cli (compile pipeline) | regenerated | Intermediate compile state |
-| `compiled` | cli (compile pipeline) | regenerated | Compiled wiki output (subset; see `wiki/`) |
-| `config` | cli (.agents/.config) | persistent | Rig identity (project/crew) — read by harvest path-prefix fallback |
-| `constraints` | cli (constraints subsystem) | persistent | Compiled constraint manifests |
-| `context` | cli (`cli/cmd/ao/inject_context_paths.go`) | rolling | Per-run adhoc context injection paths keyed by run ID |
-| `daemon` | cli (`agentopsd`, daemon store/projections, OpenClaw snapshots) | persistent | Authoritative daemon ledger, queue/job projections, activation state, and consumer snapshots |
-| `defrag` | cli (compile defrag), scripts | rolling | Defrag run state and dry-run reports |
-| `evals` | cli eval runtime, scripts (`eval-agentops`) | persistent | Eval run outputs, promoted baselines, and suite execution state |
-| `findings` | scripts, /forge | persistent | Mined findings awaiting promotion |
-| `git` | cli (git-aware tooling) | persistent | Git-derived state cached for the runtime |
-| `handoffs` | cli (daemon content-addressed artifacts) | persistent | Content-addressed handoff artifacts keyed by sha256 for daemon job replay |
-| `holdout` | cli (`/scenario`) | persistent | Holdout scenarios stored outside the codebase view |
-| `knowledge` | cli (compile knowledge surface) | persistent | Promoted knowledge artifacts |
-| `learnings` | cli (curate `TierLearning`), /post-mortem, /retro | persistent | Promoted learning artifacts |
-| `ledger` | cli (audit ledger) | persistent | Append-only audit ledger |
-| `memory` | cli (memory subsystem) | persistent | Memory-rl artifacts |
-| `mine` | cli (compile mine), /forge | rolling | Mined raw signal awaiting promotion |
-| `nightly` | scripts (`nightly-evolution`) | rolling | Private local nightly run digests, readiness snapshots, scheduler templates, and phase logs |
-| `opencode-tests` | scripts (opencode runtime tests) | regenerated | Opencode runtime test fixtures and outputs |
-| `overnight` | scripts (nightly dream cycle), /dream | rolling | Overnight run state and morning packets |
-| `packets` | cli (`context_explain.go`, `context_packet_status.go`) | rolling | Source manifests and promoted packets feeding the context-explain surface |
-| `patterns` | cli (curate), /post-mortem, /retro | persistent | Promoted pattern artifacts |
-| `planning-rules` | cli (planning) | persistent | Planning rules sourced from skills/contracts |
-| `plans` | /plan, scripts | persistent | Planning artifacts |
-| `playbooks` | cli (knowledge-activation) | persistent | Compiled playbook candidates |
-| `pool` | cli (`pool.PoolDir`) | persistent | Idea pool / candidate inbox |
-| `pre-mortem-checks` | /pre-mortem | persistent | Pre-mortem check templates and runs |
-| `products` | /product | persistent | Product validation artifacts |
-| `profile` | cli (profile subsystem) | persistent | Repo execution profile cache |
-| `quarantine` | cli (daemon/wiki worker retry policy) | rolling | Failed daemon worker payloads and retry/quarantine evidence for operator review |
-| `releases` | scripts (`ci-local-release`) | rolling | Local CI release evidence |
-| `retros` | /retro | persistent | Retrospectives |
-| `schedule` | cli (`cli/internal/schedule`, `cli/cmd/ao/agentopsd.go`, `cli/cmd/ao/init.go`), scripts (`check-schedule-example.sh`) | persistent | Daemon schedule entries (cron/interval triggers) consumed by `ao schedule` and `agentopsd --schedule-file` |
-| `sessions` | cli (`.agents/ao/sessions`), hooks | rolling | Session transcripts and matches |
-| `signals` | hooks (quality-signals) | rolling | Append-only quality signal log |
-| `skill-drafts` | cli (`cli/internal/ratchet/skill_drafts.go`) | rolling | Auto-generated SKILL.md drafts emitted by the ratchet (per-slug) |
-| `skills` | cli (`doctor`, install) | persistent | User-installed skill state (alt path under `~/.agents/skills/`) |
-| `smoke-test` | scripts (smoke harness) | regenerated | Smoke test scratch dirs |
-| `specs` | /plan, /pre-mortem | persistent | Specs gating ratchet steps |
-| `swarm-role` | /swarm | rolling | Per-role swarm state |
-| `synthesis` | /plan, /forge, /compile | persistent | Synthesis output |
-| `tasks` | cli (quickstart beads-optional mode) | persistent | Beads-optional task tracking fallback |
-| `teams` | cli (`codex-team`, `swarm`) | rolling | Team coordination state |
-| `topics` | cli (`context_explain.go`, `context_packet_status.go`) | rolling | Topic-packets surface inputs |
-| `wiki` | cli (`dream_subcycle.go`, `forge.go`, `overnight.go`) | regenerated | Wiki source artifacts written by Dream / forge pipelines (sources/) |
+Lifecycle vocabulary is restricted to `persistent`, `rolling`,
+`regenerated`, `runtime-only`, and `ignored`. Allowed writers are restricted to
+`cli`, `hooks`, `scripts`, `skills`, `operators`, and `tests`. The mutation
+lane must name the intended write path; it cannot be blank or placeholder text.
+
+| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |
+|---|---|---|---|---|
+| `ao` | persistent | cli, hooks | runtime-state | Core runtime state: chain, citations, baselines, history, search index, factory state, hook-error logs |
+| `archive` | persistent | cli | retention-archive | Archived/superseded artifacts with retention metadata |
+| `archived-worktrees` | persistent | scripts | operator-preserve | Snapshot of preserved worktrees pending review |
+| `briefings` | regenerated | scripts | generated-output | Compiled session-start briefings |
+| `candidates` | rolling | cli | candidate-cache | Pre-promotion candidate observations |
+| `compaction-snapshots` | rolling | hooks | hook-snapshot | Pre-compaction context snapshots |
+| `compile` | regenerated | cli | generated-output | Intermediate compile state |
+| `compiled` | regenerated | cli | generated-output | Compiled wiki output (subset; see `wiki/`) |
+| `config` | persistent | cli, operators | operator-config | Rig identity (project/crew) - read by harvest path-prefix fallback |
+| `constraints` | persistent | cli | generated-policy | Compiled constraint manifests |
+| `context` | rolling | cli | run-scoped-cache | Per-run adhoc context injection paths keyed by run ID |
+| `daemon` | persistent | cli | durable-ledger | Authoritative daemon ledger, queue/job projections, activation state, and consumer snapshots |
+| `decisions` | persistent | operators, skills | decision-record | Durable decision records and review artifacts not owned by a single active skill |
+| `defrag` | rolling | cli, scripts | maintenance-run-state | Defrag run state and dry-run reports |
+| `evals` | persistent | cli, scripts | eval-evidence | Eval run outputs, promoted baselines, and suite execution state |
+| `findings` | persistent | scripts, skills | promotion-inbox | Mined findings awaiting promotion |
+| `git` | persistent | cli | git-cache | Git-derived state cached for the runtime |
+| `handoffs` | persistent | cli | durable-replay-artifact | Content-addressed handoff artifacts keyed by sha256 for daemon job replay |
+| `holdout` | persistent | cli, skills | scenario-store | Holdout scenarios stored outside the codebase view |
+| `INDEX.md` | persistent | operators, scripts | corpus-index | Human-readable index for tracked `.agents/` knowledge surfaces |
+| `knowledge` | persistent | cli | promoted-knowledge | Promoted knowledge artifacts |
+| `learnings` | persistent | cli, skills | promoted-learning | Promoted learning artifacts |
+| `ledger` | persistent | cli | append-only-ledger | Append-only audit ledger |
+| `LOG.md` | persistent | operators, scripts | corpus-log | Human-readable change log for tracked `.agents/` knowledge surfaces |
+| `memory` | persistent | cli | memory-rl-state | Memory-rl artifacts |
+| `mine` | rolling | cli, skills | mining-inbox | Mined raw signal awaiting promotion |
+| `nightly` | rolling | scripts | local-nightly-state | Private local nightly run digests, readiness snapshots, scheduler templates, and phase logs |
+| `opencode-tests` | regenerated | scripts, tests | test-output | Opencode runtime test fixtures and outputs |
+| `overnight` | rolling | scripts, skills | overnight-run-state | Overnight run state and morning packets |
+| `packets` | rolling | cli | context-packet-cache | Source manifests and promoted packets feeding the context-explain surface |
+| `patterns` | persistent | cli, skills | promoted-pattern | Promoted pattern artifacts |
+| `planning-rules` | persistent | cli | generated-policy | Planning rules sourced from skills/contracts |
+| `plans` | persistent | skills, scripts | planning-artifact | Planning artifacts |
+| `playbooks` | persistent | cli | generated-playbook | Compiled playbook candidates |
+| `pool` | persistent | cli | candidate-inbox | Idea pool / candidate inbox |
+| `pre-mortem-checks` | persistent | skills | validation-artifact | Pre-mortem check templates and runs |
+| `products` | persistent | skills | product-artifact | Product validation artifacts |
+| `profile` | persistent | cli | profile-cache | Repo execution profile cache |
+| `quarantine` | rolling | cli | failure-quarantine | Failed daemon worker payloads and retry/quarantine evidence for operator review |
+| `releases` | rolling | scripts | release-evidence | Local CI release evidence |
+| `retros` | persistent | skills | retro-artifact | Retrospectives |
+| `schedule` | persistent | cli, scripts | schedule-store | Daemon schedule entries consumed by `ao schedule` and `agentopsd --schedule-file` |
+| `schedule.yaml.example` | persistent | scripts, operators | schedule-example | Checked-in example schedule for daemon/runtime scheduling |
+| `sessions` | rolling | cli, hooks | session-cache | Session transcripts and matches |
+| `signals` | rolling | hooks | append-only-signals | Append-only quality signal log |
+| `skill-drafts` | rolling | cli | generated-draft | Auto-generated SKILL.md drafts emitted by the ratchet (per-slug) |
+| `skills` | persistent | cli | installed-skill-state | User-installed skill state (alt path under `~/.agents/skills/`) |
+| `smoke-test` | regenerated | scripts, tests | test-output | Smoke test scratch dirs |
+| `specs` | persistent | skills | spec-artifact | Specs gating ratchet steps |
+| `swarm-role` | rolling | skills | coordination-state | Per-role swarm state |
+| `synthesis` | persistent | skills | synthesis-artifact | Synthesis output |
+| `tasks` | persistent | cli | task-fallback | Beads-optional task tracking fallback |
+| `teams` | rolling | cli | coordination-state | Team coordination state |
+| `triage` | persistent | operators, scripts | triage-artifact | Tracked triage packets and operator review notes not owned by a single active skill |
+| `topics` | rolling | cli | topic-packet-cache | Topic-packets surface inputs |
+| `wiki` | regenerated | cli | generated-output | Wiki source artifacts written by Dream / forge pipelines (sources/) |
 
 ### Skill-owned subdirs
 

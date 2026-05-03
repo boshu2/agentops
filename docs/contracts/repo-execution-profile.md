@@ -11,7 +11,7 @@ This contract defines the repo-local operating policy that autonomous orchestrat
 The profile reduces giant repo-specific prompts by moving stable operating policy into a machine-readable contract:
 - ordered startup reads
 - canonical goals source and compatibility mirrors
-- mandatory validation bundle
+- mandatory validation bundle plus structured validation lane metadata
 - tracker command wrappers and shell policy
 - concrete definition_of_done predicates
 
@@ -30,6 +30,22 @@ Declares the canonical goals document plus any compatibility mirrors that must s
 
 ### `validation_commands`
 Ordered shell commands that define the repo's standard landing gate for substantive slices.
+
+### `validation_lanes`
+Structured metadata for validation commands. Each lane has a stable `name`, the exact `command`, and mutation policy fields:
+- `read_only` — command should not mutate tracked repo files or persistent agent state
+- `writes_artifacts` — command intentionally writes validation/release artifacts
+- `artifact_paths` — known artifact paths or globs written by the lane
+- `isolated_agents_home` — command should run with isolated `HOME`/`AGENTS_HOME` or equivalent no-citation state
+- `release_only` — command is reserved for release readiness rather than fast everyday validation
+- `mutation_escape_hatch` — named opt-in for intentional mutation, or `null` when mutation is not allowed
+
+Agents should select the smallest lane set that proves the slice:
+- Fast local validation uses lanes where `read_only=true`, `writes_artifacts=false`, and `release_only=false`.
+- Release readiness uses `release_only=true` lanes only when preparing a tag, release PR, or explicit release audit.
+- If a lane has `isolated_agents_home=true`, create an isolated agent state directory before running it instead of writing into persistent local agent knowledge.
+- If `writes_artifacts=true`, check `artifact_paths` before and after the run and report the generated files.
+- If `mutation_escape_hatch` is non-null, do not run that lane as routine validation; name the escape hatch in the handoff or release evidence.
 
 ### `tracker_commands`
 Repo-scoped command wrappers for issue tracking. This is where shell/runtime requirements such as `zsh -lc 'cd <repo> && bd ...'` live when a tracker needs a specific execution environment.
@@ -52,6 +68,7 @@ Recommended packet fields for the first slice:
 - `objective`
 - `contract_surfaces`
 - `validation_commands`
+- `validation_lanes`
 - `tracker_mode`
 - `done_criteria`
 
@@ -78,6 +95,31 @@ This keeps repo policy additive and phase-stable without replacing the current g
   "validation_commands": [
     "scripts/ci-local-release.sh",
     "bash scripts/check-worktree-disposition.sh"
+  ],
+  "validation_lanes": [
+    {
+      "name": "worktree-disposition-read-only",
+      "command": "bash scripts/check-worktree-disposition.sh",
+      "purpose": "Classify worktree cleanliness before landing.",
+      "read_only": true,
+      "writes_artifacts": false,
+      "isolated_agents_home": false,
+      "release_only": false,
+      "mutation_escape_hatch": null
+    },
+    {
+      "name": "local-ci-release",
+      "command": "scripts/ci-local-release.sh",
+      "purpose": "Run full local release readiness validation.",
+      "read_only": false,
+      "writes_artifacts": true,
+      "artifact_paths": [
+        ".agents/releases/local-ci/**"
+      ],
+      "isolated_agents_home": true,
+      "release_only": true,
+      "mutation_escape_hatch": "operator-run-release-validation"
+    }
   ],
   "tracker_commands": {
     "shell_prefix": "zsh -lc 'cd <repo> && '",

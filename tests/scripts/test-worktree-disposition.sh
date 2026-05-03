@@ -113,9 +113,30 @@ if dirty_output="$(run_gate "$feature" 2>&1)"; then
 fi
 assert_contains "$dirty_output" "has uncommitted changes"
 assert_contains "$dirty_output" "Dirty paths from git status --porcelain"
-assert_contains "$dirty_output" "Other dirty paths detected"
+assert_contains "$dirty_output" "User/operator edit paths detected"
 assert_contains "$dirty_output" "regular.txt"
 git -C "$canonical" checkout -- regular.txt
+
+printf '# ignore\n' >"$canonical/.gitignore"
+git -C "$canonical" add .gitignore
+git -C "$canonical" commit -q -m "add ignore policy fixture"
+printf 'tmp/\n' >>"$canonical/.gitignore"
+if policy_dirty_output="$(run_gate "$feature" 2>&1)"; then
+    echo "expected dirty policy path to fail" >&2
+    exit 1
+fi
+assert_contains "$policy_dirty_output" "Tracked policy paths detected"
+assert_contains "$policy_dirty_output" ".gitignore"
+git -C "$canonical" checkout -- .gitignore
+
+printf 'scratch\n' >"$canonical/untracked-scratch.txt"
+if unknown_dirty_output="$(run_gate "$feature" 2>&1)"; then
+    echo "expected unknown untracked path to fail" >&2
+    exit 1
+fi
+assert_contains "$unknown_dirty_output" "Unknown dirty paths detected"
+assert_contains "$unknown_dirty_output" "untracked-scratch.txt"
+rm -f "$canonical/untracked-scratch.txt"
 
 mkdir -p "$canonical/cli/docs"
 printf 'commands\n' >"$canonical/cli/docs/COMMANDS.md"
@@ -140,6 +161,18 @@ ignored_runtime_output="$(run_gate "$feature")"
 assert_contains "$ignored_runtime_output" "PASS: canonical root"
 git -C "$canonical" checkout -- .agents/rpi/next-work.jsonl
 rm -rf "$canonical/wiki"
+
+printf '{"source_epic":"runtime","items":[],"consumed":false,"claim_status":"available"}\n' >>"$canonical/.agents/rpi/next-work.jsonl"
+printf 'policy=true\n' >>"$canonical/.gitignore"
+if mixed_dirty_output="$(run_gate "$feature" 2>&1)"; then
+    echo "expected mixed ignored runtime and policy dirt to fail" >&2
+    exit 1
+fi
+assert_contains "$mixed_dirty_output" "Generated/ignored paths detected"
+assert_contains "$mixed_dirty_output" ".agents/rpi/next-work.jsonl"
+assert_contains "$mixed_dirty_output" "Tracked policy paths detected"
+assert_contains "$mixed_dirty_output" ".gitignore"
+git -C "$canonical" checkout -- .agents/rpi/next-work.jsonl .gitignore
 
 git -C "$canonical" branch codex/preserve-missing main
 if preserved_missing_output="$(run_gate "$feature" 2>&1)"; then

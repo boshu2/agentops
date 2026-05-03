@@ -292,14 +292,20 @@ func writeExecutionPacketFromArtifact(cwd string, art *discoveryArtifact, goalOv
 			contractSurfaces = append(contractSurfaces, entry)
 		}
 	}
+	profile, err := loadRepoExecutionProfile(cwd)
+	if err != nil {
+		return "", err
+	}
 
 	packet := map[string]any{
 		// Canonical executionPacket fields (kept in-sync with rpi_execution_packet.go).
-		"schema_version":    1,
-		"objective":         goal,
-		"contract_surfaces": contractSurfaces,
-		"done_criteria":     doneCriteria,
-		"tracker_mode":      "discovery-artifact",
+		"schema_version":      1,
+		"objective":           goal,
+		"contract_surfaces":   contractSurfaces,
+		"validation_commands": orEmptyStringSlice(profile.ValidationCommands),
+		"validation_lanes":    profile.ValidationLanes,
+		"done_criteria":       doneCriteria,
+		"tracker_mode":        "discovery-artifact",
 
 		// Discovery-artifact-mode extensions (documented in
 		// skills/rpi/references/discovery-artifact-mode.md).

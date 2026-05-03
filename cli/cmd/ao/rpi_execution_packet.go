@@ -29,6 +29,7 @@ type executionPacket struct {
 	PlanPath                string                  `json:"plan_path,omitempty"`
 	ContractSurfaces        []string                `json:"contract_surfaces"`
 	ValidationCommands      []string                `json:"validation_commands,omitempty"`
+	ValidationLanes         []rpi.ValidationLane    `json:"validation_lanes,omitempty"`
 	TrackerMode             string                  `json:"tracker_mode"`
 	TrackerHealth           *trackerHealth          `json:"tracker_health,omitempty"`
 	DoneCriteria            []string                `json:"done_criteria,omitempty"`
@@ -42,6 +43,11 @@ type executionPacket struct {
 	PlannerVendor           string                  `json:"planner_vendor,omitempty"`
 	ReviewerVendor          string                  `json:"reviewer_vendor,omitempty"`
 	MixedModeDegradedReason string                  `json:"mixed_mode_degraded_reason,omitempty"`
+}
+
+type repoExecutionProfile struct {
+	ValidationCommands []string             `json:"validation_commands"`
+	ValidationLanes    []rpi.ValidationLane `json:"validation_lanes"`
 }
 
 func writeExecutionPacketSeed(cwd string, state *phasedState) error {
@@ -62,6 +68,10 @@ func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 		Complexity:         string(state.Complexity),
 		MixedModeRequested: state.Opts.Mixed,
 	}
+	profile, err := loadRepoExecutionProfile(cwd)
+	if err != nil {
+		return err
+	}
 	if isPlanFileEpic(state.EpicID) {
 		packet.PlanPath = planFileFromEpic(state.EpicID)
 	} else if planPath, err := discoverPlanFile(cwd); err == nil {
@@ -71,6 +81,11 @@ func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 	if _, err := os.Stat(filepath.Join(cwd, "docs", "contracts", "repo-execution-profile.md")); err == nil {
 		packet.ContractSurfaces = append(packet.ContractSurfaces, "docs/contracts/repo-execution-profile.md")
 	}
+	if _, err := os.Stat(repoExecutionProfileJSONPath(cwd)); err == nil {
+		packet.ContractSurfaces = append(packet.ContractSurfaces, "docs/contracts/repo-execution-profile.json")
+	}
+	packet.ValidationCommands = append(packet.ValidationCommands, profile.ValidationCommands...)
+	packet.ValidationLanes = append(packet.ValidationLanes, profile.ValidationLanes...)
 
 	if state.ProgramPath != "" {
 		packet.ContractSurfaces = append(packet.ContractSurfaces, state.ProgramPath)
@@ -100,6 +115,26 @@ func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 		return fmt.Errorf("write execution packet: %w", err)
 	}
 	return nil
+}
+
+func repoExecutionProfileJSONPath(cwd string) string {
+	return filepath.Join(cwd, "docs", "contracts", "repo-execution-profile.json")
+}
+
+func loadRepoExecutionProfile(cwd string) (*repoExecutionProfile, error) {
+	path := repoExecutionProfileJSONPath(cwd)
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return &repoExecutionProfile{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read repo execution profile: %w", err)
+	}
+	var profile repoExecutionProfile
+	if err := json.Unmarshal(data, &profile); err != nil {
+		return nil, fmt.Errorf("parse repo execution profile: %w", err)
+	}
+	return &profile, nil
 }
 
 func executionPacketBeadID(state *phasedState) string {

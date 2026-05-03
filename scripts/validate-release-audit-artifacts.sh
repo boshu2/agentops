@@ -3,6 +3,59 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+MODE="all"
+TARGET_RELEASE=""
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/validate-release-audit-artifacts.sh [--mode all|latest|changed|target] [--target-release V]
+
+Modes:
+  all      Validate all audits; missing non-latest local artifact dirs are skipped.
+  latest   Validate only the latest audit and require its artifacts.
+  changed  Validate only audit files listed in RELEASE_AUDIT_CHANGED_PATHS.
+  target   Validate the audit for --target-release and require its artifacts.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --mode)
+            MODE="${2:-}"
+            shift 2
+            ;;
+        --target-release)
+            TARGET_RELEASE="${2:-}"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+case "$MODE" in
+    all|latest|changed|target) ;;
+    *)
+        echo "Invalid --mode: $MODE" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
+
+if [[ "$MODE" == "target" ]]; then
+    if [[ -z "$TARGET_RELEASE" ]]; then
+        echo "--target-release is required with --mode target" >&2
+        exit 2
+    fi
+    TARGET_RELEASE="${TARGET_RELEASE#v}"
+fi
 
 extract_version() {
     local audit="$1"
@@ -137,17 +190,45 @@ if (( ${#audit_files[@]} > 0 )); then
     latest_audit="${audit_files[$((${#audit_files[@]} - 1))]}"
 fi
 
+audit_selected() {
+    local audit="$1"
+    local version="$2"
+    local rel_path
+
+    rel_path="${audit#"$REPO_ROOT"/}"
+    case "$MODE" in
+        all)
+            return 0
+            ;;
+        latest)
+            [[ "$audit" == "$latest_audit" ]]
+            ;;
+        target)
+            [[ "$version" == "$TARGET_RELEASE" ]]
+            ;;
+        changed)
+            printf '%s\n' "${RELEASE_AUDIT_CHANGED_PATHS:-}" | grep -Fxq "$rel_path"
+            ;;
+    esac
+}
+
 failures=()
+selected_count=0
 for audit in "${audit_files[@]}"; do
     version="$(extract_version "$audit")"
     [[ -n "$version" ]] || continue
+
+    if ! audit_selected "$audit" "$version"; then
+        continue
+    fi
+    selected_count=$((selected_count + 1))
 
     artifact_dir="$(extract_artifact_dir "$audit")"
     [[ -n "$artifact_dir" ]] || continue
     artifact_dir="${artifact_dir%/}"
 
     manifest="$REPO_ROOT/$artifact_dir/release-artifacts.json"
-    if [[ ! -f "$manifest" && ! -d "$REPO_ROOT/$artifact_dir" && "$audit" != "$latest_audit" ]]; then
+    if [[ "$MODE" == "all" && ! -f "$manifest" && ! -d "$REPO_ROOT/$artifact_dir" && "$audit" != "$latest_audit" ]]; then
         continue
     fi
 
@@ -163,6 +244,17 @@ for audit in "${audit_files[@]}"; do
         failures+=("$output")
     fi
 done
+
+if [[ "$MODE" == "changed" && "$selected_count" -eq 0 ]]; then
+    echo "release audit artifact validation passed: no changed release audits to validate."
+    exit 0
+fi
+
+if [[ "$MODE" == "target" && "$selected_count" -eq 0 ]]; then
+    printf 'release audit artifact validation failed:\n' >&2
+    printf '  - no release audit found for target release %s\n' "$TARGET_RELEASE" >&2
+    exit 1
+fi
 
 if (( ${#failures[@]} > 0 )); then
     printf 'release audit artifact validation failed:\n' >&2

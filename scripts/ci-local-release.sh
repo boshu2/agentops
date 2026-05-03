@@ -22,6 +22,8 @@ RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 ARTIFACT_DIR="$REPO_ROOT/.agents/releases/local-ci/$RUN_ID"
 mkdir -p "$ARTIFACT_DIR"
 SECURITY_TMP_BASE="${TMPDIR:-/tmp}/agentops-security-local-ci/$RUN_ID"
+LOCAL_CI_MUTATION_LANE="local-ci-release"
+LOCAL_CI_MUTATION_ESCAPE_HATCH="operator-run-release-validation"
 
 SECURITY_MODE="full"
 FAST_MODE=false
@@ -45,6 +47,10 @@ Options:
   --security-mode      quick|full (default: full)
   --jobs N             Max parallel jobs (default: half CPU cores, min 4)
   -h, --help           Show this help
+
+Environment:
+  AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1
+      Allow release smoke to update tracked AgentOps metadata.
 USAGE
 }
 
@@ -699,6 +705,9 @@ else
 fi
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 echo "Artifacts: $ARTIFACT_DIR"
+echo "Validation lane: $LOCAL_CI_MUTATION_LANE (writes $(artifact_dir_rel))"
+echo "Mutation escape hatch: $LOCAL_CI_MUTATION_ESCAPE_HATCH"
+echo "Release metadata guard: tracked .agents findings/citations stay stable unless AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1"
 echo "Max parallel jobs: $MAX_JOBS"
 
 # ── Phase 1: Quick sequential checks (must pass before heavy work) ──

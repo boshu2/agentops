@@ -1076,7 +1076,7 @@ fi
 # --- 25b. Release audit artifact refs ---
 if needs_release_audit_artifact_check; then
     if [[ -x scripts/validate-release-audit-artifacts.sh ]]; then
-        if release_audit_artifacts_output="$(scripts/validate-release-audit-artifacts.sh 2>&1)"; then
+        if release_audit_artifacts_output="$(RELEASE_AUDIT_CHANGED_PATHS="$(changed_paths)" scripts/validate-release-audit-artifacts.sh --mode changed 2>&1)"; then
             pass "release audit artifacts"
         else
             fail "release audit artifacts"
