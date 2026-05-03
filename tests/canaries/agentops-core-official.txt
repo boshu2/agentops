@@ -1,0 +1,18 @@
+# Official blocking AgentOps contract canaries.
+#
+# This list is intentionally smaller than the full evals/agentops-core corpus.
+# It contains deterministic, red-actionable canaries that belong in normal
+# testing/CI. The broader corpus remains in agentops-eval-advisory while
+# brittle exact-string and baseline-ratchet theater is hardened or removed.
+
+evals/agentops-core/cli-command-surface-matrix.json
+evals/agentops-core/cli-contracts.json
+evals/agentops-core/context-packet-ab-wave0.json
+evals/agentops-core/distribution-install-update.json
+evals/agentops-core/eval-runner-engine-control-plane.json
+evals/agentops-core/hook-gates.json
+evals/agentops-core/hook-lifecycle-behavior.json
+evals/agentops-core/pre-push-gate-governance.json
+evals/agentops-core/release-security-gates.json
+evals/agentops-core/retrieval-quality-gates.json
+evals/agentops-core/runtime-smoke-matrix.json

@@ -81,6 +81,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `synthesis` | persistent | skills | synthesis-artifact | Synthesis output |
 | `tasks` | persistent | cli | task-fallback | Beads-optional task tracking fallback |
 | `teams` | rolling | cli | coordination-state | Team coordination state |
+| `tests` | regenerated | scripts, tests | test-output | Official local/CI test artifacts, including contract-canary run records |
 | `triage` | persistent | operators, scripts | triage-artifact | Tracked triage packets and operator review notes not owned by a single active skill |
 | `topics` | rolling | cli | topic-packet-cache | Topic-packets surface inputs |
 | `wiki` | regenerated | cli | generated-output | Wiki source artifacts written by Dream / forge pipelines (sources/) |
@@ -144,6 +145,7 @@ swarm-role
 synthesis
 tasks
 teams
+tests
 topics
 wiki
 <!-- END agents-write-surfaces-allowlist -->

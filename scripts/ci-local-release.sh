@@ -816,6 +816,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Hook integration tests (--fast)"
     warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
+    warn "Skipped AgentOps contract canaries (--fast)"
 
     # Still build the binary (fast) and run smoke tests against it
     run_step "Go build + vet" run_go_build_only
@@ -826,6 +827,7 @@ else
     run_step_bg "Hook integration tests" ./tests/hooks/test-hooks.sh
     run_step_bg "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
     run_step_bg "Security toolchain gate (${SECURITY_MODE}, require tools)" run_security_gate
+    run_step_bg "AgentOps contract canaries" ./scripts/test-agentops-contract-canaries.sh
 
     collect_parallel
 

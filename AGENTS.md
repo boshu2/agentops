@@ -159,7 +159,10 @@ find skills -type l  # must be empty — zero symlinks allowed
  # 14. Codex semantic parity audit (generated skills still match Codex-native tool/runtime semantics)
  bash scripts/audit-codex-parity.sh
 
- # 15. AgentOps eval canaries
+ # 15. AgentOps contract canaries (official deterministic test gate)
+ scripts/test-agentops-contract-canaries.sh
+
+ # 16. AgentOps eval advisory corpus
  scripts/eval-agentops.sh --fast
 
 # Full gate (runs everything above and more):
@@ -230,7 +233,8 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
-| **agentops-eval-advisory** | Runs deterministic public AgentOps eval canaries and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); eval suite or scorecard regression until baselines are ratcheted |
+| **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
+| **agentops-eval-advisory** | Runs the broader public AgentOps eval/canary corpus and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); advisory corpus, scorecard, or local-baseline regression until brittle canaries and ratchets are promoted |
 | **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
