@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/paths"
 )
 
 // IterationSummary is one pass of the INGEST → REDUCE → MEASURE wave.
@@ -750,7 +752,7 @@ func regressionNames(rs []MetricRegression) []string {
 // will skip it — post-commit strips belong in the morning report as
 // warnings, not as auto-routed work.
 func logPostCommitFinding(cwd string, iterIndex int, report MetadataIntegrityReport) error {
-	findingsDir := filepath.Join(cwd, ".agents", "findings")
+	findingsDir := paths.ResolveFromRoot(cwd).FindingsDir
 	if err := os.MkdirAll(findingsDir, 0o755); err != nil {
 		return err
 	}

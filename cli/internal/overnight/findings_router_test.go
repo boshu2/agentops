@@ -143,6 +143,47 @@ func TestRouteFindings_EmitsSchemaCompliantEnums(t *testing.T) {
 	}
 }
 
+func TestRouteFindings_UsesStatePathOverrides(t *testing.T) {
+	cwd := t.TempDir()
+	findingsDir := filepath.Join(t.TempDir(), "custom-findings")
+	rpiDir := filepath.Join(t.TempDir(), "custom-rpi")
+	t.Setenv("AO_FINDINGS_DIR", findingsDir)
+	t.Setenv("AO_RPI_DIR", rpiDir)
+
+	if err := os.MkdirAll(findingsDir, 0o755); err != nil {
+		t.Fatalf("mkdir findings override: %v", err)
+	}
+	body := `---
+id: "f-2026-05-03-001"
+type: "finding"
+title: "Override path"
+severity: "high"
+status: "active"
+---
+# Finding: Override path
+
+## Summary
+Route through the configured findings directory.
+`
+	if err := os.WriteFile(filepath.Join(findingsDir, "f-2026-05-03-001.md"), []byte(body), 0o644); err != nil {
+		t.Fatalf("write override finding: %v", err)
+	}
+
+	routed, degraded, err := RouteFindings(cwd)
+	if err != nil {
+		t.Fatalf("RouteFindings: %v", err)
+	}
+	if routed != 1 || len(degraded) != 0 {
+		t.Fatalf("RouteFindings routed=%d degraded=%v, want routed=1 degraded=[]", routed, degraded)
+	}
+	if _, err := os.Stat(filepath.Join(rpiDir, "next-work.jsonl")); err != nil {
+		t.Fatalf("expected next-work under AO_RPI_DIR: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("did not expect default next-work path when AO_RPI_DIR is set, stat err=%v", err)
+	}
+}
+
 // TestMapSeverity_CollapsesCriticalToHigh documents the deliberate mapping
 // choice: finding-schema "critical"/"blocker" collapse to "high" because the
 // next-work v1.4 severity enum is {low, medium, high}. Prior to this test

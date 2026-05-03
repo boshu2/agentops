@@ -11,12 +11,12 @@ import (
 
 func TestIsHashNamed(t *testing.T) {
 	cases := map[string]bool{
-		"2026-02-23-4556c2b4.md":        true,
-		"2026-02-23-ABCDEF12.md":        false, // uppercase hex not accepted
-		"2026-02-23-name.md":            false,
-		"just-four-part-x.md":           false,
+		"2026-02-23-4556c2b4.md":         true,
+		"2026-02-23-ABCDEF12.md":         false, // uppercase hex not accepted
+		"2026-02-23-name.md":             false,
+		"just-four-part-x.md":            false,
 		"2026-02-23-4556c2b4aabbccdd.md": false, // too long last part
-		"a-b-c.md":                      false, // only 3 parts
+		"a-b-c.md":                       false, // only 3 parts
 	}
 	for name, want := range cases {
 		if got := IsHashNamed(name); got != want {

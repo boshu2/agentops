@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/paths"
 )
 
 // DefaultWarnOnlyBudget is the number of warn-only rescues the loop grants
@@ -59,7 +61,7 @@ type WarnOnlyBudgetState struct {
 // repoRoot should be the directory containing .agents/ — callers typically
 // pass the current working directory.
 func WarnOnlyBudgetPath(repoRoot string) string {
-	return filepath.Join(repoRoot, ".agents", "overnight", WarnOnlyBudgetFilename)
+	return filepath.Join(paths.ResolveFromRoot(repoRoot).AgentsDir, "overnight", WarnOnlyBudgetFilename)
 }
 
 // defaultBudgetState returns a freshly-initialised budget with

@@ -16,13 +16,13 @@ const DaemonPlansProjectionSchemaVersion = 1
 // PlansProjectionEntry is one entry in the daemon-rebuilt plans manifest.
 // Source-of-truth fields come from bd via the executor's BdSource.
 type PlansProjectionEntry struct {
-	BeadsID    string    `json:"beads_id"`
-	Title      string    `json:"title,omitempty"`
-	Status     string    `json:"status,omitempty"`
-	Priority   string    `json:"priority,omitempty"`
-	IssueType  string    `json:"issue_type,omitempty"`
-	UpdatedAt  time.Time `json:"updated_at,omitempty"`
-	Checksum   string    `json:"checksum,omitempty"`
+	BeadsID   string    `json:"beads_id"`
+	Title     string    `json:"title,omitempty"`
+	Status    string    `json:"status,omitempty"`
+	Priority  string    `json:"priority,omitempty"`
+	IssueType string    `json:"issue_type,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	Checksum  string    `json:"checksum,omitempty"`
 }
 
 // DaemonPlansProjection is the daemon-side wrapper around plans manifest

@@ -73,7 +73,7 @@ func TestInject_UtilityWeight_MissingUtility(t *testing.T) {
 	injectUtilityWeight = 1.0
 
 	ls := []search.Learning{
-		{ID: "missing", CompositeScore: 1.0, Utility: 0.0},     // missing -> u=0 -> penalty
+		{ID: "missing", CompositeScore: 1.0, Utility: 0.0},           // missing -> u=0 -> penalty
 		{ID: "explicit_baseline", CompositeScore: 1.0, Utility: 0.5}, // explicit baseline
 	}
 	applyUtilityRerank(ls, injectUtilityWeight)

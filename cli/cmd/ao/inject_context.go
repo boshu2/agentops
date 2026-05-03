@@ -33,7 +33,7 @@ var validSectionNames = map[string]bool{
 
 // ContextDeclaration represents a skill's context window policy.
 type ContextDeclaration struct {
-	Window     string         `yaml:"window"`      // isolated, fork, inherit
+	Window     string         `yaml:"window"` // isolated, fork, inherit
 	Sections   *SectionFilter `yaml:"sections"`
 	Intent     *IntentConfig  `yaml:"intent"`
 	IntelScope string         `yaml:"intel_scope"`

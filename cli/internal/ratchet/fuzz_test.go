@@ -38,13 +38,13 @@ func FuzzParseChainLines(f *testing.F) {
 // parseChainLines silently drop entries would still pass the fuzz target.
 func TestFuzzParseChainLines_SeedCorrectness(t *testing.T) {
 	tests := []struct {
-		name         string
-		input        string
-		wantID       string
-		wantEpic     string
-		wantEntries  int
+		name          string
+		input         string
+		wantID        string
+		wantEpic      string
+		wantEntries   int
 		wantFirstStep string
-		wantErr      bool
+		wantErr       bool
 	}{
 		{
 			name:          "metadata_plus_one_entry",
@@ -71,10 +71,10 @@ func TestFuzzParseChainLines_SeedCorrectness(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "malformed_entry_skipped_among_valid",
-			input:       `{"id":"chain-003"}` + "\n" + `malformed entry` + "\n" + `{"step":"plan","timestamp":"2026-01-01T00:00:00Z","output":"out.md","locked":false}`,
-			wantID:      "chain-003",
-			wantEntries: 1,
+			name:          "malformed_entry_skipped_among_valid",
+			input:         `{"id":"chain-003"}` + "\n" + `malformed entry` + "\n" + `{"step":"plan","timestamp":"2026-01-01T00:00:00Z","output":"out.md","locked":false}`,
+			wantID:        "chain-003",
+			wantEntries:   1,
 			wantFirstStep: "plan",
 		},
 		{

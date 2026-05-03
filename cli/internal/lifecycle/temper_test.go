@@ -40,12 +40,12 @@ func TestIsContainedPath(t *testing.T) {
 
 func TestIsArtifactFile(t *testing.T) {
 	cases := map[string]bool{
-		"foo.md":      true,
-		"bar.jsonl":   true,
-		"baz.txt":     false,
-		"qux.json":    false,
-		"notes.MD":    false, // case-sensitive
-		"":            false,
+		"foo.md":    true,
+		"bar.jsonl": true,
+		"baz.txt":   false,
+		"qux.json":  false,
+		"notes.MD":  false, // case-sensitive
+		"":          false,
 	}
 	for name, want := range cases {
 		if got := IsArtifactFile(name); got != want {
@@ -56,10 +56,10 @@ func TestIsArtifactFile(t *testing.T) {
 
 func TestParseMarkdownField(t *testing.T) {
 	cases := []struct {
-		line     string
-		field    string
-		wantVal  string
-		wantOK   bool
+		line    string
+		field   string
+		wantVal string
+		wantOK  bool
 	}{
 		{"**ID**: abc-123", "ID", "abc-123", true},
 		{"**ID:** abc-123", "ID", "abc-123", true},

@@ -531,7 +531,7 @@ func renderHandoffMarkdown(now time.Time, status contextSessionStatus, usage tra
 		IsStale: status.IsStale, Model: status.Model,
 		InputTokens: usage.InputTokens, CacheCreationInputToken: usage.CacheCreationInputToken,
 		CacheReadInputToken: usage.CacheReadInputToken,
-		EstimatedUsage: status.EstimatedUsage, MaxTokens: status.MaxTokens,
+		EstimatedUsage:      status.EstimatedUsage, MaxTokens: status.MaxTokens,
 		Recommendation: status.Recommendation,
 	})
 }
@@ -546,31 +546,51 @@ func matchPendingHandoff(path, cwd, sessionID string) (string, string, bool) {
 
 type tailLineEnvelope = contextbudget.TailLineEnvelope
 
-func readSessionTail(path string) (transcriptUsage, string, time.Time, error) { return contextbudget.ReadSessionTail(path) }
+func readSessionTail(path string) (transcriptUsage, string, time.Time, error) {
+	return contextbudget.ReadSessionTail(path)
+}
 
-func extractTailUsageAndTask(lines []string) (transcriptUsage, string, time.Time) { return contextbudget.ExtractTailUsageAndTask(lines) }
+func extractTailUsageAndTask(lines []string) (transcriptUsage, string, time.Time) {
+	return contextbudget.ExtractTailUsageAndTask(lines)
+}
 
-func fixupTailTimestamps(path string, usage *transcriptUsage, newestTS *time.Time) { contextbudget.FixupTailTimestamps(path, usage, newestTS) }
+func fixupTailTimestamps(path string, usage *transcriptUsage, newestTS *time.Time) {
+	contextbudget.FixupTailTimestamps(path, usage, newestTS)
+}
 
 func scanTailLines(data []byte) ([]string, error) { return contextbudget.ScanTailLines(data) }
 
-func extractUsageFromTailEntry(entry tailLineEnvelope, ts time.Time) transcriptUsage { return contextbudget.ExtractUsageFromTailEntry(entry, ts) }
+func extractUsageFromTailEntry(entry tailLineEnvelope, ts time.Time) transcriptUsage {
+	return contextbudget.ExtractUsageFromTailEntry(entry, ts)
+}
 
-func extractTaskFromTailEntry(entry tailLineEnvelope) string { return contextbudget.ExtractTaskFromTailEntry(entry) }
+func extractTaskFromTailEntry(entry tailLineEnvelope) string {
+	return contextbudget.ExtractTaskFromTailEntry(entry)
+}
 
-func updateTailState(entry tailLineEnvelope, ts time.Time, usage *transcriptUsage, lastTask *string, newestTS *time.Time) bool { return contextbudget.UpdateTailState(entry, ts, usage, lastTask, newestTS) }
+func updateTailState(entry tailLineEnvelope, ts time.Time, usage *transcriptUsage, lastTask *string, newestTS *time.Time) bool {
+	return contextbudget.UpdateTailState(entry, ts, usage, lastTask, newestTS)
+}
 
-func readFileTail(path string, maxBytes int64) ([]byte, error) { return contextbudget.ReadFileTail(path, maxBytes) }
+func readFileTail(path string, maxBytes int64) ([]byte, error) {
+	return contextbudget.ReadFileTail(path, maxBytes)
+}
 
-func seekAndReadTail(f *os.File, size, maxBytes int64) ([]byte, error) { return contextbudget.SeekAndReadTail(f, size, maxBytes) }
+func seekAndReadTail(f *os.File, size, maxBytes int64) ([]byte, error) {
+	return contextbudget.SeekAndReadTail(f, size, maxBytes)
+}
 
 func parseTimestamp(raw string) time.Time { return contextbudget.ParseTimestamp(raw) }
 
 func extractTextContent(raw json.RawMessage) string { return contextbudget.ExtractTextContent(raw) }
 
-func estimateTokens(text string) int { return contextbudget.EstimateTokensFromChars(text, InjectCharsPerToken) }
+func estimateTokens(text string) int {
+	return contextbudget.EstimateTokensFromChars(text, InjectCharsPerToken)
+}
 
-func actionForStatus(status string, stale bool) string { return contextbudget.ActionForStatus(status, stale, string(contextbudget.StatusOptimal), string(contextbudget.StatusCritical), string(contextbudget.StatusWarning)) }
+func actionForStatus(status string, stale bool) string {
+	return contextbudget.ActionForStatus(status, stale, string(contextbudget.StatusOptimal), string(contextbudget.StatusCritical), string(contextbudget.StatusWarning))
+}
 
 func hookMessageForStatus(status contextSessionStatus) string {
 	switch status.Action {
@@ -620,14 +640,30 @@ func resolveContextAssignment(cwd, task, agentName string) contextAssignment {
 }
 
 func applyContextAssignment(status *contextSessionStatus, assignment contextAssignment) {
-	if status == nil { return }
-	if v := strings.TrimSpace(assignment.AgentName); v != "" { status.AgentName = v }
-	if v := strings.TrimSpace(assignment.AgentRole); v != "" { status.AgentRole = v }
-	if v := strings.TrimSpace(assignment.TeamName); v != "" { status.TeamName = v }
-	if v := strings.TrimSpace(assignment.IssueID); v != "" { status.IssueID = v }
-	if v := strings.TrimSpace(assignment.TmuxPaneID); v != "" { status.TmuxPaneID = v }
-	if v := strings.TrimSpace(assignment.TmuxTarget); v != "" { status.TmuxTarget = v }
-	if v := strings.TrimSpace(assignment.TmuxSession); v != "" { status.TmuxSession = v }
+	if status == nil {
+		return
+	}
+	if v := strings.TrimSpace(assignment.AgentName); v != "" {
+		status.AgentName = v
+	}
+	if v := strings.TrimSpace(assignment.AgentRole); v != "" {
+		status.AgentRole = v
+	}
+	if v := strings.TrimSpace(assignment.TeamName); v != "" {
+		status.TeamName = v
+	}
+	if v := strings.TrimSpace(assignment.IssueID); v != "" {
+		status.IssueID = v
+	}
+	if v := strings.TrimSpace(assignment.TmuxPaneID); v != "" {
+		status.TmuxPaneID = v
+	}
+	if v := strings.TrimSpace(assignment.TmuxTarget); v != "" {
+		status.TmuxTarget = v
+	}
+	if v := strings.TrimSpace(assignment.TmuxSession); v != "" {
+		status.TmuxSession = v
+	}
 }
 
 func assignmentFromStatus(status contextSessionStatus) contextAssignment {
@@ -690,13 +726,27 @@ func mergePersistedAssignment(cwd string, status *contextSessionStatus) {
 }
 
 func mergeAssignmentFields(current, persisted *contextAssignment, status *contextSessionStatus) {
-	if current.AgentName == "" { status.AgentName = persisted.AgentName }
-	if current.AgentRole == "" { status.AgentRole = persisted.AgentRole }
-	if current.TeamName == "" { status.TeamName = persisted.TeamName }
-	if current.IssueID == "" { status.IssueID = persisted.IssueID }
-	if current.TmuxPaneID == "" { status.TmuxPaneID = persisted.TmuxPaneID }
-	if current.TmuxTarget == "" { status.TmuxTarget = persisted.TmuxTarget }
-	if current.TmuxSession == "" { status.TmuxSession = persisted.TmuxSession }
+	if current.AgentName == "" {
+		status.AgentName = persisted.AgentName
+	}
+	if current.AgentRole == "" {
+		status.AgentRole = persisted.AgentRole
+	}
+	if current.TeamName == "" {
+		status.TeamName = persisted.TeamName
+	}
+	if current.IssueID == "" {
+		status.IssueID = persisted.IssueID
+	}
+	if current.TmuxPaneID == "" {
+		status.TmuxPaneID = persisted.TmuxPaneID
+	}
+	if current.TmuxTarget == "" {
+		status.TmuxTarget = persisted.TmuxTarget
+	}
+	if current.TmuxSession == "" {
+		status.TmuxSession = persisted.TmuxSession
+	}
 }
 
 func readPersistedAssignment(cwd, sessionID string) (contextAssignment, bool) {
@@ -729,9 +779,18 @@ func maybeAutoRestartStaleSession(status contextSessionStatus) contextSessionSta
 		return status
 	}
 	target := strings.TrimSpace(status.TmuxTarget)
-	if target == "" { status.RestartMessage = "missing tmux target mapping"; return status }
-	if _, err := exec.LookPath("tmux"); err != nil { status.RestartMessage = "tmux unavailable"; return status }
-	if tmuxTargetAlive(target) { status.RestartMessage = "tmux target already alive"; return status }
+	if target == "" {
+		status.RestartMessage = "missing tmux target mapping"
+		return status
+	}
+	if _, err := exec.LookPath("tmux"); err != nil {
+		status.RestartMessage = "tmux unavailable"
+		return status
+	}
+	if tmuxTargetAlive(target) {
+		status.RestartMessage = "tmux target already alive"
+		return status
+	}
 	status.RestartAttempt = true
 	sessionName := strings.TrimSpace(status.TmuxSession)
 	if sessionName == "" {
@@ -753,25 +812,37 @@ func maybeAutoRestartStaleSession(status contextSessionStatus) contextSessionSta
 
 func tmuxTargetAlive(target string) bool { return contextbudget.TmuxTargetAlive(target) }
 
-func tmuxStartDetachedSession(sessionName string) error { return contextbudget.TmuxStartDetachedSession(sessionName) }
+func tmuxStartDetachedSession(sessionName string) error {
+	return contextbudget.TmuxStartDetachedSession(sessionName)
+}
 
 func searchTeamConfig(cfgPath, agentName string) (teamConfigMember, bool) {
 	m, ok := contextbudget.SearchTeamConfigFile(cfgPath, agentName)
-	if !ok { return teamConfigMember{}, false }
+	if !ok {
+		return teamConfigMember{}, false
+	}
 	return teamConfigMember{Name: m.Name, AgentType: m.AgentType, TmuxPane: m.TmuxPane}, true
 }
 
 func findTeamMemberByName(agentName string) (string, teamConfigMember, bool) {
 	team, m, ok := contextbudget.FindTeamMemberByName(agentName)
-	if !ok { return "", teamConfigMember{}, false }
+	if !ok {
+		return "", teamConfigMember{}, false
+	}
 	return team, teamConfigMember{Name: m.Name, AgentType: m.AgentType, TmuxPane: m.TmuxPane}, true
 }
 
-func inferAgentRole(agentName, explicitRole string) string { return contextbudget.InferAgentRole(agentName, explicitRole) }
+func inferAgentRole(agentName, explicitRole string) string {
+	return contextbudget.InferAgentRole(agentName, explicitRole)
+}
 
-func remainingPercent(usagePercent float64) float64 { return contextbudget.RemainingPercent(usagePercent) }
+func remainingPercent(usagePercent float64) float64 {
+	return contextbudget.RemainingPercent(usagePercent)
+}
 
-func readinessForUsage(usagePercent float64) string { return contextbudget.ReadinessForUsage(usagePercent) }
+func readinessForUsage(usagePercent float64) string {
+	return contextbudget.ReadinessForUsage(usagePercent)
+}
 
 func readinessAction(readiness string) string { return contextbudget.ReadinessAction(readiness) }
 
@@ -785,11 +856,17 @@ func tmuxSessionFromTarget(target string) string { return contextbudget.TmuxSess
 
 func displayOrDash(value string) string { return contextbudget.DisplayOrDash(value) }
 
-func gitChangedFiles(cwd string, limit int) []string { return contextbudget.GitChangedFiles(cwd, limit) }
+func gitChangedFiles(cwd string, limit int) []string {
+	return contextbudget.GitChangedFiles(cwd, limit)
+}
 
-func runCommand(cwd string, timeout time.Duration, name string, args ...string) string { return contextbudget.RunCommand(cwd, timeout, name, args...) }
+func runCommand(cwd string, timeout time.Duration, name string, args ...string) string {
+	return contextbudget.RunCommand(cwd, timeout, name, args...)
+}
 
-func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) { return contextbudget.WithTimeout(timeout) }
+func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return contextbudget.WithTimeout(timeout)
+}
 
 func sanitizeForFilename(input string) string { return contextbudget.SanitizeForFilename(input) }
 
@@ -797,6 +874,8 @@ func toRepoRelative(cwd, fullPath string) string { return contextbudget.ToRepoRe
 
 func normalizeLine(s string) string { return contextbudget.NormalizeLine(s) }
 
-func nonZeroOrDefault(value, fallback int) int { return contextbudget.NonZeroOrDefault(value, fallback) }
+func nonZeroOrDefault(value, fallback int) int {
+	return contextbudget.NonZeroOrDefault(value, fallback)
+}
 
 func truncateDisplay(s string, max int) string { return contextbudget.TruncateDisplay(s, max) }

@@ -125,9 +125,28 @@ func TestRepoReadinessUsesGitRootFallbackForSubdir(t *testing.T) {
 		t.Fatalf("InspectRepoReadiness: %v", err)
 	}
 	want := filepath.Join(root, ".agents")
-	if report.AgentsDir != want {
+	if !sameReadinessPath(report.AgentsDir, want) {
 		t.Fatalf("AgentsDir = %q, want git root fallback %q", report.AgentsDir, want)
 	}
+}
+
+func sameReadinessPath(a, b string) bool {
+	return canonicalReadinessTestPath(a) == canonicalReadinessTestPath(b)
+}
+
+func canonicalReadinessTestPath(path string) string {
+	path = filepath.Clean(path)
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return filepath.Clean(resolved)
+	}
+	parent := filepath.Dir(path)
+	if parent == path {
+		return path
+	}
+	if resolved, err := filepath.EvalSymlinks(parent); err == nil {
+		return filepath.Join(filepath.Clean(resolved), filepath.Base(path))
+	}
+	return path
 }
 
 func TestPlanRepoSeedDryRunDoesNotWrite(t *testing.T) {

@@ -9,19 +9,19 @@ import (
 )
 
 var (
-	modkernel32WinLock      = syscall.NewLazyDLL("kernel32.dll")
-	procCreateEventWLock    = modkernel32WinLock.NewProc("CreateEventW")
-	procCloseHandleLock     = modkernel32WinLock.NewProc("CloseHandle")
-	procLockFileExLock      = modkernel32WinLock.NewProc("LockFileEx")
-	procUnlockFileExLock    = modkernel32WinLock.NewProc("UnlockFileEx")
-	procWFSOLock            = modkernel32WinLock.NewProc("WaitForSingleObject")
+	modkernel32WinLock   = syscall.NewLazyDLL("kernel32.dll")
+	procCreateEventWLock = modkernel32WinLock.NewProc("CreateEventW")
+	procCloseHandleLock  = modkernel32WinLock.NewProc("CloseHandle")
+	procLockFileExLock   = modkernel32WinLock.NewProc("LockFileEx")
+	procUnlockFileExLock = modkernel32WinLock.NewProc("UnlockFileEx")
+	procWFSOLock         = modkernel32WinLock.NewProc("WaitForSingleObject")
 )
 
 const (
-	lockfileExclusiveLockAO  = uintptr(0x00000002)
-	lockfileFailImmediately  = uintptr(0x00000001)
-	errorIOPendingAO         = syscall.Errno(997)  // ERROR_IO_PENDING
-	errorLockViolation       = syscall.Errno(33)   // ERROR_LOCK_VIOLATION
+	lockfileExclusiveLockAO = uintptr(0x00000002)
+	lockfileFailImmediately = uintptr(0x00000001)
+	errorIOPendingAO        = syscall.Errno(997) // ERROR_IO_PENDING
+	errorLockViolation      = syscall.Errno(33)  // ERROR_LOCK_VIOLATION
 )
 
 func flockLock(f *os.File) error {

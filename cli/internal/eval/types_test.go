@@ -12,23 +12,23 @@ import (
 
 func TestSuiteEnvironmentRoundTripPreservesDisableHooks(t *testing.T) {
 	cases := []struct {
-		name    string
-		env     SuiteEnvironment
+		name     string
+		env      SuiteEnvironment
 		wantJSON string
 	}{
 		{
-			name:    "default omits disable_hooks",
-			env:     SuiteEnvironment{},
+			name:     "default omits disable_hooks",
+			env:      SuiteEnvironment{},
 			wantJSON: `{}`,
 		},
 		{
-			name:    "explicit false omits disable_hooks (omitempty)",
-			env:     SuiteEnvironment{DisableHooks: false},
+			name:     "explicit false omits disable_hooks (omitempty)",
+			env:      SuiteEnvironment{DisableHooks: false},
 			wantJSON: `{}`,
 		},
 		{
-			name:    "true emits disable_hooks",
-			env:     SuiteEnvironment{DisableHooks: true},
+			name:     "true emits disable_hooks",
+			env:      SuiteEnvironment{DisableHooks: true},
 			wantJSON: `{"disable_hooks":true}`,
 		},
 		{
@@ -65,18 +65,18 @@ func TestSuiteEnvironmentRoundTripPreservesDisableHooks(t *testing.T) {
 
 func TestEnvironmentRecordRoundTripPreservesHooksDisabled(t *testing.T) {
 	cases := []struct {
-		name    string
-		record  EnvironmentRecord
+		name                    string
+		record                  EnvironmentRecord
 		wantHooksDisabledInJSON bool
 	}{
 		{
-			name:    "false omits via omitempty",
-			record:  EnvironmentRecord{ScrubbedEnvPrefixes: []string{}, NetworkAccess: NetworkDisabled},
+			name:                    "false omits via omitempty",
+			record:                  EnvironmentRecord{ScrubbedEnvPrefixes: []string{}, NetworkAccess: NetworkDisabled},
 			wantHooksDisabledInJSON: false,
 		},
 		{
-			name:    "true is preserved through round-trip",
-			record:  EnvironmentRecord{ScrubbedEnvPrefixes: []string{}, NetworkAccess: NetworkDisabled, HooksDisabled: true},
+			name:                    "true is preserved through round-trip",
+			record:                  EnvironmentRecord{ScrubbedEnvPrefixes: []string{}, NetworkAccess: NetworkDisabled, HooksDisabled: true},
 			wantHooksDisabledInJSON: true,
 		},
 	}

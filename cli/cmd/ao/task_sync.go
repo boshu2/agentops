@@ -296,15 +296,15 @@ func parseTaskCreate(input map[string]any, sessionID string) *TaskEvent {
 	}
 
 	task := &TaskEvent{
-		TaskID:    generateTaskID(),
-		Subject:   subject,
+		TaskID:      generateTaskID(),
+		Subject:     subject,
 		Description: description,
-		Status:    "pending",
-		SessionID: sessionID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Utility:   types.InitialUtility,
-		Metadata:  metadata,
+		Status:      "pending",
+		SessionID:   sessionID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		Utility:     types.InitialUtility,
+		Metadata:    metadata,
 	}
 
 	if activeForm != "" {

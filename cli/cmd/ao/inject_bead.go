@@ -18,10 +18,12 @@ const (
 type BeadContext = search.BeadContext
 
 // Thin wrappers — delegate to search package, kept for test compatibility.
-func resolveBeadContext(beadID, cwd string) *BeadContext { return search.ResolveBeadContext(beadID, cwd) }
-func readBeadCache(cwd, beadID string) *BeadContext      { return search.ReadBeadCache(cwd, beadID) }
-func splitLabels(s string) []string                      { return search.SplitLabels(s) }
-func buildKeywords(ctx *BeadContext) []string             { return search.BuildKeywords(ctx) }
+func resolveBeadContext(beadID, cwd string) *BeadContext {
+	return search.ResolveBeadContext(beadID, cwd)
+}
+func readBeadCache(cwd, beadID string) *BeadContext { return search.ReadBeadCache(cwd, beadID) }
+func splitLabels(s string) []string                 { return search.SplitLabels(s) }
+func buildKeywords(ctx *BeadContext) []string       { return search.BuildKeywords(ctx) }
 
 // applyBeadBoost adjusts a learning's composite score based on bead context.
 // Stays in cmd/ao because it depends on the learning type.

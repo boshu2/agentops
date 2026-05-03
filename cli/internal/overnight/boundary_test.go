@@ -230,21 +230,21 @@ func TestRunLoop_NoGitOpsInvoked(t *testing.T) {
 	repo := t.TempDir()
 
 	forbiddenSubcommands := map[string]struct{}{
-		"commit":   {},
-		"push":     {},
-		"reset":    {},
-		"checkout": {},
-		"rebase":   {},
-		"merge":    {},
+		"commit":      {},
+		"push":        {},
+		"reset":       {},
+		"checkout":    {},
+		"rebase":      {},
+		"merge":       {},
 		"cherry-pick": {},
-		"am":       {},
-		"apply":    {},
-		"restore":  {},
-		"switch":   {},
-		"stash":    {},
-		"clean":    {},
-		"tag":      {},
-		"branch":   {},
+		"am":          {},
+		"apply":       {},
+		"restore":     {},
+		"switch":      {},
+		"stash":       {},
+		"clean":       {},
+		"tag":         {},
+		"branch":      {},
 	}
 
 	withExecShim(t, func(name string, args ...string) *exec.Cmd {

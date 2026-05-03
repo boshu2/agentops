@@ -546,7 +546,7 @@ func TestCountArtifacts(t *testing.T) {
 		filepath.Join(baseDir, ".agents", "patterns"):                       {"p1.md"},
 		filepath.Join(baseDir, ".agents", "candidates"):                     {"c1.md", "c2.md"},
 		filepath.Join(baseDir, ".agents", "research"):                       {"r1.md"},
-		filepath.Join(baseDir, ".agents", "retro"):                         {"retro1.md"},
+		filepath.Join(baseDir, ".agents", "retro"):                          {"retro1.md"},
 		filepath.Join(baseDir, storage.DefaultBaseDir, storage.SessionsDir): {"s1.jsonl"},
 	}
 	for dir, files := range dirs {

@@ -15,7 +15,6 @@ import (
 const (
 	// InjectCharsPerToken is the approximate characters per token (conservative estimate).
 	InjectCharsPerToken = 4
-
 )
 
 // ResortLearnings re-sorts learnings by CompositeScore descending.

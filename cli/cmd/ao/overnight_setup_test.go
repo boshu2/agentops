@@ -16,8 +16,8 @@ func TestIsValidDailyTime(t *testing.T) {
 		{in: "09:05", want: true},
 		{in: "24:00", want: false},
 		{in: "23:60", want: false},
-		{in: "1:00", want: false},  // hour not zero-padded
-		{in: "01:5", want: false},  // minute not zero-padded
+		{in: "1:00", want: false}, // hour not zero-padded
+		{in: "01:5", want: false}, // minute not zero-padded
 		{in: "ab:cd", want: false},
 		{in: "11-30", want: false},
 		{in: "", want: false},
@@ -34,8 +34,8 @@ func TestIsValidDailyTime(t *testing.T) {
 
 func TestSplitDailyTime(t *testing.T) {
 	tests := []struct {
-		in                 string
-		wantHour, wantMin  string
+		in                string
+		wantHour, wantMin string
 	}{
 		{in: "09:30", wantHour: "09", wantMin: "30"},
 		{in: " 08:15 ", wantHour: "08", wantMin: "15"},
@@ -104,9 +104,9 @@ func TestNormalizeDreamRunnerList(t *testing.T) {
 			want: []string{"codex"},
 		},
 		{
-			name:  "empty input",
-			in:    nil,
-			want:  []string{},
+			name: "empty input",
+			in:   nil,
+			want: []string{},
 		},
 	}
 	for _, tc := range tests {

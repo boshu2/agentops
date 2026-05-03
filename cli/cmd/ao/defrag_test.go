@@ -986,4 +986,3 @@ func TestSweepOscillatingGoals_SkipsMalformedLines(t *testing.T) {
 		t.Errorf("expected 0 oscillating goals, got %d", len(result.OscillatingGoals))
 	}
 }
-

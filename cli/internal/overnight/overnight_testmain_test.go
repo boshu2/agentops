@@ -32,10 +32,38 @@ func TestMain(m *testing.M) {
 
 	oldHome := os.Getenv("HOME")
 	_ = os.Setenv("HOME", tmp)
+	restorePathEnv := clearAgentPathEnv()
 
 	code := m.Run()
 
+	restorePathEnv()
 	_ = os.Setenv("HOME", oldHome)
 	_ = os.RemoveAll(tmp)
 	os.Exit(code)
+}
+
+func clearAgentPathEnv() func() {
+	keys := []string{
+		"AO_HOME", "CLAUDE_PLUGIN_DATA",
+		"AO_AGENTS_DIR", "AO_KNOWLEDGE_ROOT", "AO_HOOKS_DIR", "AO_SCOPE_LOCK",
+		"AO_RPI_DIR", "AO_FINDINGS_DIR", "AO_PLANS_DIR", "AO_COUNCIL_DIR",
+		"AO_LEARNINGS_DIR", "AO_PATTERNS_DIR", "AO_DECISIONS_DIR",
+	}
+	prev := make(map[string]string, len(keys))
+	prevSet := make(map[string]bool, len(keys))
+	for _, key := range keys {
+		value, ok := os.LookupEnv(key)
+		prev[key] = value
+		prevSet[key] = ok
+		_ = os.Unsetenv(key)
+	}
+	return func() {
+		for _, key := range keys {
+			if prevSet[key] {
+				_ = os.Setenv(key, prev[key])
+			} else {
+				_ = os.Unsetenv(key)
+			}
+		}
+	}
 }

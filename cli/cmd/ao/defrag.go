@@ -141,8 +141,8 @@ func isHashNamed(name string) bool { return lifecycle.IsHashNamed(name) }
 func findDuplicateLearnings(cwd string) (*DefragDedupResult, error) {
 	return lifecycle.FindDuplicateLearnings(cwd)
 }
-func buildTrigrams(text string) map[string]bool          { return lifecycle.BuildTrigrams(text) }
-func trigramOverlap(a, b map[string]bool) float64        { return lifecycle.TrigramOverlap(a, b) }
+func buildTrigrams(text string) map[string]bool   { return lifecycle.BuildTrigrams(text) }
+func trigramOverlap(a, b map[string]bool) float64 { return lifecycle.TrigramOverlap(a, b) }
 func sweepOscillatingGoals(cwd string) (*OscillationResult, error) {
 	return lifecycle.SweepOscillatingGoals(cwd)
 }

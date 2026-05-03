@@ -42,8 +42,8 @@ func init() {
 	constraintCmd.AddCommand(constraintListCmd)
 }
 
-func constraintIndexPath() string  { return search.ConstraintIndexPath() }
-func constraintLockPath() string   { return search.ConstraintLockPath() }
+func constraintIndexPath() string { return search.ConstraintIndexPath() }
+func constraintLockPath() string  { return search.ConstraintLockPath() }
 func loadConstraintIndex() (*constraintIndex, error) {
 	return search.LoadConstraintIndex()
 }

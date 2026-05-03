@@ -977,7 +977,11 @@ exit 1
 }
 
 func TestFindEpic_NonTimeoutError(t *testing.T) {
+	restrictSearchOrder(t)
+
 	dir := t.TempDir()
+	t.Setenv("PATH", t.TempDir())
+
 	gc, err := NewGateChecker(dir)
 	if err != nil {
 		t.Fatal(err)

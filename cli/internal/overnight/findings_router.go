@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/paths"
 )
 
 // findingFilenameRe matches canonical finding filenames of the form
@@ -66,8 +68,9 @@ type nextWorkLine struct {
 // with a trailing newline and fsync. NFS append is NOT atomic; callers MUST
 // ensure next-work.jsonl lives on a local POSIX filesystem.
 func RouteFindings(cwd string) (routed int, degraded []string, err error) {
-	findingsDir := filepath.Join(cwd, ".agents", "findings")
-	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
+	statePaths := paths.ResolveFromRoot(cwd)
+	findingsDir := statePaths.FindingsDir
+	nextWorkPath := filepath.Join(statePaths.RPIDir, "next-work.jsonl")
 
 	info, statErr := os.Stat(findingsDir)
 	if os.IsNotExist(statErr) {
