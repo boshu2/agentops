@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.lid-primitives-demo",
+  "name": "LID Baseline-A/B Demo (skill-on vs skill-off)",
+  "description": "Smallest fixture that proves the skill-on/off baseline-A/B wiring produces a measurable per-case delta when run via `ao eval run --baseline-mode=both`. The delta-bearing case asserts that AGENTOPS_HOOKS_DISABLED is unset (skill-on); the tied case asserts a stable invariant that holds regardless of hook state.",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "lid", "baseline-ab", "demo"],
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 30
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1, "critical": true},
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "skill-active-when-no-hook-suppression",
+      "title": "Hook suppression env var is unset (skill-on path)",
+      "kind": "command",
+      "objective": "Demonstrates the skill-on leg: the case command checks that AGENTOPS_HOOKS_DISABLED is unset/empty/0 and exits 0 only when skills are active.",
+      "runtime": "shell",
+      "timeout_seconds": 10,
+      "inputs": {
+        "shell": "if [ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ]; then echo 'hooks suppressed (skill-off leg)'; exit 1; else echo 'hooks active (skill-on leg)'; exit 0; fi"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "hooks active"}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"],
+      "critical": true
+    },
+    {
+      "id": "stable-invariant-across-baselines",
+      "title": "Stable invariant — passes regardless of hook state",
+      "kind": "command",
+      "objective": "Tied case: this must pass in both skill-on and skill-off legs so the DeltaScorecard records a 0 for it, proving per-case delta semantics include both delta and tied cases.",
+      "runtime": "shell",
+      "timeout_seconds": 10,
+      "inputs": {
+        "shell": "echo 'tied invariant ok'; exit 0"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness", "runtime_compatibility"]
+    }
+  ]
+}
