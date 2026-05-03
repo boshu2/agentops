@@ -115,3 +115,30 @@ func TestSweepTempFiles_IgnoresNonTmp(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSweepTempFiles_RemovesSymlinkWithoutTouchingTarget(t *testing.T) {
+	dir := t.TempDir()
+	outside := t.TempDir()
+	target := filepath.Join(outside, "target")
+	if err := os.WriteFile(target, []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link.tmp")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	removed, err := SweepTempFiles(dir, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(removed) != 1 || removed[0] != link {
+		t.Fatalf("expected removal of symlink %q, got %v", link, removed)
+	}
+	if _, err := os.Lstat(link); !os.IsNotExist(err) {
+		t.Fatal("symlink still present")
+	}
+	if got, err := os.ReadFile(target); err != nil || string(got) != "keep" {
+		t.Fatalf("target changed: content=%q err=%v", got, err)
+	}
+}
