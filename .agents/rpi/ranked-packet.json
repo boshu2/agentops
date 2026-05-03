@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "goal": "Release readiness >=8/10 with SIL/VIL/HIL evidence in the release process",
-  "generated_at": "2026-05-02T15:08:39-04:00",
+  "goal": "AI-native zero-trust release process with SIL/VIL/HIL and digital-twin evidence before build/tag/release",
+  "generated_at": "2026-05-02T23:51:12Z",
   "applied_findings": [
     {
       "path": ".agents/findings/f-2026-05-01-024.md",
@@ -12,21 +12,25 @@
       "reason": "Cross-host install-and-smoke pattern maps to remote HIL targets."
     },
     {
-      "path": ".agents/findings/f-2026-05-01-025.md",
-      "reason": "Use quick lifecycle gates for multi-phase discovery."
-    },
-    {
-      "path": ".agents/findings/f-2026-05-02-005.md",
-      "reason": "Implementation must verify tracked file edits and diffs after edits."
+      "path": ".agents/findings/f-2026-04-30-002.md",
+      "reason": "Release gates should detect missing upstream evidence inputs instead of repeatedly failing on empty state."
     }
   ],
   "prior_art": [
-    ".agents/research/2026-04-24-agentops-evaluation-environment.md",
-    ".agents/research/2026-04-29-eval-suite-triage.md",
-    ".agents/research/2026-04-26-state-since-v2.38.0.md",
+    ".agents/research/2026-05-02-release-readiness-eight-sil-vil-hil.md",
+    ".agents/plans/2026-05-02-release-readiness-eight-sil-vil-hil.md",
+    ".agents/council/2026-05-02-pre-mortem-release-readiness-eight-sil-vil-hil.md",
+    "docs/contracts/release-readiness.md",
     "docs/contracts/eval-environment.md",
     "docs/RELEASING.md",
     "docs/CI-CD.md"
   ],
-  "next_work": []
+  "next_work": [
+    "soc-owed.2",
+    "soc-owed.3",
+    "soc-owed.4",
+    "soc-owed.5",
+    "soc-owed.6",
+    "soc-owed.7"
+  ]
 }

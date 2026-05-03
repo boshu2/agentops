@@ -78,9 +78,9 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--cite string      Citation type to record for returned artifacts: retrieved, reference, applied (default \"retrieved\")"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--no-cite          Skip citation recording"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao inject`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--no-cite               Disable citation recording"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--apply-decay           Apply confidence decay before ranking"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--session string        Session ID for citation tracking (auto-generated if empty)"}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--no-cite                   Disable citation recording"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--apply-decay               Apply confidence decay before ranking"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--session string            Session ID for citation tracking (auto-generated if empty)"}
       ],
       "dimensions": ["artifact_quality", "runtime_compatibility", "process_adherence"]
     },

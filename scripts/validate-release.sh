@@ -104,7 +104,7 @@ echo "--- End status output ---"
 echo "✓ status runs (exit code ignored)"
 
 # Check commit count since last tag (warning, not failure)
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+LAST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1 || true)
 if [[ -n "$LAST_TAG" ]]; then
     COMMIT_COUNT=$(git log "${LAST_TAG}..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$COMMIT_COUNT" -gt 15 ]]; then

@@ -156,7 +156,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/dream`](skills/dream.md) | You want overnight knowledge compounding that never mutates source code |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 69 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 70 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---

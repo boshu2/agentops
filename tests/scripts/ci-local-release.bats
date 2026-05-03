@@ -107,6 +107,10 @@ teardown() {
     # provenance depends on artifacts being written to a dated directory.
     run grep -q 'ARTIFACT_DIR=' "$SCRIPT"
     [ "$status" -eq 0 ]
+    run grep -q 'version="$(release_version)"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'make build VERSION="$version"' "$SCRIPT"
+    [ "$status" -eq 0 ]
 }
 
 @test "script wires HIL and release readiness gates" {

@@ -430,14 +430,11 @@ run_go_build_only() {
 
 run_release_binary_validation() {
     local version
-    version="$(git describe --tags --always --dirty 2>/dev/null || true)"
-    if [[ -z "$version" ]]; then
-        version="v$(jq -r '.version' .claude-plugin/plugin.json)"
-    fi
+    version="$(release_version)"
 
     (
         cd cli
-        make build
+        make build VERSION="$version"
     )
 
     ./scripts/validate-release.sh "$REPO_ROOT/cli/bin/ao" "$version"
