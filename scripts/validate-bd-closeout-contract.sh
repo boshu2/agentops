@@ -48,6 +48,10 @@ if require_file "docs/runbooks/bd-server-mode-closeout.md"; then
         || fail "runbook must include bd dolt remote list"
     grep -q 'no remote is configured' "$repo_root/docs/runbooks/bd-server-mode-closeout.md" \
         || fail "runbook must explain the no-remote case"
+    grep -q 'bd_timeout' "$repo_root/docs/runbooks/bd-server-mode-closeout.md" \
+        || fail "runbook must include the bd_timeout bounded-command wrapper"
+    grep -q 'timed out after emitting JSON' "$repo_root/docs/runbooks/bd-server-mode-closeout.md" \
+        || fail "runbook must explain hung-after-output bd write behavior"
 fi
 
 if require_file "docs/documentation-index.md"; then

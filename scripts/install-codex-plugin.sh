@@ -464,6 +464,10 @@ if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
   done
   # Copy shared helpers
   if [[ -d "${REPO_ROOT}/lib" ]]; then
+    PLUGIN_LIB_DST="${PLUGIN_CACHE_ROOT}/lib"
+    mkdir -p "$PLUGIN_LIB_DST"
+    cp "${REPO_ROOT}/lib/"*.sh "$PLUGIN_LIB_DST/" 2>/dev/null || true
+    # Compatibility for older hooks that sourced helpers from hooks/ directly.
     cp "${REPO_ROOT}/lib/"*.sh "$HOOKS_DST/" 2>/dev/null || true
   fi
 

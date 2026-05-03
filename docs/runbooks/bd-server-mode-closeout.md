@@ -30,13 +30,32 @@ closeout look uniform.
 
 ## Standard Closeout
 
+Use a bounded wrapper for every bd/Dolt closeout command. On macOS this repo
+expects GNU `gtimeout` from coreutils; on Linux, `timeout` is usually present.
+
+```bash
+bd_timeout() {
+  local seconds="${1:-8}"
+  shift
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "${seconds}s" "$@"
+    return $?
+  fi
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "${seconds}s" "$@"
+    return $?
+  fi
+  "$@"
+}
+```
+
 Run this after any `bd update`, `bd close`, dependency edit, or issue creation:
 
 ```bash
-bd vc status
-bd dolt commit -m "tracker: <summary>"   # if tracker changes are pending
-bd dolt remote list
-bd dolt push                             # only when a real remote is configured
+bd_timeout 8 bd vc status
+bd_timeout 8 bd dolt commit -m "tracker: <summary>"   # if tracker changes are pending
+bd_timeout 8 bd dolt remote list
+bd_timeout 8 bd dolt push                             # only when a real remote is configured
 ```
 
 Then complete the repo closeout:
@@ -49,6 +68,23 @@ git status
 
 `git push` remains mandatory for repository changes. `bd dolt push` is
 conditional on a real remote.
+
+## Command Timeout Outcomes
+
+If a bd command times out before producing output, treat it as failed and retry
+once after checking `bd vc status`. If a bd write command emits valid JSON and
+then times out, treat the result as indeterminate-success:
+
+1. Preserve the emitted stdout in the session notes.
+2. Re-read the emitted issue ID with `bd_timeout 8 bd show <id> --json`.
+3. If the readback matches the requested state, continue and record
+   "bd command timed out after emitting JSON; readback confirmed".
+4. If readback fails or shows stale state, retry once, then file a linked
+   follow-up issue with the command, timeout, stdout, and stderr.
+
+If `bd dolt remote list` prints "No remotes configured." and then times out,
+record "bd Dolt remote list timed out after no-remote output", skip `bd dolt
+push`, and continue to the mandatory Git push.
 
 ## No Remote Is Configured
 
@@ -68,7 +104,7 @@ failure without improving backup or team sync.
 If `bd show` or `bd ready` reads stale issues, missing issues, or an unexpected
 database:
 
-1. Run `bd vc status`.
+1. Run `bd_timeout 8 bd vc status`.
 2. Inspect the active database and project id from the workspace metadata or
    bd diagnostic output.
 3. Verify the served database exists before mutating tracker state.

@@ -1,45 +1,67 @@
 {
   "schema_version": 1,
-  "goal": "Create bd issues for all actionable 2026-05-02 audit findings",
-  "generated_at": "2026-05-02T23:01:13-04:00",
-  "applied_findings": [
+  "generated_at": "2026-05-03T13:10:00Z",
+  "goal": "harden AgentOps repo operating loop determinism",
+  "epic_id": "soc-0qz1",
+  "ranked_items": [
     {
-      "path": ".agents/findings/f-2026-04-25-001.md",
-      "reason": "Worktree disposition remains a release blocker after validation evidence passes."
+      "rank": 1,
+      "id": "soc-0qz1.4",
+      "title": "Fix Codex plugin hook packaging and dangerous-git parsing",
+      "why_now": "Concrete installed-runtime bug with direct push-workflow impact and limited file ownership."
     },
     {
-      "path": ".agents/findings/f-2026-05-02-005.md",
-      "reason": "Silent Edit revert should be tracked as upstream evidence filing, not repo-source repair."
+      "rank": 2,
+      "id": "soc-0qz1.6",
+      "title": "Scope release audit artifact validation to relevant artifacts",
+      "why_now": "Concrete false-blocking gate from local-only historical artifacts; narrow validator/test slice."
     },
     {
-      "path": ".agents/findings/f-2026-05-02-006.md",
-      "reason": "Semver tag filtering is a concrete release-helper bug."
+      "rank": 3,
+      "id": "soc-0qz1.2",
+      "title": "Define repo-local .agents mutability policy and write-surface contract",
+      "why_now": "Policy vocabulary needed before broad validation mutation changes."
+    },
+    {
+      "rank": 4,
+      "id": "soc-0qz1.8",
+      "title": "Codify repo execution profile no-mutation validation lanes",
+      "why_now": "Machine-readable lane metadata prevents future prompt-only policy drift."
+    },
+    {
+      "rank": 5,
+      "id": "soc-0qz1.3",
+      "title": "Make validation hermetic and non-mutating by default",
+      "why_now": "Central objective, but safest after policy and lane metadata are clear."
+    },
+    {
+      "rank": 6,
+      "id": "soc-0qz1.5",
+      "title": "Classify canonical root cleanliness and worktree disposition blockers",
+      "why_now": "Needs .agents policy vocabulary to classify root dirt without hiding policy edits."
+    },
+    {
+      "rank": 7,
+      "id": "soc-0qz1.7",
+      "title": "Bound bd and Dolt closeout command behavior",
+      "why_now": "Important automation reliability fix; can proceed independently once ownership is assigned."
     }
   ],
-  "existing_tracker_coverage": [
-    "soc-0vm9",
-    "soc-sros",
-    "soc-0pzj",
-    "soc-owed"
-  ],
-  "created_or_updated_beads": [
-    "soc-ff2p",
-    "soc-ff2p.2",
-    "soc-ff2p.3",
-    "soc-ff2p.4",
-    "soc-ff2p.5",
-    "soc-ff2p.6",
-    "soc-ff2p.7",
-    "soc-ff2p.8",
-    "soc-0pzj"
-  ],
-  "new_issue_candidates": [
-    "Filter release tag discovery to semver release tags",
-    "Make tests/run-all.sh --all reliable under live runtime failures",
-    "Resolve release worktree disposition and .agents churn blocker",
-    "Isolate release validation from .agents/findings metadata churn",
-    "Review security toolchain warning before v2.40 tag",
-    "File upstream Claude Code silent Edit revert report",
-    "Decide historical changelog coverage floor"
+  "applied_items": [
+    {
+      "path": ".agents/patterns/2026-05-01-state-path-resolver.md",
+      "type": "pattern",
+      "reason": "All .agents-writing hooks and helpers should use canonical state path resolution."
+    },
+    {
+      "path": ".agents/research/2026-04-29-ci-tests-hooks-noise-audit.md",
+      "type": "research",
+      "reason": "Local validation needs behavior fixtures that catch real drift."
+    },
+    {
+      "path": ".agents/plans/2026-05-02-ai-native-zero-trust-release-process.md",
+      "type": "plan",
+      "reason": "Release artifact scoping must coordinate with the larger zero-trust release evidence epic."
+    }
   ]
 }
