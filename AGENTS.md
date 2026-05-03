@@ -68,7 +68,7 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 ## CI Validation — Passing the Pipeline
 
 All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), and check-test-staleness (non-blocking).
-Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including `codex-runtime-sections`.
+Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 ### Local Pre-Push Checklist
 
@@ -198,7 +198,6 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **agentops-eval-advisory** | Runs deterministic public AgentOps eval canaries and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); eval suite or scorecard regression until baselines are ratcheted |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
-| **codex-runtime-sections** | Required Codex runtime sections and ordering remain valid; CI also enforces Codex artifact metadata parity, backbone prompts, override coverage, RPI contract, lifecycle guards, and headless runtime smoke in this job | AGENTS/runtime guidance changes drift from required Codex runtime section rules or Codex artifact/runtime checks stop matching the shipped local gate stack |
 | **contract-compatibility-gate** | documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance |
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
@@ -221,6 +220,13 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **standards-injector-completeness** | Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md` | Adding a case branch without the reference file (the hook fails open silently) |
 | **swarm-evidence** | Swarm evidence files and file manifests are valid | Missing or malformed swarm evidence artifacts |
 | **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
+| **validate-codex-backbone-prompts** | Codex backbone prompt files are present and well-formed | Backbone prompt file deleted, renamed, or shape regressed |
+| **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |
+| **validate-codex-lifecycle-guards** | Codex lifecycle guards (session/run boundaries, kill switches) remain wired | Lifecycle guard removed or runtime hook order changed without updating the guard |
+| **validate-codex-override-coverage** | Every `skills-codex-overrides/<name>/` entry covers required override surfaces | Adding an override skill without the prompt or body coverage the runtime expects |
+| **validate-codex-rpi-contract** | Codex RPI contract (phase prompts, transitions, output schema) matches runtime | RPI contract drift between Claude and Codex runtimes |
+| **validate-codex-runtime-sections** | Required Codex runtime sections and ordering remain valid in shipped artifacts | AGENTS/runtime guidance changes drift from required Codex runtime section rules |
+| **validate-headless-runtime-skills** | Headless runtime skill bundle smoke (mocked Claude/Codex/OpenCode runners) | Runtime install/bundle drift breaks headless skill execution |
 | **validate-hooks-doc-parity** | Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json` | Runtime hook contract changed but docs were not updated |
 | **windows-smoke** | Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests | Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green |
 | **bats-tests** | BATS integration tests for shell scripts pass | Hook or script behavioral regression |
