@@ -198,6 +198,7 @@ mkdir -p "$run_dir" "$BASELINE_DIR"
 
 failures=0
 warnings=0
+promote_queue=()
 
 record_failure() {
     echo "FAIL eval-agentops: $*" >&2
@@ -207,6 +208,51 @@ record_failure() {
 record_warning() {
     echo "WARN eval-agentops: $*" >&2
     warnings=$((warnings + 1))
+}
+
+# Phase-2 (deferred) baseline promotion: a regressed suite must not write
+# its run record over the existing baseline. Per-suite the loop only queues;
+# the actual write happens after all suites finish AND failures == 0.
+queue_promotion() {
+    local suite_id="$1" run_path="$2" baseline_path="$3"
+    promote_queue+=("$suite_id|$run_path|$baseline_path")
+}
+
+# Working-tree allowlist: .agents/ is session state and is allowed dirty.
+# Anything else dirty refuses promotion unless EVAL_AGENTOPS_ALLOW_DIRTY=1.
+working_tree_dirty_outside_allowlist() {
+    if ! command -v git >/dev/null 2>&1; then
+        return 1
+    fi
+    git -C "$ROOT" status --porcelain 2>/dev/null \
+        | awk '{ p=$0; sub(/^.. /,"",p); print p }' \
+        | grep -vE '^(\.agents/|\.beads/)' \
+        | grep -q .
+}
+
+run_promote_queue() {
+    [[ "$PROMOTE" == "true" ]] || return 0
+    [[ "${#promote_queue[@]}" -gt 0 ]] || return 0
+
+    if [[ "$failures" -gt 0 ]]; then
+        record_failure "promotion ABORTED: $failures suite failure(s); no baselines written"
+        return 0
+    fi
+    if [[ "${EVAL_AGENTOPS_ALLOW_DIRTY:-0}" != "1" ]] && working_tree_dirty_outside_allowlist; then
+        record_failure "promotion ABORTED: working tree dirty outside .agents/ and .beads/ (set EVAL_AGENTOPS_ALLOW_DIRTY=1 to override)"
+        return 0
+    fi
+
+    local entry suite_id run_path baseline_path promote_stdout
+    for entry in "${promote_queue[@]}"; do
+        IFS='|' read -r suite_id run_path baseline_path <<<"$entry"
+        promote_stdout="$run_dir/${suite_id}.baseline.stdout.json"
+        if ! "$AO_BIN" eval baseline "$run_path" --out "$baseline_path" --promoted-by "$PROMOTED_BY" --rationale "$RATIONALE" --json >"$promote_stdout"; then
+            record_failure "$suite_id baseline promotion failed"
+        else
+            echo "promoted baseline: $baseline_path"
+        fi
+    done
 }
 
 echo "AgentOps eval run: $run_id"
@@ -294,14 +340,11 @@ for suite in "${SUITES[@]}"; do
     fi
 
     if [[ "$PROMOTE" == "true" ]]; then
-        promote_stdout="$run_dir/${suite_id}.baseline.stdout.json"
-        if ! "$AO_BIN" eval baseline "$run_path" --out "$baseline_path" --promoted-by "$PROMOTED_BY" --rationale "$RATIONALE" --json >"$promote_stdout"; then
-            record_failure "$suite_id baseline promotion failed"
-        else
-            echo "promoted baseline: $baseline_path"
-        fi
+        queue_promotion "$suite_id" "$run_path" "$baseline_path"
     fi
 done
+
+run_promote_queue
 
 if [[ "$FAST" == "true" ]]; then
     coverage_path="$run_dir/coverage.json"

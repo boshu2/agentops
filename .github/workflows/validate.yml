@@ -42,6 +42,51 @@ jobs:
           chmod +x scripts/validate-hook-preflight.sh
           ./scripts/validate-hook-preflight.sh
 
+  pre-push-gate-wired:
+    name: pre-push-gate-wired (required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify pre-push gate chain is intact
+        run: |
+          chmod +x scripts/check-pre-push-gate-wired.sh
+          ./scripts/check-pre-push-gate-wired.sh --dry-run-smoke
+
+  agentops-eval-baseline-audit:
+    name: agentops-eval-baseline-audit (required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary
+        run: |
+          mkdir -p cli/bin
+          (cd cli && go build -o bin/ao ./cmd/ao)
+
+      - name: Run eval baseline-audit
+        run: |
+          set -euo pipefail
+          out="$(./cli/bin/ao eval baseline-audit --root evals/agentops-core --json)"
+          echo "$out"
+          stale=$(printf '%s' "$out" | jq '(.stale_suite_hashes // []) | length' 2>/dev/null || echo "-1")
+          mismatch=$(printf '%s' "$out" | jq '.policy_mismatch_count // 0' 2>/dev/null || echo "-1")
+          if [[ "$stale" == "-1" || "$mismatch" == "-1" ]]; then
+            echo "FAIL: could not parse baseline-audit output" >&2
+            exit 1
+          fi
+          if [[ "$stale" -gt 0 || "$mismatch" -gt 0 ]]; then
+            echo "FAIL: stale_suite_hashes=$stale, policy_mismatch_count=$mismatch" >&2
+            exit 1
+          fi
+          echo "ok: stale_suite_hashes=0 policy_mismatch_count=0"
+
   standards-injector-completeness:
     runs-on: ubuntu-latest
     steps:
@@ -966,7 +1011,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -976,6 +1021,8 @@ jobs:
           echo "doc-release-gate: ${{ needs.doc-release-gate.result }}"
           echo "smoke-test: ${{ needs.smoke-test.result }}"
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
+          echo "pre-push-gate-wired: ${{ needs.pre-push-gate-wired.result }}"
+          echo "agentops-eval-baseline-audit: ${{ needs.agentops-eval-baseline-audit.result }}"
           echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
           echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"
           echo "hook-output-schema-lint: ${{ needs.hook-output-schema-lint.result }}"
@@ -1015,6 +1062,8 @@ jobs:
           if [[ "${{ needs.doc-release-gate.result }}" != "success" ]] || \
              [[ "${{ needs.smoke-test.result }}" != "success" ]] || \
              [[ "${{ needs.hook-preflight.result }}" != "success" ]] || \
+             [[ "${{ needs.pre-push-gate-wired.result }}" != "success" ]] || \
+             [[ "${{ needs.agentops-eval-baseline-audit.result }}" != "success" ]] || \
              [[ "${{ needs.standards-injector-completeness.result }}" != "success" ]] || \
              [[ "${{ needs.validate-hooks-doc-parity.result }}" != "success" ]] || \
              [[ "${{ needs.hook-output-schema-lint.result }}" != "success" ]] || \
