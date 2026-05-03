@@ -6,7 +6,6 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-
 // estimateTokens, truncateDisplay, hookMessageForStatus tests are in context_test.go
 
 // ---------------------------------------------------------------------------

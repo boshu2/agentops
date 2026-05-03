@@ -53,12 +53,12 @@ func TestClassifyFeedbackType(t *testing.T) {
 
 func TestCounterDirectionFromFeedback(t *testing.T) {
 	cases := []struct {
-		name           string
-		reward         float64
-		explicitHelp   bool
-		explicitHarm   bool
-		wantHelpful    bool
-		wantHarmful    bool
+		name         string
+		reward       float64
+		explicitHelp bool
+		explicitHarm bool
+		wantHelpful  bool
+		wantHarmful  bool
 	}{
 		{"explicit helpful wins", 0.1, true, false, true, false},
 		{"explicit harmful wins", 0.9, false, true, false, true},
@@ -189,8 +189,8 @@ func TestRebuildWithFrontMatter(t *testing.T) {
 func TestUpdateFrontMatterFields_ReplacesAndAppends(t *testing.T) {
 	existing := []string{"utility: 0.3", "maturity: provisional"}
 	result := UpdateFrontMatterFields(existing, map[string]string{
-		"utility":  "0.9",
-		"new_key":  "new_val",
+		"utility": "0.9",
+		"new_key": "new_val",
 	})
 	joined := strings.Join(result, "\n")
 	if !strings.Contains(joined, "utility: 0.9") {

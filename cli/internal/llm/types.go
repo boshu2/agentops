@@ -37,4 +37,3 @@ type TurnChunk struct {
 func (c TurnChunk) Prompt() string {
 	return "USER:\n" + c.UserText + "\n\nASSISTANT:\n" + c.AssistantText
 }
-

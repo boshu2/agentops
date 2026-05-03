@@ -35,9 +35,9 @@ type PlansProjectionExecutorOptions struct {
 // the supervisor invokes with a claimed job; rebuild/write/validate mechanics
 // live in plans_projection.go.
 type PlansProjectionExecutor struct {
-	store    *Store
-	source   PlansBdSource
-	now      func() time.Time
+	store  *Store
+	source PlansBdSource
+	now    func() time.Time
 }
 
 // NewPlansProjectionExecutor builds an executor from explicit dependencies.

@@ -514,7 +514,6 @@ func testCountContextLines(s string) int {
 	return count
 }
 
-
 // ===========================================================================
 // worktree.go — runIDFromWorktreePath
 // ===========================================================================
@@ -899,4 +898,3 @@ func TestSearchSearchJSONL(t *testing.T) {
 		}
 	})
 }
-

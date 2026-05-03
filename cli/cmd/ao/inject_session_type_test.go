@@ -113,4 +113,3 @@ func TestInjectProfile_Missing(t *testing.T) {
 		t.Error("expected error reading missing profile")
 	}
 }
-

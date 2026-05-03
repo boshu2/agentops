@@ -275,7 +275,7 @@ func TestValidateTeamLifecycle_OutOfOrderPreservesOriginalIndex(t *testing.T) {
 	// Council finding: EventIndex must refer to caller's original slice position, not sorted.
 	now := time.Now()
 	events := []TeamLifecycleEvent{
-		{Action: "task", TeamName: "team-1", Timestamp: now.Add(time.Second), AgentID: "worker-1"}, // orig idx 0
+		{Action: "task", TeamName: "team-1", Timestamp: now.Add(time.Second), AgentID: "worker-1"},   // orig idx 0
 		{Action: "delete", TeamName: "team-1", Timestamp: now.Add(2 * time.Second), AgentID: "lead"}, // orig idx 1
 		// create is last in input but first by timestamp
 		{Action: "create", TeamName: "team-1", Timestamp: now, AgentID: "lead"}, // orig idx 2

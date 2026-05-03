@@ -195,3 +195,15 @@ func TestWarnOnlyBudgetPath_UnderDotAgents(t *testing.T) {
 		t.Fatalf("path=%q want %q", got, want)
 	}
 }
+
+func TestWarnOnlyBudgetPath_UsesAgentPathOverrides(t *testing.T) {
+	repo := t.TempDir()
+	agentsDir := filepath.Join(t.TempDir(), "agents")
+	t.Setenv("AO_AGENTS_DIR", agentsDir)
+
+	got := WarnOnlyBudgetPath(repo)
+	want := filepath.Join(agentsDir, "overnight", WarnOnlyBudgetFilename)
+	if got != want {
+		t.Fatalf("path=%q want %q", got, want)
+	}
+}

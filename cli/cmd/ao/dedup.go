@@ -94,9 +94,9 @@ func readUtilityFromFrontmatter(text string, defaultVal float64) float64 {
 func readUtilityFromJSONL(text string, defaultVal float64) float64 {
 	return lifecycle.ReadUtilityFromJSONL(text, defaultVal)
 }
-func extractLearningBody(path string) string  { return lifecycle.ExtractLearningBody(path) }
-func extractMarkdownBody(text string) string  { return lifecycle.ExtractMarkdownBody(text) }
-func extractJSONLBody(text string) string     { return lifecycle.ExtractJSONLBody(text) }
+func extractLearningBody(path string) string { return lifecycle.ExtractLearningBody(path) }
+func extractMarkdownBody(text string) string { return lifecycle.ExtractMarkdownBody(text) }
+func extractJSONLBody(text string) string    { return lifecycle.ExtractJSONLBody(text) }
 func hashNormalizedContent(body string) string {
 	return lifecycle.HashNormalizedContent(body)
 }

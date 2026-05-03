@@ -84,4 +84,3 @@ func ClassifyByVerdict(verdict string) types.MemRLFailureClass {
 		return types.MemRLFailureClass(strings.ToLower(verdict))
 	}
 }
-

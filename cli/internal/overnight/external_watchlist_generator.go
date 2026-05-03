@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/paths"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,10 +28,10 @@ const externalWatchlistSourceEpic = "external-watchlist"
 // re-emit every run" against "operator forgets to look".
 const defaultWatchlistStaleAfter = 168 * time.Hour
 
-// externalWatchlistRelativePath is the operator-managed watchlist file
-// location, relative to the run cwd. PROGRAM.md permits this path under
-// "Mutable Scope" when Dream is the active command.
-const externalWatchlistRelativePath = ".agents/dream/external-watchlist.yaml"
+// externalWatchlistFilename is the operator-managed watchlist file name under
+// the resolved AgentOps dream state directory. PROGRAM.md permits this file
+// under "Mutable Scope" when Dream is the active command.
+const externalWatchlistFilename = "external-watchlist.yaml"
 
 // WatchlistEntry is one operator-curated source to watch for changes.
 //
@@ -59,7 +60,7 @@ type Watchlist struct {
 // requires=["human-review"]; the queue selector holds them.
 func runExternalWatchlistGenerator(ctx context.Context, opts RunLoopOptions) FindingGeneratorSidecar {
 	started := time.Now()
-	watchlistPath := filepath.Join(opts.Cwd, externalWatchlistRelativePath)
+	watchlistPath := filepath.Join(paths.ResolveFromRoot(opts.Cwd).AgentsDir, "dream", externalWatchlistFilename)
 	return runExternalWatchlistGeneratorAt(ctx, opts, watchlistPath, time.Now(), started)
 }
 

@@ -15,21 +15,21 @@ import (
 // handoffArtifact is the user-facing handoff artifact for session boundary isolation.
 // Distinct from phaseHandoff (orchestrator-internal) — this is written by `ao handoff`.
 type handoffArtifact struct {
-	SchemaVersion     int            `json:"schema_version"`
-	ID                string         `json:"id"`
-	CreatedAt         string         `json:"created_at"`
-	Type              string         `json:"type"` // manual, auto, rpi
-	Goal              string         `json:"goal,omitempty"`
-	Summary           string         `json:"summary,omitempty"`
-	Continuation      string         `json:"continuation,omitempty"`
-	ArtifactsProduced []string       `json:"artifacts_produced,omitempty"`
-	DecisionsMade     []string       `json:"decisions_made,omitempty"`
-	OpenRisks         []string       `json:"open_risks,omitempty"`
-	RPI               *handoffRPI    `json:"rpi"`
-	State             *handoffState  `json:"state"`
-	Consumed          bool           `json:"consumed"`
-	ConsumedAt        *string        `json:"consumed_at,omitempty"`
-	ConsumedBy        *string        `json:"consumed_by,omitempty"`
+	SchemaVersion     int           `json:"schema_version"`
+	ID                string        `json:"id"`
+	CreatedAt         string        `json:"created_at"`
+	Type              string        `json:"type"` // manual, auto, rpi
+	Goal              string        `json:"goal,omitempty"`
+	Summary           string        `json:"summary,omitempty"`
+	Continuation      string        `json:"continuation,omitempty"`
+	ArtifactsProduced []string      `json:"artifacts_produced,omitempty"`
+	DecisionsMade     []string      `json:"decisions_made,omitempty"`
+	OpenRisks         []string      `json:"open_risks,omitempty"`
+	RPI               *handoffRPI   `json:"rpi"`
+	State             *handoffState `json:"state"`
+	Consumed          bool          `json:"consumed"`
+	ConsumedAt        *string       `json:"consumed_at,omitempty"`
+	ConsumedBy        *string       `json:"consumed_by,omitempty"`
 }
 
 // handoffRPI captures RPI phase context for session handoffs.
@@ -300,4 +300,3 @@ func killSessionViaTmux(cwd string) error {
 	cmd := exec.Command("tmux", "respawn-pane", "-k", "-t", pane, restartCmd)
 	return cmd.Run()
 }
-

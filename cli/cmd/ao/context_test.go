@@ -1774,211 +1774,424 @@ func TestRunContextStatus_TableWithStatuses(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil { t.Fatal(err) }
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
 	defer func() { _ = os.Chdir(origDir) }()
 	sessionID := "table-status-session"
 	transcriptDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
-	if err := os.MkdirAll(transcriptDir, 0755); err != nil { t.Fatal(err) }
+	if err := os.MkdirAll(transcriptDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	longTask := "a really long task description that exceeds forty-eight characters to test truncation behavior in the output"
 	writeTranscriptLines(t, filepath.Join(transcriptDir, sessionID+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-1 * time.Minute).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": longTask}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "claude-sonnet", "usage": map[string]any{"input_tokens": 1000, "cache_creation_input_tokens": 2000, "cache_read_input_tokens": 3000}}},
 	})
 	ctxDir := filepath.Join(dir, ".agents", "ao", "context")
-	if err := os.MkdirAll(ctxDir, 0755); err != nil { t.Fatal(err) }
+	if err := os.MkdirAll(ctxDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	tracker := contextbudget.NewBudgetTracker(sessionID)
 	tracker.MaxTokens = contextbudget.DefaultMaxTokens
 	tracker.UpdateUsage(6000)
 	bdata, _ := json.MarshalIndent(tracker, "", "  ")
 	os.WriteFile(filepath.Join(ctxDir, "budget-"+sessionID+".json"), bdata, 0644)
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
-	oldOutput := output; output = "table"; defer func() { output = oldOutput }()
-	oldWd := contextWatchdogMinute; contextWatchdogMinute = defaultWatchdogMinutes; defer func() { contextWatchdogMinute = oldWd }()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	oldOutput := output
+	output = "table"
+	defer func() { output = oldOutput }()
+	oldWd := contextWatchdogMinute
+	contextWatchdogMinute = defaultWatchdogMinutes
+	defer func() { contextWatchdogMinute = oldWd }()
 	err := runContextStatus(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
-	if err != nil { t.Fatalf("error: %v", err) }
-	buf := make([]byte, 8192); n, _ := r.Read(buf); got := string(buf[:n])
-	if !strings.Contains(got, "SESSION") { t.Errorf("expected SESSION header, got: %q", got) }
+	w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	got := string(buf[:n])
+	if !strings.Contains(got, "SESSION") {
+		t.Errorf("expected SESSION header, got: %q", got)
+	}
 }
 
 func TestRunContextStatus_EmptyTelemetry(t *testing.T) {
-	dir := t.TempDir(); origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	t.Setenv("HOME", t.TempDir())
-	oldOutput := output; output = "table"; defer func() { output = oldOutput }()
-	oldWd := contextWatchdogMinute; contextWatchdogMinute = defaultWatchdogMinutes; defer func() { contextWatchdogMinute = oldWd }()
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
+	oldOutput := output
+	output = "table"
+	defer func() { output = oldOutput }()
+	oldWd := contextWatchdogMinute
+	contextWatchdogMinute = defaultWatchdogMinutes
+	defer func() { contextWatchdogMinute = oldWd }()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 	err := runContextStatus(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
-	if err != nil { t.Fatalf("error: %v", err) }
-	buf := make([]byte, 8192); n, _ := r.Read(buf)
-	if !strings.Contains(string(buf[:n]), "No context telemetry") { t.Errorf("expected empty message") }
+	w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	if !strings.Contains(string(buf[:n]), "No context telemetry") {
+		t.Errorf("expected empty message")
+	}
 }
 
 func TestRunContextGuard_TableOutput(t *testing.T) {
-	dir := t.TempDir(); tmpHome := t.TempDir(); t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	sessionID := "guard-table-session"
-	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations"); os.MkdirAll(projDir, 0755)
+	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
+	os.MkdirAll(projDir, 0755)
 	writeTranscriptLines(t, filepath.Join(projDir, sessionID+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-30 * time.Second).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "task"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "claude-sonnet", "usage": map[string]any{"input_tokens": 500, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 2000}}},
 	})
 	old1, old2, old3, old4, old5, old6 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, output
-	contextSessionID = sessionID; contextMaxTokens = contextbudget.DefaultMaxTokens; contextWatchdogMinute = defaultWatchdogMinutes
-	contextAutoRestart = false; contextWriteHandoff = false; output = "table"
-	defer func() { contextSessionID = old1; contextMaxTokens = old2; contextWatchdogMinute = old3; contextAutoRestart = old4; contextWriteHandoff = old5; output = old6 }()
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
+	contextSessionID = sessionID
+	contextMaxTokens = contextbudget.DefaultMaxTokens
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextAutoRestart = false
+	contextWriteHandoff = false
+	output = "table"
+	defer func() {
+		contextSessionID = old1
+		contextMaxTokens = old2
+		contextWatchdogMinute = old3
+		contextAutoRestart = old4
+		contextWriteHandoff = old5
+		output = old6
+	}()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 	err := runContextGuard(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
-	if err != nil { t.Fatalf("error: %v", err) }
-	buf := make([]byte, 8192); n, _ := r.Read(buf)
-	if !strings.Contains(string(buf[:n]), "Session:") { t.Errorf("expected 'Session:' in output") }
+	w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
+	if !strings.Contains(string(buf[:n]), "Session:") {
+		t.Errorf("expected 'Session:' in output")
+	}
 }
 
 func TestRunContextGuard_MissingSession(t *testing.T) {
-	dir := t.TempDir(); origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
-	old := contextSessionID; contextSessionID = ""; t.Setenv("CLAUDE_SESSION_ID", ""); defer func() { contextSessionID = old }()
+	dir := t.TempDir()
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
+	old := contextSessionID
+	contextSessionID = ""
+	t.Setenv("CLAUDE_SESSION_ID", "")
+	defer func() { contextSessionID = old }()
 	err := runContextGuard(&cobra.Command{}, nil)
-	if err == nil { t.Fatal("expected error") }
-	if !strings.Contains(err.Error(), "session id missing") { t.Errorf("unexpected: %v", err) }
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "session id missing") {
+		t.Errorf("unexpected: %v", err)
+	}
 }
 
 func TestRunContextGuard_AutoRestart(t *testing.T) {
-	dir := t.TempDir(); tmpHome := t.TempDir(); t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	sessionID := "guard-ar"
-	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations"); os.MkdirAll(projDir, 0755)
+	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
+	os.MkdirAll(projDir, 0755)
 	writeTranscriptLines(t, filepath.Join(projDir, sessionID+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-30 * time.Second).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "task"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "claude-sonnet", "usage": map[string]any{"input_tokens": 500, "cache_creation_input_tokens": 500, "cache_read_input_tokens": 500}}},
 	})
 	old1, old2, old3, old4, old5, old6 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, output
-	contextSessionID = sessionID; contextMaxTokens = contextbudget.DefaultMaxTokens; contextWatchdogMinute = defaultWatchdogMinutes
-	contextAutoRestart = true; contextWriteHandoff = false; output = "json"
-	defer func() { contextSessionID = old1; contextMaxTokens = old2; contextWatchdogMinute = old3; contextAutoRestart = old4; contextWriteHandoff = old5; output = old6 }()
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
+	contextSessionID = sessionID
+	contextMaxTokens = contextbudget.DefaultMaxTokens
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextAutoRestart = true
+	contextWriteHandoff = false
+	output = "json"
+	defer func() {
+		contextSessionID = old1
+		contextMaxTokens = old2
+		contextWatchdogMinute = old3
+		contextAutoRestart = old4
+		contextWriteHandoff = old5
+		output = old6
+	}()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 	err := runContextGuard(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
+	w.Close()
+	os.Stdout = oldStdout
 	_, _ = io.ReadAll(r)
 	_ = r.Close()
-	if err != nil { t.Fatalf("error: %v", err) }
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
 }
 
 func TestRunContextGuard_WithPromptOverride(t *testing.T) {
-	dir := t.TempDir(); tmpHome := t.TempDir(); t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	sessionID := "guard-prompt"
-	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations"); os.MkdirAll(projDir, 0755)
+	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
+	os.MkdirAll(projDir, 0755)
 	writeTranscriptLines(t, filepath.Join(projDir, sessionID+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-30 * time.Second).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "original"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "claude-sonnet", "usage": map[string]any{"input_tokens": 500, "cache_creation_input_tokens": 500, "cache_read_input_tokens": 500}}},
 	})
 	old1, old2, old3, old4, old5, old6, old7 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, contextPrompt, output
-	contextSessionID = sessionID; contextMaxTokens = contextbudget.DefaultMaxTokens; contextWatchdogMinute = defaultWatchdogMinutes
-	contextAutoRestart = false; contextWriteHandoff = false; contextPrompt = "override prompt"; output = "json"
-	defer func() { contextSessionID = old1; contextMaxTokens = old2; contextWatchdogMinute = old3; contextAutoRestart = old4; contextWriteHandoff = old5; contextPrompt = old6; output = old7 }()
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
+	contextSessionID = sessionID
+	contextMaxTokens = contextbudget.DefaultMaxTokens
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextAutoRestart = false
+	contextWriteHandoff = false
+	contextPrompt = "override prompt"
+	output = "json"
+	defer func() {
+		contextSessionID = old1
+		contextMaxTokens = old2
+		contextWatchdogMinute = old3
+		contextAutoRestart = old4
+		contextWriteHandoff = old5
+		contextPrompt = old6
+		output = old7
+	}()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 	err := runContextGuard(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
-	if err != nil { t.Fatalf("error: %v", err) }
-	buf := make([]byte, 8192); n, _ := r.Read(buf)
+	w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	buf := make([]byte, 8192)
+	n, _ := r.Read(buf)
 	var result contextGuardResult
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(buf[:n]))), &result); err != nil { t.Fatalf("json: %v", err) }
-	if result.Session.LastTask != "override prompt" { t.Errorf("LastTask = %q", result.Session.LastTask) }
+	if err := json.Unmarshal([]byte(strings.TrimSpace(string(buf[:n]))), &result); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if result.Session.LastTask != "override prompt" {
+		t.Errorf("LastTask = %q", result.Session.LastTask)
+	}
 }
 
 func TestRunContextGuard_CollectError(t *testing.T) {
-	dir := t.TempDir(); tmpHome := t.TempDir(); t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	old1, old2, old3, old4, old5, old6 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, output
-	contextSessionID = "nonexistent-session-xyz"; contextMaxTokens = contextbudget.DefaultMaxTokens
-	contextWatchdogMinute = defaultWatchdogMinutes; contextAutoRestart = false; contextWriteHandoff = false; output = "json"
-	defer func() { contextSessionID = old1; contextMaxTokens = old2; contextWatchdogMinute = old3; contextAutoRestart = old4; contextWriteHandoff = old5; output = old6 }()
+	contextSessionID = "nonexistent-session-xyz"
+	contextMaxTokens = contextbudget.DefaultMaxTokens
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextAutoRestart = false
+	contextWriteHandoff = false
+	output = "json"
+	defer func() {
+		contextSessionID = old1
+		contextMaxTokens = old2
+		contextWatchdogMinute = old3
+		contextAutoRestart = old4
+		contextWriteHandoff = old5
+		output = old6
+	}()
 	err := runContextGuard(&cobra.Command{}, nil)
-	if err == nil { t.Fatal("expected error for missing transcript") }
-	if !strings.Contains(err.Error(), "find transcript") { t.Errorf("unexpected error: %v", err) }
+	if err == nil {
+		t.Fatal("expected error for missing transcript")
+	}
+	if !strings.Contains(err.Error(), "find transcript") {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestRunContextGuard_WriteHandoffCritical(t *testing.T) {
-	dir := t.TempDir(); tmpHome := t.TempDir(); t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd(); os.Chdir(dir); defer func() { _ = os.Chdir(origDir) }()
+	dir := t.TempDir()
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	origDir, _ := os.Getwd()
+	os.Chdir(dir)
+	defer func() { _ = os.Chdir(origDir) }()
 	sessionID := "guard-handoff-crit"
-	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations"); os.MkdirAll(projDir, 0755)
+	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
+	os.MkdirAll(projDir, 0755)
 	writeTranscriptLines(t, filepath.Join(projDir, sessionID+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-30 * time.Second).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "critical task"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "claude-sonnet", "usage": map[string]any{"input_tokens": 180000, "cache_creation_input_tokens": 10000, "cache_read_input_tokens": 10000}}},
 	})
 	old1, old2, old3, old4, old5, old6 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, output
-	contextSessionID = sessionID; contextMaxTokens = 200000; contextWatchdogMinute = defaultWatchdogMinutes
-	contextAutoRestart = false; contextWriteHandoff = true; output = "json"
-	defer func() { contextSessionID = old1; contextMaxTokens = old2; contextWatchdogMinute = old3; contextAutoRestart = old4; contextWriteHandoff = old5; output = old6 }()
-	oldStdout := os.Stdout; r, w, _ := os.Pipe(); os.Stdout = w
+	contextSessionID = sessionID
+	contextMaxTokens = 200000
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextAutoRestart = false
+	contextWriteHandoff = true
+	output = "json"
+	defer func() {
+		contextSessionID = old1
+		contextMaxTokens = old2
+		contextWatchdogMinute = old3
+		contextAutoRestart = old4
+		contextWriteHandoff = old5
+		output = old6
+	}()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 	err := runContextGuard(&cobra.Command{}, nil)
-	w.Close(); os.Stdout = oldStdout
-	if err != nil { t.Fatalf("error: %v", err) }
-	buf := make([]byte, 16384); n, _ := r.Read(buf)
+	w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	buf := make([]byte, 16384)
+	n, _ := r.Read(buf)
 	var result contextGuardResult
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(buf[:n]))), &result); err != nil { t.Fatalf("json: %v\nbody: %s", err, string(buf[:n])) }
-	if result.Session.Status != string(contextbudget.StatusCritical) { t.Errorf("status=%q, want CRITICAL", result.Session.Status) }
-	if result.HandoffFile == "" { t.Error("expected handoff file to be set") }
-	if !strings.Contains(result.HookMessage, "Handoff saved") { t.Errorf("hook message should mention handoff: %q", result.HookMessage) }
+	if err := json.Unmarshal([]byte(strings.TrimSpace(string(buf[:n]))), &result); err != nil {
+		t.Fatalf("json: %v\nbody: %s", err, string(buf[:n]))
+	}
+	if result.Session.Status != string(contextbudget.StatusCritical) {
+		t.Errorf("status=%q, want CRITICAL", result.Session.Status)
+	}
+	if result.HandoffFile == "" {
+		t.Error("expected handoff file to be set")
+	}
+	if !strings.Contains(result.HookMessage, "Handoff saved") {
+		t.Errorf("hook message should mention handoff: %q", result.HookMessage)
+	}
 }
 
 func TestPersistGuardState_FullCoverage(t *testing.T) {
 	dir := t.TempDir()
 	err := persistGuardState(dir, contextSessionStatus{SessionID: "persist-test", EstimatedUsage: 5000, MaxTokens: 200000, AgentName: "w1", AgentRole: "worker"})
-	if err != nil { t.Fatalf("error: %v", err) }
-	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "budget-persist-test.json")); os.IsNotExist(e) { t.Error("no budget") }
-	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-persist-test.json")); os.IsNotExist(e) { t.Error("no assignment") }
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "budget-persist-test.json")); os.IsNotExist(e) {
+		t.Error("no budget")
+	}
+	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-persist-test.json")); os.IsNotExist(e) {
+		t.Error("no assignment")
+	}
 }
 
 func TestPersistGuardState_EmptyAssignment(t *testing.T) {
 	dir := t.TempDir()
-	if err := persistGuardState(dir, contextSessionStatus{SessionID: "pe", EstimatedUsage: 5000, MaxTokens: 200000}); err != nil { t.Fatal(err) }
-	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-pe.json")); !os.IsNotExist(e) { t.Error("unexpected assignment") }
+	if err := persistGuardState(dir, contextSessionStatus{SessionID: "pe", EstimatedUsage: 5000, MaxTokens: 200000}); err != nil {
+		t.Fatal(err)
+	}
+	if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-pe.json")); !os.IsNotExist(e) {
+		t.Error("unexpected assignment")
+	}
 }
 
 func TestSeekAndReadTail_LargeFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "large.jsonl")
 	var b strings.Builder
-	for i := 0; i < 100; i++ { b.WriteString(`{"t":"u"}` + strings.Repeat("x", 100) + "\n") }
+	for i := 0; i < 100; i++ {
+		b.WriteString(`{"t":"u"}` + strings.Repeat("x", 100) + "\n")
+	}
 	os.WriteFile(path, []byte(b.String()), 0644)
 	data, err := readFileTail(path, 200)
-	if err != nil { t.Fatal(err) }
-	if len(data) == 0 { t.Fatal("empty") }
-	if len(data) > 200 { t.Errorf("too big: %d", len(data)) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) == 0 {
+		t.Fatal("empty")
+	}
+	if len(data) > 200 {
+		t.Errorf("too big: %d", len(data))
+	}
 }
 
 func TestExtractTextContent_ArrayContent(t *testing.T) {
-	if got := extractTextContent(json.RawMessage(`[{"type":"text","text":"hello"},{"type":"img"}]`)); got != "hello" { t.Errorf("got %q", got) }
+	if got := extractTextContent(json.RawMessage(`[{"type":"text","text":"hello"},{"type":"img"}]`)); got != "hello" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestExtractTextContent_ArrayEmptyText(t *testing.T) {
-	if got := extractTextContent(json.RawMessage(`[{"type":"text","text":""},{"type":"text","text":"  "}]`)); got != "" { t.Errorf("got %q", got) }
+	if got := extractTextContent(json.RawMessage(`[{"type":"text","text":""},{"type":"text","text":"  "}]`)); got != "" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestExtractTextContent_InvalidJSON(t *testing.T) {
-	if got := extractTextContent(json.RawMessage(`{bad}`)); got != "" { t.Errorf("got %q", got) }
+	if got := extractTextContent(json.RawMessage(`{bad}`)); got != "" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestExtractTextContent_NilRaw(t *testing.T) {
-	if got := extractTextContent(json.RawMessage(nil)); got != "" { t.Errorf("got %q", got) }
+	if got := extractTextContent(json.RawMessage(nil)); got != "" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestExtractTextContent_WhitespaceOnly(t *testing.T) {
-	if got := extractTextContent(json.RawMessage(`   `)); got != "" { t.Errorf("got %q", got) }
+	if got := extractTextContent(json.RawMessage(`   `)); got != "" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestExtractIssueID_Variants(t *testing.T) {
 	for _, tt := range []struct{ n, i, w string }{{"std", "ag-gjw work", "ag-gjw"}, {"upper", "AG-XYZ", "ag-xyz"}, {"none", "task", ""}, {"empty", "", ""}} {
-		t.Run(tt.n, func(t *testing.T) { if got := extractIssueID(tt.i); got != tt.w { t.Errorf("%q->%q want %q", tt.i, got, tt.w) } })
+		t.Run(tt.n, func(t *testing.T) {
+			if got := extractIssueID(tt.i); got != tt.w {
+				t.Errorf("%q->%q want %q", tt.i, got, tt.w)
+			}
+		})
 	}
 }
 
 func TestResolveContextAssignment_Variants(t *testing.T) {
-	t.Run("no agent", func(t *testing.T) { a := resolveContextAssignment(t.TempDir(), "task", ""); if a.AgentName != "" { t.Errorf("name=%q", a.AgentName) } })
-	t.Run("issue in task", func(t *testing.T) { if a := resolveContextAssignment(t.TempDir(), "ag-xyz feature", ""); a.IssueID != "ag-xyz" { t.Errorf("issue=%q", a.IssueID) } })
-	t.Run("agent no team", func(t *testing.T) { t.Setenv("HOME", t.TempDir()); a := resolveContextAssignment(t.TempDir(), "task", "some-agent"); if a.AgentRole != "agent" { t.Errorf("role=%q", a.AgentRole) } })
+	t.Run("no agent", func(t *testing.T) {
+		a := resolveContextAssignment(t.TempDir(), "task", "")
+		if a.AgentName != "" {
+			t.Errorf("name=%q", a.AgentName)
+		}
+	})
+	t.Run("issue in task", func(t *testing.T) {
+		if a := resolveContextAssignment(t.TempDir(), "ag-xyz feature", ""); a.IssueID != "ag-xyz" {
+			t.Errorf("issue=%q", a.IssueID)
+		}
+	})
+	t.Run("agent no team", func(t *testing.T) {
+		t.Setenv("HOME", t.TempDir())
+		a := resolveContextAssignment(t.TempDir(), "task", "some-agent")
+		if a.AgentRole != "agent" {
+			t.Errorf("role=%q", a.AgentRole)
+		}
+	})
 }
 
 func TestPersistAssignment_Variants(t *testing.T) {
@@ -1986,13 +2199,21 @@ func TestPersistAssignment_Variants(t *testing.T) {
 		dir := t.TempDir()
 		persistAssignment(dir, contextSessionStatus{SessionID: "aw", AgentName: "w5", TeamName: "b"})
 		data, err := os.ReadFile(filepath.Join(dir, ".agents", "ao", "context", "assignment-aw.json"))
-		if err != nil { t.Fatal(err) }
-		var s contextAssignmentSnapshot; json.Unmarshal(data, &s)
-		if s.AgentName != "w5" { t.Errorf("name=%q", s.AgentName) }
+		if err != nil {
+			t.Fatal(err)
+		}
+		var s contextAssignmentSnapshot
+		json.Unmarshal(data, &s)
+		if s.AgentName != "w5" {
+			t.Errorf("name=%q", s.AgentName)
+		}
 	})
 	t.Run("skips empty", func(t *testing.T) {
-		dir := t.TempDir(); persistAssignment(dir, contextSessionStatus{SessionID: "as"})
-		if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-as.json")); !os.IsNotExist(e) { t.Error("unexpected") }
+		dir := t.TempDir()
+		persistAssignment(dir, contextSessionStatus{SessionID: "as"})
+		if _, e := os.Stat(filepath.Join(dir, ".agents", "ao", "context", "assignment-as.json")); !os.IsNotExist(e) {
+			t.Error("unexpected")
+		}
 	})
 }
 
@@ -2000,259 +2221,455 @@ func TestReadSessionTail_NoUsageEntries(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nu.jsonl")
 	writeTranscriptLines(t, path, []map[string]any{{"type": "user", "timestamp": "2026-02-20T10:00:00Z", "message": map[string]any{"role": "user", "content": "some task"}}})
 	u, task, _, err := readSessionTail(path)
-	if err != nil { t.Fatal(err) }
-	if task != "some task" { t.Errorf("task=%q", task) }
-	if u.InputTokens != 0 { t.Errorf("tokens=%d", u.InputTokens) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if task != "some task" {
+		t.Errorf("task=%q", task)
+	}
+	if u.InputTokens != 0 {
+		t.Errorf("tokens=%d", u.InputTokens)
+	}
 }
 
 func TestReadSessionTail_FileNotFound(t *testing.T) {
 	_, _, _, err := readSessionTail(filepath.Join(t.TempDir(), "nonexistent.jsonl"))
-	if err == nil { t.Fatal("expected error") }
+	if err == nil {
+		t.Fatal("expected error")
+	}
 }
 
 func TestReadSessionTail_EmptyFile(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "empty.jsonl"); os.WriteFile(path, []byte{}, 0644)
+	path := filepath.Join(t.TempDir(), "empty.jsonl")
+	os.WriteFile(path, []byte{}, 0644)
 	usage, task, _, err := readSessionTail(path)
-	if err != nil { t.Fatal(err) }
-	if task != "" { t.Errorf("task=%q", task) }
-	if usage.InputTokens != 0 { t.Errorf("tokens=%d", usage.InputTokens) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if task != "" {
+		t.Errorf("task=%q", task)
+	}
+	if usage.InputTokens != 0 {
+		t.Errorf("tokens=%d", usage.InputTokens)
+	}
 }
 
 func TestCollectSessionStatus_ZeroUsageFallback(t *testing.T) {
-	dir, h := t.TempDir(), t.TempDir(); t.Setenv("HOME", h)
-	sid := "zu"; td := filepath.Join(h, ".claude", "projects", "p", "conversations"); os.MkdirAll(td, 0755)
+	dir, h := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", h)
+	sid := "zu"
+	td := filepath.Join(h, ".claude", "projects", "p", "conversations")
+	os.MkdirAll(td, 0755)
 	writeTranscriptLines(t, filepath.Join(td, sid+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "a task with no usage data"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}},
 	})
 	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
-	if err != nil { t.Fatal(err) }
-	if s.EstimatedUsage <= 0 { t.Errorf("usage=%d", s.EstimatedUsage) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.EstimatedUsage <= 0 {
+		t.Errorf("usage=%d", s.EstimatedUsage)
+	}
 }
 
 func TestCollectSessionStatus_Stale(t *testing.T) {
-	dir, h := t.TempDir(), t.TempDir(); t.Setenv("HOME", h)
-	sid := "st"; td := filepath.Join(h, ".claude", "projects", "p", "conversations"); os.MkdirAll(td, 0755)
+	dir, h := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", h)
+	sid := "st"
+	td := filepath.Join(h, ".claude", "projects", "p", "conversations")
+	os.MkdirAll(td, 0755)
 	writeTranscriptLines(t, filepath.Join(td, sid+".jsonl"), []map[string]any{
 		{"type": "user", "timestamp": time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "old"}},
 		{"type": "assistant", "timestamp": time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 1000, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 1000}}},
 	})
 	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
-	if err != nil { t.Fatal(err) }
-	if !s.IsStale { t.Error("expected stale") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.IsStale {
+		t.Error("expected stale")
+	}
 }
 
 func TestCollectSessionStatus_ZeroTimestamp(t *testing.T) {
-	dir, h := t.TempDir(), t.TempDir(); t.Setenv("HOME", h)
-	sid := "zt"; td := filepath.Join(h, ".claude", "projects", "p", "conversations"); os.MkdirAll(td, 0755)
+	dir, h := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", h)
+	sid := "zt"
+	td := filepath.Join(h, ".claude", "projects", "p", "conversations")
+	os.MkdirAll(td, 0755)
 	writeTranscriptLines(t, filepath.Join(td, sid+".jsonl"), []map[string]any{
 		{"type": "user", "message": map[string]any{"role": "user", "content": "task"}},
 		{"type": "assistant", "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 1000, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 1000}}},
 	})
 	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
-	if err != nil { t.Fatal(err) }
-	if s.LastUpdated == "" { t.Error("expected LastUpdated") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.LastUpdated == "" {
+		t.Error("expected LastUpdated")
+	}
 }
 
 func TestCompareSessionStatuses_Extra(t *testing.T) {
 	t.Run("id tiebreak", func(t *testing.T) {
 		a := contextSessionStatus{Readiness: contextReadinessGreen, Status: string(contextbudget.StatusOptimal), SessionID: "b"}
 		b := contextSessionStatus{Readiness: contextReadinessGreen, Status: string(contextbudget.StatusOptimal), SessionID: "a"}
-		if compareSessionStatuses(a, b) <= 0 { t.Error("a should be after b") }
+		if compareSessionStatuses(a, b) <= 0 {
+			t.Error("a should be after b")
+		}
 	})
 	t.Run("stale first", func(t *testing.T) {
 		a := contextSessionStatus{Readiness: contextReadinessGreen, Status: string(contextbudget.StatusOptimal), IsStale: false, SessionID: "a"}
 		b := contextSessionStatus{Readiness: contextReadinessGreen, Status: string(contextbudget.StatusOptimal), IsStale: true, SessionID: "b"}
-		if compareSessionStatuses(a, b) <= 0 { t.Error("stale b before a") }
+		if compareSessionStatuses(a, b) <= 0 {
+			t.Error("stale b before a")
+		}
 	})
 }
 
 func TestFindPendingHandoff_Extra(t *testing.T) {
 	t.Run("skips dirs and non-json", func(t *testing.T) {
-		dir := t.TempDir(); pd := filepath.Join(dir, ".agents", "handoff", "pending")
-		os.MkdirAll(filepath.Join(pd, "sub.json"), 0755); os.WriteFile(filepath.Join(pd, "r.md"), []byte("hi"), 0644)
-		_, _, f, err := findPendingHandoffForSession(dir, "x"); if err != nil { t.Fatal(err) }; if f { t.Error("found") }
+		dir := t.TempDir()
+		pd := filepath.Join(dir, ".agents", "handoff", "pending")
+		os.MkdirAll(filepath.Join(pd, "sub.json"), 0755)
+		os.WriteFile(filepath.Join(pd, "r.md"), []byte("hi"), 0644)
+		_, _, f, err := findPendingHandoffForSession(dir, "x")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f {
+			t.Error("found")
+		}
 	})
 	t.Run("no dir", func(t *testing.T) {
-		_, _, f, err := findPendingHandoffForSession(t.TempDir(), "x"); if err != nil { t.Fatal(err) }; if f { t.Error("found") }
+		_, _, f, err := findPendingHandoffForSession(t.TempDir(), "x")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f {
+			t.Error("found")
+		}
 	})
 	t.Run("match found", func(t *testing.T) {
-		dir := t.TempDir(); pd := filepath.Join(dir, ".agents", "handoff", "pending"); os.MkdirAll(pd, 0755)
-		marker := handoffMarker{SessionID: "match-me", HandoffFile: "handoff.md"}; data, _ := json.Marshal(marker)
+		dir := t.TempDir()
+		pd := filepath.Join(dir, ".agents", "handoff", "pending")
+		os.MkdirAll(pd, 0755)
+		marker := handoffMarker{SessionID: "match-me", HandoffFile: "handoff.md"}
+		data, _ := json.Marshal(marker)
 		os.WriteFile(filepath.Join(pd, "test.json"), data, 0644)
 		hp, mp, found, err := findPendingHandoffForSession(dir, "match-me")
-		if err != nil { t.Fatal(err) }; if !found { t.Error("not found") }
-		if hp != "handoff.md" { t.Errorf("hp=%q", hp) }; if mp == "" { t.Error("empty marker path") }
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !found {
+			t.Error("not found")
+		}
+		if hp != "handoff.md" {
+			t.Errorf("hp=%q", hp)
+		}
+		if mp == "" {
+			t.Error("empty marker path")
+		}
 	})
 }
 
 func TestTmuxStartDetachedSession_Variants(t *testing.T) {
-	if err := tmuxStartDetachedSession(""); err == nil || !strings.Contains(err.Error(), "missing") { t.Errorf("err=%v", err) }
-	if err := tmuxStartDetachedSession("   "); err == nil { t.Error("expected error") }
+	if err := tmuxStartDetachedSession(""); err == nil || !strings.Contains(err.Error(), "missing") {
+		t.Errorf("err=%v", err)
+	}
+	if err := tmuxStartDetachedSession("   "); err == nil {
+		t.Error("expected error")
+	}
 }
 
 func TestTmuxStartDetachedSession_CmdFail_NoOutput(t *testing.T) {
-	bd := filepath.Join(t.TempDir(), "bin"); os.MkdirAll(bd, 0755)
+	bd := filepath.Join(t.TempDir(), "bin")
+	os.MkdirAll(bd, 0755)
 	os.WriteFile(filepath.Join(bd, "tmux"), []byte("#!/bin/sh\nexit 1\n"), 0755)
 	t.Setenv("PATH", bd+string(os.PathListSeparator)+os.Getenv("PATH"))
 	err := tmuxStartDetachedSession("test-session")
-	if err == nil { t.Fatal("expected error") }
-	if !strings.Contains(err.Error(), "exit status") { t.Errorf("unexpected error: %v", err) }
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "exit status") {
+		t.Errorf("unexpected error: %v", err)
+	}
 }
 
 func TestReadinessForUsage_Extra(t *testing.T) {
-	for _, tt := range []struct{ u float64; w string }{
+	for _, tt := range []struct {
+		u float64
+		w string
+	}{
 		{0.75, contextReadinessCritical}, {0.60, contextReadinessRed}, {0.40, contextReadinessAmber}, {0.25, contextReadinessGreen}, {1.5, contextReadinessCritical},
-	} { if got := readinessForUsage(tt.u); got != tt.w { t.Errorf("readinessForUsage(%f)=%q want %q", tt.u, got, tt.w) } }
+	} {
+		if got := readinessForUsage(tt.u); got != tt.w {
+			t.Errorf("readinessForUsage(%f)=%q want %q", tt.u, got, tt.w)
+		}
+	}
 }
 
 func TestReadinessAction_Extra(t *testing.T) {
 	for _, tt := range []struct{ i, w string }{
 		{contextReadinessGreen, "carry_on"}, {contextReadinessAmber, "finish_current_scope"}, {contextReadinessRed, "relief_on_station"}, {contextReadinessCritical, "immediate_relief"}, {"X", "immediate_relief"},
-	} { if got := readinessAction(tt.i); got != tt.w { t.Errorf("readinessAction(%q)=%q want %q", tt.i, got, tt.w) } }
+	} {
+		if got := readinessAction(tt.i); got != tt.w {
+			t.Errorf("readinessAction(%q)=%q want %q", tt.i, got, tt.w)
+		}
+	}
 }
 
 func TestToRepoRelative_Extra(t *testing.T) {
-	if got := toRepoRelative("", "/a/b.txt"); got == "" { t.Error("empty") }
+	if got := toRepoRelative("", "/a/b.txt"); got == "" {
+		t.Error("empty")
+	}
 }
 
 func TestGitChangedFiles_LimitExtra(t *testing.T) {
 	dir := t.TempDir()
 	for _, a := range [][]string{{"git", "init"}, {"git", "config", "user.email", "t@t"}, {"git", "config", "user.name", "T"}, {"git", "config", "commit.gpgsign", "false"}} {
-		c := exec.Command(a[0], a[1:]...); c.Dir = dir; c.CombinedOutput()
+		c := exec.Command(a[0], a[1:]...)
+		c.Dir = dir
+		c.CombinedOutput()
 	}
-	for i := 0; i < 5; i++ { os.WriteFile(filepath.Join(dir, strings.Repeat("a", i+1)+".txt"), []byte("v1"), 0644) }
-	for _, a := range [][]string{{"git", "add", "."}, {"git", "commit", "-m", "i"}} { c := exec.Command(a[0], a[1:]...); c.Dir = dir; c.CombinedOutput() }
-	for i := 0; i < 5; i++ { os.WriteFile(filepath.Join(dir, strings.Repeat("a", i+1)+".txt"), []byte("v2"), 0644) }
+	for i := 0; i < 5; i++ {
+		os.WriteFile(filepath.Join(dir, strings.Repeat("a", i+1)+".txt"), []byte("v1"), 0644)
+	}
+	for _, a := range [][]string{{"git", "add", "."}, {"git", "commit", "-m", "i"}} {
+		c := exec.Command(a[0], a[1:]...)
+		c.Dir = dir
+		c.CombinedOutput()
+	}
+	for i := 0; i < 5; i++ {
+		os.WriteFile(filepath.Join(dir, strings.Repeat("a", i+1)+".txt"), []byte("v2"), 0644)
+	}
 	ch := gitChangedFiles(dir, 2)
-	if len(ch) > 2 { t.Errorf("got %d", len(ch)) }
-	if len(ch) == 0 { t.Error("none") }
+	if len(ch) > 2 {
+		t.Errorf("got %d", len(ch))
+	}
+	if len(ch) == 0 {
+		t.Error("none")
+	}
 }
 
 func TestRunCommand_Extra(t *testing.T) {
-	if got := runCommand("/tmp", 5*time.Second, "echo", "hi"); got != "hi" { t.Errorf("got %q", got) }
-	if got := runCommand("/tmp", 5*time.Second, "false"); got != "" { t.Errorf("got %q", got) }
+	if got := runCommand("/tmp", 5*time.Second, "echo", "hi"); got != "hi" {
+		t.Errorf("got %q", got)
+	}
+	if got := runCommand("/tmp", 5*time.Second, "false"); got != "" {
+		t.Errorf("got %q", got)
+	}
 }
 
 func TestCollectOneTrackedStatus_Extra(t *testing.T) {
-	dir := t.TempDir(); cd := filepath.Join(dir, ".agents", "ao", "context"); os.MkdirAll(cd, 0755)
+	dir := t.TempDir()
+	cd := filepath.Join(dir, ".agents", "ao", "context")
+	os.MkdirAll(cd, 0755)
 	os.WriteFile(filepath.Join(cd, "budget-bad.json"), []byte("{bad}"), 0644)
-	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-bad.json"), 20*time.Minute); ok { t.Error("ok for bad json") }
+	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-bad.json"), 20*time.Minute); ok {
+		t.Error("ok for bad json")
+	}
 	os.WriteFile(filepath.Join(cd, "budget-es.json"), []byte(`{"session_id":"  "}`), 0644)
-	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-es.json"), 20*time.Minute); ok { t.Error("ok for empty sid") }
+	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-es.json"), 20*time.Minute); ok {
+		t.Error("ok for empty sid")
+	}
 }
 
 func TestMergeAssignmentFields_Extra(t *testing.T) {
 	s := &contextSessionStatus{SessionID: "m", AgentName: "cur"}
 	mergeAssignmentFields(&contextAssignment{AgentName: "cur"}, &contextAssignment{AgentName: "p", AgentRole: "pr", TeamName: "pt", IssueID: "pi", TmuxPaneID: "pp", TmuxTarget: "ptg", TmuxSession: "ps"}, s)
-	if s.AgentName != "cur" { t.Error("overwritten") }
-	if s.AgentRole != "pr" { t.Errorf("role=%q", s.AgentRole) }
-	if s.TmuxSession != "ps" { t.Errorf("session=%q", s.TmuxSession) }
+	if s.AgentName != "cur" {
+		t.Error("overwritten")
+	}
+	if s.AgentRole != "pr" {
+		t.Errorf("role=%q", s.AgentRole)
+	}
+	if s.TmuxSession != "ps" {
+		t.Errorf("session=%q", s.TmuxSession)
+	}
 }
 
 func TestApplyContextAssignment_Extra(t *testing.T) {
 	applyContextAssignment(nil, contextAssignment{AgentName: "x"})
 	s := &contextSessionStatus{}
 	applyContextAssignment(s, contextAssignment{AgentName: "w", AgentRole: "r", TeamName: "t", IssueID: "i", TmuxPaneID: "p", TmuxTarget: "tg", TmuxSession: "ts"})
-	if s.AgentName != "w" { t.Errorf("name=%q", s.AgentName) }
-	if s.TmuxSession != "ts" { t.Errorf("session=%q", s.TmuxSession) }
+	if s.AgentName != "w" {
+		t.Errorf("name=%q", s.AgentName)
+	}
+	if s.TmuxSession != "ts" {
+		t.Errorf("session=%q", s.TmuxSession)
+	}
 }
 
 func TestRenderHandoffMarkdown_Extra(t *testing.T) {
 	md := renderHandoffMarkdown(time.Now(), contextSessionStatus{SessionID: "fb", UsagePercent: 0.5}, transcriptUsage{}, "none", nil)
-	if !strings.Contains(md, "50.0%") { t.Error("missing 50%") }
+	if !strings.Contains(md, "50.0%") {
+		t.Error("missing 50%")
+	}
 }
 
 func TestSearchTeamConfig_Extra(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "bad.json"), []byte("{bad"), 0644)
-	if _, ok := searchTeamConfig(filepath.Join(dir, "bad.json"), "x"); ok { t.Error("ok for bad") }
+	if _, ok := searchTeamConfig(filepath.Join(dir, "bad.json"), "x"); ok {
+		t.Error("ok for bad")
+	}
 	os.WriteFile(filepath.Join(dir, "g.json"), []byte(`{"members":[{"name":"a"}]}`), 0644)
-	if _, ok := searchTeamConfig(filepath.Join(dir, "g.json"), "b"); ok { t.Error("ok for no match") }
+	if _, ok := searchTeamConfig(filepath.Join(dir, "g.json"), "b"); ok {
+		t.Error("ok for no match")
+	}
 }
 
 func TestMatchPendingHandoff_Extra(t *testing.T) {
 	dir := t.TempDir()
-	d1, _ := json.Marshal(handoffMarker{SessionID: "s1", Consumed: true}); os.WriteFile(filepath.Join(dir, "c.json"), d1, 0644)
-	if _, _, ok := matchPendingHandoff(filepath.Join(dir, "c.json"), dir, "s1"); ok { t.Error("consumed") }
-	d2, _ := json.Marshal(handoffMarker{SessionID: "s2"}); os.WriteFile(filepath.Join(dir, "w.json"), d2, 0644)
-	if _, _, ok := matchPendingHandoff(filepath.Join(dir, "w.json"), dir, "s3"); ok { t.Error("wrong session") }
-	if _, _, ok := matchPendingHandoff("/no/f.json", "/tmp", "x"); ok { t.Error("nonexistent") }
+	d1, _ := json.Marshal(handoffMarker{SessionID: "s1", Consumed: true})
+	os.WriteFile(filepath.Join(dir, "c.json"), d1, 0644)
+	if _, _, ok := matchPendingHandoff(filepath.Join(dir, "c.json"), dir, "s1"); ok {
+		t.Error("consumed")
+	}
+	d2, _ := json.Marshal(handoffMarker{SessionID: "s2"})
+	os.WriteFile(filepath.Join(dir, "w.json"), d2, 0644)
+	if _, _, ok := matchPendingHandoff(filepath.Join(dir, "w.json"), dir, "s3"); ok {
+		t.Error("wrong session")
+	}
+	if _, _, ok := matchPendingHandoff("/no/f.json", "/tmp", "x"); ok {
+		t.Error("nonexistent")
+	}
 }
 
 func TestFixupTailTimestamps_Extra(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "t.jsonl"); os.WriteFile(path, []byte("d\n"), 0644)
-	u := transcriptUsage{}; ts := time.Time{}
+	path := filepath.Join(t.TempDir(), "t.jsonl")
+	os.WriteFile(path, []byte("d\n"), 0644)
+	u := transcriptUsage{}
+	ts := time.Time{}
 	fixupTailTimestamps(path, &u, &ts)
-	if ts.IsZero() { t.Error("zero ts") }; if u.Timestamp.IsZero() { t.Error("zero usage ts") }
-	e := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC); u2 := transcriptUsage{Timestamp: e}; ts2 := e
+	if ts.IsZero() {
+		t.Error("zero ts")
+	}
+	if u.Timestamp.IsZero() {
+		t.Error("zero usage ts")
+	}
+	e := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	u2 := transcriptUsage{Timestamp: e}
+	ts2 := e
 	fixupTailTimestamps(path, &u2, &ts2)
-	if !ts2.Equal(e) { t.Error("ts changed") }
+	if !ts2.Equal(e) {
+		t.Error("ts changed")
+	}
 }
 
 func TestMaybeAutoRestartStaleSession_Extra(t *testing.T) {
 	t.Run("tmux unavailable", func(t *testing.T) {
 		t.Setenv("PATH", t.TempDir())
 		r := maybeAutoRestartStaleSession(contextSessionStatus{Action: "recover_dead_session", TmuxTarget: "s:0"})
-		if r.RestartMessage != "tmux unavailable" { t.Errorf("msg=%q", r.RestartMessage) }
+		if r.RestartMessage != "tmux unavailable" {
+			t.Errorf("msg=%q", r.RestartMessage)
+		}
 	})
 	t.Run("target alive", func(t *testing.T) {
-		bd := filepath.Join(t.TempDir(), "bin"); os.MkdirAll(bd, 0755)
+		bd := filepath.Join(t.TempDir(), "bin")
+		os.MkdirAll(bd, 0755)
 		os.WriteFile(filepath.Join(bd, "tmux"), []byte("#!/bin/sh\nexit 0\n"), 0755)
 		t.Setenv("PATH", bd+string(os.PathListSeparator)+os.Getenv("PATH"))
 		r := maybeAutoRestartStaleSession(contextSessionStatus{Action: "recover_dead_session", TmuxTarget: "l:0"})
-		if r.RestartMessage != "tmux target already alive" { t.Errorf("msg=%q", r.RestartMessage) }
+		if r.RestartMessage != "tmux target already alive" {
+			t.Errorf("msg=%q", r.RestartMessage)
+		}
 	})
 	t.Run("session from target", func(t *testing.T) {
-		bd := filepath.Join(t.TempDir(), "bin"); os.MkdirAll(bd, 0755)
+		bd := filepath.Join(t.TempDir(), "bin")
+		os.MkdirAll(bd, 0755)
 		os.WriteFile(filepath.Join(bd, "tmux"), []byte("#!/bin/sh\nif [ \"$1\" = \"has-session\" ]; then exit 1; fi\nexit 0\n"), 0755)
 		t.Setenv("PATH", bd+string(os.PathListSeparator)+os.Getenv("PATH"))
 		r := maybeAutoRestartStaleSession(contextSessionStatus{Action: "recover_dead_session", TmuxTarget: "w:0"})
-		if !r.RestartSuccess { t.Errorf("fail: %q", r.RestartMessage) }
-		if r.TmuxSession != "w" { t.Errorf("session=%q", r.TmuxSession) }
+		if !r.RestartSuccess {
+			t.Errorf("fail: %q", r.RestartMessage)
+		}
+		if r.TmuxSession != "w" {
+			t.Errorf("session=%q", r.TmuxSession)
+		}
 	})
 	t.Run("start fails", func(t *testing.T) {
-		bd := filepath.Join(t.TempDir(), "bin"); os.MkdirAll(bd, 0755)
+		bd := filepath.Join(t.TempDir(), "bin")
+		os.MkdirAll(bd, 0755)
 		os.WriteFile(filepath.Join(bd, "tmux"), []byte("#!/bin/sh\nif [ \"$1\" = \"has-session\" ]; then exit 1; fi\necho fail >&2; exit 1\n"), 0755)
 		t.Setenv("PATH", bd+string(os.PathListSeparator)+os.Getenv("PATH"))
 		r := maybeAutoRestartStaleSession(contextSessionStatus{Action: "recover_dead_session", TmuxTarget: "f:0", TmuxSession: "f"})
-		if !r.RestartAttempt { t.Error("no attempt") }; if r.RestartSuccess { t.Error("should fail") }
+		if !r.RestartAttempt {
+			t.Error("no attempt")
+		}
+		if r.RestartSuccess {
+			t.Error("should fail")
+		}
 	})
 }
 
 func TestTmuxTargetAlive_Extra(t *testing.T) {
-	if tmuxTargetAlive("") { t.Error("empty") }; if tmuxTargetAlive("   ") { t.Error("ws") }
+	if tmuxTargetAlive("") {
+		t.Error("empty")
+	}
+	if tmuxTargetAlive("   ") {
+		t.Error("ws")
+	}
 }
 
 func TestParseTimestamp_RFC3339WithOffset(t *testing.T) {
-	if parseTimestamp("2026-02-20T10:00:00+05:00").IsZero() { t.Error("zero") }
+	if parseTimestamp("2026-02-20T10:00:00+05:00").IsZero() {
+		t.Error("zero")
+	}
 }
 
 func TestParseTimestamp_UnparsableReturnsZero(t *testing.T) {
-	if ts := parseTimestamp("not-a-timestamp"); !ts.IsZero() { t.Errorf("expected zero, got %v", ts) }
+	if ts := parseTimestamp("not-a-timestamp"); !ts.IsZero() {
+		t.Errorf("expected zero, got %v", ts)
+	}
 }
 
 func TestParseTimestamp_EmptyString(t *testing.T) {
-	if ts := parseTimestamp(""); !ts.IsZero() { t.Errorf("expected zero, got %v", ts) }
+	if ts := parseTimestamp(""); !ts.IsZero() {
+		t.Errorf("expected zero, got %v", ts)
+	}
 }
 
 func TestEnsureCriticalHandoff_ExistingHandoff(t *testing.T) {
-	dir := t.TempDir(); pd := filepath.Join(dir, ".agents", "handoff", "pending"); os.MkdirAll(pd, 0755)
-	marker := handoffMarker{SessionID: "existing-ho", HandoffFile: "existing-handoff.md"}; data, _ := json.Marshal(marker)
+	dir := t.TempDir()
+	pd := filepath.Join(dir, ".agents", "handoff", "pending")
+	os.MkdirAll(pd, 0755)
+	marker := handoffMarker{SessionID: "existing-ho", HandoffFile: "existing-handoff.md"}
+	data, _ := json.Marshal(marker)
 	os.WriteFile(filepath.Join(pd, "existing.json"), data, 0644)
 	hp, mp, err := ensureCriticalHandoff(dir, contextSessionStatus{SessionID: "existing-ho"}, transcriptUsage{})
-	if err != nil { t.Fatal(err) }
-	if hp != "existing-handoff.md" { t.Errorf("hp=%q", hp) }; if mp == "" { t.Error("empty marker path") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hp != "existing-handoff.md" {
+		t.Errorf("hp=%q", hp)
+	}
+	if mp == "" {
+		t.Error("empty marker path")
+	}
 }
 
 func TestEnsureCriticalHandoff_NewHandoff(t *testing.T) {
 	dir := t.TempDir()
 	status := contextSessionStatus{SessionID: "new-ho-test", Status: string(contextbudget.StatusCritical), UsagePercent: 0.95, RemainingPercent: 0.05, Readiness: contextReadinessCritical, LastTask: "critical task"}
 	hp, mp, err := ensureCriticalHandoff(dir, status, transcriptUsage{InputTokens: 190000})
-	if err != nil { t.Fatal(err) }
-	if hp == "" { t.Error("empty handoff path") }; if mp == "" { t.Error("empty marker path") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hp == "" {
+		t.Error("empty handoff path")
+	}
+	if mp == "" {
+		t.Error("empty marker path")
+	}
 	matches, _ := filepath.Glob(filepath.Join(dir, ".agents", "handoff", "*.md"))
-	if len(matches) == 0 { t.Error("no handoff markdown files created") }
+	if len(matches) == 0 {
+		t.Error("no handoff markdown files created")
+	}
 	markers, _ := filepath.Glob(filepath.Join(dir, ".agents", "handoff", "pending", "*.json"))
-	if len(markers) == 0 { t.Error("no marker files created") }
+	if len(markers) == 0 {
+		t.Error("no marker files created")
+	}
 }

@@ -80,8 +80,8 @@ func ValidateMessageSize(message string, maxTokens int) *ContractViolation {
 // so that EventIndex in violations refers to the caller's position, not the
 // post-sort position.
 type indexedEvent struct {
-	event    TeamLifecycleEvent
-	origIdx  int
+	event   TeamLifecycleEvent
+	origIdx int
 }
 
 // teamMeta tracks lifecycle state and last-seen provenance per team.

@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/boshu2/agentops/cli/internal/mine"
+	"github.com/boshu2/agentops/cli/internal/paths"
 )
 
 const mineFindingsGeneratorName = "mine-findings"
@@ -236,7 +237,7 @@ func AggregateFindingGeneratorSidecars(cwd, outputDir string) (FindingGeneratorA
 		return result, nil, fmt.Errorf("read generator-results dir: %w", err)
 	}
 
-	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
+	nextWorkPath := filepath.Join(paths.ResolveFromRoot(cwd).RPIDir, "next-work.jsonl")
 	existing, err := loadGeneratorNextWorkDedupState(nextWorkPath)
 	if err != nil {
 		return result, degraded, fmt.Errorf("load generator next-work dedup state: %w", err)

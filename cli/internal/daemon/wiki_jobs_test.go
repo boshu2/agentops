@@ -362,6 +362,40 @@ func TestValidateWikiForgeSourcePathsContainment_AllowsSymlinkRootSpelling(t *te
 	}
 }
 
+func TestValidateWikiForgeSourcePathsContainment_AllowsCanonicalRootWithSymlinkSourceSpelling(t *testing.T) {
+	realRoot := t.TempDir()
+	linkParent := t.TempDir()
+	linkRoot := filepath.Join(linkParent, "repo")
+	if err := os.Symlink(realRoot, linkRoot); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	sourcePath := filepath.Join(linkRoot, "session.jsonl")
+	if err := os.WriteFile(sourcePath, []byte("decision: accept symlink source spelling\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	if err := validateWikiForgeSourcePathsContainment(realRoot, []string{sourcePath}); err != nil {
+		t.Fatalf("expected canonical root with symlink source spelling to stay inside root: %v", err)
+	}
+}
+
+func TestValidateWikiForgeSourcePathsContainment_RejectsSymlinkedParentForMissingLeaf(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	link := filepath.Join(root, "linked-out")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	err := validateWikiForgeSourcePathsContainment(root, []string{filepath.Join(link, "new.md")})
+	if err == nil {
+		t.Fatal("expected symlinked parent outside repo to be rejected")
+	}
+	if !strings.Contains(err.Error(), "resolves via symlink") {
+		t.Fatalf("expected symlink containment error, got: %v", err)
+	}
+}
+
 // TestWikiJobs_RejectsEmptyProvider confirms that WikiForgeJobSpec validation
 // rejects an empty Provider at every reachable submission entrypoint:
 // Validate(), ToJobSpec(), and the payload roundtrip path

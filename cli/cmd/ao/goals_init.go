@@ -37,10 +37,12 @@ var goalsInitCmd = &cobra.Command{
 
 // Thin wrappers for test compatibility.
 
-func buildDefaultGoalFile() *goals.GoalFile          { return goals.BuildDefaultGoalFile() }
-func buildInteractiveGoalFile(r io.Reader) (*goals.GoalFile, error) { return goals.BuildInteractiveGoalFile(r) }
-func detectGates(root string) []goals.Goal            { return goals.DetectGates(root) }
-func autoDetectTemplate(root string) string           { return goals.AutoDetectTemplate(root) }
+func buildDefaultGoalFile() *goals.GoalFile { return goals.BuildDefaultGoalFile() }
+func buildInteractiveGoalFile(r io.Reader) (*goals.GoalFile, error) {
+	return goals.BuildInteractiveGoalFile(r)
+}
+func detectGates(root string) []goals.Goal  { return goals.DetectGates(root) }
+func autoDetectTemplate(root string) string { return goals.AutoDetectTemplate(root) }
 
 func loadTemplate(name string) (*goalTemplate, error) {
 	return goals.LoadTemplate(embedded.TemplatesFS, name)

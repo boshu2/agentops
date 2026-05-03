@@ -82,11 +82,11 @@ func TestFindConstraint(t *testing.T) {
 func TestFilterStaleConstraints(t *testing.T) {
 	cutoff := time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)
 	entries := []ConstraintEntry{
-		{ID: "a", Status: "active", CompiledAt: "2026-04-15T00:00:00Z"},   // stale (before cutoff)
-		{ID: "b", Status: "active", CompiledAt: "2026-04-25T00:00:00Z"},   // fresh
-		{ID: "c", Status: "retired", CompiledAt: "2026-04-01T00:00:00Z"},  // retired -> skipped
-		{ID: "d", Status: "draft", CompiledAt: "bogus"},                   // unparseable
-		{ID: "e", Status: "draft", CompiledAt: "2026-04-10"},              // date-only, stale
+		{ID: "a", Status: "active", CompiledAt: "2026-04-15T00:00:00Z"},  // stale (before cutoff)
+		{ID: "b", Status: "active", CompiledAt: "2026-04-25T00:00:00Z"},  // fresh
+		{ID: "c", Status: "retired", CompiledAt: "2026-04-01T00:00:00Z"}, // retired -> skipped
+		{ID: "d", Status: "draft", CompiledAt: "bogus"},                  // unparseable
+		{ID: "e", Status: "draft", CompiledAt: "2026-04-10"},             // date-only, stale
 	}
 	stale := FilterStaleConstraints(entries, cutoff)
 	ids := map[string]bool{}

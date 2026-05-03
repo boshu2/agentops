@@ -865,4 +865,3 @@ func BenchmarkGenerateResumptionContext(b *testing.B) {
 		summarizer.GenerateResumptionContext(state)
 	}
 }
-

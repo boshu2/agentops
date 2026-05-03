@@ -11,15 +11,15 @@ import (
 // LedgerHealth summarizes durability state for the ao doctor surface (TB-Δ3
 // Phase 2-C). Read-only — populated by Store.LedgerHealth from on-disk facts.
 type LedgerHealth struct {
-	LedgerSizeBytes      int64         `json:"ledger_size_bytes"`
-	LedgerMaxBytes       int64         `json:"ledger_max_bytes"`
-	LedgerSizeRatio      float64       `json:"ledger_size_ratio"`
-	LatestSnapshotPath   string        `json:"latest_snapshot_path,omitempty"`
-	LatestSnapshotAge    time.Duration `json:"latest_snapshot_age_ns"`
-	HasSnapshot          bool          `json:"has_snapshot"`
-	ArchiveCount         int           `json:"archive_count"`
-	OldestArchiveTime    time.Time     `json:"oldest_archive_time,omitempty"`
-	WarnReasons          []string      `json:"warn_reasons,omitempty"`
+	LedgerSizeBytes    int64         `json:"ledger_size_bytes"`
+	LedgerMaxBytes     int64         `json:"ledger_max_bytes"`
+	LedgerSizeRatio    float64       `json:"ledger_size_ratio"`
+	LatestSnapshotPath string        `json:"latest_snapshot_path,omitempty"`
+	LatestSnapshotAge  time.Duration `json:"latest_snapshot_age_ns"`
+	HasSnapshot        bool          `json:"has_snapshot"`
+	ArchiveCount       int           `json:"archive_count"`
+	OldestArchiveTime  time.Time     `json:"oldest_archive_time,omitempty"`
+	WarnReasons        []string      `json:"warn_reasons,omitempty"`
 }
 
 // LedgerHealthThresholds controls the WARN bands. Zero-value means "use

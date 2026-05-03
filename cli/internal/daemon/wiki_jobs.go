@@ -299,13 +299,13 @@ type wikiForgePromptContext struct {
 // worker session is created so the failure surfaces as a job-validation
 // error, never as a partial worker run.
 //
-// Containment rule: each path, after filepath.Abs + filepath.Clean, must
-// live under either the repo root spelling the caller supplied or the
-// canonicalized root. If the path exists, its EvalSymlinks result must live
-// under the canonical root. EvalSymlinks errors on non-existent paths are
-// tolerated — the lexical check still rejects paths whose form escapes the
-// root, and downstream existing-source reads surface missing-file errors
-// with their own context.
+// Containment rule: each path, after filepath.Abs + filepath.Clean (and
+// EvalSymlinks through the deepest existing parent), must equal the canonical
+// repo root or live underneath it. Missing leaf paths are tolerated — the
+// lexical check still rejects paths whose form escapes the root, and downstream
+// existing-source reads surface missing-file errors with their own context. The
+// repo root itself is canonicalized via EvalSymlinks once so symlinked tmp dirs
+// (e.g. macOS /tmp -> /private/tmp) don't produce false positives.
 func validateWikiForgeSourcePathsContainment(repoRoot string, paths []string) error {
 	if strings.TrimSpace(repoRoot) == "" {
 		return fmt.Errorf("wiki forge source path containment: repo root is empty")
@@ -315,10 +315,7 @@ func validateWikiForgeSourcePathsContainment(repoRoot string, paths []string) er
 		return fmt.Errorf("wiki forge source path containment: resolve repo root %q: %w", repoRoot, err)
 	}
 	rootClean := filepath.Clean(rootAbs)
-	rootCanon := rootClean
-	if resolved, err := filepath.EvalSymlinks(rootCanon); err == nil {
-		rootCanon = resolved
-	}
+	rootCanon := canonicalExistingPath(rootClean)
 	for _, p := range paths {
 		if strings.TrimSpace(p) == "" {
 			return fmt.Errorf("wiki forge source path is empty")
@@ -328,17 +325,21 @@ func validateWikiForgeSourcePathsContainment(repoRoot string, paths []string) er
 			return fmt.Errorf("wiki forge source path %q: resolve absolute: %w", p, err)
 		}
 		clean := filepath.Clean(abs)
+		canon := canonicalExistingPath(clean)
 		// Lexical containment first — catches `..` traversal regardless of
-		// whether the target file exists or is a symlink.
-		if !wikiForgePathWithinRoot(clean, rootClean) && !wikiForgePathWithinRoot(clean, rootCanon) {
+		// whether the target file exists or is a symlink. Also accept
+		// canonical containment so macOS /var and /private/var spellings do
+		// not reject the same physical path.
+		if !wikiForgePathWithinRoot(clean, rootClean) &&
+			!wikiForgePathWithinRoot(clean, rootCanon) &&
+			!wikiForgePathWithinRoot(canon, rootCanon) {
 			return fmt.Errorf("wiki forge source path %q escapes repo root %q", p, rootCanon)
 		}
-		// Symlink containment second — only enforced when the path exists,
-		// to allow paths-to-be-created and to keep test fixtures simple.
-		if resolved, err := filepath.EvalSymlinks(clean); err == nil {
-			if !wikiForgePathWithinRoot(resolved, rootCanon) {
-				return fmt.Errorf("wiki forge source path %q resolves via symlink to %q which escapes repo root %q", p, resolved, rootCanon)
-			}
+		// Symlink containment second. Missing leaf paths still resolve through
+		// their deepest existing parent, so an existing symlinked directory
+		// cannot be used to create a source path outside the repo.
+		if canon != clean && !wikiForgePathWithinRoot(canon, rootCanon) {
+			return fmt.Errorf("wiki forge source path %q resolves via symlink to %q which escapes repo root %q", p, canon, rootCanon)
 		}
 	}
 	return nil
@@ -348,6 +349,33 @@ func wikiForgePathWithinRoot(path, root string) bool {
 	path = filepath.Clean(path)
 	root = filepath.Clean(root)
 	return path == root || strings.HasPrefix(path, root+string(filepath.Separator))
+}
+
+func canonicalExistingPath(path string) string {
+	clean := filepath.Clean(path)
+	if resolved, err := filepath.EvalSymlinks(clean); err == nil {
+		return filepath.Clean(resolved)
+	}
+
+	existing := clean
+	missingParts := []string{}
+	for {
+		parent := filepath.Dir(existing)
+		if parent == existing {
+			return clean
+		}
+		missingParts = append([]string{filepath.Base(existing)}, missingParts...)
+		existing = parent
+		if _, err := os.Stat(existing); err != nil {
+			continue
+		}
+		resolved, err := filepath.EvalSymlinks(existing)
+		if err != nil {
+			return clean
+		}
+		parts := append([]string{filepath.Clean(resolved)}, missingParts...)
+		return filepath.Join(parts...)
+	}
 }
 
 // expandWikiForgeSourcePaths flattens directory entries in spec.SourcePaths

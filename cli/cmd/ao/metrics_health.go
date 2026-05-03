@@ -224,14 +224,14 @@ func DefaultEscapeVelocityTargets() EscapeVelocityTargets {
 
 // EscapeVelocityVerification holds the results of verifying a namespace against targets.
 type EscapeVelocityVerification struct {
-	Namespace    string                 `json:"namespace"`
-	Targets      EscapeVelocityTargets  `json:"targets"`
-	Actual       healthMetrics          `json:"actual"`
-	SigmaPass    bool                   `json:"sigma_pass"`
-	RhoPass      bool                   `json:"rho_pass"`
-	SigmaRhoPass bool                   `json:"sigma_rho_pass"`
-	AllPass      bool                   `json:"all_pass"`
-	Failures     []string               `json:"failures,omitempty"`
+	Namespace    string                `json:"namespace"`
+	Targets      EscapeVelocityTargets `json:"targets"`
+	Actual       healthMetrics         `json:"actual"`
+	SigmaPass    bool                  `json:"sigma_pass"`
+	RhoPass      bool                  `json:"rho_pass"`
+	SigmaRhoPass bool                  `json:"sigma_rho_pass"`
+	AllPass      bool                  `json:"all_pass"`
+	Failures     []string              `json:"failures,omitempty"`
 }
 
 // VerifyEscapeVelocity checks whether a namespace's metrics meet the target thresholds.

@@ -33,9 +33,9 @@ func okTask() *Task {
 	return &Task{
 		ID: "t",
 		Stats: TaskStat{
-			Metric:      "accuracy",
-			Paired:      true,
-			MinNSamples: 50,
+			Metric:       "accuracy",
+			Paired:       true,
+			MinNSamples:  50,
 			DecisionRule: DecisionRule{Kind: "ci_excludes_zero", Confidence: 0.95},
 		},
 	}

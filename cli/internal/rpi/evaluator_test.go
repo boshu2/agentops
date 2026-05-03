@@ -133,7 +133,7 @@ func TestDefaultEvaluatorFindings(t *testing.T) {
 func TestUniqueFindings(t *testing.T) {
 	items := []Finding{
 		{Description: "a", Fix: "x"},
-		{Description: "a", Fix: "x"},    // duplicate
+		{Description: "a", Fix: "x"}, // duplicate
 		{Description: "b"},
 		{Description: "", Fix: "", Ref: ""}, // empty -> dropped
 	}

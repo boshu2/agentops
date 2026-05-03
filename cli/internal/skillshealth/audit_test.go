@@ -15,48 +15,48 @@ func TestParseFrontmatter_TableDriven(t *testing.T) {
 		wantPresent bool // whether name+description should both be present
 	}{
 		{
-			name: "valid full frontmatter",
-			input: "---\nname: foo\ndescription: a thing\n---\n# body\n",
+			name:     "valid full frontmatter",
+			input:    "---\nname: foo\ndescription: a thing\n---\n# body\n",
 			wantName: "foo", wantDesc: "a thing", wantPresent: true,
 		},
 		{
-			name:  "missing description",
-			input: "---\nname: foo\n---\n",
+			name:     "missing description",
+			input:    "---\nname: foo\n---\n",
 			wantName: "foo", wantDesc: "", wantPresent: false,
 		},
 		{
-			name:  "missing name",
-			input: "---\ndescription: only desc\n---\n",
+			name:     "missing name",
+			input:    "---\ndescription: only desc\n---\n",
 			wantName: "", wantDesc: "only desc", wantPresent: false,
 		},
 		{
-			name:  "comment-only frontmatter",
-			input: "---\n# just a comment\n---\nbody\n",
+			name:     "comment-only frontmatter",
+			input:    "---\n# just a comment\n---\nbody\n",
 			wantName: "", wantDesc: "", wantPresent: false,
 		},
 		{
-			name:  "no leading fence",
-			input: "name: foo\ndescription: bar\n",
+			name:     "no leading fence",
+			input:    "name: foo\ndescription: bar\n",
 			wantName: "", wantDesc: "", wantPresent: false,
 		},
 		{
-			name:  "quoted values",
-			input: "---\nname: \"foo\"\ndescription: 'a thing'\n---\n",
+			name:     "quoted values",
+			input:    "---\nname: \"foo\"\ndescription: 'a thing'\n---\n",
 			wantName: "foo", wantDesc: "a thing", wantPresent: true,
 		},
 		{
-			name:  "indented (nested) keys ignored",
-			input: "---\nname: foo\nmetadata:\n  description: nested\ndescription: real\n---\n",
+			name:     "indented (nested) keys ignored",
+			input:    "---\nname: foo\nmetadata:\n  description: nested\ndescription: real\n---\n",
 			wantName: "foo", wantDesc: "real", wantPresent: true,
 		},
 		{
-			name:  "empty file",
-			input: "",
+			name:     "empty file",
+			input:    "",
 			wantName: "", wantDesc: "", wantPresent: false,
 		},
 		{
-			name:  "fence but unclosed",
-			input: "---\nname: foo\ndescription: bar\n",
+			name:     "fence but unclosed",
+			input:    "---\nname: foo\ndescription: bar\n",
 			wantName: "", wantDesc: "", wantPresent: false,
 		},
 	}

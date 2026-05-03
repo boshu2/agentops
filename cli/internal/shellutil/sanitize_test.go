@@ -27,9 +27,9 @@ func TestSanitizedEnv_StripsBashEnvAndEnv(t *testing.T) {
 	}
 	// Verify retained vars survive.
 	want := map[string]bool{
-		"PATH=/usr/bin":  false,
+		"PATH=/usr/bin":   false,
 		"HOME=/home/test": false,
-		"USER=test":      false,
+		"USER=test":       false,
 	}
 	for _, entry := range got {
 		if _, ok := want[entry]; ok {

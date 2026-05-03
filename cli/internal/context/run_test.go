@@ -163,12 +163,12 @@ func TestNormalizeLine(t *testing.T) {
 
 func TestSanitizeForFilename(t *testing.T) {
 	cases := map[string]string{
-		"simple":           "simple",
-		"foo/bar baz":      "foo-bar-baz",
-		"multiple!!chars!!":"multiple-chars",
-		"   ":              "session",
-		"":                 "session",
-		"---leading":       "leading",
+		"simple":            "simple",
+		"foo/bar baz":       "foo-bar-baz",
+		"multiple!!chars!!": "multiple-chars",
+		"   ":               "session",
+		"":                  "session",
+		"---leading":        "leading",
 	}
 	for in, want := range cases {
 		if got := SanitizeForFilename(in); got != want {
@@ -189,10 +189,10 @@ func TestToRepoRelative(t *testing.T) {
 
 func TestExtractIssueID(t *testing.T) {
 	cases := map[string]string{
-		"context ag-abc123 blah":  "ag-abc123",
-		"context AG-XYZ99 blah":   "ag-xyz99",
-		"no issue here":           "",
-		"ag-alphanum99":           "ag-alphanum99",
+		"context ag-abc123 blah": "ag-abc123",
+		"context AG-XYZ99 blah":  "ag-xyz99",
+		"no issue here":          "",
+		"ag-alphanum99":          "ag-alphanum99",
 	}
 	for in, want := range cases {
 		if got := ExtractIssueID(in); got != want {
@@ -347,10 +347,10 @@ func TestReadFileTail_MissingFile(t *testing.T) {
 
 func TestTmuxTargetFromPaneID(t *testing.T) {
 	cases := map[string]string{
-		"":           "",
-		"in-process": "",
+		"":                 "",
+		"in-process":       "",
 		"session:window.0": "session:window",
-		"simple":     "simple",
+		"simple":           "simple",
 	}
 	for in, want := range cases {
 		if got := TmuxTargetFromPaneID(in); got != want {

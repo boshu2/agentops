@@ -190,8 +190,8 @@ func TestResolveFromRoot_UsesGitRootAndEnvOverrides(t *testing.T) {
 
 	withEnv(t, nil)
 	got := ResolveFromRoot(subdir)
-	if got.AgentsDir != filepath.Join(repo, ".agents") {
-		t.Fatalf("AgentsDir = %q, want repo root fallback", got.AgentsDir)
+	if !samePath(got.AgentsDir, filepath.Join(repo, ".agents")) {
+		t.Fatalf("AgentsDir = %q, want repo root fallback %q", got.AgentsDir, filepath.Join(repo, ".agents"))
 	}
 
 	agentsOverride := filepath.Join(tmp, "agents-override")
@@ -200,6 +200,25 @@ func TestResolveFromRoot_UsesGitRootAndEnvOverrides(t *testing.T) {
 	if got.AgentsDir != agentsOverride {
 		t.Fatalf("AgentsDir = %q, want AO_AGENTS_DIR override %q", got.AgentsDir, agentsOverride)
 	}
+}
+
+func samePath(a, b string) bool {
+	return canonicalTestPath(a) == canonicalTestPath(b)
+}
+
+func canonicalTestPath(path string) string {
+	path = filepath.Clean(path)
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return filepath.Clean(resolved)
+	}
+	parent := filepath.Dir(path)
+	if parent == path {
+		return path
+	}
+	if resolved, err := filepath.EvalSymlinks(parent); err == nil {
+		return filepath.Join(filepath.Clean(resolved), filepath.Base(path))
+	}
+	return path
 }
 
 func TestValidate_CreatesMissingDirs(t *testing.T) {

@@ -54,9 +54,9 @@ func TestNormalizeDreamCouncilRunnerLabel(t *testing.T) {
 
 func TestDreamCouncilRunnerMatches(t *testing.T) {
 	tests := []struct {
-		name              string
-		expected, actual  string
-		want              bool
+		name             string
+		expected, actual string
+		want             bool
 	}{
 		{name: "exact", expected: "codex", actual: "codex", want: true},
 		{name: "case insensitive", expected: "codex", actual: "CODEX", want: true},
@@ -89,9 +89,9 @@ func TestValidateDreamCouncilRunnerReport(t *testing.T) {
 	}
 
 	cases := []struct {
-		name     string
-		mutate   func(r *overnightCouncilRunnerReport)
-		wantSub  string
+		name    string
+		mutate  func(r *overnightCouncilRunnerReport)
+		wantSub string
 	}{
 		{name: "missing runner", mutate: func(r *overnightCouncilRunnerReport) { r.Runner = "" }, wantSub: "missing runner field"},
 		{name: "runner mismatch", mutate: func(r *overnightCouncilRunnerReport) { r.Runner = "claude" }, wantSub: "runner mismatch"},
