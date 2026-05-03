@@ -258,6 +258,18 @@ func initStateFromSnapshot(snapshot ProjectionSet, sourceLedger, rebuiltAt strin
 			artifacts[k] = v
 		}
 		job.Artifacts = artifacts
+		// Symmetric deep-copy of ArtifactRefs (W-B-25 / soc-58q5.9):
+		// without this, the rebuilt jobsByID entry shares the underlying
+		// ArtifactRefs map with the source snapshot's job, so concurrent
+		// writers on either side race. ArtifactRef is a flat value struct
+		// (string/int64 fields only), so a shallow value copy suffices.
+		if job.ArtifactRefs != nil {
+			refs := make(map[string]ArtifactRef, len(job.ArtifactRefs))
+			for k, v := range job.ArtifactRefs {
+				refs[k] = v
+			}
+			job.ArtifactRefs = refs
+		}
 		jobsByID[job.JobID] = &job
 		jobOrder = append(jobOrder, job.JobID)
 	}

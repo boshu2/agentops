@@ -133,7 +133,11 @@ func (s *RecurrenceSupervisor) tick(ctx context.Context, now time.Time) error {
 
 // refreshSchedules reconciles the in-memory schedule cache with the store's
 // current schedule list. New schedules get a parsed cron.Schedule and an
-// initial nextTick computed from now.
+// initial nextTick computed from now. Schedules whose template Cron has
+// changed since the last refresh re-parse the cron expression and recompute
+// nextTick from s.clock.Now(); the old cadence is dropped. Recomputation uses
+// s.clock.Now() rather than time.Now() so test-time clock injection stays
+// honoured (Gap-5 contract).
 func (s *RecurrenceSupervisor) refreshSchedules(now time.Time) error {
 	templates, err := s.store.ListSchedules()
 	if err != nil {
@@ -146,6 +150,23 @@ func (s *RecurrenceSupervisor) refreshSchedules(now time.Time) error {
 		current[t.Name] = struct{}{}
 		existing, ok := s.schedules[t.Name]
 		if ok && existing.template.Cron == t.Cron {
+			existing.template = t
+			continue
+		}
+		if ok {
+			// Existing schedule with a changed Cron expression: re-parse and
+			// recompute nextTick from the supervisor's clock so the new cadence
+			// takes effect immediately on subsequent ticks. If the new cron is
+			// invalid, keep the prior parsed schedule + nextTick to avoid
+			// breaking a running schedule on operator typo.
+			sched, parseErr := ParseCron(t.Cron)
+			if parseErr != nil {
+				log.Printf("[recurrence] reparse cron for schedule %q (%q): %v; keeping previous cadence",
+					t.Name, t.Cron, parseErr)
+				continue
+			}
+			existing.sched = sched
+			existing.nextTick = sched.Next(s.clock.Now())
 			existing.template = t
 			continue
 		}

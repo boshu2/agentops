@@ -540,3 +540,89 @@ func projectionTestTime(t *testing.T, minuteOffset int) time.Time {
 	}
 	return base.Add(time.Duration(minuteOffset) * time.Minute)
 }
+
+// TestProjections_ArtifactRefsAreCopied guards W-B-25 / soc-58q5.9: when
+// initStateFromSnapshot seeds the rebuild loop, both Artifacts AND
+// ArtifactRefs must be deep-copied. Before the fix, only Artifacts was
+// deep-copied while ArtifactRefs shared the underlying map with the source
+// snapshot's Job, so concurrent writers on either side raced.
+//
+// We exercise initStateFromSnapshot via the public RebuildProjections entry
+// point with opts.FromSnapshot set. After rebuild, mutating the source
+// snapshot's ArtifactRefs map must NOT be observable in the rebuilt set.
+func TestProjections_ArtifactRefsAreCopied(t *testing.T) {
+	originalRef := ArtifactRef{
+		Path:      ".agents/handoffs/sha256/aa/orig",
+		SHA256:    strings.Repeat("a", 64),
+		Size:      11,
+		WrittenAt: "2026-04-30T00:00:00Z",
+	}
+	snapshot := ProjectionSet{
+		SchemaVersion: ProjectionSchemaVersion,
+		LastEventID:   "evt-001",
+		Jobs: []JobProjection{
+			{
+				JobID:        "job-1",
+				RequestID:    "req_20260430_000001",
+				Status:       JobStatusCompleted,
+				Artifacts:    map[string]string{"k": "v"},
+				ArtifactRefs: map[string]ArtifactRef{"k": originalRef},
+			},
+		},
+	}
+
+	rebuilt, err := RebuildProjections(nil, ProjectionRebuildOptions{
+		FromSnapshot: &snapshot,
+		RebuiltAt:    projectionTestTime(t, 0),
+	})
+	if err != nil {
+		t.Fatalf("RebuildProjections: %v", err)
+	}
+	if len(rebuilt.Jobs) != 1 {
+		t.Fatalf("expected 1 rebuilt job, got %d", len(rebuilt.Jobs))
+	}
+	rebuiltJob := rebuilt.Jobs[0]
+
+	// Pre-mutation: rebuilt copy must equal source.
+	if got := rebuiltJob.ArtifactRefs["k"]; got != originalRef {
+		t.Fatalf("rebuilt ArtifactRefs[k] = %#v, want %#v", got, originalRef)
+	}
+	if got := rebuiltJob.Artifacts["k"]; got != "v" {
+		t.Fatalf("rebuilt Artifacts[k] = %q, want %q", got, "v")
+	}
+
+	// Mutate the source snapshot AFTER the rebuild completed. With the bug
+	// (shared underlying map) these mutations would be visible on the
+	// rebuilt copy. The fix gives the rebuilt copy its own backing map.
+	snapshot.Jobs[0].ArtifactRefs["k"] = ArtifactRef{
+		Path:      ".agents/handoffs/sha256/bb/mutated",
+		SHA256:    strings.Repeat("b", 64),
+		Size:      99,
+		WrittenAt: "2099-01-01T00:00:00Z",
+	}
+	snapshot.Jobs[0].ArtifactRefs["new-key"] = ArtifactRef{
+		Path:      ".agents/handoffs/sha256/cc/added",
+		SHA256:    strings.Repeat("c", 64),
+		Size:      7,
+		WrittenAt: "2099-01-01T00:00:00Z",
+	}
+	// Cross-check: the existing Artifacts deep-copy must also still hold.
+	snapshot.Jobs[0].Artifacts["k"] = "MUTATED"
+	snapshot.Jobs[0].Artifacts["new-key"] = "added"
+
+	if got := rebuiltJob.ArtifactRefs["k"]; got != originalRef {
+		t.Fatalf("rebuilt ArtifactRefs[k] aliased source map: got %#v, want %#v", got, originalRef)
+	}
+	if _, present := rebuiltJob.ArtifactRefs["new-key"]; present {
+		t.Fatalf("rebuilt ArtifactRefs aliased source map: new-key leaked through")
+	}
+	if len(rebuiltJob.ArtifactRefs) != 1 {
+		t.Fatalf("rebuilt ArtifactRefs length changed: got %d, want 1", len(rebuiltJob.ArtifactRefs))
+	}
+	if got := rebuiltJob.Artifacts["k"]; got != "v" {
+		t.Fatalf("rebuilt Artifacts[k] aliased source map: got %q, want %q", got, "v")
+	}
+	if _, present := rebuiltJob.Artifacts["new-key"]; present {
+		t.Fatalf("rebuilt Artifacts aliased source map: new-key leaked through")
+	}
+}

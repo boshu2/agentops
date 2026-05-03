@@ -534,6 +534,159 @@ func TestFireOne_DerivedQueueStateIsPure(t *testing.T) {
 	}
 }
 
+// TestRefreshSchedules_RecomputesNextTickOnCronChange asserts that when a
+// schedule template's Cron field is mutated mid-run, refreshSchedules re-parses
+// the new cron expression and recomputes nextTick from s.clock.Now() so the
+// new cadence takes effect rather than the stale one. (soc-58q5.6 / W-B-10)
+//
+// The contract from the pre-mortem (Gap-5): recomputation MUST use
+// s.clock.Now(), not time.Now(); RecurrenceSupervisor exposes s.clock for
+// exactly this reason and direct time.Now() calls would break test-time clock
+// injection silently.
+func TestRefreshSchedules_RecomputesNextTickOnCronChange(t *testing.T) {
+	t0 := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &t0)
+	clock := NewFakeClock(t0)
+	sup := NewRecurrenceSupervisor(store, queue, clock)
+
+	// Cron A fires every 5 minutes; Cron B fires every hour. Their Next() from
+	// t0 differ enough that the test cannot pass by accident.
+	cronA := "*/5 * * * *"
+	cronB := "0 * * * *"
+	tmpl := RecurringJobTemplate{
+		Name:    "cadence-shift",
+		Cron:    cronA,
+		JobType: JobTypeLLMWikiLoop,
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule cronA: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules cronA: %v", err)
+	}
+
+	sup.mu.Lock()
+	stA, ok := sup.schedules[tmpl.Name]
+	if !ok {
+		sup.mu.Unlock()
+		t.Fatalf("schedule %q missing after first refresh", tmpl.Name)
+	}
+	nextTickA := stA.nextTick
+	schedA := stA.sched
+	sup.mu.Unlock()
+
+	// Sanity: cron A's first tick from t0-1ns matches what we cached.
+	wantA := schedA.Next(t0.Add(-time.Nanosecond))
+	if !nextTickA.Equal(wantA) {
+		t.Fatalf("nextTick for cronA = %v, want %v", nextTickA, wantA)
+	}
+
+	// Operator updates the template's Cron mid-run. Advance the clock too so we
+	// can prove the recompute used s.clock.Now() (not the original t0 nor the
+	// `now` parameter passed to refreshSchedules).
+	clock.Advance(30 * time.Second)
+	updated := tmpl
+	updated.Cron = cronB
+	if err := store.DeleteSchedule(tmpl.Name); err != nil {
+		t.Fatalf("DeleteSchedule: %v", err)
+	}
+	if err := store.SaveSchedule(updated); err != nil {
+		t.Fatalf("SaveSchedule cronB: %v", err)
+	}
+
+	// Pass the original t0 as `now` to refreshSchedules deliberately. The fix
+	// must use s.clock.Now() (which is t0 + 30s) for the recompute, NOT the
+	// passed-in `now`. If the implementation regresses to time.Now() or to
+	// the stale `now` parameter, this assertion catches it.
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules cronB: %v", err)
+	}
+
+	sup.mu.Lock()
+	stB, ok := sup.schedules[tmpl.Name]
+	if !ok {
+		sup.mu.Unlock()
+		t.Fatalf("schedule %q missing after cron change refresh", tmpl.Name)
+	}
+	nextTickB := stB.nextTick
+	schedB := stB.sched
+	gotTemplateCron := stB.template.Cron
+	sup.mu.Unlock()
+
+	if gotTemplateCron != cronB {
+		t.Fatalf("template.Cron = %q after change, want %q", gotTemplateCron, cronB)
+	}
+	if nextTickB.Equal(nextTickA) {
+		t.Fatalf("nextTick unchanged after Cron change: %v (cron field updated but cadence stale)", nextTickB)
+	}
+	wantB := schedB.Next(clock.Now())
+	if !nextTickB.Equal(wantB) {
+		t.Fatalf("nextTick after cron change = %v, want sched_B.Next(clock.Now()) = %v", nextTickB, wantB)
+	}
+	// Also verify the recompute used the live clock (t0+30s), not stale t0.
+	if !nextTickB.Equal(schedB.Next(t0)) && nextTickB.Equal(schedB.Next(t0.Add(-time.Nanosecond))) {
+		t.Fatalf("nextTick used the stale `now` parameter (t0) rather than s.clock.Now() (t0+30s)")
+	}
+}
+
+// TestRefreshSchedules_KeepsPreviousCadenceOnInvalidCronUpdate asserts that
+// when a Cron mutation introduces an invalid expression, the supervisor keeps
+// the previously-parsed schedule + nextTick rather than dropping the entry,
+// so an operator typo cannot break a running schedule mid-flight.
+func TestRefreshSchedules_KeepsPreviousCadenceOnInvalidCronUpdate(t *testing.T) {
+	t0 := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &t0)
+	clock := NewFakeClock(t0)
+	sup := NewRecurrenceSupervisor(store, queue, clock)
+
+	tmpl := RecurringJobTemplate{
+		Name:    "typo-protect",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeLLMWikiLoop,
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules initial: %v", err)
+	}
+	sup.mu.Lock()
+	priorState := sup.schedules[tmpl.Name]
+	if priorState == nil {
+		sup.mu.Unlock()
+		t.Fatalf("schedule missing after initial refresh")
+	}
+	priorSched := priorState.sched
+	priorNext := priorState.nextTick
+	sup.mu.Unlock()
+
+	// Operator typo: change to an unparseable cron.
+	bad := tmpl
+	bad.Cron = "not a cron"
+	if err := store.DeleteSchedule(tmpl.Name); err != nil {
+		t.Fatalf("DeleteSchedule: %v", err)
+	}
+	if err := store.SaveSchedule(bad); err != nil {
+		t.Fatalf("SaveSchedule bad: %v", err)
+	}
+	if err := sup.refreshSchedules(t0); err != nil {
+		t.Fatalf("refreshSchedules after bad: %v", err)
+	}
+
+	sup.mu.Lock()
+	got := sup.schedules[tmpl.Name]
+	sup.mu.Unlock()
+	if got == nil {
+		t.Fatalf("running schedule was dropped after invalid cron update; want previous cadence kept")
+	}
+	if got.sched != priorSched {
+		t.Fatalf("sched replaced after invalid cron update; want previous parsed schedule retained")
+	}
+	if !got.nextTick.Equal(priorNext) {
+		t.Fatalf("nextTick changed after invalid cron update: got %v want %v", got.nextTick, priorNext)
+	}
+}
+
 // --- test helpers ---
 
 func newRecurrenceTestRig(t *testing.T, now *time.Time) (*Store, *Queue) {
