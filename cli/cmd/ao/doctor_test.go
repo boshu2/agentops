@@ -1155,51 +1155,9 @@ func TestCheckSkills_RawCodexOverlapWarns(t *testing.T) {
 }
 
 func TestCheckCodexSync_PassWhenRepoMatchesInstall(t *testing.T) {
-	repo := chdirTemp(t)
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	if err := exec.Command("git", "-C", repo, "init").Run(); err != nil {
-		t.Fatal(err)
-	}
-	if err := exec.Command("git", "-C", repo, "config", "user.email", "test@example.com").Run(); err != nil {
-		t.Fatal(err)
-	}
-	if err := exec.Command("git", "-C", repo, "config", "user.name", "Test").Run(); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(repo, "skills-codex"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
-	if err := os.WriteFile(manifestPath, []byte(`{"skills":[{"name":"research"}]}`), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := exec.Command("git", "-C", repo, "add", ".").Run(); err != nil {
-		t.Fatal(err)
-	}
-	if err := exec.Command("git", "-C", repo, "commit", "-m", "fixture").Run(); err != nil {
-		t.Fatal(err)
-	}
-	manifestHash, err := sha256File(manifestPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	versionOut, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	version := strings.TrimSpace(string(versionOut))
-
-	metaDir := filepath.Join(fakeHome, ".codex")
-	if err := os.MkdirAll(metaDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	meta := fmt.Sprintf(`{"install_mode":"native-plugin","version":"%s","manifest_hash":"%s"}`, version, manifestHash)
-	if err := os.WriteFile(filepath.Join(metaDir, ".agentops-codex-install.json"), []byte(meta), 0644); err != nil {
-		t.Fatal(err)
-	}
+	fixture := setupCodexSyncFixture(t)
+	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookHealthy, true)
+	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
 
 	result := checkCodexSync()
 	if result.Status != "pass" {
@@ -1207,6 +1165,48 @@ func TestCheckCodexSync_PassWhenRepoMatchesInstall(t *testing.T) {
 	}
 	if !strings.Contains(result.Detail, "matches repo") {
 		t.Fatalf("expected match detail, got %q", result.Detail)
+	}
+}
+
+func TestCheckCodexSync_WarnsWhenNativeHookCacheMissingHelpers(t *testing.T) {
+	fixture := setupCodexSyncFixture(t)
+	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookHealthy, false)
+	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
+
+	result := checkCodexSync()
+	if result.Status != "warn" {
+		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
+	}
+	if !strings.Contains(result.Detail, "hook-helpers.sh") {
+		t.Fatalf("expected missing helper warning, got %q", result.Detail)
+	}
+}
+
+func TestCheckCodexSync_WarnsWhenNativeHookCacheRejectsSafeBranch(t *testing.T) {
+	fixture := setupCodexSyncFixture(t)
+	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookOldForceRegex, true)
+	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
+
+	result := checkCodexSync()
+	if result.Status != "warn" {
+		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
+	}
+	if !strings.Contains(result.Detail, "safe branch names containing -f") {
+		t.Fatalf("expected safe branch smoke warning, got %q", result.Detail)
+	}
+}
+
+func TestCheckCodexSync_WarnsWhenNativeHookCacheAllowsForcePush(t *testing.T) {
+	fixture := setupCodexSyncFixture(t)
+	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookAllowsEverything, true)
+	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
+
+	result := checkCodexSync()
+	if result.Status != "warn" {
+		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
+	}
+	if !strings.Contains(result.Detail, "does not block git push -f") {
+		t.Fatalf("expected force push smoke warning, got %q", result.Detail)
 	}
 }
 
@@ -1307,6 +1307,117 @@ func TestCheckCodexSync_WarnsWhenRepoIsNewer(t *testing.T) {
 	if !strings.Contains(result.Detail, "refresh-codex-local.sh") {
 		t.Fatalf("expected repair command in detail, got %q", result.Detail)
 	}
+}
+
+type codexSyncFixture struct {
+	repo         string
+	home         string
+	version      string
+	manifestHash string
+}
+
+func setupCodexSyncFixture(t *testing.T) codexSyncFixture {
+	t.Helper()
+
+	repo := chdirTemp(t)
+	fakeHome := t.TempDir()
+	t.Setenv("HOME", fakeHome)
+
+	if err := exec.Command("git", "-C", repo, "init").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", repo, "config", "user.email", "test@example.com").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", repo, "config", "user.name", "Test").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "skills-codex"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
+	if err := os.WriteFile(manifestPath, []byte(`{"skills":[{"name":"research"}]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", repo, "add", ".").Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", repo, "commit", "-m", "fixture").Run(); err != nil {
+		t.Fatal(err)
+	}
+	manifestHash, err := sha256File(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	versionOut, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return codexSyncFixture{
+		repo:         repo,
+		home:         fakeHome,
+		version:      strings.TrimSpace(string(versionOut)),
+		manifestHash: manifestHash,
+	}
+}
+
+func writeCodexInstallMeta(t *testing.T, home, version, manifestHash, pluginRoot string) {
+	t.Helper()
+
+	metaDir := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(metaDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	meta := fmt.Sprintf(`{"install_mode":"native-plugin","hook_runtime":"codex-native-hooks","version":"%s","manifest_hash":"%s","plugin_root":"%s"}`,
+		version, manifestHash, pluginRoot)
+	if err := os.WriteFile(filepath.Join(metaDir, ".agentops-codex-install.json"), []byte(meta), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+const codexHookHealthy = `#!/usr/bin/env bash
+input="$(cat)"
+if [[ "$input" == *'"command":"git push -f origin main"'* ]]; then
+  exit 2
+fi
+exit 0
+`
+
+const codexHookOldForceRegex = `#!/usr/bin/env bash
+input="$(cat)"
+if echo "$input" | grep -qE 'push\s+.*(-f|--force)'; then
+  exit 2
+fi
+exit 0
+`
+
+const codexHookAllowsEverything = `#!/usr/bin/env bash
+cat >/dev/null
+exit 0
+`
+
+func writeCodexHookCache(t *testing.T, home, hookBody string, withHelper bool) string {
+	t.Helper()
+
+	pluginRoot := filepath.Join(home, ".codex", "plugins", "cache", "agentops-marketplace", "agentops", "local")
+	hooksDir := filepath.Join(pluginRoot, "hooks")
+	if err := os.MkdirAll(hooksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hooksDir, "dangerous-git-guard.sh"), []byte(hookBody), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if withHelper {
+		libDir := filepath.Join(pluginRoot, "lib")
+		if err := os.MkdirAll(libDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(libDir, "hook-helpers.sh"), []byte("# fixture helper\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return pluginRoot
 }
 
 // ---------------------------------------------------------------------------
