@@ -10,13 +10,13 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is source control for what your agents have learned.**
+**AgentOps is a local operating layer for coding agents: control plane, lifecycle hooks, validation gates, and a versioned corpus your team owns.**
 
-Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
+The corpus is source control for what your agents have learned. Every coding session reads from it on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context is now an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 **The moat is the context you, your team, and your business have earned. AgentOps is how it compounds.**
 
-[Install](#install) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
+[Install](#install) · [Quick Start](#quick-start) · [Cross-Vendor](#agentops-is-the-cross-vendor-operating-layer) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
 </div>
 
@@ -47,6 +47,8 @@ flowchart LR
 
 All agent runtime state lives in local `.agents/` — auditable and yours, but git-ignored by policy because it can churn and may contain sensitive session context. Plain text you can grep, diff, and review locally. Zero telemetry. Zero cloud dependency.
 
+Those layers are runtime-neutral. Claude Code, Codex CLI, Cursor, and OpenCode can use the same corpus, validation packets, and operating discipline instead of trapping each workflow inside one vendor's chat.
+
 ### Proof: the three-gap contract
 
 AgentOps closes three failure modes most agent setups don't even name:
@@ -58,6 +60,31 @@ AgentOps closes three failure modes most agent setups don't even name:
 | **Loop Closure** | Code diff lands. No lesson extracted. No constraint hardened. Next session re-learns from scratch. | `/post-mortem` · finding compiler · `/evolve` |
 
 Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one or more of these. Full contract: [docs/context-lifecycle.md](docs/context-lifecycle.md).
+
+---
+
+## AgentOps Is the Cross-Vendor Operating Layer
+
+The plugin is one entrypoint, not the product boundary. AgentOps is a local operating layer around coding agents: shared skills tell agents how to work, the `ao` CLI owns repo-native state and control-plane workflows, hooks keep lifecycle discipline active, and the daemon path moves that work toward always-on local operation.
+
+| Surface | What it does | Why it matters |
+|---------|--------------|----------------|
+| Skills and plugins | Load AgentOps flows into Claude Code, Codex CLI, Cursor, and OpenCode | Agents get the same operating language across vendors |
+| `ao` CLI | Searches, compiles, curates, and assembles repo context; runs RPI, factory, evolve, and daemon commands | The control plane lives outside any one chat window |
+| Hooks | React to runtime events such as session start, user prompts, tool use, and stop | Lifecycle and validation discipline can fire automatically |
+| `.agents/` corpus | Stores learnings, findings, handoffs, council reports, and run evidence locally | The durable asset belongs to the repo and team |
+| Daemon path | Runs queued and scheduled local jobs through `ao daemon` surfaces as that layer matures | AgentOps can move from chat-invoked flows toward always-on operation |
+
+`/council` is the clearest proof of that system boundary. It is not just a review command; it is a way to make multiple agents and runtimes evaluate the same evidence and return one auditable verdict.
+
+| Command | What it demonstrates |
+|---------|----------------------|
+| `/council validate this PR` | The active runtime can spawn independent judges around one shared packet |
+| `/council --mixed validate this PR` | Claude and Codex can receive the same evidence, apply the same perspectives, and hand their verdicts back to AgentOps for consolidation |
+| `/council --preset=security-audit validate the auth system` | Expertise is configured by the operating layer, not left to a single model's default behavior |
+| `/council --evidence --commit-ready validate the release plan` | The result becomes repo-local decision evidence, not just chat history |
+
+That is the deeper product shape: agents stay replaceable, vendors can cooperate, and the corpus plus control plane remain yours.
 
 ---
 
@@ -170,7 +197,7 @@ Inside a repo, use the path that matches what you are trying to do.
 |------|-----|-----------|
 | **First repo setup** | `ao quick-start`, then `/quickstart` | AgentOps reports repo readiness and a next action |
 | **First validated change** | `/rpi "a small goal"` | Discovery, implementation, validation, and learning closeout leave evidence in `.agents/` |
-| **Review something now** | `/council validate this PR` or `/vibe recent` | You get a PASS/WARN/FAIL verdict before shipping |
+| **Review something now** | `/council validate this PR` or `/vibe recent` | You get a consolidated verdict and an evidence record in `.agents/` before shipping |
 
 New project? Use the guided CLI seed first:
 
@@ -203,16 +230,18 @@ Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Rou
 
 ## See It Work
 
-**One command: validate a PR**
+**One command: validate a PR across vendors**
 
 ```text
-> /council validate this PR
+> /council --mixed validate this PR
 
-[council] 3 judges spawned independently
-[judge-1] PASS - token bucket implementation correct
-[judge-2] WARN - rate limiting missing on /login endpoint
-[judge-3] PASS - Redis integration follows middleware pattern
-Consensus: WARN - add rate limiting to /login before shipping
+[council] evidence packet sealed -> 6 judges across 2 runtimes
+[claude/judge-1] WARN - rate limiting missing on /login endpoint
+[claude/judge-2] PASS - Redis integration follows middleware pattern
+[codex/judge-1]  WARN - token bucket refill lacks jitter under burst
+[codex/judge-2]  PASS - backoff bounds match retry policy
+Consensus: WARN - fix /login rate limit and add refill jitter before shipping
+Recorded: .agents/council/<run-id>/verdict.md
 ```
 
 **Full loop: research through post-mortem**
@@ -240,7 +269,7 @@ Every skill works alone. Flows compose them when you want more structure.
 | Skill | Use it when |
 |-------|-------------|
 | `/quickstart` | You want the fastest setup check and next action |
-| `/council` | You want independent judges to review a plan, PR, or decision |
+| `/council` | You want independent judges — optionally across Claude and Codex — to evaluate one evidence packet and return a consolidated verdict |
 | `/research` | You need codebase context and prior learnings before changing code |
 | `/pre-mortem` | You want to pressure-test a plan before implementation |
 | `/implement` | You want one scoped task built and validated |
