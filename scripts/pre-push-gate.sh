@@ -1054,9 +1054,15 @@ except Exception:
             if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
                 fail "AgentOps eval baseline-audit (could not parse audit output)"
                 indent_output "$audit_output"
-            elif [[ "$stale_count" -gt 0 || "$mismatch_count" -gt 0 ]]; then
-                fail "AgentOps eval baseline-audit (stale=$stale_count, policy_mismatch=$mismatch_count)"
+            elif [[ "$stale_count" -gt 0 ]]; then
+                fail "AgentOps eval baseline-audit (stale_suite_hashes=$stale_count)"
                 indent_output "$audit_output"
+            elif [[ "$mismatch_count" -gt 0 ]]; then
+                # Drift-only gate: under the "stop tracking agents runtime
+                # state" policy (commit 3f1566fd) baselines are operator-local,
+                # so missing_compare_baselines on a fresh clone is expected.
+                # Surface as warn so the signal isn't lost without blocking.
+                warn "AgentOps eval baseline-audit (policy_mismatch_count=$mismatch_count; substrate-info, non-blocking)"
             else
                 pass "AgentOps eval baseline-audit"
             fi

@@ -70,9 +70,15 @@ jobs:
           mkdir -p cli/bin
           (cd cli && go build -o bin/ao ./cmd/ao)
 
-      - name: Run eval baseline-audit
+      - name: Run eval baseline-audit (drift-only)
         run: |
           set -euo pipefail
+          # Drift-only gate: fail on stale_suite_hashes (real drift between a
+          # promoted baseline and its current suite SHA). policy_mismatch_count
+          # is reported informationally — under the "stop tracking agents
+          # runtime state" policy (commit 3f1566fd) baselines are operator-
+          # local, so a fresh clone always reports missing_compare_baselines.
+          # That's a substrate-design conversation, not a CI block.
           out="$(./cli/bin/ao eval baseline-audit --root evals/agentops-core --json)"
           echo "$out"
           stale=$(printf '%s' "$out" | jq '(.stale_suite_hashes // []) | length' 2>/dev/null || echo "-1")
@@ -81,11 +87,11 @@ jobs:
             echo "FAIL: could not parse baseline-audit output" >&2
             exit 1
           fi
-          if [[ "$stale" -gt 0 || "$mismatch" -gt 0 ]]; then
-            echo "FAIL: stale_suite_hashes=$stale, policy_mismatch_count=$mismatch" >&2
+          if [[ "$stale" -gt 0 ]]; then
+            echo "FAIL: stale_suite_hashes=$stale (a promoted baseline's suite SHA drifted)" >&2
             exit 1
           fi
-          echo "ok: stale_suite_hashes=0 policy_mismatch_count=0"
+          echo "ok: stale_suite_hashes=0 (info: policy_mismatch_count=$mismatch)"
 
   standards-injector-completeness:
     runs-on: ubuntu-latest

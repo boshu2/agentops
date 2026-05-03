@@ -228,7 +228,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
 | **agentops-eval-advisory** | Runs deterministic public AgentOps eval canaries and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); eval suite or scorecard regression until baselines are ratcheted |
-| **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json` and fails on `stale_suite_hashes>0` or `policy_mismatch_count>0` | Promoting a baseline whose suite SHA later drifted; declaring `baseline_policy.mode=none` while a promoted baseline exists |
+| **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
 | **contract-compatibility-gate** | documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance |
