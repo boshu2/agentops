@@ -202,6 +202,7 @@ nav:
       - Context Packet: context-packet.md
       - Curation Pipeline: curation-pipeline.md
       - Evolve Setup: evolve-setup.md
+      - Local Compute Routing: local-compute-routing.md
       - Seed Definition: seed-definition.md
       - Scale Without Swarms: scale-without-swarms.md
       - Strategic Direction: strategic-direction.md
