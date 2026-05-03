@@ -60,5 +60,20 @@
   "design_path": ".agents/design/2026-05-03-design-context-usefulness-eval.md",
   "research_path": ".agents/research/2026-05-03-context-usefulness-eval.md",
   "pre_mortem_path": ".agents/pre-mortem/2026-05-03-context-usefulness-eval.md",
+  "council_consensus": {
+    "date": "2026-05-03",
+    "mode": "mixed",
+    "verdict": "WARN",
+    "report_path": ".agents/council/2026-05-03-context-usefulness-best-path-report.md",
+    "best_path": "Add a narrow Wave 0 before broad integration: deterministic context-packet A/B in cli/internal/eval, context_off vs context_on, isolated fixture .agents roots, hooks preserved, minimal per-case scorecard, and one negative-control ignore case.",
+    "defer_until_scorecard_trusted": [
+      "MemRL and maturity reinforcement",
+      "ao corpus fitness and Dream consumer surfaces",
+      "blocking CI gates",
+      "broad product-doc claims",
+      "automatic pruning or quarantine"
+    ],
+    "architecture_constraint": "Context usefulness is a separate context-variant axis inside the existing eval package, not an overload of skill/hook baseline mode and not a new lifecycle stack."
+  },
   "discovery_timestamp": "2026-05-03T13:01:01Z"
 }

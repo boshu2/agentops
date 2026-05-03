@@ -4,8 +4,8 @@ type: learning
 date: 2026-04-19
 status: active
 maturity: established
-utility: 0.8149
-confidence: 0.4440
+utility: 0.7516
+confidence: 0.5000
 pattern: orchestrator-compression
 detection_question: "Did the top-level orchestrator skill (rpi, discovery, validation) invoke its declared sub-skills via separate Skill() calls, or did it inline/compress the work?"
 applicable_when: "invoking /rpi, /discovery, /crank, or /validation; reviewing a session that claimed to run RPI"
@@ -15,11 +15,11 @@ source:
     - .agents/rpi/phase-3-summary-2026-04-19-mkdocs-material-docs-rebuild.md
     - .agents/rpi/phase-3-summary-2026-04-19-mkdocs-material-docs-rebuild-cycle2.md
 tags: [rpi, orchestrator, delegation, anti-pattern, skills]
-last_decay_at: 2026-05-03T00:02:17-04:00
+last_decay_at: 2026-05-03T09:20:16-04:00
 helpful_count: 4
-last_reward: 0.80
-reward_count: 4
-last_reward_at: 2026-05-02T22:41:12-04:00
+last_reward: 0.50
+reward_count: 5
+last_reward_at: 2026-05-03T09:20:16-04:00
 harmful_count: 0
 ---
 
