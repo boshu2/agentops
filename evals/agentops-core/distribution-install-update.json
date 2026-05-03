@@ -62,7 +62,7 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Results: 3 PASS, 0 FAIL"},
         {"type": "stdout_contains", "value": "PASS: Codex-native install flow verified"},
-        {"type": "stdout_contains", "value": "skills tested: 70"}
+        {"type": "stdout_contains", "value": "skills tested: 71"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence", "artifact_quality"],
       "critical": true

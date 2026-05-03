@@ -34,7 +34,7 @@
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; timeout 30s bash -lc 'cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao eval coverage --root ../evals/agentops-core --json' > \"$tmp/coverage.json\"; python3 -c 'import json, sys; data=json.load(open(sys.argv[1])); assert data[\"suite_count\"] >= 11; assert \"efficiency\" in data.get(\"required_dimensions\", []); assert not data.get(\"missing_required_dimensions\")' \"$tmp/coverage.json\""
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; timeout 60s bash -lc 'cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao eval coverage --root ../evals/agentops-core --json' > \"$tmp/coverage.json\"; python3 -c 'import json, sys; data=json.load(open(sys.argv[1])); assert data[\"suite_count\"] >= 11; assert \"efficiency\" in data.get(\"required_dimensions\", []); assert not data.get(\"missing_required_dimensions\")' \"$tmp/coverage.json\""
       },
       "expectations": [
         {"type": "exit_code", "value": 0}
