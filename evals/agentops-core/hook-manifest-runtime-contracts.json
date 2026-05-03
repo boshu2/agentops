@@ -65,11 +65,11 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..122"},
+        {"type": "stdout_contains", "value": "1..125"},
         {"type": "stdout_contains", "value": "ok 24 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
         {"type": "stdout_contains", "value": "ok 39 dangerous-git-guard: force push blocked with exit 2"},
-        {"type": "stdout_contains", "value": "ok 50 codex-parity-warn: shared skill edit emits parity warning"},
-        {"type": "stdout_contains", "value": "ok 122 task-validation-gate: empty stdin exits gracefully"}
+        {"type": "stdout_contains", "value": "ok 53 codex-parity-warn: shared skill edit emits parity warning"},
+        {"type": "stdout_contains", "value": "ok 125 task-validation-gate: empty stdin exits gracefully"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
