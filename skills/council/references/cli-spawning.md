@@ -44,7 +44,7 @@ When `--mixed` is set:
    - the same packet (see "Pre-assemble packet" pattern)
    - the same `{PERSONA_NAME}` and `{PERSPECTIVE}` slot in the agent prompt
    - the same `output_schema`
-3. Total judges = 2 × len(perspectives). Default len=3 → 6 judges. Variable preset sizes scale naturally (e.g., `--preset=security-audit` has 4 perspectives → 8 judges; `--preset=plan-review` has 4 → 8).
+3. Total judges = 2 × len(perspectives). Default len=3 → 6 judges. Variable preset sizes scale naturally (e.g., `--preset=security-audit` has 4 perspectives → 8 judges; `--preset=plan-review` has 4 → 8; `--preset=leadership-quartet` has 4 → 8).
 4. Do **NOT** split perspectives across vendors. The whole point of `--mixed` is to hold the perspective constant and vary only the vendor — that is what makes verdict differences attributable to the vendor instead of to the perspective.
 
 ### Phase 2: Wait for Completion

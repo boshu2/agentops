@@ -9,6 +9,7 @@
 /council --deep --explorers=3 research upgrade patterns         # 12 agents (3 judges x 4)
 /council --preset=security-audit --deep validate the API        # attacker, defender, compliance, web-security
 /council --preset=doc-review validate README.md                  # 4 doc judges with named perspectives
+/council --deep --mixed --preset=leadership-quartet validate PRODUCT.md vs shipped app # 4 runtime-native + 4 Codex
 /council brainstorm caching strategies for the API              # 2 judges explore options
 /council --technique=scamper brainstorm API improvements               # structured SCAMPER brainstorm
 /council --technique=six-hats brainstorm migration strategy            # parallel perspectives brainstorm

@@ -27,7 +27,7 @@
 | `--timeout=N` | Override timeout in seconds (default: 120) |
 | `--perspectives="a,b,c"` | Custom perspective names (each name sets the judge's system prompt to adopt that viewpoint) |
 | `--perspectives-file=<path>` | Load named perspectives from a YAML file (see Named Perspectives in SKILL.md) |
-| `--preset=<name>` | Built-in persona preset (security-audit, architecture, research, ops, code-review, plan-review, doc-review, retrospective, product, developer-experience) |
+| `--preset=<name>` | Built-in persona preset (security-audit, architecture, research, ops, code-review, plan-review, doc-review, retrospective, product, developer-experience, leadership-quartet) |
 | `--count=N` | Override agent count per vendor (e.g., `--count=4` = 4 Claude, or 4+4 with --mixed). Subject to MAX_AGENTS=12 cap. |
 | `--explorers=N` | Explorer sub-agents per judge (default: 0, max: 5). Max effective value depends on judge count. Total agents capped at 12. |
 | `--explorer-model=M` | Override explorer model (default: sonnet) |
