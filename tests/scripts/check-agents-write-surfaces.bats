@@ -27,6 +27,13 @@ write_contract() {
     local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
     {
         printf '# .agents/ Write Surfaces\n\n'
+        printf '## Surfaces\n\n'
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        for entry in "$@"; do
+            printf '| `%s` | persistent | cli | fixture-write | Fixture surface |\n' "$entry"
+        done
+        printf '\n'
         printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
         for entry in "$@"; do
             printf '%s\n' "$entry"
@@ -152,6 +159,10 @@ EOF
 @test "supports inline comments and blank lines in allowlist" {
     local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
     {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | persistent | cli | fixture-write | Fixture surface |\n'
+        printf '| `learnings` | persistent | cli | fixture-write | Fixture surface |\n\n'
         printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
         printf '\n'
         printf '# core state\n'
@@ -222,6 +233,10 @@ EOF
         printf '# .agents/ Write Surfaces\n\n'
         printf 'The `<!-- BEGIN agents-write-surfaces-allowlist -->` / `<!-- END agents-write-surfaces-allowlist -->` markers are documented here.\n\n'
         printf 'This sentence is prose, not an allowlist entry.\n\n'
+        printf '## Surfaces\n\n'
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | persistent | cli | fixture-write | Fixture surface |\n\n'
         printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
         printf 'ao\n'
         printf '<!-- END agents-write-surfaces-allowlist -->\n'
@@ -235,6 +250,76 @@ EOF
     cd "$FAKE_REPO"
     run bash scripts/check-agents-write-surfaces.sh
     [ "$status" -eq 0 ]
+}
+
+@test "fails when allowlisted surface lacks table classification" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | persistent | cli | fixture-write | Fixture surface |\n\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf 'widgets\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing table classifications"* ]]
+    [[ "$output" == *"widgets"* ]]
+}
+
+@test "fails on unknown lifecycle classification" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | forever | cli | fixture-write | Fixture surface |\n\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown lifecycle"* ]]
+}
+
+@test "fails on unknown allowed writer" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | persistent | daemon | fixture-write | Fixture surface |\n\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown writer"* ]]
+}
+
+@test "fails on missing mutation lane" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | persistent | cli |  | Fixture surface |\n\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing mutation lane"* ]]
 }
 
 @test "repo allowlist entries are referenced or explicitly lifecycle-only" {

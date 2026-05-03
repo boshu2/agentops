@@ -8,6 +8,7 @@
 # Usage:
 #   bash scripts/release-smoke-test.sh              # build + test
 #   bash scripts/release-smoke-test.sh --skip-build # use existing cli/bin/ao
+#   AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1 bash scripts/release-smoke-test.sh
 #
 # Exit codes:
 #   0 = all tests passed
@@ -23,7 +24,33 @@ cd "$REPO_ROOT"
 #  Options
 # ═══════════════════════════════════════════════════════
 
+ORIGINAL_ARGS=("$@")
 SKIP_BUILD=false
+ALLOW_AGENT_MUTATIONS="${AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS:-0}"
+
+truthy() {
+    case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|y|on|always) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+release_smoke_mutation_args() {
+    local command_name="$1"
+
+    if truthy "$ALLOW_AGENT_MUTATIONS"; then
+        return 0
+    fi
+
+    case "$command_name" in
+        inject|lookup)
+            printf '%s\n' "--no-cite"
+            ;;
+        flywheel-close-loop)
+            printf '%s\n' "--dry-run"
+            ;;
+    esac
+}
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -31,11 +58,17 @@ while [[ $# -gt 0 ]]; do
             SKIP_BUILD=true
             shift
             ;;
+        --allow-agent-mutations)
+            ALLOW_AGENT_MUTATIONS=1
+            shift
+            ;;
         -h|--help)
             echo "Usage: bash scripts/release-smoke-test.sh [--skip-build]"
             echo ""
             echo "Options:"
             echo "  --skip-build   Use existing cli/bin/ao instead of rebuilding"
+            echo "  --allow-agent-mutations"
+            echo "                 Allow citation/finding metadata writes during smoke"
             echo "  -h, --help     Show this help"
             exit 0
             ;;
@@ -45,6 +78,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if ! truthy "$ALLOW_AGENT_MUTATIONS" && ! truthy "${AGENTOPS_RELEASE_METADATA_GUARD_ACTIVE:-0}"; then
+    AGENTOPS_RELEASE_METADATA_GUARD_ACTIVE=1 \
+        exec "$REPO_ROOT/scripts/check-release-agent-metadata-stable.sh" -- "$0" "${ORIGINAL_ARGS[@]}"
+fi
 
 # ═══════════════════════════════════════════════════════
 #  Colors & Counters
@@ -359,11 +397,19 @@ test_exec "ao search 'test'" "$AO" search "test"
 test_exec_exact "ao search --json --local nonexistent => []" "[]" "$AO" search --json --local "nonexistent-xyz-12345"
 
 # Knowledge injection
-test_exec_tolerant "ao inject" "$AO" inject
-test_exec_output "ao inject --index-only" "Knowledge Index|ID|Title" "$AO" inject --index-only
+inject_mutation_args=()
+while IFS= read -r arg; do
+    [[ -n "$arg" ]] && inject_mutation_args+=("$arg")
+done < <(release_smoke_mutation_args inject)
+test_exec_tolerant "ao inject" "$AO" inject "${inject_mutation_args[@]}"
+test_exec_output "ao inject --index-only" "Knowledge Index|ID|Title" "$AO" inject --index-only "${inject_mutation_args[@]}"
 
 # Lookup
-test_exec_tolerant "ao lookup --query 'test'" "$AO" lookup --query "test"
+lookup_mutation_args=()
+while IFS= read -r arg; do
+    [[ -n "$arg" ]] && lookup_mutation_args+=("$arg")
+done < <(release_smoke_mutation_args lookup)
+test_exec_tolerant "ao lookup --query 'test'" "$AO" lookup --query "test" "${lookup_mutation_args[@]}"
 test_exec_tolerant "ao findings list" "$AO" findings list
 test_exec_output "ao findings stats" "Total findings|By status|Most cited|Total hits" "$AO" findings stats
 
@@ -372,8 +418,12 @@ test_exec_output "ao metrics health" "sigma|rho|delta|retrieval|citation|decay" 
 test_exec_output "ao metrics report" "Flywheel|Metrics|Period|decay|retrieval|citation" "$AO" metrics report
 
 # Flywheel
+flywheel_close_loop_mutation_args=()
+while IFS= read -r arg; do
+    [[ -n "$arg" ]] && flywheel_close_loop_mutation_args+=("$arg")
+done < <(release_smoke_mutation_args flywheel-close-loop)
 test_exec_output "ao flywheel status" "Flywheel|status|COMPOUNDING|decay|retrieval" "$AO" flywheel status
-test_exec_output "ao flywheel close-loop" "Close-Loop|Summary|Pool|promote|Citation" "$AO" flywheel close-loop
+test_exec_output "ao flywheel close-loop" "Close-Loop|Summary|Pool|promote|Citation" "$AO" flywheel close-loop "${flywheel_close_loop_mutation_args[@]}"
 
 # Pool
 test_exec_tolerant "ao pool list" "$AO" pool list

@@ -88,10 +88,15 @@ const _ = ".agents/test-only-surface/x"
 	mustWrite(t, filepath.Join(tmp, "lib", "store.bash"),
 		[]byte("#!/usr/bin/env bash\nstore=.agents/memory/cache\n"))
 
-	// Contract doc: empty allowlist (none of the fixture surfaces are
-	// catalogued). The parity test only cares about the referenced set;
-	// allowlist comparison happens in production runs, not here.
+	// Contract doc: minimal typed table plus an intentionally narrow allowlist.
+	// The parity test only cares about the referenced set; allowlist and
+	// classification failures are expected and tolerated as exit 1.
 	contract := []byte(`# Test fixture
+
+| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |
+|---|---|---|---|---|
+| ` + "`ao`" + ` | persistent | cli | runtime-state | Fixture row |
+
 <!-- BEGIN agents-write-surfaces-allowlist -->
 ao
 <!-- END agents-write-surfaces-allowlist -->

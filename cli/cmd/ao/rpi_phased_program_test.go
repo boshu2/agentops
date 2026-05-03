@@ -203,7 +203,16 @@ type dryRunProgramContractCase struct {
 
 type dryRunProgramContractPacket struct {
 	ContractSurfaces []string `json:"contract_surfaces"`
-	AutodevProgram   struct {
+	ValidationLanes  []struct {
+		Name                string  `json:"name"`
+		Command             string  `json:"command"`
+		ReadOnly            bool    `json:"read_only"`
+		WritesArtifacts     bool    `json:"writes_artifacts"`
+		IsolatedAgentsHome  bool    `json:"isolated_agents_home"`
+		ReleaseOnly         bool    `json:"release_only"`
+		MutationEscapeHatch *string `json:"mutation_escape_hatch"`
+	} `json:"validation_lanes"`
+	AutodevProgram struct {
 		Path               string   `json:"path"`
 		ValidationCommands []string `json:"validation_commands"`
 	} `json:"autodev_program"`
@@ -247,6 +256,34 @@ func setupDryRunProgramContractWorkspace(t *testing.T, tc dryRunProgramContractC
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "docs", "contracts", "repo-execution-profile.md"), []byte("# Repo Execution Profile\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	profile := `{
+  "schema_version": 1,
+  "startup_reads": ["docs/newcomer-guide.md"],
+  "goals_source": {"primary": "GOALS.md"},
+  "validation_commands": ["scripts/pre-push-gate.sh --fast"],
+  "validation_lanes": [
+    {
+      "name": "pre-push-fast",
+      "command": "scripts/pre-push-gate.sh --fast",
+      "read_only": true,
+      "writes_artifacts": false,
+      "isolated_agents_home": true,
+      "release_only": false,
+      "mutation_escape_hatch": null
+    }
+  ],
+  "tracker_commands": {
+    "ready": "bd ready --json",
+    "show": "bd show <id> --json",
+    "update": "bd update <id> --status in_progress --json",
+    "close": "bd close <id> --reason \"Completed\" --json"
+  },
+  "definition_of_done": {"predicates": ["validation passes"]}
+}
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "docs", "contracts", "repo-execution-profile.json"), []byte(profile), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	tc.setupFiles(t, tmpDir)
@@ -357,6 +394,16 @@ func assertDryRunProgramContractPacket(
 	}
 	if !containsProgramContract(packet.ContractSurfaces, "docs/contracts/repo-execution-profile.md") {
 		t.Fatalf("contract_surfaces = %#v, want repo execution profile", packet.ContractSurfaces)
+	}
+	if len(packet.ValidationLanes) != 1 {
+		t.Fatalf("validation_lanes = %#v, want one repo profile lane", packet.ValidationLanes)
+	}
+	lane := packet.ValidationLanes[0]
+	if lane.Name != "pre-push-fast" || lane.Command != "scripts/pre-push-gate.sh --fast" {
+		t.Fatalf("validation_lanes[0] = %#v, want pre-push-fast command", lane)
+	}
+	if !lane.ReadOnly || lane.WritesArtifacts || !lane.IsolatedAgentsHome || lane.ReleaseOnly || lane.MutationEscapeHatch != nil {
+		t.Fatalf("validation_lanes[0] metadata = %#v, want read-only isolated non-release lane", lane)
 	}
 	if !containsProgramContract(packet.ContractSurfaces, tc.wantPath) {
 		t.Fatalf("contract_surfaces = %#v, want %s", packet.ContractSurfaces, tc.wantPath)

@@ -13,3 +13,17 @@ type ExecutionPacketProgram struct {
 	DecisionPolicy     []string `json:"decision_policy,omitempty"`
 	StopConditions     []string `json:"stop_conditions,omitempty"`
 }
+
+// ValidationLane carries repo execution profile validation metadata through
+// RPI packets while preserving the legacy validation_commands list.
+type ValidationLane struct {
+	Name                string   `json:"name"`
+	Command             string   `json:"command"`
+	Purpose             string   `json:"purpose,omitempty"`
+	ReadOnly            bool     `json:"read_only"`
+	WritesArtifacts     bool     `json:"writes_artifacts"`
+	ArtifactPaths       []string `json:"artifact_paths,omitempty"`
+	IsolatedAgentsHome  bool     `json:"isolated_agents_home"`
+	ReleaseOnly         bool     `json:"release_only"`
+	MutationEscapeHatch *string  `json:"mutation_escape_hatch"`
+}

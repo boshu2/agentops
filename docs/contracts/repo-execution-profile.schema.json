@@ -58,6 +58,14 @@
         "minLength": 1
       }
     },
+    "validation_lanes": {
+      "type": "array",
+      "description": "Structured metadata for validation commands, including mutation behavior and release-only gates.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/validation_lane"
+      }
+    },
     "tracker_commands": {
       "type": "object",
       "description": "Repo-scoped tracker command wrappers and shell policy.",
@@ -162,6 +170,71 @@
         "require_clean_git": {
           "type": "boolean",
           "default": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "validation_lane": {
+      "type": "object",
+      "description": "One validation command plus machine-readable mutation and isolation metadata.",
+      "required": [
+        "name",
+        "command",
+        "read_only",
+        "writes_artifacts",
+        "isolated_agents_home",
+        "release_only",
+        "mutation_escape_hatch"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable lane identifier for packet consumers."
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Shell command. Keep aligned with validation_commands when this lane is part of the default landing bundle."
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable reason to run this lane."
+        },
+        "read_only": {
+          "type": "boolean",
+          "description": "True when the lane should not mutate tracked repo files or persistent agent state."
+        },
+        "writes_artifacts": {
+          "type": "boolean",
+          "description": "True when the lane intentionally writes validation or release artifacts."
+        },
+        "artifact_paths": {
+          "type": "array",
+          "description": "Known artifact paths or globs written by this lane.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "isolated_agents_home": {
+          "type": "boolean",
+          "description": "True when agents should run the command with isolated HOME/AGENTS_HOME or equivalent no-citation state."
+        },
+        "release_only": {
+          "type": "boolean",
+          "description": "True when the lane is intended for release readiness rather than fast everyday validation."
+        },
+        "mutation_escape_hatch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Named opt-in that permits intentional mutation, or null when no mutation is allowed."
         }
       },
       "additionalProperties": false

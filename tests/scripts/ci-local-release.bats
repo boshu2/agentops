@@ -33,6 +33,7 @@ teardown() {
     [[ "$output" == *"--security-mode"* ]]
     [[ "$output" == *"--readiness-mode"* ]]
     [[ "$output" == *"--hil-target"* ]]
+    [[ "$output" == *"AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS"* ]]
 }
 
 @test "-h prints usage and exits 0" {
@@ -111,6 +112,22 @@ teardown() {
     [ "$status" -eq 0 ]
     run grep -q 'make build VERSION="$version"' "$SCRIPT"
     [ "$status" -eq 0 ]
+}
+
+@test "script logs local-ci mutation lane and escape hatch" {
+    run grep -q 'LOCAL_CI_MUTATION_LANE="local-ci-release"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'LOCAL_CI_MUTATION_ESCAPE_HATCH="operator-run-release-validation"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'Release metadata guard:' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "script invokes release smoke without mutation opt-in by default" {
+    run grep -q 'Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q -- '--allow-agent-mutations' "$SCRIPT"
+    [ "$status" -eq 1 ]
 }
 
 @test "script wires HIL and release readiness gates" {
