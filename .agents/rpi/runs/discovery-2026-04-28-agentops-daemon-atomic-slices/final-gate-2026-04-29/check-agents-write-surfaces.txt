@@ -1,3 +1,0 @@
-$ scripts/check-agents-write-surfaces.sh
-agents-write-surfaces contract OK: 58 referenced subdirs, 48 allowlisted, all documented or skill-owned.
-status=0

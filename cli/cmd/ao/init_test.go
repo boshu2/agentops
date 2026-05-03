@@ -89,8 +89,8 @@ func TestRunInitGitignoreAppend(t *testing.T) {
 	}
 
 	data, _ := os.ReadFile(filepath.Join(tmp, ".gitignore"))
-	if !strings.Contains(string(data), ".agents/") {
-		t.Error("expected .gitignore to contain .agents/")
+	if !strings.Contains(string(data), "/.agents/") {
+		t.Error("expected .gitignore to contain /.agents/")
 	}
 	if !strings.Contains(string(data), "node_modules/") {
 		t.Error("expected .gitignore to still contain node_modules/")
@@ -115,8 +115,8 @@ func TestRunInitGitignoreCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected .gitignore to be created: %v", err)
 	}
-	if !strings.Contains(string(data), ".agents/") {
-		t.Error("expected .gitignore to contain .agents/")
+	if !strings.Contains(string(data), "/.agents/") {
+		t.Error("expected .gitignore to contain /.agents/")
 	}
 }
 
@@ -139,11 +139,11 @@ func TestRunInitIdempotent(t *testing.T) {
 		t.Fatalf("second runInit: %v", err)
 	}
 
-	// .agents/ should appear only once in .gitignore
+	// /.agents/ should appear only once in .gitignore
 	data, _ := os.ReadFile(filepath.Join(tmp, ".gitignore"))
-	count := strings.Count(string(data), ".agents/\n")
+	count := strings.Count(string(data), "/.agents/\n")
 	if count != 1 {
-		t.Errorf("expected .agents/ once in .gitignore, got %d", count)
+		t.Errorf("expected /.agents/ once in .gitignore, got %d", count)
 	}
 }
 
@@ -251,9 +251,6 @@ func TestNestedGitignoreContent(t *testing.T) {
 	if !strings.Contains(content, "!.gitignore") {
 		t.Error("expected .agents/.gitignore to contain !.gitignore")
 	}
-	if !strings.Contains(content, "!README.md") {
-		t.Error("expected .agents/.gitignore to contain !README.md")
-	}
 }
 
 func TestRunInitGitignoreNoTrailingNewline(t *testing.T) {
@@ -278,10 +275,10 @@ func TestRunInitGitignoreNoTrailingNewline(t *testing.T) {
 	content := string(data)
 	// Should have newline between existing content and new entry
 	if strings.Contains(content, "node_modules/.agents/") {
-		t.Error("expected newline between existing content and .agents/ entry")
+		t.Error("expected newline between existing content and /.agents/ entry")
 	}
-	if !strings.Contains(content, ".agents/") {
-		t.Error("expected .gitignore to contain .agents/")
+	if !strings.Contains(content, "/.agents/") {
+		t.Error("expected .gitignore to contain /.agents/")
 	}
 }
 

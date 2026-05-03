@@ -85,14 +85,15 @@ if [ "${AGENTOPS_STARTUP_CLOSE_LOOP:-0}" = "1" ] && command -v ao &>/dev/null; t
     ao flywheel close-loop --quiet >/dev/null 2>&1 || true
 fi
 
-# Auto-gitignore .agents/
-if [ "${AGENTOPS_GITIGNORE_AUTO:-1}" != "0" ] && [ -d "$ROOT/.git" ]; then
+# Always gitignore repo-root .agents/. It is local agent runtime state and must
+# not be committed. AGENTOPS_GITIGNORE_AUTO is retained only as a legacy no-op.
+if [ -d "$ROOT/.git" ]; then
     GITIGNORE="$ROOT/.gitignore"
     if [ -f "$GITIGNORE" ]; then
-        grep -q '^\.agents/$' "$GITIGNORE" 2>/dev/null || \
-            printf '\n# AgentOps session artifacts\n.agents/\n' >> "$GITIGNORE" 2>/dev/null
+        grep -q '^/\.agents/$' "$GITIGNORE" 2>/dev/null || \
+            printf '\n# AgentOps session artifacts\n/.agents/\n' >> "$GITIGNORE" 2>/dev/null
     else
-        printf '# AgentOps session artifacts\n.agents/\n' > "$GITIGNORE" 2>/dev/null
+        printf '# AgentOps session artifacts\n/.agents/\n' > "$GITIGNORE" 2>/dev/null
     fi
 fi
 if [ ! -f "$ROOT/.agents/.gitignore" ]; then

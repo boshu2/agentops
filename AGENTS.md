@@ -232,6 +232,8 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 
 **No symlinks.** The plugin-load-test rejects ALL symlinks. If you need the same file in multiple skill `references/` dirs, **copy the file** — do not symlink.
 
+**Do not track repo-root `.agents/`.** `.agents/` is local agent runtime state for Codex, Claude, AgentOps, and other agents. It can churn and may contain sensitive session context. The pre-push and CI gates run `scripts/check-no-tracked-agents.sh`; use durable docs or release artifacts outside `.agents/` for anything that belongs in git history.
+
 **Skill counts must be synced.** When adding or removing a skill directory, run:
 ```bash
 scripts/sync-skill-counts.sh

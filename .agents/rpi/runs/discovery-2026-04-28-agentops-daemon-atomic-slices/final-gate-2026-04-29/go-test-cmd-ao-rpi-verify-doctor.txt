@@ -1,3 +1,0 @@
-$ go test ./cmd/ao -run 'RPIVerify|Doctor|DaemonLifecycleDryRunCommand'
-ok  	github.com/boshu2/agentops/cli/cmd/ao	(cached)
-status=0

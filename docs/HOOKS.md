@@ -74,7 +74,7 @@ Most hooks read environment variables rather than checking in-tree config. See [
 |----------|--------|
 | `AGENTOPS_STARTUP_CONTEXT_MODE` | `factory` (default) stages goal-scoped briefing state; `manual` skips prompt-time factory intake |
 | `AGENTOPS_STANDARDS_FULL_INJECT` | Set to `1` only for legacy debugging when you need full standards references injected by `standards-injector.sh` |
-| `AGENTOPS_GITIGNORE_AUTO` | Set to `0` to commit `.agents/` artifacts to the repo |
+| `AGENTOPS_GITIGNORE_AUTO` | Legacy no-op for repo-root `.agents/`; local agent state must remain git-ignored |
 | `AGENTOPS_HOOKS_DISABLED` | Set to `1` to short-circuit all hooks without uninstalling them |
 | `AGENTOPS_QUIET` | Set to `1` to suppress non-error hook output |
 

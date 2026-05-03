@@ -47,7 +47,7 @@ This creates:
   .agents/ao/provenance/  - Provenance graph
 
 Git protection:
-  .gitignore              - .agents/ entry appended (or --stealth for .git/info/exclude)
+  .gitignore              - /.agents/ entry appended (or --stealth for .git/info/exclude)
   .agents/.gitignore      - Belt-and-suspenders deny-all
 
 Run in your project root. Safe to run multiple times (idempotent).`,
@@ -247,7 +247,7 @@ func ensureNestedAgentsGitignore(cwd string) error {
 	}
 
 	if _, err := os.Stat(nestedGitignore); os.IsNotExist(err) {
-		content := "# Do not commit this directory — session artifacts, absolute paths, sensitive output.\n*\n!.gitignore\n!README.md\n"
+		content := "# Do not commit this directory — session artifacts, absolute paths, sensitive output.\n*\n!.gitignore\n"
 		if err := os.WriteFile(nestedGitignore, []byte(content), 0600); err != nil {
 			return fmt.Errorf("create .agents/.gitignore: %w", err)
 		}
@@ -298,7 +298,7 @@ func printInitSummary(cwd string, isGitRepo bool) {
 		if initStealth {
 			fmt.Println("  .git/info/exclude (stealth)")
 		} else {
-			fmt.Println("  .gitignore (.agents/ entry)")
+			fmt.Println("  .gitignore (/.agents/ entry)")
 		}
 		fmt.Println("  .agents/.gitignore")
 	}
@@ -322,7 +322,7 @@ func isGitRepository(dir string) bool {
 	return err == nil
 }
 
-// setupGitignore adds .agents/ to .gitignore or .git/info/exclude.
+// setupGitignore adds /.agents/ to .gitignore or .git/info/exclude.
 func setupGitignore(cwd string, dryRun, stealth bool) error {
 	var targetPath string
 	var label string
@@ -335,14 +335,14 @@ func setupGitignore(cwd string, dryRun, stealth bool) error {
 		label = ".gitignore"
 	}
 
-	// Check if .agents/ already present
-	if fileContainsLine(targetPath, ".agents/") {
-		VerbosePrintf("%s already contains .agents/\n", label)
+	// Check if the current repo-root .agents/ policy is already present.
+	if fileContainsLine(targetPath, "/.agents/") {
+		VerbosePrintf("%s already contains /.agents/\n", label)
 		return nil
 	}
 
 	if dryRun {
-		fmt.Printf("[dry-run] Would add .agents/ to %s\n", label)
+		fmt.Printf("[dry-run] Would add /.agents/ to %s\n", label)
 		return nil
 	}
 
@@ -368,7 +368,7 @@ func setupGitignore(cwd string, dryRun, stealth bool) error {
 		}
 	}
 
-	_, err = f.WriteString("\n# AgentOps session artifacts (auto-added by ao init)\n.agents/\n")
+	_, err = f.WriteString("\n# AgentOps session artifacts (auto-added by ao init)\n/.agents/\n")
 	return err
 }
 

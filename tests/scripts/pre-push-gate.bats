@@ -38,6 +38,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-test-fixture-parity.sh"
     make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh"
     make_stub "$FAKE_REPO/scripts/check-agents-write-surfaces.sh"
+    make_stub "$FAKE_REPO/scripts/check-no-tracked-agents.sh"
     make_stub "$FAKE_REPO/scripts/check-worktree-disposition.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-runtime-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-skill-parity.sh"

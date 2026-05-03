@@ -473,6 +473,11 @@ jobs:
 
           echo "✅ No symlinks found"
 
+      - name: Enforce local-only .agents state
+        run: |
+          chmod +x scripts/check-no-tracked-agents.sh
+          bash scripts/check-no-tracked-agents.sh
+
       - name: Test plugin directory structure
         run: |
           echo "=== Testing plugin structure (unified) ==="

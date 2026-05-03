@@ -1,2 +1,0 @@
-$ shellcheck scripts/validate-daemon-product-e2e.sh
-status=0

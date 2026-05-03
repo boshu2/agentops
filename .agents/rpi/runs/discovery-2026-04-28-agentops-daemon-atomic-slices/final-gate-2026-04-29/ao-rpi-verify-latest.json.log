@@ -1,8 +1,0 @@
-$ ao rpi verify --latest --json
-{
-  "status": "PASS",
-  "pass": true,
-  "record_count": 0,
-  "first_broken_index": -1
-}
-status=0

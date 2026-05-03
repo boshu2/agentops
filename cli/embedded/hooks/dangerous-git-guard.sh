@@ -21,12 +21,15 @@ COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | 
 # Hot path: no git, no problem
 echo "$COMMAND" | grep -q "git" || exit 0
 
-# Warn if .agents/ files may be staged (never block — exit 0)
+# Warn if .agents/ files may be staged. Commit attempts with staged additions or
+# modifications are blocked below; deletions are allowed for one-time cleanup.
 if echo "$COMMAND" | grep -qE 'git\s+add' && echo "$COMMAND" | grep -qE '\.agents/|\s\.\s*$|\s-A'; then
-    echo "Warning: .agents/ files may be staged. These should typically be gitignored. Review: git status .agents/" >&2
+    echo "Warning: repo-root .agents/ is local runtime state and must stay gitignored. Review: git status .agents/" >&2
 fi
-if echo "$COMMAND" | grep -qE 'git\s+commit' && git diff --cached --name-only 2>/dev/null | grep -q '^\.agents/'; then
-    echo "Warning: .agents/ files are staged for commit. Consider: git reset HEAD .agents/" >&2
+if echo "$COMMAND" | grep -qE 'git\s+commit' && git diff --cached --name-only --diff-filter=ACMR -- .agents 2>/dev/null | grep -q '^\.agents/'; then
+    write_failure "dangerous_git" "git commit .agents" 2 "repo-root .agents commit blocked"
+    echo "Blocked: repo-root .agents/ is local runtime state. Use: git restore --staged .agents/" >&2
+    exit 2
 fi
 
 # Allow-list (checked before block-list)

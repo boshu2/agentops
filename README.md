@@ -28,7 +28,7 @@ AgentOps gives your coding agent four things it does not have by default:
 
 | Layer | What changes |
 |-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in `.agents/` — the corpus. `ao compile`, `ao maturity --evict`, decay, and lint keep it from rotting. *Removes the toil of re-explaining context every session.* |
+| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` — the private corpus. `ao compile`, `ao maturity --evict`, decay, and lint keep it from rotting. *Removes the toil of re-explaining context every session.* |
 | **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship. *Removes the toil of catching the same mistake twice.* |
 | **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks. *Removes the toil of re-implementing the same flow per agent.* |
 | **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end. *Removes the toil of running the same multi-step process by hand.* |
@@ -45,7 +45,7 @@ flowchart LR
     N --> S
 ```
 
-All state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and commit. Zero telemetry. Zero cloud dependency.
+All agent runtime state lives in local `.agents/` — auditable and yours, but git-ignored by policy because it can churn and may contain sensitive session context. Plain text you can grep, diff, and review locally. Zero telemetry. Zero cloud dependency.
 
 ### Proof: the three-gap contract
 

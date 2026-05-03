@@ -411,6 +411,31 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "dangerous-git-guard: staged .agents add blocks commit" {
+    mkdir -p "$MOCK_REPO/.agents/rpi"
+    printf '{}\n' > "$MOCK_REPO/.agents/rpi/execution-packet.json"
+    git -C "$MOCK_REPO" add .agents/rpi/execution-packet.json
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git commit -m leak"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"repo-root .agents/ is local runtime state"* ]]
+}
+
+@test "dangerous-git-guard: staged .agents deletion allows cleanup commit" {
+    git -C "$MOCK_REPO" config user.email test@example.com
+    git -C "$MOCK_REPO" config user.name "Test User"
+    mkdir -p "$MOCK_REPO/.agents/rpi"
+    printf '{}\n' > "$MOCK_REPO/.agents/rpi/execution-packet.json"
+    git -C "$MOCK_REPO" add .agents/rpi/execution-packet.json
+    git -C "$MOCK_REPO" commit -qm "track legacy agents state"
+    git -C "$MOCK_REPO" rm -q --cached .agents/rpi/execution-packet.json
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git commit -m cleanup"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 0 ]
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # ratchet-advance.sh — advanced cases
 # ═══════════════════════════════════════════════════════════════════════

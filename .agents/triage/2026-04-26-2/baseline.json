@@ -1,9 +1,0 @@
-{
-  "date": "2026-04-26",
-  "run": "triage/2026-04-26-2",
-  "unconsumed_item_count": 53,
-  "morning_packet_count": null,
-  "morning_packet_note": "no overnight/latest dir — section 3 skipped",
-  "schema_violation_count": 0,
-  "schema_check_output": "PASS: 66 row(s) conform to v1.3 schema enums"
-}

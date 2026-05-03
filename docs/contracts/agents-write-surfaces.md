@@ -4,9 +4,12 @@
 > **Consumers:** `scripts/check-agents-write-surfaces.sh`, `/evolve`, future `ao agents` tooling
 > **Linted by:** `scripts/check-agents-write-surfaces.sh`
 
-This contract catalogues every top-level subdirectory under `.agents/` that
-agentops production code (Go in `cli/` excluding tests, shell in `scripts/`,
-`hooks/`, `lib/`) writes to or persists state under. It does **not** cover
+This contract catalogues every top-level subdirectory under local repo-root
+`.agents/` that agentops production code (Go in `cli/` excluding tests, shell
+in `scripts/`, `hooks/`, `lib/`) writes to or persists state under. Repo-root
+`.agents/` is runtime state, not a git persistence surface; it is ignored by
+policy and guarded by `scripts/check-no-tracked-agents.sh`. This contract does
+**not** cover
 skill-owned subdirs that follow the `.agents/<skill-name>/` convention —
 those are validated dynamically against `skills/<skill-name>/SKILL.md`.
 
@@ -141,7 +144,8 @@ wiki
 2. Add a row in the `## Surfaces` table above explaining owner / lifecycle / purpose.
 3. Add the bare subdir name to the allowlist block.
 4. Run `scripts/check-agents-write-surfaces.sh` and confirm it exits 0.
-5. Add or update a regression test in `tests/scripts/check-agents-write-surfaces.bats` if the new surface introduces a new contract dimension (format, ownership rule, lifecycle).
+5. Run `scripts/check-no-tracked-agents.sh` and confirm no repo-root `.agents` path is tracked or staged for add/modify.
+6. Add or update a regression test in `tests/scripts/check-agents-write-surfaces.bats` if the new surface introduces a new contract dimension (format, ownership rule, lifecycle).
 
 ## See also
 

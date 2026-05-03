@@ -20,7 +20,7 @@ repeatable flows. You manage the roadmap.
 
 ## What data leaves my machine?
 
-AgentOps itself stores nothing externally — all state lives in `.agents/` (local, git-ignored by default). No telemetry, no cloud, no external services. Set `AGENTOPS_GITIGNORE_AUTO=0` to commit knowledge artifacts to your repo. Your coding agent's normal API traffic to its LLM provider still applies.
+AgentOps itself stores nothing externally — all state lives in `.agents/` (local and git-ignored by policy). No telemetry, no cloud, no external services. Repo-root `.agents/` can churn and may contain sensitive session context, so AgentOps gates prevent tracking it. Your coding agent's normal API traffic to its LLM provider still applies.
 
 ## Can I use this with other AI coding tools?
 

@@ -7,7 +7,7 @@ For the full release log, see [`CHANGELOG.md`](CHANGELOG.md). This page is delib
 ## Before upgrading
 
 ```bash
-# Back up local state if you commit .agents/
+# Repo-root .agents/ is local/private runtime state and should not be committed
 git status .agents/
 
 # Record current version so you can compare

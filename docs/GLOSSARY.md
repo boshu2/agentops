@@ -5,7 +5,7 @@ Project-specific terms used throughout AgentOps documentation.
 ## Symbols
 
 ### `.agents/`
-Per-repo local directory where AgentOps stores learnings, plans, findings, handoffs, and run state. Plain text — `git grep`, `diff`, and `git log` all work on it. Ignored by default; set `AGENTOPS_GITIGNORE_AUTO=0` to commit it.
+Per-repo local directory where AgentOps stores learnings, plans, findings, handoffs, and run state. Plain text for local grep/diff/review. Repo-root `.agents/` is ignored by policy and must not be tracked because it can churn and may contain sensitive session context.
 
 ### `MEMORY.md`
 Per-repo durable memory file loaded automatically by some runtimes at session start. Compiled by `SessionStart` and `SessionEnd` hooks from `.agents/` artifacts. Primary pointer surface in `AGENTOPS_STARTUP_CONTEXT_MODE=manual`.

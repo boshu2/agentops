@@ -60,7 +60,7 @@ The `constraint candidate: yes` flag marks learnings that should become automate
 
 - Every completed quest produces at least one learning file. No exceptions.
 - Failed quests produce learnings too. Failures are the highest-value input to the flywheel.
-- Learnings are committed to git in `.agents/learnings/`. They are ratcheted — once committed, they persist.
+- Learnings live in the local `.agents/learnings/` corpus. Durable, shareable constraints must be promoted into tracked tests or docs outside repo-root `.agents/`.
 
 ---
 

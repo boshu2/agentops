@@ -561,7 +561,7 @@ if git -C "$QUICKSTART_REPO" init >/dev/null 2>&1; then
         print_output_head "$QS_OUT1"$'\n'"$QS_OUT2" 8
     fi
 
-    if [[ -f "$QUICKSTART_REPO/.gitignore" ]] && [[ "$(grep -c '^\.agents/$' "$QUICKSTART_REPO/.gitignore")" -eq 1 ]]; then
+    if [[ -f "$QUICKSTART_REPO/.gitignore" ]] && [[ "$(grep -c '^/\.agents/$' "$QUICKSTART_REPO/.gitignore")" -eq 1 ]]; then
         pass "quickstart keeps .gitignore idempotent"
     else
         fail "quickstart keeps .gitignore idempotent"

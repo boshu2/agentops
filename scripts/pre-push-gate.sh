@@ -532,6 +532,18 @@ else
     skip ".agents/ write-surface contract"
 fi
 
+# --- 3e. No tracked repo-root .agents state ---
+if [[ -x scripts/check-no-tracked-agents.sh ]]; then
+    if no_tracked_agents_output="$(scripts/check-no-tracked-agents.sh 2>&1)"; then
+        pass "no tracked .agents state"
+    else
+        fail "tracked .agents state"
+        indent_output "$no_tracked_agents_output"
+    fi
+else
+    fail "missing executable: scripts/check-no-tracked-agents.sh"
+fi
+
 # --- 5. Embedded hooks sync (full parity gate, always-on) ---
 # Unconditional: even pure-Go diffs can interact with embedded fixtures, and the
 # CI-side gate is unconditional. ~0.5-1s overhead. Caught 7/20 prior failures.

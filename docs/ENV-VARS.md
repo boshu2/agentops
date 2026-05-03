@@ -70,14 +70,13 @@ These control the optional hook system installed via `ao init --hooks`. Each hoo
 | `AGENTOPS_NEW_USER_WELCOME_DISABLED` | `0` | Set to `1` to disable the one-time `UserPromptSubmit` welcome that appears when AgentOps detects a brand-new repo with no existing `.agents/` state. |
 | `AGENTOPS_MEMORY_SYNC` | `0` | Set to `1` to enable repo-root MEMORY.md sync at SessionEnd. Writes session history with managed block markers for cross-runtime access (Codex, OpenCode). |
 | `AGENTOPS_EVICTION_DISABLED` | `0` | Set to `1` to disable knowledge eviction. Eviction removes stale learnings that have decayed below the retention threshold. Disable if you want to keep all learnings indefinitely. |
-| `AGENTOPS_GITIGNORE_AUTO` | `1` | Set to `0` to prevent the session-start hook from auto-adding `.agents/` to `.gitignore`. Useful if you want to commit knowledge artifacts to your repo. |
+| `AGENTOPS_GITIGNORE_AUTO` | legacy | Legacy compatibility knob. Repo-root `.agents/` is always treated as local/private runtime state and must not be tracked. |
 | `AGENTOPS_AUTO_PRUNE` | `1` | Set to `0` to disable automatic `.agents/` directory pruning at session end. Pruning removes stale lock files and empty directories to keep the workspace clean. |
 
 ### Usage Examples
 
 ```bash
-# Disable all hooks temporarily
-AGENTOPS_HOOKS_DISABLED=1 claude
+# Repo-root .agents/ stays git-ignored; there is no commit opt-out.
 
 # Use opus for a critical security review
 COUNCIL_CLAUDE_MODEL=opus claude
@@ -89,8 +88,8 @@ COUNCIL_CLAUDE_MODEL=haiku COUNCIL_TIMEOUT=60 claude
 # Keep all knowledge forever (disable eviction)
 AGENTOPS_EVICTION_DISABLED=1 claude
 
-# Commit .agents/ to git (disable auto-gitignore)
-AGENTOPS_GITIGNORE_AUTO=0 claude
+# Disable all hooks temporarily
+AGENTOPS_HOOKS_DISABLED=1 claude
 ```
 
 ### Precedence
