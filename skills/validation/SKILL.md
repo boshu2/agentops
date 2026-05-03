@@ -240,7 +240,3 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 - [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
 - [references/forge-scope.md](references/forge-scope.md) — forge session scoping and deduplication
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run behavior and standalone mode
-
-## See Also
-
-Core phases: [vibe](../vibe/SKILL.md), [post-mortem](../post-mortem/SKILL.md), [retro](../retro/SKILL.md), [forge](../forge/SKILL.md), [crank](../crank/SKILL.md), [discovery](../discovery/SKILL.md), [rpi](../rpi/SKILL.md). Lifecycle Step 1.7: [test](../test/SKILL.md), [deps](../deps/SKILL.md), [review](../review/SKILL.md), [perf](../perf/SKILL.md).

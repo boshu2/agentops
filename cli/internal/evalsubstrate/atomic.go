@@ -54,7 +54,7 @@ func fsyncDir(dir string) error {
 	if err != nil {
 		return err
 	}
-	defer d.Close()
+	defer func() { _ = d.Close() }()
 	if err := d.Sync(); err != nil {
 		// macOS APFS sometimes returns EINVAL on dir Sync — accept as no-op.
 		return nil
@@ -66,14 +66,24 @@ func fsyncDir(dir string) error {
 // Used by `ao eval cleanup --tmp-files` to recover from rename-step crashes.
 func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 	var removed []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	rootHandle, err := os.OpenRoot(root)
+	if err != nil {
+		return removed, fmt.Errorf("SweepTempFiles: open root %q: %w", root, err)
+	}
+	defer func() { _ = rootHandle.Close() }()
+
+	err = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
-		if info.IsDir() {
+		if entry.IsDir() {
 			return nil
 		}
 		if filepath.Ext(path) != ".tmp" {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
 			return nil
 		}
 		if maxAgeSeconds > 0 {
@@ -82,7 +92,11 @@ func SweepTempFiles(root string, maxAgeSeconds int64) ([]string, error) {
 				return nil
 			}
 		}
-		if rerr := os.Remove(path); rerr == nil {
+		rel, err := filepath.Rel(root, path)
+		if err != nil || rel == "." {
+			return nil
+		}
+		if rerr := rootHandle.Remove(rel); rerr == nil {
 			removed = append(removed, path)
 		}
 		return nil

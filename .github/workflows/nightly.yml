@@ -164,10 +164,10 @@ jobs:
     # Deduped nightly knowledge-cycle workstream (compile + dream-cycle + Athena
     # follow-up) per soc-2xmg / .agents/plans/2026-05-03-ci-failures-1-40-handling.md
     # §nightly-knowledge-cycle-dedupe. The corpus-empty precondition implements
-    # f-2026-04-30-002 — when the upstream corpus has zero citation activity in
-    # the measurement window AND total_artifacts > 0, the cycle SKIPs every
-    # downstream stage with reason "corpus-dormant" rather than failing three
-    # separate jobs on the same dormant-corpus condition.
+    # f-2026-04-30-002 — when the upstream corpus is empty, or when it has
+    # artifacts but zero citation activity in the measurement window, the cycle
+    # SKIPs every downstream stage rather than failing three separate jobs on
+    # the same unavailable-corpus condition.
     #
     # Static Validation (#39) is intentionally DEFER — it runs in its own job
     # (static-validation, above) and is bundled here only by reference.
