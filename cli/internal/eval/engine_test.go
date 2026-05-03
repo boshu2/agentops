@@ -66,6 +66,94 @@ func TestRunSuiteArtifactCheckPasses(t *testing.T) {
 	}
 }
 
+// TestRunSuiteRerunIsDeterministic asserts that RunSuite over an artifact_check
+// suite produces bit-equal CaseResult outputs across reruns, ignoring fields
+// that are inherently per-run (RunID, wall-clock timestamps, and per-case
+// duration_ms). This is the engine's determinism contract: deterministic-tier
+// suites must be safe to baseline because every rerun is reproducible.
+func TestRunSuiteRerunIsDeterministic(t *testing.T) {
+	dir := t.TempDir()
+	writeEvalFile(t, filepath.Join(dir, "fixture.txt"), "alpha\nneedle\nomega\n")
+	suitePath := writeEvalSuite(t, dir, `{
+  "schema_version": 1,
+  "id": "fixture.determinism",
+  "name": "Fixture determinism",
+  "domain": "cli",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "contains",
+      "title": "fixture contains needle",
+      "kind": "artifact_check",
+      "objective": "Verify reruns are deterministic.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "fixture.txt", "value": "needle"}
+      ]
+    }
+  ]
+}`)
+
+	first, err := RunSuite(RunOptions{SuitePath: suitePath, RunID: "rerun-1", Now: fixedEvalTime})
+	if err != nil {
+		t.Fatalf("RunSuite #1: %v", err)
+	}
+	second, err := RunSuite(RunOptions{SuitePath: suitePath, RunID: "rerun-2", Now: fixedEvalTime})
+	if err != nil {
+		t.Fatalf("RunSuite #2: %v", err)
+	}
+
+	if got, want := len(first.CaseResults), len(second.CaseResults); got != want {
+		t.Fatalf("case_results len: got %d, want %d", got, want)
+	}
+	if first.AggregateScore != second.AggregateScore {
+		t.Fatalf("aggregate_score: %v != %v", first.AggregateScore, second.AggregateScore)
+	}
+	if first.Suite.SHA256 != second.Suite.SHA256 {
+		t.Fatalf("suite sha drift: %q != %q", first.Suite.SHA256, second.Suite.SHA256)
+	}
+
+	a, b := normalizeForDeterminism(first), normalizeForDeterminism(second)
+	aJSON, err := json.Marshal(a)
+	if err != nil {
+		t.Fatalf("marshal first: %v", err)
+	}
+	bJSON, err := json.Marshal(b)
+	if err != nil {
+		t.Fatalf("marshal second: %v", err)
+	}
+	if string(aJSON) != string(bJSON) {
+		t.Fatalf("rerun drift after normalization:\nfirst:  %s\nsecond: %s", aJSON, bJSON)
+	}
+}
+
+// normalizeForDeterminism strips fields that are expected to vary across runs
+// even when the suite logic is deterministic: run id, wall-clock timestamps,
+// and per-case duration measurements.
+func normalizeForDeterminism(r *RunRecord) *RunRecord {
+	if r == nil {
+		return nil
+	}
+	out := *r
+	out.RunID = ""
+	out.StartedAt = time.Time{}
+	out.CompletedAt = nil
+	cases := make([]CaseResult, len(out.CaseResults))
+	copy(cases, out.CaseResults)
+	for i := range cases {
+		cases[i].DurationMS = 0
+	}
+	out.CaseResults = cases
+	return &out
+}
+
 func TestRunSuiteCommandCasePasses(t *testing.T) {
 	if os.Getenv("GO_WANT_EVAL_HELPER_PROCESS") == "1" {
 		fmt.Print(`{"ok":true,"message":"hello from helper"}`)

@@ -973,6 +973,60 @@ else
     skip "AgentOps eval canaries (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
 fi
 
+# --- 24d. AgentOps eval baseline-audit ---
+# Catches stale promoted baselines (suite SHA drifted relative to baseline) and
+# policy mismatches (promoted baseline exists for a baseline_policy.mode=none
+# suite, or vice versa). Runs alongside 24c whenever eval files changed.
+run_baseline_audit=false
+if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
+    run_baseline_audit=false
+elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+    run_baseline_audit=true
+elif needs_check eval; then
+    run_baseline_audit=true
+fi
+
+if [[ "$run_baseline_audit" == "true" ]]; then
+    ao_bin=""
+    if [[ -x cli/bin/ao ]]; then
+        ao_bin="cli/bin/ao"
+    elif command -v ao >/dev/null 2>&1; then
+        ao_bin="$(command -v ao)"
+    fi
+    if [[ -n "$ao_bin" ]]; then
+        if audit_output="$("$ao_bin" eval baseline-audit --root evals/agentops-core --json 2>&1)"; then
+            stale_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(len(d.get("stale_suite_hashes",[])))
+except Exception:
+    print(-1)' 2>/dev/null)
+            mismatch_count=$(printf '%s' "$audit_output" | python3 -c 'import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(int(d.get("policy_mismatch_count",0)))
+except Exception:
+    print(-1)' 2>/dev/null)
+            if [[ "$stale_count" == "-1" || "$mismatch_count" == "-1" ]]; then
+                fail "AgentOps eval baseline-audit (could not parse audit output)"
+                indent_output "$audit_output"
+            elif [[ "$stale_count" -gt 0 || "$mismatch_count" -gt 0 ]]; then
+                fail "AgentOps eval baseline-audit (stale=$stale_count, policy_mismatch=$mismatch_count)"
+                indent_output "$audit_output"
+            else
+                pass "AgentOps eval baseline-audit"
+            fi
+        else
+            fail "AgentOps eval baseline-audit"
+            indent_output "$audit_output"
+        fi
+    else
+        skip "AgentOps eval baseline-audit (no ao binary; build cli/bin/ao first)"
+    fi
+else
+    skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+fi
+
 # --- 25. Doc-release stabilization gate ---
 if needs_check docs || needs_check skill; then
     if [[ -x tests/docs/validate-doc-release.sh ]]; then
