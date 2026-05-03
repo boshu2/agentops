@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,6 +164,184 @@ func TestWikiForgePromptRequiresStructuredOutputEnvelope(t *testing.T) {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q:\n%s", want, prompt)
 		}
+	}
+}
+
+// TestWikiJobs_RejectsTraversalSourcePaths is the L2 containment test for
+// soc-58q5.10 (W-C-15). It exercises the wiki-forge runner end-to-end via
+// queue submission + claim, then asserts that operator-supplied source
+// paths containing `..`, absolute paths outside the repo root, or
+// otherwise-escaping paths are rejected as a job-validation failure
+// (FailureRequestRejected) BEFORE any worker session is created.
+// Containment is enforced against the daemon Store root.
+func TestWikiJobs_RejectsTraversalSourcePaths(t *testing.T) {
+	root := t.TempDir()
+
+	// Create a real source file inside the repo root for the accept cases
+	// so they exercise the full happy-path through the worker.
+	insidePath := filepath.Join(root, "valid.md")
+	if err := os.WriteFile(insidePath, []byte("decision: accept inside-root paths\n"), 0o644); err != nil {
+		t.Fatalf("write inside source: %v", err)
+	}
+	subdir := filepath.Join(root, "subdir")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir subdir: %v", err)
+	}
+	subdirFile := filepath.Join(subdir, "file.md")
+	if err := os.WriteFile(subdirFile, []byte("decision: accept nested paths\n"), 0o644); err != nil {
+		t.Fatalf("write subdir source: %v", err)
+	}
+
+	cases := []struct {
+		name      string
+		paths     []string
+		wantErr   bool
+		wantInMsg string // substring that should appear in the failure message when wantErr
+	}{
+		{
+			name:      "rejects parent traversal",
+			paths:     []string{"../../etc/passwd"},
+			wantErr:   true,
+			wantInMsg: "../../etc/passwd",
+		},
+		{
+			name:      "rejects absolute /etc/passwd",
+			paths:     []string{"/etc/passwd"},
+			wantErr:   true,
+			wantInMsg: "/etc/passwd",
+		},
+		{
+			name:      "rejects absolute outside-root path",
+			paths:     []string{"/tmp/somewhere-else-not-in-root.md"},
+			wantErr:   true,
+			wantInMsg: "/tmp/somewhere-else-not-in-root.md",
+		},
+		{
+			name:      "rejects mixed valid + traversal in same job",
+			paths:     []string{insidePath, "../../etc/passwd"},
+			wantErr:   true,
+			wantInMsg: "../../etc/passwd",
+		},
+		{
+			name:    "accepts absolute path inside root",
+			paths:   []string{insidePath},
+			wantErr: false,
+		},
+		{
+			name:    "accepts nested subdir path inside root",
+			paths:   []string{subdirFile},
+			wantErr: false,
+		},
+	}
+
+	for i, tc := range cases {
+		tc := tc
+		i := i
+		t.Run(tc.name, func(t *testing.T) {
+			store := NewStore(root)
+			queue := NewQueue(store, QueueOptions{})
+			worker := &fakeWikiForgeWorker{sessionID: "sess_traversal"}
+			runner, err := NewWikiForgeRunner(store, WikiForgeRunnerOptions{Queue: queue, Worker: worker})
+			if err != nil {
+				t.Fatalf("NewWikiForgeRunner: %v", err)
+			}
+
+			spec := NewWikiForgeJobSpec("dream-traversal", ".agents/wiki/sources", tc.paths)
+			jobID := fmt.Sprintf("job-traversal-%d", i)
+			jobSpec, err := spec.ToJobSpec(jobID)
+			if err != nil {
+				t.Fatalf("ToJobSpec: %v", err)
+			}
+			if _, err := queue.SubmitJob(SubmitJobInput{
+				RequestID:      RequestID(fmt.Sprintf("req-traversal-%d", i)),
+				JobID:          jobSpec.ID,
+				JobType:        jobSpec.Type,
+				IdempotencyKey: fmt.Sprintf("wiki.forge:traversal:%d", i),
+				Payload:        jobSpec.Payload,
+			}, QueueMutationOptions{}); err != nil {
+				t.Fatalf("SubmitJob: %v", err)
+			}
+
+			result, runErr := runner.RunWikiForgeJob(context.Background(), jobID)
+
+			if tc.wantErr {
+				// Rejection contract: status FAILED, failure code is
+				// request_rejected, no worker session was started, and
+				// the offending path is in the failure message for
+				// operator debuggability.
+				if runErr != nil {
+					t.Fatalf("expected run to return nil error (validation surfaces via failure status), got: %v", runErr)
+				}
+				if result.Status != JobStatusFailed {
+					t.Fatalf("status: got %s want %s", result.Status, JobStatusFailed)
+				}
+				if result.Failure == nil {
+					t.Fatalf("expected non-nil failure; got result %#v", result)
+				}
+				if result.Failure.Code != FailureRequestRejected {
+					t.Fatalf("failure code: got %s want %s", result.Failure.Code, FailureRequestRejected)
+				}
+				if !strings.Contains(result.Failure.Message, tc.wantInMsg) {
+					t.Fatalf("failure message %q missing substring %q", result.Failure.Message, tc.wantInMsg)
+				}
+				if len(worker.requests) != 0 {
+					t.Fatalf("worker must not be invoked when paths fail containment; got %d requests", len(worker.requests))
+				}
+				if len(result.WorkerSessions) != 0 {
+					t.Fatalf("no worker sessions should be recorded; got %d", len(result.WorkerSessions))
+				}
+				return
+			}
+
+			// Accept cases: full happy path runs through the worker.
+			if runErr != nil {
+				t.Fatalf("RunWikiForgeJob: %v", runErr)
+			}
+			if result.Status != JobStatusCompleted {
+				t.Fatalf("status: got %s want %s (failure=%#v)", result.Status, JobStatusCompleted, result.Failure)
+			}
+			if len(worker.requests) != len(tc.paths) {
+				t.Fatalf("worker requests: got %d want %d", len(worker.requests), len(tc.paths))
+			}
+		})
+	}
+}
+
+// TestValidateWikiForgeSourcePathsContainment_Unit covers the containment
+// helper directly (L1) for fast feedback on traversal-rejection logic
+// independent of the queue/worker plumbing.
+func TestValidateWikiForgeSourcePathsContainment_Unit(t *testing.T) {
+	root := t.TempDir()
+	insidePath := filepath.Join(root, "in.md")
+	if err := os.WriteFile(insidePath, []byte("x"), 0o644); err != nil {
+		t.Fatalf("write inside: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+	}{
+		{name: "absolute inside root", paths: []string{insidePath}, wantErr: false},
+		{name: "root itself", paths: []string{root}, wantErr: false},
+		{name: "parent traversal", paths: []string{filepath.Join(root, "..", "outside.md")}, wantErr: true},
+		{name: "etc passwd absolute", paths: []string{"/etc/passwd"}, wantErr: true},
+		{name: "empty path", paths: []string{""}, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateWikiForgeSourcePathsContainment(root, tc.paths)
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected error, got nil for paths=%v", tc.paths)
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("expected no error, got %v for paths=%v", err, tc.paths)
+			}
+		})
+	}
+
+	if err := validateWikiForgeSourcePathsContainment("", []string{insidePath}); err == nil {
+		t.Fatalf("empty repo root must be rejected")
 	}
 }
 

@@ -72,8 +72,21 @@ func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecut
 		return JobExecutionResult{}, err
 	}
 	artifacts := dreamRunArtifacts(spec.OutputDir)
-	if err := os.MkdirAll(spec.OutputDir, 0o755); err != nil {
-		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("create dream output dir: %w", err)
+	// soc-58q5.13 (W-C-18): refuse to traverse a symlink at the planned
+	// output_dir. The path is operator-supplied via the job payload, so an
+	// attacker who can pre-create a symlink at OutputDir could redirect
+	// summary/log writes outside the intended sandbox. Lstat (not Stat) so we
+	// see the symlink itself rather than its target.
+	if info, err := os.Lstat(spec.OutputDir); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("dream output_dir is a symlink: %s", spec.OutputDir)
+		}
+	}
+	// soc-58q5.13 (W-C-18): 0o700 (not 0o755) keeps overnight log + summary
+	// readable only by the daemon's UID. Per-run dirs hold goal-bearing
+	// content the operator may want kept private from other local users.
+	if err := os.MkdirAll(spec.OutputDir, 0o700); err != nil {
+		return JobExecutionResult{Artifacts: artifacts}, fmt.Errorf("create dream output_dir: %w", err)
 	}
 	startedAt := e.now().UTC()
 	// soc-5of.9: O_APPEND (not O_TRUNC) so a daemon restart mid-dream cannot

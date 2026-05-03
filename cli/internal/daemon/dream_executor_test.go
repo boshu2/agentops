@@ -146,6 +146,129 @@ func indexOfSubstring(s, sub string) int {
 	return -1
 }
 
+// TestDreamExecutor_RejectsSymlinkOutputDir is a regression for soc-58q5.13
+// (W-C-18): when OutputDir already exists as a symlink, the executor must
+// refuse the job rather than dereference the link. Without the Lstat guard,
+// MkdirAll would happily traverse the symlink and write summary/log artifacts
+// to whatever target an attacker pre-pointed it at.
+func TestDreamExecutor_RejectsSymlinkOutputDir(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	cwd := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	plannedOutputDir := filepath.Join(cwd, ".agents", "overnight", "dream-symlink")
+	if err := os.MkdirAll(filepath.Dir(plannedOutputDir), 0o755); err != nil {
+		t.Fatalf("mkdir parent: %v", err)
+	}
+	attackerTarget := t.TempDir()
+	if err := os.Symlink(attackerTarget, plannedOutputDir); err != nil {
+		t.Fatalf("os.Symlink: %v", err)
+	}
+
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	spec := NewDreamRunJobSpec("dream-symlink", plannedOutputDir)
+	spec.MaxIterations = 1
+	spec.ExecutionTimeout = "30s"
+	jobSpec, err := spec.ToJobSpec("job-dream-symlink")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	if _, err := queue.SubmitJob(SubmitJobInput{
+		RequestID: "req-dream-symlink",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor, err := NewDreamExecutor(DreamExecutorOptions{
+		Cwd: cwd,
+		RunLoop: func(ctx context.Context, opts DreamRunLoopOptions) (DreamRunLoopResult, error) {
+			t.Fatalf("run loop must not be invoked when output_dir is a symlink")
+			return DreamRunLoopResult{}, nil
+		},
+		Now: func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("NewDreamExecutor: %v", err)
+	}
+
+	claim := QueueClaim{Job: QueueJobState{
+		JobID:   jobSpec.ID,
+		JobType: jobSpec.Type,
+		Payload: jobSpec.Payload,
+	}}
+	_, runErr := executor.RunJob(context.Background(), claim)
+	if runErr == nil {
+		t.Fatalf("RunJob: expected error, got nil")
+	}
+	if !containsSubstring(runErr.Error(), "symlink") {
+		t.Fatalf("RunJob error = %q, want substring %q", runErr.Error(), "symlink")
+	}
+	entries, err := os.ReadDir(attackerTarget)
+	if err != nil {
+		t.Fatalf("read attacker target: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("attacker target was written to: %d entries", len(entries))
+	}
+}
+
+// TestDreamExecutor_OutputDirPermsAreUserOnly is a regression for soc-58q5.13
+// (W-C-18): the freshly-created per-run output dir must be 0o700, not the
+// previous 0o755 (group + world readable). The dir holds operator-specified
+// goal text and may carry secrets; loose perms leak it to other local users.
+func TestDreamExecutor_OutputDirPermsAreUserOnly(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	cwd := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o755); err != nil {
+		t.Fatalf("mkdir .agents: %v", err)
+	}
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	outputDir := filepath.Join(cwd, ".agents", "overnight", "dream-perms")
+	spec := NewDreamRunJobSpec("dream-perms", outputDir)
+	spec.MaxIterations = 1
+	spec.ExecutionTimeout = "30s"
+	jobSpec, err := spec.ToJobSpec("job-dream-perms")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	if _, err := queue.SubmitJob(SubmitJobInput{
+		RequestID: "req-dream-perms",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor, err := NewDreamExecutor(DreamExecutorOptions{
+		Cwd: cwd,
+		RunLoop: func(ctx context.Context, opts DreamRunLoopOptions) (DreamRunLoopResult, error) {
+			_, _ = io.WriteString(opts.LogWriter, "perms test\n")
+			return DreamRunLoopResult{IterationCount: 1}, nil
+		},
+		Now: func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("NewDreamExecutor: %v", err)
+	}
+	supervisor := newTestSupervisor(t, queue, executor)
+
+	if _, err := supervisor.RunOnce(context.Background()); err != nil {
+		t.Fatalf("RunOnce: %v", err)
+	}
+	info, err := os.Stat(outputDir)
+	if err != nil {
+		t.Fatalf("stat output dir: %v", err)
+	}
+	if got, want := info.Mode().Perm(), os.FileMode(0o700); got != want {
+		t.Fatalf("output_dir perms = %o, want %o", got, want)
+	}
+}
+
 func TestDreamExecutorExecutionTimeoutFailsJob(t *testing.T) {
 	cwd := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(cwd, ".agents"), 0o755); err != nil {
