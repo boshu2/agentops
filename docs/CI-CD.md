@@ -96,7 +96,7 @@ Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`,
 
 ### Soft Gates (continue-on-error: true)
 
-These jobs run but their failure does **not** block merges. Each carries an `(advisory)` suffix in its GitHub check name. Triage SLAs and escalation rules are codified in [`AGENTS.md` §Advisory Job Triage SLAs](../AGENTS.md#ci-validation--passing-the-pipeline) — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
+These jobs run but their failure does **not** block merges. Each carries an `(advisory)` suffix in its GitHub check name. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
 
 | Job | Triage SLA | Reason |
 |-----|------------|--------|
@@ -117,7 +117,7 @@ The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is a **
 
 When the window closes green and the gate is promoted, update both this section and the AGENTS.md advisory table. Until then, retrieval-bench red is informational; do not block release on it.
 
-Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, and 39 are tracked in [`AGENTS.md` §DEFERRED CI Hardening](../AGENTS.md#deferred-ci-hardening-soc-mi17), including the promotion triggers that would move each item back to FIX scope.
+Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, and 39 are tracked in root `AGENTS.md` §DEFERRED CI Hardening, including the promotion triggers that would move each item back to FIX scope.
 
 ### Blocking Gates (all others)
 
