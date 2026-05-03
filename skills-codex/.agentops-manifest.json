@@ -1040,13 +1040,13 @@
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
       "source_hash": "3bd9f321938894b24fe718defc99b65939d52a0ca42ad422e003004a39fbbe6c",
-      "generated_hash": "ffcd87fe4e43ba17960165e1bc46e17012408fed184fb1bc95a4e78869af2637"
+      "generated_hash": "56106e5dcb202109498a39fa4ff8f6345df4c3b13abb15a9dd304567ead0a39a"
     },
     {
       "name": "validation",
       "source_skill": "skills/validation",
       "source_hash": "2e71f8dbe94c65971f0dff7f82ac83396649ff036bbea388060174945f660c5c",
-      "generated_hash": "a0dcf3ecee1ba679a80b480a8e4b695280c2c11aba8a7d4c08a68c09cc084745"
+      "generated_hash": "fd2e3dc8620e0870a958ee41975ce689bbfde8e43ab163558cfc6a66a886aae6"
     },
     {
       "name": "vibe",
