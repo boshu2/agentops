@@ -218,6 +218,58 @@ func TestValidateParallelPrereqs_EmptySlice(t *testing.T) {
 	}
 }
 
+func TestParallelShouldAutoMerge_DefaultPreserves(t *testing.T) {
+	oldAutoMerge := parallelAutoMerge
+	oldNoMerge := parallelNoMerge
+	defer func() {
+		parallelAutoMerge = oldAutoMerge
+		parallelNoMerge = oldNoMerge
+	}()
+
+	parallelAutoMerge = false
+	parallelNoMerge = false
+	got, err := parallelShouldAutoMerge()
+	if err != nil {
+		t.Fatalf("parallelShouldAutoMerge: %v", err)
+	}
+	if got {
+		t.Fatal("expected default to preserve worktrees, got auto-merge")
+	}
+
+	parallelAutoMerge = true
+	parallelNoMerge = false
+	got, err = parallelShouldAutoMerge()
+	if err != nil {
+		t.Fatalf("parallelShouldAutoMerge --auto-merge: %v", err)
+	}
+	if !got {
+		t.Fatal("expected --auto-merge to enable merge")
+	}
+
+	parallelAutoMerge = true
+	parallelNoMerge = true
+	if _, err := parallelShouldAutoMerge(); err == nil {
+		t.Fatal("expected conflicting merge flags to error")
+	}
+}
+
+func TestRPIParallelHelpMarksLegacyNonProduction(t *testing.T) {
+	out, err := executeCommand("rpi", "parallel", "--help")
+	if err != nil {
+		t.Fatalf("ao rpi parallel --help failed: %v", err)
+	}
+	for _, want := range []string{
+		"Compatibility-only legacy command",
+		"daemon-managed worker slots",
+		"--auto-merge",
+		"Compatibility alias for the default preserve-for-review behavior",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("help output missing %q:\n%s", want, out)
+		}
+	}
+}
+
 func TestCreateParallelWorktrees_CreatesAndCleansUp(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -284,6 +336,78 @@ func TestCreateParallelWorktrees_CreatesAndCleansUp(t *testing.T) {
 		cmd = exec.Command("git", "branch", "-D", wt.branch)
 		cmd.Dir = tmpDir
 		_ = cmd.Run()
+	}
+}
+
+func TestCreateParallelWorktrees_RefusesStalePath(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = tmpDir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %s: %v", args, string(out), err)
+		}
+	}
+	runGit("init")
+	runGit("config", "user.email", "test@test.com")
+	runGit("config", "user.name", "Test")
+	runGit("config", "commit.gpgsign", "false")
+	readmePath := filepath.Join(tmpDir, "README.md")
+	if err := os.WriteFile(readmePath, []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-m", "init")
+
+	stalePath := filepath.Join(tmpDir, ".claude", "worktrees", "wt-alpha")
+	if err := os.MkdirAll(stalePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(tmpDir)
+
+	_, err := createParallelWorktrees(tmpDir, []parallelEpic{{Name: "wt-alpha", Goal: "do alpha"}}, "claude")
+	if err == nil {
+		t.Fatal("expected stale worktree path to be rejected")
+	}
+	if !strings.Contains(err.Error(), "refusing to remove existing worktree path") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateParallelWorktrees_RefusesStaleBranch(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = tmpDir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %s: %v", args, string(out), err)
+		}
+	}
+	runGit("init")
+	runGit("config", "user.email", "test@test.com")
+	runGit("config", "user.name", "Test")
+	runGit("config", "commit.gpgsign", "false")
+	readmePath := filepath.Join(tmpDir, "README.md")
+	if err := os.WriteFile(readmePath, []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-m", "init")
+	runGit("branch", "epic/wt-alpha")
+	t.Chdir(tmpDir)
+
+	_, err := createParallelWorktrees(tmpDir, []parallelEpic{{Name: "wt-alpha", Goal: "do alpha"}}, "claude")
+	if err == nil {
+		t.Fatal("expected stale branch to be rejected")
+	}
+	if !strings.Contains(err.Error(), "refusing to delete existing branch") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

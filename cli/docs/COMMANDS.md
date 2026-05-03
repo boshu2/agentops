@@ -2244,11 +2244,12 @@ ao rpi parallel [goals...] [flags]
 **Flags:**
 
 ```
+      --auto-merge               Opt in to legacy merge/cleanup after successful epics
       --gate-script string       Validation script to run after all merges (e.g., scripts/ci-local-release.sh)
   -h, --help                     help for parallel
       --manifest string          Path to epic manifest file (JSON)
       --merge-order string       Comma-separated epic names for merge order (default: manifest order or arg order)
-      --no-merge                 Skip auto-merge (leave worktrees for manual review)
+      --no-merge                 Compatibility alias for the default preserve-for-review behavior
       --phase-timeout duration   Timeout per epic (kills subprocess if exceeded) (default 1h30m0s)
       --runtime-cmd string       Runtime command for phased sessions (default: claude)
       --tmux                     Spawn epics in tmux windows for interactive visibility
