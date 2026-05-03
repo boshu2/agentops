@@ -196,9 +196,24 @@ func (s *Store) AppendLedgerEvent(event LedgerEvent) (LedgerEvent, error) {
 	if err != nil {
 		return LedgerEvent{}, err
 	}
+	// IdempotencyKey-aware dedup for JobAccepted events: when concurrent
+	// SubmitJob callers observed an empty Queue.Snapshot and both reach this
+	// point with the same IdempotencyKey, the second one finds the first's
+	// already-appended event and returns it instead of appending a duplicate.
+	// This closes the W-B-05 race where SubmitJob's pre-check (outside this
+	// lock) is advisory only.
+	var newIdempotencyKey string
+	if event.EventType == EventJobAccepted {
+		newIdempotencyKey, _ = stringPayload(event.Payload, "idempotency_key")
+	}
 	for _, existing := range replay.Events {
 		if existing.EventID == event.EventID {
 			return existing, nil
+		}
+		if newIdempotencyKey != "" && existing.EventType == EventJobAccepted {
+			if existingKey, _ := stringPayload(existing.Payload, "idempotency_key"); existingKey == newIdempotencyKey {
+				return existing, nil
+			}
 		}
 	}
 

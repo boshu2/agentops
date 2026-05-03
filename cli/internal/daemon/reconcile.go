@@ -113,6 +113,9 @@ func (r *RPIReconciler) ReconcileRPIJobs(ctx context.Context) (RPIReconcileRepor
 	}
 	report := RPIReconcileReport{}
 	for _, job := range snapshot.Jobs {
+		if err := ctx.Err(); err != nil {
+			return report, err
+		}
 		if !isRPIJobType(job.JobType) {
 			continue
 		}

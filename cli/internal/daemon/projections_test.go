@@ -413,6 +413,125 @@ func TestProjections_ScheduleEventsRebuildScheduleList(t *testing.T) {
 	}
 }
 
+// TestRebuildProjections_ErrorReturnsUnusableSet exercises the error-return
+// contract documented on RebuildProjections (W-B-22 / soc-58q5.7): on error,
+// the returned ProjectionSet is zero-valued (SchemaVersion == 0, nil
+// Manifests/Jobs maps), so callers MUST check err before reading the set.
+//
+// Two paths:
+//
+//  1. Package-level RebuildProjections: an event with a non-string
+//     payload["job_type"] makes jobTypeFromPayload error, which propagates
+//     up through applyPayloadToJob → applyEventsToState. The caller would
+//     see SchemaVersion == 0 and a nil Manifests map — any attempt to
+//     index-assign Manifests[name] would panic.
+//
+//  2. Store.RebuildProjections: a corrupt gzip ledger archive makes
+//     replayLedgerFile error before projection rebuild even starts; same
+//     zero-valued return.
+func TestRebuildProjections_ErrorReturnsUnusableSet(t *testing.T) {
+	t.Run("package_level_payload_error", func(t *testing.T) {
+		// Hand-craft an event whose payload job_type is a non-string. We
+		// bypass NewLedgerEvent so ValidateLedgerEvent does not reject the
+		// shape; the failure must surface from applyPayloadToJob inside
+		// RebuildProjections, not from event normalization.
+		bad := LedgerEvent{
+			SchemaVersion: LedgerSchemaVersion,
+			EventID:       "evt-bad-1",
+			RequestID:     "req-bad-1",
+			JobID:         "job-bad-1",
+			EventType:     EventJobAccepted,
+			OccurredAt:    projectionTestTime(t, 0).Format(time.RFC3339Nano),
+			Actor:         "test",
+			Payload:       map[string]any{"job_type": 42},
+		}
+
+		set, err := RebuildProjections([]LedgerEvent{bad}, ProjectionRebuildOptions{
+			RebuiltAt:    projectionTestTime(t, 1),
+			SourceLedger: ".agents/daemon/ledger.jsonl",
+		})
+		if err == nil {
+			t.Fatal("expected error from non-string job_type, got nil")
+		}
+		assertZeroValuedProjectionSet(t, set)
+
+		// Smoke the panic vector documented in the godoc: writing to a nil
+		// map panics. A caller that ignored err and tried to mutate
+		// set.Manifests would crash here. We assert the panic to lock in
+		// the "unusable on error" contract.
+		assertNilMapWritePanics(t, func() { set.Manifests[ProjectionRPIRegistry] = ProjectionManifest{} })
+	})
+
+	t.Run("store_level_corrupt_archive", func(t *testing.T) {
+		// Force Store.ReplayLedger to return a hard error (not a quarantined
+		// corrupt-record). A non-gzip file with a .gz suffix in the rotated
+		// archive directory makes gzip.NewReader fail in replayLedgerFile,
+		// which fmt.Errorf-wraps and returns up through ReplayLedger.
+		root := t.TempDir()
+		store := NewStore(root)
+
+		// Archive layout (per LedgerArchivePaths + replayLedgerFile):
+		// archives sit alongside ledger.jsonl in store.Dir() with the prefix
+		// "ledger." and suffix ".jsonl.gz". A non-gzip body under that name
+		// makes gzip.NewReader fail, which fmt.Errorf-wraps and returns up
+		// through ReplayLedger as a hard error (not a quarantined record).
+		if err := os.MkdirAll(store.Dir(), 0o755); err != nil {
+			t.Fatalf("mkdir store dir: %v", err)
+		}
+		bogusArchive := filepath.Join(store.Dir(), "ledger.20260101T000000Z.jsonl.gz")
+		if err := os.WriteFile(bogusArchive, []byte("not a gzip file"), 0o644); err != nil {
+			t.Fatalf("write bogus archive: %v", err)
+		}
+
+		set, err := store.RebuildProjections(ProjectionRebuildOptions{
+			RebuiltAt: projectionTestTime(t, 0),
+		})
+		if err == nil {
+			t.Fatal("expected error from corrupt gzip archive, got nil")
+		}
+		assertZeroValuedProjectionSet(t, set)
+	})
+}
+
+func assertZeroValuedProjectionSet(t *testing.T, set ProjectionSet) {
+	t.Helper()
+	if set.SchemaVersion != 0 {
+		t.Errorf("SchemaVersion on error = %d, want 0 (zero-valued sentinel)", set.SchemaVersion)
+	}
+	if set.RebuiltAt != "" {
+		t.Errorf("RebuiltAt on error = %q, want empty", set.RebuiltAt)
+	}
+	if set.SourceLedger != "" {
+		t.Errorf("SourceLedger on error = %q, want empty", set.SourceLedger)
+	}
+	if set.Manifests != nil {
+		t.Errorf("Manifests on error = %#v, want nil (caller MUST check err first)", set.Manifests)
+	}
+	if set.Jobs != nil {
+		t.Errorf("Jobs on error = %#v, want nil", set.Jobs)
+	}
+	if set.Schedules != nil {
+		t.Errorf("Schedules on error = %#v, want nil", set.Schedules)
+	}
+	if set.LastEventID != "" {
+		t.Errorf("LastEventID on error = %q, want empty", set.LastEventID)
+	}
+	if len(set.RPI.Runs) != 0 || len(set.Dream.Runs) != 0 || len(set.Wiki.Jobs) != 0 {
+		t.Errorf("derived buckets non-empty on error: rpi=%d dream=%d wiki=%d",
+			len(set.RPI.Runs), len(set.Dream.Runs), len(set.Wiki.Jobs))
+	}
+}
+
+func assertNilMapWritePanics(t *testing.T, fn func()) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic from writing to nil map on zero-valued ProjectionSet, got none — godoc contract is wrong")
+		}
+	}()
+	fn()
+}
+
 func projectionTestTime(t *testing.T, minuteOffset int) time.Time {
 	t.Helper()
 	base, err := time.Parse(time.RFC3339, fixedLedgerTime)

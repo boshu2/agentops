@@ -447,6 +447,93 @@ func mustEncodePayload(t *testing.T, m map[string]any) []byte {
 	return b
 }
 
+// TestFireOne_QueueSnapshotConsistent guards against the race where fireOne
+// reads the queue twice and the queue drains between reads, producing a skip
+// reason that doesn't match the state we acted on. After W-B-07 (soc-58q5.5),
+// fireOne must take a single queue snapshot at entry and reuse the same
+// (depth, hasInFlight) for both shouldFire and the recorded skip reason.
+//
+// The Queue type is a concrete struct, so this test asserts the invariant
+// behaviorally: it preseeds the queue with two in-flight jobs (depth=2,
+// running=true) for a schedule whose template only has SkipIfRunning set.
+// Then it asserts the recorded skip reason matches the snapshot taken at
+// the start of fireOne (skip_if_running:in-flight). A second snapshot call
+// inside fireOne could in principle observe a different reason if anything
+// drained between calls, so this also serves as a regression sentinel for
+// "fireOne should not re-snapshot mid-decision".
+func TestFireOne_QueueSnapshotConsistent(t *testing.T) {
+	now := fixedTickAt
+	store, queue := newRecurrenceTestRig(t, &now)
+	tmpl := RecurringJobTemplate{
+		Name:    "snap-consistent",
+		Cron:    "*/5 * * * *",
+		JobType: JobTypeLLMWikiLoop,
+		Backpressure: RecurrenceBackpressure{
+			SkipIfRunning: true,
+			MaxQueueDepth: 5,
+		},
+	}
+	if err := store.SaveSchedule(tmpl); err != nil {
+		t.Fatalf("SaveSchedule: %v", err)
+	}
+	preSeedRunningJob(t, queue, tmpl.Name, "preseed-a", JobTypeLLMWikiLoop, now)
+	preSeedRunningJob(t, queue, tmpl.Name, "preseed-b", JobTypeLLMWikiLoop, now)
+
+	sup := NewRecurrenceSupervisor(store, queue, NewFakeClock(now))
+
+	if err := sup.tick(context.Background(), now); err != nil {
+		t.Fatalf("tick: %v", err)
+	}
+
+	// Verify the skip reason recorded matches what shouldFire would return for
+	// the snapshot taken at fireOne entry. Because SkipIfRunning is checked
+	// first in shouldFire, the reason MUST be skip_if_running:in-flight, not
+	// max_queue_depth:5 or empty. A drain between two snapshot reads could
+	// flip this to max_queue_depth or even allow a fire — which is the bug
+	// W-B-07 prevents.
+	if got := lastSkipReason(t, store, tmpl.Name); got != "skip_if_running:in-flight" {
+		t.Fatalf("skip reason = %q, want %q (snapshot must be consistent across fireOne)", got, "skip_if_running:in-flight")
+	}
+
+	// And no new accepted job for this schedule (skip should not have submitted).
+	count := 0
+	for _, j := range realQueueJobs(t, queue) {
+		if jobBelongsToSchedule(j, tmpl.Name) && j.JobID != "preseed-a" && j.JobID != "preseed-b" {
+			count++
+		}
+	}
+	if count != 0 {
+		t.Fatalf("unexpected new jobs for schedule %q: %d", tmpl.Name, count)
+	}
+}
+
+// TestFireOne_DerivedQueueStateIsPure pins derivedQueueState as a pure
+// function so the single-snapshot invariant in fireOne can rely on reusing
+// the same QueueSnapshot for every backpressure-relevant decision. If a
+// future change makes derivedQueueState read external state, this test
+// becomes the failure surface.
+func TestFireOne_DerivedQueueStateIsPure(t *testing.T) {
+	snap := QueueSnapshot{
+		Jobs: []QueueJobState{
+			{JobID: "a", JobType: "llm-wiki-loop", Status: JobStatusRunning, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "b", JobType: "llm-wiki-loop", Status: JobStatusQueued, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "c", JobType: "llm-wiki-loop", Status: JobStatusCompleted, Payload: map[string]any{"schedule_name": "s"}},
+			{JobID: "d", JobType: "llm-wiki-loop", Status: JobStatusQueued, Payload: map[string]any{"schedule_name": "other"}},
+		},
+	}
+	depth1, inFlight1 := derivedQueueState(snap, "s")
+	depth2, inFlight2 := derivedQueueState(snap, "s")
+	if depth1 != depth2 || inFlight1 != inFlight2 {
+		t.Fatalf("derivedQueueState not pure: (%d,%v) vs (%d,%v)", depth1, inFlight1, depth2, inFlight2)
+	}
+	if depth1 != 2 {
+		t.Fatalf("depth = %d, want 2 (a running + b queued for schedule s; c terminal; d wrong schedule)", depth1)
+	}
+	if !inFlight1 {
+		t.Fatalf("hasInFlight = false, want true (job a is running)")
+	}
+}
+
 // --- test helpers ---
 
 func newRecurrenceTestRig(t *testing.T, now *time.Time) (*Store, *Queue) {

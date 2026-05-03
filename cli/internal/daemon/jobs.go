@@ -178,6 +178,14 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if input.RequestID == "" {
 		input.RequestID = RequestID(q.nextID("req", input.JobID))
 	}
+	// Best-effort idempotency pre-check (fast path).
+	//
+	// This snapshot scan runs OUTSIDE Store.AppendLedgerEvent's mutex, so it
+	// can be stale under concurrent submission. The authoritative dedup is in
+	// Store.AppendLedgerEvent which scans for an existing JobAccepted event
+	// with the same IdempotencyKey under s.mu and returns the existing event
+	// when found — see TestSubmitJob_DedupRelyOnStoreLock. The pre-check
+	// avoids a redundant ledger replay in the common single-submitter case.
 	snapshot, err := q.Snapshot()
 	if err != nil {
 		return QueueJobState{}, err
@@ -212,14 +220,19 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	committed, err := q.appendQueueEvent(event, opts)
+	if err != nil {
 		return QueueJobState{}, err
 	}
+	// committed.JobID may differ from input.JobID when Store.AppendLedgerEvent
+	// dedup'd by IdempotencyKey (concurrent same-key submission). Use the
+	// durable event's JobID for the post-write snapshot lookup so the caller
+	// receives the existing job, not a "not found" for the never-written one.
 	snapshot, err = q.Snapshot()
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	return snapshot.jobByID(input.JobID)
+	return snapshot.jobByID(committed.JobID)
 }
 
 func (q *Queue) ClaimNext(actor string, opts QueueMutationOptions) (QueueClaim, error) {
@@ -290,7 +303,7 @@ func (q *Queue) Heartbeat(input HeartbeatInput, opts QueueMutationOptions) (Queu
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -323,7 +336,7 @@ func (q *Queue) CompleteJob(input CompleteJobInput, opts QueueMutationOptions) (
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -366,7 +379,7 @@ func (q *Queue) FailJob(input FailJobInput, opts QueueMutationOptions) (QueueJob
 	if err != nil {
 		return QueueJobState{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueJobState{}, err
 	}
 	return q.currentJob(input.JobID)
@@ -400,7 +413,7 @@ func (q *Queue) CancelJob(input CancelJobInput, opts QueueMutationOptions) (Canc
 	if err != nil {
 		return CancelJobResult{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return CancelJobResult{}, err
 	}
 	updated, err := q.currentJob(input.JobID)
@@ -459,7 +472,7 @@ func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutatio
 	if err != nil {
 		return QueueClaim{}, err
 	}
-	if err := q.appendQueueEvent(event, opts); err != nil {
+	if _, err := q.appendQueueEvent(event, opts); err != nil {
 		return QueueClaim{}, err
 	}
 	updated, err := q.currentJob(job.JobID)
@@ -490,7 +503,8 @@ func (q *Queue) appendLeaseExpired(job QueueJobState, actor string) error {
 	if err != nil {
 		return err
 	}
-	return q.appendQueueEvent(event, QueueMutationOptions{})
+	_, err = q.appendQueueEvent(event, QueueMutationOptions{})
+	return err
 }
 
 func (q *Queue) appendRetryExhausted(job QueueJobState, actor string) error {
@@ -512,7 +526,8 @@ func (q *Queue) appendRetryExhausted(job QueueJobState, actor string) error {
 	if err != nil {
 		return err
 	}
-	return q.appendQueueEvent(event, QueueMutationOptions{})
+	_, err = q.appendQueueEvent(event, QueueMutationOptions{})
+	return err
 }
 
 func (q *Queue) assertLiveClaim(jobID, claimToken string, leaseEpoch int) (QueueJobState, error) {
@@ -549,17 +564,23 @@ func (q *Queue) terminalClaimJob(jobID, claimToken string, leaseEpoch int) (Queu
 	return job, nil
 }
 
-func (q *Queue) appendQueueEvent(event LedgerEvent, opts QueueMutationOptions) error {
+// appendQueueEvent appends event to the ledger and returns the durable event
+// (which may differ from the input when the store dedups by EventID or by
+// IdempotencyKey for JobAccepted events — see Store.AppendLedgerEvent).
+// Callers that need to know which event actually committed (e.g. SubmitJob
+// resolving the post-dedup JobID) must inspect the returned event.
+func (q *Queue) appendQueueEvent(event LedgerEvent, opts QueueMutationOptions) (LedgerEvent, error) {
 	if opts.Failpoint == QueueFailpointBeforeAppend {
-		return fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointBeforeAppend)
+		return LedgerEvent{}, fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointBeforeAppend)
 	}
-	if _, err := q.store.AppendLedgerEvent(event); err != nil {
-		return err
+	committed, err := q.store.AppendLedgerEvent(event)
+	if err != nil {
+		return LedgerEvent{}, err
 	}
 	if opts.Failpoint == QueueFailpointAfterAppendBeforeAck {
-		return fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointAfterAppendBeforeAck)
+		return LedgerEvent{}, fmt.Errorf("%w: %s", ErrFailpoint, QueueFailpointAfterAppendBeforeAck)
 	}
-	return nil
+	return committed, nil
 }
 
 func (q *Queue) snapshotFromEvents(events []LedgerEvent) (QueueSnapshot, error) {

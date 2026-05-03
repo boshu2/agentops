@@ -188,7 +188,13 @@ func (s *RecurrenceSupervisor) fireOne(ctx context.Context, st *scheduleState, t
 		return fmt.Errorf("dedup check: %w", err)
 	}
 
-	depth, hasInFlight, err := s.queueState(st.template.Name)
+	// Take the queue snapshot ONCE per fireOne invocation. queueDepth and
+	// hasInFlight must come from the same snapshot as the data shouldFire
+	// reasons over; otherwise a queue draining mid-decision can produce a
+	// recorded skip reason that doesn't match the state we acted on.
+	// Idempotency on subID still keeps submission safe, but the ledger
+	// skip reason needs single-snapshot semantics. (soc-58q5.5 / W-B-07)
+	depth, hasInFlight, err := s.queueStateOnce(st.template.Name)
 	if err != nil {
 		return fmt.Errorf("queue state: %w", err)
 	}
@@ -292,6 +298,22 @@ func (s *RecurrenceSupervisor) queueState(scheduleName string) (int, bool, error
 		}
 		return 0, false, err
 	}
+	depth, hasInFlight := derivedQueueState(snap, scheduleName)
+	return depth, hasInFlight, nil
+}
+
+// queueStateOnce is the single-snapshot variant used inside fireOne. It is
+// guaranteed to call Queue.Snapshot at most once per invocation; callers must
+// reuse the returned (depth, hasInFlight) for every backpressure-relevant
+// decision in the same fire path. (soc-58q5.5 / W-B-07)
+func (s *RecurrenceSupervisor) queueStateOnce(scheduleName string) (int, bool, error) {
+	return s.queueState(scheduleName)
+}
+
+// derivedQueueState computes (queueDepth, hasInFlight) from an already-taken
+// snapshot. Pure function so a single Snapshot() result can be reused without
+// re-querying the queue.
+func derivedQueueState(snap QueueSnapshot, scheduleName string) (int, bool) {
 	depth := 0
 	hasInFlight := false
 	for _, job := range snap.Jobs {
@@ -309,7 +331,7 @@ func (s *RecurrenceSupervisor) queueState(scheduleName string) (int, bool, error
 			hasInFlight = true
 		}
 	}
-	return depth, hasInFlight, nil
+	return depth, hasInFlight
 }
 
 // isRealQueueJob filters out phantom snapshot entries created by schedule.*

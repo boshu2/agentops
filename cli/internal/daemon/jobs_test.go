@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 )
@@ -582,6 +583,87 @@ func TestQueue_RestartReclaimsExpiredRunningJob(t *testing.T) {
 	}
 	if claimIDs[0] == claimIDs[1] {
 		t.Fatalf("restart generated duplicate claim event ID %q", claimIDs[0])
+	}
+}
+
+// TestSubmitJob_DedupRelyOnStoreLock is the contract test for the
+// IdempotencyKey dedup pre-check in SubmitJob. It spawns 50 goroutines that
+// concurrently call SubmitJob on the same Queue with the same
+// IdempotencyKey, then asserts that exactly one unique JobID is returned
+// across all callers.
+//
+// The pre-check at the top of SubmitJob runs OUTSIDE Store.AppendLedgerEvent's
+// mutex (see the comment in jobs.go SubmitJob), and AppendLedgerEvent dedups
+// by EventID rather than by IdempotencyKey. This test pins the dedup contract
+// the API surface promises: same IdempotencyKey -> same JobID for all
+// callers, even under concurrent submission. If the queue ever produces
+// multiple JobIDs for a single IdempotencyKey, this test fails and the audit
+// finding (W-B-05) is reproduced.
+func TestSubmitJob_DedupRelyOnStoreLock(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute, MaxAttempts: 3})
+
+	const submitters = 50
+	const idemKey = "idem-concurrent-submit"
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		jobIDs  = make(map[string]int, 1)
+		errs    []error
+		startCh = make(chan struct{})
+	)
+
+	wg.Add(submitters)
+	for i := 0; i < submitters; i++ {
+		go func() {
+			defer wg.Done()
+			<-startCh
+			job, err := queue.SubmitJob(SubmitJobInput{
+				JobType:        JobTypeRPIRun,
+				IdempotencyKey: idemKey,
+				Actor:          "ao",
+				Payload:        map[string]any{"goal": "ship daemon"},
+			}, QueueMutationOptions{})
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			jobIDs[job.JobID]++
+		}()
+	}
+	close(startCh)
+	wg.Wait()
+
+	if len(errs) > 0 {
+		t.Fatalf("concurrent SubmitJob returned %d errors; first: %v", len(errs), errs[0])
+	}
+	if len(jobIDs) != 1 {
+		t.Fatalf("concurrent same-IdempotencyKey submit produced %d distinct JobIDs (%v), want 1", len(jobIDs), jobIDs)
+	}
+	var observed int
+	for _, count := range jobIDs {
+		observed = count
+	}
+	if observed != submitters {
+		t.Fatalf("observed %d successful submits across one JobID, want %d", observed, submitters)
+	}
+
+	// Ledger contract: exactly one JobAccepted event for the deduped key.
+	events, err := queue.store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	var accepted int
+	for _, event := range events {
+		if event.EventType == EventJobAccepted {
+			accepted++
+		}
+	}
+	if accepted != 1 {
+		t.Fatalf("ledger has %d JobAccepted events for one IdempotencyKey, want 1", accepted)
 	}
 }
 
