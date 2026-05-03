@@ -112,3 +112,17 @@ When the plan introduces or modifies fields with a bounded set of valid values (
 | Are valid values defined as a constant set (not inline strings)? | Yes | severity=low: "Valid values are inline strings — extract to named constant set" |
 
 **Auto-triggered** when the plan introduces struct fields with comments mentioning valid values, config fields with bounded options, or string fields parsed from user input.
+
+## Step 2.9: Regex Scope Predicate Check (Mandatory when plan introduces a regex/glob/grep filter)
+
+When the plan introduces a regex, glob, or grep pattern that classifies inputs into "in scope" / "out of scope" (goal gates that scan files, lint rules that classify code, orchestrators that filter work, search/inject filters), the plan MUST enumerate ≥3 positive cases and ≥3 negative cases.
+
+| Question | Expected | Finding if Missing |
+|----------|----------|--------------------|
+| Does the plan list ≥3 positive cases the predicate MUST match? | Yes | severity=significant: "Regex predicate has no positive case list — risk of too-narrow first iteration" |
+| Does the plan list ≥3 negative cases the predicate MUST NOT match? | Yes | severity=significant: "Regex predicate has no negative case list — risk of too-broad first iteration (false positives)" |
+| Does the implementation include a unit test covering both lists? | Yes | severity=moderate: "Regex predicate has cases listed in plan but no unit test — predicate semantics drift after first edit" |
+
+**Auto-triggered** when any plan issue mentions: a goal gate scanning `scripts/**`, `docs/**`, or any glob; a regex assigned to a variable; a `grep -E` invocation in a new gate or lint script; an orchestrator that filters which files to dispatch; a search filter that decides which records to surface.
+
+See [scope-predicate-positive-negative-cases.md](scope-predicate-positive-negative-cases.md) for the full rationale, the C3 incident that motivated this check, and the pseudocode-fix template.
