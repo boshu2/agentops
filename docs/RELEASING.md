@@ -37,6 +37,7 @@ git tag vX.Y.Z
 - [ ] Official readiness score is at least 8/10 (`release-readiness.json` has `release_status: pass`)
 - [ ] SIL/VIL/HIL evidence is attached (`hil-evidence.json`; use `--hil-target` or an explicit `--hil-waiver "reason"`)
 - [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
+- [ ] Release validation did not mutate tracked `.agents/findings/*` metadata; `scripts/ci-local-release.sh` guards this by default.
 - [ ] All tests pass locally (`cd cli && make test`)
 - [ ] CI green on main (check Actions tab)
 - [ ] Version number follows semver (vX.Y.Z)
@@ -55,10 +56,32 @@ If the commit count since the last tag exceeds 15:
 
 Check commit count:
 ```bash
-git log $(git describe --tags --abbrev=0)..HEAD --oneline | wc -l
+git log $(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0)..HEAD --oneline | wc -l
 ```
 
 The pre-flight validation script (`scripts/validate-release.sh`) will warn (not fail) when this threshold is exceeded.
+
+### 1b. Historical Changelog Coverage
+
+The maintained changelog coverage floor is `v2.16.0`. Earlier tags are treated
+as historical bootstrap tags and do not require backfilled curated notes or audit
+documents for current releases. If a future release needs a complete pre-`v2.16.0`
+history, file explicit backfill beads for the missing versions instead of
+blocking the active release by default.
+
+### 1c. Agent Metadata Mutation
+
+Release validation must be read-only with respect to tracked finding metadata.
+`scripts/ci-local-release.sh` runs the release smoke path through
+`scripts/check-release-agent-metadata-stable.sh`, and
+`scripts/release-smoke-test.sh` uses `ao inject --no-cite`,
+`ao lookup --no-cite`, and `ao flywheel close-loop --dry-run` by default.
+
+Intentional citation/finding metadata refreshes are opt-in:
+
+```bash
+AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1 scripts/ci-local-release.sh
+```
 
 ### 2. Update CHANGELOG
 

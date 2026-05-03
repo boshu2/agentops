@@ -3,7 +3,7 @@
 # Run before UAT to catch stale-binary false failures.
 set -euo pipefail
 
-LOCAL_VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "unknown")
+LOCAL_VERSION=$(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --always --dirty 2>/dev/null || echo "unknown")
 AO_PATH=$(command -v ao 2>/dev/null || true)
 
 if [[ -z "$AO_PATH" ]]; then
