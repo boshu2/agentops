@@ -73,13 +73,16 @@ type DeltaScorecard struct {
 // OutputPath: the function does not mutate opts; instead each leg gets a
 // derived OutputPath when opts.OutputPath != "".
 func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, error) {
+	baseRunID, err := baselineABRunIDBase(opts)
+	if err != nil {
+		return DeltaScorecard{}, nil, nil, fmt.Errorf("baseline A/B run id: %w", err)
+	}
+
 	onOpts := opts
 	onOpts.OverrideDisableHooks = false
+	onOpts.RunID = baseRunID + "-skill-on"
 	if opts.OutputPath != "" {
 		onOpts.OutputPath = appendBaselineSuffix(opts.OutputPath, "skill-on")
-	}
-	if opts.RunID != "" {
-		onOpts.RunID = opts.RunID + "-skill-on"
 	}
 	onRecord, err := RunSuite(onOpts)
 	if err != nil {
@@ -88,11 +91,9 @@ func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, err
 
 	offOpts := opts
 	offOpts.OverrideDisableHooks = true
+	offOpts.RunID = baseRunID + "-skill-off"
 	if opts.OutputPath != "" {
 		offOpts.OutputPath = appendBaselineSuffix(opts.OutputPath, "skill-off")
-	}
-	if opts.RunID != "" {
-		offOpts.RunID = opts.RunID + "-skill-off"
 	}
 	offRecord, err := RunSuite(offOpts)
 	if err != nil {
@@ -101,6 +102,21 @@ func RunBaselineAB(opts RunOptions) (DeltaScorecard, *RunRecord, *RunRecord, err
 
 	scorecard := computeDelta(opts.SuitePath, onRecord, offRecord)
 	return scorecard, onRecord, offRecord, nil
+}
+
+func baselineABRunIDBase(opts RunOptions) (string, error) {
+	if opts.RunID != "" {
+		return opts.RunID, nil
+	}
+	suite, _, err := LoadSuite(opts.SuitePath)
+	if err != nil {
+		return "", err
+	}
+	now := opts.Now
+	if now == nil {
+		now = defaultNow
+	}
+	return defaultRunID(suite.ID, now().UTC()), nil
 }
 
 // computeDelta builds a DeltaScorecard from two per-leg RunRecords.
