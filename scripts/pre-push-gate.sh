@@ -129,6 +129,16 @@ truthy() {
         *) return 1 ;;
     esac
 }
+# prepush_skip_flag — feature flag for the diff-conditional hygiene checks added
+# under prepush-hygiene-gate (soc-h53j). Operators can disable a single check via
+# AGENTOPS_PREPUSH_SKIP_<NAME>=1 without resorting to --no-verify when a check
+# misbehaves on a specific machine. Names are upper-snake-case matching the
+# skip-keys documented next to each check.
+prepush_skip_flag() {
+    local name="$1"
+    local var="AGENTOPS_PREPUSH_SKIP_${name}"
+    truthy "${!var:-0}"
+}
 cleanup_hash_snapshot() {
     if [[ -n "${HASH_GATE_SNAPSHOT:-}" ]]; then
         rm -f "$HASH_GATE_SNAPSHOT" 2>/dev/null || true
@@ -1167,6 +1177,33 @@ if needs_check hook; then
     fi
 else
     skip "hooks/docs parity"
+fi
+
+# --- 28b. Codex hook manifest parity (R2 from soc-h53j) ---
+# When hooks/ changes, verify the local Codex hook manifest still maps cleanly to
+# AgentOps-managed handlers. Skip silently when no Codex install is present so
+# operators without ~/.codex (or with a non-AgentOps install path) are not blocked.
+# Skip key: AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 for emergency disable without --no-verify.
+if needs_check hook; then
+    if prepush_skip_flag CODEX_HOOKS; then
+        skip "codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"
+    elif [[ -x scripts/audit-codex-hooks.sh ]]; then
+        codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+        if [[ -f "$codex_home_path/hooks.json" ]]; then
+            if codex_hooks_output="$(scripts/audit-codex-hooks.sh --strict 2>&1)"; then
+                pass "codex hook manifest parity"
+            else
+                fail "codex hook manifest parity (run: bash scripts/audit-codex-hooks.sh --strict)"
+                indent_output "$codex_hooks_output"
+            fi
+        else
+            skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
+        fi
+    else
+        fail "missing executable: scripts/audit-codex-hooks.sh"
+    fi
+else
+    skip "codex hook manifest parity"
 fi
 
 # --- 29. CI policy parity ---

@@ -84,6 +84,10 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-home-isolation.sh"
     make_hash_snapshot_stub "$FAKE_REPO/scripts/check-agents-hash-snapshot.sh"
     make_stub "$FAKE_REPO/scripts/pre-push-proof.sh"
+    # soc-h53j: paired stub for prepush-hygiene-gate codex-hooks parity (R2).
+    # Symmetric per f-2026-04-27-002: any helper-script reference in
+    # scripts/pre-push-gate.sh must have a fake-repo stub here.
+    make_stub "$FAKE_REPO/scripts/audit-codex-hooks.sh"
 }
 
 teardown() {
@@ -838,4 +842,153 @@ GIT
     run env PRE_PUSH_AGENT_HASH=1 bash "$GATE" --fast
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"agents-hub content-hash gate snapshot failed"* ]]
+}
+
+# --- soc-h53j: prepush-hygiene-gate (items 5, 8-12, 17, 25, 26, 28, 32) ---
+
+@test "pre-push-gate.sh skips codex hook manifest parity when no hook diff" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"codex hook manifest parity"*"skipped"* ]]
+}
+
+@test "pre-push-gate.sh runs codex hook manifest parity when hooks change and codex hooks file exists" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "hooks/hooks.json"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    # Provide a fake CODEX_HOME with a hooks.json so the new gate fires.
+    fake_codex_home="$BATS_TEST_TMPDIR/codex-home"
+    mkdir -p "$fake_codex_home"
+    echo '{"hooks": {}}' > "$fake_codex_home/hooks.json"
+
+    # Stub audit-codex-hooks.sh to fail so we can assert the gate routes through it.
+    make_stub "$FAKE_REPO/scripts/audit-codex-hooks.sh" 1
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS \
+        CODEX_HOME="$fake_codex_home" \
+        bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"codex hook manifest parity"* ]]
+}
+
+@test "pre-push-gate.sh skips codex hook manifest parity when AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "hooks/hooks.json"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    fake_codex_home="$BATS_TEST_TMPDIR/codex-home"
+    mkdir -p "$fake_codex_home"
+    echo '{"hooks": {}}' > "$fake_codex_home/hooks.json"
+
+    # Even with a failing audit stub, the skip flag must keep the gate green.
+    make_stub "$FAKE_REPO/scripts/audit-codex-hooks.sh" 1
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS \
+        CODEX_HOME="$fake_codex_home" \
+        AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 \
+        bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"* ]]
+}
+
+@test "pre-push-gate.sh skips codex hook manifest parity when CODEX_HOME has no hooks.json" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "hooks/hooks.json"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    fake_codex_home="$BATS_TEST_TMPDIR/codex-home-empty"
+    mkdir -p "$fake_codex_home"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS CODEX_HOME="$fake_codex_home" \
+        bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"codex hook manifest parity"*"no $fake_codex_home/hooks.json"* ]]
+}
+
+@test "pre-push-gate.sh prepush-hygiene-gate items 5, 8-12, 17, 25, 26, 28, 32 are wired into the script" {
+    # Symmetric audit per f-2026-04-27-002: each item from
+    # .agents/plans/2026-05-03-ci-failures-1-40-handling.md §prepush-hygiene-gate
+    # must have a corresponding section header in pre-push-gate.sh. This test
+    # is the BATS-side guardrail that prevents silent gate drift.
+    run grep -E '# --- (5\.|6\.|24b\.|25\.|27b\.|28\.|28b\.|31\.|32\.) ' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # At least the items above should each appear once.
+    [[ "$output" == *"# --- 5. Embedded hooks sync"* ]]
+    [[ "$output" == *"# --- 6. Skill count sync"* ]]
+    [[ "$output" == *"# --- 24b. CLI docs parity"* ]]
+    [[ "$output" == *"# --- 25. Doc-release"* ]]
+    [[ "$output" == *"# --- 27b. Standards-injector"* ]]
+    [[ "$output" == *"# --- 28. Hooks/docs parity"* ]]
+    [[ "$output" == *"# --- 28b. Codex hook manifest parity"* ]]
+    [[ "$output" == *"# --- 31. Plugin load test"* ]]
+    [[ "$output" == *"# --- 32. Learning coherence"* ]]
+}
+
+@test "pre-push-gate.sh fast clean-tree completes in under 30 seconds (R3)" {
+    # R3: regression guard against latent slowdown of the diff-conditional gate.
+    # The clean-tree fast path must remain under 30s so it stays usable as a
+    # pre-push hook. Today it is ~5s on the operator's mac; this test asserts
+    # the upper bound the bead committed to.
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    start=$(date +%s)
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    end=$(date +%s)
+    elapsed=$((end - start))
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"pre-push gate (fast): passed"* ]]
+    # Hard cap: 30 seconds (acceptance R3 from soc-h53j).
+    [ "$elapsed" -lt 30 ]
+}
+
+@test "pre-push-gate.sh exposes prepush_skip_flag helper for diff-conditional checks" {
+    # Acceptance: each new conditional check is feature-flagged via env var
+    # (AGENTOPS_PREPUSH_SKIP_<NAME>=1). Verify the helper exists and reads the
+    # documented env-var pattern.
+    run grep -q 'prepush_skip_flag()' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'AGENTOPS_PREPUSH_SKIP_' "$SCRIPT"
+    [ "$status" -eq 0 ]
 }
