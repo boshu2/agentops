@@ -1,47 +1,44 @@
 {
   "schema_version": 1,
-  "run_id": "20260503T130101Z-context-usefulness-eval",
-  "objective": "build context usefulness eval for .agents using outcome-level A/B, harmful-context sentinels, and MemRL feedback integration",
+  "run_id": "20260503T133104Z-context-packet-ab-wave0",
+  "objective": "scope and implement Wave 0 deterministic context-packet A/B for AgentOps context usefulness",
   "epic_id": "soc-rn8k",
   "issue_ids": [
-    "soc-rn8k.7",
-    "soc-3ezb",
-    "soc-s0gi",
-    "soc-bus6",
-    "soc-1tqu",
-    "soc-r27y"
+    "soc-t3y1",
+    "soc-qx5k",
+    "soc-idym",
+    "soc-jnzc"
   ],
-  "plan_path": ".agents/plans/2026-05-03-context-usefulness-eval.md",
+  "plan_path": ".agents/plans/2026-05-03-context-packet-ab-wave0.md",
   "contract_surfaces": [
     "docs/contracts/context-usefulness-eval.md",
     "docs/contracts/eval-baseline-ab.md",
-    "docs/contracts/eval-verdict-pipeline.md",
-    "docs/context-lifecycle.md",
-    "PRODUCT.md"
+    "docs/context-packet.md",
+    "cli/internal/eval"
   ],
   "validation_commands": [
-    "cd cli && go test ./internal/eval ./internal/lifecycle ./internal/corpus ./cmd/ao",
-    "bash scripts/check-context-usefulness.sh",
-    "bash scripts/check-retrieval-quality-ratchet.sh",
-    "bash scripts/check-memrl-health.sh",
-    "bash tests/docs/validate-doc-release.sh",
+    "cd cli && go test ./internal/eval -run 'Context|Baseline|Env|Hooks'",
+    "cd cli && go test ./cmd/ao -run 'Eval|Context'",
+    "ao eval run evals/agentops-core/context-packet-ab-wave0.json --context-mode=ab --json",
     "bash scripts/check-contract-compatibility.sh",
+    "bash tests/docs/validate-doc-release.sh",
+    "scripts/generate-cli-reference.sh",
     "scripts/pre-push-gate.sh --fast"
   ],
   "tracker_mode": "beads",
   "tracker_health": {
     "healthy": true,
     "mode": "beads",
-    "reason": "Created epic soc-rn8k and six implementation tasks. Hierarchical child creation hit a prefix mismatch after soc-rn8k.7, so the remaining tasks are recorded in the epic notes as standalone task beads."
+    "reason": "bd ready succeeded and existing parent epic soc-rn8k is open; focused Wave 0 tasks are created from this discovery."
   },
   "done_criteria": [
-    "context usefulness contract exists and is catalogued",
-    "deterministic context A/B eval runner supports context_off, context_on, curated_only, stale_sentinel, and toxic_sentinel variants",
-    "fixtures prove helpful context, ignored stale context, and penalized harmful context without writing sentinels into the live .agents corpus",
-    "scorecard records task success delta, token/tool delta, source contradiction, harmful uptake, known-failure avoidance, and per-artifact attribution",
-    "MemRL and maturity use scorecard attribution rather than citation alone",
-    "corpus fitness, Dream, and gates expose context usefulness or a clear degraded reason",
-    "docs explain hygiene versus retrieval versus outcome usefulness"
+    "Wave 0 contract defines context_off/context_on and explicit deferrals",
+    "Context A/B is a separate eval axis, not an ABBaselineMode overload",
+    "context_off/context_on legs use isolated AO_AGENTS_DIR fixture roots",
+    "context mode preserves hooks and never emits AGENTOPS_HOOKS_DISABLED=1",
+    "minimal scorecard records per-case context delta, decision evidence, ignored-context evidence, and degraded reasons",
+    "CLI exposes context A/B without confusing skill/hook baseline mode",
+    "deterministic eval suite includes helpful-context and ignored-context cases"
   ],
   "complexity": "standard",
   "pre_mortem_verdict": "WARN",
@@ -53,27 +50,11 @@
     "recommended": [
       "L2"
     ],
-    "rationale": "The slice adds CLI eval behavior, fixture isolation, lifecycle feedback, corpus fitness, Dream/gate surfaces, and product docs. Deterministic SIL and focused integration tests are required; broader runtime variance work remains advisory."
+    "rationale": "Wave 0 changes eval DTOs, runner orchestration, CLI flags, fixture roots, contracts, and command tests. Deterministic unit/integration coverage is required; lifecycle and live runtime variance remain deferred."
   },
   "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "brainstorm_path": ".agents/brainstorm/2026-05-03-context-usefulness-eval.md",
-  "design_path": ".agents/design/2026-05-03-design-context-usefulness-eval.md",
-  "research_path": ".agents/research/2026-05-03-context-usefulness-eval.md",
-  "pre_mortem_path": ".agents/pre-mortem/2026-05-03-context-usefulness-eval.md",
-  "council_consensus": {
-    "date": "2026-05-03",
-    "mode": "mixed",
-    "verdict": "WARN",
-    "report_path": ".agents/council/2026-05-03-context-usefulness-best-path-report.md",
-    "best_path": "Add a narrow Wave 0 before broad integration: deterministic context-packet A/B in cli/internal/eval, context_off vs context_on, isolated fixture .agents roots, hooks preserved, minimal per-case scorecard, and one negative-control ignore case.",
-    "defer_until_scorecard_trusted": [
-      "MemRL and maturity reinforcement",
-      "ao corpus fitness and Dream consumer surfaces",
-      "blocking CI gates",
-      "broad product-doc claims",
-      "automatic pruning or quarantine"
-    ],
-    "architecture_constraint": "Context usefulness is a separate context-variant axis inside the existing eval package, not an overload of skill/hook baseline mode and not a new lifecycle stack."
-  },
-  "discovery_timestamp": "2026-05-03T13:01:01Z"
+  "design_path": ".agents/design/2026-05-03-design-context-packet-ab-wave0.md",
+  "research_path": ".agents/research/2026-05-03-context-packet-ab-wave0.md",
+  "pre_mortem_path": ".agents/pre-mortem/2026-05-03-context-packet-ab-wave0.md",
+  "discovery_timestamp": "2026-05-03T13:31:04Z"
 }

@@ -1,43 +1,43 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-03T13:01:01Z",
-  "goal": "build context usefulness eval for .agents using outcome-level A/B, harmful-context sentinels, and MemRL feedback integration",
+  "generated_at": "2026-05-03T13:31:04Z",
+  "goal": "scope Wave 0 deterministic context-packet A/B for context usefulness",
   "items": [
     {
       "rank": 1,
-      "path": ".agents/brainstorm/2026-05-03-agentops-product-direction.md",
-      "type": "brainstorm",
-      "reason": "Prior selected direction: Decision/Context Compiler First."
+      "path": ".agents/council/2026-05-03-context-usefulness-best-path-report.md",
+      "type": "council",
+      "reason": "Mixed council consensus: add Wave 0 before broad integration."
     },
     {
       "rank": 2,
-      "path": ".agents/council/2026-05-03-brainstorm-agentops-product-direction.md",
+      "path": ".agents/council/2026-05-03-context-usefulness-best-path-judge-architecture.md",
       "type": "council",
-      "reason": "Validated the product direction and warned that typed packet contracts are needed."
+      "reason": "Architecture constraint: context variant axis must not overload skill/hook A/B."
     },
     {
       "rank": 3,
-      "path": ".agents/research/2026-05-03-agents-corpus-context-compiler-validation.md",
-      "type": "research",
-      "reason": "Validated `.agents/` as the existing corpus and identified missing compiler contract."
+      "path": ".agents/council/2026-05-03-context-usefulness-best-path-judge-eval.md",
+      "type": "council",
+      "reason": "Eval-science constraints for scorecard fields, negative control, and deferred lifecycle integration."
     },
     {
       "rank": 4,
-      "path": ".agents/findings/f-2026-04-30-002.md",
-      "type": "finding",
-      "reason": "Corpus-state gates can correctly fail when citation activity is absent or insufficient."
+      "path": ".agents/patterns/2026-05-01-state-path-resolver.md",
+      "type": "pattern",
+      "reason": "Use AO_AGENTS_DIR/state resolver for fixture context roots."
     },
     {
       "rank": 5,
-      "path": "docs/contracts/eval-baseline-ab.md",
-      "type": "contract",
-      "reason": "Existing A/B primitive can be extended from skill suppression to context suppression."
+      "path": ".agents/findings/f-2026-04-14-001.md",
+      "type": "finding",
+      "reason": "CLI command changes require paired direct command tests."
     },
     {
       "rank": 6,
-      "path": "scripts/validate-learning-coherence.sh",
-      "type": "gate",
-      "reason": "Existing garbage-learning detection should feed the new harmful-context eval."
+      "path": "docs/contracts/eval-baseline-ab.md",
+      "type": "contract",
+      "reason": "Existing A/B contract is skill/hook scoped and must not be conflated with context suppression."
     }
   ]
 }
