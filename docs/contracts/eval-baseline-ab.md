@@ -86,8 +86,9 @@ delta. Document that limitation in any suite that uses `--baseline-mode`.
 
 Per-leg `RunRecord` artifacts are persisted alongside the scorecard when
 `--out` is supplied; their paths get a `-skill-on` / `-skill-off` suffix
-inserted before the file extension. RunIDs get the same suffix when
-`--run-id` is supplied.
+inserted before the file extension. RunIDs always get the same suffix, using
+either the supplied `--run-id` as the base or a generated default base when
+`--run-id` is omitted.
 
 ## When to use which mode
 

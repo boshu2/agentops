@@ -114,6 +114,86 @@ func TestComputeDeltaHandlesMissingOffSideCase(t *testing.T) {
 	}
 }
 
+func TestRunBaselineABDefaultRunIDsAreDistinct(t *testing.T) {
+	dir := t.TempDir()
+	suitePath := writeEvalSuite(t, dir, `{
+  "schema_version": 1,
+  "id": "fixture.baseline-ab",
+  "name": "Fixture baseline AB",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden"
+  },
+  "scoring": {
+    "aggregate_threshold": 1,
+    "dimensions": [
+      {"name": "correctness", "weight": 1, "threshold": 1}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "skill-on",
+      "title": "skill-on leg passes only without hook suppression",
+      "kind": "command",
+      "objective": "Prove baseline A/B toggles hook suppression.",
+      "runtime": "shell",
+      "inputs": {
+        "shell": "if [ \"${AGENTOPS_HOOKS_DISABLED:-0}\" = \"1\" ]; then exit 1; fi"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness"],
+      "critical": true
+    },
+    {
+      "id": "invariant",
+      "title": "invariant",
+      "kind": "command",
+      "objective": "Passes in both legs.",
+      "runtime": "shell",
+      "inputs": {
+        "shell": "exit 0"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0}
+      ],
+      "dimensions": ["correctness"]
+    }
+  ]
+}`)
+
+	scorecard, onRun, offRun, err := RunBaselineAB(RunOptions{
+		SuitePath: suitePath,
+		Runtime:   RuntimeShell,
+		Now:       fixedEvalTime,
+	})
+	if err != nil {
+		t.Fatalf("RunBaselineAB returned error: %v", err)
+	}
+
+	wantOn := "eval-20260424T120000Z-fixture.baseline-ab-skill-on"
+	wantOff := "eval-20260424T120000Z-fixture.baseline-ab-skill-off"
+	if onRun.RunID != wantOn {
+		t.Fatalf("skill-on run_id = %q, want %q", onRun.RunID, wantOn)
+	}
+	if offRun.RunID != wantOff {
+		t.Fatalf("skill-off run_id = %q, want %q", offRun.RunID, wantOff)
+	}
+	if onRun.RunID == offRun.RunID {
+		t.Fatalf("A/B leg run IDs collided: %q", onRun.RunID)
+	}
+	if scorecard.SkillOnRunID != onRun.RunID || scorecard.SkillOffRunID != offRun.RunID {
+		t.Fatalf("scorecard run IDs = (%q,%q), want (%q,%q)",
+			scorecard.SkillOnRunID, scorecard.SkillOffRunID, onRun.RunID, offRun.RunID)
+	}
+}
+
 func TestAppendBaselineSuffix(t *testing.T) {
 	tests := []struct {
 		in     string
