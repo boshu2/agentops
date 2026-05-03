@@ -21,14 +21,35 @@ _helper_setup() {
     MOCK_REPO="$TMP_TEST_DIR/mock-repo"
     setup_mock_repo "$MOCK_REPO"
 
+    # ── Hook lifecycle isolation (soc-y1bk) ───────────────────────────
+    # Three load-bearing isolations so a hook script invoked via `run bash $hook`
+    # (without an explicit `cd $MOCK_REPO`) cannot reach into the real repo
+    # under -shuffle / parallel BATS runs:
+    #
+    #   1. _SAVED_PWD — preserve caller cwd so teardown can restore it.
+    #   2. cd "$MOCK_REPO" — `git rev-parse --show-toplevel` inside any hook
+    #      now resolves to the tempdir mock, NOT $REPO_ROOT (the real repo).
+    #      This prevents the .agents/ao/.intent-echo-fired family of dedup
+    #      flags from being created/cleaned in the operator's working tree.
+    #   3. HOME=$TMP_TEST_DIR — defense-in-depth: any helper that falls back
+    #      to $HOME (instead of git toplevel) lands inside the tempdir too.
+    _SAVED_PWD="$(pwd)"
+    cd "$MOCK_REPO" || return 1
+    export HOME="$TMP_TEST_DIR"
+
     # Ensure hooks are NOT globally disabled by default
     export AGENTOPS_HOOKS_DISABLED=0
 }
 
 # ── Common teardown ──────────────────────────────────────────────────
 _helper_teardown() {
+    # Restore caller cwd before teardown removes the tmpdir.
+    cd "${_SAVED_PWD:-$REPO_ROOT}" 2>/dev/null || true
     rm -rf "$TMP_TEST_DIR"
-    # Clean up any dedup flags that may have leaked into the real repo
+    # Belt-and-suspenders cleanup of dedup flags. With the setup-time
+    # cd "$MOCK_REPO" + HOME=$TMP_TEST_DIR isolation above, hooks should
+    # never write into $REPO_ROOT/.agents/ao/ in the first place; this
+    # remains as a safety net for legacy tests that bypass the helper.
     rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
     rm -f "$REPO_ROOT/.agents/ao/.new-user-welcome-needed" 2>/dev/null
     rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null

@@ -139,7 +139,9 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "intent-echo: destructive prompt output conforms to schema with hookEventName=UserPromptSubmit" {
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    # soc-y1bk: dedup state lives under $MOCK_REPO/.agents/ao/ now (helper cds
+    # there at setup), so cleanup of the real repo's flag is no longer needed.
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
     run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
         -- '{"prompt":"delete all the old files and remove everything"}' "$HOOKS_DIR/intent-echo.sh"
     [ "$status" -eq 0 ]
@@ -149,7 +151,7 @@ EOF
 }
 
 @test "intent-echo: non-destructive prompt emits no JSON" {
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
     run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
         -- '{"prompt":"add a new test"}' "$HOOKS_DIR/intent-echo.sh"
     [ "$status" -eq 0 ]

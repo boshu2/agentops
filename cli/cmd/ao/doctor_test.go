@@ -449,10 +449,9 @@ func TestCountHealFindings(t *testing.T) {
 func TestCheckSkillIntegrity_NoHealScript(t *testing.T) {
 	// When run from a temp dir with no heal.sh, should warn gracefully.
 	// Override HOME so findHealScript() can't find ~/.claude/skills/heal-skill/.
+	// soc-y1bk: t.Setenv auto-restores prior HOME on cleanup; no manual reset needed.
 	chdirTemp(t)
-	origHome := os.Getenv("HOME")
 	t.Setenv("HOME", t.TempDir())
-	t.Cleanup(func() { os.Setenv("HOME", origHome) })
 	result := checkSkillIntegrity()
 	if result.Status != "warn" {
 		t.Errorf("status=%q, want warn (detail: %s)", result.Status, result.Detail)

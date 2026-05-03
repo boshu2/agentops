@@ -144,6 +144,11 @@ EOF
 @test "exits 2 on malformed allowlist entries" {
     local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
     {
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ok-name` | `persistent` | `cli` | Test mutation lane. | Test fixture surface. |\n'
+        printf '| `BAD/SLASH` | `persistent` | `cli` | Test mutation lane. | Test fixture surface. |\n'
+        printf '\n'
         printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
         printf 'ok-name\n'
         printf 'BAD/SLASH\n'
@@ -181,6 +186,98 @@ EOF
     cd "$FAKE_REPO"
     run bash scripts/check-agents-write-surfaces.sh
     [ "$status" -eq 0 ]
+}
+
+@test "fails when allowlisted surface lacks table classification" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '# .agents/ Write Surfaces\n\n'
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `patterns` | `persistent` | `cli` | Test mutation lane. | Test fixture surface. |\n'
+        printf '\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+    cat > "$FAKE_REPO/cli/internal/foo.go" <<'EOF'
+package foo
+
+const A = ".agents/ao"
+EOF
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing table classifications"* ]]
+    [[ "$output" == *"ao"* ]]
+}
+
+@test "fails when lifecycle classification is unknown" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '# .agents/ Write Surfaces\n\n'
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | `forever` | `cli` | Test mutation lane. | Test fixture surface. |\n'
+        printf '\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+    cat > "$FAKE_REPO/cli/internal/foo.go" <<'EOF'
+package foo
+
+const A = ".agents/ao"
+EOF
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown lifecycle"* ]]
+    [[ "$output" == *"forever"* ]]
+}
+
+@test "fails when writer classification is unknown" {
+    local doc="$FAKE_REPO/docs/contracts/agents-write-surfaces.md"
+    {
+        printf '# .agents/ Write Surfaces\n\n'
+        printf '| Surface | Lifecycle | Allowed writers | Mutation lane | Purpose |\n'
+        printf '|---|---|---|---|---|\n'
+        printf '| `ao` | `persistent` | `robots` | Test mutation lane. | Test fixture surface. |\n'
+        printf '\n'
+        printf '<!-- BEGIN agents-write-surfaces-allowlist -->\n'
+        printf 'ao\n'
+        printf '<!-- END agents-write-surfaces-allowlist -->\n'
+    } > "$doc"
+    cat > "$FAKE_REPO/cli/internal/foo.go" <<'EOF'
+package foo
+
+const A = ".agents/ao"
+EOF
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown writer"* ]]
+    [[ "$output" == *"robots"* ]]
+}
+
+@test "fails when repo-local tracked surface lacks classification" {
+    write_contract ao
+    mkdir -p "$FAKE_REPO/.agents/widgets"
+    : > "$FAKE_REPO/.agents/widgets/state.json"
+    cat > "$FAKE_REPO/cli/internal/foo.go" <<'EOF'
+package foo
+
+const A = ".agents/ao"
+EOF
+
+    cd "$FAKE_REPO"
+    run bash scripts/check-agents-write-surfaces.sh
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing table classifications"* ]]
+    [[ "$output" == *"widgets"* ]]
 }
 
 @test "--json emits machine-readable summary" {

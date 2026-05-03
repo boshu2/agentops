@@ -499,6 +499,28 @@ else
     skip "HOME isolation in test files"
 fi
 
+# --- 3b2. Test HOME isolation (broader lint, soc-y1bk) ---
+# Sibling of 3b that catches every *_test.go that touches $HOME without
+# t.Setenv or a TestMain guard, and forbids raw os.Setenv("HOME", ...) inside
+# regular test functions (race-prone under -race -shuffle=on -count=N).
+# Skip key: AGENTOPS_PREPUSH_SKIP_TEST_HOME_ISO=1 for emergency disable.
+if needs_check go || needs_check shell; then
+    if prepush_skip_flag TEST_HOME_ISO; then
+        skip "test HOME isolation (AGENTOPS_PREPUSH_SKIP_TEST_HOME_ISO=1)"
+    elif [[ -x scripts/check-test-home-isolation.sh ]]; then
+        if test_home_iso_output="$(scripts/check-test-home-isolation.sh 2>&1)"; then
+            pass "test HOME isolation (soc-y1bk)"
+        else
+            fail "test HOME isolation (run: bash scripts/check-test-home-isolation.sh)"
+            indent_output "$test_home_iso_output"
+        fi
+    else
+        fail "missing executable: scripts/check-test-home-isolation.sh"
+    fi
+else
+    skip "test HOME isolation"
+fi
+
 # --- 3c. Capture ~/.agents hash snapshot (diff'd at end of gate) ---
 # This gate protects Go tests from mutating the operator's real agent hub. In
 # local fast mode, skip it when no Go checks are running unless explicitly

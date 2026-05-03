@@ -318,7 +318,9 @@ AOEOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "intent-echo: normal prompt exits silently" {
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    # soc-y1bk: dedup flag lives under $MOCK_REPO/.agents/ao/ now (helper cds
+    # there at setup) so the hook does not poison the real repo.
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
     run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
         -- '{"prompt":"add a new test"}' "$HOOKS_DIR/intent-echo.sh"
     [ "$status" -eq 0 ]
@@ -326,7 +328,7 @@ AOEOF
 }
 
 @test "intent-echo: destructive keyword triggers context injection" {
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
     run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
         -- '{"prompt":"delete all the old files"}' "$HOOKS_DIR/intent-echo.sh"
     [ "$status" -eq 0 ]
@@ -591,24 +593,29 @@ AOEOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "research-loop-detector: Edit resets counter" {
-    rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
+    # soc-y1bk: write/assert against $MOCK_REPO so the test does not poison
+    # the operator's real .agents/ao/ tree under -shuffle / parallel runs.
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    rm -f "$MOCK_REPO/.agents/ao/.read-streak" 2>/dev/null
     run bash -c 'printf "%s" "$1" | CLAUDE_TOOL_NAME=Edit bash "$2" 2>&1' \
         -- '{"tool_name":"Edit"}' "$HOOKS_DIR/research-loop-detector.sh"
     [ "$status" -eq 0 ]
-    [ ! -f "$REPO_ROOT/.agents/ao/.read-streak" ]
+    [ ! -f "$MOCK_REPO/.agents/ao/.read-streak" ]
 }
 
 @test "research-loop-detector: Read increments counter" {
-    rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    rm -f "$MOCK_REPO/.agents/ao/.read-streak" 2>/dev/null
     run bash -c 'printf "%s" "$1" | CLAUDE_TOOL_NAME=Read bash "$2" 2>&1' \
         -- '{"tool_name":"Read"}' "$HOOKS_DIR/research-loop-detector.sh"
     [ "$status" -eq 0 ]
-    [ -f "$REPO_ROOT/.agents/ao/.read-streak" ]
-    [ "$(cat "$REPO_ROOT/.agents/ao/.read-streak")" = "1" ]
+    [ -f "$MOCK_REPO/.agents/ao/.read-streak" ]
+    [ "$(cat "$MOCK_REPO/.agents/ao/.read-streak")" = "1" ]
 }
 
 @test "research-loop-detector: threshold 8 triggers warning" {
-    echo "7" > "$REPO_ROOT/.agents/ao/.read-streak"
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    echo "7" > "$MOCK_REPO/.agents/ao/.read-streak"
     run bash -c 'printf "%s" "$1" | CLAUDE_TOOL_NAME=Read bash "$2" 2>&1' \
         -- '{"tool_name":"Read"}' "$HOOKS_DIR/research-loop-detector.sh"
     [ "$status" -eq 0 ]
@@ -616,7 +623,8 @@ AOEOF
 }
 
 @test "research-loop-detector: kill switch silences output" {
-    echo "14" > "$REPO_ROOT/.agents/ao/.read-streak"
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    echo "14" > "$MOCK_REPO/.agents/ao/.read-streak"
     run bash -c 'printf "%s" "$1" | CLAUDE_TOOL_NAME=Read AGENTOPS_RESEARCH_LOOP_DISABLED=1 bash "$2" 2>&1' \
         -- '{"tool_name":"Read"}' "$HOOKS_DIR/research-loop-detector.sh"
     [ "$status" -eq 0 ]
@@ -624,12 +632,13 @@ AOEOF
 }
 
 @test "research-loop-detector: malformed JSON with env var still works" {
-    rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    rm -f "$MOCK_REPO/.agents/ao/.read-streak" 2>/dev/null
     run bash -c 'printf "%s" "$1" | CLAUDE_TOOL_NAME=Read bash "$2" 2>&1' \
         -- 'broken json' "$HOOKS_DIR/research-loop-detector.sh"
     [ "$status" -eq 0 ]
     # Should still increment because CLAUDE_TOOL_NAME env var is set
-    [ -f "$REPO_ROOT/.agents/ao/.read-streak" ]
+    [ -f "$MOCK_REPO/.agents/ao/.read-streak" ]
 }
 
 @test "research-loop-detector: empty stdin with no env var exits gracefully" {

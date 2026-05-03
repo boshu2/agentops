@@ -1235,6 +1235,11 @@ func TestFilterMemoryDuplicates_RemovesDuplicates(t *testing.T) {
 	// in ~/.claude/projects/-<path>/ — we need to set up that structure.
 	// Instead, since findMemoryFile uses cwd to derive the path, we test the
 	// filtering logic by creating the expected MEMORY.md location.
+	//
+	// Isolate HOME explicitly per soc-y1bk so this test never writes to the
+	// operator's real ~/.claude tree, even if a future regression reverts the
+	// package's TestMain HOME guard.
+	t.Setenv("HOME", t.TempDir())
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		t.Skip("cannot determine home directory")

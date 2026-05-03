@@ -3438,10 +3438,8 @@ func TestRunHooksInstall_Fresh(t *testing.T) {
 	hooksForce = false
 	hooksFull = false
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	old := os.Stdout
 	_, w, _ := os.Pipe()
 	os.Stdout = w
@@ -3461,10 +3459,8 @@ func TestRunHooksInstall_AlreadyInstalled(t *testing.T) {
 	hooksForce = false
 	hooksFull = false
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	claudeDir := filepath.Join(tmpHome, ".claude")
 	os.MkdirAll(claudeDir, 0755)
 	settings := map[string]any{
@@ -3502,10 +3498,8 @@ func TestRunHooksInstall_Force(t *testing.T) {
 	hooksForce = true
 	hooksFull = false
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	claudeDir := filepath.Join(tmpHome, ".claude")
 	os.MkdirAll(claudeDir, 0755)
 	settings := map[string]any{
@@ -3538,10 +3532,8 @@ func TestRunHooksInstall_DryRun(t *testing.T) {
 	hooksForce = false
 	hooksFull = false
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	old := os.Stdout
 	_, w, _ := os.Pipe()
 	os.Stdout = w
@@ -3563,10 +3555,8 @@ func TestRunHooksInstall_FullMode(t *testing.T) {
 	hooksFull = true
 	hooksSourceDir = ""
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull; hooksSourceDir = oldSrc }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	tmpDir := t.TempDir()
 	origDir, _ := os.Getwd()
 	_ = os.Chdir(tmpDir)
@@ -3590,10 +3580,8 @@ func TestRunHooksInstall_ExistingNonAo(t *testing.T) {
 	hooksForce = false
 	hooksFull = false
 	defer func() { hooksDryRun = oldDry; hooksForce = oldForce; hooksFull = oldFull }()
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	claudeDir := filepath.Join(tmpHome, ".claude")
 	os.MkdirAll(claudeDir, 0755)
 	settings := map[string]any{
@@ -3623,10 +3611,8 @@ func TestRunHooksInstall_ExistingNonAo(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRunHooksShow_Full(t *testing.T) {
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	claudeDir := filepath.Join(tmpHome, ".claude")
 	os.MkdirAll(claudeDir, 0755)
 	settings := map[string]any{
@@ -3652,10 +3638,8 @@ func TestRunHooksShow_Full(t *testing.T) {
 }
 
 func TestRunHooksShow_Missing(t *testing.T) {
-	origHome := os.Getenv("HOME")
 	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
-	defer os.Setenv("HOME", origHome)
+	t.Setenv("HOME", tmpHome)
 	old := os.Stdout
 	_, w, _ := os.Pipe()
 	os.Stdout = w

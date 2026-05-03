@@ -13,6 +13,12 @@ import (
 // withEnv sets env vars for the test and restores them on cleanup. It also
 // unsets the full AO_* + CLAUDE_PLUGIN_DATA family so leaked values from the
 // surrounding shell never reach into the resolver under test.
+//
+// Uses t.Setenv exclusively (per soc-y1bk) so the test framework's env mutex
+// serializes writes — required for clean -race -shuffle=on runs. The first
+// t.Setenv per key records the prior value for cleanup; later os.Unsetenv on
+// the same key simulates "absent" inside the test scope while letting cleanup
+// still restore the original value at the end.
 func withEnv(t *testing.T, env map[string]string) {
 	t.Helper()
 	keys := []string{
@@ -22,30 +28,15 @@ func withEnv(t *testing.T, env map[string]string) {
 		"AO_LEARNINGS_DIR", "AO_PATTERNS_DIR", "AO_DECISIONS_DIR",
 		"AO_PATHS_DEBUG",
 	}
-	prev := map[string]string{}
-	prevSet := map[string]bool{}
+	// Touch every key with t.Setenv first (records prior value for cleanup),
+	// then unset it so the resolver under test sees a clean env.
 	for _, k := range keys {
-		v, ok := os.LookupEnv(k)
-		prev[k] = v
-		prevSet[k] = ok
-		if err := os.Unsetenv(k); err != nil {
-			t.Fatalf("unsetenv %s: %v", k, err)
-		}
+		t.Setenv(k, "")
+		_ = os.Unsetenv(k)
 	}
 	for k, v := range env {
-		if err := os.Setenv(k, v); err != nil {
-			t.Fatalf("setenv %s=%s: %v", k, v, err)
-		}
+		t.Setenv(k, v)
 	}
-	t.Cleanup(func() {
-		for _, k := range keys {
-			if prevSet[k] {
-				_ = os.Setenv(k, prev[k])
-			} else {
-				_ = os.Unsetenv(k)
-			}
-		}
-	})
 }
 
 // chdir changes the working directory for the test and restores it.

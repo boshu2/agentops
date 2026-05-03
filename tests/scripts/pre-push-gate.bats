@@ -88,6 +88,10 @@ setup() {
     # Symmetric per f-2026-04-27-002: any helper-script reference in
     # scripts/pre-push-gate.sh must have a fake-repo stub here.
     make_stub "$FAKE_REPO/scripts/audit-codex-hooks.sh"
+    # soc-y1bk: paired stub for test-isolation-sweep — gate 3b2.
+    # Symmetric per f-2026-04-27-002: stub the new lint so the fake repo
+    # exercises the same diff-conditional branch the real gate runs.
+    make_stub "$FAKE_REPO/scripts/check-test-home-isolation.sh"
 }
 
 teardown() {
@@ -990,5 +994,84 @@ GIT
     run grep -q 'prepush_skip_flag()' "$SCRIPT"
     [ "$status" -eq 0 ]
     run grep -q 'AGENTOPS_PREPUSH_SKIP_' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+# ─────────────────────────────────────────────────────────────────────────
+# soc-y1bk: paired tests for the new test-HOME-isolation lint (gate 3b2).
+# Symmetric per f-2026-04-27-002: any helper-script reference in the gate
+# script must have a fake-repo stub here AND tests asserting the diff-
+# conditional behavior (run / skip-flag / pass-through).
+# ─────────────────────────────────────────────────────────────────────────
+
+@test "pre-push-gate.sh runs check-test-home-isolation.sh when shell files change" {
+    # Use a shell-only diff (HAS_SHELL=1, HAS_GO=0) so the lint runs but the
+    # Go build/vet checks short-circuit and don't trip on the empty fake go.mod.
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "scripts/check-test-home-isolation.sh"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    # Failing stub so we can prove the gate routes through the lint.
+    make_stub "$FAKE_REPO/scripts/check-test-home-isolation.sh" 1
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"*"test HOME isolation"* ]]
+}
+
+@test "pre-push-gate.sh skips test HOME isolation when AGENTOPS_PREPUSH_SKIP_TEST_HOME_ISO=1" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "scripts/check-test-home-isolation.sh"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    # Even with a failing lint stub, the skip flag must keep the gate green.
+    make_stub "$FAKE_REPO/scripts/check-test-home-isolation.sh" 1
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS \
+        AGENTOPS_PREPUSH_SKIP_TEST_HOME_ISO=1 \
+        bash "$GATE" --fast --scope upstream --accumulate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"test HOME isolation (AGENTOPS_PREPUSH_SKIP_TEST_HOME_ISO=1)"* ]]
+}
+
+@test "pre-push-gate.sh skips test HOME isolation when no Go or shell files change" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "docs/README.md"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    [ "$status" -eq 0 ]
+    # Doc-only diff should skip the lint (output marker says "skipped").
+    [[ "$output" == *"test HOME isolation"*"skipped"* ]]
+}
+
+@test "pre-push-gate.sh test-home-isolation lint stub exists in fake repo (paired stub guard)" {
+    # Guardrail per f-2026-04-27-002: the .bats setup MUST provision a stub
+    # for every helper-script that the real gate references. If anyone removes
+    # the stub from setup() without removing the gate reference, this test
+    # catches it.
+    [ -x "$FAKE_REPO/scripts/check-test-home-isolation.sh" ]
+    run grep -q 'check-test-home-isolation\.sh' "$SCRIPT"
     [ "$status" -eq 0 ]
 }

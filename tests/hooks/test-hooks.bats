@@ -459,10 +459,11 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "intent-echo: destructive keyword triggers context (original)" {
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    # soc-y1bk: dedup flag now lives under $MOCK_REPO/.agents/ao/ (helper cds there).
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
     OUTPUT=$(printf '%s' '{"prompt":"delete all the old files"}' | bash "$HOOKS_DIR/intent-echo.sh" 2>&1)
     echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-    rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
+    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
 }
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -512,7 +513,12 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "research-loop-detector: threshold triggers warning (original)" {
-    echo "7" > "$REPO_ROOT/.agents/ao/.read-streak"
+    # Seed the dedup state in the mock repo (per soc-y1bk hook lifecycle
+    # isolation). Helper now cds into $MOCK_REPO at setup time so
+    # `git rev-parse --show-toplevel` inside the hook resolves here, not
+    # to the real $REPO_ROOT.
+    mkdir -p "$MOCK_REPO/.agents/ao"
+    echo "7" > "$MOCK_REPO/.agents/ao/.read-streak"
     OUTPUT=$(printf '%s' '{"tool_name":"Read"}' | CLAUDE_TOOL_NAME=Read bash "$HOOKS_DIR/research-loop-detector.sh" 2>&1)
     echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
 }

@@ -102,9 +102,7 @@ func TestDiscoverRigs_IncludesGlobalHub(t *testing.T) {
 	mustMkdirAll(t, filepath.Join(globalAgents, "learnings"))
 	mustMkdirAll(t, filepath.Join(globalAgents, "patterns"))
 
-	origHome := os.Getenv("HOME")
 	t.Setenv("HOME", fakeHome)
-	defer func() { _ = os.Setenv("HOME", origHome) }()
 
 	// Use a nonexistent root so only the global hub is found.
 	opts := WalkOptions{
