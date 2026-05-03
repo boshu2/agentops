@@ -121,7 +121,7 @@ ema_update() {
 }
 
 float_lt() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a+0.0 < b+0.0) }'; }
-int_ge()   { [ "$(awk -v a="$1" -v b="$2" 'BEGIN { print (a+0)>=(b+0)?1:0 }')" = "1" ]; }
+int_ge()   { [ "$1" -ge "$2" ] 2>/dev/null; }
 
 mutate_one_artifact() {
     local artifact_path="$1" verdict_kind="$2" verdict_utility="$3" run_id="$4" seed_source="$5"
