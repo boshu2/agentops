@@ -15,12 +15,12 @@ production coding lanes are disabled.
 
 Machine-readable schema:
 
-- [`schemas/routing-policy.v1.schema.json`](../../schemas/routing-policy.v1.schema.json)
+- `schemas/routing-policy.v1.schema.json`
 
 Validated fixtures:
 
-- [`cli/internal/daemon/testdata/routing-policy/default.json`](../../cli/internal/daemon/testdata/routing-policy/default.json)
-- [`cli/internal/daemon/testdata/routing-policy/invalid-gascity-production.json`](../../cli/internal/daemon/testdata/routing-policy/invalid-gascity-production.json)
+- `cli/internal/daemon/testdata/routing-policy/default.json`
+- `cli/internal/daemon/testdata/routing-policy/invalid-gascity-production.json`
 
 ## Required Shape
 

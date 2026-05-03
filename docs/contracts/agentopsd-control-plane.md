@@ -125,7 +125,7 @@ Worktree invariants:
 
 Routing policy is schema-backed by
 [`routing-policy.md`](routing-policy.md) and
-[`schemas/routing-policy.v1.schema.json`](../../schemas/routing-policy.v1.schema.json).
+`schemas/routing-policy.v1.schema.json`.
 
 Milestone 1 routing requirements:
 
