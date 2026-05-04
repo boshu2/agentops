@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.workbench-agent-v1",
+  "name": "Workbench Agent Eval v1",
+  "description": "Live agent behavioral eval. Invokes claude/codex CLI against broken workbench fixtures and scores the agent's fix. Use --dry-run harness flag for CI; real agent invocation for local metrics gathering.",
+  "domain": "behavioral",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "evidence_kind": "behavior_fixture",
+  "owners": ["agentops"],
+  "tags": ["behavioral", "agent", "live", "workbench", "go", "python", "devops"],
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": false,
+    "network": "enabled",
+    "scrub_env_prefixes": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
+    "timeout_seconds": 600
+  },
+  "scoring": {
+    "aggregate_threshold": 0.5,
+    "dimensions": [
+      {"name": "correctness", "weight": 3, "threshold": 0.5, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 0.5},
+      {"name": "process_adherence", "weight": 1, "threshold": 0.3}
+    ]
+  },
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.workbench-agent-v1.baseline.json",
+    "blocking_gate": "none",
+    "max_aggregate_regression": 0.15,
+    "max_dimension_regression": 0.2
+  },
+  "cases": [
+    {
+      "id": "agent-go-01-fix-bug",
+      "title": "Agent fixes off-by-one bug in Go Multiply",
+      "kind": "command",
+      "objective": "Agent receives broken Go code with off-by-one error. Must identify and fix the bug so tests pass.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-01 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-py-04-fix-sqli",
+      "title": "Agent fixes SQL injection in Python API",
+      "kind": "command",
+      "objective": "Agent receives Python code with f-string SQL query. Must identify and fix the injection vulnerability.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task py-04 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "agent-ops-01-fix-deploy",
+      "title": "Agent adds error handling to deploy script",
+      "kind": "command",
+      "objective": "Agent receives a deploy script missing set -euo pipefail and validation. Must add proper error handling.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task ops-01 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": false
+    }
+  ]
+}
