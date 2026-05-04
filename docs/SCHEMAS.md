@@ -36,6 +36,7 @@ These describe data written and consumed at runtime — handoffs between session
 | [`eval-run.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) | Evaluation run records, scorecards, baseline comparisons, runtime hygiene, and artifacts. See [`Eval Environment`](contracts/eval-environment.md). |
 | [`release-readiness.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/release-readiness.v1.schema.json) | Release readiness score artifact with SIL/VIL/HIL evidence and waiver state. See [`Release Readiness`](contracts/release-readiness.md). |
 | [`routing-policy.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) | Agentopsd factory routing policy for model/provider/runtime lanes, authority levels, concurrency caps, and manual-merge defaults. See [`Routing Policy`](contracts/routing-policy.md). |
+| [`factory-yield.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/factory-yield.v1.schema.json) | Factory yield observations for baseline/treatment comparison across routing, validation, merge, cost, latency, defects, interventions, and artifacts. See [`Factory Yield Ledger`](contracts/factory-yield-ledger.md). |
 | [`remote-compute-target.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) | Product-neutral GasCity-backed remote compute target configuration. See [`Remote Compute`](contracts/remote-compute.md). |
 | [`remote-session-event.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/remote-session-event.schema.json) | Remote session events and idempotent command delivery records. See [`Remote Compute`](contracts/remote-compute.md). |
 | [`swarm-evidence.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) | Permissive shape for files written by swarm workers to `.agents/swarm/results/<task>.json`. Companion strict schema: [`contracts/swarm-worker-result.schema.json`](contracts/swarm-worker-result.schema.json). |
@@ -60,6 +61,7 @@ Machine-readable schemas that live under [`contracts/`](contracts/index.md) (nar
 - [`contracts/next-work.schema.md`](contracts/next-work.schema.md) — `.agents/rpi/next-work.jsonl` shape
 - [`contracts/swarm-worker-result.schema.json`](contracts/swarm-worker-result.schema.json) — strict completion contract for swarm workers
 - [`contracts/finding-artifact.schema.json`](contracts/finding-artifact.schema.json) — full finding-artifact schema
+- [`contracts/factory-yield-ledger.schema.json`](contracts/factory-yield-ledger.schema.json) — contract-local fixture schema for `factory.yield_observation`
 
 ## Validating against a schema
 

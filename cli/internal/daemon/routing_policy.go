@@ -1,8 +1,10 @@
 package daemon
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -22,8 +24,9 @@ type RoutingPolicy struct {
 	PolicyID             string        `json:"policy_id"`
 	DefaultLane          string        `json:"default_lane"`
 	MaxTotalConcurrency  int           `json:"max_total_concurrency"`
+	AutoMergeEnabled     bool          `json:"auto_merge_enabled"`
 	Lanes                []RoutingLane `json:"lanes"`
-	ManualMergeByDefault bool          `json:"manual_merge_by_default,omitempty"`
+	ManualMergeByDefault bool          `json:"manual_merge_by_default"`
 }
 
 type RoutingLane struct {
@@ -40,6 +43,7 @@ type RoutingLane struct {
 	QualityPrior       string                `json:"quality_prior,omitempty"`
 	YieldGate          *RoutingYieldGate     `json:"yield_gate,omitempty"`
 	PromotionGate      *RoutingPromotionGate `json:"promotion_gate,omitempty"`
+	MergeEligibility   *RoutingMergeGate     `json:"merge_eligibility,omitempty"`
 	DisabledReason     string                `json:"disabled_reason,omitempty"`
 }
 
@@ -52,12 +56,21 @@ type RoutingPromotionGate struct {
 	RequiresYieldEvidence bool `json:"requires_yield_evidence"`
 }
 
+type RoutingMergeGate struct {
+	ManualMergeRequired               bool      `json:"manual_merge_required"`
+	ValidationCommands                []string  `json:"validation_commands"`
+	ValidationFailureTerminalEvent    EventType `json:"validation_failure_terminal_event"`
+	RetainArtifactsOnFailure          bool      `json:"retain_artifacts_on_failure"`
+	RetainWorktreeOnValidationFailure bool      `json:"retain_worktree_on_validation_failure"`
+}
+
 func DefaultFactoryRoutingPolicy() RoutingPolicy {
 	return RoutingPolicy{
 		SchemaVersion:        RoutingPolicySchemaVersion,
 		PolicyID:             "repo-default",
 		DefaultLane:          "frontier-codex",
 		MaxTotalConcurrency:  2,
+		AutoMergeEnabled:     false,
 		ManualMergeByDefault: true,
 		Lanes: []RoutingLane{
 			{
@@ -75,6 +88,16 @@ func DefaultFactoryRoutingPolicy() RoutingPolicy {
 				YieldGate: &RoutingYieldGate{
 					MinAcceptedPatchesPerHour: 0,
 					MinSampleSize:             0,
+				},
+				MergeEligibility: &RoutingMergeGate{
+					ManualMergeRequired: true,
+					ValidationCommands: []string{
+						"cd cli && go test ./internal/daemon -run 'RoutingPolicy|FactoryProjection'",
+						"scripts/pre-push-gate.sh --fast",
+					},
+					ValidationFailureTerminalEvent:    EventFactoryJobTerminal,
+					RetainArtifactsOnFailure:          true,
+					RetainWorktreeOnValidationFailure: true,
 				},
 			},
 			{
@@ -108,7 +131,16 @@ func DefaultFactoryRoutingPolicy() RoutingPolicy {
 
 func ParseRoutingPolicyJSON(data []byte) (RoutingPolicy, error) {
 	var policy RoutingPolicy
-	if err := json.Unmarshal(data, &policy); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&policy); err != nil {
+		return policy, err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			err = fmt.Errorf("routing policy JSON must contain exactly one object")
+		}
 		return policy, err
 	}
 	if err := ValidateRoutingPolicy(policy); err != nil {
@@ -129,6 +161,9 @@ func ValidateRoutingPolicy(policy RoutingPolicy) error {
 	}
 	if policy.MaxTotalConcurrency <= 0 {
 		return fmt.Errorf("max_total_concurrency must be > 0")
+	}
+	if policy.AutoMergeEnabled {
+		return fmt.Errorf("auto_merge_enabled must be false")
 	}
 	if !policy.ManualMergeByDefault {
 		return fmt.Errorf("manual_merge_by_default must be true")
@@ -232,6 +267,41 @@ func validateRoutingLane(policy RoutingPolicy, lane RoutingLane) error {
 	if !lane.Enabled && strings.TrimSpace(lane.DisabledReason) == "" {
 		return fmt.Errorf("disabled lanes require disabled_reason")
 	}
+	if lane.MergeEligibility != nil {
+		if err := validateRoutingMergeGate(*lane.MergeEligibility); err != nil {
+			return err
+		}
+	}
+	if laneRequiresMergeGate(lane) && lane.MergeEligibility == nil {
+		return fmt.Errorf("merge-eligible lanes require merge_eligibility validation commands")
+	}
+	return nil
+}
+
+func validateRoutingMergeGate(gate RoutingMergeGate) error {
+	if !gate.ManualMergeRequired {
+		return fmt.Errorf("merge_eligibility.manual_merge_required must be true")
+	}
+	if len(gate.ValidationCommands) == 0 {
+		return fmt.Errorf("merge_eligibility.validation_commands are required")
+	}
+	for i, command := range gate.ValidationCommands {
+		if strings.TrimSpace(command) == "" {
+			return fmt.Errorf("merge_eligibility.validation_commands[%d] is required", i)
+		}
+	}
+	if err := ValidateEventType(gate.ValidationFailureTerminalEvent); err != nil {
+		return fmt.Errorf("merge_eligibility.validation_failure_terminal_event: %w", err)
+	}
+	if gate.ValidationFailureTerminalEvent != EventFactoryJobTerminal {
+		return fmt.Errorf("merge_eligibility.validation_failure_terminal_event must be %q", EventFactoryJobTerminal)
+	}
+	if !gate.RetainArtifactsOnFailure {
+		return fmt.Errorf("merge_eligibility.retain_artifacts_on_failure must be true")
+	}
+	if !gate.RetainWorktreeOnValidationFailure {
+		return fmt.Errorf("merge_eligibility.retain_worktree_on_validation_failure must be true")
+	}
 	return nil
 }
 
@@ -261,6 +331,18 @@ func laneHasProductionTaskClass(lane RoutingLane) bool {
 		}
 	}
 	return false
+}
+
+func laneRequiresMergeGate(lane RoutingLane) bool {
+	if !lane.Enabled || !laneHasProductionTaskClass(lane) {
+		return false
+	}
+	switch lane.Authority {
+	case RoutingAuthorityDelegated, RoutingAuthorityAuthoritative:
+		return true
+	default:
+		return false
+	}
 }
 
 func isGasCityLane(lane RoutingLane) bool {

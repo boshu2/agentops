@@ -198,6 +198,7 @@
 - [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for cycle-1 autonomy runtime work (ported from olympus)
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
 - [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
+- [Factory Manual Merge Runbook](runbooks/factory-manual-merge.md) — Operator recovery and manual merge procedure for factory worktrees and validation evidence
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
@@ -208,6 +209,9 @@
 - [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
 - [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
 - [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
+- [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation
+- [Factory Yield Ledger Schema](contracts/factory-yield-ledger.schema.json) — Contract-local JSON Schema used to validate the yield ledger fixture
+- [Factory Yield Ledger Example](contracts/factory-yield-ledger.example.json) — Valid fixture for a `factory.yield_observation` event
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes

@@ -46,6 +46,13 @@ skills, the runtime, and external integrations.
     Schema-backed model/provider/runtime lane policy, authority levels, and
     milestone-1 GasCity / Mt. Olympus production-routing guardrails.
 
+-   :material-chart-timeline-variant: **[Factory Yield Ledger](factory-yield-ledger.md)**
+
+    ---
+
+    Baseline/treatment yield observations correlated to routing, validation,
+    manual merge decisions, cost, latency, defects, and artifacts.
+
 -   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
 
     ---

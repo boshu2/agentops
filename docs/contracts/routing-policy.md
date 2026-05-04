@@ -30,6 +30,7 @@ Validated fixtures:
   "policy_id": "repo-default",
   "default_lane": "frontier-codex",
   "max_total_concurrency": 2,
+  "auto_merge_enabled": false,
   "manual_merge_by_default": true,
   "lanes": [
     {
@@ -47,6 +48,16 @@ Validated fixtures:
       "yield_gate": {
         "min_accepted_patches_per_hour": 0,
         "min_sample_size": 0
+      },
+      "merge_eligibility": {
+        "manual_merge_required": true,
+        "validation_commands": [
+          "cd cli && go test ./internal/daemon -run 'RoutingPolicy|FactoryProjection'",
+          "scripts/pre-push-gate.sh --fast"
+        ],
+        "validation_failure_terminal_event": "factory.job_terminal",
+        "retain_artifacts_on_failure": true,
+        "retain_worktree_on_validation_failure": true
       }
     },
     {
@@ -99,15 +110,26 @@ Daemon validation fails closed when:
 
 - `schema_version` is not `1`;
 - `policy_id`, `default_lane`, or `lanes` is missing;
+- unknown JSON fields are present;
 - lane IDs are duplicated;
 - `default_lane` is missing or disabled;
+- `auto_merge_enabled` is not `false`;
+- `manual_merge_by_default` is not `true`;
 - an enabled lane has `max_concurrency == 0`;
 - lane `max_concurrency` exceeds `max_total_concurrency`;
 - authority is not one of the four known values;
 - a local provider lane is above `ADVISORY`;
 - an `AUTHORITATIVE` lane lacks a promotion gate requiring yield evidence;
 - a disabled lane lacks `disabled_reason`;
-- a GasCity / Mt. Olympus lane is enabled for production task classes.
+- a GasCity / Mt. Olympus lane is enabled for production task classes;
+- an enabled `DELEGATED` or `AUTHORITATIVE` lane serving a production task
+  class lacks `merge_eligibility`;
+- `merge_eligibility.validation_commands` is empty or contains blank commands;
+- `merge_eligibility.validation_failure_terminal_event` is not the known
+  `factory.job_terminal` event;
+- `merge_eligibility.manual_merge_required`,
+  `merge_eligibility.retain_artifacts_on_failure`, or
+  `merge_eligibility.retain_worktree_on_validation_failure` is not `true`.
 
 ## Production Boundaries
 
@@ -127,10 +149,27 @@ changes or merge decisions until yield evidence supports promotion.
 
 ## Merge Policy
 
-`manual_merge_by_default` must be `true`. The routing policy does not grant
-merge authority. A `DELEGATED` coding lane can produce a candidate patch and
-validation artifacts; an operator or a future explicitly promoted gate decides
-whether to merge.
+`auto_merge_enabled` must be `false` and `manual_merge_by_default` must be
+`true`. The routing policy does not grant merge authority. A `DELEGATED` coding
+lane can produce a candidate patch and validation artifacts; an operator or a
+future explicitly promoted gate decides whether to merge.
+
+Any route or pilot lane that can produce a merge candidate must declare
+`merge_eligibility`. That gate is not permission to merge. It is a machine
+readable contract for manual review:
+
+- `manual_merge_required: true`;
+- `validation_commands`: exact commands the operator must see passed before
+  merge review;
+- `validation_failure_terminal_event: "factory.job_terminal"`;
+- `retain_artifacts_on_failure: true`;
+- `retain_worktree_on_validation_failure: true`.
+
+When validation fails, the lane must leave the worker job terminal through
+`factory.job_terminal` with `status: "failed"`, retain validation artifacts,
+and keep the worktree for operator recovery. The factory projection represents
+that state through `terminal_jobs`, `blocked_validations`, and
+`retained_failed_worktrees`.
 
 Legacy `ao rpi parallel` now follows the same safety default: it preserves
 worktrees and requires `--auto-merge` to opt into compatibility-mode merging.

@@ -3,6 +3,7 @@
   "policy_id": "repo-default",
   "default_lane": "frontier-codex",
   "max_total_concurrency": 2,
+  "auto_merge_enabled": false,
   "manual_merge_by_default": true,
   "lanes": [
     {
@@ -20,6 +21,16 @@
       "yield_gate": {
         "min_accepted_patches_per_hour": 0,
         "min_sample_size": 0
+      },
+      "merge_eligibility": {
+        "manual_merge_required": true,
+        "validation_commands": [
+          "cd cli && go test ./internal/daemon -run 'RoutingPolicy|FactoryProjection'",
+          "scripts/pre-push-gate.sh --fast"
+        ],
+        "validation_failure_terminal_event": "factory.job_terminal",
+        "retain_artifacts_on_failure": true,
+        "retain_worktree_on_validation_failure": true
       }
     },
     {

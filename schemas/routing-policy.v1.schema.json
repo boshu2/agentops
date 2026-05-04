@@ -8,6 +8,7 @@
     "policy_id",
     "default_lane",
     "max_total_concurrency",
+    "auto_merge_enabled",
     "manual_merge_by_default",
     "lanes"
   ],
@@ -27,6 +28,9 @@
     "max_total_concurrency": {
       "type": "integer",
       "minimum": 1
+    },
+    "auto_merge_enabled": {
+      "const": false
     },
     "manual_merge_by_default": {
       "const": true
@@ -105,6 +109,9 @@
         "promotion_gate": {
           "$ref": "#/$defs/promotion_gate"
         },
+        "merge_eligibility": {
+          "$ref": "#/$defs/merge_eligibility"
+        },
         "disabled_reason": {
           "type": "string"
         }
@@ -143,6 +150,46 @@
                 "minLength": 1
               }
             }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                },
+                "required": ["enabled"]
+              },
+              {
+                "properties": {
+                  "authority": {
+                    "enum": ["DELEGATED", "AUTHORITATIVE"]
+                  }
+                },
+                "required": ["authority"]
+              },
+              {
+                "properties": {
+                  "task_classes": {
+                    "contains": {
+                      "enum": [
+                        "code_change",
+                        "test_repair",
+                        "docs_change",
+                        "merge_decision"
+                      ]
+                    }
+                  }
+                },
+                "required": ["task_classes"]
+              }
+            ]
+          },
+          "then": {
+            "required": ["merge_eligibility"]
           }
         },
         {
@@ -218,6 +265,39 @@
       "properties": {
         "requires_yield_evidence": {
           "type": "boolean"
+        }
+      }
+    },
+    "merge_eligibility": {
+      "type": "object",
+      "required": [
+        "manual_merge_required",
+        "validation_commands",
+        "validation_failure_terminal_event",
+        "retain_artifacts_on_failure",
+        "retain_worktree_on_validation_failure"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "manual_merge_required": {
+          "const": true
+        },
+        "validation_commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "validation_failure_terminal_event": {
+          "const": "factory.job_terminal"
+        },
+        "retain_artifacts_on_failure": {
+          "const": true
+        },
+        "retain_worktree_on_validation_failure": {
+          "const": true
         }
       }
     }
