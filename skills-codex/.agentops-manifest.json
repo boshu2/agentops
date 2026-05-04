@@ -698,7 +698,7 @@
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "1dabe9fe758fdc8e12d585cc0f0be3c7687394633c7a325cfa17d2e564e63d19",
-      "generated_hash": "d9fdd74b362c36facd766ea6ac3da7638135e26411233374fa8f953fad8d200d"
+      "generated_hash": "0be239984a0f2fcee32b42058bd063f6734f6c8dcf39f48917f71cb298807b33"
     },
     {
       "name": "deps",
@@ -782,7 +782,7 @@
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "197971ba26ca36a9acaf72673000061e77b2f1e6ed7e8ac3370e47a54d3b8211",
-      "generated_hash": "a050d66f0746069033825b6b3a9acebafaa54b37b5ec5a4e494939d15fdcba42"
+      "generated_hash": "a71a281c6d41263fcaff338a910a92d44fd72ba15e6d37b1e483e5af0c0ce732"
     },
     {
       "name": "inject",
