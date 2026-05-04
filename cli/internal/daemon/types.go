@@ -21,7 +21,9 @@ const (
 	JobTypePlansProjection  JobType = "plans.projection"
 	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
 	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
-	JobTypeLLMWikiLoop JobType = "llmwiki.loop"
+	JobTypeLLMWikiLoop      JobType = "llmwiki.loop"
+	JobTypeEvalSuite        JobType = "eval.suite"
+	JobTypeEvalSkillDelta   JobType = "eval.skill-delta"
 )
 
 // RecurringJobTemplate is a schedule entry that materializes a Job on each cron tick.
@@ -367,6 +369,9 @@ var jobTypeSet = map[string]struct{}{
 	string(JobTypeWikiForge):        {},
 	string(JobTypeOpenClawSnapshot): {},
 	string(JobTypePlansProjection):  {},
+	string(JobTypeLLMWikiLoop):      {},
+	string(JobTypeEvalSuite):        {},
+	string(JobTypeEvalSkillDelta):   {},
 }
 
 var eventTypeSet = map[string]struct{}{

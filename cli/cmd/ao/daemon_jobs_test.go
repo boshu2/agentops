@@ -328,6 +328,16 @@ func TestValidateSubmitJobTypeAcceptsKnown(t *testing.T) {
 			t.Errorf("validateSubmitJobType(%q) returned error: %v", jt, err)
 		}
 	}
+	for _, jt := range []daemonpkg.JobType{
+		daemonpkg.JobTypeEvalSuite,
+		daemonpkg.JobTypeEvalSkillDelta,
+		daemonpkg.JobTypePlansProjection,
+		daemonpkg.JobTypeLLMWikiLoop,
+	} {
+		if err := validateSubmitJobType(string(jt)); err != nil {
+			t.Errorf("new job type %q rejected: %v", jt, err)
+		}
+	}
 }
 
 func TestValidateSubmitJobTypeRejectsUnknown(t *testing.T) {

@@ -39,6 +39,10 @@ var knownDaemonJobTypes = []daemonpkg.JobType{
 	daemonpkg.JobTypeWikiBuild,
 	daemonpkg.JobTypeWikiForge,
 	daemonpkg.JobTypeOpenClawSnapshot,
+	daemonpkg.JobTypePlansProjection,
+	daemonpkg.JobTypeLLMWikiLoop,
+	daemonpkg.JobTypeEvalSuite,
+	daemonpkg.JobTypeEvalSkillDelta,
 }
 
 var daemonJobsCmd = &cobra.Command{
