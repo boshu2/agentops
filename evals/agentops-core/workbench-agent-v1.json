@@ -31,34 +31,11 @@
     "max_aggregate_regression": 0.15,
     "max_dimension_regression": 0.2
   },
-  "run_modes": {
-    "single": {
-      "description": "One run per task, task-specific prompts",
-      "flags": "--timeout 180"
-    },
-    "pass_at_5": {
-      "description": "5 runs per task for statistical confidence (Anthropic pattern)",
-      "flags": "--runs 5 --timeout 180 --json"
-    },
-    "ab_compare": {
-      "description": "With-skill vs without-skill A/B (SkillsBench pattern)",
-      "flags": "--compare --timeout 180 --json"
-    },
-    "retry": {
-      "description": "Two-attempt with test feedback on failure (Aider pattern)",
-      "flags": "--retry --timeout 180"
-    },
-    "generic_prompt": {
-      "description": "Generic prompt baseline for prompt-sensitivity measurement",
-      "flags": "--generic-prompt --timeout 180"
-    }
-  },
   "cases": [
     {
       "id": "agent-go-01-fix-bug",
       "title": "Agent fixes off-by-one bug in Go Multiply",
       "kind": "command",
-      "category": "bug_fix",
       "objective": "Agent receives broken Go code with off-by-one error. Must identify and fix the bug so tests pass.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -77,7 +54,6 @@
       "id": "agent-go-02-write-tests",
       "title": "Agent writes test coverage for store Delete/Get",
       "kind": "command",
-      "category": "test_writing",
       "objective": "Agent must write new test functions for Delete and Get-not-found operations, achieving 80%+ coverage.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -96,7 +72,6 @@
       "id": "agent-go-03-implement-divide",
       "title": "Agent implements Divide function with error handling",
       "kind": "command",
-      "category": "feature_impl",
       "objective": "Agent must implement Divide with correct division and divide-by-zero error handling, plus add tests.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -115,7 +90,6 @@
       "id": "agent-go-04-refactor-complexity",
       "title": "Agent refactors ProcessBatch below CC-10",
       "kind": "command",
-      "category": "refactor",
       "objective": "Agent must reduce cyclomatic complexity of ProcessBatch to <=10 while preserving all behavior.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -134,7 +108,6 @@
       "id": "agent-go-05-fix-cmdi",
       "title": "Agent fixes command injection vulnerability",
       "kind": "command",
-      "category": "security_fix",
       "objective": "Agent must find and fix unsafe exec.Command construction that enables command injection.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -153,7 +126,6 @@
       "id": "agent-py-01-fix-404",
       "title": "Agent fixes broken 404 response in API",
       "kind": "command",
-      "category": "bug_fix",
       "objective": "Agent receives Python API with incorrect HTTP response. Must identify and fix the bug.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -172,7 +144,6 @@
       "id": "agent-py-02-add-validation",
       "title": "Agent adds Pydantic input validation",
       "kind": "command",
-      "category": "feature_impl",
       "objective": "Agent must add field validators for price>0 and non-empty name, plus write validation test cases.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -191,7 +162,6 @@
       "id": "agent-py-03-add-pagination",
       "title": "Agent adds pagination to list endpoint",
       "kind": "command",
-      "category": "feature_impl",
       "objective": "Agent must add page/size params, paginated response with total/page/size, and pagination test.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -210,7 +180,6 @@
       "id": "agent-py-04-fix-sqli",
       "title": "Agent fixes SQL injection in Python API",
       "kind": "command",
-      "category": "security_fix",
       "objective": "Agent receives Python code with f-string SQL query. Must identify and fix the injection vulnerability.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -229,7 +198,6 @@
       "id": "agent-ops-01-fix-deploy",
       "title": "Agent adds error handling to deploy script",
       "kind": "command",
-      "category": "hardening",
       "objective": "Agent must restore set -euo pipefail and field validation to deploy script.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -248,7 +216,6 @@
       "id": "agent-ops-02-fix-logrotate",
       "title": "Agent fixes log rotation empty-directory crash",
       "kind": "command",
-      "category": "bug_fix",
       "objective": "Agent must fix log rotation script to handle empty directories gracefully.",
       "runtime": "shell",
       "timeout_seconds": 180,
@@ -267,7 +234,6 @@
       "id": "agent-ops-03-add-retry",
       "title": "Agent adds retry logic with backoff to healthcheck",
       "kind": "command",
-      "category": "feature_impl",
       "objective": "Agent must add configurable retry loop with backoff to healthcheck script.",
       "runtime": "shell",
       "timeout_seconds": 180,
