@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-WORKBENCH="$REPO_ROOT/evals/workbench"
 HARNESS="$SCRIPT_DIR/eval-agent-harness.sh"
 
 usage() {
@@ -93,7 +92,6 @@ for task in $ALL_TASKS; do
 
   case "$MODE" in
     single)
-      harness_flags="$harness_flags"
       ;;
     pass-at-k)
       harness_flags="$harness_flags --runs $PASS_K --json"
@@ -110,6 +108,7 @@ for task in $ALL_TASKS; do
   esac
 
   start_ts=$(date +%s)
+  # shellcheck disable=SC2086
   result=$(bash "$HARNESS" $harness_flags 2>/dev/null | tail -1)
   end_ts=$(date +%s)
   elapsed=$((end_ts - start_ts))

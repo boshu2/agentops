@@ -22,7 +22,6 @@ Options:
   --hooks-disabled     Set AGENTOPS_HOOKS_DISABLED=1 for skill-off leg
   --retry              Give agent a second attempt with test failure output (Aider pattern)
   --dry-run            Skip agent invocation, output synthetic result
-  --json               Output full JSON report (default for --runs > 1)
   -h, --help           Show this help
 USAGE
 }
@@ -37,7 +36,6 @@ COMPARE=false
 HOOKS_DISABLED=false
 RETRY=false
 DRY_RUN=false
-JSON_OUTPUT=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -51,7 +49,6 @@ while [[ $# -gt 0 ]]; do
     --hooks-disabled) HOOKS_DISABLED=true; shift ;;
     --retry) RETRY=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
-    --json) JSON_OUTPUT=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
