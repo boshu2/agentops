@@ -13,6 +13,16 @@ cd "$REPO_ROOT"
 VENV_DIR=".venv-docs"
 
 ensure_venv() {
+    # Stale-venv pre-flight: a venv whose pyvenv.cfg points to a moved/deleted
+    # interpreter passes the directory-existence check but fails on activation.
+    # This bit us after the ~/dev/personal/agentops/ -> ~/dev/agentops/ collapse.
+    if [[ -d "$VENV_DIR" ]]; then
+        if ! "$VENV_DIR/bin/python3" -c "import sys" >/dev/null 2>&1; then
+            echo "==> Stale venv detected ($VENV_DIR), recreating"
+            rm -rf "$VENV_DIR"
+        fi
+    fi
+
     if [[ ! -d "$VENV_DIR" ]]; then
         echo "==> Creating MkDocs venv ($VENV_DIR)"
         if command -v uv >/dev/null 2>&1; then

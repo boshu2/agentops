@@ -17,6 +17,10 @@
 
 set -euo pipefail
 
+# Upstream: https://github.com/BurntSushi/ripgrep/releases
+# Last checked: 2026-05-03, upstream latest: 14.1.1
+# Bump cadence: review on security advisories or roughly every 3 months.
+# To check current upstream: curl -sf https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | jq -r .tag_name
 RG_VERSION="${RG_VERSION:-14.1.1}"
 RG_INSTALL_DIR="${RG_INSTALL_DIR:-$HOME/.local/bin}"
 RG_SRC_DIR="${RG_SRC_DIR:-$HOME/.cache/agentops/ripgrep-src}"
