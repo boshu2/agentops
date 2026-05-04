@@ -26,7 +26,7 @@ command -v jq >/dev/null 2>&1 || { echo "FAIL: jq is required"; exit 1; }
 # cli/internal/overnight/findings_router_test.go.
 VALID_TYPES=(tech-debt improvement pattern-fix process-improvement feature bug task docs chore)
 VALID_SEVERITIES=(low medium high)
-VALID_SOURCES=(council-finding retro-learning retro-pattern evolve-generator feature-suggestion backlog-processing post-mortem-finding manifest-classification)
+VALID_SOURCES=(council-finding retro-learning retro-pattern evolve-generator feature-suggestion backlog-processing post-mortem-finding manifest-classification dream-degraded)
 VALID_CLAIM_STATUSES=(available in_progress consumed)
 
 in_set() {
