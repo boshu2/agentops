@@ -925,8 +925,8 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "2a2db1970663f7bbb821c75eaf57d6d8c0dcdac00de99152ba1898eebc1ce0f0",
-      "generated_hash": "609ffdff339e43721ecdc6f51a3ec59e4ededde557ac08972cc78299db109628"
+      "source_hash": "95e99f81f387133801d68bb3886af044e72cf6229a564e7eb844a00223b281a5",
+      "generated_hash": "14ba7178b1fef45be2228574d72084b532a50a9e45c6d211f7143b2dc9b1bfd6"
     },
     {
       "name": "research",
