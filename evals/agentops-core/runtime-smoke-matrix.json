@@ -105,8 +105,8 @@
       "kind": "artifact_check",
       "objective": "Keep the product contract and smoke dispatch tied to Claude Code, Codex, Cursor, and OpenCode runtime proof tiers.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Claude Code, Codex CLI, Cursor, and OpenCode"},
-        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Tier S structural/install proof is active for all four runtimes"},
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Claude Code, Codex CLI, and OpenCode"},
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Tier S structural proof is active for all four runtimes"},
         {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-claude-code-smoke.sh"},
         {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-codex-smoke.sh"},
         {"type": "artifact_contains", "target": "../../tests/smoke-test.sh", "value": "test-runtime-cursor-smoke.sh"},
