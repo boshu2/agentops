@@ -134,6 +134,108 @@
       ],
       "dimensions": ["correctness", "safety", "process_adherence"],
       "critical": false
+    },
+    {
+      "id": "wb-go-02-add-test-coverage",
+      "title": "Add missing test coverage for Go store package",
+      "kind": "command",
+      "objective": "Agent must add tests for Delete and Get (missing key) operations. Tests the test-writing workflow and coverage awareness.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-go-04-refactor-complexity",
+      "title": "Refactor high-complexity Go function below CC threshold",
+      "kind": "command",
+      "objective": "Agent must refactor a CC-15 function to below CC 10 while maintaining behavior. Tests refactoring discipline.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-04/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-04/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-02-add-input-validation",
+      "title": "Add input validation to Python API models",
+      "kind": "command",
+      "objective": "Agent must add Pydantic validation (price > 0, non-empty name) and corresponding tests. Tests defensive coding.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-03-add-pagination",
+      "title": "Add pagination to Python API list endpoint",
+      "kind": "command",
+      "objective": "Agent must add page/size query parameters and paginated response. Tests feature implementation workflow.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-03/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-03/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": false
+    },
+    {
+      "id": "wb-ops-02-fix-empty-dir-crash",
+      "title": "Fix log rotation crash on empty directory",
+      "kind": "command",
+      "objective": "Agent must add graceful handling for empty log directories. Tests edge-case awareness.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/ops-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/devops/* \"$TMPDIR/\" && bash evals/workbench/tasks/ops-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-ops-03-add-retry-logic",
+      "title": "Add retry logic to healthcheck script",
+      "kind": "command",
+      "objective": "Agent must add retry with backoff to a single-attempt healthcheck. Tests reliability engineering.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/ops-03/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/devops/* \"$TMPDIR/\" && bash evals/workbench/tasks/ops-03/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
     }
   ]
 }

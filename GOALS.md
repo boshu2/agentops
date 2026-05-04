@@ -88,7 +88,7 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 
 The 58 existing eval suites are CI canaries (contract checks). None answers "did this skill change make agents better?" Ship a behavioral eval system with a known-good workbench project, task definitions with golden solutions, and scoring scripts that measure correctness, safety, and process adherence. The eval engine already supports A/B comparison via `--baseline-mode=both` and statistical verdict — the gap is eval content, not infrastructure.
 
-**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, first behavioral eval suite (`workbench-behavioral-v1`) with 6 cases. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Remaining gap: live agent runtime tier (Day-3) for real skill-on vs skill-off delta.
+**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Remaining gap: live agent runtime tier (Day-3) for real skill-on vs skill-off delta.
 
 **Steer:** increase (behavioral eval tasks with scoring scripts)
 
