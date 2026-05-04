@@ -1,0 +1,5 @@
+app_name: workbench-api
+version: "1.0.0"
+target: staging
+health_url: http://localhost:8080/health
+log_dir: /tmp/wb-deploy-logs

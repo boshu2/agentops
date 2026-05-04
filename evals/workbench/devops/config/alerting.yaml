@@ -1,0 +1,9 @@
+rules:
+  - name: high-error-rate
+    threshold: 0.05
+    window_seconds: 300
+    action: notify
+  - name: slow-response
+    threshold_ms: 2000
+    window_seconds: 60
+    action: warn
