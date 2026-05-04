@@ -9,7 +9,7 @@ total=3
 
 # Check 1: rotate-logs.sh handles empty directory gracefully (exits 0)
 tmpdir="$(mktemp -d)"
-trap "rm -rf '$tmpdir'" EXIT
+trap 'rm -rf "$tmpdir"' EXIT
 emptydir="$tmpdir/empty-logs"
 mkdir -p "$emptydir"
 if bash scripts/rotate-logs.sh "$emptydir" 2>/dev/null; then

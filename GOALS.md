@@ -84,6 +84,14 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 
 **Steer:** increase (auto-proposed skill drafts)
 
+### 10. Measure skill value through real-task evaluation
+
+The 58 existing eval suites are CI canaries (contract checks). None answers "did this skill change make agents better?" Ship a behavioral eval system with a known-good workbench project, task definitions with golden solutions, and scoring scripts that measure correctness, safety, and process adherence. The eval engine already supports A/B comparison via `--baseline-mode=both` and statistical verdict — the gap is eval content, not infrastructure.
+
+**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, first behavioral eval suite (`workbench-behavioral-v1`) with 6 cases. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Remaining gap: live agent runtime tier (Day-3) for real skill-on vs skill-off delta.
+
+**Steer:** increase (behavioral eval tasks with scoring scripts)
+
 ## Three-Gap Contract Proof Surface
 
 AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Every gate below maps to at least one gap. If a gap has no gate, it is an unproven promise.
@@ -134,4 +142,5 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |
 | install-smoke | `timeout 30 bash tests/install/test-install-smoke.sh` | 5 | Install scripts pass syntax and structure validation |  |
 | flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |  |
+| eval-workbench-verify | `timeout 60 bash scripts/check-eval-workbench.sh` | 6 | Behavioral eval workbench golden state, task scoring, and suite structure verified |  |
 | state-path-resolver-coverage | `bash scripts/check-paths-resolver-coverage.sh` | 3 | Tracks executable-code sites that still hardcode `.agents/` paths instead of sourcing the canonical resolver (lib/ao-paths.sh / cli/internal/paths from soc-irg1.1). Warn-only initially per warn-then-fail-ratchet pattern; flip to blocking is a separate follow-up issue under epic soc-irg1 after 2 weeks of baseline data. See `.agents/patterns/2026-05-01-state-path-resolver.md`. | warn-only |

@@ -14,7 +14,7 @@ fi
 
 # Check 2: deploy.sh exits non-zero when given invalid config (missing required field)
 tmpdir="$(mktemp -d)"
-trap "rm -rf '$tmpdir'" EXIT
+trap 'rm -rf "$tmpdir"' EXIT
 cat > "$tmpdir/bad.yaml" <<EOF
 app_name: test-app
 EOF

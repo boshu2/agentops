@@ -16,7 +16,7 @@ fi
 # Check 2: healthcheck.sh outputs valid JSON (has all required fields)
 # Test with an unreachable URL so we get output without needing a server
 tmpdir="$(mktemp -d)"
-trap "rm -rf '$tmpdir'" EXIT
+trap 'rm -rf "$tmpdir"' EXIT
 output=$(MAX_RETRIES=1 BACKOFF_SECS=0 bash scripts/healthcheck.sh "http://127.0.0.1:19999/nope" 2>&1) || true
 valid_json=true
 for field in status url attempts latency_ms; do

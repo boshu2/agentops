@@ -20,8 +20,6 @@ fi
 # Check 3: No function has cyclomatic complexity > 10
 # Heuristic: count if/for/switch/case/&& /|| tokens inside each function
 # and flag any that exceed 10
-high_cc=0
-
 # Use a Python script for reliable complexity counting
 cc_ok=true
 if ! python3 - "$WORKDIR/internal/calc/calc.go" << 'PYEOF'
