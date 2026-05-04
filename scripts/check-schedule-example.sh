@@ -4,11 +4,18 @@
 # Fitness gate: dream-end-user-coverage (per GOALS.md Directive #8 + amendment
 # B3 of soc-hxnr.6).
 #
-# Asserts that .agents/schedule.yaml.example:
-#   1. Exists at the expected path
-#   2. Parses as valid YAML with a non-empty `schedules:` list
+# Asserts that the stock schedule example:
+#   1. Exists at the canonical tracked path docs/templates/schedule.yaml.example
+#      (preferred), OR at .agents/schedule.yaml.example (operator's local copy
+#      after `ao init --with-schedule`).
+#   2. Parses as valid YAML with a non-empty `schedules:` list.
 #   3. Contains at least one schedule with job_type from the v1.0 safe-set:
-#      dream.run, wiki.forge (real-bodied executors per soc-8inr substrate)
+#      dream.run, wiki.forge (real-bodied executors per soc-8inr substrate).
+#
+# The tracked canonical (docs/templates/) is what makes this gate flip green
+# permanently across environments — `.agents/schedule.yaml.example` is
+# gitignored per the no-tracked-agents policy and only exists post-init on
+# operator hosts.
 #
 # llmwiki.loop is intentionally excluded — its stage handlers are stubs in v1.0;
 # wait for the real-bodies follow-up (f-2026-05-01-011) before scheduling.
@@ -20,11 +27,19 @@
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-EXAMPLE_PATH="$REPO_ROOT/.agents/schedule.yaml.example"
+CANONICAL_PATH="$REPO_ROOT/docs/templates/schedule.yaml.example"
+RUNTIME_PATH="$REPO_ROOT/.agents/schedule.yaml.example"
 
-# Step 1: existence
-if [[ ! -f "$EXAMPLE_PATH" ]]; then
-    echo "FAIL: $EXAMPLE_PATH does not exist" >&2
+# Step 1: existence — prefer the tracked canonical, fall back to operator's
+# local runtime copy.
+if [[ -f "$CANONICAL_PATH" ]]; then
+    EXAMPLE_PATH="$CANONICAL_PATH"
+elif [[ -f "$RUNTIME_PATH" ]]; then
+    EXAMPLE_PATH="$RUNTIME_PATH"
+else
+    echo "FAIL: stock schedule example missing" >&2
+    echo "  expected at: $CANONICAL_PATH (canonical, tracked)" >&2
+    echo "          or: $RUNTIME_PATH (operator runtime copy)" >&2
     echo "Per Directive #8 + soc-hxnr.6, the stock starter schedule must be present." >&2
     exit 1
 fi
