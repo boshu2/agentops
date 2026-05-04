@@ -31,6 +31,7 @@ var knownEventTypes = map[EventType]struct{}{
 	EventFactoryValidationCompleted: {},
 	EventFactoryMergeDecision:       {},
 	EventFactoryJobTerminal:         {},
+	EventFactoryYieldObservation:    {},
 	EventScheduleCreated:            {},
 	EventScheduleFired:              {},
 	EventScheduleSkipped:            {},
@@ -56,7 +57,8 @@ func isFactoryEvent(t EventType) bool {
 		EventFactoryValidationStarted,
 		EventFactoryValidationCompleted,
 		EventFactoryMergeDecision,
-		EventFactoryJobTerminal:
+		EventFactoryJobTerminal,
+		EventFactoryYieldObservation:
 		return true
 	default:
 		return false

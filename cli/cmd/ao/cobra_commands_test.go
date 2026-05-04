@@ -65,6 +65,10 @@ func executeCommand(args ...string) (string, error) {
 	origFactoryStartGoal := factoryStartGoal
 	origFactoryStartLimit := factoryStartLimit
 	origFactoryStartNoMaintenance := factoryStartNoMaintenance
+	origFactoryPilotGoal := factoryPilotGoal
+	origFactoryPilotRunID := factoryPilotRunID
+	origFactoryPilotWorktreeRoot := factoryPilotWorktreeRoot
+	origFactoryPilotValidationCommands := factoryPilotValidationCommands
 	origCodexStopSessionID := codexStopSessionID
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
@@ -163,6 +167,10 @@ func executeCommand(args ...string) (string, error) {
 		factoryStartGoal = origFactoryStartGoal
 		factoryStartLimit = origFactoryStartLimit
 		factoryStartNoMaintenance = origFactoryStartNoMaintenance
+		factoryPilotGoal = origFactoryPilotGoal
+		factoryPilotRunID = origFactoryPilotRunID
+		factoryPilotWorktreeRoot = origFactoryPilotWorktreeRoot
+		factoryPilotValidationCommands = origFactoryPilotValidationCommands
 		codexStopSessionID = origCodexStopSessionID
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract
@@ -453,7 +461,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"beads":      {"verify", "lint", "harvest"},
 		"daemon":     {"run", "ready", "status", "service"},
 		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
-		"factory":    {"start"},
+		"factory":    {"start", "pilot"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
 		"ratchet":    {"status", "check", "next"},

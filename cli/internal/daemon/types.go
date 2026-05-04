@@ -87,6 +87,7 @@ const (
 	EventFactoryValidationCompleted EventType = "factory.validation_completed"
 	EventFactoryMergeDecision       EventType = "factory.merge_decision"
 	EventFactoryJobTerminal         EventType = "factory.job_terminal"
+	EventFactoryYieldObservation    EventType = "factory.yield_observation"
 )
 
 type JobStatus string
@@ -388,6 +389,7 @@ var eventTypeSet = map[string]struct{}{
 	string(EventFactoryValidationCompleted): {},
 	string(EventFactoryMergeDecision):       {},
 	string(EventFactoryJobTerminal):         {},
+	string(EventFactoryYieldObservation):    {},
 }
 
 var jobStatusSet = map[string]struct{}{

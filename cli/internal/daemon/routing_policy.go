@@ -219,6 +219,16 @@ func (policy RoutingPolicy) SelectLane(taskClass string) (RoutingLane, error) {
 }
 
 func validateRoutingLane(policy RoutingPolicy, lane RoutingLane) error {
+	if err := validateRoutingLaneRequiredFields(lane); err != nil {
+		return err
+	}
+	if err := validateRoutingLaneConcurrency(policy, lane); err != nil {
+		return err
+	}
+	return validateRoutingLaneGates(lane)
+}
+
+func validateRoutingLaneRequiredFields(lane RoutingLane) error {
 	if strings.TrimSpace(lane.ID) == "" {
 		return fmt.Errorf("id is required")
 	}
@@ -237,6 +247,10 @@ func validateRoutingLane(policy RoutingPolicy, lane RoutingLane) error {
 	if len(lane.TaskClasses) == 0 {
 		return fmt.Errorf("task_classes are required")
 	}
+	return nil
+}
+
+func validateRoutingLaneConcurrency(policy RoutingPolicy, lane RoutingLane) error {
 	if lane.MaxConcurrency < 0 {
 		return fmt.Errorf("max_concurrency must be >= 0")
 	}
@@ -246,6 +260,10 @@ func validateRoutingLane(policy RoutingPolicy, lane RoutingLane) error {
 	if lane.MaxConcurrency > policy.MaxTotalConcurrency {
 		return fmt.Errorf("max_concurrency %d exceeds max_total_concurrency %d", lane.MaxConcurrency, policy.MaxTotalConcurrency)
 	}
+	return nil
+}
+
+func validateRoutingLaneGates(lane RoutingLane) error {
 	if lane.YieldGate != nil {
 		if lane.YieldGate.MinAcceptedPatchesPerHour < 0 {
 			return fmt.Errorf("yield_gate.min_accepted_patches_per_hour must be >= 0")

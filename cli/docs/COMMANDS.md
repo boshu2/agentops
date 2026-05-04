@@ -1422,6 +1422,24 @@ ao factory [command]
 
 **Subcommands:**
 
+#### `ao factory pilot`
+
+Print the smallest safe factory pilot plan for comparing one worker
+
+```
+ao factory pilot [flags]
+```
+
+**Flags:**
+
+```
+      --goal string              Pilot objective to compare with 1-vs-2 cloud/frontier workers
+  -h, --help                     help for pilot
+      --run-id string            Stable pilot run id (default generated from current time)
+      --validation stringArray   Validation command required before manual merge review (repeatable)
+      --worktree-root string     Factory-owned worktree root for allocated worker worktrees
+```
+
 #### `ao factory start`
 
 Start the software-factory operator lane for a concrete goal.

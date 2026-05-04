@@ -291,7 +291,7 @@ Milestone 1 is safe observed parallelism:
 - lifecycle event vocabulary and projection shape;
 - validation-required manual merge gates;
 - yield ledger event shape;
-- bounded 1-vs-2 pilot runbook using fake/cloud-frontier lanes.
+- bounded 1-vs-2 pilot runbook using cloud/frontier lanes.
 
 Explicit non-goals:
 

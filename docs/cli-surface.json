@@ -219,6 +219,48 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "daemon events tail",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "daemon jobs cancel",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "daemon jobs list",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "daemon jobs show",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "daemon jobs submit",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "daemon jobs wait",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "daemon ready",
       "coverage_status": "covered",
@@ -235,6 +277,13 @@
     {
       "category": "public-tested",
       "command": "daemon service install",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "daemon soak",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -283,6 +332,20 @@
     },
     {
       "category": "public-tested",
+      "command": "eval baseline-audit",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval cleanup",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "eval compare",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -310,6 +373,48 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "eval suite n-required",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "eval suite verdict",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "eval task add",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "eval task list",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval task run",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "manual-only",
+      "command": "eval task show",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "evolve",
       "coverage_status": "covered",
@@ -319,6 +424,13 @@
     {
       "category": "public-tested",
       "command": "extract",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "factory pilot",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -920,6 +1032,13 @@
     },
     {
       "category": "public-tested",
+      "command": "pool reindex",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "pool reject",
       "coverage_status": "allowlisted",
       "kind": "leaf",
@@ -1143,6 +1262,55 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "schedule add",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "schedule list",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "schedule remove",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "schedule run",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "public-tested",
+      "command": "scope freeze",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "scope status",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "scope unfreeze",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "public-tested",
       "command": "search",
       "coverage_status": "covered",
@@ -1172,6 +1340,13 @@
     },
     {
       "category": "public-tested",
+      "command": "skills check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "status",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1194,6 +1369,13 @@
     {
       "category": "public-tested",
       "command": "vibe-check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "watch",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

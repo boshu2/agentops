@@ -58,6 +58,7 @@ func TestValidateEventTypeAcceptsFactoryLifecycleEvents(t *testing.T) {
 		EventFactoryValidationCompleted,
 		EventFactoryMergeDecision,
 		EventFactoryJobTerminal,
+		EventFactoryYieldObservation,
 	}
 	for _, eventType := range events {
 		if err := ValidateEventType(eventType); err != nil {
@@ -326,6 +327,45 @@ func TestFactoryProjectionClaimedJobsAreWorkerOwnedNotQueued(t *testing.T) {
 	}
 	if factory.ActiveWorkers[0].WorkerID != "worker-claimed" || factory.ActiveWorkers[0].Status != FactorySlotStatusAllocated {
 		t.Fatalf("active worker = %#v, want claimed worker in allocated slot", factory.ActiveWorkers[0])
+	}
+}
+
+func TestFactoryProjectionRecordsYieldObservationAsRecentEvent(t *testing.T) {
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-yield", "req-yield", "job-yield", EventFactoryYieldObservation, "", 0, map[string]any{
+			"run_id":                "factory-run-1",
+			"lane_id":               "frontier-codex",
+			"baseline_or_treatment": "treatment",
+			"accepted_patches":      1,
+			"validation_status":     "passed",
+			"merge_status":          "manual_pending",
+			"artifact_refs": map[string]ArtifactRef{
+				"validation": {
+					Path:      ".agents/factory/runs/factory-run-1/validation.json",
+					SHA256:    strings.Repeat("b", 64),
+					Size:      256,
+					WrittenAt: projectionTestTime(t, 0).Format(time.RFC3339Nano),
+				},
+			},
+		}),
+	}
+
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 1),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	factory := projections.Factory
+	if len(factory.RecentEvents) != 1 {
+		t.Fatalf("recent events = %d, want 1: %#v", len(factory.RecentEvents), factory.RecentEvents)
+	}
+	if factory.RecentEvents[0].EventType != EventFactoryYieldObservation {
+		t.Fatalf("recent event type = %q, want %q", factory.RecentEvents[0].EventType, EventFactoryYieldObservation)
+	}
+	if len(factory.Artifacts) != 1 || factory.Artifacts[0].Path != ".agents/factory/runs/factory-run-1/validation.json" {
+		t.Fatalf("artifacts = %#v, want yield validation artifact pointer", factory.Artifacts)
 	}
 }
 
