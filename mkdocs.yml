@@ -1,5 +1,5 @@
 site_name: AgentOps
-site_description: The operational layer for coding agents. Memory, validation, and feedback loops that compound between sessions.
+site_description: Context compiler for coding agents. Assembles, validates, and delivers the right context so every session starts loaded, not cold.
 site_url: https://boshu2.github.io/agentops/
 site_author: AgentOps
 
@@ -197,6 +197,7 @@ nav:
       - Philosophy: philosophy.md
       - Knowledge Flywheel: knowledge-flywheel.md
       - The Science: the-science.md
+      - CDLC: cdlc.md
       - Brownian Ratchet: brownian-ratchet.md
       - Context Lifecycle: context-lifecycle.md
       - Context Packet: context-packet.md
