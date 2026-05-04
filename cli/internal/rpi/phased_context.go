@@ -46,6 +46,9 @@ const PhaseSummaryInstruction = `PHASE SUMMARY CONTRACT: Before finishing this s
 
 // ContextDisciplineInstruction is prepended to every phase prompt to prevent compaction.
 const ContextDisciplineInstruction = `CONTEXT DISCIPLINE: You are running inside ao rpi phased (phase {{.PhaseNum}} of 3). Each phase gets a FRESH context window. Stay disciplined:
+- AUTONOMOUS EXECUTION: You already have approval to perform this phase. Do NOT ask for confirmation, permission, or plan approval.
+- Do NOT stop after presenting a plan. Begin the required phase work immediately.
+- In non-interactive runtimes, slash-command references are instructions to execute the equivalent workflow directly when slash commands are unavailable.
 - Do NOT accumulate large file contents in context. Read files with the Read tool JIT and extract only what you need.
 - Do NOT explore broadly when narrow exploration suffices. Be surgical.
 - Write findings, plans, and results to DISK (files in .agents/), not just in conversation.

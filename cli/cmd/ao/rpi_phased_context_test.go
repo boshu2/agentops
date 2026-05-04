@@ -127,6 +127,41 @@ func TestCtx_BuildPromptForPhase_Phase1(t *testing.T) {
 	}
 }
 
+func TestCtx_BuildPromptForPhase_AutonomousExecutionContract(t *testing.T) {
+	state := &phasedState{
+		Goal:     "make direct runtimes proceed",
+		EpicID:   "ep-auto",
+		Verdicts: map[string]string{},
+		Attempts: map[string]int{},
+		Opts:     defaultPhasedEngineOptions(),
+	}
+
+	prompt, err := buildPromptForPhase("", 1, state, nil)
+	if err != nil {
+		t.Fatalf("buildPromptForPhase(1): %v", err)
+	}
+
+	for _, want := range []string{
+		"You already have approval to perform this phase",
+		"Do NOT ask for confirmation",
+		"Begin the required phase work immediately",
+		"slash-command references are instructions to execute the equivalent workflow directly",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("phase prompt missing autonomous execution clause %q\nprompt:\n%s", want, prompt)
+		}
+	}
+
+	contractIdx := strings.Index(prompt, "AUTONOMOUS EXECUTION")
+	skillIdx := strings.Index(prompt, "Run these skills IN SEQUENCE")
+	if contractIdx < 0 || skillIdx < 0 {
+		t.Fatalf("prompt missing expected contract or skill section\nprompt:\n%s", prompt)
+	}
+	if contractIdx > skillIdx {
+		t.Fatalf("autonomous execution contract must appear before skill instructions\nprompt:\n%s", prompt)
+	}
+}
+
 func TestCtx_BuildPromptForPhase_Phase2_WithHandoffs(t *testing.T) {
 	tmp := t.TempDir()
 
