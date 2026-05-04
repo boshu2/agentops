@@ -76,6 +76,18 @@ const (
 	EventJobCancelled          EventType = "job.cancelled"
 	EventProjectionMarkedStale EventType = "projection.marked_stale"
 	EventProjectionRebuilt     EventType = "projection.rebuilt"
+
+	EventFactoryJobSubmitted        EventType = "factory.job_submitted"
+	EventFactoryJobClaimed          EventType = "factory.job_claimed"
+	EventFactoryJobStarted          EventType = "factory.job_started"
+	EventFactoryRoutingDecided      EventType = "factory.routing_decided"
+	EventFactorySlotAllocated       EventType = "factory.slot_allocated"
+	EventFactoryWorktreeAllocated   EventType = "factory.worktree_allocated"
+	EventFactoryValidationStarted   EventType = "factory.validation_started"
+	EventFactoryValidationCompleted EventType = "factory.validation_completed"
+	EventFactoryMergeDecision       EventType = "factory.merge_decision"
+	EventFactoryJobTerminal         EventType = "factory.job_terminal"
+	EventFactoryYieldObservation    EventType = "factory.yield_observation"
 )
 
 type JobStatus string
@@ -88,6 +100,54 @@ const (
 	JobStatusFailed       JobStatus = "failed"
 	JobStatusCancelled    JobStatus = "cancelled"
 	JobStatusDegraded     JobStatus = "degraded"
+)
+
+type FactoryJobStatus string
+
+const (
+	FactoryJobStatusSubmitted           FactoryJobStatus = "submitted"
+	FactoryJobStatusClaimed             FactoryJobStatus = "claimed"
+	FactoryJobStatusStarted             FactoryJobStatus = "started"
+	FactoryJobStatusRouted              FactoryJobStatus = "routed"
+	FactoryJobStatusAllocated           FactoryJobStatus = "allocated"
+	FactoryJobStatusValidating          FactoryJobStatus = "validating"
+	FactoryJobStatusValidated           FactoryJobStatus = "validated"
+	FactoryJobStatusValidationFailed    FactoryJobStatus = "validation_failed"
+	FactoryJobStatusAwaitingManualMerge FactoryJobStatus = "awaiting_manual_merge"
+	FactoryJobStatusTerminal            FactoryJobStatus = "terminal"
+	FactoryJobStatusRetainedFailed      FactoryJobStatus = "retained_failed"
+)
+
+type FactorySlotStatus string
+
+const (
+	FactorySlotStatusIdle                FactorySlotStatus = "idle"
+	FactorySlotStatusAllocated           FactorySlotStatus = "allocated"
+	FactorySlotStatusRunning             FactorySlotStatus = "running"
+	FactorySlotStatusBlockedValidation   FactorySlotStatus = "blocked_validation"
+	FactorySlotStatusAwaitingManualMerge FactorySlotStatus = "awaiting_manual_merge"
+	FactorySlotStatusTerminal            FactorySlotStatus = "terminal"
+	FactorySlotStatusRetainedFailed      FactorySlotStatus = "retained_failed"
+)
+
+type FactoryValidationStatus string
+
+const (
+	FactoryValidationStatusRunning   FactoryValidationStatus = "running"
+	FactoryValidationStatusPassed    FactoryValidationStatus = "passed"
+	FactoryValidationStatusFailed    FactoryValidationStatus = "failed"
+	FactoryValidationStatusBlocked   FactoryValidationStatus = "blocked"
+	FactoryValidationStatusCancelled FactoryValidationStatus = "cancelled"
+)
+
+type FactoryMergeDecision string
+
+const (
+	FactoryMergeDecisionNotRequested  FactoryMergeDecision = "not_requested"
+	FactoryMergeDecisionManualPending FactoryMergeDecision = "manual_pending"
+	FactoryMergeDecisionManualMerged  FactoryMergeDecision = "manual_merged"
+	FactoryMergeDecisionRejected      FactoryMergeDecision = "rejected"
+	FactoryMergeDecisionAbandoned     FactoryMergeDecision = "abandoned"
 )
 
 type JobResultStatus string
@@ -195,6 +255,18 @@ func ValidateJobStatus(value JobStatus) error {
 	return validateStringEnum("job status", string(value), jobStatusSet)
 }
 
+func ValidateFactorySlotStatus(value FactorySlotStatus) error {
+	return validateStringEnum("factory slot status", string(value), factorySlotStatusSet)
+}
+
+func ValidateFactoryValidationStatus(value FactoryValidationStatus) error {
+	return validateStringEnum("factory validation status", string(value), factoryValidationStatusSet)
+}
+
+func ValidateFactoryMergeDecision(value FactoryMergeDecision) error {
+	return validateStringEnum("factory merge decision", string(value), factoryMergeDecisionSet)
+}
+
 func ValidateJobResultStatus(value JobResultStatus) error {
 	return validateStringEnum("job result", string(value), jobResultStatusSet)
 }
@@ -298,15 +370,26 @@ var jobTypeSet = map[string]struct{}{
 }
 
 var eventTypeSet = map[string]struct{}{
-	string(EventJobAccepted):           {},
-	string(EventJobClaimed):            {},
-	string(EventJobHeartbeat):          {},
-	string(EventJobLeaseExpired):       {},
-	string(EventJobCompleted):          {},
-	string(EventJobFailed):             {},
-	string(EventJobCancelled):          {},
-	string(EventProjectionMarkedStale): {},
-	string(EventProjectionRebuilt):     {},
+	string(EventJobAccepted):                {},
+	string(EventJobClaimed):                 {},
+	string(EventJobHeartbeat):               {},
+	string(EventJobLeaseExpired):            {},
+	string(EventJobCompleted):               {},
+	string(EventJobFailed):                  {},
+	string(EventJobCancelled):               {},
+	string(EventProjectionMarkedStale):      {},
+	string(EventProjectionRebuilt):          {},
+	string(EventFactoryJobSubmitted):        {},
+	string(EventFactoryJobClaimed):          {},
+	string(EventFactoryJobStarted):          {},
+	string(EventFactoryRoutingDecided):      {},
+	string(EventFactorySlotAllocated):       {},
+	string(EventFactoryWorktreeAllocated):   {},
+	string(EventFactoryValidationStarted):   {},
+	string(EventFactoryValidationCompleted): {},
+	string(EventFactoryMergeDecision):       {},
+	string(EventFactoryJobTerminal):         {},
+	string(EventFactoryYieldObservation):    {},
 }
 
 var jobStatusSet = map[string]struct{}{
@@ -317,6 +400,32 @@ var jobStatusSet = map[string]struct{}{
 	string(JobStatusFailed):       {},
 	string(JobStatusCancelled):    {},
 	string(JobStatusDegraded):     {},
+}
+
+var factorySlotStatusSet = map[string]struct{}{
+	string(FactorySlotStatusIdle):                {},
+	string(FactorySlotStatusAllocated):           {},
+	string(FactorySlotStatusRunning):             {},
+	string(FactorySlotStatusBlockedValidation):   {},
+	string(FactorySlotStatusAwaitingManualMerge): {},
+	string(FactorySlotStatusTerminal):            {},
+	string(FactorySlotStatusRetainedFailed):      {},
+}
+
+var factoryValidationStatusSet = map[string]struct{}{
+	string(FactoryValidationStatusRunning):   {},
+	string(FactoryValidationStatusPassed):    {},
+	string(FactoryValidationStatusFailed):    {},
+	string(FactoryValidationStatusBlocked):   {},
+	string(FactoryValidationStatusCancelled): {},
+}
+
+var factoryMergeDecisionSet = map[string]struct{}{
+	string(FactoryMergeDecisionNotRequested):  {},
+	string(FactoryMergeDecisionManualPending): {},
+	string(FactoryMergeDecisionManualMerged):  {},
+	string(FactoryMergeDecisionRejected):      {},
+	string(FactoryMergeDecisionAbandoned):     {},
 }
 
 var jobResultStatusSet = map[string]struct{}{

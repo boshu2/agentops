@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/docs/contracts/factory-yield-ledger.schema.json",
+  "title": "AgentOps Factory Yield Ledger Example",
+  "type": "object",
+  "required": [
+    "event_type",
+    "schema_version",
+    "observation_id",
+    "run_id",
+    "job_id",
+    "task_id",
+    "lane_id",
+    "provider",
+    "runtime",
+    "model",
+    "authority",
+    "task_class",
+    "baseline_or_treatment",
+    "routing_decision_id",
+    "validation_id",
+    "validation_status",
+    "merge_decision_id",
+    "merge_status",
+    "accepted_patches",
+    "wall_clock_minutes",
+    "review_minutes",
+    "recovery_minutes",
+    "model_cost_usd",
+    "conflict_count",
+    "defect_count",
+    "operator_interventions",
+    "artifact_refs",
+    "decision_used_for",
+    "recorded_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_type": {
+      "const": "factory.yield_observation"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "observation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtime": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority": {
+      "type": "string",
+      "enum": ["OBSERVE", "ADVISORY", "DELEGATED", "AUTHORITATIVE"]
+    },
+    "task_class": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baseline_or_treatment": {
+      "type": "string",
+      "enum": ["baseline", "treatment"]
+    },
+    "routing_decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "routing_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validation_status": {
+      "type": "string",
+      "enum": ["running", "passed", "failed", "blocked", "cancelled"]
+    },
+    "merge_decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "merge_status": {
+      "type": "string",
+      "enum": [
+        "not_requested",
+        "manual_pending",
+        "manual_merged",
+        "rejected",
+        "abandoned"
+      ]
+    },
+    "accepted_patches": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "wall_clock_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "queue_wait_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "execution_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "review_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "recovery_minutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "model_cost_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "conflict_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "defect_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "operator_interventions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_refs": {
+      "$ref": "#/$defs/artifact_refs"
+    },
+    "sidecar_consumed_by": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sidecar_link"
+      }
+    },
+    "decision_used_for": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "recorded_at": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "artifact_refs": {
+      "type": "object",
+      "required": ["routing", "validation", "merge"],
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "properties": {
+        "routing": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "merge": {
+          "type": "string",
+          "minLength": 1
+        },
+        "diff": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transcript": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sidecar_link": {
+      "type": "object",
+      "required": ["sidecar_job_id", "consumed_by", "decision_used_for"],
+      "additionalProperties": false,
+      "properties": {
+        "sidecar_job_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "consumed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_used_for": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

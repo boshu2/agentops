@@ -215,6 +215,14 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 | `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `$rpi --quality`. |
 | `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
+## Expensive Command Policy
+
+Routine validation is targeted by default. Broad proof commands such as
+`go test -race`, `go test -shuffle`, `go test -count=N` with `N > 1`, eval
+runners, retrieval bench, headless runtime smoke, and release gates require
+explicit operator/release/acceptance-criteria context. If one is run, record the
+reason and timeout in the phase summary.
+
 ## Quick Start
 
 ```bash

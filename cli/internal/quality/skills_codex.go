@@ -27,13 +27,14 @@ const (
 // CodexInstallMeta describes the installed Codex plugin metadata.
 type CodexInstallMeta struct {
 	InstallMode  string `json:"install_mode"`
+	HookRuntime  string `json:"hook_runtime"`
 	PluginRoot   string `json:"plugin_root"`
 	Version      string `json:"version"`
 	ManifestHash string `json:"manifest_hash"`
 	SkillCount   int    `json:"skill_count"`
 }
 
-func CodexNativePluginSkillsPath(home string) string {
+func CodexNativePluginRootPath(home string) string {
 	return filepath.Join(
 		home,
 		".codex",
@@ -42,8 +43,11 @@ func CodexNativePluginSkillsPath(home string) string {
 		CodexAgentOpsMarketplaceName,
 		CodexAgentOpsPluginName,
 		"local",
-		"skills-codex",
 	)
+}
+
+func CodexNativePluginSkillsPath(home string) string {
+	return filepath.Join(CodexNativePluginRootPath(home), "skills-codex")
 }
 
 func CodexNativePluginHealPath(home string) string {
@@ -448,12 +452,89 @@ func CheckCodexSync() Check {
 		}
 	}
 
+	if hookCheck := CheckCodexNativeHookCache(home, meta, repoRoot); hookCheck != nil {
+		return *hookCheck
+	}
+
 	return Check{
 		Name:     "Codex Sync",
 		Status:   "pass",
 		Detail:   fmt.Sprintf("installed Codex %s matches repo %s", ModeOrDefault(meta.InstallMode), ValueOrUnknown(repoVersion)),
 		Required: false,
 	}
+}
+
+// CheckCodexNativeHookCache validates the installed Codex hook bundle that
+// Codex executes from ~/.codex/plugins/cache, not the checked-out repo copy.
+func CheckCodexNativeHookCache(home string, meta *CodexInstallMeta, repoRoot string) *Check {
+	if meta == nil || meta.InstallMode != "native-plugin" {
+		return nil
+	}
+
+	pluginRoot := meta.PluginRoot
+	if strings.TrimSpace(pluginRoot) == "" {
+		pluginRoot = CodexNativePluginRootPath(home)
+	}
+	pluginRoot = filepath.Clean(pluginRoot)
+
+	hookPath := filepath.Join(pluginRoot, "hooks", "dangerous-git-guard.sh")
+	helperPath := filepath.Join(pluginRoot, "lib", "hook-helpers.sh")
+	if !FileExists(hookPath) {
+		return &Check{
+			Name:   "Codex Sync",
+			Status: "warn",
+			Detail: fmt.Sprintf("installed Codex native hook cache is missing %s; run 'cd %s && bash scripts/refresh-codex-local.sh'",
+				hookPath, repoRoot),
+		}
+	}
+	if !FileExists(helperPath) {
+		return &Check{
+			Name:   "Codex Sync",
+			Status: "warn",
+			Detail: fmt.Sprintf("installed Codex native hook cache is missing %s; run 'cd %s && bash scripts/refresh-codex-local.sh'",
+				helperPath, repoRoot),
+		}
+	}
+
+	tmpRepo, err := os.MkdirTemp("", "agentops-codex-hook-smoke-*")
+	if err != nil {
+		return &Check{Name: "Codex Sync", Status: "warn", Detail: "cannot create Codex hook smoke repo", Required: false}
+	}
+	defer os.RemoveAll(tmpRepo)
+	if output, err := exec.Command("git", "-C", tmpRepo, "init", "-q").CombinedOutput(); err != nil {
+		return &Check{
+			Name:   "Codex Sync",
+			Status: "warn",
+			Detail: fmt.Sprintf("cannot initialize Codex hook smoke repo: %s", strings.TrimSpace(string(output))),
+		}
+	}
+
+	if output, err := runCodexHookSmoke(hookPath, tmpRepo, `{"tool_input":{"command":"git push origin feature-fix"}}`); err != nil {
+		return &Check{
+			Name:   "Codex Sync",
+			Status: "warn",
+			Detail: fmt.Sprintf("installed Codex dangerous-git-guard rejects safe branch names containing -f; run 'cd %s && bash scripts/refresh-codex-local.sh' (%s)",
+				repoRoot, strings.TrimSpace(output)),
+		}
+	}
+	if _, err := runCodexHookSmoke(hookPath, tmpRepo, `{"tool_input":{"command":"git push -f origin main"}}`); err == nil {
+		return &Check{
+			Name:   "Codex Sync",
+			Status: "warn",
+			Detail: fmt.Sprintf("installed Codex dangerous-git-guard does not block git push -f; run 'cd %s && bash scripts/refresh-codex-local.sh'",
+				repoRoot),
+		}
+	}
+
+	return nil
+}
+
+func runCodexHookSmoke(hookPath, workDir, input string) (string, error) {
+	cmd := exec.Command("bash", hookPath)
+	cmd.Dir = workDir
+	cmd.Stdin = strings.NewReader(input)
+	output, err := cmd.CombinedOutput()
+	return string(output), err
 }
 
 // FindHealScript searches for heal.sh in known locations and returns the path if found.

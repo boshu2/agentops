@@ -1,0 +1,47 @@
+{
+  "event_type": "factory.yield_observation",
+  "schema_version": 1,
+  "observation_id": "yield-factory-2026-05-03-001-job-review",
+  "run_id": "factory-2026-05-03-001",
+  "job_id": "job-review",
+  "task_id": "soc-dpci.7",
+  "lane_id": "frontier-codex",
+  "provider": "openai",
+  "runtime": "codex",
+  "model": "frontier-default",
+  "authority": "DELEGATED",
+  "task_class": "code_change",
+  "baseline_or_treatment": "treatment",
+  "routing_decision_id": "evt-routing-job-review",
+  "routing_policy_id": "repo-default",
+  "validation_id": "val-review",
+  "validation_status": "passed",
+  "merge_decision_id": "merge-review",
+  "merge_status": "manual_pending",
+  "accepted_patches": 1,
+  "wall_clock_minutes": 42,
+  "queue_wait_minutes": 3,
+  "execution_minutes": 31,
+  "review_minutes": 8,
+  "recovery_minutes": 0,
+  "model_cost_usd": 3.25,
+  "conflict_count": 0,
+  "defect_count": 0,
+  "operator_interventions": 1,
+  "artifact_refs": {
+    "routing": ".agents/factory/runs/factory-2026-05-03-001/routing.json",
+    "validation": ".agents/factory/runs/factory-2026-05-03-001/validation.json",
+    "merge": ".agents/factory/runs/factory-2026-05-03-001/merge-decision.json",
+    "diff": ".agents/factory/runs/factory-2026-05-03-001/diff.patch",
+    "transcript": ".agents/factory/runs/factory-2026-05-03-001/transcript.jsonl"
+  },
+  "sidecar_consumed_by": [
+    {
+      "sidecar_job_id": "job-local-critique",
+      "consumed_by": "job-review",
+      "decision_used_for": "manual_merge_review"
+    }
+  ],
+  "decision_used_for": ["manual_merge_review", "lane_yield_scorecard"],
+  "recorded_at": "2026-05-03T21:00:00Z"
+}

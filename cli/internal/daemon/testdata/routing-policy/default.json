@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "policy_id": "repo-default",
+  "default_lane": "frontier-codex",
+  "max_total_concurrency": 2,
+  "auto_merge_enabled": false,
+  "manual_merge_by_default": true,
+  "lanes": [
+    {
+      "id": "frontier-codex",
+      "enabled": true,
+      "authority": "DELEGATED",
+      "provider": "openai",
+      "runtime": "codex",
+      "model": "frontier-default",
+      "task_classes": ["code_change", "test_repair", "docs_change"],
+      "max_concurrency": 2,
+      "cost_hint_usd_per_hour": 0,
+      "latency_hint": "interactive",
+      "quality_prior": "default",
+      "yield_gate": {
+        "min_accepted_patches_per_hour": 0,
+        "min_sample_size": 0
+      },
+      "merge_eligibility": {
+        "manual_merge_required": true,
+        "validation_commands": [
+          "cd cli && go test ./internal/daemon -run 'RoutingPolicy|FactoryProjection'",
+          "scripts/pre-push-gate.sh --fast"
+        ],
+        "validation_failure_terminal_event": "factory.job_terminal",
+        "retain_artifacts_on_failure": true,
+        "retain_worktree_on_validation_failure": true
+      }
+    },
+    {
+      "id": "local-observer",
+      "enabled": true,
+      "authority": "ADVISORY",
+      "provider": "local",
+      "runtime": "mlx-or-ollama",
+      "model": "local-configured",
+      "task_classes": [
+        "scout",
+        "retrieve",
+        "summarize",
+        "classify",
+        "preflight",
+        "critique"
+      ],
+      "max_concurrency": 1,
+      "latency_hint": "batch",
+      "quality_prior": "advisory",
+      "promotion_gate": {
+        "requires_yield_evidence": true
+      }
+    },
+    {
+      "id": "gascity-reference",
+      "enabled": false,
+      "authority": "OBSERVE",
+      "provider": "gascity",
+      "runtime": "mt-olympus",
+      "model": "provider-selected",
+      "task_classes": ["reference_runtime"],
+      "max_concurrency": 0,
+      "disabled_reason": "Not production-critical for milestone 1"
+    }
+  ]
+}

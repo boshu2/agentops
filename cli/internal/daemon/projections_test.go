@@ -46,6 +46,329 @@ func TestRequestIDModelRequiresLedgerCorrelation(t *testing.T) {
 	}
 }
 
+func TestValidateEventTypeAcceptsFactoryLifecycleEvents(t *testing.T) {
+	events := []EventType{
+		EventFactoryJobSubmitted,
+		EventFactoryJobClaimed,
+		EventFactoryJobStarted,
+		EventFactoryRoutingDecided,
+		EventFactorySlotAllocated,
+		EventFactoryWorktreeAllocated,
+		EventFactoryValidationStarted,
+		EventFactoryValidationCompleted,
+		EventFactoryMergeDecision,
+		EventFactoryJobTerminal,
+		EventFactoryYieldObservation,
+	}
+	for _, eventType := range events {
+		if err := ValidateEventType(eventType); err != nil {
+			t.Fatalf("ValidateEventType(%q): %v", eventType, err)
+		}
+	}
+}
+
+func TestFactoryProjectionReplaysLifecycleFromLedger(t *testing.T) {
+	artifactRef := ArtifactRef{
+		Path:      ".agents/handoffs/sha256/aa/bb/" + strings.Repeat("a", 64),
+		SHA256:    strings.Repeat("a", 64),
+		Size:      128,
+		WrittenAt: projectionTestTime(t, 13).Format(time.RFC3339Nano),
+	}
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-001", "req-review-1", "job-review", EventFactoryJobSubmitted, "", 0, map[string]any{
+			"job_id":       "job-review",
+			"run_id":       "factory-run-1",
+			"task_id":      "soc-dpci.5",
+			"requested_by": "operator",
+			"objective":    "reviewable patch",
+		}),
+		mustNewProjectionTestEvent(t, "evt-002", "req-review-2", "job-review", EventFactoryRoutingDecided, "", 1, map[string]any{
+			"lane_id":   "frontier-codex",
+			"provider":  "openai",
+			"runtime":   "codex",
+			"model":     "gpt-5",
+			"authority": "DELEGATED",
+			"reason":    "default coding lane",
+		}),
+		mustNewProjectionTestEvent(t, "evt-003", "req-review-3", "job-review", EventFactorySlotAllocated, "", 2, map[string]any{
+			"slot_id":                  "slot-review",
+			"lane_id":                  "frontier-codex",
+			"max_concurrency_snapshot": 2,
+		}),
+		mustNewProjectionTestEvent(t, "evt-004", "req-review-4", "job-review", EventFactoryJobClaimed, "", 3, map[string]any{
+			"slot_id":   "slot-review",
+			"worker_id": "worker-review",
+		}),
+		mustNewProjectionTestEvent(t, "evt-005", "req-review-5", "job-review", EventFactoryWorktreeAllocated, "", 4, map[string]any{
+			"worktree_id":  "wt-review",
+			"slot_id":      "slot-review",
+			"path":         "/tmp/factory/wt-review",
+			"base_commit":  "abc123",
+			"branch":       "factory/review",
+			"owner_job_id": "job-review",
+		}),
+		mustNewProjectionTestEvent(t, "evt-006", "req-review-6", "job-review", EventFactoryJobStarted, "", 5, map[string]any{
+			"slot_id":   "slot-review",
+			"worker_id": "worker-review",
+		}),
+		mustNewProjectionTestEvent(t, "evt-007", "req-review-7", "job-review", EventFactoryValidationStarted, "", 6, map[string]any{
+			"validation_id": "val-review",
+			"commands":      []string{"go test ./internal/daemon -run Factory"},
+			"level":         "L1",
+		}),
+		mustNewProjectionTestEvent(t, "evt-008", "req-review-8", "job-review", EventFactoryValidationCompleted, "", 7, map[string]any{
+			"validation_id": "val-review",
+			"status":        "passed",
+			"artifacts":     map[string]string{"validation": ".agents/factory/runs/factory-run-1/review-validation.json"},
+			"duration_ms":   1200,
+		}),
+		mustNewProjectionTestEvent(t, "evt-009", "req-review-9", "job-review", EventFactoryMergeDecision, "", 8, map[string]any{
+			"decision":       "manual_pending",
+			"decider":        "operator",
+			"reason":         "manual merge required",
+			"conflicts":      []string{},
+			"manual_command": "git merge factory/review",
+		}),
+		mustNewProjectionTestEvent(t, "evt-010", "req-failed-1", "job-failed", EventFactoryJobSubmitted, "", 9, map[string]any{
+			"job_id":       "job-failed",
+			"run_id":       "factory-run-1",
+			"task_id":      "soc-dpci.6",
+			"requested_by": "operator",
+			"objective":    "failing patch",
+		}),
+		mustNewProjectionTestEvent(t, "evt-011", "req-failed-2", "job-failed", EventFactoryRoutingDecided, "", 10, map[string]any{
+			"lane_id":   "frontier-codex",
+			"provider":  "openai",
+			"runtime":   "codex",
+			"model":     "gpt-5",
+			"authority": "DELEGATED",
+			"reason":    "same lane",
+		}),
+		mustNewProjectionTestEvent(t, "evt-012", "req-failed-3", "job-failed", EventFactorySlotAllocated, "", 11, map[string]any{
+			"slot_id":                  "slot-failed",
+			"lane_id":                  "frontier-codex",
+			"max_concurrency_snapshot": 2,
+		}),
+		mustNewProjectionTestEvent(t, "evt-013", "req-failed-4", "job-failed", EventFactoryJobStarted, "", 12, map[string]any{
+			"slot_id":   "slot-failed",
+			"worker_id": "worker-failed",
+		}),
+		mustNewProjectionTestEvent(t, "evt-014", "req-failed-5", "job-failed", EventFactoryWorktreeAllocated, "", 13, map[string]any{
+			"worktree_id":  "wt-failed",
+			"slot_id":      "slot-failed",
+			"path":         "/tmp/factory/wt-failed",
+			"base_commit":  "abc123",
+			"branch":       "factory/failed",
+			"owner_job_id": "job-failed",
+		}),
+		mustNewProjectionTestEvent(t, "evt-015", "req-failed-6", "job-failed", EventFactoryValidationStarted, "", 14, map[string]any{
+			"validation_id": "val-failed",
+			"commands":      []string{"go test ./internal/daemon -run Factory"},
+			"level":         "L1",
+		}),
+		mustNewProjectionTestEvent(t, "evt-016", "req-failed-7", "job-failed", EventFactoryValidationCompleted, "", 15, map[string]any{
+			"validation_id": "val-failed",
+			"status":        "failed",
+			"artifacts":     map[string]string{"validation": ".agents/factory/runs/factory-run-1/failed-validation.json"},
+			"logs":          map[string]string{"validation": ".agents/factory/runs/factory-run-1/failed-validation.log"},
+			"duration_ms":   2400,
+		}),
+		mustNewProjectionTestEvent(t, "evt-017", "req-failed-8", "job-failed", EventFactoryJobTerminal, "", 16, map[string]any{
+			"status":            "failed",
+			"artifact_refs":     map[string]ArtifactRef{"diff": artifactRef},
+			"transcript_ref":    ".agents/factory/runs/factory-run-1/job-failed/transcript.jsonl",
+			"diff_ref":          ".agents/factory/runs/factory-run-1/job-failed/diff.patch",
+			"log_ref":           ".agents/factory/runs/factory-run-1/job-failed/worker.log",
+			"retained_worktree": true,
+		}),
+	}
+
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 20),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	factory := projections.Factory
+	if projections.LastEventID != "evt-017" {
+		t.Fatalf("LastEventID = %q, want evt-017", projections.LastEventID)
+	}
+	if len(factory.Jobs) != 2 {
+		t.Fatalf("factory jobs = %d, want 2", len(factory.Jobs))
+	}
+	if factory.Jobs[0].Status != FactoryJobStatusAwaitingManualMerge {
+		t.Fatalf("job-review status = %q, want awaiting_manual_merge", factory.Jobs[0].Status)
+	}
+	if factory.Jobs[1].Status != FactoryJobStatusRetainedFailed {
+		t.Fatalf("job-failed status = %q, want retained_failed", factory.Jobs[1].Status)
+	}
+	if len(factory.ActiveWorkers) != 1 {
+		t.Fatalf("active workers = %d, want 1: %#v", len(factory.ActiveWorkers), factory.ActiveWorkers)
+	}
+	if factory.ActiveWorkers[0].WorkerID != "worker-review" || factory.ActiveWorkers[0].SlotID != "slot-review" || factory.ActiveWorkers[0].Status != FactorySlotStatusAwaitingManualMerge {
+		t.Fatalf("active worker = %#v, want slot-review awaiting_manual_merge", factory.ActiveWorkers[0])
+	}
+	if len(factory.Slots) != 2 {
+		t.Fatalf("slots = %d, want 2", len(factory.Slots))
+	}
+	if factory.Slots[0].Status != FactorySlotStatusAwaitingManualMerge {
+		t.Fatalf("slot-review status = %q, want awaiting_manual_merge", factory.Slots[0].Status)
+	}
+	if factory.Slots[1].Status != FactorySlotStatusRetainedFailed {
+		t.Fatalf("slot-failed status = %q, want retained_failed", factory.Slots[1].Status)
+	}
+	if len(factory.QueueLanes) != 1 {
+		t.Fatalf("queue lanes = %d, want 1: %#v", len(factory.QueueLanes), factory.QueueLanes)
+	}
+	if factory.QueueLanes[0].LaneID != "frontier-codex" || factory.QueueLanes[0].QueueDepth != 0 {
+		t.Fatalf("queue lane = %#v, want frontier-codex depth 0", factory.QueueLanes[0])
+	}
+	if len(factory.ModelLanes) != 1 {
+		t.Fatalf("model lanes = %d, want 1: %#v", len(factory.ModelLanes), factory.ModelLanes)
+	}
+	if factory.ModelLanes[0].Provider != "openai" || factory.ModelLanes[0].Runtime != "codex" || factory.ModelLanes[0].Authority != RoutingAuthorityDelegated {
+		t.Fatalf("model lane = %#v, want openai/codex/DELEGATED", factory.ModelLanes[0])
+	}
+	if factory.LastRoutingDecision == nil || factory.LastRoutingDecision.JobID != "job-failed" || factory.LastRoutingDecision.LaneID != "frontier-codex" {
+		t.Fatalf("last routing decision = %#v, want job-failed/frontier-codex", factory.LastRoutingDecision)
+	}
+	if len(factory.Validations) != 2 {
+		t.Fatalf("validations = %d, want 2", len(factory.Validations))
+	}
+	if len(factory.BlockedValidations) != 1 {
+		t.Fatalf("blocked validations = %d, want 1: %#v", len(factory.BlockedValidations), factory.BlockedValidations)
+	}
+	if factory.BlockedValidations[0].ValidationID != "val-failed" || factory.BlockedValidations[0].Status != FactoryValidationStatusFailed {
+		t.Fatalf("blocked validation = %#v, want val-failed failed", factory.BlockedValidations[0])
+	}
+	if len(factory.RetainedFailedWorktrees) != 1 {
+		t.Fatalf("retained failed worktrees = %d, want 1: %#v", len(factory.RetainedFailedWorktrees), factory.RetainedFailedWorktrees)
+	}
+	if factory.RetainedFailedWorktrees[0].WorktreeID != "wt-failed" || factory.RetainedFailedWorktrees[0].Path != "/tmp/factory/wt-failed" {
+		t.Fatalf("retained worktree = %#v, want wt-failed path", factory.RetainedFailedWorktrees[0])
+	}
+	if len(factory.PendingManualMerges) != 1 {
+		t.Fatalf("pending manual merges = %d, want 1: %#v", len(factory.PendingManualMerges), factory.PendingManualMerges)
+	}
+	if factory.PendingManualMerges[0].JobID != "job-review" || factory.PendingManualMerges[0].Decision != FactoryMergeDecisionManualPending {
+		t.Fatalf("pending manual merge = %#v, want job-review manual_pending", factory.PendingManualMerges[0])
+	}
+	if len(factory.TerminalJobs) != 1 {
+		t.Fatalf("terminal jobs = %d, want 1", len(factory.TerminalJobs))
+	}
+	if factory.TerminalJobs[0].Status != JobStatusFailed || !factory.TerminalJobs[0].RetainedWorktree {
+		t.Fatalf("terminal job = %#v, want failed retained", factory.TerminalJobs[0])
+	}
+	if got := factory.TerminalJobs[0].ArtifactRefs["diff"]; got != artifactRef {
+		t.Fatalf("terminal artifact ref = %#v, want %#v", got, artifactRef)
+	}
+	if len(factory.RecentEvents) != len(events) || factory.RecentEvents[len(factory.RecentEvents)-1].EventType != EventFactoryJobTerminal {
+		t.Fatalf("recent events = %#v, want all events ending with terminal", factory.RecentEvents)
+	}
+	if len(factory.Logs) != 2 {
+		t.Fatalf("logs = %d, want validation + worker log: %#v", len(factory.Logs), factory.Logs)
+	}
+	if len(factory.Artifacts) != 3 {
+		t.Fatalf("artifacts = %d, want two validation artifacts + terminal ref: %#v", len(factory.Artifacts), factory.Artifacts)
+	}
+	if len(factory.Transcripts) != 1 || factory.Transcripts[0].Path != ".agents/factory/runs/factory-run-1/job-failed/transcript.jsonl" {
+		t.Fatalf("transcripts = %#v, want failed transcript", factory.Transcripts)
+	}
+	if len(factory.Diffs) != 1 || factory.Diffs[0].Path != ".agents/factory/runs/factory-run-1/job-failed/diff.patch" {
+		t.Fatalf("diffs = %#v, want failed diff", factory.Diffs)
+	}
+}
+
+func TestFactoryProjectionClaimedJobsAreWorkerOwnedNotQueued(t *testing.T) {
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-001", "req-claimed-1", "job-claimed", EventFactoryJobSubmitted, "", 0, map[string]any{
+			"job_id":       "job-claimed",
+			"run_id":       "factory-run-1",
+			"task_id":      "soc-dpci.5",
+			"requested_by": "operator",
+			"objective":    "claimed patch",
+		}),
+		mustNewProjectionTestEvent(t, "evt-002", "req-claimed-2", "job-claimed", EventFactoryRoutingDecided, "", 1, map[string]any{
+			"lane_id":   "frontier-codex",
+			"provider":  "openai",
+			"runtime":   "codex",
+			"model":     "gpt-5",
+			"authority": "DELEGATED",
+			"reason":    "default coding lane",
+		}),
+		mustNewProjectionTestEvent(t, "evt-003", "req-claimed-3", "job-claimed", EventFactorySlotAllocated, "", 2, map[string]any{
+			"slot_id":                  "slot-claimed",
+			"lane_id":                  "frontier-codex",
+			"max_concurrency_snapshot": 2,
+		}),
+		mustNewProjectionTestEvent(t, "evt-004", "req-claimed-4", "job-claimed", EventFactoryJobClaimed, "", 3, map[string]any{
+			"slot_id":   "slot-claimed",
+			"worker_id": "worker-claimed",
+		}),
+	}
+
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 20),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	factory := projections.Factory
+	if len(factory.QueueLanes) != 1 {
+		t.Fatalf("queue lanes = %d, want 1: %#v", len(factory.QueueLanes), factory.QueueLanes)
+	}
+	if factory.QueueLanes[0].LaneID != "frontier-codex" || factory.QueueLanes[0].QueueDepth != 0 {
+		t.Fatalf("queue lane = %#v, want frontier-codex depth 0", factory.QueueLanes[0])
+	}
+	if len(factory.ActiveWorkers) != 1 {
+		t.Fatalf("active workers = %d, want 1: %#v", len(factory.ActiveWorkers), factory.ActiveWorkers)
+	}
+	if factory.ActiveWorkers[0].WorkerID != "worker-claimed" || factory.ActiveWorkers[0].Status != FactorySlotStatusAllocated {
+		t.Fatalf("active worker = %#v, want claimed worker in allocated slot", factory.ActiveWorkers[0])
+	}
+}
+
+func TestFactoryProjectionRecordsYieldObservationAsRecentEvent(t *testing.T) {
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-yield", "req-yield", "job-yield", EventFactoryYieldObservation, "", 0, map[string]any{
+			"run_id":                "factory-run-1",
+			"lane_id":               "frontier-codex",
+			"baseline_or_treatment": "treatment",
+			"accepted_patches":      1,
+			"validation_status":     "passed",
+			"merge_status":          "manual_pending",
+			"artifact_refs": map[string]ArtifactRef{
+				"validation": {
+					Path:      ".agents/factory/runs/factory-run-1/validation.json",
+					SHA256:    strings.Repeat("b", 64),
+					Size:      256,
+					WrittenAt: projectionTestTime(t, 0).Format(time.RFC3339Nano),
+				},
+			},
+		}),
+	}
+
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 1),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	factory := projections.Factory
+	if len(factory.RecentEvents) != 1 {
+		t.Fatalf("recent events = %d, want 1: %#v", len(factory.RecentEvents), factory.RecentEvents)
+	}
+	if factory.RecentEvents[0].EventType != EventFactoryYieldObservation {
+		t.Fatalf("recent event type = %q, want %q", factory.RecentEvents[0].EventType, EventFactoryYieldObservation)
+	}
+	if len(factory.Artifacts) != 1 || factory.Artifacts[0].Path != ".agents/factory/runs/factory-run-1/validation.json" {
+		t.Fatalf("artifacts = %#v, want yield validation artifact pointer", factory.Artifacts)
+	}
+}
+
 func TestProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger(t *testing.T) {
 	events := []LedgerEvent{
 		mustNewProjectionTestEvent(t, "evt-rpi-accepted", "req-rpi-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil),

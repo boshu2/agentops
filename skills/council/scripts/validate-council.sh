@@ -18,7 +18,6 @@ if [[ "$OUTPUT_DIR" =~ ^-+ ]]; then
     exit 1
 fi
 
-DATE=$(date +%Y-%m-%d)
 PASS=0
 FAIL=0
 WARN=0
