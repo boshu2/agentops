@@ -93,6 +93,8 @@ setup() {
     # Symmetric per f-2026-04-27-002: stub the new lint so the fake repo
     # exercises the same diff-conditional branch the real gate runs.
     make_stub "$FAKE_REPO/scripts/check-test-home-isolation.sh"
+    make_stub "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh"
+    mkdir -p "$FAKE_REPO/tests/canaries"
     make_eval_baseline_audit_stub
 }
 
