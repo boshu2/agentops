@@ -36,6 +36,7 @@
 #  24. Headless runtime skill smoke (full mode only)
 #  24b. CLI docs parity
 #  24c. AgentOps eval canaries (fast deterministic suites)
+#  24e. Contract canaries (blocking, canary-sensitive changes)
 #  --- shifted from CI-only (v2.32) ---
 #  25. Doc-release stabilization gate
 #  25b. Release audit artifact refs
@@ -1115,6 +1116,44 @@ except Exception:
     fi
 else
     skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+fi
+
+# --- 24e. Official contract canaries (blocking, canary-sensitive changes) ---
+run_contract_canaries=false
+if [[ "${PRE_PUSH_SKIP_EVAL:-0}" != "1" ]]; then
+    if truthy "${PRE_PUSH_RUN_CONTRACT_CANARIES:-0}"; then
+        run_contract_canaries=true
+    elif [[ "$FAST_MODE" == "true" ]] && [[ -n "${all_changed:-}" ]]; then
+        if echo "$all_changed" | grep -qE '^tests/canaries/|^scripts/test-agentops-contract-canaries\.sh$|^\.github/workflows/validate\.yml$'; then
+            run_contract_canaries=true
+        fi
+    fi
+fi
+
+if [[ "$run_contract_canaries" == "true" ]]; then
+    if [[ -x scripts/test-agentops-contract-canaries.sh ]]; then
+        ao_canary_bin=""
+        if [[ -x cli/bin/ao ]]; then
+            ao_canary_bin="cli/bin/ao"
+        elif command -v ao >/dev/null 2>&1; then
+            ao_canary_bin="$(command -v ao)"
+        fi
+        if [[ -n "$ao_canary_bin" ]]; then
+            canary_args=(--ao-bin "$ao_canary_bin")
+            if canary_output="$(run_without_git_env_isolated_agents_home scripts/test-agentops-contract-canaries.sh "${canary_args[@]}" 2>&1)"; then
+                pass "contract canaries"
+            else
+                fail "contract canaries"
+                indent_output "$canary_output"
+            fi
+        else
+            skip "contract canaries (no ao binary; build cli/bin/ao first)"
+        fi
+    else
+        skip "contract canaries (runner not found)"
+    fi
+else
+    skip "contract canaries (no canary-sensitive changes; set PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
 fi
 
 # --- 25. Doc-release stabilization gate ---
