@@ -1232,7 +1232,7 @@ ao eval run <suite.json> [flags]
   -h, --help                            help for run
       --out string                      write eval run record to path
       --run-id string                   stable run id to use in the run record
-      --runtime string                  deterministic runtime override (static, mock, shell)
+      --runtime string                  runtime override (static, mock, shell, claude, codex)
 ```
 
 #### `ao eval scorecard`

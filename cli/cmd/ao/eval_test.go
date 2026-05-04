@@ -998,3 +998,30 @@ func restoreEvalTaskRunGlobals(t *testing.T) {
 		evalTaskRunDryRun = oldDryRun
 	})
 }
+
+func TestParseEvalRuntime(t *testing.T) {
+	tests := []struct {
+		input   string
+		want    aoeval.Runtime
+		wantErr bool
+	}{
+		{"static", aoeval.RuntimeStatic, false},
+		{"mock", aoeval.RuntimeMock, false},
+		{"shell", aoeval.RuntimeShell, false},
+		{"claude", aoeval.RuntimeClaude, false},
+		{"codex", aoeval.RuntimeCodex, false},
+		{"", "", false},
+		{"unknown", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := parseEvalRuntime(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseEvalRuntime(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("parseEvalRuntime(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}

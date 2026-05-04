@@ -360,14 +360,14 @@ func configureEvalCommand() {
 
 	evalRunCmd.Flags().StringVar(&evalRunOutput, "out", "", "write eval run record to path")
 	evalRunCmd.Flags().StringVar(&evalRunID, "run-id", "", "stable run id to use in the run record")
-	evalRunCmd.Flags().StringVar(&evalRunRuntime, "runtime", "", "deterministic runtime override (static, mock, shell)")
+	evalRunCmd.Flags().StringVar(&evalRunRuntime, "runtime", "", "runtime override (static, mock, shell, claude, codex)")
 	evalRunCmd.Flags().StringVar(&evalRunBaseline, "baseline", "", "compare the run against a baseline run record")
 	evalRunCmd.Flags().StringVar(&evalRunBaselineMode, "baseline-mode", string(aoeval.BaselineModeSkillOn), "skill-on | skill-off | both — runs the suite once with skills loaded, once with hooks suppressed, or both for a delta scorecard")
 	evalRunCmd.Flags().StringVar(&evalRunContextMode, "context-mode", string(aoeval.ContextModeNone), "none | ab — run context-off/context-on legs over isolated AO_AGENTS_DIR roots")
 	evalRunCmd.Flags().StringVar(&evalRunContextOffDir, "context-off-agents-dir", "", "AO_AGENTS_DIR root for the context-off leg (defaults to suite fixtures)")
 	evalRunCmd.Flags().StringVar(&evalRunContextOnDir, "context-on-agents-dir", "", "AO_AGENTS_DIR root for the context-on leg (defaults to suite fixtures)")
 	evalRunCmd.Flags().StringVar(&evalRunDeltaOut, "delta-out", "", "write delta scorecard JSON to path (with --baseline-mode=both or --context-mode=ab)")
-	_ = evalRunCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("static", "mock", "shell"))
+	_ = evalRunCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("static", "mock", "shell", "claude", "codex"))
 	_ = evalRunCmd.RegisterFlagCompletionFunc("baseline-mode", staticCompletionFunc(aoeval.AllBaselineModes()...))
 	_ = evalRunCmd.RegisterFlagCompletionFunc("context-mode", staticCompletionFunc(aoeval.AllContextModes()...))
 
@@ -441,8 +441,10 @@ func parseEvalRuntime(value string) (aoeval.Runtime, error) {
 	switch aoeval.Runtime(value) {
 	case aoeval.RuntimeStatic, aoeval.RuntimeMock, aoeval.RuntimeShell:
 		return aoeval.Runtime(value), nil
+	case aoeval.RuntimeClaude, aoeval.RuntimeCodex:
+		return aoeval.Runtime(value), nil
 	default:
-		return "", fmt.Errorf("runtime %q is out of deterministic scope (use static, mock, or shell)", value)
+		return "", fmt.Errorf("unknown runtime %q (use static, mock, shell, claude, or codex)", value)
 	}
 }
 
