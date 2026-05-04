@@ -203,6 +203,33 @@ Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Conv
 
 ---
 
+## How the 12 Factors Build the Flywheel
+
+The [12-factor doctrine](https://12factoragentops.com) is a build order — four tiers that construct the three product layers in sequence. The flywheel emerges when all three layers are running.
+
+| Tier | Factors | Product Layer | What It Builds | Theory |
+|---|---|---|---|---|
+| **Foundation** (I–IV) | Context Is Everything, Track in Git, One Agent One Job, Research First | **Context Compiler** | The substrate — context exists, is versioned, is scoped, is researched | Cognitive science (40% load, lost-in-middle). Meadows #12–#6. |
+| **Flow** (V–VI) | Validate Externally, Lock Progress Forward | **Validation Gates** | The filter — bad context gets caught, good context can't regress | Brownian Ratchet (chaos + filter + one-way gate). Meadows #8–#7. |
+| **Knowledge** (VII–IX) | Extract Learnings, Compound Knowledge, Measure What Matters | **Knowledge Flywheel** | The engine — learnings extract, score, promote, inject. The loop closes. | MemRL (Zhang 2025). Self-organization (Meadows #4). Escape velocity: σ×ρ > δ. |
+| **Scale** (X–XII) | Isolate Workers, Supervise Hierarchically, Harvest Failures | **Infrastructure** | The multiplier — all three layers across parallel agents. Failure becomes fuel. | Control theory (K8s reconciliation). SRE (SLOs + error budgets). |
+
+The flywheel doesn't exist until the Knowledge tier kicks in — but it can't function without the layers beneath it. Factor VIII (Compound Knowledge) is the climax: the moment the loop closes and starts compounding. Everything before it is setup. Everything after it is scale.
+
+### The theoretical threads
+
+Each tier draws from a different body of theory:
+
+- **Cognitive science** (Sweller 1988, Liu 2023) constrains the Foundation: the 40% load rule, lost-in-middle attention mechanics, buffer-sizing. Without these constraints, you could dump everything into the window. You can't.
+- **The Brownian Ratchet** operates in the Flow tier: agents produce noisy output. Validation gates are the filter. The ratchet (Factor VI) is the one-way gate. Chaos + filter + gate = net forward progress.
+- **MemRL** (Zhang 2025) drives the Knowledge tier: reinforcement learning on episodic memory. Citation events become training signals. Utility scores update. The flywheel has its own learning algorithm.
+- **Control theory** enables the Scale tier: declared state (GOALS.md) + reconcile loop (`/evolve`) + error budgets (fitness gates). The system continuously reconciles actual state to desired state.
+- **Systems dynamics** (Meadows 2008) provides the leverage hierarchy: Foundation is necessary infrastructure (#12–#10), Flow adds feedback (#8–#7), Knowledge reaches self-organization (#4–#3). The highest-leverage phases are the ones most teams never build.
+
+Full convergence map tying each CDLC phase to all five threads: [The Science — Part 6](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+
+---
+
 ## Why This Matters
 
 LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
