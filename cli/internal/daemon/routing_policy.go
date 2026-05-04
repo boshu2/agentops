@@ -264,23 +264,11 @@ func validateRoutingLaneConcurrency(policy RoutingPolicy, lane RoutingLane) erro
 }
 
 func validateRoutingLaneGates(lane RoutingLane) error {
-	if lane.YieldGate != nil {
-		if lane.YieldGate.MinAcceptedPatchesPerHour < 0 {
-			return fmt.Errorf("yield_gate.min_accepted_patches_per_hour must be >= 0")
-		}
-		if lane.YieldGate.MinSampleSize < 0 {
-			return fmt.Errorf("yield_gate.min_sample_size must be >= 0")
-		}
+	if err := validateYieldGate(lane); err != nil {
+		return err
 	}
-	if lane.Provider == "local" && lane.Authority != RoutingAuthorityObserve && lane.Authority != RoutingAuthorityAdvisory {
-		return fmt.Errorf("local provider authority must be OBSERVE or ADVISORY")
-	}
-	if lane.Authority == RoutingAuthorityAuthoritative &&
-		(lane.PromotionGate == nil || !lane.PromotionGate.RequiresYieldEvidence) {
-		return fmt.Errorf("AUTHORITATIVE lanes require promotion_gate.requires_yield_evidence")
-	}
-	if isGasCityLane(lane) && lane.Enabled && laneHasProductionTaskClass(lane) {
-		return fmt.Errorf("GasCity/Mt. Olympus production lanes are disabled for milestone 1")
+	if err := validateLaneAuthority(lane); err != nil {
+		return err
 	}
 	if !lane.Enabled && strings.TrimSpace(lane.DisabledReason) == "" {
 		return fmt.Errorf("disabled lanes require disabled_reason")
@@ -292,6 +280,33 @@ func validateRoutingLaneGates(lane RoutingLane) error {
 	}
 	if laneRequiresMergeGate(lane) && lane.MergeEligibility == nil {
 		return fmt.Errorf("merge-eligible lanes require merge_eligibility validation commands")
+	}
+	return nil
+}
+
+func validateYieldGate(lane RoutingLane) error {
+	if lane.YieldGate == nil {
+		return nil
+	}
+	if lane.YieldGate.MinAcceptedPatchesPerHour < 0 {
+		return fmt.Errorf("yield_gate.min_accepted_patches_per_hour must be >= 0")
+	}
+	if lane.YieldGate.MinSampleSize < 0 {
+		return fmt.Errorf("yield_gate.min_sample_size must be >= 0")
+	}
+	return nil
+}
+
+func validateLaneAuthority(lane RoutingLane) error {
+	if lane.Provider == "local" && lane.Authority != RoutingAuthorityObserve && lane.Authority != RoutingAuthorityAdvisory {
+		return fmt.Errorf("local provider authority must be OBSERVE or ADVISORY")
+	}
+	if lane.Authority == RoutingAuthorityAuthoritative &&
+		(lane.PromotionGate == nil || !lane.PromotionGate.RequiresYieldEvidence) {
+		return fmt.Errorf("AUTHORITATIVE lanes require promotion_gate.requires_yield_evidence")
+	}
+	if isGasCityLane(lane) && lane.Enabled && laneHasProductionTaskClass(lane) {
+		return fmt.Errorf("GasCity/Mt. Olympus production lanes are disabled for milestone 1")
 	}
 	return nil
 }
