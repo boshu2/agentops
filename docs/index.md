@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Operational discipline for coding agents. AgentOps is source control for what your agents have learned — a typed, versioned, agent-readable corpus that compounds across sessions.
+description: Context compiler for coding agents. AgentOps assembles, validates, and delivers the right context so every session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -9,9 +9,9 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  Operational discipline for coding agents.<br>
+  Context compiler for coding agents.<br>
   Ship reliable code with unreliable agents.<br>
-  <strong>AgentOps is source control for what your agents have learned.</strong>
+  <strong>Right context, right window, right time.</strong>
 </p>
 
 <p class="hero-subtagline">

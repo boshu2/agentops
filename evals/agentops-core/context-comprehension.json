@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.context-comprehension",
+  "name": "Context Comprehension — SKILL.md Quality",
+  "description": "Structural quality assessment of SKILL.md files using the context_comprehension dimension",
+  "domain": "skill",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "owners": ["agentops"],
+  "tags": ["canary", "offline", "skills", "context-comprehension", "quality"],
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "timeout_seconds": 30
+  },
+  "scoring": {
+    "aggregate_threshold": 0.6,
+    "dimensions": [
+      {"name": "context_comprehension", "weight": 1.0, "threshold": 0.6, "critical": false}
+    ]
+  },
+  "baseline_policy": {"mode": "none"},
+  "cases": [
+    {
+      "id": "known-good-implement",
+      "title": "implement SKILL.md passes structural quality checks",
+      "kind": "command",
+      "objective": "Verify that a known-good skill (implement) scores above the quality threshold on structural checks.",
+      "runtime": "shell",
+      "inputs": {
+        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/implement/SKILL.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.has_steps", "value": true},
+        {"type": "json_path", "target": "stdout.has_examples", "value": true},
+        {"type": "json_path", "target": "stdout.sufficient_length", "value": true},
+        {"type": "score_at_least", "target": "stdout.quality_score", "threshold": 0.6}
+      ],
+      "dimensions": ["context_comprehension"]
+    },
+    {
+      "id": "known-good-research",
+      "title": "research SKILL.md passes structural quality checks",
+      "kind": "command",
+      "objective": "Verify that a known-good skill (research) scores above the quality threshold on structural checks.",
+      "runtime": "shell",
+      "inputs": {
+        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/research/SKILL.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.has_steps", "value": true},
+        {"type": "json_path", "target": "stdout.has_examples", "value": true},
+        {"type": "json_path", "target": "stdout.sufficient_length", "value": true},
+        {"type": "score_at_least", "target": "stdout.quality_score", "threshold": 0.6}
+      ],
+      "dimensions": ["context_comprehension"]
+    },
+    {
+      "id": "minimal-skill-retro",
+      "title": "retro SKILL.md produces valid JSON with word count",
+      "kind": "command",
+      "objective": "Verify the fixture runs against a minimal skill and produces valid structured output regardless of score.",
+      "runtime": "shell",
+      "inputs": {
+        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/retro/SKILL.md"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "json_path", "target": "stdout.word_count", "value": true}
+      ],
+      "dimensions": ["context_comprehension"]
+    }
+  ]
+}

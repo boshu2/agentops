@@ -6,7 +6,7 @@ last_reviewed: 2026-05-04
 
 ## Mission
 
-AgentOps is source control for what your agents have learned. It gives coding agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
+AgentOps is a context compiler for coding agents. It assembles, validates, and delivers **the right context at the right time** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 The corpus is the descendant of the wiki (Ward Cunningham, 1995), the runbook, the postmortem, the toil budget — every prior generation's codified team knowledge, made agent-readable and maintained like code. Same lineage. New substrate.
 
@@ -127,7 +127,7 @@ The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evid
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
 | Behavioral eval system needs live agent runtime tier | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, first behavioral eval suite (6 cases). Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime tier (Day-3) for real skill-on vs skill-off delta — deterministic shell cases validate the scorer but cannot measure whether skills help agents. | in-progress |
-| Public messaging now converged on operational-discipline + moat framing | A 2026-04-30 internal positioning council locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
+| Public messaging shifted to context-compiler + moat framing | CDLC (Context Development Life Cycle) framing landed: Mission, Strategic Bet, README, and mkdocs hero surfaces now use "context compiler" as the primary identity noun. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 
 ## Design Principles
 

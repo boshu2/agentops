@@ -6,7 +6,7 @@
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-**Local operating layer for coding agents across Claude, Codex, Cursor, and OpenCode.**
+**Context compiler for coding agents. Assembles, tests, and delivers the right context across Claude, Codex, Cursor, and OpenCode.**
 
 AgentOps gives agents a shared `ao` control plane, lifecycle hooks, validation gates, and a repo-owned `.agents/` corpus so work survives chat windows and vendor boundaries.
 
@@ -128,7 +128,7 @@ Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one
 
 ## AgentOps Is the Cross-Vendor Operating Layer
 
-The plugin is one entrypoint, not the product boundary. AgentOps is a local operating layer around coding agents: shared skills tell agents how to work, the `ao` CLI owns repo-native state and control-plane workflows, hooks keep lifecycle discipline active, and the daemon path moves that work toward always-on local operation.
+The plugin is one entrypoint, not the product boundary. AgentOps is a context compiler for coding agents: it assembles phase-scoped context packets, validates them through multi-model consensus, and delivers decay-ranked knowledge so every session starts loaded, not cold. Shared skills tell agents how to work, the `ao` CLI owns repo-native state and control-plane workflows, hooks keep lifecycle discipline active, and the daemon path moves that work toward always-on local operation.
 
 | Surface | What it does | Why it matters |
 |---------|--------------|----------------|

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -526,4 +527,127 @@ func promoteCitedLearnings(cwd string, quiet bool) int {
 		fmt.Fprintf(os.Stderr, "Promoted %d learnings\n", promoted)
 	}
 	return promoted
+}
+
+// qualitySignalEntry represents a single line from session-quality.jsonl.
+type qualitySignalEntry struct {
+	Timestamp  string `json:"timestamp"`
+	SignalType string `json:"signal_type"`
+	Detail     string `json:"detail"`
+	SessionID  string `json:"session_id"`
+}
+
+// processQualitySignalFeedback reads correction signals from
+// .agents/signals/session-quality.jsonl and applies negative utility
+// adjustments to skills that were loaded during the given session.
+// Returns the number of correction signals found for the session.
+func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (int, error) {
+	signalsPath := filepath.Join(cwd, ".agents", "signals", "session-quality.jsonl")
+	f, err := os.Open(signalsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("open quality signals: %w", err)
+	}
+	defer f.Close()
+
+	// Count correction signals for this session.
+	var correctionCount int
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 256*1024), 256*1024)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		var entry qualitySignalEntry
+		if err := json.Unmarshal(line, &entry); err != nil {
+			continue
+		}
+		if entry.SessionID == sessionID && entry.SignalType == "correction" {
+			correctionCount++
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, fmt.Errorf("read quality signals: %w", err)
+	}
+	if correctionCount == 0 {
+		return 0, nil
+	}
+
+	// Compute penalty: -0.1 per correction, capped at -0.3.
+	penalty := -0.1 * float64(correctionCount)
+	if penalty < -0.3 {
+		penalty = -0.3
+	}
+
+	// Load citations for this session and filter for skill_loaded entries.
+	citations, err := ratchet.LoadCitations(cwd)
+	if err != nil {
+		return correctionCount, fmt.Errorf("load citations for quality feedback: %w", err)
+	}
+
+	res := resolver.NewFileResolver(cwd)
+	appliedMutate := mutateArtifacts && !GetDryRun()
+
+	var feedbackEvents []FeedbackEvent
+	for _, c := range citations {
+		if c.CitationType != "skill_loaded" {
+			continue
+		}
+
+		learningID := extractLearningID(c.ArtifactPath)
+		path, resolveErr := res.Resolve(learningID)
+		if resolveErr != nil {
+			continue
+		}
+
+		if !appliedMutate {
+			currentUtility := parseUtilityFromFile(path)
+			event := FeedbackEvent{
+				SessionID:       sessionID,
+				ArtifactPath:    path,
+				CitationType:    "skill_loaded",
+				MetricNamespace: "quality-signal",
+				Decision:        "penalized",
+				Reason:          fmt.Sprintf("quality-correction-count-%d", correctionCount),
+				Reward:          penalty,
+				UtilityBefore:   currentUtility,
+				UtilityAfter:    currentUtility,
+				Alpha:           0,
+				RecordedAt:      time.Now(),
+			}
+			feedbackEvents = append(feedbackEvents, event)
+			continue
+		}
+
+		rewardCount := getLearningRewardCount(path)
+		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
+		oldUtility, newUtility, updateErr := updateLearningUtility(path, penalty, alpha)
+		if updateErr != nil {
+			continue
+		}
+
+		event := FeedbackEvent{
+			SessionID:       sessionID,
+			ArtifactPath:    path,
+			CitationType:    "skill_loaded",
+			MetricNamespace: "quality-signal",
+			Decision:        "penalized",
+			Reason:          fmt.Sprintf("quality-correction-count-%d", correctionCount),
+			Reward:          penalty,
+			UtilityBefore:   oldUtility,
+			UtilityAfter:    newUtility,
+			Alpha:           alpha,
+			RecordedAt:      time.Now(),
+		}
+		feedbackEvents = append(feedbackEvents, event)
+	}
+
+	if !GetDryRun() && len(feedbackEvents) > 0 {
+		_ = writeFeedbackEvents(cwd, feedbackEvents)
+	}
+
+	return correctionCount, nil
 }

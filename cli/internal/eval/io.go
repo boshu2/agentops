@@ -312,7 +312,8 @@ func validDeterministicRuntime(r Runtime) bool {
 func validDimension(d Dimension) bool {
 	switch d {
 	case DimensionCorrectness, DimensionProcessAdherence, DimensionArtifactQuality,
-		DimensionRuntimeCompatibility, DimensionEfficiency, DimensionSafety, DimensionLearningClosure:
+		DimensionRuntimeCompatibility, DimensionEfficiency, DimensionSafety,
+		DimensionLearningClosure, DimensionContextComprehension:
 		return true
 	default:
 		return false

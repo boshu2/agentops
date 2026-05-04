@@ -10,7 +10,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
+	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
@@ -254,6 +256,20 @@ func applyInjectModifiers(cwd string, opts *search.InjectOptions, knowledge *inj
 	if decl != nil {
 		filtered := applyContextFilter(knowledge, decl)
 		*knowledge = *filtered
+	}
+
+	if opts.ForSkill != "" && decl != nil {
+		evt := types.CitationEvent{
+			ArtifactPath: fmt.Sprintf("skills/%s/SKILL.md", opts.ForSkill),
+			SessionID:    resolveSessionID(opts.SessionID),
+			CitedAt:      time.Now(),
+			CitationType: "skill_loaded",
+			ModelVendor:  detectModelVendor(),
+			Query:        fmt.Sprintf("inject --for=%s", opts.ForSkill),
+		}
+		if err := ratchet.RecordCitation(cwd, evt); err != nil {
+			fmt.Fprintf(os.Stderr, "WARN: skill-load citation: %v\n", err)
+		}
 	}
 
 	runID := os.Getenv("RPI_RUN_ID")
