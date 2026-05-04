@@ -72,7 +72,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
             execution)
                 limit=800
                 ;;
-            judgment|product|session|knowledge|contribute|cross-vendor|utility|team|orchestration|solo)
+            judgment|product|session|knowledge|contribute|cross-vendor|orchestration)
                 limit=1050
                 ;;
         esac

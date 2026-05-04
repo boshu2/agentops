@@ -77,6 +77,9 @@ def hash_tree(root: pathlib.Path) -> str:
     return sha256_bytes("".join(rows).encode("utf-8"))
 
 
+repo_root = skills_root.parent
+source_root = repo_root / "skills"
+
 updated = []
 for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
     if not (skill_dir / "SKILL.md").exists():
@@ -84,22 +87,42 @@ for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
 
     name = skill_dir.name
     new_hash = hash_tree(skill_dir)
+
+    # Source-side hash: tree-hash skills/<name>/ if it exists. A codex skill
+    # without a source twin (rare; pure-codex skill) keeps source_hash empty.
+    source_dir = source_root / name
+    new_source_hash = hash_tree(source_dir) if source_dir.is_dir() and (source_dir / "SKILL.md").exists() else ""
+
     changed = False
 
-    # Check/update manifest entry
-    if name in entry_by_name and entry_by_name[name].get("generated_hash") != new_hash:
-        changed = True
-        if not check_only:
-            entry_by_name[name]["generated_hash"] = new_hash
+    # Check/update manifest entry (both generated_hash AND source_hash)
+    if name in entry_by_name:
+        entry = entry_by_name[name]
+        if entry.get("generated_hash") != new_hash:
+            changed = True
+            if not check_only:
+                entry["generated_hash"] = new_hash
+        if new_source_hash and entry.get("source_hash") != new_source_hash:
+            changed = True
+            if not check_only:
+                entry["source_hash"] = new_source_hash
 
-    # Check/update marker
+    # Check/update marker (both generated_hash AND source_hash)
     marker_path = skill_dir / marker_name
     if marker_path.exists():
         marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        marker_changed = False
         if marker.get("generated_hash") != new_hash:
-            changed = True
+            marker_changed = True
             if not check_only:
                 marker["generated_hash"] = new_hash
+        if new_source_hash and marker.get("source_hash") != new_source_hash:
+            marker_changed = True
+            if not check_only:
+                marker["source_hash"] = new_source_hash
+        if marker_changed:
+            changed = True
+            if not check_only:
                 marker_path.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
 
     if changed:
