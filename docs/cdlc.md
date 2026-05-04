@@ -185,9 +185,27 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 
 ---
 
+## The Leverage Hierarchy
+
+Not all phases are equal. Donella Meadows ranked twelve places to intervene in a system, from weakest (#12: tweak a number) to strongest (#1: change the paradigm). The CDLC phases climb that ladder.
+
+| Leverage | Meadows Point | CDLC Phase | What It Means |
+|---|---|---|---|
+| Low | #12–#10: Parameters, buffers, structure | **Generate** | Writing a better prompt helps, but it's the lowest-leverage thing you can do. Most teams stop here. |
+| Medium | #9–#8: Delays, balancing feedback | **Compile**, **Test** | Assembling the right context and validating it before delivery. Feedback loops that catch errors. |
+| Threshold | #6: Information flows | **Distribute**, **Deliver** | Making context available where it's needed. The point where individual effort becomes organizational capability. |
+| High | #5: Rules | **Observe** | Measuring what actually happens. Rules that govern what gets promoted, demoted, or discarded. |
+| Highest | #4–#3: Self-organization, goals | **Adapt** | The system improves itself. Learnings promote automatically. Goals reconcile. The flywheel compounds without human intervention. |
+
+The pattern: the phases most teams skip are the ones Meadows says matter most. Writing a prompt is #12. Building a system that improves its own context based on what it observes is #4. That's an 8-level leverage gap.
+
+Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Convergence map tying each CDLC phase to all five theoretical pillars: [docs/the-science.md](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+
+---
+
 ## Why This Matters
 
-LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel.
+LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
 
 DevOps proved that disciplined systems around indeterministic workers (humans) produce reliable output. SRE proved it again with SLOs and error budgets. Kubernetes proved it for infrastructure with control loops.
 
