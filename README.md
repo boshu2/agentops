@@ -6,9 +6,11 @@
 [![Nightly](https://github.com/boshu2/agentops/actions/workflows/nightly.yml/badge.svg)](https://github.com/boshu2/agentops/actions/workflows/nightly.yml)
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-**Context compiler for coding agents. Assembles, tests, and delivers the right context across Claude, Codex, Cursor, and OpenCode.**
+### Operational discipline for coding agents.
 
-AgentOps gives agents a shared `ao` control plane, lifecycle hooks, validation gates, and a repo-owned `.agents/` corpus so work survives chat windows and vendor boundaries.
+Ship reliable code with unreliable agents.
+
+**AgentOps is the context compiler — compile context, gate output, compound knowledge across Claude, Codex, Cursor, and OpenCode.**
 
 [Install](#install) · [See It Work](#see-it-work) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
