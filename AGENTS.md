@@ -242,6 +242,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
 | **embedded-sync** | `cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/` | Editing hooks without running `cd cli && make sync-hooks` |
+| **eval-workbench-verify** | Behavioral eval workbench golden state, task scoring scripts, and suite structure | Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON |
 | **go-build** | `ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
 | **hook-preflight** | All hooks have kill switches, no unsafe eval, timeouts present | Using `eval` or backtick substitution in hooks |
 | **hook-output-schema-lint** | Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept | Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+) |

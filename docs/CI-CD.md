@@ -57,6 +57,7 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
                     │  codex-runtime-sections                       │
                     │  embedded-sync       cli-docs-parity          │
                     │  agentops-contract-canaries                  │
+                    │  eval-workbench-verify                       │
                     │  agentops-eval-advisory                      │
                     │  shellcheck          markdownlint             │
                     │  security-scan       security-toolchain-gate  │
