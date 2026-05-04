@@ -87,42 +87,37 @@ Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md) · Configura
 
 ## What AgentOps Gives You
 
-AgentOps gives your coding agent four things it does not have by default:
+Three layers. Each solves a different problem. All three compound.
 
-| Layer | What changes |
-|-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` — the private corpus. `ao compile`, `ao maturity --evict`, decay, and lint keep it from rotting. *Removes the toil of re-explaining context every session.* |
-| **Validation** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship. *Removes the toil of catching the same mistake twice.* |
-| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks. *Removes the toil of re-implementing the same flow per agent.* |
-| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end. *Removes the toil of running the same multi-step process by hand.* |
-
-Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
+| Layer | Problem | What changes |
+|-------|---------|--------------|
+| **Context Compiler** | Every session starts from zero | `ao inject` delivers decay-ranked knowledge. `ao context assemble` builds phase-scoped packets. 71 skills load automatically via hooks. *Your agent starts loaded, not cold.* |
+| **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` — multi-model consensus validates plans before build and code before commit. Gates block, not advise. *Three fresh judges catch what one agent can't.* |
+| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
 
 ```mermaid
 flowchart LR
-    S[Session work] --> B[Bookkeeping]
-    S --> V[Validation]
-    B --> C[The corpus]
-    V --> C
-    C --> N[Next session]
-    N --> S
+    S[Session starts] --> L1[Layer 1: Compile context]
+    L1 --> W[Agent works]
+    W --> L2[Layer 2: Validate output]
+    L2 --> E[Session ends]
+    E --> L3[Layer 3: Extract + compound]
+    L3 -->|better context| S
 ```
 
-All agent runtime state lives in local `.agents/` — auditable and yours, but git-ignored by policy because it can churn and may contain sensitive session context. Plain text you can grep, diff, and review locally. Zero telemetry. Zero cloud dependency.
+All state lives in local `.agents/` — plain text you can grep, diff, and review. Zero telemetry. Zero cloud dependency. Runtime-neutral across Claude Code, Codex CLI, and OpenCode.
 
-Those layers are runtime-neutral. Claude Code, Codex CLI, Cursor, and OpenCode can use the same corpus, validation packets, and operating discipline instead of trapping each workflow inside one vendor's chat.
+### The three gaps (proof contract)
 
-### Proof: the three-gap contract
+The three layers close three failure modes most agent setups don't even name:
 
-AgentOps closes three failure modes most agent setups don't even name:
-
-| Gap | What fails without it | Closed by |
+| Gap | Where the loop breaks | Closed by |
 |-----|-----------------------|-----------|
-| **Judgment** | Plan looks coherent. Code passes tests. Both miss the edge case. No one challenged either. | `/pre-mortem` · `/vibe` · `/council` |
-| **Durable Learning** | Auth bug fixed Monday. Same auth bug returns Wednesday. The lesson lived in a chat transcript. | `/retro` · `/forge` · `ao lookup` |
-| **Loop Closure** | Code diff lands. No lesson extracted. No constraint hardened. Next session re-learns from scratch. | `/post-mortem` · finding compiler · `/evolve` |
+| **Judgment** | Plan looks coherent. Code passes tests. Both miss the edge case. | Layer 2: `/pre-mortem` · `/vibe` · `/council` |
+| **Durable Learning** | Auth bug fixed Monday. Same bug returns Wednesday. | Layer 3: `/forge` · `ao flywheel` · `ao inject` |
+| **Loop Closure** | Code lands. No lesson extracted. Next session re-learns from scratch. | Layer 3→1: `/evolve` · finding compiler · `/dream` |
 
-Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one or more of these. Full contract: [docs/context-lifecycle.md](docs/context-lifecycle.md).
+Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one or more of these gaps. Full contract: [docs/context-lifecycle.md](docs/context-lifecycle.md).
 
 ---
 
