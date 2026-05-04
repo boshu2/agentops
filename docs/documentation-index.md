@@ -230,6 +230,7 @@
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
 - [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile
+- [Eval Workbench](../evals/workbench/) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts
 - [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
 - [Eval Run Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) — JSON Schema for evaluation run records and scorecards
 - [Remote Compute Target Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) — JSON Schema for product-neutral GasCity-backed remote compute targets
