@@ -1,0 +1,1 @@
+The deploy script is missing error handling and input validation. Add strict mode (set -euo pipefail) and restore validation that checks for required configuration fields (app_name, version, target, log_dir). The script should exit with a non-zero status if any required field is missing. Run tests to verify.

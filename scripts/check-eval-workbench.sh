@@ -22,6 +22,16 @@ fail() { echo "FAIL: $1" >&2; exit 1; }
 task_count=$(find "$WORKBENCH/tasks" -name "score.sh" -type f 2>/dev/null | wc -l)
 [ "$task_count" -ge 9 ] || fail "Need ≥9 tasks with score.sh, found $task_count"
 
+# Check every task has a prompt.md (task-specific prompts required)
+prompt_count=$(find "$WORKBENCH/tasks" -name "prompt.md" -type f 2>/dev/null | wc -l)
+[ "$prompt_count" -eq "$task_count" ] || fail "prompt.md count ($prompt_count) != task count ($task_count) — every task needs a prompt.md"
+
+# Check agent eval suite exists and covers all tasks
+agent_suite="$REPO_ROOT/evals/agentops-core/workbench-agent-v1.json"
+[ -f "$agent_suite" ] || fail "Agent eval suite not found"
+agent_case_count=$(python3 -c "import json; print(len(json.load(open('$agent_suite'))['cases']))" 2>/dev/null)
+[ "$agent_case_count" -ge "$task_count" ] || fail "Agent suite has $agent_case_count cases but $task_count tasks exist"
+
 # Check behavioral eval suite exists
 suite="$REPO_ROOT/evals/agentops-core/workbench-behavioral-v1.json"
 [ -f "$suite" ] || fail "Behavioral eval suite not found"

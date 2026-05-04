@@ -1,0 +1,1 @@
+The API models are missing input validation. Add Pydantic field validators to ensure item prices are always positive and item names are not empty or whitespace-only. Write test functions named test_create_item_invalid_price and test_create_item_empty_name that verify these validations return 422 responses. Run tests to verify.

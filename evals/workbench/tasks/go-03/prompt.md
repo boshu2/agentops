@@ -1,0 +1,1 @@
+The Divide function in the calculator is stubbed out and returns incorrect results. Implement the actual division logic with proper error handling for division by zero. Add test cases to calc_test.go that verify both correct division and the error case. Run tests to verify.

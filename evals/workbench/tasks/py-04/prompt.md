@@ -1,0 +1,1 @@
+There is a SQL injection vulnerability in the database query code. Find the unsafe string interpolation and fix it using parameterized queries. Run tests to verify the fix.
