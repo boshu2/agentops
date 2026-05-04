@@ -13,7 +13,7 @@ Per-repo durable memory file loaded automatically by some runtimes at session st
 ## A
 
 ### AgentOps
-The operational layer for coding agents. Publicly, AgentOps adds bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. Technically, it acts as a context compiler around your existing models and tools. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md)
+A context compiler for coding agents. Three product layers — **Context Compiler**, **Validation Gates**, and **Knowledge Flywheel** — turn raw session signal into better next context so sessions compound instead of restarting from zero. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md)
 
 ### Atomic Work
 A unit of work with no shared mutable state with concurrent workers. Pure function model: input (issue spec + codebase snapshot) → output (patch + verification). This isolation property is what enables parallel wave execution — workers cannot interfere with each other. Enforced by fresh context per worker and lead-only commits.
@@ -178,6 +178,9 @@ A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each w
 A knowledge quality state indicating an artifact has been validated through multiple uses across sessions. Tempered knowledge has higher confidence than pending and can be promoted to the permanent knowledge base. [Full documentation](ARCHITECTURE.md#knowledge-artifacts)
 
 ## V
+
+### Validation Gates
+The second product layer (Layer 2). Multi-model councils challenge plans before build and code before commit, returning auditable verdicts — PASS, WARN, or FAIL. Gates block progress, not advise. Encompasses `/council`, `/vibe`, `/pre-mortem`, `/post-mortem`, and runtime hook gates. Maps to the Validation gap (judgment validation) in the [Context Lifecycle Contract](context-lifecycle.md).
 
 ### Vibe
 A skill (`/vibe`) that validates code after implementation by running a council of judges against the changes. Produces a PASS, WARN, or FAIL verdict. A passing vibe is typically required by the push gate before code can be pushed to the remote. [Full documentation](skills/vibe.md)

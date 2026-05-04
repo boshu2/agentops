@@ -23,6 +23,14 @@ permalink: /comparisons/agentops-vs-gsd
 | **Scale** | 53 commands, 46 workflows, 16 agents | 50+ skills, compiled CLI, hooks, schemas |
 | **Primary use** | Spec-driven development with phased execution | Ongoing codebase work with persistent memory |
 
+### Three-Layer Comparison
+
+| Product Layer | GSD | AgentOps |
+|---------------|----:|----------|
+| **Context Compiler** (L1) | Fresh context per agent (isolation, no retrieval) | Decay-ranked retrieval + fresh context per wave (isolation AND memory) |
+| **Validation Gates** (L2) | Post-build review agent | Pre-build `/pre-mortem` + post-build `/vibe` with multi-model council |
+| **Knowledge Flywheel** (L3) | No persistent learning across sessions | Extract → score → promote → inject; session 50 knows what session 1 learned |
+
 ---
 
 ## What GSD Does Well

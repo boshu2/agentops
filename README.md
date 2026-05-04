@@ -237,17 +237,17 @@ Every skill works alone. Flows compose them when you want more structure.
 | `/dream` | You want overnight knowledge compounding that never mutates source code |
 
 <details>
-<summary><b>Full catalog</b> - validation, flows, bookkeeping, and session skills</summary>
+<summary><b>Full catalog</b> — organized by product layer</summary>
 
-**Validation:** `/council` · `/vibe` · `/pre-mortem` · `/post-mortem`
+**Context Compiler (L1):** `/research` · `/compile` · `/inject` · `/handoff` · `/recover`
 
-**Flows:** `/research` · `/plan` · `/implement` · `/crank` · `/swarm` · `/rpi` · `/evolve`
+**Validation Gates (L2):** `/council` · `/vibe` · `/pre-mortem` · `/post-mortem`
 
-**Bookkeeping:** `/retro` · `/forge` · `/flywheel` · `/compile`
+**Knowledge Flywheel (L3):** `/retro` · `/forge` · `/flywheel` · `/dream`
 
-**Session:** `/handoff` · `/recover` · `/status` · `/trace` · `/provenance` · `/dream`
+**Orchestrated Flows:** `/plan` · `/implement` · `/crank` · `/swarm` · `/rpi` · `/evolve`
 
-**Product:** `/product` · `/goals` · `/release` · `/readme` · `/doc`
+**Session & Product:** `/status` · `/trace` · `/provenance` · `/product` · `/goals` · `/release` · `/readme` · `/doc`
 
 **Utility:** `/brainstorm` · `/bug-hunt` · `/complexity` · `/scaffold` · `/push`
 
@@ -256,9 +256,9 @@ Full reference: [docs/SKILLS.md](docs/SKILLS.md)
 </details>
 
 <details>
-<summary><b>Cross-runtime orchestration</b> - mix Claude, Codex, Cursor, and OpenCode</summary>
+<summary><b>Cross-runtime orchestration</b> — mix Claude, Codex, Cursor, and OpenCode</summary>
 
-Multi-runtime, one workflow. The same validation, research, delivery, and bookkeeping flows run whether the active worker is Claude Code, Codex, Cursor, or OpenCode.
+Multi-runtime, one workflow. The same three layers — context compilation, validation gates, and knowledge flywheel — run whether the active worker is Claude Code, Codex, Cursor, or OpenCode.
 
 One runtime leads a session. Another reviews the result. A third handles focused implementation. Adapters are runtime-specific. The contract is constant: independent context, auditable files, validation before promotion.
 
@@ -321,11 +321,11 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 
 ## Competitive Positioning
 
-Most tools optimize work *within* a session. AgentOps compounds across them. The bookkeeping and validation layer is the gap.
+Most tools optimize work *within* a session. AgentOps compounds across them. The three product layers — Context Compiler, Validation Gates, Knowledge Flywheel — are the gap.
 
 | Tool | What it does well | What AgentOps adds |
 |------|-------------------|--------------------|
-| **[GSD](https://github.com/glittercowboy/get-shit-done)** | Fresh-context phased execution, recovery loops, runtime breadth | Cross-session bookkeeping, pre-build validation, the knowledge flywheel |
+| **[GSD](https://github.com/glittercowboy/get-shit-done)** | Fresh-context phased execution, recovery loops, runtime breadth | Context Compiler (cross-session retrieval), Validation Gates (pre-build), Knowledge Flywheel |
 | **[Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin)** | Ideation, configurable reviewers, cross-runtime conversion | Automatic capture/scoring/injection, council validation, repo-native `ao` workflows |
 | **[Spec Kit](https://github.com/github/spec-kit) / [Kiro](https://kiro.dev/)** | Spec-driven development and executable planning artifacts | Learning beyond specs: failures, decisions, retros, prevention rules |
 | **[Superpowers](https://github.com/obra/superpowers)** | TDD discipline and autonomous work patterns | Memory, pre-mortems, validation across repeated sessions |

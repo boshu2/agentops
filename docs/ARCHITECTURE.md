@@ -1,14 +1,15 @@
 # AgentOps Architecture
 
-> AgentOps is the operational layer for coding agents. Publicly it sells bookkeeping, validation, primitives, and flows; technically it compiles raw session signal into better next context.
+> AgentOps is a context compiler for coding agents. Three product layers — Context Compiler, Validation Gates, and Knowledge Flywheel — turn raw session signal into better next context.
 
 ## Overview
 
 AgentOps is a repo-native operating layer that combines interactive skills, the
-`ao` control plane, hooks, and `.agents/` artifacts. The public product story is
-bookkeeping, validation, primitives, and flows. The technical mechanism is a
-context compiler plus knowledge flywheel: capture what happened, validate it,
-store it with provenance, and surface it back when the next task needs it.
+`ao` control plane, hooks, and `.agents/` artifacts. Three product layers do the
+work: the **Context Compiler** assembles the right context at session start, the
+**Validation Gates** challenge plans and code before they ship, and the
+**Knowledge Flywheel** extracts learnings, scores them, and resurfaces them so
+the next session starts smarter.
 
 The architecture rests on five pillars. Each one is independent — you can use any skill standalone — but together they form a recursive system that gets smarter with every cycle.
 
@@ -37,11 +38,11 @@ Three principles drive every architectural decision:
 
 **Least-privilege context loading.** Each agent receives only the context necessary for its task. Research gets prior knowledge. Plan gets a 500-token research summary. Crank workers get fresh context per wave with zero bleed-through. Vibe gets recent changes only. Phase summaries compress output between phases to prevent signal-to-noise collapse. The context window is treated as a security boundary — nothing enters without scoping.
 
-**The cycle is the product.** No single skill is the value. Bookkeeping,
-validation, primitives, and flows only matter when they turn into a repeatable
-loop: discovery, implementation, validation, learn, repeat. Post-mortem
-doesn't just extract learnings; it proposes the next cycle's work. The system
-feeds itself.
+**The cycle is the product.** No single layer is the value. Context compilation,
+validation gates, and knowledge flywheel only matter when they turn into a
+repeatable loop: discovery, implementation, validation, learn, repeat.
+Post-mortem doesn't just extract learnings; it proposes the next cycle's work.
+The system feeds itself.
 
 ---
 

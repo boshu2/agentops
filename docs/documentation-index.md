@@ -18,6 +18,16 @@
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
+## Three Product Layers
+
+| Layer | What it does | Key surfaces |
+|-------|-------------|-------------|
+| **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, hooks |
+| **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
+| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/retro`, `/forge`, `ao lookup`, `.agents/` |
+
+Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+
 ## Architecture
 
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
@@ -63,7 +73,7 @@
 ## Concepts
 
 - [Philosophy](philosophy.md) — Five validated principles for building with coding agents, with evidence from five months of production use
-- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the public bookkeeping, validation, primitives, and flows story
+- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the three product layers
 - [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
 - [The Science](the-science.md) — Research behind knowledge decay and compounding
 - [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy

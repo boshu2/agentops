@@ -23,6 +23,14 @@ permalink: /comparisons/agentops-vs-compound-engineer
 | **Scale** | 45+ skills, 25+ agents, 10 runtime targets | 50+ skills, compiled CLI, hooks, schemas |
 | **Primary use** | Standardized engineering workflow with knowledge capture | Ongoing codebase work with persistent memory and validation |
 
+### Three-Layer Comparison
+
+| Product Layer | Compound Engineer | AgentOps |
+|---------------|------------------:|----------|
+| **Context Compiler** (L1) | Manual `/refresh` invocation loads context | Automatic injection at session start; phase-scoped, token-budgeted |
+| **Validation Gates** (L2) | Configurable review agents (single-model) | Multi-model councils with independent judges and auditable verdicts |
+| **Knowledge Flywheel** (L3) | `/compound` captures manually; no scoring or decay | Automated extract → score → promote → inject with decay ranking |
+
 ---
 
 ## What Compound Engineer Does Well

@@ -21,6 +21,14 @@ permalink: /comparisons/agentops-vs-superpowers
 | **GitHub stars** | 29,000+ | Growing |
 | **Primary use** | Greenfield development | Ongoing codebase work |
 
+### Three-Layer Comparison
+
+| Product Layer | Superpowers | AgentOps |
+|---------------|------------:|----------|
+| **Context Compiler** (L1) | Session-local planning context (no cross-session retrieval) | Decay-ranked retrieval of prior learnings + phase-scoped assembly |
+| **Validation Gates** (L2) | TDD as implicit gate (tests pass or fail) | TDD + multi-model councils with independent judges and pre-build validation |
+| **Knowledge Flywheel** (L3) | No persistent learning between sessions | Extract → score → promote → inject; autonomous overnight compounding |
+
 ---
 
 ## What Superpowers Does Well
