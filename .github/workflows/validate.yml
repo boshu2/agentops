@@ -266,6 +266,35 @@ jobs:
           chmod +x scripts/test-agentops-contract-canaries.sh
           scripts/test-agentops-contract-canaries.sh
 
+  eval-workbench-verify:
+    name: eval-workbench-verify (required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+          cache-dependency-path: evals/workbench/go-cli/go.mod
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Python dependencies
+        run: |
+          cd evals/workbench/python-api
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install fastapi uvicorn httpx pytest ruff black
+
+      - name: Verify workbench golden state
+        run: |
+          chmod +x scripts/check-eval-workbench.sh
+          bash scripts/check-eval-workbench.sh
+
   agentops-eval-advisory:
     name: agentops-eval-advisory (advisory)
     runs-on: ubuntu-latest
@@ -1051,7 +1080,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1077,6 +1106,7 @@ jobs:
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
+          echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
@@ -1119,6 +1149,7 @@ jobs:
              [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
              [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
              [[ "${{ needs.agentops-contract-canaries.result }}" != "success" ]] || \
+             [[ "${{ needs.eval-workbench-verify.result }}" != "success" ]] || \
              [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
              [[ "${{ needs.markdownlint.result }}" != "success" ]] || \
              [[ "${{ needs.security-scan.result }}" != "success" ]] || \
