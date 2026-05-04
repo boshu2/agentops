@@ -330,6 +330,35 @@ jobs:
           chmod +x scripts/eval-agentops.sh
           ./scripts/eval-agentops.sh --fast
 
+  eval-skill-delta:
+    name: eval-skill-delta (structural gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Check for skills changes
+        id: filter
+        run: |
+          if git diff --name-only HEAD~1 -- 'skills/**' | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate eval harness dry-run
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          chmod +x scripts/eval-agent-harness.sh
+          result=$(bash scripts/eval-agent-harness.sh --task go-build --agent echo --dry-run 2>/dev/null | tail -1)
+          echo "$result" | jq -e '.skipped == true' > /dev/null
+          echo "eval harness dry-run: valid JSON, skipped=true"
+
+      - name: Skip (no skills changes)
+        if: steps.filter.outputs.changed != 'true'
+        run: echo "No skills/ changes detected — skipping eval-skill-delta"
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:
@@ -1080,7 +1109,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1108,6 +1137,7 @@ jobs:
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
+          echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
           echo "security-scan: ${{ needs.security-scan.result }}"
@@ -1150,6 +1180,7 @@ jobs:
              [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
              [[ "${{ needs.agentops-contract-canaries.result }}" != "success" ]] || \
              [[ "${{ needs.eval-workbench-verify.result }}" != "success" ]] || \
+             [[ "${{ needs.eval-skill-delta.result }}" != "success" ]] || \
              [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
              [[ "${{ needs.markdownlint.result }}" != "success" ]] || \
              [[ "${{ needs.security-scan.result }}" != "success" ]] || \
