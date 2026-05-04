@@ -107,8 +107,15 @@ NC='\033[0m'
 
 errors=0
 skipped=0
-SCOPE="${PRE_PUSH_GO_SCOPE:-upstream}"
+SCOPE_EXPLICIT=false
+if [[ -n "${PRE_PUSH_GO_SCOPE:-}" ]]; then
+    SCOPE="$PRE_PUSH_GO_SCOPE"
+    SCOPE_EXPLICIT=true
+else
+    SCOPE="upstream"
+fi
 FAST_MODE=false
+TWO_PASS=false
 FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
 FAIL_FAST_PENDING=false
@@ -148,6 +155,15 @@ cleanup_hash_snapshot() {
 }
 blocked_exit() {
     echo ""
+    if truthy "${_PRE_PUSH_ADVISORY:-0}"; then
+        if [[ "$FAST_MODE" == "true" ]]; then
+            echo -e "${YELLOW}pre-push gate (fast, advisory): $errors issues found ($skipped skipped)${NC}"
+        else
+            echo -e "${YELLOW}pre-push gate (advisory): $errors issues found${NC}"
+        fi
+        cleanup_hash_snapshot
+        exit 0
+    fi
     if [[ "$FAST_MODE" == "true" ]]; then
         echo -e "${RED}pre-push gate (fast): BLOCKED ($errors failures, $skipped skipped)${NC}"
     else
@@ -157,7 +173,11 @@ blocked_exit() {
     exit 1
 }
 fail() {
-    echo -e "${RED}FAIL${NC}  $1"
+    if truthy "${_PRE_PUSH_ADVISORY:-0}"; then
+        echo -e "${YELLOW}WARN${NC}  $1 (advisory)"
+    else
+        echo -e "${RED}FAIL${NC}  $1"
+    fi
     errors=$((errors + 1))
     if [[ "${FAIL_FAST_EFFECTIVE:-false}" == "true" ]]; then
         FAIL_FAST_PENDING=true
@@ -181,15 +201,19 @@ run_hash_snapshot() {
 usage() {
     cat <<'EOF'
 Usage: scripts/pre-push-gate.sh [--fast] [--scope auto|upstream|staged|worktree|head]
+       scripts/pre-push-gate.sh --two-pass
 
 Options:
   --fast       Only run checks relevant to changed files
-  --scope      How to determine changed files (default: upstream)
+  --scope      How to determine changed files (default: head local, upstream CI)
   --fail-fast  Stop after first blocking failure
   --accumulate Continue after failures and report all blocking failures
+  --two-pass   Pass 1: --fast --scope head --fail-fast (blocking)
+               Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
 
 Environment:
   PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
+  PRE_PUSH_TWO_PASS=1           enable two-pass mode via env
   PRE_PUSH_RUN_EVAL=1           run eval canaries even when eval files did not change
   PRE_PUSH_STRICT_EVAL=1        make local fast eval canaries blocking
   PRE_PUSH_AGENT_HEALTH=1       run local fast AgentOps health/ratchet checks
@@ -197,6 +221,10 @@ Environment:
   PRE_PUSH_STRICT_WORKTREE=1    run worktree disposition in local fast mode
 EOF
 }
+
+if truthy "${PRE_PUSH_TWO_PASS:-0}"; then
+    TWO_PASS=true
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -206,6 +234,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --scope)
             SCOPE="${2:-}"
+            SCOPE_EXPLICIT=true
             shift 2
             ;;
         --fail-fast)
@@ -214,6 +243,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --accumulate)
             FAIL_FAST_SETTING=0
+            shift
+            ;;
+        --two-pass)
+            TWO_PASS=true
             shift
             ;;
         -h|--help)
@@ -227,6 +260,10 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ "$SCOPE_EXPLICIT" != "true" ]] && ! is_ci_env; then
+    SCOPE="head"
+fi
 
 case "$SCOPE" in
     auto|upstream|staged|worktree|head) ;;
@@ -243,6 +280,28 @@ if [[ "$FAIL_FAST_SETTING" == "auto" ]]; then
     fi
 elif truthy "$FAIL_FAST_SETTING"; then
     FAIL_FAST_EFFECTIVE=true
+fi
+
+# --- Two-pass mode: re-invoke as pass 1 (blocking) + pass 2 (advisory) ---
+if [[ "$TWO_PASS" == "true" ]]; then
+    SELF="$SCRIPT_DIR/pre-push-gate.sh"
+    echo "=== Two-pass mode ==="
+    echo ""
+    echo "--- Pass 1: HEAD commit (blocking) ---"
+    set +e
+    PRE_PUSH_TWO_PASS=0 "$SELF" --fast --scope head --fail-fast
+    pass1_rc=$?
+    set -e
+    if [[ $pass1_rc -ne 0 ]]; then
+        echo ""
+        echo -e "${RED}--- Pass 1: FAILED (blocking) ---${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}--- Pass 1: PASSED ---${NC}"
+    echo ""
+    echo "--- Pass 2: upstream range (advisory) ---"
+    _PRE_PUSH_ADVISORY=1 PRE_PUSH_TWO_PASS=0 "$SELF" --scope upstream --accumulate || true
+    exit 0
 fi
 
 collect_all_changed() {
@@ -1516,6 +1575,14 @@ fi
 maybe_fail_fast
 echo ""
 if [[ $errors -gt 0 ]]; then
+    if truthy "${_PRE_PUSH_ADVISORY:-0}"; then
+        if [[ "$FAST_MODE" == "true" ]]; then
+            echo -e "${YELLOW}pre-push gate (fast, advisory): $errors issues found ($skipped skipped)${NC}"
+        else
+            echo -e "${YELLOW}pre-push gate (advisory): $errors issues found${NC}"
+        fi
+        exit 0
+    fi
     if [[ "$FAST_MODE" == "true" ]]; then
         echo -e "${RED}pre-push gate (fast): BLOCKED ($errors failures, $skipped skipped)${NC}"
     else

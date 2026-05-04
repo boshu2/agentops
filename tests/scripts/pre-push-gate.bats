@@ -1168,3 +1168,158 @@ GIT
     run grep -q 'check-test-home-isolation\.sh' "$SCRIPT"
     [ "$status" -eq 0 ]
 }
+
+# ─────────────────────────────────────────────────────────────────────────
+# soc-7c3v: two-pass mode tests
+# ─────────────────────────────────────────────────────────────────────────
+
+@test "pre-push-gate.sh --two-pass re-invokes with pass 1 (head) and pass 2 (upstream)" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --two-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Two-pass mode"* ]]
+    [[ "$output" == *"Pass 1"* ]]
+    [[ "$output" == *"Pass 2"* ]]
+}
+
+@test "pre-push-gate.sh --two-pass exits 0 when pass 2 has advisory failures" {
+    # Pass 1 (head scope) sees no changes → passes.
+    # Pass 2 (upstream scope) sees a go build failure → advisory, still exit 0.
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; exit 0; fi
+if [[ "$*" == *"diff --name-only"* && "$*" == *"upstream"* ]]; then echo "cli/main.go"; exit 0; fi
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+exit 1
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --two-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Pass 1: PASSED"* ]]
+    [[ "$output" == *"advisory"* ]]
+}
+
+@test "pre-push-gate.sh --two-pass exits 1 when pass 1 fails" {
+    # Pass 1 (head scope) sees a go build failure → blocking, exit 1.
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"show --name-only"* ]]; then echo "cli/main.go"; exit 0; fi
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/main.go"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+exit 1
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --two-pass
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Pass 1: FAILED (blocking)"* ]]
+}
+
+@test "pre-push-gate.sh PRE_PUSH_TWO_PASS=1 enables two-pass via env" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_TWO_PASS=1 bash "$GATE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Two-pass mode"* ]]
+}
+
+@test "pre-push-gate.sh defaults to --scope head locally (not CI)" {
+    run grep -q 'SCOPE_EXPLICIT' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'SCOPE="head"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh keeps --scope upstream in CI" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env CI=true bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh PRE_PUSH_GO_SCOPE overrides local default" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_GO_SCOPE=upstream bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-push-gate.sh advisory mode prints WARN not FAIL" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/main.go"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+exit 1
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS _PRE_PUSH_ADVISORY=1 bash "$GATE" --scope upstream
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"* ]]
+    [[ "$output" == *"advisory"* ]]
+}
