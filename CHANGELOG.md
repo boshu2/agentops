@@ -15,33 +15,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) and initializes a disposable bd database before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
 
-## [2.39.0] - 2026-04-27
+## [2.39.0] - 2026-05-04
 
 ### Added
 
-- **`ao agents` command group** - added `ao agents inspect`, `ao agents lint`, and `ao agents doctor` for `.agents/` write-surface introspection, linting, orphan reporting, and combined health checks.
-- **Dream finding-generator pipeline** - added generator sidecar recording, aggregation, external-watchlist candidate emission, RFC 0001 authoring docs, and an `external_watchlist_emitted` fitness counter.
-- **RPI next-work v1.4 metadata** - promoted `status`, `requires`, `dedup_key`, and external-watchlist routing into first-class next-work contract fields, validators, and skill documentation.
-- **Goals measurement filtering** - added `ao goals measure --exclude-tag` and tagged `flywheel-compounding` as `long-cycle` / `corpus-state` so long-cycle corpus state can be excluded from selected measurements.
-- **`.agents/` write-surface contract** - catalogued repo memory write surfaces, added a lint gate, and added production-code smoke coverage for the allowlisted surfaces.
-- **Harvest nested artifact support** - harvest now recurses into nested artifact directories and emits real rig metadata.
+- **AgentOps daemon runtime** - landed opt-in `agentopsd` as the local control plane for durable jobs, queueing, worker execution, projections, health/readiness/status, event tailing, mutation tokens, and product soak proofs. New CLI surfaces include `ao daemon run`, `ready`, `status`, `events tail`, `jobs list/show/submit/wait/cancel`, `service install`, and `soak`.
+- **Daemon-backed workflows and scheduling** - RPI, Dream, wiki/forge, and plans now have migration paths into the daemon via explicit daemon flags, `plans.projection`, worker policies, and projections. `.agents/schedule.yaml`, `ao schedule add/list/run/remove`, daemon `--schedule-file`, cron validation, backpressure controls, schedule mutation routes, and recurrence ledger events make recurring work a daemon-owned primitive.
+- **Worker and factory substrate** - added AgentWorker contracts, GasCity API/SSE adapters, CLI fallback workers, process cleanup, quarantine, Linux cgroup caps, routing policy guardrails, scoped mutation tokens, factory lifecycle projections, worktree ownership contracts, validation state, manual merge disposition, and yield ledgers.
+- **CLI command expansion** - added `ao agents inspect/lint/doctor`, `ao skills check`, `ao scope`, `ao eval task/cleanup/suite/coverage/baseline-audit`, `ao pool reindex`, `ao watch`, and daemon-backed plan synchronization surfaces.
+- **Deterministic eval platform** - added eval runtime adapters, scorecards, coverage reports, baseline A/B, context-packet A/B, retrieval/file-backed backends, public canary suites, and contract canaries.
+- **Dream and work-queue metadata** - added finding-generator sidecars, aggregation, external-watchlist output, end-user coverage fitness gates, and first-class next-work `status`, `requires`, `dedup_key`, and routing metadata.
+- **`.agents/` write-surface governance** - catalogued repo memory write surfaces, added lint/smoke coverage, introduced the no-tracked-`.agents` policy, and added operator docs for working with runtime state.
+- **Harvest and knowledge surfaces** - harvest now recurses into nested artifact directories, emits real rig metadata, and gained native Go extraction support.
 
 ### Changed
 
-- **Codex runtime packaging** - refreshed Codex skills for GPT-5.5, aligned Codex plugin metadata with the marketplace schema, regenerated manifests and shared hashes, converted remaining skill references to `$skill` notation, and reduced skill-catalog context footprint.
-- **Hook runtime backend** - refactored hooks around a managed runtime backend and refreshed native Codex hook/runtime proof gates.
-- **Docs and release governance** - restored `docs/index.md`, renamed the full catalog to `docs/documentation-index.md`, added `.agents/` operator and comparison docs, and accepted RFC 0001 for finding-generator parallelism.
-- **Release gate coverage** - CI/local gates now cover command/test pairing, next-work schema rows, Codex RPI contracts, assertion-density scope, agents write surfaces, standards-injector completeness, and release audit artifact references.
-- **Goals parsing internals** - reduced markdown parser complexity by extracting table-cell helpers without changing behavior.
+- **CLI architecture refactor** - reorganized large parts of the Go CLI around focused internal packages for daemon state, worker execution, GasCity, schedule parsing, eval, path resolution, lifecycle, harvest, OpenClaw, LLM wiki execution, safety, and quality checks.
+- **Daemon migration model** - foreground RPI, Dream, plans, and wiki/forge paths remain compatible, while daemon submission/read paths move runtime ownership toward the durable ledger and rebuildable projections.
+- **Hook runtime and context flow** - re-architected hooks around JIT context and a managed runtime backend, added Claude/Codex PreToolUse output parity checks, quieted Codex session-start behavior, and added edit/write hash-audit hooks.
+- **Path resolution** - moved `.agents` and repo-state path logic toward shared Go/shell resolvers (`cli/internal/paths`, `lib/ao-paths.sh`) and migrated representative CLI commands and hooks to the new helpers.
+- **Codex runtime packaging** - refreshed Codex skills for GPT-5.5, aligned native plugin metadata with the marketplace schema, regenerated manifests and hashes, converted remaining skill references to `$skill` notation, tightened native hook installation, and reduced skill-catalog context footprint.
+- **Release and CI governance** - CI/local gates now cover daemon product proofs, contract canaries, eval baselines, command/test pairing, Codex runtime sections, pre-push wiring, release audit artifacts, Windows smoke, advisory policy, and nightly knowledge-cycle dedupe.
+- **Docs and operator contracts** - added or expanded daemon, scheduling, control-plane, GasCity, OpenClaw, local compute routing, operator guide, and release governance documentation.
 - **Bootstrap behavior** - `/bootstrap` now recommends installing `bd` instead of attempting automatic installation.
 
 ### Fixed
 
-- **CLI output safety** - fixed JSON and UTF-8 truncation bugs, command catalog drift, commit-review redaction, stale docs links, and temp-directory walk-up behavior in `FindAgentsDir`.
-- **Security and scanner false positives** - closed the harvest TOCTOU path with `os.OpenRoot`, excluded safe regexp literals from broad secret scans, and split secret-regex construction so release gates do not flag their own patterns.
-- **Codex/runtime drift** - fixed Codex skill chaining defaults, native hook manifest install, quiet session-start behavior, hook test gaps, `$skill` notation, and vibe language-gated complexity.
-- **RPI, triage, and coverage edges** - repaired partial-batch lifecycle drift, pinned coverage-anchor parsing, isolated RPI supervisor test state, added inject/ratchet/harvest/overnight regressions, and normalized stale next-work bookkeeping.
-- **Release blockers** - aligned the next-work schema contract with current queue enums and paired new command changes with regression tests so the release gate passes cleanly.
+- **Daemon durability and state machines** - fixed fsync propagation, orphan temp sweeps, snapshot directory sync, idempotency-key dedupe, queue cancellation, recurrence recomputation, projection deep-copy/nil-safety, claimed job queue depth, terminal projection precedence, and store/reconcile context cancellation.
+- **Daemon API and execution hardening** - capped request bodies, bounded event limits, normalized wait timeout errors, rejected bad cursors and malformed schedule payloads, hardened wiki source-path containment and schedule name traversal, tolerated oversized ledger lines, preserved Dream log permissions, and routed Dream/wiki execution through the foreground supervisor.
+- **CLI hygiene** - fixed JSON output validity, UTF-8 truncation, schedule prompt behavior under tests, command catalog drift, Cobra docs conformance, hidden command surface checks, command/test pairing, and temp-directory walk-up behavior.
+- **Hook/runtime drift** - repaired Codex skill chaining defaults, native hook manifest installation, noisy session-start output, hook output schema, intent-echo bypass for team runners, lifecycle guard coverage, and pre-push hook coverage.
+- **Security and scanner false positives** - closed the harvest TOCTOU path with `os.OpenRoot`, excluded safe regexp literals from broad secret scans, split secret-regex construction so release gates do not flag their own patterns, and removed pipe-to-shell patterns from the ripgrep builder.
+- **CI/nightly/release blockers** - repaired eval advisory fixtures, baseline-audit drift-only behavior, Windows smoke paths, shellcheck/pre-push gate regressions, knowledge-cycle dormant-corpus handling, release audit validation, and the canary count drift found during final v2.39.0 validation.
 
 ## [2.38.0] - 2026-04-22
 
