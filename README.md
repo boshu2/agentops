@@ -10,7 +10,7 @@
 
 AgentOps gives agents a shared `ao` control plane, lifecycle hooks, validation gates, and a repo-owned `.agents/` corpus so work survives chat windows and vendor boundaries.
 
-[Install](#install) · [Quick Start](#quick-start) · [Cross-Vendor](#agentops-is-the-cross-vendor-operating-layer) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
+[Install](#install) · [See It Work](#see-it-work) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 
 </div>
 
@@ -82,6 +82,40 @@ You can also install the CLI from [release binaries](https://github.com/boshu2/a
 | Reversible | Remove the installed skill directories, delete `.agents/`, and remove hook entries from your runtime settings |
 
 Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md) · Configuration: [docs/ENV-VARS.md](docs/ENV-VARS.md)
+
+---
+
+## See It Work
+
+**One command: validate a PR across Claude and Codex**
+
+```text
+> /council --mixed validate this PR
+
+[council] evidence packet sealed -> 6 judges across Claude Code and Codex CLI
+[claude/judge-1] WARN - rate limiting missing on /login endpoint
+[claude/judge-2] PASS - Redis integration follows middleware pattern
+[codex/judge-1]  WARN - token bucket refill lacks jitter under burst
+[codex/judge-2]  PASS - backoff bounds match retry policy
+Consensus: WARN - fix /login rate limit and add refill jitter before shipping
+Recorded: .agents/council/<run-id>/verdict.md
+```
+
+**Full loop: research through post-mortem**
+
+```text
+> /rpi "add retry backoff to rate limiter"
+
+[research]    Found 3 prior learnings on rate limiting
+[plan]        2 issues, 1 wave
+[pre-mortem]  Council validates the plan
+[crank]       Executes the scoped work
+[vibe]        Council validates the code
+[post-mortem] Captures new learnings in .agents/
+[flywheel]    Next session starts with better context
+```
+
+The point is not a bigger prompt. The point is a repo that remembers what worked.
 
 ---
 
@@ -183,40 +217,6 @@ ao demo
 ```
 
 Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Router](docs/SKILL-ROUTER.md)
-
----
-
-## See It Work
-
-**One command: validate a PR across vendors**
-
-```text
-> /council --mixed validate this PR
-
-[council] evidence packet sealed -> 6 judges across 2 runtimes
-[claude/judge-1] WARN - rate limiting missing on /login endpoint
-[claude/judge-2] PASS - Redis integration follows middleware pattern
-[codex/judge-1]  WARN - token bucket refill lacks jitter under burst
-[codex/judge-2]  PASS - backoff bounds match retry policy
-Consensus: WARN - fix /login rate limit and add refill jitter before shipping
-Recorded: .agents/council/<run-id>/verdict.md
-```
-
-**Full loop: research through post-mortem**
-
-```text
-> /rpi "add retry backoff to rate limiter"
-
-[research]    Found 3 prior learnings on rate limiting
-[plan]        2 issues, 1 wave
-[pre-mortem]  Council validates the plan
-[crank]       Executes the scoped work
-[vibe]        Council validates the code
-[post-mortem] Captures new learnings in .agents/
-[flywheel]    Next session starts with better context
-```
-
-The point is not a bigger prompt. The point is a repo that remembers what worked.
 
 ---
 
