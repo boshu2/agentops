@@ -126,60 +126,29 @@ Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one
 
 ---
 
-## AgentOps Is the Cross-Vendor Operating Layer
-
-The plugin is one entrypoint, not the product boundary. AgentOps is a context compiler for coding agents: it assembles phase-scoped context packets, validates them through multi-model consensus, and delivers decay-ranked knowledge so every session starts loaded, not cold. Shared skills tell agents how to work, the `ao` CLI owns repo-native state and control-plane workflows, hooks keep lifecycle discipline active, and the daemon path moves that work toward always-on local operation.
-
-| Surface | What it does | Why it matters |
-|---------|--------------|----------------|
-| Skills and plugins | Load AgentOps flows into Claude Code, Codex CLI, Cursor, and OpenCode | Agents get the same operating language across vendors |
-| `ao` CLI | Searches, compiles, curates, and assembles repo context; runs RPI, factory, evolve, and daemon commands | The control plane lives outside any one chat window |
-| Hooks | React to runtime events such as session start, user prompts, tool use, and stop | Lifecycle and validation discipline can fire automatically |
-| `.agents/` corpus | Stores learnings, findings, handoffs, council reports, and run evidence locally | The durable asset belongs to the repo and team |
-| Daemon path | Runs queued and scheduled local jobs through `ao daemon` surfaces as that layer matures | AgentOps can move from chat-invoked flows toward always-on operation |
-
-`/council` is the clearest proof of that system boundary. It is not just a review command; it is a way to make multiple agents and runtimes evaluate the same evidence and return one auditable verdict.
-
-| Command | What it demonstrates |
-|---------|----------------------|
-| `/council validate this PR` | The active runtime can spawn independent judges around one shared packet |
-| `/council --mixed validate this PR` | Claude and Codex can receive the same evidence, apply the same perspectives, and hand their verdicts back to AgentOps for consolidation |
-| `/council --preset=security-audit validate the auth system` | Expertise is configured by the operating layer, not left to a single model's default behavior |
-| `/council --evidence --commit-ready validate the release plan` | The result becomes repo-local decision evidence, not just chat history |
-
-That is the deeper product shape: agents stay replaceable, vendors can cooperate, and the corpus plus control plane remain yours.
-
----
-
 ## Why DevOps?
 
-DevOps changed how we ship software by closing three loops: **flow** (work moves forward), **feedback** (work that breaks comes back fast), and **continual learning** (the system gets smarter with every cycle). The Three Ways. They are not metaphors. They are the architecture of every team that ships reliably under pressure.
+DevOps proved that disciplined systems around indeterministic workers produce reliable output. SRE proved it again with SLOs and error budgets. Kubernetes proved it for infrastructure with control loops. Coding agents are the next indeterministic worker class. Same playbook. New substrate.
 
-Coding agents need the same architecture. They have prompts and weights — neither of which is an operations layer. Run an agent against a real codebase and you'll feel the gap immediately: no flow control between sessions, no feedback that survives compaction, no learning that compounds. Each session starts where every prior session started: zero.
+DevOps had the SDLC — the infinity loop that made software delivery an engineering discipline. Coding agents need an equivalent: the **Context Development Life Cycle (CDLC)**. Every SDLC phase has a context counterpart. AgentOps implements all of them.
 
-AgentOps applies the Three Ways to coding agents:
+| SDLC | CDLC | AgentOps surface |
+|------|------|------------------|
+| **Plan** | **Generate** | `/research`, `/plan`, SKILL.md authoring |
+| **Code + Build** | **Compile** | `ao context assemble`, `ao inject`, decay-ranked retrieval |
+| **Test** | **Test** | `/pre-mortem`, `/vibe`, `/council`, `ao eval run` |
+| **Release** | **Distribute** | Skills registry, `/converter`, cross-runtime export |
+| **Deploy** | **Deliver** | `SessionStart` hooks, `ao inject --for=<skill>` |
+| **Operate** | **Observe** | Citation tracking, quality signals, session-outcome |
+| **Monitor → Plan** | **Adapt** | MemRL feedback, `/forge`, `/evolve`, `/dream` |
 
-| DevOps Three Ways | AgentOps surface | What it means in practice |
-|-------------------|------------------|---------------------------|
-| **Flow** | Primitives + Flows (`/research` → `/plan` → `/implement` → `/validation` → `/rpi`) | Work moves through scoped, auditable phases. No phase compresses into another. |
-| **Feedback** | Validation gates that block, not advise (`/pre-mortem`, `/vibe`, `/council`) | Multi-model consensus catches errors before they propagate. Verdicts are recorded, not assumed. |
-| **Continual Learning** | Bookkeeping + the knowledge flywheel (`/retro` → `/forge` → `ao inject` → next session) | Every session emits learnings. Learnings get scored, promoted, and decayed. Next session starts loaded. |
+LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
 
-Theoretical foundation lives in [docs/the-science.md](docs/the-science.md) (Meadows' leverage points + DevOps Three Ways) and [docs/brownian-ratchet.md](docs/brownian-ratchet.md) (chaos + filter + one-way gate = net forward progress).
+Each generation of software practice gave teams a durable artifact: the wiki, the runbook, the postmortem, the toil budget. AgentOps gives your agents the same kind of artifact — **the corpus**. A typed, versioned, agent-readable knowledge store maintained alongside the code. The model stays the same. The corpus compounds.
 
-The lineage is direct: DevOps is what made software ship. AgentOps is what makes coding agents compound. Same shape, new substrate.
+> The harness layer commoditizes. Memory primitives, learning loops, validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build that moat now. See [PRODUCT.md](PRODUCT.md) for the full thesis.
 
-> AgentOps and every harness like it gets absorbed into the model layer over time. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, before the harness layer commoditizes. See [PRODUCT.md](PRODUCT.md) for the full thesis.
-
----
-
-## The lineage
-
-Software shipped because we codified the work. Iteration. Test discipline. Pipelines. Toil reduction. Flow and waste. Each generation gave teams an artifact: the wiki (Ward Cunningham, 1995, in the same circle as XP), the runbook, the postmortem, the toil budget.
-
-AgentOps gives your agents the same kind of artifact: **the corpus** — a typed, versioned, agent-readable wiki maintained alongside the code. Same lineage. New substrate.
-
-The pattern is broader than code; the product is focused on coding agents.
+Full CDLC treatment: [docs/cdlc.md](docs/cdlc.md). Theoretical foundations: [docs/the-science.md](docs/the-science.md) and [docs/brownian-ratchet.md](docs/brownian-ratchet.md).
 
 ---
 
