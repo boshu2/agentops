@@ -52,6 +52,8 @@ The flywheel-compounding gate proves σρ > δ (escape velocity). But the full l
 
 CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to maintain zero violations and prevent future regressions via pre-commit checks.
 
+**Progress:** cli/ threshold (20) is green. cli/internal/ threshold (18) has one violation: `validateRoutingLaneGates` in `cli/internal/daemon/routing_policy.go:266` at CC 19. Gate reports fail until this is addressed.
+
 **Steer:** decrease (functions exceeding CC 20)
 
 ### 6. Maintain competitive awareness

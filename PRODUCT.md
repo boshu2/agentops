@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-04-30
+last_reviewed: 2026-05-04
 ---
 
 # PRODUCT.md
@@ -102,11 +102,11 @@ Knowledge is the moat. AgentOps isn't. Every harness — ours included — gets 
 
 ## Evidence
 
-As of 2026-04-30:
+As of 2026-05-04:
 
 **Traction:**
 
-- GitHub repo: 320 stars, 34 forks, 10 open issues, last pushed 2026-04-30
+- GitHub repo: 328 stars, 34 forks, 8 open issues, last pushed 2026-05-04
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
 - Distribution/runtime reach: 71 shared skills, 71 checked-in Codex artifacts, and 35 Codex overrides
 
@@ -126,6 +126,7 @@ The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evid
 | Pattern-to-skill promotion polish remains | The strongest differentiation thesis — self-programming compounding — has review-only draft generation today. Remaining gap: richer synthesis and a clean publish path. | in-progress |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
+| No real eval system for skill quality measurement | Existing 58 eval suites are CI canaries (contract checks). No suite answers "did this skill change make agents better?" Token overhead, skill A/B, and AgentOps-vs-baseline comparisons are unmeasured. The eval engine (`ao eval baseline`, DeltaScorecard, statistical verdict) is production-grade but has no behavioral eval content. | open |
 | Public messaging now converged on operational-discipline + moat framing | A 2026-04-30 internal positioning council locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
 
 ## Design Principles
