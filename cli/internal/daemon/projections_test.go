@@ -279,6 +279,56 @@ func TestFactoryProjectionReplaysLifecycleFromLedger(t *testing.T) {
 	}
 }
 
+func TestFactoryProjectionClaimedJobsAreWorkerOwnedNotQueued(t *testing.T) {
+	events := []LedgerEvent{
+		mustNewProjectionTestEvent(t, "evt-001", "req-claimed-1", "job-claimed", EventFactoryJobSubmitted, "", 0, map[string]any{
+			"job_id":       "job-claimed",
+			"run_id":       "factory-run-1",
+			"task_id":      "soc-dpci.5",
+			"requested_by": "operator",
+			"objective":    "claimed patch",
+		}),
+		mustNewProjectionTestEvent(t, "evt-002", "req-claimed-2", "job-claimed", EventFactoryRoutingDecided, "", 1, map[string]any{
+			"lane_id":   "frontier-codex",
+			"provider":  "openai",
+			"runtime":   "codex",
+			"model":     "gpt-5",
+			"authority": "DELEGATED",
+			"reason":    "default coding lane",
+		}),
+		mustNewProjectionTestEvent(t, "evt-003", "req-claimed-3", "job-claimed", EventFactorySlotAllocated, "", 2, map[string]any{
+			"slot_id":                  "slot-claimed",
+			"lane_id":                  "frontier-codex",
+			"max_concurrency_snapshot": 2,
+		}),
+		mustNewProjectionTestEvent(t, "evt-004", "req-claimed-4", "job-claimed", EventFactoryJobClaimed, "", 3, map[string]any{
+			"slot_id":   "slot-claimed",
+			"worker_id": "worker-claimed",
+		}),
+	}
+
+	projections, err := RebuildProjections(events, ProjectionRebuildOptions{
+		RebuiltAt:    projectionTestTime(t, 20),
+		SourceLedger: ".agents/daemon/ledger.jsonl",
+	})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	factory := projections.Factory
+	if len(factory.QueueLanes) != 1 {
+		t.Fatalf("queue lanes = %d, want 1: %#v", len(factory.QueueLanes), factory.QueueLanes)
+	}
+	if factory.QueueLanes[0].LaneID != "frontier-codex" || factory.QueueLanes[0].QueueDepth != 0 {
+		t.Fatalf("queue lane = %#v, want frontier-codex depth 0", factory.QueueLanes[0])
+	}
+	if len(factory.ActiveWorkers) != 1 {
+		t.Fatalf("active workers = %d, want 1: %#v", len(factory.ActiveWorkers), factory.ActiveWorkers)
+	}
+	if factory.ActiveWorkers[0].WorkerID != "worker-claimed" || factory.ActiveWorkers[0].Status != FactorySlotStatusAllocated {
+		t.Fatalf("active worker = %#v, want claimed worker in allocated slot", factory.ActiveWorkers[0])
+	}
+}
+
 func TestProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger(t *testing.T) {
 	events := []LedgerEvent{
 		mustNewProjectionTestEvent(t, "evt-rpi-accepted", "req-rpi-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil),

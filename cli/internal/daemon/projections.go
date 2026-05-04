@@ -1414,7 +1414,7 @@ func (factory *FactoryStatusProjection) derivePendingManualMerges() []FactoryMer
 }
 
 func isQueuedFactoryJobStatus(status FactoryJobStatus) bool {
-	return status == FactoryJobStatusSubmitted || status == FactoryJobStatusClaimed || status == FactoryJobStatusRouted
+	return status == FactoryJobStatusSubmitted || status == FactoryJobStatusRouted
 }
 
 func isActiveFactorySlotStatus(status FactorySlotStatus) bool {
