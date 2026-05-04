@@ -487,4 +487,15 @@ jq -n \
 write_markdown_digest "$DIGEST_MD" "$RUN_ID" "$MODE" "$BRANCH" "$AI_SANE_STATUS" "$DREAM_STATUS" "$EVOLVE_STATUS" "$SYSTEMD_DIR"
 
 log "digest=$DIGEST_JSON"
+
+PR_DIGEST_SCRIPT="$REPO_ROOT/scripts/nightly-pr-digest.sh"
+if [[ -x "$PR_DIGEST_SCRIPT" ]]; then
+  PR_DIGEST_MD="$OUTPUT_DIR/pr-body.md"
+  if "$PR_DIGEST_SCRIPT" --run-dir "$OUTPUT_DIR" --branch "$BRANCH" --output "$PR_DIGEST_MD" 2>"$OUTPUT_DIR/pr-digest.stderr"; then
+    log "pr_digest=$PR_DIGEST_MD"
+  else
+    log "pr_digest=failed (see $OUTPUT_DIR/pr-digest.stderr)"
+  fi
+fi
+
 log "done"
