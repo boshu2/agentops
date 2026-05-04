@@ -146,6 +146,8 @@ Additive factory event types:
 | Event | Required payload |
 |---|---|
 | `factory.job_submitted` | `job_id`, `run_id`, `task_id`, `requested_by`, `objective` |
+| `factory.job_claimed` | `job_id`, `run_id`, `slot_id`, `worker_id` |
+| `factory.job_started` | `job_id`, `run_id`, `slot_id`, `worker_id` |
 | `factory.routing_decided` | `job_id`, `run_id`, `lane_id`, `provider`, `runtime`, `model`, `authority`, `reason` |
 | `factory.slot_allocated` | `slot_id`, `job_id`, `lane_id`, `max_concurrency_snapshot` |
 | `factory.worktree_allocated` | `worktree_id`, `slot_id`, `path`, `base_commit`, `branch`, `owner_job_id` |
@@ -154,15 +156,46 @@ Additive factory event types:
 | `factory.merge_decision` | `job_id`, `decision`, `decider`, `reason`, `conflicts`, `manual_command` |
 | `factory.job_terminal` | `job_id`, `status`, `artifact_refs`, `transcript_ref`, `retained_worktree` |
 
+Optional pointer fields accepted on factory events:
+
+- `logs`, `log_refs`, and `log_ref`;
+- `artifact_refs` in addition to `artifacts`;
+- `transcript_refs` and `transcript_ref`;
+- `diff_refs` and `diff_ref`.
+
 Projection additions:
 
-- active workers and slot occupancy;
-- queue depth by lane and authority;
-- model/provider lanes and disabled reasons;
-- blocked validations;
-- retained failed worktrees;
-- pending manual merges;
-- logs, transcripts, diffs, validation outputs, and artifact pointers.
+`ProjectionSet.factory` is the status projection for these events. Its top-level
+fields are:
+
+- `jobs`;
+- `active_workers`;
+- `slots`;
+- `queue_lanes`;
+- `model_lanes`;
+- `validations`;
+- `blocked_validations`;
+- `worktrees`;
+- `retained_failed_worktrees`;
+- `merge_decisions`;
+- `pending_manual_merges`;
+- `terminal_jobs`;
+- `recent_events`;
+- `logs`;
+- `artifacts`;
+- `transcripts`;
+- `diffs`;
+- `last_routing_decision`.
+
+Enum-like projected fields use explicit allowlists:
+
+- `authority`: `OBSERVE`, `ADVISORY`, `DELEGATED`, or `AUTHORITATIVE`;
+- validation `status`: `running`, `passed`, `failed`, `blocked`, or
+  `cancelled`;
+- merge `decision`: `not_requested`, `manual_pending`, `manual_merged`,
+  `rejected`, or `abandoned`;
+- terminal job `status`: existing terminal job statuses `completed`, `failed`,
+  or `cancelled`.
 
 ## Validation And Merge Gates
 
