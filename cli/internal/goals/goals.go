@@ -38,6 +38,12 @@ type Goal struct {
 	Pillar      string            `yaml:"pillar,omitempty"`
 	Continuous  *ContinuousMetric `yaml:"continuous,omitempty"`
 	Tags        []string          `yaml:"tags,omitempty"`
+	// AffectsFiles is the canonical fix-files glob list for this goal.
+	// Populated from the goals-affects-files.yaml sidecar (kept separate so
+	// GOALS.md tables stay readable). The nightly routine cross-references
+	// this against open-PR file diffs to compute the open-PR blocker matrix
+	// and skip goals another in-flight PR already owns.
+	AffectsFiles []string `yaml:"affects_files,omitempty" json:"affects_files,omitempty"`
 }
 
 // Directive represents a strategic intent directive (GOALS.md only).
@@ -145,6 +151,7 @@ func LoadGoals(path string) (*GoalFile, error) {
 			return nil, fmt.Errorf("parsing %s: %w", actualPath, err)
 		}
 		defaultGoalTypes(gf.Goals)
+		mergeAffectsFilesSidecar(gf, sidecarPathFor(actualPath))
 		return gf, nil
 	}
 
@@ -168,7 +175,52 @@ func LoadGoals(path string) (*GoalFile, error) {
 
 	gf.Format = "yaml"
 	defaultGoalTypes(gf.Goals)
+	mergeAffectsFilesSidecar(&gf, sidecarPathFor(path))
 	return &gf, nil
+}
+
+// sidecarPathFor returns the conventional location of the affects-files
+// sidecar (goals-affects-files.yaml) given a goals file path. Defaults to a
+// sibling of the goals file in the same directory.
+func sidecarPathFor(goalsPath string) string {
+	return filepath.Join(filepath.Dir(goalsPath), "goals-affects-files.yaml")
+}
+
+// affectsFilesSidecar mirrors the on-disk YAML schema:
+//
+//	affects_files:
+//	  <goal_id>:
+//	    - <glob>
+type affectsFilesSidecar struct {
+	AffectsFiles map[string][]string `yaml:"affects_files"`
+}
+
+// mergeAffectsFilesSidecar reads the sidecar (if it exists) and populates
+// AffectsFiles on each matching Goal. Unknown goal IDs in the sidecar are
+// silently ignored so the sidecar can be edited ahead of removing a goal.
+// A missing or unreadable sidecar is not an error: the field stays empty
+// and gates parse identically to the pre-sidecar behavior.
+func mergeAffectsFilesSidecar(gf *GoalFile, path string) {
+	if gf == nil || path == "" {
+		return
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var sc affectsFilesSidecar
+	if err := yaml.Unmarshal(data, &sc); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: parsing %s: %v\n", path, err)
+		return
+	}
+	if len(sc.AffectsFiles) == 0 {
+		return
+	}
+	for i := range gf.Goals {
+		if globs, ok := sc.AffectsFiles[gf.Goals[i].ID]; ok && len(globs) > 0 {
+			gf.Goals[i].AffectsFiles = append([]string(nil), globs...)
+		}
+	}
 }
 
 // MigrateV1ToV2 converts a v1 GoalFile to v2 by adding default fields.

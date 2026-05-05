@@ -1,0 +1,109 @@
+# goals-affects-files.yaml
+#
+# Sidecar to GOALS.md mapping each goal_id to the canonical fix-files glob
+# list. The nightly routine cross-references this against open-PR file
+# diffs to compute the open-PR blocker matrix and skip goals another
+# in-flight PR already owns.
+#
+# This is a sidecar, not a column in the GOALS.md table, because the lists
+# get long enough to make the markdown table unreadable. The Go loader in
+# cli/internal/goals/goals.go reads this file alongside GOALS.md and
+# populates Goal.AffectsFiles; the field flows into `ao goals measure
+# --json` via Measurement.AffectsFiles.
+#
+# Conventions:
+# - Globs are evaluated against repo-relative paths via filepath.Match
+#   semantics (callers may also use shell-style ** if they extend the
+#   matcher; the data file itself just lists patterns).
+# - Include both the gate's check script AND the production code/data
+#   the script reads — both are valid blocker surfaces.
+# - Unknown goal IDs in this file are silently ignored by the loader, so
+#   you can stage a new goal's affects_files entry before adding the goal
+#   to GOALS.md without breaking parsing.
+
+affects_files:
+  flywheel-lifecycle:
+    - scripts/check-flywheel-lifecycle.sh
+    - tests/scripts/check-flywheel-lifecycle.bats
+    - .agents/learnings/**
+
+  go-complexity-ceiling:
+    - cli/**
+    - scripts/check-go-absolute-complexity.sh
+
+  dream-end-user-coverage:
+    - scripts/check-schedule-example.sh
+    - docs/templates/schedule.yaml.example
+    - cli/internal/schedule/testdata/example-validation.yaml
+
+  compile-freshness:
+    - scripts/check-compile-health.sh
+
+  compile-no-oscillation:
+    - scripts/check-compile-oscillation.sh
+
+  flywheel-compounding:
+    - scripts/check-flywheel-compounding.sh
+    - .agents/findings/f-2026-04-30-002.md
+
+  go-cli-tests:
+    - cli/**
+
+  go-cli-builds:
+    - cli/**
+
+  go-vet-clean:
+    - cli/**
+
+  security-gate:
+    - scripts/security-gate.sh
+    - tests/scripts/test-security-gate.sh
+
+  skill-frontmatter:
+    - skills/*/SKILL.md
+
+  hook-preflight:
+    - scripts/validate-hook-preflight.sh
+    - hooks/**
+
+  manifest-versions-match:
+    - .claude-plugin/marketplace.json
+    - .claude-plugin/plugin.json
+
+  wiring-closure:
+    - scripts/check-wiring-closure.sh
+
+  contract-compatibility:
+    - scripts/check-contract-compatibility.sh
+    - schemas/**
+    - docs/contracts/**
+
+  goals-validate:
+    - GOALS.md
+    - goals-affects-files.yaml
+    - cli/internal/goals/**
+
+  competitive-freshness:
+    - docs/comparisons/**
+    - scripts/check-competitive-freshness.sh
+
+  codex-parity-drift:
+    - skills-codex/**
+    - skills-codex-overrides/**
+    - scripts/check-codex-parity-drift.sh
+
+  install-smoke:
+    - scripts/install*.sh
+    - tests/install/test-install-smoke.sh
+
+  flywheel-proof:
+    - scripts/proof-run.sh
+
+  eval-workbench-verify:
+    - evals/**
+    - scripts/check-eval-workbench.sh
+
+  state-path-resolver-coverage:
+    - cli/internal/paths/**
+    - lib/ao-paths.sh
+    - scripts/check-paths-resolver-coverage.sh

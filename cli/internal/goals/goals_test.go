@@ -1018,3 +1018,95 @@ func TestKillAllChildren_EmptyAndNilMap(t *testing.T) {
 	childGroups.mu.Unlock()
 	killAllChildren() // empty map
 }
+
+func TestLoadGoals_AffectsFilesSidecar(t *testing.T) {
+	dir := t.TempDir()
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	mdContent := `# Goals
+
+## Gates
+
+| ID | Check | Weight | Description |
+|----|-------|--------|-------------|
+| g-one | echo ok | 5 | first |
+| g-two | echo ok | 3 | second |
+`
+	if err := os.WriteFile(goalsPath, []byte(mdContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sidecarPath := filepath.Join(dir, "goals-affects-files.yaml")
+	sidecar := `affects_files:
+  g-one:
+    - scripts/g-one.sh
+    - cli/**
+  g-two:
+    - scripts/g-two.sh
+  unknown-goal:
+    - scripts/should-be-ignored.sh
+`
+	if err := os.WriteFile(sidecarPath, []byte(sidecar), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	gf, err := LoadGoals(goalsPath)
+	if err != nil {
+		t.Fatalf("LoadGoals: %v", err)
+	}
+	if len(gf.Goals) != 2 {
+		t.Fatalf("goals len = %d, want 2", len(gf.Goals))
+	}
+
+	got := gf.Goals[0]
+	if got.ID != "g-one" {
+		t.Errorf("goals[0].ID = %q, want g-one", got.ID)
+	}
+	wantOne := []string{"scripts/g-one.sh", "cli/**"}
+	if len(got.AffectsFiles) != len(wantOne) {
+		t.Fatalf("g-one AffectsFiles = %v, want %v", got.AffectsFiles, wantOne)
+	}
+	for i, w := range wantOne {
+		if got.AffectsFiles[i] != w {
+			t.Errorf("g-one AffectsFiles[%d] = %q, want %q", i, got.AffectsFiles[i], w)
+		}
+	}
+
+	got2 := gf.Goals[1]
+	if got2.ID != "g-two" {
+		t.Errorf("goals[1].ID = %q, want g-two", got2.ID)
+	}
+	if len(got2.AffectsFiles) != 1 || got2.AffectsFiles[0] != "scripts/g-two.sh" {
+		t.Errorf("g-two AffectsFiles = %v, want [scripts/g-two.sh]", got2.AffectsFiles)
+	}
+}
+
+func TestLoadGoals_AffectsFilesSidecarMissing(t *testing.T) {
+	// Sidecar absent: AffectsFiles stays nil; no error.
+	dir := t.TempDir()
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	mdContent := `# Goals
+
+## Gates
+
+| ID | Check | Weight | Description |
+|----|-------|--------|-------------|
+| g-only | echo ok | 5 | only goal |
+`
+	if err := os.WriteFile(goalsPath, []byte(mdContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	gf, err := LoadGoals(goalsPath)
+	if err != nil {
+		t.Fatalf("LoadGoals: %v", err)
+	}
+	if gf.Goals[0].AffectsFiles != nil {
+		t.Errorf("AffectsFiles = %v, want nil for missing sidecar", gf.Goals[0].AffectsFiles)
+	}
+}
+
+func TestSidecarPathFor(t *testing.T) {
+	got := sidecarPathFor(filepath.Join("repo", "GOALS.md"))
+	want := filepath.Join("repo", "goals-affects-files.yaml")
+	if got != want {
+		t.Errorf("sidecarPathFor = %q, want %q", got, want)
+	}
+}

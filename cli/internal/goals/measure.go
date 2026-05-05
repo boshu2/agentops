@@ -19,14 +19,15 @@ import (
 
 // Measurement captures the result of running a single goal's check command.
 type Measurement struct {
-	GoalID    string   `json:"goal_id"`
-	Result    string   `json:"result"` // "pass", "fail", "skip"
-	Value     *float64 `json:"value,omitempty"`
-	Threshold *float64 `json:"threshold,omitempty"`
-	Duration  float64  `json:"duration_s"`
-	Output    string   `json:"output,omitempty"`
-	Weight    int      `json:"weight"`
-	Tags      []string `json:"tags,omitempty"`
+	GoalID       string   `json:"goal_id"`
+	Result       string   `json:"result"` // "pass", "fail", "skip"
+	Value        *float64 `json:"value,omitempty"`
+	Threshold    *float64 `json:"threshold,omitempty"`
+	Duration     float64  `json:"duration_s"`
+	Output       string   `json:"output,omitempty"`
+	Weight       int      `json:"weight"`
+	Tags         []string `json:"tags,omitempty"`
+	AffectsFiles []string `json:"affects_files,omitempty"`
 }
 
 // classifyResult maps command exit status to a result string.
@@ -114,7 +115,7 @@ func MeasureOne(goal Goal, timeout time.Duration) Measurement {
 // MeasureOneContext runs a single goal's check command under both a caller
 // context and a per-goal timeout.
 func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration) Measurement {
-	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags}
+	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags, AffectsFiles: goal.AffectsFiles}
 	if parent == nil {
 		parent = context.Background()
 	}
@@ -189,11 +190,12 @@ func skippedMeasurement(goal Goal, err error) Measurement {
 		output += ": " + err.Error()
 	}
 	return Measurement{
-		GoalID: goal.ID,
-		Result: resultSkip,
-		Output: output,
-		Weight: goal.Weight,
-		Tags:   goal.Tags,
+		GoalID:       goal.ID,
+		Result:       resultSkip,
+		Output:       output,
+		Weight:       goal.Weight,
+		Tags:         goal.Tags,
+		AffectsFiles: goal.AffectsFiles,
 	}
 }
 
