@@ -94,7 +94,7 @@ build_goals_section() {
 
   printf '### Goals (Baseline → Final)\n\n'
 
-  local baseline_goals="" final_goals=""
+  local baseline_goals=""
   if [[ -n "$BASELINE_LABEL" && -d "$baseline_dir/$BASELINE_LABEL" ]]; then
     local baseline_file
     baseline_file="$(find "$baseline_dir/$BASELINE_LABEL" -name '*.json' | sort | tail -1)"
@@ -235,7 +235,7 @@ build_tracker_degradation() {
     return
   fi
 
-  local open_count in_progress_count stale_count
+  local open_count in_progress_count
   open_count="$(bd list --status=open 2>/dev/null | command grep -c '○' || true)"
   open_count="${open_count%%[^0-9]*}"
   in_progress_count="$(bd list --status=in_progress 2>/dev/null | command grep -c '◐\|●' || true)"
