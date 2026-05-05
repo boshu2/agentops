@@ -39,6 +39,7 @@ func TestRPIPhasedDaemonReadySubmitsRunJob(t *testing.T) {
 	opts.DaemonURL = activation.URL
 	opts.DaemonToken = "secret-token"
 	opts.RunID = "daemon-ready-run"
+	opts.PhaseTimeout = 5 * time.Minute
 	handled, err := maybeSubmitRPIPhasedDaemon(context.Background(), opts, []string{"ship daemon"})
 	if err != nil {
 		t.Fatalf("daemon submit: %v", err)
@@ -53,6 +54,13 @@ func TestRPIPhasedDaemonReadySubmitsRunJob(t *testing.T) {
 	}
 	if len(events) != 1 || events[0].EventType != daemonpkg.EventJobAccepted {
 		t.Fatalf("ledger events = %#v, want one accepted event", events)
+	}
+	payload, ok := events[0].Payload["job_payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("accepted payload = %#v, want job_payload map", events[0].Payload)
+	}
+	if payload["phase_timeout"] != "5m0s" {
+		t.Fatalf("phase_timeout payload = %#v, want 5m0s", payload["phase_timeout"])
 	}
 	projection, err := daemonpkg.RebuildRPIRegistryProjection(events)
 	if err != nil {

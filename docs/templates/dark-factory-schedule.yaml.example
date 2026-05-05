@@ -1,0 +1,122 @@
+# Dark Factory agentopsd schedule template.
+#
+# This file is intentionally inert. It is documentation/config surface only;
+# copying it does not enable recurring work until an operator replaces
+# `schedules: []` with reviewed schedule entries and submits them with
+# `ao schedule add`.
+#
+# Required gate before enabling source-mutating schedules:
+#
+#   cd cli && go test ./cmd/ao -run TestAgentOpsDaemonFakeFactoryLocalPilotHandoffCompletesChildRPI
+#
+# Activation sketch after review:
+#
+#   cp docs/templates/dark-factory-schedule.yaml.example .agents/schedule.yaml
+#   edit .agents/schedule.yaml
+#   ao schedule add --file .agents/schedule.yaml --token-file ~/.agents/daemon-token
+#
+# No host scheduler, credential, launchd, systemd, or daemon service file is
+# changed by this template.
+
+schedules: []
+
+# Example: knowledge-only Dream handoff. Safe to enable before source-mutating
+# factory work because dream.run mutates only local knowledge artifacts.
+#
+# schedules:
+#   - name: nightly-dream
+#     cron: "0 3 * * *"
+#     job_type: dream.run
+#     timeout: 45m
+#     payload:
+#       goal: "Nightly knowledge consolidation"
+#       output_dir: ".agents/overnight/latest"
+#       max_iterations: 1
+#       execution_timeout: "30m"
+#     backpressure:
+#       skip_if_running: true
+#       max_queue_depth: 1
+
+# Example: factory admission only. This evaluates the work order and writes
+# admission artifacts but does not enqueue child RPI work.
+#
+# schedules:
+#   - name: factory-admission-check
+#     cron: "15 4 * * *"
+#     job_type: factory.admission
+#     timeout: 10m
+#     payload:
+#       work_order:
+#         schema_version: 1
+#         work_order_id: "factory-work-YYYY-MM-DD"
+#         generated_at: "YYYY-MM-DDT04:00:00Z"
+#         expires_at: "YYYY-MM-DDT05:00:00Z"
+#         base_sha: "<git rev-parse HEAD>"
+#         target:
+#           type: bead
+#           id: "soc-example"
+#           summary: "Bounded local factory admission rehearsal"
+#         allowed_files:
+#           - "cli/internal/daemon/"
+#           - "docs/runbooks/daemon-factory-admission.md"
+#         validation_commands:
+#           - "cd cli && go test ./internal/daemon ./cmd/ao"
+#           - "scripts/pre-push-gate.sh --fast"
+#         landing_policy: manual_pr
+#         digest_policy: required
+#         open_pr_blockers: []
+#         main_ci_baseline:
+#           status: green
+#           run_id: "<latest-main-validate-run-id>"
+#           checked_at: "YYYY-MM-DDT03:55:00Z"
+#           failed_jobs: []
+#         unknown_evidence_policy: block
+#     backpressure:
+#       skip_if_running: true
+#       max_queue_depth: 1
+
+# Example: local pilot with RPI handoff. Enable only after reviewing the current
+# open-PR blocker matrix, main CI baseline, and the fake L3 rehearsal result.
+# The cli-fallback executor forces the child rpi.run through landing-policy=off;
+# no auto-merge or default-branch push is allowed.
+#
+# schedules:
+#   - name: factory-local-pilot
+#     cron: "30 4 * * *"
+#     job_type: factory.local-pilot
+#     timeout: 2h
+#     payload:
+#       mode: rpi-handoff
+#       handoff:
+#         kind: rpi.run
+#         execution_packet_path: ".agents/rpi/runs/factory-local-pilot/execution-packet.json"
+#         epic_id: "soc-example"
+#       work_order:
+#         schema_version: 1
+#         work_order_id: "factory-local-pilot-YYYY-MM-DD"
+#         generated_at: "YYYY-MM-DDT04:00:00Z"
+#         expires_at: "YYYY-MM-DDT05:00:00Z"
+#         base_sha: "<git rev-parse HEAD>"
+#         target:
+#           type: bead
+#           id: "soc-example"
+#           summary: "One bounded daemon-owned local factory cycle"
+#         allowed_files:
+#           - "cli/internal/daemon/"
+#           - "cli/cmd/ao/"
+#           - "docs/runbooks/daemon-factory-admission.md"
+#         validation_commands:
+#           - "cd cli && go test ./internal/daemon ./cmd/ao"
+#           - "scripts/pre-push-gate.sh --fast"
+#         landing_policy: manual_pr
+#         digest_policy: required
+#         open_pr_blockers: []
+#         main_ci_baseline:
+#           status: green
+#           run_id: "<latest-main-validate-run-id>"
+#           checked_at: "YYYY-MM-DDT03:55:00Z"
+#           failed_jobs: []
+#         unknown_evidence_policy: block
+#     backpressure:
+#       skip_if_running: true
+#       max_queue_depth: 1

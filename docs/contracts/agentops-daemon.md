@@ -168,6 +168,11 @@ Initial job families:
 - `rpi.run` and `rpi.phase`
 - `dream.run` and Dream stage jobs
 - `wiki.forge`
+- `factory.admission` and `factory.local-pilot` — fail-closed factory
+  admission jobs that evaluate a typed work order before any source-mutating
+  RPI handoff. Admission artifacts are daemon-owned under
+  `.agents/daemon/factory/runs/<run-id>/`; a blocked admission completes as a
+  control-plane stop, not as an implementation failure.
 - OpenClaw-safe trigger jobs
 - `plans.projection` — read-side bd-subscription job that rebuilds the plans
   manifest projection from the shared bushido Dolt source. Read-only HTTP
@@ -176,6 +181,11 @@ Initial job families:
   `.agents/plans/2026-05-01-daemon-absorption-spec/02-pilot-plans-projection.md`
   and the foundation §6 site 3 (alt) carve-out for read-side endpoints
   (`.agents/plans/2026-05-01-daemon-absorption-spec/00-foundation-contract.md`).
+
+Executor policies route these families differently. `fake` and `gascity`
+handle `rpi.run` through the daemon phase runner; `cli-fallback` handles
+`rpi.run` by shelling to `scripts/ao-rpi-autonomous-cycle.sh` with
+`landing_policy=off` and does not claim standalone `rpi.phase` jobs.
 
 ### Read-Side Endpoints — `plans.projection` curl example (F-PM-3)
 

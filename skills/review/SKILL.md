@@ -140,6 +140,8 @@ If intent is unclear, flag it: "PR description does not explain the purpose of t
 
 Review every changed file against the SCORED checklist. For each category, actively look for problems. Do not skim -- read each changed line.
 
+For audit-style reviews, generated-code suspicion, mock leakage, or external-review-tool findings, load [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md) before writing final findings.
+
 #### S -- Security
 
 - [ ] No hardcoded secrets, API keys, tokens, or passwords
@@ -336,3 +338,4 @@ Merge council findings into the review document under a "## Council Findings" se
 - [standards](../standards/SKILL.md) — Language-specific coding conventions
 - [bug-hunt](../bug-hunt/SKILL.md) — Deep bug investigation
 - [pr-validate](../pr-validate/SKILL.md) — PR scope and isolation checks
+- [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)

@@ -419,10 +419,19 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor, llmwikiExecutor}
+		rpiExecutor, err := buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, rpiExecutor, llmwikiExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
+	factoryExecutor, err := buildAgentOpsDaemonFactoryExecutor(cwd, policy, opts)
+	if err != nil {
+		return nil, err
+	}
+	executors = append(executors, factoryExecutor)
 	// Plans projection executor (atom-2 / soc-acwf). Registered for the
 	// fake + gascity policies (read-side absorption #6 / plans.projection).
 	// Cli-fallback policy intentionally omitted per pilot spec §c (G2): that
@@ -470,6 +479,15 @@ func buildAgentOpsDaemonLLMWikiExecutor() daemonpkg.JobExecutor {
 		Lint:    &llmwiki.LintStage{},
 		Promote: &llmwiki.PromoteStage{Harvest: llmwikiHarvestAdapter{}},
 	}
+}
+
+func buildAgentOpsDaemonFactoryExecutor(cwd, policy string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {
+	return daemonpkg.NewFactoryAdmissionExecutor(daemonpkg.FactoryAdmissionExecutorOptions{
+		Store:            daemonpkg.NewStore(cwd),
+		Root:             cwd,
+		Clock:            opts.Now,
+		EnableRPIHandoff: policy == "fake" || policy == "gascity" || policy == "cli-fallback",
+	})
 }
 
 func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, error) {
@@ -533,6 +551,10 @@ func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOpt
 		Store:    daemonpkg.NewStore(cwd),
 		Executor: rpiPhaseExecutor,
 	})
+}
+
+func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string) (daemonpkg.JobExecutor, error) {
+	return daemonpkg.NewRPICLIExecutor(daemonpkg.RPICLIExecutorOptions{Root: cwd})
 }
 
 // fakeRPIPhaseExecutor is a deterministic, CI-safe phase executor that returns

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -431,6 +432,170 @@ func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIPhaseJob(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonFakeExecutorPolicyClaimsFactoryAdmissionJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	work := daemonpkg.FactoryWorkOrder{
+		SchemaVersion: daemonpkg.FactoryAdmissionJobSpecSchemaVersion,
+		WorkOrderID:   "factory-work-daemon-test",
+		GeneratedAt:   "2026-05-04T23:30:00Z",
+		ExpiresAt:     "2026-05-05T00:30:00Z",
+		BaseSHA:       "abcdef123456",
+		Target: daemonpkg.FactoryTarget{
+			Type:    daemonpkg.FactoryTargetBead,
+			ID:      "soc-ff7b.7",
+			Summary: "Exercise daemon factory admission registration",
+		},
+		AllowedFiles: []string{
+			"cli/internal/daemon/factory_admission_executor.go",
+		},
+		ValidationCommands: []string{
+			"cd cli && go test ./internal/daemon -run FactoryAdmission",
+		},
+		LandingPolicy:         daemonpkg.FactoryLandingPolicyManualPR,
+		DigestPolicy:          daemonpkg.FactoryDigestPolicyRequired,
+		OpenPRBlockers:        []daemonpkg.FactoryOpenPRBlocker{},
+		UnknownEvidencePolicy: daemonpkg.FactoryUnknownEvidenceBlock,
+		MainCIBaseline: daemonpkg.FactoryMainCIBaseline{
+			Status:     daemonpkg.FactoryCIStatusGreen,
+			RunID:      "123",
+			CheckedAt:  "2026-05-04T23:29:00Z",
+			FailedJobs: []string{},
+		},
+	}
+	spec := daemonpkg.NewFactoryAdmissionJobSpec("factory-run-daemon-test", work)
+	jobSpec, err := spec.ToJobSpec("job-factory-admission")
+	if err != nil {
+		t.Fatalf("factory admission job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-factory-admission",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit factory admission job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "fake"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed factory admission job", result)
+	}
+	if got := result.Job.Artifacts["allowed"]; got != "false" {
+		t.Fatalf("allowed artifact = %q, want false because temp dir is not a git repo", got)
+	}
+	if result.Job.Artifacts["admission"] == "" {
+		t.Fatalf("artifacts = %#v, want admission artifact", result.Job.Artifacts)
+	}
+}
+
+func TestAgentOpsDaemonFakeFactoryLocalPilotHandoffCompletesChildRPI(t *testing.T) {
+	cwd := t.TempDir()
+	headSHA := initDaemonFactoryGitRepo(t, cwd)
+	now := time.Date(2026, 5, 5, 2, 30, 0, 0, time.UTC)
+	store := daemonpkg.NewStore(cwd)
+	queue := daemonpkg.NewQueue(store, daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	work := daemonpkg.FactoryWorkOrder{
+		SchemaVersion: daemonpkg.FactoryAdmissionJobSpecSchemaVersion,
+		WorkOrderID:   "factory-l3-rehearsal",
+		GeneratedAt:   now.Add(-10 * time.Minute).Format(time.RFC3339),
+		ExpiresAt:     now.Add(time.Hour).Format(time.RFC3339),
+		BaseSHA:       headSHA,
+		Target: daemonpkg.FactoryTarget{
+			Type:    daemonpkg.FactoryTargetBead,
+			ID:      "soc-ff7b.7",
+			Summary: "Exercise daemon factory local pilot handoff",
+		},
+		AllowedFiles: []string{
+			"cli/internal/daemon/factory_admission_executor.go",
+		},
+		ValidationCommands: []string{
+			"cd cli && go test ./internal/daemon -run FactoryAdmission",
+		},
+		LandingPolicy:         daemonpkg.FactoryLandingPolicyManualPR,
+		DigestPolicy:          daemonpkg.FactoryDigestPolicyRequired,
+		OpenPRBlockers:        []daemonpkg.FactoryOpenPRBlocker{},
+		UnknownEvidencePolicy: daemonpkg.FactoryUnknownEvidenceBlock,
+		MainCIBaseline: daemonpkg.FactoryMainCIBaseline{
+			Status:     daemonpkg.FactoryCIStatusGreen,
+			RunID:      "25352104726",
+			CheckedAt:  now.Add(-15 * time.Minute).Format(time.RFC3339),
+			FailedJobs: []string{},
+		},
+	}
+	spec := daemonpkg.NewFactoryLocalPilotJobSpec("factory-l3-run", work)
+	spec.Mode = daemonpkg.FactoryAdmissionModeRPIHandoff
+	spec.Handoff = daemonpkg.FactoryHandoff{
+		Kind:                daemonpkg.FactoryHandoffRPI,
+		ExecutionPacketPath: ".agents/rpi/runs/factory-l3-run/execution-packet.json",
+		EpicID:              "soc-ff7b.7",
+	}
+	jobSpec, err := spec.ToJobSpec("job-factory-l3")
+	if err != nil {
+		t.Fatalf("factory local pilot spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-factory-l3",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit factory local pilot: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		ExecutorPolicy: "fake",
+		Now:            func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	admissionResult, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run factory admission: %v", err)
+	}
+	if !admissionResult.Claimed || admissionResult.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("admission result = %#v, want completed factory.local-pilot", admissionResult)
+	}
+	childJobID := admissionResult.Job.Artifacts["child_job_id"]
+	if childJobID == "" {
+		t.Fatalf("admission artifacts = %#v, want child_job_id", admissionResult.Job.Artifacts)
+	}
+
+	childResult, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run child rpi job: %v", err)
+	}
+	if !childResult.Claimed || childResult.Job.JobID != childJobID || childResult.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("child result = %#v, want completed child rpi job %s", childResult, childJobID)
+	}
+	if got := childResult.Job.Artifacts["executor_policy"]; got != "fake" {
+		t.Fatalf("child executor_policy = %q, want fake", got)
+	}
+
+	projections, err := store.RebuildProjections(daemonpkg.ProjectionRebuildOptions{RebuiltAt: now})
+	if err != nil {
+		t.Fatalf("rebuild projections: %v", err)
+	}
+	if len(projections.Factory.Admissions) != 1 {
+		t.Fatalf("admissions = %#v, want one admission", projections.Factory.Admissions)
+	}
+	admission := projections.Factory.Admissions[0]
+	if !admission.Allowed || admission.ChildJobID != childJobID {
+		t.Fatalf("admission projection = %#v, want allowed child handoff", admission)
+	}
+	if len(projections.Jobs) != 2 {
+		t.Fatalf("queue projection jobs = %#v, want parent and child jobs", projections.Jobs)
+	}
+}
+
 func TestAgentOpsDaemonFakeExecutorPolicyRoutesDreamRunJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
@@ -508,6 +673,55 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T) {
+	cwd := t.TempDir()
+	scriptPath := filepath.Join(cwd, "scripts", "ao-rpi-autonomous-cycle.sh")
+	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
+		t.Fatalf("mkdir script dir: %v", err)
+	}
+	script := "#!/usr/bin/env bash\nset -euo pipefail\necho cli-fallback-rpi-ok\n"
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+		t.Fatalf("write script: %v", err)
+	}
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-cli", "validate daemon cli fallback rpi run")
+	jobSpec, err := spec.ToJobSpec("job-rpi-cli")
+	if err != nil {
+		t.Fatalf("rpi run job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-rpi-cli",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit rpi run job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed rpi.run job", result)
+	}
+	if got := result.Job.Artifacts["executor_policy"]; got != "cli-fallback" {
+		t.Fatalf("executor_policy artifact = %q, want cli-fallback", got)
+	}
+	logPath := filepath.Join(cwd, filepath.FromSlash(result.Job.Artifacts["rpi_cli_log"]))
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read cli fallback rpi log: %v", err)
+	}
+	if !strings.Contains(string(data), "cli-fallback-rpi-ok") {
+		t.Fatalf("log = %q, want cli fallback output", data)
+	}
+}
+
 func TestAgentOpsDaemonPlansProjectionExecutorRegistration(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
@@ -555,6 +769,38 @@ func TestAgentOpsDaemonPlansProjectionExecutorRegistration(t *testing.T) {
 	if _, err := os.Stat(filepath.Clean(manifestPath)); err != nil {
 		t.Fatalf("plans manifest %s: %v", manifestPath, err)
 	}
+}
+
+func initDaemonFactoryGitRepo(t *testing.T, cwd string) string {
+	t.Helper()
+	runDaemonFactoryGit(t, cwd, "init", "-q")
+	runDaemonFactoryGit(t, cwd, "config", "user.email", "test@example.com")
+	runDaemonFactoryGit(t, cwd, "config", "user.name", "Test")
+	if err := os.WriteFile(filepath.Join(cwd, "README.md"), []byte("factory rehearsal\n"), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cwd, ".gitignore"), []byte(".agents/\n"), 0o644); err != nil {
+		t.Fatalf("write .gitignore: %v", err)
+	}
+	runDaemonFactoryGit(t, cwd, "add", "README.md", ".gitignore")
+	runDaemonFactoryGit(t, cwd, "commit", "-q", "-m", "init")
+	return strings.TrimSpace(runDaemonFactoryGitOutput(t, cwd, "rev-parse", "HEAD"))
+}
+
+func runDaemonFactoryGit(t *testing.T, cwd string, args ...string) {
+	t.Helper()
+	_ = runDaemonFactoryGitOutput(t, cwd, args...)
+}
+
+func runDaemonFactoryGitOutput(t *testing.T, cwd string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = cwd
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return string(out)
 }
 
 func TestProviderOverrideWikiForgeWorkerForcesCLIFallback(t *testing.T) {

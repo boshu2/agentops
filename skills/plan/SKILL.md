@@ -236,5 +236,6 @@ See [references/examples.md](references/examples.md) for more troubleshooting sc
 - [references/complexity-estimation.md](references/complexity-estimation.md)
 - [references/detail-templates.md](references/detail-templates.md)
 - [references/examples.md](references/examples.md)
+- [references/plan-to-beads-workflow.md](references/plan-to-beads-workflow.md)
 - [references/sdd-patterns.md](references/sdd-patterns.md)
 - [references/templates.md](references/templates.md)

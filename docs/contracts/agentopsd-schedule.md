@@ -103,7 +103,7 @@ schedules:
 |---|---|---|---|
 | `name` | string | yes | Unique schedule identifier. Pattern: `^[a-z][a-z0-9-]*$`. Duplicate names are rejected at parse time. |
 | `cron` | string | yes | 5-field cron expression with descriptors. See [Cron Expression Cheat-Sheet](#cron-expression-cheat-sheet). |
-| `job_type` | string | yes | Job type to materialize. Pattern: `^[a-z]+\.[a-z]+$` (e.g., `llmwiki.loop`, `dream.run`, `wiki.forge`). |
+| `job_type` | string | yes | Job type to materialize. Pattern: `^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$` (e.g., `llmwiki.loop`, `dream.run`, `factory.local-pilot`). |
 | `payload` | any | no | Free-form payload passed to the executor. Re-encoded through JSON to canonical bytes by the parser. |
 | `timeout` | string | no | Per-job timeout (Go duration format: `30m`, `1h30m`). Threaded into the materialized job's payload as `timeout`. |
 | `backpressure.skip_if_running` | bool | no | Skip the tick if a prior job from this schedule is still in-flight. Default `false`. |
@@ -131,7 +131,7 @@ The parser (`cli/internal/schedule/parser.go`, `Load(path)`) enforces:
 3. **Cron validation** — delegates to `daemon.ParseCron`; rejects 6-field
    sub-minute schedules, returns `*CronParseError` preserving the original
    input.
-4. **`job_type` pattern** — must match `^[a-z]+\.[a-z]+$`.
+4. **`job_type` pattern** — must match `^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$`.
 5. **Effective-period floor** — measures two consecutive cron ticks; gap must
    be ≥ `AGENTOPS_SCHEDULE_MIN_PERIOD_SECONDS` (default 60s).
 6. **`max_queue_depth` ceiling** — must be ≤ `AGENTOPS_SCHEDULE_MAX_QUEUE_DEPTH_CEILING`
@@ -160,6 +160,8 @@ a typed daemon payload.
 | `dream.stage` | `schema_version`, `job_type`, `dream_run_id`, `stage`, `mode` | `output_dir` |
 | `wiki.forge` | `schema_version`, `job_type`, `output_dir`, `worker_kind`, `provider`, `max_attempts` | `source_paths` |
 | `plans.projection` | `schema_version`, `job_type`, `refresh_trigger` | `project_id`, `output_dir` |
+| `factory.admission` | `schema_version`, `job_type`, `run_id`, `mode` | `work_order` |
+| `factory.local-pilot` | `schema_version`, `job_type`, `run_id`, `mode` | `work_order` |
 | `llmwiki.loop`, `wiki.build`, `openclaw.snapshot` | schedule metadata only | none at the schedule layer |
 
 Typed validation rejects malformed values, for example `rpi.run` with

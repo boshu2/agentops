@@ -22,6 +22,10 @@ The command prints:
 - disabled reference lanes;
 - manual merge and retention instructions.
 
+Before dispatching code-changing work, run the daemon admission rehearsal in
+[`daemon-factory-admission.md`](daemon-factory-admission.md) with the same
+bounded objective and validation commands.
+
 ## Dispatch Rules
 
 - Use only cloud/frontier `openai` + `codex` coding workers.

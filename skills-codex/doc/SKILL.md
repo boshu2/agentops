@@ -245,6 +245,7 @@ Tell the user:
 ## Reference Documents
 
 - [references/generation-templates.md](references/generation-templates.md)
+- [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)
 - [references/validation-rules.md](references/validation-rules.md)
 - [references/de-slopify.md](references/de-slopify.md) — Remove AI writing artifacts from docs

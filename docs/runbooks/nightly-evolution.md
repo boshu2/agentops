@@ -11,7 +11,7 @@ from GitHub Actions.
 | Nightly RPI Brief | Evidence packet and prompt issue |
 | Bushido scheduler | Local execution host for private runs |
 | `scripts/nightly-evolution.sh` | Repo-owned run contract and digest writer |
-| `ao overnight` | Private Dream/wiki knowledge compounding |
+| `ao daemon jobs submit --type dream.run` | Private Dream/wiki knowledge compounding handoff |
 | `ao rpi` / `ao evolve` | Code-mutating implementation cycles |
 | Claude Code | Headless worker/reviewer via local CLI or GitHub companion action |
 | Codex | Headless worker/reviewer via `codex exec` or local AgentOps runtime |
@@ -35,6 +35,10 @@ Run only the private Dream/wiki lane:
 ```bash
 scripts/nightly-evolution.sh --execute --run-dream
 ```
+
+This submits a typed `dream.run` daemon job. If daemon submission fails, the
+wrapper falls back to the legacy `ao overnight start` subprocess for operator
+compatibility unless `--skip-dream-subprocess` is supplied.
 
 Run one bounded evolve cycle with Codex as the runtime command:
 
@@ -115,7 +119,8 @@ systemctl --user enable --now agentops-nightly-evolution.timer
 
 Use Claude and Codex differently until eval evidence says mixed mode is stable:
 
-- Dream: run both `--runner claude --runner codex` when budget allows.
+- Dream daemon handoff: submit `dream.run` through `agentopsd`. The legacy
+  subprocess fallback still honors the configured Claude/Codex runner list.
 - Planning/review: prefer Claude or mixed mode for synthesis-heavy work.
 - Implementation: use Codex when local shell/code execution is the primary
   burden.
@@ -149,4 +154,7 @@ Each run writes:
 - `open-prs.json`
 - optional `nightly-brief/`
 - optional `systemd/`
-- optional `dream.log` and `evolve.log`
+- optional `dream-run-payload.json`, `dream-submit.json`, and
+  `dream-submit.stderr`
+- optional `dream.log` when legacy Dream subprocess fallback is used
+- optional `evolve.log`

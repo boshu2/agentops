@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 type stubRPIPhaseExecutor struct {
@@ -92,6 +93,7 @@ func TestRPIJobExecutorRunJobExecutesPhaseSpec(t *testing.T) {
 	}
 
 	phaseSpec := NewRPIPhaseJobSpec("run-1", "test goal", 2)
+	phaseSpec.PhaseTimeout = "5m0s"
 	jobSpec, err := phaseSpec.ToJobSpec("job-phase-1")
 	if err != nil {
 		t.Fatalf("payload: %v", err)
@@ -116,12 +118,49 @@ func TestRPIJobExecutorRunJobExecutesPhaseSpec(t *testing.T) {
 	if stub.lastReq.Goal != "test goal" {
 		t.Fatalf("goal = %q, want 'test goal'", stub.lastReq.Goal)
 	}
+	if stub.lastReq.PhaseTimeout != 5*time.Minute {
+		t.Fatalf("phase timeout = %s, want 5m", stub.lastReq.PhaseTimeout)
+	}
 	if result.Artifacts["phase_2/phase_summary"] != "" {
 		// phaseArtifactKey adds prefixes for some keys; just check that
 		// a non-empty artifact map came back.
 	}
 	if len(result.Artifacts) == 0 {
 		t.Fatalf("expected non-empty artifacts, got %#v", result.Artifacts)
+	}
+}
+
+func TestRPIJobExecutorRunJobPropagatesRunPhaseTimeout(t *testing.T) {
+	store := NewStore(t.TempDir())
+	stub := &stubRPIPhaseExecutor{
+		result: RPIPhaseExecutionResult{Artifacts: map[string]string{"phase_summary": "ok"}},
+	}
+	exec, err := NewRPIJobExecutor(RPIJobExecutorOptions{
+		Store:    store,
+		Executor: stub,
+	})
+	if err != nil {
+		t.Fatalf("new executor: %v", err)
+	}
+	runSpec := NewRPIRunJobSpec("run-timeout", "test timeout")
+	runSpec.MaxPhase = 1
+	runSpec.PhaseTimeout = "7m0s"
+	jobSpec, err := runSpec.ToJobSpec("job-run-timeout")
+	if err != nil {
+		t.Fatalf("payload: %v", err)
+	}
+	_, err = exec.RunJob(context.Background(), QueueClaim{
+		Job: QueueJobState{
+			JobID:   jobSpec.ID,
+			JobType: jobSpec.Type,
+			Payload: jobSpec.Payload,
+		},
+	})
+	if err != nil {
+		t.Fatalf("RunJob: %v", err)
+	}
+	if stub.lastReq.PhaseTimeout != 7*time.Minute {
+		t.Fatalf("phase timeout = %s, want 7m", stub.lastReq.PhaseTimeout)
 	}
 }
 

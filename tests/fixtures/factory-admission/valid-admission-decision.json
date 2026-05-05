@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "work_order_id": "factory-work-20260504-001",
+  "run_id": "factory-local-pilot-20260504-001",
+  "evaluated_at": "2026-05-04T23:31:00Z",
+  "allowed": true,
+  "reasons": [],
+  "landing_policy": "manual_pr",
+  "digest_policy": "required",
+  "child_job_id": "job-rpi-child-001",
+  "artifact_refs": {
+    "decision": ".agents/daemon/factory/factory-local-pilot-20260504-001/admission.json"
+  },
+  "evidence": {
+    "base_sha": "abcdef1234567890",
+    "open_pr_blocker_count": 0,
+    "main_ci_status": "green",
+    "stale": false
+  }
+}

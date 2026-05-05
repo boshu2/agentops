@@ -13,8 +13,9 @@ mutating source or starting agent work.
 
 Options:
   --execute                 Allow execution of explicitly enabled phases.
-  --run-dream               In execute mode, run ao overnight with configured runners.
+  --run-dream               In execute mode, submit a daemon dream.run job.
   --run-evolve              In execute mode, run the supervised RPI/evolve wrapper.
+  --skip-dream-subprocess   Do not fall back to legacy ao overnight start if daemon submit fails.
   --skip-brief              Skip scripts/nightly-rpi-brief.sh.
   --emit-systemd            Write systemd user service/timer templates to the run dir.
   --repo-root <path>        Repository root (default: git top-level or cwd).
@@ -186,6 +187,7 @@ write_markdown_digest() {
 EXECUTE=false
 RUN_DREAM=false
 RUN_EVOLVE=false
+SKIP_DREAM_SUBPROCESS=false
 SKIP_BRIEF=false
 EMIT_SYSTEMD=false
 REQUIRE_AI_SANE=true
@@ -212,6 +214,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --run-evolve)
       RUN_EVOLVE=true
+      shift
+      ;;
+    --skip-dream-subprocess)
+      SKIP_DREAM_SUBPROCESS=true
       shift
       ;;
     --skip-brief)
@@ -386,20 +392,46 @@ if [[ "$EMIT_SYSTEMD" == true ]]; then
 fi
 
 DREAM_STATUS="not-requested"
+DREAM_PAYLOAD_JSON=""
+DREAM_SUBMIT_JSON=""
+DREAM_SUBMIT_ERR=""
 if [[ "$RUN_DREAM" == true ]]; then
   if [[ "$EXECUTE" != true ]]; then
     DREAM_STATUS="planned"
   else
-    dream_args=(overnight start --warn-only --max-iterations 1 --output-dir "$OUTPUT_DIR/dream")
-    dream_args+=(--goal "private local nightly Dream before RPI/evolve")
-    for runner in "${RUNNER_ARRAY[@]}"; do
-      dream_args+=(--runner "$runner")
-    done
-    if ao "${dream_args[@]}" >"$OUTPUT_DIR/dream.log" 2>&1; then
-      DREAM_STATUS="ok"
-    else
+    DREAM_PAYLOAD_JSON="$OUTPUT_DIR/dream-run-payload.json"
+    DREAM_SUBMIT_JSON="$OUTPUT_DIR/dream-submit.json"
+    DREAM_SUBMIT_ERR="$OUTPUT_DIR/dream-submit.stderr"
+    jq -n \
+      --arg dream_run_id "${RUN_ID}-dream" \
+      --arg goal "private local nightly Dream before RPI/evolve" \
+      --arg output_dir "$OUTPUT_DIR/dream" '
+      {
+        schema_version: 1,
+        job_type: "dream.run",
+        dream_run_id: $dream_run_id,
+        goal: $goal,
+        mode: "daemon",
+        output_dir: $output_dir,
+        max_iterations: 1
+      }' >"$DREAM_PAYLOAD_JSON"
+    if ao daemon jobs submit --type dream.run --payload "@$DREAM_PAYLOAD_JSON" --json >"$DREAM_SUBMIT_JSON" 2>"$DREAM_SUBMIT_ERR"; then
+      DREAM_STATUS="submitted"
+    elif [[ "$SKIP_DREAM_SUBPROCESS" == true ]]; then
       DREAM_STATUS="failed"
-      die "Dream phase failed; see $OUTPUT_DIR/dream.log"
+      die "Dream daemon submit failed; see $DREAM_SUBMIT_ERR"
+    else
+      dream_args=(overnight start --warn-only --max-iterations 1 --output-dir "$OUTPUT_DIR/dream")
+      dream_args+=(--goal "private local nightly Dream before RPI/evolve")
+      for runner in "${RUNNER_ARRAY[@]}"; do
+        dream_args+=(--runner "$runner")
+      done
+      if ao "${dream_args[@]}" >"$OUTPUT_DIR/dream.log" 2>&1; then
+        DREAM_STATUS="ok"
+      else
+        DREAM_STATUS="failed"
+        die "Dream phase failed; see $OUTPUT_DIR/dream.log"
+      fi
     fi
   fi
 fi
@@ -445,6 +477,9 @@ jq -n \
   --arg evolve_status "$EVOLVE_STATUS" \
   --arg output_dir "$OUTPUT_DIR" \
   --arg systemd_dir "$SYSTEMD_DIR" \
+  --arg dream_payload_json "$DREAM_PAYLOAD_JSON" \
+  --arg dream_submit_json "$DREAM_SUBMIT_JSON" \
+  --arg dream_submit_err "$DREAM_SUBMIT_ERR" \
   --slurpfile ai "$AI_SANE_JSON" \
   --slurpfile dreamSetup "$DREAM_SETUP_JSON" \
   --slurpfile openPrs "$OPEN_PRS_JSON" \
@@ -480,6 +515,9 @@ jq -n \
       output_dir: $output_dir,
       digest_json: ($output_dir + "/digest.json"),
       digest_md: ($output_dir + "/digest.md"),
+      dream_payload: (if $dream_payload_json == "" then null else $dream_payload_json end),
+      dream_submit_json: (if $dream_submit_json == "" then null else $dream_submit_json end),
+      dream_submit_stderr: (if $dream_submit_err == "" then null else $dream_submit_err end),
       systemd_dir: (if $systemd_dir == "" then null else $systemd_dir end)
     }
   }' >"$DIGEST_JSON"

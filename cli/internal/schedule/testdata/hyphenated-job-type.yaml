@@ -1,0 +1,27 @@
+schedules:
+  - name: factory-pilot
+    cron: "0 3 * * *"
+    job_type: factory.local-pilot
+    payload:
+      work_order:
+        schema_version: 1
+        work_order_id: factory-work-1
+        generated_at: "2026-05-04T23:30:00Z"
+        expires_at: "2026-05-05T00:30:00Z"
+        base_sha: abcdef123456
+        target:
+          type: bead
+          id: soc-ff7b.7.1
+          summary: Define factory admission contract
+        allowed_files:
+          - docs/contracts/factory-admission.md
+        validation_commands:
+          - python3 tests/scripts/test-factory-admission-contracts.py
+        landing_policy: manual_pr
+        digest_policy: required
+        open_pr_blockers: []
+        main_ci_baseline:
+          status: green
+          run_id: "123"
+          checked_at: "2026-05-04T23:29:00Z"
+          failed_jobs: []

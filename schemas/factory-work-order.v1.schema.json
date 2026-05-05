@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-work-order.v1.schema.json",
+  "title": "AgentOps Factory Work Order",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work_order_id",
+    "generated_at",
+    "expires_at",
+    "base_sha",
+    "target",
+    "allowed_files",
+    "validation_commands",
+    "landing_policy",
+    "digest_policy",
+    "open_pr_blockers",
+    "main_ci_baseline"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "work_order_id": {"type": "string", "minLength": 1},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "base_sha": {"type": "string", "minLength": 7},
+    "target": {"$ref": "#/$defs/target"},
+    "allowed_files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/relative_path"}
+    },
+    "validation_commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "landing_policy": {"enum": ["off", "manual_pr"]},
+    "digest_policy": {"const": "required"},
+    "open_pr_blockers": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/open_pr_blocker"}
+    },
+    "main_ci_baseline": {"$ref": "#/$defs/main_ci_baseline"},
+    "unknown_evidence_policy": {"enum": ["block", "allow_non_mutating"]}
+  },
+  "$defs": {
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          {"pattern": "^/"},
+          {"pattern": "(^|/)\\.\\.(/|$)"}
+        ]
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "summary"],
+      "properties": {
+        "type": {"enum": ["goal", "bead", "execution_packet"]},
+        "id": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1}
+      }
+    },
+    "open_pr_blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pr_number", "head_ref", "files"],
+      "properties": {
+        "pr_number": {"type": "integer", "minimum": 1},
+        "head_ref": {"type": "string", "minLength": 1},
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/relative_path"}
+        }
+      }
+    },
+    "main_ci_baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checked_at"],
+      "properties": {
+        "status": {"enum": ["green", "red", "unknown"]},
+        "run_id": {"type": "string"},
+        "checked_at": {"type": "string", "format": "date-time"},
+        "failed_jobs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

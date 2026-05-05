@@ -13,7 +13,10 @@ func TestEnumValidation(t *testing.T) {
 		err  error
 	}{
 		{"job type", ValidateJobType(JobTypeRPIRun)},
+		{"factory admission job type", ValidateJobType(JobTypeFactoryAdmission)},
+		{"factory local pilot job type", ValidateJobType(JobTypeFactoryLocalPilot)},
 		{"event type", ValidateEventType(EventJobCompleted)},
+		{"factory admission event type", ValidateEventType(EventFactoryAdmissionDecided)},
 		{"job status", ValidateJobStatus(JobStatusRetryWaiting)},
 		{"job result", ValidateJobResultStatus(JobResultSucceeded)},
 		{"failure code", ValidateFailureCode(FailureProviderUnreachable)},

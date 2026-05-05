@@ -124,6 +124,7 @@ Allowed `kind` values:
 - `backlog-processing`
 - `post-mortem-finding`
 - `manifest-classification`
+- `dream-degraded`
 
 ### Claim Status
 

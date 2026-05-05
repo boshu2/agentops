@@ -536,6 +536,7 @@ When wiring or auditing the CI workflow that backs `--check` mode (or the tag-tr
 ## Reference Documents
 
 - [references/release-cadence.md](references/release-cadence.md)
+- [references/release-preflight-and-publishers.md](references/release-preflight-and-publishers.md)
 - [references/release-notes.md](references/release-notes.md)
 - [references/gh-actions-ci-patterns.md](references/gh-actions-ci-patterns.md)
 - [references/gh-actions-release-automation.md](references/gh-actions-release-automation.md)

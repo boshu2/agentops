@@ -182,8 +182,7 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	execCtx := ctx
-	cancel := func() {}
+	execCtx, cancel := context.WithCancel(ctx)
 	if s.executionTimeout > 0 {
 		execCtx, cancel = context.WithTimeout(ctx, s.executionTimeout)
 	}

@@ -6,6 +6,7 @@ func TestRPIJobSpecValidatesRunAndPhase(t *testing.T) {
 	run := NewRPIRunJobSpec("run-123", "ship daemon")
 	run.EpicID = "ag-hpb"
 	run.ExecutionPacketPath = ".agents/rpi/execution-packet.json"
+	run.PhaseTimeout = "5m0s"
 	if err := run.Validate(); err != nil {
 		t.Fatalf("run spec validate: %v", err)
 	}
@@ -14,6 +15,7 @@ func TestRPIJobSpecValidatesRunAndPhase(t *testing.T) {
 	phase.ParentRunJobID = "job-run"
 	phase.GasCityCityName = "agentops"
 	phase.GasCitySessionAlias = "rpi-run-123-p2"
+	phase.PhaseTimeout = "5m0s"
 	if err := phase.Validate(); err != nil {
 		t.Fatalf("phase spec validate: %v", err)
 	}
@@ -32,6 +34,12 @@ func TestRPIJobSpecRejectsSchemaEnumAndPhase(t *testing.T) {
 		t.Fatal("run spec accepted invalid backend")
 	}
 
+	run = NewRPIRunJobSpec("run-123", "ship daemon")
+	run.PhaseTimeout = "0s"
+	if err := run.Validate(); err == nil {
+		t.Fatal("run spec accepted non-positive phase timeout")
+	}
+
 	phase := NewRPIPhaseJobSpec("run-123", "ship daemon", 4)
 	if err := phase.Validate(); err == nil {
 		t.Fatal("phase spec accepted invalid phase number")
@@ -46,6 +54,7 @@ func TestRPIJobSpecRejectsSchemaEnumAndPhase(t *testing.T) {
 
 func TestRPIJobSpecRoundTripThroughDaemonJobSpec(t *testing.T) {
 	run := NewRPIRunJobSpec("run-123", "ship daemon")
+	run.PhaseTimeout = "7m0s"
 	job, err := run.ToJobSpec("job-run")
 	if err != nil {
 		t.Fatalf("run ToJobSpec: %v", err)
@@ -60,7 +69,7 @@ func TestRPIJobSpecRoundTripThroughDaemonJobSpec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse run payload: %v", err)
 	}
-	if parsedRun.RunID != run.RunID || parsedRun.StartPhase != 1 || parsedRun.MaxPhase != 3 {
+	if parsedRun.RunID != run.RunID || parsedRun.StartPhase != 1 || parsedRun.MaxPhase != 3 || parsedRun.PhaseTimeout != "7m0s" {
 		t.Fatalf("parsed run = %#v, want original run bounds", parsedRun)
 	}
 

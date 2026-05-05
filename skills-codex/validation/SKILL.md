@@ -253,5 +253,5 @@ $validation --no-forge ag-5k2             # skip forge only
 ## Reference Documents
 
 - [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
-- [references/forge-scope.md](references/forge-scope.md) — forge session scoping and deduplication
-- [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run behavior and standalone mode
+- [references/forge-scope.md](references/forge-scope.md) and [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — forge scoping, rerun behavior, standalone mode
+- [references/remote-and-multi-repo-validation.md](references/remote-and-multi-repo-validation.md)
