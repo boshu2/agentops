@@ -182,6 +182,7 @@ item_types=(
 item_sources=(
   council-finding retro-learning retro-pattern evolve-generator
   feature-suggestion backlog-processing post-mortem-finding manifest-classification
+  dream-degraded
 )
 
 for field in "${entry_fields[@]}"; do
@@ -374,7 +375,8 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
       def valid_source:
         . == "council-finding" or . == "retro-learning" or . == "retro-pattern" or
         . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing" or
-        . == "post-mortem-finding" or . == "manifest-classification";
+        . == "post-mortem-finding" or . == "manifest-classification" or
+        . == "dream-degraded";
       to_entries[] as $line |
       select(($line.value.items? | type) == "array") |
       ($line.value.items | to_entries[]) as $item |

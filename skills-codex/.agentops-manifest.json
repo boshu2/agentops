@@ -727,8 +727,8 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "a2dedbfc8f862b0fd6b3acd6d8c1207b2526a87076851d4d9ca18467392a7483",
-      "generated_hash": "07f16ccffe6133948387334d037d15d79b93fb2c4a37c61e5628a13cbc04f74d"
+      "source_hash": "8e7406cee85b218d8a59444758f1eeee118c634e0570a814219b04ad5e630469",
+      "generated_hash": "aadfa3d7975c2dd7b4882eaade0f538d0603431c388e6821afb47599f2412e62"
     },
     {
       "name": "evolve",
@@ -823,8 +823,8 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "0641e4ddb3485ba137fe4f03c90c7851fc9b14d874b639587e5081330bf57de4",
-      "generated_hash": "ffbb738e7bdd9a7c36e111a7cfc5948eb6e3e3a46133834af5c3cc31a2dcba74"
+      "source_hash": "7f99041ba3b0c959adb3bf00d2f346c6a2b480034d317fe74571224dcdb952e9",
+      "generated_hash": "322dcc3b6683acdd6f46b47cce09b9aa32ccda7ac36a01d86f483568a733b065"
     },
     {
       "name": "pr-implement",
@@ -931,8 +931,8 @@
     {
       "name": "research",
       "source_skill": "skills/research",
-      "source_hash": "c8d58e94ff051c25c56544e6b01d5264bc1dcd39470e71d5d18d8dd08f741446",
-      "generated_hash": "c2cb57e9854cfc4ecdfa0e2096dd720d369e56bbbb414903d7f8cde273a1ef28"
+      "source_hash": "acac25d668c788edca0ca9721f0311ea94b36a19e89dfba1c43c353a47b256bf",
+      "generated_hash": "d5042807a4a689d996771fb140758382b3b5edf0702afb652fab260bd78d2a82"
     },
     {
       "name": "retro",

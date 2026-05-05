@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -173,14 +174,14 @@ func TestParser_RejectsExcessiveQueueDepth(t *testing.T) {
 }
 
 func TestParser_LoadStockExample(t *testing.T) {
-	// Validates that .agents/schedule.yaml.example, the user-facing starter
-	// shipped with agentops, loads without error and has the two expected
-	// schedules (nightly-dream, hourly-forge). This protects against silent
-	// breakage of the starter file via future schema changes.
+	// Validates that docs/templates/schedule.yaml.example, the user-facing
+	// starter shipped with agentops, loads without error and has the two
+	// expected schedules (nightly-dream, hourly-forge). This protects against
+	// silent breakage of the starter file via future schema changes.
 	//
 	// Use the testdata copy to keep the test hermetic (repo policy forbids
-	// symlinks; the copy at testdata/example-validation.yaml is kept in sync
-	// with .agents/schedule.yaml.example).
+	// symlinks; testdata/example-validation.yaml is the content mirror of
+	// docs/templates/schedule.yaml.example — keep them in sync).
 	templates, err := Load(fixture(t, "example-validation.yaml"))
 	if err != nil {
 		t.Fatalf("expected example to load; got error: %v", err)
@@ -218,6 +219,46 @@ func TestParser_LoadStockExample(t *testing.T) {
 			t.Errorf("starter must NOT include llmwiki.loop (stubs in v1.0); found in schedule %q", tmpl.Name)
 		default:
 			t.Errorf("starter has unexpected job_type %q in schedule %q", tmpl.JobType, tmpl.Name)
+		}
+	}
+}
+
+func TestParser_StockExampleMirrorMatchesCanonical(t *testing.T) {
+	// Locks the testdata mirror to the canonical operator-facing template at
+	// docs/templates/schedule.yaml.example. They must produce byte-identical
+	// schedule definitions through the parser; comments may differ but
+	// behavior must not. If the mirror drifts, parser tests pass for the
+	// stale copy while end-users get a different file — silent breakage.
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatalf("resolve repo root: %v", err)
+	}
+	canonicalPath := filepath.Join(repoRoot, "docs", "templates", "schedule.yaml.example")
+	if _, err := os.Stat(canonicalPath); err != nil {
+		t.Fatalf("canonical schedule example missing at %s: %v", canonicalPath, err)
+	}
+
+	canonical, err := Load(canonicalPath)
+	if err != nil {
+		t.Fatalf("load canonical: %v", err)
+	}
+	mirror, err := Load(fixture(t, "example-validation.yaml"))
+	if err != nil {
+		t.Fatalf("load mirror: %v", err)
+	}
+
+	if len(canonical) != len(mirror) {
+		t.Fatalf("schedule count drift: canonical=%d mirror=%d", len(canonical), len(mirror))
+	}
+	for i := range canonical {
+		if canonical[i].Name != mirror[i].Name {
+			t.Errorf("schedule[%d] name drift: canonical=%q mirror=%q", i, canonical[i].Name, mirror[i].Name)
+		}
+		if canonical[i].JobType != mirror[i].JobType {
+			t.Errorf("schedule[%d] job_type drift: canonical=%q mirror=%q", i, canonical[i].JobType, mirror[i].JobType)
+		}
+		if canonical[i].Cron != mirror[i].Cron {
+			t.Errorf("schedule[%d] cron drift: canonical=%q mirror=%q", i, canonical[i].Cron, mirror[i].Cron)
 		}
 	}
 }

@@ -1,6 +1,7 @@
-# Mirror of .agents/schedule.yaml.example for hermetic parser tests.
-# Repo policy forbids symlinks (see CLAUDE.md), so this is a content copy.
-# Keep in sync with .agents/schedule.yaml.example.
+# Mirror of docs/templates/schedule.yaml.example for hermetic parser tests.
+# That file is the canonical operator-facing template (tracked per the
+# no-tracked-agents policy). Repo rules forbid symlinks (see CLAUDE.md),
+# so this is a content copy — keep them in sync.
 
 schedules:
   - name: nightly-dream

@@ -302,6 +302,23 @@ EOF
     "$fixture"
 }
 
+test_dream_degraded_active_source_passes() {
+  # Locks the curator/contract reconciliation: cli/cmd/ao/overnight_packets.go
+  # emits Source: "dream-degraded" for self-reported overnight degradation.
+  # The contract enum must accept it so the pre-push gate doesn't block on
+  # legitimate runtime emissions.
+  local fixture
+  fixture="$(create_fixture "dream-degraded-active")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"dream-degraded","timestamp":"2026-05-04T06:40:22Z","items":[{"id":"x1","title":"Investigate Dream degradation: example","type":"bug","severity":"high","source":"dream-degraded","description":"Dream curator self-reported degradation.","evidence":"runtime","confidence":"medium","why_now":"y","target_files":["x"],"morning_command":"ao rpi","packet_path":"p","claim_status":"available"}],"consumed":false,"claim_status":"available","consumed_by":null,"consumed_at":null}
+EOF
+
+  assert_gate_passes \
+    "active dream-degraded source passes parity gate" \
+    "$fixture"
+}
+
 echo "================================"
 echo "Testing next-work contract parity gate"
 echo "================================"
@@ -319,6 +336,7 @@ test_aggregate_self_drift_fails
 test_active_item_enum_drift_fails
 test_consumed_legacy_enum_drift_passes
 test_legacy_aggregate_only_consumed_queue_passes
+test_dream_degraded_active_source_passes
 
 echo ""
 echo "================================"

@@ -142,7 +142,10 @@ else
 fi
 
 # Check 3: Structural gate — corpus supports citation (has >=1 real learning)
-learning_count=$(find "$LEARNINGS_DIR" -name "*.md" 2>/dev/null | grep -v "$(basename "$TEST_LEARNING")" | wc -l | tr -d ' ')
+# Use find -not -name to exclude the test sentinel directly; grep -v + pipefail
+# would crash the script when the corpus contains only the sentinel (grep exits
+# 1 on no matches, killing the pipeline under set -euo pipefail).
+learning_count=$(find "$LEARNINGS_DIR" -name "*.md" ! -name "$(basename "$TEST_LEARNING")" 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$learning_count" -ge 1 ]]; then
     check "corpus has $learning_count learning(s) — citation is structurally possible" true
 else
