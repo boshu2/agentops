@@ -1,0 +1,40 @@
+{
+  "id": "auto-nightly-evolution-l3-rehearsal-admitted",
+  "version": 1,
+  "date": "2026-05-05",
+  "goal": "Execute+run-evolve is admitted when a valid work order passes all preflight checks.",
+  "narrative": "An operator runs a no-merge local pilot rehearsal with a valid work order, green CI, clean worktree, and landing-policy off on a nightly branch. The preflight admits the run, evolve executes, and the digest records the admission context.",
+  "expected_outcome": "Exit 0 with evolve phase ok. Digest includes admission_context with gh_evidence ok, main CI green, and blocker matrix. PR body includes admission context table with verdict.",
+  "acceptance_vectors": [
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'execute run-evolve passes runtime env and branch'"
+    },
+    {
+      "dimension": "observability",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'pr digest includes admission context'"
+    },
+    {
+      "dimension": "completeness",
+      "threshold": 0.9,
+      "check": "digest.json admission_context has gh_evidence, blocker_matrix, and main_ci_baseline"
+    }
+  ],
+  "satisfaction_threshold": 0.95,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "scripts/nightly-pr-digest.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "admitted evolve execution",
+      "admission-aware digest",
+      "work order validation"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}
