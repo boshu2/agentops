@@ -79,6 +79,22 @@ extract_summary_needs() {
 
 extract_summary_failset() {
   local file="$1"
+  # New pattern: contains(needs.*.result, 'failure') means all needs jobs are
+  # in the fail set EXCEPT those with continue-on-error: true (which always
+  # report success and thus can never trigger the failure check).
+  if grep -q "contains(needs\.\*\.result" "$file"; then
+    local coe_jobs
+    coe_jobs="$(awk '
+      /^  [a-z][a-z0-9_-]+:/ { job=$0; gsub(/^  /,"",job); gsub(/:/,"",job) }
+      /continue-on-error:[[:space:]]*true/ { print job }
+    ' "$file" | sort -u)"
+    extract_summary_needs "$file" \
+      | grep -v '^changes$' \
+      | grep -vxF "$coe_jobs" \
+      || true
+    return
+  fi
+  # Legacy pattern: individual if [[ "needs.X.result" != "success" ]] checks
   awk '
     /^  summary:/ { in_summary=1 }
     in_summary && /^[[:space:]]*if[[:space:]]+\[\[/ { in_condition=1 }
@@ -112,6 +128,8 @@ if ! extract_summary_needs "$WORKFLOW_PATH" > "$WF_NEEDS_FILE"; then
   echo "Expected style: summary.needs with bracket list (needs: [job-a, job-b])."
   exit 1
 fi
+# Exclude utility jobs (path-filter detection) from parity comparison
+sed -i '/^changes$/d' "$WF_NEEDS_FILE"
 
 if [[ ! -s "$AGENTS_JOBS_FILE" ]]; then
   echo "CI_POLICY_PARITY: no CI jobs parsed from AGENTS table under '### CI Jobs and What They Check'."
