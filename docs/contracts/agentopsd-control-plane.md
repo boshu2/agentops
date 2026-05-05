@@ -148,6 +148,7 @@ Additive factory event types:
 | `factory.job_submitted` | `job_id`, `run_id`, `task_id`, `requested_by`, `objective` |
 | `factory.job_claimed` | `job_id`, `run_id`, `slot_id`, `worker_id` |
 | `factory.job_started` | `job_id`, `run_id`, `slot_id`, `worker_id` |
+| `factory.admission_decided` | `job_id`, `run_id`, `work_order_id`, `allowed`, `reasons`, `landing_policy`, `digest_policy`, `artifact_refs` |
 | `factory.routing_decided` | `job_id`, `run_id`, `lane_id`, `provider`, `runtime`, `model`, `authority`, `reason` |
 | `factory.slot_allocated` | `slot_id`, `job_id`, `lane_id`, `max_concurrency_snapshot` |
 | `factory.worktree_allocated` | `worktree_id`, `slot_id`, `path`, `base_commit`, `branch`, `owner_job_id` |
@@ -168,6 +169,7 @@ Projection additions:
 `ProjectionSet.factory` is the status projection for these events. Its top-level
 fields are:
 
+- `admissions`;
 - `jobs`;
 - `active_workers`;
 - `slots`;

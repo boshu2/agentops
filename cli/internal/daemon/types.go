@@ -81,6 +81,7 @@ const (
 	EventProjectionMarkedStale EventType = "projection.marked_stale"
 	EventProjectionRebuilt     EventType = "projection.rebuilt"
 
+	EventFactoryAdmissionDecided    EventType = "factory.admission_decided"
 	EventFactoryJobSubmitted        EventType = "factory.job_submitted"
 	EventFactoryJobClaimed          EventType = "factory.job_claimed"
 	EventFactoryJobStarted          EventType = "factory.job_started"
@@ -110,6 +111,8 @@ type FactoryJobStatus string
 
 const (
 	FactoryJobStatusSubmitted           FactoryJobStatus = "submitted"
+	FactoryJobStatusAdmitted            FactoryJobStatus = "admitted"
+	FactoryJobStatusAdmissionBlocked    FactoryJobStatus = "admission_blocked"
 	FactoryJobStatusClaimed             FactoryJobStatus = "claimed"
 	FactoryJobStatusStarted             FactoryJobStatus = "started"
 	FactoryJobStatusRouted              FactoryJobStatus = "routed"
@@ -388,6 +391,7 @@ var eventTypeSet = map[string]struct{}{
 	string(EventJobCancelled):               {},
 	string(EventProjectionMarkedStale):      {},
 	string(EventProjectionRebuilt):          {},
+	string(EventFactoryAdmissionDecided):    {},
 	string(EventFactoryJobSubmitted):        {},
 	string(EventFactoryJobClaimed):          {},
 	string(EventFactoryJobStarted):          {},

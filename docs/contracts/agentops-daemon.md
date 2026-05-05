@@ -168,6 +168,11 @@ Initial job families:
 - `rpi.run` and `rpi.phase`
 - `dream.run` and Dream stage jobs
 - `wiki.forge`
+- `factory.admission` and `factory.local-pilot` — fail-closed factory
+  admission jobs that evaluate a typed work order before any source-mutating
+  RPI handoff. Admission artifacts are daemon-owned under
+  `.agents/daemon/factory/runs/<run-id>/`; a blocked admission completes as a
+  control-plane stop, not as an implementation failure.
 - OpenClaw-safe trigger jobs
 - `plans.projection` — read-side bd-subscription job that rebuilds the plans
   manifest projection from the shared bushido Dolt source. Read-only HTTP

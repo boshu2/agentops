@@ -209,6 +209,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
 - [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
 - [Factory Manual Merge Runbook](runbooks/factory-manual-merge.md) — Operator recovery and manual merge procedure for factory worktrees and validation evidence
+- [Daemon Factory Admission Runbook](runbooks/daemon-factory-admission.md) — Rehearsal procedure for daemon-native factory admission, blocked decisions, RPI handoff, and schedule payloads
 - [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts

@@ -154,6 +154,11 @@ changes or merge decisions until yield evidence supports promotion.
 lane can produce a candidate patch and validation artifacts; an operator or a
 future explicitly promoted gate decides whether to merge.
 
+Factory admission runs before routing. A blocked admission decision must not be
+converted into a routed worker lane or yield sample. Once admission allows a
+work order, routing selects the lane for the child execution job and keeps the
+same manual-merge defaults.
+
 Any route or pilot lane that can produce a merge candidate must declare
 `merge_eligibility`. That gate is not permission to merge. It is a machine
 readable contract for manual review:

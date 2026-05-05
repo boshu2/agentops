@@ -431,6 +431,70 @@ func TestAgentOpsDaemonFakeExecutorPolicyCompletesRPIPhaseJob(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonFakeExecutorPolicyClaimsFactoryAdmissionJob(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	work := daemonpkg.FactoryWorkOrder{
+		SchemaVersion: daemonpkg.FactoryAdmissionJobSpecSchemaVersion,
+		WorkOrderID:   "factory-work-daemon-test",
+		GeneratedAt:   "2026-05-04T23:30:00Z",
+		ExpiresAt:     "2026-05-05T00:30:00Z",
+		BaseSHA:       "abcdef123456",
+		Target: daemonpkg.FactoryTarget{
+			Type:    daemonpkg.FactoryTargetBead,
+			ID:      "soc-ff7b.7",
+			Summary: "Exercise daemon factory admission registration",
+		},
+		AllowedFiles: []string{
+			"cli/internal/daemon/factory_admission_executor.go",
+		},
+		ValidationCommands: []string{
+			"cd cli && go test ./internal/daemon -run FactoryAdmission",
+		},
+		LandingPolicy:         daemonpkg.FactoryLandingPolicyManualPR,
+		DigestPolicy:          daemonpkg.FactoryDigestPolicyRequired,
+		OpenPRBlockers:        []daemonpkg.FactoryOpenPRBlocker{},
+		UnknownEvidencePolicy: daemonpkg.FactoryUnknownEvidenceBlock,
+		MainCIBaseline: daemonpkg.FactoryMainCIBaseline{
+			Status:     daemonpkg.FactoryCIStatusGreen,
+			RunID:      "123",
+			CheckedAt:  "2026-05-04T23:29:00Z",
+			FailedJobs: []string{},
+		},
+	}
+	spec := daemonpkg.NewFactoryAdmissionJobSpec("factory-run-daemon-test", work)
+	jobSpec, err := spec.ToJobSpec("job-factory-admission")
+	if err != nil {
+		t.Fatalf("factory admission job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-factory-admission",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit factory admission job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "fake"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed factory admission job", result)
+	}
+	if got := result.Job.Artifacts["allowed"]; got != "false" {
+		t.Fatalf("allowed artifact = %q, want false because temp dir is not a git repo", got)
+	}
+	if result.Job.Artifacts["admission"] == "" {
+		t.Fatalf("artifacts = %#v, want admission artifact", result.Job.Artifacts)
+	}
+}
+
 func TestAgentOpsDaemonFakeExecutorPolicyRoutesDreamRunJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})

@@ -34,7 +34,7 @@ This contract does not cover:
 | Job type | Purpose |
 |---|---|
 | `factory.admission` | Evaluate one work order and emit an admission decision. |
-| `factory.local-pilot` | Evaluate a local pilot work order and, in later waves, optionally enqueue an admitted `rpi.run` child job. |
+| `factory.local-pilot` | Evaluate a local pilot work order and, when the daemon policy has RPI execution enabled, enqueue an admitted `rpi.run` child job. |
 
 Both job types use schema version `1` and fail closed on malformed specs.
 
@@ -87,6 +87,28 @@ Optional fields:
 | `child_job_id` | Enqueued child `rpi.run` job id when a handoff happens. |
 | `artifact_refs` | Durable refs for decision, blocker matrix, CI baseline, and digest. |
 
+## Event And Artifact Location
+
+Daemon-owned factory admission artifacts live under:
+
+```text
+.agents/daemon/factory/runs/<run_id>/
+  work-order.json
+  admission.json
+  blocker-matrix.json
+  main-ci-baseline.json
+```
+
+The executor records one additive lifecycle event:
+
+| Event | Required payload |
+|---|---|
+| `factory.admission_decided` | `run_id`, `work_order_id`, `allowed`, `reasons`, `landing_policy`, `digest_policy`, `artifact_refs` or `artifacts` |
+
+When admission allows an RPI handoff, the same event may include
+`child_job_id`. The child job is still a normal `rpi.run` queue job; admission
+does not become the execution loop.
+
 ## Blocked Vs Malformed
 
 Malformed requests are daemon job failures:
@@ -110,6 +132,9 @@ Valid-but-unsafe requests complete with `allowed=false`:
 
 This distinction keeps control-plane stops visible without pretending
 implementation work failed.
+
+Blocked admission is not yield evidence. Yield observations are emitted only
+after execution, validation, and manual review state exist.
 
 ## Landing Policy
 
