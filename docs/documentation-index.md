@@ -185,6 +185,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skill Template](templates/skill.template.md) — Template for new skills
 - [Command Template](templates/command.template.md) — Template for new commands
 - [Kernel Template](templates/kernel.template.md) — Template for new project kernels
+- [Dark Factory Schedule Example](templates/dark-factory-schedule.yaml.example) — Disabled agentopsd schedule template for reviewed Dream and local factory pilots
 - [Product Template](PRODUCT-TEMPLATE.md) — Template for writing a PRODUCT.md
 
 ## Reference
