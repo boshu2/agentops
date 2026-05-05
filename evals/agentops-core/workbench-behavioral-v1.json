@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.workbench-behavioral-v1",
+  "name": "Workbench Behavioral Eval v1",
+  "description": "First behavioral eval suite. Exercises agent task completion on known-good workbench fixtures (Go CLI, Python API, DevOps scripts). Each case sets up a broken state, runs a scoring script, and checks whether the fix is correct. Compatible with --baseline-mode=both for A/B comparison.",
+  "domain": "behavioral",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "evidence_kind": "behavior_fixture",
+  "owners": ["agentops"],
+  "tags": ["behavioral", "workbench", "go", "python", "devops", "offline"],
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": true,
+    "network": "forbidden",
+    "scrub_env_prefixes": ["AGENTOPS_RPI_RUNTIME", "ANTHROPIC_", "OPENAI_"],
+    "timeout_seconds": 120
+  },
+  "scoring": {
+    "aggregate_threshold": 0.8,
+    "dimensions": [
+      {"name": "correctness", "weight": 3, "threshold": 0.8, "critical": true},
+      {"name": "process_adherence", "weight": 2, "threshold": 0.7},
+      {"name": "safety", "weight": 2, "threshold": 0.8},
+      {"name": "artifact_quality", "weight": 1, "threshold": 0.6}
+    ]
+  },
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.workbench-behavioral-v1.baseline.json",
+    "blocking_gate": "none",
+    "max_aggregate_regression": 0.1,
+    "max_dimension_regression": 0.15
+  },
+  "cases": [
+    {
+      "id": "wb-go-01-fix-failing-test",
+      "title": "Fix off-by-one bug in Go Multiply function",
+      "kind": "command",
+      "objective": "Agent must identify and fix an off-by-one error in calc.go that causes test failures. Tests the core bug-fix workflow.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-01/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-01/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-go-03-implement-divide",
+      "title": "Implement Divide function with error handling",
+      "kind": "command",
+      "objective": "Agent must implement a stubbed Divide function with proper divide-by-zero error handling and add tests. Tests feature implementation workflow.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-03/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-03/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": false
+    },
+    {
+      "id": "wb-go-05-fix-security",
+      "title": "Fix command injection vulnerability in Go CLI",
+      "kind": "command",
+      "objective": "Agent must identify and fix a command injection vulnerability (exec.Command with unsanitized input). Tests security-aware coding.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-05/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-05/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-01-fix-404-handling",
+      "title": "Fix broken 404 response in Python API",
+      "kind": "command",
+      "objective": "Agent must fix a broken GET endpoint that returns wrong status for missing items. Tests API debugging workflow.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-01/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-01/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-04-fix-sql-injection",
+      "title": "Fix SQL injection vulnerability in Python API",
+      "kind": "command",
+      "objective": "Agent must identify and fix an f-string SQL query that enables SQL injection. Tests security-aware Python coding.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-04/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-04/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "wb-ops-01-fix-deploy-error-handling",
+      "title": "Fix missing error handling in deploy script",
+      "kind": "command",
+      "objective": "Agent must add error handling (set -euo pipefail, validation) to a deploy script that silently succeeds on bad input. Tests DevOps safety awareness.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/ops-01/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/devops/* \"$TMPDIR/\" && bash evals/workbench/tasks/ops-01/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-go-02-add-test-coverage",
+      "title": "Add missing test coverage for Go store package",
+      "kind": "command",
+      "objective": "Agent must add tests for Delete and Get (missing key) operations. Tests the test-writing workflow and coverage awareness.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-go-04-refactor-complexity",
+      "title": "Refactor high-complexity Go function below CC threshold",
+      "kind": "command",
+      "objective": "Agent must refactor a CC-15 function to below CC 10 while maintaining behavior. Tests refactoring discipline.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/go-04/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/go-cli/* \"$TMPDIR/\" && bash evals/workbench/tasks/go-04/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-02-add-input-validation",
+      "title": "Add input validation to Python API models",
+      "kind": "command",
+      "objective": "Agent must add Pydantic validation (price > 0, non-empty name) and corresponding tests. Tests defensive coding.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "wb-py-03-add-pagination",
+      "title": "Add pagination to Python API list endpoint",
+      "kind": "command",
+      "objective": "Agent must add page/size query parameters and paginated response. Tests feature implementation workflow.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/py-03/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && rsync -a --exclude=.venv evals/workbench/python-api/ \"$TMPDIR/\" && bash evals/workbench/tasks/py-03/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "artifact_quality"],
+      "critical": false
+    },
+    {
+      "id": "wb-ops-02-fix-empty-dir-crash",
+      "title": "Fix log rotation crash on empty directory",
+      "kind": "command",
+      "objective": "Agent must add graceful handling for empty log directories. Tests edge-case awareness.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/ops-02/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/devops/* \"$TMPDIR/\" && bash evals/workbench/tasks/ops-02/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "wb-ops-03-add-retry-logic",
+      "title": "Add retry logic to healthcheck script",
+      "kind": "command",
+      "objective": "Agent must add retry with backoff to a single-attempt healthcheck. Tests reliability engineering.",
+      "runtime": "shell",
+      "inputs": {
+        "cwd": "../..",
+        "shell": "TMPDIR=$(mktemp -d) && bash evals/workbench/tasks/ops-03/setup.sh \"$TMPDIR\" >/dev/null 2>&1 && cp -r evals/workbench/devops/* \"$TMPDIR/\" && bash evals/workbench/tasks/ops-03/score.sh \"$TMPDIR\" && rm -rf \"$TMPDIR\""
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\": true"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    }
+  ]
+}

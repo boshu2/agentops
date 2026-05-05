@@ -1,0 +1,1 @@
+The healthcheck script fails immediately if a service is temporarily unavailable. Add retry logic with configurable MAX_RETRIES and BACKOFF_SECS settings. The script should attempt multiple checks with increasing delay before reporting unhealthy. Ensure it outputs valid JSON with status, url, attempts, and latency_ms fields. Run tests to verify.

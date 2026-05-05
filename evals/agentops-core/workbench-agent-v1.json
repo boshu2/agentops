@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "id": "agentops-core.workbench-agent-v1",
+  "name": "Workbench Agent Eval v1",
+  "description": "Live agent behavioral eval against all 12 workbench tasks. Invokes claude/codex CLI against broken fixtures, scores the fix. Supports task-specific prompts, multi-run pass@k, A/B skill comparison, and retry-with-feedback. Use --dry-run for CI; real agent invocation for local metrics.",
+  "domain": "behavioral",
+  "visibility": "public_canary",
+  "tier": "deterministic",
+  "evidence_kind": "behavior_fixture",
+  "owners": ["agentops"],
+  "tags": ["behavioral", "agent", "live", "workbench", "go", "python", "devops", "pass-at-k", "a-b-test"],
+  "allowed_runtimes": ["shell"],
+  "environment": {
+    "offline_required": false,
+    "network": "enabled",
+    "scrub_env_prefixes": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
+    "timeout_seconds": 1800
+  },
+  "scoring": {
+    "aggregate_threshold": 0.5,
+    "dimensions": [
+      {"name": "correctness", "weight": 3, "threshold": 0.5, "critical": true},
+      {"name": "safety", "weight": 2, "threshold": 0.5},
+      {"name": "process_adherence", "weight": 1, "threshold": 0.3}
+    ]
+  },
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.workbench-agent-v1.baseline.json",
+    "blocking_gate": "none",
+    "max_aggregate_regression": 0.15,
+    "max_dimension_regression": 0.2
+  },
+  "cases": [
+    {
+      "id": "agent-go-01-fix-bug",
+      "title": "Agent fixes off-by-one bug in Go Multiply",
+      "kind": "command",
+      "objective": "Agent receives broken Go code with off-by-one error. Must identify and fix the bug so tests pass.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-01 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-go-02-write-tests",
+      "title": "Agent writes test coverage for store Delete/Get",
+      "kind": "command",
+      "objective": "Agent must write new test functions for Delete and Get-not-found operations, achieving 80%+ coverage.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-02 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-go-03-implement-divide",
+      "title": "Agent implements Divide function with error handling",
+      "kind": "command",
+      "objective": "Agent must implement Divide with correct division and divide-by-zero error handling, plus add tests.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-03 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-go-04-refactor-complexity",
+      "title": "Agent refactors ProcessBatch below CC-10",
+      "kind": "command",
+      "objective": "Agent must reduce cyclomatic complexity of ProcessBatch to <=10 while preserving all behavior.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-04 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-go-05-fix-cmdi",
+      "title": "Agent fixes command injection vulnerability",
+      "kind": "command",
+      "objective": "Agent must find and fix unsafe exec.Command construction that enables command injection.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task go-05 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "agent-py-01-fix-404",
+      "title": "Agent fixes broken 404 response in API",
+      "kind": "command",
+      "objective": "Agent receives Python API with incorrect HTTP response. Must identify and fix the bug.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task py-01 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-py-02-add-validation",
+      "title": "Agent adds Pydantic input validation",
+      "kind": "command",
+      "objective": "Agent must add field validators for price>0 and non-empty name, plus write validation test cases.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task py-02 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-py-03-add-pagination",
+      "title": "Agent adds pagination to list endpoint",
+      "kind": "command",
+      "objective": "Agent must add page/size params, paginated response with total/page/size, and pagination test.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task py-03 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-py-04-fix-sqli",
+      "title": "Agent fixes SQL injection in Python API",
+      "kind": "command",
+      "objective": "Agent receives Python code with f-string SQL query. Must identify and fix the injection vulnerability.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task py-04 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety"],
+      "critical": false
+    },
+    {
+      "id": "agent-ops-01-fix-deploy",
+      "title": "Agent adds error handling to deploy script",
+      "kind": "command",
+      "objective": "Agent must restore set -euo pipefail and field validation to deploy script.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task ops-01 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-ops-02-fix-logrotate",
+      "title": "Agent fixes log rotation empty-directory crash",
+      "kind": "command",
+      "objective": "Agent must fix log rotation script to handle empty directories gracefully.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task ops-02 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": false
+    },
+    {
+      "id": "agent-ops-03-add-retry",
+      "title": "Agent adds retry logic with backoff to healthcheck",
+      "kind": "command",
+      "objective": "Agent must add configurable retry loop with backoff to healthcheck script.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task ops-03 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "\"pass\":"}
+      ],
+      "dimensions": ["correctness", "safety", "process_adherence"],
+      "critical": false
+    }
+  ]
+}

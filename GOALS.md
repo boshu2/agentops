@@ -52,6 +52,8 @@ The flywheel-compounding gate proves σρ > δ (escape velocity). But the full l
 
 CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to maintain zero violations and prevent future regressions via pre-commit checks.
 
+**Progress:** cli/ threshold (20) is green. cli/internal/ threshold (18) is green. Previously `validateRoutingLaneGates` was CC 19; refactored into `validateYieldGate` and `validateLaneAuthority` helpers (2026-05-04).
+
 **Steer:** decrease (functions exceeding CC 20)
 
 ### 6. Maintain competitive awareness
@@ -81,6 +83,14 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 **Progress:** Prototype implemented. `ao flywheel close-loop` now generates review-only draft skills under `.agents/skill-drafts/` when a pattern has evidence across 3+ session artifacts. The remaining gap is promotion polish: richer section synthesis, stronger tier heuristics, and a cleaner review/publish path from draft to shipped skill.
 
 **Steer:** increase (auto-proposed skill drafts)
+
+### 10. Measure skill value through real-task evaluation
+
+The existing eval suites are CI canaries (contract checks). None answers "did this skill change make agents better?" Ship a behavioral eval system with a known-good workbench project, task definitions with golden solutions, and scoring scripts that measure correctness, safety, and process adherence. The eval engine already supports A/B comparison via `--baseline-mode=both` and statistical verdict — the gap is eval content, not infrastructure.
+
+**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). `--two-pass` mode added to pre-push head gate for local skill-delta validation. Remaining gap: expanding eval-skill-delta from structural-only to a default blocking gate with full skill-on vs skill-off execution across the workbench.
+
+**Steer:** increase (behavioral eval tasks with scoring scripts)
 
 ## Three-Gap Contract Proof Surface
 
@@ -132,4 +142,5 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |
 | install-smoke | `timeout 30 bash tests/install/test-install-smoke.sh` | 5 | Install scripts pass syntax and structure validation |  |
 | flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |  |
+| eval-workbench-verify | `timeout 60 bash scripts/check-eval-workbench.sh` | 6 | Behavioral eval workbench golden state, task scoring, and suite structure verified |  |
 | state-path-resolver-coverage | `bash scripts/check-paths-resolver-coverage.sh` | 3 | Tracks executable-code sites that still hardcode `.agents/` paths instead of sourcing the canonical resolver (lib/ao-paths.sh / cli/internal/paths from soc-irg1.1). Warn-only initially per warn-then-fail-ratchet pattern; flip to blocking is a separate follow-up issue under epic soc-irg1 after 2 weeks of baseline data. See `.agents/patterns/2026-05-01-state-path-resolver.md`. | warn-only |

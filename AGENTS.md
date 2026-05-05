@@ -242,6 +242,8 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **doctor-check** | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
 | **embedded-sync** | `cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/` | Editing hooks without running `cd cli && make sync-hooks` |
+| **eval-skill-delta** | Eval skill-delta CI gate validates skill-on vs skill-off delta infrastructure | Broken delta scorecard, missing harness, or malformed A/B config |
+| **eval-workbench-verify** | Behavioral eval workbench golden state, task scoring scripts, and suite structure | Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON |
 | **go-build** | `ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
 | **hook-preflight** | All hooks have kill switches, no unsafe eval, timeouts present | Using `eval` or backtick substitution in hooks |
 | **hook-output-schema-lint** | Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept | Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+) |
@@ -250,6 +252,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
 | **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; `git push --dry-run` smoke proves the hook actually fires | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
+| **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
 | **security-toolchain-gate** | Semgrep, gosec, gitleaks, etc. | Non-blocking (`continue-on-error: true`) |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |

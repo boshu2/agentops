@@ -8,7 +8,7 @@
 
 A repo-native operational layer for coding agents.
 
-AgentOps gives every session bookkeeping, validation, primitives, and flows. Work begins with repo context instead of a blank prompt, passes through explicit validation before shipping, and ends by feeding findings, learnings, and next work back into the environment.
+AgentOps gives every session three product layers: a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
 
 The institutional knowledge stops walking out the door because the repo keeps it.
 
@@ -24,27 +24,22 @@ Most coding-agent tooling handles prompt construction and routing well. The fail
 | **Bookkeeping** (internal: durable learning) | Solved problems recur because nothing extracts, scores, or retrieves the lesson | `.agents/` ledger, `ao lookup`, finding registry, `/retro` extraction, freshness curation |
 | **Closure** (internal: loop closure) | Completed work does not produce better next work | `/post-mortem` harvests learnings and next-work, finding compiler promotes failures into constraints, `GOALS.md` + `/evolve` turn findings into measurable improvements |
 
-The compound effect below only works because validation catches the problem,
-bookkeeping preserves the lesson, and closure ensures the next session loads
-better context before repeating the mistake.
+The compound effect below only works because Validation Gates catch the problem,
+the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
+the next session loads better context before repeating the mistake.
 
 ---
 
-## Four Load-Bearing Layers
+## Three Product Layers
 
-### Skills — The Primitive and Flow Layer
-Structured primitives and named flows for discovery, execution, validation, recovery, and release. Skills route work into the right chain instead of leaving the agent to improvise the lifecycle.
+### Layer 1: Context Compiler
+Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills, hooks, and the `ao` CLI collaborate to load, scope, and trim context to the token budget before the agent sees it.
 
-### Hooks — The Enforcement Layer
-Runtime hooks fire at session start/end, prompt submission, tool boundaries,
-stop, and task completion. They keep guidance, validation, and flywheel
-closure active even when the operator does not remember every step.
+### Layer 2: Validation Gates
+Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. Runtime hooks enforce them even when the operator forgets.
 
-### `ao` CLI — The Control Plane
-The CLI handles retrieval, ratchet checkpoints, flywheel closure, goals, curation, and phased execution support. It is the mechanical bridge between plain files, flows, and enforceable progress.
-
-### `.agents/` — The Bookkeeping Layer
-Plain files on disk: research, brainstorms, findings, learnings, handoffs, ratchet traces, next-work queues. No single session has to remember the plan. The environment carries it forward.
+### Layer 3: Knowledge Flywheel
+Extracts learnings from completed work, scores them for quality, promotes durable patterns, and re-injects them at the next session start. `.agents/` carries state on disk; `ao forge`, `ao lookup`, and maturity controls keep the loop closing.
 
 ---
 
@@ -97,17 +92,17 @@ By session 100, the repo already carries prior failures, design choices, plannin
 The most accurate current framing is:
 
 ```text
-Public category    -> operational layer for coding agents
-Public value       -> bookkeeping, validation, primitives, and flows
+Public category    -> context compiler for coding agents
+Product layers     -> Context Compiler + Validation Gates + Knowledge Flywheel
 Internal proof     -> three-gap lifecycle contract
-Technical frame    -> context compiler
 Runtime mechanics  -> Brownian Ratchet + Stigmergic Spiral + Knowledge Flywheel
 ```
 
 The claim is not "better models." The claim is "better repo mechanics around
-the models you already have." Publicly, that means bookkeeping, validation,
-primitives, and flows. Internally, the three-gap contract remains the proof
-model that verifies those claims are real.
+the models you already have." Three product layers deliver that: the Context
+Compiler loads the right context, Validation Gates block bad output, and the
+Knowledge Flywheel ensures every session leaves the repo smarter. The
+three-gap contract remains the internal proof model.
 
 ---
 

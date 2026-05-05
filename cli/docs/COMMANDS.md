@@ -995,7 +995,7 @@ ao daemon jobs submit [flags]
 ```
   -h, --help             help for submit
       --payload string   JSON payload (required; '@-' for stdin, '@path' for file)
-      --type string      Job type (required; one of dream.run, dream.stage, openclaw.snapshot, rpi.phase, rpi.run, wiki.build, wiki.forge)
+      --type string      Job type (required; one of dream.run, dream.stage, eval.skill-delta, eval.suite, llmwiki.loop, openclaw.snapshot, plans.projection, rpi.phase, rpi.run, wiki.build, wiki.forge)
 ```
 
 ##### `ao daemon jobs wait`
@@ -1232,7 +1232,7 @@ ao eval run <suite.json> [flags]
   -h, --help                            help for run
       --out string                      write eval run record to path
       --run-id string                   stable run id to use in the run record
-      --runtime string                  deterministic runtime override (static, mock, shell)
+      --runtime string                  runtime override (static, mock, shell, claude, codex)
 ```
 
 #### `ao eval scorecard`
@@ -3446,6 +3446,33 @@ Help provides help for any command in the application.
 
 ```
 ao help [command] [flags]
+```
+
+---
+
+### `ao registry`
+
+Query the unified registry
+
+```
+ao registry [command]
+```
+
+**Subcommands:**
+
+#### `ao registry list`
+
+List registry entries
+
+```
+ao registry list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for list
+      --type string   Filter by surface type (skills, hooks, stores, jobs, evals, cli, cadence)
 ```
 
 ---

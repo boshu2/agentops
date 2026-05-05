@@ -1,0 +1,1 @@
+The ProcessBatch function in calc.go has excessive cyclomatic complexity with deeply nested conditional logic. Refactor it to reduce complexity below 10 while preserving all existing behavior — all tests must continue to pass. Consider using lookup tables, early returns, or helper functions.

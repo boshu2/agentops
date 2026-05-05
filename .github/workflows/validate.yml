@@ -232,6 +232,19 @@ jobs:
           chmod +x scripts/generate-cli-reference.sh
           ./scripts/generate-cli-reference.sh --check
 
+  registry-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Verify registry.json is up to date
+        run: |
+          chmod +x scripts/generate-registry.sh
+          ./scripts/generate-registry.sh --check
+
   agentops-contract-canaries:
     name: agentops-contract-canaries (required)
     runs-on: ubuntu-latest
@@ -265,6 +278,35 @@ jobs:
         run: |
           chmod +x scripts/test-agentops-contract-canaries.sh
           scripts/test-agentops-contract-canaries.sh
+
+  eval-workbench-verify:
+    name: eval-workbench-verify (required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+          cache-dependency-path: evals/workbench/go-cli/go.mod
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Python dependencies
+        run: |
+          cd evals/workbench/python-api
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install fastapi uvicorn httpx pytest ruff black
+
+      - name: Verify workbench golden state
+        run: |
+          chmod +x scripts/check-eval-workbench.sh
+          bash scripts/check-eval-workbench.sh
 
   agentops-eval-advisory:
     name: agentops-eval-advisory (advisory)
@@ -300,6 +342,35 @@ jobs:
         run: |
           chmod +x scripts/eval-agentops.sh
           ./scripts/eval-agentops.sh --fast
+
+  eval-skill-delta:
+    name: eval-skill-delta (structural gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Check for skills changes
+        id: filter
+        run: |
+          if git diff --name-only HEAD~1 -- 'skills/**' | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate eval harness dry-run
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          chmod +x scripts/eval-agent-harness.sh
+          result=$(bash scripts/eval-agent-harness.sh --task go-build --agent echo --dry-run 2>/dev/null | tail -1)
+          echo "$result" | jq -e '.skipped == true' > /dev/null
+          echo "eval harness dry-run: valid JSON, skipped=true"
+
+      - name: Skip (no skills changes)
+        if: steps.filter.outputs.changed != 'true'
+        run: echo "No skills/ changes detected — skipping eval-skill-delta"
 
   shellcheck:
     runs-on: ubuntu-latest
@@ -1051,7 +1122,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, agentops-eval-advisory, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1076,8 +1147,11 @@ jobs:
           echo "validate-headless-runtime-skills: ${{ needs.validate-headless-runtime-skills.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
+          echo "registry-check: ${{ needs.registry-check.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
+          echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
+          echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
           echo "security-scan: ${{ needs.security-scan.result }}"
@@ -1118,7 +1192,10 @@ jobs:
              [[ "${{ needs.validate-headless-runtime-skills.result }}" != "success" ]] || \
              [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
              [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
+             [[ "${{ needs.registry-check.result }}" != "success" ]] || \
              [[ "${{ needs.agentops-contract-canaries.result }}" != "success" ]] || \
+             [[ "${{ needs.eval-workbench-verify.result }}" != "success" ]] || \
+             [[ "${{ needs.eval-skill-delta.result }}" != "success" ]] || \
              [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
              [[ "${{ needs.markdownlint.result }}" != "success" ]] || \
              [[ "${{ needs.security-scan.result }}" != "success" ]] || \

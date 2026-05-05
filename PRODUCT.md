@@ -1,12 +1,12 @@
 ---
-last_reviewed: 2026-04-30
+last_reviewed: 2026-05-04
 ---
 
 # PRODUCT.md
 
 ## Mission
 
-AgentOps is source control for what your agents have learned. It gives coding agents **bookkeeping**, **validation**, **primitives**, and **flows** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
+AgentOps is a context compiler for coding agents. It assembles, validates, and delivers **the right context at the right time** so every session reads from **the corpus** on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Your agent's context becomes an engineering artifact, not chat history. Vendor memory follows the chat. The corpus follows the team.
 
 The corpus is the descendant of the wiki (Ward Cunningham, 1995), the runbook, the postmortem, the toil budget — every prior generation's codified team knowledge, made agent-readable and maintained like code. Same lineage. New substrate.
 
@@ -51,50 +51,62 @@ Read the convergence table the right way: AgentOps and every harness like it get
 
 ## What the Product Actually Is
 
-The bridge tool has three layers. Each smooths a sharp edge of current models so you can build the moat (the corpus) underneath.
+Three layers. Each solves a different problem. All three compound through the CDLC — the [Context Development Life Cycle](docs/cdlc.md).
 
-### 1. Skills (71 skills across 4 runtimes)
+### Layer 1: The Context Compiler
 
-**The discipline layer.**
+**Problem:** Every agent session starts from zero. No memory of what worked, what failed, or what the codebase expects.
 
-Markdown-defined primitives and flows that agents load and execute. Atomic, composable, scoped. Engineers recognize the shape: small reviewable units with explicit phase boundaries.
+**What it does:** Assembles the right context for the right phase. Research gets different context than implementation. Scores knowledge by utility and freshness. Trims to the token budget. Delivers at session start automatically.
 
-- **Validation primitives** — `/pre-mortem`, `/vibe`, `/council`, `/review`. Multi-model consensus validates plans before build and code before commit. Gates block, not advise.
-- **Bookkeeping primitives** — `/retro`, `/forge`, `/inject`, `/flywheel`, `/compile`. Extract, score, curate, and retrieve learnings so solved problems stay solved. The flywheel runs here.
-- **Flows** — `/research`, `/implement`, `/validation`, `/rpi`, `/crank`, `/evolve`. Compose primitives into auditable phases. Drop in at any phase. No phase compresses into another.
+- `ao inject` — decay-ranked retrieval with token budgeting
+- `ao context assemble` — phase-scoped context packets
+- `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
+- 71 skills — reusable context packages across Claude Code, Codex, and OpenCode
+- 12 lifecycle hooks — context loads automatically without agent initiative
+- `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
 
-Skills work across Claude Code, Codex CLI, Cursor, and OpenCode through explicit proof tiers. Tier S structural/install proof is active for all four runtimes; Tier I live inventory proof exists for Claude Code and Codex when local CLIs/auth are available; Tier E live execution proof remains opt-in rather than a default CI gate. Codex-native skills ship alongside Claude-native, and `/converter` exports Cursor rules.
+### Layer 2: The Validation Gates
 
-### 2. CLI (`ao`)
+**Problem:** Agents ship confident garbage. No review, no second opinion, no gate between "agent thinks this is good" and "this goes into production."
 
-**The reliability + autonomy layer.**
+**What it does:** Multi-model consensus validates plans before build and code before commit. Gates block, not advise. Independent judges debate and return one auditable verdict.
 
-A Go binary that provides the repo-native infrastructure skills depend on. Declarative goals, fitness gates, control loops that reconcile.
+- `/pre-mortem` — validate plans before implementation
+- `/vibe` — validate code after implementation
+- `/council` — multi-model adversarial review (Claude + Codex judges)
+- 63 eval suites + 12-task workbench — deterministic context quality testing
+- Baseline A/B — skill-on vs skill-off delta measurement
 
-- **Bookkeeping control plane** — `ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, `ao memory sync` manage learning capture, retrieval, freshness decay, promotion. The flywheel runs here.
-- **Goals + reconciliation** — `ao goals measure` runs SLO-shaped fitness gates; `ao goals steer` manages directives; `ao evolve` runs the autonomous reconcile loop that closes the worst fitness gap. SRE error-budget logic, applied to a codebase.
-- **Operator surfaces** — `ao context assemble`, `ao rpi`, `ao factory` build phase-appropriate packets and terminal-native flows. Stay in the loop, run on the loop, or drop out entirely. Same machine.
+### Layer 3: The Knowledge Flywheel
 
-### 3. Hooks
+**Problem:** Each session ends and the lessons disappear. Same mistakes get made. Same solutions get rediscovered. Nothing compounds.
 
-**The always-on layer.**
+**What it does:** Every session extracts learnings. Learnings get scored on specificity, actionability, novelty. High-scoring learnings promote to permanent patterns. Patterns become planning rules. Next session starts loaded. The flywheel runs overnight unattended.
 
-Session lifecycle hooks that run automatically so the operational layer stays active without agent initiative. The discipline that fires whether the operator remembered or not.
+- `/forge` — extract structured learnings from completed sessions
+- `ao flywheel close-loop` — score, promote, curate automatically
+- `/evolve` — autonomous reconciliation: reads goals, fixes the worst gap, validates, repeats
+- `/dream` — overnight compounding: full extract→score→promote→inject cycle unattended
+- MemRL feedback — cited artifacts receive session reward, utility scores update
+- 1,400+ learnings, 130+ patterns — the corpus is compounding
 
-- **SessionStart / SessionEnd / Stop** — stage runtime state, maintain, and close the bookkeeping loop between sessions.
-- **PreToolUse / PostToolUse** — nudge toward the right primitives and enforce validation constraints.
-- **UserPromptSubmit** — route intent, surface startup guidance, keep the operator on a productive path.
+### How They Compound
 
-## Core Value Propositions
+```
+Session starts → Layer 1 delivers compiled context → Agent works →
+Layer 2 validates the output → Session ends → Layer 3 extracts learnings →
+Next session starts with better context (back to Layer 1)
+```
 
-The three load-bearing claims, expanded:
+That's the CDLC. Generate, compile, test, distribute, deliver, observe, adapt. Same shape as the DevOps SDLC. Different substrate. The model stays the same. The corpus compounds.
 
-- **Atomic changes** — every primitive is small enough to be cheap to undo. `/implement` is one scoped task. `/council` is one verdict. `/forge` extracts one learning at a time. Compose them; the work stays auditable end to end.
-- **Validation gates** — multi-model consensus (Claude + Codex judges debate independently) validates plans before build and code before commit. Gates block, not advise. The three-gap proof contract — judgment, durable learning, loop closure — defines what reliability means here.
-- **Compounding context** — the knowledge flywheel. Each session captures learnings scored on specificity, actionability, novelty, context, and confidence. Learnings promote to patterns; patterns become planning rules. Next session starts loaded, not cold. Escape velocity is a measurable condition: retrieval × usage > decay.
-- **Hands-free reconciliation** — `/evolve` reads `GOALS.md`, picks the worst fitness gap, fixes it, validates, records the cycle. SRE error budgets meet Kubernetes control loops. `/dream` runs overnight bookkeeping; source code stays untouched.
-- **Multi-runtime, multi-model** — same skills target Claude Code, Codex CLI, Cursor, and OpenCode with documented Tier S/I/E proof levels. `/converter` exports to native formats. Mixed-vendor council judges provide independent perspectives — the discipline lives in the system, not the model.
-- **Zero setup, zero telemetry** — all state lives in local `.agents/` directories with no cloud dependency. 71 skills, 12 runtime hook event sections, and the flywheel can operate with no external daemon.
+### Infrastructure (underneath all three layers)
+
+- **Coordination plane** — `/swarm`, `/crank`, waves, worktree isolation for parallel agents. Scale by adding workers, not overloading context.
+- **Temporal compounding** — dream cycles (hours), session forge (minutes), pattern promotion (weeks). Multiple clocks, one flywheel.
+- **Multi-runtime** — same skills, same corpus across Claude Code, Codex CLI, and OpenCode. `/converter` exports to Cursor rules. The discipline lives in the system, not the model.
+- **Zero telemetry** — all state lives in local `.agents/` directories. No cloud dependency.
 
 ## Strategic Bet
 
@@ -102,11 +114,11 @@ Knowledge is the moat. AgentOps isn't. Every harness — ours included — gets 
 
 ## Evidence
 
-As of 2026-04-30:
+As of 2026-05-04:
 
 **Traction:**
 
-- GitHub repo: 320 stars, 34 forks, 10 open issues, last pushed 2026-04-30
+- GitHub repo: 328 stars, 34 forks, 8 open issues, last pushed 2026-05-04
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
 - Distribution/runtime reach: 71 shared skills, 71 checked-in Codex artifacts, and 35 Codex overrides
 
@@ -126,7 +138,8 @@ The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evid
 | Pattern-to-skill promotion polish remains | The strongest differentiation thesis — self-programming compounding — has review-only draft generation today. Remaining gap: richer synthesis and a clean publish path. | in-progress |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
-| Public messaging now converged on operational-discipline + moat framing | A 2026-04-30 internal positioning council locked the thesis: *knowledge is the moat; AgentOps is the bridge tool that helps you build it.* Mission, Strategic Bet, README, and mkdocs surfaces aligned in PR #192. Downstream comparison docs and skill-page intros still need a sweep. | in-progress |
+| Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
+| Public messaging shifted to context-compiler + moat framing | CDLC (Context Development Life Cycle) framing landed: Mission, Strategic Bet, README, and mkdocs hero surfaces now use "context compiler" as the primary identity noun. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 
 ## Design Principles
 

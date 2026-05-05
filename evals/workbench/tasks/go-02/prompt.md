@@ -1,0 +1,1 @@
+The store package is missing test coverage for Delete and Get-not-found operations. Examine the store interface and its error types, then write test functions that cover Delete operations and Get calls for missing keys. Aim for at least 80% code coverage on the store package. Run tests to verify.

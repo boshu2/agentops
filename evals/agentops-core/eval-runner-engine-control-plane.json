@@ -75,7 +75,7 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run deterministic AgentOps evaluation suites and compare run records."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval run`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--baseline string                 compare the run against a baseline run record"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--runtime string                  deterministic runtime override (static, mock, shell)"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--runtime string                  runtime override (static, mock, shell, claude, codex)"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao eval compare`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--max-aggregate-regression float   allowed aggregate regression before verdict becomes regression"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--max-dimension-regression float   allowed per-dimension regression before verdict becomes regression"},
@@ -101,7 +101,7 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Run deterministic AgentOps evaluation suites and compare run records."},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "runtime %q is out of deterministic scope (use static, mock, or shell)"},
+        {"type": "artifact_contains", "target": "../../cli/internal/eval/engine.go", "value": "runtime %q is out of deterministic scope"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "evalRunCmd.Flags().StringVar(&evalRunBaseline, \"baseline\", \"\", \"compare the run against a baseline run record\")"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "evalBaselineAuditCmd"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "evalScorecardCmd.Flags().StringVar(&evalScorecardKind, \"kind\", string(aoeval.ScorecardKindRPI), \"scorecard kind (rpi, skill-change)\")"},

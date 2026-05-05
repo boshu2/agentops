@@ -1,7 +1,8 @@
 ---
 name: review
-description: 'Review diffs for risk.'
+description: 'Review diffs, find mocks, scan bugs, audit code.'
 ---
+
 # Review Skill
 
 > **Quick Ref:** `$review <PR>` reviews a PR, `$review --diff` reviews local changes, `$review --agent <path>` reviews agent output with extra scrutiny.
@@ -22,6 +23,10 @@ $review --diff --staged             # Diff mode — staged only
 $review --agent .agents/crank/      # Agent mode — review agent-generated output
 $review --agent ./output.patch      # Agent mode — review a patch file
 $review --deep 42                   # Deep mode — spawns council for second opinion
+$review --mocks                     # Find stubs, mocks, placeholders, TODOs
+$review --bugs                      # Bug scanner: null derefs, leaks, security holes
+$review --audit security            # Domain audit: security, perf, UX, API, CLI
+$review --deep-scan                 # Iterative audit-fix-rescan until clean
 ```
 
 ---
@@ -303,6 +308,13 @@ Merge council findings into the review document under a "## Council Findings" se
 | `$pr-validate` | PR-specific validation (isolation, scope creep). Complementary to `$review`. |
 
 ---
+
+## Reference Documents
+
+- [references/MOCK_FINDER.md](references/MOCK_FINDER.md) — Find stubs, mocks, placeholders, TODOs
+- [references/BUG_SCANNER.md](references/BUG_SCANNER.md) — Bug scanner: null derefs, leaks, security
+- [references/DOMAIN_AUDIT.md](references/DOMAIN_AUDIT.md) — Domain-parameterized audit (security, perf, UX, API, CLI)
+- [references/DEEP_SCAN.md](references/DEEP_SCAN.md) — Iterative audit-fix-rescan cycle
 
 ## See Also
 

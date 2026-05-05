@@ -1465,3 +1465,86 @@ context:
 		t.Errorf("expected adhoc-* directory under %q, found: %v", contextBase, entries)
 	}
 }
+
+// TestSkillLoadCitation_RecordedOnForSkill verifies that running inject with
+// --for=<skill> records a CitationEvent with CitationType="skill_loaded" in
+// the citations JSONL file.
+func TestSkillLoadCitation_RecordedOnForSkill(t *testing.T) {
+	resetCommandState(t)
+	t.Setenv("RPI_RUN_ID", "")
+	t.Setenv("AGENTOPS_RPI_RUNTIME", "")
+	tmp := chdirTemp(t)
+	setupAgentsDir(t, tmp)
+
+	// Create a skill with a context declaration so decl != nil
+	skillDir := filepath.Join(tmp, "skills", "implement")
+	if err := os.MkdirAll(skillDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	skillContent := `---
+name: implement
+description: test skill for citation
+skill_api_version: 1
+context:
+  window: isolated
+  sections:
+    exclude: [HISTORY]
+  intel_scope: topic
+---
+# Implement
+Test skill.
+`
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(skillContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a learning so inject has something to surface
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	writeTestMDLearning(t, learningsDir, "test-learning.md", map[string]string{
+		"maturity": "provisional",
+		"utility":  "0.8",
+	}, "# Test Learning\nSome knowledge.\n")
+
+	// Run inject with --for=implement (--no-cite only suppresses learnings citations,
+	// not the skill_loaded citation recorded in applyInjectModifiers).
+	_, err := executeCommand("inject", "--for=implement", "--no-cite")
+	if err != nil {
+		t.Fatalf("inject --for=implement failed: %v", err)
+	}
+
+	// Read the citations file and verify a skill_loaded entry exists
+	citationsPath := filepath.Join(tmp, ".agents", "ao", "citations.jsonl")
+	data, err := os.ReadFile(citationsPath)
+	if err != nil {
+		t.Fatalf("failed to read citations file: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	var foundSkillLoaded bool
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		var evt types.CitationEvent
+		if err := json.Unmarshal([]byte(line), &evt); err != nil {
+			continue
+		}
+		if evt.CitationType == "skill_loaded" {
+			foundSkillLoaded = true
+			// RecordCitation canonicalizes the path to absolute; check the suffix.
+			if !strings.HasSuffix(evt.ArtifactPath, "skills/implement/SKILL.md") {
+				t.Errorf("expected ArtifactPath ending with 'skills/implement/SKILL.md', got %q", evt.ArtifactPath)
+			}
+			if evt.Query != "inject --for=implement" {
+				t.Errorf("expected Query 'inject --for=implement', got %q", evt.Query)
+			}
+			if evt.CitedAt.IsZero() {
+				t.Error("expected non-zero CitedAt timestamp")
+			}
+			break
+		}
+	}
+	if !foundSkillLoaded {
+		t.Errorf("expected skill_loaded citation in %s, found none.\nContent: %s", citationsPath, string(data))
+	}
+}

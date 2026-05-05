@@ -387,3 +387,5 @@ For onboarding-style research ("what does this do?", new repo orientation), foll
 - [../shared/references/backend-inline.md](../shared/references/backend-inline.md)
 - [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)
+- [references/codebase-archaeology.md](references/codebase-archaeology.md) — Systematic codebase exploration for onboarding
+- [references/software-research.md](references/software-research.md) — Research tools via source code, GitHub, and web

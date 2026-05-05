@@ -1,0 +1,1 @@
+There is a security vulnerability in how shell commands are constructed. Find the unsafe use of exec.Command and fix it to prevent command injection. Run tests to verify the fix.

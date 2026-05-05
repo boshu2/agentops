@@ -6,8 +6,14 @@ set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0
 
+PHASE_FLAG=""
+if [ -n "${AGENTOPS_INJECT_PHASE:-}" ]; then
+    PHASE_FLAG="--phase ${AGENTOPS_INJECT_PHASE}"
+fi
+
 if command -v ao >/dev/null 2>&1; then
-    ao inject --apply-decay --format markdown --max-tokens 1000 2>/dev/null || {
+    # shellcheck disable=SC2086
+    ao inject --apply-decay --format markdown --max-tokens 1000 ${PHASE_FLAG} 2>/dev/null || {
         ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
         if [ -z "${AO_AGENTS_DIR:-}" ] && [ -f "$ROOT/lib/ao-paths.sh" ]; then
             eval "$(bash "$ROOT/lib/ao-paths.sh" 2>/dev/null)" 2>/dev/null || true

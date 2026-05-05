@@ -984,3 +984,53 @@ func TestPromoteCitedLearnings_MalformedJSON(t *testing.T) {
 		t.Errorf("expected 0 for malformed JSON, got %d", count)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// processQualitySignalFeedback tests
+// ---------------------------------------------------------------------------
+
+// TestProcessQualitySignalFeedback_CountsCorrections verifies that
+// processQualitySignalFeedback correctly counts correction signals for the
+// given session and ignores other signal types.
+func TestProcessQualitySignalFeedback_CountsCorrections(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create .agents/signals/ directory with session-quality.jsonl
+	signalsDir := filepath.Join(tmp, ".agents", "signals")
+	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	lines := []string{
+		`{"timestamp":"2026-05-04T00:00:00Z","signal_type":"correction","detail":"test","session_id":"test-session"}`,
+		`{"timestamp":"2026-05-04T00:00:01Z","signal_type":"repeated_prompt","detail":"test","session_id":"test-session"}`,
+	}
+	content := strings.Join(lines, "\n") + "\n"
+	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// dry-run (mutateArtifacts=false) so we only count, don't apply penalties
+	correctionCount, err := processQualitySignalFeedback(tmp, "test-session", false)
+	if err != nil {
+		t.Fatalf("processQualitySignalFeedback returned error: %v", err)
+	}
+	if correctionCount != 1 {
+		t.Errorf("expected 1 correction, got %d", correctionCount)
+	}
+}
+
+// TestProcessQualitySignalFeedback_MissingFile verifies graceful handling when
+// the session-quality.jsonl signals file does not exist.
+func TestProcessQualitySignalFeedback_MissingFile(t *testing.T) {
+	tmp := t.TempDir()
+	// No .agents/signals/ directory — file does not exist
+
+	correctionCount, err := processQualitySignalFeedback(tmp, "test-session", false)
+	if err != nil {
+		t.Fatalf("expected nil error for missing file, got: %v", err)
+	}
+	if correctionCount != 0 {
+		t.Errorf("expected 0 corrections for missing file, got %d", correctionCount)
+	}
+}

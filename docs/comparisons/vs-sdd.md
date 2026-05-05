@@ -19,6 +19,14 @@ permalink: /comparisons/agentops-vs-sdd
 | **Primary tools** | cc-sdd, spec-kit, SDD_Flow | AgentOps plugin + CLI |
 | **Primary use** | Spec-first development | Ongoing codebase work |
 
+### Three-Layer Comparison
+
+| Product Layer | SDD Tools | AgentOps |
+|---------------|----------:|----------|
+| **Context Compiler** (L1) | Spec files as static context | Specs + learnings + decisions + failures, decay-ranked and injected per phase |
+| **Validation Gates** (L2) | Spec conformance checks | Multi-model councils that validate beyond spec (security, architecture, risk) |
+| **Knowledge Flywheel** (L3) | No learning beyond specs | Failures, retros, and prevention rules compound across sessions |
+
 ---
 
 ## The SDD Landscape

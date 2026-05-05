@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Operational discipline for coding agents. AgentOps is source control for what your agents have learned — a typed, versioned, agent-readable corpus that compounds across sessions.
+description: Context compiler for coding agents. Compile context, gate output, compound knowledge — so every session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -9,9 +9,9 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  Operational discipline for coding agents.<br>
-  Ship reliable code with unreliable agents.<br>
-  <strong>AgentOps is source control for what your agents have learned.</strong>
+  Context compiler for coding agents.<br>
+  Compile context. Gate output. Compound knowledge.<br>
+  <strong>Right context, right window, right time.</strong>
 </p>
 
 <p class="hero-subtagline">
@@ -28,27 +28,24 @@ hide:
 
 ## The Problem
 
-Every agent session starts from zero. Same mistakes. Same rework. Your agent forgets everything between sessions — the landmine in `auth.py`, the two-hour timeout debug, the flag the reviewer always adds.
+Every agent session starts cold. Same mistakes. Same rework. The landmine in `auth.py`, the two-hour timeout debug, the flag the reviewer always catches — none of it carries forward.
 
-**AgentOps solves this** with four operational layers:
+**AgentOps solves this** with three product layers:
 
-| Layer | What changes |
-|-------|--------------|
-| **Bookkeeping** | Learnings, findings, handoffs, and reusable context land in local `.agents/` files |
-| **Validation** | `/pre-mortem`, `/vibe`, and `/council` pressure-test plans and code before they ship |
-| **Primitives** | Skills, hooks, and the `ao` CLI give agents reusable building blocks |
-| **Flows** | `/research`, `/implement`, `/validation`, and `/rpi` compose those primitives end to end |
+| Layer | What it does |
+|-------|-------------|
+| **Context Compiler** | Assembles the right context for the right phase — decay-ranked, token-budgeted, loaded at session start |
+| **Validation Gates** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
+| **Knowledge Flywheel** | Extracts learnings, scores them, and resurfaces them so the next session starts smarter |
 
-Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the repo kept it.
+Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the corpus kept it.
 
 ```mermaid
 flowchart LR
-    S[Session work] --> B[Bookkeeping]
-    S --> V[Validation]
-    B --> F[Knowledge flywheel]
-    V --> F
-    F --> N[Next session]
-    N --> S
+    C[Context Compiler] --> S[Session work]
+    S --> G[Validation Gates]
+    G --> F[Knowledge Flywheel]
+    F --> C
 ```
 
 All state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and commit. Zero telemetry. Zero cloud dependency.
@@ -228,7 +225,7 @@ Read the lineage at [12factoragentops.com](https://12factoragentops.com) — Dev
 
     ---
 
-    System design: bookkeeping, validation, primitives, flows, RPI pipeline.
+    System design: context compiler, validation gates, knowledge flywheel, RPI pipeline.
 
 -   :material-compare: **[Comparisons](comparisons/README.md)**
 

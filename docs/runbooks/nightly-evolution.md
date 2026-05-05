@@ -55,6 +55,32 @@ scripts/nightly-evolution.sh --execute --run-dream --run-evolve --max-cycles 1
 
 ## Scheduling
 
+### Automated Install
+
+Use the install helper to generate, install, and enable the systemd user timer:
+
+```bash
+# Preview what will be installed
+scripts/install-nightly-scheduler.sh --dry-run
+
+# Install in dry-run mode (safe default — no source mutation)
+scripts/install-nightly-scheduler.sh --enable
+
+# Install in execute mode (runs Dream + Evolve nightly)
+scripts/install-nightly-scheduler.sh --execute-mode --enable
+
+# Check status
+scripts/install-nightly-scheduler.sh --status
+
+# Remove
+scripts/install-nightly-scheduler.sh --uninstall
+```
+
+Options: `--schedule`, `--runners`, `--runtime-cmd`, `--max-cycles`. See
+`scripts/install-nightly-scheduler.sh --help` for full reference.
+
+### Manual Install (alternative)
+
 Generate systemd user timer templates:
 
 ```bash
@@ -75,8 +101,15 @@ systemctl --user daemon-reload
 systemctl --user enable --now agentops-nightly-evolution.timer
 ```
 
-The script does not install timers automatically. The host owns wake and
-scheduling semantics.
+### Schedule Design
+
+- Default: `*-*-* 12:15:00 UTC` (daily, after GitHub Nightly settles)
+- `RandomizedDelaySec=10m` prevents thundering herd if multiple repos are scheduled
+- `Persistent=true` catches up on missed runs after sleep/reboot
+- Timer is under `timers.target`, NOT `pipeline.target` (agentops-specific, not pipeline infra)
+- Kill switches (`STOP`, `KILL` files) are checked both via systemd `ConditionPathExists`
+  and in the `ExecStartPre` for defense in depth
+- `TimeoutStartSec=3600` (1h) prevents runaway evolve cycles from blocking the timer
 
 ## Vendor Policy
 

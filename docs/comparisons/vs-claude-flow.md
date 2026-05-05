@@ -23,6 +23,14 @@ permalink: /comparisons/agentops-vs-claude-flow
 | **Downloads** | 500,000+ | — |
 | **Primary use** | Enterprise orchestration | Ongoing codebase work |
 
+### Three-Layer Comparison
+
+| Product Layer | Claude-Flow / Ruflo | AgentOps |
+|---------------|--------------------:|----------|
+| **Context Compiler** (L1) | MCP-based tool routing; no cross-session retrieval | Decay-ranked retrieval, phase-scoped assembly, token-budgeted injection |
+| **Validation Gates** (L2) | Agent-role review (no independent consensus) | Multi-model councils with auditable PASS/WARN/FAIL verdicts |
+| **Knowledge Flywheel** (L3) | No persistent learning between swarm runs | Extract → score → promote → inject; sessions compound automatically |
+
 ---
 
 ## What Claude-Flow Does Well

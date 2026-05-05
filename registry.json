@@ -1,0 +1,2092 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-05T01:38:51Z",
+  "summary": {
+    "skills": 71,
+    "hooks": 41,
+    "knowledge_stores": 46,
+    "job_types": 12,
+    "eval_files": 61,
+    "cli_commands": 144
+  },
+  "surfaces": {
+    "skills": [
+      {
+        "name": "flywheel",
+        "tier": "background",
+        "path": "skills/flywheel/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "forge",
+        "tier": "background",
+        "path": "skills/forge/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "inject",
+        "tier": "background",
+        "path": "skills/inject/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "provenance",
+        "tier": "background",
+        "path": "skills/provenance/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "ratchet",
+        "tier": "background",
+        "path": "skills/ratchet/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "oss-docs",
+        "tier": "contribute",
+        "path": "skills/oss-docs/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "pr-implement",
+        "tier": "contribute",
+        "path": "skills/pr-implement/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "pr-plan",
+        "tier": "contribute",
+        "path": "skills/pr-plan/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "pr-prep",
+        "tier": "contribute",
+        "path": "skills/pr-prep/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "pr-research",
+        "tier": "contribute",
+        "path": "skills/pr-research/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "pr-retro",
+        "tier": "contribute",
+        "path": "skills/pr-retro/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "pr-validate",
+        "tier": "contribute",
+        "path": "skills/pr-validate/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "codex-team",
+        "tier": "cross-vendor",
+        "path": "skills/codex-team/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "converter",
+        "tier": "cross-vendor",
+        "path": "skills/converter/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "openai-docs",
+        "tier": "cross-vendor",
+        "path": "skills/openai-docs/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "autodev",
+        "tier": "execution",
+        "path": "skills/autodev/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "brainstorm",
+        "tier": "execution",
+        "path": "skills/brainstorm/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "bug-hunt",
+        "tier": "execution",
+        "path": "skills/bug-hunt/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 5
+      },
+      {
+        "name": "complexity",
+        "tier": "execution",
+        "path": "skills/complexity/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "crank",
+        "tier": "execution",
+        "path": "skills/crank/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 23
+      },
+      {
+        "name": "deps",
+        "tier": "execution",
+        "path": "skills/deps/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "evolve",
+        "tier": "execution",
+        "path": "skills/evolve/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 12
+      },
+      {
+        "name": "grafana-platform-dashboard",
+        "tier": "execution",
+        "path": "skills/grafana-platform-dashboard/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "implement",
+        "tier": "execution",
+        "path": "skills/implement/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "perf",
+        "tier": "execution",
+        "path": "skills/perf/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "plan",
+        "tier": "execution",
+        "path": "skills/plan/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 13
+      },
+      {
+        "name": "push",
+        "tier": "execution",
+        "path": "skills/push/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "refactor",
+        "tier": "execution",
+        "path": "skills/refactor/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "research",
+        "tier": "execution",
+        "path": "skills/research/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 16
+      },
+      {
+        "name": "reverse-engineer-rpi",
+        "tier": "execution",
+        "path": "skills/reverse-engineer-rpi/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "scaffold",
+        "tier": "execution",
+        "path": "skills/scaffold/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "scenario",
+        "tier": "execution",
+        "path": "skills/scenario/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "scope",
+        "tier": "execution",
+        "path": "skills/scope/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "security-suite",
+        "tier": "execution",
+        "path": "skills/security-suite/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "swarm",
+        "tier": "execution",
+        "path": "skills/swarm/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 14
+      },
+      {
+        "name": "test",
+        "tier": "execution",
+        "path": "skills/test/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "council",
+        "tier": "judgment",
+        "path": "skills/council/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 30
+      },
+      {
+        "name": "design",
+        "tier": "judgment",
+        "path": "skills/design/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "post-mortem",
+        "tier": "judgment",
+        "path": "skills/post-mortem/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 16
+      },
+      {
+        "name": "pre-mortem",
+        "tier": "judgment",
+        "path": "skills/pre-mortem/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 14
+      },
+      {
+        "name": "red-team",
+        "tier": "judgment",
+        "path": "skills/red-team/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "review",
+        "tier": "judgment",
+        "path": "skills/review/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "vibe",
+        "tier": "judgment",
+        "path": "skills/vibe/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 19
+      },
+      {
+        "name": "compile",
+        "tier": "knowledge",
+        "path": "skills/compile/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "harvest",
+        "tier": "knowledge",
+        "path": "skills/harvest/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "knowledge-activation",
+        "tier": "knowledge",
+        "path": "skills/knowledge-activation/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "llm-wiki",
+        "tier": "knowledge",
+        "path": "skills/llm-wiki/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "retro",
+        "tier": "knowledge",
+        "path": "skills/retro/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "trace",
+        "tier": "knowledge",
+        "path": "skills/trace/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "beads",
+        "tier": "library",
+        "path": "skills/beads/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 17
+      },
+      {
+        "name": "shared",
+        "tier": "library",
+        "path": "skills/shared/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 14
+      },
+      {
+        "name": "standards",
+        "tier": "library",
+        "path": "skills/standards/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 21
+      },
+      {
+        "name": "discovery",
+        "tier": "meta",
+        "path": "skills/discovery/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 5
+      },
+      {
+        "name": "heal-skill",
+        "tier": "meta",
+        "path": "skills/heal-skill/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "rpi",
+        "tier": "meta",
+        "path": "skills/rpi/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 12
+      },
+      {
+        "name": "update",
+        "tier": "meta",
+        "path": "skills/update/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "using-agentops",
+        "tier": "meta",
+        "path": "skills/using-agentops/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "validation",
+        "tier": "meta",
+        "path": "skills/validation/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
+        "name": "doc",
+        "tier": "product",
+        "path": "skills/doc/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 5
+      },
+      {
+        "name": "goals",
+        "tier": "product",
+        "path": "skills/goals/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "product",
+        "tier": "product",
+        "path": "skills/product/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "readme",
+        "tier": "product",
+        "path": "skills/readme/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "release",
+        "tier": "product",
+        "path": "skills/release/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 5
+      },
+      {
+        "name": "security",
+        "tier": "product",
+        "path": "skills/security/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "bootstrap",
+        "tier": "session",
+        "path": "skills/bootstrap/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
+        "name": "dream",
+        "tier": "session",
+        "path": "skills/dream/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "handoff",
+        "tier": "session",
+        "path": "skills/handoff/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "quickstart",
+        "tier": "session",
+        "path": "skills/quickstart/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
+        "name": "recover",
+        "tier": "session",
+        "path": "skills/recover/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "status",
+        "tier": "session",
+        "path": "skills/status/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "system-tuning",
+        "tier": "utility",
+        "path": "skills/system-tuning/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      }
+    ],
+    "hooks": [
+      {
+        "name": "config-change-monitor",
+        "lifecycle": "ConfigChange",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/config-change-monitor.sh",
+        "type": "command"
+      },
+      {
+        "name": "context-monitor",
+        "lifecycle": "PostToolUse",
+        "matcher": "all",
+        "timeout": 2,
+        "path": "hooks/context-monitor.sh",
+        "type": "command"
+      },
+      {
+        "name": "edit-audit",
+        "lifecycle": "PostToolUse",
+        "matcher": "Write",
+        "timeout": 3,
+        "path": "hooks/edit-audit.sh",
+        "type": "command"
+      },
+      {
+        "name": "edit-audit",
+        "lifecycle": "PostToolUse",
+        "matcher": "Edit",
+        "timeout": 3,
+        "path": "hooks/edit-audit.sh",
+        "type": "command"
+      },
+      {
+        "name": "go-complexity-precommit",
+        "lifecycle": "PostToolUse",
+        "matcher": "all",
+        "timeout": 10,
+        "path": "hooks/go-complexity-precommit.sh",
+        "type": "command"
+      },
+      {
+        "name": "go-vet-post-edit",
+        "lifecycle": "PostToolUse",
+        "matcher": "all",
+        "timeout": 15,
+        "path": "hooks/go-vet-post-edit.sh",
+        "type": "command"
+      },
+      {
+        "name": "research-loop-detector",
+        "lifecycle": "PostToolUse",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/research-loop-detector.sh",
+        "type": "command"
+      },
+      {
+        "name": "write-time-quality",
+        "lifecycle": "PostToolUse",
+        "matcher": "Write",
+        "timeout": 5,
+        "path": "hooks/write-time-quality.sh",
+        "type": "command"
+      },
+      {
+        "name": "write-time-quality",
+        "lifecycle": "PostToolUse",
+        "matcher": "Edit",
+        "timeout": 5,
+        "path": "hooks/write-time-quality.sh",
+        "type": "command"
+      },
+      {
+        "name": "precompact-snapshot",
+        "lifecycle": "PreCompact",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/precompact-snapshot.sh",
+        "type": "command"
+      },
+      {
+        "name": "codex-parity-warn",
+        "lifecycle": "PreToolUse",
+        "matcher": "Edit",
+        "timeout": 3,
+        "path": "hooks/codex-parity-warn.sh",
+        "type": "command"
+      },
+      {
+        "name": "commit-review-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 10,
+        "path": "hooks/commit-review-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "dangerous-git-guard",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/dangerous-git-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "edit-knowledge-surface",
+        "lifecycle": "PreToolUse",
+        "matcher": "Edit",
+        "timeout": 3,
+        "path": "hooks/edit-knowledge-surface.sh",
+        "type": "command"
+      },
+      {
+        "name": "edit-scope-guard",
+        "lifecycle": "PreToolUse",
+        "matcher": "Edit|Write|Bash",
+        "timeout": 5,
+        "path": "hooks/edit-scope-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "git-worker-guard",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/git-worker-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "go-test-precommit",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 60,
+        "path": "hooks/go-test-precommit.sh",
+        "type": "command"
+      },
+      {
+        "name": "holdout-isolation-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Read",
+        "timeout": 5,
+        "path": "hooks/holdout-isolation-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "holdout-isolation-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Glob",
+        "timeout": 5,
+        "path": "hooks/holdout-isolation-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "holdout-isolation-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Grep",
+        "timeout": 5,
+        "path": "hooks/holdout-isolation-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "holdout-isolation-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/holdout-isolation-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "lead-only-worker-git-guard",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/lead-only-worker-git-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "pre-mortem-gate",
+        "lifecycle": "PreToolUse",
+        "matcher": "Skill",
+        "timeout": 30,
+        "path": "hooks/pre-mortem-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "standards-injector",
+        "lifecycle": "PreToolUse",
+        "matcher": "Edit",
+        "timeout": 3,
+        "path": "hooks/standards-injector.sh",
+        "type": "command"
+      },
+      {
+        "name": "standards-injector",
+        "lifecycle": "PreToolUse",
+        "matcher": "Write",
+        "timeout": 3,
+        "path": "hooks/standards-injector.sh",
+        "type": "command"
+      },
+      {
+        "name": "compile-session-defrag",
+        "lifecycle": "SessionEnd",
+        "matcher": "all",
+        "timeout": 20,
+        "path": "hooks/compile-session-defrag.sh",
+        "type": "command"
+      },
+      {
+        "name": "session-end-maintenance",
+        "lifecycle": "SessionEnd",
+        "matcher": "all",
+        "timeout": 35,
+        "path": "hooks/session-end-maintenance.sh",
+        "type": "command"
+      },
+      {
+        "name": "session-start",
+        "lifecycle": "SessionStart",
+        "matcher": "all",
+        "timeout": 10,
+        "path": "hooks/session-start.sh",
+        "type": "command"
+      },
+      {
+        "name": "ao-flywheel-close",
+        "lifecycle": "Stop",
+        "matcher": "all",
+        "timeout": 15,
+        "path": "hooks/ao-flywheel-close.sh",
+        "type": "command"
+      },
+      {
+        "name": "stop-auto-handoff",
+        "lifecycle": "Stop",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/stop-auto-handoff.sh",
+        "type": "command"
+      },
+      {
+        "name": "stop-team-guard",
+        "lifecycle": "Stop",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/stop-team-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "subagent-stop",
+        "lifecycle": "SubagentStop",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/subagent-stop.sh",
+        "type": "command"
+      },
+      {
+        "name": "task-validation-gate",
+        "lifecycle": "TaskCompleted",
+        "matcher": "all",
+        "timeout": 60,
+        "path": "hooks/task-validation-gate.sh",
+        "type": "command"
+      },
+      {
+        "name": "context-guard",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 3,
+        "path": "hooks/context-guard.sh",
+        "type": "command"
+      },
+      {
+        "name": "factory-router",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 8,
+        "path": "hooks/factory-router.sh",
+        "type": "command"
+      },
+      {
+        "name": "intent-echo",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 3,
+        "path": "hooks/intent-echo.sh",
+        "type": "command"
+      },
+      {
+        "name": "new-user-welcome",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 3,
+        "path": "hooks/new-user-welcome.sh",
+        "type": "command"
+      },
+      {
+        "name": "prompt-nudge",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 5,
+        "path": "hooks/prompt-nudge.sh",
+        "type": "command"
+      },
+      {
+        "name": "quality-signals",
+        "lifecycle": "UserPromptSubmit",
+        "matcher": "all",
+        "timeout": 3,
+        "path": "hooks/quality-signals.sh",
+        "type": "command"
+      },
+      {
+        "name": "worktree-setup",
+        "lifecycle": "WorktreeCreate",
+        "matcher": "all",
+        "timeout": 10,
+        "path": "hooks/worktree-setup.sh",
+        "type": "command"
+      },
+      {
+        "name": "worktree-cleanup",
+        "lifecycle": "WorktreeRemove",
+        "matcher": "all",
+        "timeout": 10,
+        "path": "hooks/worktree-cleanup.sh",
+        "type": "command"
+      }
+    ],
+    "knowledge_stores": [
+      {
+        "name": "ao",
+        "path": ".agents/ao/",
+        "purpose": "CLI runtime state and configuration",
+        "file_count": 347
+      },
+      {
+        "name": "archive",
+        "path": ".agents/archive/",
+        "purpose": "Retired/archived knowledge entries",
+        "file_count": 14388
+      },
+      {
+        "name": "brainstorm",
+        "path": ".agents/brainstorm/",
+        "purpose": "Brainstorm session outputs",
+        "file_count": 9
+      },
+      {
+        "name": "compaction-snapshots",
+        "path": ".agents/compaction-snapshots/",
+        "purpose": "Pre-compaction context snapshots",
+        "file_count": 1
+      },
+      {
+        "name": "compiled",
+        "path": ".agents/compiled/",
+        "purpose": "Compiled wiki output from ao compile",
+        "file_count": 0
+      },
+      {
+        "name": "constraints",
+        "path": ".agents/constraints/",
+        "purpose": "Operational constraints and rules",
+        "file_count": 2
+      },
+      {
+        "name": "council",
+        "path": ".agents/council/",
+        "purpose": "Council validation session outputs",
+        "file_count": 31
+      },
+      {
+        "name": "crank",
+        "path": ".agents/crank/",
+        "purpose": "Crank epic execution state",
+        "file_count": 7
+      },
+      {
+        "name": "daemon",
+        "path": ".agents/daemon/",
+        "purpose": "Daemon runtime state (jobs, ledger)",
+        "file_count": 7
+      },
+      {
+        "name": "defrag",
+        "path": ".agents/defrag/",
+        "purpose": "Defragmentation outputs",
+        "file_count": 11
+      },
+      {
+        "name": "design",
+        "path": ".agents/design/",
+        "purpose": "Design decision records",
+        "file_count": 19
+      },
+      {
+        "name": "discovery",
+        "path": ".agents/discovery/",
+        "purpose": "Discovery phase outputs",
+        "file_count": 0
+      },
+      {
+        "name": "dream-cycle",
+        "path": ".agents/dream-cycle/",
+        "purpose": "Dream cycle runtime state",
+        "file_count": 2
+      },
+      {
+        "name": "evals",
+        "path": ".agents/evals/",
+        "purpose": "Evaluation results and reports",
+        "file_count": 11632
+      },
+      {
+        "name": "evolution",
+        "path": ".agents/evolution/",
+        "purpose": "Evolution loop state",
+        "file_count": 2
+      },
+      {
+        "name": "evolve",
+        "path": ".agents/evolve/",
+        "purpose": "Evolve skill session outputs",
+        "file_count": 189
+      },
+      {
+        "name": "findings",
+        "path": ".agents/findings/",
+        "purpose": "Bug hunt and research findings",
+        "file_count": 69
+      },
+      {
+        "name": "handoff",
+        "path": ".agents/handoff/",
+        "purpose": "Session handoff documents",
+        "file_count": 261
+      },
+      {
+        "name": "handoffs",
+        "path": ".agents/handoffs/",
+        "purpose": "Session handoff archives",
+        "file_count": 16
+      },
+      {
+        "name": "harvest",
+        "path": ".agents/harvest/",
+        "purpose": "Harvest consolidation outputs",
+        "file_count": 3
+      },
+      {
+        "name": "knowledge",
+        "path": ".agents/knowledge/",
+        "purpose": "Promoted knowledge entries",
+        "file_count": 631
+      },
+      {
+        "name": "learnings",
+        "path": ".agents/learnings/",
+        "purpose": "Session learnings and insights",
+        "file_count": 1494
+      },
+      {
+        "name": "ledger",
+        "path": ".agents/ledger/",
+        "purpose": "Append-only event ledger",
+        "file_count": 2
+      },
+      {
+        "name": "mine",
+        "path": ".agents/mine/",
+        "purpose": "Mining extraction outputs",
+        "file_count": 13
+      },
+      {
+        "name": "nightly",
+        "path": ".agents/nightly/",
+        "purpose": "Nightly run outputs and digests",
+        "file_count": 0
+      },
+      {
+        "name": "overnight",
+        "path": ".agents/overnight/",
+        "purpose": "Overnight dream run outputs",
+        "file_count": 2934
+      },
+      {
+        "name": "patterns",
+        "path": ".agents/patterns/",
+        "purpose": "Extracted code and workflow patterns",
+        "file_count": 136
+      },
+      {
+        "name": "planning-rules",
+        "path": ".agents/planning-rules/",
+        "purpose": "Reusable planning constraints",
+        "file_count": 80
+      },
+      {
+        "name": "plans",
+        "path": ".agents/plans/",
+        "purpose": "Plan outputs from /plan skill",
+        "file_count": 35
+      },
+      {
+        "name": "pool",
+        "path": ".agents/pool/",
+        "purpose": "Knowledge pool (ingested raw material)",
+        "file_count": 159
+      },
+      {
+        "name": "pre-mortem-checks",
+        "path": ".agents/pre-mortem-checks/",
+        "purpose": "Pre-mortem validation outputs",
+        "file_count": 71
+      },
+      {
+        "name": "pre-mortems",
+        "path": ".agents/pre-mortems/",
+        "purpose": "Pre-mortem analysis documents",
+        "file_count": 3
+      },
+      {
+        "name": "products",
+        "path": ".agents/products/",
+        "purpose": "Product definition outputs",
+        "file_count": 0
+      },
+      {
+        "name": "releases",
+        "path": ".agents/releases/",
+        "purpose": "Release notes and changelogs",
+        "file_count": 17
+      },
+      {
+        "name": "research",
+        "path": ".agents/research/",
+        "purpose": "Research outputs and reports",
+        "file_count": 71
+      },
+      {
+        "name": "retros",
+        "path": ".agents/retros/",
+        "purpose": "Retrospective session outputs",
+        "file_count": 2
+      },
+      {
+        "name": "rpi",
+        "path": ".agents/rpi/",
+        "purpose": "RPI run state and registry",
+        "file_count": 275
+      },
+      {
+        "name": "sessions",
+        "path": ".agents/sessions/",
+        "purpose": "Session metadata and transcripts",
+        "file_count": 1
+      },
+      {
+        "name": "signals",
+        "path": ".agents/signals/",
+        "purpose": "Quality and context signals",
+        "file_count": 1
+      },
+      {
+        "name": "specs",
+        "path": ".agents/specs/",
+        "purpose": "Technical specifications",
+        "file_count": 0
+      },
+      {
+        "name": "staging",
+        "path": ".agents/staging/",
+        "purpose": "Staging area for promotion",
+        "file_count": 0
+      },
+      {
+        "name": "test",
+        "path": ".agents/test/",
+        "purpose": "Test generation outputs",
+        "file_count": 2
+      },
+      {
+        "name": "tests",
+        "path": ".agents/tests/",
+        "purpose": "Test results and reports",
+        "file_count": 408
+      },
+      {
+        "name": "validation",
+        "path": ".agents/validation/",
+        "purpose": "Validation phase outputs",
+        "file_count": 1
+      },
+      {
+        "name": "vibe-context",
+        "path": ".agents/vibe-context/",
+        "purpose": "Vibe check context cache",
+        "file_count": 1
+      },
+      {
+        "name": "wiki",
+        "path": ".agents/wiki/",
+        "purpose": "Internal wiki entries",
+        "file_count": 8
+      }
+    ],
+    "job_types": [
+      {
+        "job_type": "dream.run",
+        "domain": "dream",
+        "action": "run"
+      },
+      {
+        "job_type": "dream.stage",
+        "domain": "dream",
+        "action": "stage"
+      },
+      {
+        "job_type": "eval.skill-delta",
+        "domain": "eval",
+        "action": "skill-delta"
+      },
+      {
+        "job_type": "eval.suite",
+        "domain": "eval",
+        "action": "suite"
+      },
+      {
+        "job_type": "llmwiki.loop",
+        "domain": "llmwiki",
+        "action": "loop"
+      },
+      {
+        "job_type": "openclaw.snapshot",
+        "domain": "openclaw",
+        "action": "snapshot"
+      },
+      {
+        "job_type": "plans.projection",
+        "domain": "plans",
+        "action": "projection"
+      },
+      {
+        "job_type": "rpi.phase",
+        "domain": "rpi",
+        "action": "phase"
+      },
+      {
+        "job_type": "rpi.run",
+        "domain": "rpi",
+        "action": "run"
+      },
+      {
+        "job_type": "skill.invoke",
+        "domain": "skill",
+        "action": "invoke"
+      },
+      {
+        "job_type": "wiki.build",
+        "domain": "wiki",
+        "action": "build"
+      },
+      {
+        "job_type": "wiki.forge",
+        "domain": "wiki",
+        "action": "forge"
+      }
+    ],
+    "schedules": {
+      "example": [
+        {
+          "name": "nightly-rpi-run",
+          "cron": "0 3 * * *",
+          "job_type": "rpi.run",
+          "timeout": "1h"
+        },
+        {
+          "name": "nightly-dream-run",
+          "cron": "0 2 * * *",
+          "job_type": "dream.run",
+          "timeout": "2h"
+        },
+        {
+          "name": "weekly-wiki-build",
+          "cron": "0 5 * * 0",
+          "job_type": "wiki.build",
+          "timeout": "30m"
+        },
+        {
+          "name": "daily-openclaw-snapshot",
+          "cron": "0 6 * * *",
+          "job_type": "openclaw.snapshot",
+          "timeout": "15m"
+        },
+        {
+          "name": "nightly-eval-suite",
+          "cron": "0 4 * * *",
+          "job_type": "eval.suite",
+          "timeout": "1h"
+        }
+      ],
+      "live": [
+        {
+          "name": "nightly-dream",
+          "cron": "0 3 * * *",
+          "job_type": "dream.run",
+          "timeout": "4h30m"
+        },
+        {
+          "name": "hourly-forge",
+          "cron": "5 * * * *",
+          "job_type": "wiki.forge",
+          "timeout": ""
+        },
+        {
+          "name": "nightly-eval-suite",
+          "cron": "0 4 * * *",
+          "job_type": "eval.suite",
+          "timeout": "1h"
+        },
+        {
+          "name": "weekly-flywheel-health",
+          "cron": "0 6 * * 1",
+          "job_type": "skill.invoke",
+          "timeout": "15m"
+        },
+        {
+          "name": "weekly-deps-audit",
+          "cron": "0 7 * * 2",
+          "job_type": "skill.invoke",
+          "timeout": "30m"
+        },
+        {
+          "name": "weekly-security-scan",
+          "cron": "0 7 * * 3",
+          "job_type": "skill.invoke",
+          "timeout": "30m"
+        },
+        {
+          "name": "weekly-evolve-loop",
+          "cron": "0 2 * * 6",
+          "job_type": "rpi.run",
+          "timeout": "2h"
+        }
+      ]
+    },
+    "evals": [
+      {
+        "suite": "agentops-core",
+        "path": "evals/agentops-core/",
+        "eval_count": 61,
+        "evals": [
+          "beads-issue-tracking",
+          "cli-command-surface-matrix",
+          "cli-contracts",
+          "cli-onboarding-health",
+          "context-comprehension",
+          "context-packet-ab-wave0",
+          "contract-schema-governance",
+          "converter-update-runtime-parity",
+          "core-surfaces",
+          "curation-feedback-governance",
+          "distribution-install-update",
+          "docs-release-governance",
+          "dream-software-factory-operator",
+          "efficiency-budgets",
+          "eval-runner-engine-control-plane",
+          "explicit-skill-prompts",
+          "finding-prevention-governance",
+          "goals-autodev-evolve",
+          "goals-management-lifecycle",
+          "headless-runtime-skills",
+          "hidden-cli-internals",
+          "holdout-isolation-behavior",
+          "hook-context-value",
+          "hook-gates",
+          "hook-lifecycle-behavior",
+          "hook-manifest-runtime-contracts",
+          "knowledge-flywheel-ingestion",
+          "lid-primitives-demo",
+          "mock-runtime-contracts",
+          "model-upgrade-readiness",
+          "operator-workflow-skills",
+          "optimization-dependency-governance",
+          "parallel-execution-evidence",
+          "planning-premortem-gates",
+          "pre-push-gate-governance",
+          "push-worktree-closeout",
+          "ratchet-lifecycle-ledger",
+          "red-team-adversarial-validation",
+          "release-security-gates",
+          "remote-compute-contracts",
+          "retag-release-governance",
+          "retrieval-brokerage-citations",
+          "retrieval-contracts",
+          "retrieval-quality-gates",
+          "rpi-behavior",
+          "rpi-control-plane-orchestration",
+          "rpi-scorecard",
+          "runtime-contracts",
+          "runtime-smoke-matrix",
+          "scenario-contracts",
+          "security-suite-behavioral-gates",
+          "security-toolchain-governance",
+          "session-continuity-context",
+          "skill-catalog",
+          "skill-change-scorecard",
+          "skill-quality-gates",
+          "standards-governance",
+          "status-quickstart-dashboard",
+          "supporting-cli-utilities",
+          "workbench-agent-v1",
+          "workbench-behavioral-v1"
+        ]
+      },
+      {
+        "suite": "workbench",
+        "path": "evals/workbench/",
+        "eval_count": 0,
+        "evals": []
+      }
+    ],
+    "cli_commands": [
+      {
+        "name": "agentopsd",
+        "path": "cli/cmd/ao/agentopsd.go"
+      },
+      {
+        "name": "agents",
+        "path": "cli/cmd/ao/agents.go"
+      },
+      {
+        "name": "agents_doctor",
+        "path": "cli/cmd/ao/agents_doctor.go"
+      },
+      {
+        "name": "agents_lint",
+        "path": "cli/cmd/ao/agents_lint.go"
+      },
+      {
+        "name": "autodev",
+        "path": "cli/cmd/ao/autodev.go"
+      },
+      {
+        "name": "badge",
+        "path": "cli/cmd/ao/badge.go"
+      },
+      {
+        "name": "batch_forge",
+        "path": "cli/cmd/ao/batch_forge.go"
+      },
+      {
+        "name": "batch_promote",
+        "path": "cli/cmd/ao/batch_promote.go"
+      },
+      {
+        "name": "beads",
+        "path": "cli/cmd/ao/beads.go"
+      },
+      {
+        "name": "beads_audit_cluster",
+        "path": "cli/cmd/ao/beads_audit_cluster.go"
+      },
+      {
+        "name": "codex",
+        "path": "cli/cmd/ao/codex.go"
+      },
+      {
+        "name": "compile",
+        "path": "cli/cmd/ao/compile.go"
+      },
+      {
+        "name": "completion",
+        "path": "cli/cmd/ao/completion.go"
+      },
+      {
+        "name": "completion_values",
+        "path": "cli/cmd/ao/completion_values.go"
+      },
+      {
+        "name": "config",
+        "path": "cli/cmd/ao/config.go"
+      },
+      {
+        "name": "constraint",
+        "path": "cli/cmd/ao/constraint.go"
+      },
+      {
+        "name": "context",
+        "path": "cli/cmd/ao/context.go"
+      },
+      {
+        "name": "context_assemble",
+        "path": "cli/cmd/ao/context_assemble.go"
+      },
+      {
+        "name": "context_explain",
+        "path": "cli/cmd/ao/context_explain.go"
+      },
+      {
+        "name": "context_packet",
+        "path": "cli/cmd/ao/context_packet.go"
+      },
+      {
+        "name": "context_packet_status",
+        "path": "cli/cmd/ao/context_packet_status.go"
+      },
+      {
+        "name": "contradict",
+        "path": "cli/cmd/ao/contradict.go"
+      },
+      {
+        "name": "corpus",
+        "path": "cli/cmd/ao/corpus.go"
+      },
+      {
+        "name": "curate",
+        "path": "cli/cmd/ao/curate.go"
+      },
+      {
+        "name": "daemon_jobs",
+        "path": "cli/cmd/ao/daemon_jobs.go"
+      },
+      {
+        "name": "daemon_soak",
+        "path": "cli/cmd/ao/daemon_soak.go"
+      },
+      {
+        "name": "dedup",
+        "path": "cli/cmd/ao/dedup.go"
+      },
+      {
+        "name": "defrag",
+        "path": "cli/cmd/ao/defrag.go"
+      },
+      {
+        "name": "demo",
+        "path": "cli/cmd/ao/demo.go"
+      },
+      {
+        "name": "doctor",
+        "path": "cli/cmd/ao/doctor.go"
+      },
+      {
+        "name": "eval",
+        "path": "cli/cmd/ao/eval.go"
+      },
+      {
+        "name": "eval_cleanup",
+        "path": "cli/cmd/ao/eval_cleanup.go"
+      },
+      {
+        "name": "eval_suite",
+        "path": "cli/cmd/ao/eval_suite.go"
+      },
+      {
+        "name": "eval_task",
+        "path": "cli/cmd/ao/eval_task.go"
+      },
+      {
+        "name": "evolve",
+        "path": "cli/cmd/ao/evolve.go"
+      },
+      {
+        "name": "extract",
+        "path": "cli/cmd/ao/extract.go"
+      },
+      {
+        "name": "factory",
+        "path": "cli/cmd/ao/factory.go"
+      },
+      {
+        "name": "factory_pilot",
+        "path": "cli/cmd/ao/factory_pilot.go"
+      },
+      {
+        "name": "feedback",
+        "path": "cli/cmd/ao/feedback.go"
+      },
+      {
+        "name": "feedback_loop",
+        "path": "cli/cmd/ao/feedback_loop.go"
+      },
+      {
+        "name": "findings",
+        "path": "cli/cmd/ao/findings.go"
+      },
+      {
+        "name": "flywheel_close_loop",
+        "path": "cli/cmd/ao/flywheel_close_loop.go"
+      },
+      {
+        "name": "flywheel_gate",
+        "path": "cli/cmd/ao/flywheel_gate.go"
+      },
+      {
+        "name": "forge",
+        "path": "cli/cmd/ao/forge.go"
+      },
+      {
+        "name": "gate",
+        "path": "cli/cmd/ao/gate.go"
+      },
+      {
+        "name": "gc_bridge",
+        "path": "cli/cmd/ao/gc_bridge.go"
+      },
+      {
+        "name": "gc_events",
+        "path": "cli/cmd/ao/gc_events.go"
+      },
+      {
+        "name": "goals_add",
+        "path": "cli/cmd/ao/goals_add.go"
+      },
+      {
+        "name": "goals_drift",
+        "path": "cli/cmd/ao/goals_drift.go"
+      },
+      {
+        "name": "goals_export",
+        "path": "cli/cmd/ao/goals_export.go"
+      },
+      {
+        "name": "goals_history",
+        "path": "cli/cmd/ao/goals_history.go"
+      },
+      {
+        "name": "goals_init",
+        "path": "cli/cmd/ao/goals_init.go"
+      },
+      {
+        "name": "goals_measure",
+        "path": "cli/cmd/ao/goals_measure.go"
+      },
+      {
+        "name": "goals_meta",
+        "path": "cli/cmd/ao/goals_meta.go"
+      },
+      {
+        "name": "goals_migrate",
+        "path": "cli/cmd/ao/goals_migrate.go"
+      },
+      {
+        "name": "goals_prune",
+        "path": "cli/cmd/ao/goals_prune.go"
+      },
+      {
+        "name": "goals_steer",
+        "path": "cli/cmd/ao/goals_steer.go"
+      },
+      {
+        "name": "goals_validate",
+        "path": "cli/cmd/ao/goals_validate.go"
+      },
+      {
+        "name": "handoff",
+        "path": "cli/cmd/ao/handoff.go"
+      },
+      {
+        "name": "harvest",
+        "path": "cli/cmd/ao/harvest.go"
+      },
+      {
+        "name": "hooks",
+        "path": "cli/cmd/ao/hooks.go"
+      },
+      {
+        "name": "hooks_run",
+        "path": "cli/cmd/ao/hooks_run.go"
+      },
+      {
+        "name": "index",
+        "path": "cli/cmd/ao/index.go"
+      },
+      {
+        "name": "init",
+        "path": "cli/cmd/ao/init.go"
+      },
+      {
+        "name": "inject",
+        "path": "cli/cmd/ao/inject.go"
+      },
+      {
+        "name": "knowledge",
+        "path": "cli/cmd/ao/knowledge.go"
+      },
+      {
+        "name": "lookup",
+        "path": "cli/cmd/ao/lookup.go"
+      },
+      {
+        "name": "maturity",
+        "path": "cli/cmd/ao/maturity.go"
+      },
+      {
+        "name": "memory",
+        "path": "cli/cmd/ao/memory.go"
+      },
+      {
+        "name": "metrics_baseline",
+        "path": "cli/cmd/ao/metrics_baseline.go"
+      },
+      {
+        "name": "metrics_cite",
+        "path": "cli/cmd/ao/metrics_cite.go"
+      },
+      {
+        "name": "metrics_cite_report",
+        "path": "cli/cmd/ao/metrics_cite_report.go"
+      },
+      {
+        "name": "metrics_flywheel",
+        "path": "cli/cmd/ao/metrics_flywheel.go"
+      },
+      {
+        "name": "metrics_health",
+        "path": "cli/cmd/ao/metrics_health.go"
+      },
+      {
+        "name": "metrics_nudge",
+        "path": "cli/cmd/ao/metrics_nudge.go"
+      },
+      {
+        "name": "metrics_report",
+        "path": "cli/cmd/ao/metrics_report.go"
+      },
+      {
+        "name": "mind",
+        "path": "cli/cmd/ao/mind.go"
+      },
+      {
+        "name": "mine",
+        "path": "cli/cmd/ao/mine.go"
+      },
+      {
+        "name": "notebook",
+        "path": "cli/cmd/ao/notebook.go"
+      },
+      {
+        "name": "overnight",
+        "path": "cli/cmd/ao/overnight.go"
+      },
+      {
+        "name": "overnight_curator",
+        "path": "cli/cmd/ao/overnight_curator.go"
+      },
+      {
+        "name": "overnight_setup",
+        "path": "cli/cmd/ao/overnight_setup.go"
+      },
+      {
+        "name": "plans",
+        "path": "cli/cmd/ao/plans.go"
+      },
+      {
+        "name": "pool",
+        "path": "cli/cmd/ao/pool.go"
+      },
+      {
+        "name": "pool_ingest",
+        "path": "cli/cmd/ao/pool_ingest.go"
+      },
+      {
+        "name": "pool_migrate_legacy",
+        "path": "cli/cmd/ao/pool_migrate_legacy.go"
+      },
+      {
+        "name": "pool_reindex",
+        "path": "cli/cmd/ao/pool_reindex.go"
+      },
+      {
+        "name": "promotion_helpers",
+        "path": "cli/cmd/ao/promotion_helpers.go"
+      },
+      {
+        "name": "quickstart",
+        "path": "cli/cmd/ao/quickstart.go"
+      },
+      {
+        "name": "ratchet_check",
+        "path": "cli/cmd/ao/ratchet_check.go"
+      },
+      {
+        "name": "ratchet_find",
+        "path": "cli/cmd/ao/ratchet_find.go"
+      },
+      {
+        "name": "ratchet_migrate",
+        "path": "cli/cmd/ao/ratchet_migrate.go"
+      },
+      {
+        "name": "ratchet_next",
+        "path": "cli/cmd/ao/ratchet_next.go"
+      },
+      {
+        "name": "ratchet_promote",
+        "path": "cli/cmd/ao/ratchet_promote.go"
+      },
+      {
+        "name": "ratchet_record",
+        "path": "cli/cmd/ao/ratchet_record.go"
+      },
+      {
+        "name": "ratchet_skip",
+        "path": "cli/cmd/ao/ratchet_skip.go"
+      },
+      {
+        "name": "ratchet_spec",
+        "path": "cli/cmd/ao/ratchet_spec.go"
+      },
+      {
+        "name": "ratchet_status",
+        "path": "cli/cmd/ao/ratchet_status.go"
+      },
+      {
+        "name": "ratchet_trace",
+        "path": "cli/cmd/ao/ratchet_trace.go"
+      },
+      {
+        "name": "ratchet_validate",
+        "path": "cli/cmd/ao/ratchet_validate.go"
+      },
+      {
+        "name": "registry",
+        "path": "cli/cmd/ao/registry.go"
+      },
+      {
+        "name": "retrieval_bench",
+        "path": "cli/cmd/ao/retrieval_bench.go"
+      },
+      {
+        "name": "root",
+        "path": "cli/cmd/ao/root.go"
+      },
+      {
+        "name": "rpi",
+        "path": "cli/cmd/ao/rpi.go"
+      },
+      {
+        "name": "rpi_c2_commands",
+        "path": "cli/cmd/ao/rpi_c2_commands.go"
+      },
+      {
+        "name": "rpi_cancel",
+        "path": "cli/cmd/ao/rpi_cancel.go"
+      },
+      {
+        "name": "rpi_cleanup",
+        "path": "cli/cmd/ao/rpi_cleanup.go"
+      },
+      {
+        "name": "rpi_loop",
+        "path": "cli/cmd/ao/rpi_loop.go"
+      },
+      {
+        "name": "rpi_loop_supervisor",
+        "path": "cli/cmd/ao/rpi_loop_supervisor.go"
+      },
+      {
+        "name": "rpi_mark_probed",
+        "path": "cli/cmd/ao/rpi_mark_probed.go"
+      },
+      {
+        "name": "rpi_nudge",
+        "path": "cli/cmd/ao/rpi_nudge.go"
+      },
+      {
+        "name": "rpi_parallel",
+        "path": "cli/cmd/ao/rpi_parallel.go"
+      },
+      {
+        "name": "rpi_phased",
+        "path": "cli/cmd/ao/rpi_phased.go"
+      },
+      {
+        "name": "rpi_phased_context",
+        "path": "cli/cmd/ao/rpi_phased_context.go"
+      },
+      {
+        "name": "rpi_phased_discovery",
+        "path": "cli/cmd/ao/rpi_phased_discovery.go"
+      },
+      {
+        "name": "rpi_phased_gc",
+        "path": "cli/cmd/ao/rpi_phased_gc.go"
+      },
+      {
+        "name": "rpi_phased_processing",
+        "path": "cli/cmd/ao/rpi_phased_processing.go"
+      },
+      {
+        "name": "rpi_phased_setup",
+        "path": "cli/cmd/ao/rpi_phased_setup.go"
+      },
+      {
+        "name": "rpi_phased_stream",
+        "path": "cli/cmd/ao/rpi_phased_stream.go"
+      },
+      {
+        "name": "rpi_serve",
+        "path": "cli/cmd/ao/rpi_serve.go"
+      },
+      {
+        "name": "rpi_status",
+        "path": "cli/cmd/ao/rpi_status.go"
+      },
+      {
+        "name": "rpi_stream",
+        "path": "cli/cmd/ao/rpi_stream.go"
+      },
+      {
+        "name": "rpi_verify",
+        "path": "cli/cmd/ao/rpi_verify.go"
+      },
+      {
+        "name": "scenario_add",
+        "path": "cli/cmd/ao/scenario_add.go"
+      },
+      {
+        "name": "scenario_init",
+        "path": "cli/cmd/ao/scenario_init.go"
+      },
+      {
+        "name": "scenario_list",
+        "path": "cli/cmd/ao/scenario_list.go"
+      },
+      {
+        "name": "scenario_validate",
+        "path": "cli/cmd/ao/scenario_validate.go"
+      },
+      {
+        "name": "schedule",
+        "path": "cli/cmd/ao/schedule.go"
+      },
+      {
+        "name": "scope",
+        "path": "cli/cmd/ao/scope.go"
+      },
+      {
+        "name": "search",
+        "path": "cli/cmd/ao/search.go"
+      },
+      {
+        "name": "seed",
+        "path": "cli/cmd/ao/seed.go"
+      },
+      {
+        "name": "session_close",
+        "path": "cli/cmd/ao/session_close.go"
+      },
+      {
+        "name": "session_outcome",
+        "path": "cli/cmd/ao/session_outcome.go"
+      },
+      {
+        "name": "sessions",
+        "path": "cli/cmd/ao/sessions.go"
+      },
+      {
+        "name": "skills",
+        "path": "cli/cmd/ao/skills.go"
+      },
+      {
+        "name": "status",
+        "path": "cli/cmd/ao/status.go"
+      },
+      {
+        "name": "store",
+        "path": "cli/cmd/ao/store.go"
+      },
+      {
+        "name": "task_sync",
+        "path": "cli/cmd/ao/task_sync.go"
+      },
+      {
+        "name": "temper",
+        "path": "cli/cmd/ao/temper.go"
+      },
+      {
+        "name": "trace",
+        "path": "cli/cmd/ao/trace.go"
+      },
+      {
+        "name": "version",
+        "path": "cli/cmd/ao/version.go"
+      },
+      {
+        "name": "vibe_check",
+        "path": "cli/cmd/ao/vibe_check.go"
+      },
+      {
+        "name": "watch",
+        "path": "cli/cmd/ao/watch.go"
+      },
+      {
+        "name": "worktree",
+        "path": "cli/cmd/ao/worktree.go"
+      }
+    ]
+  },
+  "cadence_recommendations": [
+    {
+      "name": "dream-cycle",
+      "cadence": "nightly",
+      "cron": "0 3 * * *",
+      "job_type": "dream.run",
+      "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
+      "skills": [
+        "dream",
+        "harvest",
+        "forge",
+        "compile",
+        "inject"
+      ]
+    },
+    {
+      "name": "knowledge-forge",
+      "cadence": "hourly",
+      "cron": "5 * * * *",
+      "job_type": "wiki.forge",
+      "description": "Mine session transcripts into learnings",
+      "skills": [
+        "forge"
+      ]
+    },
+    {
+      "name": "eval-suite",
+      "cadence": "nightly",
+      "cron": "0 4 * * *",
+      "job_type": "eval.suite",
+      "description": "Run behavioral eval suite against skill changes",
+      "skills": [
+        "scenario"
+      ]
+    },
+    {
+      "name": "wiki-build",
+      "cadence": "weekly",
+      "cron": "0 5 * * 0",
+      "job_type": "wiki.build",
+      "description": "Full .agents/compiled rebuild",
+      "skills": [
+        "compile"
+      ]
+    },
+    {
+      "name": "flywheel-health",
+      "cadence": "weekly",
+      "cron": "0 6 * * 1",
+      "job_type": null,
+      "description": "Knowledge flywheel staleness and pool depth check",
+      "skills": [
+        "flywheel"
+      ]
+    },
+    {
+      "name": "deps-audit",
+      "cadence": "weekly",
+      "cron": "0 7 * * 2",
+      "job_type": null,
+      "description": "Dependency vulnerability and license audit",
+      "skills": [
+        "deps"
+      ]
+    },
+    {
+      "name": "security-scan",
+      "cadence": "weekly",
+      "cron": "0 7 * * 3",
+      "job_type": null,
+      "description": "Repository security scan",
+      "skills": [
+        "security"
+      ]
+    },
+    {
+      "name": "evolve-loop",
+      "cadence": "weekly",
+      "cron": "0 2 * * 6",
+      "job_type": "rpi.run",
+      "description": "Autonomous fitness-scored improvement cycle",
+      "skills": [
+        "evolve",
+        "rpi"
+      ]
+    },
+    {
+      "name": "pre-push-gate",
+      "cadence": "per-push",
+      "cron": null,
+      "job_type": null,
+      "description": "CI validation before push to main",
+      "skills": []
+    },
+    {
+      "name": "session-inject",
+      "cadence": "per-session",
+      "cron": null,
+      "job_type": null,
+      "description": "Context injection at session start",
+      "skills": [
+        "inject",
+        "recover"
+      ]
+    }
+  ]
+}

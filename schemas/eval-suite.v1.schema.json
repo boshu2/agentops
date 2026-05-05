@@ -272,7 +272,8 @@
         "runtime_compatibility",
         "efficiency",
         "safety",
-        "learning_closure"
+        "learning_closure",
+        "context_comprehension"
       ]
     },
     "scoring_dimension": {

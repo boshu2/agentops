@@ -303,7 +303,9 @@ After user confirms:
 Read `references/release-notes.md` for the full release notes format, quality bar, condensing rules, and examples. Key points:
 
 - Release notes are **not the changelog** — they're user-facing, plain-English, no jargon
-- Structure: Highlights → What's New → All Changes (condensed) → link to full CHANGELOG
+- Structure: Highlights → Upgrade Notes → At a Glance → Product Areas → Known Issues → link to full CHANGELOG
+- Only touched product areas appear, in canonical order. Use the coverage workflow in `references/release-notes.md` to map changed paths to component sections before writing prose.
+- Use stable per-component action labels: Added, Changed, Refactored, Fixed, Deprecated, Removed, Security, Docs.
 - Write to `docs/releases/YYYY-MM-DD-v<version>-notes.md`
 
 **CRITICAL:** Release notes MUST be written and staged BEFORE the release commit. GoReleaser checks out the tagged commit — if notes are committed after the tag, CI won't find them and falls back to raw changelog extraction.

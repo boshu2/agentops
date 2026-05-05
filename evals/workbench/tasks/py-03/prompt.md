@@ -1,0 +1,1 @@
+The /items endpoint returns all items without pagination. Add pagination support by accepting page and size query parameters. Return a response object with items (the page slice), total (total item count), page, and size fields. Write a test named test_list_items_pagination that verifies the behavior. Run tests to verify.

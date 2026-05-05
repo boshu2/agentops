@@ -149,14 +149,14 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   "PRODUCT.md convergence skill count"
 
 patch_file "$REPO_ROOT/PRODUCT.md" \
-  '^### 1[.] Skills \([0-9]+ skills across 4 runtimes\)$' \
-  "s|^### 1[.] Skills \\([0-9]+ skills across 4 runtimes\\)$|### 1. Skills (${TOTAL} skills across 4 runtimes)|" \
-  "PRODUCT.md skills layer heading"
+  '[0-9]+ skills — reusable context packages' \
+  "s|[0-9]+ skills — reusable context packages|${TOTAL} skills — reusable context packages|" \
+  "PRODUCT.md context compiler skill count"
 
 patch_file "$REPO_ROOT/PRODUCT.md" \
-  '[[:space:]][0-9]+ skills, [0-9]+ runtime hook event sections,' \
-  "s|([[:space:]])[0-9]+ skills, [0-9]+ runtime hook event sections,|\\1${TOTAL} skills, ${HOOK_EVENT_SECTIONS} runtime hook event sections,|" \
-  "PRODUCT.md zero-setup value proposition"
+  '[0-9]+ lifecycle hooks — context loads' \
+  "s|[0-9]+ lifecycle hooks — context loads|${HOOK_EVENT_SECTIONS} lifecycle hooks — context loads|" \
+  "PRODUCT.md context compiler hook count"
 
 patch_file "$REPO_ROOT/PRODUCT.md" \
   'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \
