@@ -7,6 +7,63 @@ on:
     branches: [main]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      skills: ${{ steps.filter.outputs.skills }}
+      hooks: ${{ steps.filter.outputs.hooks }}
+      docs: ${{ steps.filter.outputs.docs }}
+      eval: ${{ steps.filter.outputs.eval }}
+      codex: ${{ steps.filter.outputs.codex }}
+      shell: ${{ steps.filter.outputs.shell }}
+      ci: ${{ steps.filter.outputs.ci }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+      learning: ${{ steps.filter.outputs.learning }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - 'cli/**'
+              - 'go.mod'
+              - 'go.sum'
+            skills:
+              - 'skills/**'
+              - 'skills-codex/**'
+              - 'skills-codex-overrides/**'
+              - 'tests/skills/**'
+            hooks:
+              - 'hooks/**'
+              - 'lib/**'
+              - 'cli/embedded/**'
+            docs:
+              - 'docs/**'
+              - 'README.md'
+              - 'CHANGELOG.md'
+              - 'PRODUCT.md'
+              - 'SKILL-TIERS.md'
+            eval:
+              - 'evals/**'
+              - 'cli/internal/eval/**'
+              - 'cli/cmd/ao/eval*'
+              - 'schemas/eval-*'
+            codex:
+              - 'skills-codex/**'
+              - 'skills-codex-overrides/**'
+            shell:
+              - '**/*.sh'
+              - 'scripts/**'
+            ci:
+              - '.github/**'
+            contracts:
+              - 'schemas/**'
+              - 'docs/contracts/**'
+            learning:
+              - '.agents/learnings/**'
+
   doc-release-gate:
     runs-on: ubuntu-latest
     steps:
@@ -54,6 +111,8 @@ jobs:
           ./scripts/check-pre-push-gate-wired.sh --dry-run-smoke
 
   agentops-eval-baseline-audit:
+    needs: [changes]
+    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     name: agentops-eval-baseline-audit (required)
     runs-on: ubuntu-latest
     steps:
@@ -138,6 +197,8 @@ jobs:
   # bundle checks removed — skills-codex/ is manually maintained. Audit drift with
   # scripts/audit-codex-parity.sh.
   validate-codex-runtime-sections:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -148,6 +209,8 @@ jobs:
           ./scripts/validate-codex-runtime-sections.sh
 
   validate-codex-generated-artifacts:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -158,6 +221,8 @@ jobs:
           ./scripts/validate-codex-generated-artifacts.sh --scope head
 
   validate-codex-backbone-prompts:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -168,6 +233,8 @@ jobs:
           ./scripts/validate-codex-backbone-prompts.sh
 
   validate-codex-override-coverage:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -178,6 +245,8 @@ jobs:
           ./scripts/validate-codex-override-coverage.sh
 
   validate-codex-rpi-contract:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -187,6 +256,8 @@ jobs:
           bash scripts/validate-codex-rpi-contract.sh
 
   validate-codex-lifecycle-guards:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -280,6 +351,8 @@ jobs:
           scripts/test-agentops-contract-canaries.sh
 
   eval-workbench-verify:
+    needs: [changes]
+    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     name: eval-workbench-verify (required)
     runs-on: ubuntu-latest
     steps:
@@ -309,6 +382,8 @@ jobs:
           bash scripts/check-eval-workbench.sh
 
   agentops-eval-advisory:
+    needs: [changes]
+    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     name: agentops-eval-advisory (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -344,6 +419,8 @@ jobs:
           ./scripts/eval-agentops.sh --fast
 
   eval-skill-delta:
+    needs: [changes]
+    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     name: eval-skill-delta (structural gate)
     runs-on: ubuntu-latest
     steps:
@@ -779,6 +856,8 @@ jobs:
         run: AGENTOPS_RETRIEVAL_SMOKE_AO=/tmp/ao-test bash scripts/retrieval-quality-smoke.sh
 
   go-build:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -943,6 +1022,8 @@ jobs:
         run: .\tests\windows\test-windows-smoke.ps1
 
   cli-integration:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -1055,6 +1136,8 @@ jobs:
           bash tests/skills/run-all.sh
 
   learning-coherence:
+    needs: [changes]
+    if: needs.changes.outputs.learning == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -1122,7 +1205,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1174,47 +1257,10 @@ jobs:
           echo "check-test-staleness: ${{ needs.check-test-staleness.result }}"
           echo "swarm-evidence: ${{ needs.swarm-evidence.result }}"
 
-          if [[ "${{ needs.doc-release-gate.result }}" != "success" ]] || \
-             [[ "${{ needs.smoke-test.result }}" != "success" ]] || \
-             [[ "${{ needs.hook-preflight.result }}" != "success" ]] || \
-             [[ "${{ needs.pre-push-gate-wired.result }}" != "success" ]] || \
-             [[ "${{ needs.agentops-eval-baseline-audit.result }}" != "success" ]] || \
-             [[ "${{ needs.standards-injector-completeness.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-hooks-doc-parity.result }}" != "success" ]] || \
-             [[ "${{ needs.hook-output-schema-lint.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-ci-policy-parity.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-runtime-sections.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-generated-artifacts.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-backbone-prompts.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-override-coverage.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-rpi-contract.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-codex-lifecycle-guards.result }}" != "success" ]] || \
-             [[ "${{ needs.validate-headless-runtime-skills.result }}" != "success" ]] || \
-             [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
-             [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
-             [[ "${{ needs.registry-check.result }}" != "success" ]] || \
-             [[ "${{ needs.agentops-contract-canaries.result }}" != "success" ]] || \
-             [[ "${{ needs.eval-workbench-verify.result }}" != "success" ]] || \
-             [[ "${{ needs.eval-skill-delta.result }}" != "success" ]] || \
-             [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
-             [[ "${{ needs.markdownlint.result }}" != "success" ]] || \
-             [[ "${{ needs.security-scan.result }}" != "success" ]] || \
-             [[ "${{ needs.skill-integrity.result }}" != "success" ]] || \
-             [[ "${{ needs.skill-schema.result }}" != "success" ]] || \
-             [[ "${{ needs.skill-dependency-check.result }}" != "success" ]] || \
-             [[ "${{ needs.contract-compatibility-gate.result }}" != "success" ]] || \
-             [[ "${{ needs.memrl-health.result }}" != "success" ]] || \
-             [[ "${{ needs.plugin-load-test.result }}" != "success" ]] || \
-             [[ "${{ needs.go-build.result }}" != "success" ]] || \
-             [[ "${{ needs.windows-smoke.result }}" != "success" ]] || \
-             [[ "${{ needs.cli-integration.result }}" != "success" ]] || \
-             [[ "${{ needs.json-flag-consistency.result }}" != "success" ]] || \
-             [[ "${{ needs.file-manifest-overlap.result }}" != "success" ]] || \
-             [[ "${{ needs.skill-lint.result }}" != "success" ]] || \
-             [[ "${{ needs.learning-coherence.result }}" != "success" ]] || \
-             [[ "${{ needs.bats-tests.result }}" != "success" ]]; then
+          # Fail only on actual failures — skipped jobs (path-filtered) are OK
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo ""
-            echo "❌ Some checks failed"
+            echo "❌ Some checks failed (failure detected)"
             exit 1
           fi
 
