@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-05T00:57:00Z",
+  "generated_at": "2026-05-05T00:58:06Z",
   "summary": {
     "skills": 71,
     "hooks": 41,
@@ -1017,7 +1017,7 @@
         "name": "handoff",
         "path": ".agents/handoff/",
         "purpose": "Session handoff documents",
-        "file_count": 253
+        "file_count": 254
       },
       {
         "name": "handoffs",

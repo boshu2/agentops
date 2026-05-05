@@ -195,10 +195,7 @@ build_job_types() {
 
   # Extract JobType constants from Go source
   grep -E 'JobType\w+\s+JobType\s*=\s*"' "$types_file" | while read -r line; do
-    local const_name value
-    const_name=$(echo "$line" | sed -E 's/.*\s(JobType\w+)\s+JobType.*/\1/')
-    value=$(echo "$line" | sed -E 's/.*"([^"]+)".*/\1/')
-    echo "$value"
+    echo "$line" | sed -E 's/.*"([^"]+)".*/\1/'
   done | jq -R -s 'split("\n") | map(select(length > 0)) | map({
     job_type: .,
     domain: (split(".")[0]),
