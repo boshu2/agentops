@@ -146,3 +146,6 @@ packs/
 !/.agents/goals/**/attempts.jsonl
 !/.agents/findings/
 !/.agents/findings/registry.jsonl
+
+# AgentOps session artifacts
+.agents/
