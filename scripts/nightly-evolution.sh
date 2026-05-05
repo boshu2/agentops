@@ -28,6 +28,7 @@ Options:
   --gate-policy <policy>    Evolve gate policy (default: required).
   --landing-policy <policy> Evolve landing policy (default: off).
   --work-order <path>       Work order JSON for --execute --run-evolve preflight.
+  --landing-branch <name>   Override the computed nightly branch for evolve landing.
   --schedule <calendar>     systemd OnCalendar value (default: *-*-* 12:15:00 UTC).
   --no-require-ai-sane      Do not block execute mode when bushido-box ai-sane fails.
   -h, --help                Show this help.
@@ -182,6 +183,8 @@ preflight_evolve() {
   local gh_evidence="$4"
   local main_ci_status="$5"
   local worktree_status="$6"
+  local landing_policy="$7"
+  local landing_branch="$8"
 
   if [[ -z "$wo" || ! -f "$wo" ]]; then
     die "execute+run-evolve requires --work-order; none provided or file not found"
@@ -223,6 +226,21 @@ preflight_evolve() {
 
   if ! command -v "$runtime_cmd" >/dev/null 2>&1; then
     die "execute+run-evolve requires runtime command: $runtime_cmd"
+  fi
+
+  case "$landing_policy" in
+    off|manual_pr) ;;
+    *) die "execute+run-evolve blocked: landing policy '$landing_policy' not allowed for pilot; use off or manual_pr" ;;
+  esac
+
+  if [[ -n "$landing_branch" ]]; then
+    local default_branch
+    default_branch="$(git -C "$repo" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)"
+    case "$landing_branch" in
+      main|master|"$default_branch")
+        die "execute+run-evolve blocked: landing on '$landing_branch' not allowed for pilot; use a nightly/* branch"
+        ;;
+    esac
   fi
 }
 
@@ -325,6 +343,7 @@ MAX_CYCLES="1"
 GATE_POLICY="required"
 LANDING_POLICY="off"
 WORK_ORDER=""
+LANDING_BRANCH_OVERRIDE=""
 SCHEDULE="*-*-* 12:15:00 UTC"
 
 while [[ $# -gt 0 ]]; do
@@ -393,6 +412,10 @@ while [[ $# -gt 0 ]]; do
       WORK_ORDER="${2:-}"
       shift 2
       ;;
+    --landing-branch)
+      LANDING_BRANCH_OVERRIDE="${2:-}"
+      shift 2
+      ;;
     --schedule)
       SCHEDULE="${2:-}"
       shift 2
@@ -453,7 +476,11 @@ fi
 
 log "run_id=$RUN_ID mode=$MODE output_dir=$OUTPUT_DIR"
 
-BRANCH="$(compute_branch "$RUN_DATE")"
+if [[ -n "$LANDING_BRANCH_OVERRIDE" ]]; then
+  BRANCH="$LANDING_BRANCH_OVERRIDE"
+else
+  BRANCH="$(compute_branch "$RUN_DATE")"
+fi
 RUNTIME_TSV="$OUTPUT_DIR/runtime-inventory.tsv"
 split_csv "$RUNNERS" RUNNER_ARRAY
 write_runtime_inventory "$RUNTIME_TSV" "${RUNNER_ARRAY[@]}" "$RUNTIME_CMD" gh bd
@@ -582,7 +609,7 @@ if [[ "$RUN_EVOLVE" == true ]]; then
   if [[ "$EXECUTE" != true ]]; then
     EVOLVE_STATUS="planned"
   else
-    preflight_evolve "$WORK_ORDER" "$REPO_ROOT" "$RUNTIME_CMD" "$GH_EVIDENCE" "$MAIN_CI_STATUS" "$WORKTREE_STATUS"
+    preflight_evolve "$WORK_ORDER" "$REPO_ROOT" "$RUNTIME_CMD" "$GH_EVIDENCE" "$MAIN_CI_STATUS" "$WORKTREE_STATUS" "$LANDING_POLICY" "$BRANCH"
     export AGENTOPS_RPI_RUNTIME_MODE="$RUNTIME_MODE"
     export AGENTOPS_RPI_RUNTIME_COMMAND="$RUNTIME_CMD"
     if [[ -n "$BRANCH" ]]; then

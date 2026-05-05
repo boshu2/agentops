@@ -703,6 +703,71 @@ STUB
     [[ "$output" == *"requires runtime command: nonexistent-runtime-xyz"* ]]
 }
 
+@test "execute+run-evolve refuses sync-push landing policy" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy sync_push
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"landing policy 'sync_push' not allowed"* ]]
+}
+
+@test "execute+run-evolve refuses main branch landing" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy off \
+        --landing-branch main
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"landing on 'main' not allowed"* ]]
+}
+
+@test "execute+run-evolve passes non-main generated branch with landing-policy off" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-02 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy off \
+        --runtime-cmd codex
+
+    [ "$status" -eq 0 ]
+    jq -e '.phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
+}
+
 @test "execute+run-dream allowed without work order" {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
