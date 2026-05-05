@@ -1,0 +1,36 @@
+{
+  "computed_at": "2026-05-05T06:15:00Z",
+  "open_prs_against_main": [
+    {"number": 228, "head": "codex/dark-factory-rpi-20260504", "label_set": ["docs","cli","tests"], "title": "Dark Factory daemon-native admission and local pilot handoff"},
+    {"number": 227, "head": "dependabot/go_modules/cli/go-minor-patch-77b3277776", "label_set": ["cli"], "title": "Dependabot: pgregory.net/rapid 1.2.0 -> 1.3.0"},
+    {"number": 226, "head": "claude/zen-cerf-fu1gD", "label_set": ["skills","docs","cli","tests"], "title": "Nightly 2026-05-04 - 4 productive cycles"}
+  ],
+  "blocked_goals": [
+    {
+      "goal_id": "flywheel-lifecycle",
+      "weight": 6,
+      "blocked_by_pr": 226,
+      "canonical_fix_files": ["scripts/check-flywheel-lifecycle.sh"],
+      "note": "PR #226 fixes Stage 5 sparse-corpus crash"
+    },
+    {
+      "goal_id": "go-complexity-ceiling",
+      "weight": 6,
+      "blocked_by_pr": 226,
+      "canonical_fix_files": ["cli/internal/daemon/routing_policy.go"],
+      "note": "PR #226 extracts validateRoutingLaneYieldGate / Authority helpers"
+    },
+    {
+      "goal_id": "dream-end-user-coverage",
+      "weight": 3,
+      "blocked_by_pr": 226,
+      "canonical_fix_files": ["scripts/check-schedule-example.sh", "docs/templates/schedule.yaml.example"],
+      "note": "PR #226 promotes example to docs/templates/ tracked location"
+    }
+  ],
+  "unblocked_failing_goals": [
+    {"goal_id": "compile-no-oscillation", "weight": 4, "tags": ["runtime-artifact"], "note": "runtime-artifact - gitignored, expected to flip every run, excluded from headline"},
+    {"goal_id": "compile-freshness", "weight": 4, "tags": ["runtime-artifact"], "note": "runtime-artifact - gitignored, expected to flip every run, excluded from headline"},
+    {"goal_id": "flywheel-compounding", "weight": 3, "tags": ["long-cycle", "corpus-state"], "note": "quarantined-style, dormant corpus; needs SKIP precondition f-2026-04-30-002"}
+  ]
+}

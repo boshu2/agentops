@@ -48,31 +48,60 @@ EOF
     [[ "$output" == *"compounding"* ]]
 }
 
-@test "FAIL with σ=0 AND ρ=0 emits dormant-corpus hint" {
-    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003}'
+@test "SKIP with σ=0 AND ρ=0 AND citations_this_period=0 (dormant precondition)" {
+    # f-2026-04-30-002 path: fully dormant corpus has no signal to evaluate,
+    # so the gate returns exit 77 (autotools skip) and the goals runner
+    # classifies as `skip`, not `fail`. Locks the new SKIP-by-precondition
+    # contract introduced alongside SkipExitCode in the goals runner.
+    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"metrics":{"citations_this_period":0,"total_artifacts":0,"learnings_created":0}}'
     run env AO_BIN="$FAKE_AO" bash "$SCRIPT"
+    [ "$status" -eq 77 ]
+    [[ "$output" == *"SKIP"* ]]
+    [[ "$output" == *"σ=0 ρ=0"* ]]
+    [[ "$output" == *"dormant"* ]]
+    [[ "$output" == *"f-2026-04-30-002"* ]]
+    [[ "$output" == *"exit 77"* ]]
+    # SKIP path must NOT mention the high-confidence remediation (different cause)
+    [[ "$output" != *"applied|reference"* ]]
+}
+
+@test "SKIP with σ=0 ρ=0 + dormant payload still surfaces metrics + period" {
+    # Even under SKIP, operators should see at-a-glance what the empty
+    # corpus state looks like (artifact counts, period). Locks both the
+    # exit-77 contract and the diagnostic content.
+    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"golden_signals":{"trend_verdict":"stagnant","concentration_verdict":"dormant","overall_verdict":"accumulating"},"metrics":{"citations_this_period":0,"total_artifacts":47,"learnings_created":65,"period_start":"2026-04-23T00:00:00Z","period_end":"2026-04-30T00:00:00Z"}}'
+    run env AO_BIN="$FAKE_AO" bash "$SCRIPT"
+    [ "$status" -eq 77 ]
+    [[ "$output" == *"SKIP"* ]]
+    [[ "$output" == *"citations_this_period=0"* ]]
+    [[ "$output" == *"total_artifacts=47"* ]]
+    [[ "$output" == *"learnings_created=65"* ]]
+    [[ "$output" == *"period=[2026-04-23T00:00:00Z .. 2026-04-30T00:00:00Z]"* ]]
+    [[ "$output" == *"f-2026-04-30-002"* ]]
+}
+
+@test "SKIP precondition can be disabled via FLYWHEEL_SKIP_DORMANT=0" {
+    # Dev override: when an operator wants to see the FAIL diagnostic for
+    # debugging, the SKIP path is opt-out via FLYWHEEL_SKIP_DORMANT=0.
+    # Falls back to the inconsistent-index FAIL hint (citations=0 ON the
+    # dormant payload after the override; index-inconsistent path).
+    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"metrics":{"citations_this_period":0,"total_artifacts":0,"learnings_created":0}}'
+    run env AO_BIN="$FAKE_AO" FLYWHEEL_SKIP_DORMANT=0 bash "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"* ]]
     [[ "$output" == *"σ=0 ρ=0"* ]]
-    [[ "$output" == *"dormant"* ]]
-    # σ=0 ρ=0 hint must NOT mention only the high-confidence remediation
-    [[ "$output" != *"applied|reference"* ]]
-    # σ=0 ρ=0 must surface multi-session-bound diagnostic (per the
-    # 2026-04-30 quarantine-strengthening cycle).
-    [[ "$output" == *"multi-session-bound"* ]]
 }
 
-@test "FAIL with σ=0 AND ρ=0 surfaces verdict + period block when payload provides them" {
-    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"golden_signals":{"trend_verdict":"stagnant","concentration_verdict":"dormant","overall_verdict":"accumulating"},"metrics":{"citations_this_period":0,"total_artifacts":47,"learnings_created":65,"period_start":"2026-04-23T00:00:00Z","period_end":"2026-04-30T00:00:00Z"}}'
+@test "FAIL with σ=0 AND ρ=0 BUT citations_this_period>0 (index-inconsistent)" {
+    # When σ and ρ are zero but citations exist in the period, the index
+    # is inconsistent — that's a real fail, not dormancy. Stays exit 1
+    # with the index-inconsistent hint.
+    write_fake_ao '{"escape_velocity_compounding":false,"sigma":0,"rho":0,"sigma_rho":0,"delta":0.003,"metrics":{"citations_this_period":12,"total_artifacts":47,"learnings_created":65}}'
     run env AO_BIN="$FAKE_AO" bash "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"trend_verdict=stagnant"* ]]
-    [[ "$output" == *"concentration_verdict=dormant"* ]]
-    [[ "$output" == *"overall_verdict=accumulating"* ]]
-    [[ "$output" == *"citations_this_period=0"* ]]
-    [[ "$output" == *"total_artifacts=47"* ]]
-    [[ "$output" == *"period=[2026-04-23T00:00:00Z .. 2026-04-30T00:00:00Z]"* ]]
-    [[ "$output" == *"f-2026-04-30-002.md"* ]]
+    [[ "$output" == *"FAIL"* ]]
+    [[ "$output" == *"citation index inconsistent"* ]]
+    [[ "$output" == *"ao flywheel reindex"* ]]
 }
 
 @test "FAIL with ρ=0 only (σ>0) emits high-confidence-citation hint" {

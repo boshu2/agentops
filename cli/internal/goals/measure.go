@@ -19,26 +19,48 @@ import (
 
 // Measurement captures the result of running a single goal's check command.
 type Measurement struct {
-	GoalID    string   `json:"goal_id"`
-	Result    string   `json:"result"` // "pass", "fail", "skip"
-	Value     *float64 `json:"value,omitempty"`
-	Threshold *float64 `json:"threshold,omitempty"`
-	Duration  float64  `json:"duration_s"`
-	Output    string   `json:"output,omitempty"`
-	Weight    int      `json:"weight"`
-	Tags      []string `json:"tags,omitempty"`
+	GoalID       string   `json:"goal_id"`
+	Result       string   `json:"result"` // "pass", "fail", "skip"
+	Value        *float64 `json:"value,omitempty"`
+	Threshold    *float64 `json:"threshold,omitempty"`
+	Duration     float64  `json:"duration_s"`
+	Output       string   `json:"output,omitempty"`
+	Weight       int      `json:"weight"`
+	Tags         []string `json:"tags,omitempty"`
+	AffectsFiles []string `json:"affects_files,omitempty"`
 }
+
+// SkipExitCode is the conventional exit code a gate script returns to
+// signal "skip" (precondition not met, not a failure). 77 follows the
+// autotools/automake convention so existing skip-aware shell scripts
+// drop in unchanged. The flywheel-compounding gate uses this to skip
+// when the corpus is dormant (zero citation signal in the window) —
+// see GOALS.md Directive #4 / finding f-2026-04-30-002.
+const SkipExitCode = 77
 
 // classifyResult maps command exit status to a result string.
 func classifyResult(ctxErr, cmdErr error) string {
 	switch {
 	case errors.Is(ctxErr, context.DeadlineExceeded), errors.Is(ctxErr, context.Canceled):
 		return resultSkip
-	case cmdErr != nil:
-		return resultFail
-	default:
+	case cmdErr == nil:
 		return resultPass
+	case isSkipExit(cmdErr):
+		return resultSkip
+	default:
+		return resultFail
 	}
+}
+
+// isSkipExit reports whether cmdErr is an *exec.ExitError whose exit code
+// matches SkipExitCode. Any other error type or exit code returns false so
+// genuine failures still classify as fail.
+func isSkipExit(cmdErr error) bool {
+	var exitErr *exec.ExitError
+	if !errors.As(cmdErr, &exitErr) {
+		return false
+	}
+	return exitErr.ExitCode() == SkipExitCode
 }
 
 // truncateOutput caps output at 500 runes by keeping the first 200 and last
@@ -114,7 +136,7 @@ func MeasureOne(goal Goal, timeout time.Duration) Measurement {
 // MeasureOneContext runs a single goal's check command under both a caller
 // context and a per-goal timeout.
 func MeasureOneContext(parent context.Context, goal Goal, timeout time.Duration) Measurement {
-	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags}
+	m := Measurement{GoalID: goal.ID, Weight: goal.Weight, Tags: goal.Tags, AffectsFiles: goal.AffectsFiles}
 	if parent == nil {
 		parent = context.Background()
 	}
@@ -189,11 +211,12 @@ func skippedMeasurement(goal Goal, err error) Measurement {
 		output += ": " + err.Error()
 	}
 	return Measurement{
-		GoalID: goal.ID,
-		Result: resultSkip,
-		Output: output,
-		Weight: goal.Weight,
-		Tags:   goal.Tags,
+		GoalID:       goal.ID,
+		Result:       resultSkip,
+		Output:       output,
+		Weight:       goal.Weight,
+		Tags:         goal.Tags,
+		AffectsFiles: goal.AffectsFiles,
 	}
 }
 
@@ -321,27 +344,76 @@ func acquireGoalSlot(ctx context.Context, sem chan struct{}) bool {
 }
 
 // computeSummary aggregates pass/fail/skip counts and weighted score.
+// Reports both the headline (raw) score and the code-driven score (raw
+// minus runtime-artifact-tagged goals). See SnapshotSummary doc for why
+// runtime-artifact goals are tabulated separately.
 func computeSummary(measurements []Measurement) SnapshotSummary {
 	var summary SnapshotSummary
 	summary.Total = len(measurements)
 	var weightedPass, weightedTotal int
+	var codePass, codeTotal int
 	for _, m := range measurements {
+		isRA := isRuntimeArtifact(m.Tags)
 		switch m.Result {
 		case resultPass:
 			summary.Passing++
 			weightedPass += m.Weight
 			weightedTotal += m.Weight
+			if isRA {
+				summary.RuntimeArtifactTotal++
+				summary.RuntimeArtifactPassing++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenPassing++
+				codePass += m.Weight
+				codeTotal += m.Weight
+			}
 		case resultFail:
 			summary.Failing++
 			weightedTotal += m.Weight
+			if isRA {
+				summary.RuntimeArtifactTotal++
+				summary.RuntimeArtifactFailing++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenFailing++
+				codeTotal += m.Weight
+			}
 		case resultSkip:
 			summary.Skipped++
+			if isRA {
+				summary.RuntimeArtifactTotal++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenSkipped++
+			}
 		}
 	}
 	if weightedTotal > 0 {
 		summary.Score = float64(weightedPass) / float64(weightedTotal) * 100
 	}
+	if codeTotal > 0 {
+		summary.CodeDrivenScore = float64(codePass) / float64(codeTotal) * 100
+	}
 	return summary
+}
+
+// runtimeArtifactTag is the canonical tag name used by goals.yaml /
+// GOALS.md to mark gates whose green path depends on a gitignored
+// runtime artifact (e.g. .agents/defrag/latest.json). The nightly
+// routine excludes these from headline fitness comparison because
+// their flips don't propagate across environments.
+const runtimeArtifactTag = "runtime-artifact"
+
+// isRuntimeArtifact reports whether tags contain the runtime-artifact
+// classifier (case-insensitive, leading/trailing whitespace ignored).
+func isRuntimeArtifact(tags []string) bool {
+	for _, t := range tags {
+		if strings.EqualFold(strings.TrimSpace(t), runtimeArtifactTag) {
+			return true
+		}
+	}
+	return false
 }
 
 const gitSHATimeout = 2 * time.Second

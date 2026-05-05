@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -508,4 +509,130 @@ func TestTrackChild_ConcurrentAccess(t *testing.T) {
 		delete(childGroups.pids, pid)
 	}
 	childGroups.mu.Unlock()
+}
+
+func TestMeasureOne_Skip_ExitCode77(t *testing.T) {
+	// When a gate exits 77 (autotools skip convention), the goals runner
+	// must classify the measurement as `skip`, not `fail`. This is the
+	// quarantine-by-precondition path used by check-flywheel-compounding.sh
+	// when the corpus is dormant — failing under "no signal" is a
+	// misclassification that artificially drags fitness scores.
+	g := Goal{ID: "skip77", Check: "exit 77", Weight: 3}
+	m := MeasureOne(g, time.Second)
+	if m.Result != resultSkip {
+		t.Fatalf("Result = %q, want %q for exit 77", m.Result, resultSkip)
+	}
+	if m.GoalID != "skip77" {
+		t.Errorf("GoalID = %q, want skip77", m.GoalID)
+	}
+	if m.Weight != 3 {
+		t.Errorf("Weight = %d, want 3", m.Weight)
+	}
+}
+
+func TestMeasureOne_FailOnOtherNonZeroExitCodes(t *testing.T) {
+	// Non-77 non-zero exits must still classify as fail. SKIP must be
+	// opt-in via the explicit autotools convention, not a default for
+	// every gate that returns >0.
+	for _, code := range []int{1, 2, 7, 76, 78, 99} {
+		t.Run("exit_"+strconv.Itoa(code), func(t *testing.T) {
+			g := Goal{ID: "g", Check: "exit " + strconv.Itoa(code), Weight: 1}
+			m := MeasureOne(g, time.Second)
+			if m.Result != resultFail {
+				t.Errorf("exit %d: Result = %q, want %q", code, m.Result, resultFail)
+			}
+		})
+	}
+}
+
+func TestIsSkipExit(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+		{name: "non-exit-error", err: errors.New("boom"), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isSkipExit(tt.err); got != tt.want {
+				t.Errorf("isSkipExit(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestComputeSummary_CodeDrivenAndRuntimeArtifactSplit(t *testing.T) {
+	// Mixed corpus: two code-driven (one pass, one fail), two
+	// runtime-artifact (one pass, one fail), one skip in each lane.
+	summary := computeSummary([]Measurement{
+		{Result: resultPass, Weight: 6}, // code-driven pass
+		{Result: resultFail, Weight: 8}, // code-driven fail
+		{Result: resultSkip, Weight: 3}, // code-driven skip
+		{Result: resultPass, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA pass
+		{Result: resultFail, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA fail
+	})
+
+	// Headline (raw): 2 pass (6+4) / 2 fail (8+4) / 1 skip (3, excluded);
+	// weighted 10 / 22 = 45.45%
+	if summary.Total != 5 || summary.Passing != 2 || summary.Failing != 2 || summary.Skipped != 1 {
+		t.Fatalf("headline counts: %+v", summary)
+	}
+	wantScore := 100.0 * 10 / 22
+	if got := summary.Score; got < wantScore-0.01 || got > wantScore+0.01 {
+		t.Errorf("Score = %f, want ~%f", got, wantScore)
+	}
+
+	// Code-driven: 1 pass / 1 fail / 1 skip; weighted 6 / 14 = 42.86%
+	if summary.CodeDrivenTotal != 3 || summary.CodeDrivenPassing != 1 || summary.CodeDrivenFailing != 1 || summary.CodeDrivenSkipped != 1 {
+		t.Fatalf("code-driven counts: %+v", summary)
+	}
+	wantCode := 100.0 * 6 / 14
+	if got := summary.CodeDrivenScore; got < wantCode-0.01 || got > wantCode+0.01 {
+		t.Errorf("CodeDrivenScore = %f, want ~%f", got, wantCode)
+	}
+
+	// Runtime-artifact: 1 pass / 1 fail / 0 skip
+	if summary.RuntimeArtifactTotal != 2 || summary.RuntimeArtifactPassing != 1 || summary.RuntimeArtifactFailing != 1 {
+		t.Errorf("runtime-artifact counts: %+v", summary)
+	}
+}
+
+func TestComputeSummary_AllRuntimeArtifact_CodeDrivenScoreZeroDenominator(t *testing.T) {
+	// When every goal is runtime-artifact, the code-driven slice is empty.
+	// CodeDrivenTotal=0 must keep CodeDrivenScore at 0 (no NaN, no panic).
+	summary := computeSummary([]Measurement{
+		{Result: resultPass, Weight: 4, Tags: []string{"runtime-artifact"}},
+		{Result: resultFail, Weight: 4, Tags: []string{"runtime-artifact"}},
+	})
+	if summary.CodeDrivenTotal != 0 {
+		t.Errorf("CodeDrivenTotal = %d, want 0", summary.CodeDrivenTotal)
+	}
+	if summary.CodeDrivenScore != 0 {
+		t.Errorf("CodeDrivenScore = %f, want 0 (empty denominator)", summary.CodeDrivenScore)
+	}
+}
+
+func TestIsRuntimeArtifact(t *testing.T) {
+	tests := []struct {
+		name string
+		tags []string
+		want bool
+	}{
+		{name: "nil_tags", tags: nil, want: false},
+		{name: "empty_tags", tags: []string{}, want: false},
+		{name: "exact_match", tags: []string{"runtime-artifact"}, want: true},
+		{name: "case_insensitive", tags: []string{"Runtime-Artifact"}, want: true},
+		{name: "with_whitespace", tags: []string{"  runtime-artifact  "}, want: true},
+		{name: "alongside_other_tags", tags: []string{"long-cycle", "runtime-artifact"}, want: true},
+		{name: "no_match", tags: []string{"long-cycle", "corpus-state"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRuntimeArtifact(tt.tags); got != tt.want {
+				t.Errorf("isRuntimeArtifact(%v) = %v, want %v", tt.tags, got, tt.want)
+			}
+		})
+	}
 }
