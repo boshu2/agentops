@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-05T00:58:06Z",
+  "generated_at": "2026-05-05T01:38:51Z",
   "summary": {
     "skills": 71,
     "hooks": 41,
     "knowledge_stores": 46,
-    "job_types": 11,
+    "job_types": 12,
     "eval_files": 61,
-    "cli_commands": 143
+    "cli_commands": 144
   },
   "surfaces": {
     "skills": [
@@ -241,7 +241,7 @@
         "path": "skills/research/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 16
       },
       {
         "name": "reverse-engineer-rpi",
@@ -344,8 +344,8 @@
         "tier": "judgment",
         "path": "skills/review/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 4
       },
       {
         "name": "vibe",
@@ -409,7 +409,7 @@
         "path": "skills/beads/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 13
+        "reference_count": 17
       },
       {
         "name": "shared",
@@ -481,7 +481,7 @@
         "path": "skills/doc/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 5
       },
       {
         "name": "goals",
@@ -915,7 +915,7 @@
         "name": "ao",
         "path": ".agents/ao/",
         "purpose": "CLI runtime state and configuration",
-        "file_count": 341
+        "file_count": 347
       },
       {
         "name": "archive",
@@ -951,7 +951,7 @@
         "name": "council",
         "path": ".agents/council/",
         "purpose": "Council validation session outputs",
-        "file_count": 30
+        "file_count": 31
       },
       {
         "name": "crank",
@@ -975,7 +975,7 @@
         "name": "design",
         "path": ".agents/design/",
         "purpose": "Design decision records",
-        "file_count": 18
+        "file_count": 19
       },
       {
         "name": "discovery",
@@ -1017,7 +1017,7 @@
         "name": "handoff",
         "path": ".agents/handoff/",
         "purpose": "Session handoff documents",
-        "file_count": 254
+        "file_count": 261
       },
       {
         "name": "handoffs",
@@ -1035,13 +1035,13 @@
         "name": "knowledge",
         "path": ".agents/knowledge/",
         "purpose": "Promoted knowledge entries",
-        "file_count": 620
+        "file_count": 631
       },
       {
         "name": "learnings",
         "path": ".agents/learnings/",
         "purpose": "Session learnings and insights",
-        "file_count": 1413
+        "file_count": 1494
       },
       {
         "name": "ledger",
@@ -1065,7 +1065,7 @@
         "name": "overnight",
         "path": ".agents/overnight/",
         "purpose": "Overnight dream run outputs",
-        "file_count": 4761
+        "file_count": 2934
       },
       {
         "name": "patterns",
@@ -1083,7 +1083,7 @@
         "name": "plans",
         "path": ".agents/plans/",
         "purpose": "Plan outputs from /plan skill",
-        "file_count": 34
+        "file_count": 35
       },
       {
         "name": "pool",
@@ -1119,7 +1119,7 @@
         "name": "research",
         "path": ".agents/research/",
         "purpose": "Research outputs and reports",
-        "file_count": 70
+        "file_count": 71
       },
       {
         "name": "retros",
@@ -1235,6 +1235,11 @@
         "action": "run"
       },
       {
+        "job_type": "skill.invoke",
+        "domain": "skill",
+        "action": "invoke"
+      },
+      {
         "job_type": "wiki.build",
         "domain": "wiki",
         "action": "build"
@@ -1290,6 +1295,36 @@
           "cron": "5 * * * *",
           "job_type": "wiki.forge",
           "timeout": ""
+        },
+        {
+          "name": "nightly-eval-suite",
+          "cron": "0 4 * * *",
+          "job_type": "eval.suite",
+          "timeout": "1h"
+        },
+        {
+          "name": "weekly-flywheel-health",
+          "cron": "0 6 * * 1",
+          "job_type": "skill.invoke",
+          "timeout": "15m"
+        },
+        {
+          "name": "weekly-deps-audit",
+          "cron": "0 7 * * 2",
+          "job_type": "skill.invoke",
+          "timeout": "30m"
+        },
+        {
+          "name": "weekly-security-scan",
+          "cron": "0 7 * * 3",
+          "job_type": "skill.invoke",
+          "timeout": "30m"
+        },
+        {
+          "name": "weekly-evolve-loop",
+          "cron": "0 2 * * 6",
+          "job_type": "rpi.run",
+          "timeout": "2h"
         }
       ]
     },
@@ -1769,6 +1804,10 @@
       {
         "name": "ratchet_validate",
         "path": "cli/cmd/ao/ratchet_validate.go"
+      },
+      {
+        "name": "registry",
+        "path": "cli/cmd/ao/registry.go"
       },
       {
         "name": "retrieval_bench",

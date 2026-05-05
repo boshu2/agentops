@@ -3450,6 +3450,33 @@ ao help [command] [flags]
 
 ---
 
+### `ao registry`
+
+Query the unified registry
+
+```
+ao registry [command]
+```
+
+**Subcommands:**
+
+#### `ao registry list`
+
+List registry entries
+
+```
+ao registry list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for list
+      --type string   Filter by surface type (skills, hooks, stores, jobs, evals, cli, cadence)
+```
+
+---
+
 ### `ao scenario`
 
 Create, list, and validate holdout scenarios stored in .agents/holdout/.

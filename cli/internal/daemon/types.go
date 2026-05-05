@@ -24,6 +24,7 @@ const (
 	JobTypeLLMWikiLoop      JobType = "llmwiki.loop"
 	JobTypeEvalSuite        JobType = "eval.suite"
 	JobTypeEvalSkillDelta   JobType = "eval.skill-delta"
+	JobTypeSkillInvoke      JobType = "skill.invoke"
 )
 
 // RecurringJobTemplate is a schedule entry that materializes a Job on each cron tick.
@@ -372,6 +373,7 @@ var jobTypeSet = map[string]struct{}{
 	string(JobTypeLLMWikiLoop):      {},
 	string(JobTypeEvalSuite):        {},
 	string(JobTypeEvalSkillDelta):   {},
+	string(JobTypeSkillInvoke):      {},
 }
 
 var eventTypeSet = map[string]struct{}{

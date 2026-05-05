@@ -232,6 +232,19 @@ jobs:
           chmod +x scripts/generate-cli-reference.sh
           ./scripts/generate-cli-reference.sh --check
 
+  registry-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Verify registry.json is up to date
+        run: |
+          chmod +x scripts/generate-registry.sh
+          ./scripts/generate-registry.sh --check
+
   agentops-contract-canaries:
     name: agentops-contract-canaries (required)
     runs-on: ubuntu-latest
@@ -1109,7 +1122,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1134,6 +1147,7 @@ jobs:
           echo "validate-headless-runtime-skills: ${{ needs.validate-headless-runtime-skills.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
+          echo "registry-check: ${{ needs.registry-check.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
@@ -1178,6 +1192,7 @@ jobs:
              [[ "${{ needs.validate-headless-runtime-skills.result }}" != "success" ]] || \
              [[ "${{ needs.embedded-sync.result }}" != "success" ]] || \
              [[ "${{ needs.cli-docs-parity.result }}" != "success" ]] || \
+             [[ "${{ needs.registry-check.result }}" != "success" ]] || \
              [[ "${{ needs.agentops-contract-canaries.result }}" != "success" ]] || \
              [[ "${{ needs.eval-workbench-verify.result }}" != "success" ]] || \
              [[ "${{ needs.eval-skill-delta.result }}" != "success" ]] || \
