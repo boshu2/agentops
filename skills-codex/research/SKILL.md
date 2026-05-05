@@ -97,10 +97,7 @@ Before launching the explore agent, detect which backend is available:
 Record the selected backend — it will be included in the research output document for traceability.
 
 **Read the matching backend reference for concrete tool call examples:**
-- Shared Claude feature contract → `skills/shared/references/claude-code-latest-features.md`
-- Local mirrored contract for runtime-local reads → `references/claude-code-latest-features.md`
 - Codex → `references/backend-codex-subagents.md`
-- Claude Native Teams → `references/backend-claude-teams.md`
 - Background Tasks → `references/backend-background-tasks.md`
 - Inline → `references/backend-inline.md`
 
@@ -368,10 +365,8 @@ For onboarding-style research ("what does this do?", new repo orientation), foll
 - [references/iterative-retrieval.md](references/iterative-retrieval.md)
 - [references/deep-research-mcp.md](references/deep-research-mcp.md)
 - [references/backend-background-tasks.md](references/backend-background-tasks.md)
-- [references/backend-claude-teams.md](references/backend-claude-teams.md)
 - [references/backend-codex-subagents.md](references/backend-codex-subagents.md)
 - [references/backend-inline.md](references/backend-inline.md)
-- [references/claude-code-latest-features.md](references/claude-code-latest-features.md)
 - [references/context-discovery.md](references/context-discovery.md)
 - [references/data-flow-from-entry-points.md](references/data-flow-from-entry-points.md)
 - [references/document-template.md](references/document-template.md)
@@ -380,10 +375,8 @@ For onboarding-style research ("what does this do?", new repo orientation), foll
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
 - [references/vibe-methodology.md](references/vibe-methodology.md)
 - [../shared/references/backend-background-tasks.md](../shared/references/backend-background-tasks.md)
-- [../shared/references/backend-claude-teams.md](../shared/references/backend-claude-teams.md)
 - [../shared/references/backend-codex-subagents.md](../shared/references/backend-codex-subagents.md)
 - [../shared/references/backend-inline.md](../shared/references/backend-inline.md)
-- [../shared/references/claude-code-latest-features.md](../shared/references/claude-code-latest-features.md)
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)
 - [references/codebase-archaeology.md](references/codebase-archaeology.md) — Systematic codebase exploration for onboarding
 - [references/software-research.md](references/software-research.md) — Research tools via source code, GitHub, and web

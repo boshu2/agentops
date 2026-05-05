@@ -1,9 +1,6 @@
 ---
 name: beads
-description: >-
-  Track issues with bd/br, triage with bv graph analysis, convert plans to beads,
-  and manage dependencies. Use when tracking tasks, prioritizing work, finding
-  bottlenecks, creating task graphs from plans, or syncing issues to git via JSONL.
+description: 'Track issues with bd/br, triage with bv, and convert plans to beads.'
 skill_api_version: 1
 context:
   window: fork
