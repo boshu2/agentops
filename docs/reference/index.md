@@ -7,6 +7,7 @@ Three groups worth knowing:
 - **Lookup** — [Glossary](../GLOSSARY.md), [Environment Variables](../ENV-VARS.md), [CLI ↔ Skills Map](../cli-skills-map.md). Skim once, then search-on-demand.
 - **Operations** — [Testing](../TESTING.md), [CI/CD](../CI-CD.md), [Releasing](../RELEASING.md), [Incident Runbook](../INCIDENT-RUNBOOK.md). Load these before you ship a release or page someone.
 - **Field guides** — [Agent Footguns](../agent-footguns.md), [Troubleshooting](../troubleshooting.md), [AgentOps Brief](../agentops-brief.md). Read before onboarding a new teammate.
+- **Curation** — [JSM Skill Absorption Matrix](jsm-skill-absorption.md). Use when checking what was absorbed from the Bushido standalone skill set.
 
 <div class="grid cards" markdown>
 
@@ -81,5 +82,11 @@ Three groups worth knowing:
     ---
 
     Deep documentation and pipeline details.
+
+-   :material-source-merge: **[JSM Absorption](jsm-skill-absorption.md)**
+
+    ---
+
+    Disposition matrix for the Bushido JSM-managed skill set.
 
 </div>

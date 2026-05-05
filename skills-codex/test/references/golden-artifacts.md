@@ -45,3 +45,7 @@ Add this to `.agents/test/summary.md` when golden files change:
 |---|---|---|
 | <path> | accepted/rejected | <why> |
 ```
+
+---
+
+**Source:** Adapted from jsm / `testing-golden-artifacts`. Pattern-only, no verbatim text.

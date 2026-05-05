@@ -43,3 +43,7 @@ The external behavior must remain the same. If you discover a bug, file or switc
 | Focused tests passed | PASS/FAIL |
 | New abstraction justified | yes/no |
 ```
+
+---
+
+**Source:** Adapted from jsm / `simplify-and-refactor-code-isomorphically` and `de-slopify`. Pattern-only, no verbatim text.

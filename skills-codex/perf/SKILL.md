@@ -206,6 +206,8 @@ For each optimization:
 5. **Keep or revert** — only keep changes that measurably improve metrics
 6. **Commit** with message format: `perf(<scope>): <description> (+X% throughput)` or `perf(<scope>): <description> (-X% latency)`
 
+For high-effort optimization work, load [references/optimization-proof-loop.md](references/optimization-proof-loop.md) before changing code. It defines the proof contract for isomorphic rewrites, benchmark deltas, and keep/revert decisions.
+
 ### Acceptance Criteria
 
 - Improvement must be statistically significant (p < 0.05 for `benchstat`, or >5% consistent change for manual comparison)
@@ -314,3 +316,4 @@ COMPARISON: baseline vs candidate
 
 - [references/profiling-playbook.md](references/profiling-playbook.md)
 - [references/system-pressure-triage.md](references/system-pressure-triage.md)
+- [references/optimization-proof-loop.md](references/optimization-proof-loop.md)

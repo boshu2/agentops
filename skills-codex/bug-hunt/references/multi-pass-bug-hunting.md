@@ -38,3 +38,7 @@ Add pass accounting to the bug report:
 | 1 | <n> | <n> | <n> | <summary> |
 | 2 | <n> | <n> | <n> | <summary> |
 ```
+
+---
+
+**Source:** Adapted from jsm / `multi-pass-bug-hunting`. Pattern-only, no verbatim text.

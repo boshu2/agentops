@@ -46,3 +46,7 @@ Add a short conformance section to `.agents/test/summary.md`:
 ## Stop Criteria
 
 Stop when every must-support contract row has a mechanical test or a documented exclusion with owner and rationale.
+
+---
+
+**Source:** Adapted from jsm / `testing-conformance-harnesses`. Pattern-only, no verbatim text.

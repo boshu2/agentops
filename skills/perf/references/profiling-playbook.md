@@ -39,3 +39,7 @@ Always report the metrics the runtime can provide:
 |---|---:|---:|---:|---|
 | <metric> | <value> | <value> | <delta> | improve/regress/noise |
 ```
+
+---
+
+**Source:** Adapted from jsm / `profiling-software-performance`. Pattern-only, no verbatim text.

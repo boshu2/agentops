@@ -45,6 +45,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
+- [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the 2026-05-05 Bushido standalone JSM skill set
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [Claude Code Skills Docs](https://code.claude.com/docs/en/skills) — Official Claude Code skills documentation (upstream)
 

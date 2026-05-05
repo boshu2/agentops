@@ -53,3 +53,7 @@ Record fuzz coverage in `.agents/test/summary.md`:
 |---|---:|---:|---|
 | <target> | <n> | <time> | <none or issue> |
 ```
+
+---
+
+**Source:** Adapted from jsm / `testing-fuzzing`. Pattern-only, no verbatim text.

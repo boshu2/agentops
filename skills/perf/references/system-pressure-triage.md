@@ -32,3 +32,7 @@ If host pressure affects the result, add this section to the perf report:
 | Memory | <value> | <impact> |
 | Disk/I/O | <value> | <impact> |
 ```
+
+---
+
+**Source:** Adapted from jsm / `system-performance-remediation`. Pattern-only, no verbatim text.

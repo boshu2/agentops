@@ -162,5 +162,6 @@ Beads should be so detailed that a fresh agent can implement without consulting 
 - [references/RESUMABILITY.md](references/RESUMABILITY.md)
 - [references/ROUTING.md](references/ROUTING.md)
 - [references/STATIC_DATA.md](references/STATIC_DATA.md)
+- [references/tracker-migration-and-triage.md](references/tracker-migration-and-triage.md)
 - [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
 - [references/WORKFLOWS.md](references/WORKFLOWS.md)

@@ -108,8 +108,10 @@ Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestra
 - The hook's defensive parse on malformed JSON is intentional. See [references/lock-file-format.md](references/lock-file-format.md) for the rationale.
 - Hooks (session-boundary) and `agentopsd` (cron-cadence) compose; this skill is purely session-boundary.
 - Path-scope freezing handles *where* edits land. For a complementary lane that gates *what* commands run (`rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy`) — including allowlist layering, one-shot override codes, and PreToolUse wiring — see [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md). Wire it alongside the scope guard when a wave touches infrastructure or shared data.
+- When a workflow needs human approval, hook parity, or simultaneous command review rather than only path freezing, use [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md).
 
 ## References
 
 - [references/lock-file-format.md](references/lock-file-format.md)
 - [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md)
+- [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md)

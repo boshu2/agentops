@@ -380,6 +380,7 @@ For onboarding-style research ("what does this do?", new repo orientation), foll
 - [references/failure-patterns.md](references/failure-patterns.md)
 - [references/onboarding-methodology.md](references/onboarding-methodology.md)
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
+- [references/source-discovery-and-pattern-extraction.md](references/source-discovery-and-pattern-extraction.md)
 - [references/vibe-methodology.md](references/vibe-methodology.md)
 - [../shared/references/backend-background-tasks.md](../shared/references/backend-background-tasks.md)
 - [../shared/references/backend-claude-teams.md](../shared/references/backend-claude-teams.md)

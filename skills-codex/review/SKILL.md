@@ -137,6 +137,8 @@ Review every changed file against the SCORED checklist. For each category, activ
 - [ ] Dependencies: no known-vulnerable versions added
 - [ ] File operations: path traversal prevention, safe temp file handling
 
+For audit-style reviews, generated-code suspicion, mock leakage, or external-review-tool findings, load [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md) before writing final findings.
+
 #### C -- Correctness
 
 - [ ] Logic errors: off-by-one, wrong operator, inverted condition
@@ -323,3 +325,4 @@ Merge council findings into the review document under a "## Council Findings" se
 - [standards](../standards/SKILL.md) — Language-specific coding conventions
 - [bug-hunt](../bug-hunt/SKILL.md) — Deep bug investigation
 - [pr-validate](../pr-validate/SKILL.md) — PR scope and isolation checks
+- [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)

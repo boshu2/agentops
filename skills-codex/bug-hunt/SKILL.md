@@ -42,6 +42,8 @@ For proactive sweeps that need fresh-eyes rescans, also load [references/multi-p
 
 For stuck commands, deadlocks, retry storms, blocked subprocesses, or hangs, load [references/deadlock-and-hang-triage.md](references/deadlock-and-hang-triage.md) before changing code.
 
+When the target process is live, hung, or only reproducible under debugger observation, load [references/debugger-attach-triage.md](references/debugger-attach-triage.md) before attaching or changing ptrace/sysctl settings.
+
 ## Execution Steps
 
 Given `$bug-hunt <symptom>`:
@@ -376,6 +378,7 @@ Common bug patterns to check:
 - [references/convergence-criteria.md](references/convergence-criteria.md)
 - [references/multi-pass-bug-hunting.md](references/multi-pass-bug-hunting.md)
 - [references/deadlock-and-hang-triage.md](references/deadlock-and-hang-triage.md)
+- [references/debugger-attach-triage.md](references/debugger-attach-triage.md)
 
 ## Local Resources
 
@@ -386,8 +389,10 @@ Common bug patterns to check:
 - [references/failure-categories.md](references/failure-categories.md)
 - [references/audit-fix-rescan-cycle.md](references/audit-fix-rescan-cycle.md)
 - [references/convergence-criteria.md](references/convergence-criteria.md)
+- [references/multi-pass-bug-hunting.md](references/multi-pass-bug-hunting.md)
+- [references/deadlock-and-hang-triage.md](references/deadlock-and-hang-triage.md)
+- [references/debugger-attach-triage.md](references/debugger-attach-triage.md)
 
 ### scripts/
 
 - `scripts/validate.sh`
-

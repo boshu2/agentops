@@ -211,6 +211,8 @@ For each finding, state:
 
 **Critical rule: ONE optimization at a time.**
 
+For high-effort optimization work, load [references/optimization-proof-loop.md](references/optimization-proof-loop.md) before changing code. It defines the proof contract for isomorphic rewrites, benchmark deltas, and keep/revert decisions.
+
 For each optimization:
 
 1. **Describe** the change before making it
@@ -328,3 +330,4 @@ COMPARISON: baseline vs candidate
 
 - [references/profiling-playbook.md](references/profiling-playbook.md)
 - [references/system-pressure-triage.md](references/system-pressure-triage.md)
+- [references/optimization-proof-loop.md](references/optimization-proof-loop.md)

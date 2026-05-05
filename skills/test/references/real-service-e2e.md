@@ -43,3 +43,7 @@ Record real-service test safety in `.agents/test/summary.md`:
 | Isolated namespace | PASS/FAIL |
 | Cleanup verified | PASS/FAIL |
 ```
+
+---
+
+**Source:** Adapted from jsm / `testing-real-service-e2e-no-mocks`. Pattern-only, no verbatim text.

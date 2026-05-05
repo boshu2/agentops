@@ -40,3 +40,7 @@ Classify the process before changing code:
 | Stack sample | `<path>` | <summary> |
 | Timeout regression | `<test>` | <summary> |
 ```
+
+---
+
+**Source:** Adapted from jsm / `deadlock-finder-and-fixer`. Pattern-only, no verbatim text.
