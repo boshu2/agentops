@@ -79,7 +79,7 @@ for dir in research learnings knowledge patterns retros plans brainstorm; do
 done
 
 # Search global patterns (cross-repo knowledge)
-grep -r -l -i "<topic>" ~/.claude/patterns/ 2>/dev/null
+grep -r -l -i "<topic>" ~/.agents/patterns/ 2>/dev/null
 ```
 
 If matches are found, read the relevant files with the Read tool before proceeding to exploration. Prior knowledge prevents redundant investigation.
@@ -116,9 +116,7 @@ Record the selected backend — it will be included in the research output docum
 #### Backend Selection (MANDATORY)
 
 1. If `spawn_agent` is available → **Codex sub-agent**
-2. Else if `TeamCreate` is available → **Claude native team** (Explore agent)
-3. Else if `skill` tool is read-only (OpenCode) → **OpenCode subagent** — `task(subagent_type="explore", description="Research: <topic>", prompt="<explore prompt>")`
-4. Else → **Background task fallback**
+2. Else → **Background task fallback**
 
 #### Exploration Prompt (all backends)
 
