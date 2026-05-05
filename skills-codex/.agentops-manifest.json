@@ -649,8 +649,8 @@
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "d55af164f1d679d4f8e56703c37deda96488c49a762bf79acc2d6d486722122d",
-      "generated_hash": "c45ea9c2f24ef2f7a5854d1797bf04186c0a4667b495d3e65432af09da0650c6"
+      "source_hash": "d6986ebb7a4ef31f9a8aa4abfb3faf7460133d2378d319e9da66240e9f9e5a4b",
+      "generated_hash": "0fb7b834d010a178b9cd1310eb8344c653bcc8390c36565c4224c3834983d9dd"
     },
     {
       "name": "bootstrap",
@@ -727,8 +727,8 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "45ae7c7226b11a910911bc861f68c30affa79b36a51f68236b436bcafeb62f44",
-      "generated_hash": "ba0ec767e6e95cf043cc689503bed3912977613ceb454971aef05ceeb1576e43"
+      "source_hash": "8e7406cee85b218d8a59444758f1eeee118c634e0570a814219b04ad5e630469",
+      "generated_hash": "aadfa3d7975c2dd7b4882eaade0f538d0603431c388e6821afb47599f2412e62"
     },
     {
       "name": "evolve",
@@ -823,8 +823,8 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "0641e4ddb3485ba137fe4f03c90c7851fc9b14d874b639587e5081330bf57de4",
-      "generated_hash": "ffbb738e7bdd9a7c36e111a7cfc5948eb6e3e3a46133834af5c3cc31a2dcba74"
+      "source_hash": "7f99041ba3b0c959adb3bf00d2f346c6a2b480034d317fe74571224dcdb952e9",
+      "generated_hash": "322dcc3b6683acdd6f46b47cce09b9aa32ccda7ac36a01d86f483568a733b065"
     },
     {
       "name": "pr-implement",
@@ -931,8 +931,8 @@
     {
       "name": "research",
       "source_skill": "skills/research",
-      "source_hash": "f16f482b73dc7659ee32f28d2e9096df2cdd91a88e3e37d36d7e9c3b9ed32d8d",
-      "generated_hash": "7f14f84d72e610c613b6a19c1ba0984bd8425c8da2ef54e6c46f593f47c4fef1"
+      "source_hash": "acac25d668c788edca0ca9721f0311ea94b36a19e89dfba1c43c353a47b256bf",
+      "generated_hash": "d5042807a4a689d996771fb140758382b3b5edf0702afb652fab260bd78d2a82"
     },
     {
       "name": "retro",
@@ -949,8 +949,8 @@
     {
       "name": "review",
       "source_skill": "skills/review",
-      "source_hash": "ad8bc5766279d9ace89b2e771fd06d6fe5c91fdec3d6e3aadb4e4b42eac33b04",
-      "generated_hash": "880cfb3694cdb80548b397238db8d0e01ef684516b21fdf769d6958ce93b4cf5"
+      "source_hash": "eeba4f7133f3c70d23d94dcf5c12d9f2d93457428ab8fd499a7d19692465af71",
+      "generated_hash": "79364ff360267b2f5ca15b972ff6908f9de9db78f16c06b9f1ae5a6a793615e0"
     },
     {
       "name": "rpi",

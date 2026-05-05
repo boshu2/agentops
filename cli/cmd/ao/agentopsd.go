@@ -543,8 +543,9 @@ func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOpt
 		return nil, err
 	}
 	rpiPhaseExecutor := daemonpkg.GasCityRPIPhaseExecutor{
-		Client:   daemonpkg.GasCityClientAdapter{Client: client},
-		CityName: opts.GasCityCity,
+		Client:           daemonpkg.GasCityClientAdapter{Client: client},
+		CityName:         opts.GasCityCity,
+		SessionAgentName: os.Getenv("AGENTOPS_GASCITY_WORKER_TEMPLATE"),
 	}
 	return daemonpkg.NewRPIJobExecutor(daemonpkg.RPIJobExecutorOptions{
 		Store:    daemonpkg.NewStore(cwd),

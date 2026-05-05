@@ -259,3 +259,5 @@ Tell the user:
 - [references/generation-templates.md](references/generation-templates.md)
 - [references/project-types.md](references/project-types.md)
 - [references/validation-rules.md](references/validation-rules.md)
+- [references/de-slopify.md](references/de-slopify.md) — Remove AI writing artifacts from docs
+- [references/architecture-report.md](references/architecture-report.md) — Generate technical architecture documents

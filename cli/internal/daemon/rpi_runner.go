@@ -482,9 +482,10 @@ func (a GasCityClientAdapter) SessionTranscript(ctx context.Context, cityName st
 }
 
 type GasCityRPIPhaseExecutor struct {
-	Client       GasCityRPIClient
-	CityName     string
-	PhaseTimeout time.Duration
+	Client           GasCityRPIClient
+	CityName         string
+	SessionAgentName string
+	PhaseTimeout     time.Duration
 }
 
 func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
@@ -548,8 +549,8 @@ func resolveAndCheckCityReadiness(ctx context.Context, e GasCityRPIPhaseExecutor
 			Cause:     err,
 		}
 	}
-	if !ready.Ready {
-		status := strings.TrimSpace(ready.Status)
+	if !ready.IsReady() {
+		status := strings.TrimSpace(ready.EffectiveStatus())
 		if status == "" {
 			status = "not ready"
 		}
@@ -569,9 +570,13 @@ func createGasCitySession(ctx context.Context, e GasCityRPIPhaseExecutor, cityNa
 	if sessionAlias == "" {
 		sessionAlias = fmt.Sprintf("rpi-%s-p%d", req.RunID, req.Phase)
 	}
+	sessionAgentName := strings.TrimSpace(e.SessionAgentName)
+	if sessionAgentName == "" {
+		sessionAgentName = "worker"
+	}
 	session, createMeta, err := e.Client.CreateSession(ctx, cityName, gascity.SessionCreateRequest{
 		Kind:  "agent",
-		Name:  "worker",
+		Name:  sessionAgentName,
 		Alias: sessionAlias,
 		Async: true,
 		Title: fmt.Sprintf("RPI %s phase %d", req.RunID, req.Phase),

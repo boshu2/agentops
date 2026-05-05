@@ -1,0 +1,47 @@
+# Stock starter schedule for AgentOps continuous-worker scheduling.
+#
+# Operator workflow:
+#   1. Copy this file to .agents/schedule.yaml in your repo (or run
+#      `ao init --with-schedule` to seed it automatically).
+#   2. Adjust cron expressions, payload knobs, and backpressure to taste.
+#   3. Have agentopsd consume it: `ao daemon run --schedule-file .agents/schedule.yaml`.
+#
+# v1.0 safe-set job_types (real-bodied executors — see cli/internal/daemon/):
+#   - dream.run    overnight knowledge consolidation
+#   - wiki.forge   forge patterns from session corpus
+#
+# llmwiki.loop is intentionally excluded: its stage handlers are stubs in
+# v1.0 (see f-2026-05-01-011); enable once the real-bodies follow-up lands.
+#
+# Hermetic mirror lives at cli/internal/schedule/testdata/example-validation.yaml
+# for parser tests — keep them in sync (see scripts/check-schedule-example.sh).
+
+schedules:
+  - name: nightly-dream
+    cron: "0 3 * * *"
+    job_type: dream.run
+    payload:
+      schema_version: 1   # REQUIRED — see cli/internal/daemon/dream_jobs.go DreamJobSpecSchemaVersion
+      output_dir: ".agents/overnight"
+      max_iterations: 5
+      execution_timeout: "4h"
+      goal: "Nightly knowledge consolidation"
+    timeout: "4h30m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
+
+  - name: hourly-forge
+    cron: "5 * * * *"
+    job_type: wiki.forge
+    payload:
+      schema_version: 1   # REQUIRED — see cli/internal/daemon/wiki_jobs.go WikiJobSpecSchemaVersion
+      source_paths:
+        - ".agents/sessions/"
+      output_dir: ".agents/wiki/forge"
+      worker_kind: "claude"
+      provider: "anthropic"
+      model: "claude-sonnet-4"
+    backpressure:
+      skip_if_running: false
+      max_queue_depth: 5
