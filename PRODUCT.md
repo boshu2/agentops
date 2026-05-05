@@ -75,7 +75,7 @@ Three layers. Each solves a different problem. All three compound through the CD
 - `/pre-mortem` — validate plans before implementation
 - `/vibe` — validate code after implementation
 - `/council` — multi-model adversarial review (Claude + Codex judges)
-- 61 eval suites — deterministic context quality testing
+- 63 eval suites + 12-task workbench — deterministic context quality testing
 - Baseline A/B — skill-on vs skill-off delta measurement
 
 ### Layer 3: The Knowledge Flywheel
@@ -138,7 +138,7 @@ The flywheel numbers (4,940 learnings, 1,195 patterns) are the load-bearing evid
 | Pattern-to-skill promotion polish remains | The strongest differentiation thesis — self-programming compounding — has review-only draft generation today. Remaining gap: richer synthesis and a clean publish path. | in-progress |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
-| Behavioral eval system needs live agent runtime tier | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, first behavioral eval suite (6 cases). Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime tier (Day-3) for real skill-on vs skill-off delta — deterministic shell cases validate the scorer but cannot measure whether skills help agents. | in-progress |
+| Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
 | Public messaging shifted to context-compiler + moat framing | CDLC (Context Development Life Cycle) framing landed: Mission, Strategic Bet, README, and mkdocs hero surfaces now use "context compiler" as the primary identity noun. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 
 ## Design Principles
