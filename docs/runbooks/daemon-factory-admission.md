@@ -62,7 +62,12 @@ ao factory admit \
 The daemon executor policy controls the handoff:
 
 - `fake` and `gascity` may enqueue the admitted `rpi.run` child job;
-- `cli-fallback` records `rpi_handoff_unavailable` and blocks instead.
+- `cli-fallback` may enqueue the admitted `rpi.run` child job and executes it
+  through `scripts/ao-rpi-autonomous-cycle.sh` with `landing-policy=off`.
+
+`cli-fallback` is still a manual rehearsal surface: it proves daemon-owned
+admission and local execution wiring without enabling recurring host
+scheduling, automatic merge, or default-branch pushes.
 
 ## Readback
 

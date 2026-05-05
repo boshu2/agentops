@@ -182,6 +182,11 @@ Initial job families:
   and the foundation §6 site 3 (alt) carve-out for read-side endpoints
   (`.agents/plans/2026-05-01-daemon-absorption-spec/00-foundation-contract.md`).
 
+Executor policies route these families differently. `fake` and `gascity`
+handle `rpi.run` through the daemon phase runner; `cli-fallback` handles
+`rpi.run` by shelling to `scripts/ao-rpi-autonomous-cycle.sh` with
+`landing_policy=off` and does not claim standalone `rpi.phase` jobs.
+
 ### Read-Side Endpoints — `plans.projection` curl example (F-PM-3)
 
 ```sh

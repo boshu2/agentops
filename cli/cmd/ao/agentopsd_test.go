@@ -572,6 +572,55 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T) {
+	cwd := t.TempDir()
+	scriptPath := filepath.Join(cwd, "scripts", "ao-rpi-autonomous-cycle.sh")
+	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
+		t.Fatalf("mkdir script dir: %v", err)
+	}
+	script := "#!/usr/bin/env bash\nset -euo pipefail\necho cli-fallback-rpi-ok\n"
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+		t.Fatalf("write script: %v", err)
+	}
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-cli", "validate daemon cli fallback rpi run")
+	jobSpec, err := spec.ToJobSpec("job-rpi-cli")
+	if err != nil {
+		t.Fatalf("rpi run job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-rpi-cli",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit rpi run job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed rpi.run job", result)
+	}
+	if got := result.Job.Artifacts["executor_policy"]; got != "cli-fallback" {
+		t.Fatalf("executor_policy artifact = %q, want cli-fallback", got)
+	}
+	logPath := filepath.Join(cwd, filepath.FromSlash(result.Job.Artifacts["rpi_cli_log"]))
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read cli fallback rpi log: %v", err)
+	}
+	if !strings.Contains(string(data), "cli-fallback-rpi-ok") {
+		t.Fatalf("log = %q, want cli fallback output", data)
+	}
+}
+
 func TestAgentOpsDaemonPlansProjectionExecutorRegistration(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})

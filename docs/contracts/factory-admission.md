@@ -109,6 +109,13 @@ When admission allows an RPI handoff, the same event may include
 `child_job_id`. The child job is still a normal `rpi.run` queue job; admission
 does not become the execution loop.
 
+Daemon executor policy determines how that child job runs:
+
+- `fake` completes deterministic CI-safe phase artifacts.
+- `gascity` delegates phases to the GasCity API executor.
+- `cli-fallback` shells one safe local cycle through
+  `scripts/ao-rpi-autonomous-cycle.sh` with `landing_policy=off`.
+
 ## Blocked Vs Malformed
 
 Malformed requests are daemon job failures:

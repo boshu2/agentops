@@ -419,7 +419,11 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{wikiExecutor, llmwikiExecutor}
+		rpiExecutor, err := buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd)
+		if err != nil {
+			return nil, err
+		}
+		executors = []daemonpkg.JobExecutor{wikiExecutor, rpiExecutor, llmwikiExecutor}
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
@@ -482,7 +486,7 @@ func buildAgentOpsDaemonFactoryExecutor(cwd, policy string, opts agentopsDaemonR
 		Store:            daemonpkg.NewStore(cwd),
 		Root:             cwd,
 		Clock:            opts.Now,
-		EnableRPIHandoff: policy == "fake" || policy == "gascity",
+		EnableRPIHandoff: policy == "fake" || policy == "gascity" || policy == "cli-fallback",
 	})
 }
 
@@ -546,6 +550,10 @@ func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOpt
 		Store:    daemonpkg.NewStore(cwd),
 		Executor: rpiPhaseExecutor,
 	})
+}
+
+func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string) (daemonpkg.JobExecutor, error) {
+	return daemonpkg.NewRPICLIExecutor(daemonpkg.RPICLIExecutorOptions{Root: cwd})
 }
 
 // fakeRPIPhaseExecutor is a deterministic, CI-safe phase executor that returns
