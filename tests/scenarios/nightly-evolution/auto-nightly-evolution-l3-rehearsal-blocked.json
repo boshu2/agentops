@@ -1,0 +1,39 @@
+{
+  "id": "auto-nightly-evolution-l3-rehearsal-blocked",
+  "version": 1,
+  "date": "2026-05-05",
+  "goal": "Execute+run-evolve is blocked by admission preflight when evidence is missing or unsafe.",
+  "narrative": "An operator runs a no-merge local pilot rehearsal to prove the fail-closed preflight stops source mutation when conditions are unsafe: missing work order, expired work order, red main CI, unknown GH evidence, dirty worktree, tracked .agents, missing runtime, or forbidden landing policy.",
+  "expected_outcome": "Each stop reason produces a non-zero exit with a descriptive error. No source mutation occurs. Dream-only execute remains allowed.",
+  "acceptance_vectors": [
+    {
+      "dimension": "safety",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'execute\\+run-evolve refuses'"
+    },
+    {
+      "dimension": "completeness",
+      "threshold": 1.0,
+      "check": "All 8 stop reasons are tested: missing work order, expired, dirty worktree, unknown gh, red CI, tracked .agents, missing runtime, forbidden landing policy"
+    },
+    {
+      "dimension": "isolation",
+      "threshold": 1.0,
+      "check": "bats tests/scripts/nightly-evolution.bats --filter 'execute\\+run-dream allowed without work order'"
+    }
+  ],
+  "satisfaction_threshold": 0.95,
+  "scope": {
+    "files": [
+      "scripts/nightly-evolution.sh",
+      "tests/scripts/nightly-evolution.bats"
+    ],
+    "behaviors": [
+      "preflight_evolve stop reasons",
+      "fail-closed source mutation gate",
+      "Dream-only execute bypass"
+    ]
+  },
+  "source": "agent",
+  "status": "active"
+}

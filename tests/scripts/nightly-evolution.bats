@@ -12,6 +12,9 @@ setup() {
     cp "$SCRIPT" "$FAKE_REPO/scripts/nightly-evolution.sh"
     chmod +x "$FAKE_REPO/scripts/nightly-evolution.sh"
 
+    cp "$REPO_ROOT/scripts/nightly-pr-digest.sh" "$FAKE_REPO/scripts/nightly-pr-digest.sh"
+    chmod +x "$FAKE_REPO/scripts/nightly-pr-digest.sh"
+
     cat >"$FAKE_REPO/scripts/nightly-rpi-brief.sh" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -76,6 +79,18 @@ STUB
     cat >"$MOCK_BIN/gh" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1 $2" == "pr list" ]]; then
+  printf '%s\n' "${GH_PR_LIST_RESPONSE:-[]}"
+  exit 0
+fi
+if [[ "$1 $2" == "run list" ]]; then
+  if [[ -n "${GH_RUN_LIST_RESPONSE:-}" ]]; then
+    printf '%s\n' "$GH_RUN_LIST_RESPONSE"
+  else
+    printf '[{"conclusion":"success","databaseId":99999}]\n'
+  fi
+  exit 0
+fi
 printf '[]\n'
 STUB
     chmod +x "$MOCK_BIN/gh"
@@ -123,6 +138,69 @@ set -euo pipefail
 exit 42
 STUB
     chmod +x "$FAKE_REPO/scripts/nightly-rpi-brief.sh"
+}
+
+make_path_without_gh() {
+    local restricted_bin="$TMP_DIR/restricted-bin"
+    mkdir -p "$restricted_bin"
+    local f
+    for f in "$MOCK_BIN"/*; do
+        [[ "$(basename "$f")" != "gh" ]] && cp -f "$f" "$restricted_bin/"
+    done
+    local tool tool_path
+    for tool in bash git jq date timeout printf grep cut wc sort head tail dirname basename mkdir mktemp cat rm chmod find sed tr cp touch env; do
+        tool_path="$(command -v "$tool" 2>/dev/null || true)"
+        [[ -n "$tool_path" && ! -e "$restricted_bin/$tool" ]] && ln -sf "$tool_path" "$restricted_bin/$tool"
+    done
+    printf '%s' "$restricted_bin"
+}
+
+create_valid_work_order() {
+    local path="$1"
+    local expires_at
+    expires_at="$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v+1H +%Y-%m-%dT%H:%M:%SZ)"
+    local sha
+    sha="$(git -C "$FAKE_REPO" rev-parse HEAD)"
+    jq -n \
+      --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      --arg expires_at "$expires_at" \
+      --arg sha "$sha" \
+      '{
+        schema_version: 1,
+        work_order_id: "test-wo-001",
+        generated_at: $generated_at,
+        expires_at: $expires_at,
+        base_sha: $sha,
+        target: {type: "goal", id: "test-goal", summary: "Test work order"},
+        allowed_files: ["scripts/nightly-evolution.sh"],
+        validation_commands: ["echo ok"],
+        landing_policy: "off",
+        digest_policy: "required",
+        open_pr_blockers: [],
+        main_ci_baseline: {status: "green", checked_at: $generated_at, failed_jobs: []}
+      }' >"$path"
+}
+
+create_expired_work_order() {
+    local path="$1"
+    local sha
+    sha="$(git -C "$FAKE_REPO" rev-parse HEAD)"
+    jq -n \
+      --arg sha "$sha" \
+      '{
+        schema_version: 1,
+        work_order_id: "test-wo-expired",
+        generated_at: "2020-01-01T00:00:00Z",
+        expires_at: "2020-01-01T01:00:00Z",
+        base_sha: $sha,
+        target: {type: "goal", id: "test-goal", summary: "Expired work order"},
+        allowed_files: ["scripts/nightly-evolution.sh"],
+        validation_commands: ["echo ok"],
+        landing_policy: "off",
+        digest_policy: "required",
+        open_pr_blockers: [],
+        main_ci_baseline: {status: "green", checked_at: "2020-01-01T00:00:00Z", failed_jobs: []}
+      }' >"$path"
 }
 
 add_remote_nightly_branches() {
@@ -382,6 +460,8 @@ add_remote_nightly_branches() {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
     export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
 
     run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
         --repo-root "$FAKE_REPO" \
@@ -390,6 +470,7 @@ add_remote_nightly_branches() {
         --skip-brief \
         --execute \
         --run-evolve \
+        --work-order "$wo" \
         --runtime-cmd codex \
         --runtime-mode direct \
         --landing-policy off
@@ -397,4 +478,357 @@ add_remote_nightly_branches() {
     [ "$status" -eq 0 ]
     grep -q -- '--landing-branch nightly/2026-05-01' "$AO_RPI_LOG"
     jq -e '.runtime.command == "codex" and .runtime.mode == "direct" and .phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
+}
+
+@test "dry-run builds blocker matrix and main CI baseline artifacts" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_PR_LIST_RESPONSE='[{"number":42,"title":"feat: add widget","headRefName":"feat/widget","baseRefName":"main","changedFiles":3,"url":"https://github.com/test/42","labels":[]}]'
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"success","databaseId":12345}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    [ -f "$TMP_DIR/out/blocker-matrix.json" ]
+    [ -f "$TMP_DIR/out/main-ci-baseline.json" ]
+    jq -e '.status == "ok" and (.prs | length) == 1 and .prs[0].pr_number == 42' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "green" and .run_id == "12345"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "ok"' "$TMP_DIR/out/digest.json"
+    jq -e '.admission_context.blocker_matrix.status == "ok"' "$TMP_DIR/out/digest.json"
+    jq -e '.admission_context.main_ci_baseline.status == "green"' "$TMP_DIR/out/digest.json"
+}
+
+@test "gh failure produces unknown CI and failed blocker matrix" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    cat >"$MOCK_BIN/gh" <<'STUB'
+#!/usr/bin/env bash
+exit 1
+STUB
+    chmod +x "$MOCK_BIN/gh"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "failed"' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "unknown"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "failed"' "$TMP_DIR/out/digest.json"
+}
+
+@test "gh unavailable produces unknown CI and unavailable blocker matrix" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    NO_GH_PATH="$(make_path_without_gh)"
+
+    run env PATH="$NO_GH_PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "unavailable"' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "unknown"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "unavailable"' "$TMP_DIR/out/digest.json"
+}
+
+@test "red main CI baseline is classified correctly" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":99998}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "red" and .run_id == "99998"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.main_ci_baseline.status == "red"' "$TMP_DIR/out/digest.json"
+}
+
+@test "execute+run-evolve refuses missing work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires --work-order"* ]]
+}
+
+@test "execute+run-evolve refuses expired work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/expired-wo.json"
+    create_expired_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"work order expired"* ]]
+}
+
+@test "execute+run-evolve refuses dirty worktree" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    echo "dirty" >> "$FAKE_REPO/README.md"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"clean worktree"* ]]
+}
+
+@test "execute+run-evolve refuses unknown gh evidence" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    NO_GH_PATH="$(make_path_without_gh)"
+
+    run env PATH="$NO_GH_PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires GitHub evidence"* ]]
+}
+
+@test "execute+run-evolve refuses red main CI" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":55555}]'
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"main CI is red"* ]]
+}
+
+@test "execute+run-evolve refuses tracked .agents" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    mkdir -p "$FAKE_REPO/.agents"
+    touch "$FAKE_REPO/.agents/tracked-file"
+    git -C "$FAKE_REPO" add .agents/tracked-file
+    git -C "$FAKE_REPO" commit -q -m "track .agents"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"tracked .agents"* ]]
+}
+
+@test "execute+run-evolve refuses missing runtime command" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --runtime-cmd nonexistent-runtime-xyz
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires runtime command: nonexistent-runtime-xyz"* ]]
+}
+
+@test "execute+run-evolve refuses sync-push landing policy" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy sync_push
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"landing policy 'sync_push' not allowed"* ]]
+}
+
+@test "execute+run-evolve refuses main branch landing" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy off \
+        --landing-branch main
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"landing on 'main' not allowed"* ]]
+}
+
+@test "execute+run-evolve passes non-main generated branch with landing-policy off" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-02 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --landing-policy off \
+        --runtime-cmd codex
+
+    [ "$status" -eq 0 ]
+    jq -e '.phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
+}
+
+@test "execute+run-dream allowed without work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream
+
+    [ "$status" -eq 0 ]
+    jq -e '.phases.dream == "submitted"' "$TMP_DIR/out/digest.json"
+}
+
+@test "pr digest includes admission context table" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_PR_LIST_RESPONSE='[{"number":77,"title":"fix: thing","headRefName":"fix/thing","baseRefName":"main","changedFiles":2,"url":"https://github.com/test/77","labels":[]}]'
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"success","databaseId":88888}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    [ -f "$TMP_DIR/out/pr-body.md" ]
+    grep -q 'Admission Context' "$TMP_DIR/out/pr-body.md"
+    grep -q 'GitHub evidence.*ok' "$TMP_DIR/out/pr-body.md"
+    grep -q 'Main CI baseline.*green' "$TMP_DIR/out/pr-body.md"
+    grep -q 'Open PR blockers.*1' "$TMP_DIR/out/pr-body.md"
+    grep -q 'dry-run' "$TMP_DIR/out/pr-body.md"
+}
+
+@test "pr digest json includes admission context fields" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":44444}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+
+    "$FAKE_REPO/scripts/nightly-pr-digest.sh" \
+        --run-dir "$TMP_DIR/out" \
+        --format json \
+        --output "$TMP_DIR/out/pr-digest.json"
+
+    jq -e '.admission_context.gh_evidence == "ok"' "$TMP_DIR/out/pr-digest.json"
+    jq -e '.admission_context.main_ci_baseline.status == "red"' "$TMP_DIR/out/pr-digest.json"
 }

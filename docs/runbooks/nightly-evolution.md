@@ -142,6 +142,97 @@ Use Claude and Codex differently until eval evidence says mixed mode is stable:
 - `bushido-box ai-sane` must pass in execute mode unless
   `--no-require-ai-sane` is supplied.
 
+## L3 Rehearsal — First No-Merge Local Pilot
+
+Before enabling recurring scheduled runs, prove the full execute+evolve
+path with a mocked work order that cannot merge.
+
+### Step 1: Dry-run
+
+```bash
+scripts/nightly-evolution.sh
+```
+
+Verify `digest.json` is written and `admission_context` is populated.
+
+### Step 2: Dream-only execute
+
+```bash
+scripts/nightly-evolution.sh --execute --run-dream
+```
+
+Verify Dream submits (or falls back) without requiring a work order.
+
+### Step 3: Execute+evolve blocked by admission
+
+Create an expired work order to confirm the preflight refuses:
+
+```bash
+jq -n '{
+  schema_version: 1, work_order_id: "rehearsal-blocked",
+  generated_at: "2020-01-01T00:00:00Z", expires_at: "2020-01-01T01:00:00Z",
+  base_sha: "abcdef1", target: {type:"goal",id:"t",summary:"T"},
+  allowed_files: ["scripts/nightly-evolution.sh"],
+  validation_commands: ["echo ok"], landing_policy: "off",
+  digest_policy: "required", open_pr_blockers: [],
+  main_ci_baseline: {status:"green",checked_at:"2020-01-01T00:00:00Z",failed_jobs:[]}
+}' > /tmp/rehearsal-blocked.json
+
+scripts/nightly-evolution.sh \
+  --execute --run-evolve \
+  --work-order /tmp/rehearsal-blocked.json
+# Expected: non-zero exit, "work order expired"
+```
+
+### Step 4: Execute+evolve admitted (no-merge)
+
+Create a valid work order and run with `--landing-policy off`:
+
+```bash
+jq -n --arg sha "$(git rev-parse HEAD)" \
+  --arg ea "$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg ga "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{
+  schema_version: 1, work_order_id: "rehearsal-admitted",
+  generated_at: $ga, expires_at: $ea, base_sha: $sha,
+  target: {type:"goal",id:"rehearsal",summary:"L3 rehearsal"},
+  allowed_files: ["scripts/nightly-evolution.sh"],
+  validation_commands: ["echo ok"], landing_policy: "off",
+  digest_policy: "required", open_pr_blockers: [],
+  main_ci_baseline: {status:"green",checked_at:$ga,failed_jobs:[]}
+}' > /tmp/rehearsal-admitted.json
+
+scripts/nightly-evolution.sh \
+  --execute --run-evolve \
+  --work-order /tmp/rehearsal-admitted.json \
+  --landing-policy off \
+  --runtime-cmd claude \
+  --max-cycles 1
+# Expected: exit 0, digest records admitted run
+```
+
+### Step 5: Review digest
+
+```bash
+cat .agents/nightly/$(date -u +%F)/*/digest.md
+cat .agents/nightly/$(date -u +%F)/*/pr-body.md
+```
+
+Verify the digest includes the admission context table, stop reasons (step
+3), and admitted verdict (step 4).
+
+The pilot is not recurring until this rehearsal passes all five steps.
+
+### BATS validation
+
+Run the full scenario suite:
+
+```bash
+bats tests/scripts/nightly-evolution.bats
+```
+
+Scenario fixtures for the blocked and admitted rehearsals are at
+`tests/scenarios/nightly-evolution/auto-nightly-evolution-l3-rehearsal-*.json`.
+
 ## Outputs
 
 Each run writes:
@@ -152,6 +243,8 @@ Each run writes:
 - `dream-setup.json`
 - `runtime-inventory.tsv`
 - `open-prs.json`
+- `blocker-matrix.json`
+- `main-ci-baseline.json`
 - optional `nightly-brief/`
 - optional `systemd/`
 - optional `dream-run-payload.json`, `dream-submit.json`, and
