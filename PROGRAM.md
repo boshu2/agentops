@@ -10,9 +10,11 @@ ready to land.
 ## Mutable Scope
 
 - PROGRAM.md
+- PRODUCT.md
 - README.md
 - GOALS.md
 - cli/**
+- evals/**
 - docs/**
 - hooks/**
 - lib/**

@@ -207,6 +207,7 @@ GO
     cat > "$MOCK_BIN/git" <<'GIT'
 #!/usr/bin/env bash
 if [[ "$*" == *"diff --name-only"* ]]; then echo "cli/cmd/ao/main.go"; fi
+if [[ "$*" == *"show --name-only"* ]]; then echo "cli/cmd/ao/main.go"; fi
 if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
 exit 0
 GIT

@@ -20,6 +20,10 @@ output_contract: skills/research/schemas/findings.json
 
 > **Quick Ref:** Deep codebase exploration with multi-angle analysis. Output: `.agents/research/*.md`
 
+```bash
+ao codex ensure-start 2>/dev/null || true
+```
+
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 **CLI dependencies:** ao (knowledge injection — optional). If ao is unavailable, skip prior knowledge search and proceed with direct codebase exploration.
