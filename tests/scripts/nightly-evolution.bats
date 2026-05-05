@@ -57,6 +57,14 @@ if [[ "$1 $2" == "overnight setup" ]]; then
   printf '{"status":"dry-run","dream":{"runners":["claude","codex"],"scheduler_mode":"systemd"}}\n'
   exit 0
 fi
+if [[ "$1 $2 $3" == "daemon jobs submit" ]]; then
+  if [[ "${AO_DAEMON_SUBMIT_FAIL:-}" == "1" ]]; then
+    printf 'daemon submit failed\n' >&2
+    exit 55
+  fi
+  printf '{"job_id":"job-dream","status":"queued"}\n'
+  exit 0
+fi
 if [[ "$1 $2" == "overnight start" ]]; then
   printf '{"status":"ok"}\n'
   exit 0
@@ -235,11 +243,12 @@ add_remote_nightly_branches() {
         --no-require-ai-sane
 
     [ "$status" -eq 0 ]
-    grep -q 'overnight start' "$AO_LOG"
-    jq -e '.readiness.ai_sane_status == "warn" and .phases.dream == "ok"' "$TMP_DIR/out/digest.json"
+    grep -q 'daemon jobs submit' "$AO_LOG"
+    ! grep -q 'overnight start' "$AO_LOG"
+    jq -e '.readiness.ai_sane_status == "warn" and .phases.dream == "submitted"' "$TMP_DIR/out/digest.json"
 }
 
-@test "execute run-dream invokes ao overnight with both runners" {
+@test "execute run-dream submits daemon dream job payload" {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
     export AO_LOG AO_RPI_LOG
@@ -253,10 +262,52 @@ add_remote_nightly_branches() {
         --run-dream
 
     [ "$status" -eq 0 ]
+    grep -q 'daemon jobs submit' "$AO_LOG"
+    ! grep -q 'overnight start' "$AO_LOG"
+    jq -e '.mode == "execute" and .phases.dream == "submitted"' "$TMP_DIR/out/digest.json"
+    payload="$(jq -r '.artifacts.dream_payload' "$TMP_DIR/out/digest.json")"
+    jq -e '.job_type == "dream.run" and .mode == "daemon" and .max_iterations == 1 and (.output_dir | endswith("/dream"))' "$payload"
+}
+
+@test "execute run-dream falls back to legacy subprocess when daemon submit fails" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG AO_DAEMON_SUBMIT_FAIL=1
+
+    run env PATH="$MOCK_BIN:$PATH" AO_DAEMON_SUBMIT_FAIL="$AO_DAEMON_SUBMIT_FAIL" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream
+
+    [ "$status" -eq 0 ]
+    grep -q 'daemon jobs submit' "$AO_LOG"
     grep -q 'overnight start' "$AO_LOG"
     grep -q -- '--runner claude' "$AO_LOG"
     grep -q -- '--runner codex' "$AO_LOG"
     jq -e '.mode == "execute" and .phases.dream == "ok"' "$TMP_DIR/out/digest.json"
+}
+
+@test "execute run-dream can skip legacy subprocess fallback" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG AO_DAEMON_SUBMIT_FAIL=1
+
+    run env PATH="$MOCK_BIN:$PATH" AO_DAEMON_SUBMIT_FAIL="$AO_DAEMON_SUBMIT_FAIL" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream \
+        --skip-dream-subprocess
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Dream daemon submit failed"* ]]
+    grep -q 'daemon jobs submit' "$AO_LOG"
+    ! grep -q 'overnight start' "$AO_LOG"
 }
 
 @test "kill switch prevents nightly run" {
