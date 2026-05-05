@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const RPIJobSpecSchemaVersion = 1
@@ -30,6 +31,7 @@ type RPIRunJobSpec struct {
 	TestFirst           bool       `json:"test_first"`
 	Backend             RPIBackend `json:"backend"`
 	GasCityCityName     string     `json:"gascity_city_name,omitempty"`
+	PhaseTimeout        string     `json:"phase_timeout,omitempty"`
 }
 
 type RPIPhaseJobSpec struct {
@@ -46,6 +48,7 @@ type RPIPhaseJobSpec struct {
 	Backend             RPIBackend `json:"backend"`
 	GasCityCityName     string     `json:"gascity_city_name,omitempty"`
 	GasCitySessionAlias string     `json:"gascity_session_alias,omitempty"`
+	PhaseTimeout        string     `json:"phase_timeout,omitempty"`
 }
 
 func NewRPIRunJobSpec(runID, goal string) RPIRunJobSpec {
@@ -95,6 +98,9 @@ func (spec RPIRunJobSpec) Validate() error {
 	if spec.MaxPhase < spec.StartPhase {
 		return fmt.Errorf("max_phase %d must be >= start_phase %d", spec.MaxPhase, spec.StartPhase)
 	}
+	if err := validateOptionalDuration("phase_timeout", spec.PhaseTimeout); err != nil {
+		return err
+	}
 	return ValidateRPIBackend(spec.Backend)
 }
 
@@ -119,6 +125,9 @@ func (spec RPIPhaseJobSpec) Validate() error {
 	}
 	if spec.Attempt < 0 {
 		return fmt.Errorf("attempt must be >= 0")
+	}
+	if err := validateOptionalDuration("phase_timeout", spec.PhaseTimeout); err != nil {
+		return err
 	}
 	return ValidateRPIBackend(spec.Backend)
 }
@@ -207,6 +216,14 @@ func validateRPIPhaseNumber(field string, value int) error {
 		return fmt.Errorf("%s must be between 1 and 3", field)
 	}
 	return nil
+}
+
+func parseRPIPhaseTimeout(value string) time.Duration {
+	duration, err := time.ParseDuration(strings.TrimSpace(value))
+	if err != nil || duration <= 0 {
+		return 0
+	}
+	return duration
 }
 
 func structToMap(value any) (map[string]any, error) {

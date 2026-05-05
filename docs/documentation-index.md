@@ -186,6 +186,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skill Template](templates/skill.template.md) — Template for new skills
 - [Command Template](templates/command.template.md) — Template for new commands
 - [Kernel Template](templates/kernel.template.md) — Template for new project kernels
+- [Dark Factory Schedule Example](templates/dark-factory-schedule.yaml.example) — Disabled agentopsd schedule template for reviewed Dream and local factory pilots
 - [Product Template](PRODUCT-TEMPLATE.md) — Template for writing a PRODUCT.md
 
 ## Reference
@@ -210,6 +211,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
 - [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
 - [Factory Manual Merge Runbook](runbooks/factory-manual-merge.md) — Operator recovery and manual merge procedure for factory worktrees and validation evidence
+- [Daemon Factory Admission Runbook](runbooks/daemon-factory-admission.md) — Rehearsal procedure for daemon-native factory admission, blocked decisions, RPI handoff, and schedule payloads
 - [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
@@ -219,6 +221,9 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
 - [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
+- [Factory Admission Contract](contracts/factory-admission.md) — Daemon-owned work-order admission contract for fail-closed local factory pilots and RPI handoff
+- [Factory Work Order Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-work-order.v1.schema.json) — JSON Schema for daemon-native factory work-order inputs
+- [Factory Admission Decision Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-admission.v1.schema.json) — JSON Schema for daemon-native admission decisions
 - [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
 - [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
 - [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation

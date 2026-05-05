@@ -286,7 +286,10 @@ paths:
       description: |
         Requires daemon readiness before submission. Only
         `openclaw.snapshot`, `rpi.run`, `dream.run`, and `wiki.forge` are
-        allowlisted through this endpoint.
+        allowlisted through this endpoint. Factory, schedule, plans, and eval
+        job families remain available only through the general `/v1/jobs`
+        mutation surface; OpenClaw is a constrained consumer trigger, not a
+        factory admission authority.
       security:
         - DaemonMutationToken: []
         - BearerAuth: []
@@ -973,7 +976,13 @@ components:
         - dream.stage
         - wiki.build
         - wiki.forge
+        - factory.admission
+        - factory.local-pilot
         - openclaw.snapshot
+        - plans.projection
+        - llmwiki.loop
+        - eval.suite
+        - eval.skill-delta
     JobStatus:
       type: string
       enum:
@@ -1006,6 +1015,18 @@ components:
         - job.cancelled
         - projection.marked_stale
         - projection.rebuilt
+        - factory.admission_decided
+        - factory.job_submitted
+        - factory.job_claimed
+        - factory.job_started
+        - factory.routing_decided
+        - factory.slot_allocated
+        - factory.worktree_allocated
+        - factory.validation_started
+        - factory.validation_completed
+        - factory.merge_decision
+        - factory.job_terminal
+        - factory.yield_observation
     FailureCode:
       type: string
       enum:

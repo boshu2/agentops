@@ -97,3 +97,9 @@ passed and the merge status reached `manual_pending` or `manual_merged`.
 Validation failure, merge rejection, retained failed worktrees, and recovery
 minutes must remain visible in the yield event. Omitting failed observations
 invalidates the comparison because it hides recovery cost.
+
+Blocked factory admission is upstream control-plane evidence, not a yield
+observation. A blocked `factory.admission` or `factory.local-pilot` job records
+its decision artifact and reasons, but it does not emit
+`factory.yield_observation` because no execution, validation, or manual review
+sample exists yet.

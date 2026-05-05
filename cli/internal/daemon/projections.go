@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -21,6 +22,7 @@ var knownEventTypes = map[EventType]struct{}{
 	EventJobCancelled:               {},
 	EventProjectionMarkedStale:      {},
 	EventProjectionRebuilt:          {},
+	EventFactoryAdmissionDecided:    {},
 	EventFactoryJobSubmitted:        {},
 	EventFactoryJobClaimed:          {},
 	EventFactoryJobStarted:          {},
@@ -48,7 +50,8 @@ func isScheduleEvent(t EventType) bool {
 
 func isFactoryEvent(t EventType) bool {
 	switch t {
-	case EventFactoryJobSubmitted,
+	case EventFactoryAdmissionDecided,
+		EventFactoryJobSubmitted,
 		EventFactoryJobClaimed,
 		EventFactoryJobStarted,
 		EventFactoryRoutingDecided,
@@ -174,6 +177,7 @@ type OpenClawResources struct {
 }
 
 type FactoryStatusProjection struct {
+	Admissions              []FactoryAdmissionProjection      `json:"admissions,omitempty"`
 	Jobs                    []FactoryJobProjection            `json:"jobs,omitempty"`
 	ActiveWorkers           []FactoryWorkerProjection         `json:"active_workers,omitempty"`
 	Slots                   []FactorySlotProjection           `json:"slots,omitempty"`
@@ -209,6 +213,21 @@ type FactoryJobProjection struct {
 	SubmittedAt string           `json:"submitted_at,omitempty"`
 	UpdatedAt   string           `json:"updated_at,omitempty"`
 	LastEventID string           `json:"last_event_id,omitempty"`
+}
+
+type FactoryAdmissionProjection struct {
+	JobID         string                  `json:"job_id"`
+	RunID         string                  `json:"run_id,omitempty"`
+	WorkOrderID   string                  `json:"work_order_id"`
+	Allowed       bool                    `json:"allowed"`
+	Reasons       []string                `json:"reasons,omitempty"`
+	LandingPolicy FactoryLandingPolicy    `json:"landing_policy,omitempty"`
+	DigestPolicy  FactoryDigestPolicy     `json:"digest_policy,omitempty"`
+	ChildJobID    string                  `json:"child_job_id,omitempty"`
+	Artifacts     map[string]string       `json:"artifacts,omitempty"`
+	Evidence      FactoryDecisionEvidence `json:"evidence"`
+	DecidedAt     string                  `json:"decided_at,omitempty"`
+	LastEventID   string                  `json:"last_event_id,omitempty"`
 }
 
 type FactoryWorkerProjection struct {
@@ -779,6 +798,8 @@ func (set *ProjectionSet) applyFactoryLifecycleEvent(event LedgerEvent) error {
 
 func (factory *FactoryStatusProjection) applyFactoryEvent(event LedgerEvent) error {
 	switch event.EventType {
+	case EventFactoryAdmissionDecided:
+		return factory.applyFactoryAdmissionDecided(event)
 	case EventFactoryJobSubmitted:
 		factory.applyFactoryJobSubmitted(event)
 	case EventFactoryJobClaimed:
@@ -799,6 +820,23 @@ func (factory *FactoryStatusProjection) applyFactoryEvent(event LedgerEvent) err
 		return factory.applyFactoryMergeDecision(event)
 	case EventFactoryJobTerminal:
 		return factory.applyFactoryJobTerminal(event)
+	}
+	return nil
+}
+
+func (factory *FactoryStatusProjection) applyFactoryAdmissionDecided(event LedgerEvent) error {
+	admission, err := factoryAdmissionFromPayload(event)
+	if err != nil {
+		return fmt.Errorf("event %q: %w", event.EventID, err)
+	}
+	factory.upsertFactoryAdmission(admission)
+
+	job := factory.upsertFactoryJob(event.JobID)
+	factory.applyFactoryJobMetadata(job, event)
+	if admission.Allowed {
+		job.Status = FactoryJobStatusAdmitted
+	} else {
+		job.Status = FactoryJobStatusAdmissionBlocked
 	}
 	return nil
 }
@@ -1520,6 +1558,85 @@ func (factory *FactoryStatusProjection) recordFactoryPointers(event LedgerEvent)
 	}
 }
 
+func factoryAdmissionFromPayload(event LedgerEvent) (FactoryAdmissionProjection, error) {
+	admission := FactoryAdmissionProjection{
+		JobID:       event.JobID,
+		Reasons:     stringSlicePayload(event.Payload, "reasons"),
+		Artifacts:   artifactsFromPayload(event.Payload),
+		DecidedAt:   event.OccurredAt,
+		LastEventID: event.EventID,
+	}
+	if runID, ok := stringPayload(event.Payload, "run_id"); ok {
+		admission.RunID = runID
+	}
+	if workOrderID, ok := stringPayload(event.Payload, "work_order_id"); ok {
+		admission.WorkOrderID = workOrderID
+	}
+	if allowed, ok := boolPayload(event.Payload, "allowed"); ok {
+		admission.Allowed = allowed
+	}
+	if landing, ok := stringPayload(event.Payload, "landing_policy"); ok {
+		admission.LandingPolicy = FactoryLandingPolicy(landing)
+	}
+	if digest, ok := stringPayload(event.Payload, "digest_policy"); ok {
+		admission.DigestPolicy = FactoryDigestPolicy(digest)
+	}
+	if childJobID, ok := stringPayload(event.Payload, "child_job_id"); ok {
+		admission.ChildJobID = childJobID
+	}
+	if evidence, ok, err := factoryDecisionEvidenceFromPayload(event.Payload); err != nil {
+		return FactoryAdmissionProjection{}, err
+	} else if ok {
+		admission.Evidence = evidence
+	}
+	if admission.WorkOrderID == "" {
+		return FactoryAdmissionProjection{}, fmt.Errorf("work_order_id is required")
+	}
+	if admission.LandingPolicy != "" {
+		if err := ValidateFactoryLandingPolicy(admission.LandingPolicy); err != nil {
+			return FactoryAdmissionProjection{}, err
+		}
+	}
+	if admission.DigestPolicy != "" {
+		if err := ValidateFactoryDigestPolicy(admission.DigestPolicy); err != nil {
+			return FactoryAdmissionProjection{}, err
+		}
+	}
+	return admission, nil
+}
+
+func factoryDecisionEvidenceFromPayload(payload map[string]any) (FactoryDecisionEvidence, bool, error) {
+	raw, ok := payload["evidence"]
+	if !ok {
+		return FactoryDecisionEvidence{}, false, nil
+	}
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return FactoryDecisionEvidence{}, true, err
+	}
+	var evidence FactoryDecisionEvidence
+	if err := json.Unmarshal(data, &evidence); err != nil {
+		return FactoryDecisionEvidence{}, true, err
+	}
+	if err := evidence.Validate(); err != nil {
+		return FactoryDecisionEvidence{}, true, err
+	}
+	return evidence, true, nil
+}
+
+func (factory *FactoryStatusProjection) upsertFactoryAdmission(admission FactoryAdmissionProjection) {
+	admission.Reasons = append([]string{}, admission.Reasons...)
+	admission.Artifacts = cloneStringMap(admission.Artifacts)
+	for i := range factory.Admissions {
+		existing := &factory.Admissions[i]
+		if existing.JobID == admission.JobID && existing.WorkOrderID == admission.WorkOrderID {
+			factory.Admissions[i] = admission
+			return
+		}
+	}
+	factory.Admissions = append(factory.Admissions, admission)
+}
+
 func (factory *FactoryStatusProjection) upsertFactoryJob(jobID string) *FactoryJobProjection {
 	for i := range factory.Jobs {
 		if factory.Jobs[i].JobID == jobID {
@@ -1825,6 +1942,7 @@ func mapPayload(payload map[string]any, key string) (map[string]any, bool) {
 
 func cloneFactoryProjection(in FactoryStatusProjection) FactoryStatusProjection {
 	out := FactoryStatusProjection{
+		Admissions:              append([]FactoryAdmissionProjection{}, in.Admissions...),
 		Jobs:                    append([]FactoryJobProjection{}, in.Jobs...),
 		ActiveWorkers:           append([]FactoryWorkerProjection{}, in.ActiveWorkers...),
 		QueueLanes:              append([]FactoryQueueLaneProjection{}, in.QueueLanes...),
@@ -1838,6 +1956,10 @@ func cloneFactoryProjection(in FactoryStatusProjection) FactoryStatusProjection 
 		Artifacts:               append([]FactoryPointer{}, in.Artifacts...),
 		Transcripts:             append([]FactoryPointer{}, in.Transcripts...),
 		Diffs:                   append([]FactoryPointer{}, in.Diffs...),
+	}
+	for i := range out.Admissions {
+		out.Admissions[i].Reasons = append([]string{}, in.Admissions[i].Reasons...)
+		out.Admissions[i].Artifacts = cloneStringMap(in.Admissions[i].Artifacts)
 	}
 	out.Slots = make([]FactorySlotProjection, len(in.Slots))
 	for i := range in.Slots {

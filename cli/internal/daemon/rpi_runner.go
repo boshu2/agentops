@@ -75,6 +75,7 @@ type RPIPhaseExecutionRequest struct {
 	Backend             RPIBackend
 	GasCityCityName     string
 	GasCitySessionAlias string
+	PhaseTimeout        time.Duration
 	Prompt              string
 	Progress            RPIPhaseProgressFunc
 }
@@ -281,6 +282,7 @@ func (r *RPIRunner) executeRun(ctx context.Context, claim QueueClaim, spec RPIRu
 		phaseSpec.Attempt = claim.Job.Attempt
 		phaseSpec.Backend = spec.Backend
 		phaseSpec.GasCityCityName = spec.GasCityCityName
+		phaseSpec.PhaseTimeout = spec.PhaseTimeout
 		req := requestFromPhaseSpec(r.root(), claim, phaseSpec)
 		req.StartPhase = spec.StartPhase
 		req.MaxPhase = spec.MaxPhase
@@ -443,6 +445,7 @@ func (DefaultRPIPromptBuilder) BuildRPIPrompt(req RPIPhaseExecutionRequest) (str
 type GasCityRPIClient interface {
 	CityReadiness(context.Context, string) (gascity.ReadinessResponse, error)
 	CreateSession(context.Context, string, gascity.SessionCreateRequest) (gascity.Session, gascity.ResponseMeta, error)
+	GetSession(context.Context, string, string, gascity.SessionGetOptions) (gascity.Session, gascity.ResponseMeta, error)
 	SubmitSession(context.Context, string, string, gascity.SessionSubmitRequest) (gascity.SessionSubmitResponse, gascity.ResponseMeta, error)
 	StreamCityEvents(context.Context, string, gascity.EventStreamOptions) (GasCityRPIEventStream, gascity.ResponseMeta, error)
 	SessionTranscript(context.Context, string, string, gascity.TranscriptOptions) (gascity.TranscriptResponse, gascity.ResponseMeta, error)
@@ -506,10 +509,14 @@ func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPha
 		return result, err
 	}
 
+	timeout := e.PhaseTimeout
+	if req.PhaseTimeout > 0 {
+		timeout = req.PhaseTimeout
+	}
 	streamCtx := ctx
 	cancel := func() {}
-	if e.PhaseTimeout > 0 {
-		streamCtx, cancel = context.WithTimeout(ctx, e.PhaseTimeout)
+	if timeout > 0 {
+		streamCtx, cancel = context.WithTimeout(ctx, timeout)
 	}
 	defer cancel()
 	stream, streamMeta, err := e.Client.StreamCityEvents(streamCtx, cityName, gascity.EventStreamOptions{})
@@ -524,7 +531,28 @@ func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPha
 	addRequestID(result.RequestIDs, "stream", streamMeta.RequestID)
 	defer stream.Close()
 
-	return processGasCityEventStreamFrames(ctx, streamCtx, stream, sessionID, sessionAlias, req, e, result)
+	result, err = processGasCityEventStreamFrames(ctx, streamCtx, stream, sessionID, sessionAlias, req, e, result)
+	if err == nil {
+		return result, nil
+	}
+	reconcileCtx := ctx
+	reconcileCancel := func() {}
+	if streamCtx.Err() != nil {
+		reconcileCtx, reconcileCancel = context.WithTimeout(context.Background(), 10*time.Second)
+	}
+	defer reconcileCancel()
+	done, reconcileErr := reconcileGasCitySessionTerminal(reconcileCtx, req, e, &result, true)
+	if reconcileErr == nil && done {
+		return result, nil
+	}
+	if streamCtx.Err() != nil {
+		interruptGasCitySessionAfterAbort(result, e, streamCtx.Err())
+		return result, err
+	}
+	if reconcileErr != nil {
+		return result, reconcileErr
+	}
+	return result, err
 }
 
 // resolveAndCheckCityReadiness validates the executor client, resolves the
@@ -696,6 +724,9 @@ func processStreamFrame(ctx context.Context, frame gascity.EventStreamFrame, ses
 		}
 	}
 	event := frame.CityEvent
+	if event == nil {
+		return reconcileGasCitySessionTerminal(ctx, req, e, result, false)
+	}
 	if !gasCityEventMatchesSession(event, sessionID, sessionAlias) {
 		return false, nil
 	}
@@ -727,6 +758,64 @@ func processStreamFrame(ctx context.Context, frame gascity.EventStreamFrame, ses
 		phaseArtifactKey(req.Phase, "gascity_evidence"): evidencePath,
 	}
 	return true, nil
+}
+
+func reconcileGasCitySessionTerminal(ctx context.Context, req RPIPhaseExecutionRequest, e GasCityRPIPhaseExecutor, result *RPIPhaseExecutionResult, strict bool) (bool, error) {
+	session, meta, err := e.Client.GetSession(ctx, result.GasCityCityName, result.GasCitySessionID, gascity.SessionGetOptions{Peek: true})
+	if err != nil {
+		if strict {
+			return false, &RPIPhaseExecutionError{
+				Code:      FailureProviderUnreachable,
+				Message:   fmt.Sprintf("gascity get session %q: %v", result.GasCitySessionID, err),
+				Retryable: true,
+				Cause:     err,
+			}
+		}
+		return false, nil
+	}
+	addRequestID(result.RequestIDs, "get_session", meta.RequestID)
+	classification := gascity.ClassifyTerminalState(gascity.TerminalStateInput{
+		SessionState:  session.State,
+		SessionStatus: session.Status,
+	})
+	if !classification.Terminal {
+		return false, nil
+	}
+	result.Status = classification.Status
+	if err := emitRPIPhaseProgress(ctx, req, *result, classification.Status); err != nil {
+		return false, err
+	}
+	if classification.Status != gascity.TerminalStatusCompleted || classification.Degraded {
+		code := failureCodeForTerminalStatus(classification.Status)
+		message := fmt.Sprintf("gascity session %q terminal %s", result.GasCitySessionID, classification.Status)
+		if classification.Reason != "" {
+			message += ": " + classification.Reason
+		}
+		return false, &RPIPhaseExecutionError{Code: code, Message: message}
+	}
+	evidencePath, err := captureGasCityRPIEvidence(ctx, e.Client, req, *result)
+	if err != nil {
+		return false, err
+	}
+	result.EvidencePath = evidencePath
+	result.Artifacts = map[string]string{
+		phaseArtifactKey(req.Phase, "gascity_evidence"): evidencePath,
+	}
+	return true, nil
+}
+
+func interruptGasCitySessionAfterAbort(result RPIPhaseExecutionResult, e GasCityRPIPhaseExecutor, cause error) {
+	if e.Client == nil || result.GasCityCityName == "" || result.GasCitySessionID == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	message := fmt.Sprintf("AgentOps daemon RPI phase stopped: %v", cause)
+	_, meta, _ := e.Client.SubmitSession(ctx, result.GasCityCityName, result.GasCitySessionID, gascity.SessionSubmitRequest{
+		Message: message,
+		Intent:  "interrupt_now",
+	})
+	addRequestID(result.RequestIDs, "interrupt", meta.RequestID)
 }
 
 func emitRPIPhaseProgress(ctx context.Context, req RPIPhaseExecutionRequest, result RPIPhaseExecutionResult, status string) error {
@@ -810,6 +899,7 @@ func requestFromPhaseSpec(root string, claim QueueClaim, spec RPIPhaseJobSpec) R
 		Backend:             spec.Backend,
 		GasCityCityName:     spec.GasCityCityName,
 		GasCitySessionAlias: spec.GasCitySessionAlias,
+		PhaseTimeout:        parseRPIPhaseTimeout(spec.PhaseTimeout),
 	}
 }
 

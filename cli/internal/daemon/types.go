@@ -11,14 +11,16 @@ import (
 type JobType string
 
 const (
-	JobTypeRPIRun           JobType = "rpi.run"
-	JobTypeRPIPhase         JobType = "rpi.phase"
-	JobTypeDreamRun         JobType = "dream.run"
-	JobTypeDreamStage       JobType = "dream.stage"
-	JobTypeWikiBuild        JobType = "wiki.build"
-	JobTypeWikiForge        JobType = "wiki.forge"
-	JobTypeOpenClawSnapshot JobType = "openclaw.snapshot"
-	JobTypePlansProjection  JobType = "plans.projection"
+	JobTypeRPIRun            JobType = "rpi.run"
+	JobTypeRPIPhase          JobType = "rpi.phase"
+	JobTypeDreamRun          JobType = "dream.run"
+	JobTypeDreamStage        JobType = "dream.stage"
+	JobTypeWikiBuild         JobType = "wiki.build"
+	JobTypeWikiForge         JobType = "wiki.forge"
+	JobTypeFactoryAdmission  JobType = "factory.admission"
+	JobTypeFactoryLocalPilot JobType = "factory.local-pilot"
+	JobTypeOpenClawSnapshot  JobType = "openclaw.snapshot"
+	JobTypePlansProjection   JobType = "plans.projection"
 	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
 	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
 	JobTypeLLMWikiLoop      JobType = "llmwiki.loop"
@@ -80,6 +82,7 @@ const (
 	EventProjectionMarkedStale EventType = "projection.marked_stale"
 	EventProjectionRebuilt     EventType = "projection.rebuilt"
 
+	EventFactoryAdmissionDecided    EventType = "factory.admission_decided"
 	EventFactoryJobSubmitted        EventType = "factory.job_submitted"
 	EventFactoryJobClaimed          EventType = "factory.job_claimed"
 	EventFactoryJobStarted          EventType = "factory.job_started"
@@ -109,6 +112,8 @@ type FactoryJobStatus string
 
 const (
 	FactoryJobStatusSubmitted           FactoryJobStatus = "submitted"
+	FactoryJobStatusAdmitted            FactoryJobStatus = "admitted"
+	FactoryJobStatusAdmissionBlocked    FactoryJobStatus = "admission_blocked"
 	FactoryJobStatusClaimed             FactoryJobStatus = "claimed"
 	FactoryJobStatusStarted             FactoryJobStatus = "started"
 	FactoryJobStatusRouted              FactoryJobStatus = "routed"
@@ -362,18 +367,20 @@ func isTerminalStatus(status JobStatus) bool {
 }
 
 var jobTypeSet = map[string]struct{}{
-	string(JobTypeRPIRun):           {},
-	string(JobTypeRPIPhase):         {},
-	string(JobTypeDreamRun):         {},
-	string(JobTypeDreamStage):       {},
-	string(JobTypeWikiBuild):        {},
-	string(JobTypeWikiForge):        {},
-	string(JobTypeOpenClawSnapshot): {},
-	string(JobTypePlansProjection):  {},
-	string(JobTypeLLMWikiLoop):      {},
-	string(JobTypeEvalSuite):        {},
-	string(JobTypeEvalSkillDelta):   {},
-	string(JobTypeSkillInvoke):      {},
+	string(JobTypeRPIRun):            {},
+	string(JobTypeRPIPhase):          {},
+	string(JobTypeDreamRun):          {},
+	string(JobTypeDreamStage):        {},
+	string(JobTypeWikiBuild):         {},
+	string(JobTypeWikiForge):         {},
+	string(JobTypeFactoryAdmission):  {},
+	string(JobTypeFactoryLocalPilot): {},
+	string(JobTypeOpenClawSnapshot):  {},
+	string(JobTypePlansProjection):   {},
+	string(JobTypeLLMWikiLoop):       {},
+	string(JobTypeEvalSuite):         {},
+	string(JobTypeEvalSkillDelta):    {},
+	string(JobTypeSkillInvoke):       {},
 }
 
 var eventTypeSet = map[string]struct{}{
@@ -386,6 +393,7 @@ var eventTypeSet = map[string]struct{}{
 	string(EventJobCancelled):               {},
 	string(EventProjectionMarkedStale):      {},
 	string(EventProjectionRebuilt):          {},
+	string(EventFactoryAdmissionDecided):    {},
 	string(EventFactoryJobSubmitted):        {},
 	string(EventFactoryJobClaimed):          {},
 	string(EventFactoryJobStarted):          {},

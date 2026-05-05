@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "work_order_id": "factory-work-20260504-001",
+  "generated_at": "2026-05-04T23:30:00Z",
+  "expires_at": "2026-05-05T00:30:00Z",
+  "base_sha": "abcdef1234567890",
+  "target": {
+    "type": "bead",
+    "id": "soc-ff7b.7.1",
+    "summary": "Define daemon-native factory admission contracts"
+  },
+  "allowed_files": [
+    "docs/contracts/factory-admission.md",
+    "schemas/factory-work-order.v1.schema.json",
+    "schemas/factory-admission.v1.schema.json"
+  ],
+  "validation_commands": [
+    "python3 tests/scripts/test-factory-admission-contracts.py",
+    "cd cli && go test ./internal/daemon -run 'FactoryAdmission|FactoryLocalPilot|JobType|Recurrence'"
+  ],
+  "landing_policy": "manual_pr",
+  "digest_policy": "required",
+  "open_pr_blockers": [],
+  "main_ci_baseline": {
+    "status": "green",
+    "run_id": "123456789",
+    "checked_at": "2026-05-04T23:29:00Z",
+    "failed_jobs": []
+  },
+  "unknown_evidence_policy": "block"
+}

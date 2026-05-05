@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/schemas/factory-admission.v1.schema.json",
+  "title": "AgentOps Factory Admission Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "work_order_id",
+    "run_id",
+    "evaluated_at",
+    "allowed",
+    "reasons",
+    "landing_policy",
+    "digest_policy",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "work_order_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "evaluated_at": {"type": "string", "format": "date-time"},
+    "allowed": {"type": "boolean"},
+    "reasons": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "landing_policy": {"enum": ["off", "manual_pr"]},
+    "digest_policy": {"const": "required"},
+    "child_job_id": {"type": "string", "minLength": 1},
+    "artifact_refs": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_sha", "open_pr_blocker_count", "main_ci_status"],
+      "properties": {
+        "base_sha": {"type": "string", "minLength": 7},
+        "open_pr_blocker_count": {"type": "integer", "minimum": 0},
+        "main_ci_status": {"enum": ["green", "red", "unknown"]},
+        "stale": {"type": "boolean"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"allowed": {"const": false}},
+        "required": ["allowed"]
+      },
+      "then": {
+        "properties": {
+          "reasons": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

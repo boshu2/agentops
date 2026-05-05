@@ -15,7 +15,7 @@
         "properties": {
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
           "cron": {"type": "string"},
-          "job_type": {"type": "string", "pattern": "^[a-z]+\\.[a-z]+$"},
+          "job_type": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"},
           "payload": {},
           "timeout": {"type": "string"},
           "backpressure": {

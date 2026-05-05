@@ -25,6 +25,7 @@ type fakeGasCityRPIClient struct {
 	transcriptMeta  gascity.ResponseMeta
 	transcript      gascity.TranscriptResponse
 	stream          *fakeGasCityRPIStream
+	streamFactory   func(context.Context) GasCityRPIEventStream
 	sessions        map[string]gascity.Session
 	getErrs         map[string]error
 	createCalls     []fakeGasCityRPICreateCall
@@ -108,9 +109,15 @@ func (f *fakeGasCityRPIClient) GetSession(_ context.Context, cityName string, se
 	return gascity.Session{ID: sessionID, State: "running", Running: true}, gascity.ResponseMeta{RequestID: "req-get-" + sessionID}, nil
 }
 
-func (f *fakeGasCityRPIClient) StreamCityEvents(_ context.Context, cityName string, opts gascity.EventStreamOptions) (GasCityRPIEventStream, gascity.ResponseMeta, error) {
+func (f *fakeGasCityRPIClient) StreamCityEvents(ctx context.Context, cityName string, opts gascity.EventStreamOptions) (GasCityRPIEventStream, gascity.ResponseMeta, error) {
 	f.streamCalls = append(f.streamCalls, fakeGasCityRPIStreamCall{cityName: cityName, opts: opts})
-	stream := f.stream
+	var stream GasCityRPIEventStream
+	if f.streamFactory != nil {
+		stream = f.streamFactory(ctx)
+	}
+	if stream == nil && f.stream != nil {
+		stream = f.stream
+	}
 	if stream == nil {
 		stream = &fakeGasCityRPIStream{frames: []gascity.EventStreamFrame{{
 			ID: "1",
@@ -162,9 +169,13 @@ type fakeGasCityRPIStream struct {
 	frames []gascity.EventStreamFrame
 	index  int
 	closed bool
+	err    error
 }
 
 func (s *fakeGasCityRPIStream) NextEvent() (gascity.EventStreamFrame, error) {
+	if s.err != nil {
+		return gascity.EventStreamFrame{}, s.err
+	}
 	if s.index >= len(s.frames) {
 		return gascity.EventStreamFrame{}, io.EOF
 	}
@@ -174,6 +185,21 @@ func (s *fakeGasCityRPIStream) NextEvent() (gascity.EventStreamFrame, error) {
 }
 
 func (s *fakeGasCityRPIStream) Close() error {
+	s.closed = true
+	return nil
+}
+
+type contextDoneGasCityRPIStream struct {
+	ctx    context.Context
+	closed bool
+}
+
+func (s *contextDoneGasCityRPIStream) NextEvent() (gascity.EventStreamFrame, error) {
+	<-s.ctx.Done()
+	return gascity.EventStreamFrame{}, s.ctx.Err()
+}
+
+func (s *contextDoneGasCityRPIStream) Close() error {
 	s.closed = true
 	return nil
 }
@@ -272,6 +298,74 @@ func TestRPIRunner_RunNextRPIJobThroughGasCityExecutor(t *testing.T) {
 	}
 	if state.TerminalStatus != "completed" || state.Backend != string(RPIBackendGasCityAPI) {
 		t.Fatalf("registry state = %#v", state)
+	}
+}
+
+func TestGasCityRPIPhaseExecutorCompletesFromSessionTerminalEvidence(t *testing.T) {
+	root := t.TempDir()
+	fake := &fakeGasCityRPIClient{
+		ready:   gascity.ReadinessResponse{Ready: true, Status: "ready"},
+		session: gascity.Session{ID: "sess_rpi_123"},
+		stream:  &fakeGasCityRPIStream{},
+		sessions: map[string]gascity.Session{
+			"sess_rpi_123": {ID: "sess_rpi_123", State: "closed", Status: "completed"},
+		},
+	}
+	exec := GasCityRPIPhaseExecutor{Client: fake, CityName: "agentops"}
+	result, err := exec.ExecuteRPIPhase(context.Background(), RPIPhaseExecutionRequest{
+		Root:      root,
+		RunID:     "run-rest-terminal",
+		Goal:      "prove REST terminal evidence",
+		Phase:     1,
+		PhaseName: "discovery",
+		Prompt:    "finish",
+	})
+	if err != nil {
+		t.Fatalf("ExecuteRPIPhase: %v", err)
+	}
+	if result.Status != gascity.TerminalStatusCompleted {
+		t.Fatalf("status = %q, want completed", result.Status)
+	}
+	if len(fake.getCalls) == 0 {
+		t.Fatal("expected GetSession fallback when stream ended without terminal event")
+	}
+	if result.EvidencePath == "" {
+		t.Fatalf("result = %#v, want evidence path", result)
+	}
+	if _, err := os.Stat(result.EvidencePath); err != nil {
+		t.Fatalf("evidence path %s: %v", result.EvidencePath, err)
+	}
+}
+
+func TestGasCityRPIPhaseExecutorInterruptsSessionOnPhaseTimeout(t *testing.T) {
+	fake := &fakeGasCityRPIClient{
+		ready:   gascity.ReadinessResponse{Ready: true, Status: "ready"},
+		session: gascity.Session{ID: "sess_rpi_timeout"},
+		streamFactory: func(ctx context.Context) GasCityRPIEventStream {
+			return &contextDoneGasCityRPIStream{ctx: ctx}
+		},
+		sessions: map[string]gascity.Session{
+			"sess_rpi_timeout": {ID: "sess_rpi_timeout", State: "running", Status: "running"},
+		},
+	}
+	exec := GasCityRPIPhaseExecutor{Client: fake, CityName: "agentops", PhaseTimeout: time.Millisecond}
+	_, err := exec.ExecuteRPIPhase(context.Background(), RPIPhaseExecutionRequest{
+		Root:      t.TempDir(),
+		RunID:     "run-timeout",
+		Goal:      "bound daemon phase",
+		Phase:     1,
+		PhaseName: "discovery",
+		Prompt:    "wait",
+	})
+	if err == nil || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("ExecuteRPIPhase error = %v, want deadline exceeded", err)
+	}
+	if len(fake.submitCalls) < 2 {
+		t.Fatalf("submit calls = %#v, want initial submit plus interrupt", fake.submitCalls)
+	}
+	last := fake.submitCalls[len(fake.submitCalls)-1]
+	if last.sessionID != "sess_rpi_timeout" || last.req.Intent != "interrupt_now" {
+		t.Fatalf("last submit = %#v, want interrupt_now for timeout session", last)
 	}
 }
 
