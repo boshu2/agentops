@@ -1,0 +1,12 @@
+{
+  "computed_at": "2026-05-05T06:16:00Z",
+  "method": "github_mcp_workflow_run_query_unavailable",
+  "available_tools": "list_commits, pull_request_read; no workflow_runs API",
+  "best_proxy": "open PR #228 reports main Validate run 25352104726 was failing on agentops-contract-canaries (required) and agentops-eval-advisory (advisory) before its push",
+  "main_head_sha": "80ee5a8084f0ad54b7a1fe0c23803f3bd03599a7",
+  "inferred_inherited_failures": [
+    {"job": "agentops-contract-canaries", "type": "required", "source": "PR #228 description"},
+    {"job": "agentops-eval-advisory", "type": "advisory", "source": "PR #228 description"}
+  ],
+  "note": "If our PR's CI shows these jobs red, classify as inherited from main, not introduced by this PR."
+}

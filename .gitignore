@@ -119,4 +119,30 @@ hooks/claude.json
 packs/
 
 # AgentOps session artifacts
-.agents/
+# Default: everything under the repo-root .agents/ is local/private runtime
+# state (anchored — leading `/` keeps the rule from also matching nested
+# .agents/ dirs like cli/.agents/, which has its own rule above).
+/.agents/*
+/.agents/**/*
+
+# Force-tracked .agents/ paths that compound across runs (audit truth, not
+# session state). Each path below must remain reproducible: nightly+evolve
+# digests, fitness deltas, and probe history depend on these existing in
+# main between runs. Never broaden the allowlist without updating
+# CLAUDE.md / PROGRAM.md to match. The leading directory re-includes are
+# required because git refuses to re-include files inside an excluded
+# parent directory. All patterns are anchored with a leading `/` so
+# cli/.agents/, tests/claude-code/.agents/, etc. stay excluded.
+!/.agents/
+!/.agents/rpi/
+!/.agents/rpi/next-work.jsonl
+!/.agents/nightly/
+!/.agents/nightly/**
+!/.agents/evolve/
+!/.agents/evolve/cycle-history.jsonl
+!/.agents/evolve/session-state.json
+!/.agents/goals/
+!/.agents/goals/**/
+!/.agents/goals/**/attempts.jsonl
+!/.agents/findings/
+!/.agents/findings/registry.jsonl
