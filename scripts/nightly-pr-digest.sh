@@ -300,6 +300,48 @@ build_auto_reverts() {
   fi
 }
 
+build_admission_context() {
+  printf '### Admission Context\n\n'
+
+  local gh_evidence
+  gh_evidence="$(jq -r '.admission_context.gh_evidence // "not present"' "$DIGEST_JSON")"
+  if [[ "$gh_evidence" == "not present" ]]; then
+    printf '_(no admission context in digest)_\n\n'
+    return
+  fi
+
+  local ci_status blocker_count landing_policy
+  ci_status="$(jq -r '.admission_context.main_ci_baseline.status // "unknown"' "$DIGEST_JSON")"
+  blocker_count="$(jq -r '.admission_context.blocker_matrix.prs | length' "$DIGEST_JSON" 2>/dev/null || echo 0)"
+  landing_policy="$(jq -r '.admission_context.main_ci_baseline // {} | .landing_policy // "unknown"' "$DIGEST_JSON" 2>/dev/null || echo "unknown")"
+
+  printf '| Field | Value |\n|---|---|\n'
+  printf '| GitHub evidence | %s |\n' "$gh_evidence"
+  printf '| Main CI baseline | %s |\n' "$ci_status"
+  printf '| Open PR blockers | %s |\n' "$blocker_count"
+
+  if [[ "$blocker_count" -gt 0 ]] 2>/dev/null; then
+    printf '\n**Blocker PRs:**\n\n'
+    printf '| # | Branch | Files |\n|---|---|---|\n'
+    jq -r '.admission_context.blocker_matrix.prs[] | "| #\(.pr_number) | `\(.head_ref)` | \(.changed_file_count) |"' "$DIGEST_JSON" 2>/dev/null | head -10
+    printf '\n'
+  fi
+
+  local mode evolve_status
+  mode="$(jq -r '.mode // "unknown"' "$DIGEST_JSON")"
+  evolve_status="$(jq -r '.phases.evolve // "not-requested"' "$DIGEST_JSON")"
+
+  if [[ "$mode" != "execute" ]]; then
+    printf '\n**Verdict:** dry-run (no source mutation attempted)\n\n'
+  elif [[ "$evolve_status" == "not-requested" ]]; then
+    printf '\n**Verdict:** evolve not requested\n\n'
+  elif [[ "$evolve_status" == "ok" ]]; then
+    printf '\n**Verdict:** admitted and completed\n\n'
+  else
+    printf '\n**Verdict:** %s\n\n' "$evolve_status"
+  fi
+}
+
 build_tag_push_status() {
   printf '### Tag-Push Status\n\n'
 
@@ -324,6 +366,7 @@ build_tag_push_status() {
 
 emit_markdown() {
   build_header
+  build_admission_context
   build_goals_section
   build_cycle_history
   build_runtime_flips
@@ -341,17 +384,24 @@ emit_json() {
   tmp_md="$(mktemp "${TMPDIR:-/tmp}/pr-digest-XXXXXX.md")"
   emit_markdown > "$tmp_md"
 
+  local admission_json="{}"
+  if [[ -f "$DIGEST_JSON" ]]; then
+    admission_json="$(jq '.admission_context // {}' "$DIGEST_JSON" 2>/dev/null || echo '{}')"
+  fi
+
   jq -n \
     --arg schema_version "1" \
     --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --arg branch "$BRANCH" \
     --arg run_dir "$RUN_DIR" \
+    --argjson admission "$admission_json" \
     --rawfile body "$tmp_md" \
     '{
       schema_version: ($schema_version | tonumber),
       generated_at: $generated_at,
       branch: $branch,
       run_dir: $run_dir,
+      admission_context: $admission,
       pr_body: $body
     }'
   rm -f "$tmp_md"

@@ -12,6 +12,9 @@ setup() {
     cp "$SCRIPT" "$FAKE_REPO/scripts/nightly-evolution.sh"
     chmod +x "$FAKE_REPO/scripts/nightly-evolution.sh"
 
+    cp "$REPO_ROOT/scripts/nightly-pr-digest.sh" "$FAKE_REPO/scripts/nightly-pr-digest.sh"
+    chmod +x "$FAKE_REPO/scripts/nightly-pr-digest.sh"
+
     cat >"$FAKE_REPO/scripts/nightly-rpi-brief.sh" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -783,4 +786,49 @@ STUB
 
     [ "$status" -eq 0 ]
     jq -e '.phases.dream == "submitted"' "$TMP_DIR/out/digest.json"
+}
+
+@test "pr digest includes admission context table" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_PR_LIST_RESPONSE='[{"number":77,"title":"fix: thing","headRefName":"fix/thing","baseRefName":"main","changedFiles":2,"url":"https://github.com/test/77","labels":[]}]'
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"success","databaseId":88888}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    [ -f "$TMP_DIR/out/pr-body.md" ]
+    grep -q 'Admission Context' "$TMP_DIR/out/pr-body.md"
+    grep -q 'GitHub evidence.*ok' "$TMP_DIR/out/pr-body.md"
+    grep -q 'Main CI baseline.*green' "$TMP_DIR/out/pr-body.md"
+    grep -q 'Open PR blockers.*1' "$TMP_DIR/out/pr-body.md"
+    grep -q 'dry-run' "$TMP_DIR/out/pr-body.md"
+}
+
+@test "pr digest json includes admission context fields" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":44444}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+
+    "$FAKE_REPO/scripts/nightly-pr-digest.sh" \
+        --run-dir "$TMP_DIR/out" \
+        --format json \
+        --output "$TMP_DIR/out/pr-digest.json"
+
+    jq -e '.admission_context.gh_evidence == "ok"' "$TMP_DIR/out/pr-digest.json"
+    jq -e '.admission_context.main_ci_baseline.status == "red"' "$TMP_DIR/out/pr-digest.json"
 }
