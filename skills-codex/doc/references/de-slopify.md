@@ -149,4 +149,3 @@ Install the tool and run your first command in under a minute.
 
 | Topic | Reference |
 |-------|-----------|
-| Complete phrase list | [PATTERNS.md](references/PATTERNS.md) |
