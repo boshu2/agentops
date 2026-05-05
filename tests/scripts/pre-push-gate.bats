@@ -288,7 +288,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE" --fast --scope upstream
+    run bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"release audit artifacts"* ]]
 }
@@ -370,7 +370,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"go test -race"* ]]
 }
@@ -404,7 +404,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"BLOCKED"* ]]
 }
@@ -436,7 +436,7 @@ FAST
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"go build"* ]]
     [[ "$output" == *"fail-fast enabled"* ]]
@@ -470,7 +470,7 @@ FAST
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"go build"* ]]
     [[ "$output" == *"validate-go-fast did run"* ]]
@@ -499,7 +499,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"worktree disposition"* ]]
 }
@@ -563,7 +563,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -ne 0 ]
     [[ "$output" == *"FAIL"*"codex backbone prompts"* ]]
 }
@@ -591,7 +591,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -ne 0 ]
     [[ "$output" == *"FAIL"*"codex override coverage"* ]]
 }
@@ -619,7 +619,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run bash "$GATE"
+    run bash "$GATE" --single-pass
     [ "$status" -ne 0 ]
     [[ "$output" == *"FAIL"*"headless runtime skills"* ]]
 }
@@ -793,7 +793,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"AgentOps eval canaries (advisory)"* ]]
     run grep -q -- '--advisory' "$BATS_TEST_TMPDIR/eval-args.txt"
@@ -826,7 +826,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 0 ]
     [[ "$output" == *"AgentOps eval canaries"* ]]
     run grep -q -- '--suite evals/agentops-core/context-packet-ab-wave0.json' "$BATS_TEST_TMPDIR/eval-args.txt"
@@ -883,7 +883,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_STRICT_EVAL=1 bash "$GATE" --fast --scope upstream
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_STRICT_EVAL=1 bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"AgentOps eval canaries"* ]]
 }
@@ -982,7 +982,7 @@ GIT
 
     run env -u CI -u GITHUB_ACTIONS \
         CODEX_HOME="$fake_codex_home" \
-        bash "$GATE" --fast --scope upstream --accumulate
+        bash "$GATE" --fast --scope upstream --accumulate --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"codex hook manifest parity"* ]]
 }
@@ -1115,7 +1115,7 @@ GIT
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"test HOME isolation"* ]]
 }
