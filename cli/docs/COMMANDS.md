@@ -3360,6 +3360,23 @@ ao sessions index [flags]
       --sessions-dir string   Directory containing derived session pages (default: .agents/ao/sessions)
 ```
 
+#### `ao sessions spawn`
+
+Read a session template, expand variables, run init steps, and create
+
+```
+ao sessions spawn <template-path> [flags]
+```
+
+**Flags:**
+
+```
+      --date string   Override date for template expansion (default: today, YYYY-MM-DD)
+      --dry-run       Print expanded template and init steps without executing
+  -h, --help          help for spawn
+      --no-tmux       Run init steps but skip tmux session creation
+```
+
 ---
 
 ### `ao trace`
