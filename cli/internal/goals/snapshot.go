@@ -11,12 +11,33 @@ import (
 )
 
 // SnapshotSummary holds aggregate counts and weighted score.
+//
+// Score is the headline weighted-pass percentage: passing-weight /
+// (passing-weight + failing-weight) * 100. Skipped goals (timeouts,
+// dormant preconditions, exit 77) are excluded from both numerator
+// and denominator.
+//
+// CodeDrivenScore is the same calculation restricted to goals that do
+// NOT carry the `runtime-artifact` tag. Runtime-artifact goals
+// (compile-freshness, compile-no-oscillation) flip every run because
+// they read .agents/defrag/latest.json which is gitignored — including
+// them in the headline delta inflates morning digests. Per the nightly
+// routine, the *code-driven* score is the comparison number; the raw
+// score and the runtime-artifact slice are tabulated separately.
 type SnapshotSummary struct {
-	Total   int     `json:"total"`
-	Passing int     `json:"passing"`
-	Failing int     `json:"failing"`
-	Skipped int     `json:"skipped"`
-	Score   float64 `json:"score"`
+	Total                  int     `json:"total"`
+	Passing                int     `json:"passing"`
+	Failing                int     `json:"failing"`
+	Skipped                int     `json:"skipped"`
+	Score                  float64 `json:"score"`
+	CodeDrivenTotal        int     `json:"code_driven_total"`
+	CodeDrivenPassing      int     `json:"code_driven_passing"`
+	CodeDrivenFailing      int     `json:"code_driven_failing"`
+	CodeDrivenSkipped      int     `json:"code_driven_skipped"`
+	CodeDrivenScore        float64 `json:"code_driven_score"`
+	RuntimeArtifactTotal   int     `json:"runtime_artifact_total"`
+	RuntimeArtifactPassing int     `json:"runtime_artifact_passing"`
+	RuntimeArtifactFailing int     `json:"runtime_artifact_failing"`
 }
 
 // Snapshot captures a point-in-time measurement of all goals.

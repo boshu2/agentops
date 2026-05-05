@@ -344,27 +344,76 @@ func acquireGoalSlot(ctx context.Context, sem chan struct{}) bool {
 }
 
 // computeSummary aggregates pass/fail/skip counts and weighted score.
+// Reports both the headline (raw) score and the code-driven score (raw
+// minus runtime-artifact-tagged goals). See SnapshotSummary doc for why
+// runtime-artifact goals are tabulated separately.
 func computeSummary(measurements []Measurement) SnapshotSummary {
 	var summary SnapshotSummary
 	summary.Total = len(measurements)
 	var weightedPass, weightedTotal int
+	var codePass, codeTotal int
 	for _, m := range measurements {
+		isRA := isRuntimeArtifact(m.Tags)
 		switch m.Result {
 		case resultPass:
 			summary.Passing++
 			weightedPass += m.Weight
 			weightedTotal += m.Weight
+			if isRA {
+				summary.RuntimeArtifactTotal++
+				summary.RuntimeArtifactPassing++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenPassing++
+				codePass += m.Weight
+				codeTotal += m.Weight
+			}
 		case resultFail:
 			summary.Failing++
 			weightedTotal += m.Weight
+			if isRA {
+				summary.RuntimeArtifactTotal++
+				summary.RuntimeArtifactFailing++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenFailing++
+				codeTotal += m.Weight
+			}
 		case resultSkip:
 			summary.Skipped++
+			if isRA {
+				summary.RuntimeArtifactTotal++
+			} else {
+				summary.CodeDrivenTotal++
+				summary.CodeDrivenSkipped++
+			}
 		}
 	}
 	if weightedTotal > 0 {
 		summary.Score = float64(weightedPass) / float64(weightedTotal) * 100
 	}
+	if codeTotal > 0 {
+		summary.CodeDrivenScore = float64(codePass) / float64(codeTotal) * 100
+	}
 	return summary
+}
+
+// runtimeArtifactTag is the canonical tag name used by goals.yaml /
+// GOALS.md to mark gates whose green path depends on a gitignored
+// runtime artifact (e.g. .agents/defrag/latest.json). The nightly
+// routine excludes these from headline fitness comparison because
+// their flips don't propagate across environments.
+const runtimeArtifactTag = "runtime-artifact"
+
+// isRuntimeArtifact reports whether tags contain the runtime-artifact
+// classifier (case-insensitive, leading/trailing whitespace ignored).
+func isRuntimeArtifact(tags []string) bool {
+	for _, t := range tags {
+		if strings.EqualFold(strings.TrimSpace(t), runtimeArtifactTag) {
+			return true
+		}
+	}
+	return false
 }
 
 const gitSHATimeout = 2 * time.Second

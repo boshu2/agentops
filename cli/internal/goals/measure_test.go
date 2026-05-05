@@ -562,3 +562,77 @@ func TestIsSkipExit(t *testing.T) {
 		})
 	}
 }
+
+func TestComputeSummary_CodeDrivenAndRuntimeArtifactSplit(t *testing.T) {
+	// Mixed corpus: two code-driven (one pass, one fail), two
+	// runtime-artifact (one pass, one fail), one skip in each lane.
+	summary := computeSummary([]Measurement{
+		{Result: resultPass, Weight: 6}, // code-driven pass
+		{Result: resultFail, Weight: 8}, // code-driven fail
+		{Result: resultSkip, Weight: 3}, // code-driven skip
+		{Result: resultPass, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA pass
+		{Result: resultFail, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA fail
+	})
+
+	// Headline (raw): 2 pass (6+4) / 2 fail (8+4) / 1 skip (3, excluded);
+	// weighted 10 / 22 = 45.45%
+	if summary.Total != 5 || summary.Passing != 2 || summary.Failing != 2 || summary.Skipped != 1 {
+		t.Fatalf("headline counts: %+v", summary)
+	}
+	wantScore := 100.0 * 10 / 22
+	if got := summary.Score; got < wantScore-0.01 || got > wantScore+0.01 {
+		t.Errorf("Score = %f, want ~%f", got, wantScore)
+	}
+
+	// Code-driven: 1 pass / 1 fail / 1 skip; weighted 6 / 14 = 42.86%
+	if summary.CodeDrivenTotal != 3 || summary.CodeDrivenPassing != 1 || summary.CodeDrivenFailing != 1 || summary.CodeDrivenSkipped != 1 {
+		t.Fatalf("code-driven counts: %+v", summary)
+	}
+	wantCode := 100.0 * 6 / 14
+	if got := summary.CodeDrivenScore; got < wantCode-0.01 || got > wantCode+0.01 {
+		t.Errorf("CodeDrivenScore = %f, want ~%f", got, wantCode)
+	}
+
+	// Runtime-artifact: 1 pass / 1 fail / 0 skip
+	if summary.RuntimeArtifactTotal != 2 || summary.RuntimeArtifactPassing != 1 || summary.RuntimeArtifactFailing != 1 {
+		t.Errorf("runtime-artifact counts: %+v", summary)
+	}
+}
+
+func TestComputeSummary_AllRuntimeArtifact_CodeDrivenScoreZeroDenominator(t *testing.T) {
+	// When every goal is runtime-artifact, the code-driven slice is empty.
+	// CodeDrivenTotal=0 must keep CodeDrivenScore at 0 (no NaN, no panic).
+	summary := computeSummary([]Measurement{
+		{Result: resultPass, Weight: 4, Tags: []string{"runtime-artifact"}},
+		{Result: resultFail, Weight: 4, Tags: []string{"runtime-artifact"}},
+	})
+	if summary.CodeDrivenTotal != 0 {
+		t.Errorf("CodeDrivenTotal = %d, want 0", summary.CodeDrivenTotal)
+	}
+	if summary.CodeDrivenScore != 0 {
+		t.Errorf("CodeDrivenScore = %f, want 0 (empty denominator)", summary.CodeDrivenScore)
+	}
+}
+
+func TestIsRuntimeArtifact(t *testing.T) {
+	tests := []struct {
+		name string
+		tags []string
+		want bool
+	}{
+		{name: "nil_tags", tags: nil, want: false},
+		{name: "empty_tags", tags: []string{}, want: false},
+		{name: "exact_match", tags: []string{"runtime-artifact"}, want: true},
+		{name: "case_insensitive", tags: []string{"Runtime-Artifact"}, want: true},
+		{name: "with_whitespace", tags: []string{"  runtime-artifact  "}, want: true},
+		{name: "alongside_other_tags", tags: []string{"long-cycle", "runtime-artifact"}, want: true},
+		{name: "no_match", tags: []string{"long-cycle", "corpus-state"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRuntimeArtifact(tt.tags); got != tt.want {
+				t.Errorf("isRuntimeArtifact(%v) = %v, want %v", tt.tags, got, tt.want)
+			}
+		})
+	}
+}
