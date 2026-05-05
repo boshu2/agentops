@@ -106,6 +106,74 @@ write_runtime_inventory() {
   done
 }
 
+build_blocker_matrix() {
+  local prs_json="$1"
+  local out_file="$2"
+  local gh_evidence="$3"
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  if [[ "$gh_evidence" != "ok" ]]; then
+    jq -n --arg status "$gh_evidence" --arg ts "$ts" \
+      '{status: $status, checked_at: $ts, prs: []}' >"$out_file"
+    return
+  fi
+
+  jq --arg ts "$ts" '
+    {
+      status: "ok",
+      checked_at: $ts,
+      prs: [.[] | {
+        pr_number: .number,
+        head_ref: .headRefName,
+        base_ref: .baseRefName,
+        changed_file_count: .changedFiles,
+        title: .title
+      }]
+    }' "$prs_json" >"$out_file"
+}
+
+build_main_ci_baseline() {
+  local out_file="$1"
+  local run_dir="$2"
+  local gh_evidence="$3"
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  if [[ "$gh_evidence" != "ok" ]]; then
+    jq -n --arg status "unknown" --arg ts "$ts" \
+      '{status: $status, checked_at: $ts, failed_jobs: []}' >"$out_file"
+    return
+  fi
+
+  local ci_json="$run_dir/main-ci-raw.json"
+  local ci_err="$run_dir/main-ci-raw.stderr"
+  if ! run_json_capture "$ci_json" "$ci_err" \
+    gh run list --branch main --limit 1 --json conclusion,databaseId; then
+    jq -n --arg status "unknown" --arg ts "$ts" \
+      '{status: $status, checked_at: $ts, failed_jobs: []}' >"$out_file"
+    return
+  fi
+
+  if [[ "$(jq 'length' "$ci_json")" == "0" ]]; then
+    jq -n --arg status "unknown" --arg ts "$ts" \
+      '{status: $status, checked_at: $ts, failed_jobs: []}' >"$out_file"
+    return
+  fi
+
+  local conclusion run_id ci_status
+  conclusion="$(jq -r '.[0].conclusion // "unknown"' "$ci_json")"
+  run_id="$(jq -r '.[0].databaseId | tostring' "$ci_json" 2>/dev/null || echo "")"
+  ci_status="unknown"
+  case "$conclusion" in
+    success) ci_status="green" ;;
+    failure) ci_status="red" ;;
+  esac
+
+  jq -n --arg status "$ci_status" --arg run_id "$run_id" --arg ts "$ts" \
+    '{status: $status, run_id: $run_id, checked_at: $ts, failed_jobs: []}' >"$out_file"
+}
+
 compute_branch() {
   local date_value="$1"
   local base="nightly/${date_value}"
@@ -168,6 +236,8 @@ write_markdown_digest() {
   local dream_status="$6"
   local evolve_status="$7"
   local systemd_dir="$8"
+  local gh_evidence="${9:-unavailable}"
+  local main_ci_status="${10:-unknown}"
 
   {
     printf '# Nightly Evolution Digest\n\n'
@@ -175,6 +245,8 @@ write_markdown_digest() {
     printf -- '- Mode: `%s`\n' "$mode"
     printf -- '- Planned branch: `%s`\n' "$branch"
     printf -- '- AI readiness: `%s`\n' "$ai_sane_status"
+    printf -- '- GitHub evidence: `%s`\n' "$gh_evidence"
+    printf -- '- Main CI baseline: `%s`\n' "$main_ci_status"
     printf -- '- Dream phase: `%s`\n' "$dream_status"
     printf -- '- Evolve phase: `%s`\n' "$evolve_status"
     if [[ -n "$systemd_dir" ]]; then
@@ -360,17 +432,27 @@ if ! run_json_capture "$DREAM_SETUP_JSON" "$DREAM_SETUP_ERR" ao overnight setup 
   json_empty_object >"$DREAM_SETUP_JSON"
 fi
 
+GH_EVIDENCE="unavailable"
 OPEN_PRS_JSON="$OUTPUT_DIR/open-prs.json"
 OPEN_PRS_ERR="$OUTPUT_DIR/open-prs.stderr"
+BLOCKER_MATRIX_JSON="$OUTPUT_DIR/blocker-matrix.json"
+MAIN_CI_JSON="$OUTPUT_DIR/main-ci-baseline.json"
 if command -v gh >/dev/null 2>&1; then
-  if ! run_json_capture "$OPEN_PRS_JSON" "$OPEN_PRS_ERR" \
+  if run_json_capture "$OPEN_PRS_JSON" "$OPEN_PRS_ERR" \
     gh pr list --state open --limit 30 --json number,title,headRefName,baseRefName,changedFiles,url,labels; then
+    GH_EVIDENCE="ok"
+  else
+    GH_EVIDENCE="failed"
     json_empty_array >"$OPEN_PRS_JSON"
   fi
 else
   json_empty_array >"$OPEN_PRS_JSON"
   : >"$OPEN_PRS_ERR"
 fi
+
+build_blocker_matrix "$OPEN_PRS_JSON" "$BLOCKER_MATRIX_JSON" "$GH_EVIDENCE"
+build_main_ci_baseline "$MAIN_CI_JSON" "$OUTPUT_DIR" "$GH_EVIDENCE"
+MAIN_CI_STATUS="$(jq -r '.status // "unknown"' "$MAIN_CI_JSON")"
 
 BRIEF_STATUS="skipped"
 if [[ "$SKIP_BRIEF" != true ]]; then
@@ -483,6 +565,9 @@ jq -n \
   --slurpfile ai "$AI_SANE_JSON" \
   --slurpfile dreamSetup "$DREAM_SETUP_JSON" \
   --slurpfile openPrs "$OPEN_PRS_JSON" \
+  --slurpfile blockerMatrix "$BLOCKER_MATRIX_JSON" \
+  --slurpfile mainCi "$MAIN_CI_JSON" \
+  --arg gh_evidence "$GH_EVIDENCE" \
   --rawfile runtimeInventory "$RUNTIME_TSV" '
   {
     schema_version: ($schema_version | tonumber),
@@ -506,6 +591,11 @@ jq -n \
     github: {
       open_prs: ($openPrs[0] // [])
     },
+    admission_context: {
+      gh_evidence: $gh_evidence,
+      blocker_matrix: ($blockerMatrix[0] // {}),
+      main_ci_baseline: ($mainCi[0] // {})
+    },
     phases: {
       nightly_brief: $brief_status,
       dream: $dream_status,
@@ -522,7 +612,7 @@ jq -n \
     }
   }' >"$DIGEST_JSON"
 
-write_markdown_digest "$DIGEST_MD" "$RUN_ID" "$MODE" "$BRANCH" "$AI_SANE_STATUS" "$DREAM_STATUS" "$EVOLVE_STATUS" "$SYSTEMD_DIR"
+write_markdown_digest "$DIGEST_MD" "$RUN_ID" "$MODE" "$BRANCH" "$AI_SANE_STATUS" "$DREAM_STATUS" "$EVOLVE_STATUS" "$SYSTEMD_DIR" "$GH_EVIDENCE" "$MAIN_CI_STATUS"
 
 log "digest=$DIGEST_JSON"
 

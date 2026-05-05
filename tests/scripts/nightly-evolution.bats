@@ -76,6 +76,18 @@ STUB
     cat >"$MOCK_BIN/gh" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1 $2" == "pr list" ]]; then
+  printf '%s\n' "${GH_PR_LIST_RESPONSE:-[]}"
+  exit 0
+fi
+if [[ "$1 $2" == "run list" ]]; then
+  if [[ -n "${GH_RUN_LIST_RESPONSE:-}" ]]; then
+    printf '%s\n' "$GH_RUN_LIST_RESPONSE"
+  else
+    printf '[{"conclusion":"success","databaseId":99999}]\n'
+  fi
+  exit 0
+fi
 printf '[]\n'
 STUB
     chmod +x "$MOCK_BIN/gh"
@@ -123,6 +135,21 @@ set -euo pipefail
 exit 42
 STUB
     chmod +x "$FAKE_REPO/scripts/nightly-rpi-brief.sh"
+}
+
+make_path_without_gh() {
+    local restricted_bin="$TMP_DIR/restricted-bin"
+    mkdir -p "$restricted_bin"
+    local f
+    for f in "$MOCK_BIN"/*; do
+        [[ "$(basename "$f")" != "gh" ]] && cp -f "$f" "$restricted_bin/"
+    done
+    local tool tool_path
+    for tool in bash git jq date timeout printf grep cut wc sort head tail dirname basename mkdir mktemp cat rm chmod find sed tr cp touch env; do
+        tool_path="$(command -v "$tool" 2>/dev/null || true)"
+        [[ -n "$tool_path" && ! -e "$restricted_bin/$tool" ]] && ln -sf "$tool_path" "$restricted_bin/$tool"
+    done
+    printf '%s' "$restricted_bin"
 }
 
 add_remote_nightly_branches() {
@@ -397,4 +424,85 @@ add_remote_nightly_branches() {
     [ "$status" -eq 0 ]
     grep -q -- '--landing-branch nightly/2026-05-01' "$AO_RPI_LOG"
     jq -e '.runtime.command == "codex" and .runtime.mode == "direct" and .phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
+}
+
+@test "dry-run builds blocker matrix and main CI baseline artifacts" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_PR_LIST_RESPONSE='[{"number":42,"title":"feat: add widget","headRefName":"feat/widget","baseRefName":"main","changedFiles":3,"url":"https://github.com/test/42","labels":[]}]'
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"success","databaseId":12345}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    [ -f "$TMP_DIR/out/blocker-matrix.json" ]
+    [ -f "$TMP_DIR/out/main-ci-baseline.json" ]
+    jq -e '.status == "ok" and (.prs | length) == 1 and .prs[0].pr_number == 42' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "green" and .run_id == "12345"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "ok"' "$TMP_DIR/out/digest.json"
+    jq -e '.admission_context.blocker_matrix.status == "ok"' "$TMP_DIR/out/digest.json"
+    jq -e '.admission_context.main_ci_baseline.status == "green"' "$TMP_DIR/out/digest.json"
+}
+
+@test "gh failure produces unknown CI and failed blocker matrix" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    cat >"$MOCK_BIN/gh" <<'STUB'
+#!/usr/bin/env bash
+exit 1
+STUB
+    chmod +x "$MOCK_BIN/gh"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "failed"' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "unknown"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "failed"' "$TMP_DIR/out/digest.json"
+}
+
+@test "gh unavailable produces unknown CI and unavailable blocker matrix" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    NO_GH_PATH="$(make_path_without_gh)"
+
+    run env PATH="$NO_GH_PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "unavailable"' "$TMP_DIR/out/blocker-matrix.json"
+    jq -e '.status == "unknown"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.gh_evidence == "unavailable"' "$TMP_DIR/out/digest.json"
+}
+
+@test "red main CI baseline is classified correctly" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":99998}]'
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "red" and .run_id == "99998"' "$TMP_DIR/out/main-ci-baseline.json"
+    jq -e '.admission_context.main_ci_baseline.status == "red"' "$TMP_DIR/out/digest.json"
 }
