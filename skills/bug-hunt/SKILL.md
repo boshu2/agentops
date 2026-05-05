@@ -51,6 +51,10 @@ Investigation mode uses the 4-phase structure below. Audit mode uses systematic 
 
 **For audits or pre-release sweeps that need more than one pass, route through `skills/bug-hunt/references/audit-fix-rescan-cycle.md` (multi-pass methodology) and use `skills/bug-hunt/references/convergence-criteria.md` to decide when to stop.**
 
+For proactive sweeps that need fresh-eyes rescans, also load [references/multi-pass-bug-hunting.md](references/multi-pass-bug-hunting.md).
+
+For stuck commands, deadlocks, retry storms, blocked subprocesses, or hangs, load [references/deadlock-and-hang-triage.md](references/deadlock-and-hang-triage.md) before changing code.
+
 ## Execution Steps
 
 Given `/bug-hunt <symptom>`:
@@ -395,6 +399,8 @@ Common bug patterns to check:
 - [references/failure-categories.md](references/failure-categories.md)
 - [references/audit-fix-rescan-cycle.md](references/audit-fix-rescan-cycle.md)
 - [references/convergence-criteria.md](references/convergence-criteria.md)
+- [references/multi-pass-bug-hunting.md](references/multi-pass-bug-hunting.md)
+- [references/deadlock-and-hang-triage.md](references/deadlock-and-hang-triage.md)
 
 ## See Also
 

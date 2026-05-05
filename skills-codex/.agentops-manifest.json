@@ -667,8 +667,8 @@
     {
       "name": "bug-hunt",
       "source_skill": "skills/bug-hunt",
-      "source_hash": "87bde9d362c49f65e1b9c51edbf50de577eddaf4d4d9928281d6494b220225a0",
-      "generated_hash": "070d2d5a07c98dbf0363b930518becfd16509dbdc5bfc6e8a1bf74837246e4eb"
+      "source_hash": "5526507cc24e1d6253db4bedae7a42ac6ac383cf4b6adcd3a407c8663c139df1",
+      "generated_hash": "e9dfbd977e897d0496cd580693a0905953ad5b6dad4eb6a45426011ba429b9db"
     },
     {
       "name": "codex-team",
@@ -811,8 +811,8 @@
     {
       "name": "perf",
       "source_skill": "skills/perf",
-      "source_hash": "4fc10b87d048de9dbb728d0777cd448282d5912fbc3945a5eaa6aa73b5821b00",
-      "generated_hash": "b6565277366765be2817efcb4a3e65c69a1d4b5a24fc690dfd7a082b42f4e446"
+      "source_hash": "3bc48ce1d31589fdca60185b08fd3edf80953f259666ca23e6e5c496ca8147bf",
+      "generated_hash": "850dbf9cb12ff1829022435d65fa0255701b180e62a39e78614c44c1d98197f8"
     },
     {
       "name": "plan",
@@ -919,8 +919,8 @@
     {
       "name": "refactor",
       "source_skill": "skills/refactor",
-      "source_hash": "7da28152f7649f27a28c31dab4cb0301009f3bc9599ea0d7a03afa924d9655ff",
-      "generated_hash": "a038e1dc227bd03df79d203142190964bdcc88f1bab062e6216b9ce342bfcdf8"
+      "source_hash": "da61f01857869d8ff7ab65ecfc801e423cd48e66052698dc26c182d520e6173b",
+      "generated_hash": "6f101d1a6e530b46c85c4ba177ceade211cd8d0d1710d4030fac230fa3323981"
     },
     {
       "name": "release",
@@ -1021,8 +1021,8 @@
     {
       "name": "test",
       "source_skill": "skills/test",
-      "source_hash": "6fa798633edaed3fefd524a43f553d0e2b43fecf0d14afe1ac6376087780684a",
-      "generated_hash": "ef5790a2eb2b3d95c58360889561ac07fead5082e10aba2ade8e1320347bff88"
+      "source_hash": "51efe648b2f2d97fae2b27b19b8795c3552e447e6c8df9c9012a10678e820a68",
+      "generated_hash": "401fa365cb725d6c13ff98744df3c71a018d936a8d9e2a0d6f8451e49bb52244"
     },
     {
       "name": "trace",
