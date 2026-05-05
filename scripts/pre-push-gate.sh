@@ -116,6 +116,7 @@ else
 fi
 FAST_MODE=false
 TWO_PASS=false
+SINGLE_PASS=false
 FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
 FAIL_FAST_PENDING=false
@@ -201,15 +202,17 @@ run_hash_snapshot() {
 usage() {
     cat <<'EOF'
 Usage: scripts/pre-push-gate.sh [--fast] [--scope auto|upstream|staged|worktree|head]
-       scripts/pre-push-gate.sh --two-pass
+       scripts/pre-push-gate.sh --single-pass
 
 Options:
-  --fast       Only run checks relevant to changed files
-  --scope      How to determine changed files (default: head local, upstream CI)
-  --fail-fast  Stop after first blocking failure
-  --accumulate Continue after failures and report all blocking failures
-  --two-pass   Pass 1: --fast --scope head --fail-fast (blocking)
-               Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
+  --fast        Only run checks relevant to changed files
+  --scope       How to determine changed files (default: head local, upstream CI)
+  --fail-fast   Stop after first blocking failure
+  --accumulate  Continue after failures and report all blocking failures
+  --two-pass    Pass 1: --fast --scope head --fail-fast (blocking)
+                Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
+                NOTE: two-pass is now the default for local pushes
+  --single-pass Opt out of two-pass default; run full single-pass gate
 
 Environment:
   PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
@@ -224,6 +227,8 @@ EOF
 
 if truthy "${PRE_PUSH_TWO_PASS:-0}"; then
     TWO_PASS=true
+elif [[ -n "${PRE_PUSH_TWO_PASS:-}" ]] && ! truthy "${PRE_PUSH_TWO_PASS}"; then
+    SINGLE_PASS=true
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -247,6 +252,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --two-pass)
             TWO_PASS=true
+            shift
+            ;;
+        --single-pass)
+            SINGLE_PASS=true
             shift
             ;;
         -h|--help)
@@ -280,6 +289,11 @@ if [[ "$FAIL_FAST_SETTING" == "auto" ]]; then
     fi
 elif truthy "$FAIL_FAST_SETTING"; then
     FAIL_FAST_EFFECTIVE=true
+fi
+
+# --- Default to two-pass for local pushes (inner/middle loop separation) ---
+if [[ "$SINGLE_PASS" != "true" ]] && [[ "$TWO_PASS" != "true" ]] && ! is_ci_env; then
+    TWO_PASS=true
 fi
 
 # --- Two-pass mode: re-invoke as pass 1 (blocking) + pass 2 (advisory) ---

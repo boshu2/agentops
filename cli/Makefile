@@ -1,4 +1,4 @@
-.PHONY: build test lint clean install sync-hooks
+.PHONY: build test lint clean install sync-hooks inner
 
 # Build variables
 BINARY_NAME=ao
@@ -58,6 +58,11 @@ run: build
 # Tidy go modules
 tidy:
 	go mod tidy
+
+# Inner loop: <10s compile + vet (cached)
+inner:
+	go build ./...
+	go vet ./...
 
 # Format code
 fmt:
