@@ -218,6 +218,9 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
 - [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
+- [Factory Admission Contract](contracts/factory-admission.md) — Daemon-owned work-order admission contract for fail-closed local factory pilots and RPI handoff
+- [Factory Work Order Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-work-order.v1.schema.json) — JSON Schema for daemon-native factory work-order inputs
+- [Factory Admission Decision Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-admission.v1.schema.json) — JSON Schema for daemon-native admission decisions
 - [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
 - [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
 - [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation

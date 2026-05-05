@@ -71,6 +71,14 @@ func applyRecurringJobDefaults(t RecurringJobTemplate, payload map[string]any, s
 		setDefault(payload, "worker_kind", string(defaultWikiForgeWorkerKind))
 		setDefault(payload, "provider", string(agentworker.ProviderGasCity))
 		setDefault(payload, "max_attempts", 2)
+	case JobTypeFactoryAdmission:
+		setDefault(payload, "schema_version", FactoryAdmissionJobSpecSchemaVersion)
+		setDefault(payload, "run_id", recurringSyntheticID("factory", t.Name, subID))
+		setDefault(payload, "mode", string(FactoryAdmissionModeAdmissionOnly))
+	case JobTypeFactoryLocalPilot:
+		setDefault(payload, "schema_version", FactoryAdmissionJobSpecSchemaVersion)
+		setDefault(payload, "run_id", recurringSyntheticID("factory", t.Name, subID))
+		setDefault(payload, "mode", string(FactoryAdmissionModeAdmissionOnly))
 	case JobTypePlansProjection:
 		setDefault(payload, "schema_version", PlansProjectionJobSpecSchemaVersion)
 		setDefault(payload, "refresh_trigger", string(PlansProjectionTriggerInterval))
@@ -93,6 +101,12 @@ func validateRecurringMaterializedPayload(jobType JobType, payload map[string]an
 		return err
 	case JobTypeWikiForge:
 		_, err := WikiForgeJobSpecFromPayload(payload)
+		return err
+	case JobTypeFactoryAdmission:
+		_, err := FactoryAdmissionJobSpecFromPayload(payload)
+		return err
+	case JobTypeFactoryLocalPilot:
+		_, err := FactoryLocalPilotJobSpecFromPayload(payload)
 		return err
 	case JobTypePlansProjection:
 		_, err := PlansProjectionJobSpecFromPayload(payload)

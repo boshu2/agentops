@@ -39,6 +39,13 @@ skills, the runtime, and external integrations.
     Production control-plane contract for worker slots, worktree ownership,
     lifecycle telemetry, validation gates, yield, and operator status.
 
+-   :material-shield-check: **[Factory Admission](factory-admission.md)**
+
+    ---
+
+    Daemon-owned work-order admission contract for fail-closed local factory
+    pilots and RPI handoff.
+
 -   :material-routes: **[Routing Policy](routing-policy.md)**
 
     ---

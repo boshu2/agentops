@@ -108,6 +108,17 @@ func TestParser_RejectsUnknownJobType(t *testing.T) {
 	}
 }
 
+func TestParser_AcceptsHyphenatedKnownJobType(t *testing.T) {
+	path := fixture(t, "hyphenated-job-type.yaml")
+	templates, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load hyphenated job type: %v", err)
+	}
+	if len(templates) != 1 || templates[0].JobType != daemon.JobTypeFactoryLocalPilot {
+		t.Fatalf("templates = %#v, want one factory.local-pilot schedule", templates)
+	}
+}
+
 func TestParser_RejectsInvalidTypedPayload(t *testing.T) {
 	_, err := Load(fixture(t, "invalid-rpi-payload.yaml"))
 	if err == nil {

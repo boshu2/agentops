@@ -11,19 +11,21 @@ import (
 type JobType string
 
 const (
-	JobTypeRPIRun           JobType = "rpi.run"
-	JobTypeRPIPhase         JobType = "rpi.phase"
-	JobTypeDreamRun         JobType = "dream.run"
-	JobTypeDreamStage       JobType = "dream.stage"
-	JobTypeWikiBuild        JobType = "wiki.build"
-	JobTypeWikiForge        JobType = "wiki.forge"
-	JobTypeOpenClawSnapshot JobType = "openclaw.snapshot"
-	JobTypePlansProjection  JobType = "plans.projection"
+	JobTypeRPIRun            JobType = "rpi.run"
+	JobTypeRPIPhase          JobType = "rpi.phase"
+	JobTypeDreamRun          JobType = "dream.run"
+	JobTypeDreamStage        JobType = "dream.stage"
+	JobTypeWikiBuild         JobType = "wiki.build"
+	JobTypeWikiForge         JobType = "wiki.forge"
+	JobTypeFactoryAdmission  JobType = "factory.admission"
+	JobTypeFactoryLocalPilot JobType = "factory.local-pilot"
+	JobTypeOpenClawSnapshot  JobType = "openclaw.snapshot"
+	JobTypePlansProjection   JobType = "plans.projection"
 	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
 	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
-	JobTypeLLMWikiLoop      JobType = "llmwiki.loop"
-	JobTypeEvalSuite        JobType = "eval.suite"
-	JobTypeEvalSkillDelta   JobType = "eval.skill-delta"
+	JobTypeLLMWikiLoop    JobType = "llmwiki.loop"
+	JobTypeEvalSuite      JobType = "eval.suite"
+	JobTypeEvalSkillDelta JobType = "eval.skill-delta"
 )
 
 // RecurringJobTemplate is a schedule entry that materializes a Job on each cron tick.
@@ -361,17 +363,19 @@ func isTerminalStatus(status JobStatus) bool {
 }
 
 var jobTypeSet = map[string]struct{}{
-	string(JobTypeRPIRun):           {},
-	string(JobTypeRPIPhase):         {},
-	string(JobTypeDreamRun):         {},
-	string(JobTypeDreamStage):       {},
-	string(JobTypeWikiBuild):        {},
-	string(JobTypeWikiForge):        {},
-	string(JobTypeOpenClawSnapshot): {},
-	string(JobTypePlansProjection):  {},
-	string(JobTypeLLMWikiLoop):      {},
-	string(JobTypeEvalSuite):        {},
-	string(JobTypeEvalSkillDelta):   {},
+	string(JobTypeRPIRun):            {},
+	string(JobTypeRPIPhase):          {},
+	string(JobTypeDreamRun):          {},
+	string(JobTypeDreamStage):        {},
+	string(JobTypeWikiBuild):         {},
+	string(JobTypeWikiForge):         {},
+	string(JobTypeFactoryAdmission):  {},
+	string(JobTypeFactoryLocalPilot): {},
+	string(JobTypeOpenClawSnapshot):  {},
+	string(JobTypePlansProjection):   {},
+	string(JobTypeLLMWikiLoop):       {},
+	string(JobTypeEvalSuite):         {},
+	string(JobTypeEvalSkillDelta):    {},
 }
 
 var eventTypeSet = map[string]struct{}{

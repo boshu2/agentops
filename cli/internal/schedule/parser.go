@@ -4,7 +4,7 @@
 //   - strict YAML decoding (unknown fields rejected)
 //   - duplicate name rejection
 //   - cron validation via daemon.ParseCron (5-field standard, no sub-minute)
-//   - job_type pattern enforcement (^[a-z]+\.[a-z]+$)
+//   - job_type pattern enforcement (^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$)
 //   - effective-period floor (AGENTOPS_SCHEDULE_MIN_PERIOD_SECONDS, default 60s)
 //   - max_queue_depth ceiling (AGENTOPS_SCHEDULE_MAX_QUEUE_DEPTH_CEILING, default 1000)
 package schedule
@@ -33,7 +33,7 @@ const (
 	defaultMaxQueueDepthCeiling = 1000
 )
 
-var jobTypePattern = regexp.MustCompile(`^[a-z]+\.[a-z]+$`)
+var jobTypePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$`)
 
 // fileShape mirrors the top-level structure of .agents/schedule.yaml. yaml.v3 with
 // KnownFields(true) rejects any unknown top-level fields.
@@ -139,7 +139,7 @@ func parseScheduleEntry(
 
 	if !jobTypePattern.MatchString(entry.JobType) {
 		return daemon.RecurringJobTemplate{}, newErr(path, field+".job_type",
-			fmt.Errorf("invalid job_type %q: must match ^[a-z]+\\.[a-z]+$", entry.JobType))
+			fmt.Errorf("invalid job_type %q: must match ^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$", entry.JobType))
 	}
 
 	if err := validateScheduleEntryCron(path, field, entry.Cron, minPeriod); err != nil {

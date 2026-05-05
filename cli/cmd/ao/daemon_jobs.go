@@ -38,6 +38,8 @@ var knownDaemonJobTypes = []daemonpkg.JobType{
 	daemonpkg.JobTypeDreamStage,
 	daemonpkg.JobTypeWikiBuild,
 	daemonpkg.JobTypeWikiForge,
+	daemonpkg.JobTypeFactoryAdmission,
+	daemonpkg.JobTypeFactoryLocalPilot,
 	daemonpkg.JobTypeOpenClawSnapshot,
 	daemonpkg.JobTypePlansProjection,
 	daemonpkg.JobTypeLLMWikiLoop,
