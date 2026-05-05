@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -508,4 +509,56 @@ func TestTrackChild_ConcurrentAccess(t *testing.T) {
 		delete(childGroups.pids, pid)
 	}
 	childGroups.mu.Unlock()
+}
+
+func TestMeasureOne_Skip_ExitCode77(t *testing.T) {
+	// When a gate exits 77 (autotools skip convention), the goals runner
+	// must classify the measurement as `skip`, not `fail`. This is the
+	// quarantine-by-precondition path used by check-flywheel-compounding.sh
+	// when the corpus is dormant — failing under "no signal" is a
+	// misclassification that artificially drags fitness scores.
+	g := Goal{ID: "skip77", Check: "exit 77", Weight: 3}
+	m := MeasureOne(g, time.Second)
+	if m.Result != resultSkip {
+		t.Fatalf("Result = %q, want %q for exit 77", m.Result, resultSkip)
+	}
+	if m.GoalID != "skip77" {
+		t.Errorf("GoalID = %q, want skip77", m.GoalID)
+	}
+	if m.Weight != 3 {
+		t.Errorf("Weight = %d, want 3", m.Weight)
+	}
+}
+
+func TestMeasureOne_FailOnOtherNonZeroExitCodes(t *testing.T) {
+	// Non-77 non-zero exits must still classify as fail. SKIP must be
+	// opt-in via the explicit autotools convention, not a default for
+	// every gate that returns >0.
+	for _, code := range []int{1, 2, 7, 76, 78, 99} {
+		t.Run("exit_"+strconv.Itoa(code), func(t *testing.T) {
+			g := Goal{ID: "g", Check: "exit " + strconv.Itoa(code), Weight: 1}
+			m := MeasureOne(g, time.Second)
+			if m.Result != resultFail {
+				t.Errorf("exit %d: Result = %q, want %q", code, m.Result, resultFail)
+			}
+		})
+	}
+}
+
+func TestIsSkipExit(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+		{name: "non-exit-error", err: errors.New("boom"), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isSkipExit(tt.err); got != tt.want {
+				t.Errorf("isSkipExit(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
 }

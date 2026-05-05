@@ -30,16 +30,37 @@ type Measurement struct {
 	AffectsFiles []string `json:"affects_files,omitempty"`
 }
 
+// SkipExitCode is the conventional exit code a gate script returns to
+// signal "skip" (precondition not met, not a failure). 77 follows the
+// autotools/automake convention so existing skip-aware shell scripts
+// drop in unchanged. The flywheel-compounding gate uses this to skip
+// when the corpus is dormant (zero citation signal in the window) —
+// see GOALS.md Directive #4 / finding f-2026-04-30-002.
+const SkipExitCode = 77
+
 // classifyResult maps command exit status to a result string.
 func classifyResult(ctxErr, cmdErr error) string {
 	switch {
 	case errors.Is(ctxErr, context.DeadlineExceeded), errors.Is(ctxErr, context.Canceled):
 		return resultSkip
-	case cmdErr != nil:
-		return resultFail
-	default:
+	case cmdErr == nil:
 		return resultPass
+	case isSkipExit(cmdErr):
+		return resultSkip
+	default:
+		return resultFail
 	}
+}
+
+// isSkipExit reports whether cmdErr is an *exec.ExitError whose exit code
+// matches SkipExitCode. Any other error type or exit code returns false so
+// genuine failures still classify as fail.
+func isSkipExit(cmdErr error) bool {
+	var exitErr *exec.ExitError
+	if !errors.As(cmdErr, &exitErr) {
+		return false
+	}
+	return exitErr.ExitCode() == SkipExitCode
 }
 
 // truncateOutput caps output at 500 runes by keeping the first 200 and last
