@@ -86,6 +86,25 @@ Expected readback:
 - `projections.factory.admissions[]` contains the decision;
 - artifact paths point under `.agents/daemon/factory/runs/<run_id>/`.
 
+## Fake L3 Rehearsal
+
+The daemon-native no-merge rehearsal is covered by a local fake-policy test:
+
+```bash
+cd cli && go test ./cmd/ao -run TestAgentOpsDaemonFakeFactoryLocalPilotHandoffCompletesChildRPI
+```
+
+That test initializes a real git worktree, submits a `factory.local-pilot` job,
+runs the daemon supervisor twice, and verifies the sequence:
+
+- admission allows the work order;
+- the parent job emits `child_job_id`;
+- the child `rpi.run` completes under the fake RPI executor;
+- the factory projection records the allowed admission and child handoff.
+
+This is the current L3 gate before enabling recurring host scheduling for
+source-mutating factory work.
+
 ## Schedule Shape
 
 Schedules can run the same path by materializing a `factory.local-pilot`
