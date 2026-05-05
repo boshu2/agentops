@@ -1,20 +1,8 @@
 ---
 name: doc
 description: 'Generate and validate repo docs.'
-skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
-  intel_scope: topic
-metadata:
-  tier: product
-  dependencies:
-    - standards  # loads markdown standards
-output_contract: "documentation files"
 ---
+
 # Doc Skill
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
@@ -23,7 +11,7 @@ Generate and validate documentation for any project.
 
 ## Execution Steps
 
-Given `/doc [command] [target]`:
+Given `$doc [command] [target]`:
 
 ### Step 1: Detect Project Type
 
@@ -219,7 +207,7 @@ Tell the user:
 
 ### Generating API Documentation
 
-**User says:** `/doc gen authentication`
+**User says:** `$doc gen authentication`
 
 **What happens:**
 1. Agent detects project type by checking for `package.json` and finding Node.js project
@@ -233,7 +221,7 @@ Tell the user:
 
 ### Checking Documentation Coverage
 
-**User says:** `/doc coverage`
+**User says:** `$doc coverage`
 
 **What happens:**
 1. Agent detects Python project from `pyproject.toml`

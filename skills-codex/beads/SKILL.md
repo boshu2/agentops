@@ -1,20 +1,8 @@
 ---
 name: beads
 description: 'Track issues with bd/br, triage with bv, and convert plans to beads.'
-skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
-  intel_scope: topic
-metadata:
-  tier: library
-  dependencies: []
-  internal: true
-output_contract: "beads (via bd/br/bv CLI)"
 ---
+
 # Beads - Persistent Task Memory for AI Agents
 
 Graph-based issue tracker that survives conversation compaction.
@@ -26,7 +14,7 @@ Graph-based issue tracker that survives conversation compaction.
 **Key Distinction**:
 - **bd/br**: Multi-session work, dependencies, survives compaction, git-backed
 - **bv**: Graph analysis, priority triage, bottleneck detection, parallel execution planning
-- **Task tools (TaskCreate/TaskUpdate/TaskList)**: Single-session tasks, status tracking, conversation-scoped
+- **In-session tracking**: Single-session tasks, status tracking, conversation-scoped (harness-native)
 
 **Decision Rule**: If resuming in 2 weeks would be hard without bd, use bd.
 
@@ -62,9 +50,9 @@ bd dolt push                        # only if a Dolt remote is configured
 
 ## Examples
 
-### Skill Loading from /vibe
+### Skill Loading from $vibe
 
-**User says:** `/vibe`
+**User says:** `$vibe`
 
 **What happens:**
 1. Agent loads beads skill automatically via dependency
@@ -74,9 +62,9 @@ bd dolt push                        # only if a Dolt remote is configured
 
 **Result:** Validation report includes issue context, no manual bd lookups needed.
 
-### Skill Loading from /implement
+### Skill Loading from $implement
 
-**User says:** `/implement ag-xyz-123`
+**User says:** `$implement ag-xyz-123`
 
 **What happens:**
 1. Agent loads beads skill to understand issue structure

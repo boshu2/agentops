@@ -1,45 +1,32 @@
 ---
 name: review
 description: 'Review diffs, find mocks, scan bugs, audit code.'
-skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
-  intel_scope: topic
-metadata:
-  tier: judgment
-  dependencies:
-    - standards  # loads language-specific conventions
-    - council    # optional - for multi-perspective review
-output_contract: skills/council/schemas/verdict.json
 ---
+
 # Review Skill
 
-> **Quick Ref:** `/review <PR>` reviews a PR, `/review --diff` reviews local changes, `/review --agent <path>` reviews agent output with extra scrutiny.
+> **Quick Ref:** `$review <PR>` reviews a PR, `$review --diff` reviews local changes, `$review --agent <path>` reviews agent output with extra scrutiny.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-This skill is for reviewing OTHER people's or agents' changes. For validating your own code quality, use `/vibe` instead.
+This skill is for reviewing OTHER people's or agents' changes. For validating your own code quality, use `$vibe` instead.
 
 ---
 
 ## Modes
 
 ```bash
-/review 42                          # PR mode — review PR #42
-/review https://github.com/o/r/pull/42  # PR mode — review by URL
-/review --diff                      # Diff mode — review unstaged/staged changes
-/review --diff --staged             # Diff mode — staged only
-/review --agent .agents/crank/      # Agent mode — review agent-generated output
-/review --agent ./output.patch      # Agent mode — review a patch file
-/review --deep 42                   # Deep mode — spawns council for second opinion
-/review --mocks                     # Find stubs, mocks, placeholders, TODOs
-/review --bugs                      # Bug scanner: null derefs, leaks, security holes
-/review --audit security            # Domain audit: security, perf, UX, API, CLI
-/review --deep-scan                 # Iterative audit-fix-rescan until clean
+$review 42                          # PR mode — review PR #42
+$review https://github.com/o/r/pull/42  # PR mode — review by URL
+$review --diff                      # Diff mode — review unstaged/staged changes
+$review --diff --staged             # Diff mode — staged only
+$review --agent .agents/crank/      # Agent mode — review agent-generated output
+$review --agent ./output.patch      # Agent mode — review a patch file
+$review --deep 42                   # Deep mode — spawns council for second opinion
+$review --mocks                     # Find stubs, mocks, placeholders, TODOs
+$review --bugs                      # Bug scanner: null derefs, leaks, security holes
+$review --audit security            # Domain audit: security, perf, UX, API, CLI
+$review --deep-scan                 # Iterative audit-fix-rescan until clean
 ```
 
 ---
@@ -54,7 +41,7 @@ Determine the review mode from arguments:
 2. **Diff mode**: `--diff` flag present.
 3. **Agent mode**: `--agent <path>` flag present.
 
-Load language-specific conventions from `/standards` based on file extensions in the diff. If `ao` is available, pull prior review context:
+Load language-specific conventions from `$standards` based on file extensions in the diff. If `ao` is available, pull prior review context:
 
 ```bash
 ao lookup --query "code review patterns $(basename "$PWD")" --limit 3 2>/dev/null || true
@@ -76,7 +63,7 @@ Skip silently if ao is unavailable or returns no results.
 
 ### Step 0.5: Apply Behavioral Discipline
 
-Load the behavioral discipline standard from `/standards` before reviewing the diff. Use it to answer four questions:
+Load the behavioral discipline standard from `$standards` before reviewing the diff. Use it to answer four questions:
 
 1. What assumptions does this change make, and were they surfaced or silently chosen?
 2. Could the same outcome be achieved with a smaller or more local change?
@@ -303,7 +290,7 @@ Only post if the user confirms. Never auto-post a review without explicit approv
 When `--deep` is specified, after the initial SCORED pass, spawn a council for a second opinion:
 
 ```bash
-/council validate "Review these changes for issues I might have missed: <summary of changes>"
+$council validate "Review these changes for issues I might have missed: <summary of changes>"
 ```
 
 Merge council findings into the review document under a "## Council Findings" section.
@@ -314,11 +301,11 @@ Merge council findings into the review document under a "## Council Findings" se
 
 | Skill | Relationship |
 |-------|-------------|
-| `/vibe` | Self-review (your own code). `/review` is for others' code. |
-| `/council` | Optional second opinion via `--deep` flag. |
-| `/standards` | Auto-loaded for language-specific rules. |
-| `/bug-hunt` | `/review` does a structured pass; `/bug-hunt` does deep investigation of suspected bugs. |
-| `/pr-validate` | PR-specific validation (isolation, scope creep). Complementary to `/review`. |
+| `$vibe` | Self-review (your own code). `$review` is for others' code. |
+| `$council` | Optional second opinion via `--deep` flag. |
+| `$standards` | Auto-loaded for language-specific rules. |
+| `$bug-hunt` | `$review` does a structured pass; `$bug-hunt` does deep investigation of suspected bugs. |
+| `$pr-validate` | PR-specific validation (isolation, scope creep). Complementary to `$review`. |
 
 ---
 
