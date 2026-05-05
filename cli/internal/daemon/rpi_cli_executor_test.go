@@ -56,6 +56,7 @@ func TestRPICLIExecutorMapsRunPayloadToSafeWrapperArgs(t *testing.T) {
 	spec.Backend = RPIBackendGasCityAPI
 	spec.EpicID = "soc-ff7b"
 	spec.ExecutionPacketPath = ".agents/rpi/runs/run-cli/execution-packet.json"
+	spec.PhaseTimeout = "5m0s"
 	jobSpec, err := spec.ToJobSpec("job-rpi-cli")
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
@@ -78,6 +79,7 @@ func TestRPICLIExecutorMapsRunPayloadToSafeWrapperArgs(t *testing.T) {
 		"--gate-policy", "required",
 		"--landing-policy", "off",
 		"--failure-policy", "stop",
+		"--phase-timeout", "5m0s",
 	}
 	if !reflect.DeepEqual(got.Args, wantArgs) {
 		t.Fatalf("args = %#v, want %#v", got.Args, wantArgs)

@@ -143,6 +143,9 @@ func rpiCLIArgsForSpec(spec RPIRunJobSpec) []string {
 		"--landing-policy", "off",
 		"--failure-policy", "stop",
 	}
+	if strings.TrimSpace(spec.PhaseTimeout) != "" {
+		args = append(args, "--phase-timeout", strings.TrimSpace(spec.PhaseTimeout))
+	}
 	return args
 }
 

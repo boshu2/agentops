@@ -64,6 +64,9 @@ func submitRPIPhasedDaemon(ctx context.Context, opts phasedEngineOptions, args [
 	spec.TestFirst = opts.TestFirst
 	spec.Complexity = string(classifyComplexity(goal))
 	spec.Backend = daemonpkg.RPIBackendGasCityAPI
+	if opts.PhaseTimeout > 0 {
+		spec.PhaseTimeout = opts.PhaseTimeout.String()
+	}
 	job, err := spec.ToJobSpec("job-rpi-" + runID)
 	if err != nil {
 		return daemonpkg.SubmitJobResponse{}, err
