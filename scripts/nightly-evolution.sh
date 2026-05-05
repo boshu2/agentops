@@ -27,6 +27,7 @@ Options:
   --max-cycles <n>          Max evolve cycles when --run-evolve is used (default: 1).
   --gate-policy <policy>    Evolve gate policy (default: required).
   --landing-policy <policy> Evolve landing policy (default: off).
+  --work-order <path>       Work order JSON for --execute --run-evolve preflight.
   --schedule <calendar>     systemd OnCalendar value (default: *-*-* 12:15:00 UTC).
   --no-require-ai-sane      Do not block execute mode when bushido-box ai-sane fails.
   -h, --help                Show this help.
@@ -34,7 +35,7 @@ Options:
 Examples:
   scripts/nightly-evolution.sh --emit-systemd
   scripts/nightly-evolution.sh --execute --run-dream
-  scripts/nightly-evolution.sh --execute --run-evolve --runtime-cmd codex
+  scripts/nightly-evolution.sh --execute --run-evolve --work-order work-order.json
 EOF
 }
 
@@ -174,6 +175,57 @@ build_main_ci_baseline() {
     '{status: $status, run_id: $run_id, checked_at: $ts, failed_jobs: []}' >"$out_file"
 }
 
+preflight_evolve() {
+  local wo="$1"
+  local repo="$2"
+  local runtime_cmd="$3"
+  local gh_evidence="$4"
+  local main_ci_status="$5"
+  local worktree_status="$6"
+
+  if [[ -z "$wo" || ! -f "$wo" ]]; then
+    die "execute+run-evolve requires --work-order; none provided or file not found"
+  fi
+
+  if ! jq -e '.schema_version == 1 and .work_order_id and .target and .allowed_files' "$wo" >/dev/null 2>&1; then
+    die "work order is malformed or missing required fields: $wo"
+  fi
+
+  local expires_at now_epoch expires_epoch
+  expires_at="$(jq -r '.expires_at // ""' "$wo")"
+  if [[ -n "$expires_at" ]]; then
+    now_epoch="$(date -u +%s)"
+    expires_epoch="$(date -u -d "$expires_at" +%s 2>/dev/null || echo 0)"
+    if [[ "$expires_epoch" -gt 0 && "$now_epoch" -gt "$expires_epoch" ]]; then
+      die "work order expired at $expires_at"
+    fi
+  fi
+
+  if [[ -n "$worktree_status" ]]; then
+    die "execute+run-evolve requires clean worktree; uncommitted changes found"
+  fi
+
+  if [[ "$gh_evidence" != "ok" ]]; then
+    die "execute+run-evolve requires GitHub evidence; got: $gh_evidence"
+  fi
+
+  if [[ "$main_ci_status" == "red" ]]; then
+    die "execute+run-evolve blocked: main CI is red"
+  fi
+
+  if [[ "$main_ci_status" == "unknown" ]]; then
+    die "execute+run-evolve blocked: main CI status is unknown"
+  fi
+
+  if [[ -n "$(git -C "$repo" ls-files .agents 2>/dev/null)" ]]; then
+    die "execute+run-evolve blocked: tracked .agents directory found"
+  fi
+
+  if ! command -v "$runtime_cmd" >/dev/null 2>&1; then
+    die "execute+run-evolve requires runtime command: $runtime_cmd"
+  fi
+}
+
 compute_branch() {
   local date_value="$1"
   local base="nightly/${date_value}"
@@ -272,6 +324,7 @@ RUNTIME_MODE="auto"
 MAX_CYCLES="1"
 GATE_POLICY="required"
 LANDING_POLICY="off"
+WORK_ORDER=""
 SCHEDULE="*-*-* 12:15:00 UTC"
 
 while [[ $# -gt 0 ]]; do
@@ -336,6 +389,10 @@ while [[ $# -gt 0 ]]; do
       LANDING_POLICY="${2:-}"
       shift 2
       ;;
+    --work-order)
+      WORK_ORDER="${2:-}"
+      shift 2
+      ;;
     --schedule)
       SCHEDULE="${2:-}"
       shift 2
@@ -367,6 +424,8 @@ cd "$REPO_ROOT"
 require_cmd git
 require_cmd jq
 require_cmd ao
+
+WORKTREE_STATUS="$(git status --porcelain -uno 2>/dev/null || true)"
 
 RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 RUN_ID="nightly-evolution-${RUN_STAMP}"
@@ -523,6 +582,7 @@ if [[ "$RUN_EVOLVE" == true ]]; then
   if [[ "$EXECUTE" != true ]]; then
     EVOLVE_STATUS="planned"
   else
+    preflight_evolve "$WORK_ORDER" "$REPO_ROOT" "$RUNTIME_CMD" "$GH_EVIDENCE" "$MAIN_CI_STATUS" "$WORKTREE_STATUS"
     export AGENTOPS_RPI_RUNTIME_MODE="$RUNTIME_MODE"
     export AGENTOPS_RPI_RUNTIME_COMMAND="$RUNTIME_CMD"
     if [[ -n "$BRANCH" ]]; then

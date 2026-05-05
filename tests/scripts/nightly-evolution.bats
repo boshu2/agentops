@@ -152,6 +152,54 @@ make_path_without_gh() {
     printf '%s' "$restricted_bin"
 }
 
+create_valid_work_order() {
+    local path="$1"
+    local expires_at
+    expires_at="$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v+1H +%Y-%m-%dT%H:%M:%SZ)"
+    local sha
+    sha="$(git -C "$FAKE_REPO" rev-parse HEAD)"
+    jq -n \
+      --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      --arg expires_at "$expires_at" \
+      --arg sha "$sha" \
+      '{
+        schema_version: 1,
+        work_order_id: "test-wo-001",
+        generated_at: $generated_at,
+        expires_at: $expires_at,
+        base_sha: $sha,
+        target: {type: "goal", id: "test-goal", summary: "Test work order"},
+        allowed_files: ["scripts/nightly-evolution.sh"],
+        validation_commands: ["echo ok"],
+        landing_policy: "off",
+        digest_policy: "required",
+        open_pr_blockers: [],
+        main_ci_baseline: {status: "green", checked_at: $generated_at, failed_jobs: []}
+      }' >"$path"
+}
+
+create_expired_work_order() {
+    local path="$1"
+    local sha
+    sha="$(git -C "$FAKE_REPO" rev-parse HEAD)"
+    jq -n \
+      --arg sha "$sha" \
+      '{
+        schema_version: 1,
+        work_order_id: "test-wo-expired",
+        generated_at: "2020-01-01T00:00:00Z",
+        expires_at: "2020-01-01T01:00:00Z",
+        base_sha: $sha,
+        target: {type: "goal", id: "test-goal", summary: "Expired work order"},
+        allowed_files: ["scripts/nightly-evolution.sh"],
+        validation_commands: ["echo ok"],
+        landing_policy: "off",
+        digest_policy: "required",
+        open_pr_blockers: [],
+        main_ci_baseline: {status: "green", checked_at: "2020-01-01T00:00:00Z", failed_jobs: []}
+      }' >"$path"
+}
+
 add_remote_nightly_branches() {
     git init --bare -q "$TMP_DIR/origin.git"
     git -C "$FAKE_REPO" remote add origin "$TMP_DIR/origin.git"
@@ -409,6 +457,8 @@ add_remote_nightly_branches() {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
     export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
 
     run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
         --repo-root "$FAKE_REPO" \
@@ -417,6 +467,7 @@ add_remote_nightly_branches() {
         --skip-brief \
         --execute \
         --run-evolve \
+        --work-order "$wo" \
         --runtime-cmd codex \
         --runtime-mode direct \
         --landing-policy off
@@ -505,4 +556,166 @@ STUB
     [ "$status" -eq 0 ]
     jq -e '.status == "red" and .run_id == "99998"' "$TMP_DIR/out/main-ci-baseline.json"
     jq -e '.admission_context.main_ci_baseline.status == "red"' "$TMP_DIR/out/digest.json"
+}
+
+@test "execute+run-evolve refuses missing work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires --work-order"* ]]
+}
+
+@test "execute+run-evolve refuses expired work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/expired-wo.json"
+    create_expired_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"work order expired"* ]]
+}
+
+@test "execute+run-evolve refuses dirty worktree" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    echo "dirty" >> "$FAKE_REPO/README.md"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"clean worktree"* ]]
+}
+
+@test "execute+run-evolve refuses unknown gh evidence" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    NO_GH_PATH="$(make_path_without_gh)"
+
+    run env PATH="$NO_GH_PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires GitHub evidence"* ]]
+}
+
+@test "execute+run-evolve refuses red main CI" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    export GH_RUN_LIST_RESPONSE='[{"conclusion":"failure","databaseId":55555}]'
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"main CI is red"* ]]
+}
+
+@test "execute+run-evolve refuses tracked .agents" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+    mkdir -p "$FAKE_REPO/.agents"
+    touch "$FAKE_REPO/.agents/tracked-file"
+    git -C "$FAKE_REPO" add .agents/tracked-file
+    git -C "$FAKE_REPO" commit -q -m "track .agents"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"tracked .agents"* ]]
+}
+
+@test "execute+run-evolve refuses missing runtime command" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+    local wo="$TMP_DIR/work-order.json"
+    create_valid_work_order "$wo"
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-evolve \
+        --work-order "$wo" \
+        --runtime-cmd nonexistent-runtime-xyz
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires runtime command: nonexistent-runtime-xyz"* ]]
+}
+
+@test "execute+run-dream allowed without work order" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --skip-brief \
+        --execute \
+        --run-dream
+
+    [ "$status" -eq 0 ]
+    jq -e '.phases.dream == "submitted"' "$TMP_DIR/out/digest.json"
 }
