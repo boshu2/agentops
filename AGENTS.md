@@ -253,6 +253,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
 | **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; `git push --dry-run` smoke proves the hook actually fires | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
+| **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
 | **security-toolchain-gate** | Semgrep, gosec, gitleaks, etc. | Non-blocking (`continue-on-error: true`) |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |
