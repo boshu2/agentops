@@ -692,6 +692,88 @@ func TestProbeDreamPacketStaleness_AddToSkillClaim_NonAddVerb(t *testing.T) {
 	}
 }
 
+// TestProbeDreamPacketStaleness_SessionStateTargetsAreNotStale verifies
+// the probe does NOT flag a packet whose only TargetFiles are dream
+// session-state outputs. Every dream-* packet generator (degraded,
+// metrics-health, retrieval-live) cites its own .agents/overnight/
+// or .agents/dream/ output as the target — those files exist as a
+// side effect of the dream run that just emitted the packet, so their
+// presence is not a signal about whether the underlying issue is
+// solved. Counting them produced a permanent stale-rate>50% degraded
+// entry every nightly that the curator then re-emitted as another
+// degraded packet (negative-feedback loop).
+func TestProbeDreamPacketStaleness_SessionStateTargetsAreNotStale(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, rel := range []string{
+		filepath.Join(".agents", "overnight", "latest", "summary.json"),
+		filepath.Join(".agents", "overnight", "latest", "metrics-health.json"),
+		filepath.Join(".agents", "overnight", "latest", "retrieval-bench.json"),
+		filepath.Join(".agents", "dream", "probe-results.jsonl"),
+	} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, rel)), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpDir, rel), []byte("{}\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+
+	cases := []struct {
+		name        string
+		targetFiles []string
+	}{
+		{"summary.json", []string{filepath.Join(tmpDir, ".agents", "overnight", "latest", "summary.json")}},
+		{"metrics-health.json relative", []string{filepath.Join(".agents", "overnight", "latest", "metrics-health.json")}},
+		{"retrieval-bench.json absolute", []string{filepath.Join(tmpDir, ".agents", "overnight", "latest", "retrieval-bench.json")}},
+		{"probe-results.jsonl", []string{filepath.Join(".agents", "dream", "probe-results.jsonl")}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			packet := overnightMorningPacket{
+				ID:          "session-state-" + tc.name,
+				Title:       "Investigate Dream degradation: example",
+				TargetFiles: tc.targetFiles,
+			}
+			reason, match, ok := probeDreamPacketStaleness(tmpDir, packet)
+			if ok {
+				t.Fatalf("probe should NOT flag session-state-only packet stale: reason=%q match=%q", reason, match)
+			}
+		})
+	}
+}
+
+// TestProbeDreamPacketStaleness_RealSourceTargetIsStale locks the
+// inverse: when the cited target IS a real source/contract file
+// outside the dream session-state hierarchy, the probe must still
+// flag the packet stale. Confirms the session-state skip in
+// probeTargetFilesExist did not over-broaden the filter.
+func TestProbeDreamPacketStaleness_RealSourceTargetIsStale(t *testing.T) {
+	tmpDir := t.TempDir()
+	srcRel := filepath.Join("cli", "internal", "overnight", "types.go")
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(tmpDir, srcRel)), 0o755); err != nil {
+		t.Fatalf("mkdir src: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, srcRel), []byte("package overnight\n"), 0o644); err != nil {
+		t.Fatalf("write src: %v", err)
+	}
+
+	packet := overnightMorningPacket{
+		ID:          "real-source",
+		Title:       "Investigate Dream degradation: maxRunTimeout",
+		TargetFiles: []string{srcRel},
+	}
+	reason, match, ok := probeDreamPacketStaleness(tmpDir, packet)
+	if !ok {
+		t.Fatalf("probe should flag stale when target file is a real tracked source: reason=%q match=%q", reason, match)
+	}
+	if !strings.Contains(reason, "target file already tracked") {
+		t.Errorf("reason = %q, want it to mention target file already tracked", reason)
+	}
+	if match != srcRel {
+		t.Errorf("match = %q, want %q", match, srcRel)
+	}
+}
+
 // TestExtractAddToSkillClaim_ParseShapes pins the title parser surface so
 // the probe can rely on it.
 func TestExtractAddToSkillClaim_ParseShapes(t *testing.T) {

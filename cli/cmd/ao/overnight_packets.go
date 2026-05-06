@@ -264,7 +264,13 @@ func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (strin
 
 // probeTargetFilesExist treats a packet as stale when any cited TargetFiles
 // path already exists in the repo as a regular file. URLs and absolute
-// paths outside the repo are skipped.
+// paths outside the repo are skipped, and so are session-state paths
+// under .agents/overnight/ and .agents/dream/ — those files exist as a
+// side effect of the dream run that just emitted the packet, so their
+// presence proves nothing about whether the underlying issue is solved.
+// Counting them produced a permanent stale-rate>50% degraded entry in
+// every nightly because the dream-* packet generators all cite their
+// own session-state outputs.
 func probeTargetFilesExist(cwd string, targets []string, deadline time.Time) (string, string, bool) {
 	for _, raw := range targets {
 		if time.Now().After(deadline) {
@@ -277,6 +283,9 @@ func probeTargetFilesExist(cwd string, targets []string, deadline time.Time) (st
 		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 			continue
 		}
+		if isDreamSessionStatePath(cwd, path) {
+			continue
+		}
 		candidate := path
 		if !filepath.IsAbs(candidate) {
 			candidate = filepath.Join(cwd, candidate)
@@ -286,6 +295,31 @@ func probeTargetFilesExist(cwd string, targets []string, deadline time.Time) (st
 		}
 	}
 	return "", "", false
+}
+
+// isDreamSessionStatePath returns true when the cited path is under the
+// dream/overnight session-state hierarchy. Those files are written by
+// the dream run itself and always exist post-run, so their existence is
+// not a signal about whether the packet's underlying work is done.
+func isDreamSessionStatePath(cwd, path string) bool {
+	abs := path
+	if !filepath.IsAbs(abs) {
+		abs = filepath.Join(cwd, abs)
+	}
+	abs = filepath.Clean(abs)
+	cwd = filepath.Clean(cwd)
+	for _, prefix := range []string{
+		filepath.Join(cwd, ".agents", "overnight"),
+		filepath.Join(cwd, ".agents", "dream"),
+	} {
+		if abs == prefix {
+			return true
+		}
+		if strings.HasPrefix(abs, prefix+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
 }
 
 // probeRepoRefTokens scans the morning command and title for prefix/<name><suffix>
