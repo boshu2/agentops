@@ -74,14 +74,27 @@ func processDiscoveryPhase(cwd string, state *phasedState, logPath string) error
 }
 
 func resolveDiscoveryEpicID(cwd string, state *phasedState, tracker trackerHealth, logPath string) (string, error) {
-	if tracker.Healthy {
-		if epicID, err := extractEpicID(state.Opts.BDCommand); err == nil {
+	if !tracker.Healthy {
+		return resolveDiscoveryFallback(cwd, state, tracker, logPath, nil)
+	}
+	// Prefer epics created during THIS cycle (since state.StartedAt) so that
+	// stale unrelated open epics never win cycle binding. See soc-uo44.
+	if state.StartedAt != "" {
+		if epicID, err := captureCreatedEpicID(state.Opts.BDCommand, state.StartedAt); err == nil && epicID != "" {
 			return epicID, nil
-		} else {
-			return resolveDiscoveryFallback(cwd, state, tracker, logPath, err)
+		} else if err != nil {
+			VerbosePrintf("captureCreatedEpicID since=%s failed: %v (falling back to retroactive poll)\n", state.StartedAt, err)
 		}
 	}
-	return resolveDiscoveryFallback(cwd, state, tracker, logPath, nil)
+	// Retroactive-poll fallback. Result may be a stale epic; warning logged so
+	// downstream debugging is possible. Kept for cycles whose phase-1 did not
+	// create an epic (e.g. tasklist mode) and for cycles missing StartedAt.
+	if epicID, err := extractEpicID(state.Opts.BDCommand); err == nil {
+		VerbosePrintf("Warning: no epic created since %q; using retroactive poll fallback (got %q) — see soc-uo44\n", state.StartedAt, epicID)
+		return epicID, nil
+	} else {
+		return resolveDiscoveryFallback(cwd, state, tracker, logPath, err)
+	}
 }
 
 func resolveDiscoveryFallback(cwd string, state *phasedState, tracker trackerHealth, logPath string, epicErr error) (string, error) {

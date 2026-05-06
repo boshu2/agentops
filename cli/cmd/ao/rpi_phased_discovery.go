@@ -29,7 +29,40 @@ func parseIssueTypeFromShowJSON(data []byte) (bool, error) {
 
 // --- Epic and completion helpers ---
 
+// captureCreatedEpicID returns the most recently created open epic created at or
+// after `since` (RFC3339 timestamp). It is the cycle-binding-safe replacement for
+// extractEpicID, which polled all open epics regardless of creation time and
+// could bind cycles to stale unrelated epics (see soc-uo44).
+//
+// Callers should pass state.StartedAt — the timestamp the orchestrator stored
+// when phase-1 began — so that pre-cycle epics are excluded.
+//
+// Returns ("", error) when no epic was created during this cycle (the bd JSON
+// list is empty after filtering). The caller should treat that as a signal to
+// fall back to extractEpicID with a logged warning, not as a hard failure.
+func captureCreatedEpicID(bdCommand, since string) (string, error) {
+	if strings.TrimSpace(since) == "" {
+		return "", fmt.Errorf("captureCreatedEpicID: since timestamp required (cycle binding cannot use unfiltered poll)")
+	}
+	command := effectiveBDCommand(bdCommand)
+
+	cmd := exec.Command(command, "list", "--type", "epic", "--status", "open", "--created-after", since, "--json")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("bd list --created-after %s: %w", since, err)
+	}
+	return parseLatestEpicIDFromJSON(out)
+}
+
 // extractEpicID finds the most recently created open epic ID via bd CLI.
+//
+// Deprecated for cycle binding: this function does NOT filter by creation time
+// and can return stale unrelated epics (e.g. backlog items) when those exist.
+// Cycle-binding callers MUST use captureCreatedEpicID(bdCommand, sinceRFC3339)
+// instead so the result is restricted to epics created during the current
+// cycle. extractEpicID is retained for diagnostic and legacy callers, and as a
+// last-resort fallback when no since-timestamp is available.
+//
 // bd list returns epics in creation order; we take the LAST match so that
 // the epic just created by the plan phase is selected over older ones.
 func extractEpicID(bdCommand string) (string, error) {
