@@ -1,6 +1,24 @@
 {
   "generated_at_utc": "2026-05-06",
-  "method": "main-CI baseline check via MCP",
-  "note": "MCP tools do not expose workflow_runs API; baseline check skipped at prelude. Will compare PR CI to main during step 6.",
-  "inherited_failures": []
+  "method": "MCP workflow_runs API not exposed; baseline established post-PR-open by running scripts/test-agentops-contract-canaries.sh against origin/main HEAD (7fa6339) locally and comparing PR #235 nightly/2026-05-06 HEAD",
+  "inherited_failures": [
+    {
+      "job": "agentops-contract-canaries (required)",
+      "failed_canaries": [
+        {"suite": "agentops-core.cli-command-surface-matrix", "aggregate": 0.7917},
+        {"suite": "agentops-core.distribution-install-update", "aggregate": 0.8476},
+        {"suite": "agentops-core.hook-lifecycle-behavior", "aggregate": 0.3571},
+        {"suite": "agentops-core.pre-push-gate-governance", "aggregate": 0.7292},
+        {"suite": "agentops-core.release-security-gates", "aggregate": 0.8214},
+        {"suite": "agentops-core.runtime-smoke-matrix", "aggregate": 0.8952}
+      ],
+      "evidence": "PR #235 and origin/main produce the same 6 canary failures with identical aggregate scores. None of nightly/2026-05-06's three cycles touched canary infrastructure (cli/cmd/ao/registry.go:printRegistryTable, cli/internal/daemon/factory_admission.go:evaluate, cli/internal/overnight/types.go:maxRunTimeout, cli/cmd/ao/overnight_packets.go:probeTargetFilesExist + tests).",
+      "classification": "inherited from main; not introduced by PR #235"
+    },
+    {
+      "job": "summary",
+      "evidence": "rolls up agentops-contract-canaries; failure is a cascade from the inherited canary failures",
+      "classification": "inherited cascade"
+    }
+  ]
 }
