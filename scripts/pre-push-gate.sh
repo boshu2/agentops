@@ -117,6 +117,7 @@ fi
 FAST_MODE=false
 TWO_PASS=false
 SINGLE_PASS=false
+SMOKE_EVOLVE=false
 FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
 FAIL_FAST_PENDING=false
@@ -213,6 +214,9 @@ Options:
                 Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
                 NOTE: two-pass is now the default for local pushes
   --single-pass Opt out of two-pass default; run full single-pass gate
+  --smoke-evolve Opt-in: after the normal gate, run scripts/test-evolve-cycle-smoke.sh
+                 (one bounded ao evolve cycle; asserts commit lands and no new
+                 orphans). Takes 15-30 min; off by default. soc-k3fa / mc-m3.5-pre4.
 
 Environment:
   PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
@@ -256,6 +260,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         --single-pass)
             SINGLE_PASS=true
+            shift
+            ;;
+        --smoke-evolve)
+            # Opt-in: run scripts/test-evolve-cycle-smoke.sh after the normal
+            # gate completes. Takes 15-30 minutes; off by default. See soc-k3fa.
+            SMOKE_EVOLVE=true
             shift
             ;;
         -h|--help)
@@ -1613,6 +1623,20 @@ else
         echo -e "${GREEN}pre-push gate (fast): passed ($skipped skipped)${NC}"
     else
         echo -e "${GREEN}pre-push gate: passed${NC}"
+    fi
+    if [[ "$SMOKE_EVOLVE" == "true" ]]; then
+        smoke_script="scripts/test-evolve-cycle-smoke.sh"
+        if [[ ! -x "$smoke_script" ]]; then
+            echo -e "${RED}--smoke-evolve requested but $smoke_script is not executable${NC}"
+            exit 1
+        fi
+        echo -e "${YELLOW}--smoke-evolve: running $smoke_script (15-30 min)...${NC}"
+        if "$smoke_script"; then
+            echo -e "${GREEN}--smoke-evolve: PASS${NC}"
+        else
+            echo -e "${RED}--smoke-evolve: FAIL${NC}"
+            exit 1
+        fi
     fi
     exit 0
 fi
