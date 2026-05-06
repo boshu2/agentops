@@ -22,6 +22,12 @@ func TestPhaseNameForNumber(t *testing.T) {
 }
 
 func TestPhaseEvaluatorVerdict(t *testing.T) {
+	// Structural-evidence rule (soc-3mtv): when gateVerdict is PASS or DONE
+	// (positive structural signal — tracker says cycle work is complete), the
+	// transcript-derived reward heuristic MUST NOT downgrade the verdict.
+	// Previous behavior: low/mid reward overrode a PASS gate to WARN/FAIL,
+	// producing false-WARN/FAIL on legitimate cycles whose transcript shape
+	// didn't match the regex set.
 	cases := []struct {
 		name          string
 		phaseNum      int
@@ -33,14 +39,23 @@ func TestPhaseEvaluatorVerdict(t *testing.T) {
 	}{
 		{"fail gate -> FAIL", 2, "", "FAIL", false, 1.0, "FAIL"},
 		{"blocked gate -> FAIL", 2, "", "blocked", false, 1.0, "FAIL"},
-		{"low reward -> FAIL", 2, "", "PASS", true, 0.1, "FAIL"},
+		// soc-3mtv: PASS gate is authoritative regardless of reward.
+		{"pass gate + low reward -> PASS (structural override)", 2, "", "PASS", true, 0.1, "PASS"},
+		{"pass gate + mid reward -> PASS (structural override)", 2, "", "PASS", true, 0.4, "PASS"},
+		{"pass gate + good reward -> PASS", 2, "", "PASS", true, 0.9, "PASS"},
+		{"done gate + low reward -> PASS (structural override)", 2, "", "DONE", true, 0.1, "PASS"},
+		{"done gate + mid reward -> PASS (structural override)", 2, "", "done", true, 0.4, "PASS"},
+		{"done gate + no transcript -> PASS", 2, "", "DONE", false, 0.0, "PASS"},
 		{"warn gate -> WARN", 2, "", "warn", false, 1.0, "WARN"},
 		{"partial gate -> WARN", 2, "", "partial", false, 1.0, "WARN"},
 		{"skip gate -> WARN", 2, "", "skip", false, 1.0, "WARN"},
-		{"phase 1 tasklist -> WARN", 1, "tasklist", "PASS", false, 1.0, "WARN"},
-		{"mid reward -> WARN", 2, "", "PASS", true, 0.4, "WARN"},
-		{"good reward -> PASS", 2, "", "PASS", true, 0.9, "PASS"},
-		{"no transcript -> PASS", 2, "", "PASS", false, 0.0, "PASS"},
+		{"phase 1 tasklist -> WARN", 1, "tasklist", "PASS", false, 1.0, "PASS"}, // Note: PASS gate now authoritative even for tasklist
+		// Empty/unknown gate falls back to reward heuristic (no structural signal).
+		{"empty gate + low reward -> FAIL", 2, "", "", true, 0.1, "FAIL"},
+		{"empty gate + mid reward -> WARN", 2, "", "", true, 0.4, "WARN"},
+		{"empty gate + good reward -> PASS", 2, "", "", true, 0.9, "PASS"},
+		{"empty gate + no transcript -> PASS", 2, "", "", false, 0.0, "PASS"},
+		{"phase 1 tasklist + empty gate -> WARN", 1, "tasklist", "", false, 1.0, "WARN"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -111,22 +126,38 @@ func TestDefaultEvaluatorFindings(t *testing.T) {
 		t.Errorf("tasklist finding missing: %+v", f4)
 	}
 
-	// Low reward transcript
+	// soc-3mtv: when gate is PASS or DONE (positive structural signal),
+	// transcript-derived reward findings are suppressed — they were producing
+	// false-positive "weak completion" warnings on legitimate cycles.
 	f5 := DefaultEvaluatorFindings(2, "", "PASS", true, 0.1, "/tmp/transcript", "ref")
-	if len(f5) == 0 || !strings.Contains(f5[0].Description, "failing session") {
-		t.Errorf("low reward finding missing: %+v", f5)
+	if len(f5) != 0 {
+		t.Errorf("PASS gate must suppress low-reward findings, got %+v", f5)
 	}
 
-	// Medium reward transcript
 	f6 := DefaultEvaluatorFindings(2, "", "PASS", true, 0.4, "/tmp/transcript", "ref")
-	if len(f6) == 0 || !strings.Contains(f6[0].Description, "weak completion") {
-		t.Errorf("weak completion finding missing: %+v", f6)
+	if len(f6) != 0 {
+		t.Errorf("PASS gate must suppress mid-reward findings, got %+v", f6)
 	}
 
-	// Good reward -> no findings
+	f6b := DefaultEvaluatorFindings(2, "", "DONE", true, 0.1, "/tmp/transcript", "ref")
+	if len(f6b) != 0 {
+		t.Errorf("DONE gate must suppress low-reward findings, got %+v", f6b)
+	}
+
+	// Good reward -> no findings (regardless of gate)
 	f7 := DefaultEvaluatorFindings(2, "", "PASS", true, 0.9, "/tmp/transcript", "ref")
 	if len(f7) != 0 {
 		t.Errorf("expected no findings, got %+v", f7)
+	}
+
+	// Empty/unknown gate falls back to transcript heuristic — low/mid reward findings still emitted.
+	f8 := DefaultEvaluatorFindings(2, "", "", true, 0.1, "/tmp/transcript", "ref")
+	if len(f8) == 0 || !strings.Contains(f8[0].Description, "failing session") {
+		t.Errorf("empty gate + low reward must surface failing-session finding: %+v", f8)
+	}
+	f9 := DefaultEvaluatorFindings(2, "", "", true, 0.4, "/tmp/transcript", "ref")
+	if len(f9) == 0 || !strings.Contains(f9[0].Description, "weak completion") {
+		t.Errorf("empty gate + mid reward must surface weak-completion finding: %+v", f9)
 	}
 }
 
