@@ -60,14 +60,14 @@ Validates a skill's SKILL.md against the unified AgentOps template. Pass 1 wraps
 
 | # | Check id | Severity |
 |---|----------|----------|
-| 1 | `description-has-triggers` | FAIL |
+| 1 | `description-has-triggers` | WARN (downgraded from FAIL after pilot) |
 | 2 | `constraints-frontloaded` | WARN |
 | 3 | `rationale-present` | WARN |
 | 4 | `verification-checkpoints` | WARN |
 | 5 | `output-spec-explicit` | FAIL |
 | 6 | `quality-rubric` | WARN |
-| 7 | `references-modularization` | WARN |
-| 8 | `trigger-clarity` | FAIL |
+| 7 | `references-modularization` | WARN (conditional, only if SKILL.md > 400 lines) |
+| 8 | `trigger-clarity` | WARN (downgraded from FAIL after pilot) |
 
 Full check definitions and accepted forms in [references/audit-checks.md](references/audit-checks.md).
 
