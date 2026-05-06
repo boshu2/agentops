@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: create a skill, scaffold skill, absorb external skill, new skill.'
+description: 'Scaffold a new SKILL.md.'
 ---
 # $skill-builder — Scaffold or absorb a new SKILL.md
 
@@ -9,7 +9,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 ## ⚠️ Critical Constraints
 
 - **Template is canonical.** All four modes produce SKILL.md files conforming to `references/skill-template.md`. Do not invent ad-hoc structures. **Why:** `skill-auditor` validates against this template; drift creates auditor false-fails.
-- **Self-audit is mandatory.** After every successful build, `scripts/build.sh` invokes `bash skills/skill-auditor/scripts/audit.sh <new-skill-dir>`. A FAIL verdict aborts the build. **Why:** PR-002 (external validation gate) — the builder must not declare its own work complete.
+- **Self-audit is mandatory.** After every successful build, the build script invokes `$skill-auditor` against the new skill directory. A FAIL verdict aborts the build. **Why:** PR-002 (external validation gate) — the builder must not declare its own work complete.
 - **Codex parity is day-1, not later.** `from-scratch`, `from-template`, and `absorb-external` modes must produce both `skills/<name>/SKILL.md` AND `skills-codex/<name>/SKILL.md` + `skills-codex/<name>/prompt.md`. **Why:** finding `2026-05-03-codex-skill-shape-is-dual-file` — codex SKILL.md uses slim frontmatter (no `skill_api_version`); prompt.md is mandatory; `audit-codex-parity.sh` is a content scanner that won't catch frontmatter drift.
 - **250-line ceiling on new SKILL.md.** Use `references/` for overflow. **Why:** finding `f-2026-05-01-025` — every skill invocation reloads 5-15KB; multi-lifecycle sessions compound to 150-200KB+ pure scaffolding.
 
@@ -19,7 +19,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 |------|--------|-------------|
 | `from-scratch` | stable | Interactive scaffold from canonical template. Produces full skill skeleton + scripts/validate.sh + codex parity. |
 | `from-template` | stable | `--like <existing-skill>` copies structure from a sibling skill, swaps domain-specific sections. |
-| `absorb-external` | stable | Reads external SKILL.md (e.g., from `~/dev/financial-services/.../<skill>/SKILL.md`), wraps in AgentOps frontmatter, invokes `/converter` for codex parity. |
+| `absorb-external` | stable | Reads external SKILL.md (e.g., from `~/dev/financial-services/.../<skill>/SKILL.md`), wraps in AgentOps frontmatter, invokes `$converter` for codex parity. |
 | `from-pattern` | **alpha (passthrough)** | Delegates to `ao flywheel close-loop`. Outputs land at `.agents/knowledge/promoted/` per flywheel rules — they are NOT yet shaped as SKILL.md drafts. v2 will add skill-specific synthesis. Use `from-scratch` or `absorb-external` for SKILL.md output today. |
 
 ## Workflow
@@ -43,17 +43,17 @@ build.sh from-pattern                            # → ao flywheel close-loop
 
 For `absorb-external`, the external SKILL.md's content (Constraints / Workflow / Output / Quality sections) is preserved verbatim where possible; AgentOps' structured frontmatter is added on top; the external description is reformatted to satisfy `description-has-triggers`.
 
-**Checkpoint:** `bash skills/heal-skill/scripts/heal.sh --check skills/<new-name>` returns clean.
+**Checkpoint:** `$heal-skill --check skills/<new-name>` returns clean.
 
 ### Phase 3: Codex parity
 
-`scripts/init.sh` invokes `/converter skills/<new-name> codex` to produce `skills-codex/<new-name>/{SKILL.md,prompt.md}`. Then trims `skill_api_version` from the codex SKILL.md (converter may preserve it). Asserts `prompt.md` exists.
+`scripts/init.sh` invokes `$converter skills/<new-name> codex` to produce `skills-codex/<new-name>/{SKILL.md,prompt.md}`. Then trims `skill_api_version` from the codex SKILL.md (converter may preserve it). Asserts `prompt.md` exists.
 
 **Checkpoint:** `bash scripts/audit-codex-parity.sh` returns clean AND `grep -q "^skill_api_version:" skills-codex/<name>/SKILL.md` returns nothing.
 
 ### Phase 4: Self-audit
 
-`scripts/build.sh` tail invokes `bash skills/skill-auditor/scripts/audit.sh skills/<new-name>`. WARN is acceptable for v1 skills (e.g., `experimental` stability). FAIL aborts.
+The build script tail invokes `$skill-auditor` on `skills/<new-name>`. WARN is acceptable for v1 skills (e.g., `experimental` stability). FAIL aborts.
 
 **Checkpoint:** `audit_pass=true` in build report.
 
@@ -113,7 +113,7 @@ $skill-builder absorb-external dcf-helper \
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | Self-audit FAIL | Generated SKILL.md missing required Pass-2 check | Re-run with `--verbose`; inspect which check failed; usually `output-spec-explicit` or `trigger-clarity` |
-| Codex parity drift | `/converter` preserved `skill_api_version` | `init.sh` runs `sed -i '/^skill_api_version:/d' skills-codex/<name>/SKILL.md`; verify with grep |
+| Codex parity drift | `$converter` preserved `skill_api_version` | `init.sh` runs `sed -i '/^skill_api_version:/d' skills-codex/<name>/SKILL.md`; verify with grep |
 | SKILL.md > 250 lines | Mode generated too much inline content | Move section bodies to `references/<topic>.md`; reference inline as `[text](references/<topic>.md)` |
 | `from-pattern` produces no SKILL.md | Expected behavior — passthrough only in v1 | Use `from-scratch` or `absorb-external` if you need a SKILL.md draft |
 

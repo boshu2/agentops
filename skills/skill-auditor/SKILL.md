@@ -1,19 +1,6 @@
 ---
 name: skill-auditor
-description: |
-  Audit an existing SKILL.md against the unified AgentOps template (15 checks: 7 wrap heal-skill, 8 are NEW).
-
-  **Use when:**
-  - A new skill is candidate for promotion to stable
-  - Periodic quality review of skill catalog
-  - Pilot pass on a Tier-S skill before refactor
-  - Pre-commit gate for skill edits
-
-  **Triggers:** "audit skill", "skill quality review", "is this skill ready"
-
-  **Not ideal for:**
-  - Repairing structural hygiene (use /heal-skill --fix)
-  - Deeper LLM-powered quality review (skill-stocktake — not yet shipped)
+description: 'Audit an existing SKILL.md against the unified AgentOps template (15 checks). Triggers: "audit skill", "skill quality review", "is this skill ready".'
 skill_api_version: 1
 user-invocable: true
 context:
@@ -38,7 +25,7 @@ Validates a skill's SKILL.md against the unified AgentOps template. Pass 1 wraps
 ## ⚠️ Critical Constraints
 
 - **Auditor is read-only.** Reports findings; never modifies the target. **Why:** PR-002 (external validation) — the auditor must remain a separate gate from the implementer. To repair findings: use `heal-skill --fix` for Pass-1 issues, hand-edit for Pass-2 issues.
-- **Pass 1 delegates, never reimplements.** The auditor calls `bash skills/heal-skill/scripts/heal.sh --check <target>` and parses its output. **Why:** PR-006 (cross-layer consistency) — heal-skill's checks are the source of truth for structural hygiene; reimplementation creates drift.
+- **Pass 1 delegates, never reimplements.** The auditor calls `/heal-skill --check <target>` and parses its output. **Why:** PR-006 (cross-layer consistency) — heal-skill's checks are the source of truth for structural hygiene; reimplementation creates drift.
 - **Pass 2 must accept AgentOps' existing conventions.** Specifically `description-has-triggers` accepts THREE valid forms (YAML `|` block scalar OR `Triggers:`/`Use when:` markers OR `metadata.triggers` array with 3+ items). **Why:** finding `f-2026-05-06-auditor-checks-must-fit-host-conventions` — auditor checks must validate against the host substrate's existing valid artifacts before promotion to required gate.
 - **Verdict aggregation rule:** any check returns `fail` → FAIL; otherwise any returns `warn` → WARN; otherwise PASS. **Why:** prevents silent severity downgrade.
 

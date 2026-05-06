@@ -542,6 +542,18 @@
         "reason": "Current trace workflows are evidence-driven and remain sufficiently clear under converter parity."
       },
       {
+        "name": "skill-auditor",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
+      },
+      {
+        "name": "skill-builder",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
+      },
+      {
         "name": "update",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -715,8 +727,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "3a46b6700c1bf9a82748d49baa2f5b42acf88212d4d2409f806c87d9c485480d",
-      "generated_hash": "c7d5953afe5b96dca995f94000831d609fb74c704b8fa9b93b534b66a18397c0"
+      "source_hash": "96c73b8966775cf7482cf0265133a39d8c356ac7d74d16051e9cfe8bc5fd8ca1",
+      "generated_hash": "027be281254ef5b62ffacc604f55d2ce34b49c2bbbd99a9f31d3ad4702f94009"
     },
     {
       "name": "dream",
@@ -775,8 +787,8 @@
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
-      "source_hash": "697be65a7f142dab2ecfa66142e3f499b71181f3c09d73b441f3ced834376868",
-      "generated_hash": "dc12b2150809efc3f8f14bd77cc05004b65b8addac59424dbb7fec5352074713"
+      "source_hash": "3c108dcae47ce755778685f6432f8ebea752f1f21d94adbc1dc547283cb547b3",
+      "generated_hash": "3e5f02ccb7201f1ab86a1ed72233ecb3b3af9690a290d770f65366b2472d2f1b"
     },
     {
       "name": "implement",
@@ -995,6 +1007,18 @@
       "generated_hash": "828ba53361b1c3f482bd4eb62e395ce0f17c85d81982978a4545398c78f70d75"
     },
     {
+      "name": "skill-auditor",
+      "source_skill": "skills/skill-auditor",
+      "source_hash": "2c3e336b94cfacecfa98d495d84295d9ab0c915ef659c9c9652aba5fce4bf8ca",
+      "generated_hash": "9c4eb0a755855b1e9761879020e14e3abaf6de9c9ef6336a24b47f8250cac0b6"
+    },
+    {
+      "name": "skill-builder",
+      "source_skill": "skills/skill-builder",
+      "source_hash": "67a2664b58af5bfb548531d25d0cc0d72466f0f99aedd9a5970b79568e86659b",
+      "generated_hash": "f32617332b22440a8294964e73bdcaa1d274b830b37d699e480d0df4dcb58dc0"
+    },
+    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "35b062c2d4454da0343226de49c9d10e0d2e59d9ca9c9774397c617085de3ee1",
@@ -1039,14 +1063,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "6889af974a061f3d159b5a95360ebb70ff181d03ff50af89e0cfe23acd5b9ed0",
-      "generated_hash": "56106e5dcb202109498a39fa4ff8f6345df4c3b13abb15a9dd304567ead0a39a"
+      "source_hash": "84add2383909efb5c1977da145f69c589ee4a3c7eece1932507ebc92ffc8ef84",
+      "generated_hash": "84d9fb29c6c72b917ced66de69c2fc1ecafe705a1cbbed6b2ddbf361ab081823"
     },
     {
       "name": "validation",
       "source_skill": "skills/validation",
-      "source_hash": "697c0f55e3d2648d457fad762e572eb5a9ee6d4a76bafba4e848a557b78eb6db",
-      "generated_hash": "e57dd7cdaad76789f09445d313136a7ea6845debfb7405b7f42b3bd79a746a76"
+      "source_hash": "c0fd2f9e626ff4a7460ffa5efa410997dbfd040724ba1b1c38d066eb42df750f",
+      "generated_hash": "becd183323fa80b92579e49d340fadaaa2bda832866d1d3c93b6b29a5880c50a"
     },
     {
       "name": "vibe",
