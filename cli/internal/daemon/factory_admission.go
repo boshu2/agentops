@@ -70,81 +70,19 @@ func (e FactoryAdmissionEvaluator) evaluate(ctx context.Context, runID string, w
 		ctx = context.Background()
 	}
 	now := e.now()
-	generatedAt, err := parseFactoryAdmissionTime("generated_at", work.GeneratedAt)
-	if err != nil {
-		return FactoryAdmissionDecision{}, err
-	}
-	expiresAt, err := parseFactoryAdmissionTime("expires_at", work.ExpiresAt)
+	generatedAt, expiresAt, err := parseFactoryAdmissionWindow(work)
 	if err != nil {
 		return FactoryAdmissionDecision{}, err
 	}
 
-	reasons := []string{}
-	if now.After(expiresAt) {
-		reasons = append(reasons, FactoryAdmissionReasonExpiredWorkOrder)
-	}
-	if generatedAt.After(now) {
-		reasons = append(reasons, FactoryAdmissionReasonFutureGeneratedAt)
-	}
+	reasons := evaluateFactoryAdmissionWindow(now, generatedAt, expiresAt)
 
-	repo := FactoryRepoState{}
-	blockers := append([]FactoryOpenPRBlocker{}, work.OpenPRBlockers...)
-	ciBaseline := work.MainCIBaseline
-	if e.Evidence == nil {
-		reasons = append(reasons, FactoryAdmissionReasonEvidenceProviderMissing)
-	} else {
-		collectedRepo, err := e.Evidence.RepoState(ctx)
-		if err != nil {
-			if isFactoryAdmissionContextError(err) {
-				return FactoryAdmissionDecision{}, err
-			}
-			reasons = append(reasons, FactoryAdmissionReasonRepoStateUnknown)
-		} else {
-			repo = collectedRepo
-			reasons = append(reasons, evaluateFactoryRepoState(work.BaseSHA, collectedRepo)...)
-		}
-
-		matrix, err := e.Evidence.OpenPRBlockers(ctx, work.AllowedFiles)
-		if err != nil {
-			if isFactoryAdmissionContextError(err) {
-				return FactoryAdmissionDecision{}, err
-			}
-			if factoryAdmissionBlocksUnknownEvidence(work) {
-				reasons = append(reasons, FactoryAdmissionReasonOpenPREvidenceUnknown)
-			}
-		} else if !matrix.Known {
-			if factoryAdmissionBlocksUnknownEvidence(work) {
-				reasons = append(reasons, FactoryAdmissionReasonOpenPREvidenceUnknown)
-			}
-		} else {
-			blockers = append(blockers, matrix.Blockers...)
-		}
-
-		ci, err := e.Evidence.MainCIBaseline(ctx)
-		if err != nil {
-			if isFactoryAdmissionContextError(err) {
-				return FactoryAdmissionDecision{}, err
-			}
-			if factoryAdmissionBlocksUnknownEvidence(work) {
-				reasons = append(reasons, FactoryAdmissionReasonMainCIUnknown)
-			}
-		} else if !ci.Known {
-			if factoryAdmissionBlocksUnknownEvidence(work) {
-				reasons = append(reasons, FactoryAdmissionReasonMainCIUnknown)
-			}
-		} else {
-			ciBaseline = ci.Baseline
-		}
+	collected, err := e.collectFactoryAdmissionEvidence(ctx, work)
+	if err != nil {
+		return FactoryAdmissionDecision{}, err
 	}
-
-	if len(blockers) > 0 {
-		reasons = append(reasons, FactoryAdmissionReasonOpenPROverlap)
-	}
-	if ciBaseline.Status == FactoryCIStatusRed {
-		reasons = append(reasons, FactoryAdmissionReasonMainCIRed)
-	} else if ciBaseline.Status == FactoryCIStatusUnknown && factoryAdmissionBlocksUnknownEvidence(work) {
-		reasons = append(reasons, FactoryAdmissionReasonMainCIUnknown)
-	}
+	reasons = append(reasons, collected.reasons...)
+	reasons = append(reasons, evaluateFactoryAdmissionAggregate(work, collected.blockers, collected.ciBaseline)...)
 
 	reasons = uniqueNonEmptyFactoryAdmissionReasons(reasons)
 	decision := FactoryAdmissionDecision{
@@ -157,9 +95,9 @@ func (e FactoryAdmissionEvaluator) evaluate(ctx context.Context, runID string, w
 		LandingPolicy: work.LandingPolicy,
 		DigestPolicy:  work.DigestPolicy,
 		Evidence: FactoryDecisionEvidence{
-			BaseSHA:            factoryDecisionBaseSHA(work.BaseSHA, repo.HeadSHA),
-			OpenPRBlockerCount: len(blockers),
-			MainCIStatus:       ciBaseline.Status,
+			BaseSHA:            factoryDecisionBaseSHA(work.BaseSHA, collected.repo.HeadSHA),
+			OpenPRBlockerCount: len(collected.blockers),
+			MainCIStatus:       collected.ciBaseline.Status,
 			Stale:              now.After(expiresAt),
 		},
 	}
@@ -167,6 +105,132 @@ func (e FactoryAdmissionEvaluator) evaluate(ctx context.Context, runID string, w
 		return FactoryAdmissionDecision{}, fmt.Errorf("admission decision: %w", err)
 	}
 	return decision, nil
+}
+
+func parseFactoryAdmissionWindow(work FactoryWorkOrder) (time.Time, time.Time, error) {
+	generatedAt, err := parseFactoryAdmissionTime("generated_at", work.GeneratedAt)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	expiresAt, err := parseFactoryAdmissionTime("expires_at", work.ExpiresAt)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	return generatedAt, expiresAt, nil
+}
+
+func evaluateFactoryAdmissionWindow(now, generatedAt, expiresAt time.Time) []string {
+	reasons := []string{}
+	if now.After(expiresAt) {
+		reasons = append(reasons, FactoryAdmissionReasonExpiredWorkOrder)
+	}
+	if generatedAt.After(now) {
+		reasons = append(reasons, FactoryAdmissionReasonFutureGeneratedAt)
+	}
+	return reasons
+}
+
+// factoryAdmissionEvidenceBundle gathers the three evidence-provider results
+// and the reasons collected while consulting them. Pulling this off the
+// evaluate() caller keeps that function under the cli/internal/ CC ceiling
+// and makes the per-source error handling testable in isolation.
+type factoryAdmissionEvidenceBundle struct {
+	reasons    []string
+	blockers   []FactoryOpenPRBlocker
+	ciBaseline FactoryMainCIBaseline
+	repo       FactoryRepoState
+}
+
+func (e FactoryAdmissionEvaluator) collectFactoryAdmissionEvidence(ctx context.Context, work FactoryWorkOrder) (factoryAdmissionEvidenceBundle, error) {
+	bundle := factoryAdmissionEvidenceBundle{
+		blockers:   append([]FactoryOpenPRBlocker{}, work.OpenPRBlockers...),
+		ciBaseline: work.MainCIBaseline,
+	}
+	if e.Evidence == nil {
+		bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonEvidenceProviderMissing)
+		return bundle, nil
+	}
+
+	if err := e.collectFactoryRepoEvidence(ctx, work, &bundle); err != nil {
+		return factoryAdmissionEvidenceBundle{}, err
+	}
+	if err := e.collectFactoryBlockerEvidence(ctx, work, &bundle); err != nil {
+		return factoryAdmissionEvidenceBundle{}, err
+	}
+	if err := e.collectFactoryCIEvidence(ctx, work, &bundle); err != nil {
+		return factoryAdmissionEvidenceBundle{}, err
+	}
+	return bundle, nil
+}
+
+func (e FactoryAdmissionEvaluator) collectFactoryRepoEvidence(ctx context.Context, work FactoryWorkOrder, bundle *factoryAdmissionEvidenceBundle) error {
+	collectedRepo, err := e.Evidence.RepoState(ctx)
+	if err != nil {
+		if isFactoryAdmissionContextError(err) {
+			return err
+		}
+		bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonRepoStateUnknown)
+		return nil
+	}
+	bundle.repo = collectedRepo
+	bundle.reasons = append(bundle.reasons, evaluateFactoryRepoState(work.BaseSHA, collectedRepo)...)
+	return nil
+}
+
+func (e FactoryAdmissionEvaluator) collectFactoryBlockerEvidence(ctx context.Context, work FactoryWorkOrder, bundle *factoryAdmissionEvidenceBundle) error {
+	matrix, err := e.Evidence.OpenPRBlockers(ctx, work.AllowedFiles)
+	if err != nil {
+		if isFactoryAdmissionContextError(err) {
+			return err
+		}
+		if factoryAdmissionBlocksUnknownEvidence(work) {
+			bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonOpenPREvidenceUnknown)
+		}
+		return nil
+	}
+	if !matrix.Known {
+		if factoryAdmissionBlocksUnknownEvidence(work) {
+			bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonOpenPREvidenceUnknown)
+		}
+		return nil
+	}
+	bundle.blockers = append(bundle.blockers, matrix.Blockers...)
+	return nil
+}
+
+func (e FactoryAdmissionEvaluator) collectFactoryCIEvidence(ctx context.Context, work FactoryWorkOrder, bundle *factoryAdmissionEvidenceBundle) error {
+	ci, err := e.Evidence.MainCIBaseline(ctx)
+	if err != nil {
+		if isFactoryAdmissionContextError(err) {
+			return err
+		}
+		if factoryAdmissionBlocksUnknownEvidence(work) {
+			bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonMainCIUnknown)
+		}
+		return nil
+	}
+	if !ci.Known {
+		if factoryAdmissionBlocksUnknownEvidence(work) {
+			bundle.reasons = append(bundle.reasons, FactoryAdmissionReasonMainCIUnknown)
+		}
+		return nil
+	}
+	bundle.ciBaseline = ci.Baseline
+	return nil
+}
+
+func evaluateFactoryAdmissionAggregate(work FactoryWorkOrder, blockers []FactoryOpenPRBlocker, ciBaseline FactoryMainCIBaseline) []string {
+	reasons := []string{}
+	if len(blockers) > 0 {
+		reasons = append(reasons, FactoryAdmissionReasonOpenPROverlap)
+	}
+	switch {
+	case ciBaseline.Status == FactoryCIStatusRed:
+		reasons = append(reasons, FactoryAdmissionReasonMainCIRed)
+	case ciBaseline.Status == FactoryCIStatusUnknown && factoryAdmissionBlocksUnknownEvidence(work):
+		reasons = append(reasons, FactoryAdmissionReasonMainCIUnknown)
+	}
+	return reasons
 }
 
 func (e FactoryAdmissionEvaluator) now() time.Time {

@@ -1,0 +1,6 @@
+{
+  "generated_at_utc": "2026-05-06",
+  "method": "main-CI baseline check via MCP",
+  "note": "MCP tools do not expose workflow_runs API; baseline check skipped at prelude. Will compare PR CI to main during step 6.",
+  "inherited_failures": []
+}

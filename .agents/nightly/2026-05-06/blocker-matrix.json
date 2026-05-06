@@ -1,0 +1,7 @@
+{
+  "generated_at_utc": "2026-05-06",
+  "method": "mcp__github__list_pull_requests state=open",
+  "open_prs": [],
+  "blocked_goals": [],
+  "note": "No open PRs against main at run start; blocker matrix empty."
+}

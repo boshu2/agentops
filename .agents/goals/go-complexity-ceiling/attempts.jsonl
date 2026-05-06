@@ -1,0 +1,1 @@
+{"run":"2026-05-06","cycle":1,"axis":"function-extraction","targets":["cli/cmd/ao/registry.go:printRegistryTable","cli/internal/daemon/factory_admission.go:evaluate"],"result":"flipped","cc_before":[28,24],"cc_after":[3,5],"weight":6}

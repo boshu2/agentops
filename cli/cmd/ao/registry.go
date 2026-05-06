@@ -155,77 +155,85 @@ func printRegistryJSON(cmd *cobra.Command, reg *registryFile) error {
 
 func printRegistryTable(cmd *cobra.Command, reg *registryFile) error {
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-
-	show := func(t string) bool {
-		return registryTypeFilter == "" || registryTypeFilter == t
+	sections := registrySectionEmitters(reg)
+	first := true
+	for _, section := range sections {
+		if !registrySectionShouldShow(section.kind, section.rows) {
+			continue
+		}
+		writeRegistrySectionHeader(w, first)
+		section.emit(w)
+		first = false
 	}
-
-	if show("skills") {
-		fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		for _, s := range reg.Surfaces.Skills {
-			fmt.Fprintf(w, "skill\t%s\t%s\n", s.Name, s.Tier)
-		}
-	}
-	if show("hooks") && len(reg.Surfaces.Hooks) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, h := range reg.Surfaces.Hooks {
-			fmt.Fprintf(w, "hook\t%s\t%s\n", h.Name, h.Lifecycle)
-		}
-	}
-	if show("stores") && len(reg.Surfaces.Stores) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, s := range reg.Surfaces.Stores {
-			fmt.Fprintf(w, "store\t%s\t%s\n", s.Name, s.Purpose)
-		}
-	}
-	if show("jobs") && len(reg.Surfaces.JobTypes) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, j := range reg.Surfaces.JobTypes {
-			fmt.Fprintf(w, "job\t%s\t%s.%s\n", j.JobType, j.Domain, j.Action)
-		}
-	}
-	if show("evals") && len(reg.Surfaces.Evals) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, e := range reg.Surfaces.Evals {
-			fmt.Fprintf(w, "eval\t%s\t%d files\n", e.Suite, e.EvalCount)
-		}
-	}
-	if show("cli") && len(reg.Surfaces.CLI) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, c := range reg.Surfaces.CLI {
-			fmt.Fprintf(w, "cli\t%s\t%s\n", c.Name, c.Path)
-		}
-	}
-	if show("cadence") && len(reg.Cadence) > 0 {
-		if registryTypeFilter == "" {
-			fmt.Fprintln(w)
-		} else {
-			fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
-		}
-		for _, c := range reg.Cadence {
-			fmt.Fprintf(w, "cadence\t%s\t%s\n", c.Name, c.Cadence)
-		}
-	}
-
 	return w.Flush()
+}
+
+type registrySection struct {
+	kind string
+	rows int
+	emit func(w *tabwriter.Writer)
+}
+
+func registrySectionEmitters(reg *registryFile) []registrySection {
+	return []registrySection{
+		{"skills", len(reg.Surfaces.Skills), func(w *tabwriter.Writer) {
+			for _, s := range reg.Surfaces.Skills {
+				fmt.Fprintf(w, "skill\t%s\t%s\n", s.Name, s.Tier)
+			}
+		}},
+		{"hooks", len(reg.Surfaces.Hooks), func(w *tabwriter.Writer) {
+			for _, h := range reg.Surfaces.Hooks {
+				fmt.Fprintf(w, "hook\t%s\t%s\n", h.Name, h.Lifecycle)
+			}
+		}},
+		{"stores", len(reg.Surfaces.Stores), func(w *tabwriter.Writer) {
+			for _, s := range reg.Surfaces.Stores {
+				fmt.Fprintf(w, "store\t%s\t%s\n", s.Name, s.Purpose)
+			}
+		}},
+		{"jobs", len(reg.Surfaces.JobTypes), func(w *tabwriter.Writer) {
+			for _, j := range reg.Surfaces.JobTypes {
+				fmt.Fprintf(w, "job\t%s\t%s.%s\n", j.JobType, j.Domain, j.Action)
+			}
+		}},
+		{"evals", len(reg.Surfaces.Evals), func(w *tabwriter.Writer) {
+			for _, e := range reg.Surfaces.Evals {
+				fmt.Fprintf(w, "eval\t%s\t%d files\n", e.Suite, e.EvalCount)
+			}
+		}},
+		{"cli", len(reg.Surfaces.CLI), func(w *tabwriter.Writer) {
+			for _, c := range reg.Surfaces.CLI {
+				fmt.Fprintf(w, "cli\t%s\t%s\n", c.Name, c.Path)
+			}
+		}},
+		{"cadence", len(reg.Cadence), func(w *tabwriter.Writer) {
+			for _, c := range reg.Cadence {
+				fmt.Fprintf(w, "cadence\t%s\t%s\n", c.Name, c.Cadence)
+			}
+		}},
+	}
+}
+
+// registrySectionShouldShow gates a section by the active registry filter.
+// Skills always show their header even with zero rows to preserve the
+// pre-refactor behavior of an unfiltered listing.
+func registrySectionShouldShow(kind string, rows int) bool {
+	if registryTypeFilter != "" && registryTypeFilter != kind {
+		return false
+	}
+	if kind == "skills" && registryTypeFilter == "" {
+		return true
+	}
+	return rows > 0
+}
+
+// writeRegistrySectionHeader emits a header for the first section and a
+// blank-line separator (or repeated header when filtered) for subsequent
+// sections, mirroring the original printRegistryTable formatting.
+func writeRegistrySectionHeader(w *tabwriter.Writer, first bool) {
+	if first || registryTypeFilter != "" {
+		fmt.Fprintf(w, "TYPE\tNAME\tDETAIL\n")
+		return
+	}
+	fmt.Fprintln(w)
 }
