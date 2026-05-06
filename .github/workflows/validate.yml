@@ -470,7 +470,7 @@ jobs:
         if: steps.filter.outputs.changed == 'true'
         run: |
           chmod +x scripts/eval-agent-harness.sh
-          result=$(bash scripts/eval-agent-harness.sh --task go-build --agent echo --dry-run 2>/dev/null | tail -1)
+          result=$(bash scripts/eval-agent-harness.sh --task go-01 --agent echo --dry-run 2>/dev/null | tail -1)
           echo "$result" | jq -e '.skipped == true' > /dev/null
           echo "eval harness dry-run: valid JSON, skipped=true"
 

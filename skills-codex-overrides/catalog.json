@@ -540,6 +540,18 @@
       "reason": "Current trace workflows are evidence-driven and remain sufficiently clear under converter parity."
     },
     {
+      "name": "skill-auditor",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
+    },
+    {
+      "name": "skill-builder",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
+    },
+    {
       "name": "update",
       "treatment": "parity_only",
       "wave": "catalog-parity",

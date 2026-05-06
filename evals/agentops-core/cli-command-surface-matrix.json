@@ -40,7 +40,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=63 sub=155 all=218"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=63 sub=156 all=219"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],

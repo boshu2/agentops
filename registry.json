@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-05T01:38:51Z",
+  "generated_at": "2026-05-06T20:58:24Z",
   "summary": {
-    "skills": 71,
+    "skills": 73,
     "hooks": 41,
-    "knowledge_stores": 46,
-    "job_types": 12,
+    "knowledge_stores": 2,
+    "job_types": 14,
     "eval_files": 61,
-    "cli_commands": 144
+    "cli_commands": 146
   },
   "surfaces": {
     "skills": [
@@ -113,7 +113,7 @@
         "path": "skills/codex-team/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "converter",
@@ -153,7 +153,7 @@
         "path": "skills/bug-hunt/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 5
+        "reference_count": 8
       },
       {
         "name": "complexity",
@@ -176,8 +176,8 @@
         "tier": "execution",
         "path": "skills/deps/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 1
       },
       {
         "name": "evolve",
@@ -208,8 +208,8 @@
         "tier": "execution",
         "path": "skills/perf/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 3
       },
       {
         "name": "plan",
@@ -217,7 +217,7 @@
         "path": "skills/plan/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 13
+        "reference_count": 14
       },
       {
         "name": "push",
@@ -232,8 +232,8 @@
         "tier": "execution",
         "path": "skills/refactor/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 1
       },
       {
         "name": "research",
@@ -241,7 +241,7 @@
         "path": "skills/research/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "reverse-engineer-rpi",
@@ -257,7 +257,7 @@
         "path": "skills/scaffold/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "scenario",
@@ -273,7 +273,7 @@
         "path": "skills/scope/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "security-suite",
@@ -296,8 +296,8 @@
         "tier": "execution",
         "path": "skills/test/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 4
       },
       {
         "name": "council",
@@ -313,7 +313,7 @@
         "path": "skills/design/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "post-mortem",
@@ -345,7 +345,7 @@
         "path": "skills/review/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 4
+        "reference_count": 5
       },
       {
         "name": "vibe",
@@ -409,7 +409,7 @@
         "path": "skills/beads/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 18
       },
       {
         "name": "shared",
@@ -452,6 +452,22 @@
         "reference_count": 12
       },
       {
+        "name": "skill-auditor",
+        "tier": "meta",
+        "path": "skills/skill-auditor/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
+      },
+      {
+        "name": "skill-builder",
+        "tier": "meta",
+        "path": "skills/skill-builder/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
+      },
+      {
         "name": "update",
         "tier": "meta",
         "path": "skills/update/",
@@ -473,7 +489,7 @@
         "path": "skills/validation/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 4
+        "reference_count": 6
       },
       {
         "name": "doc",
@@ -481,7 +497,7 @@
         "path": "skills/doc/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 5
+        "reference_count": 6
       },
       {
         "name": "goals",
@@ -513,7 +529,7 @@
         "path": "skills/release/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 5
+        "reference_count": 6
       },
       {
         "name": "security",
@@ -912,280 +928,16 @@
     ],
     "knowledge_stores": [
       {
-        "name": "ao",
-        "path": ".agents/ao/",
-        "purpose": "CLI runtime state and configuration",
-        "file_count": 347
-      },
-      {
-        "name": "archive",
-        "path": ".agents/archive/",
-        "purpose": "Retired/archived knowledge entries",
-        "file_count": 14388
-      },
-      {
-        "name": "brainstorm",
-        "path": ".agents/brainstorm/",
-        "purpose": "Brainstorm session outputs",
-        "file_count": 9
-      },
-      {
-        "name": "compaction-snapshots",
-        "path": ".agents/compaction-snapshots/",
-        "purpose": "Pre-compaction context snapshots",
-        "file_count": 1
-      },
-      {
-        "name": "compiled",
-        "path": ".agents/compiled/",
-        "purpose": "Compiled wiki output from ao compile",
-        "file_count": 0
-      },
-      {
-        "name": "constraints",
-        "path": ".agents/constraints/",
-        "purpose": "Operational constraints and rules",
-        "file_count": 2
-      },
-      {
-        "name": "council",
-        "path": ".agents/council/",
-        "purpose": "Council validation session outputs",
-        "file_count": 31
-      },
-      {
-        "name": "crank",
-        "path": ".agents/crank/",
-        "purpose": "Crank epic execution state",
-        "file_count": 7
-      },
-      {
-        "name": "daemon",
-        "path": ".agents/daemon/",
-        "purpose": "Daemon runtime state (jobs, ledger)",
-        "file_count": 7
-      },
-      {
-        "name": "defrag",
-        "path": ".agents/defrag/",
-        "purpose": "Defragmentation outputs",
-        "file_count": 11
-      },
-      {
-        "name": "design",
-        "path": ".agents/design/",
-        "purpose": "Design decision records",
-        "file_count": 19
-      },
-      {
-        "name": "discovery",
-        "path": ".agents/discovery/",
-        "purpose": "Discovery phase outputs",
-        "file_count": 0
-      },
-      {
-        "name": "dream-cycle",
-        "path": ".agents/dream-cycle/",
-        "purpose": "Dream cycle runtime state",
-        "file_count": 2
-      },
-      {
-        "name": "evals",
-        "path": ".agents/evals/",
-        "purpose": "Evaluation results and reports",
-        "file_count": 11632
-      },
-      {
-        "name": "evolution",
-        "path": ".agents/evolution/",
-        "purpose": "Evolution loop state",
-        "file_count": 2
-      },
-      {
-        "name": "evolve",
-        "path": ".agents/evolve/",
-        "purpose": "Evolve skill session outputs",
-        "file_count": 189
-      },
-      {
-        "name": "findings",
-        "path": ".agents/findings/",
-        "purpose": "Bug hunt and research findings",
-        "file_count": 69
-      },
-      {
-        "name": "handoff",
-        "path": ".agents/handoff/",
-        "purpose": "Session handoff documents",
-        "file_count": 261
-      },
-      {
-        "name": "handoffs",
-        "path": ".agents/handoffs/",
-        "purpose": "Session handoff archives",
-        "file_count": 16
-      },
-      {
-        "name": "harvest",
-        "path": ".agents/harvest/",
-        "purpose": "Harvest consolidation outputs",
-        "file_count": 3
-      },
-      {
-        "name": "knowledge",
-        "path": ".agents/knowledge/",
-        "purpose": "Promoted knowledge entries",
-        "file_count": 631
-      },
-      {
-        "name": "learnings",
-        "path": ".agents/learnings/",
-        "purpose": "Session learnings and insights",
-        "file_count": 1494
-      },
-      {
-        "name": "ledger",
-        "path": ".agents/ledger/",
-        "purpose": "Append-only event ledger",
-        "file_count": 2
-      },
-      {
-        "name": "mine",
-        "path": ".agents/mine/",
-        "purpose": "Mining extraction outputs",
-        "file_count": 13
-      },
-      {
         "name": "nightly",
         "path": ".agents/nightly/",
         "purpose": "Nightly run outputs and digests",
-        "file_count": 0
-      },
-      {
-        "name": "overnight",
-        "path": ".agents/overnight/",
-        "purpose": "Overnight dream run outputs",
-        "file_count": 2934
-      },
-      {
-        "name": "patterns",
-        "path": ".agents/patterns/",
-        "purpose": "Extracted code and workflow patterns",
-        "file_count": 136
-      },
-      {
-        "name": "planning-rules",
-        "path": ".agents/planning-rules/",
-        "purpose": "Reusable planning constraints",
-        "file_count": 80
-      },
-      {
-        "name": "plans",
-        "path": ".agents/plans/",
-        "purpose": "Plan outputs from /plan skill",
-        "file_count": 35
-      },
-      {
-        "name": "pool",
-        "path": ".agents/pool/",
-        "purpose": "Knowledge pool (ingested raw material)",
-        "file_count": 159
-      },
-      {
-        "name": "pre-mortem-checks",
-        "path": ".agents/pre-mortem-checks/",
-        "purpose": "Pre-mortem validation outputs",
-        "file_count": 71
-      },
-      {
-        "name": "pre-mortems",
-        "path": ".agents/pre-mortems/",
-        "purpose": "Pre-mortem analysis documents",
-        "file_count": 3
-      },
-      {
-        "name": "products",
-        "path": ".agents/products/",
-        "purpose": "Product definition outputs",
-        "file_count": 0
-      },
-      {
-        "name": "releases",
-        "path": ".agents/releases/",
-        "purpose": "Release notes and changelogs",
-        "file_count": 17
-      },
-      {
-        "name": "research",
-        "path": ".agents/research/",
-        "purpose": "Research outputs and reports",
-        "file_count": 71
-      },
-      {
-        "name": "retros",
-        "path": ".agents/retros/",
-        "purpose": "Retrospective session outputs",
-        "file_count": 2
+        "file_count": 4
       },
       {
         "name": "rpi",
         "path": ".agents/rpi/",
         "purpose": "RPI run state and registry",
-        "file_count": 275
-      },
-      {
-        "name": "sessions",
-        "path": ".agents/sessions/",
-        "purpose": "Session metadata and transcripts",
         "file_count": 1
-      },
-      {
-        "name": "signals",
-        "path": ".agents/signals/",
-        "purpose": "Quality and context signals",
-        "file_count": 1
-      },
-      {
-        "name": "specs",
-        "path": ".agents/specs/",
-        "purpose": "Technical specifications",
-        "file_count": 0
-      },
-      {
-        "name": "staging",
-        "path": ".agents/staging/",
-        "purpose": "Staging area for promotion",
-        "file_count": 0
-      },
-      {
-        "name": "test",
-        "path": ".agents/test/",
-        "purpose": "Test generation outputs",
-        "file_count": 2
-      },
-      {
-        "name": "tests",
-        "path": ".agents/tests/",
-        "purpose": "Test results and reports",
-        "file_count": 408
-      },
-      {
-        "name": "validation",
-        "path": ".agents/validation/",
-        "purpose": "Validation phase outputs",
-        "file_count": 1
-      },
-      {
-        "name": "vibe-context",
-        "path": ".agents/vibe-context/",
-        "purpose": "Vibe check context cache",
-        "file_count": 1
-      },
-      {
-        "name": "wiki",
-        "path": ".agents/wiki/",
-        "purpose": "Internal wiki entries",
-        "file_count": 8
       }
     ],
     "job_types": [
@@ -1208,6 +960,16 @@
         "job_type": "eval.suite",
         "domain": "eval",
         "action": "suite"
+      },
+      {
+        "job_type": "factory.admission",
+        "domain": "factory",
+        "action": "admission"
+      },
+      {
+        "job_type": "factory.local-pilot",
+        "domain": "factory",
+        "action": "local-pilot"
       },
       {
         "job_type": "llmwiki.loop",
@@ -1251,82 +1013,8 @@
       }
     ],
     "schedules": {
-      "example": [
-        {
-          "name": "nightly-rpi-run",
-          "cron": "0 3 * * *",
-          "job_type": "rpi.run",
-          "timeout": "1h"
-        },
-        {
-          "name": "nightly-dream-run",
-          "cron": "0 2 * * *",
-          "job_type": "dream.run",
-          "timeout": "2h"
-        },
-        {
-          "name": "weekly-wiki-build",
-          "cron": "0 5 * * 0",
-          "job_type": "wiki.build",
-          "timeout": "30m"
-        },
-        {
-          "name": "daily-openclaw-snapshot",
-          "cron": "0 6 * * *",
-          "job_type": "openclaw.snapshot",
-          "timeout": "15m"
-        },
-        {
-          "name": "nightly-eval-suite",
-          "cron": "0 4 * * *",
-          "job_type": "eval.suite",
-          "timeout": "1h"
-        }
-      ],
-      "live": [
-        {
-          "name": "nightly-dream",
-          "cron": "0 3 * * *",
-          "job_type": "dream.run",
-          "timeout": "4h30m"
-        },
-        {
-          "name": "hourly-forge",
-          "cron": "5 * * * *",
-          "job_type": "wiki.forge",
-          "timeout": ""
-        },
-        {
-          "name": "nightly-eval-suite",
-          "cron": "0 4 * * *",
-          "job_type": "eval.suite",
-          "timeout": "1h"
-        },
-        {
-          "name": "weekly-flywheel-health",
-          "cron": "0 6 * * 1",
-          "job_type": "skill.invoke",
-          "timeout": "15m"
-        },
-        {
-          "name": "weekly-deps-audit",
-          "cron": "0 7 * * 2",
-          "job_type": "skill.invoke",
-          "timeout": "30m"
-        },
-        {
-          "name": "weekly-security-scan",
-          "cron": "0 7 * * 3",
-          "job_type": "skill.invoke",
-          "timeout": "30m"
-        },
-        {
-          "name": "weekly-evolve-loop",
-          "cron": "0 2 * * 6",
-          "job_type": "rpi.run",
-          "timeout": "2h"
-        }
-      ]
+      "example": [],
+      "live": []
     },
     "evals": [
       {
@@ -1552,6 +1240,10 @@
       {
         "name": "factory",
         "path": "cli/cmd/ao/factory.go"
+      },
+      {
+        "name": "factory_admit",
+        "path": "cli/cmd/ao/factory_admit.go"
       },
       {
         "name": "factory_pilot",
@@ -1936,6 +1628,10 @@
       {
         "name": "session_outcome",
         "path": "cli/cmd/ao/session_outcome.go"
+      },
+      {
+        "name": "session_spawn",
+        "path": "cli/cmd/ao/session_spawn.go"
       },
       {
         "name": "sessions",

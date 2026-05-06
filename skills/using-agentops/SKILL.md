@@ -151,6 +151,8 @@ These are the skills every user needs first. Everything else is available when y
 | `/system-tuning` | Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene |
 | `/scaffold` | Project scaffolding, component generation, and boilerplate setup |
 | `/scenario` | Author and manage holdout scenarios for behavioral validation |
+| `/skill-auditor` | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
+| `/skill-builder` | Scaffold or absorb new SKILL.md files against the unified template |
 
 ## Expert Skills (specialized workflows)
 

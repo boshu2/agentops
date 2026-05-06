@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (62)
+### User-Facing Skills (64)
 
 **Judgment:**
 
@@ -318,6 +318,8 @@ These are how skills chain in practice:
 | **converter** | cross-vendor | Cross-platform skill converter (Codex, Cursor) |
 | **reverse-engineer-rpi** | execution | Reverse-engineer a product into feature catalog + code map + specs |
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
+| **skill-auditor** | meta | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
+| **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
 | **update** | meta | Reinstall all AgentOps skills globally |
 
 ### Internal Skills (9) — `metadata.internal: true`
