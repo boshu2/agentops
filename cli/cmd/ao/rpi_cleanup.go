@@ -385,11 +385,78 @@ func updateFlatStateIfMatches(flatPath, runID, reason, terminatedAt string) {
 	rpi.UpdateFlatStateIfMatches(flatPath, runID, reason, terminatedAt)
 }
 
+// preserveWorktreeCommits inspects the worktree's HEAD and, if it points at a
+// commit that is NOT reachable from the repo's main branch, creates a
+// `codex/preserve-<runID>` branch in repoRoot pointing at the worktree HEAD.
+// This guards against the 2026-05-06 overnight failure mode where auto-cleanup
+// of failed-cycle worktrees orphaned real commits (see soc-ewne).
+//
+// Returns the preserved commit SHA on success (empty string when no preserve
+// was needed because the worktree HEAD was already on main). Errors are
+// returned but the caller (removeOrphanedWorktree) treats them as warnings
+// and continues with cleanup so a preserve failure does not block the cleanup
+// path; the warning surfaces in supervisor output.
+func preserveWorktreeCommits(repoRoot, worktreePath, runID string) (string, error) {
+	if strings.TrimSpace(runID) == "" {
+		return "", fmt.Errorf("preserveWorktreeCommits: runID required (preserve branch name must be deterministic)")
+	}
+	if _, err := os.Stat(worktreePath); err != nil {
+		return "", nil // worktree already gone
+	}
+
+	headOut, err := exec.Command("git", "-C", worktreePath, "rev-parse", "HEAD").Output()
+	if err != nil {
+		return "", fmt.Errorf("preserveWorktreeCommits: rev-parse HEAD: %w", err)
+	}
+	worktreeHEAD := strings.TrimSpace(string(headOut))
+	if worktreeHEAD == "" {
+		return "", nil
+	}
+
+	// `git rev-list <head> ^main` returns the commits unique to the worktree.
+	// Empty output means the worktree HEAD is already on main; no preserve needed.
+	rlOut, rlErr := exec.Command("git", "-C", repoRoot, "rev-list", worktreeHEAD, "^main").Output()
+	if rlErr != nil {
+		// main missing or rev-list failed for any reason — fall back to
+		// preserving unconditionally; better an extra branch than orphaned work.
+		VerbosePrintf("preserveWorktreeCommits: rev-list %s ^main failed (%v); preserving unconditionally\n", worktreeHEAD, rlErr)
+	} else if len(strings.TrimSpace(string(rlOut))) == 0 {
+		return "", nil
+	}
+
+	branchName := "codex/preserve-" + runID
+	if out, berr := exec.Command("git", "-C", repoRoot, "branch", "--no-track", branchName, worktreeHEAD).CombinedOutput(); berr != nil {
+		// Idempotency: if the branch exists pointing at the same SHA, accept it.
+		existing, _ := exec.Command("git", "-C", repoRoot, "rev-parse", "--verify", branchName).Output()
+		if strings.TrimSpace(string(existing)) == worktreeHEAD {
+			return worktreeHEAD, nil
+		}
+		return "", fmt.Errorf("preserveWorktreeCommits: branch %s: %s: %w", branchName, string(out), berr)
+	}
+	return worktreeHEAD, nil
+}
+
 // removeOrphanedWorktree removes a worktree directory and any legacy branch marker.
+//
+// Before destructive cleanup, preserveWorktreeCommits is invoked so any
+// commits made inside the worktree are kept reachable on a
+// `codex/preserve-<runID>` branch. Preservation is best-effort: a failure logs
+// a warning and cleanup continues, since the existing failure mode (orphaned
+// commits in git fsck) is already as bad as a lost preserve attempt.
 func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
 	// Safety validation is delegated to internal/rpi.
 	if err := rpi.ValidateWorktreeSibling(repoRoot, worktreePath); err != nil {
 		return err
+	}
+
+	if preserved, err := preserveWorktreeCommits(repoRoot, worktreePath, runID); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: preserveWorktreeCommits(%s, %s): %v (continuing cleanup)\n", worktreePath, runID, err)
+	} else if preserved != "" {
+		shortLen := 12
+		if len(preserved) < shortLen {
+			shortLen = len(preserved)
+		}
+		fmt.Printf("Preserved worktree commit %s on branch codex/preserve-%s\n", preserved[:shortLen], runID)
 	}
 
 	// Force remove the worktree.
