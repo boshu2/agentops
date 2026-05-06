@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Skill Audit Report",
+  "description": "Output contract for skill-auditor. Two passes: Pass 1 wraps heal-skill structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal-skill.",
+  "type": "object",
+  "required": ["target", "verdict", "pass1", "pass2"],
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "skills/<name> path being audited"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"],
+      "description": "Aggregate verdict. fails>0 = FAIL; warns>0 = WARN; otherwise PASS."
+    },
+    "pass1": {
+      "type": "object",
+      "description": "heal-skill structural results (delegated to bash skills/heal-skill/scripts/heal.sh --check <target>).",
+      "required": ["findings"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "path", "msg"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "heal.sh finding code (e.g., MISSING_NAME, UNLINKED_REF, DEAD_REF)"
+              },
+              "path": {"type": "string"},
+              "msg": {"type": "string"}
+            }
+          }
+        },
+        "autofixable": {
+          "type": "integer",
+          "description": "Count of findings heal.sh can auto-fix with --fix"
+        }
+      }
+    },
+    "pass2": {
+      "type": "object",
+      "description": "Eight NEW checks beyond heal-skill structural hygiene.",
+      "required": ["checks"],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["id", "status"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "enum": [
+                  "description-has-triggers",
+                  "constraints-frontloaded",
+                  "rationale-present",
+                  "verification-checkpoints",
+                  "output-spec-explicit",
+                  "quality-rubric",
+                  "references-modularization",
+                  "trigger-clarity"
+                ],
+                "description": "Stable check identifier. NOTE: 'description-has-triggers' (NOT 'description-multiline') — the broader form accepts AgentOps' single-line description convention plus financial-services' multi-line block-scalar form plus metadata.triggers arrays. See references/skill-template.md §2 for accepted forms."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pass", "warn", "fail", "n/a"],
+                "description": "n/a applies when the check is conditionally inapplicable (e.g., references-modularization on a <400-line skill)."
+              },
+              "evidence": {
+                "type": "string",
+                "description": "Specific finding (line, snippet, or grep match) supporting the status."
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable one-paragraph rollup. Suitable for embedding in a markdown audit report."
+    }
+  },
+  "additionalProperties": false
+}
