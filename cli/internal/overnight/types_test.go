@@ -1,6 +1,51 @@
 package overnight
 
-import "testing"
+import (
+	"strings"
+	"testing"
+	"time"
+)
+
+// TestRunLoopOptionsNormalize_RunTimeoutMatchesDreamConfigDefault locks
+// the runtime cap to the prevailing dream config default in
+// cli/internal/config/config.go (RunTimeout: "8h"). The two values must
+// move in lockstep: a lower cap silently clamps every default-config
+// dream run and surfaces a permanent "RunTimeout clamped" degraded
+// entry that the curator re-emits as a morning packet.
+func TestRunLoopOptionsNormalize_RunTimeoutMatchesDreamConfigDefault(t *testing.T) {
+	const dreamConfigDefault = 8 * time.Hour
+
+	if maxRunTimeout != dreamConfigDefault {
+		t.Fatalf("maxRunTimeout = %v, want %v (dream config default in cli/internal/config/config.go); update both together", maxRunTimeout, dreamConfigDefault)
+	}
+
+	opts := RunLoopOptions{RunTimeout: dreamConfigDefault}
+	got, degraded := opts.normalize()
+	if got.RunTimeout != dreamConfigDefault {
+		t.Fatalf("normalized RunTimeout = %v, want %v (default config must pass through unclamped)", got.RunTimeout, dreamConfigDefault)
+	}
+	for _, d := range degraded {
+		if strings.Contains(d, "RunTimeout clamped") {
+			t.Fatalf("default 8h config should not produce a clamp warning, got: %v", degraded)
+		}
+	}
+
+	over := RunLoopOptions{RunTimeout: dreamConfigDefault + time.Hour}
+	clamped, degraded := over.normalize()
+	if clamped.RunTimeout != dreamConfigDefault {
+		t.Fatalf("over-cap RunTimeout = %v, want %v", clamped.RunTimeout, dreamConfigDefault)
+	}
+	found := false
+	for _, d := range degraded {
+		if strings.Contains(d, "RunTimeout clamped") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("over-cap should report a RunTimeout clamp warning, got: %v", degraded)
+	}
+}
 
 // TestIterationStatus_Validate exercises the exhaustive enum check plus
 // the two error paths (empty and unknown legacy literal). The legacy

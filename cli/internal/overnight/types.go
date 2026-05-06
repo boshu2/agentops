@@ -142,7 +142,9 @@ type RunLoopOptions struct {
 	RunID string
 
 	// RunTimeout caps the outer loop's wall-clock. Default: 2h.
-	// Capped at 6h regardless of flag value.
+	// Capped at 8h regardless of flag value (matches the dream config
+	// default in cli/internal/config/config.go and the setup/resolve
+	// fallbacks in cli/cmd/ao).
 	RunTimeout time.Duration
 
 	// MaxIterations caps the outer loop count. 0 = budget-bounded only.
@@ -305,8 +307,12 @@ type LongHaulSummary struct {
 // defaultRunTimeout is the documented default wall-clock cap.
 const defaultRunTimeout = 2 * time.Hour
 
-// maxRunTimeout is the hard upper bound regardless of flag value.
-const maxRunTimeout = 6 * time.Hour
+// maxRunTimeout is the hard upper bound regardless of flag value. Set
+// to 8h to align with the prevailing dream config default — keeping
+// this lower silently clamped every default-config dream run and
+// surfaced a permanent "RunTimeout clamped" degraded entry that the
+// curator routinely re-emitted as a morning packet.
+const maxRunTimeout = 8 * time.Hour
 
 // defaultPlateauEpsilon is the documented default plateau threshold.
 const defaultPlateauEpsilon = 0.01
@@ -341,7 +347,7 @@ func (opts RunLoopOptions) normalize() (RunLoopOptions, []string) {
 		opts.RunTimeout = defaultRunTimeout
 	}
 	if opts.RunTimeout > maxRunTimeout {
-		degraded = append(degraded, "RunTimeout clamped to 6h hard max")
+		degraded = append(degraded, "RunTimeout clamped to 8h hard max")
 		opts.RunTimeout = maxRunTimeout
 	}
 	if opts.PlateauEpsilon <= 0 {
