@@ -97,14 +97,14 @@ check_description_has_triggers() {
 check_constraints_frontloaded() {
   local skill_md="$1"
   awk '
-    BEGIN{n=0; i=0}
+    BEGIN{n=0; i=0; found=0}
     /^---$/{n++; next}
     n==2 {
       i++
-      if (i > 80) exit 1
-      if (/^## .*[Cc]onstraints/ || /^## .*⚠️/) exit 0
+      if (i > 80) { exit 1 }
+      if (/^## .*[Cc]onstraints/ || /^## .*⚠️/) { found=1; exit 0 }
     }
-    END{exit 1}
+    END{ exit (found ? 0 : 1) }
   ' "$skill_md"
 }
 
@@ -254,7 +254,7 @@ emit_json() {
   printf '\n    ]\n'
   printf '  },\n'
   printf '  "summary": "Pass1: %d findings (%d autofixable). Pass2: %d fails, %d warns. Verdict: %s."\n' \
-    "$(echo "$PASS1_FINDINGS_JSON" | grep -c '"code":' || echo 0)" "$PASS1_AUTOFIXABLE" "$fails" "$warns" "$VERDICT"
+    "$(echo "$PASS1_FINDINGS_JSON" | grep -c '"code":' | head -1)" "$PASS1_AUTOFIXABLE" "$fails" "$warns" "$VERDICT"
   printf '}\n'
 }
 
