@@ -1,12 +1,16 @@
 # AgentOps — One-Page Brief
 
-**The problem:** AI coding tools behave like contractors with amnesia. Every session starts from zero — no memory of what broke last week, no record of decisions already made, no awareness of what was tried and abandoned. You brief them today. Tomorrow you brief them again.
+`.agents/` is just a wiki — markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
+
+*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
+
+AgentOps is the shovel. Start digging.
 
 ---
 
 ## What It Is
 
-A repo-native operational layer for coding agents.
+A wiki for your agents — repo-native, version-controlled, mechanically maintained.
 
 <!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
 AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
@@ -109,6 +113,19 @@ preserves the evidence trail, the Context Compiler loads the right context,
 Validation Gates block bad output, and the Knowledge Flywheel ensures every
 session leaves the repo smarter. The
 three-gap contract remains the internal proof model.
+
+---
+
+## What if the labs ship this natively?
+
+They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the value isn't in this tool, it's in the corpus you build with it. AgentOps is bridge infrastructure: your `.agents/` directory is plain markdown in your repo, so if a frontier vendor ships native equivalents in 12 months, your corpus carries forward unchanged.
+
+---
+
+## See also
+
+- [docs/wiki-for-agents.md](wiki-for-agents.md) — the wiki framing as a standalone document.
+- [docs/trust-factory.md](trust-factory.md) — AgentOps mapped to the five-step trust factory primitive.
 
 ---
 

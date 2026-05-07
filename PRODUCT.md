@@ -1,12 +1,12 @@
 ---
-last_reviewed: 2026-05-06
+last_reviewed: 2026-05-07
 ---
 
 # PRODUCT.md
 
 ## Mission
 
-**AgentOps keeps the books, compiles the context, and compounds the corpus that feeds your software factory.**
+**AgentOps automates the discipline of building a wiki for your agents.** The wiki is markdown in `.agents/` next to your code; the agents that use it also produce it. The compounded corpus is the moat.
 
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
@@ -29,6 +29,14 @@ The software factory that gets better with each use. Every session produces code
 The aspiration is factory-grade throughput for code: enough structure that agents can run against a defined process, with the operator setting cadence, rigor, and escalation boundaries. Same shape that turned software delivery into an engineering discipline — applied to coding agents.
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
+
+## What if the labs ship this natively?
+
+They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the value isn't in this tool. It's in the corpus you build with it.
+
+AgentOps is bridge infrastructure. Your `.agents/` directory is plain markdown in your repo. If a frontier vendor ships native equivalents in 12 months, your corpus carries forward. If we get acquired or change direction, your corpus is yours. If you outgrow the tool entirely, fork it, customize it, replace it — the corpus is what matters.
+
+Open source forever. Built so you own the asset, not the tool.
 
 ## Market Convergence
 
@@ -63,7 +71,9 @@ Read the convergence table the right way: AgentOps and every harness like it get
 
 ## What the Product Actually Is
 
-AgentOps is a software factory with three surfaces and four user-facing layers: Bookkeeping, Context Compiler, Validation Gates, and Knowledge Flywheel. Dream is the scheduled overnight mode of the flywheel, not a separate peer product. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the factory executes.
+AgentOps is a wiki for your agents. `.agents/` is markdown in your repo, version-controlled with your code, that agents read, traverse, and contribute to — the kind of wiki your team should already have, except agents do the maintenance. AgentOps automates the discipline of building one: capture, retrieval, validation, and compounding all happen mechanically so the wiki stays current instead of bitrotting.
+
+That wiki is the substrate underneath a software factory with three surfaces and four user-facing layers: Bookkeeping, Context Compiler, Validation Gates, and Knowledge Flywheel. Dream is the scheduled overnight mode of the flywheel, not a separate peer product. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the factory executes. The deeper proof-contract framing — identity, reproducibility, evaluation, evidence, recovery — lives in [docs/trust-factory.md](docs/trust-factory.md).
 
 ### Three surfaces
 
@@ -198,6 +208,8 @@ As of 2026-05-04:
 
 These are this repo's corpus stats; your own AgentOps install will produce its own. Run `scripts/corpus-stats.sh --table` (or `--json` / `--markdown`) against `$AO_CORPUS_ROOT` to derive yours. The previously-cited "4,940 learnings, 1,195 patterns, 40 planning rules" line was removed because no on-disk source reconciled it; the numbers above are what the tracked source actually returns at the time of writing.
 
+*`.agents/` runtime state was wiped by routine cleanup on 2026-05-07; receipts use 2026-05-04 stable snapshot. Durability fix tracked in soc-rv5p.*
+
 Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide on what cadence the dream/evolution/compile loops run via `ao schedule`. Scale and compounding follow from the schedule you set, not from a claim we make.
 
 ## Desired State vs Current State
@@ -279,6 +291,8 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 ## See Also
 
 - [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of judgment validation, durable learning, and loop closure, with evidence map and mechanism inventory.
+- [Trust Factory](docs/trust-factory.md) — how AgentOps maps to the five-step proof contract (identity, reproducibility, evaluation, evidence, recovery).
+- [Wiki for your agents](docs/wiki-for-agents.md) — the wiki framing as a standalone document.
 - [Scale Without Swarms](docs/scale-without-swarms.md) — why 3-5 focused agents with fresh context and regression gates outperform massive uncoordinated swarms; the AgentOps model of waves, isolation, and gates explained.
 - [Brownian Ratchet](docs/brownian-ratchet.md) — the forward-only-progress lineage in detail.
 - [The Science](docs/the-science.md) — DevOps Three Ways, the escape velocity condition, and the leverage-points map.

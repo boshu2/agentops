@@ -1,11 +1,12 @@
 # Goals
 
-The operational layer for coding agents — repo-native bookkeeping, validation, primitives, and flows that make every session smarter than the last.
+A wiki for your agents — repo-native, version-controlled, mechanically maintained — that turns your context into the durable moat under any model or harness.
 
 ## North Stars
 
 <!-- agentops:claim:AOP-CLAIM-GOALS-DREAM-VALIDATED -->
 - The knowledge flywheel is the product — every session makes the next session smarter
+- The wiki maintains itself: every session contributes to `.agents/` by default
 - Skills work identically across Claude Code, Codex CLI, Cursor, and OpenCode
 - Knowledge captured in one session is retrieved and applied in the next
 - The flywheel runs autonomously between sessions (dream cycle), not just on-demand
@@ -93,6 +94,14 @@ The existing eval suites are CI canaries (contract checks). None answers "did th
 **Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). `--two-pass` mode added to pre-push head gate for local skill-delta validation. Remaining gap: expanding eval-skill-delta from structural-only to a default blocking gate with full skill-on vs skill-off execution across the workbench.
 
 **Steer:** increase (behavioral eval tasks with scoring scripts)
+
+### 11. Durability of the corpus across runtime cleanup
+
+On 2026-05-07, routine maintenance wiped most of `.agents/` runtime subdirs (only `.agents/nightly/` is git-tracked); a fresh `scripts/corpus-stats.sh` returns near-zero counts even though the 2026-05-04 stable snapshot recorded ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions. The dogfood receipts claim — and the broader "corpus is the moat" positioning — depends on that asset being durable across cleanup, machine moves, and reinstalls. This directive tracks the design and implementation of a snapshot/restore mechanism: scheduled snapshots of `.agents/` runtime state to durable storage, restore tooling that can rehydrate a fresh checkout, and a freshness/coverage gate so degradation is visible before the receipts go stale. Tracked under bd issue soc-rv5p.
+
+**Steer:** increase (snapshots / restore mechanism)
+
+**Tags:** corpus-state
 
 ## Three-Gap Contract Proof Surface
 
