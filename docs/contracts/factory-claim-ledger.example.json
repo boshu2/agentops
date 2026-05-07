@@ -228,6 +228,22 @@
       "evidence_artifacts": []
     },
     {
+      "claim_id": "AOP-CLAIM-BRIEF-FOUR-LAYERS",
+      "claim_text": "AgentOps gives every session four product layers: Bookkeeping, Context Compiler, Validation Gates, Knowledge Flywheel.",
+      "source": {"file": "docs/agentops-brief.md", "marker": "AOP-CLAIM-BRIEF-FOUR-LAYERS"},
+      "current_evidence": "Brief doc and PRODUCT.md describe the four-layer model; assurance-profile.md maps layers to assurance roles.",
+      "missing_proof": "Layer architecture is product framing; per-layer validation evidence needed for 'validated' wording.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-factory-claim-ledger.sh --strict",
+      "release_posture": "locally_checked_l1",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Architectural framing of the four product layers; per-layer proof claims need separate evidence.",
+      "evidence_artifacts": []
+    },
+    {
       "claim_id": "AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS",
       "claim_text": "The software-factory surface treats thin topics as discovery-only until evidence improves.",
       "source": {"file": "docs/software-factory.md", "marker": "AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS"},

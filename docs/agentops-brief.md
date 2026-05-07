@@ -8,6 +8,7 @@
 
 A repo-native operational layer for coding agents.
 
+<!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
 AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
 
 The institutional knowledge stops walking out the door because the repo keeps it.
