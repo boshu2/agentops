@@ -2,8 +2,10 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -139,6 +141,24 @@ func (e *RPIRunExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecu
 		Artifacts:  res.Artifacts,
 	}))
 
+	// soc-awx8: emit one criterion_verdict event per verdict found in any wave
+	// checkpoint under .agents/crank/wave-*-checkpoint.json. Best-effort —
+	// missing/unreadable checkpoints emit zero events and do NOT fail the job.
+	// Order: AFTER phase_complete, BEFORE phase_handoff, so consumers see the
+	// per-criterion results as part of the closing-out sequence.
+	if err == nil {
+		for _, v := range readWaveCheckpointVerdicts(e.root) {
+			e.emitAgentUpdate(claim, queue, NewAgentUpdateCriterionVerdictEvent(AgentUpdateCriterionVerdict{
+				CriterionID:  v.ID,
+				Status:       v.Status,
+				EvidencePath: v.EvidencePath,
+				Notes:        v.Notes,
+				RunID:        spec.RunID,
+				Timestamp:    e.now().UTC().Format(time.RFC3339Nano),
+			}))
+		}
+	}
+
 	if err == nil {
 		e.emitAgentUpdate(claim, queue, NewAgentUpdatePhaseHandoffEvent(AgentUpdatePhaseHandoff{
 			FromPhase:  "rpi.run",
@@ -226,3 +246,43 @@ func validateRPIRunFullRun(spec RPIRunJobSpec) error {
 }
 
 var _ JobExecutor = (*RPIRunExecutor)(nil)
+
+// waveCheckpointVerdict mirrors the verdict-row shape /crank writes into
+// `.agents/crank/wave-*-checkpoint.json` per skills/crank/SKILL.md Step 5.7.
+// Verdict source-of-truth is the per-criterion-rubric reference doc; this is
+// the read-side projection used by the daemon's agent-update emitter.
+type waveCheckpointVerdict struct {
+	ID           string `json:"id"`
+	Status       string `json:"status"`
+	EvidencePath string `json:"evidence_path,omitempty"`
+	Notes        string `json:"notes,omitempty"`
+}
+
+// readWaveCheckpointVerdicts scans `<root>/.agents/crank/wave-*-checkpoint.json`
+// and returns the flattened list of `criterion_verdicts` rows. Best-effort:
+// missing dir, unreadable files, and malformed JSON yield an empty slice (no
+// error surfaced) so the daemon's emission loop degrades to "zero verdict
+// events" rather than failing the job. Filenames are scanned in lexicographic
+// order so wave-1, wave-2, ... emit in the same order operators would read
+// them off disk.
+func readWaveCheckpointVerdicts(root string) []waveCheckpointVerdict {
+	matches, err := filepath.Glob(filepath.Join(root, ".agents", "crank", "wave-*-checkpoint.json"))
+	if err != nil || len(matches) == 0 {
+		return nil
+	}
+	var verdicts []waveCheckpointVerdict
+	for _, path := range matches {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var checkpoint struct {
+			CriterionVerdicts []waveCheckpointVerdict `json:"criterion_verdicts"`
+		}
+		if err := json.Unmarshal(data, &checkpoint); err != nil {
+			continue
+		}
+		verdicts = append(verdicts, checkpoint.CriterionVerdicts...)
+	}
+	return verdicts
+}

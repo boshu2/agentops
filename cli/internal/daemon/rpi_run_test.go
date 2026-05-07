@@ -3,6 +3,8 @@ package daemon
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -337,6 +339,118 @@ func TestRPIRunEmitsAgentUpdates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestRPIRunEmitsCriterionVerdicts exercises soc-awx8: when wave checkpoints
+// exist under .agents/crank/wave-*-checkpoint.json, RunJob emits one
+// agent_update.criterion_verdict event per verdict row, ordered AFTER
+// phase_complete and BEFORE phase_handoff. Multiple checkpoints contribute in
+// lexicographic order (wave-1, wave-2, …).
+func TestRPIRunEmitsCriterionVerdicts(t *testing.T) {
+	root := t.TempDir()
+	checkpointDir := filepath.Join(root, ".agents", "crank")
+	if err := os.MkdirAll(checkpointDir, 0o755); err != nil {
+		t.Fatalf("mkdir checkpoint: %v", err)
+	}
+	wave1 := []byte(`{
+	  "wave": 1,
+	  "criterion_verdicts": [
+	    {"id": "ac-foo.1", "status": "PASS", "evidence_path": "cli/foo.go", "notes": "ok"},
+	    {"id": "ac-foo.2", "status": "FAIL", "notes": "exit 1"}
+	  ]
+	}`)
+	wave2 := []byte(`{
+	  "wave": 2,
+	  "criterion_verdicts": [
+	    {"id": "ac-bar.1", "status": "SKIP", "notes": "deferred"}
+	  ]
+	}`)
+	if err := os.WriteFile(filepath.Join(checkpointDir, "wave-1-checkpoint.json"), wave1, 0o644); err != nil {
+		t.Fatalf("write wave-1: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(checkpointDir, "wave-2-checkpoint.json"), wave2, 0o644); err != nil {
+		t.Fatalf("write wave-2: %v", err)
+	}
+
+	store := NewStore(root)
+	startTime := time.Date(2026, 5, 7, 22, 0, 0, 0, time.UTC)
+	tickCount := 0
+	tickingClock := func() time.Time {
+		t := startTime.Add(time.Duration(tickCount) * 10 * time.Millisecond)
+		tickCount++
+		return t
+	}
+	exec, err := NewRPIRunExecutor(RPIRunExecutorOptions{
+		Root:  root,
+		Store: store,
+		Actor: "test-actor",
+		Clock: tickingClock,
+		Run: func(_ context.Context, _ RPIRunRequest) (RPIRunResult, error) {
+			return RPIRunResult{}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("new executor: %v", err)
+	}
+	spec := NewRPIRunJobSpec("run-verdicts", "exercise verdict emission")
+	jobSpec, err := spec.ToJobSpec("job-verdicts")
+	if err != nil {
+		t.Fatalf("job spec: %v", err)
+	}
+	claim := QueueClaim{Job: QueueJobState{
+		JobID:     jobSpec.ID,
+		RequestID: "req-verdicts",
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}}
+	if _, err := exec.RunJob(context.Background(), claim); err != nil {
+		t.Fatalf("RunJob: %v", err)
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	var got []EventType
+	for _, ev := range events {
+		got = append(got, ev.EventType)
+	}
+	want := []EventType{
+		EventAgentUpdatePhaseStart,
+		EventAgentUpdatePhaseComplete,
+		EventAgentUpdateCriterionVerdict,
+		EventAgentUpdateCriterionVerdict,
+		EventAgentUpdateCriterionVerdict,
+		EventAgentUpdatePhaseHandoff,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("event sequence = %v, want %v", got, want)
+	}
+
+	// Verify each verdict event carries the right per-row payload + the run_id
+	// from the spec.
+	verdicts := []struct {
+		id, status, evidence string
+	}{
+		{"ac-foo.1", "PASS", "cli/foo.go"},
+		{"ac-foo.2", "FAIL", ""},
+		{"ac-bar.1", "SKIP", ""},
+	}
+	for i, want := range verdicts {
+		ev := events[2+i]
+		if ev.Payload["criterion_id"] != want.id {
+			t.Errorf("event[%d].criterion_id = %v, want %s", 2+i, ev.Payload["criterion_id"], want.id)
+		}
+		if ev.Payload["status"] != want.status {
+			t.Errorf("event[%d].status = %v, want %s", 2+i, ev.Payload["status"], want.status)
+		}
+		if ev.Payload["run_id"] != "run-verdicts" {
+			t.Errorf("event[%d].run_id = %v, want run-verdicts", 2+i, ev.Payload["run_id"])
+		}
+		if want.evidence != "" && ev.Payload["evidence_path"] != want.evidence {
+			t.Errorf("event[%d].evidence_path = %v, want %s", 2+i, ev.Payload["evidence_path"], want.evidence)
+		}
 	}
 }
 
