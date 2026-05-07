@@ -162,9 +162,10 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     # --- (f) Referenced files must exist ---
     # Match patterns like references/foo.md, references/bar-baz.md
     # Also handles cross-skill references:
-    #   - skills/shared/references/foo.md (repo-absolute)
+    #   - skills/<name>/references/foo.md (repo-absolute)
     #   - ../shared/references/foo.md (relative to skill dir)
-    ref_paths=$(grep -oE '(\.\./shared/|skills/[a-z-]+/)?references/[A-Za-z0-9_.-]+(\.[a-z]+)?' "$skill_md" 2>/dev/null || true)
+    #   - ../<sibling-skill>/references/foo.md (relative cross-skill)
+    ref_paths=$(grep -oE '(\.\./[a-z-]+/|skills/[a-z-]+/)?references/[A-Za-z0-9_.-]+(\.[a-z]+)?' "$skill_md" 2>/dev/null || true)
     if [ -n "$ref_paths" ]; then
         while IFS= read -r ref; do
             [ -z "$ref" ] && continue
