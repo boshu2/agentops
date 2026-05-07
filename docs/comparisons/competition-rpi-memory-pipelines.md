@@ -402,7 +402,7 @@ Capability mapping against AgentOps:
 | Managed Agents | AgentOps equivalent | Status |
 |---|---|---|
 | Dreaming | `/dream` + `ao overnight` + nightly CI dream-cycle proof job | Shipped |
-| Outcomes (rubric → grader → iterate) | Shipped at three scopes: project (`GOALS.md` + `ao goals measure` per-gate subprocesses + `/evolve` retry loop), plan (`/pre-mortem` council judges), code (`/vibe` council judges). Each judge/gate runs in a separate context; `/evolve` iterates worst-failing gate until pass. | Shipped (proof-point A/B counter-stat is the remaining work, not the capability) |
+| Outcomes (rubric → grader → iterate) | Shipped at three scopes: project (`GOALS.md` + `ao goals measure` per-gate subprocesses + `/evolve` retry loop), plan (`/pre-mortem` council judges), code (`/vibe` council judges). Each judge/gate runs in a separate context; `/evolve` iterates worst-failing gate until pass. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases (skill-on 12/12, skill-off 12/12) — at v1 task difficulty the hook layer is non-differentiating; substrate v2 is roadmap. Counter-stat: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. | Shipped at the capability layer; v2 eval substrate is roadmap. |
 | Multiagent orchestration | `/swarm` + `/crank` + `/rpi` + worktree isolation | Shipped (per-worker tool isolation in flight) |
 | Webhooks (completion notification) | GitHub Actions / git hooks; pattern doc shipped at `docs/patterns/completion-notifications.md` | Shipped via existing CI substrate (off-API users already have the infrastructure) |
 

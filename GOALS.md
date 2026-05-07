@@ -94,19 +94,21 @@ The existing eval suites are CI canaries (contract checks). None answers "did th
 
 ## Three-Gap Contract Proof Surface
 
-AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Every gate below maps to at least one gap. If a gap has no gate, it is an unproven promise.
+AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
 
-| Gap | What fails without it | Proving gates | Coverage |
-|-----|-----------------------|---------------|----------|
-| **1. Judgment validation** — agents ship without risk context | Plans skip architecture fit; implementations pass happy path but miss edge cases | `hook-preflight`, `go-vet-clean`, `go-complexity-ceiling`, `security-gate`, `wiring-closure`, `contract-compatibility` | Mechanically enforced via hooks and static analysis; `/pre-mortem` and `/vibe` supply the non-mechanical judgment layer |
-| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `flywheel-compounding`, `flywheel-proof`, `compile-freshness`, `compile-no-oscillation` | Flywheel escape velocity proves compounding; Compile gates prove curation and freshness |
-| **3. Loop closure** — completed work doesn't produce better next work | Sessions end with diffs but no extracted lessons; next session starts cold | `flywheel-proof`, `goals-validate`, `wiring-closure`, `release-cadence` | `flywheel-proof` traces capture-to-retrieval; `goals-validate` ensures findings become directives; `wiring-closure` proves registries stay connected |
+| Gap | What fails without it | Currently enforcing | Roadmap (declared, not yet enforced) |
+|-----|-----------------------|---------------------|---------------------------------------|
+| **1. Judgment validation** — agents ship without risk context | Plans skip architecture fit; implementations pass happy path but miss edge cases | `hook-preflight`, `go-vet-clean`, `go-complexity-ceiling`, `security-gate`, `contract-compatibility`; `/pre-mortem` and `/vibe` supply the non-mechanical judgment layer | — |
+| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `compile-no-oscillation` (defrag stability) | `flywheel-compounding` (long-cycle, corpus-state), `flywheel-proof` (cross-session evidence), `compile-freshness` (runtime-artifact dependency) |
+| **3. Loop closure** — completed work doesn't produce better next work | Sessions end with diffs but no extracted lessons; next session starts cold | `release-cadence` (where wired) | `flywheel-proof`, `goals-validate` (CI-not-gating), `wiring-closure` (CI-not-gating) |
 
-**Design rule:** prefer current gates over new scripts unless a true gap is found. New gates are justified only when a gap row shows no proving gate.
+**Design rule:** prefer current gates over new scripts unless a true gap is found. The Roadmap column is itself a tracked gap — moving a gate left is the work, not adding new gates.
 
 **Canonical reference:** `docs/context-lifecycle.md` — evidence map and mechanism inventory for all three gaps.
 
-The three-gap contract is satisfied when the mapped gates below remain green together. `ao goals measure` checks the current set on demand.
+**Today's enforcement state:** Gap 1 is mechanically enforced. Gaps 2 and 3 are partial: scripts exist (`scripts/proof-run.sh`, `scripts/check-flywheel-compounding.sh`, `scripts/check-wiring-closure.sh`, etc.) but are not invoked from automation that blocks merges. `flywheel-compounding` is explicitly long-cycle by design — its green path requires multi-session corpus growth, not a single push. The right way to read this table: the corpus-level claims in PRODUCT.md are aspirational until the Roadmap column is empty.
+
+`ao goals measure` runs every declared gate on demand and is the canonical way to inspect current state, including roadmap gates.
 
 ## Gates
 
