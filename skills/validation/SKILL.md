@@ -31,7 +31,7 @@ Validation delegates to `/vibe`, `/post-mortem`, `/retro`, and `/forge` (plus li
 **Anti-pattern to reject:** spawning judges via `Agent()` in place of `/vibe`, inlining post-mortem analysis, skipping `/forge`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract and supported compression escapes (`--quick`, `--no-retro`, `--no-forge`, `--no-lifecycle`, `--no-behavioral`, `--allow-critical-deps`).
 
 See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
-See [`../rpi/references/isolation-contract.md`](../rpi/references/isolation-contract.md) for the four-lever model and the compression patterns `scripts/check-skill-isolation.sh` flags in phase-skill SKILL.md bodies. See [`../rpi/references/best-practices.md`](../rpi/references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
+See [`references/isolation-contract.md`](references/isolation-contract.md) for the four-lever model and the compression patterns `scripts/check-skill-isolation.sh` flags in phase-skill SKILL.md bodies. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
 ## DAG — Execute This Sequentially
 
@@ -155,19 +155,11 @@ STEP 5  ──  write phase summary to .agents/rpi/phase-3-summary-YYYY-MM-DD-<s
 
 ---
 
-## Setup Detail
+## Setup + Gate Detail
 
-Track state inline: `epic_id`, `complexity`, `no_retro`, `no_forge`, `strict_surfaces`, `vibe_verdict`, `post_mortem_verdict`. Load execution packet (if available): read `complexity`, `contract_surfaces`, and `done_criteria` from `.agents/rpi/execution-packet.json`. When a current `run_id` is known, prefer the matching `.agents/rpi/runs/<run-id>/execution-packet.json` archive over the latest alias.
+Track state inline: `epic_id`, `complexity`, `no_retro`, `no_forge`, `strict_surfaces`, `vibe_verdict`, `post_mortem_verdict`. Load execution packet from `.agents/rpi/execution-packet.json` (or per-run archive when `run_id` is known) for `complexity`, `contract_surfaces`, `done_criteria`.
 
-## Gate Detail
-
-**Validation has multiple blocking conditions.** Validation cannot fix code — it can only report and fail closeout when the lifecycle contract is not met.
-
-- **Blocking FAIL conditions:** `vibe` FAIL, code-surface failure in STEP 1.5, `--strict-surfaces` failure on any closure surface, CVSS >= 9.0 dependency findings in STEP 1.7b unless `--allow-critical-deps`, and post-mortem FAIL in STEP 2.
-- **PASS/WARN:** Log verdicts, continue through the remaining steps.
-- **FAIL:** Extract findings from the latest evaluator output, write phase summary with FAIL status, output `<promise>FAIL</promise>` with findings attached. Suggest: `"Validation FAIL. Fix findings, then re-run /validation [epic-id]"`.
-
-**Why no internal retry:** Retries require re-implementation (`/crank`). The caller (`/rpi` or human) decides whether to loop back.
+**Validation has multiple blocking conditions.** It cannot fix code — only report and fail closeout. Blocking FAIL: `vibe` FAIL, code-surface failure in STEP 1.5, `--strict-surfaces` failure on any closure surface, CVSS >= 9.0 dependency findings in STEP 1.7b unless `--allow-critical-deps`, post-mortem FAIL in STEP 2. PASS/WARN: log and continue. FAIL: extract findings, write phase summary with FAIL status, output `<promise>FAIL</promise>`. Retries require re-implementation (`/crank`); caller decides whether to loop back.
 
 ## Phase Summary Format
 
@@ -184,30 +176,11 @@ Write to `.agents/rpi/phase-3-summary-YYYY-MM-DD-<slug>.md`:
 - **Complexity:** <fast|standard|full>
 - **Status:** <DONE|FAIL>
 - **Timestamp:** <ISO-8601>
-
-## Per-criterion verdicts
-
-| Criterion | Status | Evidence | Notes |
-|---|---|---|---|
-| ac-foo.1 | PASS | path/to/evidence | one-liner |
-| ac-foo.2 | FAIL | (missing) | command exited 1 |
 ```
 
-## Per-Criterion Verdict Report
+When the execution packet supplies `acceptance_criteria`, the summary appends a per-criterion verdict table (one row per criterion: id / status / evidence / notes). A row is FAIL when `evidence_required: true` and `evidence_path` matches no artifact, regardless of `check_command` exit. Aggregate verdict is a GOALS-style weighted average over `weight`; criteria with `optional: true` are non-blocking. See [`references/per-criterion-rubric.md`](references/per-criterion-rubric.md) for rubric, runner contract for the seven `check_type` enum values, and worked examples.
 
-When the execution packet supplies `acceptance_criteria` (epic and/or bead level), validation replaces the vibe-only verdict with a per-criterion table (shape shown in "Phase Summary Format" above). Each row reports one criterion's outcome; rubric, runner contract for the seven `check_type` enum values, and worked examples live in [`references/per-criterion-rubric.md`](references/per-criterion-rubric.md).
-
-A row is FAIL when `evidence_required: true` and `evidence_path` matches no artifact, regardless of `check_command` exit. Aggregate verdict is a GOALS-style weighted average over `weight`; criteria with `optional: true` are non-blocking.
-
-## Back-compat fallback
-
-When `acceptance_criteria` is absent or empty in the execution packet, validation falls back to vibe-only verdict and emits a WARN log line:
-
-```
-[deprecated] no acceptance_criteria found in packet — running vibe-only
-```
-
-This back-compat behavior holds until **2026-06-30**. After that date, missing `acceptance_criteria` becomes FAIL — criteria are mandatory.
+When `acceptance_criteria` is absent/empty in the packet, validation falls back to vibe-only verdict and emits `[deprecated] no acceptance_criteria found in packet — running vibe-only`. Back-compat holds until **2026-06-30**; after that, missing `acceptance_criteria` is FAIL.
 
 ## Phase Budgets
 
