@@ -205,7 +205,7 @@ Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Conv
 
 ## How the 12 Factors Build the Flywheel
 
-The [12-factor doctrine](https://12factoragentops.com) is a build order — four tiers that construct the three product layers in sequence. The flywheel emerges when all three layers are running.
+The [12-factor doctrine](https://12factoragentops.com) is a build order — four tiers that construct the compounding product loop in sequence. The flywheel emerges when bookkeeping, context compilation, validation gates, and learning loops are running together.
 
 | Tier | Factors | Product Layer | What It Builds | Theory |
 |---|---|---|---|---|

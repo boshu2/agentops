@@ -8,7 +8,7 @@
 
 A repo-native operational layer for coding agents.
 
-AgentOps gives every session three product layers: a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
+AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
 
 The institutional knowledge stops walking out the door because the repo keeps it.
 
@@ -25,12 +25,15 @@ Most coding-agent tooling handles prompt construction and routing well. The fail
 | **Closure** (internal: loop closure) | Completed work does not produce better next work | `/post-mortem` harvests learnings and next-work, finding compiler promotes failures into constraints, `GOALS.md` + `/evolve` turn findings into measurable improvements |
 
 The compound effect below only works because Validation Gates catch the problem,
-the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
+the Bookkeeping layer preserves the trace, the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
 the next session loads better context before repeating the mistake.
 
 ---
 
-## Three Product Layers
+## Four Product Layers
+
+### Layer 0: Bookkeeping
+Records the operational memory agents do not keep for themselves: attempts, decisions, citations, verdicts, handoffs, findings, retros, and post-mortems. The work leaves a trace in `.agents/`.
 
 ### Layer 1: Context Compiler
 Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills, hooks, and the `ao` CLI collaborate to load, scope, and trim context to the token budget before the agent sees it.
@@ -67,10 +70,10 @@ Next session starts with a richer environment than this one did.
 
 | Property | Detail |
 |----------|--------|
-| **Local-only** | No telemetry, no cloud, no vendor accounts. Nothing phones home. |
+| **Local-first** | No AgentOps-managed telemetry or hosted control plane. Model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. |
 | **Open source** | Every line auditable. Apache 2.0 licensed. |
 | **Multi-tool** | Works with Claude Code, Codex, Cursor, OpenCode. Not locked to one vendor. |
-| **Air-gap compatible** | Runs fully offline. Knowledge base is plain files. |
+| **Constrained-network fit** | Repo-local evidence and plain files fit mirrored, reviewed, or disconnected operator workflows. |
 | **Auditable trail** | Every learning, decision, and review verdict written to `.agents/` with timestamps. |
 
 ---
@@ -92,16 +95,17 @@ By session 100, the repo already carries prior failures, design choices, plannin
 The most accurate current framing is:
 
 ```text
-Public category    -> context compiler for coding agents
-Product layers     -> Context Compiler + Validation Gates + Knowledge Flywheel
+Public category    -> software factory for coding agents
+Product layers     -> Bookkeeping + Context Compiler + Validation Gates + Knowledge Flywheel
 Internal proof     -> three-gap lifecycle contract
 Runtime mechanics  -> Brownian Ratchet + Stigmergic Spiral + Knowledge Flywheel
 ```
 
 The claim is not "better models." The claim is "better repo mechanics around
-the models you already have." Three product layers deliver that: the Context
-Compiler loads the right context, Validation Gates block bad output, and the
-Knowledge Flywheel ensures every session leaves the repo smarter. The
+the models you already have." Four product layers deliver that: Bookkeeping
+preserves the evidence trail, the Context Compiler loads the right context,
+Validation Gates block bad output, and the Knowledge Flywheel ensures every
+session leaves the repo smarter. The
 three-gap contract remains the internal proof model.
 
 ---

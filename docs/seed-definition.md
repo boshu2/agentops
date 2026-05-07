@@ -1,6 +1,6 @@
 # The Seed
 
-> The product is not 53 skills. The product is the minimal set of starting conditions that, planted in any repo with an LLM, evolves toward whatever that repo's goals are.
+> The product is not a pile of skills. The product is the minimal set of starting conditions that, planted in any repo with an LLM, evolves toward whatever that repo's goals are.
 
 ## The Metaphor
 

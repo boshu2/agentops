@@ -195,6 +195,7 @@ nav:
       - Meta-Observer: workflows/meta-observer-pattern.md
   - Concepts:
       - Philosophy: philosophy.md
+      - Assurance Profile: assurance-profile.md
       - Knowledge Flywheel: knowledge-flywheel.md
       - The Science: the-science.md
       - CDLC: cdlc.md
