@@ -144,6 +144,11 @@ func quickDemo() error {
 			"mcp__smart-connections-work__lookup",
 			"Your knowledge compounds. Others start fresh.",
 		},
+		{
+			"6. Schedule a recurring job (always-on lane)",
+			"ao schedule add ./examples/schedules/dream-nightly.yaml && ao daemon",
+			"`ao daemon` runs the schedule. Nightly dreams without babysitting.",
+		},
 	}
 
 	for _, step := range steps {
