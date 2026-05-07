@@ -146,8 +146,8 @@ func quickDemo() error {
 		},
 		{
 			"6. Schedule a recurring job (always-on lane)",
-			"ao schedule add ./examples/schedules/dream-nightly.yaml && ao daemon",
-			"`ao daemon` runs the schedule. Nightly dreams without babysitting.",
+			"ao daemon run & ao schedule add --file ./examples/schedules/dream-nightly.yaml",
+			"`ao daemon run` fires registered schedules on cron. Nightly dreams without babysitting.",
 		},
 	}
 
