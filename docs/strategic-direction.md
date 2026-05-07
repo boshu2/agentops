@@ -37,7 +37,7 @@ dK/dt = I(t) - d*K + s*r*K - f*K^2
 | Symbol | Meaning | AgentOps mechanism |
 |--------|---------|-------------------|
 | `K` | Knowledge stock (validated learnings, patterns, decisions) | `.agents/` corpus |
-| `I(t)` | Input rate (new knowledge per cycle) | `ao forge`, `/retro`, `/post-mortem` |
+| `I(t)` | Input rate (new knowledge per cycle) | Automated bookkeeping in `.agents/`, `ao forge`, `/retro`, `/post-mortem` |
 | `d` | Decay rate (~17%/week without reinforcement, Darr 1995) | `ao maturity --expire` |
 | `s` | Retrieval effectiveness (do you find what you need?) | `ao lookup` freshness-weighted scoring, `ao search` |
 | `r` | Citation rate (do you use what you find?) | Knowledge reuse in research/plan phases |
@@ -62,7 +62,7 @@ Donella Meadows ranked intervention points in complex systems from least to most
 | 8 | Balancing feedback loops | Regression gates auto-revert bad cycles, council FAIL blocks merge, push gate blocks unvalidated code | Prevents `K` regression |
 | 7 | Reinforcing feedback loops | Knowledge flywheel (session N learnings feed session N+1), citation-based utility scoring (MemRL) | The `s*r*K` compounding term |
 | 6 | Information flows | `ao lookup` (knowledge into context on demand), `ao forge` (experience out of sessions), hook nudges, briefing packets | Increases `s` by getting right knowledge to right window |
-| 5 | Rules | Hooks (3 active lifecycle events in `hooks/hooks.json`), validation gates, worker-guard (lead-only commit), dangerous-git guard, pre-mortem gate | Structural enforcement. Rules cannot be forgotten or ignored. |
+| 5 | Rules | Hooks wired through `hooks/hooks.json`, validation gates, worker-guard (lead-only commit), dangerous-git guard, pre-mortem gate | Structural enforcement. Rules cannot be forgotten or ignored. |
 | 4 | Self-organization | `/evolve` fitness loop (measure-fix-validate-learn-repeat), constraint compiler (learnings become structural rules), progressive skill revelation | The system improves its own rules based on experience |
 | 3 | Goals | `GOALS.md` with mechanically verifiable gates, `ao goals measure`, severity-weighted selection, North Stars and Anti Stars | System intent. What the system optimizes toward. |
 | 2 | Mindset/paradigm | The 6 paradigm shifts below | How the builder thinks about agent systems |
@@ -94,19 +94,19 @@ AgentOps: validate at every stage. `/pre-mortem` catches spec failures before im
 ### 4. From "rules are guidelines" to "rules are structural" (Hooks)
 
 Traditional: coding standards in a wiki that agents may or may not read.
-AgentOps: 12 hook lifecycle events that fire automatically on session start, tool use, push, compaction, and stop. Rules enforced by hooks cannot be forgotten, skipped, or rationalized away. The agent does not decide whether to follow them -- the system enforces them.
+AgentOps: hook lifecycle events fire automatically on session start, tool use, push, compaction, and stop. Rules enforced by hooks cannot be forgotten, skipped, or rationalized away. The agent does not decide whether to follow them -- the system enforces them.
 
-### 5. From "knowledge is hoarded" to "knowledge is flowing" (Flywheel)
+### 5. From "agent memory" to "system bookkeeping" (Corpus)
 
 Traditional: knowledge lives in individual context windows and dies when the session ends.
-AgentOps: knowledge is extracted (`ao forge`), quality-gated (specificity, actionability, novelty scoring), tiered (gold/silver/bronze), freshness-decayed, and retrieved on demand (`ao lookup`). The flywheel makes session 50 know what session 1 learned. Knowledge that is not retrieved and used decays. Knowledge that compounds survives.
+AgentOps: the system keeps the books. Attempts, decisions, citations, evidence packets, verdicts, handoffs, findings, retros, and post-mortems become file-backed traces in `.agents/`. That record is then extracted (`ao forge`), quality-gated (specificity, actionability, novelty scoring), tiered (gold/silver/bronze), freshness-decayed, and retrieved on demand (`ao lookup`). The flywheel makes session 50 know what session 1 learned. Knowledge that is not retrieved and used decays. Knowledge that compounds survives.
 
 ### 6. From "designed systems" to "evolved systems" (The Seed)
 
 Traditional: design the complete system upfront, then build it.
 AgentOps: define minimal starting conditions (GOALS.md + hooks + core skills + flywheel bootstrap), plant them in a repo, and let the system evolve toward whatever that repo's goals are. `/evolve` measures fitness, fixes the worst gap, validates nothing regressed, extracts what it learned, and repeats. The system builds its own safety net first (tests), then uses that safety net to refactor aggressively. Nobody tells it the order -- severity-based goal selection naturally produces the correct sequence.
 
-This is the deepest shift. The product is not 53 skills. The product is the seed that, given a fitness landscape, produces the right system.
+This is the deepest shift. The product is not a pile of skills. The product is the seed that, given a fitness landscape, produces the right system.
 
 ---
 

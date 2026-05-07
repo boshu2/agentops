@@ -1,6 +1,6 @@
 # Agent Instructions
 
-**AgentOps compiles and compounds the context that feeds your software factory.** It encodes the DevSecOps CDLC and multi-agent operating practices (planner/implementer/validator separation, fresh-context worker waves, council validation) into a portable corpus that compounds across sessions and runtimes. Plugin + CLI + hooks + scheduling daemon, runs on your hardware against your subscription. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
+**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI + hooks + scheduling daemon, runs on your hardware against your subscription. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 

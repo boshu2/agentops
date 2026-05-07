@@ -10,7 +10,13 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps compiles and compounds the context that feeds your software factory.** It encodes the DevSecOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are outputs of that compiler. Runs on your hardware, your repos, your subscriptions. Choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding. Works across Claude Code, Codex, Cursor, and OpenCode.
+**AgentOps keeps the books for coding agents, then compiles that record into context for your software factory.** It captures what agents tried, what worked, what failed, what was validated, and what should constrain the next run.
+
+In practice, AgentOps turns each agent run into an evidence trail, uses that trail to brief the next run, and blocks risky work before it ships.
+
+It encodes the DevSecOps SDLC as the **CDLC**: isolated context per worker, shared corpus coordination, planner/implementer/validator separation, validation gates, and scheduled compounding.
+
+Runs on your hardware, your repos, your subscriptions. Choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding. Works across Claude Code, Codex, Cursor, and OpenCode. For constrained or regulated environments, see the [Assurance Posture](PRODUCT.md#assurance-posture).
 
 → See [scheduling reference](docs/scheduling.md) and [example schedules](examples/schedules/) for the always-on lane.
 
@@ -81,7 +87,7 @@ You can also install the CLI from [release binaries](https://github.com/boshu2/a
 | What it touches | Installs skills globally and registers runtime hooks when requested; agent work writes local bookkeeping to `.agents/` |
 | Source code changes | None during install |
 | Network behavior | Install and update paths fetch from GitHub; repo artifacts stay local unless you choose external tools or remote model runtimes |
-| Telemetry | None required |
+| Telemetry | No AgentOps product telemetry required |
 | Permission surface | Skills can run shell commands and read or write repo files during agent work, so install where you want agents to operate |
 | Reversible | Remove the installed skill directories, delete `.agents/`, and remove hook entries from your runtime settings |
 
@@ -119,41 +125,44 @@ Recorded: .agents/council/<run-id>/verdict.md
 [flywheel]    Next session starts with better context
 ```
 
-The point is not a bigger prompt. The point is a repo that remembers what worked.
+The point is not a bigger prompt. The point is a repo that remembers what was tried, what worked, what failed, and what should constrain the next run.
 
 ---
 
 ## What AgentOps Gives You
 
-Three layers. Each solves a different problem. All three compound.
+Four layers. Each solves a different problem. All four compound.
 
 | Layer | Problem | What changes |
 |-------|---------|--------------|
+| **Bookkeeping** | Agents forget what they tried, why they changed course, and what evidence mattered | `.agents/` captures run packets, handoffs, findings, citations, decisions, verdicts, retros, and post-mortems. *The work leaves a trace.* |
 | **Context Compiler** | Every session starts from zero | `ao inject` delivers decay-ranked knowledge. `ao context assemble` builds phase-scoped packets. 73 skills load automatically via hooks. *Your agent starts loaded, not cold.* |
 | **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` — multi-model consensus validates plans before build and code before commit. Gates block, not advise. *Three fresh judges catch what one agent can't.* |
-| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
+| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
 
 ```mermaid
 flowchart LR
-    S[Session starts] --> L1[Layer 1: Compile context]
+    S[Session starts] --> L1[Compile context]
     L1 --> W[Agent works]
-    W --> L2[Layer 2: Validate output]
+    W --> B[Record bookkeeping]
+    B --> L2[Validate output]
     L2 --> E[Session ends]
-    E --> L3[Layer 3: Extract + compound]
+    E --> L3[Extract + compound]
     L3 -->|better context| S
 ```
 
-All state lives in local `.agents/` — plain text you can grep, diff, and review. Zero telemetry. Zero cloud dependency from AgentOps itself. Runtime-neutral across Claude Code, Codex CLI, and OpenCode. That local, auditable posture is intentional: the product is designed for teams that need constrained-network discipline, explicit evidence, and human authority boundaries.
+All state lives in local `.agents/` — plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane; model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. Runtime-neutral across Claude Code, Codex CLI, and OpenCode. That local, auditable posture is intentional: the product is designed for teams that need constrained-network discipline, explicit evidence, and human authority boundaries.
 
-### The three gaps (proof contract)
+### The failure modes (proof contract)
 
-The three layers close three failure modes most agent setups don't even name:
+The four layers close failure modes most agent setups don't even name:
 
 | Gap | Where the loop breaks | Closed by |
 |-----|-----------------------|-----------|
-| **Judgment** | Plan looks coherent. Code passes tests. Both miss the edge case. | Layer 2: `/pre-mortem` · `/vibe` · `/council` |
-| **Durable Learning** | Auth bug fixed Monday. Same bug returns Wednesday. | Layer 3: `/forge` · `ao flywheel` · `ao inject` |
-| **Loop Closure** | Code lands. No lesson extracted. Next session re-learns from scratch. | Layer 3→1: `/evolve` · finding compiler · `/dream` |
+| **Bookkeeping** | Agent tries three approaches, drops two, and the next session never knows why. | `.agents/` traces · `/trace` · `/provenance` · citations · handoffs |
+| **Judgment** | Plan looks coherent. Code passes tests. Both miss the edge case. | Validation Gates: `/pre-mortem` · `/vibe` · `/council` |
+| **Durable Learning** | Auth bug fixed Monday. Same bug returns Wednesday. | Knowledge Flywheel: `/forge` · `ao flywheel` · `ao inject` |
+| **Loop Closure** | Code lands. No lesson extracted. Next session re-learns from scratch. | Flywheel → Context Compiler: `/evolve` · finding compiler · `/dream` |
 
 Each factor in the [12-factor doctrine](https://12factoragentops.com) closes one or more of these gaps. Full contract: [docs/context-lifecycle.md](docs/context-lifecycle.md).
 
@@ -177,7 +186,7 @@ DevOps had the SDLC — the infinity loop that made software delivery an enginee
 
 LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
 
-Each generation of software practice gave teams a durable artifact: the wiki, the runbook, the postmortem, the toil budget. AgentOps gives your agents the same kind of artifact — **the corpus**. A typed, versioned, agent-readable knowledge store maintained alongside the code. The model stays the same. The corpus compounds.
+Each generation of software practice gave teams a durable artifact: the wiki, the runbook, the postmortem, the toil budget. AgentOps gives your agents the same kind of artifact — **the corpus**. It starts as bookkeeping, then becomes a typed, versioned, agent-readable knowledge store maintained alongside the code. The model stays the same. The corpus compounds.
 
 > The harness layer commoditizes. Memory primitives, learning loops, validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build that moat now. See [PRODUCT.md](PRODUCT.md) for the full thesis.
 
@@ -243,11 +252,13 @@ Every skill works alone. Flows compose them when you want more structure.
 <details>
 <summary><b>Full catalog</b> — organized by product layer</summary>
 
-**Context Compiler (L1):** `/research` · `/compile` · `/inject` · `/handoff` · `/recover`
+**Bookkeeping (L0):** `/retro` · `/trace` · `/provenance` · `/post-mortem` · `/handoff`
 
-**Validation Gates (L2):** `/council` · `/vibe` · `/pre-mortem` · `/post-mortem`
+**Context Compiler (L1):** `/research` · `/compile` · `/inject` · `/recover`
 
-**Knowledge Flywheel (L3):** `/retro` · `/forge` · `/flywheel` · `/dream`
+**Validation Gates (L2):** `/council` · `/vibe` · `/pre-mortem`
+
+**Knowledge Flywheel (L3):** `/forge` · `/flywheel` · `/dream`
 
 **Orchestrated Flows:** `/plan` · `/implement` · `/crank` · `/swarm` · `/rpi` · `/evolve`
 
@@ -262,7 +273,7 @@ Full reference: [docs/SKILLS.md](docs/SKILLS.md)
 <details>
 <summary><b>Cross-runtime orchestration</b> — mix Claude, Codex, Cursor, and OpenCode</summary>
 
-Multi-runtime, one workflow. The same three layers — context compilation, validation gates, and knowledge flywheel — run whether the active worker is Claude Code, Codex, Cursor, or OpenCode.
+Multi-runtime, one workflow. The same four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — run whether the active worker is Claude Code, Codex, Cursor, or OpenCode.
 
 One runtime leads a session. Another reviews the result. A third handles focused implementation. Adapters are runtime-specific. The contract is constant: independent context, auditable files, validation before promotion.
 
