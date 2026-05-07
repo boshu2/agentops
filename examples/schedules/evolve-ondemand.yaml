@@ -1,0 +1,37 @@
+# evolve-ondemand.yaml — manual-fire autonomous improvement loop
+#
+# What it does:
+#   Registers an `rpi.run` template that you fire by hand on demand —
+#   typically when `ao goals measure` reports a regression or you want to
+#   kick off an autonomous fitness-scored improvement cycle. The schedule
+#   carries a once-yearly cron purely to satisfy the parser; it is intended
+#   to be triggered manually, never to fire on its own.
+#
+# Why schedule it (instead of running ad hoc):
+#   Registering it as a named schedule lets you fire it through the daemon
+#   surface that already enforces backpressure, idempotency, and projection
+#   targets — same plumbing as the cron-driven recipes.
+#
+# Cadence: manual fire only. The `@yearly` cron is a placeholder; the
+# expected invocation is:
+#
+#   ao schedule run evolve-ondemand
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/evolve-ondemand.yaml
+#
+# Inspect runs:
+#   ao watch
+#   ao schedule list
+
+schedules:
+  - name: evolve-ondemand
+    cron: "@yearly"
+    job_type: rpi.run
+    payload:
+      schema_version: 1
+      goal: "Autonomous fitness-scored improvement cycle (manual fire)"
+    timeout: "2h"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

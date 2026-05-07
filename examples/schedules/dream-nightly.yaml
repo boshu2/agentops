@@ -1,0 +1,37 @@
+# dream-nightly.yaml — replicate the headless overnight dream/evolution session
+#
+# What it does:
+#   Fires `dream.run` once per night through agentopsd. The dream executor
+#   walks the daemon-managed dream lifecycle (ingest → reduce → measure →
+#   commit → report) and emits artifacts under .agents/overnight/.
+#
+# Why schedule it:
+#   This is the "leave it running overnight" recipe. It compounds session
+#   evidence into durable knowledge while you sleep — the same workload you'd
+#   otherwise launch by hand with `ao dream` or via a wrapper.
+#
+# Cadence: nightly at 23:00 local. Skip-if-running protects the run from
+# overlap if a long iteration spills into the next tick.
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/dream-nightly.yaml
+#
+# Inspect runs:
+#   ao schedule list
+#   ao watch
+#   ls .agents/overnight/
+
+schedules:
+  - name: dream-nightly
+    cron: "0 23 * * *"
+    job_type: dream.run
+    payload:
+      schema_version: 1
+      output_dir: ".agents/overnight"
+      max_iterations: 5
+      execution_timeout: "4h"
+      goal: "Nightly knowledge consolidation"
+    timeout: "4h30m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
