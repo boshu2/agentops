@@ -106,7 +106,7 @@ AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycl
 
 **Canonical reference:** `docs/context-lifecycle.md` — evidence map and mechanism inventory for all three gaps.
 
-**Today's enforcement state:** Gap 1 is mechanically enforced. Gaps 2 and 3 are partial: scripts exist (`scripts/proof-run.sh`, `scripts/check-flywheel-compounding.sh`, `scripts/check-wiring-closure.sh`, etc.) but are not invoked from automation that blocks merges. `flywheel-compounding` is explicitly long-cycle by design — its green path requires multi-session corpus growth, not a single push. The right way to read this table: the corpus-level claims in PRODUCT.md are aspirational until the Roadmap column is empty.
+**Today's enforcement state:** Gap 1 is mechanically enforced. Gaps 2 and 3 are partial: scripts exist (`scripts/proof-run.sh`, `scripts/check-flywheel-compounding.sh`, `scripts/check-wiring-closure.sh`, etc.) but are not invoked from automation that blocks merges. `flywheel-compounding` is explicitly long-cycle by design — its green path requires multi-session corpus growth, not a single push. The right way to read this table: PRODUCT.md and GOALS.md are allowed to run ahead of the repo because they are desired-state specifications. The Current Proof column is actual state; the Roadmap column is the reconcile queue that `/evolve`, dream, validation gates, and follow-up work drive toward closure.
 
 `ao goals measure` runs every declared gate on demand and is the canonical way to inspect current state, including roadmap gates.
 

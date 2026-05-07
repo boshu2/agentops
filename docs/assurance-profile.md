@@ -26,6 +26,7 @@ AgentOps uses "rigor" in the operator sense:
 - **Least-context execution.** Workers get the context needed for their phase, not the entire accumulated conversation.
 - **Independent judgment.** Councils and validators review evidence packets instead of inheriting the implementer's mental state.
 - **Policy as gates.** Hooks, pre-push checks, goal gates, security scans, and validation skills block promotion rather than merely advising.
+- **Desired-state discipline.** `PRODUCT.md` and `GOALS.md` can run ahead of the repo as explicit setpoints; measurements and reconcile loops show what is true now and what must close next.
 - **Human authority boundaries.** The operator chooses when the system is interactive, supervised, scheduled, or unattended.
 - **Local-first evidence.** AgentOps writes local files that can be inspected, archived, redacted, excluded from source control, or exported into a program's evidence system.
 

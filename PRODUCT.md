@@ -197,6 +197,10 @@ These are this repo's corpus stats; your own AgentOps install will produce its o
 
 Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide on what cadence the dream/evolution/compile loops run via `ao schedule`. Scale and compounding follow from the schedule you set, not from a claim we make.
 
+## Desired State vs Current State
+
+`PRODUCT.md` and `GOALS.md` are allowed to outpace the current repo. That is the point of goals: they define the desired state, not a frozen claim that every mechanism is already complete. In the Kubernetes/control-loop lineage, `GOALS.md` is the setpoint, the repo is actual state, `ao goals measure` is the sensor, and `/evolve`, dream, validation gates, and follow-up issues are the reconcile loop. Gaps are not embarrassing when they are named, measured, and queued; they are the worklist that keeps the factory moving toward closure.
+
 ## Known Product Gaps
 
 | Gap | Impact | Status |
