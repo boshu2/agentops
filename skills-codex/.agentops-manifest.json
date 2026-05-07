@@ -733,8 +733,8 @@
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "a03519e67e37e3cedf9f3da930f5c990afa9faedd019b97c7b5097aa2d9d62eb",
-      "generated_hash": "f191a607e3864bfa7d36bbc7d7f5c4aa793ec5587d33bbee5cca8697474a85bc"
+      "source_hash": "58350884beebb9035c9ed5bc0ce50f9ef83c496f744f4c2e85c2becd2b952981",
+      "generated_hash": "602b8aa494b32ddaaae3f86a414b30a25f0dfb474ca95861ff3560dacdb7d3ff"
     },
     {
       "name": "doc",
@@ -745,8 +745,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "20f33e67463bed2ce48633e4415a4ca512580bbcbdd43029d3b660b26e523bd5",
-      "generated_hash": "f40282255035d4ce1951f1b680c5ed6dc5f7e7d4b2dcf94d885dd8118303dd13"
+      "source_hash": "f7d38113a928717adb365ee2256b3729a80c5dd9fea0e99937fc21a05363febb",
+      "generated_hash": "2912756c5bee636d8f449c5ea1010dd87b7bf695b52c75c70f1d389f5f9099ad"
     },
     {
       "name": "flywheel",
@@ -757,8 +757,8 @@
     {
       "name": "forge",
       "source_skill": "skills/forge",
-      "source_hash": "6859ff33e417f52082658f6a38b28c5aa040332e2bf4fe1dee060d573886bdc4",
-      "generated_hash": "c39f4993c079f0c4df600f15b4699d6699d3b05c6a867c7e62017338a8f63cc7"
+      "source_hash": "1cfc451f725eb1c953f8f2ed6639b16c7d67959ceb831de5528a724115c80f5d",
+      "generated_hash": "501d002529be12a80e500aa10702d7d72fbddc4b86dc416253ac385b8bfa7478"
     },
     {
       "name": "goals",

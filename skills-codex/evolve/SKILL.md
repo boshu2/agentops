@@ -4,6 +4,8 @@ description: 'Run autonomous improvement loops.'
 ---
 # $evolve — Goal-Driven Compounding Loop
 
+> **Cross-vendor analog:** Anthropic Managed Agents Outcomes (May 2026). Both close the loop "agent runs → grader scores against a rubric → agent retries"; AgentOps does it locally against any model.
+
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.
 
 **Codex orchestration default:** keep the skill name `$evolve`. In Codex,

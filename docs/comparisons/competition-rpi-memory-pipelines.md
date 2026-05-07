@@ -37,6 +37,16 @@ AgentOps' current differentiation is the combination of repo-native `.agents` me
 | Skill suite | 14 skills, 3 commands, 1 agent in clone | Docs claim 42+ skills and 50+ agents; clone showed 36 skill dirs and 51 agent files | 85 GSD command files and 33 agents in clone | v2 docs claim 25 skills and 100+ MCP tools; clone showed 38 `.claude/skills`, 168 command docs, 7 top-level agents | Command templates and extensions rather than a skill suite | Docs claim 17 skills across 8 agents; public repo stores an installer skill plus templates/docs | 69 skills plus CLI, hooks, contracts, schemas |
 | Primary pipeline | Brainstorm -> worktree -> plan -> subagent dev -> TDD -> review -> finish branch | Ideate -> brainstorm -> plan -> work -> review -> compound -> refresh | New project -> discuss/research -> plan -> execute waves -> verify/UAT -> ship -> extract learnings | Swarm/hive-mind -> hooks -> shared memory -> post-command memory -> session restore/consolidation | Constitution -> specify -> plan -> tasks -> implement | Discovery -> spec init -> requirements -> design -> tasks -> impl -> validate | Research -> plan -> pre-mortem -> crank -> vibe -> post-mortem -> flywheel |
 
+| Aspect | Anthropic Managed Agents (May 2026) |
+|--------|--------------------------------------|
+| Memory substrate | Managed memory store + dreaming; per-agent memory plus cross-agent shared learnings surfaced by the dream cycle |
+| Compounding loop | Dreaming reviews past sessions, extracts patterns, curates memory between runs; outcomes loop iterates against a rubric until a separate-context grader passes |
+| Wiki shape | Memory blocks per agent, surfaced through the Console; not a navigable wiki |
+| Dream/offline cycle | First-class. Scheduled, optional human-review gate before memory updates land |
+| Automated pruning | Dreaming restructures memory to stay high-signal as it evolves |
+| Skill suite | Outcomes (rubric → grader → iterate) + multiagent orchestration (lead + specialists with own model/prompt/tools) |
+| Primary pipeline | Lead agent → delegate to specialists → parallel work on shared filesystem → outcomes grader → webhook on completion |
+
 ## AgentOps Baseline
 
 AgentOps presents itself as an operational layer and context compiler. The public README describes four layers: bookkeeping, validation, primitives, and flows. It also describes repo-local `.agents` memory and the RPI flow: research, plan, pre-mortem, crank, vibe, post-mortem, and flywheel.
@@ -368,6 +378,38 @@ Competitive read:
 
 None of the direct competitors has a full Karpathy-style public wiki loop as a core product primitive. GSD has a graph, Compound Engineer has a solution library, and Ruflo has semantic memory, but AgentOps can own the auditable raw-to-wiki-to-operational-memory bridge.
 
+## Anthropic Managed Agents (May 2026)
+
+Reference: Anthropic Code-with-Claude announcement, 2026-05-06. Dreaming research preview plus outcomes, multiagent orchestration, and webhooks shipped in public beta on the Claude Platform.
+
+This is Anthropic externalizing the architecture AgentOps has been implementing. Memory + dream cycle + grader-graded outcomes + lead/specialist orchestration are the same primitives AgentOps ships locally. The wedge for AgentOps was always the deployment story, and that wedge is unchanged: this is off the API, cross-vendor, and the corpus stays in `.agents/` on disk.
+
+Pattern:
+
+```text
+agent session
+  -> memory blocks per agent
+  -> scheduled dream cycle reviews past sessions
+  -> patterns extracted, memory curated (auto or human-gated)
+  -> outcomes rubric -> separate-context grader -> retry until pass
+  -> lead agent delegates to specialists with their own model/prompt/tools
+  -> parallel work on shared filesystem; persistent events; Console trace
+  -> webhook on completion
+```
+
+Capability mapping against AgentOps:
+
+| Managed Agents | AgentOps equivalent | Status |
+|---|---|---|
+| Dreaming | `/dream` + `ao overnight` + nightly CI dream-cycle proof job | Shipped |
+| Outcomes (rubric → grader → iterate) | `/vibe` + `/council` + `/pre-mortem` (judges as separate-context graders) → unifying `ao outcomes run` verb in flight | Partial |
+| Multiagent orchestration | `/swarm` + `/crank` + `/rpi` + worktree isolation | Shipped (per-worker tool isolation in flight) |
+| Webhooks (completion notification) | GitHub Actions / git hooks; pattern doc in flight | Doc-only, off-API users already have the substrate |
+
+Competitive read:
+
+This is the validation event for the AgentOps thesis, not a competitive threat. Anthropic confirms the architecture; what stays yours is the corpus the system compounds on your behalf. Readers who want these primitives running off the API, against any vendor's model, with the corpus owned locally land at AgentOps.
+
 ## Borrowable Primitives
 
 | Source | Primitive to consider | Why it matters |
@@ -397,5 +439,7 @@ AgentOps should compare itself against three distinct competitor archetypes:
 - Ruflo: mechanized database memory and consolidation.
 - Compound Engineer: readable solution-library compounding and refresh.
 - GSD/SDD/Superpowers: ergonomic workflow discipline around plans, specs, tasks, and skills.
+
+Anthropic's 2026-05-06 Managed Agents launch ships these primitives natively on the Claude Platform; the AgentOps wedge is the off-API + cross-vendor deployment story, not the primitives themselves.
 
 AgentOps wins when it proves the whole loop is operational: capture evidence, score it, promote it, inject it with citations, validate that it helped, prune what decays, and let Dream run the maintenance work without touching source code.
