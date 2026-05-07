@@ -6,13 +6,13 @@ last_reviewed: 2026-05-06
 
 ## Mission
 
-**AgentOps compiles and compounds the context that feeds your software factory.**
+**AgentOps keeps the books, compiles the context, and compounds the corpus that feeds your software factory.**
 
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. The corpus emerges in three layers: **goals** (`GOALS.md` + `ao goals measure`), **product** (`PRODUCT.md` + design principles), and **program** (`PROGRAM.md` + execution invariants). Together they encode enough structure to run at the human's chosen automation level.
+It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
 
-One substrate, three operator surfaces, one enforcement layer: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription), with **hooks and gates** wiring policy into the runtime.
+One factory, three operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription), with **hooks and gates** wiring policy into the runtime.
 
 The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans choose the posture: stay **in the loop** during discovery and validation, or sit **on the loop** while the daemon compounds overnight.
 
@@ -57,25 +57,25 @@ Read the convergence table the right way: AgentOps and every harness like it get
 ### Persona 3: The Quality-First Maintainer
 - **Goal:** Ship fewer but higher-confidence releases. Prevent regressions. Maintain institutional knowledge across team and agent turnover.
 - **Pain point:** Design decisions get lost in commit messages. Agents repeat mistakes because knowledge isn't captured. Test coverage stalls because writing tests is slower than writing features.
-- **Gap exposure:** All three gaps — judgment validation (regressions slip through), durable learning (institutional knowledge lost), and loop closure (completed work doesn't feed back into constraints).
+- **Gap exposure:** All failure modes — bookkeeping (evidence disappears), judgment validation (regressions slip through), durable learning (institutional knowledge lost), and loop closure (completed work doesn't feed back into constraints).
 
 ## What the Product Actually Is
 
-AgentOps is one substrate (the context compiler) with three surfaces and four outputs. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the substrate executes. The surfaces are how operators reach it. The outputs are what it emits.
+AgentOps is a software factory with three surfaces and four user-facing layers: Bookkeeping, Context Compiler, Validation Gates, and Knowledge Flywheel. Dream is the scheduled overnight mode of the flywheel, not a separate peer product. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the factory executes.
 
 ### Three surfaces
 
 The same substrate, reached three ways:
 
 - **In-harness plugin** — skills + hooks for Claude Code, Codex, Cursor, OpenCode. Context loads automatically inside the editor; the agent never has to ask. Install via `claude plugin install`, `install-codex.sh`, or the skills.sh package.
-- **`ao` CLI** — the terminal and CI control plane. `ao inject`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, no cloud dependency.
+- **`ao` CLI** — the terminal and CI control plane. `ao inject`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, with no required AgentOps cloud control plane.
 - **Scheduling daemon** — off-API, off-vendor. `ao schedule` + `ao daemon` run dream, evolve, compile, defrag, forge, and feedback-drain on whatever cadence you set, against whichever local subscription you already pay for. The always-on lane.
 
-### Four outputs
+### Four layers
 
-What the compiler emits. These are not peer products — they are what falls out when the substrate runs.
+The same model used in the README: bookkeeping records the work, the context compiler feeds the next run, validation gates enforce judgment, and the flywheel compounds the corpus.
 
-#### Output 1: Agent Bookkeeping
+#### Layer 1: Agent Bookkeeping
 
 **Problem:** Agents do not keep their own operational memory. They forget what they tried, why they changed course, which warnings mattered, what passed validation, and what should be reused next time.
 
@@ -87,7 +87,20 @@ What the compiler emits. These are not peer products — they are what falls out
 - `ao metrics cite` and citation logs — record what knowledge was used
 - RPI packets and council verdicts — preserve plan/build/validation evidence
 
-#### Output 2: Validation Gates
+#### Layer 2: Context Compiler
+
+**Problem:** Every session starts from zero. Agents need the right slice of prior work, policy, constraints, and decisions before they can act well.
+
+**What the compiler emits:** Decay-ranked, phase-scoped context packets built from the bookkeeping trail and curated corpus.
+
+- `ao inject` — decay-ranked retrieval with token budgeting
+- `ao context assemble` — phase-scoped context packets
+- `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
+- 73 skills — reusable context packages across Claude Code, Codex, and OpenCode
+- 12 lifecycle hooks — context loads automatically without agent initiative
+- `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
+
+#### Layer 3: Validation Gates
 
 **Problem:** Agents ship confident garbage. No review, no second opinion, no gate between "agent thinks this is good" and "this goes into production."
 
@@ -99,39 +112,20 @@ What the compiler emits. These are not peer products — they are what falls out
 - 63 eval suites + 12-task workbench — deterministic context quality testing
 - Baseline A/B — skill-on vs skill-off delta measurement
 
-#### Output 3: Knowledge Flywheel
+#### Layer 4: Knowledge Flywheel
 
 **Problem:** Each session ends and the lessons disappear. Same mistakes get made. Same solutions get rediscovered. Nothing compounds.
 
-**What the compiler emits:** Bookkeeping becomes reusable knowledge. Learnings get scored on specificity, actionability, novelty. High-scoring learnings promote to permanent patterns. Patterns become planning rules. Next session starts loaded.
+**What the compiler emits:** Bookkeeping becomes reusable knowledge. Learnings get scored on specificity, actionability, novelty. High-scoring learnings promote to permanent patterns. Patterns become planning rules. Scheduled dream cycles defrag and compound the corpus without competing with foreground engineering. Next session starts loaded.
 
 - `/forge` — extract structured learnings from completed sessions
 - `ao flywheel close-loop` — score, promote, curate automatically
 - `/evolve` — autonomous reconciliation: reads goals, fixes the worst gap, validates, repeats
+- `/dream` and `ao overnight` — bounded private compounding lane
+- `ao schedule` + `ao daemon` — operator-owned cadence for dream, evolve, compile, defrag, forge, and feedback-drain
+- `.github/workflows/nightly.yml` — public proof harness for the contracts (not your private runtime)
 - MemRL feedback — cited artifacts receive session reward, utility scores update
 - 1,400+ learnings, 130+ patterns — the corpus is compounding
-
-#### Output 4: Dream Daemon
-
-**Problem:** Compounding only happens during sessions. The corpus needs maintenance — defrag, supersession, decay — and that work shouldn't compete with foreground engineering.
-
-**What the compiler emits:** Bounded overnight compounding. The full extract → score → promote → inject cycle runs unattended, off the API, against any model.
-
-- `/dream` — overnight compounding lane
-- `ao overnight` — bounded private execution
-- `cli/cmd/ao/dream_executor.go` — the runtime
-- `.github/workflows/nightly.yml` — public proof harness for the contracts (not your private runtime)
-
-### Where the context compiler shows up
-
-The substrate that emits the four outputs above:
-
-- `ao inject` — decay-ranked retrieval with token budgeting
-- `ao context assemble` — phase-scoped context packets
-- `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 73 skills — reusable context packages across Claude Code, Codex, and OpenCode
-- 12 lifecycle hooks — context loads automatically without agent initiative
-- `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
 
 ### How They Compound
 
@@ -144,12 +138,12 @@ dream daemon defrags overnight → Next session starts with better context
 
 That's the CDLC. Generate, compile, test, distribute, deliver, observe, adapt. Same shape as the DevOps SDLC. Different substrate. The model stays the same. The corpus compounds.
 
-### Infrastructure (underneath all four outputs)
+### Infrastructure (underneath all four layers)
 
 - **Coordination plane** — `/swarm`, `/crank`, waves, worktree isolation for parallel agents. Scale by adding workers, not overloading context.
 - **Temporal compounding** — dream cycles (hours), session forge (minutes), pattern promotion (weeks). Multiple clocks, one flywheel.
 - **Multi-runtime** — same skills, same corpus across Claude Code, Codex CLI, and OpenCode. `/converter` exports to Cursor rules. The discipline lives in the system, not the model.
-- **Zero telemetry** — all state lives in local `.agents/` directories. No cloud dependency.
+- **Local-first operation** — all AgentOps state lives in local `.agents/` directories. No required AgentOps product telemetry or hosted control plane; operators choose model runtimes, networks, installers, and remotes.
 
 ## Strategic Bet
 
@@ -274,7 +268,7 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 
 ## See Also
 
-- [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of the three gaps (judgment validation, durable learning, loop closure) with evidence map and mechanism inventory.
+- [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of judgment validation, durable learning, and loop closure, with evidence map and mechanism inventory.
 - [Scale Without Swarms](docs/scale-without-swarms.md) — why 3-5 focused agents with fresh context and regression gates outperform massive uncoordinated swarms; the AgentOps model of waves, isolation, and gates explained.
 - [Brownian Ratchet](docs/brownian-ratchet.md) — the forward-only-progress lineage in detail.
 - [The Science](docs/the-science.md) — DevOps Three Ways, the escape velocity condition, and the leverage-points map.
