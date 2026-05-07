@@ -165,6 +165,14 @@ As of 2026-05-04:
 - External validation: independent 3-judge audit (council, 2026-05-06) confirmed parity with Anthropic Managed Agents on rubric authoring, separate-context grading, and iterate-until-pass
 - Empirical workbench A/B (2026-05-06, 12 cases): Δ=+0.0000 — both `skill-on` and `skill-off` legs scored 12/12. Honest read: at workbench v1 difficulty (off-by-one bugs, simple validators, basic SQLi) AgentOps's hook layer is non-differentiating because the tasks don't require it. Substrate v2 (realistic agent task difficulty) is roadmap. Source: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`
 
+**Maintainer corpus stats** (this repo's `.agents/`, derived by `scripts/corpus-stats.sh` — re-runnable, no fabricated numbers):
+
+- ~1,842 learnings · ~186 patterns · ~80 planning rules
+- ~68 finding markdown files · ~24 registry entries
+- ~3,867 citations recorded in `.agents/ao/citations.jsonl`
+
+These are this repo's corpus stats; your own AgentOps install will produce its own. Run `scripts/corpus-stats.sh --table` (or `--json` / `--markdown`) against `$AO_CORPUS_ROOT` to derive yours. The previously-cited "4,940 learnings, 1,195 patterns, 40 planning rules" line was removed because no on-disk source reconciled it; the numbers above are what the tracked source actually returns at the time of writing.
+
 Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide on what cadence the dream/evolution/compile loops run via `ao schedule`. Scale and compounding follow from the schedule you set, not from a claim we make.
 
 ## Known Product Gaps
