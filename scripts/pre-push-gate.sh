@@ -309,6 +309,10 @@ fi
 # --- Two-pass mode: re-invoke as pass 1 (blocking) + pass 2 (advisory) ---
 if [[ "$TWO_PASS" == "true" ]]; then
     SELF="$SCRIPT_DIR/pre-push-gate.sh"
+    pass2_args=(--scope upstream --accumulate)
+    if [[ "$FAST_MODE" == "true" ]]; then
+        pass2_args=(--fast "${pass2_args[@]}")
+    fi
     echo "=== Two-pass mode ==="
     echo ""
     echo "--- Pass 1: HEAD commit (blocking) ---"
@@ -324,7 +328,7 @@ if [[ "$TWO_PASS" == "true" ]]; then
     echo -e "${GREEN}--- Pass 1: PASSED ---${NC}"
     echo ""
     echo "--- Pass 2: upstream range (advisory) ---"
-    _PRE_PUSH_ADVISORY=1 PRE_PUSH_TWO_PASS=0 "$SELF" --scope upstream --accumulate || true
+    _PRE_PUSH_ADVISORY=1 PRE_PUSH_TWO_PASS=0 "$SELF" "${pass2_args[@]}" || true
     exit 0
 fi
 

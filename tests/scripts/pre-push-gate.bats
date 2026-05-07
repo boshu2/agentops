@@ -1222,6 +1222,37 @@ GO
     [[ "$output" == *"advisory"* ]]
 }
 
+@test "pre-push-gate.sh --fast two-pass keeps pass 2 fast and skips evals for non-eval changes" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; exit 0; fi
+if [[ "$*" == *"diff --name-only"* && "$*" == *"upstream"* ]]; then echo "docs/README.md"; exit 0; fi
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+mkdir -p .agents/evals
+touch .agents/evals/should-not-exist
+echo "eval should not run" > "$BATS_TEST_TMPDIR/eval-called"
+exit 1
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --two-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Pass 1: PASSED"* ]]
+    [[ "$output" == *"AgentOps eval canaries"*"skipped"* ]]
+    [ ! -e "$BATS_TEST_TMPDIR/eval-called" ]
+    [ ! -e "$FAKE_REPO/.agents/evals/should-not-exist" ]
+}
+
 @test "pre-push-gate.sh --two-pass exits 1 when pass 1 fails" {
     # Pass 1 (head scope) sees a go build failure → blocking, exit 1.
     cat > "$MOCK_BIN/git" <<'GIT'
