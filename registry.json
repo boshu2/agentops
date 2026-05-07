@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T22:14:17Z",
+  "generated_at": "2026-05-07T22:23:57Z",
   "summary": {
     "skills": 73,
     "hooks": 41,
@@ -289,7 +289,7 @@
         "path": "skills/swarm/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 15
       },
       {
         "name": "test",
