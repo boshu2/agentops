@@ -458,8 +458,11 @@ func TestBuildDreamMorningPacketPlans_CapsProbeResults(t *testing.T) {
 	}
 
 	summary := newDreamPacketTestSummary(t, tmpDir, "advance goal")
-	summary.RetrievalLive = map[string]any{"coverage": 0.1}
-	summary.MetricsHealth = map[string]any{"escape_velocity": false}
+	summary.RetrievalLive = map[string]any{"coverage": 0.1, "total_learnings": 5}
+	summary.MetricsHealth = map[string]any{
+		"escape_velocity": false,
+		"knowledge_stock": map[string]any{"total": 5},
+	}
 	summary.Degraded = []string{"retrieval failed"}
 	for _, key := range []string{"retrieval_live", "metrics_health", "summary_json"} {
 		path := summary.Artifacts[key]
@@ -482,6 +485,73 @@ func TestBuildDreamMorningPacketPlans_CapsProbeResults(t *testing.T) {
 		if result.Source == "dream-degraded" {
 			t.Fatalf("dream-degraded fallback was probed after cap: %+v", result)
 		}
+	}
+}
+
+// TestBuildDreamFallbackPackets_SuppressesWhenCorpusDormant locks the
+// guard against the two recurring stale fallback packets ("Repair Dream
+// retrieval coverage" and "Restore flywheel escape velocity") when the
+// summary metrics show zero corpus content. With sigma=rho=0,
+// total_learnings=0, and knowledge_stock.total=0, the underlying signals
+// (coverage, escape_velocity) are mathematically pinned regardless of
+// any code change — they're corpus-state, not bug-state. Per
+// f-2026-04-30-002 the morning handoff treats this as SKIP, not repair.
+func TestBuildDreamFallbackPackets_SuppressesWhenCorpusDormant(t *testing.T) {
+	tmpDir := t.TempDir()
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	summary.RetrievalLive = map[string]any{
+		"coverage":        0.0,
+		"queries":         10,
+		"total_learnings": 0,
+	}
+	summary.MetricsHealth = map[string]any{
+		"sigma":           0.0,
+		"rho":             0.0,
+		"escape_velocity": false,
+		"knowledge_stock": map[string]any{"total": 0},
+	}
+
+	packets := buildDreamFallbackPackets(summary)
+	for _, packet := range packets {
+		if packet.Source == "dream-retrieval-live" || packet.Source == "dream-metrics-health" {
+			t.Fatalf("corpus-dormant summary should suppress %s packet, got %+v", packet.Source, packet)
+		}
+	}
+}
+
+// TestBuildDreamFallbackPackets_EmitsWhenCorpusActive locks the inverse:
+// when knowledge_stock.total > 0, low retrieval coverage and missing
+// escape velocity ARE genuine code-state signals and the existing
+// fallback packets must still emit. Confirms the dormancy guard did not
+// over-broaden into suppressing real degradations.
+func TestBuildDreamFallbackPackets_EmitsWhenCorpusActive(t *testing.T) {
+	tmpDir := t.TempDir()
+	summary := newDreamPacketTestSummary(t, tmpDir, "")
+	summary.RetrievalLive = map[string]any{
+		"coverage":        0.10,
+		"queries":         10,
+		"total_learnings": 25,
+	}
+	summary.MetricsHealth = map[string]any{
+		"escape_velocity": false,
+		"knowledge_stock": map[string]any{"total": 25},
+	}
+
+	packets := buildDreamFallbackPackets(summary)
+	var sawRetrieval, sawEscape bool
+	for _, packet := range packets {
+		if packet.Source == "dream-retrieval-live" {
+			sawRetrieval = true
+		}
+		if packet.Source == "dream-metrics-health" {
+			sawEscape = true
+		}
+	}
+	if !sawRetrieval {
+		t.Errorf("active-corpus summary should emit dream-retrieval-live packet")
+	}
+	if !sawEscape {
+		t.Errorf("active-corpus summary should emit dream-metrics-health packet")
 	}
 }
 

@@ -90,13 +90,26 @@ fi
 if [ -d "$ROOT/.git" ]; then
     GITIGNORE="$ROOT/.gitignore"
     if [ -f "$GITIGNORE" ]; then
-        grep -q '^/\.agents/$' "$GITIGNORE" 2>/dev/null || \
+        # Match the modern anchored shapes (/.agents/, /.agents/*,
+        # /.agents/**/*) AND any allowlist re-include (!/.agents/...).
+        # The original `^/\.agents/$` was too narrow and double-appended
+        # whenever the gitignore used the directory-glob shape.
+        grep -qE '^!?/?\.agents(/|$)' "$GITIGNORE" 2>/dev/null || \
             printf '\n# AgentOps session artifacts\n/.agents/\n' >> "$GITIGNORE" 2>/dev/null
     else
         printf '# AgentOps session artifacts\n/.agents/\n' > "$GITIGNORE" 2>/dev/null
     fi
 fi
-if [ ! -f "$ROOT/.agents/.gitignore" ]; then
+# Only install the deny-all child .gitignore when the repo's root
+# .gitignore lacks an allowlist for /.agents/ paths. AgentOps itself
+# force-tracks audit-truth artifacts (.agents/findings/registry.jsonl,
+# .agents/nightly/<date>/baseline-goals.json, etc.) via `!/.agents/...`
+# re-includes; a blanket `*` deny-all child would override every
+# parent re-include because gitignore's last-match-wins rule applies
+# to the deeper file. External repos without an allowlist still get
+# the safety belt.
+if [ ! -f "$ROOT/.agents/.gitignore" ] && \
+   ! grep -qE '^!/?\.agents/' "$ROOT/.gitignore" 2>/dev/null; then
     cat > "$ROOT/.agents/.gitignore" 2>/dev/null <<'EOF'
 # Deny all by default — session artifacts must not leak to git.
 *

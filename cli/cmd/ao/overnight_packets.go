@@ -678,6 +678,31 @@ func buildDreamQueuePacket(summary overnightSummary, sel queueSelection, rank in
 	return packet
 }
 
+// dreamCorpusDormant reports whether Dream's overnight metrics indicate the
+// repo's knowledge corpus has zero artifacts. When true, the fallback
+// packets that key off retrieval coverage (always 0.000 with no learnings)
+// and flywheel escape velocity (always false with sigma=rho=0) are not
+// actionable code work — they describe a missing corpus, not a fixable
+// bug. Per f-2026-04-30-002 (corpus-active SKIP precondition for
+// flywheel-compounding), the morning handoff should not turn corpus
+// dormancy into repair tasks; that produced two recurring stale packets
+// every nightly. Returns true only when both signals (RetrievalLive
+// total_learnings == 0 AND MetricsHealth knowledge_stock.total == 0)
+// confirm dormancy; a single nonzero signal exits as not-dormant so the
+// existing packets fire when retrieval is genuinely broken at non-zero
+// corpus.
+func dreamCorpusDormant(summary overnightSummary) bool {
+	if learnings, ok := lookupFloat(summary.RetrievalLive, "total_learnings"); ok && learnings > 0 {
+		return false
+	}
+	if stock, ok := summary.MetricsHealth["knowledge_stock"].(map[string]any); ok {
+		if total, ok := lookupFloat(stock, "total"); ok && total > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacket {
 	packets := make([]overnightMorningPacket, 0, 3)
 
@@ -702,7 +727,9 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 		packets = append(packets, packet)
 	}
 
-	if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok && coverage < 0.50 {
+	corpusDormant := dreamCorpusDormant(summary)
+
+	if coverage, ok := lookupFloat(summary.RetrievalLive, "coverage"); ok && coverage < 0.50 && !corpusDormant {
 		packet := overnightMorningPacket{
 			ID:             dreamPacketID("retrieval", fmt.Sprintf("%.3f", coverage)),
 			Title:          "Repair Dream retrieval coverage",
@@ -721,7 +748,7 @@ func buildDreamFallbackPackets(summary overnightSummary) []overnightMorningPacke
 		packets = append(packets, packet)
 	}
 
-	if escape, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); ok && !escape {
+	if escape, ok := lookupBool(summary.MetricsHealth, "escape_velocity"); ok && !escape && !corpusDormant {
 		packet := overnightMorningPacket{
 			ID:             dreamPacketID("escape-velocity", summary.RunID),
 			Title:          "Restore flywheel escape velocity",
