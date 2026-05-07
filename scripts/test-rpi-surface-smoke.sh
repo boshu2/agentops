@@ -103,6 +103,7 @@ check_bins() {
     fi
 
     # bd version probe is informational only — exotic builds may differ.
+    # shellcheck disable=SC2034 # bd_out is set by run_capture via name-ref
     local bd_out
     if run_capture bd_out bd --version || run_capture bd_out bd version; then
         :
