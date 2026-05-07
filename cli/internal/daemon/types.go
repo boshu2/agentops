@@ -94,6 +94,13 @@ const (
 	EventFactoryMergeDecision       EventType = "factory.merge_decision"
 	EventFactoryJobTerminal         EventType = "factory.job_terminal"
 	EventFactoryYieldObservation    EventType = "factory.yield_observation"
+
+	// Agent-update events: phase-boundary messages emitted by daemon-mode RPI
+	// runners (soc-y0ct). Schema: schemas/agent-update.schema.json.
+	EventAgentUpdatePhaseStart       EventType = "agent_update.phase_start"
+	EventAgentUpdatePhaseComplete    EventType = "agent_update.phase_complete"
+	EventAgentUpdateCriterionVerdict EventType = "agent_update.criterion_verdict"
+	EventAgentUpdatePhaseHandoff     EventType = "agent_update.phase_handoff"
 )
 
 type JobStatus string
@@ -405,6 +412,11 @@ var eventTypeSet = map[string]struct{}{
 	string(EventFactoryMergeDecision):       {},
 	string(EventFactoryJobTerminal):         {},
 	string(EventFactoryYieldObservation):    {},
+
+	string(EventAgentUpdatePhaseStart):       {},
+	string(EventAgentUpdatePhaseComplete):    {},
+	string(EventAgentUpdateCriterionVerdict): {},
+	string(EventAgentUpdatePhaseHandoff):     {},
 }
 
 var jobStatusSet = map[string]struct{}{

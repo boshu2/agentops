@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/agent-update.schema.json",
+  "title": "Agent Update Message",
+  "description": "Phase-boundary message emitted by daemon-mode RPI runners (soc-y0ct). Each event_type corresponds to a daemon LedgerEvent of type agent_update.<event_type>; the schema canonicalises the payload contract so heterogeneous consumers (projections, transcripts, downstream judges) can parse without ad-hoc shape inference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "agent_update_version",
+    "event_type",
+    "payload"
+  ],
+  "properties": {
+    "agent_update_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "phase_start",
+        "phase_complete",
+        "criterion_verdict",
+        "phase_handoff"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "phase_start"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/phase_start"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "phase_complete"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/phase_complete"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "criterion_verdict"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/criterion_verdict"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "const": "phase_handoff"
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/phase_handoff"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "phase_start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase_name",
+        "run_id",
+        "timestamp"
+      ],
+      "properties": {
+        "phase_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "RPI phase name (e.g., research, plan, implement, validate)."
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable RPI run identifier; correlates with execution-packet.run_id."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 / RFC 3339 timestamp of the phase boundary."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional free-form context (operator-supplied tags, env hints)."
+        }
+      }
+    },
+    "phase_complete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase_name",
+        "run_id",
+        "timestamp",
+        "status"
+      ],
+      "properties": {
+        "phase_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["success", "failure", "timeout"]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Wall-clock duration of the phase in milliseconds."
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Phase-scoped artifact map (label -> path)."
+        }
+      }
+    },
+    "criterion_verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "criterion_id",
+        "status",
+        "run_id",
+        "timestamp"
+      ],
+      "properties": {
+        "criterion_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Acceptance-criterion ID (matches execution-packet $defs/Criterion.id, typically ac-<scope>.<n>)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "SKIP"]
+        },
+        "evidence_path": {
+          "type": "string",
+          "description": "Optional path to the evidence artifact backing the verdict."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional free-form judge/runner annotation."
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "phase_handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_phase",
+        "to_phase",
+        "run_id",
+        "timestamp"
+      ],
+      "properties": {
+        "from_phase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to_phase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "packet_path": {
+          "type": "string",
+          "description": "Optional path to the execution packet handed off to the next phase."
+        }
+      }
+    }
+  }
+}
