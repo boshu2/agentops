@@ -657,7 +657,7 @@ Most `/crank` steps delegate worker execution via `/swarm` or `Skill()`. A small
 
 If unsure whether a step is orchestrator-owned or delegatable, the default is **delegate**. Only steps marked with the admonition above are exempt.
 
-Crank runs as an isolated phase-2 execution context — discovery and validation are sealed off from this skill. See [../rpi/references/isolation-contract.md](../rpi/references/isolation-contract.md) for the four-lever enforcement model and the compression patterns `scripts/check-skill-isolation.sh` flags.
+Crank runs as an isolated phase-2 execution context — discovery and validation are sealed off from this skill. See [../rpi/references/isolation-contract.md](../rpi/references/isolation-contract.md) for the four-lever enforcement model and the compression patterns `scripts/check-skill-isolation.sh` flags. See [../rpi/references/best-practices.md](../rpi/references/best-practices.md) for the lifecycle principle + anti-pattern citation table (cite by number; do not duplicate body content).
 
 ## Reference Documents
 

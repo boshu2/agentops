@@ -31,7 +31,7 @@ Validation delegates to `/vibe`, `/post-mortem`, `/retro`, and `/forge` (plus li
 **Anti-pattern to reject:** spawning judges via `Agent()` in place of `/vibe`, inlining post-mortem analysis, skipping `/forge`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract and supported compression escapes (`--quick`, `--no-retro`, `--no-forge`, `--no-lifecycle`, `--no-behavioral`, `--allow-critical-deps`).
 
 See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
-See [`../rpi/references/isolation-contract.md`](../rpi/references/isolation-contract.md) for the four-lever model and the compression patterns `scripts/check-skill-isolation.sh` flags in phase-skill SKILL.md bodies.
+See [`../rpi/references/isolation-contract.md`](../rpi/references/isolation-contract.md) for the four-lever model and the compression patterns `scripts/check-skill-isolation.sh` flags in phase-skill SKILL.md bodies. See [`../rpi/references/best-practices.md`](../rpi/references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
 ## DAG — Execute This Sequentially
 
