@@ -2245,6 +2245,46 @@ fi
 
 # ============================================================
 echo ""
+echo "=== postedit-codex-refresh.sh ==="
+# ============================================================
+# soc-7qq9: PostToolUse hook auto-runs refresh-codex-artifacts after skill edits.
+# Smoke tests verify the hook (1) is silent + exits 0 on a non-skill path,
+# (2) attempts to run refresh on a skill path inside a real repo, and
+# (3) honors the disable env var.
+
+# Test 1: non-skill path is a no-op (silent, exit 0).
+NON_SKILL_INPUT='{"tool_name":"Edit","tool_input":{"file_path":"/tmp/some/random/file.go"}}'
+if printf '%s\n' "$NON_SKILL_INPUT" | bash "$HOOKS_DIR/postedit-codex-refresh.sh" >/dev/null 2>&1; then
+    pass "postedit-codex-refresh exits 0 on non-skill path"
+else
+    fail "postedit-codex-refresh exits 0 on non-skill path"
+fi
+
+# Test 2: AGENTOPS_HOOKS_DISABLED=1 short-circuits (no jq calls etc.).
+DISABLED_INPUT='{"tool_name":"Edit","tool_input":{"file_path":"/tmp/skills/some-skill/SKILL.md"}}'
+if printf '%s\n' "$DISABLED_INPUT" | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/postedit-codex-refresh.sh" >/dev/null 2>&1; then
+    pass "postedit-codex-refresh respects AGENTOPS_HOOKS_DISABLED=1"
+else
+    fail "postedit-codex-refresh respects AGENTOPS_HOOKS_DISABLED=1"
+fi
+
+# Test 3: AGENTOPS_CODEX_AUTOREFRESH_DISABLED=1 also short-circuits.
+if printf '%s\n' "$DISABLED_INPUT" | AGENTOPS_CODEX_AUTOREFRESH_DISABLED=1 bash "$HOOKS_DIR/postedit-codex-refresh.sh" >/dev/null 2>&1; then
+    pass "postedit-codex-refresh respects AGENTOPS_CODEX_AUTOREFRESH_DISABLED=1"
+else
+    fail "postedit-codex-refresh respects AGENTOPS_CODEX_AUTOREFRESH_DISABLED=1"
+fi
+
+# Test 4: skill path outside any repo silently exits (no git root → no-op).
+ORPHAN_SKILL_INPUT='{"tool_name":"Edit","tool_input":{"file_path":"/tmp/orphan/skills/foo/SKILL.md"}}'
+if printf '%s\n' "$ORPHAN_SKILL_INPUT" | bash "$HOOKS_DIR/postedit-codex-refresh.sh" >/dev/null 2>&1; then
+    pass "postedit-codex-refresh silent when path is outside a git repo"
+else
+    fail "postedit-codex-refresh silent when path is outside a git repo"
+fi
+
+# ============================================================
+echo ""
 echo "=== Coverage check ==="
 # ============================================================
 
