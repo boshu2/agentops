@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T20:21:15Z",
+  "generated_at": "2026-05-07T20:45:01Z",
   "summary": {
     "skills": 73,
     "hooks": 41,
@@ -169,7 +169,7 @@
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 24
+        "reference_count": 27
       },
       {
         "name": "deps",
@@ -433,7 +433,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 5
+        "reference_count": 8
       },
       {
         "name": "heal-skill",
@@ -489,7 +489,7 @@
         "path": "skills/validation/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 7
+        "reference_count": 10
       },
       {
         "name": "doc",
@@ -931,13 +931,13 @@
         "name": "ao",
         "path": ".agents/ao/",
         "purpose": "CLI runtime state and configuration",
-        "file_count": 685
+        "file_count": 694
       },
       {
         "name": "archive",
         "path": ".agents/archive/",
         "purpose": "Retired/archived knowledge entries",
-        "file_count": 14402
+        "file_count": 14403
       },
       {
         "name": "audits",
@@ -949,7 +949,7 @@
         "name": "brainstorm",
         "path": ".agents/brainstorm/",
         "purpose": "Brainstorm session outputs",
-        "file_count": 10
+        "file_count": 11
       },
       {
         "name": "compaction-snapshots",
@@ -979,7 +979,7 @@
         "name": "council",
         "path": ".agents/council/",
         "purpose": "Council validation session outputs",
-        "file_count": 51
+        "file_count": 52
       },
       {
         "name": "crank",
@@ -1003,7 +1003,7 @@
         "name": "design",
         "path": ".agents/design/",
         "purpose": "Design decision records",
-        "file_count": 24
+        "file_count": 25
       },
       {
         "name": "discovery",
@@ -1051,7 +1051,7 @@
         "name": "handoff",
         "path": ".agents/handoff/",
         "purpose": "Session handoff documents",
-        "file_count": 548
+        "file_count": 556
       },
       {
         "name": "handoffs",
@@ -1069,13 +1069,13 @@
         "name": "knowledge",
         "path": ".agents/knowledge/",
         "purpose": "Promoted knowledge entries",
-        "file_count": 797
+        "file_count": 808
       },
       {
         "name": "learnings",
         "path": ".agents/learnings/",
         "purpose": "Session learnings and insights",
-        "file_count": 1847
+        "file_count": 1848
       },
       {
         "name": "ledger",
@@ -1123,7 +1123,7 @@
         "name": "plans",
         "path": ".agents/plans/",
         "purpose": "Plan outputs from /plan skill",
-        "file_count": 46
+        "file_count": 47
       },
       {
         "name": "pool",
@@ -1171,7 +1171,7 @@
         "name": "research",
         "path": ".agents/research/",
         "purpose": "Research outputs and reports",
-        "file_count": 91
+        "file_count": 92
       },
       {
         "name": "retros",
@@ -1189,7 +1189,7 @@
         "name": "rpi",
         "path": ".agents/rpi/",
         "purpose": "RPI run state and registry",
-        "file_count": 14
+        "file_count": 17
       },
       {
         "name": "sessions",
