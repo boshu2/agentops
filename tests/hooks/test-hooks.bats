@@ -51,6 +51,63 @@ hook_temporarily_disabled() {
     [ -d "$mock/.agents/research" ] && [ ! -d "$mock/subdir/.agents/research" ]
 }
 
+@test "session-start: respects parent gitignore allowlist (no deny-all child)" {
+    # Repos that force-track audit-truth artifacts under .agents/ via
+    # `!/.agents/...` re-includes (the agentops repo itself does this for
+    # findings/registry.jsonl, nightly/<date>/baseline-goals.json, and
+    # evolve/cycle-history.jsonl) must not get a deny-all child .gitignore
+    # installed by the hook — gitignore last-match-wins means the deeper
+    # `*` would silently override every parent re-include and break audit
+    # propagation across runs. Regression locked from the 2026-05-07
+    # nightly where the hook's blanket child gitignore re-broke the
+    # ONE-TIME #1 fix from 2026-05-05.
+    local mock="$TMP_TEST_DIR/mock-allowlist-session"
+    mkdir -p "$mock"
+    git -C "$mock" init -q >/dev/null 2>&1
+    cat > "$mock/.gitignore" <<'GIT'
+/.agents/*
+/.agents/**/*
+!/.agents/findings/
+!/.agents/findings/registry.jsonl
+GIT
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    [ ! -f "$mock/.agents/.gitignore" ]
+}
+
+@test "session-start: external repo without allowlist still gets deny-all child" {
+    # Inverse lock for the allowlist-aware guard above: repos that DON'T
+    # force-track anything under .agents/ should still receive the
+    # deny-all child .gitignore safety belt so session artifacts can't
+    # leak to git on a casual `git add .`. The guard switches behavior
+    # only when the parent gitignore opts in via `!/.agents/`.
+    local mock="$TMP_TEST_DIR/mock-no-allowlist-session"
+    mkdir -p "$mock"
+    git -C "$mock" init -q >/dev/null 2>&1
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    [ -f "$mock/.agents/.gitignore" ]
+    grep -qx '*' "$mock/.agents/.gitignore"
+}
+
+@test "session-start: does not double-append /.agents/* when already present" {
+    # The hook's pre-existing grep for `^/\.agents/$` was too narrow and
+    # double-appended `/.agents/` whenever the repo's gitignore used the
+    # directory-glob shape (`/.agents/*`). Verifies the broadened match
+    # treats the modern shapes as already-handled.
+    local mock="$TMP_TEST_DIR/mock-no-double-append-session"
+    mkdir -p "$mock"
+    git -C "$mock" init -q >/dev/null 2>&1
+    cat > "$mock/.gitignore" <<'GIT'
+/.agents/*
+/.agents/**/*
+GIT
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    # Count actual `.agents` ignore lines; should still be exactly the
+    # two we wrote, with no `/.agents/` re-append.
+    local count
+    count=$(grep -cE '^/?\.agents(/|$)' "$mock/.gitignore" || true)
+    [ "$count" -eq 2 ]
+}
+
 @test "session-start: fresh repo stages one-time new-user welcome marker" {
     local mock="$TMP_TEST_DIR/mock-fresh-session"
     mkdir -p "$mock"
