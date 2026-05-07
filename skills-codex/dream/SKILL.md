@@ -4,8 +4,6 @@ description: 'Run overnight compounding sessions.'
 ---
 # Dream Skill
 
-> **Cross-vendor analog:** Anthropic Managed Agents Dreaming (research preview, May 2026). Same shape — scheduled session review, pattern extraction, memory curation between runs — but local, off the API, and against any model.
-
 `$dream` is the interactive surface for the same Dream engine used by
 `ao overnight`.
 
