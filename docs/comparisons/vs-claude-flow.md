@@ -202,6 +202,7 @@ AgentOps:           ████████████░░░░░░░░
                     (20 agents, standard)          (compounds over time)
 ```
 
+<!-- agentops:claim:AOP-CLAIM-COMP-CLAUDE-FLOW -->
 **Different optimizations for different goals:**
 - Claude-Flow: Maximum throughput *now*
 - AgentOps: Maximum effectiveness *over time*

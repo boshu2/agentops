@@ -1,11 +1,13 @@
 # AgentOps Assurance Profile
 
+<!-- agentops:claim:AOP-CLAIM-ASSURANCE-PROFILE-POSTURE -->
 AgentOps brings high-assurance operating discipline to AI-agent-paced software work. The lane is not "move slow because the environment is serious." The lane is: keep the rigor, shorten the cycle time, and make every agent run leave evidence a serious operator can review.
 
 This is an engineering posture, not a certification claim. AgentOps does not make a repo accredited, classified-network approved, safety-critical, export-controlled, FedRAMP-authorized, or airworthiness-ready by itself. It gives teams a local-first operating layer for agent work that can fit into those programs when the operator supplies the required controls, approvals, boundaries, and accreditation process.
 
 ## Claim
 
+<!-- agentops:claim:AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS -->
 AgentOps is a software factory for coding agents with four compounding layers:
 
 | Layer | Assurance role |
@@ -15,6 +17,7 @@ AgentOps is a software factory for coding agents with four compounding layers:
 | **Validation Gates** | Plans and code are challenged before promotion by pre-mortems, councils, vibe reviews, tests, hooks, and local quality gates. |
 | **Knowledge Flywheel** | Lessons are extracted, scored, promoted, decayed, and reloaded so the system compounds instead of repeating failures. |
 
+<!-- agentops:claim:AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC -->
 The goal is aerospace/IC-style operational discipline at AI-agent pace: evidence before belief, boundaries before autonomy, and promotion only after gates pass.
 
 ## What Rigor Means Here
@@ -43,6 +46,7 @@ AgentOps controls the operating layer around coding agents. It does not control 
 | Secrets and data | AgentOps can help constrain context, but does not classify data or provide a DLP boundary | Enforce secret handling, data classification, redaction, and egress controls |
 | Accreditation | Provides evidence artifacts and operating discipline | Map artifacts to the local control framework and obtain required approvals |
 
+<!-- agentops:claim:AOP-CLAIM-ASSURANCE-PROFILE-POSTURE -->
 The correct high-assurance reading is: **no AgentOps-managed telemetry or hosted control plane; operator-selected dependencies remain operator-selected dependencies.**
 
 ## Operating Profiles
@@ -59,6 +63,7 @@ Expected posture:
 
 ### Profile 1: Team Software Factory
 
+<!-- agentops:claim:AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS -->
 Use AgentOps as the team operating model for coding agents. Work is issue-tracked, validated, and closed with evidence before merge.
 
 Expected posture:

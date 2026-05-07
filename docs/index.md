@@ -15,6 +15,7 @@ hide:
 </p>
 
 <p class="hero-subtagline">
+  <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
   Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Vendor memory follows the chat. The corpus follows the team.
 </p>
 
@@ -155,13 +156,14 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/dream`](skills/dream.md) | You want overnight knowledge compounding that never mutates source code |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 70 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 73 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---
 
 ## Unsupervised Cycles
 
+<!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES -->
 **Day: autonomous improvement.** `/evolve` reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, records each cycle.
 
 ```text

@@ -1,0 +1,23 @@
+{
+  "schema_version": "factory-claim-ledger/v1",
+  "ledger_id": "fixture-negative-missing-marker",
+  "updated_at": "2026-05-07",
+  "claims": [
+    {
+      "claim_id": "FIXTURE-UNUSED",
+      "claim_text": "Unused row.",
+      "source": {"file": "README.md", "marker": "FIXTURE-UNUSED"},
+      "current_evidence": "None.",
+      "missing_proof": "Marker missing.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L0",
+      "closure_gate": "expected failure",
+      "release_posture": "roadmap",
+      "evidence_status": "planned",
+      "authority_state": "agentops_owned",
+      "promotion_state": "blocked",
+      "anti_overclaim_wording": "Expected failure.",
+      "evidence_artifacts": []
+    }
+  ]
+}

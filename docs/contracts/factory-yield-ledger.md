@@ -6,6 +6,7 @@
 > **Consumers:** `agentopsd` factory projections, routing promotion gates,
 > bounded pilot scorecards, operator review
 
+<!-- agentops:claim:AOP-CLAIM-CONTRACT-YIELD-LEDGER -->
 The yield ledger compares baseline and treatment lanes after review,
 validation, recovery, merge conflicts, escaped defects, interventions, and
 model/API cost are counted. It answers whether a lane produces accepted,
@@ -18,7 +19,7 @@ Machine-readable schema:
 - `schemas/factory-yield.v1.schema.json`
 - `docs/contracts/factory-yield-ledger.schema.json`
 
-Validated fixture:
+Example fixture:
 
 - `docs/contracts/factory-yield-ledger.example.json`
 

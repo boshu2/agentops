@@ -165,6 +165,7 @@ primitives. With it, they see one product surface.
 
 ## Design Rules
 
+<!-- agentops:claim:AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS -->
 - Prefer briefings over giant startup dumps.
 - Keep substrate and operator surfaces distinct.
 - Let external validation outrank self-report.

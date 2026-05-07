@@ -1,0 +1,39 @@
+{
+  "schema_version": "factory-claim-ledger/v1",
+  "ledger_id": "fixture-positive",
+  "updated_at": "2026-05-07",
+  "claims": [
+    {
+      "claim_id": "FIXTURE-POSITIVE-VALIDATED",
+      "claim_text": "Fixture validates marked high-claim wording.",
+      "source": {"file": "README.md", "marker": "FIXTURE-POSITIVE-VALIDATED"},
+      "current_evidence": "Fixture marker and ledger row exist.",
+      "missing_proof": "None for fixture.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L1",
+      "closure_gate": "scripts/check-factory-claim-ledger.sh --fixture tests/fixtures/factory-claim-ledger/positive --ledger ledger.json",
+      "release_posture": "locally_checked_l1",
+      "evidence_status": "present",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Fixture only.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "FIXTURE-DEMOTED-CLAIM",
+      "claim_text": "Fixture covers demotion after evidence becomes stale.",
+      "source": {"file": "README.md", "marker": "FIXTURE-DEMOTED-CLAIM"},
+      "current_evidence": "Fixture marker and ledger row exist, but evidence is intentionally stale.",
+      "missing_proof": "Refresh evidence before promoting this wording again.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L0",
+      "closure_gate": "scripts/check-factory-claim-ledger.sh --fixture tests/fixtures/factory-claim-ledger/positive --ledger ledger.json",
+      "release_posture": "roadmap",
+      "evidence_status": "stale",
+      "authority_state": "agentops_owned",
+      "promotion_state": "demoted",
+      "anti_overclaim_wording": "Describe as stale or demoted until refreshed.",
+      "evidence_artifacts": []
+    }
+  ]
+}

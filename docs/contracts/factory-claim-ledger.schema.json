@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.local/docs/contracts/factory-claim-ledger.schema.json",
+  "title": "AgentOps Factory Claim Ledger",
+  "type": "object",
+  "required": ["schema_version", "ledger_id", "updated_at", "claims"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "factory-claim-ledger/v1"
+    },
+    "ledger_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": [
+        "claim_id",
+        "claim_text",
+        "source",
+        "current_evidence",
+        "missing_proof",
+        "owner_issue",
+        "validation_level",
+        "closure_gate",
+        "release_posture",
+        "evidence_status",
+        "authority_state",
+        "promotion_state",
+        "anti_overclaim_wording",
+        "evidence_artifacts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9][A-Z0-9_.-]*$"
+        },
+        "claim_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "object",
+          "required": ["file", "marker"],
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "type": "string",
+              "minLength": 1
+            },
+            "marker": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "current_evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missing_proof": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_issue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "validation_level": {
+          "type": "string",
+          "enum": ["L0", "L1", "L2", "L3"]
+        },
+        "closure_gate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "release_posture": {
+          "type": "string",
+          "enum": [
+            "roadmap",
+            "contracted_l0",
+            "locally_checked_l1",
+            "integrated_l2",
+            "pilot_observed_l3",
+            "advisory_gate",
+            "blocking_gate",
+            "release_gate"
+          ]
+        },
+        "evidence_status": {
+          "type": "string",
+          "enum": ["none", "planned", "partial", "present", "stale", "blocked"]
+        },
+        "authority_state": {
+          "type": "string",
+          "enum": [
+            "agentops_owned",
+            "operator_owned",
+            "external_authority_required",
+            "not_claimed"
+          ]
+        },
+        "promotion_state": {
+          "type": "string",
+          "enum": [
+            "not_promoted",
+            "eligible",
+            "promoted",
+            "demoted",
+            "blocked"
+          ]
+        },
+        "anti_overclaim_wording": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "kind"],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

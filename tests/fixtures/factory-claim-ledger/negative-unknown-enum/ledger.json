@@ -1,0 +1,23 @@
+{
+  "schema_version": "factory-claim-ledger/v1",
+  "ledger_id": "fixture-negative-unknown-enum",
+  "updated_at": "2026-05-07",
+  "claims": [
+    {
+      "claim_id": "FIXTURE-UNKNOWN-ENUM",
+      "claim_text": "Unknown enum fixture.",
+      "source": {"file": "README.md", "marker": "FIXTURE-UNKNOWN-ENUM"},
+      "current_evidence": "Marker exists.",
+      "missing_proof": "Enum should fail.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L9",
+      "closure_gate": "expected failure",
+      "release_posture": "roadmap",
+      "evidence_status": "planned",
+      "authority_state": "agentops_owned",
+      "promotion_state": "blocked",
+      "anti_overclaim_wording": "Expected failure.",
+      "evidence_artifacts": []
+    }
+  ]
+}

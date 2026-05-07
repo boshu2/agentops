@@ -4,6 +4,7 @@
 > **Consumers:** `agentopsd`, factory schedules, `ao factory` operator
 > commands, RPI daemon jobs, morning digest renderers
 
+<!-- agentops:claim:AOP-CLAIM-CONTRACT-FACTORY-ADMISSION -->
 Factory admission is the daemon-owned gate between a proposed autonomous
 factory work order and source-mutating execution. It answers one question:
 

@@ -1,0 +1,23 @@
+{
+  "schema_version": "factory-claim-ledger/v1",
+  "ledger_id": "fixture-negative-l2-no-evidence",
+  "updated_at": "2026-05-07",
+  "claims": [
+    {
+      "claim_id": "FIXTURE-L2-NO-EVIDENCE",
+      "claim_text": "L2 without artifact fixture.",
+      "source": {"file": "README.md", "marker": "FIXTURE-L2-NO-EVIDENCE"},
+      "current_evidence": "Marker exists.",
+      "missing_proof": "Evidence artifact missing.",
+      "owner_issue": "soc-kizn.1",
+      "validation_level": "L2",
+      "closure_gate": "expected failure",
+      "release_posture": "integrated_l2",
+      "evidence_status": "present",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Expected failure.",
+      "evidence_artifacts": []
+    }
+  ]
+}
