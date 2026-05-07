@@ -33,7 +33,7 @@ if [[ -x "$REPO_ROOT/scripts/pre-push-gate.sh" ]]; then
     if [[ "${PRE_PUSH_FORCE:-0}" != "1" && -x "$REPO_ROOT/scripts/pre-push-proof.sh" ]] && \
         run_without_git_env "$REPO_ROOT/scripts/pre-push-proof.sh" check --scope upstream --mode fast >/dev/null 2>&1; then
         echo "pre-push: validation proof current; skipping fast gate. Set PRE_PUSH_FORCE=1 to rerun."
-    elif ! run_without_git_env "$REPO_ROOT/scripts/pre-push-gate.sh" --fast --scope upstream </dev/null; then
+    elif ! run_without_git_env env PRE_PUSH_TWO_PASS=0 "$REPO_ROOT/scripts/pre-push-gate.sh" --fast --scope upstream </dev/null; then
         echo "pre-push: blocked by validation gate. Fix issues before pushing."
         exit 1
     fi
@@ -41,5 +41,5 @@ fi
 
 # --- bd issue tracking (existing behavior) ---
 if command -v bd >/dev/null 2>&1; then
-    bd hooks run pre-push "$@" <"$HOOK_STDIN_FILE"
+    run_without_git_env bd hooks run pre-push "$@" <"$HOOK_STDIN_FILE"
 fi
