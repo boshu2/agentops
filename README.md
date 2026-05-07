@@ -10,7 +10,7 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is a context compiler that feeds your software factory — the substrate the supermodel plugs into.** It encodes the DevSecOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. Runs on your hardware, your repos, your subscriptions. Drop in (in-the-loop) or stay out (on-the-loop) at whatever cadence fits. Works across Claude Code, Codex, Cursor, and OpenCode.
+**AgentOps compiles and compounds the context that feeds your software factory.** It encodes the DevSecOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are outputs of that compiler. Runs on your hardware, your repos, your subscriptions. Choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding. Works across Claude Code, Codex, Cursor, and OpenCode.
 
 → See [scheduling reference](docs/scheduling.md) and [example schedules](examples/schedules/) for the always-on lane.
 
@@ -129,7 +129,7 @@ Three layers. Each solves a different problem. All three compound.
 
 | Layer | Problem | What changes |
 |-------|---------|--------------|
-| **Context Compiler** | Every session starts from zero | `ao inject` delivers decay-ranked knowledge. `ao context assemble` builds phase-scoped packets. 71 skills load automatically via hooks. *Your agent starts loaded, not cold.* |
+| **Context Compiler** | Every session starts from zero | `ao inject` delivers decay-ranked knowledge. `ao context assemble` builds phase-scoped packets. 73 skills load automatically via hooks. *Your agent starts loaded, not cold.* |
 | **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` — multi-model consensus validates plans before build and code before commit. Gates block, not advise. *Three fresh judges catch what one agent can't.* |
 | **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
 
@@ -143,7 +143,7 @@ flowchart LR
     L3 -->|better context| S
 ```
 
-All state lives in local `.agents/` — plain text you can grep, diff, and review. Zero telemetry. Zero cloud dependency. Runtime-neutral across Claude Code, Codex CLI, and OpenCode.
+All state lives in local `.agents/` — plain text you can grep, diff, and review. Zero telemetry. Zero cloud dependency from AgentOps itself. Runtime-neutral across Claude Code, Codex CLI, and OpenCode. That local, auditable posture is intentional: the product is designed for teams that need constrained-network discipline, explicit evidence, and human authority boundaries.
 
 ### The three gaps (proof contract)
 

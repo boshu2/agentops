@@ -6,25 +6,25 @@ last_reviewed: 2026-05-06
 
 ## Mission
 
-**AgentOps is a context compiler that feeds your software factory — the substrate the supermodel plugs into.**
+**AgentOps compiles and compounds the context that feeds your software factory.**
 
-It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. The corpus emerges in three layers: **goals** (`GOALS.md` + `ao goals measure`), **product** (`PRODUCT.md` + design principles), and **program** (`PROGRAM.md` + execution invariants). Together they encode enough structure to run autonomously at the human's chosen cadence.
+The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-One substrate, four surfaces: an **in-harness plugin** (skills + hooks for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), the **hooks layer** (mechanical gates wired into the runtime), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription).
+It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. The corpus emerges in three layers: **goals** (`GOALS.md` + `ao goals measure`), **product** (`PRODUCT.md` + design principles), and **program** (`PROGRAM.md` + execution invariants). Together they encode enough structure to run at the human's chosen automation level.
 
-The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans drop in or out at whatever cadence fits — stay **in the loop** during discovery and validation, or sit **on the loop** while the daemon compounds overnight. The structure is mechanical enough to run unattended; the gates are loud enough that you can.
+One substrate, three operator surfaces, one enforcement layer: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription), with **hooks and gates** wiring policy into the runtime.
 
-Lineage: **Knowledge OS** (the systems-theoretic substrate — Meadows, the dK/dt equation, stigmergy) → **Olympus** (archived runtime; patterns absorbed as skills) → **AgentOps** (this reference implementation) → **Mt. Olympus** (forkable Gas City runtime proof). **Field lineage:** lessons from building and selling coding agents in high-stakes regulated environments + the open-source community around **Gas Town beads** and **Ralph loops** (the fresh-context-per-worker pattern AgentOps's `/crank` waves implement). Factory's *Missions*, Anthropic's *Managed Agents*, Cursor agents — convergent, not derived-from.
+The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans choose the posture: stay **in the loop** during discovery and validation, or sit **on the loop** while the daemon compounds overnight.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
 > Lineage: AgentOps positions explicitly against EveryInc's [Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin) — see [docs/comparisons/vs-compound-engineer.md](docs/comparisons/vs-compound-engineer.md) for the in-depth contrast (operator-driven trunk vs. autonomy overlays, capture/scoring/injection, council validation).
-> Lineage hierarchy: Knowledge OS → Olympus → AgentOps → Mt. Olympus. See the [Lineage](#lineage) section below.
+> Internal lineage: the systems-theory work that preceded AgentOps lives in the [Lineage](#lineage) section, but users do not need that vocabulary to understand the product.
 
 ## Vision
 
-The software factory that gets better with each use. Every session produces code, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
+The software factory that gets better with each use. Every session produces code, evidence, decisions, attempts, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
 
-The aspiration is **TSMC-efficiency for code**: enough structure that the system runs autonomously at high throughput against a defined process, with the operator setting cadence and stepping in only at exception boundaries. Same shape that turned analog engineering into a repeatable industrial discipline — applied to coding agents.
+The aspiration is factory-grade throughput for code: enough structure that agents can run against a defined process, with the operator setting cadence, rigor, and escalation boundaries. Same shape that turned software delivery into an engineering discipline — applied to coding agents.
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
 
@@ -61,7 +61,7 @@ Read the convergence table the right way: AgentOps and every harness like it get
 
 ## What the Product Actually Is
 
-AgentOps is one substrate (the context compiler) with three surfaces and three outputs. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the substrate executes. The surfaces are how operators reach it. The outputs are what it emits.
+AgentOps is one substrate (the context compiler) with three surfaces and four outputs. The CDLC — the [Context Development Life Cycle](docs/cdlc.md) — is what the substrate executes. The surfaces are how operators reach it. The outputs are what it emits.
 
 ### Three surfaces
 
@@ -71,11 +71,23 @@ The same substrate, reached three ways:
 - **`ao` CLI** — the terminal and CI control plane. `ao inject`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, no cloud dependency.
 - **Scheduling daemon** — off-API, off-vendor. `ao schedule` + `ao daemon` run dream, evolve, compile, defrag, forge, and feedback-drain on whatever cadence you set, against whichever local subscription you already pay for. The always-on lane.
 
-### Three outputs
+### Four outputs
 
 What the compiler emits. These are not peer products — they are what falls out when the substrate runs.
 
-#### Output 1: Validation Gates
+#### Output 1: Agent Bookkeeping
+
+**Problem:** Agents do not keep their own operational memory. They forget what they tried, why they changed course, which warnings mattered, what passed validation, and what should be reused next time.
+
+**What the compiler emits:** File-backed traces of agent work: attempts, decisions, citations, handoffs, findings, retros, post-mortems, council verdicts, and run packets. This is the raw material for context compilation and compounding.
+
+- `.agents/` — repo-local bookkeeping substrate
+- `/retro` and `/post-mortem` — capture decisions, lessons, and follow-up work
+- `/provenance` and `/trace` — connect artifacts back to their source
+- `ao metrics cite` and citation logs — record what knowledge was used
+- RPI packets and council verdicts — preserve plan/build/validation evidence
+
+#### Output 2: Validation Gates
 
 **Problem:** Agents ship confident garbage. No review, no second opinion, no gate between "agent thinks this is good" and "this goes into production."
 
@@ -87,11 +99,11 @@ What the compiler emits. These are not peer products — they are what falls out
 - 63 eval suites + 12-task workbench — deterministic context quality testing
 - Baseline A/B — skill-on vs skill-off delta measurement
 
-#### Output 2: Knowledge Flywheel
+#### Output 3: Knowledge Flywheel
 
 **Problem:** Each session ends and the lessons disappear. Same mistakes get made. Same solutions get rediscovered. Nothing compounds.
 
-**What the compiler emits:** Every session extracts learnings. Learnings get scored on specificity, actionability, novelty. High-scoring learnings promote to permanent patterns. Patterns become planning rules. Next session starts loaded.
+**What the compiler emits:** Bookkeeping becomes reusable knowledge. Learnings get scored on specificity, actionability, novelty. High-scoring learnings promote to permanent patterns. Patterns become planning rules. Next session starts loaded.
 
 - `/forge` — extract structured learnings from completed sessions
 - `ao flywheel close-loop` — score, promote, curate automatically
@@ -99,7 +111,7 @@ What the compiler emits. These are not peer products — they are what falls out
 - MemRL feedback — cited artifacts receive session reward, utility scores update
 - 1,400+ learnings, 130+ patterns — the corpus is compounding
 
-#### Output 3: Dream Daemon
+#### Output 4: Dream Daemon
 
 **Problem:** Compounding only happens during sessions. The corpus needs maintenance — defrag, supersession, decay — and that work shouldn't compete with foreground engineering.
 
@@ -112,7 +124,7 @@ What the compiler emits. These are not peer products — they are what falls out
 
 ### Where the context compiler shows up
 
-The substrate that emits the three outputs above:
+The substrate that emits the four outputs above:
 
 - `ao inject` — decay-ranked retrieval with token budgeting
 - `ao context assemble` — phase-scoped context packets
@@ -125,13 +137,14 @@ The substrate that emits the three outputs above:
 
 ```
 Session starts → compiler delivers context → Agent works →
-validation gates emit verdicts → Session ends → flywheel extracts learnings →
+bookkeeping records attempts, decisions, citations, and evidence →
+validation gates emit verdicts → Session ends → flywheel promotes learnings →
 dream daemon defrags overnight → Next session starts with better context
 ```
 
 That's the CDLC. Generate, compile, test, distribute, deliver, observe, adapt. Same shape as the DevOps SDLC. Different substrate. The model stays the same. The corpus compounds.
 
-### Infrastructure (underneath all three outputs)
+### Infrastructure (underneath all four outputs)
 
 - **Coordination plane** — `/swarm`, `/crank`, waves, worktree isolation for parallel agents. Scale by adding workers, not overloading context.
 - **Temporal compounding** — dream cycles (hours), session forge (minutes), pattern promotion (weeks). Multiple clocks, one flywheel.
@@ -149,6 +162,17 @@ The bet is **sovereignty, not features.** Every harness — ours included — ge
 3. **Operator workflow encoding.** RPI, planner/implementer/validator separation, fresh-context worker waves, council validation — these are operating practices for multi-agent work, encoded as skills and hooks. Vendors will ship managed agents; they won't ship your operator workflow.
 
 The model gets smarter. The corpus stays yours. See the [Lineage](#lineage) section for how this position was arrived at.
+
+## Assurance Posture
+
+AgentOps is engineered from constrained-environment habits, not consumer-app assumptions. This is not a certification claim; it is the operating posture the system is built toward.
+
+- **Local-first control.** The corpus lives in `.agents/` beside the code. AgentOps requires no product telemetry, and operators choose which model runtimes, networks, and subscriptions touch the repo.
+- **Context as a boundary.** Research, planning, implementation, and validation receive different context. Workers get fresh windows. Validators get evidence packets instead of the implementer's accumulated chat.
+- **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, post-mortems, handoffs, and schedule outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
+- **Policy gates over advice.** Hooks, pre-push checks, security scans, goal fitness gates, and pre-mortems encode process as executable constraints instead of relying on the agent to remember a runbook.
+- **Variable autonomy.** The same factory can run interactive, supervised, scheduled, or unattended loops. High-risk environments can keep humans in the loop for planning, validation, release, and promotion while still using agents for bounded work.
+- **Constrained-network fit.** The design favors repo-local state, explicit artifacts, no required cloud control plane, and operator-owned scheduling. Formal deployment into classified, export-controlled, or safety-critical environments still requires the local authority's security controls, model approvals, supply-chain process, and accreditation work.
 
 ## Evidence
 
@@ -186,11 +210,12 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
 | Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
+| High-assurance profile is not yet formalized | The architecture has local-first state, evidence packets, policy gates, and no required telemetry, but there is not yet a dedicated assurance profile for air-gapped, classified, export-controlled, or safety-critical deployments. | planned |
 | Public messaging shifted to context-compiler + moat framing | CDLC (Context Development Life Cycle) framing landed: Mission, Strategic Bet, README, and mkdocs hero surfaces now use "context compiler" as the primary identity noun. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 
 ## Lineage
 
-The hierarchy that produced this product, and the parallels we are *not* derived from:
+The internal lineage that produced this product, and the parallels we are *not* derived from. Users do not need this vocabulary; it records where the shape came from.
 
 ### The hierarchy
 
@@ -198,7 +223,7 @@ The hierarchy that produced this product, and the parallels we are *not* derived
 
 - **Knowledge OS** is the systems-theoretic substrate. The dK/dt equation, stigmergy as the multi-agent coordination primitive, Meadows' leverage-point hierarchy as the design discipline. This is the body of theory the rest descends from.
 - **Olympus** was the predecessor runtime. Power-user daemon, run ledger, context compilation, constraint injection. Archived as a live system; its patterns survived as skills inside AgentOps.
-- **AgentOps** (this repository) is the reference implementation. Skills + hooks + `ao` CLI + scheduling daemon. The substrate the supermodel plugs into.
+- **AgentOps** (this repository) is the coding-agent implementation. Skills + hooks + `ao` CLI + scheduling daemon. It applies the context-compounding model to software work.
 - **Mt. Olympus** is the forkable Gas City runtime proof — the empirical demonstration that the substrate runs, autonomously, against a real codebase under operator control.
 
 ### Why Meadows, foregrounded
