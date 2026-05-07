@@ -161,6 +161,8 @@ The model gets smarter. The corpus stays yours. See the [Lineage](#lineage) sect
 
 AgentOps is engineered from constrained-environment habits, not consumer-app assumptions. This is not a certification claim; it is the operating posture the system is built toward.
 
+Full profile: [docs/assurance-profile.md](docs/assurance-profile.md).
+
 - **Local-first control.** The corpus lives in `.agents/` beside the code. AgentOps requires no product telemetry, and operators choose which model runtimes, networks, and subscriptions touch the repo.
 - **Context as a boundary.** Research, planning, implementation, and validation receive different context. Workers get fresh windows. Validators get evidence packets instead of the implementer's accumulated chat.
 - **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, post-mortems, handoffs, and schedule outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
@@ -195,6 +197,10 @@ These are this repo's corpus stats; your own AgentOps install will produce its o
 
 Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide on what cadence the dream/evolution/compile loops run via `ao schedule`. Scale and compounding follow from the schedule you set, not from a claim we make.
 
+## Desired State vs Current State
+
+`PRODUCT.md` and `GOALS.md` are allowed to outpace the current repo. That is the point of goals: they define the desired state, not a frozen claim that every mechanism is already complete. In the Kubernetes/control-loop lineage, `GOALS.md` is the setpoint, the repo is actual state, `ao goals measure` is the sensor, and `/evolve`, dream, validation gates, and follow-up issues are the reconcile loop. Gaps are not embarrassing when they are named, measured, and queued; they are the worklist that keeps the factory moving toward closure.
+
 ## Known Product Gaps
 
 | Gap | Impact | Status |
@@ -204,7 +210,7 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
 | Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
-| High-assurance profile is not yet formalized | The architecture has local-first state, evidence packets, policy gates, and no required telemetry, but there is not yet a dedicated assurance profile for air-gapped, classified, export-controlled, or safety-critical deployments. | planned |
+| High-assurance profile needs deeper control mapping | The initial [assurance profile](docs/assurance-profile.md) now documents local-first state, evidence packets, policy gates, telemetry boundaries, autonomy modes, and out-of-scope claims. Remaining work is redaction, evidence export, supply-chain inputs, and program-specific control mapping. | in-progress |
 | Public messaging shifted to context-compiler + moat framing | CDLC (Context Development Life Cycle) framing landed: Mission, Strategic Bet, README, and mkdocs hero surfaces now use "context compiler" as the primary identity noun. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 
 ## Lineage

@@ -4,10 +4,10 @@
 
 Parallel agents produce noisy output; councils filter it; ratchets lock progress so it can never regress.
 
-AgentOps delivers three product layers: the Context Compiler, Validation Gates,
-and Knowledge Flywheel. This page explains the internal mechanics beneath those
-layers: the proof gaps they must close, the Brownian Ratchet, and the flywheel
-that makes sessions compound.
+AgentOps delivers four product layers: Bookkeeping, the Context Compiler,
+Validation Gates, and the Knowledge Flywheel. This page explains the internal
+mechanics beneath those layers: the proof gaps they must close, the Brownian
+Ratchet, and the flywheel that makes sessions compound.
 
 Think of the mechanics below as the substrate under the operator surface:
 briefings and startup context prepare the work order, RPI phases run the

@@ -18,15 +18,16 @@
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
-## Three Product Layers
+## Four Product Layers
 
 | Layer | What it does | Key surfaces |
 |-------|-------------|-------------|
+| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, post-mortems |
 | **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, hooks |
 | **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
 | **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/retro`, `/forge`, `ao lookup`, `.agents/` |
 
-Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
 ## Architecture
 
@@ -77,7 +78,8 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 ## Concepts
 
 - [Philosophy](philosophy.md) — Five validated principles for building with coding agents, with evidence from five months of production use
-- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the three product layers
+- [Assurance Profile](assurance-profile.md) — High-assurance operating posture for local, auditable, constrained-environment agent work
+- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the compounding product loop
 - [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
 - [The Science](the-science.md) — Research behind knowledge decay and compounding
 - [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy

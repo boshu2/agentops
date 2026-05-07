@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Context compiler for coding agents. Compile context, gate output, compound knowledge — so every session starts loaded, not cold.
+description: Software factory for coding agents. Keep the books, compile context, gate output, and compound knowledge so every session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -9,9 +9,9 @@ hide:
 # AgentOps { .landing-hero }
 
 <p class="hero-tagline">
-  Context compiler for coding agents.<br>
-  Compile context. Gate output. Compound knowledge.<br>
-  <strong>Right context, right window, right time.</strong>
+  Software factory for coding agents.<br>
+  Keep the books. Compile context. Gate output. Compound knowledge.<br>
+  <strong>AI-agent pace with serious-operator discipline.</strong>
 </p>
 
 <p class="hero-subtagline">
@@ -30,10 +30,11 @@ hide:
 
 Every agent session starts cold. Same mistakes. Same rework. The landmine in `auth.py`, the two-hour timeout debug, the flag the reviewer always catches — none of it carries forward.
 
-**AgentOps solves this** with three product layers:
+**AgentOps solves this** with four product layers:
 
 | Layer | What it does |
 |-------|-------------|
+| **Bookkeeping** | Records what agents tried, changed, validated, and learned so the work leaves evidence |
 | **Context Compiler** | Assembles the right context for the right phase — decay-ranked, token-budgeted, loaded at session start |
 | **Validation Gates** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
 | **Knowledge Flywheel** | Extracts learnings, scores them, and resurfaces them so the next session starts smarter |
@@ -42,13 +43,14 @@ Session 1, your agent spends two hours debugging a timeout bug. Session 15, a ne
 
 ```mermaid
 flowchart LR
+    B[Bookkeeping] --> C[Context Compiler]
     C[Context Compiler] --> S[Session work]
     S --> G[Validation Gates]
     G --> F[Knowledge Flywheel]
-    F --> C
+    F --> B
 ```
 
-All state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and commit. Zero telemetry. Zero cloud dependency.
+All AgentOps state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and exclude from source control. No AgentOps-managed telemetry or hosted control plane; model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. For constrained environments, see the [Assurance Profile](assurance-profile.md).
 
 ---
 
@@ -132,7 +134,7 @@ Consensus: WARN — add rate limiting to /login before shipping
 [flywheel]    Next session starts with better context
 ```
 
-The point is not a bigger prompt. The point is a repo that remembers what worked.
+The point is not a bigger prompt. The point is a repo that remembers what was tried, what worked, what failed, and what should constrain the next run.
 
 ---
 

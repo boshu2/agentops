@@ -106,6 +106,8 @@ AgentOps: the system keeps the books. Attempts, decisions, citations, evidence p
 Traditional: design the complete system upfront, then build it.
 AgentOps: define minimal starting conditions (GOALS.md + hooks + core skills + flywheel bootstrap), plant them in a repo, and let the system evolve toward whatever that repo's goals are. `/evolve` measures fitness, fixes the worst gap, validates nothing regressed, extracts what it learned, and repeats. The system builds its own safety net first (tests), then uses that safety net to refactor aggressively. Nobody tells it the order -- severity-based goal selection naturally produces the correct sequence.
 
+This means goals and product docs can intentionally lead the implementation. They are the desired state and fitness landscape; the repo is actual state; the loops reconcile the delta.
+
 This is the deepest shift. The product is not a pile of skills. The product is the seed that, given a fitness landscape, produces the right system.
 
 ---

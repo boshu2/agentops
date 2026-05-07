@@ -343,7 +343,7 @@ The seed does not design outcomes. It creates conditions for emergence:
 
 Given these conditions, the system produces different outcomes in different repos — just as the same genetic machinery produces different organisms in different environments.
 
-This is why the product is 6 seed elements, not 53 skills. The skills are the phenotype. The seed is the genotype.
+This is why the product is a small set of seed elements, not a pile of skills. The skills are the phenotype. The seed is the genotype.
 
 **Status:** Implemented. All 6 paradigm shifts are embedded in the architecture. The 6th (designed to evolved) is realized through `/evolve` and the seed definition (see [seed-definition.md](seed-definition.md)).
 

@@ -50,7 +50,7 @@ This is a deliberate bet against the current tooling consensus. Vector databases
 - Volume is bounded (one project, not the internet)
 - Freshness matters more than recall breadth (stale knowledge is worse than no knowledge)
 - Human curation is the highest-leverage action
-- Portability is required (no cloud dependency, works air-gapped)
+- Portability is required (repo-local state, no AgentOps-hosted control plane, mirrorable dependencies)
 
 ...markdown + wikilinks outperforms embeddings. The agent can grep it, the human can read it, and `ao defrag` can maintain it.
 

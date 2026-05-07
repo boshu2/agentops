@@ -336,7 +336,7 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 
 ## Competitive Positioning
 
-Most tools optimize work *within* a session. AgentOps compounds across them. The three product layers — Context Compiler, Validation Gates, Knowledge Flywheel — are the gap.
+Most tools optimize work *within* a session. AgentOps compounds across them. The four product layers — Bookkeeping, Context Compiler, Validation Gates, Knowledge Flywheel — are the gap.
 
 | Tool | What it does well | What AgentOps adds |
 |------|-------------------|--------------------|
