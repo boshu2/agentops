@@ -131,6 +131,16 @@ func collectPhaseSessionOutcome(cwd, runID string, phaseNum int) *phaseSessionOu
 		return nil
 	}
 
+	// Structured evidence from the execution packet's validation_lanes_results
+	// can override regex-based test detection in the transcript: a clean run
+	// that did not print "PASSED" still credits tests_pass when a lane PASSed.
+	packetPath := filepath.Join(cwd, ".agents", "rpi", rpi.ExecutionPacketFile)
+	laneResults, err := rpi.ParseValidationLanesResults(packetPath)
+	if err != nil {
+		VerbosePrintf("Warning: could not parse validation_lanes_results from %s: %v\n", packetPath, err)
+	}
+	testsPassEvidence := rpi.AnyLaneResultPassed(laneResults)
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return &phaseSessionOutcome{SessionID: sessionID}
@@ -140,7 +150,7 @@ func collectPhaseSessionOutcome(cwd, runID string, phaseNum int) *phaseSessionOu
 		return &phaseSessionOutcome{SessionID: sessionID}
 	}
 
-	outcome, err := analyzeTranscript(transcriptPath, sessionID)
+	outcome, err := analyzeTranscriptWithEvidence(transcriptPath, sessionID, testsPassEvidence)
 	if err != nil {
 		return &phaseSessionOutcome{
 			SessionID:      sessionID,

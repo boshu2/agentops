@@ -74,14 +74,15 @@ var signalPatterns = struct {
 
 // signalState holds detection state during transcript scanning.
 type signalState struct {
-	testsFound       bool
-	testsPassed      bool
-	testsFailed      bool
-	gitPushFound     bool
-	gitCommitFound   bool
-	beadsClosedFound bool
-	ratchetLockFound bool
-	exceptionsFound  bool
+	testsFound        bool
+	testsPassed       bool
+	testsFailed       bool
+	gitPushFound      bool
+	gitCommitFound    bool
+	beadsClosedFound  bool
+	ratchetLockFound  bool
+	exceptionsFound   bool
+	testsPassEvidence bool // structured evidence (e.g., validation_lanes_results PASS) overrides regex
 }
 
 // detectTestSignals checks for test-related signals in a line.
@@ -133,6 +134,15 @@ func addSignal(signals *[]Signal, reward *float64, name string, found bool, weig
 	}
 }
 
+// addSignalWithEvidence appends a signal where structured evidence overrides
+// regex-detected presence. When evidenceValue is true, the signal is found
+// regardless of regexValue. Used when validation_lanes_results contains a
+// trustworthy PASS/FAIL outcome that should override pattern-matching of
+// orchestrator output.
+func addSignalWithEvidence(signals *[]Signal, reward *float64, name string, regexValue, evidenceValue bool, weight float64) {
+	addSignal(signals, reward, name, regexValue || evidenceValue, weight)
+}
+
 // addPenalty appends a penalty signal and updates reward.
 func addPenalty(signals *[]Signal, reward *float64, name string, condition bool, penalty float64) {
 	if condition {
@@ -157,10 +167,13 @@ func (s *signalState) buildSignals() ([]Signal, float64) {
 	var signals []Signal
 	reward := 0.0
 
-	// Test signal has special logic
-	testsPassed := s.testsFound && s.testsPassed && !s.testsFailed
-	if testsPassed {
-		addSignal(&signals, &reward, "tests_pass", true, weightTestsPass)
+	// Test signal has special logic. Structured evidence (e.g., a PASS result
+	// recorded in the execution packet's validation_lanes_results) overrides
+	// the regex signal: a clean test run that didn't print "PASSED" in the
+	// orchestrator output should still be credited when the lane reported PASS.
+	regexTestsPassed := s.testsFound && s.testsPassed && !s.testsFailed
+	if regexTestsPassed || s.testsPassEvidence {
+		addSignalWithEvidence(&signals, &reward, "tests_pass", regexTestsPassed, s.testsPassEvidence, weightTestsPass)
 	} else if s.testsFound {
 		signals = append(signals, Signal{Name: "tests_pass", Value: false, Weight: 0})
 	}
@@ -275,6 +288,15 @@ func runSessionOutcome(cmd *cobra.Command, args []string) error {
 
 // analyzeTranscript parses a transcript and computes reward signal.
 func analyzeTranscript(path string, sessionID string) (*SessionOutcome, error) {
+	return analyzeTranscriptWithEvidence(path, sessionID, false)
+}
+
+// analyzeTranscriptWithEvidence parses a transcript and computes the reward
+// signal, allowing structured evidence (e.g., a PASS recorded in the execution
+// packet's validation_lanes_results) to override the regex-based tests_pass
+// detection. Set testsPassEvidence to true when an external lane outcome
+// reports PASS; false preserves legacy behavior.
+func analyzeTranscriptWithEvidence(path string, sessionID string, testsPassEvidence bool) (*SessionOutcome, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open transcript: %w", err)
@@ -290,7 +312,7 @@ func analyzeTranscript(path string, sessionID string) (*SessionOutcome, error) {
 		Signals:    []Signal{},
 	}
 
-	state := &signalState{}
+	state := &signalState{testsPassEvidence: testsPassEvidence}
 	totalLines := scanTranscript(f, outcome, state)
 	outcome.TotalLines = totalLines
 

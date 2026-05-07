@@ -333,6 +333,57 @@ func TestTranscriptContainsSessionID_SubstringMatch(t *testing.T) {
 	}
 }
 
+func TestAddSignalWithEvidence_OverridesRegex(t *testing.T) {
+	var signals []Signal
+	var reward float64
+	addSignalWithEvidence(&signals, &reward, "tests_pass", false, true, weightTestsPass)
+	if len(signals) != 1 {
+		t.Fatalf("expected 1 signal, got %d: %#v", len(signals), signals)
+	}
+	if signals[0].Name != "tests_pass" {
+		t.Fatalf("name = %q, want tests_pass", signals[0].Name)
+	}
+	if !signals[0].Value {
+		t.Fatalf("expected Value=true (evidence override), got false: %#v", signals[0])
+	}
+	if signals[0].Weight != weightTestsPass {
+		t.Fatalf("weight = %v, want %v", signals[0].Weight, weightTestsPass)
+	}
+	if reward != weightTestsPass {
+		t.Fatalf("reward = %v, want %v", reward, weightTestsPass)
+	}
+}
+
+func TestAddSignalWithEvidence_BothFalse(t *testing.T) {
+	var signals []Signal
+	var reward float64
+	addSignalWithEvidence(&signals, &reward, "tests_pass", false, false, weightTestsPass)
+	if len(signals) != 1 {
+		t.Fatalf("expected 1 signal, got %d: %#v", len(signals), signals)
+	}
+	if signals[0].Value {
+		t.Fatalf("expected Value=false, got true: %#v", signals[0])
+	}
+	if signals[0].Weight != 0 {
+		t.Fatalf("weight = %v, want 0 (not found)", signals[0].Weight)
+	}
+	if reward != 0 {
+		t.Fatalf("reward = %v, want 0", reward)
+	}
+}
+
+func TestAddSignalWithEvidence_RegexAlone(t *testing.T) {
+	var signals []Signal
+	var reward float64
+	addSignalWithEvidence(&signals, &reward, "tests_pass", true, false, weightTestsPass)
+	if len(signals) != 1 || !signals[0].Value {
+		t.Fatalf("expected found via regex: %#v", signals)
+	}
+	if reward != weightTestsPass {
+		t.Fatalf("reward = %v, want %v", reward, weightTestsPass)
+	}
+}
+
 func TestSignalWeights(t *testing.T) {
 	// Verify weights sum to <= 1.0 for positive signals
 	positiveSum := weightTestsPass + weightGitPush + weightGitCommit +
