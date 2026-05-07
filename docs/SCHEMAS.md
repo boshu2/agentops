@@ -62,6 +62,7 @@ Machine-readable schemas that live under [`contracts/`](contracts/index.md) (nar
 - [`contracts/swarm-worker-result.schema.json`](contracts/swarm-worker-result.schema.json) — strict completion contract for swarm workers
 - [`contracts/finding-artifact.schema.json`](contracts/finding-artifact.schema.json) — full finding-artifact schema
 - [`contracts/factory-yield-ledger.schema.json`](contracts/factory-yield-ledger.schema.json) — contract-local fixture schema for `factory.yield_observation`
+- [`contracts/factory-claim-ledger.schema.json`](contracts/factory-claim-ledger.schema.json) — contract-local schema for public claim posture rows, evidence levels, and promotion states
 
 ## Validating against a schema
 

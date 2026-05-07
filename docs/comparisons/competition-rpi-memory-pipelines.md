@@ -34,7 +34,7 @@ AgentOps' current differentiation is the combination of repo-native `.agents` me
 | Wiki shape | None | Solution library, not raw-to-wiki | Planning tree and optional graph, not wiki | Database/vector memory, not wiki | Extension ecosystem, not core wiki | Spec workspace, not wiki | `llm-wiki`: raw sources -> synthesized wiki -> lint/promote |
 | Dream/offline cycle | None found | Refresh/autofix, but no explicit overnight cycle | No; "dream extraction" is project-init wording | Periodic/nightly consolidation is closest analog | None in core | None found | `ao overnight` Dream contract with safe staging and morning packet |
 | Automated pruning | None found | Keep, update, consolidate, replace, delete; uncertain docs marked stale | Cleanup/archive and health repair | Cleanup by days/namespace; consolidation reports pruned items | Not core; community optimize/memory lint concepts | No corpus pruning found | Maturity decay, dedup, contradictions, prune/evict, defrag |
-| Skill suite | 14 skills, 3 commands, 1 agent in clone | Docs claim 42+ skills and 50+ agents; clone showed 36 skill dirs and 51 agent files | 85 GSD command files and 33 agents in clone | v2 docs claim 25 skills and 100+ MCP tools; clone showed 38 `.claude/skills`, 168 command docs, 7 top-level agents | Command templates and extensions rather than a skill suite | Docs claim 17 skills across 8 agents; public repo stores an installer skill plus templates/docs | 69 skills plus CLI, hooks, contracts, schemas |
+| Skill suite | 14 skills, 3 commands, 1 agent in clone | Docs claim 42+ skills and 50+ agents; clone showed 36 skill dirs and 51 agent files | 85 GSD command files and 33 agents in clone | v2 docs claim 25 skills and 100+ MCP tools; clone showed 38 `.claude/skills`, 168 command docs, 7 top-level agents | Command templates and extensions rather than a skill suite | Docs claim 17 skills across 8 agents; public repo stores an installer skill plus templates/docs | 73 skills plus CLI, hooks, contracts, schemas |
 | Primary pipeline | Brainstorm -> worktree -> plan -> subagent dev -> TDD -> review -> finish branch | Ideate -> brainstorm -> plan -> work -> review -> compound -> refresh | New project -> discuss/research -> plan -> execute waves -> verify/UAT -> ship -> extract learnings | Swarm/hive-mind -> hooks -> shared memory -> post-command memory -> session restore/consolidation | Constitution -> specify -> plan -> tasks -> implement | Discovery -> spec init -> requirements -> design -> tasks -> impl -> validate | Research -> plan -> pre-mortem -> crank -> vibe -> post-mortem -> flywheel |
 
 | Aspect | Anthropic Managed Agents (May 2026) |
@@ -106,7 +106,7 @@ brainstorm
 
 Competitive read:
 
-Superpowers is a quality bar for small, crisp workflow skills and skill TDD. It is not a strong memory or autonomous pruning benchmark.
+Superpowers is a quality bar for small, crisp workflow skills and skill TDD. It is not a strong memory or pruning benchmark.
 
 ## Compound Engineer
 
@@ -158,6 +158,7 @@ ideate
 
 Competitive read:
 
+<!-- agentops:claim:AOP-CLAIM-COMP-RPI-MEMORY -->
 Compound Engineer is AgentOps' closest philosophical neighbor. Its strongest differentiator is a concrete, human-readable `docs/solutions` maintenance UX. AgentOps is stronger where learning is scored, injected, validated, and tied to Dream/flywheel gates.
 
 ## GSD

@@ -10,6 +10,7 @@
 
 Ship reliable code with unreliable agents.
 
+<!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 **AgentOps keeps the books for coding agents, then compiles that record into context for your software factory.** It captures what agents tried, what worked, what failed, what was validated, and what should constrain the next run.
 
 In practice, AgentOps turns each agent run into an evidence trail, uses that trail to brief the next run, and blocks risky work before it ships.
@@ -132,6 +133,7 @@ The point is not a bigger prompt. The point is a repo that remembers what was tr
 ## What AgentOps Gives You
 
 Four layers. Each solves a different problem. All four compound.
+<!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
 | Layer | Problem | What changes |
 |-------|---------|--------------|
@@ -198,6 +200,7 @@ Full CDLC treatment: [docs/cdlc.md](docs/cdlc.md). Theoretical foundations: [doc
 
 Inside a repo, use the path that matches what you are trying to do.
 
+<!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
 | Path | Run | Done when |
 |------|-----|-----------|
 | **First repo setup** | `ao quick-start`, then `/quickstart` | AgentOps reports repo readiness and a next action |
@@ -305,6 +308,7 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md)
 
 ## Advanced: Day Loop And Night Loop
 
+<!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
 Use `/evolve` when you want code improvement. It reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, and records the cycle.
 
 ```text
@@ -336,6 +340,7 @@ Run Dream overnight, then run Evolve in the morning against a fresher corpus. Th
 
 ## Competitive Positioning
 
+<!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 Most tools optimize work *within* a session. AgentOps compounds across them. The four product layers — Bookkeeping, Context Compiler, Validation Gates, Knowledge Flywheel — are the gap.
 
 | Tool | What it does well | What AgentOps adds |

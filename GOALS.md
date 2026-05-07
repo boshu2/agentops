@@ -4,6 +4,7 @@ The operational layer for coding agents — repo-native bookkeeping, validation,
 
 ## North Stars
 
+<!-- agentops:claim:AOP-CLAIM-GOALS-DREAM-VALIDATED -->
 - The knowledge flywheel is the product — every session makes the next session smarter
 - Skills work identically across Claude Code, Codex CLI, Cursor, and OpenCode
 - Knowledge captured in one session is retrieved and applied in the next
@@ -88,6 +89,7 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 
 The existing eval suites are CI canaries (contract checks). None answers "did this skill change make agents better?" Ship a behavioral eval system with a known-good workbench project, task definitions with golden solutions, and scoring scripts that measure correctness, safety, and process adherence. The eval engine already supports A/B comparison via `--baseline-mode=both` and statistical verdict — the gap is eval content, not infrastructure.
 
+<!-- agentops:claim:AOP-CLAIM-GOALS-EVAL-WORKBENCH -->
 **Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). `--two-pass` mode added to pre-push head gate for local skill-delta validation. Remaining gap: expanding eval-skill-delta from structural-only to a default blocking gate with full skill-on vs skill-off execution across the workbench.
 
 **Steer:** increase (behavioral eval tasks with scoring scripts)

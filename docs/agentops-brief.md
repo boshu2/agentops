@@ -86,6 +86,7 @@ With AgentOps:     [2 hrs] → [10 min] → [2 min] → instant  =  ~2.2 hours t
                     learn     recall     refine    mastered
 ```
 
+<!-- agentops:claim:AOP-CLAIM-BRIEF-VALIDATED-PATTERNS -->
 By session 100, the repo already carries prior failures, design choices, planning rules, and validated patterns that new sessions can load before they repeat old mistakes.
 
 ---
@@ -122,7 +123,7 @@ three-gap contract remains the internal proof model.
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 66 shared skills  │   `ao` Control Plane │   7 Hook Events       │
+│ 73 shared skills  │   `ao` Control Plane │   12 Hook Events      │
 │ plus runtime      │ repo-native retrieval│  runtime manifest     │
 │    artifacts      │ goals, and automation│                       │
 └───────────────────┴──────────────────────┴───────────────────────┘

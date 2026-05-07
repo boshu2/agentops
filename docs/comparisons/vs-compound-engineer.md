@@ -20,7 +20,7 @@ permalink: /comparisons/agentops-vs-compound-engineer
 | **Core strength** | Full ideate-to-compound loop, cross-runtime portability, configurable review agents | Git-tracked memory, validation gates, knowledge flywheel with scoring |
 | **GitHub** | EveryInc/compound-engineering-plugin | boshu2/agentops |
 | **Latest** | Active development (April 2026) | v2.39.0 (April 2026) |
-| **Scale** | 45+ skills, 25+ agents, 10 runtime targets | 50+ skills, compiled CLI, hooks, schemas |
+| **Scale** | 45+ skills, 25+ agents, 10 runtime targets | 73 skills, compiled CLI, hooks, schemas |
 | **Primary use** | Standardized engineering workflow with knowledge capture | Ongoing codebase work with persistent memory and validation |
 
 ### Three-Layer Comparison
@@ -105,6 +105,7 @@ AgentOps:
   + strategic goals and measured progress
 ```
 
+<!-- agentops:claim:AOP-CLAIM-COMP-COMPOUND-ENGINEER -->
 Compound Engineer captures knowledge manually through the compound step and maintains it through compound-refresh. AgentOps extracts knowledge automatically through session hooks and post-mortems, scores it for maturity, and injects relevant learnings into future sessions mechanically.
 
 ---

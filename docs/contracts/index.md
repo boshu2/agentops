@@ -60,6 +60,13 @@ skills, the runtime, and external integrations.
     Baseline/treatment yield observations correlated to routing, validation,
     manual merge decisions, cost, latency, defects, and artifacts.
 
+-   :material-shield-search: **[Factory Claim Ledger](factory-claim-ledger.md)**
+
+    ---
+
+    Machine-readable posture ledger tying public software-factory claims to
+    evidence level, owner issue, closure gate, and anti-overclaim wording.
+
 -   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
 
     ---

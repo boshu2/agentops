@@ -8,6 +8,7 @@ last_reviewed: 2026-05-06
 
 **AgentOps keeps the books, compiles the context, and compounds the corpus that feeds your software factory.**
 
+<!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
 It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
@@ -24,6 +25,7 @@ The bet is **sovereignty, not features**. Vendors will ship managed memory, coun
 
 The software factory that gets better with each use. Every session produces code, evidence, decisions, attempts, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
 
+<!-- agentops:claim:AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT -->
 The aspiration is factory-grade throughput for code: enough structure that agents can run against a defined process, with the operator setting cadence, rigor, and escalation boundaries. Same shape that turned software delivery into an engineering discipline — applied to coding agents.
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
@@ -120,6 +122,7 @@ The same model used in the README: bookkeeping records the work, the context com
 
 - `/forge` — extract structured learnings from completed sessions
 - `ao flywheel close-loop` — score, promote, curate automatically
+<!-- agentops:claim:AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE -->
 - `/evolve` — autonomous reconciliation: reads goals, fixes the worst gap, validates, repeats
 - `/dream` and `ao overnight` — bounded private compounding lane
 - `ao schedule` + `ao daemon` — operator-owned cadence for dream, evolve, compile, defrag, forge, and feedback-drain
@@ -224,6 +227,7 @@ The internal lineage that produced this product, and the parallels we are *not* 
 - **Knowledge OS** is the systems-theoretic substrate. The dK/dt equation, stigmergy as the multi-agent coordination primitive, Meadows' leverage-point hierarchy as the design discipline. This is the body of theory the rest descends from.
 - **Olympus** was the predecessor runtime. Power-user daemon, run ledger, context compilation, constraint injection. Archived as a live system; its patterns survived as skills inside AgentOps.
 - **AgentOps** (this repository) is the coding-agent implementation. Skills + hooks + `ao` CLI + scheduling daemon. It applies the context-compounding model to software work.
+<!-- agentops:claim:AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF -->
 - **Mt. Olympus** is the forkable Gas City runtime proof — the empirical demonstration that the substrate runs, autonomously, against a real codebase under operator control.
 
 ### Why Meadows, foregrounded

@@ -99,6 +99,7 @@ The `/pre-mortem` skill simulates 10 failure scenarios *before* you write code. 
 
 Superpowers relies on your test suite. If tests pass, it's "done."
 
+<!-- agentops:claim:AOP-CLAIM-COMP-SUPERPOWERS -->
 AgentOps `/vibe` validates 8 aspects beyond tests:
 - Semantic correctness (does code match spec?)
 - Security vulnerabilities
