@@ -1,0 +1,28 @@
+# compile-weekly.yaml — weekly knowledge compilation
+#
+# What it does:
+#   Fires `skill.invoke` against the `compile` skill, which executes the
+#   Mine → Grow → Compile → Lint pipeline against .agents/. The skill
+#   shells out to `ao compile` and writes the rebuilt wiki under .agents/.
+#
+# Why schedule it:
+#   A weekly compile keeps the derived wiki coherent without burning daily
+#   compute. Pair it with the nightly dream + daily forge so freshly forged
+#   learnings get woven into the wiki on a steady cadence.
+#
+# Cadence: weekly, Sunday at 02:00 local. Runs before defrag-weekly.yaml.
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/compile-weekly.yaml
+
+schedules:
+  - name: compile-weekly
+    cron: "0 2 * * 0"
+    job_type: skill.invoke
+    payload:
+      skill_name: "compile"
+      args: "--full"
+    timeout: "1h"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

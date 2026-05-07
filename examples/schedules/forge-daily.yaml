@@ -1,0 +1,35 @@
+# forge-daily.yaml — daily transcript forge
+#
+# What it does:
+#   Fires `wiki.forge` against recent .agents/sessions/ transcripts. The
+#   forge worker mines transcripts into structured learnings and writes them
+#   under .agents/wiki/forge/ for later promotion.
+#
+# Why schedule it:
+#   Forging once per day catches the previous day's session evidence while
+#   it's still fresh, so compile-weekly + defrag-weekly have something to
+#   work on. Daily is a sweet spot: hourly is wasteful, weekly drops
+#   transient signal.
+#
+# Cadence: daily at 22:00 local — shortly before dream-nightly so forge
+# output is in place when the dream pipeline starts.
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/forge-daily.yaml
+
+schedules:
+  - name: forge-daily
+    cron: "0 22 * * *"
+    job_type: wiki.forge
+    payload:
+      schema_version: 1
+      source_paths:
+        - ".agents/sessions/"
+      output_dir: ".agents/wiki/forge"
+      worker_kind: "claude"
+      provider: "anthropic"
+      model: "claude-sonnet-4"
+    timeout: "1h"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

@@ -1,0 +1,29 @@
+# defrag-weekly.yaml — weekly knowledge defragmentation
+#
+# What it does:
+#   Fires `skill.invoke` against the `compile` skill in defrag-only mode,
+#   which runs `ao defrag --prune --dedup` over .agents/. Removes stale
+#   entries and dedupes high-similarity clusters without re-mining.
+#
+# Why schedule it:
+#   Weekly defrag keeps `.agents/` from drifting into bloat. Run it the hour
+#   after compile-weekly so any newly compiled wiki entries get a chance to
+#   settle before pruning.
+#
+# Cadence: weekly, Sunday at 03:00 local. Runs immediately after
+# compile-weekly.yaml (which is scheduled for 02:00).
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/defrag-weekly.yaml
+
+schedules:
+  - name: defrag-weekly
+    cron: "0 3 * * 0"
+    job_type: skill.invoke
+    payload:
+      skill_name: "compile"
+      args: "--defrag-only"
+    timeout: "30m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
