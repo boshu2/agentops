@@ -56,6 +56,18 @@ Match the first row that applies. Output only that message — nothing else.
 | BD=true + CODEX=true | "✅ Codex full stack ready.\n  `bd ready` — see open work\n  Start with `$rpi \"your goal\"`, `$research <topic>`, or `$status`\n  Current Codex installs with native hooks handle startup and closeout automatically after install.\n  Older hookless installs fall back to entry skills auto-running `ao codex ensure-start` once per thread and closeout skills auto-running `ao codex ensure-stop`.\n  Manual escape hatch: `ao codex status`" |
 | BD=true | "✅ Full stack ready.\n  `bd ready` — see open work\n  `$rpi \"your goal\"` — start a new goal from scratch\n  `$status` — see current session state" |
 
+### Step 4: Schedule a nightly dream (always-on lane)
+
+After the next-action message, append this one-liner so the user sees scheduling co-equal with compiler+gates:
+
+```
+🌙 Always-on lane:
+  ao schedule add ./examples/schedules/dream-nightly.yaml   # nightly compounding session
+  ao daemon                                                  # always-on lane that runs the schedule
+```
+
+`ao daemon` is the always-on lane that runs the schedule — start it once and your nightly dream, harvest, and compile work happen without you babysitting.
+
 ---
 
 Starting a new project? Run `$scaffold <language> <name>` to generate project structure with best practices.
