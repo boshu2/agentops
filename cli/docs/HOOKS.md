@@ -2,6 +2,8 @@
 
 The ao CLI integrates with runtime hooks to automate the CASS (Contextual Agent Session Search) knowledge flywheel.
 
+> **Note on CASS:** "CASS" is AgentOps-internal terminology for the maturity-driven retrieval substrate, inspired by the Olympus runtime predecessor. It is not external prior art. The maturity model itself is documented in `cli/internal/types/types.go` and the curation pipeline at `docs/curation-pipeline.md`.
+
 ## Runtime Modes
 
 | Runtime | Hook Mechanism | Install |
