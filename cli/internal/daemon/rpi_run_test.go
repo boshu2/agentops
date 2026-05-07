@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestRPIRunExecutor_RunsViaFunc verifies the executor dispatches to the
@@ -233,6 +234,141 @@ func TestRPIRunJobSpec_AcceptsSupervisorPolicyFields(t *testing.T) {
 	}
 	if parsed.KillSwitchPath != ".agents/rpi/KILL" {
 		t.Errorf("KillSwitchPath = %q, want .agents/rpi/KILL", parsed.KillSwitchPath)
+	}
+}
+
+// TestRPIRunEmitsAgentUpdates exercises soc-y0ct.2: when a Store is wired into
+// the executor, RunJob emits agent-update phase_start before the runner and
+// phase_complete + phase_handoff after a successful run. Without a Store, no
+// events are appended (back-compat with sub-5a callers that injected a runner
+// only).
+func TestRPIRunEmitsAgentUpdates(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		runErr      error
+		wantStatus  string
+		wantHandoff bool
+	}{
+		{name: "success", runErr: nil, wantStatus: "success", wantHandoff: true},
+		{name: "failure", runErr: errors.New("runner exploded"), wantStatus: "failure", wantHandoff: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			store := NewStore(root)
+			// Advancing clock so duration_ms is populated on phase_complete (the
+			// constructor drops zero-valued duration_ms via omitempty).
+			startTime := time.Date(2026, 5, 7, 21, 0, 0, 0, time.UTC)
+			tickCount := 0
+			tickingClock := func() time.Time {
+				t := startTime.Add(time.Duration(tickCount) * 10 * time.Millisecond)
+				tickCount++
+				return t
+			}
+			exec, err := NewRPIRunExecutor(RPIRunExecutorOptions{
+				Root:  root,
+				Store: store,
+				Actor: "test-actor",
+				Clock: tickingClock,
+				Run: func(_ context.Context, _ RPIRunRequest) (RPIRunResult, error) {
+					return RPIRunResult{Artifacts: map[string]string{"runner_marker": "ok"}}, tc.runErr
+				},
+			})
+			if err != nil {
+				t.Fatalf("new executor: %v", err)
+			}
+			spec := NewRPIRunJobSpec("run-emit", "exercise emission")
+			spec.ExecutionPacketPath = ".agents/rpi/runs/run-emit/execution-packet.json"
+			jobSpec, err := spec.ToJobSpec("job-emit")
+			if err != nil {
+				t.Fatalf("job spec: %v", err)
+			}
+			claim := QueueClaim{Job: QueueJobState{
+				JobID:     jobSpec.ID,
+				RequestID: "req-emit",
+				JobType:   jobSpec.Type,
+				Payload:   jobSpec.Payload,
+			}}
+			if _, err := exec.RunJob(context.Background(), claim); !errors.Is(err, tc.runErr) {
+				t.Fatalf("RunJob err = %v, want %v", err, tc.runErr)
+			}
+
+			events, err := store.ReadLedger()
+			if err != nil {
+				t.Fatalf("read ledger: %v", err)
+			}
+			var got []EventType
+			for _, ev := range events {
+				got = append(got, ev.EventType)
+			}
+			want := []EventType{EventAgentUpdatePhaseStart, EventAgentUpdatePhaseComplete}
+			if tc.wantHandoff {
+				want = append(want, EventAgentUpdatePhaseHandoff)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("emitted event types = %v, want %v", got, want)
+			}
+
+			// Verify boilerplate (JobID, Actor, RequestID) and payload (run_id, phase_name)
+			// on the phase_start event so we know the wrapper carries claim metadata.
+			start := events[0]
+			if start.JobID != "job-emit" || string(start.RequestID) != "req-emit" || start.Actor != "test-actor" {
+				t.Errorf("phase_start boilerplate = %+v", start)
+			}
+			if start.Payload["run_id"] != "run-emit" || start.Payload["phase_name"] != "rpi.run" {
+				t.Errorf("phase_start payload = %v", start.Payload)
+			}
+
+			// Verify phase_complete reports the right status and carries duration_ms.
+			complete := events[1]
+			if complete.Payload["status"] != tc.wantStatus {
+				t.Errorf("phase_complete status = %v, want %s", complete.Payload["status"], tc.wantStatus)
+			}
+			if _, ok := complete.Payload["duration_ms"]; !ok {
+				t.Errorf("phase_complete missing duration_ms; payload = %v", complete.Payload)
+			}
+
+			if tc.wantHandoff {
+				handoff := events[2]
+				if handoff.Payload["from_phase"] != "rpi.run" || handoff.Payload["to_phase"] != "operator" {
+					t.Errorf("phase_handoff payload = %v", handoff.Payload)
+				}
+				if handoff.Payload["packet_path"] != spec.ExecutionPacketPath {
+					t.Errorf("phase_handoff packet_path = %v", handoff.Payload["packet_path"])
+				}
+			}
+		})
+	}
+}
+
+// TestRPIRunNoEmissionWithoutStore confirms back-compat: callers that don't
+// pass a Store get the runner-only behavior with zero events appended.
+func TestRPIRunNoEmissionWithoutStore(t *testing.T) {
+	root := t.TempDir()
+	// Set up a side-channel store JUST to assert no events landed; executor
+	// is not configured with it.
+	witness := NewStore(root + "-witness")
+	exec, err := NewRPIRunExecutor(RPIRunExecutorOptions{
+		Root: root,
+		Run:  func(_ context.Context, _ RPIRunRequest) (RPIRunResult, error) { return RPIRunResult{}, nil },
+	})
+	if err != nil {
+		t.Fatalf("new executor: %v", err)
+	}
+	spec := NewRPIRunJobSpec("run-silent", "no store wired")
+	jobSpec, err := spec.ToJobSpec("job-silent")
+	if err != nil {
+		t.Fatalf("job spec: %v", err)
+	}
+	claim := QueueClaim{Job: QueueJobState{JobID: jobSpec.ID, JobType: jobSpec.Type, Payload: jobSpec.Payload}}
+	if _, err := exec.RunJob(context.Background(), claim); err != nil {
+		t.Fatalf("RunJob: %v", err)
+	}
+	events, err := witness.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("expected zero events on the witness store, got %d", len(events))
 	}
 }
 

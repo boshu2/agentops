@@ -577,9 +577,15 @@ func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string, runOverride daemonpkg
 	if run == nil {
 		run = defaultCLIFallbackRPIRunFunc
 	}
+	// soc-y0ct.2: pass the daemon Store so the executor emits agent-update
+	// events on phase boundaries (phase_start before runner, phase_complete +
+	// phase_handoff after). Tests that don't need ledger emission omit Store
+	// and the executor falls back to runner-only behavior.
 	return daemonpkg.NewRPIRunExecutor(daemonpkg.RPIRunExecutorOptions{
-		Root: cwd,
-		Run:  run,
+		Root:  cwd,
+		Run:   run,
+		Store: daemonpkg.NewStore(cwd),
+		Actor: "agentopsd-rpi-run",
 	})
 }
 
