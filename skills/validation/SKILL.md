@@ -226,6 +226,10 @@ reason and timeout in the phase summary.
 /validation --no-forge ag-5k2             # skip forge only
 ```
 
+## Output Specification
+
+**Format:** markdown summary to stdout + on-disk artifacts. Files written: `.agents/rpi/phase-3-summary-YYYY-MM-DD-validation.md` (phase summary), `.agents/post-mortems/YYYY-MM-DD-<topic>.md`, `.agents/learnings/<slug>.md`, `.agents/findings/registry.jsonl` (appended), `.agents/ratchet/state.json`. **Exit signal:** completion marker — see below.
+
 ## Completion Markers
 
 ```
@@ -235,13 +239,7 @@ reason and timeout in the phase summary.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Vibe FAIL on first run | Implementation has quality issues | Fix findings via `/crank`, then re-run `/validation` |
-| Post-mortem reviewed recent work instead of an epic | No epic-id provided | Pass epic-id for epic-scoped closeout: `/validation ag-5k2` |
-| Codex closeout missing | Codex has no session-end hook surface | Let `/validation` run `ao codex stop`, or run `ao codex stop` manually before leaving the session |
-| Forge produces no output | No ao CLI or no transcript content | Install ao CLI or run `/retro` manually |
-| Stale execution-packet | Packet from a previous RPI cycle | Delete `.agents/rpi/execution-packet.json` and pass `--complexity` explicitly |
+See [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Reference Documents
 

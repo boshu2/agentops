@@ -765,3 +765,147 @@ func TestUpdateFlatStateIfMatches_InvalidJSON(t *testing.T) {
 	// Should not panic
 	updateFlatStateIfMatches(flatPath, "run-1", "reason", "2026-04-04T12:00:00Z")
 }
+
+// --- preserveWorktreeCommits (soc-ewne / mc-m3.5-pre3) ---
+//
+// preserveWorktreeCommits is called BEFORE removeOrphanedWorktree on a failed
+// cycle. It detects commits in the worktree's HEAD ancestry that are not
+// reachable from main, and creates a `codex/preserve-<runID>` branch on the
+// repo so the work is not garbage-collected when the worktree is removed.
+//
+// This guards against the 2026-05-06 overnight failure mode: 4 cycles produced
+// real commits inside detached worktrees; auto-clean orphaned them. Three were
+// confirmed unreachable in git fsck and required manual recovery.
+
+// setupRepoWithWorktree creates a tiny repo and a sibling detached worktree
+// with one optional extra commit on top of HEAD. Returns (repoRoot, worktreePath).
+// The worktree's HEAD points to extraCommitSHA when madeCommit is true.
+func setupRepoWithWorktree(t *testing.T, runID string, madeCommit bool) (string, string, string) {
+	t.Helper()
+	parent := t.TempDir()
+	repoRoot := filepath.Join(parent, "repo")
+	if err := os.MkdirAll(repoRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	run := func(dir string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		// Isolate from user/global git config.
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=test",
+			"GIT_AUTHOR_EMAIL=test@example.com",
+			"GIT_COMMITTER_NAME=test",
+			"GIT_COMMITTER_EMAIL=test@example.com",
+			"HOME="+parent,
+		)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+
+	run(repoRoot, "init", "-b", "main")
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte("seed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	run(repoRoot, "add", ".")
+	run(repoRoot, "commit", "-m", "seed")
+
+	// Add a sibling detached worktree on the same parent dir so
+	// ValidateWorktreeSibling passes.
+	worktreePath := filepath.Join(parent, "repo-rpi-"+runID)
+	run(repoRoot, "worktree", "add", "--detach", worktreePath, "HEAD")
+
+	extraSHA := ""
+	if madeCommit {
+		if err := os.WriteFile(filepath.Join(worktreePath, "work.txt"), []byte("cycle work\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		run(worktreePath, "add", ".")
+		run(worktreePath, "commit", "-m", "cycle "+runID+" landed")
+
+		out, err := exec.Command("git", "-C", worktreePath, "rev-parse", "HEAD").Output()
+		if err != nil {
+			t.Fatalf("rev-parse: %v", err)
+		}
+		extraSHA = strings.TrimSpace(string(out))
+	}
+
+	return repoRoot, worktreePath, extraSHA
+}
+
+// branchTipSHA returns the commit sha that branchName points to in repoRoot,
+// or "" if the branch does not exist.
+func branchTipSHA(t *testing.T, repoRoot, branchName string) string {
+	t.Helper()
+	out, err := exec.Command("git", "-C", repoRoot, "rev-parse", "--verify", branchName).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func TestPreserveWorktreeCommits_FailedCycle_CreatesPreserveBranch(t *testing.T) {
+	runID := "abcd1234ef56"
+	repoRoot, worktreePath, wantSHA := setupRepoWithWorktree(t, runID, true)
+
+	preserved, err := preserveWorktreeCommits(repoRoot, worktreePath, runID)
+	if err != nil {
+		t.Fatalf("preserveWorktreeCommits: %v", err)
+	}
+	if preserved != wantSHA {
+		t.Errorf("preserved sha = %q, want %q", preserved, wantSHA)
+	}
+
+	branchName := "codex/preserve-" + runID
+	got := branchTipSHA(t, repoRoot, branchName)
+	if got != wantSHA {
+		t.Errorf("branch %q tip = %q, want %q", branchName, got, wantSHA)
+	}
+}
+
+func TestPreserveWorktreeCommits_NoNewCommits_NoBranchCreated(t *testing.T) {
+	runID := "ffeeddccbbaa"
+	repoRoot, worktreePath, _ := setupRepoWithWorktree(t, runID, false)
+
+	preserved, err := preserveWorktreeCommits(repoRoot, worktreePath, runID)
+	if err != nil {
+		t.Fatalf("preserveWorktreeCommits: %v", err)
+	}
+	if preserved != "" {
+		t.Errorf("expected empty preserved sha when no extra commits; got %q", preserved)
+	}
+
+	branchName := "codex/preserve-" + runID
+	if got := branchTipSHA(t, repoRoot, branchName); got != "" {
+		t.Errorf("expected no preserve branch; got tip %q", got)
+	}
+}
+
+func TestPreserveWorktreeCommits_EmptyRunID_Errors(t *testing.T) {
+	repoRoot, worktreePath, _ := setupRepoWithWorktree(t, "tmprid", true)
+	if _, err := preserveWorktreeCommits(repoRoot, worktreePath, ""); err == nil {
+		t.Error("expected error for empty runID; preserve branch name must be deterministic")
+	}
+}
+
+// removeOrphanedWorktree must call preserveWorktreeCommits before deleting the
+// worktree, so failed-cycle commits aren't orphaned (soc-ewne acceptance).
+func TestRemoveOrphanedWorktree_PreservesCommitsBeforeRemoval(t *testing.T) {
+	runID := "cleanuptest1"
+	repoRoot, worktreePath, wantSHA := setupRepoWithWorktree(t, runID, true)
+
+	if err := removeOrphanedWorktree(repoRoot, worktreePath, runID); err != nil {
+		t.Fatalf("removeOrphanedWorktree: %v", err)
+	}
+
+	if _, err := os.Stat(worktreePath); !os.IsNotExist(err) {
+		t.Errorf("worktree still exists after cleanup: %v", err)
+	}
+
+	branchName := "codex/preserve-" + runID
+	if got := branchTipSHA(t, repoRoot, branchName); got != wantSHA {
+		t.Errorf("preserve branch tip = %q, want %q", got, wantSHA)
+	}
+}

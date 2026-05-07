@@ -36,7 +36,7 @@ For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared
 
 Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `bd ready`, bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
 
-Read `references/team-coordination.md` for the full per-wave execution model and `references/ralph-loop-contract.md` for the fresh-context worker contract.
+Read `references/team-coordination.md` for the full per-wave execution model, `references/ralph-loop-contract.md` for the fresh-context worker contract, and `references/worker-specs.md` for per-worker model/tool/prompt specs.
 
 ## Flags
 

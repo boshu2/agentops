@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "suite_id": "agentops-core.workbench-agent-v1",
+  "suite_path": "evals/agentops-core/workbench-agent-v1.json",
+  "generated_at": "2026-05-07T04:07:51.0446487Z",
+  "skill_on_run_id": "eval-20260507T034113Z-agentops-core.workbench-agent-v1-skill-on",
+  "skill_off_run_id": "eval-20260507T034113Z-agentops-core.workbench-agent-v1-skill-off",
+  "skill_on_aggregate": 1,
+  "skill_off_aggregate": 1,
+  "aggregate_delta": 0,
+  "per_case": [
+    {
+      "case_id": "agent-go-01-fix-bug",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-go-02-write-tests",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-go-03-implement-divide",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-go-04-refactor-complexity",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-go-05-fix-cmdi",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-py-01-fix-404",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-py-02-add-validation",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-py-03-add-pagination",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-py-04-fix-sqli",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-ops-01-fix-deploy",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-ops-02-fix-logrotate",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    },
+    {
+      "case_id": "agent-ops-03-add-retry",
+      "skill_on_status": "pass",
+      "skill_off_status": "pass",
+      "skill_on_score": 1,
+      "skill_off_score": 1,
+      "delta": 0
+    }
+  ]
+}

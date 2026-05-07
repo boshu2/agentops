@@ -1222,3 +1222,249 @@ func TestWorktree_findStaleRPISiblingWorktrees_NonGitSibling(t *testing.T) {
 		t.Errorf("expected 0 skipped dirty, got %d", len(skippedDirty))
 	}
 }
+
+// TestWorktree_runIDFromWorktreePath_crankPatterns covers the additional
+// orchestrator naming schemes (crank waves, discovery slices, wave-pack).
+func TestWorktree_runIDFromWorktreePath_crankPatterns(t *testing.T) {
+	tests := []struct {
+		name         string
+		repoRoot     string
+		worktreePath string
+		want         string
+	}{
+		{"wave sibling w3-zeus", "/home/u/mt-olympus", "/home/u/mt-olympus-w3-zeus", "w3-zeus"},
+		{"wave sibling w12-formula", "/home/u/repo", "/home/u/repo-w12-formula", "w12-formula"},
+		{"discovery slice", "/home/u/repo", "/home/u/repo-d-s1", "d-s1"},
+		{"discovery slice multi-token", "/home/u/repo", "/home/u/repo-d-cool-slice", "d-cool-slice"},
+		{"wave-pack worktrees dir", "/home/u/repo", "/home/u/repo-worktrees/wave-2-athena", "wave-2-athena"},
+		{"wave-pack with hyphen suffix", "/home/u/repo", "/home/u/repo-worktrees/wave-9-multi-token", "wave-9-multi-token"},
+		{"wave-pack missing wave- prefix", "/home/u/repo", "/home/u/repo-worktrees/randomdir", ""},
+		{"wave-pack just wave-", "/home/u/repo", "/home/u/repo-worktrees/wave-", ""},
+		{"bare w prefix without digits", "/home/u/repo", "/home/u/repo-w-broken", ""},
+		{"bare w<N> without slice", "/home/u/repo", "/home/u/repo-w3-", ""},
+		{"bare d without slice", "/home/u/repo", "/home/u/repo-d-", ""},
+		{"unrelated suffix", "/home/u/repo", "/home/u/repo-feature-thing", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := runIDFromWorktreePath(tt.repoRoot, tt.worktreePath)
+			if got != tt.want {
+				t.Errorf("runIDFromWorktreePath(%q, %q) = %q, want %q",
+					tt.repoRoot, tt.worktreePath, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestWorktree_findRPISiblingWorktreePaths_multiPattern verifies that the
+// scan picks up RPI siblings, crank wave siblings, discovery slices, and
+// wave-pack subdirs simultaneously.
+func TestWorktree_findRPISiblingWorktreePaths_multiPattern(t *testing.T) {
+	parent := t.TempDir()
+	repoRoot := filepath.Join(parent, "olympus")
+	if err := os.MkdirAll(repoRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create siblings the scan should match.
+	siblings := []string{
+		"olympus-rpi-run42",
+		"olympus-w3-zeus",
+		"olympus-w12-athena",
+		"olympus-d-s1",
+	}
+	for _, s := range siblings {
+		if err := os.MkdirAll(filepath.Join(parent, s), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Wave-pack subdir form.
+	wavePack := filepath.Join(parent, "olympus-worktrees")
+	for _, s := range []string{"wave-1-discovery", "wave-2-impl"} {
+		if err := os.MkdirAll(filepath.Join(wavePack, s), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Distractors: should NOT match.
+	for _, s := range []string{"olympus-feature-thing", "other-rpi-x", "olympus-w-broken", "olympus-d-"} {
+		if err := os.MkdirAll(filepath.Join(parent, s), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	paths, err := findRPISiblingWorktreePaths(repoRoot)
+	if err != nil {
+		t.Fatalf("findRPISiblingWorktreePaths: %v", err)
+	}
+
+	got := make(map[string]bool)
+	for _, p := range paths {
+		got[filepath.Base(p)] = true
+	}
+	wantBases := []string{
+		"olympus-rpi-run42",
+		"olympus-w3-zeus",
+		"olympus-w12-athena",
+		"olympus-d-s1",
+		"wave-1-discovery",
+		"wave-2-impl",
+	}
+	for _, w := range wantBases {
+		if !got[w] {
+			t.Errorf("expected to find %q in scan, got %v", w, paths)
+		}
+	}
+	for _, distractor := range []string{"olympus-feature-thing", "other-rpi-x", "olympus-w-broken"} {
+		if got[distractor] {
+			t.Errorf("scan should not match distractor %q, got %v", distractor, paths)
+		}
+	}
+}
+
+func TestWorktree_porcelainEntryPath(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want string
+	}{
+		{"modified file", " M file.txt", "file.txt"},
+		{"added staged", "A  staged.go", "staged.go"},
+		{"untracked", "?? new.txt", "new.txt"},
+		{"rename", "R  old.go -> new.go", "new.go"},
+		{"rename with spaces", "R  old name.txt -> new name.txt", "new name.txt"},
+		{"runtime path", " M .beads/metadata.json", ".beads/metadata.json"},
+		{"empty line", "", ""},
+		{"too short", "X", ""},
+		{"trailing space trimmed", " M file.txt   ", "file.txt"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := porcelainEntryPath(tt.line)
+			if got != tt.want {
+				t.Errorf("porcelainEntryPath(%q) = %q, want %q", tt.line, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWorktree_isRuntimeOnlyPath(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{".beads/metadata.json", true},
+		{".beads/.local_version", true},
+		{".agents/ao/sessions/2026-05-06.jsonl", true},
+		{".agents/ao/baselines/snap.json", true},
+		{".agents/crank/wave-2-checkpoint.json", true},
+		{".agents/rpi/execution-packet.json", true},
+		{".agents/playbooks/foo.md", false},
+		{"src/main.go", false},
+		{"README.md", false},
+		{"beads/foo", false},
+		{".beadsx/spoofed", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := isRuntimeOnlyPath(tt.path)
+			if got != tt.want {
+				t.Errorf("isRuntimeOnlyPath(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWorktree_hasNonRuntimeDirtyEntries(t *testing.T) {
+	tests := []struct {
+		name      string
+		porcelain string
+		want      bool
+	}{
+		{"empty", "", false},
+		{"only runtime - beads only", " M .beads/metadata.json\n", false},
+		{"only runtime - mixed runtime", " M .beads/metadata.json\n?? .agents/ao/sessions/foo.jsonl\n", false},
+		{"single user file", " M src/main.go\n", true},
+		{"runtime plus user file", " M .beads/metadata.json\n M src/main.go\n", true},
+		{"rename to user path", "R  old.go -> src/new.go\n", true},
+		{"rename to runtime path", "R  old.json -> .beads/new.json\n", false},
+		{"untracked user file", "?? cool.go\n", true},
+		{"untracked runtime file", "?? .agents/ao/sessions/2026.jsonl\n", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hasNonRuntimeDirtyEntries(tt.porcelain)
+			if got != tt.want {
+				t.Errorf("hasNonRuntimeDirtyEntries(%q) = %v, want %v", tt.porcelain, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestWorktree_isWorktreeDirty_runtimeOnly is an L2 integration test: a real
+// git repo where the only modifications/additions are under runtime-only
+// paths should be reported clean.
+func TestWorktree_isWorktreeDirty_runtimeOnly(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	tmp := t.TempDir()
+	if err := exec.Command("git", "init", tmp).Run(); err != nil {
+		t.Fatalf("git init: %v", err)
+	}
+	for _, args := range [][]string{
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "Test"},
+		{"config", "commit.gpgsign", "false"},
+	} {
+		if err := exec.Command("git", append([]string{"-C", tmp}, args...)...).Run(); err != nil {
+			t.Fatalf("git config: %v", err)
+		}
+	}
+	// Initial commit: tracked .beads/metadata.json plus a real source file.
+	if err := os.MkdirAll(filepath.Join(tmp, ".beads"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, ".beads", "metadata.json"), []byte(`{"v":1}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "main.go"), []byte("package main\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := exec.Command("git", "-C", tmp, "add", ".").Run(); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmp, "commit", "-m", "init").Run(); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	// Modify the runtime file; add an untracked runtime file. Source unchanged.
+	if err := os.WriteFile(filepath.Join(tmp, ".beads", "metadata.json"), []byte(`{"v":2}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmp, ".agents", "ao", "sessions"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, ".agents", "ao", "sessions", "x.jsonl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	dirty, err := isWorktreeDirty(tmp)
+	if err != nil {
+		t.Fatalf("isWorktreeDirty: %v", err)
+	}
+	if dirty {
+		t.Error("expected runtime-only dirt to be reported clean")
+	}
+
+	// Now add a real source change — should flip to dirty.
+	if err := os.WriteFile(filepath.Join(tmp, "main.go"), []byte("package main\n// modified\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	dirty, err = isWorktreeDirty(tmp)
+	if err != nil {
+		t.Fatalf("isWorktreeDirty: %v", err)
+	}
+	if !dirty {
+		t.Error("expected real source change to be reported dirty")
+	}
+}

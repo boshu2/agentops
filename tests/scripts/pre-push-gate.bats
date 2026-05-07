@@ -36,6 +36,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-mutation-route-coverage.sh"
     make_stub "$FAKE_REPO/scripts/check-retrieval-manifest-paths.sh"
     make_stub "$FAKE_REPO/scripts/check-test-fixture-parity.sh"
+    make_stub "$FAKE_REPO/scripts/test-evolve-cycle-smoke.sh"
     make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh"
     make_stub "$FAKE_REPO/scripts/check-agents-write-surfaces.sh"
     make_stub "$FAKE_REPO/scripts/check-no-tracked-agents.sh"

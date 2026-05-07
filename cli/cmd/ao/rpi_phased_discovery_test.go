@@ -400,3 +400,96 @@ func TestParseCrankCompletion_CheckmarkAsClosed(t *testing.T) {
 		t.Errorf("parseCrankCompletion with checkmarks = %q, want %q", got, "DONE")
 	}
 }
+
+// --- captureCreatedEpicID (soc-uo44 / mc-m3.5-pre1) ---
+//
+// These tests verify that cycle binding uses an epic created DURING this cycle
+// rather than retroactively polling all open epics (which historically picked
+// stale unrelated epics like soc-scad and bound every cycle's gate to the wrong
+// tracker state). See .agents/research/2026-05-06-evolve-lifecycle-mid-session-discovery.md.
+
+// fakeBDWithCreatedAfter writes a /bin/sh fake-bd into tmp that responds to
+// `bd list ... --created-after <ts> --json` by emitting epicsAfter, and to
+// `bd list --type epic --status open --json` (no filter) by emitting epicsAll.
+// Returns the absolute path to the script.
+func fakeBDWithCreatedAfter(t *testing.T, epicsAll, epicsAfter string) string {
+	t.Helper()
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "fake-bd")
+	// The shell branches on the presence of --created-after. When that flag is
+	// passed, emit epicsAfter; otherwise emit epicsAll.
+	script := "#!/bin/sh\n" +
+		"for arg in \"$@\"; do\n" +
+		"  if [ \"$arg\" = \"--created-after\" ]; then\n" +
+		"    cat <<'AFTER'\n" + epicsAfter + "\nAFTER\n" +
+		"    exit 0\n" +
+		"  fi\n" +
+		"done\n" +
+		"cat <<'ALL'\n" + epicsAll + "\nALL\n"
+	if err := os.WriteFile(path, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestCaptureCreatedEpicID_PrefersThisRunsCreation(t *testing.T) {
+	// Discovery created soc-newepic during this cycle. captureCreatedEpicID
+	// must filter by --created-after and return ONLY epics created since.
+	epicsAll := `[{"id":"soc-stale","status":"open"},{"id":"soc-newepic","status":"open"}]`
+	epicsAfter := `[{"id":"soc-newepic","status":"open"}]`
+	bd := fakeBDWithCreatedAfter(t, epicsAll, epicsAfter)
+
+	got, err := captureCreatedEpicID(bd, "2026-05-06T14:00:00Z")
+	if err != nil {
+		t.Fatalf("captureCreatedEpicID: %v", err)
+	}
+	if got != "soc-newepic" {
+		t.Errorf("captureCreatedEpicID = %q, want %q", got, "soc-newepic")
+	}
+}
+
+func TestCaptureCreatedEpicID_IgnoresStaleOpenEpics(t *testing.T) {
+	// Tracker has stale unrelated epic (e.g. soc-scad) plus a freshly created one.
+	// captureCreatedEpicID's bd invocation includes --created-after, which the fake-bd
+	// honors by returning only fresh epics. Assert the stale id is NEVER returned.
+	epicsAll := `[{"id":"soc-scad","status":"open"},{"id":"soc-fresh","status":"open"}]`
+	epicsAfter := `[{"id":"soc-fresh","status":"open"}]`
+	bd := fakeBDWithCreatedAfter(t, epicsAll, epicsAfter)
+
+	got, err := captureCreatedEpicID(bd, "2026-05-06T14:00:00Z")
+	if err != nil {
+		t.Fatalf("captureCreatedEpicID: %v", err)
+	}
+	if got == "soc-scad" {
+		t.Fatalf("captureCreatedEpicID returned stale epic %q — must never bind to pre-cycle epics", got)
+	}
+	if got != "soc-fresh" {
+		t.Errorf("captureCreatedEpicID = %q, want %q", got, "soc-fresh")
+	}
+}
+
+func TestCaptureCreatedEpicID_NoEpicCreatedThisCycleReturnsEmpty(t *testing.T) {
+	// Legitimate case: cycle ran without creating an epic (e.g. tasklist mode).
+	// captureCreatedEpicID returns ("", err) for all-empty so callers can fall
+	// back to extractEpicID with a logged warning rather than failing the cycle.
+	epicsAll := `[{"id":"soc-stale","status":"open"}]`
+	epicsAfter := `[]`
+	bd := fakeBDWithCreatedAfter(t, epicsAll, epicsAfter)
+
+	got, _ := captureCreatedEpicID(bd, "2026-05-06T14:00:00Z")
+	// Empty result is the contract; some non-nil err is acceptable since
+	// parseLatestEpicIDFromJSON returns an error on all-empty entries.
+	if got != "" {
+		t.Errorf("captureCreatedEpicID with empty filtered list = %q, want \"\"", got)
+	}
+}
+
+func TestCaptureCreatedEpicID_RequiresSinceTimestamp(t *testing.T) {
+	// Empty since must error — without a filter we'd be back to retroactive poll
+	// behavior (the bug we're fixing).
+	bd := fakeBDWithCreatedAfter(t, `[]`, `[]`)
+	_, err := captureCreatedEpicID(bd, "")
+	if err == nil {
+		t.Error("captureCreatedEpicID with empty since timestamp returned nil error; must require since")
+	}
+}

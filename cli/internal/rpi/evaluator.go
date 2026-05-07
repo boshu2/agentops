@@ -27,19 +27,49 @@ func PhaseNameForNumber(phaseNum int) string {
 	}
 }
 
+// gateVerdictIsStructurallyPassing reports whether the gate verdict represents
+// a positive structural signal — the orchestrator-level check (e.g. crank
+// completion, validation report parse) explicitly succeeded. When this is true,
+// the agent transcript heuristic must NOT be used to downgrade the result.
+//
+// Historical bug (soc-3mtv): the transcript regex set was narrow (looked for
+// "PASSED" / "tests passed" / "✓") and missed legitimate green test output that
+// reported in different shapes, producing reward < 0.55 → WARN even when the
+// orchestrator confirmed the cycle's work-bead was closed and validation had
+// passed. The fix: trust the structural gate verdict over the transcript
+// heuristic whenever the structural signal is positive.
+func gateVerdictIsStructurallyPassing(gateVerdict string) bool {
+	switch strings.ToUpper(strings.TrimSpace(gateVerdict)) {
+	case "PASS", "DONE":
+		return true
+	}
+	return false
+}
+
 // PhaseEvaluatorVerdict computes the evaluator verdict from gate verdict,
 // transcript reward, tracker mode, and phase number.
+//
+// Decision order:
+//  1. FAIL/BLOCKED gate is authoritative → FAIL.
+//  2. PASS/DONE gate is authoritative → PASS (transcript heuristic does NOT
+//     downgrade; see gateVerdictIsStructurallyPassing for rationale).
+//  3. WARN/PARTIAL/SKIP gate → WARN.
+//  4. No structural signal: fall back to transcript reward heuristic.
 func PhaseEvaluatorVerdict(phaseNum int, trackerMode, gateVerdict string, hasTranscript bool, reward float64) string {
 	normalized := strings.ToUpper(strings.TrimSpace(gateVerdict))
 	switch normalized {
 	case "FAIL", "BLOCKED":
 		return "FAIL"
 	}
-	if hasTranscript && reward < 0.25 {
-		return "FAIL"
+	if gateVerdictIsStructurallyPassing(normalized) {
+		return "PASS"
 	}
 	if normalized == "WARN" || normalized == "PARTIAL" || normalized == "SKIP" {
 		return "WARN"
+	}
+	// No structural signal — fall back to transcript heuristic.
+	if hasTranscript && reward < 0.25 {
+		return "FAIL"
 	}
 	if phaseNum == 1 && trackerMode == "tasklist" {
 		return "WARN"
@@ -105,7 +135,12 @@ func DefaultEvaluatorFindings(phaseNum int, trackerMode, gateVerdict string, has
 		})
 	}
 
-	if hasTranscript {
+	// Suppress transcript-reward findings when the gate is structurally passing
+	// (soc-3mtv). The transcript regex heuristic is too narrow to be authoritative;
+	// it produced false-positive "weak completion" findings on green cycles whose
+	// test output didn't match the regex set. When the orchestrator-level gate
+	// says PASS/DONE, that's the authoritative signal.
+	if hasTranscript && !gateVerdictIsStructurallyPassing(gateVerdict) {
 		switch {
 		case reward < 0.25:
 			findings = append(findings, Finding{

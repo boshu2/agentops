@@ -18,6 +18,8 @@ output_contract: ".agents/learnings/*.md, .agents/patterns/*.md"
 ---
 # Forge Skill
 
+> **Cross-vendor analog:** the capture half of Anthropic Managed Agents' memory + dreaming pair (May 2026). Forge mines transcripts; `/dream` curates between sessions. Off the API, local, cross-vendor.
+
 **Typically runs automatically via SessionEnd hook.**
 
 Extract knowledge from session transcripts.

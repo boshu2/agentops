@@ -249,38 +249,92 @@ func findStaleRPISiblingWorktrees(repoRoot string, now time.Time, staleAfter tim
 	return candidates, liveWorktreeRuns, skippedDirty, nil
 }
 
+// findRPISiblingWorktreePaths returns sibling worktree paths that one of
+// AgentOps's orchestrators may have created. Multiple naming schemes are
+// scanned because different orchestrators choose different layouts:
+//
+//	<repo>-rpi-<id>             ao rpi phased worktrees
+//	<repo>-w<N>-<slice>         agentops:crank wave isolation (sibling form)
+//	<repo>-d-<slice>            agentops:crank discovery slice (sibling form)
+//	<repo>-worktrees/wave-<x>   agentops:crank documented path
 func findRPISiblingWorktreePaths(repoRoot string) ([]string, error) {
 	base := filepath.Base(repoRoot)
 	parent := filepath.Dir(repoRoot)
-	pattern := filepath.Join(parent, base+"-rpi-*")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
+	patterns := []string{
+		filepath.Join(parent, base+"-rpi-*"),
+		filepath.Join(parent, base+"-w[0-9]*-*"),
+		filepath.Join(parent, base+"-d-*"),
+		filepath.Join(parent, base+"-worktrees", "wave-*"),
 	}
 
+	seen := make(map[string]struct{})
 	var paths []string
-	for _, match := range matches {
-		info, err := os.Stat(match)
-		if err != nil || !info.IsDir() {
-			continue
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, err
 		}
-		paths = append(paths, match)
+		for _, match := range matches {
+			info, err := os.Stat(match)
+			if err != nil || !info.IsDir() {
+				continue
+			}
+			if _, ok := seen[match]; ok {
+				continue
+			}
+			seen[match] = struct{}{}
+			paths = append(paths, match)
+		}
 	}
 	sort.Strings(paths)
 	return paths, nil
 }
 
+// waveSiblingPattern matches the per-worker suffix for crank wave worktrees,
+// e.g. "w3-zeus" or "w12-formula". Used by runIDFromWorktreePath.
+var waveSiblingPattern = regexp.MustCompile(`^w[0-9]+-.+$`)
+
+// runIDFromWorktreePath extracts a stable run identifier from a managed
+// worktree path. Returns "" if the path doesn't match any known orchestrator
+// naming scheme.
 func runIDFromWorktreePath(repoRoot, worktreePath string) string {
-	base := filepath.Base(repoRoot) + "-rpi-"
+	parent := filepath.Dir(repoRoot)
+	base := filepath.Base(repoRoot)
+
+	// Wave-pack pattern: <parent>/<base>-worktrees/wave-<slug>
+	if filepath.Dir(worktreePath) == filepath.Join(parent, base+"-worktrees") {
+		name := filepath.Base(worktreePath)
+		if strings.HasPrefix(name, "wave-") && len(name) > len("wave-") {
+			return name
+		}
+		return ""
+	}
+
+	// Sibling patterns: <parent>/<base>-{rpi|w<N>|d}-<...>
 	name := filepath.Base(worktreePath)
-	if !strings.HasPrefix(name, base) {
+	repoPrefix := base + "-"
+	if !strings.HasPrefix(name, repoPrefix) {
 		return ""
 	}
-	runID := strings.TrimPrefix(name, base)
-	if runID == "" {
+	suffix := strings.TrimPrefix(name, repoPrefix)
+	if suffix == "" {
 		return ""
 	}
-	return runID
+
+	if strings.HasPrefix(suffix, "rpi-") {
+		id := strings.TrimPrefix(suffix, "rpi-")
+		if id == "" {
+			return ""
+		}
+		return id
+	}
+	if strings.HasPrefix(suffix, "d-") && len(suffix) > len("d-") {
+		return suffix
+	}
+	if waveSiblingPattern.MatchString(suffix) {
+		return suffix
+	}
+	return ""
 }
 
 func worktreeReferenceTime(worktreePath string) time.Time {
@@ -305,14 +359,71 @@ func worktreeReferenceTime(worktreePath string) time.Time {
 	return best
 }
 
+// runtimeOnlyPathPrefixes are paths that orchestrators (ao, bd,
+// agentops:crank) modify as runtime state, not as user work-in-progress.
+// Dirty entries confined to these prefixes don't represent meaningful
+// uncommitted changes and shouldn't block worktree gc.
+var runtimeOnlyPathPrefixes = []string{
+	".beads/",
+	".agents/ao/sessions/",
+	".agents/ao/baselines/",
+	".agents/ao/goals/baselines/",
+	".agents/crank/",
+	".agents/rpi/",
+}
+
 func isWorktreeDirty(worktreePath string) (bool, error) {
-	cmd := exec.Command("git", "-C", worktreePath, "status", "--porcelain")
+	// -uall expands untracked directories so each file appears with its
+	// full path. Required for hasNonRuntimeDirtyEntries to apply the
+	// runtime-prefix filter accurately (e.g. `.agents/ao/sessions/x.jsonl`
+	// instead of just `.agents/`).
+	cmd := exec.Command("git", "-C", worktreePath, "status", "--porcelain", "-uall")
 	cmd.Env = gitDiscoveryEnv()
 	out, err := cmd.Output()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("git status --porcelain in %s: %w", worktreePath, err)
 	}
-	return strings.TrimSpace(string(out)) != "", nil
+	return hasNonRuntimeDirtyEntries(string(out)), nil
+}
+
+// hasNonRuntimeDirtyEntries reports whether git-status-porcelain output
+// contains at least one entry whose path is NOT confined to a runtime-only
+// directory. Empty/blank output is treated as clean.
+func hasNonRuntimeDirtyEntries(porcelainOutput string) bool {
+	for _, line := range strings.Split(porcelainOutput, "\n") {
+		path := porcelainEntryPath(line)
+		if path == "" {
+			continue
+		}
+		if !isRuntimeOnlyPath(path) {
+			return true
+		}
+	}
+	return false
+}
+
+// porcelainEntryPath extracts the affected path from one line of git
+// status --porcelain output. Returns "" for blank or malformed lines.
+// For renames ("R  old -> new"), returns the destination path.
+func porcelainEntryPath(line string) string {
+	// Format: "XY path" — XY is two status chars, then a space, then path.
+	if len(line) < 4 {
+		return ""
+	}
+	rest := line[3:]
+	if idx := strings.Index(rest, " -> "); idx >= 0 {
+		rest = rest[idx+4:]
+	}
+	return strings.TrimSpace(rest)
+}
+
+func isRuntimeOnlyPath(path string) bool {
+	for _, prefix := range runtimeOnlyPathPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func findStaleRPITmuxSessions(now time.Time, staleAfter time.Duration, activeRuns, liveWorktreeRuns map[string]bool) ([]tmuxSessionMeta, error) {

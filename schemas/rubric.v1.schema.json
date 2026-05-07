@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/boshu2/agentops/schemas/rubric.v1.schema.json",
+  "title": "AgentOps Outcome Rubric",
+  "description": "Rubric consumed by `ao outcomes run --rubric=<path>`. Defines pass criteria, weights, and retry budget for a separate-context grader loop. See .agents/specs/ao-outcomes.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["criteria", "pass_threshold"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Always 1 for this file."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable rubric name (for logs and result JSON)."
+    },
+    "description": {
+      "type": "string",
+      "description": "What this rubric grades. Optional but recommended."
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List of grading criteria. Grader scores each independently; the weighted sum determines pass/fail.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "weight"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "description": "Stable identifier for this criterion (lowercase, snake-or-kebab)."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What this criterion measures, in plain English. The grader sees this verbatim."
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Weight in the [0,1] range. Sum of all weights should be 1.0 (validated)."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["objective", "subjective"],
+            "default": "subjective",
+            "description": "objective = mechanically verifiable (test passes, file exists); subjective = grader judgment (copy quality, brand voice)."
+          }
+        }
+      }
+    },
+    "pass_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.8,
+      "description": "Minimum weighted score (0.0-1.0) required to pass. Default 0.8."
+    },
+    "retry_budget": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 3,
+      "description": "Maximum number of target re-runs before giving up. Default 3, hard cap 10."
+    },
+    "grader_timeout_seconds": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 600,
+      "default": 300,
+      "description": "Per-grader-invocation timeout in seconds. Default 300 (5 min)."
+    }
+  }
+}

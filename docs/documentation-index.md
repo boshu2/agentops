@@ -47,6 +47,9 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
 - [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the 2026-05-05 Bushido standalone JSM skill set
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
+- [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) — Scaffold or absorb new SKILL.md files against the unified template
+- [skill-auditor](https://github.com/boshu2/agentops/blob/main/skills/skill-auditor/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (15 checks)
+- [Tier-S Audit Pilot 2026-05-06](https://github.com/boshu2/agentops/blob/main/.agents/audits/2026-05-06-tier-s-pilot.md) — Empirical baseline of 5 Tier-S skills against the auditor
 - [Claude Code Skills Docs](https://code.claude.com/docs/en/skills) — Official Claude Code skills documentation (upstream)
 
 ## Workflows
@@ -85,6 +88,11 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Context Packet](context-packet.md) — Agent context assembly specification
 - [Strategic Direction](strategic-direction.md) — Product strategy and roadmap
 - [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points
+
+## Patterns
+
+- [`.agents/` Hygiene Contract](patterns/agents-hygiene-contract.md) — Five-ring layering for taking native ownership of structural surfaces
+- [Completion Notifications](patterns/completion-notifications.md) — Off-API webhook-equivalent patterns (GitHub Actions, post-commit hook, daemon log tail)
 
 ## Standards
 
@@ -235,6 +243,10 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
 - [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
+- [`ao outcomes` Contract](contracts/ao-outcomes.md) — Rubric → target → grader → retry loop spec for `ao outcomes run`; off-API analog of Anthropic Managed Agents Outcomes
+- [`ao watch` Contract](contracts/ao-watch.md) — Live worker-event stream spec for `ao watch --follow`; off-API analog of Anthropic Managed Agents Console trace
+- [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for `ao outcomes run` rubric files
+- [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
 - [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification

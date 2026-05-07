@@ -10,7 +10,7 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is the context compiler — compile context, gate output, compound knowledge across Claude, Codex, Cursor, and OpenCode.**
+**AgentOps is a context compiler + validation harness with cross-runtime skill packaging. The daemon is the always-on dream.** Compile context on the way in, gate output on the way out, schedule dream / evolve / compile / defrag to run unattended on whatever cadence you set. Works across Claude, Codex, Cursor, and OpenCode.
 
 [Install](#install) · [See It Work](#see-it-work) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 

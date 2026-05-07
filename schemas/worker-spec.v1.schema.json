@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/boshu2/agentops/schemas/worker-spec.v1.schema.json",
+  "title": "AgentOps Worker Spec",
+  "description": "Per-worker model + tool + prompt isolation spec consumed by /crank and /swarm at spawn time. See skills/crank/references/worker-specs.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Always 1 for this file."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "Worker role identifier (e.g. `spec-author`, `test-writer`, `impl-claude`)."
+    },
+    "model": {
+      "type": "string",
+      "enum": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5",
+        "gpt-5-codex",
+        "gpt-5",
+        "local-ollama",
+        "local-llamacpp",
+        "inherit"
+      ],
+      "description": "Model identifier for this worker. `inherit` uses the lead agent's model. `local-ollama` and `local-llamacpp` require an endpoint set via env or runtime config."
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Read",
+          "Write",
+          "Edit",
+          "Bash",
+          "Grep",
+          "Glob",
+          "WebFetch",
+          "WebSearch",
+          "Agent",
+          "AskUserQuestion",
+          "TaskCreate",
+          "TaskUpdate",
+          "TaskList",
+          "TaskGet"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "Allowed tool list for this worker. Empty array means no tools (read-only reasoning). Omit to inherit lead's tool set."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Path to a prompt template file (relative to repo root). Worker spawn prepends this prompt to the per-task instructions."
+    },
+    "effort": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "default": "medium",
+      "description": "Reasoning effort. low = haiku-tier, medium = sonnet-tier, high = opus-tier. Cross-checked against `model` at spawn time."
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 3600,
+      "default": 600,
+      "description": "Per-task timeout for this worker. Default 600 (10 min)."
+    }
+  }
+}
