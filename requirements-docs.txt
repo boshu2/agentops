@@ -16,4 +16,4 @@ mkdocs-git-revision-date-localized-plugin==1.2.9
 pymdown-extensions==10.21.2
 
 # Link checking
-linkchecker==10.5.0
+linkchecker==10.6.0
