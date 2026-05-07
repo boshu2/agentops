@@ -329,7 +329,19 @@ func promotionDestinationName(sourceRig, sourceIdentity, contentHash string) str
 	if base == "" || base == "." {
 		base = "artifact.md"
 	}
-	name := sanitizeFilenamePart(sourceRig) + "-" + base
+	rig := sanitizeFilenamePart(sourceRig)
+	// Strip any pre-existing rig prefix from base so the promotion path stays
+	// idempotent. Without this, promoting an already-promoted artifact (or one
+	// whose filename was corrupted by a prior buggy pass) would re-prepend the
+	// rig prefix on every run, producing names like
+	// "<rig>-<rig>-<rig>-foo.md". Trims any number of consecutive prefixes.
+	for rig != "" && rig != "unknown" && strings.HasPrefix(base, rig+"-") {
+		base = strings.TrimPrefix(base, rig+"-")
+	}
+	if base == "" {
+		base = "artifact.md"
+	}
+	name := rig + "-" + base
 	if len(name) <= promotedDestinationNameLimit {
 		return name
 	}
