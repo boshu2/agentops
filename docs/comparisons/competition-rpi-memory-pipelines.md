@@ -402,9 +402,9 @@ Capability mapping against AgentOps:
 | Managed Agents | AgentOps equivalent | Status |
 |---|---|---|
 | Dreaming | `/dream` + `ao overnight` + nightly CI dream-cycle proof job | Shipped |
-| Outcomes (rubric → grader → iterate) | `/vibe` + `/council` + `/pre-mortem` (judges as separate-context graders) → unifying `ao outcomes run` verb in flight | Partial |
+| Outcomes (rubric → grader → iterate) | Shipped at three scopes: project (`GOALS.md` + `ao goals measure` per-gate subprocesses + `/evolve` retry loop), plan (`/pre-mortem` council judges), code (`/vibe` council judges). Each judge/gate runs in a separate context; `/evolve` iterates worst-failing gate until pass. | Shipped (proof-point A/B counter-stat is the remaining work, not the capability) |
 | Multiagent orchestration | `/swarm` + `/crank` + `/rpi` + worktree isolation | Shipped (per-worker tool isolation in flight) |
-| Webhooks (completion notification) | GitHub Actions / git hooks; pattern doc in flight | Doc-only, off-API users already have the substrate |
+| Webhooks (completion notification) | GitHub Actions / git hooks; pattern doc shipped at `docs/patterns/completion-notifications.md` | Shipped via existing CI substrate (off-API users already have the infrastructure) |
 
 Competitive read:
 
