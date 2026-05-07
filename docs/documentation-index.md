@@ -89,6 +89,11 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Strategic Direction](strategic-direction.md) — Product strategy and roadmap
 - [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points
 
+## Patterns
+
+- [`.agents/` Hygiene Contract](patterns/agents-hygiene-contract.md) — Five-ring layering for taking native ownership of structural surfaces
+- [Completion Notifications](patterns/completion-notifications.md) — Off-API webhook-equivalent patterns (GitHub Actions, post-commit hook, daemon log tail)
+
 ## Standards
 
 - [Standards Overview](standards/README.md) — Coding standards index
