@@ -1,0 +1,54 @@
+# feedback-drain-hourly.yaml — hourly MemRL feedback-loop drain
+#
+# What it does:
+#   Fires `ao feedback-loop --drain` once an hour. The drain walks
+#   .agents/ao/citations.jsonl, finds entries with the zero-time
+#   feedback_at sentinel (citations that fired but never had their
+#   reward propagated), applies a neutral reward + α-update via the
+#   existing UpdateLearningUtility code, and clears the sentinel so the
+#   row stops haunting the MemRL health check. Idempotent: re-running
+#   drains only what's still unfed.
+#
+# Why schedule it:
+#   The substrate audit (soc-sx99 epic) found 1,508 of 3,735 citations
+#   (40%) carry feedback_at = 0001-01-01. The close-loop fires but a
+#   large fraction of citation events never produce a utility update,
+#   so MemRL effectively trains on a fraction of its real corpus.
+#   Hourly drain keeps the residual zero-sentinel rate below the 5%
+#   health-gate threshold without piling work on session boundaries.
+#
+# Cadence: hourly at :15 — offset from forge-daily / dream-nightly so
+# it doesn't compete for the daemon worker pool when the heavy jobs
+# kick off.
+#
+# Wire up:
+#   ao schedule add --file examples/schedules/feedback-drain-hourly.yaml
+#
+# Inspect runs:
+#   ao watch
+#   ao schedule list
+#   scripts/check-memrl-health.sh   # verifies < 5% residual sentinels
+#
+# Manual fire (no daemon):
+#   ao feedback-loop --drain                  # apply
+#   ao feedback-loop --drain --dry-run        # count, don't write
+#   ao feedback-loop --drain --drain-reward 0.5 --alpha 0.1
+#
+# Note on job_type:
+#   `skill.invoke` is the closest existing daemon executor for "run an
+#   ao subcommand on a cron". Until a native `feedback.drain` executor
+#   lands, operators who want to drive this from agentopsd should use
+#   the form below; operators on plain cron can call the CLI directly
+#   ("15 * * * * cd <repo> && ao feedback-loop --drain").
+
+schedules:
+  - name: feedback-drain-hourly
+    cron: "15 * * * *"
+    job_type: skill.invoke
+    payload:
+      skill_name: "feedback-loop"
+      args: "--drain"
+    timeout: "10m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

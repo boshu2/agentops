@@ -52,7 +52,16 @@ var (
 	feedbackLoopTranscript   string
 	feedbackLoopAlpha        float64
 	feedbackLoopCitationType string
+	feedbackLoopDrain        bool
+	feedbackLoopDrainReward  float64
 )
+
+// defaultDrainReward is the neutral reward applied to citations whose
+// feedback_at is the zero-time sentinel — i.e. citations that fired but
+// never received an outcome update. 0.5 is the same neutral midpoint used
+// for InitialUtility, so a single drain pass nudges utilities toward the
+// long-run prior without spuriously rewarding or punishing learnings.
+const defaultDrainReward = 0.5
 
 var validFeedbackCitationTypes = lifecycle.ValidFeedbackLoopCitationTypes
 
@@ -66,6 +75,8 @@ func init() {
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopCitationType, "citation-type", "retrieved", "Filter citations by type (retrieved, applied, all)")
 	_ = feedbackLoopCmd.RegisterFlagCompletionFunc("citation-type", staticCompletionFunc("retrieved", "applied", "all"))
+	feedbackLoopCmd.Flags().BoolVar(&feedbackLoopDrain, "drain", false, "Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)")
+	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopDrainReward, "drain-reward", defaultDrainReward, "Neutral reward applied to drained citations (0.0-1.0)")
 }
 
 // annealedAlpha computes a decaying learning rate.
@@ -247,6 +258,10 @@ func validateFeedbackCitationType(citationType string) (string, error) {
 }
 
 func runFeedbackLoop(cmd *cobra.Command, args []string) error {
+	if feedbackLoopDrain {
+		return runFeedbackLoopDrain()
+	}
+
 	sessionID, err := resolveFeedbackLoopSessionID(feedbackLoopSessionID)
 	if err != nil {
 		return err
@@ -571,4 +586,206 @@ func executeBatchFeedbackSessions(cmd *cobra.Command, sessionIDs []string) int {
 // loadFeedbackEvents reads all feedback events from the log.
 func loadFeedbackEvents(baseDir string) ([]FeedbackEvent, error) {
 	return lifecycle.LoadFeedbackLoopEvents(baseDir)
+}
+
+// drainOptions controls drainUnfedCitations.
+type drainOptions struct {
+	Reward float64
+	Alpha  float64
+	DryRun bool
+}
+
+// drainStats summarises a drain pass.
+type drainStats struct {
+	Total      int // total citations in store
+	UnfedFound int // citations whose FeedbackAt is the zero-time sentinel
+	Updated    int // unique learnings whose utility was updated
+	Failed     int // unique learnings drain attempted but couldn't update
+	MarkedFed  int // citation rows rewritten with FeedbackAt now non-zero
+}
+
+// isUnfedCitation reports whether a citation is still carrying the
+// zero-time feedback_at sentinel (the substrate audit's 1,508/3,735
+// stuck rows are exactly this shape).
+func isUnfedCitation(c types.CitationEvent) bool {
+	return c.FeedbackAt.IsZero() && !c.FeedbackGiven
+}
+
+// drainUnfedCitations is the entry point for `ao feedback-loop --drain`.
+// It walks .agents/ao/citations.jsonl, applies a neutral reward + α-update
+// to every learning cited by an unfed citation, and clears the zero-time
+// sentinel on the citation rows themselves. Idempotent: re-running drains
+// only what's still unfed.
+func drainUnfedCitations(baseDir string, opts drainOptions) (drainStats, error) {
+	citations, err := ratchet.LoadCitations(baseDir)
+	if err != nil {
+		return drainStats{}, fmt.Errorf("load citations for drain: %w", err)
+	}
+	stats := drainStats{Total: len(citations)}
+
+	unfed := collectUnfedCitations(citations)
+	stats.UnfedFound = len(unfed)
+	if stats.UnfedFound == 0 {
+		return stats, nil
+	}
+
+	if opts.DryRun {
+		return stats, nil
+	}
+
+	uniqueUnfed := deduplicateCitations(baseDir, unfed)
+	updatedKeys, updated, failed := applyDrainUpdates(baseDir, uniqueUnfed, opts)
+	stats.Updated = updated
+	stats.Failed = failed
+
+	marked, err := markDrainedCitations(baseDir, citations, updatedKeys, opts.Reward)
+	if err != nil {
+		return stats, err
+	}
+	stats.MarkedFed = marked
+
+	return stats, nil
+}
+
+// collectUnfedCitations returns the subset of citations carrying the
+// zero-time feedback_at sentinel.
+func collectUnfedCitations(citations []types.CitationEvent) []types.CitationEvent {
+	unfed := make([]types.CitationEvent, 0, len(citations))
+	for _, c := range citations {
+		if !isUnfedCitation(c) {
+			continue
+		}
+		unfed = append(unfed, c)
+	}
+	return unfed
+}
+
+// applyDrainUpdates calls updateLearningUtility for each unique unfed
+// citation, returning the set of (artifact|namespace) keys that were
+// successfully updated and the updated/failed counts.
+func applyDrainUpdates(baseDir string, unique []types.CitationEvent, opts drainOptions) (map[string]bool, int, int) {
+	updatedKeys := make(map[string]bool, len(unique))
+	updated, failed := 0, 0
+
+	for _, citation := range unique {
+		artifactPath := canonicalArtifactPath(baseDir, citation.ArtifactPath)
+		learningPath, err := findLearningFile(baseDir, filepath.Base(artifactPath))
+		if err != nil {
+			if _, statErr := os.Stat(artifactPath); statErr == nil {
+				learningPath = artifactPath
+			} else {
+				VerbosePrintf("drain: learning not found for %s: %v\n", artifactPath, err)
+				failed++
+				continue
+			}
+		}
+
+		if !isPrimaryMetricNamespace(citation.MetricNamespace) {
+			// Non-primary namespaces are audit-only — clear the sentinel
+			// without moving utility, so they stop showing up in the
+			// MemRL health gate's stuck-citation count.
+			updatedKeys[citationFeedbackNamespaceKey(baseDir, learningPath, citation.MetricNamespace)] = true
+			continue
+		}
+
+		if _, _, err := updateLearningUtility(learningPath, opts.Reward, opts.Alpha); err != nil {
+			VerbosePrintf("drain: failed to update %s: %v\n", learningPath, err)
+			failed++
+			continue
+		}
+		updatedKeys[citationFeedbackNamespaceKey(baseDir, learningPath, citation.MetricNamespace)] = true
+		updated++
+	}
+
+	return updatedKeys, updated, failed
+}
+
+// markDrainedCitations rewrites citations.jsonl, stamping every unfed row
+// whose (artifact|namespace) key was drained with FeedbackGiven=true and
+// the current time, so a re-run of drain skips it.
+func markDrainedCitations(baseDir string, citations []types.CitationEvent, updatedKeys map[string]bool, reward float64) (int, error) {
+	if len(updatedKeys) == 0 {
+		return 0, nil
+	}
+	now := time.Now()
+	marked := 0
+	for i := range citations {
+		if !isUnfedCitation(citations[i]) {
+			continue
+		}
+		canonPath := canonicalArtifactPath(baseDir, citations[i].ArtifactPath)
+		key := citationFeedbackNamespaceKey(baseDir, canonPath, citations[i].MetricNamespace)
+		if !updatedKeys[key] {
+			continue
+		}
+		citations[i].FeedbackGiven = true
+		citations[i].FeedbackReward = reward
+		citations[i].FeedbackAt = now
+		marked++
+	}
+	if marked == 0 {
+		return 0, nil
+	}
+	if err := writeCitations(baseDir, citations); err != nil {
+		return 0, fmt.Errorf("rewrite citations after drain: %w", err)
+	}
+	return marked, nil
+}
+
+// runFeedbackLoopDrain is the cobra entry point reached when --drain is set.
+func runFeedbackLoopDrain() error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+
+	if feedbackLoopDrainReward < 0 || feedbackLoopDrainReward > 1 {
+		return fmt.Errorf("--drain-reward must be in [0,1], got %f", feedbackLoopDrainReward)
+	}
+
+	opts := drainOptions{
+		Reward: feedbackLoopDrainReward,
+		Alpha:  feedbackLoopAlpha,
+		DryRun: GetDryRun(),
+	}
+
+	stats, err := drainUnfedCitations(cwd, opts)
+	if err != nil {
+		return err
+	}
+	return reportDrainStats(stats, opts)
+}
+
+// reportDrainStats prints the drain summary in the active output format.
+func reportDrainStats(stats drainStats, opts drainOptions) error {
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(map[string]any{
+			"total_citations": stats.Total,
+			"unfed_found":     stats.UnfedFound,
+			"updated":         stats.Updated,
+			"failed":          stats.Failed,
+			"marked_fed":      stats.MarkedFed,
+			"dry_run":         opts.DryRun,
+			"reward":          opts.Reward,
+			"alpha":           opts.Alpha,
+		})
+	}
+
+	prefix := ""
+	if opts.DryRun {
+		prefix = "[dry-run] "
+	}
+	fmt.Printf("%sDrain summary:\n", prefix)
+	fmt.Printf("  Total citations: %d\n", stats.Total)
+	fmt.Printf("  Unfed (zero feedback_at): %d\n", stats.UnfedFound)
+	fmt.Printf("  Learnings updated: %d\n", stats.Updated)
+	fmt.Printf("  Failed: %d\n", stats.Failed)
+	fmt.Printf("  Citations marked fed: %d\n", stats.MarkedFed)
+	if stats.Total > 0 {
+		zeroRate := float64(stats.UnfedFound-stats.MarkedFed) / float64(stats.Total) * 100
+		fmt.Printf("  Residual zero-sentinel rate: %.2f%%\n", zeroRate)
+	}
+	return nil
 }

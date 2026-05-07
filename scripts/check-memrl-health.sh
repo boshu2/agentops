@@ -79,6 +79,38 @@ else
     fail "Dedup command missing (cli/cmd/ao/dedup.go)"
 fi
 
+# ── Check G: Citation feedback_at zero-sentinel rate < 5% ──
+# Substrate audit (soc-sx99) found 1,508/3,735 citations (40%) with
+# feedback_at = 0001-01-01 — the close-loop fires but never propagates a
+# utility update for those rows. `ao feedback-loop --drain` clears the
+# sentinel; this check fails the gate if the residual rate is ≥ 5%.
+CITATIONS="$ROOT/.agents/ao/citations.jsonl"
+ZERO_RATE_THRESHOLD_BP=500   # 5.00% expressed in basis points
+if [[ -f "$CITATIONS" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+        total=$(wc -l < "$CITATIONS" | tr -d ' ')
+        if [[ "$total" -gt 0 ]]; then
+            # Count rows whose feedback_at is missing or the zero-time sentinel.
+            zero=$(jq -rc '. as $c | ($c.feedback_at // "") | (. == "" or . == "0001-01-01T00:00:00Z" or startswith("0001-01-01"))' \
+                "$CITATIONS" 2>/dev/null | grep -c '^true$' || true)
+            # bash arithmetic only: rate_bp = zero * 10000 / total
+            rate_bp=$(( zero * 10000 / total ))
+            rate_pct=$(awk -v bp="$rate_bp" 'BEGIN{printf "%.2f", bp/100}')
+            if [[ "$rate_bp" -lt "$ZERO_RATE_THRESHOLD_BP" ]]; then
+                pass "Citation feedback_at zero-sentinel rate ${rate_pct}% (< 5.00%, ${zero}/${total})"
+            else
+                fail "Citation feedback_at zero-sentinel rate ${rate_pct}% (>= 5.00%, ${zero}/${total}) — run: ao feedback-loop --drain"
+            fi
+        else
+            pass "Citation log empty — no zero-sentinel rate to check"
+        fi
+    else
+        pass "Citation feedback_at zero-sentinel check skipped (jq not available)"
+    fi
+else
+    pass "No citations.jsonl yet — zero-sentinel check vacuously OK"
+fi
+
 # ── Summary ──
 echo ""
 if [[ "$failures" -gt 0 ]]; then
