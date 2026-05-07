@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // RPIRunRequest is the per-job input handed to the runner function injected
@@ -36,9 +37,17 @@ type RPIRunResult struct {
 type RPIRunFunc func(ctx context.Context, req RPIRunRequest) (RPIRunResult, error)
 
 // RPIRunExecutorOptions configures NewRPIRunExecutor.
+//
+// Store/Clock/Actor are optional. When Store is non-nil, RunJob emits agent-update
+// ledger events on phase boundaries (phase_start before the runner; phase_complete
+// + phase_handoff after) per soc-y0ct.2. When Store is nil, no events are emitted —
+// preserves back-compat with sub-wave 5a tests that injected a fake runner only.
 type RPIRunExecutorOptions struct {
-	Run  RPIRunFunc
-	Root string
+	Run   RPIRunFunc
+	Root  string
+	Store *Store
+	Clock func() time.Time
+	Actor string
 }
 
 // RPIRunExecutor is a JobExecutor for rpi.run that calls the injected runner
@@ -46,13 +55,17 @@ type RPIRunExecutorOptions struct {
 // CLI-fallback wire-up. Mirrors DreamExecutor's function-pointer pattern.
 //
 // soc-bcrn.3.6 (E3.W4 sub-5a): see RPIRunRequest for context.
+// soc-y0ct.2: emits agent-update events on phase boundaries when store != nil.
 type RPIRunExecutor struct {
-	run  RPIRunFunc
-	root string
+	run   RPIRunFunc
+	root  string
+	store *Store
+	now   func() time.Time
+	actor string
 }
 
-// NewRPIRunExecutor constructs an RPIRunExecutor. Both the runner function and
-// the root cwd are required.
+// NewRPIRunExecutor constructs an RPIRunExecutor. Run and Root are required;
+// Store/Clock/Actor are optional and gate agent-update emission.
 func NewRPIRunExecutor(opts RPIRunExecutorOptions) (*RPIRunExecutor, error) {
 	if opts.Run == nil {
 		return nil, errors.New("rpi run executor: Run is required")
@@ -60,7 +73,15 @@ func NewRPIRunExecutor(opts RPIRunExecutorOptions) (*RPIRunExecutor, error) {
 	if strings.TrimSpace(opts.Root) == "" {
 		return nil, errors.New("rpi run executor: Root is required")
 	}
-	return &RPIRunExecutor{run: opts.Run, root: opts.Root}, nil
+	now := opts.Clock
+	if now == nil {
+		now = func() time.Time { return time.Now().UTC() }
+	}
+	actor := strings.TrimSpace(opts.Actor)
+	if actor == "" {
+		actor = "agentopsd-rpi-run"
+	}
+	return &RPIRunExecutor{run: opts.Run, root: opts.Root, store: opts.Store, now: now, actor: actor}, nil
 }
 
 // JobTypes reports the queue job types this executor handles.
@@ -87,20 +108,85 @@ func (e *RPIRunExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecu
 	if err := validateRPIRunFullRun(spec); err != nil {
 		return JobExecutionResult{Artifacts: artifacts}, err
 	}
+
+	queue := e.queueOrNil()
+	e.emitAgentUpdate(claim, queue, NewAgentUpdatePhaseStartEvent(AgentUpdatePhaseStart{
+		PhaseName: "rpi.run",
+		RunID:     spec.RunID,
+		Timestamp: e.now().UTC().Format(time.RFC3339Nano),
+	}))
+
+	startedAt := e.now()
 	res, err := e.run(ctx, RPIRunRequest{Spec: spec, Claim: claim, Root: e.root})
-	if err != nil {
-		// Merge any runner-emitted artifacts even on failure so operators can
-		// inspect partial outputs (e.g., the run log path the runner already
-		// opened) alongside the failure record.
-		for k, v := range res.Artifacts {
-			artifacts[k] = v
-		}
-		return JobExecutionResult{Artifacts: artifacts}, err
-	}
+	durationMs := e.now().Sub(startedAt).Milliseconds()
+
+	// Merge runner-emitted artifacts (success or failure) so operators can inspect
+	// partial outputs (e.g., the run log path the runner already opened).
 	for k, v := range res.Artifacts {
 		artifacts[k] = v
 	}
-	return JobExecutionResult{Artifacts: artifacts}, nil
+
+	completeStatus := "success"
+	if err != nil {
+		completeStatus = "failure"
+	}
+	e.emitAgentUpdate(claim, queue, NewAgentUpdatePhaseCompleteEvent(AgentUpdatePhaseComplete{
+		PhaseName:  "rpi.run",
+		RunID:      spec.RunID,
+		Timestamp:  e.now().UTC().Format(time.RFC3339Nano),
+		Status:     completeStatus,
+		DurationMs: durationMs,
+		Artifacts:  res.Artifacts,
+	}))
+
+	if err == nil {
+		e.emitAgentUpdate(claim, queue, NewAgentUpdatePhaseHandoffEvent(AgentUpdatePhaseHandoff{
+			FromPhase:  "rpi.run",
+			ToPhase:    "operator",
+			RunID:      spec.RunID,
+			Timestamp:  e.now().UTC().Format(time.RFC3339Nano),
+			PacketPath: spec.ExecutionPacketPath,
+		}))
+	}
+
+	return JobExecutionResult{Artifacts: artifacts}, err
+}
+
+// queueOrNil returns a Queue scoped to this executor's actor/clock when a Store
+// is configured, otherwise nil. Used to mint deterministic event IDs without
+// forcing every caller to pass a Queue through.
+func (e *RPIRunExecutor) queueOrNil() *Queue {
+	if e.store == nil {
+		return nil
+	}
+	return NewQueue(e.store, QueueOptions{Actor: e.actor, Now: e.now})
+}
+
+// emitAgentUpdate stamps the boilerplate ledger fields onto a payload-only
+// LedgerEventInput from the agent_update.go constructors and appends to the
+// store. No-op when the executor has no Store configured (back-compat with
+// callers that only inject a runner). Errors are logged via the queue contract
+// but do not fail the job — the runner result is the source of truth for the
+// supervisor's terminal-record.
+func (e *RPIRunExecutor) emitAgentUpdate(claim QueueClaim, queue *Queue, base LedgerEventInput) {
+	if e.store == nil || queue == nil {
+		return
+	}
+	requestID := RequestID(claim.Job.RequestID)
+	if strings.TrimSpace(string(requestID)) == "" {
+		requestID = RequestID("req-" + claim.Job.JobID)
+	}
+	base.EventID = queue.nextEventID(base.EventType, claim.Job.JobID)
+	base.RequestID = requestID
+	base.JobID = claim.Job.JobID
+	base.JobType = claim.Job.JobType
+	base.Actor = e.actor
+	base.OccurredAt = e.now()
+	event, err := NewLedgerEvent(base)
+	if err != nil {
+		return
+	}
+	_, _ = e.store.AppendLedgerEvent(event)
 }
 
 // rpiRunArtifactsFor mirrors RPICLIExecutor.artifactsFor but tags
