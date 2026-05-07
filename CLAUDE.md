@@ -2,7 +2,7 @@
 
 ## What this is
 
-AgentOps is a context compiler — the substrate the supermodel plugs into. It encodes the CDLC and multi-agent operating practices into a portable corpus that compounds across sessions.
+AgentOps is a context compiler that feeds your software factory — the substrate the supermodel plugs into. It encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes, with humans in or on the loop at whatever cadence fits.
 
 ## Zero-Context Startup (Read First)
 
