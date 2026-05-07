@@ -14,6 +14,31 @@ type ExecutionPacketProgram struct {
 	StopConditions     []string `json:"stop_conditions,omitempty"`
 }
 
+// Criterion is a single acceptance criterion attached to an epic or bead in an
+// execution packet. CheckType is a closed enum:
+//
+//   - test_pass
+//   - command_exit_zero
+//   - file_exists
+//   - grep_match
+//   - manual
+//   - council_judge
+//   - custom_rubric
+//
+// When CheckType == "custom_rubric", AgentJudge MUST be a non-empty string
+// naming the council or judge that owns the verdict.
+type Criterion struct {
+	ID               string  `json:"id"`
+	Description      string  `json:"description"`
+	CheckType        string  `json:"check_type"`
+	CheckCommand     string  `json:"check_command,omitempty"`
+	EvidencePath     string  `json:"evidence_path,omitempty"`
+	EvidenceRequired bool    `json:"evidence_required"`
+	Weight           float64 `json:"weight"`
+	Optional         bool    `json:"optional"`
+	AgentJudge       string  `json:"agent_judge,omitempty"`
+}
+
 // ValidationLane carries repo execution profile validation metadata through
 // RPI packets while preserving the legacy validation_commands list.
 type ValidationLane struct {

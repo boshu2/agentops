@@ -208,6 +208,73 @@ func ArtifactContentType(rel string) string {
 	}
 }
 
+// LaneResult captures a per-lane PASS/FAIL signal extracted from a packet's
+// validation_lanes_results field. Status is the raw status string (typically
+// "PASS" or "FAIL") and Passed is its case-insensitive interpretation.
+type LaneResult struct {
+	Name   string `json:"name"`
+	Passed bool   `json:"passed"`
+}
+
+// ParseValidationLanesResults reads the execution packet at packetPath and
+// returns the lane results from the packet's validation_lanes_results field.
+// Returns an empty slice (no error) when the field is absent or the packet
+// has no results yet. Returns nil (no error) when the file does not exist;
+// a parse error is returned when the JSON is malformed.
+func ParseValidationLanesResults(packetPath string) ([]LaneResult, error) {
+	if strings.TrimSpace(packetPath) == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(packetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read execution packet: %w", err)
+	}
+	var packet struct {
+		Results []struct {
+			Name   string `json:"name"`
+			Status string `json:"status,omitempty"`
+			Passed *bool  `json:"passed,omitempty"`
+			Result string `json:"result,omitempty"`
+		} `json:"validation_lanes_results"`
+	}
+	if err := json.Unmarshal(data, &packet); err != nil {
+		return nil, fmt.Errorf("parse validation_lanes_results: %w", err)
+	}
+	if len(packet.Results) == 0 {
+		return []LaneResult{}, nil
+	}
+	out := make([]LaneResult, 0, len(packet.Results))
+	for _, r := range packet.Results {
+		lane := LaneResult{Name: r.Name}
+		switch {
+		case r.Passed != nil:
+			lane.Passed = *r.Passed
+		default:
+			marker := strings.ToUpper(strings.TrimSpace(r.Status))
+			if marker == "" {
+				marker = strings.ToUpper(strings.TrimSpace(r.Result))
+			}
+			lane.Passed = marker == "PASS" || marker == "PASSED" || marker == "OK"
+		}
+		out = append(out, lane)
+	}
+	return out, nil
+}
+
+// AnyLaneResultPassed returns true when at least one lane reports passed.
+// Convenience helper for evaluators that gate on "any-PASS" reductions.
+func AnyLaneResultPassed(results []LaneResult) bool {
+	for _, r := range results {
+		if r.Passed {
+			return true
+		}
+	}
+	return false
+}
+
 // SortArtifactRefs sorts artifact refs by UpdatedAt (descending) then Path (ascending).
 func SortArtifactRefs(refs []ArtifactRef) {
 	for i := 0; i < len(refs); i++ {

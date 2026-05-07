@@ -60,39 +60,29 @@ In Claude Code the operator lane is simply:
 Hooks handle runtime state, validation gates, execution discipline, and
 flywheel closure automatically around whatever the agent does.
 
-### Codex (hookless — explicit lifecycle)
+### Codex (hookless — agentopsd canonical; legacy lifecycle shims deprecated)
 
-Codex has no hooks surface. The factory compensates with an explicit CLI
-lifecycle that skills auto-invoke to simulate what hooks provide natively:
-
-```bash
-ao codex start          # Replaces SessionStart hooks — assembles briefing,
-                        # writes startup-context.md, runs safe maintenance
-/rpi "fix auth startup" # Skills invoke ao codex ensure-start internally
-ao codex stop           # Replaces Stop hooks — close-loop, learnings, handoff
-```
-
-Key differences from the hook-native path:
-
-| Concern | Claude Code | Codex |
-|---------|-------------|-------|
-| Startup context | `session-start.sh` fires automatically | `ao codex start` must be called (or skills call `ao codex ensure-start`) |
-| Validation gates | `pre-mortem-gate.sh` blocks tool calls | Skills check gate status themselves |
-| Code quality | `go-vet-post-edit.sh`, `go-complexity-precommit.sh` fire after edits | Must run `cd cli && make test` manually or via skill |
-| Flywheel closure | `ao-flywheel-close.sh` fires on Stop | `ao codex stop` must be called explicitly |
-| Execution nudges | `prompt-nudge.sh`, `research-loop-detector.sh` | No equivalent — relies on skill discipline |
-
-The operator lane for Codex wraps this:
+Codex has no hooks surface. The canonical factory route for hookless runtimes
+is `agentopsd` — daemon-resident jobs that assemble their own briefing, run
+the bounded delivery line, and emit learnings without manual lifecycle calls:
 
 ```bash
-ao factory start --goal "fix auth startup"
-/rpi "fix auth startup"
-ao codex stop
+ao daemon submit --kind rpi --goal "fix auth startup"
 ```
 
-`ao factory start` compiles a goal-time briefing and runs `ao codex start` so
-the session begins with bounded context. `ao codex stop` closes the flywheel
-so learnings, citations, and handoff state persist.
+The deprecated legacy `ao codex *` lifecycle shims (`ao codex start`, `ao codex stop`, `ao codex ensure-start`, `ao codex ensure-stop`) remain only as a hookless fallback for environments where the daemon is unavailable. Routine
+validation, RPI closeout, and merge work should not call them; full Codex
+skill/runtime parity cleanup is tracked in `soc-kizn.8`.
+
+Key differences from the hook-native path (using the canonical daemon route):
+
+| Concern | Claude Code | Codex (agentopsd) |
+|---------|-------------|-------------------|
+| Startup context | `session-start.sh` fires automatically | Daemon job assembles its own briefing |
+| Validation gates | `pre-mortem-gate.sh` blocks tool calls | Daemon worker enforces gates inside the job |
+| Code quality | `go-vet-post-edit.sh`, `go-complexity-precommit.sh` fire after edits | Worker runs `cd cli && make test` inside the job |
+| Flywheel closure | `ao-flywheel-close.sh` fires on Stop | Daemon emits learnings on job completion |
+| Execution nudges | `prompt-nudge.sh`, `research-loop-detector.sh` | Worker discipline + daemon-side stall detection |
 
 Both paths exist because people use Codex or they use Claude Code.
 
@@ -100,10 +90,10 @@ Both paths exist because people use Codex or they use Claude Code.
 
 | Layer | Purpose | Primary surfaces |
 |------|---------|------------------|
-| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao codex stop` |
-| Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao codex start`, `ao codex ensure-start`, `ao context assemble` |
+| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao daemon submit` |
+| Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble`, `ao daemon submit` |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
-| Learning loop | Convert completed work into future advantage | `ao codex stop`, `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
+| Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
 | Hooks | Automatic enforcement, quality gates, and execution discipline | `hooks/hooks.json`, `hooks/*.sh`, kill switch |
 | Substrate | Retrieval, provenance, packetization, and promotion machinery | `.agents/packets/`, `.agents/topics/`, `.agents/briefings/`, `.agents/findings/`, builder logic |
 

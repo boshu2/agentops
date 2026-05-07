@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T15:52:08Z",
+  "generated_at": "2026-05-07T20:51:42Z",
   "summary": {
     "skills": 73,
     "hooks": 41,
@@ -25,7 +25,7 @@
         "path": "skills/forge/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "inject",
@@ -169,7 +169,7 @@
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 24
+        "reference_count": 27
       },
       {
         "name": "deps",
@@ -433,7 +433,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 5
+        "reference_count": 8
       },
       {
         "name": "heal-skill",
@@ -449,7 +449,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 12
+        "reference_count": 14
       },
       {
         "name": "skill-auditor",
@@ -489,7 +489,7 @@
         "path": "skills/validation/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 6
+        "reference_count": 10
       },
       {
         "name": "doc",

@@ -709,7 +709,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "9998d6976e73cd7f630465b5ebb61a64a87e58f777e1763b4e87b29b11d964e1",
+      "source_hash": "870103393336bc56fe53cc722501f238861b8eab5767835f5230de333e69a169",
       "generated_hash": "ba0a5b1f6a4f1c2350341611d2977b387451c63f550254263fe61f582afcfbca"
     },
     {
@@ -727,7 +727,7 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "96c73b8966775cf7482cf0265133a39d8c356ac7d74d16051e9cfe8bc5fd8ca1",
+      "source_hash": "707331322addee81ff52032fa6eefc4c39a4eccc8538888ec8a7c75a8ffda45c",
       "generated_hash": "027be281254ef5b62ffacc604f55d2ce34b49c2bbbd99a9f31d3ad4702f94009"
     },
     {
@@ -757,7 +757,7 @@
     {
       "name": "forge",
       "source_skill": "skills/forge",
-      "source_hash": "1cfc451f725eb1c953f8f2ed6639b16c7d67959ceb831de5528a724115c80f5d",
+      "source_hash": "1e38d7ed8eadbd31bdf95cd29d7b44ab7fd4942423e2e9fe2d9e0b6cc74a3dd0",
       "generated_hash": "c39f4993c079f0c4df600f15b4699d6699d3b05c6a867c7e62017338a8f63cc7"
     },
     {
@@ -829,7 +829,7 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "bc1bd8b560f9fa7c415cd50e6a99d2ca535bb44fd7f326652138125df1d31cd4",
+      "source_hash": "c3c3995888202af523374004b01d3b2531856a6164d4d97005c7c9e44d3750f3",
       "generated_hash": "2cf4eb87931c18ca1251808588a642cb094d14dadf329ef1a4c11a5a5dd4468a"
     },
     {
@@ -967,7 +967,7 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "69b94fdc5a05512f4a300f067f7c7817166133c01c599d52155c634c9c799b55",
+      "source_hash": "05d460b9c31658ef5e21654489ee2bfe28ed36ab7af2027b5a2479cb9c8fe522",
       "generated_hash": "c4f56071bfb8efe64c63425e2d57c5a9d93a42f1f77449092cc9e18f2b55f2dc"
     },
     {
@@ -1069,7 +1069,7 @@
     {
       "name": "validation",
       "source_skill": "skills/validation",
-      "source_hash": "c0fd2f9e626ff4a7460ffa5efa410997dbfd040724ba1b1c38d066eb42df750f",
+      "source_hash": "18d13f593d2f7bcfe562a89bdf740269631004f8a990911d71615d7500d82926",
       "generated_hash": "becd183323fa80b92579e49d340fadaaa2bda832866d1d3c93b6b29a5880c50a"
     },
     {

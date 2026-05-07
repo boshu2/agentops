@@ -113,8 +113,9 @@ Daemon executor policy determines how that child job runs:
 
 - `fake` completes deterministic CI-safe phase artifacts.
 - `gascity` delegates phases to the GasCity API executor.
-- `cli-fallback` shells one safe local cycle through
-  `scripts/ao-rpi-autonomous-cycle.sh` with `landing_policy=off`.
+- `cli-fallback` runs one safe local cycle in-process via `RPIRunExecutor`
+  (`cli/internal/daemon/rpi_run.go`) with `landing_policy=off`. The previous
+  shell-out wrapper under `scripts/` was retired in soc-bcrn.3.7.
 
 ## Blocked Vs Malformed
 

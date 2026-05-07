@@ -675,14 +675,6 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 
 func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T) {
 	cwd := t.TempDir()
-	scriptPath := filepath.Join(cwd, "scripts", "ao-rpi-autonomous-cycle.sh")
-	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
-		t.Fatalf("mkdir script dir: %v", err)
-	}
-	script := "#!/usr/bin/env bash\nset -euo pipefail\necho cli-fallback-rpi-ok\n"
-	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
-		t.Fatalf("write script: %v", err)
-	}
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
 	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-cli", "validate daemon cli fallback rpi run")
 	jobSpec, err := spec.ToJobSpec("job-rpi-cli")
@@ -698,7 +690,28 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T)
 		t.Fatalf("submit rpi run job: %v", err)
 	}
 
-	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"})
+	// soc-bcrn.3.6 (E3.W4 sub-5a): the CLI-fallback executor now runs the
+	// phased RPI engine in-process; tests inject a fake runner instead of
+	// shelling out to scripts/ao-rpi-autonomous-cycle.sh.
+	var runnerCalls int
+	fakeRun := func(_ context.Context, req daemonpkg.RPIRunRequest) (daemonpkg.RPIRunResult, error) {
+		runnerCalls++
+		if req.Spec.RunID != "run-daemon-cli" || req.Spec.Goal == "" {
+			t.Errorf("runner spec = %#v, want run-daemon-cli with non-empty goal", req.Spec)
+		}
+		if req.Root != cwd {
+			t.Errorf("runner root = %q, want %q", req.Root, cwd)
+		}
+		return daemonpkg.RPIRunResult{Artifacts: map[string]string{
+			"rpi_run_status": "completed",
+			"runner_marker":  "in-process-ok",
+		}}, nil
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		ExecutorPolicy:        "cli-fallback",
+		CLIFallbackRPIRunFunc: fakeRun,
+	})
 	if err != nil {
 		t.Fatalf("build supervisor: %v", err)
 	}
@@ -709,16 +722,107 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T)
 	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
 		t.Fatalf("result = %#v, want completed rpi.run job", result)
 	}
-	if got := result.Job.Artifacts["executor_policy"]; got != "cli-fallback" {
-		t.Fatalf("executor_policy artifact = %q, want cli-fallback", got)
+	if runnerCalls != 1 {
+		t.Fatalf("runner called %d times, want 1", runnerCalls)
 	}
-	logPath := filepath.Join(cwd, filepath.FromSlash(result.Job.Artifacts["rpi_cli_log"]))
-	data, err := os.ReadFile(logPath)
+	if got := result.Job.Artifacts["executor_policy"]; got != "in-process" {
+		t.Fatalf("executor_policy artifact = %q, want in-process", got)
+	}
+	if got := result.Job.Artifacts["backend"]; got != "in-process" {
+		t.Fatalf("backend artifact = %q, want in-process", got)
+	}
+	if got := result.Job.Artifacts["rpi_run_status"]; got != "completed" {
+		t.Fatalf("rpi_run_status artifact = %q, want completed", got)
+	}
+	if got := result.Job.Artifacts["runner_marker"]; got != "in-process-ok" {
+		t.Fatalf("runner_marker artifact = %q, want in-process-ok", got)
+	}
+}
+
+// TestBuildSupervisorConfigFromSpec_MapsPolicyFields covers the spec→cfg
+// translation introduced by soc-bcrn.3.8 (E3.W4 sub-5a-fix). Daemon-submitted
+// rpi.run jobs must propagate gate, landing, BD-sync, failure, and
+// kill-switch policy onto the supervisor config so the supervisor loop
+// enforces the same semantics as `ao rpi loop --supervisor`.
+func TestBuildSupervisorConfigFromSpec_MapsPolicyFields(t *testing.T) {
+	root := t.TempDir()
+	spec := daemonpkg.NewRPIRunJobSpec("run-cfg", "validate spec to cfg mapping")
+	spec.GatePolicy = "required"
+	spec.LandingPolicy = "commit"
+	spec.LandingBranch = "release/v3"
+	spec.BDSyncPolicy = "always"
+	spec.FailurePolicy = "continue"
+	spec.KillSwitchPath = filepath.Join(root, "custom-kill")
+
+	cfg, err := buildSupervisorConfigFromSpec(spec, root)
 	if err != nil {
-		t.Fatalf("read cli fallback rpi log: %v", err)
+		t.Fatalf("buildSupervisorConfigFromSpec: %v", err)
 	}
-	if !strings.Contains(string(data), "cli-fallback-rpi-ok") {
-		t.Fatalf("log = %q, want cli fallback output", data)
+	if cfg.GatePolicy != "required" {
+		t.Errorf("GatePolicy = %q, want required", cfg.GatePolicy)
+	}
+	if cfg.LandingPolicy != "commit" {
+		t.Errorf("LandingPolicy = %q, want commit", cfg.LandingPolicy)
+	}
+	if cfg.LandingBranch != "release/v3" {
+		t.Errorf("LandingBranch = %q, want release/v3", cfg.LandingBranch)
+	}
+	if cfg.BDSyncPolicy != "always" {
+		t.Errorf("BDSyncPolicy = %q, want always", cfg.BDSyncPolicy)
+	}
+	if cfg.FailurePolicy != "continue" {
+		t.Errorf("FailurePolicy = %q, want continue", cfg.FailurePolicy)
+	}
+	if cfg.KillSwitchPath != filepath.Join(root, "custom-kill") {
+		t.Errorf("KillSwitchPath = %q, want absolute path under root", cfg.KillSwitchPath)
+	}
+	if cfg.LeaseEnabled {
+		t.Errorf("LeaseEnabled = true, want false (daemon owns the queue-level lease)")
+	}
+}
+
+// TestBuildSupervisorConfigFromSpec_DefaultsWhenSpecEmpty checks that a spec
+// without any supervisor policy fields produces a cfg matching the
+// supervisor's safe defaults (gate-policy=off, landing-policy=off,
+// failure-policy=stop). Path defaults must still resolve relative to root.
+func TestBuildSupervisorConfigFromSpec_DefaultsWhenSpecEmpty(t *testing.T) {
+	root := t.TempDir()
+	spec := daemonpkg.NewRPIRunJobSpec("run-default-cfg", "no policy fields")
+
+	cfg, err := buildSupervisorConfigFromSpec(spec, root)
+	if err != nil {
+		t.Fatalf("buildSupervisorConfigFromSpec: %v", err)
+	}
+	if cfg.GatePolicy != "off" {
+		t.Errorf("GatePolicy = %q, want off (default)", cfg.GatePolicy)
+	}
+	if cfg.LandingPolicy != "off" {
+		t.Errorf("LandingPolicy = %q, want off (default)", cfg.LandingPolicy)
+	}
+	if cfg.FailurePolicy != "stop" {
+		t.Errorf("FailurePolicy = %q, want stop (default)", cfg.FailurePolicy)
+	}
+	if cfg.LeaseEnabled {
+		t.Errorf("LeaseEnabled = true, want false (daemon owns the queue-level lease)")
+	}
+	if !filepath.IsAbs(cfg.KillSwitchPath) {
+		t.Errorf("KillSwitchPath = %q, want absolute (resolved against root)", cfg.KillSwitchPath)
+	}
+	if !strings.HasPrefix(cfg.KillSwitchPath, root) {
+		t.Errorf("KillSwitchPath = %q, want prefix %q", cfg.KillSwitchPath, root)
+	}
+}
+
+// TestBuildSupervisorConfigFromSpec_RejectsInvalidEnum guards against
+// silently accepting a typo in a policy field. validateLoopConfigPolicies
+// is the same enum gate the cobra path runs, so daemon submitters get the
+// same diagnostics.
+func TestBuildSupervisorConfigFromSpec_RejectsInvalidEnum(t *testing.T) {
+	spec := daemonpkg.NewRPIRunJobSpec("run-bad", "invalid enum should fail")
+	spec.GatePolicy = "ON" // not a valid value
+
+	if _, err := buildSupervisorConfigFromSpec(spec, t.TempDir()); err == nil {
+		t.Fatal("expected error for invalid GatePolicy")
 	}
 }
 
