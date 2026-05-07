@@ -13,9 +13,9 @@ Three repositories converge into a single product surface:
 
 Olympus (`ol`) was the power-user daemon predecessor, archived. Its patterns (context compilation, constraint injection, run ledger) survive as features inside `ao`. No live integration exists.
 
-### Lineage hierarchy
+### Internal lineage
 
-The full lineage spine the rest of this document descends from:
+The public product does not require users to know this vocabulary. This is the internal lineage spine: the systems work that produced the AgentOps shape, then got applied to coding agents.
 
 **Knowledge OS** (the systems-theoretic substrate — Meadows leverage points, the dK/dt equation, stigmergy as the multi-agent coordination primitive)
 → **Olympus** (archived runtime; patterns absorbed as skills)

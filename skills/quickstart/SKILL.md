@@ -51,7 +51,7 @@ Full reference: /quickstart --catalog
 
 ### Step 3: One next action
 
-Match the first row that applies. Output only that message — nothing else.
+Match the first row that applies. Output that message, then append the Step 4 always-on lane.
 
 | Condition | Message |
 |-----------|---------|
