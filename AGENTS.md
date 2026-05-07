@@ -1,5 +1,7 @@
 # Agent Instructions
 
+**AgentOps is a context compiler — the substrate the supermodel plugs into.** It encodes the CDLC and multi-agent operating practices (planner/implementer/validator separation, fresh-context worker waves, council validation) into a portable corpus that compounds across sessions and runtimes.
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 ## Session Start (Zero-Context Agent)

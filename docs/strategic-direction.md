@@ -13,6 +13,17 @@ Three repositories converge into a single product surface:
 
 Olympus (`ol`) was the power-user daemon predecessor, archived. Its patterns (context compilation, constraint injection, run ledger) survive as features inside `ao`. No live integration exists.
 
+### Lineage hierarchy
+
+The full lineage spine the rest of this document descends from:
+
+**Knowledge OS** (the systems-theoretic substrate — Meadows leverage points, the dK/dt equation, stigmergy as the multi-agent coordination primitive)
+→ **Olympus** (archived runtime; patterns absorbed as skills)
+→ **AgentOps** (this reference implementation: skills + hooks + `ao` CLI + scheduling daemon)
+→ **Mt. Olympus** (forkable Gas City runtime proof — the empirical demonstration the substrate runs autonomously against a real codebase under operator control).
+
+Industry parallels (Anthropic Managed Agents, factory-style mission systems, Cursor agents) are convergent on the same planner/implementer/validator shape — not derived-from.
+
 ---
 
 ## The Organizing Equation

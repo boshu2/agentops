@@ -10,7 +10,9 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is a context compiler + validation harness with cross-runtime skill packaging. The daemon is the always-on dream.** Compile context on the way in, gate output on the way out, schedule dream / evolve / compile / defrag to run unattended on whatever cadence you set. Works across Claude, Codex, Cursor, and OpenCode.
+**AgentOps is a context compiler — the substrate the supermodel plugs into.** It encodes the DevOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. Works across Claude Code, Codex, Cursor, and OpenCode.
+
+→ See [scheduling reference](docs/scheduling.md) and [example schedules](examples/schedules/) for the always-on lane.
 
 [Install](#install) · [See It Work](#see-it-work) · [Quick Start](#quick-start) · [Why DevOps?](#why-devops) · [Skills](#skills) · [CLI](#the-ao-cli) · [Doctrine](https://12factoragentops.com) · [Docs](docs/documentation-index.md)
 

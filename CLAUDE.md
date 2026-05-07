@@ -1,5 +1,9 @@
 # AgentOps Skills Repository
 
+## What this is
+
+AgentOps is a context compiler — the substrate the supermodel plugs into. It encodes the CDLC and multi-agent operating practices into a portable corpus that compounds across sessions.
+
 ## Zero-Context Startup (Read First)
 
 If this is your first message in a fresh session, orient in this order:
