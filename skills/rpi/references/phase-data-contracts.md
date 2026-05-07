@@ -48,3 +48,11 @@ Queue lifecycle rule:
 - the entry aggregate flips to `consumed=true` only after every child item is consumed
 
 Canonical schema contract: [`docs/contracts/next-work.schema.md`](../../../docs/contracts/next-work.schema.md) (v1.4)
+
+## Rollback discipline
+
+When changing phase-boundary logic, ship phase-3 (closeout) updates FIRST and remove phase-2 (handoff) logic SECOND. This keeps a working closeout path in place during the transition window — if phase-3 ships broken, you can revert before phase-2's removal lands.
+
+Pre-mortem F3 of `soc-bcrn` (`.agents/council/2026-05-07-pre-mortem-rpi-lifecycle-sharpening.md`) called this out as the primary rollback risk for the consolidated daemon epic (E3).
+
+Worked example: `cli/cmd/ao/rpi_cleanup.go:preserveWorktreeCommits` (phase-3 commit-preservation logic) was added BEFORE the phase-2 cleanup-removal as part of E3.S3. The order matters: orphaned worktree commits that previously fell into git fsck dangling now land on `codex/preserve-<runID>` branches before the worktree is force-removed. If preservation had been wired in the opposite order, a regression window would have lost commits during the transition.
