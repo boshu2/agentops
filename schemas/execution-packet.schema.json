@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/execution-packet.schema.json",
+  "title": "RPI Execution Packet",
+  "description": "Per-run execution packet emitted by ao rpi; captures objective, validation surface, and (v2+) per-criterion acceptance criteria for the epic and its beads.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "objective",
+    "contract_surfaces",
+    "tracker_mode"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "objective": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "epic_id": {
+      "type": "string"
+    },
+    "bead_id": {
+      "type": "string"
+    },
+    "tracking_repo_root": {
+      "type": "string"
+    },
+    "beads_dir": {
+      "type": "string"
+    },
+    "pr_url": {
+      "type": "string"
+    },
+    "merge_commit": {
+      "type": "string"
+    },
+    "plan_path": {
+      "type": "string"
+    },
+    "contract_surfaces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_lanes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "tracker_mode": {
+      "type": "string"
+    },
+    "tracker_health": {
+      "type": "object"
+    },
+    "done_criteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Legacy v1 stop-conditions list. Preserved for back-compat; v2+ packets prefer epic_criteria/bead_criteria."
+    },
+    "epic_criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Criterion"
+      },
+      "description": "Acceptance criteria attached to the epic."
+    },
+    "bead_criteria": {
+      "type": "object",
+      "description": "Acceptance criteria keyed by bead ID.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/Criterion"
+        }
+      }
+    },
+    "complexity": {
+      "type": "string"
+    },
+    "proof_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evaluator_artifacts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "proof_updated_at": {
+      "type": "string"
+    },
+    "autodev_program": {
+      "type": "object"
+    },
+    "mixed_mode_requested": {
+      "type": "boolean"
+    },
+    "mixed_mode_effective": {
+      "type": "boolean"
+    },
+    "planner_vendor": {
+      "type": "string"
+    },
+    "reviewer_vendor": {
+      "type": "string"
+    },
+    "mixed_mode_degraded_reason": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "Criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "check_type",
+        "evidence_required",
+        "weight",
+        "optional"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ac-[a-z0-9][a-z0-9._-]*\\.[0-9]+$",
+          "description": "Stable criterion identifier of the form ac-<scope>.<n>."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One-line measurable acceptance statement."
+        },
+        "check_type": {
+          "type": "string",
+          "enum": [
+            "test_pass",
+            "command_exit_zero",
+            "file_exists",
+            "grep_match",
+            "manual",
+            "council_judge",
+            "custom_rubric"
+          ]
+        },
+        "check_command": {
+          "type": "string"
+        },
+        "evidence_path": {
+          "type": "string"
+        },
+        "evidence_required": {
+          "type": "boolean"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "agent_judge": {
+          "type": "string",
+          "description": "Names the council or judge that owns the verdict. Required when check_type == \"custom_rubric\"."
+        }
+      },
+      "if": {
+        "properties": {
+          "check_type": {
+            "const": "custom_rubric"
+          }
+        },
+        "required": ["check_type"]
+      },
+      "then": {
+        "required": ["agent_judge"],
+        "properties": {
+          "agent_judge": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
