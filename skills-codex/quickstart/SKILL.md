@@ -62,11 +62,11 @@ After the next-action message, append this one-liner so the user sees scheduling
 
 ```
 🌙 Always-on lane:
-  ao schedule add ./examples/schedules/dream-nightly.yaml   # nightly compounding session
-  ao daemon                                                  # always-on lane that runs the schedule
+  ao daemon run --schedule-file .agents/schedule.yaml &              # start the daemon
+  ao schedule add --file ./examples/schedules/dream-nightly.yaml     # register a nightly recipe
 ```
 
-`ao daemon` is the always-on lane that runs the schedule — start it once and your nightly dream, harvest, and compile work happen without you babysitting.
+`ao daemon run` is the always-on lane that fires registered schedules on cron — start it once (or wire to systemd) and your nightly dream, harvest, and compile work happen without you babysitting. See `docs/scheduling.md` for the full recipe catalog.
 
 ---
 
