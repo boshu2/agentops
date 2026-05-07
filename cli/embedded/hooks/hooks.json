@@ -250,6 +250,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/postedit-codex-refresh.sh",
+            "timeout": 10
           }
         ]
       },
@@ -265,6 +270,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/postedit-codex-refresh.sh",
+            "timeout": 10
           }
         ]
       },
