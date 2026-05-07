@@ -36,7 +36,7 @@ The strict checker scans at least:
 
 - Schema: [`factory-claim-ledger.schema.json`](factory-claim-ledger.schema.json)
 - Current ledger fixture: [`factory-claim-ledger.example.json`](factory-claim-ledger.example.json)
-- Validator: [`scripts/check-factory-claim-ledger.sh`](../../scripts/check-factory-claim-ledger.sh)
+- Validator: `scripts/check-factory-claim-ledger.sh`
 
 ## Closed Enums
 
@@ -94,4 +94,3 @@ Each row must include:
   ledger alone.
 - `.agents/` runtime artifacts are local evidence, not durable public proof,
   until exported through a reviewed evidence bundle.
-
