@@ -7,9 +7,9 @@
 #   2. .githooks/pre-push does not invoke scripts/pre-push-gate.sh
 #   3. scripts/pre-push-gate.sh missing the baseline-audit block (24d)
 #
-# It also runs a real `git push --dry-run` smoke against a sandboxed bare repo
-# to prove the gate actually fires from git's hook resolution path. The sandbox
-# is opt-in via --dry-run-smoke because cold runs cost ~10-30s.
+# It also runs a real `git push` smoke against a sandboxed bare repo to prove
+# the hook fires and the remote ref actually moves. The sandbox is opt-in via
+# --dry-run-smoke for backward compatibility with existing CI wiring.
 
 set -euo pipefail
 
@@ -17,16 +17,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-DRY_RUN_SMOKE="false"
+PUSH_SMOKE="false"
 CHECK_ACTIVATION="false"
 
 usage() {
     cat <<'EOF'
-Usage: scripts/check-pre-push-gate-wired.sh [--dry-run-smoke] [--check-activation]
+Usage: scripts/check-pre-push-gate-wired.sh [--dry-run-smoke|--push-smoke] [--check-activation]
 
 Options:
-  --dry-run-smoke      Create a sandbox bare remote and run `git push --dry-run`
-                       to prove the gate fires through git's hook resolution.
+  --dry-run-smoke      Compatibility alias for --push-smoke.
+  --push-smoke         Create a sandbox bare remote and run a real `git push`
+                       to prove the hook passes refs and updates the remote.
   --check-activation   Also assert this checkout's core.hooksPath == .githooks.
                        Off by default so CI clones (which never run
                        install-dev-hooks.sh) still pass the wiring check.
@@ -36,7 +37,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --dry-run-smoke) DRY_RUN_SMOKE="true"; shift ;;
+        --dry-run-smoke|--push-smoke) PUSH_SMOKE="true"; shift ;;
         --check-activation) CHECK_ACTIVATION="true"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown arg: $1" >&2; usage >&2; exit 2 ;;
@@ -98,8 +99,8 @@ if [[ "$CHECK_ACTIVATION" == "true" ]]; then
     fi
 fi
 
-# --- 6. (optional) git push --dry-run smoke against sandbox bare remote ---
-if [[ "$DRY_RUN_SMOKE" == "true" ]]; then
+# --- 6. (optional) git push smoke against sandbox bare remote ---
+if [[ "$PUSH_SMOKE" == "true" ]]; then
     sandbox="$(mktemp -d "${TMPDIR:-/tmp}/agentops-prepush-smoke.XXXXXX")"
     trap 'rm -rf "$sandbox"' EXIT
     bare="$sandbox/remote.git"
@@ -110,20 +111,29 @@ if [[ "$DRY_RUN_SMOKE" == "true" ]]; then
     cd "$work"
     git config user.email smoke@agentops.local
     git config user.name "smoke test"
-    git config core.hooksPath "$REPO_ROOT/.githooks"
 
-    # Place a tripwire that pre-push-gate.sh can detect — we don't actually want
-    # to run the full ~5min gate here. The hook chain calls
-    # pre-push-gate.sh; we override $PATH so the gate sees a stub that records
-    # invocation and exits 0.
+    # Place tripwires behind the copied hook: the gate exits like a passing
+    # advisory run, and the bd shim records the exact refspec stdin it receives.
     stub_dir="$sandbox/stub"
-    mkdir -p "$stub_dir/scripts"
+    mkdir -p "$stub_dir/scripts" "$stub_dir/bin"
     cat >"$stub_dir/scripts/pre-push-gate.sh" <<'STUB'
 #!/usr/bin/env bash
 echo "PRE_PUSH_GATE_INVOKED" >"$SMOKE_TRIPWIRE"
+printf '%s\n' "${PRE_PUSH_TWO_PASS:-<unset>}" >"$SMOKE_TWO_PASS"
+echo "pre-push gate (fast, advisory): 1 issues found (0 skipped)"
 exit 0
 STUB
     chmod +x "$stub_dir/scripts/pre-push-gate.sh"
+    cat >"$stub_dir/bin/bd" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "hooks" && "${2:-}" == "run" && "${3:-}" == "pre-push" ]]; then
+    cat >"${BD_STDIN_CAPTURE:?}"
+    exit 0
+fi
+echo "unexpected bd invocation: $*" >&2
+exit 2
+STUB
+    chmod +x "$stub_dir/bin/bd"
 
     # Override REPO_ROOT in the hook so it reaches the stub.
     cp "$REPO_ROOT/.githooks/pre-push" "$sandbox/pre-push.copy"
@@ -134,19 +144,46 @@ STUB
     git config core.hooksPath "$work/.githooks_smoke"
 
     tripwire="$sandbox/tripwire"
+    two_pass="$sandbox/two-pass"
+    bd_stdin="$sandbox/bd-stdin"
     : >"$tripwire"
 
     git remote add origin "$bare"
     echo "smoke" >file
     git add file
     git commit --quiet -m "smoke commit"
+    local_head="$(git rev-parse HEAD)"
 
-    SMOKE_TRIPWIRE="$tripwire" git push --dry-run origin main >/dev/null 2>&1 || true
+    if SMOKE_TRIPWIRE="$tripwire" \
+        SMOKE_TWO_PASS="$two_pass" \
+        BD_STDIN_CAPTURE="$bd_stdin" \
+        PATH="$stub_dir/bin:$PATH" \
+        git push origin main >/dev/null 2>&1; then
+        :
+    else
+        fail "git push failed through pre-push hook (sandbox smoke)"
+    fi
 
     if [[ -s "$tripwire" ]] && grep -q PRE_PUSH_GATE_INVOKED "$tripwire"; then
-        pass "git push --dry-run invokes pre-push gate (sandbox smoke)"
+        pass "git push invokes pre-push gate (sandbox smoke)"
     else
-        fail "git push --dry-run did NOT invoke pre-push gate (sandbox smoke)"
+        fail "git push did NOT invoke pre-push gate (sandbox smoke)"
+    fi
+    if [[ "$(cat "$two_pass" 2>/dev/null || true)" == "0" ]]; then
+        pass "pre-push hook forces single-pass push gate"
+    else
+        fail "pre-push hook did NOT force single-pass push gate"
+    fi
+    if [[ -s "$bd_stdin" ]] && grep -q 'refs/heads/main' "$bd_stdin"; then
+        pass "pre-push hook replays refspec stdin to bd"
+    else
+        fail "pre-push hook did NOT replay refspec stdin to bd"
+    fi
+    remote_head="$(git --git-dir "$bare" rev-parse refs/heads/main 2>/dev/null || true)"
+    if [[ "$remote_head" == "$local_head" ]]; then
+        pass "git push transmits through pre-push hook (sandbox smoke)"
+    else
+        fail "git push did NOT update sandbox remote ref"
     fi
     cd "$REPO_ROOT"
 fi

@@ -253,7 +253,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
-| **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; `git push --dry-run` smoke proves the hook actually fires | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
+| **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
