@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T22:23:57Z",
+  "generated_at": "2026-05-07T22:30:59Z",
   "summary": {
     "skills": 73,
     "hooks": 41,
-    "knowledge_stores": 0,
+    "knowledge_stores": 1,
     "job_types": 14,
     "eval_files": 61,
     "cli_commands": 147
@@ -926,7 +926,14 @@
         "type": "command"
       }
     ],
-    "knowledge_stores": [],
+    "knowledge_stores": [
+      {
+        "name": "nightly",
+        "path": ".agents/nightly/",
+        "purpose": "Nightly run outputs and digests",
+        "file_count": 6
+      }
+    ],
     "job_types": [
       {
         "job_type": "dream.run",
