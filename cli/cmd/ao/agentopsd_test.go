@@ -675,14 +675,6 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 
 func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T) {
 	cwd := t.TempDir()
-	scriptPath := filepath.Join(cwd, "scripts", "ao-rpi-autonomous-cycle.sh")
-	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
-		t.Fatalf("mkdir script dir: %v", err)
-	}
-	script := "#!/usr/bin/env bash\nset -euo pipefail\necho cli-fallback-rpi-ok\n"
-	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
-		t.Fatalf("write script: %v", err)
-	}
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
 	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-cli", "validate daemon cli fallback rpi run")
 	jobSpec, err := spec.ToJobSpec("job-rpi-cli")
@@ -698,7 +690,28 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T)
 		t.Fatalf("submit rpi run job: %v", err)
 	}
 
-	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{ExecutorPolicy: "cli-fallback"})
+	// soc-bcrn.3.6 (E3.W4 sub-5a): the CLI-fallback executor now runs the
+	// phased RPI engine in-process; tests inject a fake runner instead of
+	// shelling out to scripts/ao-rpi-autonomous-cycle.sh.
+	var runnerCalls int
+	fakeRun := func(_ context.Context, req daemonpkg.RPIRunRequest) (daemonpkg.RPIRunResult, error) {
+		runnerCalls++
+		if req.Spec.RunID != "run-daemon-cli" || req.Spec.Goal == "" {
+			t.Errorf("runner spec = %#v, want run-daemon-cli with non-empty goal", req.Spec)
+		}
+		if req.Root != cwd {
+			t.Errorf("runner root = %q, want %q", req.Root, cwd)
+		}
+		return daemonpkg.RPIRunResult{Artifacts: map[string]string{
+			"rpi_run_status": "completed",
+			"runner_marker":  "in-process-ok",
+		}}, nil
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		ExecutorPolicy:        "cli-fallback",
+		CLIFallbackRPIRunFunc: fakeRun,
+	})
 	if err != nil {
 		t.Fatalf("build supervisor: %v", err)
 	}
@@ -709,16 +722,20 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T)
 	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
 		t.Fatalf("result = %#v, want completed rpi.run job", result)
 	}
-	if got := result.Job.Artifacts["executor_policy"]; got != "cli-fallback" {
-		t.Fatalf("executor_policy artifact = %q, want cli-fallback", got)
+	if runnerCalls != 1 {
+		t.Fatalf("runner called %d times, want 1", runnerCalls)
 	}
-	logPath := filepath.Join(cwd, filepath.FromSlash(result.Job.Artifacts["rpi_cli_log"]))
-	data, err := os.ReadFile(logPath)
-	if err != nil {
-		t.Fatalf("read cli fallback rpi log: %v", err)
+	if got := result.Job.Artifacts["executor_policy"]; got != "in-process" {
+		t.Fatalf("executor_policy artifact = %q, want in-process", got)
 	}
-	if !strings.Contains(string(data), "cli-fallback-rpi-ok") {
-		t.Fatalf("log = %q, want cli fallback output", data)
+	if got := result.Job.Artifacts["backend"]; got != "in-process" {
+		t.Fatalf("backend artifact = %q, want in-process", got)
+	}
+	if got := result.Job.Artifacts["rpi_run_status"]; got != "completed" {
+		t.Fatalf("rpi_run_status artifact = %q, want completed", got)
+	}
+	if got := result.Job.Artifacts["runner_marker"]; got != "in-process-ok" {
+		t.Fatalf("runner_marker artifact = %q, want in-process-ok", got)
 	}
 }
 

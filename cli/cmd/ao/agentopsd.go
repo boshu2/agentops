@@ -84,6 +84,12 @@ type agentopsDaemonRunOptions struct {
 	// cadence. nil/0 → 1 minute default. Tests use a small value to advance
 	// schedule firing within a single test run.
 	RecurrencePollInterval time.Duration
+	// CLIFallbackRPIRunFunc (optional) overrides the in-process runner the
+	// CLI-fallback RPI executor dispatches to. Production callers leave this
+	// nil so the executor calls runPhasedEngine; tests inject a fake to
+	// avoid spinning up the full phased engine in-process. soc-bcrn.3.6
+	// (E3.W4 sub-5a).
+	CLIFallbackRPIRunFunc daemonpkg.RPIRunFunc
 }
 
 var daemonCmd = &cobra.Command{
@@ -419,7 +425,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		rpiExecutor, err := buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd)
+		rpiExecutor, err := buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd, opts.CLIFallbackRPIRunFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -553,8 +559,67 @@ func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOpt
 	})
 }
 
-func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string) (daemonpkg.JobExecutor, error) {
-	return daemonpkg.NewRPICLIExecutor(daemonpkg.RPICLIExecutorOptions{Root: cwd})
+// buildAgentOpsDaemonCLIFallbackRPIExecutor wires the daemon's CLI-fallback
+// executor policy. Historically this shelled out to
+// scripts/ao-rpi-autonomous-cycle.sh via RPICLIExecutor; soc-bcrn.3.6 (E3.W4
+// sub-5a) replaced that with an in-process RPIRunExecutor that calls
+// runPhasedEngine directly. The shell-out path is retired in 5b/5c; the old
+// RPICLIExecutor type is intentionally left in-tree until then.
+//
+// runOverride is optional: production passes nil so the executor dispatches
+// to the in-process runPhasedEngine wrapper; tests inject a fake to avoid
+// spinning the full phased engine in a tempdir.
+func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string, runOverride daemonpkg.RPIRunFunc) (daemonpkg.JobExecutor, error) {
+	run := runOverride
+	if run == nil {
+		run = defaultCLIFallbackRPIRunFunc
+	}
+	return daemonpkg.NewRPIRunExecutor(daemonpkg.RPIRunExecutorOptions{
+		Root: cwd,
+		Run:  run,
+	})
+}
+
+// defaultCLIFallbackRPIRunFunc is the production runner injected into
+// RPIRunExecutor by buildAgentOpsDaemonCLIFallbackRPIExecutor when no
+// override is supplied. It builds phasedEngineOptions from the spec and
+// calls runPhasedEngine in-process.
+func defaultCLIFallbackRPIRunFunc(ctx context.Context, req daemonpkg.RPIRunRequest) (daemonpkg.RPIRunResult, error) {
+	opts := buildPhasedEngineOptionsFromSpec(req.Spec, req.Root)
+	if err := runPhasedEngine(ctx, req.Root, req.Spec.Goal, opts); err != nil {
+		return daemonpkg.RPIRunResult{}, fmt.Errorf("run phased engine: %w", err)
+	}
+	return daemonpkg.RPIRunResult{
+		Artifacts: map[string]string{
+			"rpi_run_status": "completed",
+		},
+	}, nil
+}
+
+// buildPhasedEngineOptionsFromSpec translates a daemon RPIRunJobSpec into the
+// phasedEngineOptions consumed by runPhasedEngine. Mirrors the construction
+// done by `ao rpi phased`/`ao rpi serve`/`ao rpi loop --supervisor` callers
+// but seeds defaults and scope appropriate for an in-process daemon worker:
+//
+//   - dashboard suppressed (the daemon owns the supervisor terminal record);
+//   - run_id pre-seeded from the spec so artifacts correlate;
+//   - WorkingDir pinned to the daemon root cwd;
+//   - phase_timeout, execution-packet path, test_first carried through.
+//
+// Fields without an obvious mapping (Mixed, BudgetSpec, GCCityName, etc.)
+// fall back to defaultPhasedEngineOptions values; sub-waves 5b/5c will
+// refine per-spec wiring as the operator surface stabilizes.
+func buildPhasedEngineOptionsFromSpec(spec daemonpkg.RPIRunJobSpec, root string) phasedEngineOptions {
+	opts := defaultPhasedEngineOptions()
+	opts.WorkingDir = root
+	opts.RunID = spec.RunID
+	opts.NoDashboard = true
+	opts.TestFirst = spec.TestFirst
+	opts.DiscoveryArtifact = spec.ExecutionPacketPath
+	if d, err := time.ParseDuration(strings.TrimSpace(spec.PhaseTimeout)); err == nil && d > 0 {
+		opts.PhaseTimeout = d
+	}
+	return opts
 }
 
 // fakeRPIPhaseExecutor is a deterministic, CI-safe phase executor that returns
