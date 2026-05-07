@@ -10,7 +10,7 @@
 
 Ship reliable code with unreliable agents.
 
-**AgentOps is a context compiler — the substrate the supermodel plugs into.** It encodes the DevOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. Works across Claude Code, Codex, Cursor, and OpenCode.
+**AgentOps is a context compiler that feeds your software factory — the substrate the supermodel plugs into.** It encodes the DevSecOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. Runs on your hardware, your repos, your subscriptions. Drop in (in-the-loop) or stay out (on-the-loop) at whatever cadence fits. Works across Claude Code, Codex, Cursor, and OpenCode.
 
 → See [scheduling reference](docs/scheduling.md) and [example schedules](examples/schedules/) for the always-on lane.
 

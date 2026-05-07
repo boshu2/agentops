@@ -6,15 +6,15 @@ last_reviewed: 2026-05-06
 
 ## Mission
 
-**AgentOps is a context compiler — the substrate the supermodel plugs into.**
+**AgentOps is a context compiler that feeds your software factory — the substrate the supermodel plugs into.**
 
-It encodes the DevOps SDLC as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products.
+It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. Validation gates, the knowledge flywheel, and the schedulable dream daemon are *outputs* of the compiler — not peer products. The corpus emerges in three layers: **goals** (`GOALS.md` + `ao goals measure`), **product** (`PRODUCT.md` + design principles), and **program** (`PROGRAM.md` + execution invariants). Together they encode enough structure to run autonomously at the human's chosen cadence.
 
-One substrate, three surfaces: an **in-harness plugin** (skills + hooks for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs against your local subscription).
+One substrate, four surfaces: an **in-harness plugin** (skills + hooks for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), the **hooks layer** (mechanical gates wired into the runtime), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription).
 
-The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.**
+The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans drop in or out at whatever cadence fits — stay **in the loop** during discovery and validation, or sit **on the loop** while the daemon compounds overnight. The structure is mechanical enough to run unattended; the gates are loud enough that you can.
 
-Lineage: **Knowledge OS** (the systems-theoretic substrate — Meadows, the dK/dt equation, stigmergy) → **Olympus** (archived runtime; patterns absorbed as skills) → **AgentOps** (this reference implementation) → **Mt. Olympus** (forkable Gas City runtime proof). Factory's *Missions*, Anthropic's *Managed Agents*, Cursor agents — convergent, not derived-from.
+Lineage: **Knowledge OS** (the systems-theoretic substrate — Meadows, the dK/dt equation, stigmergy) → **Olympus** (archived runtime; patterns absorbed as skills) → **AgentOps** (this reference implementation) → **Mt. Olympus** (forkable Gas City runtime proof). **Field lineage:** lessons from building and selling coding agents in high-stakes regulated environments + the open-source community around **Gas Town beads** and **Ralph loops** (the fresh-context-per-worker pattern AgentOps's `/crank` waves implement). Factory's *Missions*, Anthropic's *Managed Agents*, Cursor agents — convergent, not derived-from.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
 > Lineage: AgentOps positions explicitly against EveryInc's [Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin) — see [docs/comparisons/vs-compound-engineer.md](docs/comparisons/vs-compound-engineer.md) for the in-depth contrast (operator-driven trunk vs. autonomy overlays, capture/scoring/injection, council validation).
@@ -23,6 +23,8 @@ Lineage: **Knowledge OS** (the systems-theoretic substrate — Meadows, the dK/d
 ## Vision
 
 The software factory that gets better with each use. Every session produces code, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
+
+The aspiration is **TSMC-efficiency for code**: enough structure that the system runs autonomously at high throughput against a defined process, with the operator setting cadence and stepping in only at exception boundaries. Same shape that turned analog engineering into a repeatable industrial discipline — applied to coding agents.
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
 
