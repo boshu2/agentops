@@ -110,8 +110,11 @@ build_hooks() {
 # ─── Knowledge Stores (.agents/ dirs) ────────────────────────────────────────
 
 build_knowledge_stores() {
-  local agents_dir="${REPO_ROOT}/.agents"
-  [[ -d "$agents_dir" ]] || { echo "[]"; return; }
+  # soc-k47k: don't early-return on missing .agents/ — `git ls-files` reads the
+  # index, which is authoritative regardless of working-tree state. CI clean
+  # checkout always populates the tracked files, so the only case where the
+  # tracked list is empty is when the repo genuinely has no tracked .agents/
+  # entries.
 
   # Known purpose map — manually maintained since .agents/ has no manifest
   local -A purposes=(
@@ -163,15 +166,34 @@ build_knowledge_stores() {
     [wiki]="Internal wiki entries"
   )
 
-  local result="[]"
-  for dir in "${agents_dir}"/*/; do
-    [[ -d "$dir" ]] || continue
-    local name
-    name="$(basename "$dir")"
-    local purpose="${purposes[$name]:-"Unknown — needs documentation"}"
-    local file_count
-    file_count=$(find "$dir" -type f 2>/dev/null | wc -l | tr -d ' ')
+  # soc-k47k: walk `git ls-files .agents/` instead of filesystem so the registry
+  # is deterministic across environments. CI's clean checkout and a session-built
+  # local checkout will produce identical output. Only directories containing
+  # tracked files appear in knowledge_stores; the file_count is the tracked-file
+  # count (which is reproducible — `find` was not).
+  local tracked
+  tracked=$(cd "$REPO_ROOT" && git ls-files .agents/ 2>/dev/null || true)
+  if [[ -z "$tracked" ]]; then
+    echo "[]"
+    return
+  fi
 
+  # Build (name → file_count) map from tracked .agents/<name>/... entries.
+  declare -A counts=()
+  while IFS= read -r tracked_path; do
+    [[ -z "$tracked_path" ]] && continue
+    # Extract the immediate child of .agents/ (e.g., "nightly" from ".agents/nightly/2026-05-07/foo.json").
+    local subdir
+    subdir="${tracked_path#.agents/}"
+    subdir="${subdir%%/*}"
+    [[ -n "$subdir" && "$subdir" != "$tracked_path" ]] || continue
+    counts[$subdir]=$((${counts[$subdir]:-0} + 1))
+  done <<< "$tracked"
+
+  local result="[]"
+  for name in "${!counts[@]}"; do
+    local purpose="${purposes[$name]:-"Unknown — needs documentation"}"
+    local file_count="${counts[$name]}"
     result=$(echo "$result" | jq --arg name "$name" \
       --arg purpose "$purpose" \
       --arg path ".agents/${name}/" \
