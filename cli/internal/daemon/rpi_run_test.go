@@ -190,3 +190,77 @@ func TestNewRPIRunExecutor_RequiresFields(t *testing.T) {
 		t.Fatal("expected error when Root is empty")
 	}
 }
+
+// TestRPIRunJobSpec_AcceptsSupervisorPolicyFields verifies supervisor policy
+// fields added by soc-bcrn.3.8 round-trip cleanly through ToJobSpec /
+// RPIRunJobSpecFromPayload so daemon submitters can attach gate, landing,
+// and kill-switch policy without losing semantics on the wire.
+func TestRPIRunJobSpec_AcceptsSupervisorPolicyFields(t *testing.T) {
+	spec := NewRPIRunJobSpec("run-policy", "validate supervisor policy fields")
+	spec.MaxCycles = 2
+	spec.GatePolicy = "required"
+	spec.LandingPolicy = "commit"
+	spec.LandingBranch = "main"
+	spec.BDSyncPolicy = "auto"
+	spec.FailurePolicy = "continue"
+	spec.KillSwitchPath = ".agents/rpi/KILL"
+
+	job, err := spec.ToJobSpec("job-policy")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	parsed, err := RPIRunJobSpecFromPayload(job.Payload)
+	if err != nil {
+		t.Fatalf("RPIRunJobSpecFromPayload: %v", err)
+	}
+	if parsed.MaxCycles != 2 {
+		t.Errorf("MaxCycles = %d, want 2", parsed.MaxCycles)
+	}
+	if parsed.GatePolicy != "required" {
+		t.Errorf("GatePolicy = %q, want required", parsed.GatePolicy)
+	}
+	if parsed.LandingPolicy != "commit" {
+		t.Errorf("LandingPolicy = %q, want commit", parsed.LandingPolicy)
+	}
+	if parsed.LandingBranch != "main" {
+		t.Errorf("LandingBranch = %q, want main", parsed.LandingBranch)
+	}
+	if parsed.BDSyncPolicy != "auto" {
+		t.Errorf("BDSyncPolicy = %q, want auto", parsed.BDSyncPolicy)
+	}
+	if parsed.FailurePolicy != "continue" {
+		t.Errorf("FailurePolicy = %q, want continue", parsed.FailurePolicy)
+	}
+	if parsed.KillSwitchPath != ".agents/rpi/KILL" {
+		t.Errorf("KillSwitchPath = %q, want .agents/rpi/KILL", parsed.KillSwitchPath)
+	}
+}
+
+// TestRPIRunJobSpec_DefaultsAreEmpty confirms a spec built without explicit
+// supervisor policy fields parses with zero values so callers can apply
+// supervisor defaults at the cfg layer (back-compat with sub-5a payloads).
+func TestRPIRunJobSpec_DefaultsAreEmpty(t *testing.T) {
+	spec := NewRPIRunJobSpec("run-defaults", "no supervisor policy")
+	job, err := spec.ToJobSpec("job-defaults")
+	if err != nil {
+		t.Fatalf("ToJobSpec: %v", err)
+	}
+	// Pre-existing payload without policy fields (older clients).
+	delete(job.Payload, "max_cycles")
+	delete(job.Payload, "gate_policy")
+	delete(job.Payload, "landing_policy")
+	delete(job.Payload, "landing_branch")
+	delete(job.Payload, "bd_sync_policy")
+	delete(job.Payload, "failure_policy")
+	delete(job.Payload, "kill_switch_path")
+
+	parsed, err := RPIRunJobSpecFromPayload(job.Payload)
+	if err != nil {
+		t.Fatalf("RPIRunJobSpecFromPayload: %v", err)
+	}
+	if parsed.MaxCycles != 0 || parsed.GatePolicy != "" || parsed.LandingPolicy != "" ||
+		parsed.LandingBranch != "" || parsed.BDSyncPolicy != "" || parsed.FailurePolicy != "" ||
+		parsed.KillSwitchPath != "" {
+		t.Fatalf("expected zero supervisor policy fields, got %#v", parsed)
+	}
+}

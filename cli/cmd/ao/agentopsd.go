@@ -563,12 +563,15 @@ func buildAgentOpsDaemonGasCityRPIExecutor(cwd string, opts agentopsDaemonRunOpt
 // executor policy. Historically this shelled out to
 // scripts/ao-rpi-autonomous-cycle.sh via RPICLIExecutor; soc-bcrn.3.6 (E3.W4
 // sub-5a) replaced that with an in-process RPIRunExecutor that calls
-// runPhasedEngine directly. The shell-out path is retired in 5b/5c; the old
-// RPICLIExecutor type is intentionally left in-tree until then.
+// runPhasedEngine directly. soc-bcrn.3.8 (E3.W4 sub-5a-fix) lifted the
+// in-process runner up to the supervisor (cycles + gates + landing) so
+// daemon-submitted jobs preserve gate enforcement and landing-policy
+// semantics that the legacy shell wrapper provided. The old RPICLIExecutor
+// type is intentionally left in-tree until 5b/5c.
 //
 // runOverride is optional: production passes nil so the executor dispatches
-// to the in-process runPhasedEngine wrapper; tests inject a fake to avoid
-// spinning the full phased engine in a tempdir.
+// to the in-process supervisor wrapper; tests inject a fake to avoid spinning
+// the full supervised cycle in a tempdir.
 func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string, runOverride daemonpkg.RPIRunFunc) (daemonpkg.JobExecutor, error) {
 	run := runOverride
 	if run == nil {
@@ -582,44 +585,91 @@ func buildAgentOpsDaemonCLIFallbackRPIExecutor(cwd string, runOverride daemonpkg
 
 // defaultCLIFallbackRPIRunFunc is the production runner injected into
 // RPIRunExecutor by buildAgentOpsDaemonCLIFallbackRPIExecutor when no
-// override is supplied. It builds phasedEngineOptions from the spec and
-// calls runPhasedEngine in-process.
+// override is supplied. soc-bcrn.3.8 (E3.W4 sub-5a-fix): builds a
+// supervisor config from the spec and dispatches into executeLoopCycles —
+// the same entry point `ao rpi loop --supervisor` uses — so gates and
+// landing semantics survive the daemon path. The empty nextWorkPath means
+// the supervisor uses req.Spec.Goal as the explicit goal and exits after
+// one cycle (no queue consumption).
 func defaultCLIFallbackRPIRunFunc(ctx context.Context, req daemonpkg.RPIRunRequest) (daemonpkg.RPIRunResult, error) {
-	opts := buildPhasedEngineOptionsFromSpec(req.Spec, req.Root)
-	if err := runPhasedEngine(ctx, req.Root, req.Spec.Goal, opts); err != nil {
-		return daemonpkg.RPIRunResult{}, fmt.Errorf("run phased engine: %w", err)
+	cfg, err := buildSupervisorConfigFromSpec(req.Spec, req.Root)
+	if err != nil {
+		return daemonpkg.RPIRunResult{}, fmt.Errorf("build supervisor config: %w", err)
+	}
+	if err := executeLoopCyclesCtx(ctx, req.Root, req.Spec.Goal, "", cfg); err != nil {
+		return daemonpkg.RPIRunResult{}, fmt.Errorf("supervisor loop: %w", err)
 	}
 	return daemonpkg.RPIRunResult{
 		Artifacts: map[string]string{
-			"rpi_run_status": "completed",
+			"rpi_run_status":    "completed",
+			"supervisor_engine": "in-process",
 		},
 	}, nil
 }
 
-// buildPhasedEngineOptionsFromSpec translates a daemon RPIRunJobSpec into the
-// phasedEngineOptions consumed by runPhasedEngine. Mirrors the construction
-// done by `ao rpi phased`/`ao rpi serve`/`ao rpi loop --supervisor` callers
-// but seeds defaults and scope appropriate for an in-process daemon worker:
+// executeLoopCyclesCtx is a thin wrapper that lets the daemon path supply a
+// caller-controlled context (the existing executeLoopCycles always builds
+// its own signal-aware context). For now the daemon delegates to the same
+// loop body; the ctx parameter is reserved for future plumbing once the
+// loop accepts an external context.
+func executeLoopCyclesCtx(_ context.Context, cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSupervisorConfig) error {
+	return executeLoopCycles(cwd, explicitGoal, nextWorkPath, cfg)
+}
+
+// buildSupervisorConfigFromSpec translates a daemon RPIRunJobSpec into an
+// rpiLoopSupervisorConfig consumed by the supervisor loop. soc-bcrn.3.8
+// (E3.W4 sub-5a-fix): replaces the old buildPhasedEngineOptionsFromSpec
+// wiring so daemon-submitted jobs run through the same cycles + gates +
+// landing path as `ao rpi loop --supervisor`.
 //
-//   - dashboard suppressed (the daemon owns the supervisor terminal record);
-//   - run_id pre-seeded from the spec so artifacts correlate;
-//   - WorkingDir pinned to the daemon root cwd;
-//   - phase_timeout, execution-packet path, test_first carried through.
+// The base config comes from buildBaseLoopConfig() so global defaults
+// (failure-policy=stop, gate-policy=off, landing-policy=off, etc.) apply
+// out of the box. Any explicit spec field overrides the default. Fields on
+// RPIRunJobSpec without a counterpart on rpiLoopSupervisorConfig (MaxCycles,
+// ExecutionPacketPath, TestFirst, RunID, PhaseTimeout) are preserved on the
+// spec for future wiring but not yet projected onto the supervisor cfg —
+// daemon mode currently runs a single explicit-goal cycle and exits, so
+// MaxCycles and queue-mode plumbing are not yet required.
 //
-// Fields without an obvious mapping (Mixed, BudgetSpec, GCCityName, etc.)
-// fall back to defaultPhasedEngineOptions values; sub-waves 5b/5c will
-// refine per-spec wiring as the operator surface stabilizes.
-func buildPhasedEngineOptionsFromSpec(spec daemonpkg.RPIRunJobSpec, root string) phasedEngineOptions {
-	opts := defaultPhasedEngineOptions()
-	opts.WorkingDir = root
-	opts.RunID = spec.RunID
-	opts.NoDashboard = true
-	opts.TestFirst = spec.TestFirst
-	opts.DiscoveryArtifact = spec.ExecutionPacketPath
-	if d, err := time.ParseDuration(strings.TrimSpace(spec.PhaseTimeout)); err == nil && d > 0 {
-		opts.PhaseTimeout = d
+// resolveLoopConfigPaths is invoked so the kill-switch and landing-lock
+// paths resolve relative to the daemon root cwd, mirroring the cobra-driven
+// resolveLoopSupervisorConfig flow.
+func buildSupervisorConfigFromSpec(spec daemonpkg.RPIRunJobSpec, root string) (rpiLoopSupervisorConfig, error) {
+	cfg := buildBaseLoopConfig()
+	if v := strings.TrimSpace(spec.GatePolicy); v != "" {
+		cfg.GatePolicy = strings.ToLower(v)
 	}
-	return opts
+	if v := strings.TrimSpace(spec.LandingPolicy); v != "" {
+		cfg.LandingPolicy = strings.ToLower(v)
+	}
+	if v := strings.TrimSpace(spec.LandingBranch); v != "" {
+		cfg.LandingBranch = v
+	}
+	if v := strings.TrimSpace(spec.BDSyncPolicy); v != "" {
+		cfg.BDSyncPolicy = strings.ToLower(v)
+	}
+	if v := strings.TrimSpace(spec.FailurePolicy); v != "" {
+		cfg.FailurePolicy = strings.ToLower(v)
+	}
+	if v := strings.TrimSpace(spec.KillSwitchPath); v != "" {
+		cfg.KillSwitchPath = v
+	}
+
+	if err := validateLoopConfigPolicies(cfg); err != nil {
+		return cfg, fmt.Errorf("supervisor config from spec: %w", err)
+	}
+
+	// Apply timing/path defaults the same way the cobra flow does so
+	// LeaseTTL, CommandTimeout, and KillSwitchPath behave consistently
+	// regardless of whether the supervisor was launched from CLI or daemon.
+	applyLoopTimingDefaults(&cfg, nil)
+	applyLoopPathDefaults(&cfg)
+	resolveLoopConfigPaths(&cfg, root)
+
+	// Daemon owns the supervisor lease at the queue level; per-job lease
+	// acquisition would deadlock against itself. Disable explicitly.
+	cfg.LeaseEnabled = false
+	return cfg, nil
 }
 
 // fakeRPIPhaseExecutor is a deterministic, CI-safe phase executor that returns

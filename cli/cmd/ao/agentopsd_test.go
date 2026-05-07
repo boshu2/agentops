@@ -739,6 +739,93 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T)
 	}
 }
 
+// TestBuildSupervisorConfigFromSpec_MapsPolicyFields covers the spec→cfg
+// translation introduced by soc-bcrn.3.8 (E3.W4 sub-5a-fix). Daemon-submitted
+// rpi.run jobs must propagate gate, landing, BD-sync, failure, and
+// kill-switch policy onto the supervisor config so the supervisor loop
+// enforces the same semantics as `ao rpi loop --supervisor`.
+func TestBuildSupervisorConfigFromSpec_MapsPolicyFields(t *testing.T) {
+	root := t.TempDir()
+	spec := daemonpkg.NewRPIRunJobSpec("run-cfg", "validate spec to cfg mapping")
+	spec.GatePolicy = "required"
+	spec.LandingPolicy = "commit"
+	spec.LandingBranch = "release/v3"
+	spec.BDSyncPolicy = "always"
+	spec.FailurePolicy = "continue"
+	spec.KillSwitchPath = filepath.Join(root, "custom-kill")
+
+	cfg, err := buildSupervisorConfigFromSpec(spec, root)
+	if err != nil {
+		t.Fatalf("buildSupervisorConfigFromSpec: %v", err)
+	}
+	if cfg.GatePolicy != "required" {
+		t.Errorf("GatePolicy = %q, want required", cfg.GatePolicy)
+	}
+	if cfg.LandingPolicy != "commit" {
+		t.Errorf("LandingPolicy = %q, want commit", cfg.LandingPolicy)
+	}
+	if cfg.LandingBranch != "release/v3" {
+		t.Errorf("LandingBranch = %q, want release/v3", cfg.LandingBranch)
+	}
+	if cfg.BDSyncPolicy != "always" {
+		t.Errorf("BDSyncPolicy = %q, want always", cfg.BDSyncPolicy)
+	}
+	if cfg.FailurePolicy != "continue" {
+		t.Errorf("FailurePolicy = %q, want continue", cfg.FailurePolicy)
+	}
+	if cfg.KillSwitchPath != filepath.Join(root, "custom-kill") {
+		t.Errorf("KillSwitchPath = %q, want absolute path under root", cfg.KillSwitchPath)
+	}
+	if cfg.LeaseEnabled {
+		t.Errorf("LeaseEnabled = true, want false (daemon owns the queue-level lease)")
+	}
+}
+
+// TestBuildSupervisorConfigFromSpec_DefaultsWhenSpecEmpty checks that a spec
+// without any supervisor policy fields produces a cfg matching the
+// supervisor's safe defaults (gate-policy=off, landing-policy=off,
+// failure-policy=stop). Path defaults must still resolve relative to root.
+func TestBuildSupervisorConfigFromSpec_DefaultsWhenSpecEmpty(t *testing.T) {
+	root := t.TempDir()
+	spec := daemonpkg.NewRPIRunJobSpec("run-default-cfg", "no policy fields")
+
+	cfg, err := buildSupervisorConfigFromSpec(spec, root)
+	if err != nil {
+		t.Fatalf("buildSupervisorConfigFromSpec: %v", err)
+	}
+	if cfg.GatePolicy != "off" {
+		t.Errorf("GatePolicy = %q, want off (default)", cfg.GatePolicy)
+	}
+	if cfg.LandingPolicy != "off" {
+		t.Errorf("LandingPolicy = %q, want off (default)", cfg.LandingPolicy)
+	}
+	if cfg.FailurePolicy != "stop" {
+		t.Errorf("FailurePolicy = %q, want stop (default)", cfg.FailurePolicy)
+	}
+	if cfg.LeaseEnabled {
+		t.Errorf("LeaseEnabled = true, want false (daemon owns the queue-level lease)")
+	}
+	if !filepath.IsAbs(cfg.KillSwitchPath) {
+		t.Errorf("KillSwitchPath = %q, want absolute (resolved against root)", cfg.KillSwitchPath)
+	}
+	if !strings.HasPrefix(cfg.KillSwitchPath, root) {
+		t.Errorf("KillSwitchPath = %q, want prefix %q", cfg.KillSwitchPath, root)
+	}
+}
+
+// TestBuildSupervisorConfigFromSpec_RejectsInvalidEnum guards against
+// silently accepting a typo in a policy field. validateLoopConfigPolicies
+// is the same enum gate the cobra path runs, so daemon submitters get the
+// same diagnostics.
+func TestBuildSupervisorConfigFromSpec_RejectsInvalidEnum(t *testing.T) {
+	spec := daemonpkg.NewRPIRunJobSpec("run-bad", "invalid enum should fail")
+	spec.GatePolicy = "ON" // not a valid value
+
+	if _, err := buildSupervisorConfigFromSpec(spec, t.TempDir()); err == nil {
+		t.Fatal("expected error for invalid GatePolicy")
+	}
+}
+
 func TestAgentOpsDaemonPlansProjectionExecutorRegistration(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
