@@ -612,16 +612,82 @@ if [[ "$RUN_EVOLVE" == true ]]; then
     preflight_evolve "$WORK_ORDER" "$REPO_ROOT" "$RUNTIME_CMD" "$GH_EVIDENCE" "$MAIN_CI_STATUS" "$WORKTREE_STATUS" "$LANDING_POLICY" "$BRANCH"
     export AGENTOPS_RPI_RUNTIME_MODE="$RUNTIME_MODE"
     export AGENTOPS_RPI_RUNTIME_COMMAND="$RUNTIME_CMD"
-    if [[ -n "$BRANCH" ]]; then
-      evolve_args=(--max-cycles "$MAX_CYCLES" --gate-policy "$GATE_POLICY" --landing-policy "$LANDING_POLICY" --landing-branch "$BRANCH")
-    else
-      evolve_args=(--max-cycles "$MAX_CYCLES" --gate-policy "$GATE_POLICY" --landing-policy "$LANDING_POLICY")
+
+    # soc-bcrn.3.7: submit to agentopsd via `ao daemon jobs submit` (rpi.run) +
+    # wait for terminal status. RPIRunExecutor (sub-wave 5a,
+    # cli/internal/daemon/rpi_run.go) handles execution in-process; the prior
+    # shell-out wrapper was retired here. Combined output (submit + wait) is
+    # captured to $OUTPUT_DIR/evolve.log.
+    EVOLVE_PAYLOAD_JSON="$OUTPUT_DIR/evolve-rpi-run-payload.json"
+    EVOLVE_SUBMIT_JSON="$OUTPUT_DIR/evolve-submit.json"
+    EVOLVE_WAIT_JSON="$OUTPUT_DIR/evolve-wait.json"
+
+    require_cmd ao
+    : >"$OUTPUT_DIR/evolve.log"
+
+    # Liveness probe: no `ao daemon health` command exists, so a successful
+    # `ao daemon jobs list --json` doubles as a daemon-reachability check.
+    if ! ao daemon jobs list --json >>"$OUTPUT_DIR/evolve.log" 2>&1; then
+      EVOLVE_STATUS="failed"
+      die "Evolve phase failed: agentopsd unreachable (ao daemon jobs list); see $OUTPUT_DIR/evolve.log"
     fi
-    if "$REPO_ROOT/scripts/ao-rpi-autonomous-cycle.sh" "${evolve_args[@]}" >"$OUTPUT_DIR/evolve.log" 2>&1; then
+
+    # Build the rpi.run payload. Shape: cli/internal/daemon/rpi_jobs.go
+    # (RPIRunJobSpec). soc-bcrn.3.8 added the supervisor policy fields
+    # (max_cycles, gate_policy, landing_policy, landing_branch) so the
+    # daemon path applies the same gates + landing the legacy
+    # legacy shell wrapper applied via ao rpi loop --supervisor.
+    LANDING_BRANCH_PAYLOAD="${BRANCH:-}"
+    jq -n \
+      --arg run_id "${RUN_ID}-evolve" \
+      --arg goal "private local nightly RPI/evolve cycle" \
+      --argjson max_cycles "$MAX_CYCLES" \
+      --arg gate_policy "$GATE_POLICY" \
+      --arg landing_policy "$LANDING_POLICY" \
+      --arg landing_branch "$LANDING_BRANCH_PAYLOAD" '
+      {
+        schema_version: 1,
+        job_type: "rpi.run",
+        run_id: $run_id,
+        goal: $goal,
+        start_phase: 1,
+        max_phase: 3,
+        test_first: true,
+        backend: "gascity-api",
+        max_cycles: $max_cycles,
+        gate_policy: $gate_policy,
+        landing_policy: $landing_policy
+      }
+      + (if $landing_branch == "" then {} else {landing_branch: $landing_branch} end)' >"$EVOLVE_PAYLOAD_JSON"
+
+    if ! ao daemon jobs submit --type rpi.run --payload "@$EVOLVE_PAYLOAD_JSON" --json \
+        >"$EVOLVE_SUBMIT_JSON" 2>>"$OUTPUT_DIR/evolve.log"; then
+      cat "$EVOLVE_SUBMIT_JSON" >>"$OUTPUT_DIR/evolve.log" 2>/dev/null || true
+      EVOLVE_STATUS="failed"
+      die "Evolve phase failed: ao daemon jobs submit (rpi.run); see $OUTPUT_DIR/evolve.log"
+    fi
+    cat "$EVOLVE_SUBMIT_JSON" >>"$OUTPUT_DIR/evolve.log"
+
+    EVOLVE_JOB_ID="$(jq -r '.job_id // empty' "$EVOLVE_SUBMIT_JSON")"
+    if [[ -z "$EVOLVE_JOB_ID" ]]; then
+      EVOLVE_STATUS="failed"
+      die "Evolve phase failed: no job_id in submit response; see $OUTPUT_DIR/evolve.log"
+    fi
+
+    if ! ao --output json daemon jobs wait "$EVOLVE_JOB_ID" \
+        >"$EVOLVE_WAIT_JSON" 2>>"$OUTPUT_DIR/evolve.log"; then
+      cat "$EVOLVE_WAIT_JSON" >>"$OUTPUT_DIR/evolve.log" 2>/dev/null || true
+      EVOLVE_STATUS="failed"
+      die "Evolve phase failed: ao daemon jobs wait $EVOLVE_JOB_ID; see $OUTPUT_DIR/evolve.log"
+    fi
+    cat "$EVOLVE_WAIT_JSON" >>"$OUTPUT_DIR/evolve.log"
+
+    EVOLVE_TERMINAL_STATUS="$(jq -r '.status // empty' "$EVOLVE_WAIT_JSON")"
+    if [[ "$EVOLVE_TERMINAL_STATUS" == "completed" ]]; then
       EVOLVE_STATUS="ok"
     else
       EVOLVE_STATUS="failed"
-      die "Evolve phase failed; see $OUTPUT_DIR/evolve.log"
+      die "Evolve phase failed: rpi.run job $EVOLVE_JOB_ID terminal status '$EVOLVE_TERMINAL_STATUS'; see $OUTPUT_DIR/evolve.log"
     fi
   fi
 fi

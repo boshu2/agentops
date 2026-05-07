@@ -184,8 +184,10 @@ Initial job families:
 
 Executor policies route these families differently. `fake` and `gascity`
 handle `rpi.run` through the daemon phase runner; `cli-fallback` handles
-`rpi.run` by shelling to `scripts/ao-rpi-autonomous-cycle.sh` with
-`landing_policy=off` and does not claim standalone `rpi.phase` jobs.
+`rpi.run` in-process via `RPIRunExecutor` (`cli/internal/daemon/rpi_run.go`),
+which calls `runPhasedEngine` through the function-pointer pattern, and does
+not claim standalone `rpi.phase` jobs. The previous shell-out wrapper under
+`scripts/` was retired in soc-bcrn.3.7.
 
 ### Read-Side Endpoints — `plans.projection` curl example (F-PM-3)
 

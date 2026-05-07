@@ -63,7 +63,9 @@ The daemon executor policy controls the handoff:
 
 - `fake` and `gascity` may enqueue the admitted `rpi.run` child job;
 - `cli-fallback` may enqueue the admitted `rpi.run` child job and executes it
-  through `scripts/ao-rpi-autonomous-cycle.sh` with `landing-policy=off`.
+  in-process via `RPIRunExecutor` (`cli/internal/daemon/rpi_run.go`) with
+  `landing-policy=off`. The previous shell-out wrapper under `scripts/` was
+  retired in soc-bcrn.3.7.
 
 `cli-fallback` is still a manual rehearsal surface: it proves daemon-owned
 admission and local execution wiring without enabling recurring host
