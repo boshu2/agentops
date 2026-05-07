@@ -709,7 +709,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "5693784e93885fbf3ebe58c8ac4010ab14377d7f3d6ee53b3f2698a03938060c",
+      "source_hash": "870103393336bc56fe53cc722501f238861b8eab5767835f5230de333e69a169",
       "generated_hash": "ba0a5b1f6a4f1c2350341611d2977b387451c63f550254263fe61f582afcfbca"
     },
     {
@@ -727,7 +727,7 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "3f1bbc935567a72e645c037e34940d7259c2badc190f8f91db49fa4a2e589010",
+      "source_hash": "707331322addee81ff52032fa6eefc4c39a4eccc8538888ec8a7c75a8ffda45c",
       "generated_hash": "027be281254ef5b62ffacc604f55d2ce34b49c2bbbd99a9f31d3ad4702f94009"
     },
     {
@@ -787,7 +787,7 @@
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
-      "source_hash": "3327b65b82a4167f3a52e0936cb7e59a58b27ec54ec9a9017f0beb4e5b2ab47a",
+      "source_hash": "3c108dcae47ce755778685f6432f8ebea752f1f21d94adbc1dc547283cb547b3",
       "generated_hash": "3e5f02ccb7201f1ab86a1ed72233ecb3b3af9690a290d770f65366b2472d2f1b"
     },
     {
@@ -1069,7 +1069,7 @@
     {
       "name": "validation",
       "source_skill": "skills/validation",
-      "source_hash": "3c55c8e9789682c1c1de3aee4f5b7856ccf2e8511dde12c995fb8b27a20412e4",
+      "source_hash": "18d13f593d2f7bcfe562a89bdf740269631004f8a990911d71615d7500d82926",
       "generated_hash": "becd183323fa80b92579e49d340fadaaa2bda832866d1d3c93b6b29a5880c50a"
     },
     {

@@ -678,6 +678,7 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 - [references/team-coordination.md](references/team-coordination.md)
 - [references/test-first-mode.md](references/test-first-mode.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+- [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
 - [references/uat-integration-wave.md](references/uat-integration-wave.md)
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
 - [references/wave-patterns.md](references/wave-patterns.md)

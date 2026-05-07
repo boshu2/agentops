@@ -245,3 +245,4 @@ See [references/troubleshooting.md](references/troubleshooting.md).
 - [references/four-surface-closure.md](references/four-surface-closure.md) — four-surface closure validation (code + docs + examples + proof)
 - [references/forge-scope.md](references/forge-scope.md) and [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — forge scoping, rerun behavior, standalone mode
 - [references/remote-and-multi-repo-validation.md](references/remote-and-multi-repo-validation.md)
+- [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
