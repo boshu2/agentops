@@ -13,6 +13,7 @@ The corpus is the descendant of the wiki (Ward Cunningham, 1995), the runbook, t
 Compounding is something the user **schedules**, not something the system magic-claims. `ao schedule` + `ao daemon` run dream, evolve, compile, defrag, forge, and feedback-drain on whatever cadence the user sets — that's the always-on lane. The three-gap model (judgment validation, durable learning, loop closure) names the failure modes; today **Gap 1 is mechanically enforced** via hooks, static analysis, and CI gates. **Gaps 2 and 3 are roadmap** — the gates are declared, the substrate is maturing, and the empirical proof artifacts (eval workbench, MemRL outcome-grounded reward, flywheel-proof) are tracked work, not shipped claims.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
+> Lineage: AgentOps positions explicitly against EveryInc's [Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin) — see [docs/comparisons/vs-compound-engineer.md](docs/comparisons/vs-compound-engineer.md) for the in-depth contrast (operator-driven trunk vs. autonomy overlays, capture/scoring/injection, council validation).
 
 ## Vision
 
@@ -183,3 +184,4 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 - [Scale Without Swarms](docs/scale-without-swarms.md) — why 3-5 focused agents with fresh context and regression gates outperform massive uncoordinated swarms; the AgentOps model of waves, isolation, and gates explained.
 - [Brownian Ratchet](docs/brownian-ratchet.md) — the forward-only-progress lineage in detail.
 - [The Science](docs/the-science.md) — DevOps Three Ways, the escape velocity condition, and the leverage-points map.
+- [vs. Compound Engineer](docs/comparisons/vs-compound-engineer.md) — direct comparison against EveryInc's compound-engineering-plugin, including where AgentOps is in-scope (capture, scoring, injection, council validation, repo-native `ao` workflows) and where it explicitly is not.

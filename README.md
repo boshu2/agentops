@@ -328,7 +328,7 @@ Most tools optimize work *within* a session. AgentOps compounds across them. The
 | Tool | What it does well | What AgentOps adds |
 |------|-------------------|--------------------|
 | **[GSD](https://github.com/glittercowboy/get-shit-done)** | Fresh-context phased execution, recovery loops, runtime breadth | Context Compiler (cross-session retrieval), Validation Gates (pre-build), Knowledge Flywheel |
-| **[Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin)** | Ideation, configurable reviewers, cross-runtime conversion | Automatic capture/scoring/injection, council validation, repo-native `ao` workflows |
+| **[Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin)** ([vs.](docs/comparisons/vs-compound-engineer.md)) | Ideation, configurable reviewers, cross-runtime conversion | Automatic capture/scoring/injection, council validation, repo-native `ao` workflows |
 | **[Spec Kit](https://github.com/github/spec-kit) / [Kiro](https://kiro.dev/)** | Spec-driven development and executable planning artifacts | Learning beyond specs: failures, decisions, retros, prevention rules |
 | **[Superpowers](https://github.com/obra/superpowers)** | TDD discipline and autonomous work patterns | Memory, pre-mortems, validation across repeated sessions |
 | **[Ruflo / Claude-Flow](https://github.com/ruvnet/ruflo)** | High-scale swarm orchestration and MCP-heavy coordination | Local, auditable compounding around whatever executes the work |
