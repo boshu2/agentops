@@ -1495,6 +1495,8 @@ ao feedback-loop [flags]
 ```
       --alpha float            EMA learning rate (default 0.1)
       --citation-type string   Filter citations by type (retrieved, applied, all) (default "retrieved")
+      --drain                  Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)
+      --drain-reward float     Neutral reward applied to drained citations (0.0-1.0) (default 0.5)
   -h, --help                   help for feedback-loop
       --reward float           Override reward value (0.0-1.0); -1 = compute from transcript (default -1)
       --session string         Session ID to process
@@ -3282,6 +3284,35 @@ ao mine [flags]
       --quiet               Suppress progress output
       --since string        How far back to look (e.g. 26h, 7d) (default "26h")
       --sources string      Comma-separated sources to mine (git, agents, code, events) (default "git,agents,code")
+```
+
+---
+
+### `ao patterns`
+
+Maintenance commands for the .agents/patterns/ directory.
+
+```
+ao patterns [command]
+```
+
+**Subcommands:**
+
+#### `ao patterns repair-filenames`
+
+Walk .agents/patterns/*.md, detect filenames whose hyphenated segments
+
+```
+ao patterns repair-filenames [flags]
+```
+
+**Flags:**
+
+```
+      --apply        Perform renames (default: dry-run, no disk writes)
+      --dir string   Patterns directory to repair (default: <cwd>/.agents/patterns)
+  -h, --help         help for repair-filenames
+      --quiet        Suppress per-rename output
 ```
 
 ---

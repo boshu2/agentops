@@ -377,6 +377,117 @@ func TestPromote_RepeatedPromotionIsIdempotent(t *testing.T) {
 	}
 }
 
+// TestPromote_DoesNotDoubleRigPrefix is the regression for soc-sx99.7. A
+// promoted artifact whose on-disk filename already begins with the rig prefix
+// (e.g., "agentops-nami-note.md") must not be re-prefixed on a subsequent
+// promotion pass. Earlier code unconditionally prepended `<rig>-` to the
+// basename, so a file named "agentops-nami-note.md" became
+// "agentops-nami-agentops-nami-note.md" — the canonical doubling that left
+// 128/136 patterns on disk with malformed names.
+//
+// This scenario exercises the path where original_path frontmatter has been
+// lost (legacy/migrated artifact, manual edit, etc.) so the destination is
+// derived from the already-promoted SourcePath.
+func TestPromote_DoesNotDoubleRigPrefix(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Simulate a legacy promoted artifact with the rig-prefixed filename
+	// but with original_path missing from the frontmatter (the field that
+	// would otherwise short-circuit the doubling via promotionSourceIdentity).
+	legacyName := "agentops-nami-note.md"
+	srcFile := filepath.Join(srcDir, legacyName)
+	srcContent := "---\ntype: learning\npromoted_from: \"agentops-nami\"\n---\n\n# Stable\n\nLegacy promoted body.\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:          "art-legacy",
+				Type:        "learning",
+				SourceRig:   "agentops-nami",
+				SourcePath:  srcFile,
+				ContentHash: "hash-legacy",
+				Confidence:  0.9,
+			},
+		},
+	}
+
+	if _, err := Promote(cat, destDir, false); err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(destDir, "learning"))
+	if err != nil {
+		t.Fatalf("read promoted learning dir: %v", err)
+	}
+	if len(entries) != 1 {
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Fatalf("promoted entries=%d (%v), want 1", len(entries), names)
+	}
+	got := entries[0].Name()
+	want := legacyName // canonical: rig prefix preserved exactly once.
+	if got != want {
+		t.Fatalf("promoted basename=%q, want %q (rig prefix doubled)", got, want)
+	}
+
+	// Belt-and-suspenders: explicitly assert no doubling, even if the basename
+	// happens to differ from the legacy name in some other way.
+	if strings.Contains(got, "agentops-nami-agentops-nami-") {
+		t.Fatalf("promoted basename %q contains doubled rig prefix", got)
+	}
+}
+
+// TestPromote_DoesNotTripleRigPrefix asserts the promotion path is bounded —
+// even if the on-disk filename was already corrupted by a prior buggy run,
+// re-promoting must not grow the prefix again. Mirrors the on-disk shape of
+// the 128 malformed pattern files this slice exists to repair.
+func TestPromote_DoesNotTripleRigPrefix(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// A pre-corrupted name with the rig prefix already doubled.
+	corruptedName := "agentops-nami-agentops-nami-note.md"
+	srcFile := filepath.Join(srcDir, corruptedName)
+	srcContent := "---\ntype: learning\npromoted_from: \"agentops-nami\"\n---\n\n# Stable\n\nLegacy.\n"
+	if err := os.WriteFile(srcFile, []byte(srcContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := &Catalog{
+		Promoted: []Artifact{
+			{
+				ID:          "art-corrupt",
+				Type:        "learning",
+				SourceRig:   "agentops-nami",
+				SourcePath:  srcFile,
+				ContentHash: "hash-corrupt",
+				Confidence:  0.9,
+			},
+		},
+	}
+	if _, err := Promote(cat, destDir, false); err != nil {
+		t.Fatalf("Promote failed: %v", err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(destDir, "learning"))
+	if err != nil {
+		t.Fatalf("read promoted learning dir: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("promoted entries=%d, want 1", len(entries))
+	}
+	got := entries[0].Name()
+	if strings.Contains(got, "agentops-nami-agentops-nami-agentops-nami-") {
+		t.Fatalf("promoted basename %q grew the rig prefix to triple", got)
+	}
+}
+
 func TestPromote_CapsLongDestinationFilenameWithHash(t *testing.T) {
 	srcDir := t.TempDir()
 	destDir := t.TempDir()
