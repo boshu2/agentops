@@ -144,6 +144,8 @@ STEP 4  ──  if not --no-forge AND ao available:
               fi
 
 STEP 5  ──  write phase summary to .agents/rpi/phase-3-summary-YYYY-MM-DD-<slug>.md
+              Include the per-criterion verdict table (see "Per-Criterion Verdict Report" below).
+              If acceptance_criteria absent or empty: emit back-compat WARN and fall through to vibe-only verdict (see "Back-compat fallback" below).
               ao ratchet record vibe 2>/dev/null || true
               output <promise>DONE</promise>
 ```
@@ -181,7 +183,30 @@ Write to `.agents/rpi/phase-3-summary-YYYY-MM-DD-<slug>.md`:
 - **Complexity:** <fast|standard|full>
 - **Status:** <DONE|FAIL>
 - **Timestamp:** <ISO-8601>
+
+## Per-criterion verdicts
+
+| Criterion | Status | Evidence | Notes |
+|---|---|---|---|
+| ac-foo.1 | PASS | path/to/evidence | one-liner |
+| ac-foo.2 | FAIL | (missing) | command exited 1 |
 ```
+
+## Per-Criterion Verdict Report
+
+When the execution packet supplies `acceptance_criteria` (epic and/or bead level), validation replaces the vibe-only verdict with a per-criterion table (shape shown in "Phase Summary Format" above). Each row reports one criterion's outcome; rubric, runner contract for the seven `check_type` enum values, and worked examples live in [`references/per-criterion-rubric.md`](references/per-criterion-rubric.md).
+
+A row is FAIL when `evidence_required: true` and `evidence_path` matches no artifact, regardless of `check_command` exit. Aggregate verdict is a GOALS-style weighted average over `weight`; criteria with `optional: true` are non-blocking.
+
+## Back-compat fallback
+
+When `acceptance_criteria` is absent or empty in the execution packet, validation falls back to vibe-only verdict and emits a WARN log line:
+
+```
+[deprecated] no acceptance_criteria found in packet — running vibe-only
+```
+
+This back-compat behavior holds until **2026-06-30**. After that date, missing `acceptance_criteria` becomes FAIL — criteria are mandatory.
 
 ## Phase Budgets
 
