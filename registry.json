@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T15:27:25Z",
+  "generated_at": "2026-05-07T15:38:10Z",
   "summary": {
     "skills": 73,
     "hooks": 41,
@@ -931,7 +931,7 @@
         "name": "ao",
         "path": ".agents/ao/",
         "purpose": "CLI runtime state and configuration",
-        "file_count": 635
+        "file_count": 638
       },
       {
         "name": "archive",
@@ -1051,7 +1051,7 @@
         "name": "handoff",
         "path": ".agents/handoff/",
         "purpose": "Session handoff documents",
-        "file_count": 511
+        "file_count": 514
       },
       {
         "name": "handoffs",
@@ -1319,82 +1319,8 @@
       }
     ],
     "schedules": {
-      "example": [
-        {
-          "name": "nightly-rpi-run",
-          "cron": "0 3 * * *",
-          "job_type": "rpi.run",
-          "timeout": "1h"
-        },
-        {
-          "name": "nightly-dream-run",
-          "cron": "0 2 * * *",
-          "job_type": "dream.run",
-          "timeout": "2h"
-        },
-        {
-          "name": "weekly-wiki-build",
-          "cron": "0 5 * * 0",
-          "job_type": "wiki.build",
-          "timeout": "30m"
-        },
-        {
-          "name": "daily-openclaw-snapshot",
-          "cron": "0 6 * * *",
-          "job_type": "openclaw.snapshot",
-          "timeout": "15m"
-        },
-        {
-          "name": "nightly-eval-suite",
-          "cron": "0 4 * * *",
-          "job_type": "eval.suite",
-          "timeout": "1h"
-        }
-      ],
-      "live": [
-        {
-          "name": "nightly-dream",
-          "cron": "0 3 * * *",
-          "job_type": "dream.run",
-          "timeout": "4h30m"
-        },
-        {
-          "name": "hourly-forge",
-          "cron": "5 * * * *",
-          "job_type": "wiki.forge",
-          "timeout": ""
-        },
-        {
-          "name": "nightly-eval-suite",
-          "cron": "0 4 * * *",
-          "job_type": "eval.suite",
-          "timeout": "1h"
-        },
-        {
-          "name": "weekly-flywheel-health",
-          "cron": "0 6 * * 1",
-          "job_type": "skill.invoke",
-          "timeout": "15m"
-        },
-        {
-          "name": "weekly-deps-audit",
-          "cron": "0 7 * * 2",
-          "job_type": "skill.invoke",
-          "timeout": "30m"
-        },
-        {
-          "name": "weekly-security-scan",
-          "cron": "0 7 * * 3",
-          "job_type": "skill.invoke",
-          "timeout": "30m"
-        },
-        {
-          "name": "weekly-evolve-loop",
-          "cron": "0 2 * * 6",
-          "job_type": "rpi.run",
-          "timeout": "2h"
-        }
-      ]
+      "example": [],
+      "live": []
     },
     "evals": [
       {
