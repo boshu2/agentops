@@ -1,0 +1,23 @@
+{
+  "date": "2026-05-08",
+  "main_sha": "f331c03",
+  "method": "ran scripts/pre-push-gate.sh --fast at HEAD == origin/main (no divergence between nightly branch and main when measured)",
+  "inherited_failures": [
+    {
+      "name": "agentops-core.pre-push-gate-governance / pre-push-bats-suite",
+      "exit_code": 127,
+      "root_cause": "bats not installed in canonical VM image"
+    },
+    {
+      "name": "agentops-core.release-security-gates / release-gate-contract-tests",
+      "exit_code": 127,
+      "root_cause": "bats not installed in canonical VM image"
+    },
+    {
+      "name": "agentops-core.runtime-smoke-matrix / cursor-runtime-smoke",
+      "exit_code": 1,
+      "root_cause": "cursor runtime smoke harness fails in canonical VM image (likely missing tooling)"
+    }
+  ],
+  "note": "All three are inherited from main: this branch was at the same SHA as origin/main when measured. Per pipeline step 4, red here is a main-branch concern, not a per-PR blocker. The bats failures are environment, not code; install bats in canonical VM image (one-time repo fix)."
+}
