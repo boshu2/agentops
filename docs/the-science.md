@@ -2,6 +2,13 @@
 
 > **TL;DR:** One model of knowledge decay (Darr 1995) suggests ~17%/week without reinforcement. Knowledge compounds when retrieval × usage beats decay and scale friction. Early growth can be exponential; long-run growth requires active limits-to-growth controls.
 
+> For the practitioner-facing distillation, see [Trust Factory](trust-factory.md). For the wiki framing of the same mechanism, see [A wiki for your agents](wiki-for-agents.md).
+
+## Companion docs
+
+- [Trust Factory](trust-factory.md) — the practitioner-facing distillation: how the science maps to identity, reproducibility, evaluation, evidence, and recovery.
+- [A wiki for your agents](wiki-for-agents.md) — the deflationary framing for the same mechanism (`.agents/` as a 25-year-old idea, mechanically maintained).
+
 ---
 
 ## The Journey

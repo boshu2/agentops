@@ -1,18 +1,22 @@
 # DevOps for Vibe-Coding
 
-**Version:** 1.2.0
-**Date:** 2026-01-31
+**Version:** 1.3.0
+**Date:** 2026-05-07
 **Status:** Supporting bridge narrative, not the primary category page
+
+> **See also:** [A wiki for your agents](../wiki-for-agents.md) — the primary
+> category framing this doc supports. The DevOps argument below is the
+> historical lineage; the wiki framing is the current headline.
 
 ---
 
 ## Tagline
 
-**Primary:** The operational layer for coding agents.
+**Primary:** A wiki for your agents — built so you own the moat.
 
-**Secondary:** Bookkeeping, validation, primitives, and flows that compound between sessions.
+**Secondary (DevOps lineage):** Bookkeeping, validation, primitives, and flows that compound between sessions, drawn from 50 years of operational discipline.
 
-**Category:** Operational layer for coding agents
+**Category:** Context library / wiki for agents (DevOps lineage, not the category label)
 
 **Legacy (SEO/blog only):** DevOps for Vibe-Coding
 
@@ -20,10 +24,12 @@
 
 ## Elevator Pitch (30 seconds)
 
-> AgentOps is the operational layer for coding agents. DevOps is the lineage,
-> not the category. It gives coding agents bookkeeping, validation,
-> primitives, and flows so work starts with repo context instead of a blank
-> prompt, gets challenged before shipping, and compounds between sessions.
+> AgentOps is a wiki for your agents — markdown in `.agents/` next to your
+> code, version-controlled, that agents read, traverse, and contribute to.
+> DevOps is the lineage, not the category: AgentOps automates the discipline
+> of building and maintaining that wiki, so work starts with repo context
+> instead of a blank prompt, gets challenged before shipping, and compounds
+> between sessions.
 
 ### One-Liner (10 seconds)
 
@@ -209,11 +215,13 @@ Every session makes the next one better because the environment changes, not bec
 
 ### When Asked "What is 12-Factor AgentOps?"
 
-> Publicly, AgentOps is the operational layer for coding agents. It gives
-> coding agents bookkeeping, validation, primitives, and flows so every
-> session starts where the last one left off. Under the hood, DevOps and
-> 12-factor ideas explain why the lifecycle/control plane looks the way it
-> does.
+> Publicly, AgentOps is a wiki for your agents — repo-native markdown in
+> `.agents/` that agents read and contribute to, with the discipline of
+> maintenance automated. It gives coding agents bookkeeping, validation,
+> primitives, and flows so every session starts where the last one left
+> off. Under the hood, DevOps and 12-factor ideas explain why the
+> lifecycle/control plane looks the way it does — see also the
+> [wiki-for-agents](../wiki-for-agents.md) primary framing.
 
 ### When Asked "How is it different from X?"
 
