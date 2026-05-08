@@ -51,6 +51,8 @@ This is the cleanest framing: a marketplace and a context library are complement
 
 ---
 
+<!-- agentops:claim:AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING -->
+
 ## Where AgentOps wins
 
 **Persistent corpus.** AgentOps's `.agents/` directory is a markdown wiki in your repo, version-controlled with your code. Learnings, decisions, citations, and validation verdicts are extracted and stored every session, then injected into future sessions via decay-ranked retrieval. Tons-of-Skills ships skills; the skill output ends with the session. AgentOps ships a bookkeeping schema that turns each session's output into durable corpus that the next session reads.

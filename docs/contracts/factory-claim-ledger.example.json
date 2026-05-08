@@ -402,6 +402,54 @@
       "promotion_state": "blocked",
       "anti_overclaim_wording": "Do not claim higher throughput without generated yield artifacts.",
       "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION",
+      "claim_text": "AgentOps holds a context-library / wiki-for-agents lane no competitor in the seven-competitor radar contests directly.",
+      "source": {"file": "docs/comparisons/competitive-radar.md", "marker": "AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION"},
+      "current_evidence": "Competitive radar table and lane segmentation in docs/comparisons/competitive-radar.md sourced from 2026-05-07 council research.",
+      "missing_proof": "Needs generated competitive-freshness scorecards and refreshed lane-segmentation evidence before quantified superiority wording.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Lane differentiation is structural framing, not measured outcome; do not imply benchmark-validated superiority.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING",
+      "claim_text": "AgentOps composes models per phase inside one RPI loop, distinct from cross-harness DRY parity.",
+      "source": {"file": "docs/comparisons/vs-everything-claude-code.md", "marker": "AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING"},
+      "current_evidence": "Comparison doc describes per-phase routing inside ao rpi; CLI surfaces exist for council and validation.",
+      "missing_proof": "Needs measured cross-model phase-routing artifacts and freshness scorecards before quantitative superiority wording.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Per-phase routing is a workflow capability claim, not a benchmark-validated speedup.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING",
+      "claim_text": "AgentOps adds a compounding corpus on top of skill inventory rather than a larger inventory of skills.",
+      "source": {"file": "docs/comparisons/vs-tons-of-skills.md", "marker": "AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING"},
+      "current_evidence": "Comparison doc and AgentOps .agents/ corpus surfaces produced by sessions.",
+      "missing_proof": "Needs generated corpus-growth and competitive-freshness scorecards before quantitative inventory-vs-corpus claims.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Corpus discipline is architectural framing, not measured throughput superiority over a marketplace.",
+      "evidence_artifacts": []
     }
   ]
 }

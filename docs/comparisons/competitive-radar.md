@@ -104,6 +104,8 @@ AgentOps's posture toward it (compete, complement, or ignore).
 
 ## Where AgentOps Wins
 
+<!-- agentops:claim:AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION -->
+
 Six differentiators no competitor in the seven-competitor set has. Sourced from
 the 2026-05-07 council research (`.agents/council/2026-05-07-research-readme-positioning.md` in the repo).
 
