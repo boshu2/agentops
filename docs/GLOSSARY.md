@@ -144,7 +144,7 @@ An internal skill that traces the lineage and sources of knowledge artifacts —
 ## R
 
 ### Ralph Wiggum Pattern (Ralph Loop)
-The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern--fresh-context-every-wave)
+The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern-fresh-context-every-wave)
 
 ### Ratchet
 A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and hooks enforce it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](skills/ratchet.md)

@@ -224,7 +224,7 @@ Not all phases are equal. Donella Meadows ranked twelve places to intervene in a
 
 The pattern: the phases most teams skip are the ones Meadows says matter most. Writing a prompt is #12. Building a system that improves its own context based on what it observes is #4. That's an 8-level leverage gap.
 
-Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Convergence map tying each CDLC phase to all five theoretical pillars: [docs/the-science.md](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Convergence map tying each CDLC phase to all five theoretical pillars: [docs/the-science.md](the-science.md#part-6-the-convergence-cdlc-as-the-unifying-spine).
 
 ---
 
@@ -251,7 +251,7 @@ Each tier draws from a different body of theory:
 - **Control theory** enables the Scale tier: declared state (GOALS.md) + reconcile loop (`/evolve`) + error budgets (fitness gates). The system continuously reconciles actual state to desired state.
 - **Systems dynamics** (Meadows 2008) provides the leverage hierarchy: Foundation is necessary infrastructure (#12–#10), Flow adds feedback (#8–#7), Knowledge reaches self-organization (#4–#3). The highest-leverage phases are the ones most teams never build.
 
-Full convergence map tying each CDLC phase to all five threads: [The Science — Part 6](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+Full convergence map tying each CDLC phase to all five threads: [The Science — Part 6](the-science.md#part-6-the-convergence-cdlc-as-the-unifying-spine).
 
 ---
 
