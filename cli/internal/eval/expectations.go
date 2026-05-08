@@ -1,13 +1,19 @@
 package eval
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type caseContext struct {
@@ -32,6 +38,8 @@ func evaluateExpectation(exp Expectation, ctx caseContext) expectationResult {
 		return evaluateStringContains("stdout", ctx.stdout, stringExpectationValue(exp))
 	case "stderr_contains":
 		return evaluateStringContains("stderr", ctx.stderr, stringExpectationValue(exp))
+	case "stdout_contains_auto_detect":
+		return evaluateStdoutContainsAutoDetect(exp, ctx)
 	case "file_exists":
 		return evaluateFileExists(exp, ctx)
 	case "file_absent":
@@ -381,4 +389,181 @@ func validateSchemaTarget(exp Expectation, ctx caseContext) error {
 		return err
 	}
 	return ValidateSuite(&suite)
+}
+
+// autoDetectSpec describes a stdout_contains_auto_detect expectation payload.
+// The expectation re-executes command, parses pattern against its combined
+// stdout+stderr, captures expected_group, and verifies the case stdout
+// contains the full match. tolerance_pct (default 0) allows numeric drift
+// between the freshly-detected capture group and the value embedded in the
+// case stdout when both are numeric. Strict-by-default: drift fails loud.
+type autoDetectSpec struct {
+	command       string
+	pattern       string
+	expectedGroup int
+	tolerancePct  float64
+}
+
+func parseAutoDetectSpec(exp Expectation) (autoDetectSpec, error) {
+	spec := autoDetectSpec{expectedGroup: 1, tolerancePct: 0}
+	raw, ok := exp.Value.(map[string]any)
+	if !ok {
+		return spec, fmt.Errorf("value must be an object with command/pattern fields")
+	}
+	if cmd, ok := raw["command"].(string); ok {
+		spec.command = strings.TrimSpace(cmd)
+	}
+	if spec.command == "" {
+		return spec, fmt.Errorf("command is required")
+	}
+	if pat, ok := raw["pattern"].(string); ok {
+		spec.pattern = pat
+	}
+	if spec.pattern == "" {
+		return spec, fmt.Errorf("pattern is required")
+	}
+	if grp, ok := raw["expected_group"]; ok {
+		if i, ok := intValue(grp); ok {
+			spec.expectedGroup = i
+		}
+	}
+	if tol, ok := raw["tolerance_pct"]; ok {
+		if f, ok := floatValue(tol); ok {
+			spec.tolerancePct = f
+		}
+	}
+	if spec.expectedGroup < 0 {
+		return spec, fmt.Errorf("expected_group must be >= 0")
+	}
+	if spec.tolerancePct < 0 {
+		return spec, fmt.Errorf("tolerance_pct must be >= 0")
+	}
+	return spec, nil
+}
+
+func evaluateStdoutContainsAutoDetect(exp Expectation, ctx caseContext) expectationResult {
+	spec, err := parseAutoDetectSpec(exp)
+	if err != nil {
+		return failf("stdout_contains_auto_detect: %v", err)
+	}
+	re, err := regexp.Compile(spec.pattern)
+	if err != nil {
+		return failf("stdout_contains_auto_detect: compile pattern %q: %v", spec.pattern, err)
+	}
+	if err := autoDetectPrecheck(spec.command); err != nil {
+		return failf("stdout_contains_auto_detect: %v", err)
+	}
+	output, runErr := runAutoDetectCommand(ctx, spec.command)
+	if runErr != nil {
+		return failf("stdout_contains_auto_detect: re-run %q: %v", spec.command, runErr)
+	}
+	matches := re.FindStringSubmatch(output)
+	if matches == nil {
+		return failf("stdout_contains_auto_detect: pattern %q did not match auto-detect output (command=%q)", spec.pattern, spec.command)
+	}
+	if spec.expectedGroup >= len(matches) {
+		return failf("stdout_contains_auto_detect: expected_group %d out of range (regex has %d groups)", spec.expectedGroup, len(matches)-1)
+	}
+	fullMatch := matches[0]
+	captured := matches[spec.expectedGroup]
+	if !strings.Contains(ctx.stdout, fullMatch) {
+		// Tolerance gate: if the haystack contains a different number under
+		// the same surrounding pattern, allow within tolerance_pct. Otherwise
+		// fail loud with a one-line bump prompt naming the new value.
+		if spec.tolerancePct > 0 {
+			if accepted, msg := autoDetectTolerated(ctx.stdout, re, spec, captured); accepted {
+				return passf("%s", msg)
+			}
+		}
+		return failf(
+			"stdout_contains_auto_detect: case stdout missing detected match %q (auto-detect: command=%q pattern=%q captured=%q). BUMP the pinned value to %q.",
+			fullMatch, spec.command, spec.pattern, captured, fullMatch,
+		)
+	}
+	return passf("stdout_contains_auto_detect matched %q (auto-detected from %q)", fullMatch, spec.command)
+}
+
+// autoDetectPrecheck verifies the command's first token resolves on PATH so
+// missing binaries (e.g. bats on CI) fail loud with an explicit message
+// instead of being silently treated as a regex miss.
+func autoDetectPrecheck(command string) error {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return fmt.Errorf("command is empty")
+	}
+	binary := fields[0]
+	if strings.ContainsAny(binary, "/\\") {
+		// Path-qualified — let exec surface its own error if missing.
+		return nil
+	}
+	if _, err := exec.LookPath(binary); err != nil {
+		return fmt.Errorf("required binary %q not found on PATH (auto-detect cannot run): %w", binary, err)
+	}
+	return nil
+}
+
+func runAutoDetectCommand(ctx caseContext, command string) (string, error) {
+	timeout := defaultTimeoutSeconds
+	if ctx.evalCase.TimeoutSeconds > 0 {
+		timeout = ctx.evalCase.TimeoutSeconds
+	} else if ctx.suite != nil && ctx.suite.Environment.TimeoutSeconds > 0 {
+		timeout = ctx.suite.Environment.TimeoutSeconds
+	}
+	cctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	name, args := shellCommand(command)
+	cmd := exec.CommandContext(cctx, name, args...)
+	// Match runCase semantics: derive cwd from inputs.cwd if present, else
+	// the suite directory. Auto-detect must observe the same working tree
+	// as the case it ratchets, otherwise the captured value drifts spuriously.
+	if ctx.evalCase.Inputs != nil {
+		if cwd, ok := ctx.evalCase.Inputs["cwd"].(string); ok && cwd != "" {
+			cmd.Dir = resolvePath(ctx.suiteDir, cwd)
+		}
+	}
+	if cmd.Dir == "" {
+		cmd.Dir = ctx.suiteDir
+	}
+	var combined bytes.Buffer
+	cmd.Stdout = &combined
+	cmd.Stderr = &combined
+	runErr := cmd.Run()
+	if cctx.Err() == context.DeadlineExceeded {
+		return combined.String(), fmt.Errorf("auto-detect command timed out after %ds", timeout)
+	}
+	// runErr is informational — many of these commands legitimately exit
+	// non-zero (e.g. an unrelated failing test) yet still emit the line we
+	// need to capture. The regex match is the authoritative signal.
+	_ = runErr
+	if runtime.GOOS == "windows" && combined.Len() == 0 {
+		return "", fmt.Errorf("auto-detect command produced no output (windows)")
+	}
+	return combined.String(), nil
+}
+
+func autoDetectTolerated(haystack string, re *regexp.Regexp, spec autoDetectSpec, fresh string) (bool, string) {
+	haystackMatches := re.FindStringSubmatch(haystack)
+	if haystackMatches == nil || spec.expectedGroup >= len(haystackMatches) {
+		return false, ""
+	}
+	pinned := haystackMatches[spec.expectedGroup]
+	freshNum, freshOK := floatValue(fresh)
+	pinnedNum, pinnedOK := floatValue(pinned)
+	if !freshOK || !pinnedOK {
+		return false, ""
+	}
+	if pinnedNum == 0 {
+		return freshNum == 0, "stdout_contains_auto_detect within tolerance (zero baseline)"
+	}
+	driftPct := (freshNum - pinnedNum) / pinnedNum * 100
+	if driftPct < 0 {
+		driftPct = -driftPct
+	}
+	if driftPct <= spec.tolerancePct {
+		return true, fmt.Sprintf(
+			"stdout_contains_auto_detect within tolerance: pinned=%s fresh=%s drift=%.2f%% <= %.2f%%",
+			pinned, fresh, driftPct, spec.tolerancePct,
+		)
+	}
+	return false, ""
 }

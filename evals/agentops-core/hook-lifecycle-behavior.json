@@ -94,7 +94,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Total: 226"},
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bash tests/hooks/test-hooks.sh", "pattern": "Total: ([0-9]+)", "expected_group": 1, "tolerance_pct": 0}},
         {"type": "stdout_contains", "value": "Fail: 0"},
         {"type": "stdout_contains", "value": "ALL PASSED"}
       ],

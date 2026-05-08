@@ -334,8 +334,9 @@ func validNetwork(n NetworkAccess) bool {
 
 func validExpectationType(kind string) bool {
 	switch kind {
-	case "exit_code", "stdout_contains", "stderr_contains", "json_path", "file_exists",
-		"file_absent", "schema_valid", "artifact_contains", "score_at_least", "manual_review":
+	case "exit_code", "stdout_contains", "stderr_contains", "stdout_contains_auto_detect",
+		"json_path", "file_exists", "file_absent", "schema_valid", "artifact_contains",
+		"score_at_least", "manual_review":
 		return true
 	default:
 		return false

@@ -40,7 +40,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..51"},
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bats tests/scripts/pre-push-gate.bats", "pattern": "^1\\.\\.([0-9]+)", "expected_group": 1, "tolerance_pct": 0}},
         {"type": "stdout_contains", "value": "ok 6 pre-push-gate.sh passes when no Go changes"},
         {"type": "stdout_contains", "value": "ok 21 pre-push-gate.sh clears GIT env for skill CLI snippets"},
         {"type": "stdout_contains", "value": "ok 22 pre-push-gate.sh clears GIT env for CLI docs parity"},

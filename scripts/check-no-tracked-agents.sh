@@ -5,17 +5,22 @@ set -euo pipefail
 # not bleed into git, EXCEPT for an explicit audit-truth allowlist that
 # compounds across nightly runs. The allowlist is intentionally narrow —
 # baseline/final goal snapshots, evolve cycle history, per-goal attempt
-# history, dream probe registry, findings registry, and the live next-work
-# queue. These are 10 KB/day of audit data that the nightly routine and
-# evolve loop cite to avoid re-doing work.
+# history, dream probe registry, findings registry, the live next-work
+# queue, and the Reconciliation Engine arc's static thesis snapshot +
+# operator decision records (.agents/reconcile/wave-0-thesis-snapshot.md,
+# .agents/reconcile/thesis-stability-decision.md, and
+# .agents/reconcile/promotion-decision.md — committed inputs to
+# scripts/check-thesis-stability.sh and the Wave 1E gate-flip workflow,
+# not runtime state). These are ~10 KB/day of audit data that nightly +
+# evolve + reconcile cite to avoid re-doing work.
 #
 # Anything else under .agents/ stays untracked. Changes to the allowlist
 # require a coordinated update of .gitignore (which carries the matching
 # negation patterns) and CLAUDE.md / PROGRAM.md guidance.
 
-ALLOWED_PATHS_REGEX='^\.agents/(nightly/|evolve/cycle-history\.jsonl$|evolve/session-state\.json$|goals/[^/]+/attempts\.jsonl$|findings/registry\.jsonl$|rpi/next-work\.jsonl$)'
+ALLOWED_PATHS_REGEX='^\.agents/(nightly/|evolve/cycle-history\.jsonl$|evolve/session-state\.json$|goals/[^/]+/attempts\.jsonl$|findings/registry\.jsonl$|rpi/next-work\.jsonl$|reconcile/wave-0-thesis-snapshot\.md$|reconcile/thesis-stability-decision\.md$|reconcile/promotion-decision\.md$)'
 
-ALLOWED_REINCLUDES_REGEX='^[[:space:]]*!/?\.agents/?[[:space:]]*$|^[[:space:]]*!/?\.agents/(rpi/?|rpi/next-work\.jsonl|nightly/?|nightly/\*\*|evolve/?|evolve/cycle-history\.jsonl|evolve/session-state\.json|goals/?|goals/\*\*/?|goals/\*\*/attempts\.jsonl|findings/?|findings/registry\.jsonl)[[:space:]]*$'
+ALLOWED_REINCLUDES_REGEX='^[[:space:]]*!/?\.agents/?[[:space:]]*$|^[[:space:]]*!/?\.agents/(rpi/?|rpi/next-work\.jsonl|nightly/?|nightly/\*\*|evolve/?|evolve/cycle-history\.jsonl|evolve/session-state\.json|goals/?|goals/\*\*/?|goals/\*\*/attempts\.jsonl|findings/?|findings/registry\.jsonl|reconcile/?|reconcile/wave-0-thesis-snapshot\.md|reconcile/thesis-stability-decision\.md|reconcile/promotion-decision\.md)[[:space:]]*$'
 
 if [[ -n "${NO_TRACKED_AGENTS_REPO_ROOT:-}" ]]; then
   REPO_ROOT="$(cd "$NO_TRACKED_AGENTS_REPO_ROOT" && pwd)"

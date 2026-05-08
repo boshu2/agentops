@@ -64,9 +64,9 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger--session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
+| `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
 | Finding registry | [docs/contracts/finding-registry.md](contracts/finding-registry.md) | Stores reusable structured findings that planning and validation can load before rediscovering the same failure |
-| `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger--session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
+| `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
 | `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Turns completed work into reusable learnings and patterns |
 | Freshness / maturity controls | `ao maturity`, `ao dedup`, `ao contradict` | Keeps retrieval focused on useful, current knowledge |
 | Compile cycle | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |

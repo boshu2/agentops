@@ -709,8 +709,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "870103393336bc56fe53cc722501f238861b8eab5767835f5230de333e69a169",
-      "generated_hash": "ba0a5b1f6a4f1c2350341611d2977b387451c63f550254263fe61f582afcfbca"
+      "source_hash": "2d3643015cdf0eb7cb85ce6bfd8b76ee688cc2280c4d37aec04ed328ab2ff570",
+      "generated_hash": "67d8f2dbac5aebfcfaebb0c894d394f266299a13b10dee377eeb5f9469f4a90a"
     },
     {
       "name": "deps",
@@ -1033,8 +1033,8 @@
     {
       "name": "swarm",
       "source_skill": "skills/swarm",
-      "source_hash": "2dc8db4f67fc5536b248c89dda334d728ebe71f0a278ff663a08ca08234b9f53",
-      "generated_hash": "6014e1965271b39d3d77781dbd0ba25c4b147676937fb67092c8fcab11d2b7be"
+      "source_hash": "190645c68a4288bc1710157c9d1ead8d17ded55d5a4c7e8e48b39beef5732faf",
+      "generated_hash": "6dee9bd52c151724de2f5dc685f0ffd4a884ccc2f77ed1ec8960d08191ac8ebd"
     },
     {
       "name": "system-tuning",
