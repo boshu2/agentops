@@ -112,6 +112,8 @@ The point is not a bigger prompt. The point is a repo that remembers what was tr
 
 ---
 
+<!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
+
 ## What AgentOps Gives You
 
 Four layers. Each solves a different problem. All four compound.
@@ -124,6 +126,8 @@ Four layers. Each solves a different problem. All four compound.
 | **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
 
 All state lives in local `.agents/` — plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane. Runtime-neutral across Claude Code, Codex CLI, Cursor, and OpenCode.
+
+<!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
 ### Why not just use Notion or Confluence?
 
@@ -170,6 +174,8 @@ LLMs are engines. Context is fuel. You can't tune the engine — that's the mode
 ## Quick Start
 
 Inside a repo, use the path that matches what you are trying to do.
+
+<!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
 
 | Path | Run | Done when |
 |------|-----|-----------|
@@ -227,6 +233,8 @@ Full reference: [docs/SKILLS.md](docs/SKILLS.md).
 
 The `ao` CLI is the repo-native control plane behind the skills. It handles retrieval, health checks, compounding, goals, and terminal workflows.
 
+<!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
+
 ```bash
 ao quick-start                            # Set up AgentOps in a repo
 ao doctor                                 # Check local health
@@ -252,6 +260,8 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 | **Software factory** (daemon) | Vetted, well-defined work; overnight compounding; bulk processing | `ao schedule` + `ao daemon` running dream / evolve / compile / defrag / forge unattended; mix-and-match councils per phase | Operator — you set cadence and quality bars; the factory runs |
 
 **Hand agents** — when you're driving. Skills (`/rpi`, `/council`, `/pre-mortem`, `/vibe`) work in chat. Different rigor levels available — light skills for exploratory work, full RPI loop for everything that should be tracked, council validation before shipping.
+
+<!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
 **Software factory** — when work is vetted and ready. The `ao daemon` runs scheduled jobs against your local subscription on your hardware. Mix and match models per phase: Claude for discovery, Codex for implementation, a fresh Claude for validation, an open-weights local model for overnight defrag. Run Dream overnight, then Evolve in the morning against a fresher corpus.
 
