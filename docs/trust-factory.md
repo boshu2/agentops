@@ -18,6 +18,8 @@ post-mortems — none of them generate value by themselves. They generate
 *permission to ship*. As coding agents commoditize generation, the part of the
 loop that earns permission is what compounds.
 
+<!-- agentops:claim:AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE -->
+
 ## The five-step primitive
 
 Every artifact promotion needs five things, in order:

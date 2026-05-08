@@ -79,6 +79,8 @@ collect_repo_sources() {
     "docs/agentops-brief.md"
     "docs/assurance-profile.md"
     "docs/software-factory.md"
+    "docs/trust-factory.md"
+    "docs/wiki-for-agents.md"
   )
 
   local f

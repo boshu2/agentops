@@ -447,6 +447,122 @@ jobs:
           chmod +x scripts/eval-agentops.sh
           ./scripts/eval-agentops.sh --fast
 
+  factory-claim-ledger-strict:
+    # Wave 1C of epic soc-e4ulx (Reconciliation Engine).
+    # Bead: soc-lmww1. Plan: .agents/plans/2026-05-07-reconciliation-engine-full-arc.md
+    # Advisory-only: failures here MUST NOT fail the PR check. Promotion to
+    # blocking is gated on Wave 1E structured sampling, not wall-clock time.
+    # NOTE: `merged_anyway` and `ledger_updated` (referenced in the plan's
+    # observation schema) cannot be set during PR CI — they are backfilled by
+    # Wave 1E aggregation or by the operator post-merge. We emit only the
+    # fields the runner can know: run_id, pr_number, verdict, surfaces_touched,
+    # timestamp. Aggregation into .agents/reconcile/observation-log.jsonl is
+    # explicitly out of scope for this wave; observations are published as a
+    # workflow artifact instead of committed back to the repo.
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.markdown == 'true'
+    name: factory-claim-ledger-strict (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install jq (for observation construction)
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Run factory claim-ledger validator
+        id: validator
+        continue-on-error: true
+        run: |
+          set +e
+          bash scripts/check-factory-claim-ledger.sh
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            verdict=pass
+          else
+            verdict=fail
+          fi
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          # Do not propagate non-zero — continue-on-error keeps this advisory.
+          exit 0
+
+      - name: Emit structured observation
+        id: observation
+        continue-on-error: true
+        env:
+          VERDICT: ${{ steps.validator.outputs.verdict }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/factory-claim-ledger"
+          out="$RUNNER_TEMP/factory-claim-ledger/observation.jsonl"
+
+          # Compute touched surfaces relative to the validator's source-set.
+          # On pull_request: diff base..head. On push: diff HEAD~1..HEAD as a
+          # reasonable approximation. Filter against the source-set patterns
+          # collected by scripts/check-factory-claim-ledger.sh.
+          if [ -n "${BASE_SHA:-}" ]; then
+            range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            range="HEAD~1..HEAD"
+          fi
+
+          changed_files="$(git diff --name-only "$range" 2>/dev/null || true)"
+
+          # Source-set patterns mirror collect_repo_sources() in the validator.
+          surfaces="$(printf '%s\n' "$changed_files" | awk '
+            /^README\.md$/                                ||
+            /^PRODUCT\.md$/                                ||
+            /^GOALS\.md$/                                  ||
+            /^docs\/index\.md$/                            ||
+            /^docs\/agentops-brief\.md$/                   ||
+            /^docs\/assurance-profile\.md$/                ||
+            /^docs\/software-factory\.md$/                 ||
+            /^docs\/trust-factory\.md$/                    ||
+            /^docs\/wiki-for-agents\.md$/                  ||
+            /^docs\/comparisons\/.*\.md$/                  ||
+            /^docs\/contracts\/factory-.*\.md$/
+          ')"
+
+          # Build a JSON array of surfaces (jq handles empty input safely).
+          surfaces_json="$(printf '%s\n' "$surfaces" | jq -R . | jq -s 'map(select(length > 0))')"
+
+          jq -n \
+            --arg run_id "${GITHUB_RUN_ID:-}" \
+            --arg pr_number "${PR_NUMBER:-}" \
+            --arg verdict "${VERDICT:-unknown}" \
+            --argjson surfaces_touched "$surfaces_json" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              "run_id": $run_id,
+              "pr_number": (if $pr_number == "" then null else $pr_number end),
+              "verdict": $verdict,
+              "surfaces_touched": $surfaces_touched,
+              "timestamp": $timestamp
+            }' > "$out"
+
+          echo "Observation:"
+          cat "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Upload claim-ledger observation artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: factory-claim-ledger-observation
+          path: ${{ runner.temp }}/factory-claim-ledger/
+          retention-days: 30
+          if-no-files-found: warn
+
   eval-skill-delta:
     needs: [changes]
     if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -1264,7 +1380,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1293,6 +1409,7 @@ jobs:
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
+          echo "factory-claim-ledger-strict: ${{ needs.factory-claim-ledger-strict.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"

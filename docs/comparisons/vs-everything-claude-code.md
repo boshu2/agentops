@@ -39,6 +39,8 @@ for *"the same skill set works in every harness."* AgentOps optimizes for
 
 ---
 
+<!-- agentops:claim:AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING -->
+
 ## The model-independent-per-phase distinction
 
 This is the load-bearing difference, and it is easy to miss.

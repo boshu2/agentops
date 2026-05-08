@@ -6,7 +6,10 @@
     {
       "claim_id": "AOP-CLAIM-README-FACTORY-CONTEXT",
       "claim_text": "AgentOps keeps books, compiles context, and turns runs into evidence trails for a software factory.",
-      "source": {"file": "README.md", "marker": "AOP-CLAIM-README-FACTORY-CONTEXT"},
+      "source": {
+        "file": "README.md",
+        "marker": "AOP-CLAIM-README-FACTORY-CONTEXT"
+      },
       "current_evidence": "README public contract plus RPI/council/flywheel surfaces on disk.",
       "missing_proof": "Claim remains capability-level until strict ledger and proof bundle validators are release gates.",
       "owner_issue": "soc-kizn.1",
@@ -22,7 +25,10 @@
     {
       "claim_id": "AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL",
       "claim_text": "The flywheel can run autonomous improvement and overnight compounding loops.",
-      "source": {"file": "README.md", "marker": "AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL"},
+      "source": {
+        "file": "README.md",
+        "marker": "AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL"
+      },
       "current_evidence": "README documents /evolve and /dream surfaces; GOALS tracks automation gaps.",
       "missing_proof": "Needs scheduled-run terminal artifacts and release posture gate before stronger autonomy wording.",
       "owner_issue": "soc-kizn.10",
@@ -38,7 +44,10 @@
     {
       "claim_id": "AOP-CLAIM-README-FIRST-VALIDATED",
       "claim_text": "A first validated flow leaves evidence in .agents.",
-      "source": {"file": "README.md", "marker": "AOP-CLAIM-README-FIRST-VALIDATED"},
+      "source": {
+        "file": "README.md",
+        "marker": "AOP-CLAIM-README-FIRST-VALIDATED"
+      },
       "current_evidence": "RPI and validation flows emit local artifacts; Wave 0 canary checks proof paths.",
       "missing_proof": "Needs tracked proof export path for public replay.",
       "owner_issue": "soc-kizn.3",
@@ -54,7 +63,10 @@
     {
       "claim_id": "AOP-CLAIM-README-EVOLVE-AUTONOMOUS",
       "claim_text": "ao evolve can run a bounded autonomous improvement cycle.",
-      "source": {"file": "README.md", "marker": "AOP-CLAIM-README-EVOLVE-AUTONOMOUS"},
+      "source": {
+        "file": "README.md",
+        "marker": "AOP-CLAIM-README-EVOLVE-AUTONOMOUS"
+      },
       "current_evidence": "CLI surface documented and exercised by local gates.",
       "missing_proof": "Needs explicit release posture and rollback/demotion rule.",
       "owner_issue": "soc-kizn.10",
@@ -70,7 +82,10 @@
     {
       "claim_id": "AOP-CLAIM-README-COMPETITIVE-MEMORY",
       "claim_text": "AgentOps adds memory, pre-mortems, and validation across repeated sessions compared with session-local tools.",
-      "source": {"file": "README.md", "marker": "AOP-CLAIM-README-COMPETITIVE-MEMORY"},
+      "source": {
+        "file": "README.md",
+        "marker": "AOP-CLAIM-README-COMPETITIVE-MEMORY"
+      },
       "current_evidence": "Comparison docs and AgentOps memory/flywheel docs.",
       "missing_proof": "Needs generated competitive freshness and live delta evidence for quantified superiority.",
       "owner_issue": "soc-kizn.5",
@@ -86,7 +101,10 @@
     {
       "claim_id": "AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT",
       "claim_text": "AgentOps turns agent bookkeeping into typed, versioned, retrieved, validated engineering context.",
-      "source": {"file": "PRODUCT.md", "marker": "AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT"},
+      "source": {
+        "file": "PRODUCT.md",
+        "marker": "AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT"
+      },
       "current_evidence": "Product model maps to .agents artifacts, RPI packets, citations, and validation gates.",
       "missing_proof": "Needs strict claim ledger and durable evidence bundle export.",
       "owner_issue": "soc-kizn.1",
@@ -102,7 +120,10 @@
     {
       "claim_id": "AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT",
       "claim_text": "Factory-grade throughput is the aspiration, not a current generalized measured claim.",
-      "source": {"file": "PRODUCT.md", "marker": "AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT"},
+      "source": {
+        "file": "PRODUCT.md",
+        "marker": "AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT"
+      },
       "current_evidence": "Factory-yield ledger contract exists; observed pilot is blocked pending proof.",
       "missing_proof": "Requires paired observed baseline/treatment yield artifacts and operator acceptance.",
       "owner_issue": "soc-kizn.2",
@@ -118,7 +139,10 @@
     {
       "claim_id": "AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE",
       "claim_text": "/evolve performs bounded autonomous reconciliation against goals.",
-      "source": {"file": "PRODUCT.md", "marker": "AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE"},
+      "source": {
+        "file": "PRODUCT.md",
+        "marker": "AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE"
+      },
       "current_evidence": "GOALS and evolve docs describe the reconciliation loop.",
       "missing_proof": "Needs release posture governance and demotion rules.",
       "owner_issue": "soc-kizn.10",
@@ -134,7 +158,10 @@
     {
       "claim_id": "AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF",
       "claim_text": "Mt. Olympus is framed as a forkable runtime proof, not the AgentOps product itself.",
-      "source": {"file": "PRODUCT.md", "marker": "AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF"},
+      "source": {
+        "file": "PRODUCT.md",
+        "marker": "AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF"
+      },
       "current_evidence": "Lineage section and related local artifacts.",
       "missing_proof": "Needs externalized proof bundle before public evidence claims expand.",
       "owner_issue": "soc-kizn.3",
@@ -150,7 +177,10 @@
     {
       "claim_id": "AOP-CLAIM-GOALS-DREAM-VALIDATED",
       "claim_text": "The north-star path includes autonomous dream cycles and first validated flow onboarding.",
-      "source": {"file": "GOALS.md", "marker": "AOP-CLAIM-GOALS-DREAM-VALIDATED"},
+      "source": {
+        "file": "GOALS.md",
+        "marker": "AOP-CLAIM-GOALS-DREAM-VALIDATED"
+      },
       "current_evidence": "GOALS marks flywheel/dream targets and separate gates.",
       "missing_proof": "Long-cycle corpus gates remain roadmap unless they run green in automation.",
       "owner_issue": "soc-kizn.10",
@@ -166,7 +196,10 @@
     {
       "claim_id": "AOP-CLAIM-GOALS-EVAL-WORKBENCH",
       "claim_text": "The eval workbench infrastructure is validated, but the live skill-on/off delta remains open.",
-      "source": {"file": "GOALS.md", "marker": "AOP-CLAIM-GOALS-EVAL-WORKBENCH"},
+      "source": {
+        "file": "GOALS.md",
+        "marker": "AOP-CLAIM-GOALS-EVAL-WORKBENCH"
+      },
       "current_evidence": "Workbench golden/broken and structural gates exist.",
       "missing_proof": "Needs v2 live delta tasks and generated scorecards.",
       "owner_issue": "soc-kizn.5",
@@ -182,7 +215,10 @@
     {
       "claim_id": "AOP-CLAIM-DOCS-INDEX-CORPUS",
       "claim_text": "The docs index frames corpus continuity as typed, versioned, validated, and decay-ranked.",
-      "source": {"file": "docs/index.md", "marker": "AOP-CLAIM-DOCS-INDEX-CORPUS"},
+      "source": {
+        "file": "docs/index.md",
+        "marker": "AOP-CLAIM-DOCS-INDEX-CORPUS"
+      },
       "current_evidence": "Context lifecycle and flywheel docs describe the corpus path.",
       "missing_proof": "Needs ledgered evidence levels for validated wording.",
       "owner_issue": "soc-kizn.1",
@@ -198,7 +234,10 @@
     {
       "claim_id": "AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES",
       "claim_text": "Docs describe evolve as an autonomous improvement loop and RPI as a validated golden path.",
-      "source": {"file": "docs/index.md", "marker": "AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES"},
+      "source": {
+        "file": "docs/index.md",
+        "marker": "AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES"
+      },
       "current_evidence": "Evolve/RPI commands exist and are documented.",
       "missing_proof": "Needs release governance before autonomy wording promotes beyond advisory.",
       "owner_issue": "soc-kizn.10",
@@ -214,7 +253,10 @@
     {
       "claim_id": "AOP-CLAIM-BRIEF-VALIDATED-PATTERNS",
       "claim_text": "By session 100, the repo carries validated patterns that future sessions can load.",
-      "source": {"file": "docs/agentops-brief.md", "marker": "AOP-CLAIM-BRIEF-VALIDATED-PATTERNS"},
+      "source": {
+        "file": "docs/agentops-brief.md",
+        "marker": "AOP-CLAIM-BRIEF-VALIDATED-PATTERNS"
+      },
       "current_evidence": "Flywheel, finding registry, and citation systems exist.",
       "missing_proof": "Needs cross-session proof export and generated corpus metrics for the specific install.",
       "owner_issue": "soc-kizn.3",
@@ -230,7 +272,10 @@
     {
       "claim_id": "AOP-CLAIM-BRIEF-FOUR-LAYERS",
       "claim_text": "AgentOps gives every session four product layers: Bookkeeping, Context Compiler, Validation Gates, Knowledge Flywheel.",
-      "source": {"file": "docs/agentops-brief.md", "marker": "AOP-CLAIM-BRIEF-FOUR-LAYERS"},
+      "source": {
+        "file": "docs/agentops-brief.md",
+        "marker": "AOP-CLAIM-BRIEF-FOUR-LAYERS"
+      },
       "current_evidence": "Brief doc and PRODUCT.md describe the four-layer model; assurance-profile.md maps layers to assurance roles.",
       "missing_proof": "Layer architecture is product framing; per-layer validation evidence needed for 'validated' wording.",
       "owner_issue": "soc-kizn.1",
@@ -246,7 +291,10 @@
     {
       "claim_id": "AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS",
       "claim_text": "The software-factory surface treats thin topics as discovery-only until evidence improves.",
-      "source": {"file": "docs/software-factory.md", "marker": "AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS"},
+      "source": {
+        "file": "docs/software-factory.md",
+        "marker": "AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS"
+      },
       "current_evidence": "Software-factory design rules and Wave 0 canary.",
       "missing_proof": "Needs golden path proof bundle and release/profile governance.",
       "owner_issue": "soc-kizn.7",
@@ -262,7 +310,10 @@
     {
       "claim_id": "AOP-CLAIM-ASSURANCE-PROFILE-POSTURE",
       "claim_text": "AgentOps brings high-assurance operating discipline to AI-agent-paced work without claiming certification.",
-      "source": {"file": "docs/assurance-profile.md", "marker": "AOP-CLAIM-ASSURANCE-PROFILE-POSTURE"},
+      "source": {
+        "file": "docs/assurance-profile.md",
+        "marker": "AOP-CLAIM-ASSURANCE-PROFILE-POSTURE"
+      },
       "current_evidence": "Assurance profile states boundaries and operator responsibilities.",
       "missing_proof": "Needs evidence export, redaction, retention, and control-mapping bundles.",
       "owner_issue": "soc-kizn.3",
@@ -278,7 +329,10 @@
     {
       "claim_id": "AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS",
       "claim_text": "The assurance profile maps the four compounding layers to assurance roles.",
-      "source": {"file": "docs/assurance-profile.md", "marker": "AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS"},
+      "source": {
+        "file": "docs/assurance-profile.md",
+        "marker": "AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS"
+      },
       "current_evidence": "Bookkeeping/context/validation/flywheel surfaces exist in docs and code.",
       "missing_proof": "Needs claim-specific evidence export and source hash manifests.",
       "owner_issue": "soc-kizn.3",
@@ -294,7 +348,10 @@
     {
       "claim_id": "AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC",
       "claim_text": "Aerospace/IC-style discipline at AI-agent pace is a goal and posture, not current accreditation.",
-      "source": {"file": "docs/assurance-profile.md", "marker": "AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC"},
+      "source": {
+        "file": "docs/assurance-profile.md",
+        "marker": "AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC"
+      },
       "current_evidence": "Assurance profile documents operator boundaries and out-of-scope claims.",
       "missing_proof": "Requires local authority control mapping and approval outside AgentOps.",
       "owner_issue": "soc-kizn.3",
@@ -310,7 +367,10 @@
     {
       "claim_id": "AOP-CLAIM-CONTRACT-YIELD-LEDGER",
       "claim_text": "Factory yield must be observed as accepted, validated work per wall-clock hour, not template output.",
-      "source": {"file": "docs/contracts/factory-yield-ledger.md", "marker": "AOP-CLAIM-CONTRACT-YIELD-LEDGER"},
+      "source": {
+        "file": "docs/contracts/factory-yield-ledger.md",
+        "marker": "AOP-CLAIM-CONTRACT-YIELD-LEDGER"
+      },
       "current_evidence": "Factory yield ledger contract and schema exist.",
       "missing_proof": "Needs observed paired baseline/treatment pilot data.",
       "owner_issue": "soc-kizn.2",
@@ -326,7 +386,10 @@
     {
       "claim_id": "AOP-CLAIM-CONTRACT-FACTORY-ADMISSION",
       "claim_text": "Factory admission blocks source-mutating autonomous work before execution.",
-      "source": {"file": "docs/contracts/factory-admission.md", "marker": "AOP-CLAIM-CONTRACT-FACTORY-ADMISSION"},
+      "source": {
+        "file": "docs/contracts/factory-admission.md",
+        "marker": "AOP-CLAIM-CONTRACT-FACTORY-ADMISSION"
+      },
       "current_evidence": "Factory admission contract and daemon surfaces exist.",
       "missing_proof": "Needs pilot harness proving blocked admission does not emit yield observations.",
       "owner_issue": "soc-kizn.2",
@@ -342,7 +405,10 @@
     {
       "claim_id": "AOP-CLAIM-COMP-COMPOUND-ENGINEER",
       "claim_text": "AgentOps differentiates from Compound Engineer through automatic capture/scoring/injection and council validation.",
-      "source": {"file": "docs/comparisons/vs-compound-engineer.md", "marker": "AOP-CLAIM-COMP-COMPOUND-ENGINEER"},
+      "source": {
+        "file": "docs/comparisons/vs-compound-engineer.md",
+        "marker": "AOP-CLAIM-COMP-COMPOUND-ENGINEER"
+      },
       "current_evidence": "Comparison doc and AgentOps flywheel/council surfaces.",
       "missing_proof": "Needs generated competitive freshness evidence and live task deltas.",
       "owner_issue": "soc-kizn.5",
@@ -358,7 +424,10 @@
     {
       "claim_id": "AOP-CLAIM-COMP-SUPERPOWERS",
       "claim_text": "AgentOps differentiates from Superpowers through cross-session memory and validation beyond tests.",
-      "source": {"file": "docs/comparisons/vs-superpowers.md", "marker": "AOP-CLAIM-COMP-SUPERPOWERS"},
+      "source": {
+        "file": "docs/comparisons/vs-superpowers.md",
+        "marker": "AOP-CLAIM-COMP-SUPERPOWERS"
+      },
       "current_evidence": "Comparison doc and AgentOps memory/validation surfaces.",
       "missing_proof": "Needs v2 workbench scorecards for measured value.",
       "owner_issue": "soc-kizn.5",
@@ -374,7 +443,10 @@
     {
       "claim_id": "AOP-CLAIM-COMP-RPI-MEMORY",
       "claim_text": "AgentOps combines repo memory, scored promotion, citations, validation gates, and Dream/flywheel loops.",
-      "source": {"file": "docs/comparisons/competition-rpi-memory-pipelines.md", "marker": "AOP-CLAIM-COMP-RPI-MEMORY"},
+      "source": {
+        "file": "docs/comparisons/competition-rpi-memory-pipelines.md",
+        "marker": "AOP-CLAIM-COMP-RPI-MEMORY"
+      },
       "current_evidence": "Comparison RPI and AgentOps docs.",
       "missing_proof": "Needs generated competitive freshness and proof export.",
       "owner_issue": "soc-kizn.5",
@@ -390,7 +462,10 @@
     {
       "claim_id": "AOP-CLAIM-COMP-CLAUDE-FLOW",
       "claim_text": "Claude-Flow optimizes current throughput while AgentOps optimizes effectiveness over time.",
-      "source": {"file": "docs/comparisons/vs-claude-flow.md", "marker": "AOP-CLAIM-COMP-CLAUDE-FLOW"},
+      "source": {
+        "file": "docs/comparisons/vs-claude-flow.md",
+        "marker": "AOP-CLAIM-COMP-CLAUDE-FLOW"
+      },
       "current_evidence": "Comparison doc and AgentOps flywheel architecture.",
       "missing_proof": "Needs measured throughput/effectiveness scorecards before quantitative claims.",
       "owner_issue": "soc-kizn.5",
@@ -401,6 +476,101 @@
       "authority_state": "agentops_owned",
       "promotion_state": "blocked",
       "anti_overclaim_wording": "Do not claim higher throughput without generated yield artifacts.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION",
+      "claim_text": "AgentOps holds a context-library / wiki-for-agents lane no competitor in the seven-competitor radar contests directly.",
+      "source": {
+        "file": "docs/comparisons/competitive-radar.md",
+        "marker": "AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION"
+      },
+      "current_evidence": "Competitive radar table and lane segmentation in docs/comparisons/competitive-radar.md sourced from 2026-05-07 council research.",
+      "missing_proof": "Needs generated competitive-freshness scorecards and refreshed lane-segmentation evidence before quantified superiority wording.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Lane differentiation is structural framing, not measured outcome; do not imply benchmark-validated superiority.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING",
+      "claim_text": "AgentOps composes models per phase inside one RPI loop, distinct from cross-harness DRY parity.",
+      "source": {
+        "file": "docs/comparisons/vs-everything-claude-code.md",
+        "marker": "AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING"
+      },
+      "current_evidence": "Comparison doc describes per-phase routing inside ao rpi; CLI surfaces exist for council and validation.",
+      "missing_proof": "Needs measured cross-model phase-routing artifacts and freshness scorecards before quantitative superiority wording.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Per-phase routing is a workflow capability claim, not a benchmark-validated speedup.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING",
+      "claim_text": "AgentOps adds a compounding corpus on top of skill inventory rather than a larger inventory of skills.",
+      "source": {
+        "file": "docs/comparisons/vs-tons-of-skills.md",
+        "marker": "AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING"
+      },
+      "current_evidence": "Comparison doc and AgentOps .agents/ corpus surfaces produced by sessions.",
+      "missing_proof": "Needs generated corpus-growth and competitive-freshness scorecards before quantitative inventory-vs-corpus claims.",
+      "owner_issue": "soc-kizn.5",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-competitive-freshness.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Corpus discipline is architectural framing, not measured throughput superiority over a marketplace.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE",
+      "claim_text": "Every artifact promotion needs identity, reproducibility, evaluation, evidence, and recovery; drop any one and trust collapses.",
+      "source": {
+        "file": "docs/trust-factory.md",
+        "marker": "AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE"
+      },
+      "current_evidence": "Five-step primitive section in docs/trust-factory.md mapped to AgentOps mechanisms (identity → runs/, reproducibility → RPI + worktrees, evaluation → councils, evidence → citations + ratchets, recovery → rollback + learnings).",
+      "missing_proof": "Per-step evidence ledger linking each AgentOps mechanism to a measured outcome rather than a structural claim.",
+      "owner_issue": "soc-e4ulx",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-factory-claim-ledger.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "The five-step primitive is a framing borrowed from established trust-factory disciplines; do not imply AgentOps invented it or has uniquely measured implementation.",
+      "evidence_artifacts": []
+    },
+    {
+      "claim_id": "AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION",
+      "claim_text": ".agents/ is markdown in your repo that agents read and contribute to, with maintenance compiled mechanically by the daemon rather than maintained voluntarily.",
+      "source": {
+        "file": "docs/wiki-for-agents.md",
+        "marker": "AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION"
+      },
+      "current_evidence": "wiki-for-agents.md describes .agents/ tree shape (council/, decisions/, findings/, learnings/, patterns/, planning-rules/, runs/) and the mechanical-maintenance contrast with Notion/Confluence.",
+      "missing_proof": "Quantified compounding-vs-bitrot comparison data (corpus size + decay-rank distribution over time) before turning the framing into a measured claim.",
+      "owner_issue": "soc-e4ulx",
+      "validation_level": "L1",
+      "closure_gate": "bash scripts/check-factory-claim-ledger.sh",
+      "release_posture": "advisory_gate",
+      "evidence_status": "partial",
+      "authority_state": "agentops_owned",
+      "promotion_state": "eligible",
+      "anti_overclaim_wording": "Mechanical maintenance is a design intent of the daemon, not yet a measured outcome; do not imply the daemon has been benchmarked against human-maintained wikis.",
       "evidence_artifacts": []
     }
   ]
