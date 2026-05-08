@@ -67,6 +67,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `products` | persistent | skills | product-artifact | Product validation artifacts |
 | `profile` | persistent | cli | profile-cache | Repo execution profile cache |
 | `quarantine` | rolling | cli | failure-quarantine | Failed daemon worker payloads and retry/quarantine evidence for operator review |
+| `reconcile` | persistent | scripts, operators | reconciliation-artifact | Reconciliation engine artifacts: observation log aggregated from `factory-claim-ledger-strict (advisory)` CI runs, promotion-decision template, and related Wave-1E gate evidence (epic soc-e4ulx) |
 | `releases` | rolling | scripts | release-evidence | Local CI release evidence |
 | `retros` | persistent | skills | retro-artifact | Retrospectives |
 | `schedule` | persistent | cli, scripts | schedule-store | Daemon schedule entries consumed by `ao schedule` and `agentopsd --schedule-file` |
@@ -132,6 +133,7 @@ pre-mortem-checks
 products
 profile
 quarantine
+reconcile
 releases
 retros
 schedule
