@@ -100,16 +100,22 @@ if [ -d "$ROOT/.git" ]; then
         printf '# AgentOps session artifacts\n/.agents/\n' > "$GITIGNORE" 2>/dev/null
     fi
 fi
-# Only install the deny-all child .gitignore when the repo's root
-# .gitignore lacks an allowlist for /.agents/ paths. AgentOps itself
-# force-tracks audit-truth artifacts (.agents/findings/registry.jsonl,
-# .agents/nightly/<date>/baseline-goals.json, etc.) via `!/.agents/...`
-# re-includes; a blanket `*` deny-all child would override every
-# parent re-include because gitignore's last-match-wins rule applies
-# to the deeper file. External repos without an allowlist still get
-# the safety belt.
-if [ ! -f "$ROOT/.agents/.gitignore" ] && \
-   ! grep -qE '^!/?\.agents/' "$ROOT/.gitignore" 2>/dev/null; then
+# Reconcile the deny-all child .gitignore with the root .gitignore allowlist.
+# AgentOps itself force-tracks audit-truth artifacts (.agents/findings/registry.jsonl,
+# .agents/nightly/<date>/baseline-goals.json, etc.) via `!/.agents/...` re-includes;
+# a blanket `*` deny-all child would override every parent re-include because
+# gitignore's last-match-wins rule applies to the deeper file.
+#
+# - Root has `!/.agents/` allowlist → REMOVE any deny-all child that would
+#   sabotage the allowlist (audit truth wins; this catches stale child files
+#   from older hook versions or external tooling).
+# - Root has no allowlist → INSTALL the deny-all child (external repos that
+#   embed AgentOps still get the safety belt against runtime-state leaks).
+if grep -qE '^!/?\.agents/' "$ROOT/.gitignore" 2>/dev/null; then
+    if [ -f "$ROOT/.agents/.gitignore" ] && grep -qxE '\*' "$ROOT/.agents/.gitignore" 2>/dev/null; then
+        rm -f "$ROOT/.agents/.gitignore" 2>/dev/null
+    fi
+elif [ ! -f "$ROOT/.agents/.gitignore" ]; then
     cat > "$ROOT/.agents/.gitignore" 2>/dev/null <<'EOF'
 # Deny all by default — session artifacts must not leak to git.
 *
