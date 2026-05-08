@@ -450,7 +450,9 @@ fi
 
 > **Principle:** Verify each wave meets acceptance criteria using lightweight inline judges. No skill invocations — prevents context explosion in the orchestrator loop.
 
-**For acceptance check details (diff computation, inline judges, verdict gating), read `skills/crank/references/wave-patterns.md`.**
+**For acceptance check details (diff computation, inline judges, verdict gating, CI-policy parity gate), read `skills/crank/references/wave-patterns.md`.**
+
+**CI-Policy Parity Gate (conditional):** When a wave's diff touches `.github/workflows/*.yml`, the orchestrator MUST run `bash scripts/validate-ci-policy-parity.sh` as part of wave acceptance. On failure, the wave verdict is **FAIL**. See [references/wave-patterns.md](references/wave-patterns.md) "CI-Policy Parity Gate" for trigger pattern, worked example, and the soc-lmww1 / commit `c587b361` motivation.
 
 ### Step 5.7: Wave Checkpoint
 
