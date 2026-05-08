@@ -39,7 +39,7 @@ empty, and the rest of this radar is about staying in it.
 
 What each competitor wins on (the structural advantage AgentOps cannot beat
 them on) and what AgentOps wins on against them. Sourced from the
-[2026-05-07 council research](../../.agents/council/2026-05-07-research-readme-positioning.md).
+2026-05-07 council research (`.agents/council/2026-05-07-research-readme-positioning.md` in the repo).
 
 | Competitor | Lane | What they win on | What AgentOps wins on |
 |------------|------|------------------|------------------------|
@@ -105,7 +105,7 @@ AgentOps's posture toward it (compete, complement, or ignore).
 ## Where AgentOps Wins
 
 Six differentiators no competitor in the seven-competitor set has. Sourced from
-the [2026-05-07 council research](../../.agents/council/2026-05-07-research-readme-positioning.md).
+the 2026-05-07 council research (`.agents/council/2026-05-07-research-readme-positioning.md` in the repo).
 
 ### 1. Persistent corpus
 

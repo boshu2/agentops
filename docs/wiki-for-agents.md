@@ -90,4 +90,4 @@ The wiki is yours. Open source forever. Built so you own the asset, not the tool
 
 `.agents/` is plain markdown in your repo. If a frontier vendor ships native equivalents next year, the corpus carries forward. If AgentOps changes direction, your corpus is yours. If you outgrow this tool entirely, fork it, customize it, replace it — the corpus is what matters.
 
-For the deeper view of how the same mechanism doubles as a trust factory — identity, reproducibility, evaluation, evidence, recovery — see [trust-factory.md](./trust-factory.md). For the full README, see [../README.md](../README.md).
+For the deeper view of how the same mechanism doubles as a trust factory — identity, reproducibility, evaluation, evidence, recovery — see [trust-factory.md](./trust-factory.md). For the full README, see [the project README on GitHub](https://github.com/boshu2/agentops/blob/main/README.md).
