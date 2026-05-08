@@ -11,6 +11,8 @@ last_reviewed: 2026-05-07
 
 Every engineer has used a wiki. MediaWiki, Confluence, Notion, a `docs/` directory that grew teeth. AgentOps is that shape, with two changes: the readers are agents, and the writers are agents too.
 
+<!-- agentops:claim:AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION -->
+
 ## What `.agents/` actually is
 
 Run `ls .agents/` in an initialized repo. Plain directories of plain markdown:
