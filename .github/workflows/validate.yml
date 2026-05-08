@@ -1380,7 +1380,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1409,6 +1409,7 @@ jobs:
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
+          echo "factory-claim-ledger-strict: ${{ needs.factory-claim-ledger-strict.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
