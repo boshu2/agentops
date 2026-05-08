@@ -14,8 +14,38 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
+
+// withGoalFileCwd anchors the current process working directory to the git
+// repo root that contains goalsFile, so relative-path goal checks like
+// `bash scripts/foo.sh` resolve regardless of where `ao goals measure` was
+// invoked from (soc-crzz). Returns a restore function the caller must defer.
+// If goalsFile is not inside a git repo or cannot be resolved, returns a
+// no-op restorer and leaves cwd untouched (preserves prior behavior).
+func withGoalFileCwd(goalsFile string) func() {
+	noop := func() {}
+	if strings.TrimSpace(goalsFile) == "" {
+		return noop
+	}
+	abs, err := filepath.Abs(goalsFile)
+	if err != nil {
+		return noop
+	}
+	resolved := paths.ResolveFromRoot(filepath.Dir(abs))
+	if resolved == nil || resolved.RepoRoot == "" {
+		return noop
+	}
+	prev, err := os.Getwd()
+	if err != nil {
+		return noop
+	}
+	if err := os.Chdir(resolved.RepoRoot); err != nil {
+		return noop
+	}
+	return func() { _ = os.Chdir(prev) }
+}
 
 // HistoryOptions configures the goals history command.
 type HistoryOptions struct {
@@ -136,6 +166,9 @@ func RunMeasure(opts MeasureOptions) error {
 	if opts.SnapDir == "" {
 		opts.SnapDir = ".agents/ao/goals/baselines"
 	}
+
+	restore := withGoalFileCwd(opts.GoalsFile)
+	defer restore()
 
 	gf, err := LoadGoals(opts.GoalsFile)
 	if err != nil {
