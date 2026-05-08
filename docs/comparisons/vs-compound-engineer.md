@@ -2,13 +2,14 @@
 title: "AgentOps vs Compound Engineer — Detailed Comparison"
 description: "How AgentOps compares to Compound Engineer for AI coding agents. Both compound knowledge, but AgentOps automates the flywheel while Compound Engineer requires manual invocation."
 permalink: /comparisons/agentops-vs-compound-engineer
+last_reviewed: 2026-05-07
 ---
 
 # AgentOps vs Compound Engineer
 
-> **Compound Engineer** is Every's coding-agent plugin implementing a knowledge-compounding development workflow. The core thesis: "Each unit of engineering work should make subsequent units easier." Includes 45+ skills, 25+ agents, ideation with adversarial filtering, knowledge maintenance, and cross-runtime support for 10 targets. Recent additions: stack-aware reviewer routing, mandatory code review by default, and PR description filtering.
+> **Compound Engineer** is Every's coding-agent plugin implementing a knowledge-compounding development workflow. The core thesis: "Each unit of engineering work should make subsequent units easier." Current state (May 2026): 37 skills, 51 agents, an explicit 7-phase workflow (ideate → brainstorm → plan → work → review → compound → refresh), and a 10-target cross-runtime conversion CLI. Recent additions: stack-aware reviewer routing, mandatory code review by default, and PR description filtering.
 >
-> *Comparison updated April 2026. See the [Compound Engineer repo](https://github.com/EveryInc/compound-engineering-plugin) for current features.*
+> See the [Compound Engineer repo](https://github.com/EveryInc/compound-engineering-plugin) for current features.
 
 ---
 
@@ -20,7 +21,7 @@ permalink: /comparisons/agentops-vs-compound-engineer
 | **Core strength** | Full ideate-to-compound loop, cross-runtime portability, configurable review agents | Git-tracked memory, validation gates, knowledge flywheel with scoring |
 | **GitHub** | EveryInc/compound-engineering-plugin | boshu2/agentops |
 | **Latest** | Active development (April 2026) | v2.39.0 (April 2026) |
-| **Scale** | 45+ skills, 25+ agents, 10 runtime targets | 73 skills, compiled CLI, hooks, schemas |
+| **Scale** | 37 skills, 51 agents, 10 runtime targets | 73 skills, compiled CLI, hooks, schemas |
 | **Primary use** | Standardized engineering workflow with knowledge capture | Ongoing codebase work with persistent memory and validation |
 
 ### Three-Layer Comparison
@@ -149,6 +150,20 @@ Compound Engineer's `/ce:work` executes plan files with todo tracking and suppor
 
 AgentOps has GOALS.md, `ao goals measure`, and `/evolve` for measuring progress toward higher-level objectives. Compound Engineer has no equivalent goal-tracking or strategic direction mechanism.
 
+### Model-Independent Phase Routing
+
+AgentOps routes a different model to each phase of one RPI loop, with state preserved across boundaries:
+
+| Phase | Model | Why |
+|-------|-------|-----|
+| Research / Discovery | Claude | Long-context synthesis over the corpus |
+| Plan | Claude | Architectural reasoning |
+| Pre-mortem | Codex (or `/council --mixed`) | Adversarial second opinion from a different family |
+| Implement | Codex | Code generation throughput |
+| Validate | Fresh Claude | Independent reviewer with no prior context bias |
+
+Compound Engineer's 10-target conversion is multi-runtime *distribution* — running the same Claude-shaped workflow on Codex, Gemini, OpenCode, etc. AgentOps does that too via supported runtimes, but additionally swaps models *per phase within a single session* so each phase runs on the model best suited to that phase. CE doesn't do this per-phase model swap; the workflow is single-model end-to-end inside whichever runtime executes it.
+
 ---
 
 ## Where Compound Engineer Goes Further
@@ -188,6 +203,7 @@ While AgentOps has maturity scoring and decay, Compound Engineer's `/ce:compound
 | **Knowledge scoring** | ⚠️ Pattern detection at 3+ | ✅ Maturity + confidence + decay | **AgentOps** |
 | **Pre-mortem simulation** | ❌ Not present | ✅ Before implementation | **AgentOps** |
 | **Multi-model council** | ❌ Not present | ✅ Multi-perspective validation | **AgentOps** |
+| **Model-independent phase routing** | ❌ Single-model workflow per runtime | ✅ Per-phase model swap (Claude → Codex → fresh Claude) in one RPI loop | **AgentOps** |
 | **Issue graph execution** | ⚠️ Plan-based todos | ✅ Beads + dependency waves | **AgentOps** |
 | **Strategic goals** | ❌ No goal tracking | ✅ GOALS.md + evolve | **AgentOps** |
 | **Compiled CLI** | ❌ No binary | ✅ Go binary (ao) | **AgentOps** |
