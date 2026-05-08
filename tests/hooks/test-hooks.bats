@@ -74,6 +74,57 @@ GIT
     [ ! -f "$mock/.agents/.gitignore" ]
 }
 
+@test "session-start: removes stale deny-all child when parent has allowlist" {
+    # soc-rv5p: a stale `.agents/.gitignore` deny-all child (left from an
+    # older hook version, an external tool, or a pre-fix session) silently
+    # overrides every parent `!/.agents/...` re-include via gitignore's
+    # last-match-wins precedence. Each new session must reconcile by
+    # REMOVING the deny-all child whenever the parent has an allowlist —
+    # otherwise force-tracked audit artifacts (.agents/nightly/<date>/...,
+    # .agents/findings/registry.jsonl, etc.) drop off git invisibly.
+    local mock="$TMP_TEST_DIR/mock-stale-deny-all"
+    mkdir -p "$mock/.agents"
+    git -C "$mock" init -q >/dev/null 2>&1
+    cat > "$mock/.gitignore" <<'GIT'
+/.agents/*
+/.agents/**/*
+!/.agents/findings/
+!/.agents/findings/registry.jsonl
+GIT
+    cat > "$mock/.agents/.gitignore" <<'GIT'
+# Deny all by default — session artifacts must not leak to git.
+*
+
+# Allow only this file for local deny-by-default semantics.
+!.gitignore
+GIT
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    [ ! -f "$mock/.agents/.gitignore" ]
+    # Verify the parent allowlist now governs (force-tracked path tracks).
+    (cd "$mock" && git check-ignore -v .agents/findings/registry.jsonl 2>&1 | grep -q '!/.agents/findings/registry.jsonl' )
+}
+
+@test "session-start: preserves non-deny-all child gitignore" {
+    # Reconciliation must only target the deny-all `*` pattern. A user-
+    # authored child .gitignore with project-specific rules must survive
+    # untouched.
+    local mock="$TMP_TEST_DIR/mock-custom-child"
+    mkdir -p "$mock/.agents"
+    git -C "$mock" init -q >/dev/null 2>&1
+    cat > "$mock/.gitignore" <<'GIT'
+/.agents/*
+!/.agents/findings/
+GIT
+    cat > "$mock/.agents/.gitignore" <<'GIT'
+# Project-specific ignore rules (not deny-all)
+*.tmp
+scratch/
+GIT
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    [ -f "$mock/.agents/.gitignore" ]
+    grep -qx '*.tmp' "$mock/.agents/.gitignore"
+}
+
 @test "session-start: external repo without allowlist still gets deny-all child" {
     # Inverse lock for the allowlist-aware guard above: repos that DON'T
     # force-track anything under .agents/ should still receive the
