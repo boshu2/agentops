@@ -29,6 +29,11 @@
 
 Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
+Bridge / framing docs:
+
+- [A wiki for your agents](wiki-for-agents.md) — `.agents/` as a markdown wiki agents read, traverse, and contribute to (deflationary framing for the busy buyer)
+- [AgentOps as a Trust Factory](trust-factory.md) — Mapping AgentOps to the five-step trust-factory primitive (identity, reproducibility, evaluation, evidence, recovery)
+
 ## Architecture
 
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
@@ -174,6 +179,8 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [vs Superpowers](comparisons/vs-superpowers.md) — AgentOps vs Superpowers plugin
 - [vs Claude-Flow](comparisons/vs-claude-flow.md) — AgentOps vs Claude-Flow orchestration
 - [vs Compound Engineer](comparisons/vs-compound-engineer.md) — AgentOps vs Compound Engineering plugin
+- [vs Tons-of-Skills](comparisons/vs-tons-of-skills.md) — AgentOps vs `jeremylongshore/claude-code-plugins-plus-skills` (volume marketplace lane)
+- [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
 
 ## Positioning

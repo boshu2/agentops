@@ -1,6 +1,31 @@
-# Context Development Life Cycle (CDLC)
+# Context Development Life Cycle
 
-> **TL;DR:** DevOps gave us the SDLC — a disciplined lifecycle for code. CDLC is the same thing for context. Every phase of the software development lifecycle has a context counterpart. AgentOps implements all of them.
+> **TL;DR:** Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. The same shape, applied to context, is what AgentOps does. Every phase of the software development lifecycle has a context counterpart. AgentOps implements all of them.
+
+Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. The same shape, applied to context, is what AgentOps does.
+
+The translation is direct. Each piece of the software-engineering stack has a coding-agent counterpart:
+
+| Software Engineering | Coding-Agent World |
+|---|---|
+| Source code | Context (corpus, planning rules, learnings) |
+| SDLC | Context Development Lifecycle |
+| Libraries (Maven, npm, crates.io) | Context libraries (the `.agents/` corpus) |
+| Compilers | Context compilers (`ao compile` → wiki) |
+| Code review | Multi-model councils |
+| CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
+| Postmortems | Automated postmortems (`/post-mortem` → learnings) |
+| Runbooks | Skills + planning rules |
+| Software factories | Software factory daemon (`ao daemon`) |
+| Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
+| Open-source corpus | Your private corpus (`.agents/` in your repo) |
+
+We call this the **Context Development Lifecycle (CDLC)** — the body of this doc explains how each SDLC phase has a CDLC counterpart.
+
+### Companion docs
+
+- [Wiki for agents](./wiki-for-agents.md) — what `.agents/` actually is and why agents can read it natively
+- [Trust factory](./trust-factory.md) — how the validation gates and councils make agent output trustworthy
 
 ---
 
@@ -8,7 +33,7 @@
 
 In 2009, DevOps asked: *what if ops looked more like dev?* The answer was CI/CD, infrastructure as code, and the SDLC infinity loop — Plan, Code, Build, Test, Release, Deploy, Operate, Monitor.
 
-CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
+The CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
 
 The answer is the same shape. Different substrate.
 

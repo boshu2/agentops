@@ -2,13 +2,14 @@
 title: "AgentOps vs Superpowers — Detailed Comparison"
 description: "How AgentOps compares to Superpowers for AI coding agents. Superpowers enforces strict TDD. AgentOps adds cross-session memory and multi-model validation councils."
 permalink: /comparisons/agentops-vs-superpowers
+last_reviewed: 2026-05-07
 ---
 
 # AgentOps vs Superpowers
 
-> **Superpowers** is a popular coding agent plugin known for disciplined TDD workflows and autonomous operation. Now supports Kimi Code CLI, OpenClaw, and Mistral Vibe (April 2026). Major architectural shift: skills separated into a dedicated repo (obra/superpowers-skills) — the plugin is now a lightweight shim that auto-updates skills on session start.
+> **Superpowers** is a popular coding agent plugin known for disciplined TDD workflows and autonomous operation (29K+ GitHub stars). It now ships via the official Anthropic marketplace (`claude-plugins-official`), and supports Kimi Code CLI, OpenClaw, and Mistral Vibe. The plugin is a lightweight shim that auto-updates skills on session start; skills live in a dedicated repo (obra/superpowers-skills).
 >
-> *Comparison updated April 2026. See [Superpowers repo](https://github.com/obra/superpowers) for current features.*
+> *Comparison updated 2026-05-07. See [Superpowers repo](https://github.com/obra/superpowers) for current features.*
 
 ---
 
@@ -80,6 +81,8 @@ Built-in enforcement of software engineering best practices. No over-engineering
 ```
 
 **Superpowers resets every session.** Your agent debugs the same issues repeatedly with no memory of past solutions.
+
+**The mechanism is a wiki.** AgentOps's `.agents/` directory is markdown in your repo, version-controlled with your code, that agents read and contribute to. Wikis are a 25-year-old idea — that is the deflationary positioning. The novel part is not the format; it is making one for agents to traverse, and making the discipline of maintenance mechanical so it actually happens. Superpowers does not implement a corpus of this kind; learnings live in the session and end with it.
 
 ### No Failure Prevention
 

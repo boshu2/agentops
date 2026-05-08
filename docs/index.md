@@ -8,16 +8,14 @@ hide:
 
 # AgentOps { .landing-hero }
 
-<p class="hero-tagline">
-  Software factory for coding agents.<br>
-  Keep the books. Compile context. Gate output. Compound knowledge.<br>
-  <strong>AI-agent pace with serious-operator discipline.</strong>
-</p>
+### A wiki for your agents. Built so you own the moat.
 
-<p class="hero-subtagline">
-  <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
-  Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Vendor memory follows the chat. The corpus follows the team.
-</p>
+<!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
+`.agents/` is just a wiki — markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
+
+*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
+
+*AgentOps is the shovel. Start digging.*
 
 <p class="hero-actions" markdown>
 [:octicons-rocket-24: Install](#install){ .md-button .md-button--primary }
