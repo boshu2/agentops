@@ -750,6 +750,7 @@ func TestBuildSupervisorConfigFromSpec_MapsPolicyFields(t *testing.T) {
 	spec.GatePolicy = "required"
 	spec.LandingPolicy = "commit"
 	spec.LandingBranch = "release/v3"
+	spec.MaxCycles = 3
 	spec.BDSyncPolicy = "always"
 	spec.FailurePolicy = "continue"
 	spec.KillSwitchPath = filepath.Join(root, "custom-kill")
@@ -766,6 +767,9 @@ func TestBuildSupervisorConfigFromSpec_MapsPolicyFields(t *testing.T) {
 	}
 	if cfg.LandingBranch != "release/v3" {
 		t.Errorf("LandingBranch = %q, want release/v3", cfg.LandingBranch)
+	}
+	if cfg.MaxCycles != 3 {
+		t.Errorf("MaxCycles = %d, want 3", cfg.MaxCycles)
 	}
 	if cfg.BDSyncPolicy != "always" {
 		t.Errorf("BDSyncPolicy = %q, want always", cfg.BDSyncPolicy)
@@ -1056,6 +1060,48 @@ func TestAgentopsdRegistersLLMWikiLoopExecutor(t *testing.T) {
 				t.Fatalf("stage artifact = %q, want lint", got)
 			}
 		})
+	}
+}
+
+func TestAgentopsdRegistersSkillInvokeExecutor(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-skill-invoke",
+		JobID:     "job-skill-invoke",
+		JobType:   daemonpkg.JobTypeSkillInvoke,
+		Payload: map[string]any{
+			"skill_name": "compile",
+			"args":       []string{"--full"},
+		},
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit skill.invoke job: %v", err)
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		ExecutorPolicy: "fake",
+		SkillInvokeRunFunc: func(_ context.Context, req daemonpkg.SkillInvokeRequest) (daemonpkg.SkillInvokeResult, error) {
+			if req.Spec.SkillName != "compile" {
+				t.Fatalf("skill_name = %q, want compile", req.Spec.SkillName)
+			}
+			return daemonpkg.SkillInvokeResult{Artifacts: map[string]string{"runner": "fake-skill"}}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.JobType != daemonpkg.JobTypeSkillInvoke {
+		t.Fatalf("result = %#v, want claimed skill.invoke job", result)
+	}
+	if result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("skill.invoke status = %s, want completed", result.Job.Status)
+	}
+	if result.Job.Artifacts["runner"] != "fake-skill" {
+		t.Fatalf("artifacts = %#v, want fake runner marker", result.Job.Artifacts)
 	}
 }
 

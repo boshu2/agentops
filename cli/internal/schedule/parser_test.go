@@ -274,6 +274,31 @@ func TestParser_StockExampleMirrorMatchesCanonical(t *testing.T) {
 	}
 }
 
+func TestParser_LoadExampleRecipes(t *testing.T) {
+	repoRoot, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatalf("resolve repo root: %v", err)
+	}
+	matches, err := filepath.Glob(filepath.Join(repoRoot, "examples", "schedules", "*.yaml"))
+	if err != nil {
+		t.Fatalf("glob example recipes: %v", err)
+	}
+	if len(matches) == 0 {
+		t.Fatal("expected example schedule recipes")
+	}
+	for _, path := range matches {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			templates, err := Load(path)
+			if err != nil {
+				t.Fatalf("Load(%s): %v", path, err)
+			}
+			if len(templates) == 0 {
+				t.Fatalf("Load(%s) returned no schedules", path)
+			}
+		})
+	}
+}
+
 func TestParser_HonorsMinPeriodCeilingEnvOverride(t *testing.T) {
 	// First, with default ceiling (1000), the excessive fixture (9999) must fail.
 	if _, err := Load(fixture(t, "excessive-queue-depth.yaml")); err == nil {

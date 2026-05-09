@@ -995,7 +995,7 @@ ao daemon jobs submit [flags]
 ```
   -h, --help             help for submit
       --payload string   JSON payload (required; '@-' for stdin, '@path' for file)
-      --type string      Job type (required; one of dream.run, dream.stage, eval.skill-delta, eval.suite, factory.admission, factory.local-pilot, llmwiki.loop, openclaw.snapshot, plans.projection, rpi.phase, rpi.run, wiki.build, wiki.forge)
+      --type string      Job type (required; one of dream.run, dream.stage, eval.skill-delta, eval.suite, factory.admission, factory.local-pilot, llmwiki.loop, openclaw.snapshot, plans.projection, rpi.phase, rpi.run, skill.invoke, wiki.build, wiki.forge)
 ```
 
 ##### `ao daemon jobs wait`

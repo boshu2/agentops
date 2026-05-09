@@ -82,6 +82,8 @@ func applyRecurringJobDefaults(t RecurringJobTemplate, payload map[string]any, s
 	case JobTypePlansProjection:
 		setDefault(payload, "schema_version", PlansProjectionJobSpecSchemaVersion)
 		setDefault(payload, "refresh_trigger", string(PlansProjectionTriggerInterval))
+	case JobTypeSkillInvoke:
+		setDefault(payload, "schema_version", SkillInvokeJobSpecSchemaVersion)
 	}
 }
 
@@ -110,6 +112,9 @@ func validateRecurringMaterializedPayload(jobType JobType, payload map[string]an
 		return err
 	case JobTypePlansProjection:
 		_, err := PlansProjectionJobSpecFromPayload(payload)
+		return err
+	case JobTypeSkillInvoke:
+		_, err := SkillInvokeJobSpecFromPayload(payload)
 		return err
 	default:
 		return nil

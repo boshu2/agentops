@@ -115,6 +115,31 @@ files designed to be picked up à la carte.
   ao schedule run evolve-ondemand
   ```
 
+### `examples/schedules/nightly-evolve.yaml`
+
+- **What it does:** Fires a daemon-owned `rpi.run` every night with
+  `gate_policy: required`, `landing_policy: off`, and `max_cycles: 1`.
+- **Why schedule it:** This is the direct daemon schedule equivalent of the
+  legacy host timer path that launched
+  `scripts/nightly-evolution.sh --execute --run-evolve`. The wrapper already
+  submits `rpi.run`; this recipe lets the daemon own the cadence directly.
+- **Cadence:** Nightly at 04:30 local. `skip_if_running: true` prevents a long
+  cycle from overlapping the next night.
+
+### `examples/schedules/vault-four-tier.yaml`
+
+- **What it does:** Registers the daemon-side vault maintenance pack:
+  Tier 1 `wiki.forge` over session evidence, Tier 2 `skill.invoke` for
+  `ao forge review --reviewer-model gemma2:9b`, and Tier 3 `llmwiki.loop`.
+- **Why schedule it:** It replaces scattered operator-local timers with
+  daemon-owned recurrence, backpressure, and ledger evidence.
+- **Cadence:** Tier 1 at 22:00, Tier 2 at 01:30, Tier 3 at 02:00. Tier 4 stays
+  manual and is intentionally not represented in the schedule pack.
+- **Morai note:** The portable Tier 2 entry uses the existing `ao forge review`
+  reviewer path. Operators with a validated Morai bridge can fork the recipe
+  and replace that `skill.invoke` payload with their host-specific bridge
+  command.
+
 ## Adding a custom schedule
 
 A schedule is a YAML file with a `schedules:` list. Each entry needs a name, a
@@ -155,6 +180,10 @@ Loader rules to be aware of (enforced by `cli/internal/schedule/parser.go`):
   `wiki.build`, `rpi.run`, `rpi.phase`, `skill.invoke`, `eval.suite`,
   `eval.skill-delta`, `factory.admission`, `factory.local-pilot`,
   `openclaw.snapshot`, `plans.projection`, `llmwiki.loop`).
+- `skill.invoke` executes the current `ao` binary with `skill_name` as the
+  subcommand and `args` split into argv tokens. Use it for existing CLI-backed
+  skill surfaces such as `compile`, `forge`, and `feedback-loop`; do not put
+  shell pipelines or host-specific wrapper paths in `args`.
 - `timeout` accepts Go duration strings (`30m`, `2h`, `4h30m`).
 - `backpressure.max_queue_depth` is bounded (default ceiling 1000) by
   `AGENTOPS_SCHEDULE_MAX_QUEUE_DEPTH_CEILING`.

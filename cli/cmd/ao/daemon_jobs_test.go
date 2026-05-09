@@ -333,6 +333,7 @@ func TestValidateSubmitJobTypeAcceptsKnown(t *testing.T) {
 		daemonpkg.JobTypeEvalSkillDelta,
 		daemonpkg.JobTypePlansProjection,
 		daemonpkg.JobTypeLLMWikiLoop,
+		daemonpkg.JobTypeSkillInvoke,
 	} {
 		if err := validateSubmitJobType(string(jt)); err != nil {
 			t.Errorf("new job type %q rejected: %v", jt, err)

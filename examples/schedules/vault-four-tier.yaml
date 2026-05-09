@@ -1,0 +1,61 @@
+# vault-four-tier.yaml - daemon schedule pack for the vault knowledge pipeline
+#
+# What it does:
+#   Replaces three operator-local timers with daemon-owned schedules:
+#   Tier 1 mines recent session evidence, Tier 2 reviews draft session pages,
+#   and Tier 3 runs the llmwiki vault loop. Tier 4 remains manual by design.
+#   The portable Tier 2 recipe uses `ao forge review --reviewer-model`; replace
+#   that `skill.invoke` payload with an operator-specific Morai bridge command
+#   only after that bridge is installed and validated on the host.
+#
+# Why schedule it:
+#   The daemon owns backpressure, idempotent recurrence, and ledger evidence,
+#   so recurring vault maintenance becomes observable through `ao schedule`,
+#   `ao watch`, and `ao daemon status` instead of scattered host timers.
+#
+# Wire up:
+#   ao daemon run --workers 2 --executor-policy cli-fallback
+#   ao schedule add --file examples/schedules/vault-four-tier.yaml
+
+schedules:
+  - name: vault-tier1-forge
+    cron: "0 22 * * *"
+    job_type: wiki.forge
+    payload:
+      schema_version: 1
+      source_paths:
+        - ".agents/sessions/"
+      output_dir: ".agents/wiki/vault/tier1-forge"
+      worker_kind: codex
+      provider: cli-fallback
+      model: "claude-sonnet-4"
+    timeout: "1h"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
+
+  - name: vault-tier2-review
+    cron: "30 1 * * *"
+    job_type: skill.invoke
+    payload:
+      schema_version: 1
+      skill_name: forge
+      args: "review --reviewer-model gemma2:9b"
+    timeout: "45m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
+
+  - name: vault-tier3-llmwiki-loop
+    cron: "0 2 * * *"
+    job_type: llmwiki.loop
+    payload:
+      vault: ".agents/wiki/vault"
+      stages:
+        - ingest
+        - lint
+        - promote
+    timeout: "30m"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

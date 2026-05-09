@@ -622,17 +622,51 @@ OnCalendar=*:0/10
 
 ```yaml
 schedules:
-  - name: gemma-entity-linker-day-window
-    cron: "*/10 7-22 * * *"   # every 10 min between 07:00 and 22:59
+  - name: vault-tier1-forge
+    cron: "0 22 * * *"
     job_type: wiki.forge
-    timeout: 5m
     payload:
-      tier: entity-extract
-      source_pattern: wiki/reviewed/*.md
+      schema_version: 1
+      source_paths:
+        - ".agents/sessions/"
+      output_dir: ".agents/wiki/vault/tier1-forge"
+      worker_kind: codex
+      provider: cli-fallback
+    timeout: 1h
     backpressure:
       skip_if_running: true
-      max_queue_depth: 5
+      max_queue_depth: 1
+
+  - name: vault-tier2-review
+    cron: "30 1 * * *"
+    job_type: skill.invoke
+    payload:
+      schema_version: 1
+      skill_name: forge
+      args: "review --reviewer-model gemma2:9b"
+    timeout: 45m
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
+
+  - name: vault-tier3-llmwiki-loop
+    cron: "0 2 * * *"
+    job_type: llmwiki.loop
+    payload:
+      vault: ".agents/wiki/vault"
+      stages: [ingest, lint, promote]
+    timeout: 30m
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1
 ```
+
+The tracked recipe lives at `examples/schedules/vault-four-tier.yaml`. Its
+portable Tier 2 entry uses the existing `ao forge review` reviewer path;
+operators with a validated Morai bridge can fork the recipe and replace that
+`skill.invoke` payload with their host-specific bridge command. Tier 4 remains
+manual; do not encode source-mutating or human-review-only promotion as an
+automatic recurrence unless a separate policy review authorizes it.
 
 ```bash
 # Register against a running daemon:

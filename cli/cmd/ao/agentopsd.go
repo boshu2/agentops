@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -90,6 +91,10 @@ type agentopsDaemonRunOptions struct {
 	// avoid spinning up the full phased engine in-process. soc-bcrn.3.6
 	// (E3.W4 sub-5a).
 	CLIFallbackRPIRunFunc daemonpkg.RPIRunFunc
+	// SkillInvokeRunFunc (optional) overrides daemon skill.invoke dispatch.
+	// Production callers leave nil so the executor shells to the current ao
+	// binary; tests inject a fake runner.
+	SkillInvokeRunFunc daemonpkg.SkillInvokeFunc
 }
 
 var daemonCmd = &cobra.Command{
@@ -433,6 +438,11 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	default:
 		return nil, fmt.Errorf("unsupported daemon executor policy %q", policy)
 	}
+	skillExecutor, err := buildAgentOpsDaemonSkillInvokeExecutor(cwd, opts)
+	if err != nil {
+		return nil, err
+	}
+	executors = append(executors, skillExecutor)
 	factoryExecutor, err := buildAgentOpsDaemonFactoryExecutor(cwd, policy, opts)
 	if err != nil {
 		return nil, err
@@ -494,6 +504,57 @@ func buildAgentOpsDaemonFactoryExecutor(cwd, policy string, opts agentopsDaemonR
 		Clock:            opts.Now,
 		EnableRPIHandoff: policy == "fake" || policy == "gascity" || policy == "cli-fallback",
 	})
+}
+
+func buildAgentOpsDaemonSkillInvokeExecutor(cwd string, opts agentopsDaemonRunOptions) (daemonpkg.JobExecutor, error) {
+	run := opts.SkillInvokeRunFunc
+	if run == nil {
+		run = defaultAgentOpsDaemonSkillInvokeFunc
+	}
+	return daemonpkg.NewSkillInvokeExecutor(daemonpkg.SkillInvokeExecutorOptions{
+		Root: cwd,
+		Run:  run,
+	})
+}
+
+func defaultAgentOpsDaemonSkillInvokeFunc(ctx context.Context, req daemonpkg.SkillInvokeRequest) (daemonpkg.SkillInvokeResult, error) {
+	executable, err := os.Executable()
+	if err != nil || strings.TrimSpace(executable) == "" {
+		executable = "ao"
+	}
+	args := append([]string{req.Spec.SkillName}, req.Spec.Args...)
+	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Dir = req.Root
+	cmd.Env = append(os.Environ(), "AGENTOPS_DAEMON_SKILL_INVOKE=1")
+	output, runErr := cmd.CombinedOutput()
+
+	artifactDir := filepath.Join(req.Root, ".agents", "daemon", "skill-invoke")
+	jobID := sanitizeDaemonSkillInvokeArtifactName(req.Claim.Job.JobID)
+	if jobID == "" {
+		jobID = sanitizeDaemonSkillInvokeArtifactName(req.Spec.SkillName)
+	}
+	logPath := filepath.Join(artifactDir, jobID+".log")
+	relLogPath := filepath.ToSlash(filepath.Join(".agents", "daemon", "skill-invoke", jobID+".log"))
+	artifacts := map[string]string{
+		"skill_invoke_command": strings.Join(append([]string{filepath.Base(executable)}, args...), " "),
+		"skill_invoke_log":     relLogPath,
+	}
+	if err := os.MkdirAll(artifactDir, 0o755); err == nil {
+		_ = os.WriteFile(logPath, output, 0o644)
+	}
+	if runErr != nil {
+		return daemonpkg.SkillInvokeResult{Artifacts: artifacts}, fmt.Errorf("skill.invoke %s: %w", req.Spec.SkillName, runErr)
+	}
+	return daemonpkg.SkillInvokeResult{Artifacts: artifacts}, nil
+}
+
+func sanitizeDaemonSkillInvokeArtifactName(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "job"
+	}
+	replacer := strings.NewReplacer("/", "-", "\\", "-", " ", "-", ":", "-", ".", "-")
+	return replacer.Replace(value)
 }
 
 func buildAgentOpsDaemonFakeWikiExecutor(cwd string) (daemonpkg.JobExecutor, error) {
@@ -629,19 +690,20 @@ func executeLoopCyclesCtx(_ context.Context, cwd, explicitGoal, nextWorkPath str
 // landing path as `ao rpi loop --supervisor`.
 //
 // The base config comes from buildBaseLoopConfig() so global defaults
-// (failure-policy=stop, gate-policy=off, landing-policy=off, etc.) apply
+// (max-cycles, failure-policy=stop, gate-policy=off, landing-policy=off, etc.) apply
 // out of the box. Any explicit spec field overrides the default. Fields on
-// RPIRunJobSpec without a counterpart on rpiLoopSupervisorConfig (MaxCycles,
-// ExecutionPacketPath, TestFirst, RunID, PhaseTimeout) are preserved on the
-// spec for future wiring but not yet projected onto the supervisor cfg —
-// daemon mode currently runs a single explicit-goal cycle and exits, so
-// MaxCycles and queue-mode plumbing are not yet required.
+// RPIRunJobSpec without a counterpart on rpiLoopSupervisorConfig
+// (ExecutionPacketPath, TestFirst, RunID, PhaseTimeout) are preserved on the
+// spec for future wiring but not yet projected onto the supervisor cfg.
 //
 // resolveLoopConfigPaths is invoked so the kill-switch and landing-lock
 // paths resolve relative to the daemon root cwd, mirroring the cobra-driven
 // resolveLoopSupervisorConfig flow.
 func buildSupervisorConfigFromSpec(spec daemonpkg.RPIRunJobSpec, root string) (rpiLoopSupervisorConfig, error) {
 	cfg := buildBaseLoopConfig()
+	if spec.MaxCycles > 0 {
+		cfg.MaxCycles = spec.MaxCycles
+	}
 	if v := strings.TrimSpace(spec.GatePolicy); v != "" {
 		cfg.GatePolicy = strings.ToLower(v)
 	}

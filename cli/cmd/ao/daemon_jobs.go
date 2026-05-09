@@ -45,6 +45,7 @@ var knownDaemonJobTypes = []daemonpkg.JobType{
 	daemonpkg.JobTypeLLMWikiLoop,
 	daemonpkg.JobTypeEvalSuite,
 	daemonpkg.JobTypeEvalSkillDelta,
+	daemonpkg.JobTypeSkillInvoke,
 }
 
 var daemonJobsCmd = &cobra.Command{
