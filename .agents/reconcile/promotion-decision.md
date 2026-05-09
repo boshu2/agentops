@@ -7,18 +7,22 @@ related_epic: soc-e4ulx
 related_bead: soc-f42z9
 status: deferred
 decision: option-b-defer
-sample_size: 3
+sample_size: 5
 sample_threshold: 20
-distinct_prs: 2
+distinct_prs: 3
 distinct_prs_threshold: 3
-re_evaluate_when: sample_size >= 20 AND distinct_prs >= 3
+fail_count: 0
+fail_count_threshold: 1
+re_evaluate_when: sample_size >= 20 AND distinct_prs >= 3 AND fail_count >= 1
 ---
 
 # Factory Claim Ledger — Promotion Decision
 
-> **Deferred 2026-05-08.** Sample size 3 < 20 threshold; distinct PRs 2 < 3 threshold.
-> Re-run aggregator + this baseline section once advisory CI runs of
-> `factory-claim-ledger-strict (advisory)` accumulate to ≥20 across ≥3 PRs.
+> **Deferred 2026-05-08 (re-confirmed same day).** Sample size 5 < 20 threshold;
+> distinct real PRs 3 = 3 threshold (just hit), but **0 fail observations** still
+> makes the FP-rate vacuous. Re-run aggregator + this baseline section once
+> advisory CI runs of `factory-claim-ledger-strict (advisory)` accumulate to
+> ≥20 with at least one `verdict=fail` to give FP-rate a real denominator.
 > Aggregator: `scripts/aggregate-observation-log.sh`.
 
 ## How to compute the baseline
@@ -61,31 +65,31 @@ jq -s '[.[] | select(.verdict == "fail" and .ledger_updated == true)] | length' 
 
 Computed 2026-05-08 from `.agents/reconcile/observation-log.jsonl` after
 running `scripts/aggregate-observation-log.sh` (read 200 most recent
-`validate.yml` runs; aggregated 3 unique observations).
+`validate.yml` runs; aggregated 5 unique observations).
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| Total observations | **3** | `jq -s 'length' "$LOG"` |
-| Pass count | 3 | group_by query |
+| Total observations | **5** | `jq -s 'length' "$LOG"` |
+| Pass count | 5 | group_by query |
 | Fail count | 0 | group_by query |
 | `merged_anyway=true` count | 0 | FP query |
 | `ledger_updated=true` count | 0 (over `verdict=fail`) | ledger query |
 | **False-positive rate** | **0** (vacuous — denominator is 0 fails) | FP / fail-count |
-| Distinct PRs | 2 (`#264`, `#265`) | `jq -s '[.[].pr_number] | unique \| length'` |
+| Distinct PRs | 3 real (`#264`, `#265`, `#266`) + 2 push-to-main (`pr_number: null`) | `jq -s '[.[].pr_number] | unique \| length'` |
 
-Raw observations are timestamped 2026-05-08T02:49Z, 02:51Z, and 06:49Z —
-all clustered within ~4 hours of the aggregator landing (commit
-`af681e9c`, 2026-05-08). The sample reflects the workflow's first day
-in production.
+Raw observations span 2026-05-08T02:49Z through 18:10Z — same calendar day
+as the aggregator landing (commit `af681e9c`). PR threshold (≥3 distinct)
+is now technically met, but sample size and the all-pass distribution
+keep the decision unchanged.
 
 ## Promotion Decision — **Option B (defer / extend sampling)**
 
 The skeleton's promotion thresholds are not met:
 
-- ✗ Sample size **3 < 20**
-- ✗ Distinct PRs **2 < 3**
+- ✗ Sample size **5 < 20**
+- ✓ Distinct real PRs **3 = 3** (just at threshold)
 - ✓ FP rate 0 (but vacuous — no fail observations to compute against)
-- ✗ Cannot demonstrate behavior under fail conditions
+- ✗ Cannot demonstrate behavior under fail conditions (0 fails)
 
 Vacuous-FP-rate alone does not justify promotion: with zero fail samples
 we have no empirical evidence about the validator's false-positive
@@ -124,6 +128,7 @@ Edit `.github/workflows/validate.yml` to flip
 | Role | Name | Date | Verdict |
 |------|------|------|---------|
 | Operator | Bo Fuller | 2026-05-08 | Option B (defer); sample 3 < 20, 2 PRs < 3, vacuous FP rate |
+| Operator | Bo Fuller | 2026-05-08 (re-eval) | Option B (defer); sample 5 < 20, 3 PRs = 3 ✓, still 0 fails — FP rate vacuous |
 
 ---
 
