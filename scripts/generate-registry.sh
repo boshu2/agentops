@@ -228,20 +228,28 @@ build_job_types() {
 # ─── Scheduled Jobs (from example) ──────────────────────────────────────────
 
 build_schedules() {
-  local schedule_example="${REPO_ROOT}/.agents/schedule.yaml.example"
+  local schedule_example="${REPO_ROOT}/docs/templates/schedule.yaml.example"
+  local legacy_schedule_example="${REPO_ROOT}/.agents/schedule.yaml.example"
   local schedule_live="${REPO_ROOT}/.agents/schedule.yaml"
 
   local result='{"example": [], "live": []}'
 
-  # Parse example schedules (YAML → JSON via simple extraction)
+  # Parse the tracked canonical example first. Ignore operator-local .agents
+  # copies unless they are intentionally tracked, so registry generation is
+  # deterministic across CI and developer machines.
   if [[ -f "$schedule_example" ]]; then
     local entries
     entries=$(parse_schedule_yaml "$schedule_example")
     result=$(echo "$result" | jq --argjson entries "$entries" '.example = $entries')
+  elif git -C "$REPO_ROOT" ls-files --error-unmatch ".agents/schedule.yaml.example" >/dev/null 2>&1; then
+    local entries
+    entries=$(parse_schedule_yaml "$legacy_schedule_example")
+    result=$(echo "$result" | jq --argjson entries "$entries" '.example = $entries')
   fi
 
-  # Parse live schedules if present
-  if [[ -f "$schedule_live" ]]; then
+  # Parse live schedules only when tracked. A live .agents/schedule.yaml is
+  # normally operator-local runtime state and must not make registry.json drift.
+  if git -C "$REPO_ROOT" ls-files --error-unmatch ".agents/schedule.yaml" >/dev/null 2>&1; then
     local entries
     entries=$(parse_schedule_yaml "$schedule_live")
     result=$(echo "$result" | jq --argjson entries "$entries" '.live = $entries')

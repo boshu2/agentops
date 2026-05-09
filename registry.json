@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-07T23:17:15Z",
+  "generated_at": "2026-05-09T21:06:29Z",
   "summary": {
     "skills": 73,
     "hooks": 43,
-    "knowledge_stores": 1,
+    "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 61,
     "cli_commands": 147
@@ -944,10 +944,28 @@
     ],
     "knowledge_stores": [
       {
+        "name": "findings",
+        "path": ".agents/findings/",
+        "purpose": "Bug hunt and research findings",
+        "file_count": 1
+      },
+      {
         "name": "nightly",
         "path": ".agents/nightly/",
         "purpose": "Nightly run outputs and digests",
         "file_count": 6
+      },
+      {
+        "name": "reconcile",
+        "path": ".agents/reconcile/",
+        "purpose": "Unknown — needs documentation",
+        "file_count": 3
+      },
+      {
+        "name": "rpi",
+        "path": ".agents/rpi/",
+        "purpose": "RPI run state and registry",
+        "file_count": 1
       }
     ],
     "job_types": [
@@ -1023,7 +1041,20 @@
       }
     ],
     "schedules": {
-      "example": [],
+      "example": [
+        {
+          "name": "nightly-dream",
+          "cron": "0 3 * * *",
+          "job_type": "dream.run",
+          "timeout": "4h30m"
+        },
+        {
+          "name": "hourly-forge",
+          "cron": "5 * * * *",
+          "job_type": "wiki.forge",
+          "timeout": ""
+        }
+      ],
       "live": []
     },
     "evals": [
