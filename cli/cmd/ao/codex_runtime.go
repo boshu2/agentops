@@ -103,7 +103,7 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 				profile.HookManifestPath = codexManifest
 				profile.Reason = "Codex native hooks are configured via ~/.codex/hooks.json."
 			case manifestConfigured && !featureEnabled:
-				profile.Reason = "Codex native hooks are installed, but [features].codex_hooks is disabled in ~/.codex/config.toml; use ao codex start/stop until the feature flag is re-enabled."
+				profile.Reason = "Codex native hooks are installed, but [features].hooks is disabled in ~/.codex/config.toml; enable it with `--enable hooks` or set hooks = true under [features]."
 			case featureEnabled && !manifestConfigured:
 				profile.Reason = manifestReason
 			default:
@@ -189,6 +189,10 @@ func codexHooksFeatureEnabled(path string) bool {
 	}
 
 	inFeatures := false
+	hooksSeen := false
+	hooksEnabled := false
+	legacyHooksSeen := false
+	legacyHooksEnabled := false
 	for _, line := range strings.Split(string(data), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
@@ -198,16 +202,30 @@ func codexHooksFeatureEnabled(path string) bool {
 			inFeatures = trimmed == "[features]"
 			continue
 		}
-		if inFeatures && strings.HasPrefix(trimmed, "codex_hooks") {
-			parts := strings.SplitN(trimmed, "=", 2)
-			if len(parts) != 2 {
-				return false
-			}
-			return strings.EqualFold(strings.TrimSpace(parts[1]), "true")
+		if !inFeatures {
+			continue
+		}
+
+		parts := strings.SplitN(trimmed, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		switch key {
+		case "hooks":
+			hooksSeen = true
+			hooksEnabled = strings.EqualFold(value, "true")
+		case "codex_hooks":
+			legacyHooksSeen = true
+			legacyHooksEnabled = strings.EqualFold(value, "true")
 		}
 	}
 
-	return false
+	if hooksSeen {
+		return hooksEnabled
+	}
+	return legacyHooksSeen && legacyHooksEnabled
 }
 
 func codexHooksManifestConfigured(path string) (bool, string) {

@@ -148,6 +148,41 @@ function Upsert-TomlKey {
   Set-Content -LiteralPath $File -Value $lines -Encoding utf8
 }
 
+function Remove-TomlKey {
+  param([string]$File, [string]$Section, [string]$Key)
+
+  if (-not (Test-Path -LiteralPath $File)) {
+    return
+  }
+
+  $lines = [System.Collections.Generic.List[string]]::new()
+  $lines.AddRange([string[]](Get-Content -LiteralPath $File))
+
+  $sectionIndex = -1
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -eq $Section) {
+      $sectionIndex = $i
+      break
+    }
+  }
+
+  if ($sectionIndex -lt 0) {
+    return
+  }
+
+  for ($i = $sectionIndex + 1; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match "^\[") {
+      break
+    }
+    if ($lines[$i] -match "^\s*$([regex]::Escape($Key))\s*=") {
+      $lines.RemoveAt($i)
+      $i--
+    }
+  }
+
+  Set-Content -LiteralPath $File -Value $lines -Encoding utf8
+}
+
 function Archive-SkillRoot {
   param([string]$Root, [string]$SkillsSource, [bool]$ManagedRoot)
 
@@ -441,7 +476,8 @@ try {
   Upsert-TomlKey $configFile "[features]" "plugins" "true"
   Upsert-TomlKey $configFile "[plugins.`"$PluginKey`"]" "enabled" "true"
   Upsert-TomlKey $configFile "[ui]" "suppress_unstable_features_warning" "true"
-  Upsert-TomlKey $configFile "[features]" "codex_hooks" "true"
+  Remove-TomlKey $configFile "[features]" "codex_hooks"
+  Upsert-TomlKey $configFile "[features]" "hooks" "true"
 
   $manifestHash = (Get-FileHash -LiteralPath $skillManifest -Algorithm SHA256).Hash.ToLowerInvariant()
   $installedManifest = Join-Path $pluginCacheRoot "skills-codex\.agentops-manifest.json"

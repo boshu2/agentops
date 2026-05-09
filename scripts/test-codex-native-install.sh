@@ -205,7 +205,10 @@ rg -q '^\[ui\]$' "$CODEX_HOME/config.toml" || fail "config.toml missing [ui] sec
 rg -q '^suppress_unstable_features_warning = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing suppress_unstable_features_warning = true"
 rg -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$CODEX_HOME/config.toml" || fail "config.toml missing AgentOps plugin block"
 rg -q '^enabled = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing enabled = true"
-rg -q '^codex_hooks = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing codex_hooks = true"
+rg -q '^hooks = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing hooks = true"
+if rg -q '^codex_hooks[[:space:]]*=' "$CODEX_HOME/config.toml"; then
+  fail "config.toml still contains deprecated codex_hooks"
+fi
 [[ -f "$CODEX_HOME/hooks.json" ]] || fail "Missing ~/.codex/hooks.json after native install"
 jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null \
   || fail "Expected 5 native Codex hook events in ~/.codex/hooks.json"

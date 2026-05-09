@@ -231,6 +231,43 @@ upsert_toml_key() {
   mv "$tmp" "$file"
 }
 
+remove_toml_key() {
+  local file="$1"
+  local section="$2"
+  local key="$3"
+  local tmp
+
+  [[ -f "$file" ]] || return 0
+
+  tmp="$(mktemp)"
+  awk \
+    -v section="$section" \
+    -v key="$key" \
+    '
+    BEGIN {
+      in_section = 0
+    }
+    {
+      if ($0 == section) {
+        in_section = 1
+        print
+        next
+      }
+
+      if (in_section && $0 ~ /^\[/) {
+        in_section = 0
+      }
+
+      if (in_section && $0 ~ ("^[[:space:]]*" key "[[:space:]]*=")) {
+        next
+      }
+
+      print
+    }
+    ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
 count_codex_hook_handlers() {
   local path="$1"
 
@@ -492,8 +529,9 @@ if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
     jq '.' "$RENDERED_HOOKS_FILE" > "$CODEX_HOOKS_FILE"
   fi
 
-  # Enable hooks feature in config
-  upsert_toml_key "$CONFIG_FILE" "[features]" "codex_hooks" "true"
+  # Enable the current Codex hooks feature flag and remove the deprecated key.
+  remove_toml_key "$CONFIG_FILE" "[features]" "codex_hooks"
+  upsert_toml_key "$CONFIG_FILE" "[features]" "hooks" "true"
 
   HOOK_HANDLER_COUNT="$(count_codex_hook_handlers "$RENDERED_HOOKS_FILE")"
   HOOK_EVENT_COUNT="$(jq -r '.hooks | length' "$RENDERED_HOOKS_FILE")"

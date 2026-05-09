@@ -93,8 +93,8 @@ fi
 
 if [[ -f "$PLUGIN_INSTALL" ]]; then
     bash -n "$PLUGIN_INSTALL" && pass "install-codex-plugin.sh syntax valid" || fail "install-codex-plugin.sh syntax invalid"
-    grep -q 'codex_hooks' "$PLUGIN_INSTALL" \
-        && pass "install-codex-plugin.sh manages codex_hooks enablement" || fail "install-codex-plugin.sh missing codex_hooks handling"
+    grep -q '"hooks" "true"' "$PLUGIN_INSTALL" \
+        && pass "install-codex-plugin.sh enables the hooks feature" || fail "install-codex-plugin.sh missing hooks feature handling"
     grep -q 'hooks.json' "$PLUGIN_INSTALL" \
         && pass "install-codex-plugin.sh installs ~/.codex/hooks.json" || fail "install-codex-plugin.sh missing hooks.json install flow"
 else
@@ -129,8 +129,13 @@ fi
 
 if [[ -f "$CODEX_HOME/config.toml" ]]; then
     pass "config.toml created in ~/.codex"
-    grep -q '^codex_hooks = true$' "$CODEX_HOME/config.toml" \
-        && pass "config.toml enables codex_hooks" || fail "config.toml missing codex_hooks = true"
+    grep -q '^hooks = true$' "$CODEX_HOME/config.toml" \
+        && pass "config.toml enables hooks" || fail "config.toml missing hooks = true"
+    if grep -q '^codex_hooks[[:space:]]*=' "$CODEX_HOME/config.toml"; then
+        fail "config.toml still contains deprecated codex_hooks"
+    else
+        pass "config.toml omits deprecated codex_hooks"
+    fi
     grep -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$CODEX_HOME/config.toml" \
         && pass "config.toml enables the AgentOps plugin" || fail "config.toml missing AgentOps plugin block"
 else

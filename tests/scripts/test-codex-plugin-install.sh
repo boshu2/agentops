@@ -165,6 +165,11 @@ test_installs_plugin_cache_and_config() {
   local user_skills_root="$TMP_DIR/.agents/skills"
 
   setup_fixture "$fixture"
+  mkdir -p "$codex_home"
+  cat > "$codex_home/config.toml" <<'EOF'
+[features]
+codex_hooks = true
+EOF
 
   if ! run_install "$fixture" "$codex_home"; then
     fail "install should succeed"
@@ -201,8 +206,10 @@ test_installs_plugin_cache_and_config() {
     rg -q '^suppress_unstable_features_warning = true$' "$codex_home/config.toml" && \
     rg -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$codex_home/config.toml" && \
     rg -q '^enabled = true$' "$codex_home/config.toml" && \
+    rg -q '^hooks = true$' "$codex_home/config.toml" && \
+    ! rg -q '^codex_hooks[[:space:]]*=' "$codex_home/config.toml" && \
     rg -q '"user_skills_root": null' "$codex_home/.agentops-codex-install.json"; then
-    pass "installs plugin cache without leaving a raw ~/.agents/skills mirror"
+    pass "installs plugin cache and migrates deprecated codex_hooks config"
   else
     fail "config.toml missing plugin enablement"
   fi

@@ -451,7 +451,7 @@ func TestDetectLifecycleRuntimeProfileWithOptions_Codex_WithNativeHooksConfigure
 	if err := os.WriteFile(filepath.Join(codexDir, "version.json"), []byte(`{"latest_version":"0.122.0"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\ncodex_hooks = true\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\nhooks = true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	manifest := `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"bash /tmp/session-start.sh"}]}]}}`
@@ -477,6 +477,75 @@ func TestDetectLifecycleRuntimeProfileWithOptions_Codex_WithNativeHooksConfigure
 	}
 }
 
+func TestDetectLifecycleRuntimeProfileWithOptions_Codex_WithLegacyHooksFeatureFlag(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_THREAD_ID", "codex-thread-legacy-flag")
+	t.Setenv("CODEX_INTERNAL_ORIGINATOR_OVERRIDE", "")
+	t.Setenv("CODEX_CI", "")
+	t.Setenv("CLAUDE_SESSION_ID", "")
+	t.Setenv("OPENCODE_SESSION_ID", "")
+
+	codexDir := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(codexDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexDir, "version.json"), []byte(`{"latest_version":"0.122.0"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\ncodex_hooks = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"bash /tmp/session-start.sh"}]}]}}`
+	if err := os.WriteFile(filepath.Join(codexDir, "hooks.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	profile := detectLifecycleRuntimeProfileWithOptions(false)
+	if profile.Mode != lifecycleModeHookCapable {
+		t.Errorf("Mode = %q, want %q", profile.Mode, lifecycleModeHookCapable)
+	}
+	if !profile.HookConfigured {
+		t.Error("HookConfigured should remain true for legacy codex_hooks configs")
+	}
+}
+
+func TestDetectLifecycleRuntimeProfileWithOptions_Codex_HooksFeatureOverridesLegacy(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_THREAD_ID", "codex-thread-current-flag-disabled")
+	t.Setenv("CODEX_INTERNAL_ORIGINATOR_OVERRIDE", "")
+	t.Setenv("CODEX_CI", "")
+	t.Setenv("CLAUDE_SESSION_ID", "")
+	t.Setenv("OPENCODE_SESSION_ID", "")
+
+	codexDir := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(codexDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexDir, "version.json"), []byte(`{"latest_version":"0.122.0"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\nhooks = false\ncodex_hooks = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"bash /tmp/session-start.sh"}]}]}}`
+	if err := os.WriteFile(filepath.Join(codexDir, "hooks.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	profile := detectLifecycleRuntimeProfileWithOptions(false)
+	if profile.Mode != lifecycleModeCodexHookless {
+		t.Errorf("Mode = %q, want %q", profile.Mode, lifecycleModeCodexHookless)
+	}
+	if profile.HookConfigured {
+		t.Error("HookConfigured should be false when the current hooks feature is explicitly disabled")
+	}
+	if !strings.Contains(profile.Reason, "[features].hooks") {
+		t.Errorf("Reason = %q, want [features].hooks guidance", profile.Reason)
+	}
+}
+
 func TestDetectLifecycleRuntimeProfileWithOptions_Codex_WithLegacyFlatManifest(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -493,7 +562,7 @@ func TestDetectLifecycleRuntimeProfileWithOptions_Codex_WithLegacyFlatManifest(t
 	if err := os.WriteFile(filepath.Join(codexDir, "version.json"), []byte(`{"latest_version":"0.122.0"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\ncodex_hooks = true\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(codexDir, "config.toml"), []byte("[features]\nhooks = true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	legacyManifest := `{"hooks":[{"name":"agentops-session-start","event":"SessionStart","command":"bash /tmp/session-start.sh","timeout":10000}]}`
