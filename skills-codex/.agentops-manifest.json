@@ -1031,6 +1031,12 @@
       "generated_hash": "f32617332b22440a8294964e73bdcaa1d274b830b37d699e480d0df4dcb58dc0"
     },
     {
+      "name": "domain",
+      "source_skill": "skills/domain",
+      "source_hash": "533c52be53f5046430d4dece7cfc5ceaf0c578023a69a2fac5b49834c6228fff",
+      "generated_hash": "b94e5073a166152dc684fba9269bc76fb342b13a90812b100ff8e34417016b82"
+    },
+    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "35b062c2d4454da0343226de49c9d10e0d2e59d9ca9c9774397c617085de3ee1",

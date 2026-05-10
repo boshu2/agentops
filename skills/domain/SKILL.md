@@ -1,6 +1,6 @@
 ---
 name: domain
-description: 'Shared vocabulary for building software with AI agents. Load when terms like vertical slice, tracer bullet, primitive, anti-pattern, or citation need a canonical definition.'
+description: 'Canonical vocabulary for human-AI software work.'
 skill_api_version: 1
 context:
   window: isolated

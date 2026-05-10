@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-10T02:40:27Z",
+  "generated_at": "2026-05-10T19:28:50Z",
   "summary": {
-    "skills": 74,
+    "skills": 75,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
@@ -370,6 +370,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 4
+      },
+      {
+        "name": "domain",
+        "tier": "knowledge",
+        "path": "skills/domain/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 8
       },
       {
         "name": "harvest",
