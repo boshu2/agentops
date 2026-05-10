@@ -447,6 +447,15 @@ jobs:
           chmod +x scripts/eval-agentops.sh
           ./scripts/eval-agentops.sh --fast
 
+      - name: Upload eval run records for triage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: agentops-eval-advisory-runs
+          path: .agents/evals/runs/
+          retention-days: 14
+          if-no-files-found: warn
+
   factory-claim-ledger-strict:
     # Wave 1C of epic soc-e4ulx (Reconciliation Engine).
     # Bead: soc-lmww1. Plan: .agents/plans/2026-05-07-reconciliation-engine-full-arc.md
