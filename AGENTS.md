@@ -73,7 +73,7 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), check-test-staleness (non-blocking), and swarm-evidence (non-blocking).
+All pushes to `main` and PRs run `.github/workflows/validate.yml`. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), and swarm-evidence (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
@@ -86,6 +86,7 @@ Advisory jobs run on every PR but their failure does NOT block merge. They surfa
 | **security-toolchain-gate** | 14d | Open a `bd` issue with label `ci-advisory`. Network/install flake (item 40) is mitigated by 3-attempt exponential-backoff retry on the install step; only persistent toolchain or scanner regressions count toward the SLA. |
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
+| **practice-citations** | 14d | Report-only walk of Primitives (skills/hooks/evals/CLI) for `practices: [slug,...]` derivation from PRACTICE.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
 | **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
 | **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
 
@@ -259,6 +260,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
+| **practice-citations** | Walks Primitives (skills/hooks/evals/CLI/schemas) for `practices: [slug,...]` derivation from PRACTICE.md; reports missing or invalid slug citations | Non-blocking (`continue-on-error: true`); report-only initially. Promotes to required after one clean backfill cycle |
 | **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
