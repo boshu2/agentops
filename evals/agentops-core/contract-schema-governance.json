@@ -110,7 +110,7 @@
         {"type": "stdout_contains", "value": "next-work contract parity validation passed."},
         {"type": "stdout_contains", "value": "PASS: schema version drift fails parity gate"},
         {"type": "stdout_contains", "value": "PASS: aggregate self drift fails parity gate"},
-        {"type": "stdout_contains", "value": "Results: 12 PASS, 0 FAIL"}
+        {"type": "stdout_contains", "value": "Results: 13 PASS, 0 FAIL"}
       ],
       "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
       "critical": true

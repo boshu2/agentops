@@ -40,7 +40,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Total Skills: 77"},
+        {"type": "stdout_contains", "value": "Total Skills: 80"},
         {"type": "stdout_contains", "value": "OVERALL: PASS"}
       ],
       "dimensions": ["correctness", "artifact_quality", "process_adherence"],
@@ -76,7 +76,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "All 71 skill(s) passed schema validation"}
+        {"type": "stdout_contains", "value": "All 74 skill(s) passed schema validation"}
       ],
       "dimensions": ["correctness", "artifact_quality"],
       "critical": true

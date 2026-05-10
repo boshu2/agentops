@@ -105,7 +105,7 @@
       "kind": "artifact_check",
       "objective": "Ensure the public product contract still describes curation, quality measurement, feedback, and promotion as part of the compounding control plane.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "ao inject`, `ao lookup`, `ao forge`, `ao curate`, `ao defrag`, `ao memory sync` manage learning capture, retrieval, freshness decay, promotion"},
+        {"type": "artifact_contains", "target": "../../PRODUCT.md", "value": "Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule)"},
         {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "Each agent is an experiment. Each experiment produces data. The data gets curated."},
         {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "Existing pool pipeline: pending -> staged -> promoted"},
         {"type": "artifact_contains", "target": "../../docs/curation-pipeline.md", "value": "After promotion, artifacts enter the MemRL utility tracking system."},

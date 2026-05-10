@@ -122,7 +122,7 @@
         {"type": "artifact_contains", "target": "../../docs/contracts/rpi-run-registry.md", "value": "Refuses to remove repo root as a worktree target"},
         {"type": "artifact_contains", "target": "../../docs/how-it-works.md", "value": "use the canonical path `ao rpi loop --supervisor`"},
         {"type": "artifact_contains", "target": "../../docs/how-it-works.md", "value": "`ao rpi parallel` runs multiple epics concurrently, each in its own git worktree."},
-        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "`ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao codex stop`"},
+        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "`ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao daemon submit`"},
         {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "Preserve the discovered"},
         {"type": "artifact_contains", "target": "../../skills/rpi/SKILL.md", "value": "`--loop`, restart from discovery on FAIL while `cycle < max_cycles`."},
         {"type": "artifact_contains", "target": "../../skills-codex/rpi/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},

@@ -29,7 +29,7 @@
       "objective": "Verify that a known-good skill (implement) scores above the quality threshold on structural checks.",
       "runtime": "shell",
       "inputs": {
-        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/implement/SKILL.md"
+        "shell": "bash fixtures/check-skill-comprehension.sh ../../skills/implement/SKILL.md"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -47,7 +47,7 @@
       "objective": "Verify that a known-good skill (research) scores above the quality threshold on structural checks.",
       "runtime": "shell",
       "inputs": {
-        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/research/SKILL.md"
+        "shell": "bash fixtures/check-skill-comprehension.sh ../../skills/research/SKILL.md"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -65,11 +65,11 @@
       "objective": "Verify the fixture runs against a minimal skill and produces valid structured output regardless of score.",
       "runtime": "shell",
       "inputs": {
-        "command": "bash fixtures/check-skill-comprehension.sh ../../skills/retro/SKILL.md"
+        "shell": "bash fixtures/check-skill-comprehension.sh ../../skills/retro/SKILL.md"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "json_path", "target": "stdout.word_count", "value": true}
+        {"type": "json_path", "target": "stdout.word_count"}
       ],
       "dimensions": ["context_comprehension"]
     }

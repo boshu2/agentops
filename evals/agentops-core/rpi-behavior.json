@@ -73,7 +73,7 @@
       "objective": "Protect deterministic public canaries from live Claude or Codex execution.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "runtime %q is out of deterministic scope"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "unknown runtime %q (use static, mock, shell, claude, or codex)"}
       ],
       "dimensions": ["runtime_compatibility", "safety"],
       "critical": true

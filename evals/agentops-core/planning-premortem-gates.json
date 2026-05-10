@@ -98,7 +98,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 12 PASS, 0 FAIL"}
+        {"type": "stdout_contains", "value": "Results: 13 PASS, 0 FAIL"}
       ],
       "dimensions": ["correctness", "learning_closure", "process_adherence"],
       "critical": true

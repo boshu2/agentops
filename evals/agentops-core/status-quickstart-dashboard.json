@@ -110,7 +110,7 @@
       "objective": "Lock quickstart's setup detector, exact AgentOps explanation, decision-table recommendations, Codex lifecycle guidance, and semantic onboarding validator.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "Tell a new user what AgentOps does and what to do first"},
-        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "Output only that message"},
+        {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "Match the first row that applies. Output that message"},
         {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "AgentOps is the operational layer for coding agents."},
         {"type": "artifact_contains", "target": "../../skills/quickstart/SKILL.md", "value": "CODEX=true"},
         {"type": "artifact_contains", "target": "../../skills-codex/quickstart/SKILL.md", "value": "$rpi \"your goal\""},

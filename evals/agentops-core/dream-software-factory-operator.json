@@ -143,7 +143,7 @@
         {"type": "artifact_contains", "target": "../../docs/contracts/dream-report.md", "value": "`summary.json` and `summary.md` are the canonical Dream report artifacts."},
         {"type": "artifact_contains", "target": "../../docs/contracts/dream-report.md", "value": "IterationSummary.Status"},
         {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "AgentOps is best understood as a **software-factory control plane**."},
-        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "ao factory start --goal \"fix auth startup\""},
+        {"type": "artifact_contains", "target": "../../docs/software-factory.md", "value": "ao daemon submit --kind rpi --goal \"fix auth startup\""},
         {"type": "artifact_contains", "target": "../../docs/workflows/session-lifecycle.md", "value": "ao overnight setup --apply --runner codex --runner claude --at 01:30"}
       ],
       "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"]

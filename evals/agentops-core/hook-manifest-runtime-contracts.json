@@ -41,7 +41,7 @@
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Hook preflight PASSED"},
-        {"type": "stdout_contains", "value": "Registered: 36 of 51"},
+        {"type": "stdout_contains", "value": "Registered: 37 of 52"},
         {"type": "stdout_contains", "value": "Unregistered: 15"},
         {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 0"},
         {"type": "stdout_contains", "value": "context-guard.sh"},
@@ -115,7 +115,7 @@
       "timeout_seconds": 60,
       "inputs": {
         "cwd": "../..",
-        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 41) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 35) and (($cmds | map(select(test(\"ao-inject\\\\.sh\"))) | length) == 0)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
+        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 43) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 36) and (($cmds | map(select(test(\"ao-inject\\\\.sh\"))) | length) == 0)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
