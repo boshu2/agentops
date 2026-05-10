@@ -667,13 +667,13 @@
     {
       "name": "brainstorm",
       "source_skill": "skills/brainstorm",
-      "source_hash": "9c9728b6611f2f989bc8c4e8e4e0803c39ea3af70d5ebb6c9a6b3513bb507d3e",
+      "source_hash": "173461161176a56e45e35f60a04e23db9a858e76d4c9b5fa29cfb5b58f0e73ac",
       "generated_hash": "feeffc5414cb28ad45c1e0ff182be1e96a65cbc134de889d2fcff5045658454e"
     },
     {
       "name": "bug-hunt",
       "source_skill": "skills/bug-hunt",
-      "source_hash": "42260964b08eb9575c0bbb49921ace72db0c2acd3f1e4ea43f9d5fe9e0e05480",
+      "source_hash": "32557f3bddd0a710e0e77f6978a49fcee2bed11020e6af5520db53574063ee50",
       "generated_hash": "3031f2f0b7472856f03b27e9cc298606d6c509a1f7f234bd2918f1d8c18182bb"
     },
     {
@@ -691,7 +691,7 @@
     {
       "name": "complexity",
       "source_skill": "skills/complexity",
-      "source_hash": "d90ecabee1f7987429ac1732088df48d5bcb61cc79bd2e73ec60693fc757d672",
+      "source_hash": "4119f650179f2bf60159ebcbfc121d77ce2affe6ec2856a74a5d866d83b035b4",
       "generated_hash": "3b82646905d8303aab277e62a66b767d80e08d8e080eb40dad28c44837564972"
     },
     {
@@ -703,7 +703,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "0d348feabd45cd49ebb00214ee64b76b1b58d59c97a992d0325e27d3d70dcb4e",
+      "source_hash": "a78f7b2bb96122128ca03f0c257a6c0898948070451614cefe189e549823b71b",
       "generated_hash": "8f600088088695ca2c2f32657e23ce7f3aa9de8ff2f739bdf2db0045274b71b3"
     },
     {
@@ -721,7 +721,7 @@
     {
       "name": "design",
       "source_skill": "skills/design",
-      "source_hash": "de35a789f9b11120caff7d92c864f62a22c840001378901b24d1b4409b00e859",
+      "source_hash": "19f40b7cbfd012c18ab317e516d187f2e60e7c56d1824e5a5ecfa1b6a38a6652",
       "generated_hash": "9b5ee704843edae6524c28b0a29aec08c0286d754194cd78f8473684219e8227"
     },
     {
@@ -757,13 +757,13 @@
     {
       "name": "forge",
       "source_skill": "skills/forge",
-      "source_hash": "1e38d7ed8eadbd31bdf95cd29d7b44ab7fd4942423e2e9fe2d9e0b6cc74a3dd0",
+      "source_hash": "89d3a5483930beb76526b85702cd72848f2e34f49eba22ef7706914a49fcc753",
       "generated_hash": "c39f4993c079f0c4df600f15b4699d6699d3b05c6a867c7e62017338a8f63cc7"
     },
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "00772719aca3ed0dfbbb0e2b1fcc7eaf0f5edaa655da9a872fe00bea2ececdc1",
+      "source_hash": "86008396d54696d86dd0e81417dd997cc0770c7cea98dfd57fc0cc28f2f66a8d",
       "generated_hash": "dc9b388da75af17c85440fa0481c9c69b16b9641b1832269e302856dd48ded8d"
     },
     {
@@ -781,7 +781,7 @@
     {
       "name": "harvest",
       "source_skill": "skills/harvest",
-      "source_hash": "af6dcb9eaea57ee52fde59fc48c65c175d6c6229fb0d19f7ccee1ce42104ee7e",
+      "source_hash": "fc1964424060ace588338439d178c1f87131f06c392f3e12beac1b1ae42786d3",
       "generated_hash": "5b7493af237b1aa26c1628c34ba0cb70928b0dfd34964fcd1d42971d6e322fd1"
     },
     {
@@ -811,7 +811,7 @@
     {
       "name": "knowledge-activation",
       "source_skill": "skills/knowledge-activation",
-      "source_hash": "94d824e77b4a05def36fd2bbbffffbd863307a43adbd05d9d9a1be0a7a58ec5b",
+      "source_hash": "988e46325f203937c44491f64791ac65634dc03453985edaec8cc9630ae0bb51",
       "generated_hash": "2a9c9973fd6d21cd725717c4624f358a41072b2c6ca535580abfddd2cf613985"
     },
     {
@@ -889,7 +889,7 @@
     {
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
-      "source_hash": "c223e3c336a21faf8b2d99ed15fa5c9d4eec044406bc8b76c404a1be48bf668d",
+      "source_hash": "495af27114e6c1ef199f3f7d828766823ed70b9de0701f8808fbbaa5c48e0076",
       "generated_hash": "76c803dbb09ebd1f9833a1ca852d366c48f6a2956141b8b9245bfd816e93155c"
     },
     {
@@ -955,13 +955,13 @@
     {
       "name": "research",
       "source_skill": "skills/research",
-      "source_hash": "3b48d1ba95a2102fe81454fac55559674be21b73b62e122aa93a3ccf698286ce",
+      "source_hash": "bf325bf44d39b5417e91a5a6f7cd1e11ab33586a5c0558dc756c336d13a6ee81",
       "generated_hash": "a90e608d9124b87d23c533710f698a49941d0c56956187cbb644c1f1267a499d"
     },
     {
       "name": "retro",
       "source_skill": "skills/retro",
-      "source_hash": "a291761d854f587fe25f83bdfd655ebea04c31d008cee9841bad85603ec84bc4",
+      "source_hash": "6fd30fe156cfc64a750544b7e0b778df2f7453e6b0e24f0bc79acc3fc0ea5b00",
       "generated_hash": "5b276604e92d31c331385096dfec9c7e7a321a68dd8eab601fcfc6f4a1657ecd"
     },
     {
@@ -1039,7 +1039,7 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "35b062c2d4454da0343226de49c9d10e0d2e59d9ca9c9774397c617085de3ee1",
+      "source_hash": "4249f1b88e8232ec102c0e44341b18afe7de8015de5697c7162dcec34d6d0779",
       "generated_hash": "3c4868a748ade4c28be2ae7f79970b9d3f49b9999dc80c7d068e53afc58069a3"
     },
     {

@@ -1,6 +1,7 @@
 ---
 name: standards
 description: 'Provide repo coding standards.'
+practices: [code-complete, design-patterns, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: isolated

@@ -1,6 +1,7 @@
 ---
 name: pre-mortem
 description: 'Stress-test plans before work.'
+practices: [adr, mythical-man-month, design-by-contract]
 skill_api_version: 1
 metadata:
   tier: judgment

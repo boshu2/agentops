@@ -1,6 +1,7 @@
 ---
 name: council
 description: 'Run multi-judge consensus.'
+practices: [llm-eval-harness, ai-assisted-dev, design-by-contract]
 skill_api_version: 1
 context:
   window: isolated

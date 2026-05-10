@@ -1,6 +1,7 @@
 ---
 name: research
 description: 'Explore and write findings.'
+practices: [wiki-knowledge-surface, pragmatic-programmer, ddd-bounded-context]
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:

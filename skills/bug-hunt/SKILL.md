@@ -1,6 +1,7 @@
 ---
 name: bug-hunt
 description: 'Investigate bugs and root causes.'
+practices: [refactoring, property-based-testing, code-complete]
 skill_api_version: 1
 context:
   window: fork

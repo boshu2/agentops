@@ -1,6 +1,7 @@
 ---
 name: forge
 description: 'Mine transcripts into learnings.'
+practices: [wiki-knowledge-surface, lean-startup]
 skill_api_version: 1
 user-invocable: false
 context:

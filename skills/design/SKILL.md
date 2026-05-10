@@ -1,6 +1,7 @@
 ---
 name: design
 description: 'Validate product fit before discovery.'
+practices: [lean-startup, ddd-bounded-context, mythical-man-month]
 skill_api_version: 1
 user-invocable: true
 context:

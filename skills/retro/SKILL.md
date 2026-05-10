@@ -1,6 +1,7 @@
 ---
 name: retro
 description: 'Capture a session learning.'
+practices: [sre, lean-startup, dora-metrics]
 skill_api_version: 1
 metadata:
   tier: knowledge
