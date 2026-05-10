@@ -1,6 +1,7 @@
 ---
 name: post-mortem
 description: 'Review completed work and learn.'
+practices: [dora-metrics, sre, lean-startup]
 skill_api_version: 1
 metadata:
   tier: judgment

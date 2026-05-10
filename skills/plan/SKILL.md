@@ -1,6 +1,7 @@
 ---
 name: plan
 description: 'Decompose goals into issue plans.'
+practices: [adr, agile-manifesto, pragmatic-programmer]
 skill_api_version: 1
 metadata:
   tier: execution

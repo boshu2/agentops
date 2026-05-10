@@ -1,6 +1,7 @@
 ---
 name: validation
 description: 'Run post-implementation validation.'
+practices: [llm-eval-harness, dora-metrics, sre]
 skill_api_version: 1
 user-invocable: true
 context:

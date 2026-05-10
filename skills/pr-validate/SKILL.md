@@ -1,6 +1,7 @@
 ---
 name: pr-validate
 description: 'Validate PR scope and quality.'
+practices: [continuous-integration, code-complete, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: fork

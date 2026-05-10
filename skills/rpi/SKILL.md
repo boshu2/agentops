@@ -1,6 +1,7 @@
 ---
 name: rpi
 description: 'Run discovery, crank, validation.'
+practices: [continuous-delivery, dora-metrics, agile-manifesto, pragmatic-programmer]
 skill_api_version: 1
 user-invocable: true
 context:

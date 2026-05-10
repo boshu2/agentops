@@ -1,6 +1,7 @@
 ---
 name: crank
 description: 'Execute epics through waves.'
+practices: [continuous-delivery, xp, agile-manifesto]
 skill_api_version: 1
 user-invocable: true
 context:

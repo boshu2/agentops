@@ -1,6 +1,7 @@
 ---
 name: vibe
 description: 'Validate code readiness.'
+practices: [ai-assisted-dev, llm-eval-harness, code-complete, pragmatic-programmer]
 skill_api_version: 1
 metadata:
   tier: judgment

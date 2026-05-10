@@ -59,7 +59,12 @@
     "license": { "type": "string" },
     "compatibility": { "type": "string" },
     "model": { "type": "string", "description": "Preferred model for skill execution (e.g., haiku, sonnet)" },
-    "output_contract": { "type": "string", "description": "Path to JSON Schema file defining this skill's structured output format (e.g., skills/council/schemas/verdict.json)" }
+    "output_contract": { "type": "string", "description": "Path to JSON Schema file defining this skill's structured output format (e.g., skills/council/schemas/verdict.json)" },
+    "practices": {
+      "type": "array",
+      "description": "Practice slugs from PRACTICE.md that this primitive embodies. Validated by scripts/validate-practice-citations.sh.",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+    }
   },
   "additionalProperties": false
 }

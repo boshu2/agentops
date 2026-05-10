@@ -1,6 +1,7 @@
 ---
 name: implement
 description: 'Implement one tracked issue.'
+practices: [tdd, refactoring, code-complete]
 skill_api_version: 1
 metadata:
   tier: execution

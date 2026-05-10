@@ -1,6 +1,7 @@
 ---
 name: domain
 description: 'Canonical vocabulary for human-AI software work.'
+practices: [ddd-bounded-context, wiki-knowledge-surface, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: isolated

@@ -1,6 +1,7 @@
 ---
 name: discovery
 description: 'Create execution packets.'
+practices: [adr, lean-startup, mythical-man-month]
 skill_api_version: 1
 user-invocable: true
 context:
