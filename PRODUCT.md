@@ -290,6 +290,7 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 
 ## See Also
 
+- [PRACTICE.md](PRACTICE.md) — engineering doctrine: the reverse-traced lineage AgentOps inherits (DevOps/SRE/XP/Agile/TDD/BDD/DDD/microservices/cloud-native/distributed-systems/pragmatic engineering) and the synthesis claim: those practices applied under the agent-context-limited constraint.
 - [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of judgment validation, durable learning, and loop closure, with evidence map and mechanism inventory.
 - [Trust Factory](docs/trust-factory.md) — how AgentOps maps to the five-step proof contract (identity, reproducibility, evaluation, evidence, recovery).
 - [Wiki for your agents](docs/wiki-for-agents.md) — the wiki framing as a standalone document.

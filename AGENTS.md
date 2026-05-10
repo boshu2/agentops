@@ -21,6 +21,10 @@ If you spawn into this repo without context, do this first:
    3. Explanatory docs (`docs/**`, `README.md`)
 5. If you find conflicts, follow the higher-precedence source and call out the mismatch explicitly in your report/PR.
 
+## Foundation texts
+
+When in doubt about HOW to build, read [`PRACTICE.md`](PRACTICE.md) — engineering doctrine, the reverse-traced lineage of practices AgentOps inherits, and what the agent-context-limited constraint changes. When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md).
+
 ## Installing/Updating Skills
 
 Use the [skills.sh](https://skills.sh/) npm package to install AgentOps skills for any agent:
