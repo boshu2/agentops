@@ -191,7 +191,7 @@ As of 2026-05-04:
 
 - GitHub repo: 328 stars, 34 forks, 8 open issues, last pushed 2026-05-04
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 75 shared skills, 74 checked-in Codex artifacts, and 35 Codex overrides
+- Distribution/runtime reach: 75 shared skills, 75 checked-in Codex artifacts, and 35 Codex overrides
 
 **Measured operational proof:**
 

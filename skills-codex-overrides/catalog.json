@@ -497,6 +497,12 @@
       "reason": "Standards are loaded as reference material and do not currently need a Codex-specific prompt layer."
     },
     {
+      "name": "domain",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
+    },
+    {
       "name": "status",
       "treatment": "bespoke",
       "wave": "core-execution",
