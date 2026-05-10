@@ -425,6 +425,11 @@ jobs:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
       - name: Install AgentOps eval dependencies
         run: |
           sudo apt-get install -y jq ripgrep
@@ -441,6 +446,13 @@ jobs:
             "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
           )
           echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
+
+      - name: Bootstrap Python workbench venv
+        run: |
+          cd evals/workbench/python-api
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install fastapi uvicorn httpx pytest ruff black
 
       - name: Run broad AgentOps eval advisory corpus
         run: |
