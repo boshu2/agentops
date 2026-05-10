@@ -2,6 +2,8 @@ module github.com/boshu2/agentops/cli
 
 go 1.26
 
+toolchain go1.26.3
+
 require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/google/go-cmp v0.7.0

@@ -640,6 +640,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
+    },
+    {
+      "name": "hooks-authoring",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
     }
   ]
 }

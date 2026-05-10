@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 73 AgentOps skills (64 user-facing + 9 internal).
+Complete reference for all 74 AgentOps skills (65 user-facing + 9 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -471,7 +471,7 @@ Capture lessons from accepted/rejected PR outcomes.
 Reinstall all AgentOps skills globally from the latest source.
 
 ```bash
-/update                      # Reinstall all 73 skills
+/update                      # Reinstall all 74 skills
 ```
 
 ---
@@ -492,6 +492,7 @@ phases, and flags.
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
 | `/grafana-platform-dashboard` | Design/refactor/validate Grafana dashboards for OpenShift/Kubernetes platform ops |
 | `/harvest` | Cross-rig knowledge consolidation and tiered promotion to the global hub |
+| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/perf` | Performance profiling, benchmarking, regression detection, optimization |
 | `/push` | Atomic test-commit-push with conventional-commit message |
 | `/readme` | Generate a gold-standard README via interview + council validation |

@@ -45,7 +45,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 73 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 74 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 | **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `ao overnight` + `cli/cmd/ao/dream_executor.go` + `.github/workflows/nightly.yml` dream-cycle proof job | Shipped. Bounded private overnight compounding lane runs the harvest → forge → close-loop → defrag chain unattended, off the API and against any model. |
 | **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Shipped at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (iterates worst-failing gate until pass; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. Independent 3-judge audit confirmed parity on rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed. | Shipped at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
@@ -108,7 +108,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao inject` — decay-ranked retrieval with token budgeting
 - `ao context assemble` — phase-scoped context packets
 - `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 73 skills — reusable context packages across Claude Code, Codex, and OpenCode
+- 74 skills — reusable context packages across Claude Code, Codex, and OpenCode
 - 12 lifecycle hooks — context loads automatically without agent initiative
 - `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
 
@@ -191,7 +191,7 @@ As of 2026-05-04:
 
 - GitHub repo: 328 stars, 34 forks, 8 open issues, last pushed 2026-05-04
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 73 shared skills, 73 checked-in Codex artifacts, and 35 Codex overrides
+- Distribution/runtime reach: 74 shared skills, 74 checked-in Codex artifacts, and 35 Codex overrides
 
 **Measured operational proof:**
 

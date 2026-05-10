@@ -109,6 +109,7 @@ Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestra
 - Hooks (session-boundary) and `agentopsd` (cron-cadence) compose; this skill is purely session-boundary.
 - Path-scope freezing handles *where* edits land. For a complementary lane that gates *what* commands run (`rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy`) — including allowlist layering, one-shot override codes, and PreToolUse wiring — see [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md). Wire it alongside the scope guard when a wave touches infrastructure or shared data.
 - When a workflow needs human approval, hook parity, or simultaneous command review rather than only path freezing, use [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md).
+- When authoring new hook behavior rather than using scope's existing guard, use `/hooks-authoring`.
 
 ## References
 

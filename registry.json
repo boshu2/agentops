@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-09T21:06:29Z",
+  "generated_at": "2026-05-10T02:40:27Z",
   "summary": {
-    "skills": 73,
+    "skills": 74,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
@@ -196,6 +196,14 @@
         "reference_count": 3
       },
       {
+        "name": "hooks-authoring",
+        "tier": "execution",
+        "path": "skills/hooks-authoring/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
+      },
+      {
         "name": "implement",
         "tier": "execution",
         "path": "skills/implement/",
@@ -297,7 +305,7 @@
         "path": "skills/test/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 4
+        "reference_count": 6
       },
       {
         "name": "council",

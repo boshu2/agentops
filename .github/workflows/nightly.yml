@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run CLI tests with coverage
@@ -69,7 +69,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run retrieval bench (synthetic corpus)
@@ -119,7 +119,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -182,7 +182,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao

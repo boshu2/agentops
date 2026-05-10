@@ -132,7 +132,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao binary
@@ -320,7 +320,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Verify CLI docs are up to date
@@ -354,7 +354,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Install AgentOps contract canary dependencies
@@ -390,7 +390,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: evals/workbench/go-cli/go.mod
 
       - name: Set up Python
@@ -422,7 +422,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Install AgentOps eval dependencies
@@ -720,7 +720,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
@@ -995,7 +995,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1031,7 +1031,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1177,7 +1177,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run native Windows smoke tests
@@ -1196,7 +1196,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1229,7 +1229,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1273,7 +1273,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
