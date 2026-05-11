@@ -1090,6 +1090,20 @@ else
     skip "goals validate (jq not installed)"
 fi
 
+# --- 22f. Wiring-closure (GOALS.md gate wiring-closure, weight 7) ---
+# Always runs: any script/skill/hook addition or registry edit can break
+# closure, regardless of which diff category fired. Fast (~1-2s).
+if [[ -f scripts/check-wiring-closure.sh ]]; then
+    if wiring_closure_output="$(timeout 60 bash scripts/check-wiring-closure.sh 2>&1)"; then
+        pass "wiring closure"
+    else
+        fail "wiring closure"
+        indent_output "$wiring_closure_output"
+    fi
+else
+    fail "missing file: scripts/check-wiring-closure.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
