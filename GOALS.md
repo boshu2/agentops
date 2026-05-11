@@ -110,8 +110,8 @@ AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycl
 | Gap | What fails without it | Currently enforcing | Roadmap (declared, not yet enforced) |
 |-----|-----------------------|---------------------|---------------------------------------|
 | **1. Judgment validation** — agents ship without risk context | Plans skip architecture fit; implementations pass happy path but miss edge cases | `hook-preflight`, `go-vet-clean`, `go-complexity-ceiling`, `security-gate`, `contract-compatibility`; `/pre-mortem` and `/vibe` supply the non-mechanical judgment layer | — |
-| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `compile-no-oscillation` (defrag stability) | `flywheel-compounding` (long-cycle, corpus-state), `flywheel-proof` (cross-session evidence), `compile-freshness` (runtime-artifact dependency) |
-| **3. Loop closure** — completed work doesn't produce better next work | Sessions end with diffs but no extracted lessons; next session starts cold | `release-cadence` (where wired) | `flywheel-proof`, `goals-validate` (CI-not-gating), `wiring-closure` (CI-not-gating) |
+| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `compile-no-oscillation` (defrag stability), `flywheel-proof` (cross-session evidence, soc-45sg.2) | `flywheel-compounding` (long-cycle, corpus-state), `compile-freshness` (runtime-artifact dependency) |
+| **3. Loop closure** — completed work doesn't produce better next work | Sessions end with diffs but no extracted lessons; next session starts cold | `release-cadence` (where wired), `goals-validate` (soc-45sg.4), `flywheel-proof` (soc-45sg.2) | `wiring-closure` (CI-not-gating) |
 
 **Design rule:** prefer current gates over new scripts unless a true gap is found. The Roadmap column is itself a tracked gap — moving a gate left is the work, not adding new gates.
 

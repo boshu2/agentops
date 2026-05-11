@@ -1063,6 +1063,33 @@ else
     fail "missing file: scripts/check-quarantine-empty.sh"
 fi
 
+# --- 22e. Goals-validate (GOALS.md gate goals-validate, weight 5) ---
+# Always runs (no needs_check guard): GOALS.md changes can happen in any
+# diff scope and structural breakage must surface even on docs-only pushes.
+# Requires cli/bin/ao; in fast mode skip with friendly hint when absent.
+if [[ "$FAST_MODE" == "true" && ! -x "cli/bin/ao" ]]; then
+    skip "goals validate (no pre-built cli/bin/ao; run 'cd cli && make build' to enable)"
+elif [[ -x "cli/bin/ao" ]] && command -v jq >/dev/null 2>&1; then
+    if goals_validate_output="$(cli/bin/ao goals validate --json 2>&1)" && \
+       echo "$goals_validate_output" | jq -e '.valid == true' >/dev/null 2>&1; then
+        pass "goals validate"
+    else
+        fail "goals validate"
+        indent_output "$goals_validate_output"
+    fi
+elif command -v jq >/dev/null 2>&1; then
+    # Full-mode fallback: build into a temp binary the gate row's way.
+    if goals_validate_output="$(bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && /tmp/ao-goals-val goals validate --json' 2>&1)" && \
+       echo "$goals_validate_output" | jq -e '.valid == true' >/dev/null 2>&1; then
+        pass "goals validate"
+    else
+        fail "goals validate"
+        indent_output "$goals_validate_output"
+    fi
+else
+    skip "goals validate (jq not installed)"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
