@@ -447,6 +447,27 @@ jobs:
           chmod +x scripts/check-contracts-structural-floor.sh
           ./scripts/check-contracts-structural-floor.sh
 
+  validate-three-gap-supergate:
+    needs: [changes]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go (for goals-validate + flywheel-proof children)
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+
+      - name: Run three-gap super-gates (GOALS.md gate id three-gap-supergate, weight 5)
+        run: |
+          chmod +x scripts/check-three-gap-supergate.sh
+          ./scripts/check-three-gap-supergate.sh --gap=all
+
   validate-headless-runtime-skills:
     needs: [changes]
     if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -1600,7 +1621,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-three-gap-supergate, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1633,6 +1654,7 @@ jobs:
           echo "validate-finding-registry: ${{ needs.validate-finding-registry.result }}"
           echo "validate-factory-admission: ${{ needs.validate-factory-admission.result }}"
           echo "validate-contracts-structural-floor: ${{ needs.validate-contracts-structural-floor.result }}"
+          echo "validate-three-gap-supergate: ${{ needs.validate-three-gap-supergate.result }}"
           echo "validate-headless-runtime-skills: ${{ needs.validate-headless-runtime-skills.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
