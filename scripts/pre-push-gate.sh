@@ -1032,6 +1032,22 @@ else
     skip "codex lifecycle guards"
 fi
 
+# --- 22b. Codex parity drift (GOALS.md directive D7) ---
+if needs_check skill; then
+    if [[ -f scripts/check-codex-parity-drift.sh ]]; then
+        if codex_parity_drift_output="$(bash scripts/check-codex-parity-drift.sh 2>&1)"; then
+            pass "codex parity drift"
+        else
+            fail "codex parity drift"
+            indent_output "$codex_parity_drift_output"
+        fi
+    else
+        fail "missing file: scripts/check-codex-parity-drift.sh"
+    fi
+else
+    skip "codex parity drift"
+fi
+
 # --- 23. Skill CLI snippets ---
 if needs_check skill; then
     if [[ -x scripts/validate-skill-cli-snippets.sh ]]; then

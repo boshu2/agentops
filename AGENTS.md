@@ -278,6 +278,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **validate-codex-backbone-prompts** | Codex backbone prompt files are present and well-formed | Backbone prompt file deleted, renamed, or shape regressed |
 | **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |
 | **validate-codex-lifecycle-guards** | Codex lifecycle guards (session/run boundaries, kill switches) remain wired | Lifecycle guard removed or runtime hook order changed without updating the guard |
+| **validate-codex-parity-drift** | GOALS.md directive D7: `scripts/check-codex-parity-drift.sh` returns 0 findings (no `--warn-only` escape) | Codex parity drift reintroduced between Claude skills and `skills-codex/` outputs |
 | **validate-codex-override-coverage** | Every `skills-codex-overrides/<name>/` entry covers required override surfaces | Adding an override skill without the prompt or body coverage the runtime expects |
 | **validate-codex-rpi-contract** | Codex RPI contract (phase prompts, transitions, output schema) matches runtime | RPI contract drift between Claude and Codex runtimes |
 | **validate-codex-runtime-sections** | Required Codex runtime sections and ordering remain valid in shipped artifacts | AGENTS/runtime guidance changes drift from required Codex runtime section rules |

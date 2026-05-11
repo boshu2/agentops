@@ -286,6 +286,23 @@ jobs:
           chmod +x scripts/validate-codex-lifecycle-guards.sh
           ./scripts/validate-codex-lifecycle-guards.sh
 
+  validate-codex-parity-drift:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Check Codex parity drift (GOALS.md directive D7)
+        run: |
+          chmod +x scripts/check-codex-parity-drift.sh
+          ./scripts/check-codex-parity-drift.sh
+
   validate-headless-runtime-skills:
     needs: [changes]
     if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -1429,7 +1446,7 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1451,6 +1468,7 @@ jobs:
           echo "validate-codex-override-coverage: ${{ needs.validate-codex-override-coverage.result }}"
           echo "validate-codex-rpi-contract: ${{ needs.validate-codex-rpi-contract.result }}"
           echo "validate-codex-lifecycle-guards: ${{ needs.validate-codex-lifecycle-guards.result }}"
+          echo "validate-codex-parity-drift: ${{ needs.validate-codex-parity-drift.result }}"
           echo "validate-headless-runtime-skills: ${{ needs.validate-headless-runtime-skills.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
