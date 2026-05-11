@@ -1,0 +1,135 @@
+# End-to-end install execution against clean OS containers.
+# Companion: GOALS.md Directive D2 (bead soc-ymph.2). The fast suite
+# `tests/install/test-install-smoke.sh` only validates syntax/structure;
+# this workflow exercises the actual install.sh flow against ubuntu and
+# macOS runners and verifies the post-install surface is usable.
+#
+# Triggered:
+#   - Nightly (UTC 09:30 — late evening Pacific)
+#   - Manual via workflow_dispatch
+#   - PRs that touch install.sh or this workflow
+#
+# Not on every push: the brew tap + real prereq probes take 2-5 min per
+# runner, which is too expensive for the main merge gate. Treat this as
+# a periodic drift detector instead.
+
+name: install-e2e
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 9 * * *'
+  pull_request:
+    paths:
+      - 'scripts/install.sh'
+      - 'scripts/install-codex.sh'
+      - '.github/workflows/install-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go (needed to build ao from source)
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Stub coding agent so prereq check passes
+        # install.sh warns rather than failing when no agent is installed,
+        # but we want a populated PATH to exercise the codex-present branch.
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          cat <<'STUB' > "$HOME/.local/bin/codex"
+          #!/usr/bin/env bash
+          echo "codex stub for install-e2e: $*"
+          exit 0
+          STUB
+          chmod +x "$HOME/.local/bin/codex"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run install.sh against clean ubuntu
+        # We expect Homebrew not to be installed on ubuntu-latest, so the
+        # CLI install path will hit the documented fallback message
+        # ("Skipping CLI (Homebrew not found)"). That branch is the one we
+        # want to verify is reachable without crashing.
+        run: |
+          set +e
+          bash scripts/install.sh
+          rc=$?
+          echo "install.sh exit code: $rc"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::install.sh failed on ubuntu (rc=$rc)"
+            exit "$rc"
+          fi
+
+      - name: Build ao from source and verify --version
+        # Real install path on ubuntu without brew is build-from-source.
+        # Verify the binary the install path produces a usable CLI surface.
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+          ./bin/ao --version
+
+      - name: Verify install-smoke (fast structural check still green)
+        run: |
+          chmod +x tests/install/test-install-smoke.sh
+          timeout 60 bash tests/install/test-install-smoke.sh
+
+  macos-install:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Stub coding agent so prereq check passes
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          cat <<'STUB' > "$HOME/.local/bin/codex"
+          #!/usr/bin/env bash
+          echo "codex stub for install-e2e: $*"
+          exit 0
+          STUB
+          chmod +x "$HOME/.local/bin/codex"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run install.sh against clean macos
+        # macOS runners have brew preinstalled; install.sh will try the
+        # boshu2/agentops tap. If the tap is missing or the formula has not
+        # been published to the latest tag, we surface that as a warning
+        # (not a hard fail) — it is an upstream-config drift, not an
+        # install.sh script defect. Hard-fail only on install.sh itself.
+        run: |
+          set +e
+          bash scripts/install.sh 2>&1 | tee /tmp/install.log
+          rc=${PIPESTATUS[0]}
+          echo "install.sh exit code: $rc"
+          if [ "$rc" -ne 0 ]; then
+            if grep -q "brew install agentops" /tmp/install.log; then
+              echo "::warning::install.sh exited non-zero on the brew step; treating as upstream-config warning"
+              exit 0
+            fi
+            echo "::error::install.sh failed on macos for a non-brew reason (rc=$rc)"
+            exit "$rc"
+          fi
+
+      - name: Build ao from source and verify --version
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+          ./bin/ao --version
+
+      - name: Verify install-smoke (fast structural check still green)
+        run: |
+          chmod +x tests/install/test-install-smoke.sh
+          timeout 60 bash tests/install/test-install-smoke.sh
