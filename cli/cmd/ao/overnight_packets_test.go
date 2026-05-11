@@ -953,6 +953,48 @@ func TestExtractRepoRef_TerminationCharacters(t *testing.T) {
 	}
 }
 
+// TestDreamProbeShapes_RegistryIDsAreUniqueAndStable guards the curator's
+// staleness-probe registry: every shape must have a non-empty ID and IDs
+// must be unique. The IDs flow into degraded-finding strings and digest
+// summaries, so collisions silently merge two shapes' telemetry.
+func TestDreamProbeShapes_RegistryIDsAreUniqueAndStable(t *testing.T) {
+	if len(dreamProbeShapes) == 0 {
+		t.Fatal("dreamProbeShapes is empty; the curator has no staleness probes")
+	}
+	seen := make(map[string]bool, len(dreamProbeShapes))
+	for i, shape := range dreamProbeShapes {
+		if strings.TrimSpace(shape.ID) == "" {
+			t.Fatalf("dreamProbeShapes[%d].ID is empty", i)
+		}
+		if shape.Probe == nil {
+			t.Fatalf("dreamProbeShapes[%d].Probe (id=%q) is nil", i, shape.ID)
+		}
+		if seen[shape.ID] {
+			t.Fatalf("dreamProbeShapes contains duplicate ID %q at index %d", shape.ID, i)
+		}
+		seen[shape.ID] = true
+	}
+	wantIDs := []string{
+		"target-files-exist",
+		"repo-ref-tokens",
+		"skill-line-limit-claim",
+		"add-to-skill-claim",
+	}
+	for _, id := range wantIDs {
+		if !seen[id] {
+			t.Errorf("dreamProbeShapes is missing canonical shape %q; current IDs: %v", id, registryIDs())
+		}
+	}
+}
+
+func registryIDs() []string {
+	out := make([]string, 0, len(dreamProbeShapes))
+	for _, s := range dreamProbeShapes {
+		out = append(out, s.ID)
+	}
+	return out
+}
+
 func newDreamPacketTestSummary(t *testing.T, repoRoot, goal string) overnightSummary {
 	t.Helper()
 

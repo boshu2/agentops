@@ -229,18 +229,58 @@ func probeDreamPacket(cwd string, packet overnightMorningPacket) dreamPacketProb
 	}
 }
 
+// dreamProbeShape names a single curator-side staleness probe. Shapes are
+// registered in dreamProbeShapes and consulted in order by
+// probeDreamPacketStaleness. Adding a new false-positive title shape is a
+// registry append: write a thin Probe func that adapts the existing
+// extract/check helpers into the (cwd, packet, deadline) signature, then
+// append a {ID, Probe} entry. The order matters only for the reason string
+// surfaced when multiple shapes would fire.
+type dreamProbeShape struct {
+	ID    string
+	Probe func(cwd string, packet overnightMorningPacket, deadline time.Time) (reason, match string, stale bool)
+}
+
+// dreamProbeShapes is the curator's staleness-probe registry. The order is
+// stable so probeDreamPacketStaleness returns the first matching reason
+// deterministically. Adding a new probe: append a {ID, Probe} entry; do not
+// edit probeDreamPacketStaleness.
+var dreamProbeShapes = []dreamProbeShape{
+	{
+		ID: "target-files-exist",
+		Probe: func(cwd string, packet overnightMorningPacket, deadline time.Time) (string, string, bool) {
+			return probeTargetFilesExist(cwd, packet.TargetFiles, deadline)
+		},
+	},
+	{
+		ID:    "repo-ref-tokens",
+		Probe: probeRepoRefTokens,
+	},
+	{
+		ID: "skill-line-limit-claim",
+		Probe: func(cwd string, packet overnightMorningPacket, deadline time.Time) (string, string, bool) {
+			return probeSkillLineLimitClaim(cwd, packet.Title, deadline)
+		},
+	},
+	{
+		ID: "add-to-skill-claim",
+		Probe: func(cwd string, packet overnightMorningPacket, deadline time.Time) (string, string, bool) {
+			return probeAddToSkillClaim(cwd, packet.Title, deadline)
+		},
+	},
+}
+
 // probeDreamPacketStaleness runs a 5-second tractability probe against the
-// candidate packet. It checks five surfaces:
+// candidate packet by walking dreamProbeShapes in order. The registry today
+// covers:
 //  1. TargetFiles entries — if any cited path already exists on disk, the
 //     packet is treated as already done.
-//  2. scripts/<x>.sh tokens in the morning_command or title that resolve
-//     to an existing script.
-//  3. schemas/<x>.json tokens in the morning_command or title that resolve
-//     to an existing schema file.
-//  4. "Decompose skills/<name>/SKILL.md to under N-line limit" claims —
+//  2. scripts/<x>.sh and schemas/<x>.json tokens in the morning_command or
+//     title that resolve to existing repo files.
+//  3. "Decompose skills/<name>/SKILL.md to under N-line limit" claims —
 //     if the cited skill exists and is below the actual size-check fail
 //     threshold, the line-limit claim is fictional.
-//  5. "Add <phrase> to /<skill> skill" claims — if the cited skill's
+//  4. "Add <phrase> to /<skill> skill" claims — if the cited skill's
 //     SKILL.md already contains the proposed phrase verbatim (modulo
 //     hyphen/case normalization), the addition has already shipped.
 //
@@ -248,17 +288,10 @@ func probeDreamPacket(cwd string, packet overnightMorningPacket) dreamPacketProb
 // signals it returns (_, _, false) and the curator emits the packet normally.
 func probeDreamPacketStaleness(cwd string, packet overnightMorningPacket) (string, string, bool) {
 	deadline := time.Now().Add(dreamCuratorProbeTimeout)
-	if reason, match, ok := probeTargetFilesExist(cwd, packet.TargetFiles, deadline); ok {
-		return reason, match, true
-	}
-	if reason, match, ok := probeRepoRefTokens(cwd, packet, deadline); ok {
-		return reason, match, true
-	}
-	if reason, match, ok := probeSkillLineLimitClaim(cwd, packet.Title, deadline); ok {
-		return reason, match, true
-	}
-	if reason, match, ok := probeAddToSkillClaim(cwd, packet.Title, deadline); ok {
-		return reason, match, true
+	for _, shape := range dreamProbeShapes {
+		if reason, match, ok := shape.Probe(cwd, packet, deadline); ok {
+			return reason, match, true
+		}
 	}
 	return "", "", false
 }
