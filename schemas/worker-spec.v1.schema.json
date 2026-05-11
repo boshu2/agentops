@@ -3,6 +3,7 @@
   "$id": "https://github.com/boshu2/agentops/schemas/worker-spec.v1.schema.json",
   "title": "AgentOps Worker Spec",
   "description": "Per-worker model + tool + prompt isolation spec consumed by /crank and /swarm at spawn time. See skills/crank/references/worker-specs.md.",
+  "practices": ["microservices", "team-topologies"],
   "type": "object",
   "additionalProperties": false,
   "required": ["model"],

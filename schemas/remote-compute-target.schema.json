@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/remote-compute-target.schema.json",
   "title": "AgentOps Remote Compute Target v1",
   "description": "Product-neutral target configuration for a GasCity-backed remote compute node. Secrets are referenced, never embedded.",
+  "practices": ["microservices", "distributed-systems-design"],
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/handoff.v1.schema.json",
   "title": "AgentOps Handoff Artifact v1",
   "description": "Structured handoff artifact for session boundary isolation. Written by `ao handoff`, consumed by session-start hook.",
+  "practices": ["event-sourcing-cqrs", "distributed-tracing"],
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "id", "created_at", "type", "consumed"],

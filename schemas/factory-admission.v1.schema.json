@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.local/schemas/factory-admission.v1.schema.json",
   "title": "AgentOps Factory Admission Decision",
+  "$comment": "practices: [design-by-contract, microservices]",
   "type": "object",
   "additionalProperties": false,
   "required": [

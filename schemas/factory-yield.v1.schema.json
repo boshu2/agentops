@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.local/schemas/factory-yield.v1.schema.json",
   "title": "AgentOps Factory Yield Observation",
+  "$comment": "practices: [dora-metrics, microservices]",
   "type": "object",
   "required": [
     "event_type",

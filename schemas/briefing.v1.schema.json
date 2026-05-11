@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/briefing.v1.schema.json",
   "title": "Briefing",
   "description": "Hermes-assembled context packet for an agent",
+  "practices": ["wiki-knowledge-surface", "pragmatic-programmer"],
   "type": "object",
   "required": ["briefing_id", "bead_id", "sections", "token_count", "assembled_at", "schema_version"],
   "properties": {

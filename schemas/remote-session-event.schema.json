@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/remote-session-event.schema.json",
   "title": "AgentOps Remote Session Event v1",
   "description": "Append-only event shape for AgentOps remote sessions and idempotent command delivery.",
+  "practices": ["event-sourcing-cqrs", "distributed-tracing"],
   "type": "object",
   "additionalProperties": false,
   "required": [

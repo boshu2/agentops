@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/bead.v1.schema.json",
   "title": "Bead",
   "description": "A single unit of work within a quest",
+  "practices": ["dora-metrics", "lean-startup"],
   "type": "object",
   "required": ["bead_id", "quest_id", "title", "description", "status", "dependencies", "created_at", "schema_version"],
   "properties": {

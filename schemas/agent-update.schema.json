@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/agent-update.schema.json",
   "title": "Agent Update Message",
   "description": "Phase-boundary message emitted by daemon-mode RPI runners (soc-y0ct). Each event_type corresponds to a daemon LedgerEvent of type agent_update.<event_type>; the schema canonicalises the payload contract so heterogeneous consumers (projections, transcripts, downstream judges) can parse without ad-hoc shape inference.",
+  "practices": ["gitops", "continuous-delivery"],
   "type": "object",
   "additionalProperties": false,
   "required": [

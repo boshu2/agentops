@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/execution-packet.schema.json",
   "title": "RPI Execution Packet",
   "description": "Per-run execution packet emitted by ao rpi; captures objective, validation surface, and (v2+) per-criterion acceptance criteria for the epic and its beads.",
+  "practices": ["design-by-contract", "pragmatic-programmer"],
   "type": "object",
   "additionalProperties": false,
   "required": [

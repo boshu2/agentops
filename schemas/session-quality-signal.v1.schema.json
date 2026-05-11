@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Session Quality Signal",
+  "$comment": "practices: [dora-metrics, sre]",
   "type": "object",
   "required": ["timestamp", "signal_type", "detail", "session_id"],
   "properties": {

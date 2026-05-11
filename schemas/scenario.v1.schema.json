@@ -3,6 +3,7 @@
     "$id": "scenario.v1.schema.json",
     "title": "AgentOps Holdout Scenario",
     "description": "Schema for behavioral validation scenarios stored in .agents/holdout/",
+    "practices": ["property-based-testing", "llm-eval-harness"],
     "type": "object",
     "properties": {
         "id": {

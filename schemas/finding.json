@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Finding Item",
   "description": "Canonical finding-item schema for AgentOps validation skills. A compatible subset of the finding-artifact schema (docs/contracts/finding-artifact.schema.json). Any valid finding item is also a valid verdict.json finding entry.",
+  "practices": ["dora-metrics", "wiki-knowledge-surface"],
   "type": "object",
   "properties": {
     "id": {

@@ -3,6 +3,7 @@
   "$id": "https://github.com/boshu2/agentops/schemas/swarm-evidence.schema.json",
   "title": "Swarm Worker Evidence Result",
   "description": "Schema for files written by swarm workers to .agents/swarm/results/<task>.json. Workers spawned via /swarm or /crank emit one of these per task. The shape is intentionally permissive: historical results vary widely, and task-specific extension fields are allowed via additionalProperties.",
+  "practices": ["dora-metrics", "team-topologies"],
   "type": "object",
   "additionalProperties": true,
   "required": ["status"],

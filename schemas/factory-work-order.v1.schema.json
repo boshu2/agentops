@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.local/schemas/factory-work-order.v1.schema.json",
   "title": "AgentOps Factory Work Order",
+  "$comment": "practices: [microservices, team-topologies]",
   "type": "object",
   "additionalProperties": false,
   "required": [

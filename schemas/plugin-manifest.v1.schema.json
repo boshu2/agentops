@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/plugin-manifest.v1.schema.json",
   "title": "AgentOps Claude Plugin Manifest v1",
+  "$comment": "practices: [microservices, hexagonal-architecture]",
   "type": "object",
   "additionalProperties": false,
   "required": ["name", "version"],

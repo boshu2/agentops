@@ -3,6 +3,7 @@
   "$id": "https://github.com/boshu2/agentops/schemas/rubric.v1.schema.json",
   "title": "AgentOps Outcome Rubric",
   "description": "Rubric consumed by `ao outcomes run --rubric=<path>`. Defines pass criteria, weights, and retry budget for a separate-context grader loop. See .agents/specs/ao-outcomes.md.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "type": "object",
   "additionalProperties": false,
   "required": ["criteria", "pass_threshold"],
