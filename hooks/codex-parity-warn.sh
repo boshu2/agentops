@@ -2,6 +2,7 @@
 # codex-parity-warn.sh - PreToolUse hook (matcher: Edit)
 # Warns when editing skills/ files that have a skills-codex/ counterpart needing sync.
 # Non-blocking (always exit 0). Warning via additionalContext injection.
+# practices: [design-by-contract, cmm-process-maturity]
 set -euo pipefail
 
 # Kill switches

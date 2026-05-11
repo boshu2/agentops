@@ -1,6 +1,7 @@
 #!/bin/bash
 # ConfigChange hook: security auditing for mid-session configuration changes
 # Logs config changes and optionally blocks critical changes in strict mode
+# practices: [supply-chain-integrity, sre]
 #
 # NOTE: This hook uses AGENTOPS_HOOKS_DISABLED as its kill switch.
 # If someone disables hooks via a config change, this hook is also disabled —

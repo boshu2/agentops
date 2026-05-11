@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao maturity --scan
 # Runs maturity scan at session start.
+# practices: [cmm-process-maturity, dora-metrics]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

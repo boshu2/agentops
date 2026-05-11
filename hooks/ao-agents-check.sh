@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: .agents/ file count warning
 # Warns when .agents/ directory exceeds 500 files.
+# practices: [sre, legacy-code-seams]
 set -euo pipefail
 
 AGENTS_DIR="$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.agents"

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao extract
 # Runs knowledge extraction pipeline at session start.
+# practices: [wiki-knowledge-surface, pragmatic-programmer]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

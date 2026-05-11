@@ -2,6 +2,7 @@
 # commit-review-gate.sh - PreToolUse hook: inject staged diff before git commit
 # Forces Claude to see its own changes before committing.
 # Non-blocking (always exit 0). Injects diff as additionalContext.
+# practices: [code-complete, continuous-integration, design-by-contract]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

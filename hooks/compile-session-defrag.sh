@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# AgentOps Hook: compile/defrag knowledge base at session boundaries.
+# practices: [wiki-knowledge-surface, refactoring]
 set -euo pipefail
 
 # Kill switch

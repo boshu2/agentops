@@ -3,6 +3,7 @@
 # When a Read targets .agents/learnings/, .agents/patterns/, or .agents/research/,
 # appends a citation event to .agents/ao/citations.jsonl.
 # Kill switch: AGENTOPS_HOOKS_DISABLED=1
+# practices: [wiki-knowledge-surface, distributed-tracing]
 
 set -euo pipefail
 

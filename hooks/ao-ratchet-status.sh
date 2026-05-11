@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao ratchet status
 # Outputs current ratchet status as JSON at session start.
+# practices: [dora-metrics, continuous-delivery]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0
