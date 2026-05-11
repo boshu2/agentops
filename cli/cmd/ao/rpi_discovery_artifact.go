@@ -8,6 +8,7 @@
 // See skills/rpi/references/discovery-artifact-mode.md for the behavioural
 // spec. This file is intentionally standalone so the core phased runner stays
 // unchanged when the flag is not set.
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (

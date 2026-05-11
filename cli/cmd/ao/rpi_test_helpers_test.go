@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 // newTestPhasedState returns a phasedState with sensible test defaults.

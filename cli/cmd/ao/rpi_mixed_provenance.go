@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import "strings"
