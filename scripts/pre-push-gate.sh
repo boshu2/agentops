@@ -1161,6 +1161,20 @@ else
     fail "missing file: scripts/check-finding-registry.sh"
 fi
 
+# --- 22k. Factory-admission contract (GOALS.md gate factory-admission, weight 4 — A2 audit follow-up) ---
+# Wraps tests/scripts/test-factory-admission-contracts.py as a blocking gate.
+# Skips when jsonschema is unavailable rather than failing (local-vs-CI parity).
+if [[ -f scripts/check-factory-admission.sh ]]; then
+    if factory_admission_output="$(bash scripts/check-factory-admission.sh 2>&1)"; then
+        pass "factory-admission"
+    else
+        fail "factory-admission"
+        indent_output "$factory_admission_output"
+    fi
+else
+    fail "missing file: scripts/check-factory-admission.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
