@@ -1063,6 +1063,28 @@ else
     fail "missing file: scripts/check-quarantine-empty.sh"
 fi
 
+# --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
+# Runs the 20-check end-to-end flywheel proof against an isolated repo.
+# ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
+# we only run in fast mode when relevant diff categories are present AND
+# a pre-built binary already exists. Full mode always runs.
+if needs_check go || needs_check skill || needs_check hook || needs_check eval; then
+    if [[ "$FAST_MODE" == "true" && ! -x "cli/bin/ao" ]]; then
+        skip "flywheel proof (no pre-built cli/bin/ao; run 'cd cli && make build' to enable)"
+    elif [[ -f scripts/proof-run.sh ]]; then
+        if flywheel_proof_output="$(bash scripts/proof-run.sh 2>&1)"; then
+            pass "flywheel proof"
+        else
+            fail "flywheel proof"
+            indent_output "$flywheel_proof_output"
+        fi
+    else
+        fail "missing file: scripts/proof-run.sh"
+    fi
+else
+    skip "flywheel proof"
+fi
+
 # --- 23. Skill CLI snippets ---
 if needs_check skill; then
     if [[ -x scripts/validate-skill-cli-snippets.sh ]]; then
