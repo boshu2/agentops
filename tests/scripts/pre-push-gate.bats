@@ -61,6 +61,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-corpus-freshness.sh"
     make_stub "$FAKE_REPO/scripts/check-flywheel-compounding-snapshot.sh"
     make_stub "$FAKE_REPO/scripts/snapshot-flywheel-compounding.sh"
+    make_stub "$FAKE_REPO/scripts/check-factory-yield-ledger.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"

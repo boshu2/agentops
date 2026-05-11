@@ -1133,6 +1133,20 @@ else
     fail "missing file: scripts/check-flywheel-compounding-snapshot.sh"
 fi
 
+# --- 22i. Factory-yield-ledger contract (GOALS.md gate factory-yield-ledger, weight 4 — A2 audit follow-up) ---
+# Validates docs/contracts/factory-yield-ledger.* schema + example.
+# Fast (<100ms).
+if [[ -f scripts/check-factory-yield-ledger.sh ]]; then
+    if factory_yield_ledger_output="$(bash scripts/check-factory-yield-ledger.sh 2>&1)"; then
+        pass "factory-yield ledger"
+    else
+        fail "factory-yield ledger"
+        indent_output "$factory_yield_ledger_output"
+    fi
+else
+    fail "missing file: scripts/check-factory-yield-ledger.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
