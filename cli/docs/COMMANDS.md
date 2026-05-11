@@ -2862,6 +2862,41 @@ ao corpus fitness [flags]
       --json   Emit the fitness vector as JSON
 ```
 
+#### `ao corpus restore`
+
+Untars a snapshot produced by ao corpus snapshot. By default refuses to overwrite an
+
+```
+ao corpus restore [flags]
+```
+
+**Flags:**
+
+```
+      --from string   Explicit snapshot tarball path
+  -h, --help          help for restore
+      --into string   Destination directory (default: .agents) (default ".agents")
+      --json          Emit the result as JSON to stdout
+      --latest        Pick the newest tarball in the snapshot dir
+      --overwrite     Replace an existing destination directory (with .bak rescue)
+```
+
+#### `ao corpus snapshot`
+
+Writes the entire .agents/ tree as a tar.gz to a durable directory outside the repo,
+
+```
+ao corpus snapshot [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for snapshot
+      --json                Emit the manifest as JSON to stdout
+      --output-dir string   Override snapshot dir (default: $AGENTOPS_CORPUS_SNAPSHOT_DIR or ~/.agentops/corpus-snapshots)
+```
+
 ---
 
 ### `ao defrag`

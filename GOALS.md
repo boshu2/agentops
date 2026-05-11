@@ -154,6 +154,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | competitive-freshness | `bash scripts/check-competitive-freshness.sh` | 3 | Competitive analysis docs updated within 45 days |  |
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |
 | quarantine-empty | `bash scripts/check-quarantine-empty.sh` | 4 | tests/_quarantine/ holds zero `.sh`/`.bats` suites (Directive D3). Single-cycle override: set `ALLOW_QUARANTINE=1` when intentionally parking a flaky suite. |  |
+| corpus-freshness | `bash scripts/check-corpus-freshness.sh` | 4 | Newest corpus snapshot under `$AGENTOPS_CORPUS_SNAPSHOT_DIR` (default `~/.agentops/corpus-snapshots/`) is within 7 days. Skips cleanly when no snapshots exist. Override: `AGENTOPS_CORPUS_FRESHNESS_SKIP=1`. Companion: `ao corpus snapshot` / `ao corpus restore` (Directive D11). |  |
 | install-smoke | `timeout 30 bash tests/install/test-install-smoke.sh` | 5 | Install scripts pass syntax and structure validation |  |
 | flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |  |
 | eval-workbench-verify | `timeout 60 bash scripts/check-eval-workbench.sh` | 6 | Behavioral eval workbench golden state, task scoring, and suite structure verified |  |

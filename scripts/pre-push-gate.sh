@@ -1104,6 +1104,21 @@ else
     fail "missing file: scripts/check-wiring-closure.sh"
 fi
 
+# --- 22g. Corpus-freshness (GOALS.md gate corpus-freshness, weight 4 — Directive D11) ---
+# Always runs: structural gate; skips cleanly when no snapshot dir exists so
+# greenfield boxes do not block. Real teeth: operator boxes that DO have a
+# snapshot dir will fail if their newest snapshot is >7d old. Fast (<100ms).
+if [[ -f scripts/check-corpus-freshness.sh ]]; then
+    if corpus_freshness_output="$(bash scripts/check-corpus-freshness.sh 2>&1)"; then
+        pass "corpus freshness"
+    else
+        fail "corpus freshness"
+        indent_output "$corpus_freshness_output"
+    fi
+else
+    fail "missing file: scripts/check-corpus-freshness.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
