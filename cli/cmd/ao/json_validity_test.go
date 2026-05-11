@@ -1,3 +1,4 @@
+// practices: [design-by-contract, pragmatic-programmer]
 package main
 
 import (

@@ -1,3 +1,4 @@
+// practices: [tdd, pragmatic-programmer]
 package main
 
 // testutil_test.go consolidates test helper functions that are shared across

@@ -1,3 +1,4 @@
+// practices: [sre, continuous-delivery]
 package main
 
 import (

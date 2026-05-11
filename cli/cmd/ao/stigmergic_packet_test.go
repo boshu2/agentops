@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, team-topologies]
 package main
 
 import (

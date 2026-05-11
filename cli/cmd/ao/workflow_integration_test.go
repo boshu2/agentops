@@ -1,3 +1,4 @@
+// practices: [continuous-delivery, agile-manifesto]
 package main
 
 import (

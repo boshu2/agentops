@@ -1,3 +1,4 @@
+// practices: [continuous-delivery, supply-chain-integrity]
 package main
 
 import (

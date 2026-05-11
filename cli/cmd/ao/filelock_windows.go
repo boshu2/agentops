@@ -1,5 +1,6 @@
 //go:build windows
 
+// practices: [resilience-patterns, sre]
 package main
 
 import (

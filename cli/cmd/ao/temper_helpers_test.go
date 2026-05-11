@@ -1,3 +1,4 @@
+// practices: [llm-eval-harness, ai-assisted-dev]
 package main
 
 import (

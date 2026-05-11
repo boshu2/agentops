@@ -1,3 +1,4 @@
+// practices: [design-by-contract, code-complete]
 package main
 
 import (

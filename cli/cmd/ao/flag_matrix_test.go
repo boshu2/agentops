@@ -1,3 +1,4 @@
+// practices: [twelve-factor-app, feature-flags]
 package main
 
 import (

@@ -14,6 +14,7 @@
 // caller that actually emits 42 from agentopsd's own success path would be a
 // BREAKING change vs the existing contract — see the finding doc's
 // "Compatibility notes" section before wiring them into the daemon binary.
+// practices: [sre, resilience-patterns]
 package main
 
 // Olympus quest-supervisor exit codes.

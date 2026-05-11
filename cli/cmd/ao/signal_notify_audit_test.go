@@ -1,3 +1,4 @@
+// practices: [distributed-tracing, sre]
 package main
 
 import (

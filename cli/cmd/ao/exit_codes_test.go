@@ -1,3 +1,4 @@
+// practices: [sre, resilience-patterns]
 package main
 
 import "testing"

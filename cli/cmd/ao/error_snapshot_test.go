@@ -1,3 +1,4 @@
+// practices: [resilience-patterns, design-by-contract]
 package main
 
 import (

@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, agile-manifesto]
 package main
 
 import (

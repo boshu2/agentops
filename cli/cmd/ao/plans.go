@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, adr]
 package main
 
 import (

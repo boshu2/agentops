@@ -2,6 +2,7 @@
 // (parsing, extraction, verification wiring) rather than end-to-end bd
 // invocations. Tests that need bd override execBD/bdAvailable with fakes.
 
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (

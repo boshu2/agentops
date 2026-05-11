@@ -1,3 +1,4 @@
+// practices: [property-based-testing, design-by-contract]
 package main
 
 import (

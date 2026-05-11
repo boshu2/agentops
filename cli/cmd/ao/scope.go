@@ -1,5 +1,6 @@
 // Package main: `ao scope` cobra subcommand for the /scope skill (issue
 // soc-irg1.3). Manages .agents/scope.lock via cli/internal/scope.
+// practices: [ddd-bounded-context, design-by-contract]
 package main
 
 import (

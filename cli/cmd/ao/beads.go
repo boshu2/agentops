@@ -17,6 +17,7 @@
 // descriptions that drift from HEAD before a new session acts on them. The
 // planning rule at skills/plan/references/stale-scope-validation.md explains
 // when to run these.
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (

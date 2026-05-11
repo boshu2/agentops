@@ -1,6 +1,7 @@
 ---
 name: curate
 description: 'Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.'
+practices: [wiki-knowledge-surface, lean-startup]
 skill_api_version: 1
 user-invocable: true
 context:

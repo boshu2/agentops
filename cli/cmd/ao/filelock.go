@@ -1,3 +1,4 @@
+// practices: [resilience-patterns, sre]
 package main
 
 import "errors"

@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, twelve-factor-app]
 package main
 
 import (

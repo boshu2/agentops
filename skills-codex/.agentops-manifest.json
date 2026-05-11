@@ -727,7 +727,7 @@
     {
       "name": "curate",
       "source_skill": "skills/curate",
-      "source_hash": "04f69af33ae7ad11610493b773600dbdb43a5a35ea8dd454e9dfbd64726271d5",
+      "source_hash": "843e8e10747456f6edaf4225f20844c6f37f5991ca6b0cf93811563c09a7bb7f",
       "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
     },
     {
@@ -1105,7 +1105,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "2e31ba1afe8c5d558a976d5da8164db4f22554145ad83e3b93329d06d59215d0",
+      "source_hash": "6aa804fcab2e2ff4245b5c5d2c598450e032555efc6d3f7c7da9522102bbd4ad",
       "generated_hash": "ea7a8797f288541ed91c3b060c7c0bdb29de9ec7e9ffd5acd40ccf4bf4f53e5d"
     },
     {

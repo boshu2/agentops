@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, event-sourcing-cqrs]
 package main
 
 import (

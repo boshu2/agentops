@@ -1,3 +1,4 @@
+// practices: [refactoring, wiki-knowledge-surface]
 package main
 
 import (
