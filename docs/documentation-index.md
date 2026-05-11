@@ -294,6 +294,7 @@ Bridge / framing docs:
 - [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`
 - [Swarm Evidence Schema](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
 - [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
+- [Multi-Runtime Tier Charter](contracts/multi-runtime-tier-charter.md) — Explicit Tier S/I/E declaration: Tier S structural blocks CI; Tier E live execution is opt-in (Directive D1)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [Dream Run Contract](contracts/dream-run-contract.md) — Process model, locking, keep-awake, and artifact floor for private overnight runs
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
