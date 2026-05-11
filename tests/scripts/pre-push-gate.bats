@@ -59,6 +59,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/proof-run.sh"
     make_stub "$FAKE_REPO/scripts/check-wiring-closure.sh"
     make_stub "$FAKE_REPO/scripts/check-corpus-freshness.sh"
+    make_stub "$FAKE_REPO/scripts/check-flywheel-compounding-snapshot.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"

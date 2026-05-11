@@ -1119,6 +1119,20 @@ else
     fail "missing file: scripts/check-corpus-freshness.sh"
 fi
 
+# --- 22h. Flywheel-compounding snapshot (GOALS.md gate flywheel-compounding-snapshot, weight 5 — G1) ---
+# Validates the tracked corpus-state evidence file docs/releases/flywheel-compounding-snapshot.json.
+# Fast (<100ms). Refresh with: bash scripts/snapshot-flywheel-compounding.sh
+if [[ -f scripts/check-flywheel-compounding-snapshot.sh ]]; then
+    if flywheel_compounding_snapshot_output="$(bash scripts/check-flywheel-compounding-snapshot.sh 2>&1)"; then
+        pass "flywheel-compounding snapshot"
+    else
+        fail "flywheel-compounding snapshot"
+        indent_output "$flywheel_compounding_snapshot_output"
+    fi
+else
+    fail "missing file: scripts/check-flywheel-compounding-snapshot.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so

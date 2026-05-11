@@ -110,7 +110,7 @@ AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycl
 | Gap | What fails without it | Currently enforcing | Roadmap (declared, not yet enforced) |
 |-----|-----------------------|---------------------|---------------------------------------|
 | **1. Judgment validation** — agents ship without risk context | Plans skip architecture fit; implementations pass happy path but miss edge cases | `hook-preflight`, `go-vet-clean`, `go-complexity-ceiling`, `security-gate`, `contract-compatibility`; `/pre-mortem` and `/vibe` supply the non-mechanical judgment layer | — |
-| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `compile-no-oscillation` (defrag stability), `flywheel-proof` (cross-session evidence, soc-45sg.2) | `flywheel-compounding` (long-cycle, corpus-state), `compile-freshness` (runtime-artifact dependency) |
+| **2. Durable learning** — solved problems recur | Same auth bug fixed Monday returns Wednesday; agents re-run dead-end investigations | `compile-no-oscillation` (defrag stability), `flywheel-proof` (cross-session evidence, soc-45sg.2), `flywheel-compounding-snapshot` (corpus-state evidence, soc-45sg.1) | `flywheel-compounding` (live long-cycle), `compile-freshness` (runtime-artifact dependency) |
 | **3. Loop closure** — completed work doesn't produce better next work | Sessions end with diffs but no extracted lessons; next session starts cold | `release-cadence` (where wired), `goals-validate` (soc-45sg.4), `flywheel-proof` (soc-45sg.2), `wiring-closure` (soc-45sg.5) | — |
 
 **Design rule:** prefer current gates over new scripts unless a true gap is found. The Roadmap column is itself a tracked gap — moving a gate left is the work, not adding new gates.
@@ -136,6 +136,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | ID | Check | Weight | Description | Tags |
 |----|-------|--------|-------------|------|
 | flywheel-compounding | `bash scripts/check-flywheel-compounding.sh` | 3 | Knowledge flywheel above escape velocity (σρ > δ); requires multi-session citation activity, not movable by single-session automation — see `.agents/findings/f-2026-04-29-001.md` | long-cycle, corpus-state |
+| flywheel-compounding-snapshot | `bash scripts/check-flywheel-compounding-snapshot.sh` | 5 | CI-readable corpus-state evidence: validates `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and asserts `escape_velocity_compounding=true`. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh`. Closes G1 by making the long-cycle gate CI-enforceable without running multi-session work. |  |
 | dream-end-user-coverage | `bash scripts/check-schedule-example.sh` | 3 | Stock .agents/schedule.yaml.example exists, parses, and uses real-bodied job types (dream.run, wiki.forge). Closes Directive #8 end-user-repo gap. |  |
 | flywheel-proof | `bash scripts/proof-run.sh` | 7 | Flywheel compounds across sessions (automated proof) |  |
 | skill-frontmatter | `bash -c 'for f in skills/*/SKILL.md; do head -5 "$f" \| grep -q "^---" && head -10 "$f" \| grep -q "^name:" && head -10 "$f" \| grep -q "^description:" \|\| { echo FAIL:$f; exit 1; }; done'` | 6 | Every skill has valid YAML frontmatter |  |
