@@ -296,6 +296,7 @@ Bridge / framing docs:
 - [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
 - [Multi-Runtime Tier Charter](contracts/multi-runtime-tier-charter.md) — Explicit Tier S/I/E declaration: Tier S structural blocks CI; Tier E live execution is opt-in (Directive D1)
 - [v2.39.0 README claim evidence manifest](releases/v2.39.0-claims/README.md) — Maps each `AOP-CLAIM-README-*` marker to its evidence file and verification gate (PG4)
+- [AgentOps 3.0 PMF Scenario — exported evidence](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, exported artifacts (PG2)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [Dream Run Contract](contracts/dream-run-contract.md) — Process model, locking, keep-awake, and artifact floor for private overnight runs
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
