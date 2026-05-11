@@ -18,6 +18,12 @@
 | AOP-CLAIM-README-EVOLVE-AUTONOMOUS | [evolve-autonomous.md](evolve-autonomous.md) | `.agents/evolve/cycle-history.jsonl` (durable session record) |
 | AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL | [autonomous-flywheel.md](autonomous-flywheel.md) | `scripts/check-flywheel-compounding-snapshot.sh` |
 
+## Other claim scopes
+
+Non-README scope claims (PRODUCT, GOALS, BRIEF, ASSURANCE, COMP,
+CONTRACT, DOCS, WIKI, SOFTWARE-FACTORY, TRUST-FACTORY) — 25 markers —
+are mapped in [all-claims-evidence-map.md](all-claims-evidence-map.md).
+
 ## Why this pattern
 
 Local `.agents/` notes are gitignored — they are not visible to anyone
