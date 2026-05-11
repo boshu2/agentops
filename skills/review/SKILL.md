@@ -1,6 +1,7 @@
 ---
 name: review
 description: 'Review diffs for risk, find mocks, scan for bugs, and audit codebases.'
+practices: [code-complete, refactoring, design-by-contract]
 skill_api_version: 1
 context:
   window: fork

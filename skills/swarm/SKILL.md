@@ -1,6 +1,7 @@
 ---
 name: swarm
 description: 'Dispatch parallel agents.'
+practices: [microservices, team-topologies, mythical-man-month]
 skill_api_version: 1
 context:
   window: fork

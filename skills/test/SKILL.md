@@ -1,6 +1,7 @@
 ---
 name: test
 description: 'Generate tests and coverage plans.'
+practices: [tdd, property-based-testing, bdd-gherkin]
 skill_api_version: 1
 context:
   window: fork

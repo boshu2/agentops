@@ -1,6 +1,7 @@
 ---
 name: scope
 description: 'Hard-block edits outside declared frozen directories via PreToolUse hook.'
+practices: [ddd-bounded-context, design-by-contract, mythical-man-month]
 skill_api_version: 1
 context:
   window: isolated

@@ -1,6 +1,7 @@
 ---
 name: release
 description: 'Run release validation.'
+practices: [continuous-delivery, gitops, supply-chain-integrity]
 skill_api_version: 1
 context:
   window: fork

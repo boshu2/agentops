@@ -1,6 +1,7 @@
 ---
 name: scaffold
 description: 'Create project, component, or boilerplate scaffolds.'
+practices: [pragmatic-programmer, design-patterns, hexagonal-architecture]
 skill_api_version: 1
 context:
   window: fork
