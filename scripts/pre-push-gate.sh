@@ -1147,6 +1147,20 @@ else
     fail "missing file: scripts/check-factory-yield-ledger.sh"
 fi
 
+# --- 22j. Finding-registry contract (GOALS.md gate finding-registry, weight 4 — A2 audit follow-up) ---
+# Validates docs/contracts/finding-registry.* schema + cross-check + live registry.
+# Fast (<200ms with a populated registry).
+if [[ -f scripts/check-finding-registry.sh ]]; then
+    if finding_registry_output="$(bash scripts/check-finding-registry.sh 2>&1)"; then
+        pass "finding-registry"
+    else
+        fail "finding-registry"
+        indent_output "$finding_registry_output"
+    fi
+else
+    fail "missing file: scripts/check-finding-registry.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
