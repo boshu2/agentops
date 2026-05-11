@@ -1,6 +1,7 @@
 ---
 name: using-agentops
 description: 'Explain AgentOps workflows.'
+practices: [wiki-knowledge-surface, pragmatic-programmer, agile-manifesto]
 skill_api_version: 1
 user-invocable: false
 context:

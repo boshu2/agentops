@@ -1,6 +1,7 @@
 ---
 name: skill-builder
 description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
+practices: [code-complete, pragmatic-programmer, design-patterns]
 skill_api_version: 1
 context:
   window: fork

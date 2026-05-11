@@ -1,6 +1,7 @@
 ---
 name: pr-research
 description: 'Research an upstream repo.'
+practices: [wiki-knowledge-surface, legacy-code-seams, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: fork

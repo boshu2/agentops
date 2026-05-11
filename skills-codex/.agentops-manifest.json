@@ -853,13 +853,13 @@
     {
       "name": "pr-implement",
       "source_skill": "skills/pr-implement",
-      "source_hash": "d9fac5e26ca6a0b9711a59e68bd6c983a3723090b37d9a6b6d1a263f809a9334",
+      "source_hash": "ea39f6bda00fbca2128948d2c416fca3ac4cce1561dff023a62395fc16fb9203",
       "generated_hash": "c379a9da99b11ec263a4390ac0eb12468245bc47b2eb0df8d2367eca81ebd009"
     },
     {
       "name": "pr-plan",
       "source_skill": "skills/pr-plan",
-      "source_hash": "21f9e82b1d4523ce41c98b3abe4814921536dcd9b97b82612fa432f871871431",
+      "source_hash": "b6a29a438ab31d24fe1d501b7553f7e0d56ba2d794d6ca4cd5de1e77a87a8160",
       "generated_hash": "9c642fd106e24221a2120219fcba2da62202a0686d3978c01d94660a6222f336"
     },
     {
@@ -871,13 +871,13 @@
     {
       "name": "pr-research",
       "source_skill": "skills/pr-research",
-      "source_hash": "1c528a95c77b0da2171979e44365b6fad8000bd13976b612ed2e0b7a5b0213f2",
+      "source_hash": "ace3b15fd23c39516ca607dcae4f4bd737025a69d345d3092f3f332cd913af5b",
       "generated_hash": "d2da34d258effceab5c0f0f81ce2cbc4df30c6ad55295484abd96eec43ef8a65"
     },
     {
       "name": "pr-retro",
       "source_skill": "skills/pr-retro",
-      "source_hash": "0e0ea8421b744b50a29185fdfbc3af1f1c5e256b12321957d46d602be95afe0f",
+      "source_hash": "5b23890edaff29873fe9b1cbe69f2c7f1e09cbcedc7f74735d90640a2964823d",
       "generated_hash": "f17bcb9512aaef9e5cffce80a6712146ec1498565e3ee71b2ba9d80a861cee4a"
     },
     {
@@ -967,7 +967,7 @@
     {
       "name": "reverse-engineer-rpi",
       "source_skill": "skills/reverse-engineer-rpi",
-      "source_hash": "9ca90e1be933d3150672204075f6768c908f4f8c46d41dc6565e80a4a648f485",
+      "source_hash": "75c7dc8ac4b46d82bb428e6ea1351a0abdc7f99ce869e54ffbabcafe2de33a4b",
       "generated_hash": "2166a1d4b1d7361134aa8a64c97298d47877e557c7c46082439635cdf3f8c2c5"
     },
     {
@@ -1015,19 +1015,19 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "82c2b3ce900ee6344f2797bd4a3d32cba12cd7bb472240ed0a3ba3e289bb34e1",
+      "source_hash": "d1f94d8485f94e70362293478be7225ad3d7572c705182d7cf48a01a39ee1f90",
       "generated_hash": "828ba53361b1c3f482bd4eb62e395ce0f17c85d81982978a4545398c78f70d75"
     },
     {
       "name": "skill-auditor",
       "source_skill": "skills/skill-auditor",
-      "source_hash": "2c3e336b94cfacecfa98d495d84295d9ab0c915ef659c9c9652aba5fce4bf8ca",
+      "source_hash": "de654bc56b9a4ed81a832c06f058b6a9bee6fc65bca83fd58496f7a399dc8f4e",
       "generated_hash": "9c4eb0a755855b1e9761879020e14e3abaf6de9c9ef6336a24b47f8250cac0b6"
     },
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "67a2664b58af5bfb548531d25d0cc0d72466f0f99aedd9a5970b79568e86659b",
+      "source_hash": "6edf30fd1d0b193f2ce8e06f2f1dc172d1449d3c873dc4d0fc1a33a244fa7dad",
       "generated_hash": "f32617332b22440a8294964e73bdcaa1d274b830b37d699e480d0df4dcb58dc0"
     },
     {
@@ -1057,7 +1057,7 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "2d8a54fcbd58ecccdb0c16a08e87a5369b8a57597167d928a25efbec28b766df",
+      "source_hash": "55f65d6e9dea669699c5a04cc8d2296fe2bae3e23dfd69c5ddb32756e2bc0eba",
       "generated_hash": "f5699f83ee7d5cb7845c0f5a46f69a74ea5f22b79fc4244c33d03f2a93698178"
     },
     {
@@ -1081,7 +1081,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "ef687ea4084bb49b03f2789441eacf5b7accf0deccaade231003e68a95ae0c5e",
+      "source_hash": "4651487ecdc581ef50359a09336d0fc7ccca66cf4fe7767283400d8d2901f925",
       "generated_hash": "bbf8a97a9de1889103b3368c1592be55690b28047768e5bd46aa2a4fb00ae995"
     },
     {

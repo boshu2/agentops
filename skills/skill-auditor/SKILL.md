@@ -1,6 +1,7 @@
 ---
 name: skill-auditor
 description: 'Audit an existing SKILL.md against the unified AgentOps template (15 checks). Triggers: "audit skill", "skill quality review", "is this skill ready".'
+practices: [code-complete, cmm-process-maturity, design-by-contract]
 skill_api_version: 1
 user-invocable: true
 context:
