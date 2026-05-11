@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, ai-assisted-dev]
 package main
 
 import "github.com/boshu2/agentops/cli/internal/search"
