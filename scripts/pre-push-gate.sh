@@ -1048,6 +1048,21 @@ else
     skip "codex parity drift"
 fi
 
+# --- 22c. Quarantine-empty (GOALS.md directive D3) ---
+# Always runs (no needs_check guard): the quarantine directory is shared
+# infrastructure and any populated state must surface even on unrelated diffs.
+# Single-cycle override: ALLOW_QUARANTINE=1.
+if [[ -f scripts/check-quarantine-empty.sh ]]; then
+    if quarantine_empty_output="$(bash scripts/check-quarantine-empty.sh 2>&1)"; then
+        pass "quarantine empty"
+    else
+        fail "quarantine empty"
+        indent_output "$quarantine_empty_output"
+    fi
+else
+    fail "missing file: scripts/check-quarantine-empty.sh"
+fi
+
 # --- 23. Skill CLI snippets ---
 if needs_check skill; then
     if [[ -x scripts/validate-skill-cli-snippets.sh ]]; then
