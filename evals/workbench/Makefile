@@ -9,7 +9,7 @@ PY_TASKS := py-01 py-02 py-03 py-04
 OPS_TASKS := ops-01 ops-02 ops-03
 ALL_TASKS := $(GO_TASKS) $(PY_TASKS) $(OPS_TASKS)
 
-.PHONY: verify verify-golden verify-broken clean help
+.PHONY: verify verify-golden verify-broken clean help head-to-head
 
 help:
 	@echo "Eval workbench targets:"
@@ -90,5 +90,11 @@ verify-broken:
 	echo "Broken verify: $$pass detected, $$fail missed out of $(words $(ALL_TASKS))"; \
 	[ $$fail -eq 0 ]
 
+head-to-head:
+	@# D10: regenerate scorecard-latest.json and compare to baseline. The
+	@# heavy lifting lives in scripts/check-eval-workbench.sh — invoke it
+	@# rather than duplicating the delta logic here.
+	@bash $(WORKBENCH_DIR)../../scripts/check-eval-workbench.sh
+
 clean:
-	rm -rf /tmp/wb-*
+	rm -rf /tmp/wb-* $(WORKBENCH_DIR)scorecard-latest.json

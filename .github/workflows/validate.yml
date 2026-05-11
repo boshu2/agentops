@@ -514,10 +514,20 @@ jobs:
           source .venv/bin/activate
           pip install fastapi uvicorn httpx pytest ruff black
 
-      - name: Verify workbench golden state
+      - name: Verify workbench golden state (D10 head-to-head delta)
         run: |
           chmod +x scripts/check-eval-workbench.sh
           bash scripts/check-eval-workbench.sh
+
+      - name: Upload scorecard-latest.json (D10 delta artifact)
+        # Runs whether the verify step passed or failed so a reviewer can
+        # inspect the delta when a regression triggered the gate.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-scorecard
+          path: evals/workbench/scorecard-latest.json
+          if-no-files-found: warn
 
   agentops-eval-advisory:
     needs: [changes]
