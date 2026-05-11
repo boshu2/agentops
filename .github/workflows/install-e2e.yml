@@ -69,12 +69,12 @@ jobs:
             exit "$rc"
           fi
 
-      - name: Build ao from source and verify --version
+      - name: Build ao from source and verify version
         # Real install path on ubuntu without brew is build-from-source.
         # Verify the binary the install path produces a usable CLI surface.
         run: |
           cd cli && go build -o bin/ao ./cmd/ao
-          ./bin/ao --version
+          ./bin/ao version
 
       - name: Verify install-smoke (fast structural check still green)
         run: |
@@ -124,10 +124,10 @@ jobs:
             exit "$rc"
           fi
 
-      - name: Build ao from source and verify --version
+      - name: Build ao from source and verify version
         run: |
           cd cli && go build -o bin/ao ./cmd/ao
-          ./bin/ao --version
+          ./bin/ao version
 
       - name: Verify install-smoke (fast structural check still green)
         run: |
