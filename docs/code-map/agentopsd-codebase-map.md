@@ -81,21 +81,21 @@ Top packages by file count (non-test source under `cli/internal/`):
 | Package | Files | LOC (src) | One-line purpose |
 |---------|------:|----------:|------------------|
 | `cli/cmd/ao` | 496 | ~63,137 | All cobra commands, flag wiring, glue between subsystems. Largest single surface; primary refactor target as the daemon extracts. |
-| `internal/rpi` | 28 | 4,921 | RPI lifecycle support: artifact paths, cancel/signal handling, stale-run cleanup, phased GC, executor plumbing. |
-| `internal/overnight` | 24 | 7,151 | Overnight curator stages, checkpoints (incl. Darwin clonefile path), ingest, Dream Council, morning packet rendering. |
-| `internal/daemon` | 17 | 5,816 | Long-running daemon: token-gated auth, Dream/RPI executors, RPI registry/runner, reconcile loop. |
-| `internal/search` | 17 | 3,290 | `.agents/` retrieval: bead context, constraint index (`.agents/constraints/index.json`), finding match, label utilities. |
-| `internal/vibecheck` | 15 | 1,244 | Vibe analyzer with detector plugins (amnesia, drift, logging, …). |
-| `internal/lifecycle` | 11 | 2,680 | In-process knowledge-flywheel close-loop, curate, dedup. Extracted from `cli/cmd/ao` so Dream's REDUCE stage can drive it without shelling out. |
-| `internal/ratchet` | 10 | 3,207 | Brownian Ratchet chain log: append-only entries, filelocks, contract validation. |
-| `internal/goals` | 10 | 2,670 | GOALS.yaml/MD model, fitness measurement, drift tracking. |
-| `internal/context` | 10 | 2,223 | Context-bundle assembly, brief rendering, token-budget enforcement. |
-| `internal/llm` | 10 | 2,079 | LLM client abstraction, chunker, forge tier-1 extraction. |
-| `internal/eval` | 9 | 3,002 | Eval engine: baseline/compare, coverage, runtime, scorecard. |
-| `internal/quality` | 8 | 2,358 | Repo-quality doctor: golden metrics, health/ops metrics, codex-skills lint, stale-refs. |
-| `internal/gascity` | 6 | 1,581 | TODO — placeholder summary; gascity is the energy/budget accounting subsystem. |
-| `internal/storage` | 6 | 1,224 | Filesystem helpers: locked file IO, search index. |
-| `internal/agentworker`, `wikiworker`, `bridge`, `openclaw`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Smaller leaf packages — TODO: per-package summaries. |
+| `cli/internal/rpi` | 28 | 4,921 | RPI lifecycle support: artifact paths, cancel/signal handling, stale-run cleanup, phased GC, executor plumbing. |
+| `cli/internal/overnight` | 24 | 7,151 | Overnight curator stages, checkpoints (incl. Darwin clonefile path), ingest, Dream Council, morning packet rendering. |
+| `cli/internal/daemon` | 17 | 5,816 | Long-running daemon: token-gated auth, Dream/RPI executors, RPI registry/runner, reconcile loop. |
+| `cli/internal/search` | 17 | 3,290 | `.agents/` retrieval: bead context, constraint index (`.agents/constraints/index.json`), finding match, label utilities. |
+| `cli/internal/vibecheck` | 15 | 1,244 | Vibe analyzer with detector plugins (amnesia, drift, logging, …). |
+| `cli/internal/lifecycle` | 11 | 2,680 | In-process knowledge-flywheel close-loop, curate, dedup. Extracted from `cli/cmd/ao` so Dream's REDUCE stage can drive it without shelling out. |
+| `cli/internal/ratchet` | 10 | 3,207 | Brownian Ratchet chain log: append-only entries, filelocks, contract validation. |
+| `cli/internal/goals` | 10 | 2,670 | GOALS.yaml/MD model, fitness measurement, drift tracking. |
+| `cli/internal/context` | 10 | 2,223 | Context-bundle assembly, brief rendering, token-budget enforcement. |
+| `cli/internal/llm` | 10 | 2,079 | LLM client abstraction, chunker, forge tier-1 extraction. |
+| `cli/internal/eval` | 9 | 3,002 | Eval engine: baseline/compare, coverage, runtime, scorecard. |
+| `cli/internal/quality` | 8 | 2,358 | Repo-quality doctor: golden metrics, health/ops metrics, codex-skills lint, stale-refs. |
+| `cli/internal/gascity` | 6 | 1,581 | TODO — placeholder summary; gascity is the energy/budget accounting subsystem. |
+| `cli/internal/storage` | 6 | 1,224 | Filesystem helpers: locked file IO, search index. |
+| `cli/internal/agentworker`, `wikiworker`, `bridge`, `openclaw`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Smaller leaf packages — TODO: per-package summaries. |
 
 ### Top 3 packages — detail
 
@@ -106,8 +106,8 @@ Top packages by file count (non-test source under `cli/internal/`):
   - `PhaseArtifactNumberPattern` — regex used everywhere RPI artifacts are scanned by phase number.
   - `ProcessInfo` — parsed process metadata from `ps`-style introspection (used by cancel/cleanup).
   - `StaleRunEntry` — describes a stale RPI run discovered during cleanup scanning.
-- **Imports from internal:** `internal/types` only — `rpi` is intentionally near the bottom of the dependency graph.
-- **Imported by:** `internal/daemon` (rpi_runner, rpi_registry, reconcile), `internal/eval` (runtime), `internal/overnight` (runner passes). Heaviest re-user is `cmd/ao/rpi*.go`.
+- **Imports from internal:** `cli/internal/types` only — `rpi` is intentionally near the bottom of the dependency graph.
+- **Imported by:** `cli/internal/daemon` (rpi_runner, rpi_registry, reconcile), `cli/internal/eval` (runtime), `cli/internal/overnight` (runner passes). Heaviest re-user is `cli/cmd/ao/rpi*.go`.
 
 #### `cli/internal/overnight/` (24 files, 7,151 LOC)
 
@@ -116,8 +116,8 @@ Top packages by file count (non-test source under `cli/internal/`):
   - Checkpoint clone helpers split by platform (`checkpoint_clone_darwin.go` vs `checkpoint_clone_fallback.go`).
   - Boundary-test harness (`withExecShim`) for swapping `ExecCommand` in tests.
   - `seedAgents` test helper that builds a fake `.agents/` tree (used widely by overnight tests).
-- **Imports from internal:** `internal/{corpus, daemon, forge, harvest, lifecycle, mine, pool, provenance, rpi, search}` — overnight is the highest-level orchestrator and the densest internal-import node.
-- **Imported by:** `cmd/ao/overnight*.go` and (transitively) the daemon's Dream executor.
+- **Imports from internal:** `cli/internal/{corpus, daemon, forge, harvest, lifecycle, mine, pool, provenance, rpi, search}` — overnight is the highest-level orchestrator and the densest internal-import node.
+- **Imported by:** `cli/cmd/ao/overnight*.go` and (transitively) the daemon's Dream executor.
 
 #### `cli/internal/daemon/` (17 files, 5,816 LOC)
 
@@ -126,8 +126,8 @@ Top packages by file count (non-test source under `cli/internal/`):
   - Authentication middleware enforcing the mutation-token header (`auth.go` + `TestAuthRequiresMutationTokenHeader`).
   - `DreamRunLoopOptions` and `DreamMode` — typed run-loop config for the Dream executor.
   - RPI registry/runner pair that owns in-flight RPI runs and reconciles their state.
-- **Imports from internal:** `internal/{agentworker, gascity, openclaw, rpi, wikiworker}`.
-- **Imported by:** `cmd/ao/daemon*.go` and `internal/overnight` (Dream stage hands work to the daemon executor).
+- **Imports from internal:** `cli/internal/{agentworker, gascity, openclaw, rpi, wikiworker}`.
+- **Imported by:** `cli/cmd/ao/daemon*.go` and `cli/internal/overnight` (Dream stage hands work to the daemon executor).
 
 ## Cross-references (internal package import graph)
 
@@ -149,20 +149,20 @@ vibecheck ──► (no internal deps; leaf)
 
 Observations:
 
-- `internal/types` and `internal/storage` sit at the bottom — leaf packages with broad fan-in.
-- `internal/overnight` is the densest aggregator (10 internal imports).
-- `internal/daemon` and `internal/overnight` both depend on `internal/rpi`, which is the cross-cutting RPI lifecycle library.
-- `cli/cmd/ao/` is the global integration point — every `internal/*` package eventually reaches it through cobra command files (not enumerated here; that's the next pass).
+- `cli/internal/types` and `cli/internal/storage` sit at the bottom — leaf packages with broad fan-in.
+- `cli/internal/overnight` is the densest aggregator (10 internal imports).
+- `cli/internal/daemon` and `cli/internal/overnight` both depend on `cli/internal/rpi`, which is the cross-cutting RPI lifecycle library.
+- `cli/cmd/ao/` is the global integration point — every `cli/internal/*` package eventually reaches it through cobra command files (not enumerated here; that's the next pass).
 
 ## Persistence Surfaces
 
 | Surface | Path | Notes |
 |--------|------|-------|
-| RPI runs / artifacts | `.agents/rpi/runs/<id>/`, `.agents/rpi/artifacts/` | Owned by `internal/rpi`; scanned by cleanup + phased GC |
-| Overnight checkpoints | `.agents/overnight/<run>/checkpoint*` | Owned by `internal/overnight`; Darwin uses clonefile |
-| Knowledge flywheel | `.agents/{learnings,patterns,findings,research,retros,…}/` | Read-many surfaces for `internal/{search,lifecycle,context}` |
-| Constraint index | `.agents/constraints/index.json` | `internal/search/constraint.go` schema owner |
-| Beads | `.beads/` (bd CLI) | External to this repo's Go code; consumed by `internal/search/bead_context.go` and `cmd/ao` bead helpers |
+| RPI runs / artifacts | `.agents/rpi/runs/<id>/`, `.agents/rpi/artifacts/` | Owned by `cli/internal/rpi`; scanned by cleanup + phased GC |
+| Overnight checkpoints | `.agents/overnight/<run>/checkpoint*` | Owned by `cli/internal/overnight`; Darwin uses clonefile |
+| Knowledge flywheel | `.agents/{learnings,patterns,findings,research,retros,…}/` | Read-many surfaces for `cli/internal/{search,lifecycle,context}` |
+| Constraint index | `.agents/constraints/index.json` | `cli/internal/search/constraint.go` schema owner |
+| Beads | `.beads/` (bd CLI) | External to this repo's Go code; consumed by `cli/internal/search/bead_context.go` and `cli/cmd/ao` bead helpers |
 | Daemon state | TODO — confirm path; appears under `.agents/daemon/` and possibly `~/.agentops/` |
 | Ratchet chain | TODO — confirm path under `.agents/ratchet/` |
 | Goals | `GOALS.yaml`, `GOALS.md` (repo root) + history under `.agents/goals/` |
@@ -186,7 +186,7 @@ When debugging an overnight cycle:
 When debugging the daemon:
 
 1. `ao daemon status`, then tail daemon logs (TODO: confirm path).
-2. Inspect `internal/daemon/reconcile.go` and `rpi_registry.go` for state transitions.
+2. Inspect `cli/internal/daemon/reconcile.go` and `rpi_registry.go` for state transitions.
 
 ## Scope Notes
 
@@ -194,4 +194,4 @@ When debugging the daemon:
 - The binary is still `ao`; the `agentopsd` rename and corresponding directory split are tracked under the parent extraction epic.
 - LOC counts are non-test source only (`*.go` minus `*_test.go`) measured at write time. Recount before any release.
 - Cross-reference graph was sampled with `grep`, not built from `go list -deps`. Treat it as a navigation aid, not a complete graph. TODO: replace with a `go list`-driven generator and check it in CI.
-- Several `internal/` packages (e.g. `gascity`, `bridge`, `harvest`, `mine`, `pool`, `provenance`, `safety`, `state`, `taxonomy`) carry no per-package summary yet — flagged as TODO above.
+- Several `cli/internal/` packages (e.g. `gascity`, `bridge`, `harvest`, `mine`, `pool`, `provenance`, `safety`, `state`, `taxonomy`) carry no per-package summary yet — flagged as TODO above.
