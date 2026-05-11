@@ -1175,6 +1175,20 @@ else
     fail "missing file: scripts/check-factory-admission.sh"
 fi
 
+# --- 22l. Contracts structural floor (GOALS.md gate contracts-structural-floor, weight 4) ---
+# Every docs/contracts/*.md meets the minimum bar: heading, cataloged in
+# documentation-index, body >= 200 bytes, paired schema is valid JSON.
+if [[ -f scripts/check-contracts-structural-floor.sh ]]; then
+    if contracts_floor_output="$(bash scripts/check-contracts-structural-floor.sh 2>&1)"; then
+        pass "contracts structural floor"
+    else
+        fail "contracts structural floor"
+        indent_output "$contracts_floor_output"
+    fi
+else
+    fail "missing file: scripts/check-contracts-structural-floor.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
