@@ -28,7 +28,7 @@ This road map IS the reconcile queue, made explicit.
 
 ## Structure
 
-Five evolution epics, plus three audit epics that generate inventory for follow-on beads.
+Five evolution epics, three audit epics that generate inventory for follow-on beads, and one learning-capture epic that compounds the loop's self-improvement across days.
 
 | Epic | Scope | Concrete beads |
 |------|-------|----------------|
@@ -40,6 +40,7 @@ Five evolution epics, plus three audit epics that generate inventory for follow-
 | **A1: AOP-CLAIM Audit** | Inventory all 83 claim markers, separate verified vs unverified, generate beads for unverified | 1 audit + N follow-ups |
 | **A2: Contract Enforcement Audit** | For each of 38 contracts in `docs/contracts/`, verify it has a `scripts/check-*.sh` enforcement gate | 1 audit + N follow-ups |
 | **A3: Code-Map Drift Audit** | For each `docs/code-map/*.md`, diff claimed structure against actual file layout | 1 audit + N follow-ups |
+| **LC: Learning Capture Loop** | Each /evolve cycle micro-captures 1 line; every 5th productive cycle reflects on patterns; each hard stop consolidates to a dated learning file; recurring frictions auto-file `evolve-improvement` beads under this label | 1 epic + 1 leaf + N auto-filed |
 
 ## E1: Directive Closure (11 beads)
 
@@ -194,6 +195,55 @@ Currently enforced. Bead is to ratchet stricter: add `council-coverage` gate tha
 3. Drift items: file paths that the map claims exist but don't, OR files in the repo that the map doesn't account for.
 
 **Audit deliverable:** `.agents/research/2026-05-11-code-map-drift-report.md` — diff per code map.
+
+## LC: Learning Capture Loop (1 epic + 1 leaf + N auto-filed)
+
+The 13-cycle /evolve session on 2026-05-11 surfaced 6 frictions only because a human ran a manual post-mortem afterwards. That doesn't compound — the next 13-cycle session would surface the same 6 frictions plus new ones, and nobody would notice the recurrence. LC encodes the reflection inside the loop so each day compounds insight about the loop's own behavior, not just the work product.
+
+Three layers:
+
+**1. Per-cycle micro-capture (cheap, mechanical, every cycle):**
+
+At end of each cycle, the loop appends one line to `.agents/evolve/daily-learning-log-YYYY-MM-DD.md` in the format:
+```
+- cycle N [result] work_ref: short note  [optional: FRICTION: tag-slug | INSIGHT: tag-slug]
+```
+
+The daily log accumulates a low-cost stream of observations. Friction tags use a stable kebab-case taxonomy (see `.agents/evolve/daily-learning-log.template.md`) so the same friction recurring across days is mechanically detectable.
+
+**2. Every-5th-productive-cycle reflect (light, inline):**
+
+When `PRODUCTIVE_THIS_SESSION % 5 == 0 && > 0`, before scheduling the next wakeup the loop:
+- Reads the daily log entries since the last reflect
+- Looks for the same FRICTION tag appearing 2+ times this session
+- Surfaces the pattern inline in the cycle-history `note` field (no separate cycle, just an annotation)
+- If a tag has appeared 3+ times in the session AND once already on a prior day, fast-path file an `evolve-improvement` bead immediately rather than waiting for end-of-day
+
+**3. End-of-day consolidate (full reflection, automatic):**
+
+When a hard stop fires (KILL/STOP/END_AT/all-evolution-beads-closed/dormancy), the loop runs:
+```
+bash scripts/evolve-capture-daily-learning.sh
+```
+
+This produces `.agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md` with:
+- Counts (total/productive/scout/idle/regressed cycles)
+- Cycle ledger for the day
+- Per-cycle micro-captures
+- Friction tags this session
+- Cross-day recurring patterns (compared to prior daily learning files)
+- Promotion candidates
+
+The script ALSO auto-files `evolution-roadmap` + `evolve-improvement` labeled beads for any friction that recurred on 2+ days, with the title shape `LC-followup: Address recurring /evolve friction "<tag>"` and idempotency by title match.
+
+**Acceptance:**
+- `scripts/evolve-capture-daily-learning.sh` exists, is executable, and supports `--dry-run`.
+- `.agents/evolve/daily-learning-log.template.md` documents the micro-capture format + tag taxonomy.
+- The all-day starter prompt invokes the consolidator at every hard stop.
+- After 2 days of /evolve runs, the recurring-friction auto-bead-filing path is exercised at least once (test scenario: same FRICTION tag in two daily log files → 1 new `LC-followup` bead).
+
+**Why "capture cycle" vs "post-mortem-then-forget":**
+Manual post-mortem on the 13-cycle session worked, but it required a human turn after the day to write the learnings. LC inverts that: the loop captures continuously and consolidates automatically, so day 2 starts with the lessons from day 1 already promoted into the work queue. The flywheel applies to the loop itself, not just to product work.
 
 ## Execution Order (for /evolve to drain)
 

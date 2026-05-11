@@ -21,7 +21,7 @@ bd_create_if_missing() {
   local parent="${6:-}"
 
   # Idempotency: check if an open issue with the exact title exists
-  if bd list --status=open --json 2>/dev/null | jq -e --arg t "$title" '.[] | select(.title == $t)' >/dev/null 2>&1; then
+  if bd list --status=open --limit 0 --json 2>/dev/null | jq -e --arg t "$title" '.[] | select(.title == $t)' >/dev/null 2>&1; then
     echo "skip: $title (exists)"
     return 0
   fi
@@ -58,7 +58,7 @@ bd_mk() {
   shift
   local title="$1" desc="$2" type="$3" priority="$4" labels="$5" parent="${6:-}"
 
-  if existing="$(bd list --status=open --json 2>/dev/null | jq -r --arg t "$title" '.[] | select(.title == $t) | .id' | head -1)"; then
+  if existing="$(bd list --status=open --limit 0 --json 2>/dev/null | jq -r --arg t "$title" '.[] | select(.title == $t) | .id' | head -1)"; then
     if [[ -n "$existing" ]]; then
       echo "skip: $existing $title"
       printf -v "$var" '%s' "$existing"
@@ -307,6 +307,19 @@ bd_mk A3 \
   "[audit] A3: Code-map drift report (2 maps)" \
   "For each docs/code-map/*.md, extract claimed file structure and diff against actual repo. Output: .agents/research/2026-05-11-code-map-drift-report.md. Drift items spawn child beads. $ROAD_REF (section A3)." \
   task 2 "evolution-roadmap,audit,code-map"
+
+# =========================================================================
+# EPIC LC: Learning Capture Loop
+# =========================================================================
+bd_mk LC_EPIC \
+  "[epic] Evolution LC: Learning capture loop (compound the loop on itself)" \
+  "Three-layer self-reflection so each day improves the next: (1) per-cycle 1-line micro-capture to .agents/evolve/daily-learning-log-YYYY-MM-DD.md, (2) every-5th-productive-cycle pattern reflect inline in cycle-history note, (3) end-of-day consolidate via scripts/evolve-capture-daily-learning.sh writing to .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md and auto-filing evolve-improvement beads for cross-day recurring frictions. $ROAD_REF (section LC)." \
+  task 1 "evolution-roadmap,learning-capture"
+
+bd_mk LC1 \
+  "LC1: Wire learning-capture protocol into /evolve all-day loop" \
+  "Verify the three layers operate end-to-end on a real day: (a) micro-capture appends one line per cycle, (b) every-5th-productive reflect surfaces pattern annotations, (c) end-of-day consolidator runs at hard stop and writes the dated learning file. Acceptance: after one full /evolve day, .agents/evolve/daily-learning-log-YYYY-MM-DD.md has N entries (one per cycle), .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md exists with counts + ledger + frictions sections, and if any FRICTION tag matches a prior day a LC-followup bead is auto-filed under evolution-roadmap. Cross-link: scripts/evolve-capture-daily-learning.sh, .agents/evolve/daily-learning-log.template.md." \
+  feature 1 "evolution-roadmap,learning-capture" "$LC_EPIC"
 
 echo ""
 echo "===================="
