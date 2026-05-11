@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao forge transcript
 # Queues transcript forging at session end.
+# practices: [wiki-knowledge-surface, pragmatic-programmer]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

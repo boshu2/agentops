@@ -1,5 +1,6 @@
 #!/bin/bash
 # context-guard.sh - UserPromptSubmit hook: proactive context telemetry + handoff trigger
+# practices: [sre, distributed-tracing]
 #
 # Behavior:
 # 1. Updates session budget telemetry from transcript usage

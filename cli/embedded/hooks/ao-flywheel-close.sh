@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao flywheel close-loop
 # Closes the flywheel loop at stop.
+# practices: [dora-metrics, wiki-knowledge-surface]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

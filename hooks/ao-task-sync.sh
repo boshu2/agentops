@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao task-sync
 # Synchronizes task state at session end.
+# practices: [gitops, continuous-delivery]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

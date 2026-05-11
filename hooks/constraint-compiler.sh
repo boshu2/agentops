@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook Helper: constraint-compiler
 # Legacy wrapper that routes tagged learnings through hooks/finding-compiler.sh.
+# practices: [design-by-contract, code-complete]
 #
 # Usage: bash hooks/constraint-compiler.sh <learning-path>
 set -euo pipefail

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao feedback-loop
 # Runs feedback loop analysis for the current session at session end.
+# practices: [dora-metrics, sre, lean-startup]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

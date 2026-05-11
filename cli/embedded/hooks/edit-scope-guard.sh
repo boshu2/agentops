@@ -1,5 +1,6 @@
 #!/bin/bash
 # Edit Scope Guard — PreToolUse hook for /scope skill (issue soc-irg1.3).
+# practices: [ddd-bounded-context, design-by-contract]
 #
 # Reads Claude Code tool-input JSON from stdin. If `.agents/scope.lock` declares
 # one or more `frozen_dirs`, blocks edits whose target path is outside every

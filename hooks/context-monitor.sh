@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # context-monitor.sh - PostToolUse hook: context window usage monitoring via bridge pattern
+# practices: [sre, distributed-tracing]
 #
 # Reads context metrics from statusline bridge file and injects agent-facing
 # warnings at 35% and 25% remaining context.

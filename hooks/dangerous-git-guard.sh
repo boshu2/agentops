@@ -1,6 +1,7 @@
 #!/bin/bash
 # Dangerous Git Operations Guard
 # Blocks destructive git commands and suggests safe alternatives.
+# practices: [sre, resilience-patterns, design-by-contract]
 
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 

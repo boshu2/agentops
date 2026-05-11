@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AgentOps Hook: ao session-outcome
 # Records session outcome at session end.
+# practices: [dora-metrics, lean-startup]
 set -euo pipefail
 
 [ "${AGENTOPS_HOOKS_DISABLED:-0}" = "1" ] && exit 0

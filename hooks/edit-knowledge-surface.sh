@@ -3,6 +3,7 @@
 # Surfaces relevant learnings BEFORE editing files that appear in knowledge artifacts.
 # Uses grep -l for fast path matching (<100ms on 155 files).
 # Non-blocking (always exit 0). Knowledge via additionalContext injection.
+# practices: [wiki-knowledge-surface, design-by-contract]
 set -euo pipefail
 
 # Kill switches

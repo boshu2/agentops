@@ -2,6 +2,7 @@
 # PostToolUse hook: append one JSON line per Edit/Write to .agents/ao/edit-audit.log
 # capturing {ts, tool, file, sha256, git_status, head_sha}. Diagnostic-only —
 # always exits 0, never blocks.
+# practices: [distributed-tracing, cmm-process-maturity]
 #
 # Used to investigate the silent-revert phenomenon (f-2026-05-02-005): if a
 # subsequent Edit shows a different sha256 from the prior post-Edit hash with
