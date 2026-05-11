@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # PostToolUse hook: auto-refresh codex artifacts after edits to skills/<name>/.
+# practices: [gitops, continuous-integration]
 #
 # Filed as soc-7qq9 in the 2026-05-07 CI-push-gate-toil retrospective. The
 # pre-push gate enforces codex parity (skills/* must have matching

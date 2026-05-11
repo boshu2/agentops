@@ -2,6 +2,7 @@
 # Lightweight skill lint gate — checks line count limits on SKILL.md edits.
 # Runs as PreToolUse hook on Write|Edit. Fast path: exits immediately if
 # the file being edited is not a SKILL.md.
+# practices: [code-complete, cmm-process-maturity]
 set -euo pipefail
 
 # Kill switch

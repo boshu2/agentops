@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # lead-only-worker-git-guard.sh - PreToolUse hook
+# practices: [team-topologies, microservices]
 #
 # Mechanically enforces the swarm "lead-only commit" policy. When the running
 # agent is identified as a swarm worker (not the lead), BLOCK any destructive

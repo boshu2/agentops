@@ -1,6 +1,7 @@
 #!/bin/bash
 # SubagentStop hook: capture worker output from swarm/crank executions.
 # Writes final worker message + schema packet for session-start consumption.
+# practices: [distributed-tracing, microservices]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

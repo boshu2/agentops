@@ -1,6 +1,7 @@
 #!/bin/bash
 # WorktreeRemove hook: archive artifacts and sync state before worktree deletion
 # Preserves learnings and beads state from isolated worktree
+# practices: [gitops, event-sourcing-cqrs]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

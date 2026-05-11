@@ -2,6 +2,7 @@
 # intent-echo.sh - UserPromptSubmit hook: force intent confirmation for high-stakes operations
 # Detects destructive/scoping keywords and injects echo protocol.
 # Non-blocking (always exit 0). Injects reminder as additionalContext.
+# practices: [design-by-contract, pragmatic-programmer]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

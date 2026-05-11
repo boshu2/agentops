@@ -2,6 +2,7 @@
 # standards-injector.sh - PreToolUse hook: inject compact language standards.
 # Reads tool_input.file_path, maps extension to language, and emits bounded
 # JIT guidance. Full standards stay on disk unless explicitly requested.
+# practices: [code-complete, pragmatic-programmer, design-by-contract]
 set -euo pipefail
 
 # Kill switch

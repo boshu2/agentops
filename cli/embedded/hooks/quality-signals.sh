@@ -3,6 +3,7 @@ set -euo pipefail
 # quality-signals.sh - UserPromptSubmit hook: lightweight session quality signal detection
 # Detects repeated prompts and correction patterns. Logs signals to
 # .agents/signals/session-quality.jsonl (append-only, advisory only).
+# practices: [dora-metrics, sre]
 # Non-blocking (always exit 0). Recent signals surface in `ao status`.
 
 # Kill switches

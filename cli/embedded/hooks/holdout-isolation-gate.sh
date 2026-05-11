@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# AgentOps Hook: holdout-isolation-gate
+# Blocks reads to .agents/holdout/ for non-evaluator agents — preserves eval integrity.
+# practices: [llm-eval-harness, design-by-contract]
 set -euo pipefail
 [[ "${AGENTOPS_HOOKS_DISABLED:-}" == "1" ]] && exit 0
 

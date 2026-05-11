@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook: run go vet on modified Go files after edits.
 # Non-blocking (exit 0) — logs warnings to stderr for visibility.
+# practices: [continuous-integration, code-complete]
 set -euo pipefail
 
 INPUT=$(cat)

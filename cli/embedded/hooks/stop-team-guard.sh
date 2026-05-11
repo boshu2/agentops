@@ -1,6 +1,7 @@
 #!/bin/bash
 # Stop hook: warn about teams that may have active members
 # Only blocks stop if team members are actually running in tmux panes
+# practices: [team-topologies, microservices]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # SessionEnd: forge learnings + maturity maintenance (serialized via lock).
+# practices: [wiki-knowledge-surface, cmm-process-maturity]
 
 # Eval-verdict compiler — kill-switch-INDEPENDENT opt-in path (pre-mortem H1).
 if [ "${AGENTOPS_EVAL_VERDICT_ENABLED:-}" = "1" ]; then

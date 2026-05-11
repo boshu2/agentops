@@ -2,6 +2,7 @@
 # ratchet-advance.sh - PostToolUse hook: suggest next RPI skill after ratchet record
 # Fires on successful `ao ratchet record <step>`. Injects additionalContext suggestion.
 # Kill switches: AGENTOPS_AUTOCHAIN=0, AGENTOPS_HOOKS_DISABLED=1
+# practices: [continuous-delivery, dora-metrics]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

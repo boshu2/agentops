@@ -1,6 +1,7 @@
 #!/bin/bash
 # WorktreeCreate hook: initialize isolated worktree for RPI/swarm work
 # Sets up beads tracking, injects knowledge, records metadata
+# practices: [microservices, team-topologies]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

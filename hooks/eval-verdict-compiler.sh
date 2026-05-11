@@ -3,6 +3,7 @@
 # Reads ~/.agents/evals/runs/<id>/manifest.json with status=complete and
 # verdict.kind set; mutates .agents/learnings/*.md frontmatter.
 # Sibling to finding-compiler.sh. Closes the AgentOps self-modification loop.
+# practices: [llm-eval-harness, dora-metrics]
 #
 # Plan: ~/dev/agentops/.agents/plans/2026-05-01-eval-as-self-pruning-corpus.md
 # DEVIATION: rev-2 plan called for `lib/finding-compiler-helpers.sh` extraction.

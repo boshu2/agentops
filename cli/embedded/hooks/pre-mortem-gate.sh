@@ -1,6 +1,7 @@
 #!/bin/bash
 # pre-mortem-gate.sh - PreToolUse hook: block /crank when epic has 3+ issues and no pre-mortem
 # Evidence: 6/6 consecutive positive pre-mortem ROI across epics.
+# practices: [adr, design-by-contract]
 #
 # Pre-mortem evidence is checked in order:
 #   1. Run-scoped phased-state.json (verdicts.pre_mortem) — avoids false positives from stale globals

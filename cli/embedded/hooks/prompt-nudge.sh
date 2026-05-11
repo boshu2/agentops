@@ -2,6 +2,7 @@
 # prompt-nudge.sh - UserPromptSubmit hook: ratchet-aware one-liner nudges
 # Checks prompt keywords against RPI ratchet state. Injects reminders.
 # Cap: one nudge line, < 200 bytes. No directory scanning.
+# practices: [dora-metrics, agile-manifesto]
 # Nudge priority: ratchet-advance.sh (PostToolUse, PRIMARY) > prompt-nudge.sh (UserPromptSubmit, SECONDARY) > session-start.sh (SessionStart, CROSS-SESSION)
 # This hook suppresses if ratchet-advance already fired recently (dedup via .ratchet-advance-fired flag).
 

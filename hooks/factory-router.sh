@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # factory-router.sh - UserPromptSubmit hook: capture first substantive prompt as
 # factory state when SessionStart had no goal. This hook stays silent.
+# practices: [wiki-knowledge-surface, dora-metrics]
 
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_FACTORY_ROUTER_DISABLED:-}" = "1" ] && exit 0

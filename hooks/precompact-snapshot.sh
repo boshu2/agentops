@@ -2,6 +2,7 @@
 # PreCompact hook: snapshot team state before context compaction
 # Captures active teams, git status, branch info for recovery after compaction
 # Fail-open: all errors are non-fatal, always exit 0
+# practices: [snapshot-testing, event-sourcing-cqrs]
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"

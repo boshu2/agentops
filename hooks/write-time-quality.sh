@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook: lightweight code quality checks after Write/Edit.
 # Non-blocking (always exit 0) — outputs warnings as JSON.
+# practices: [code-complete, refactoring]
 set -euo pipefail
 
 # Kill switch

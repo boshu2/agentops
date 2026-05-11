@@ -2,6 +2,7 @@
 # AgentOps Session Start Hook
 # Creates .agents/ directories, consumes handoffs, and prepares runtime state.
 # CLAUDE.md owns the operator-facing startup surface; this hook stays silent.
+# practices: [wiki-knowledge-surface, pragmatic-programmer]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

@@ -2,6 +2,7 @@
 # task-validation-gate.sh - TaskCompleted hook: validate task metadata before completion
 # Reads task JSON from stdin, checks metadata.validation rules.
 # Exit 0 = pass (or no validation). Exit 2 = block completion.
+# practices: [design-by-contract, tdd]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

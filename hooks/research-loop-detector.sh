@@ -3,6 +3,7 @@
 # Tracks consecutive read-only tool calls (Read, Grep, Glob, WebSearch, WebFetch).
 # Injects escalating warnings when the agent enters a read-only loop without editing.
 # Non-blocking (always exit 0). Warnings via additionalContext injection.
+# practices: [sre, ai-assisted-dev]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

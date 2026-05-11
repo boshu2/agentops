@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook: check cyclomatic complexity of modified Go files.
 # Non-blocking (exit 0) — logs warnings to stderr for visibility.
+# practices: [refactoring, code-complete]
 set -euo pipefail
 
 # shellcheck source=../lib/hook-helpers.sh

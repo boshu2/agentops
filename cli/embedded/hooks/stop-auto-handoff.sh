@@ -1,6 +1,7 @@
 #!/bin/bash
 # Stop hook: capture last_assistant_message for session continuity.
 # Writes markdown handoff + schema packet for session-start.sh packet-first recovery.
+# practices: [event-sourcing-cqrs, distributed-tracing]
 
 # Kill switch
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

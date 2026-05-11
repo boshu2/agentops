@@ -2,6 +2,7 @@
 # AgentOps Hook Helper: finding-compiler
 # Promotes structured findings into durable artifacts and compiles them into
 # planning rules, pre-mortem checks, and declarative constraint metadata.
+# practices: [dora-metrics, wiki-knowledge-surface]
 #
 # Usage:
 #   bash hooks/finding-compiler.sh                  # promote registry + compile all findings

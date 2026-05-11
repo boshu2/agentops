@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse hook: fast Go validation before git commit.
+# practices: [tdd, continuous-integration]
 #
 # Fast path (<5s): go vet + go build on every commit.
 # Targeted tests: only for cli/internal/ changes (skip cmd/ao — deferred to pre-push).

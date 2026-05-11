@@ -2,6 +2,7 @@
 # git-worker-guard.sh - PreToolUse hook: block git write operations for swarm workers
 # Workers should NEVER commit/push/add-all — only the lead does that.
 # Non-blocking for leads (exit 0). Blocks workers (exit 2).
+# practices: [team-topologies, design-by-contract, microservices]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

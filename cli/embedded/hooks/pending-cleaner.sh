@@ -2,6 +2,7 @@
 # pending-cleaner.sh — Monitor stale flywheel backlog and auto-clear safely.
 # Called during session start to prevent queue buildup.
 # Exit 0 always — never block session start.
+# practices: [sre, resilience-patterns]
 
 # Kill switches
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0

@@ -2,6 +2,7 @@
 set -euo pipefail
 # new-user-welcome.sh - UserPromptSubmit hook: show a one-time startup nudge for
 # truly fresh repos without changing runtime mode.
+# practices: [lean-startup, agile-manifesto]
 
 [ "${AGENTOPS_HOOKS_DISABLED:-}" = "1" ] && exit 0
 [ "${AGENTOPS_NEW_USER_WELCOME_DISABLED:-}" = "1" ] && exit 0
