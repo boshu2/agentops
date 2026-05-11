@@ -3,6 +3,7 @@
   "id": "agentops-core.knowledge-flywheel-ingestion",
   "name": "AgentOps Knowledge Flywheel Ingestion Canary",
   "description": "Offline public canary for the upstream knowledge flywheel: forge, mine, compile, harvest, defrag, corpus/Dream ingest behavior, and their operator contracts.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

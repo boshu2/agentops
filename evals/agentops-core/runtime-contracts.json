@@ -3,6 +3,7 @@
   "id": "agentops-core.runtime-contracts",
   "name": "AgentOps Runtime Contracts Canary",
   "description": "Offline public canary for live runtime adapter hygiene, Codex lifecycle command docs, Codex skill guards, and focused mocked runtime tests.",
+  "practices": ["llm-eval-harness", "sre"],
   "domain": "runtime",
   "visibility": "public_canary",
   "tier": "deterministic",

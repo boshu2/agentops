@@ -3,6 +3,7 @@
   "id": "agentops-core.docs-release-governance",
   "name": "AgentOps Docs and Release Governance Canary",
   "description": "Offline public canary for documentation governance: doc-release stabilization, skill-count sync, CLI-skills map parity, hook/docs parity, CI policy parity, source-backed doc/readme contracts, and OSS docs audit behavior.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "docs",
   "visibility": "public_canary",
   "tier": "deterministic",

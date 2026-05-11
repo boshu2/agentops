@@ -3,6 +3,7 @@
   "id": "agentops-core.model-upgrade-readiness",
   "name": "AgentOps Model Upgrade Readiness Canary",
   "description": "Offline public canary for model-upgrade baseline comparison, promotion metadata, and runtime-regression guardrails.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

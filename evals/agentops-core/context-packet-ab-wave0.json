@@ -3,6 +3,7 @@
   "id": "context-packet-ab-wave0",
   "name": "Context Packet A/B Wave 0",
   "description": "Public canary for measuring whether curated .agents context improves deterministic task outcomes while stale, toxic, or irrelevant context stays inert.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "context",
   "visibility": "public_canary",
   "tier": "deterministic",

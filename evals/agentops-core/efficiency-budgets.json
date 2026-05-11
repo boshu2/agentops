@@ -3,6 +3,7 @@
   "id": "agentops-core.efficiency-budgets",
   "name": "AgentOps Efficiency Budgets Canary",
   "description": "Offline public canary for eval runtime budget visibility, fast coverage reporting, and conditional pre-push eval gating.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

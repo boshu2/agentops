@@ -3,6 +3,7 @@
   "id": "agentops-core.ratchet-lifecycle-ledger",
   "name": "AgentOps Ratchet Lifecycle Ledger Canary",
   "description": "Offline public canary for the Brownian Ratchet lifecycle ledger: status, check, next, spec, validate, record, promote, skip, find, trace, migrate, and artifact migration.",
+  "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",

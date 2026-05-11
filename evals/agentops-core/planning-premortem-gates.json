@@ -3,6 +3,7 @@
   "id": "agentops-core.planning-premortem-gates",
   "name": "AgentOps Planning Pre-Mortem Gates Canary",
   "description": "Offline public canary for planning and pre-mortem failure-prevention gates: plan/pre-mortem validators, compiled finding carry-forward, tuning defaults, pre-mortem hook behavior, next-work parity, mandatory review checks, and Codex runtime command parity.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

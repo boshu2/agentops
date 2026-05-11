@@ -3,6 +3,7 @@
   "id": "agentops-core.skill-quality-gates",
   "name": "AgentOps Skill Quality Gates Canary",
   "description": "Offline public canary for skill lint, schema, runtime-format, CLI-snippet, and size-warning ratchets used to judge skill edits.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.supporting-cli-utilities",
   "name": "AgentOps Supporting CLI Utilities Canary",
   "description": "Offline public canary for lower-frequency but user-facing CLI utilities: demo, seed, badge, completion, config, vibe-check, trace, extract, and mind.",
+  "practices": ["llm-eval-harness", "pragmatic-programmer"],
   "domain": "cli",
   "visibility": "public_canary",
   "tier": "deterministic",

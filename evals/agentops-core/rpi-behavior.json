@@ -3,6 +3,7 @@
   "id": "agentops-core.rpi-behavior",
   "name": "AgentOps RPI Behavior Canary",
   "description": "Offline public canary for RPI phased runner contracts and deterministic runtime boundaries.",
+  "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.retrieval-brokerage-citations",
   "name": "AgentOps Retrieval Brokerage Citations Canary",
   "description": "Offline public canary for CASS versus repo-local retrieval brokerage, search/lookup/inject citation accounting, context relevance scoring, and session-intelligence citation telemetry.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "retrieval",
   "visibility": "public_canary",
   "tier": "deterministic",

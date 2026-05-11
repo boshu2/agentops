@@ -3,6 +3,7 @@
   "id": "agentops-core.hook-lifecycle-behavior",
   "name": "AgentOps Hook Lifecycle Behavior Canary",
   "description": "Offline public canary for repo-managed hook installation and behavioral hook lifecycle regression tests.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "hook",
   "visibility": "public_canary",
   "tier": "deterministic",

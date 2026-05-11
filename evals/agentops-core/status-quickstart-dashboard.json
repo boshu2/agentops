@@ -3,6 +3,7 @@
   "id": "agentops-core.status-quickstart-dashboard",
   "name": "AgentOps Status Quickstart Dashboard Canary",
   "description": "Offline public canary for status and quickstart operator dashboards: shared/Codex validators, CLI helper behavior, live status JSON latency, quickstart help, state-aware next actions, and Codex prompt contracts.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

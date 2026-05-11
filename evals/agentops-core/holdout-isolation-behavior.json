@@ -3,6 +3,7 @@
   "id": "agentops-core.holdout-isolation-behavior",
   "name": "AgentOps Holdout Isolation Behavior Canary",
   "description": "Offline public canary for private holdout isolation behavior across source and embedded hook artifacts.",
+  "practices": ["llm-eval-harness", "property-based-testing"],
   "domain": "scenario",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.curation-feedback-governance",
   "name": "AgentOps Curation Feedback Governance Canary",
   "description": "Offline public canary for the post-ingestion knowledge quality loop: pool promotion, human gates, curation verification, maturity transitions, citation feedback, metrics reporting, contradiction detection, and deduplication.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

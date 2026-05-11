@@ -3,6 +3,7 @@
   "id": "agentops-core.distribution-install-update",
   "name": "AgentOps Distribution Install and Update Canary",
   "description": "Offline public canary for shell installers, Codex native-plugin installs, release bundle coherence, Windows installer smoke wiring, public install docs, and update skill contracts.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.optimization-dependency-governance",
   "name": "AgentOps Optimization and Dependency Governance Canary",
   "description": "Offline public canary for complexity, performance, and dependency workflows: focused validators, behavioral Go complexity gate coverage, measurable performance baselines, and reversible dependency update contracts.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

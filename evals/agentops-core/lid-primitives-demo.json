@@ -3,6 +3,7 @@
   "id": "agentops-core.lid-primitives-demo",
   "name": "LID Baseline-A/B Demo (skill-on vs skill-off)",
   "description": "Smallest fixture that proves the skill-on/off baseline-A/B wiring produces a measurable per-case delta when run via `ao eval run --baseline-mode=both`. The delta-bearing case asserts that AGENTOPS_HOOKS_DISABLED is unset (skill-on); the tied case asserts a stable invariant that holds regardless of hook state.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

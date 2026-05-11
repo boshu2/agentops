@@ -3,6 +3,7 @@
   "id": "agentops-core.retrieval-quality-gates",
   "name": "AgentOps Retrieval Quality Gates Canary",
   "description": "Offline public canary for real-corpus retrieval quality, flywheel gate thresholds, Dream retrieval determinism, and retrieval quality ratchet wiring.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "retrieval",
   "visibility": "public_canary",
   "tier": "deterministic",

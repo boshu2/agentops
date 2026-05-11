@@ -3,6 +3,7 @@
   "id": "agentops-core.converter-update-runtime-parity",
   "name": "AgentOps Converter Update Runtime Parity Canary",
   "description": "Offline public canary for cross-runtime skill conversion, update/recover/goals validator portability, Codex artifact metadata, and converter/update skill contracts.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

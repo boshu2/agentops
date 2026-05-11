@@ -3,6 +3,7 @@
   "id": "agentops-core.dream-software-factory-operator",
   "name": "AgentOps Dream Software Factory Operator Canary",
   "description": "Offline public canary for Dream/overnight operator behavior, local curator controls, warn-only/fitness/recovery contracts, morning report packets, and the briefing-first software-factory entrypoint.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

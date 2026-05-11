@@ -3,6 +3,7 @@
   "id": "agentops-core.context-comprehension",
   "name": "Context Comprehension — SKILL.md Quality",
   "description": "Structural quality assessment of SKILL.md files using the context_comprehension dimension",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

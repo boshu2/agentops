@@ -3,6 +3,7 @@
   "id": "agentops-core.finding-prevention-governance",
   "name": "AgentOps Finding Prevention Governance Canary",
   "description": "Offline public canary for reusable findings, compiled prevention artifacts, task-validation constraints, constraint governance, and ratchet/finding CLI behavior.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.session-continuity-context",
   "name": "AgentOps Session Continuity Context Canary",
   "description": "Offline public canary for context assembly, context telemetry, handoff bridges, status dashboards, memory/notebook sync, plan manifests, task sync, and session indexing surfaces needed to recover long RPI/evolve runs.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

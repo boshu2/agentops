@@ -3,6 +3,7 @@
   "id": "agentops-core.hook-manifest-runtime-contracts",
   "name": "AgentOps Hook Manifest Runtime Contracts Canary",
   "description": "Offline public canary for hook manifest fidelity: registered command inventory, orphan JSON-emitter audit, stdin/output schema behavior, Codex hook subset, and embedded hook shipping parity.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "hook",
   "visibility": "public_canary",
   "tier": "deterministic",

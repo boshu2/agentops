@@ -3,6 +3,7 @@
   "id": "agentops-core.contract-schema-governance",
   "name": "AgentOps Contract Schema Governance Canary",
   "description": "Offline public canary for contract governance: contract compatibility, orphan detection, MemRL policy schema/profile validation, next-work parity, and docs index cataloguing.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "docs",
   "visibility": "public_canary",
   "tier": "deterministic",

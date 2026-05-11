@@ -3,6 +3,7 @@
   "id": "agentops-core.core-surfaces",
   "name": "AgentOps Core Surfaces Canary",
   "description": "Offline public canary for CLI scenario authoring, hook isolation, skill contracts, and runtime inventory surfaces.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.goals-management-lifecycle",
   "name": "AgentOps Goals Management Lifecycle Canary",
   "description": "Offline public canary for the full ao goals management lifecycle: init, add, steer, history, drift, export, prune, migrate, meta, measure, and validate.",
+  "practices": ["llm-eval-harness", "dora-metrics"],
   "domain": "goals",
   "visibility": "public_canary",
   "tier": "deterministic",

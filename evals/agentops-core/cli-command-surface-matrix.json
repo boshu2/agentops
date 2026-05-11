@@ -3,6 +3,7 @@
   "id": "agentops-core.cli-command-surface-matrix",
   "name": "AgentOps CLI Command Surface Matrix Canary",
   "description": "Offline public canary for the generated ao command surface: every documented command and subcommand help page builds and opens, heading counts are explicit, and representative operator subcommand docs stay present.",
+  "practices": ["llm-eval-harness", "pragmatic-programmer"],
   "domain": "cli",
   "visibility": "public_canary",
   "tier": "deterministic",

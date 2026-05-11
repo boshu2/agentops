@@ -3,6 +3,7 @@
   "id": "agentops-core.eval-runner-engine-control-plane",
   "name": "AgentOps Eval Runner Engine Control Plane Canary",
   "description": "Offline public canary for the eval runner engine: expectation semantics, baseline comparison and promotion, coverage reports, scorecards, live-runtime isolation, schemas, generated CLI docs, and the scripts/eval-agentops.sh wrapper policy.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

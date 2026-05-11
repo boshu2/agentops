@@ -114,6 +114,7 @@ type Suite struct {
 	ID             string           `json:"id"`
 	Name           string           `json:"name"`
 	Description    string           `json:"description,omitempty"`
+	Practices      []string         `json:"practices,omitempty"`
 	Domain         string           `json:"domain"`
 	Visibility     Visibility       `json:"visibility"`
 	Tier           Tier             `json:"tier"`

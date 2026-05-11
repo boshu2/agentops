@@ -3,6 +3,7 @@
   "id": "agentops-core.pre-push-gate-governance",
   "name": "AgentOps Pre-Push Gate Governance Canary",
   "description": "Offline public canary for pre-push gate behavior and eval-gate wiring: BATS fixture coverage, eval-agentops fast gate integration, GIT env isolation, and warning/failure handling.",
+  "practices": ["llm-eval-harness", "cmm-process-maturity"],
   "domain": "process",
   "visibility": "public_canary",
   "tier": "deterministic",

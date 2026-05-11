@@ -3,6 +3,7 @@
   "id": "agentops-core.push-worktree-closeout",
   "name": "AgentOps Push and Worktree Closeout Canary",
   "description": "Offline public canary for session closeout safety: push skill guardrails, canonical worktree disposition behavior, preserved-ref governance, and landing-the-plane requirements.",
+  "practices": ["llm-eval-harness", "cmm-process-maturity"],
   "domain": "process",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "id": "agentops-core.rpi-control-plane-orchestration",
   "name": "AgentOps RPI Control Plane Orchestration Canary",
   "description": "Offline public canary for RPI run status, dashboard/event serving, cleanup, cancel, verify, stream fallback, parallel worktrees, and worktree GC surfaces needed to operate long-running RPI/evolve sessions.",
+  "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",

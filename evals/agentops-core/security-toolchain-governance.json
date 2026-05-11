@@ -3,6 +3,7 @@
   "id": "agentops-core.security-toolchain-governance",
   "name": "AgentOps Security Toolchain Governance Canary",
   "description": "Offline public canary for direct scripts/toolchain-validate.sh gate semantics, security-vs-quality severity separation, security-gate require-tools and parse-error handling, quick-mode skip contracts, and CI soft-gate policy.",
+  "practices": ["llm-eval-harness", "supply-chain-integrity"],
   "domain": "security",
   "visibility": "public_canary",
   "tier": "deterministic",

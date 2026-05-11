@@ -3,6 +3,7 @@
   "id": "agentops-core.release-security-gates",
   "name": "AgentOps Release and Security Gates Canary",
   "description": "Offline public canary for deterministic release-gate, security-gate, redteam, artifact, and workflow wiring surfaces.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

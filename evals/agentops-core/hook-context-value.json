@@ -3,6 +3,7 @@
   "id": "agentops-core.hook-context-value",
   "name": "AgentOps Hook Context Value Canary",
   "description": "Offline public canary for measuring whether context-emitting hooks add targeted value while staying silent or bounded to avoid context bloat.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "hook",
   "visibility": "public_canary",
   "tier": "deterministic",

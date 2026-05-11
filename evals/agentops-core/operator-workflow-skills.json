@@ -3,6 +3,7 @@
   "id": "agentops-core.operator-workflow-skills",
   "name": "AgentOps Operator Workflow Skills Canary",
   "description": "Offline public canary for high-use planning, review, investigation, refactor, optimization, PR, swarm, and provenance skill contracts that were previously only covered indirectly by aggregate skill lint.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

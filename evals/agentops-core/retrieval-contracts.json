@@ -3,6 +3,7 @@
   "id": "agentops-core.retrieval-contracts",
   "name": "AgentOps Retrieval Contracts Canary",
   "description": "Offline public canary for lookup/search/inject CLI docs, retrieval-oriented skill contracts, help smoke, and deterministic retrieval benchmark fixtures.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "retrieval",
   "visibility": "public_canary",
   "tier": "deterministic",
