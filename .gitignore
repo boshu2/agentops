@@ -153,3 +153,6 @@ packs/
 !/.agents/reconcile/wave-0-thesis-snapshot.md
 !/.agents/reconcile/thesis-stability-decision.md
 !/.agents/reconcile/promotion-decision.md
+
+# AgentOps session artifacts
+.agents/
