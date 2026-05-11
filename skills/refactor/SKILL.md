@@ -1,6 +1,7 @@
 ---
 name: refactor
 description: 'Execute safe refactors.'
+practices: [refactoring, legacy-code-seams, design-patterns]
 skill_api_version: 1
 context:
   window: fork

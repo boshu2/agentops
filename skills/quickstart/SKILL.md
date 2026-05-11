@@ -1,6 +1,7 @@
 ---
 name: quickstart
 description: 'Show AgentOps next action.'
+practices: [pragmatic-programmer, agile-manifesto]
 skill_api_version: 1
 context:
   window: inherit

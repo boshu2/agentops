@@ -1,6 +1,7 @@
 ---
 name: product
 description: 'Create or refine PRODUCT.md.'
+practices: [lean-startup, mythical-man-month, ddd-bounded-context]
 skill_api_version: 1
 context:
   window: fork

@@ -1,6 +1,7 @@
 ---
 name: "openai-docs"
 description: 'Use official OpenAI docs.'
+practices: [prompt-as-spec, ai-assisted-dev]
 skill_api_version: 1
 context:
   window: fork

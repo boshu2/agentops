@@ -1,6 +1,7 @@
 ---
 name: perf
 description: 'Profile and optimize hotspots.'
+practices: [dora-metrics, sre, code-complete]
 skill_api_version: 1
 context:
   window: fork
