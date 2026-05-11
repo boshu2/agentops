@@ -21,7 +21,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || exit 2
 
 FLOOR_SECONDS="${PG1_FIVE_MINUTE_FLOOR:-300}"
 T0="$(date +%s)"
@@ -50,11 +50,12 @@ step() {
     local detail
     # Capture full output (no pipe) so SIGPIPE from head doesn't propagate
     # back through pipefail and mark a successful command as failed.
+    local after
     if detail="$(set +o pipefail; eval "$cmd" 2>&1)"; then
-        local after="$(date +%s)"
+        after="$(date +%s)"
         log_step "$label" 0 "$((after - T0))" "$(printf '%s\n' "$detail" | head -n1)"
     else
-        local after="$(date +%s)"
+        after="$(date +%s)"
         log_step "$label" 1 "$((after - T0))" "$(printf '%s\n' "$detail" | head -n1)"
     fi
 }
