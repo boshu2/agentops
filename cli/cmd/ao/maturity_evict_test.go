@@ -1,3 +1,4 @@
+// practices: [cmm-process-maturity, dora-metrics]
 package main
 
 import (

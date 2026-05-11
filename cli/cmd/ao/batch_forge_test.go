@@ -1,3 +1,4 @@
+// practices: [microservices, dora-metrics]
 package main
 
 import (

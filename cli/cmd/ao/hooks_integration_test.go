@@ -1,3 +1,4 @@
+// practices: [design-by-contract, gitops]
 package main
 
 import (

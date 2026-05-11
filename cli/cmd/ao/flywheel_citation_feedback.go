@@ -1,3 +1,4 @@
+// practices: [dora-metrics, wiki-knowledge-surface]
 package main
 
 import (

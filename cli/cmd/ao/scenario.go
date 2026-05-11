@@ -1,3 +1,4 @@
+// practices: [property-based-testing, llm-eval-harness]
 package main
 
 import "github.com/spf13/cobra"

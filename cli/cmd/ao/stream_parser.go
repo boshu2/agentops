@@ -1,3 +1,4 @@
+// practices: [distributed-systems-design, event-sourcing-cqrs]
 package main
 
 import (

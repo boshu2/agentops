@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, pragmatic-programmer]
 package main
 
 import (

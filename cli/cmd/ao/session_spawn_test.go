@@ -1,3 +1,4 @@
+// practices: [event-sourcing-cqrs, distributed-tracing]
 package main
 
 import (
