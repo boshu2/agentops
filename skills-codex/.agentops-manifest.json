@@ -649,19 +649,19 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "bcd1f96a35cd807f88e721c3b67ad00a329b24e51d350b1249385f9a139f5bb8",
+      "source_hash": "688babde56769749b2913081f7206ae1d55c35880d386ea153553b1083741da9",
       "generated_hash": "7fe2526d5e4792cb4b52e59745010fb752547b5163495e59904a13e4535f4024"
     },
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "c201f6b9159e34dd4055f4d537bf1dc68958b12dfc416fe75eb1af3c92a8663d",
+      "source_hash": "0928dd1cb2f153bb276e697643bfdcf8e6ffa18d5232d2450a38b6b050d36c9a",
       "generated_hash": "dd11ff257a092cd3d2d5e93524bd91d6afa9edac1bf9cf5f3d34d2990446961e"
     },
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "a9be7282d50ba618aa3f918634598c5dfa608aa672127822247d5f172bd2884a",
+      "source_hash": "e3132bb215aeb0e1a224fa03d6bdc1a7ad8f060ff222c6ebbec939904079612c",
       "generated_hash": "3a0f986b39ae6260e136425571827c1597862a1064b8b8530462f6825a4f9406"
     },
     {
@@ -679,13 +679,13 @@
     {
       "name": "codex-team",
       "source_skill": "skills/codex-team",
-      "source_hash": "571f631b3fa8e11b513297e14889aee8b1ba54581b1fe8c5c30cd261ef0b857c",
+      "source_hash": "c9852c2de0db5e9187231d408d3c1b5b283d33b0b43ab3b38961b0915024d76d",
       "generated_hash": "d9995c55bcfb49a3438ce940ba41d17708f216efbd3be3393c1bc0e4e05c855a"
     },
     {
       "name": "compile",
       "source_skill": "skills/compile",
-      "source_hash": "3eabd9e53468590b75f21a38cdfe70f75b8a9de97b637d112dc14870e723b38b",
+      "source_hash": "e9e2e87d7e407e94e3e84ade6cd78721d09fd16011227678cdb6c922a0a96317",
       "generated_hash": "5bc073cd943eb79d5029bf9d23879ebd239eb9962cd53127a70c29bf28be5c1a"
     },
     {
@@ -697,7 +697,7 @@
     {
       "name": "converter",
       "source_skill": "skills/converter",
-      "source_hash": "79213236d222276a31ec5cb42e419866989901fb82efbaf374443b04bb2b01fc",
+      "source_hash": "17243408a10738bf3f345a9c3a9ea80f6c39aabafa808818b4f0f458543783ac",
       "generated_hash": "5f0579c95c786fed7cc6e96839e5d2bdd92a8b42fa54aeff27b1a0961ae230d5"
     },
     {
@@ -715,7 +715,7 @@
     {
       "name": "deps",
       "source_skill": "skills/deps",
-      "source_hash": "b48f35db1835f5039f9f1a413a13314e2344f20e9d4689a3bb5ab4b621a67ccd",
+      "source_hash": "f5b17040f097c5bc77017d76fb5f4654547f9e14fdd6e9084d0f68089c8a27fd",
       "generated_hash": "949d68e69e261c25a2fe420580289135e99a800706f1a7b4ef06fcc1807ce29f"
     },
     {
@@ -733,19 +733,19 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "a2a32986e5a93a5e6adf9fc6d0bf9e60110947504428a07c3646b3bfc7818d8c",
+      "source_hash": "fac0ff0c02dbdbe4da0dcdefb74cab08570eaf4d4a2761dd2523f0fc47f70309",
       "generated_hash": "e0e17f12248492ce38b765675d8ca18de91ca47e12a59e4e4bed017b244beea6"
     },
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "58350884beebb9035c9ed5bc0ce50f9ef83c496f744f4c2e85c2becd2b952981",
+      "source_hash": "d8fe78b1197a1548ee03c7146511c0f196041533d7f457b3b1971a2a86162756",
       "generated_hash": "f191a607e3864bfa7d36bbc7d7f5c4aa793ec5587d33bbee5cca8697474a85bc"
     },
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "f7d38113a928717adb365ee2256b3729a80c5dd9fea0e99937fc21a05363febb",
+      "source_hash": "8777a51ba9e370d6e2b811c6c0fe3d1f1363a16df3dd837959a6824343d32b46",
       "generated_hash": "f40282255035d4ce1951f1b680c5ed6dc5f7e7d4b2dcf94d885dd8118303dd13"
     },
     {
@@ -769,7 +769,7 @@
     {
       "name": "grafana-platform-dashboard",
       "source_skill": "skills/grafana-platform-dashboard",
-      "source_hash": "79f828ca33b91a49b9c0db282960a37c16d2ee3192148b996a95c92579864026",
+      "source_hash": "d62787610ab5c2917fcbe8f9202a51467a4645a6a143f9bc97cd09feba143097",
       "generated_hash": "d0322934b111556c3bdaa86755f9d615ed2145f9be880d2219f82d5ba9da4193"
     },
     {
@@ -787,13 +787,13 @@
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
-      "source_hash": "73119e22ea74f7a00856ed647a7fa9ca0ef95b21e7f1130e74efb412e7552b5c",
+      "source_hash": "69ebc622e86bd300c1b95e1addcb21331c70b19f103793123cbc44466b6c0c6b",
       "generated_hash": "0a4b01de799212b1c33f718aba85c1ea0e03a033542a8e81929ddbd52425ab4b"
     },
     {
       "name": "hooks-authoring",
       "source_skill": "skills/hooks-authoring",
-      "source_hash": "485a61b5d638053898dfb93034da1a82449052ffd01ed2c5319c720035352e2e",
+      "source_hash": "59cb5371d2b1f171a4135d50eea19613a5ebf814f69578e21011533dbf7e5c85",
       "generated_hash": "d0af71012da70768cd4ebc38297f3dcf6bc72b3fb6e5af0b202224bc999ca177"
     },
     {

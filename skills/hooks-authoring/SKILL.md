@@ -1,6 +1,7 @@
 ---
 name: hooks-authoring
 description: 'Author AgentOps runtime hooks.'
+practices: [design-by-contract, code-complete, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: fork

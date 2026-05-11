@@ -1,6 +1,7 @@
 ---
 name: codex-team
 description: 'Coordinate multiple Codex agents.'
+practices: [team-topologies, ai-assisted-dev]
 skill_api_version: 1
 context: fork
 metadata:

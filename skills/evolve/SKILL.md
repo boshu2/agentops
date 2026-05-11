@@ -1,6 +1,7 @@
 ---
 name: evolve
 description: 'Run autonomous improvement loops.'
+practices: [lean-startup, dora-metrics, agile-manifesto]
 skill_api_version: 1
 user-invocable: true
 context:

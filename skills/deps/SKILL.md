@@ -1,6 +1,7 @@
 ---
 name: deps
 description: 'Audit dependency risks and updates.'
+practices: [supply-chain-integrity, continuous-delivery, sre]
 skill_api_version: 1
 context:
   window: fork

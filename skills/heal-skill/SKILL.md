@@ -1,6 +1,7 @@
 ---
 name: heal-skill
 description: 'Repair skill hygiene.'
+practices: [refactoring, code-complete]
 skill_api_version: 1
 context:
   window: isolated

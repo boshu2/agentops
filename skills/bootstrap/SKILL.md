@@ -1,6 +1,7 @@
 ---
 name: bootstrap
 description: 'Initialize AgentOps project files.'
+practices: [containers, hermetic-builds, code-complete]
 skill_api_version: 1
 user-invocable: true
 context:

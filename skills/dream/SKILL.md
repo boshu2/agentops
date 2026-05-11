@@ -1,6 +1,7 @@
 ---
 name: dream
 description: 'Run overnight compounding sessions.'
+practices: [lean-startup, wiki-knowledge-surface, sre]
 skill_api_version: 1
 user-invocable: true
 context:

@@ -1,6 +1,7 @@
 ---
 name: doc
 description: 'Generate and validate repo docs.'
+practices: [wiki-knowledge-surface, code-complete, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: fork

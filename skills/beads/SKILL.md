@@ -1,6 +1,7 @@
 ---
 name: beads
 description: 'Track issues with bd/br, triage with bv, and convert plans to beads.'
+practices: [agile-manifesto, pragmatic-programmer]
 skill_api_version: 1
 context:
   window: fork
