@@ -163,6 +163,13 @@ practices produce. The practices themselves do not change.
    tried, why it changed course, what evidence mattered, every session
    starts from zero. The practices that worked for human teams still work,
    but the cost of skipping them is now immediate, not eventual.
+7. **Intent must be linked through phases** — humans can carry intent in
+   memory, side conversations, and organizational context; agents cannot rely
+   on any of that. Discovery intent must become planning packet, council
+   verdict, implementation contract, validation evidence, and handoff without
+   depending on chat history. In AgentOps, the packet is the linked-intent
+   object: it carries the objective, constraints, evidence rules, and
+   provenance anchors from one phase to the next.
 
 ## What does NOT change
 
@@ -192,6 +199,13 @@ Every artifact under `skills/`, `hooks/`, `evals/`, `docs/`, `schemas/`,
 Each artifact is sized to fit one agent context window. Each forward-links
 to others. Each has a forcing function (snapshot hash, property test, schema
 check, eval suite) that fails when reality drifts from intent.
+
+Those four artifact kinds are not isolated. Each belongs to an intent chain:
+source material -> packet -> briefing -> verdict or plan -> execution packet
+-> validation evidence -> handoff or learning. If an artifact changes the
+work, it must make clear what prior artifact it consumed and what next phase,
+artifact, or operator it feeds. Provenance and trace are how the chain remains
+auditable after the session that created it is gone.
 
 When you build something new in this repo, ask: which of those four kinds is
 this? If the answer is "none", the artifact is probably misplaced. If the
@@ -267,6 +281,10 @@ Slug count: 45.
 - `GOALS.md` — measurable fitness goals
 - `AGENTS.md` — operator vault contract for this repo
 - `skills/domain/SKILL.md` — vocabulary corpus citing this practice
+- `skills/provenance/SKILL.md` — artifact lineage and source-chain tracing
+- `docs/domain-practice-packets.md` — product-facing packet contract
+- `docs/context-packet.md` — runtime context packet contract
+- `skills/rpi/references/phase-data-contracts.md` — phase handoff contract
 - `docs/architecture/primitive-chains.md` — the concrete primitive layers
   (Mission / Discovery / Risk / Execution / Validation / Learning / Ratchet
   / Continuity) that compose the practice into chains

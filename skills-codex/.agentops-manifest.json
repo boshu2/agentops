@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "724651119cf8ff5f467aa43a7ea45e303bf357f821b9475907a742adddc906de",
+  "codex_override_catalog_hash": "fc16b7d1f79e358978274fbebcedbbff6ecd4af7215ff3afcae9645a0d0a2f69",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -642,6 +642,18 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
+      },
+      {
+        "name": "curate",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+      },
+      {
+        "name": "validate",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
       }
     ]
   },
@@ -713,6 +725,12 @@
       "generated_hash": "67d8f2dbac5aebfcfaebb0c894d394f266299a13b10dee377eeb5f9469f4a90a"
     },
     {
+      "name": "curate",
+      "source_skill": "skills/curate",
+      "source_hash": "04f69af33ae7ad11610493b773600dbdb43a5a35ea8dd454e9dfbd64726271d5",
+      "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
+    },
+    {
       "name": "deps",
       "source_skill": "skills/deps",
       "source_hash": "f5b17040f097c5bc77017d76fb5f4654547f9e14fdd6e9084d0f68089c8a27fd",
@@ -735,6 +753,12 @@
       "source_skill": "skills/doc",
       "source_hash": "fac0ff0c02dbdbe4da0dcdefb74cab08570eaf4d4a2761dd2523f0fc47f70309",
       "generated_hash": "e0e17f12248492ce38b765675d8ca18de91ca47e12a59e4e4bed017b244beea6"
+    },
+    {
+      "name": "domain",
+      "source_skill": "skills/domain",
+      "source_hash": "274830be4e841d09fbfd0c5db35512cff713c9a9c5431ac83761cae74bdb3964",
+      "generated_hash": "680aa5338e5fdde5363726966312c0c6875b2942db60746b86f757da9dc93f84"
     },
     {
       "name": "dream",
@@ -895,8 +919,8 @@
     {
       "name": "product",
       "source_skill": "skills/product",
-      "source_hash": "0892940c6c4ee3f493254cc017a84d7a67010095178a25d2dbb2fba7b265a2b3",
-      "generated_hash": "10c1491c453fbe5c570cd5d7d6c625626f9e6bb746ba2ce94ea127e4d01b31e8"
+      "source_hash": "96aa0002940f3dbb624243fd5f9d0a299022de35d9fb257a21cf12148c786824",
+      "generated_hash": "3c2a4840bedac960a309c4e9a68e5691a654f1d0e610be4379762abf14aafb45"
     },
     {
       "name": "provenance",
@@ -1031,12 +1055,6 @@
       "generated_hash": "f32617332b22440a8294964e73bdcaa1d274b830b37d699e480d0df4dcb58dc0"
     },
     {
-      "name": "domain",
-      "source_skill": "skills/domain",
-      "source_hash": "274830be4e841d09fbfd0c5db35512cff713c9a9c5431ac83761cae74bdb3964",
-      "generated_hash": "b94e5073a166152dc684fba9269bc76fb342b13a90812b100ff8e34417016b82"
-    },
-    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "4249f1b88e8232ec102c0e44341b18afe7de8015de5697c7162dcec34d6d0779",
@@ -1081,8 +1099,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "4651487ecdc581ef50359a09336d0fc7ccca66cf4fe7767283400d8d2901f925",
+      "source_hash": "ea30bff0b3d1adbe10c353100f10c6339dc290e98e122ef4badeb01b87f9a1b8",
       "generated_hash": "bbf8a97a9de1889103b3368c1592be55690b28047768e5bd46aa2a4fb00ae995"
+    },
+    {
+      "name": "validate",
+      "source_skill": "skills/validate",
+      "source_hash": "2e31ba1afe8c5d558a976d5da8164db4f22554145ad83e3b93329d06d59215d0",
+      "generated_hash": "ea7a8797f288541ed91c3b060c7c0bdb29de9ec7e9ffd5acd40ccf4bf4f53e5d"
     },
     {
       "name": "validation",

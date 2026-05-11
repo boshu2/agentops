@@ -11,21 +11,24 @@ import (
 
 var demoCmd = &cobra.Command{
 	Use:   "demo",
-	Short: "Interactive demo showing AgentOps value in 5 minutes",
-	Long: `Run an interactive demonstration of AgentOps capabilities.
+	Short: "Show the council-first AgentOps 3.0 value path",
+	Long: `Run a demonstration of AgentOps as the engineering operating system
+for agent teams.
 
-This command walks you through the core concepts:
-  1. The Knowledge Flywheel (how sessions compound)
-  2. The Brownian Ratchet (chaos + filter = progress)
-  3. Git-native state (beads for issue tracking)
-  4. Quality gates (/pre-mortem, /vibe)
+This command walks you through the launch path:
+  1. Install AgentOps beside your existing agent runtime
+  2. Make the domain and engineering practices visible
+  3. Assemble bounded context for the task
+  4. Run a mixed-model council and record its verdict
+  5. Track the follow-up work and optionally schedule compounding
 
-No setup required - just run and see the value.
+No hosted control plane required. AgentOps runs on your machine, your repo,
+your subscriptions, and your chosen agent harness.
 
 Examples:
   ao demo              # Interactive walkthrough
-  ao demo --quick      # 2-minute overview
-  ao demo --concepts   # Just explain concepts`,
+  ao demo --quick      # 2-minute council-first overview
+  ao demo --concepts   # Explain the product model`,
 	RunE: runDemo,
 }
 
@@ -41,8 +44,8 @@ var (
 func init() {
 	demoCmd.GroupID = "start"
 	rootCmd.AddCommand(demoCmd)
-	demoCmd.Flags().BoolVar(&demoQuick, "quick", false, "2-minute quick overview")
-	demoCmd.Flags().BoolVar(&demoConcepts, "concepts", false, "Just explain core concepts")
+	demoCmd.Flags().BoolVar(&demoQuick, "quick", false, "2-minute council-first overview")
+	demoCmd.Flags().BoolVar(&demoConcepts, "concepts", false, "Explain product model")
 }
 
 func runDemo(cmd *cobra.Command, args []string) error {
@@ -58,52 +61,54 @@ func runDemo(cmd *cobra.Command, args []string) error {
 func showConcepts() error {
 	fmt.Println(`
 ╔══════════════════════════════════════════════════════════════════╗
-║                    AGENTOPS CORE CONCEPTS                          ║
+║                    AGENTOPS 3.0 PRODUCT MODEL                    ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 ┌─────────────────────────────────────────────────────────────────┐
-│  1. THE KNOWLEDGE FLYWHEEL                                       │
+│  1. ENGINEERING OS FOR AGENT TEAMS                               │
 │                                                                  │
-│     Session N → /post-mortem → Learnings                         │
-│                                    ↓                             │
-│     Session N+1 ← Smart Connections ← Indexed                    │
-│                                    ↓                             │
-│                              COMPOUNDS                           │
+│     Humans already learned how to coordinate work in complex     │
+│     codebases: domain language, specs, tests, review, evidence,  │
+│     release gates, and retros. AgentOps encodes that discipline  │
+│     for agents.                                                  │
 │                                                                  │
-│  Others start fresh. You get smarter every session.             │
+│     You bring the agent and harness. AgentOps supplies the       │
+│     operating layer around the work.                             │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│  2. THE BROWNIAN RATCHET                                         │
+│  2. DOMAIN AND PRACTICE PACKETS                                  │
 │                                                                  │
-│     CHAOS (polecats) → FILTER (/vibe) → RATCHET (merged)        │
+│     A packet tells the agent what domain it is operating in,     │
+│     which engineering practices apply, what evidence matters,    │
+│     and which claims are off limits.                             │
 │                                                                  │
-│  Multiple parallel attempts. Quality gates filter bad ones.      │
-│  Progress locks in permanently. Can't go backward.              │
+│     The packet is small enough to inspect, commit, and reuse.    │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│  3. GIT-NATIVE STATE (Beads)                                     │
+│  3. COUNCIL VERDICTS                                             │
 │                                                                  │
-│     bd create "Fix auth bug"     # Create issue                  │
-│     bd ready                     # What's unblocked?             │
-│     bd close at-1234             # Done                          │
+│     /council --mixed validate this PR                            │
+│       -> Claude and Codex judge the same evidence packet         │
+│       -> consolidated verdict lands in .agents/council/          │
 │                                                                  │
-│  Issues live in git. Survive any tool failure. No vendor lock.  │
+│     From agent opinions to engineering verdicts.                 │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│  4. QUALITY GATES                                                │
+│  4. LOCAL CORPUS AND SCHEDULED COMPOUNDING                       │
 │                                                                  │
-│     /pre-mortem  → Simulate failures BEFORE implementing        │
-│     /vibe        → 8-aspect validation AFTER implementing       │
-│     /crank       → Autonomous execution until epic done         │
+│     .agents/ records attempts, citations, decisions, verdicts,  │
+│     handoffs, and learnings. The daemon can run approved         │
+│     compounding jobs when you want an always-on lane.            │
 │                                                                  │
-│  Prevention > reaction. Quality at every step.                  │
+│     In-the-loop for high-rigor work. On-the-loop for scheduled   │
+│     maintenance and knowledge compounding.                       │
 └─────────────────────────────────────────────────────────────────┘
 
 Next steps:
-  ao demo --quick    # See it in action
+  ao demo --quick    # See the council-first path
   ao quick-start     # Set up your first project`)
 	return nil
 }
@@ -111,7 +116,7 @@ Next steps:
 func quickDemo() error {
 	fmt.Println(`
 ╔══════════════════════════════════════════════════════════════════╗
-║                    AGENTOPS QUICK DEMO (2 min)                     ║
+║                    AGENTOPS QUICK DEMO (2 min)                   ║
 ╚══════════════════════════════════════════════════════════════════╝`)
 
 	steps := []struct {
@@ -120,34 +125,34 @@ func quickDemo() error {
 		explain string
 	}{
 		{
-			"1. Create a task (beads)",
-			"bd create \"Add user authentication\"",
-			"Issue created in git. No external service needed.",
+			"1. Install beside the agent you already use",
+			"curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash",
+			"AgentOps adds skills, hooks, and the ao CLI. Your repo, runtime, and subscriptions stay yours.",
 		},
 		{
-			"2. See what's ready to work on",
-			"bd ready",
-			"Shows unblocked issues. Dependencies are automatic.",
+			"2. Make the operating domain visible",
+			"cp docs/examples/agentops-3-domain-practice-packet.md .agents/packets/checkout-hardening.md",
+			"The domain/practice packet makes language, engineering practices, evidence rules, and non-claims reviewable.",
 		},
 		{
-			"3. Start autonomous execution",
-			"/crank",
-			"Claude works until the epic is DONE. No babysitting.",
+			"3. Assemble bounded task context",
+			"ao context assemble --task \"validate checkout retry plan\" --phase pre-mortem --output-file .agents/rpi/briefing-current.md",
+			"The agent works from the packet and repo evidence, not from a vague prompt.",
 		},
 		{
-			"4. Extract learnings",
-			"/post-mortem",
-			"Captures what worked. Feeds the flywheel.",
+			"4. Ask for an engineering verdict",
+			"/council --mixed validate .agents/rpi/briefing-current.md",
+			"Claude and Codex judge the same evidence and produce one consolidated verdict.",
 		},
 		{
-			"5. Next session searches prior learnings",
-			"mcp__smart-connections-work__lookup",
-			"Your knowledge compounds. Others start fresh.",
+			"5. Track the work the verdict creates",
+			"bd create \"Add checkout retry jitter\" --description \"From .agents/council/<run-id>/verdict.md\" --json",
+			"The decision turns into tracked work that cites the verdict and survives agent/session boundaries.",
 		},
 		{
-			"6. Schedule a recurring job (always-on lane)",
+			"6. Optional: move trusted loops to the daemon",
 			"ao daemon run & ao schedule add --file ./examples/schedules/dream-nightly.yaml",
-			"`ao daemon run` fires registered schedules on cron. Nightly dreams without babysitting.",
+			"Approved compounding can run on a schedule while humans keep authority over what mutates code.",
 		},
 	}
 
@@ -164,33 +169,35 @@ func quickDemo() error {
 	fmt.Println(`
 ═══════════════════════════════════════════════════════════════════
 
-THE DIFFERENCE:
+THE PRODUCT:
 
-  ┌────────────────────┬────────────────────┐
-  │   COMPETITORS      │     AGENTOPS              │
-  ├────────────────────┼────────────────────┤
-  │ Start fresh        │ Knowledge compounds │
-  │ Need infrastructure│ Pure git           │
-  │ React to failures  │ Prevent failures   │
-  │ 0-1 quality gates  │ 4-layer ratchets   │
-  └────────────────────┴────────────────────┘
+  The engineering operating system for agent teams.
+  A disciplined engineering layer for agentic software development.
 
-Next: ol quick-start`)
+WHAT YOU CAN SEE:
+
+  .agents/packets/checkout-hardening.md       # shared domain and practice context
+  .agents/rpi/briefing-current.md             # bounded task context
+  .agents/council/<run-id>/verdict.md         # mixed-model engineering verdict
+  .beads/issues.jsonl                         # tracked follow-up work
+  examples/schedules/dream-nightly.yaml       # optional always-on lane
+
+Next: ao quick-start`)
 	return nil
 }
 
 func interactiveDemo() error {
 	fmt.Println(`
 ╔══════════════════════════════════════════════════════════════════╗
-║                AGENTOPS INTERACTIVE DEMO                           ║
-║           "Problem in. Value out. Intelligence compounds."        ║
+║                AGENTOPS INTERACTIVE DEMO                         ║
+║           Engineering discipline for agent teams                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 This demo will:
-  ✓ Create a sample .agents/ structure
-  ✓ Show the phased RPI workflow (Discovery → Implementation → Validation)
-  ✓ Demonstrate the knowledge flywheel
-  ✓ Explain quality gates
+  ✓ Create a sample AgentOps 3.0 packet workspace
+  ✓ Show how bounded context becomes a council verdict
+  ✓ Record the artifacts a human can inspect
+  ✓ Show where scheduled compounding fits
 
 Press Enter to continue...`)
 
@@ -202,116 +209,116 @@ Press Enter to continue...`)
 	demoDir := filepath.Join(homeDir, ".agentops-demo")
 
 	dirs := []string{
-		filepath.Join(demoDir, ".agents/research"),
-		filepath.Join(demoDir, ".agents/learnings"),
-		filepath.Join(demoDir, ".agents/patterns"),
-		filepath.Join(demoDir, ".agents/specs"),
+		filepath.Join(demoDir, ".agents/packets"),
+		filepath.Join(demoDir, ".agents/rpi"),
+		filepath.Join(demoDir, ".agents/council/demo-run"),
+		filepath.Join(demoDir, ".agents/schedules"),
 	}
 
-	fmt.Println("\n━━━ STEP 1: Creating knowledge structure ━━━")
+	fmt.Println("\n━━━ STEP 1: Creating the operating workspace ━━━")
 	for _, dir := range dirs {
 		//nolint:errcheck // demo code, errors shown implicitly by missing output
 		os.MkdirAll(dir, 0750) // #nosec G104
 		fmt.Printf("  ✓ Created %s\n", dir)
 	}
 
-	// Create sample learning
-	learningPath := filepath.Join(demoDir, ".agents/learnings/demo-learning.md")
-	learningContent := `# Learning: Context Compounds
+	packetPath := filepath.Join(demoDir, ".agents/packets/checkout-hardening.md")
+	packetContent := `# Domain and Practice Packet: Checkout Hardening
 
 **Date:** ` + time.Now().Format("2006-01-02") + `
 **Source:** AgentOps Demo
-**Tier:** 1 (Learning)
 
-## Insight
+## Domain
 
-Sessions that capture learnings via /post-mortem compound over time.
-Smart Connections indexes these automatically.
-Future sessions search past learnings before starting work.
+Checkout retry behavior must protect customer conversion, payment correctness,
+and operational visibility.
 
-## Evidence
+## Engineering Practices
 
-- 6 epics completed with 163+ commits
-- Knowledge flywheel reduced rework by ~30%
-- Pre-mortem prevented 6 critical issues
+- Domain-driven language for retry, idempotency, and payment boundaries
+- Test-first validation for backoff and duplicate-submit behavior
+- Council review before shipping risky checkout changes
 
-## Application
+## Evidence Required
 
-Always run /post-mortem after significant work.
+- Relevant code paths and tests
+- Risk list for duplicate charge and stuck checkout states
+- Consolidated council verdict
 `
 	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(learningPath, []byte(learningContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created sample learning: %s\n", learningPath)
+	os.WriteFile(packetPath, []byte(packetContent), 0600) // #nosec G104
+	fmt.Printf("  ✓ Created domain/practice packet: %s\n", packetPath)
 
-	// Create sample pattern
-	patternPath := filepath.Join(demoDir, ".agents/patterns/demo-pattern.md")
-	patternContent := `# Pattern: Wave-Based Parallel Execution
+	briefingPath := filepath.Join(demoDir, ".agents/rpi/briefing-current.md")
+	briefingContent := `# Context Briefing: Validate Checkout Retry Plan
 
-**Tier:** 2 (Pattern)
-**Citations:** 4
+## Task
 
-## Problem
+Validate the implementation plan before code changes begin.
 
-Sequential execution of issues is slow.
-But pure parallel causes merge conflicts.
+## Loaded Packet
 
-## Solution
+` + packetPath + `
 
-Group issues into waves by dependency:
-- Wave 1: No dependencies (parallel)
-- Wave 2: Depends on Wave 1 (parallel within wave)
-- ...
+## Expected Gate
 
-## Usage
+Run a mixed-model council and require a consolidated PASS/WARN/BLOCK verdict.
 
-` + "```bash" + `
-bd ready --parent=<epic>    # See what's unblocked
-gt sling <issue1> <issue2>  # Parallel dispatch
-` + "```" + `
 `
 	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(patternPath, []byte(patternContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created sample pattern: %s\n", patternPath)
+	os.WriteFile(briefingPath, []byte(briefingContent), 0600) // #nosec G104
+	fmt.Printf("  ✓ Created context briefing: %s\n", briefingPath)
 
-	fmt.Println("\n━━━ STEP 2: The RPI Workflow ━━━")
+	verdictPath := filepath.Join(demoDir, ".agents/council/demo-run/verdict.md")
+	verdictContent := `# Council Verdict: Checkout Retry Plan
+
+**Status:** WARN
+**Judges:** Claude Code, Codex CLI
+
+## Consensus
+
+Proceed after adding jitter bounds and duplicate-submit tests.
+
+## Required Follow-up
+
+- Add retry jitter lower and upper bounds
+- Add idempotency regression tests
+- Capture post-merge learning for future checkout work
+`
+	//nolint:errcheck // demo code, errors shown implicitly by missing output
+	os.WriteFile(verdictPath, []byte(verdictContent), 0600) // #nosec G104
+	fmt.Printf("  ✓ Created council verdict: %s\n", verdictPath)
+
+	schedulePath := filepath.Join(demoDir, ".agents/schedules/nightly-dream.yaml")
+	scheduleContent := `version: 1
+schedules:
+  - name: checkout-dream-nightly
+    cron: "0 2 * * *"
+    command: "ao overnight run --goal 'find stale checkout learnings'"
+`
+	//nolint:errcheck // demo code, errors shown implicitly by missing output
+	os.WriteFile(schedulePath, []byte(scheduleContent), 0600) // #nosec G104
+	fmt.Printf("  ✓ Created optional schedule: %s\n", schedulePath)
+
+	fmt.Println("\n━━━ STEP 2: The Product Path ━━━")
 	fmt.Print(`
-  RESEARCH → PLAN → IMPLEMENT → VALIDATE
-      │                            │
-      └──── Knowledge Flywheel ────┘
+  INSTALL -> PACKET -> CONTEXT -> COUNCIL -> WORK -> OPTIONAL SCHEDULE
 
-  Each phase has:
-  • Fresh context (prevents error compounding)
-  • Quality gates (filters bad work)
-  • Ratchet points (locks progress)
+  You can inspect every handoff:
+  - the domain and practice packet
+  - the assembled task briefing
+  - the mixed-model verdict
+  - the tracked issue that follows
+  - the scheduled compounding lane when you choose it
 `)
 
-	fmt.Println("\n━━━ STEP 3: The Skills ━━━")
+	fmt.Println("\n━━━ STEP 3: The Commands ━━━")
 	fmt.Print(`
-  /research    Deep codebase exploration
-  /plan        Decompose into issues (beads)
-  /pre-mortem  Simulate failures before implementing
-  /implement   Execute single issue
-  /crank       Autonomous epic execution
-  /vibe        8-aspect code validation
-  /post-mortem Validate + extract learnings
-`)
-
-	fmt.Println("\n━━━ STEP 4: The Moat ━━━")
-	fmt.Print(`
-  ┌─────────────────────────────────────────────────────────────┐
-  │                    KNOWLEDGE FLYWHEEL                        │
-  │                                                              │
-  │   Session 1 → learnings → indexed                            │
-  │                              ↓                               │
-  │   Session 2 → searches → finds prior learnings → better work │
-  │                              ↓                               │
-  │   Session 3 → even more context → COMPOUNDS                  │
-  │                                                              │
-  │   Formula: Value = Quality^time × Knowledge^sessions         │
-  └─────────────────────────────────────────────────────────────┘
-
-  Others are O(1) per session.
-  AgentOps is O(n) where n = historical sessions.
+  ao quick-start
+  ao context assemble --task "validate checkout retry plan" --phase pre-mortem
+  /council --mixed validate .agents/rpi/briefing-current.md
+  bd create "Add checkout retry jitter"
+  ao daemon run & ao schedule add --file .agents/schedules/nightly-dream.yaml
 `)
 
 	fmt.Printf("\n✓ Demo files created in: %s\n", demoDir)
@@ -322,13 +329,13 @@ NEXT STEPS:
 
   1. Try in your project:
      $ cd your-project
-     $ ol quick-start
+     $ ao quick-start
 
   2. Or explore the demo files:
      $ ls ` + demoDir + `/.agents/
 
   3. Learn more:
-     $ ol demo --concepts
+     $ ao demo --concepts
 
 ═══════════════════════════════════════════════════════════════════
 `)

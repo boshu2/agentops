@@ -672,11 +672,11 @@ func TestCobraDemoConceptsCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ao demo --concepts failed: %v", err)
 	}
-	if !strings.Contains(out, "CORE CONCEPTS") {
-		t.Errorf("expected 'CORE CONCEPTS' in output, got: %s", out)
+	if !strings.Contains(out, "AGENTOPS 3.0 PRODUCT MODEL") {
+		t.Errorf("expected 'AGENTOPS 3.0 PRODUCT MODEL' in output, got: %s", out)
 	}
-	if !strings.Contains(out, "KNOWLEDGE FLYWHEEL") {
-		t.Errorf("expected 'KNOWLEDGE FLYWHEEL' in output, got: %s", out)
+	if !strings.Contains(out, "COUNCIL VERDICTS") {
+		t.Errorf("expected 'COUNCIL VERDICTS' in output, got: %s", out)
 	}
 }
 
@@ -2335,11 +2335,11 @@ func TestCobraShowConcepts(t *testing.T) {
 
 	out := buf.String()
 
-	if !strings.Contains(out, "KNOWLEDGE FLYWHEEL") {
-		t.Errorf("expected KNOWLEDGE FLYWHEEL, got: %s", out[:200])
+	if !strings.Contains(out, "ENGINEERING OS FOR AGENT TEAMS") {
+		t.Errorf("expected ENGINEERING OS FOR AGENT TEAMS, got: %s", out[:200])
 	}
-	if !strings.Contains(out, "BROWNIAN RATCHET") {
-		t.Errorf("expected BROWNIAN RATCHET in output")
+	if !strings.Contains(out, "COUNCIL VERDICTS") {
+		t.Errorf("expected COUNCIL VERDICTS in output")
 	}
 }
 

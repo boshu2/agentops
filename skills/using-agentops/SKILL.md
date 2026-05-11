@@ -105,6 +105,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/bootstrap` | One-command full AgentOps setup — fills gaps only |
 | `/research` | Deep codebase exploration |
 | `/council` | Multi-model consensus review + finding auto-extraction |
+| `/validate` | Canonical PASS/WARN/FAIL verdict over an artifact, plan, code change, PR, or gate |
 | `/vibe` | Code validation (classification + suppression + domain checklists) |
 | `/rpi` | Full RPI lifecycle orchestrator (`/discovery` → `/crank` → `/validation`) |
 | `/implement` | Execute single issue |
@@ -112,13 +113,13 @@ These are the skills every user needs first. Everything else is available when y
 | `/status` | Single-screen dashboard of current work and suggested next action |
 | `/goals` | Maintain GOALS.yaml fitness specification |
 | `/push` | Atomic test-commit-push workflow |
-| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ/100) |
 
 ## Advanced Skills (when you need them)
 
 | Skill | Purpose |
 |-------|---------|
-| `/compile` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| `/compile`, `/flywheel` | Active knowledge intelligence and flywheel health — Mine → Grow → Defrag cycle |
+| `/curate` | Canonical miner role for transcripts, `.agents/`, bd, git, skill diffs, and rare wiki entries |
 | `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
 | `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |

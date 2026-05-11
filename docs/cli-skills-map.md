@@ -143,7 +143,7 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 |---------|----------|-------|
 | `ao completion` | User utility | Shell completion generation |
 | `ao config` | User utility | Config management |
-| `ao demo` | User utility | Interactive demonstration |
+| `ao demo` | User utility | Council-first AgentOps 3.0 demonstration |
 | `ao doctor` | CI/install | Called by install.sh and release-smoke-test.sh |
 | `ao eval` | CI/test | Public AgentOps canary suites and baseline comparisons |
 | `ao version` | User utility | Version query |

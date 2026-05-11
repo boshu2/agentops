@@ -34,6 +34,7 @@ var initCmd = &cobra.Command{
 
 This creates:
   .agents/research/       - Research findings
+  .agents/packets/        - Domain/practice packets and task context inputs
   .agents/products/       - Product specs
   .agents/retro/          - Retrospectives
   .agents/learnings/      - Extracted learnings

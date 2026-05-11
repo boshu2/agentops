@@ -10,6 +10,12 @@
 
 Profiles are **documentation groupings**, not executable configs. They organize AgentOps skills by domain so you can quickly find which skills are relevant to your work.
 
+For AgentOps 3.0 workflow recipes such as `product-council`,
+`engineering-team`, and `nightly-factory`, see
+[Activation Profiles](../activation-profiles.md). Activation profiles are
+product recipes with explicit inputs, commands, and expected artifacts; this
+page remains the role taxonomy.
+
 To use a profile:
 
 1. **Find your domain** in the table below

@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-05-07
+last_reviewed: 2026-05-10
 ---
 
 # PRODUCT.md
@@ -8,10 +8,16 @@ last_reviewed: 2026-05-07
 
 **AgentOps automates the discipline of building a wiki for your agents.** The wiki is markdown in `.agents/` next to your code; the agents that use it also produce it. The compounded corpus is the moat.
 
+## Product Identity
+
+AgentOps is the engineering operating system for agent teams: a disciplined engineering layer for agentic software development.
+
+It gives agents the shared practices humans use to build complex software together: domain context, standards, tests, reviews, issues, handoffs, verdicts, wikis, operating loops, and release discipline.
+
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
+It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The deeper product layer is simple: software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and schedules. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
 
 One factory, three operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription), with **hooks and gates** wiring policy into the runtime.
 
@@ -38,6 +44,20 @@ AgentOps is bridge infrastructure. Your `.agents/` directory is plain markdown i
 
 Open source forever. Built so you own the asset, not the tool.
 
+## 3.0 Product Posture
+
+AgentOps 3.0 narrows the release wedge without retreating from the software-factory thesis. The primary user is the agent-heavy maintainer with recurring codebase context debt: someone already using coding agents on real repos, already feeling session amnesia, repeated mistakes, low trust in agent output, and scattered validation evidence.
+
+The 3.0 promise is:
+
+> Agent-heavy maintainers can use AgentOps to keep books, compile the right context, validate agent work, curate durable learning, and start the next session smarter without giving the corpus to a hosted control plane.
+
+The hero capability is council inside an agreed engineering domain, not generic multi-model chat. AgentOps lets the operator define the domain through `PRODUCT.md`, `GOALS.md`, standards, skills, issues, test expectations, and evidence rules; then Claude, Codex, and other agents judge product, design, and implementation decisions against that shared operating context. The model can focus on the work because AgentOps carries the process and context boundaries around it.
+
+Bring your agent and bring your harness. If it can consume plugins or skills, AgentOps plugs in. The daemon, Loop, `ao`, hooks, skills, and corpus all stay in the product for operators who want to automate the pipeline, run scheduled reviews, or build factories. The sharpened posture is that day-one value must not require an unlimited-token cloud factory or a fully configured overnight automation lane. Scheduled compounding is a second-stage accelerator after the user has seen the first evidence trail work.
+
+3.0 public claims are evidence-gated. The release train tracks the PMF scenario in `soc-m6v5.8`; launch claims that cite PMF or productivity evidence must point to exported artifacts under `docs/releases/` or `evals/workbench/results/`, not only local `.agents/` notes.
+
 ## Market Convergence
 
 The April 2026 Claude Code source analysis confirmed that Anthropic's internal tooling follows the same architecture AgentOps implements:
@@ -45,7 +65,7 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session injection | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao inject`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 75 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 77 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
 | **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `ao overnight` + `cli/cmd/ao/dream_executor.go` + `.github/workflows/nightly.yml` dream-cycle proof job | Shipped. Bounded private overnight compounding lane runs the harvest → forge → close-loop → defrag chain unattended, off the API and against any model. |
 | **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Shipped at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (iterates worst-failing gate until pass; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. Independent 3-judge audit confirmed parity on rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed. | Shipped at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
@@ -54,20 +74,48 @@ Read the convergence table the right way: AgentOps and every harness like it get
 
 ## Target Personas
 
-### Persona 1: The Solo Developer
-- **Goal:** Ship features faster while maintaining code quality — without manual code review or multi-person coordination overhead.
-- **Pain point:** Each agent session starts from scratch. There's no memory of what worked, what failed, or what the codebase expects. Validation is manual or skipped entirely.
-- **Gap exposure:** Judgment validation (no review before commit) and durable learning (session amnesia).
+### Persona 1: The Agent-Heavy Maintainer
+- **Goal:** Keep a real codebase moving with coding agents while preserving context, evidence, and release judgment across sessions.
+- **Pain point:** Each agent session starts cold. The maintainer knows there were prior attempts, warnings, decisions, and fixes, but they are scattered across chats, commits, notes, and memory.
+- **Gap exposure:** Bookkeeping, context compilation, judgment validation, and durable learning. This is the 3.0 PMF wedge.
 
-### Persona 2: The Agent Orchestrator
-- **Goal:** Run multiple agents in parallel on a shared codebase without conflicts, with visibility into what each agent is doing and what the system learned.
-- **Pain point:** Parallel agents create cascading blockers — file conflicts, violated constraints, repeated mistakes. No coordination layer exists between sessions. Manual ticket grooming and post-mortems burn cycles that agents should handle.
-- **Gap exposure:** Loop closure (completed work doesn't inform next work) and durable learning (agents repeat each other's mistakes).
+### Persona 2: The Quality-First Maintainer
+- **Goal:** Ship fewer but higher-confidence releases while using agents for more of the work.
+- **Pain point:** Agents can produce coherent-looking changes that miss edge cases, violate repo conventions, or leave no reviewable proof trail.
+- **Gap exposure:** Judgment validation, claim governance, release readiness, and evidence export.
 
-### Persona 3: The Quality-First Maintainer
-- **Goal:** Ship fewer but higher-confidence releases. Prevent regressions. Maintain institutional knowledge across team and agent turnover.
-- **Pain point:** Design decisions get lost in commit messages. Agents repeat mistakes because knowledge isn't captured. Test coverage stalls because writing tests is slower than writing features.
-- **Gap exposure:** All failure modes — bookkeeping (evidence disappears), judgment validation (regressions slip through), durable learning (institutional knowledge lost), and loop closure (completed work doesn't feed back into constraints).
+### Persona 3: The Agent Orchestrator
+- **Goal:** Run multiple agents or repeated agent loops on a shared codebase without losing coordination or repeating mistakes.
+- **Pain point:** Parallel and repeated agent work creates file conflicts, stale assumptions, duplicated investigations, and context drift.
+- **Gap exposure:** Worktree isolation, planner/implementer/validator separation, loop closure, and scheduled compounding.
+
+### Anti-Personas
+
+- **One-off prompt users** who only need a single answer and do not care whether the repo remembers it.
+- **Cloud-control-plane buyers** who want a hosted autonomous factory more than local corpus ownership.
+- **Teams that will not inspect artifacts** and only want an agent to say "done."
+- **New agent users with no repeated workflow yet**; they may benefit later, but the first 3.0 wedge is users who already feel agent-session context debt.
+
+## Core Value Propositions
+
+1. **Repo-local memory for agent work.** Attempts, decisions, citations, verdicts, handoffs, findings, retros, and run packets become artifacts the next session can use.
+2. **Context starts warm.** AgentOps compiles prior work into phase-scoped context instead of asking every agent to rediscover the repo from scratch.
+3. **Judgment becomes a gate.** `/pre-mortem`, `/vibe`, and `/council` add fresh-context review before risky plans and code ship.
+4. **Engineering practice becomes executable.** Pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, and product-management practices become reusable skills, standards, gates, and issue flows the operator can jump into, automate, or review.
+5. **Learning compounds under operator control.** `/forge`, `/harvest`, `/dream`, `ao flywheel`, and schedules turn completed work into reusable constraints without requiring an AgentOps cloud.
+6. **The corpus stays portable.** The same local knowledge base can outlive a model, chat session, harness, or vendor.
+
+## 10-Star Experience
+
+For the 3.0 target audience, a 10-star experience is not "configure every automation lane." It is the first hour proving the factory is worth trusting.
+
+1. **Install fits their runtime.** They can use Claude Code, Codex, OpenCode, or another skills-compatible agent without changing how they work.
+2. **The domain packet is visible.** They can see the product, goals, standards, issue context, and test expectations the agents will operate inside.
+3. **Council shows the taste layer.** Claude and Codex judge the same product/design/engineering decision against the same domain context and produce a verdict artifact.
+4. **A first real repo task leaves evidence.** `/rpi "small goal"`, `/vibe recent`, or `/council validate this PR` produces a verdict and artifact trail the maintainer can inspect.
+5. **The next session starts smarter.** The prior evidence, decision, or learning is retrievable and changes what the next agent sees.
+6. **The user owns the substrate.** Artifacts are local, grep-able, diff-able, and removable. No AgentOps-hosted control plane is required.
+7. **Automation is introduced after trust.** Daemon/schedule/Dream is framed as a second-stage compounding lane, not a prerequisite for first value.
 
 ## What the Product Actually Is
 
@@ -82,6 +130,12 @@ The same substrate, reached three ways:
 - **In-harness plugin** — skills + hooks for Claude Code, Codex, Cursor, OpenCode. Context loads automatically inside the editor; the agent never has to ask. Install via `claude plugin install`, `install-codex.sh`, or the skills.sh package.
 - **`ao` CLI** — the terminal and CI control plane. `ao inject`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, with no required AgentOps cloud control plane.
 - **Scheduling daemon** — off-API, off-vendor. `ao schedule` + `ao daemon` run dream, evolve, compile, defrag, forge, and feedback-drain on whatever cadence you set, against whichever local subscription you already pay for. The always-on lane.
+
+### Domain and practice layer
+
+Before the four layers run, AgentOps helps the operator define the domain the agents operate inside. This is the pragmatic-engineering, DDD, TDD, and BDD-shaped part of the product: product docs define intent, goals define fitness, issues define current work, standards define style and constraints, tests or Gherkin-like scenarios define expected behavior, and skills encode the process.
+
+The point is to take process burden off the model. The LLM still researches, plans, implements, reviews, and explains, but AgentOps curates the context in and out of each phase so the model does not have to invent the development methodology while doing the work.
 
 ### Four layers
 
@@ -108,7 +162,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao inject` — decay-ranked retrieval with token budgeting
 - `ao context assemble` — phase-scoped context packets
 - `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 75 skills — reusable context packages across Claude Code, Codex, and OpenCode
+- 77 skills — reusable context packages across Claude Code, Codex, and OpenCode
 - 12 lifecycle hooks — context loads automatically without agent initiative
 - `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
 
@@ -116,11 +170,11 @@ The same model used in the README: bookkeeping records the work, the context com
 
 **Problem:** Agents ship confident garbage. No review, no second opinion, no gate between "agent thinks this is good" and "this goes into production."
 
-**What the compiler emits:** Multi-model consensus validates plans before build and code before commit. Gates block, not advise. Independent judges debate and return one auditable verdict.
+**What the compiler emits:** Multi-model consensus validates plans before build and code before commit. Gates block, not advise. Independent judges debate against the same product/domain context and return one auditable verdict.
 
 - `/pre-mortem` — validate plans before implementation
 - `/vibe` — validate code after implementation
-- `/council` — multi-model adversarial review (Claude + Codex judges)
+- `/council` — multi-model adversarial review (Claude + Codex judges) over agreed product, goals, standards, and issue context
 - 63 eval suites + 12-task workbench — deterministic context quality testing
 - Baseline A/B — skill-on vs skill-off delta measurement
 
@@ -167,6 +221,7 @@ The bet is **sovereignty, not features.** Every harness — ours included — ge
 1. **Cross-runtime corpus.** The corpus stays in `.agents/` in your repo. It runs the same way on Claude Code, Codex CLI, Cursor, and OpenCode. When the next frontier model wins next quarter — or when you switch teams or platforms — the corpus comes with you. Vendor-managed memory follows the chat session. AgentOps' corpus follows the team.
 2. **Local sovereignty.** The scheduling daemon runs off-API, off-vendor, against your local subscription. Dream cycles, evolve loops, compile/defrag don't burn your vendor quota and don't ship your codebase to a cloud you don't control.
 3. **Operator workflow encoding.** RPI, planner/implementer/validator separation, fresh-context worker waves, council validation — these are operating practices for multi-agent work, encoded as skills and hooks. Vendors will ship managed agents; they won't ship your operator workflow.
+4. **Curated engineering practice.** The operator's preferred practices — pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, release gates — become composable context units. You decide when to run them interactively, automate them, or inspect the output.
 
 The model gets smarter. The corpus stays yours. See the [Lineage](#lineage) section for how this position was arrived at.
 
@@ -185,13 +240,13 @@ Full profile: [docs/assurance-profile.md](docs/assurance-profile.md).
 
 ## Evidence
 
-As of 2026-05-04:
+As of 2026-05-10:
 
 **Traction:**
 
-- GitHub repo: 328 stars, 34 forks, 8 open issues, last pushed 2026-05-04
+- GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 75 shared skills, 75 checked-in Codex artifacts, and 35 Codex overrides
+- Distribution/runtime reach: 77 shared skills, 77 checked-in Codex artifacts, and 35 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
 
 **Measured operational proof:**
 
@@ -199,6 +254,7 @@ As of 2026-05-04:
 - Competitive freshness gate: comparison docs maintained within the 45-day target
 - External validation: independent 3-judge audit (council, 2026-05-06) confirmed parity with Anthropic Managed Agents on rubric authoring, separate-context grading, and iterate-until-pass
 - Empirical workbench A/B (2026-05-06, 12 cases): Δ=+0.0000 — both `skill-on` and `skill-off` legs scored 12/12. Honest read: at workbench v1 difficulty (off-by-one bugs, simple validators, basic SQLi) AgentOps's hook layer is non-differentiating because the tasks don't require it. Substrate v2 (realistic agent task difficulty) is roadmap. Source: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`
+- 3.0 PMF scenario evidence is planned but not yet claimed. `soc-m6v5.8` owns the scenario spec, control path, exported evidence, and claim-ledger posture before launch copy uses PMF/productivity claims.
 
 **Maintainer corpus stats** (this repo's `.agents/`, derived by `scripts/corpus-stats.sh` — re-runnable, no fabricated numbers):
 
@@ -220,6 +276,10 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 
 | Gap | Impact | Status |
 |-----|--------|--------|
+| First-value path is still too diffuse | The current product surface can ask users to understand the whole factory before they feel the first benefit. This most affects the 3.0 PMF wedge: maintainers who need context continuity and trust quickly. | in-progress |
+| 3.0 PMF scenario evidence is pending | The release thesis is clear, but the exact scenario with repo/task/control/measures has not yet produced exported proof. Public PMF/productivity claims stay gated on `soc-m6v5.8`. | open |
+| Canonical `/validate` and `/curate` consolidation is not release-ready | Additive skills exist in this worktree, but skill-count, registry, and Codex artifact gates are expected to fail until the release train resolves ship/defer and artifact sync. | in-progress |
+| Public launch claims need exported proof | Local `.agents/` artifacts are useful operating evidence but are not enough for public claims. 3.0 needs tracked evidence under `docs/releases/` or `evals/workbench/results/` when launch copy cites PMF proof. | planned |
 | Dream autonomy is still maturing | The private local Dream lane runs through `/dream` and `ao overnight`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish. | in-progress |
 | Pattern-to-skill pipeline (synthesis layer) | Detection layer ships in v1 (`.agents/plans/2026-04-23-pattern-to-skill-pipeline-detection.md`); synthesis (LLM-authored draft skill bodies, tier heuristics, on-disk drafts in `.agents/skill-drafts/`) is deferred to v2 after a design council found 8+ blockers. The "self-programming compounding" framing is aspirational, not currently producing on-disk output. | deferred |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |

@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 75 AgentOps skills (66 user-facing + 9 internal).
+Complete reference for all 77 AgentOps skills (68 user-facing + 9 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -471,7 +471,7 @@ Capture lessons from accepted/rejected PR outcomes.
 Reinstall all AgentOps skills globally from the latest source.
 
 ```bash
-/update                      # Reinstall all 75 skills
+/update                      # Reinstall all 77 skills
 ```
 
 ---

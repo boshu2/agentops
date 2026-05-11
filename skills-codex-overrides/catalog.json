@@ -652,6 +652,18 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
+    },
+    {
+      "name": "curate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+    },
+    {
+      "name": "validate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
     }
   ]
 }

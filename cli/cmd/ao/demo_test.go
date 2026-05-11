@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"strings"
 	"testing"
 )
 
 // withoutDemoDelay zeroes demoStepDelay for the duration of a test so the
-// 500 ms × 5-step pacing sleep in quickDemo does not inflate test runtime.
+// 500 ms × 6-step pacing sleep in quickDemo does not inflate test runtime.
 // The 500 ms is purely for human pacing in a live terminal; nothing in
 // quickDemo depends on it for correctness.
 func withoutDemoDelay(t *testing.T) {
@@ -13,6 +17,30 @@ func withoutDemoDelay(t *testing.T) {
 	prev := demoStepDelay
 	demoStepDelay = 0
 	t.Cleanup(func() { demoStepDelay = prev })
+}
+
+func captureDemoStdout(t *testing.T, fn func() error) (string, error) {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe stdout: %v", err)
+	}
+	os.Stdout = w
+
+	var buf bytes.Buffer
+	copyDone := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&buf, r)
+		close(copyDone)
+	}()
+
+	runErr := fn()
+	_ = w.Close()
+	os.Stdout = old
+	<-copyDone
+	_ = r.Close()
+	return buf.String(), runErr
 }
 
 func TestDemo_CommandExists(t *testing.T) {
@@ -37,17 +65,46 @@ func TestDemo_HasFlags(t *testing.T) {
 }
 
 func TestDemo_ShowConcepts(t *testing.T) {
-	err := showConcepts()
+	out, err := captureDemoStdout(t, showConcepts)
 	if err != nil {
 		t.Fatalf("showConcepts returned error: %v", err)
+	}
+	for _, want := range []string{
+		"AGENTOPS 3.0 PRODUCT MODEL",
+		"ENGINEERING OS FOR AGENT TEAMS",
+		"DOMAIN AND PRACTICE PACKETS",
+		"COUNCIL VERDICTS",
+		"From agent opinions to engineering verdicts",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("showConcepts output missing %q:\n%s", want, out)
+		}
 	}
 }
 
 func TestDemo_QuickDemo(t *testing.T) {
 	withoutDemoDelay(t)
-	err := quickDemo()
+	out, err := captureDemoStdout(t, quickDemo)
 	if err != nil {
 		t.Fatalf("quickDemo returned error: %v", err)
+	}
+	for _, want := range []string{
+		"AGENTOPS QUICK DEMO",
+		"engineering operating system for agent teams",
+		"domain/practice packet",
+		"ao context assemble",
+		"/council --mixed",
+		".agents/council/<run-id>/verdict.md",
+		"ao quick-start",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("quickDemo output missing %q:\n%s", want, out)
+		}
+	}
+	for _, stale := range []string{"ol quick-start", "unreliable agents", "superpowers"} {
+		if strings.Contains(out, stale) {
+			t.Fatalf("quickDemo output contains stale phrase %q:\n%s", stale, out)
+		}
 	}
 }
 

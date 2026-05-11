@@ -221,13 +221,14 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (66)
+### User-Facing Skills (68)
 
 **Judgment:**
 
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
+| **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
 | **vibe** | judgment | Complexity analysis + council — code quality review |
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
@@ -270,6 +271,7 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **compile** | knowledge | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **domain** | knowledge | Shared vocabulary for human-AI software building (tracer-bullet shape; loaded JIT when terms like vertical slice, tracer bullet, primitive need a canonical definition) |
+| **curate** | knowledge | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
 | **harvest** | knowledge | Cross-rig knowledge consolidation — sweep, dedup, promote |
 | **knowledge-activation** | knowledge | Outer-loop corpus operationalization — beliefs, playbooks, briefings, and gap surfaces |
 | **llm-wiki** | knowledge | External-knowledge wiki proposal — raw sources to compiled wiki |
@@ -349,13 +351,16 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | Skill | Dependencies | Type |
 |-------|--------------|------|
 | **compile** | - | - (standalone, ao CLI optional) |
+| **curate** | - | - (standalone knowledge miner) |
 | **harvest** | - | - (standalone, ao CLI required) |
 | **knowledge-activation** | compile, harvest, flywheel | optional, optional, optional |
 | **council** | - | - (core primitive) |
+| **validate** | - | - (standalone validator role) |
 | **vibe** | council, complexity, standards | required, optional (graceful skip), optional |
 | **pre-mortem** | council | required |
 | **post-mortem** | council, beads | required, optional |
 | beads | - | - |
+| domain | - | - |
 | bug-hunt | beads | optional |
 | complexity | - | - |
 | **codex-team** | - | - (standalone, fallback to swarm) |

@@ -18,7 +18,7 @@
 
 ### `ao demo`
 
-Run an interactive demonstration of AgentOps capabilities.
+Run a demonstration of AgentOps as the engineering operating system
 
 ```
 ao demo [flags]
@@ -27,9 +27,9 @@ ao demo [flags]
 **Flags:**
 
 ```
-      --concepts   Just explain core concepts
+      --concepts   Explain product model
   -h, --help       help for demo
-      --quick      2-minute quick overview
+      --quick      2-minute council-first overview
 ```
 
 ---

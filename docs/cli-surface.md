@@ -48,7 +48,7 @@
 | `ao daemon status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao dedup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao defrag` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
+| `ao demo` | `manual-only` | `allowlisted` | Interactive council-first demonstration requires a TTY. |
 | `ao doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval baseline` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval baseline-audit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

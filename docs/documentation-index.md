@@ -8,6 +8,11 @@
 
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Project overview and quick start
 - [Getting Started](getting-started/index.md) — Install + first command landing page
+- [PRACTICE.md](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) — Engineering doctrine and practice lineage for agent-context-limited artifacts
+- [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md) — Public gist/launch copy for the council-first 3.0 story
+- [AgentOps 3.0 First-Value Path](first-value-path.md) — First-session path from install to domain packet, council verdict, tracked work, and optional daemon lane
+- [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
+- [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
@@ -94,6 +99,7 @@ Bridge / framing docs:
 - [Scale Without Swarms](scale-without-swarms.md) — Single-agent scaling patterns
 - [Curation Pipeline](curation-pipeline.md) — Six-stage knowledge curation lifecycle
 - [Context Packet](context-packet.md) — Agent context assembly specification
+- [Domain and Practice Packets](domain-practice-packets.md) — Product-facing contract for the shared engineering domain agents judge work against
 - [Strategic Direction](strategic-direction.md) — Product strategy and roadmap
 - [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points
 
@@ -163,6 +169,7 @@ Bridge / framing docs:
 
 ## Profiles
 
+- [Activation Profiles](activation-profiles.md) — 3.0 first-value workflow recipes with explicit inputs, commands, artifacts, and fallbacks
 - [Profiles Overview](profiles/README.md) — Role-based profile organization
 - [Profile Comparison](profiles/COMPARISON.md) — Workspace profiles vs 12-Factor examples
 - [Meta-Patterns](profiles/META_PATTERNS.md) — Patterns extracted from role-based taxonomy
@@ -204,6 +211,9 @@ Bridge / framing docs:
 - [Skill Template](templates/skill.template.md) — Template for new skills
 - [Command Template](templates/command.template.md) — Template for new commands
 - [Kernel Template](templates/kernel.template.md) — Template for new project kernels
+- [AgentOps 3.0 Domain/Practice Packet](examples/agentops-3-domain-practice-packet.md) — Tracked launch-demo packet example
+- [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-demo-storyboard.md) — Canonical council-first launch demo script
+- [AgentOps 3.0 Council Verdict Example](examples/agentops-3-council-verdict-example.md) — Public sample verdict artifact for the explainer kit
 - [Dark Factory Schedule Example](templates/dark-factory-schedule.yaml.example) — Disabled agentopsd schedule template for reviewed Dream and local factory pilots
 - [Product Template](PRODUCT-TEMPLATE.md) — Template for writing a PRODUCT.md
 

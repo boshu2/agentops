@@ -1,6 +1,6 @@
 ---
 name: domain
-description: 'Canonical vocabulary for human-AI software work.'
+description: 'Shared agent-work vocabulary.'
 ---
 # Domain Skill — Ubiquitous Language for Human-AI Software Building
 
