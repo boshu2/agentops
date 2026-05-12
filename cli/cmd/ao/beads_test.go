@@ -822,3 +822,35 @@ func TestEmitLintHuman_AllCleanProducesHeaderOnly(t *testing.T) {
 		t.Fatalf("all-clean output should have no STALE markers: %s", s)
 	}
 }
+
+// ---------- runBeadsVerify / runBeadsLint graceful-degradation paths ----------
+// Cycle 77 / soc-wxh5.1.1 — fourth climb-back. Both functions are cobra
+// Run handlers. Their graceful-degradation path (bd not on PATH) is
+// testable by stubbing the bdAvailable var. Sibling pattern:
+// TestVerifyBead_DegradesWhenBDAbsent (this file, line 292).
+
+func TestRunBeadsVerify_DegradesGracefullyWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	// runBeadsVerify reads args[0] for the beadID; cmd is unused on
+	// the degradation path.
+	err := runBeadsVerify(nil, []string{"soc-graceful-test"})
+	if err != nil {
+		t.Fatalf("runBeadsVerify should return nil on graceful degradation, got %v", err)
+	}
+}
+
+func TestRunBeadsLint_DegradesGracefullyWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	// runBeadsLint takes no positional args; cmd is unused on the
+	// degradation path.
+	err := runBeadsLint(nil, []string{})
+	if err != nil {
+		t.Fatalf("runBeadsLint should return nil on graceful degradation, got %v", err)
+	}
+}
