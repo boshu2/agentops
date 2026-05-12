@@ -144,6 +144,7 @@ Skills that use standards:
 
 ## Reference Documents
 
+- [references/architecture-terms.md](references/architecture-terms.md)
 - [references/common-standards.md](references/common-standards.md)
 - [references/behavioral-discipline.md](references/behavioral-discipline.md)
 - [references/examples-troubleshooting-template.md](references/examples-troubleshooting-template.md)
