@@ -1571,7 +1571,7 @@ jobs:
       - name: Run bats tests
         run: |
           echo "=== Running bats tests ==="
-          bats tests/hooks/*.bats tests/scripts/*.bats
+          bats --print-output-on-failure tests/hooks/*.bats tests/scripts/*.bats
           echo "✅ Bats tests passed"
 
       - name: Run orphan hooks audit
