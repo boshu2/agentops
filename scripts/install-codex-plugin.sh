@@ -274,7 +274,7 @@ count_codex_hook_handlers() {
   jq -r '[.hooks | to_entries[]? | .value[]? | .hooks[]?] | length' "$path"
 }
 
-merge_codex_hooks() {
+merge_codex_hook_manifest() {
   local existing_file="$1"
   local new_file="$2"
   local tmp_file
@@ -523,7 +523,7 @@ if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
     if jq -e '.hooks | type == "array"' "$CODEX_HOOKS_FILE" >/dev/null 2>&1; then
       warn "Existing ~/.codex/hooks.json uses the legacy flat-array shape; replacing it with the current Codex event-map schema."
     fi
-    merge_codex_hooks "$CODEX_HOOKS_FILE" "$RENDERED_HOOKS_FILE"
+    merge_codex_hook_manifest "$CODEX_HOOKS_FILE" "$RENDERED_HOOKS_FILE"
   else
     mkdir -p "$(dirname "$CODEX_HOOKS_FILE")"
     jq '.' "$RENDERED_HOOKS_FILE" > "$CODEX_HOOKS_FILE"

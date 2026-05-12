@@ -215,7 +215,7 @@ EOF
   fi
 }
 
-test_installs_codex_hooks_with_lib_layout() {
+test_installs_codex_native_hooks_with_lib_layout() {
   local fixture="$TMP_DIR/hooks-layout"
   local codex_home="$TMP_DIR/hooks-home"
   local plugin_root="$codex_home/plugins/cache/agentops-marketplace/agentops/local"
@@ -339,7 +339,7 @@ EOF
 
 echo "== test-codex-plugin-install =="
 test_installs_plugin_cache_and_config
-test_installs_codex_hooks_with_lib_layout
+test_installs_codex_native_hooks_with_lib_layout
 test_archives_agentops_codex_home_skills_without_touching_custom_skills
 test_archives_home_agents_agentops_skills_without_touching_custom_skills
 

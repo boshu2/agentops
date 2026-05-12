@@ -199,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Codex native hooks** — AgentOps hooks now install natively into Codex CLI v0.115.0+ via `~/.codex/hooks.json`; 8 hooks wired (session-start, inject, flywheel-close, prompt-nudge, quality-signals, go-test-precommit, commit-review, ratchet-advance); installer enables `codex_hooks` feature and upgrades from hookless fallback to native hook runtime
+- **Codex native hooks** — AgentOps hooks now install natively into Codex CLI v0.115.0+ via `~/.codex/hooks.json`; 8 hooks wired (session-start, inject, flywheel-close, prompt-nudge, quality-signals, go-test-precommit, commit-review, ratchet-advance); installer enables the `hooks` feature flag, migrates deprecated `codex_hooks` configs, and upgrades from hookless fallback to native hook runtime
 - **Knowledge compiler skill** — renamed athena → `/compile` with Karpathy-style incremental compilation, pluggable LLM backend (`AGENTOPS_COMPILE_RUNTIME=ollama|claude`), interlinked markdown wiki output at `.agents/compiled/`
 - **App struct dependency injection** — `App` struct carries `ExecCommand`, `LookPath`, `RandReader`, `Stdout`, `Stderr` seams; gc bridge, events, executor, context relevance, tracker health, and stream modules accept injected dependencies instead of mutable package-level vars
 - **Test shuffle in CI** — `-shuffle=on` added to `validate.yml` and `Makefile` test targets, exposing and fixing 6 ordering-dependent tests (cobra flag leaks, maturity var leaks, env var leaks)
