@@ -17,6 +17,7 @@ jobs:
       eval: ${{ steps.filter.outputs.eval }}
       codex: ${{ steps.filter.outputs.codex }}
       shell: ${{ steps.filter.outputs.shell }}
+      bats: ${{ steps.filter.outputs.bats }}
       ci: ${{ steps.filter.outputs.ci }}
       contracts: ${{ steps.filter.outputs.contracts }}
       learning: ${{ steps.filter.outputs.learning }}
@@ -57,6 +58,8 @@ jobs:
             shell:
               - '**/*.sh'
               - 'scripts/**'
+            bats:
+              - '**/*.bats'
             ci:
               - '.github/**'
             contracts:
@@ -1570,7 +1573,7 @@ jobs:
 
   bats-tests:
     needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
