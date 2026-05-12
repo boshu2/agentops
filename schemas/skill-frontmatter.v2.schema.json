@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "agentops:skill-frontmatter.v2",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "practices": {"type": "array", "items": {"type": "string"}},
+    "hexagonal_role": {
+      "type": "string",
+      "enum": ["domain", "driving-adapter", "driven-adapter", "supporting", "generic"]
+    },
+    "consumes": {
+      "type": "array",
+      "items": {"type": "string", "description": "artifact-kind or skill slug"}
+    },
+    "produces": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "context_rel": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "with"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["shared-kernel", "customer-of", "supplier-to", "conformist-to", "acl-wraps", "separate-ways", "partnership"]
+          },
+          "with": {"type": "string", "description": "skill slug"}
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
