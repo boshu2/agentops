@@ -1194,6 +1194,21 @@ else
     fail "missing file: scripts/check-contracts-structural-floor.sh"
 fi
 
+# --- 22m. Docs learning references (soc-w6vh.5.1, cycle 62) ---
+# docs/plans/ + docs/learnings/ MUST NOT reference absent
+# .agents/learnings/YYYY-MM-DD-*.md paths without a docs/learnings/<basename>.md
+# mirror or an explicit (local-only)/(documentary)/(template) annotation.
+if [[ -f scripts/check-docs-learning-references.sh ]]; then
+    if docs_learning_output="$(bash scripts/check-docs-learning-references.sh 2>&1)"; then
+        pass "docs learning references"
+    else
+        fail "docs learning references"
+        indent_output "$docs_learning_output"
+    fi
+else
+    fail "missing file: scripts/check-docs-learning-references.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
