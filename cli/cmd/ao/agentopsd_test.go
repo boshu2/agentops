@@ -1313,3 +1313,39 @@ func TestAgentopsdScheduleFileFlag_OverridesAutoDetect(t *testing.T) {
 		t.Fatalf("schedules[0].Name = %q, want %q (flag must win over auto-detect)", schedules[0].Name, "beta")
 	}
 }
+
+// TestSanitizeDaemonSkillInvokeArtifactName covers the pure-function helper
+// at agentopsd.go:552. Cycle 74 / soc-wxh5.1.1 — first concrete climb-back
+// after cycle 60 lowered the cmd/ao coverage floor 76→75. The function
+// must (1) return "job" for empty / whitespace-only input, (2) replace
+// each filesystem-hostile character (/, \, space, :, .) with a dash,
+// (3) leave already-safe input alone. Sibling pattern: TestAtomicWriteJSON
+// (table-driven, single-concern, no external collaborators).
+func TestSanitizeDaemonSkillInvokeArtifactName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"empty returns job sentinel", "", "job"},
+		{"whitespace returns job sentinel", "   ", "job"},
+		{"tabs and newlines also collapse to job", "\t\n ", "job"},
+		{"slash replaced with dash", "a/b", "a-b"},
+		{"backslash replaced with dash", "a\\b", "a-b"},
+		{"space replaced with dash", "a b", "a-b"},
+		{"colon replaced with dash", "a:b", "a-b"},
+		{"dot replaced with dash", "a.b", "a-b"},
+		{"all hostile chars collapse to dashes", "x/y\\z w:v.t", "x-y-z-w-v-t"},
+		{"already-safe identifier unchanged", "skill-invoke-2026-05-12", "skill-invoke-2026-05-12"},
+		{"leading and trailing whitespace trimmed before replace", "  weird path/job  ", "weird-path-job"},
+		{"underscore preserved (not in replacer set)", "skill_invoke", "skill_invoke"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := sanitizeDaemonSkillInvokeArtifactName(tc.input)
+			if got != tc.want {
+				t.Fatalf("sanitizeDaemonSkillInvokeArtifactName(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
