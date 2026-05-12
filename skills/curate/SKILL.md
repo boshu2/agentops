@@ -1,7 +1,11 @@
 ---
 name: curate
-description: 'Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.'
-practices: [wiki-knowledge-surface, lean-startup]
+description: Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or
+  rare wiki entries.
+practices:
+- wiki-knowledge-surface
+- lean-startup
+hexagonal_role: supporting
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,12 +13,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: knowledge
   dependencies: []
-output_contract: ".agents/research/*.md (synthesis), bd notes, skill diffs (rare); never code mutations"
+output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare);
+  never code mutations
 ---
 
 # /curate — Canonical Miner Skill

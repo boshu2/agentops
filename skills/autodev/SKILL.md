@@ -1,7 +1,11 @@
 ---
 name: autodev
-description: 'Manage bounded autonomous dev loops.'
-practices: [cmm-process-maturity, ai-assisted-dev, dora-metrics]
+description: Manage bounded autonomous dev loops.
+practices:
+- cmm-process-maturity
+- ai-assisted-dev
+- dora-metrics
+hexagonal_role: supporting
 skill_api_version: 1
 user-invocable: true
 context:
@@ -12,9 +16,10 @@ context:
 metadata:
   tier: execution
   dependencies:
-    - evolve
-    - rpi
-output_contract: "validated PROGRAM.md/AUTODEV.md contract or clear evolve/RPI execution handoff"
+  - evolve
+  - rpi
+output_contract: validated PROGRAM.md/AUTODEV.md contract or clear evolve/RPI execution
+  handoff
 ---
 # /autodev
 

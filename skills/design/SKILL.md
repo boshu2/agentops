@@ -1,7 +1,11 @@
 ---
 name: design
-description: 'Validate product fit before discovery.'
-practices: [lean-startup, ddd-bounded-context, mythical-man-month]
+description: Validate product fit before discovery.
+practices:
+- lean-startup
+- ddd-bounded-context
+- mythical-man-month
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,13 +13,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: judgment
   dependencies:
-    - council
-    - shared
+  - council
+  - shared
 output_contract: skills/council/schemas/verdict.json
 ---
 # /design -- Product Validation Gate

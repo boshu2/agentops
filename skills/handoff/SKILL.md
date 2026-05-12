@@ -1,7 +1,11 @@
 ---
 name: handoff
-description: 'Write compact session handoffs.'
-practices: [adr, wiki-knowledge-surface, code-complete]
+description: Write compact session handoffs.
+practices:
+- adr
+- wiki-knowledge-surface
+- code-complete
+hexagonal_role: supporting
 skill_api_version: 1
 context:
   window: inherit
@@ -11,7 +15,7 @@ context:
 metadata:
   tier: session
   dependencies: []
-output_contract: ".agents/handoffs/YYYY-MM-DD-*.md"
+output_contract: .agents/handoffs/YYYY-MM-DD-*.md
 ---
 # Handoff Skill
 

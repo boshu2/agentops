@@ -1,7 +1,10 @@
 ---
 name: knowledge-activation
-description: 'Activate mature .agents knowledge.'
-practices: [wiki-knowledge-surface, pragmatic-programmer]
+description: Activate mature .agents knowledge.
+practices:
+- wiki-knowledge-surface
+- pragmatic-programmer
+hexagonal_role: supporting
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,15 +12,16 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: topic
 metadata:
   tier: knowledge
   dependencies:
-    - compile
-    - harvest
-    - flywheel
-output_contract: ".agents/beliefs.md, .agents/playbooks/*.md, .agents/briefings/*.md"
+  - compile
+  - harvest
+  - flywheel
+output_contract: .agents/beliefs.md, .agents/playbooks/*.md, .agents/briefings/*.md
 ---
 # Knowledge Activation
 

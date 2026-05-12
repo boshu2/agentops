@@ -1,20 +1,25 @@
 ---
 name: release
-description: 'Run release validation.'
-practices: [continuous-delivery, gitops, supply-chain-integrity]
+description: Run release validation.
+practices:
+- continuous-delivery
+- gitops
+- supply-chain-integrity
+hexagonal_role: supporting
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 user-invocable: true
 metadata:
   tier: product
   dependencies: []
-output_contract: "CHANGELOG.md update, git tag"
+output_contract: CHANGELOG.md update, git tag
 ---
 # Release Skill
 

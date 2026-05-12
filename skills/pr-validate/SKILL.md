@@ -1,24 +1,29 @@
 ---
 name: pr-validate
-description: 'Validate PR scope and quality.'
-practices: [continuous-integration, code-complete, pragmatic-programmer]
+description: Validate PR scope and quality.
+practices:
+- continuous-integration
+- code-complete
+- pragmatic-programmer
+hexagonal_role: driving-adapter
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 license: MIT
 compatibility: Requires git, gh CLI
 metadata:
   author: AI Platform Team
-  version: "1.0.0"
+  version: 1.0.0
   tier: contribute
   internal: false
 allowed-tools: Read, Bash, Grep, Glob
-output_contract: "stdout: PR validation report"
+output_contract: 'stdout: PR validation report'
 ---
 # PR Validate Skill
 

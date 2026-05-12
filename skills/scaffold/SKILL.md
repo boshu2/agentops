@@ -1,20 +1,25 @@
 ---
 name: scaffold
-description: 'Create project, component, or boilerplate scaffolds.'
-practices: [pragmatic-programmer, design-patterns, hexagonal-architecture]
+description: Create project, component, or boilerplate scaffolds.
+practices:
+- pragmatic-programmer
+- design-patterns
+- hexagonal-architecture
+hexagonal_role: supporting
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards  # loads language-specific conventions
-output_contract: "project files and directory structure"
+  - standards
+output_contract: project files and directory structure
 ---
 # Scaffold Skill
 

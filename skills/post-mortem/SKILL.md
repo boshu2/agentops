@@ -1,19 +1,24 @@
 ---
 name: post-mortem
-description: 'Review completed work and learn.'
-practices: [dora-metrics, sre, lean-startup]
+description: Review completed work and learn.
+practices:
+- dora-metrics
+- sre
+- lean-startup
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: judgment
   dependencies:
-    - council  # multi-model judgment
-    - beads    # optional - for issue status
+  - council
+  - beads
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 output_contract: skills/council/schemas/verdict.json
 ---

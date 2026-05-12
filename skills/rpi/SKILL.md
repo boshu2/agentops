@@ -1,7 +1,12 @@
 ---
 name: rpi
-description: 'Run discovery, crank, validation.'
-practices: [continuous-delivery, dora-metrics, agile-manifesto, pragmatic-programmer]
+description: Run discovery, crank, validation.
+practices:
+- continuous-delivery
+- dora-metrics
+- agile-manifesto
+- pragmatic-programmer
+hexagonal_role: supporting
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,17 +14,18 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: meta
   dependencies:
-    - discovery   # phase 1 orchestrator
-    - crank       # phase 2 orchestrator
-    - validation  # phase 3 orchestrator
-    - ratchet     # checkpoint tracking
+  - discovery
+  - crank
+  - validation
+  - ratchet
   internal: false
-output_contract: ".agents/rpi/YYYY-MM-DD-*.md"
+output_contract: .agents/rpi/YYYY-MM-DD-*.md
 ---
 
 # /rpi - Full Lifecycle Orchestrator

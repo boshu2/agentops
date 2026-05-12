@@ -1,18 +1,23 @@
 ---
 name: pre-mortem
-description: 'Stress-test plans before work.'
-practices: [adr, mythical-man-month, design-by-contract]
+description: Stress-test plans before work.
+practices:
+- adr
+- mythical-man-month
+- design-by-contract
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: judgment
   dependencies:
-    - council  # multi-model judgment
+  - council
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 output_contract: skills/council/schemas/verdict.json
 ---

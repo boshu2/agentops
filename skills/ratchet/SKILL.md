@@ -1,7 +1,11 @@
 ---
 name: ratchet
-description: 'Record Brownian Ratchet gates.'
-practices: [dora-metrics, refactoring, continuous-integration]
+description: Record Brownian Ratchet gates.
+practices:
+- dora-metrics
+- refactoring
+- continuous-integration
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: false
 context:
@@ -9,13 +13,16 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: "stdout: gate check result"
+output_contract: 'stdout: gate check result'
 ---
 # Ratchet Skill
 

@@ -1,7 +1,10 @@
 ---
 name: quickstart
-description: 'Show AgentOps next action.'
-practices: [pragmatic-programmer, agile-manifesto]
+description: Show AgentOps next action.
+practices:
+- pragmatic-programmer
+- agile-manifesto
+hexagonal_role: driving-adapter
 skill_api_version: 1
 context:
   window: inherit
@@ -11,7 +14,7 @@ context:
 metadata:
   tier: session
   dependencies: []
-output_contract: "stdout: onboarding walkthrough"
+output_contract: 'stdout: onboarding walkthrough'
 ---
 # /quickstart
 

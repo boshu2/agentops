@@ -1,21 +1,27 @@
 ---
 name: vibe
-description: 'Validate code readiness.'
-practices: [ai-assisted-dev, llm-eval-harness, code-complete, pragmatic-programmer]
+description: Validate code readiness.
+practices:
+- ai-assisted-dev
+- llm-eval-harness
+- code-complete
+- pragmatic-programmer
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: judgment
   dependencies:
-    - council    # multi-model judgment
-    - complexity # complexity analysis
-    - bug-hunt   # proactive code audit
-    - standards  # loaded for language-specific context
+  - council
+  - complexity
+  - bug-hunt
+  - standards
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 output_contract: skills/council/schemas/verdict.json
 ---

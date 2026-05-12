@@ -1,19 +1,24 @@
 ---
 name: council
-description: 'Run multi-judge consensus.'
-practices: [llm-eval-harness, ai-assisted-dev, design-by-contract]
+description: Run multi-judge consensus.
+practices:
+- llm-eval-harness
+- ai-assisted-dev
+- design-by-contract
+hexagonal_role: domain
 skill_api_version: 1
 context:
   window: isolated
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: judgment
   dependencies:
-    - standards   # optional - loaded for code validation context
+  - standards
   replaces: judge
 output_contract: skills/council/schemas/verdict.json
 ---

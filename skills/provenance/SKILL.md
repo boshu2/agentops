@@ -1,7 +1,11 @@
 ---
 name: provenance
-description: 'Trace artifact provenance.'
-practices: [supply-chain-integrity, adr, hermetic-builds]
+description: Trace artifact provenance.
+practices:
+- supply-chain-integrity
+- adr
+- hermetic-builds
+hexagonal_role: driven-adapter
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 context:
@@ -9,13 +13,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: "stdout: lineage report"
+output_contract: 'stdout: lineage report'
 ---
 # Provenance Skill
 

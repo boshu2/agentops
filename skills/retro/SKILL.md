@@ -1,14 +1,18 @@
 ---
 name: retro
-description: 'Capture a session learning.'
-practices: [sre, lean-startup, dora-metrics]
+description: Capture a session learning.
+practices:
+- sre
+- lean-startup
+- dora-metrics
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: knowledge
   dependencies: []
 context:
   window: fork
-output_contract: ".agents/learnings/YYYY-MM-DD-*.md"
+output_contract: .agents/learnings/YYYY-MM-DD-*.md
 ---
 
 # Retro Skill

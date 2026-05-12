@@ -1,7 +1,10 @@
 ---
 name: forge
-description: 'Mine transcripts into learnings.'
-practices: [wiki-knowledge-surface, lean-startup]
+description: Mine transcripts into learnings.
+practices:
+- wiki-knowledge-surface
+- lean-startup
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: false
 context:
@@ -9,13 +12,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: ".agents/learnings/*.md, .agents/patterns/*.md"
+output_contract: .agents/learnings/*.md, .agents/patterns/*.md
 ---
 # Forge Skill
 

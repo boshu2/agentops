@@ -1,7 +1,11 @@
 ---
 name: discovery
-description: 'Create execution packets.'
-practices: [adr, lean-startup, mythical-man-month]
+description: Create execution packets.
+practices:
+- adr
+- lean-startup
+- mythical-man-month
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,18 +13,19 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: meta
   dependencies:
-    - brainstorm  # optional - clarify WHAT before HOW
-    - design      # optional - product validation when PRODUCT.md exists
-    - research    # required - codebase exploration
-    - plan        # required - epic decomposition
-    - pre-mortem  # required - validation gate
-    - shared      # optional - CLI fallback table
-output_contract: ".agents/plans/YYYY-MM-DD-*.md, beads, epic-id"
+  - brainstorm
+  - design
+  - research
+  - plan
+  - pre-mortem
+  - shared
+output_contract: .agents/plans/YYYY-MM-DD-*.md, beads, epic-id
 ---
 # /discovery — Full Discovery Phase Orchestrator
 

@@ -1,21 +1,26 @@
 ---
 name: swarm
-description: 'Dispatch parallel agents.'
-practices: [microservices, team-topologies, mythical-man-month]
+description: Dispatch parallel agents.
+practices:
+- microservices
+- team-topologies
+- mythical-man-month
+hexagonal_role: supporting
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: orchestration
   dependencies:
-    - implement # required - executes `/implement <bead-id>` per task
-    - vibe      # optional - integration with validation
-output_contract: ".agents/swarm/results/*.json"
+  - implement
+  - vibe
+output_contract: .agents/swarm/results/*.json
 ---
 # Swarm Skill
 

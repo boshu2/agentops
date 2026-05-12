@@ -1,7 +1,11 @@
 ---
 name: flywheel
-description: 'Check knowledge flywheel health.'
-practices: [wiki-knowledge-surface, lean-startup, dora-metrics]
+description: Check knowledge flywheel health.
+practices:
+- wiki-knowledge-surface
+- lean-startup
+- dora-metrics
+hexagonal_role: domain
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku
@@ -10,13 +14,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: "stdout: flywheel health report (JSON when --json)"
+output_contract: 'stdout: flywheel health report (JSON when --json)'
 ---
 # Flywheel Skill
 Monitor the knowledge flywheel health.

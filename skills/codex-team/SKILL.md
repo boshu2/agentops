@@ -1,12 +1,15 @@
 ---
 name: codex-team
-description: 'Coordinate multiple Codex agents.'
-practices: [team-topologies, ai-assisted-dev]
+description: Coordinate multiple Codex agents.
+practices:
+- team-topologies
+- ai-assisted-dev
+hexagonal_role: supporting
 skill_api_version: 1
 context: fork
 metadata:
   tier: cross-vendor
-output_contract: ".agents/swarm/results/*.json"
+output_contract: .agents/swarm/results/*.json
 ---
 # Codex Team
 

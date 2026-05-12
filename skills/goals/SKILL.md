@@ -1,19 +1,24 @@
 ---
 name: goals
-description: 'Maintain AgentOps goals.'
-practices: [dora-metrics, lean-startup, agile-manifesto]
+description: Maintain AgentOps goals.
+practices:
+- dora-metrics
+- lean-startup
+- agile-manifesto
+hexagonal_role: domain
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: product
   dependencies: []
-output_contract: "GOALS.md"
+output_contract: GOALS.md
 ---
 # /goals — Fitness Goal Maintenance
 

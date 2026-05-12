@@ -1,7 +1,11 @@
 ---
 name: validation
-description: 'Run post-implementation validation.'
-practices: [llm-eval-harness, dora-metrics, sre]
+description: Run post-implementation validation.
+practices:
+- llm-eval-harness
+- dora-metrics
+- sre
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,16 +13,17 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: meta
   dependencies:
-    - vibe        # required - code quality review
-    - post-mortem # required - retrospective analysis
-    - retro       # optional - quick learning capture
-    - forge       # optional - transcript mining
-    - shared      # optional - CLI fallback table
+  - vibe
+  - post-mortem
+  - retro
+  - forge
+  - shared
 output_contract: skills/council/schemas/verdict.json
 ---
 # /validation — Full Validation Phase Orchestrator

@@ -1,22 +1,26 @@
 ---
 name: plan
-description: 'Decompose goals into issue plans.'
-practices: [adr, agile-manifesto, pragmatic-programmer]
+description: Decompose goals into issue plans.
+practices:
+- adr
+- agile-manifesto
+- pragmatic-programmer
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: execution
   dependencies:
-    - research   # optional - checks for prior research
-    - beads      # optional - creates issues via bd CLI (fallback: plain markdown plan)
-    - pre-mortem # optional - suggested before crank
-    - crank      # optional - suggested for execution
-    - implement  # optional - suggested for single issue
+  - research
+  - beads
+  - pre-mortem
+  - crank
+  - implement
 context:
   window: fork
   intent:
     mode: task
   intel_scope: topic
-output_contract: ".agents/plans/YYYY-MM-DD-*.md, beads (via bd create)"
+output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via bd create)
 ---
 # Plan Skill
 

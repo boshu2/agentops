@@ -1,21 +1,26 @@
 ---
 name: implement
-description: 'Implement one tracked issue.'
-practices: [tdd, refactoring, code-complete]
+description: Implement one tracked issue.
+practices:
+- tdd
+- refactoring
+- code-complete
+hexagonal_role: driving-adapter
 skill_api_version: 1
 metadata:
   tier: execution
   dependencies:
-    - beads     # optional - for issue tracking via bd CLI
-    - standards # loads language-specific standards
+  - beads
+  - standards
 context:
   window: isolated
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
-output_contract: "code changes, test results, bead status update, behavioral spec (optional)"
+output_contract: code changes, test results, bead status update, behavioral spec (optional)
 ---
 # Implement Skill
 

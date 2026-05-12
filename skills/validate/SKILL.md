@@ -1,7 +1,10 @@
 ---
 name: validate
-description: 'Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.'
-practices: [design-by-contract, llm-eval-harness]
+description: Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.
+practices:
+- design-by-contract
+- llm-eval-harness
+hexagonal_role: driving-adapter
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,7 +12,8 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: judgment

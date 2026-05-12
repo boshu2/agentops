@@ -1,7 +1,11 @@
 ---
 name: crank
-description: 'Execute epics through waves.'
-practices: [continuous-delivery, xp, agile-manifesto]
+description: Execute epics through waves.
+practices:
+- continuous-delivery
+- xp
+- agile-manifesto
+hexagonal_role: domain
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,17 +13,18 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: execution
   dependencies:
-    - swarm       # required - executes each wave
-    - vibe        # required - final validation
-    - implement   # required - individual issue execution
-    - beads       # optional - issue tracking via bd CLI (fallback: TaskList)
-    - post-mortem # optional - suggested for learnings extraction
-output_contract: "code changes across wave execution, .agents/swarm/results/*.json"
+  - swarm
+  - vibe
+  - implement
+  - beads
+  - post-mortem
+output_contract: code changes across wave execution, .agents/swarm/results/*.json
 ---
 # Crank Skill
 

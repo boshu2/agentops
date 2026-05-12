@@ -1,7 +1,11 @@
 ---
 name: update
-description: 'Sync AgentOps skills.'
-practices: [gitops, continuous-delivery, infrastructure-as-code]
+description: Sync AgentOps skills.
+practices:
+- gitops
+- continuous-delivery
+- infrastructure-as-code
+hexagonal_role: supporting
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,12 +13,15 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: meta
   dependencies: []
-output_contract: "~/.claude/skills/ (installed copies)"
+output_contract: ~/.claude/skills/ (installed copies)
 ---
 # /update — Reinstall AgentOps Skills
 

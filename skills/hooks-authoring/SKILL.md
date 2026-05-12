@@ -1,20 +1,25 @@
 ---
 name: hooks-authoring
-description: 'Author AgentOps runtime hooks.'
-practices: [design-by-contract, code-complete, pragmatic-programmer]
+description: Author AgentOps runtime hooks.
+practices:
+- design-by-contract
+- code-complete
+- pragmatic-programmer
+hexagonal_role: domain
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards
-output_contract: "hook script, manifest entry, tests, and validation evidence"
+  - standards
+output_contract: hook script, manifest entry, tests, and validation evidence
 ---
 # /hooks-authoring - Hook Authoring Workflow
 

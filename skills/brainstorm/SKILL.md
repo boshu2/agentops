@@ -1,7 +1,10 @@
 ---
 name: brainstorm
-description: 'Separate goals from implementation.'
-practices: [lean-startup, mythical-man-month]
+description: Separate goals from implementation.
+practices:
+- lean-startup
+- mythical-man-month
+hexagonal_role: domain
 skill_api_version: 1
 metadata:
   tier: execution
@@ -11,7 +14,10 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [INTEL, HISTORY, TASK]
+    exclude:
+    - INTEL
+    - HISTORY
+    - TASK
   intel_scope: none
 output_contract: skills/research/schemas/findings.json
 ---
