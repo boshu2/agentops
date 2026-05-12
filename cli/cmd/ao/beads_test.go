@@ -565,3 +565,119 @@ func TestRenderLearningBody_IncludesFrontmatterAndBody(t *testing.T) {
 		}
 	}
 }
+
+// ---------- verifyFunctionCitation / verifySymbolCitation / grepSymbol ----------
+// Cycle 75 / soc-wxh5.1.1 — second concrete climb-back. These functions
+// share grepSymbol as their core; testing both verifyFunctionCitation
+// and verifySymbolCitation plus a direct grepSymbol test covers all 3
+// in one focused commit. Sibling shape: TestVerifyFileCitation_Fresh/Stale
+// above — temp dir, write fixture file, assert Status + Reason.
+
+func TestVerifyFunctionCitation_Fresh(t *testing.T) {
+	dir := t.TempDir()
+	clidir := filepath.Join(dir, "cli")
+	if err := os.MkdirAll(clidir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(clidir, "foo.go"),
+		[]byte("package foo\nfunc TargetFn() int { return 0 }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Citation{Kind: "function", Raw: "func TargetFn"}
+	verifyFunctionCitation(&c, dir)
+	if c.Status != CitationFresh {
+		t.Fatalf("status = %q, want FRESH (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "defined at") {
+		t.Fatalf("reason = %q, want substring 'defined at'", c.Reason)
+	}
+}
+
+func TestVerifyFunctionCitation_Stale(t *testing.T) {
+	dir := t.TempDir()
+	// Create the search-root dirs but no matching file.
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := Citation{Kind: "function", Raw: "func DoesNotExistAnywhere_x9z"}
+	verifyFunctionCitation(&c, dir)
+	if c.Status != CitationStale {
+		t.Fatalf("status = %q, want STALE (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "zero definitions") {
+		t.Fatalf("reason = %q, want substring 'zero definitions'", c.Reason)
+	}
+}
+
+func TestVerifySymbolCitation_Fresh(t *testing.T) {
+	dir := t.TempDir()
+	skillsdir := filepath.Join(dir, "skills")
+	if err := os.MkdirAll(skillsdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(skillsdir, "SKILL.md"),
+		[]byte("# Skill\nUses the `UNIQUE_SYM_FOR_TEST` constant.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Citation{Kind: "symbol", Raw: "`UNIQUE_SYM_FOR_TEST`"}
+	verifySymbolCitation(&c, dir)
+	if c.Status != CitationFresh {
+		t.Fatalf("status = %q, want FRESH (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "found at") {
+		t.Fatalf("reason = %q, want substring 'found at'", c.Reason)
+	}
+}
+
+func TestVerifySymbolCitation_Stale(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := Citation{Kind: "symbol", Raw: "`NEVER_DEFINED_SYM_q7w`"}
+	verifySymbolCitation(&c, dir)
+	if c.Status != CitationStale {
+		t.Fatalf("status = %q, want STALE (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "zero references") {
+		t.Fatalf("reason = %q, want substring 'zero references'", c.Reason)
+	}
+}
+
+func TestGrepSymbol_EmptyInputReturnsNil(t *testing.T) {
+	got := grepSymbol(t.TempDir(), "")
+	if got != nil {
+		t.Fatalf("grepSymbol(_, \"\") = %v, want nil", got)
+	}
+}
+
+func TestGrepSymbol_FindsAcrossSourceRoots(t *testing.T) {
+	dir := t.TempDir()
+	// Plant the symbol in each of the three search roots; assert grep
+	// returns >= 1 match (limited to 10 by the function).
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		subdir := filepath.Join(dir, sub)
+		if err := os.MkdirAll(subdir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		ext := ".go"
+		if sub == "skills" {
+			ext = ".md"
+		}
+		if sub == "scripts" {
+			ext = ".sh"
+		}
+		if err := os.WriteFile(filepath.Join(subdir, "marker"+ext),
+			[]byte("contains UNIQ_CITE_TARGET_xyz once"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	matches := grepSymbol(dir, "UNIQ_CITE_TARGET_xyz")
+	if len(matches) == 0 {
+		t.Fatalf("grepSymbol returned 0 matches, want >= 1")
+	}
+}
