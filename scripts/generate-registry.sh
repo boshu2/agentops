@@ -279,6 +279,12 @@ build_evals() {
   local evals_dir="${REPO_ROOT}/evals"
   [[ -d "$evals_dir" ]] || { echo "[]"; return; }
 
+  # soc-k47k pattern: walk `git ls-files evals/` instead of filesystem `find`
+  # so untracked artifacts (e.g. evals/workbench/scorecard-latest.json written
+  # by local eval runs) don't drift the registry vs CI's clean checkout.
+  local tracked
+  tracked=$(cd "$REPO_ROOT" && git ls-files 'evals/*/*.json' 2>/dev/null || true)
+
   local result="[]"
   for suite_dir in "${evals_dir}"/*/; do
     [[ -d "$suite_dir" ]] || continue
@@ -286,9 +292,13 @@ build_evals() {
     suite_name="$(basename "$suite_dir")"
 
     local eval_files=()
-    while IFS= read -r -d '' f; do
-      eval_files+=("$(basename "$f" .json)")
-    done < <(find "$suite_dir" -maxdepth 1 -name '*.json' -type f -print0 2>/dev/null)
+    while IFS= read -r line; do
+      [[ -z "$line" ]] && continue
+      # Match only direct children of the suite (one level deep).
+      [[ "$line" == "evals/${suite_name}/"*.json ]] || continue
+      [[ "${line#evals/${suite_name}/}" == */*.json ]] && continue
+      eval_files+=("$(basename "$line" .json)")
+    done <<< "$tracked"
 
     local file_count=${#eval_files[@]}
     local files_json

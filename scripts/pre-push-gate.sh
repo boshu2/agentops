@@ -1077,6 +1077,11 @@ elif [[ -x "cli/bin/ao" ]] && command -v jq >/dev/null 2>&1; then
         fail "goals validate"
         indent_output "$goals_validate_output"
     fi
+elif [[ ! -d "cli/cmd/ao" ]]; then
+    # Bats fake-repo, partial checkout, or any environment where cli/cmd/ao
+    # isn't present: skip rather than attempt a no-source build that emits
+    # a misleading "/tmp/ao-goals-val: No such file or directory" error.
+    skip "goals validate (cli/cmd/ao/ not present in this tree)"
 elif command -v jq >/dev/null 2>&1; then
     # Full-mode fallback: build into a temp binary the gate row's way.
     if goals_validate_output="$(bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && /tmp/ao-goals-val goals validate --json' 2>&1)" && \
