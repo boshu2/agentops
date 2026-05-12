@@ -72,3 +72,59 @@ teardown() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"SKIP  compile-health"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# Gap 1 — council coverage (cycle 63 / soc-wxh5.2)
+#
+# Sibling pattern: matches the Gap 2 test shape above — same SHIM_ROOT,
+# same fixture-per-test setup, same PASS/SKIP message assertion model.
+# ---------------------------------------------------------------------------
+
+@test "Gap 1 SKIPs council-coverage when .agents/council/ does not exist" {
+    # SHIM_ROOT/.agents has no council subdir (setup didn't create one)
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SKIP"* ]]
+    [[ "$output" == *"no .agents/council/"* ]]
+    [[ "$output" == *"three-gap super-gate (council-coverage): PASS"* ]]
+}
+
+@test "Gap 1 SKIPs council-coverage when .agents/council/ is empty" {
+    # Directory present but no .md files — count is 0 → SKIP path
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SKIP"* ]]
+    [[ "$output" == *"no .agents/council/"* ]]
+}
+
+@test "Gap 1 PASSes council-coverage when at least one .md file is present" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/2026-05-12-fake-council.md"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS  council artifacts present"* ]]
+    [[ "$output" == *"1 files"* ]]
+    [[ "$output" != *"SKIP"* ]]
+}
+
+@test "Gap 1 PASSes council-coverage with multiple .md files (count reported)" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/a.md"
+    : > "$SHIM_ROOT/.agents/council/b.md"
+    : > "$SHIM_ROOT/.agents/council/c.md"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS  council artifacts present"* ]]
+    [[ "$output" == *"3 files"* ]]
+}
+
+@test "Gap 1 ignores non-.md files in .agents/council/ (only counts markdown)" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/notes.txt"
+    : > "$SHIM_ROOT/.agents/council/data.json"
+    # No .md files at all → SKIP
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SKIP"* ]]
+}
