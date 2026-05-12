@@ -111,7 +111,7 @@ Matches the existing meta-contract shape from `docs/contracts/update-principles.
 
 Not claiming these are the only naming decisions worth pinning. The five ranked drifts here are the ones the bounded-context inventory measured as highest-pain (cross-referenced in multiple files with semantic conflict). Other terms may surface in future audits; they get added here as discovered.
 
-Not claiming legacy names must be retired *immediately*. The rename schedule is per-cycle; each rename is bounded and reversible. Code can use legacy names until its rename cycle fires; documentation should start using canonical names from contract-landing day.
+Not claiming legacy names must be retired _immediately_. The rename schedule is per-cycle; each rename is bounded and reversible. Code can use legacy names until its rename cycle fires; documentation should start using canonical names from contract-landing day.
 
 Not claiming this contract overrides PRODUCT.md or GOALS.md. Where those documents use a legacy term, the rename gets harvested as follow-up work, not retroactively edited.
 
