@@ -128,3 +128,88 @@ teardown() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"SKIP"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# Gap 1 — strict-coverage mode (cycle 72 / soc-w6vh.6)
+#
+# The --strict-coverage flag maps PR commits to council references. A
+# commit is "covered" if any council artifact mentions its short SHA or
+# the commit message has a Council/Pre-mortem/Vibe verdict header.
+#
+# Sibling pattern: same SHIM_ROOT shape as the structural tests above —
+# stub a tmp repo, init git inside, make N commits, possibly stage
+# council references, run the gate with --strict-coverage.
+# ---------------------------------------------------------------------------
+
+# Helper: turn SHIM_ROOT into a minimal git repo with N commits past 'main'
+init_shim_git() {
+    git -C "$SHIM_ROOT" init -q -b main
+    git -C "$SHIM_ROOT" config user.email "evolve-test@local"
+    git -C "$SHIM_ROOT" config user.name "evolve-test"
+    git -C "$SHIM_ROOT" commit -q --allow-empty -m "base commit on main"
+    git -C "$SHIM_ROOT" checkout -q -b feature
+}
+
+@test "Gap 1 default emits INFO line about --strict-coverage opt-in" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/a.md"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"INFO"* ]]
+    [[ "$output" == *"--strict-coverage"* ]]
+    [[ "$output" == *"structural"* ]]
+}
+
+@test "Gap 1 --strict-coverage SKIPs when no commits past base" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/a.md"
+    init_shim_git
+    # On 'feature' but no commits past 'main' — log returns nothing.
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage --strict-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SKIP"* ]]
+    [[ "$output" == *"--strict-coverage"* ]]
+}
+
+@test "Gap 1 --strict-coverage PASSes when all PR commits have council ref" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    init_shim_git
+    # Make one commit on feature with a body header that counts as covered.
+    git -C "$SHIM_ROOT" commit -q --allow-empty -m "feat: thing
+
+Pre-mortem: see .agents/council/x.md"
+    : > "$SHIM_ROOT/.agents/council/x.md"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage --strict-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS  --strict-coverage"* ]]
+    [[ "$output" == *"1/1"* ]]
+}
+
+@test "Gap 1 --strict-coverage FAILs when a PR commit lacks council ref" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    : > "$SHIM_ROOT/.agents/council/x.md"
+    init_shim_git
+    # Commit with no Council/Pre-mortem/Vibe header AND no SHA in council files.
+    git -C "$SHIM_ROOT" commit -q --allow-empty -m "feat: uncovered work"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage --strict-coverage
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL  --strict-coverage"* ]]
+    [[ "$output" == *"0/1"* ]]
+    [[ "$output" == *"missing:"* ]]
+    [[ "$output" == *"FAIL"* ]]
+}
+
+@test "Gap 1 --strict-coverage covers by council artifact mentioning short SHA" {
+    mkdir -p "$SHIM_ROOT/.agents/council"
+    init_shim_git
+    # Make commit first, then write a council artifact mentioning the short SHA.
+    git -C "$SHIM_ROOT" commit -q --allow-empty -m "feat: needs coverage"
+    local sha
+    sha="$(git -C "$SHIM_ROOT" log -1 --format=%H)"
+    local short="${sha:0:7}"
+    echo "Council notes referencing commit $short" > "$SHIM_ROOT/.agents/council/by-sha.md"
+    run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=council-coverage --strict-coverage
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS  --strict-coverage"* ]]
+    [[ "$output" == *"1/1"* ]]
+}

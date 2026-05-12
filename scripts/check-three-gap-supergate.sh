@@ -18,11 +18,13 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GAP="all"
+STRICT_COVERAGE=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --gap=*) GAP="${1#--gap=}"; shift;;
         --gap) GAP="${2:-all}"; shift 2;;
+        --strict-coverage) STRICT_COVERAGE=1; shift;;
         -h|--help)
             grep '^#' "$0" | sed 's/^# \?//'
             exit 0
@@ -50,18 +52,64 @@ gap_council_coverage() {
     echo "Gap 1 — Council coverage:"
     local fails=0
     # PR-bound commits should have either a /pre-mortem or /vibe verdict.
-    # Lightweight implementation: count council files; pass if >= 1 exists.
-    # Stronger PR-diff coverage tracked in operator-driven follow-up beads.
+    # Default lightweight implementation: count council files; pass if >= 1.
+    # The --strict-coverage flag (opt-in) maps PR commits to council
+    # references for the real coverage check; see strict_council_coverage()
+    # below. soc-w6vh.6 acceptance: gate report distinguishes structural
+    # availability from real coverage.
     local council_dir="$REPO_ROOT/.agents/council"
     local council_count=0
     if [ -d "$council_dir" ]; then
         council_count="$(find "$council_dir" -maxdepth 1 -name '*.md' -type f | wc -l)"
     fi
     if [ "$council_count" -ge 1 ]; then
-        echo "  PASS  council artifacts present ($council_count files in $council_dir)"
+        echo "  PASS  council artifacts present ($council_count files in $council_dir) [structural]"
     else
         # Greenfield CI runners have no .agents/council/; SKIP rather than fail.
         echo "  SKIP  no .agents/council/ on this box (operator-side surface; gate is structural)"
+        return 0
+    fi
+    if [ "$STRICT_COVERAGE" -eq 1 ]; then
+        strict_council_coverage "$council_dir" || fails=$((fails+1))
+    else
+        echo "  INFO  use --strict-coverage to map PR commits to council references (real coverage check)"
+    fi
+    return "$fails"
+}
+
+# --- Strict coverage: map PR commits to council references ---
+# Returns 0 if all commits covered, 1 if any are missing. Uses
+# PR_BASE_REF (operator override) or GITHUB_BASE_REF (CI) or main as the
+# diff base. A commit is "covered" if any council artifact mentions its
+# short SHA or the commit message has a Council/Pre-mortem/Vibe header.
+strict_council_coverage() {
+    local council_dir="$1"
+    local base_ref="${PR_BASE_REF:-${GITHUB_BASE_REF:-main}}"
+    local commits
+    commits="$(git -C "$REPO_ROOT" log --format=%H "${base_ref}..HEAD" 2>/dev/null || true)"
+    if [ -z "$commits" ]; then
+        echo "  SKIP  --strict-coverage: no commits between ${base_ref}..HEAD (single-commit PR, missing base, or non-git)"
+        return 0
+    fi
+    local total=0 covered=0
+    local missing=""
+    while IFS= read -r sha; do
+        [ -z "$sha" ] && continue
+        total=$((total + 1))
+        local short="${sha:0:7}"
+        if grep -lr -- "$short" "$council_dir" 2>/dev/null | head -1 | grep -q . \
+           || git -C "$REPO_ROOT" log -1 --format=%B "$sha" 2>/dev/null \
+                  | grep -qiE "^(Council|Pre-mortem|Vibe verdict)"; then
+            covered=$((covered + 1))
+        else
+            missing="$missing $short"
+        fi
+    done <<< "$commits"
+    if [ "$covered" -eq "$total" ]; then
+        echo "  PASS  --strict-coverage: $covered/$total PR commits have council reference"
+    else
+        echo "  FAIL  --strict-coverage: $covered/$total PR commits have council reference (missing:${missing})"
+        return 1
     fi
     return 0
 }
