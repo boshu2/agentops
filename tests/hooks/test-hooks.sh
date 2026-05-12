@@ -2289,6 +2289,9 @@ echo "=== Coverage check ==="
 # ============================================================
 
 # Verify every .sh hook file has at least one test
+# Test files may end in either .sh (legacy shell) or .bats (BATS suite);
+# both are valid coverage targets. The glob below includes both extensions
+# across the three canonical test directories.
 MISSING_HOOKS=""
 for hook_file in "$HOOKS_DIR"/*.sh; do
     hook_name=$(basename "$hook_file" .sh)
@@ -2296,8 +2299,11 @@ for hook_file in "$HOOKS_DIR"/*.sh; do
     COVERAGE_FILES=("$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats")
     for candidate in \
         "$SCRIPT_DIR/test-${hook_name}"*.sh \
+        "$SCRIPT_DIR/test-${hook_name}"*.bats \
         "$REPO_ROOT/tests/skills/test-${hook_name}"*.sh \
-        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.sh; do
+        "$REPO_ROOT/tests/skills/test-${hook_name}"*.bats \
+        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.sh \
+        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.bats; do
         [ -e "$candidate" ] && COVERAGE_FILES+=("$candidate")
     done
     if ! grep -rq "$hook_name" "${COVERAGE_FILES[@]}" 2>/dev/null; then
