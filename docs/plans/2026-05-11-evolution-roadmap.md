@@ -9,7 +9,7 @@ research_refs:
   - GOALS.md
   - PRACTICE.md
   - docs/contracts/ (38 contracts)
-  - .agents/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md
+  - docs/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md  # durable export of .agents/learnings/2026-05-11-... per soc-w6vh.5
 ---
 
 # Evolution Road Map — 2026-05-11
@@ -284,4 +284,4 @@ When even those are empty: the loop has reconciled the entire aspirational surfa
 - GOALS.md "Three-Gap Contract Proof Surface" — source for E2 + E5
 - GOALS.md "Gates" table — source for E2 priority ordering
 - PRACTICE.md slug registry — source for D9 acceptance criteria
-- `.agents/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md` — context for why this road map exists
+- `docs/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md` — context for why this road map exists (durable export of the originally-local-only learning, per soc-w6vh.5)
