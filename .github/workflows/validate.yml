@@ -466,6 +466,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # fetch-depth: 0 required so the Gap 1 --strict-coverage advisory
+          # step below can resolve `main..HEAD` against the full base history.
+          fetch-depth: 0
 
       - name: Set up Go (for goals-validate + flywheel-proof children)
         uses: actions/setup-go@v6
@@ -481,6 +485,23 @@ jobs:
         run: |
           chmod +x scripts/check-three-gap-supergate.sh
           ./scripts/check-three-gap-supergate.sh --gap=all
+
+      # soc-33bw — advisory PR-commit-to-council mapping for Gap 1. The
+      # --strict-coverage flag ships with backwards-compatible default OFF
+      # (see scripts/check-three-gap-supergate.sh strict_council_coverage).
+      # This step exercises the opt-in path for visibility; failures DO NOT
+      # block the gate yet — the trailing `|| echo` keeps the step exit
+      # code zero and the WARN signal lives in captured output. Promote to
+      # required after calibration. soc-w6vh.6 acceptance. NOTE: do NOT
+      # use the step-level GH Actions opt-out keyword for this advisory
+      # behavior — validate-ci-policy-parity.sh's awk parser
+      # misattributes that keyword to the parent job and flips the job's
+      # blocking classification.
+      - name: Gap 1 --strict-coverage (advisory; soc-33bw / soc-w6vh.6)
+        run: |
+          ./scripts/check-three-gap-supergate.sh \
+            --gap=council-coverage --strict-coverage \
+            || echo "ADVISORY-WARN: --strict-coverage non-blocking failure (soc-33bw)"
 
   validate-headless-runtime-skills:
     needs: [changes]
