@@ -234,13 +234,19 @@
 - **Gate:** Doc-internal framing claim.
 - **Closes bead:** soc-bsgq.
 
-### AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE
+### AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE — promoted to PG4
 
 - **Claim:** Trust factory pattern is a five-step primitive.
 - **Surface:** `docs/trust-factory.md`, AGENTS.md / `~/.claude` rule
-  references.
-- **Gate:** Doc-internal; high-visibility (9 references). Tightening
-  could add a structural check that exactly five steps are listed.
+  references (9 refs across the public tree).
+- **Strong evidence:** [trust-factory-five-step-primitive.md](trust-factory-five-step-primitive.md)
+  — per-step ledger linking each AgentOps mechanism to a named
+  verification gate (drift-blocking).
+- **Gate(s):** `scripts/check-retrieval-quality-ratchet.sh` (identity),
+  `scripts/check-wiring-closure.sh` (reproducibility),
+  `scripts/check-three-gap-supergate.sh --gap=all` (evaluation + evidence + loop closure),
+  `scripts/check-flywheel-compounding.sh` (recovery escape velocity),
+  `scripts/check-factory-claim-ledger.sh` (claim discipline itself).
 - **Closes bead:** soc-08bm.
 
 ## What "acceptance-as-pointer" means

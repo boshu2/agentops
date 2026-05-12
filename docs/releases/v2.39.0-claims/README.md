@@ -24,6 +24,15 @@ Non-README scope claims (PRODUCT, GOALS, BRIEF, ASSURANCE, COMP,
 CONTRACT, DOCS, WIKI, SOFTWARE-FACTORY, TRUST-FACTORY) — 25 markers —
 are mapped in [all-claims-evidence-map.md](all-claims-evidence-map.md).
 
+### High-visibility PG4 promotions (additional)
+
+These non-README markers have been promoted to dedicated PG4-strong
+evidence files (same shape as the README five):
+
+| Claim ID | Evidence file | Verified by |
+|---|---|---|
+| AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE | [trust-factory-five-step-primitive.md](trust-factory-five-step-primitive.md) | `scripts/check-three-gap-supergate.sh --gap=all` (rolls 5 step-level gates) |
+
 ## Why this pattern
 
 Local `.agents/` notes are gitignored — they are not visible to anyone
