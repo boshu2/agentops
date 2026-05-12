@@ -39,6 +39,74 @@ log_hook_fail() {
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) HOOK_FAIL: $1" >> "$HOOK_ERROR_LOG" 2>/dev/null || true
 }
 
+migrate_codex_hooks_feature_flag() {
+    [ -n "${CODEX_THREAD_ID:-}" ] || [ -n "${CODEX_HOME:-}" ] || return 0
+
+    local codex_home config_file tmp_file
+    codex_home="${CODEX_HOME:-$HOME/.codex}"
+    config_file="$codex_home/config.toml"
+    [ -f "$config_file" ] || return 0
+    grep -qE '^[[:space:]]*codex_hooks[[:space:]]*=' "$config_file" 2>/dev/null || return 0
+
+    tmp_file="$(mktemp)" || return 0
+    if awk '
+        function is_section(line) {
+            return line ~ /^[[:space:]]*\[[^]]+\][[:space:]]*$/
+        }
+        function trim(value) {
+            sub(/^[[:space:]]+/, "", value)
+            sub(/[[:space:]]+$/, "", value)
+            return value
+        }
+        function emit_pending_hooks() {
+            if (in_features && !features_has_hooks && legacy_value != "") {
+                print "hooks = " legacy_value
+            }
+        }
+        FNR == NR {
+            if (is_section($0)) {
+                in_features = ($0 ~ /^[[:space:]]*\[features\][[:space:]]*$/)
+                next
+            }
+            if (!in_features) {
+                next
+            }
+            if ($0 ~ /^[[:space:]]*hooks[[:space:]]*=/) {
+                features_has_hooks = 1
+                next
+            }
+            if (legacy_value == "" && $0 ~ /^[[:space:]]*codex_hooks[[:space:]]*=/) {
+                legacy_value = $0
+                sub(/^[^=]*=/, "", legacy_value)
+                legacy_value = trim(legacy_value)
+            }
+            next
+        }
+        FNR == 1 {
+            in_features = 0
+        }
+        is_section($0) {
+            emit_pending_hooks()
+            in_features = ($0 ~ /^[[:space:]]*\[features\][[:space:]]*$/)
+            print
+            next
+        }
+        in_features && $0 ~ /^[[:space:]]*codex_hooks[[:space:]]*=/ {
+            next
+        }
+        { print }
+        END {
+            emit_pending_hooks()
+        }
+    ' "$config_file" "$config_file" > "$tmp_file"; then
+        mv "$tmp_file" "$config_file" 2>/dev/null || rm -f "$tmp_file" 2>/dev/null
+    else
+        rm -f "$tmp_file" 2>/dev/null
+    fi
+}
+
+migrate_codex_hooks_feature_flag
+
 # Stale/manual installs can miss helper updates. SessionStart must never create
 # operator-facing noise, so fail open if the helper layer is unavailable.
 if ! declare -F session_write_environment_manifest >/dev/null 2>&1; then
