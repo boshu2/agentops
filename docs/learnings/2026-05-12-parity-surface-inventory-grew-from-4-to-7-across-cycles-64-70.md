@@ -119,3 +119,28 @@ durable form of "what cycle 71's sweep verified."
 - `ee9e627b` cycle 66 — surfaces 5 + 6 (bats stub + registry regen)
 - `3c8b33ae` cycle 68 — surface 7 (path-filter)
 - `8073e12a` cycle 70 — surface 8 (narrative-vs-truth)
+
+## 2026-05-12 update — surface 9 confirmed in the wild
+
+After cycle 71 declared the drift sweep empty, an operator commit
+chain manifested the **9th** surface live:
+
+- `3fb9963f` added 68 lines to `hooks/session-start.sh` (codex hooks
+  flag migration), but missed the corresponding update under
+  `cli/embedded/hooks/session-start.sh`. CI failed on the
+  `embedded-sync` required job.
+- `e8e139d1` fixed it by syncing the embedded copy.
+
+The mechanism: any change under `hooks/` or `lib/hook-helpers.sh` must
+be propagated to `cli/embedded/` via `cd cli && make sync-hooks`. The
+`embedded-sync` CI job catches it if missed. This was already in the
+recommendation checklist as one of the 11 items, but its real-world
+demonstration confirms the failure mode is recurrent — making it
+worth promoting from "checklist item" to "named surface #9 with a
+tracked commit-chain example."
+
+Tracked commits for surface 9:
+
+- `3fb9963f` — anti-pattern demonstration (hooks/*.sh added without
+  cli/embedded/ sync; embedded-sync CI job blocked)
+- `e8e139d1` — fix-up (synced cli/embedded/hooks/session-start.sh)
