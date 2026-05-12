@@ -128,6 +128,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/update-principles-check.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/check-test-pair-on-commit.sh",
+            "timeout": 5
           }
         ]
       },
