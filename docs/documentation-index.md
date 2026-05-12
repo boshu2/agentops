@@ -260,6 +260,7 @@ Bridge / framing docs:
 - [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md) — Public claim posture ledger mapping software-factory claims to evidence level, owner issue, closure gate, and safe wording
 - [Factory Claim Ledger Schema](contracts/factory-claim-ledger.schema.json) — Contract-local JSON Schema for claim-ledger rows and posture enums
 - [Factory Claim Ledger Example](contracts/factory-claim-ledger.example.json) — Current claim ledger fixture covering README, PRODUCT, GOALS, docs index, assurance, contracts, and comparison claims
+- [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
