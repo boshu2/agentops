@@ -681,3 +681,144 @@ func TestGrepSymbol_FindsAcrossSourceRoots(t *testing.T) {
 		t.Fatalf("grepSymbol returned 0 matches, want >= 1")
 	}
 }
+
+// ---------- emitVerifyHuman / emitLintHuman ----------
+// Cycle 76 / soc-wxh5.1.1 — third climb-back. Both functions take a
+// *os.File and write human-readable formatted output. Pattern: open a
+// temp file, pass it as w, close, read back, assert expected strings.
+
+func TestEmitVerifyHuman_HappyPath(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &VerifyReport{
+		BeadID:     "soc-test-1",
+		Title:      "test bead title",
+		Status:     "OK",
+		TotalCount: 3,
+		FreshCount: 2,
+		StaleCount: 1,
+		Citations: []Citation{
+			{Kind: "function", Raw: "func A", Status: CitationFresh, Reason: "fresh"},
+			{Kind: "function", Raw: "func B", Status: CitationStale, Reason: "zero defs"},
+			{Kind: "symbol", Raw: "`SYM`", Status: CitationUnknown, Reason: "uncertain"},
+		},
+	}
+	emitVerifyHuman(f, r, false)
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	for _, want := range []string{
+		"bead soc-test-1: test bead title  [OK]",
+		"citations: 3 total, 2 fresh, 1 stale",
+		"[STALE] func B — zero defs",
+		"[?????] `SYM` — uncertain",
+	} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("output missing %q\nfull output:\n%s", want, s)
+		}
+	}
+	// Default (verbose=false) must NOT echo FRESH citations.
+	if strings.Contains(s, "[FRESH]") {
+		t.Fatalf("non-verbose output should not show FRESH lines:\n%s", s)
+	}
+}
+
+func TestEmitVerifyHuman_VerboseShowsFreshAndResolved(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &VerifyReport{
+		BeadID: "soc-test-2", Title: "verbose check", Status: "OK",
+		TotalCount: 1, FreshCount: 1,
+		Citations: []Citation{
+			{Kind: "function", Raw: "func X", Status: CitationFresh, Reason: "found", Resolved: "cli/x.go:1"},
+		},
+	}
+	emitVerifyHuman(f, r, true)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	if !strings.Contains(s, "[FRESH] func X — found") {
+		t.Fatalf("verbose output missing FRESH line: %s", s)
+	}
+	if !strings.Contains(s, "→ cli/x.go:1") {
+		t.Fatalf("verbose output missing resolved arrow: %s", s)
+	}
+}
+
+func TestEmitLintHuman_ShowsOnlyStaleBeads(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &LintReport{
+		StatusFilter: "open",
+		TotalBeads:   2,
+		CleanBeads:   1,
+		StaleBeads:   1,
+		ErrorBeads:   0,
+		PerBead: []VerifyReport{
+			{BeadID: "soc-clean", Title: "clean one", StaleCount: 0,
+				Citations: []Citation{{Raw: "func A", Status: CitationFresh}}},
+			{BeadID: "soc-stale", Title: "stale one", StaleCount: 1,
+				Citations: []Citation{
+					{Raw: "func B", Status: CitationFresh, Reason: "ok"},
+					{Raw: "func C", Status: CitationStale, Reason: "zero defs"},
+				}},
+		},
+	}
+	emitLintHuman(f, r)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	for _, want := range []string{
+		"ao beads lint (status=open): 2 beads",
+		"1 clean, 1 stale, 0 errors",
+		"[STALE] soc-stale: stale one",
+		"- func C: zero defs",
+	} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("output missing %q\nfull output:\n%s", want, s)
+		}
+	}
+	// Clean bead must not appear in the per-bead section.
+	if strings.Contains(s, "[STALE] soc-clean") {
+		t.Fatalf("clean bead should not appear as STALE: %s", s)
+	}
+	// FRESH citation in stale-bead must not appear (only stale lines listed).
+	if strings.Contains(s, "func B") {
+		t.Fatalf("FRESH citation should not be in lint stale output: %s", s)
+	}
+}
+
+func TestEmitLintHuman_AllCleanProducesHeaderOnly(t *testing.T) {
+	dir := t.TempDir()
+	f, _ := os.Create(filepath.Join(dir, "out.txt"))
+	r := &LintReport{
+		StatusFilter: "open", TotalBeads: 1, CleanBeads: 1,
+		PerBead: []VerifyReport{
+			{BeadID: "soc-clean-only", Title: "all clean", StaleCount: 0},
+		},
+	}
+	emitLintHuman(f, r)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	if !strings.Contains(s, "1 clean, 0 stale, 0 errors") {
+		t.Fatalf("missing summary line: %s", s)
+	}
+	if strings.Contains(s, "[STALE]") {
+		t.Fatalf("all-clean output should have no STALE markers: %s", s)
+	}
+}
