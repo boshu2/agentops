@@ -165,11 +165,12 @@
 - **Gate:** `check-competitive-freshness.sh`.
 - **Closes bead:** soc-645x.
 
-### AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING
+### AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING — promoted to PG4
 
-- **Claim:** AgentOps's skill catalog compounds with the corpus.
-- **Surface:** `skills/`, `.agents/learnings/`, mining cycle.
-- **Gate:** `check-flywheel-compounding-snapshot.sh` (G1, weight 5).
+- **Claim:** AgentOps adds a compounding corpus on top of skill inventory rather than a larger inventory of skills.
+- **Surface:** `docs/comparisons/vs-tons-of-skills.md` (5 refs); corpus surfaces under `.agents/` + retrieval mechanism in `cli/cmd/ao/inject*.go` + Mine/Defrag/Compile loop in `cli/cmd/ao/{mine,defrag,compile}.go`.
+- **Strong evidence:** [comp-tons-of-skills-corpus-compounding.md](comp-tons-of-skills-corpus-compounding.md) — per-mechanism ledger separating the corpus, the bookkeeping schema, the retrieval, and the compounding proof.
+- **Gate(s):** `check-flywheel-compounding-snapshot.sh` (G1, weight 5, CI-blocking), `check-flywheel-compounding.sh`, `check-flywheel-proof.sh`, `check-retrieval-quality-ratchet.sh`, `check-competitive-freshness.sh`, `check-factory-claim-ledger.sh`.
 - **Closes bead:** soc-wock.
 
 ### AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING

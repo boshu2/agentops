@@ -32,6 +32,7 @@ evidence files (same shape as the README five):
 | Claim ID | Evidence file | Verified by |
 |---|---|---|
 | AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE | [trust-factory-five-step-primitive.md](trust-factory-five-step-primitive.md) | `scripts/check-three-gap-supergate.sh --gap=all` (rolls 5 step-level gates) |
+| AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING | [comp-tons-of-skills-corpus-compounding.md](comp-tons-of-skills-corpus-compounding.md) | `scripts/check-flywheel-compounding-snapshot.sh` (G1, weight 5) |
 
 ## Why this pattern
 
