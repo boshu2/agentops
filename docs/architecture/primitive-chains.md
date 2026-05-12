@@ -148,6 +148,16 @@ The current repo state behind this document:
 
 For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-skills-map.md).
 
+## Hexagonal seams
+
+The primitive chains above are realized in code through a hexagonal seam. The inner hexagon is the AgentOps domain — currently the `ExecutionPacket` aggregate root — and everything else (CLI commands, slash commands, MCP, autonomous loops, CI gates, filesystem / git / tracker / LLM-provider adapters) hangs off it through narrow port interfaces.
+
+- `cli/internal/domain/` — the inner hexagon. First inhabitant: the `packet` package, holding the `ExecutionPacket` aggregate root and its four invariants.
+- `cli/internal/ports/` — driven-port interfaces (`PacketRepository`, `IssueTracker`, `LLMClient`).
+- `cli/internal/adapters/` — concrete adapters that implement those ports. The first is `storage_fs` (filesystem-backed `PacketRepository`).
+
+For the architectural rationale and the recipe for adding a new adapter, see [Ports and Adapters](ports-and-adapters.md) and [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md).
+
 ## See Also
 
 - [How It Works](../how-it-works.md)
@@ -155,3 +165,5 @@ For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-s
 - [Context Lifecycle Contract](../context-lifecycle.md)
 - [Brownian Ratchet](../brownian-ratchet.md)
 - [CLI ↔ Skills/Hooks Map](../cli-skills-map.md)
+- [Ports and Adapters](ports-and-adapters.md)
+- [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md)
