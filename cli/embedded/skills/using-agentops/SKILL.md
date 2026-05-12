@@ -1,7 +1,11 @@
 ---
 name: using-agentops
-description: 'Explain AgentOps workflows.'
-practices: [wiki-knowledge-surface, pragmatic-programmer, agile-manifesto]
+description: Explain AgentOps workflows.
+practices:
+- wiki-knowledge-surface
+- pragmatic-programmer
+- agile-manifesto
+hexagonal_role: generic
 skill_api_version: 1
 user-invocable: false
 context:
@@ -9,13 +13,16 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: meta
   dependencies: []
   internal: true
-output_contract: "stdout: operating guide"
+output_contract: 'stdout: operating guide'
 ---
 # AgentOps Operating Model
 
