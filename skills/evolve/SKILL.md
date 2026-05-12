@@ -191,6 +191,10 @@ When a repo-local program contract exists, apply a scope filter before Step 4:
 - prefer harvested, beads, goals, and generated work that can plausibly land within mutable scope
 - if the selected item is inherently out of scope, escalate it or convert it into durable follow-up work instead of invoking `/rpi` and hoping discovery widens scope
 
+**Step 3.0: Scope filter — route wrong-shape work to scout-mode**
+
+Before claiming a harvested item, gate scope vs session budget. If the work touches > 5 non-uniform files, introduces a new shape (schema field, struct field, validator rule, contract surface), is operator-level epic work, OR `PRODUCTIVE_THIS_SESSION > 5` and the work would extend an implementation arc rather than close one — route to **scout-mode** (read + annotate the queue entry, no execution). See `references/scout-mode.md` for the procedure and `references/mechanical-batches.md` for when a >5-file batch is uniform enough to bypass.
+
 **Step 3.1: Harvested work first**
 
 Read `.agents/rpi/next-work.jsonl` and pick the highest-value unconsumed item. Prefer exact repo match, then concrete implementation work, then higher severity. Read `references/knowledge-loop-integration.md` for the claim/release protocol.
@@ -354,6 +358,20 @@ Or for an epic with children: `Invoke /crank {epic_id}`.
 
 If Step 3 created durable work instead of executing it immediately, re-enter Step 3 and let the newly-created bead item win through the normal selection order.
 
+**Mechanical-batch hint:** when the implementation phase identifies > 20 uniform per-file edits, prefer a script (`awk`/`sed`/`for f in $candidates`) over N tool-level Edit calls. See `references/mechanical-batches.md` for the decision rule and the script-first pattern.
+
+**Operator-shape carve-out:** `AskUserQuestion` is permitted ONLY for shape decisions affecting > 50 files OR a schema/contract surface (carrier choice, struct-field shape, frontmatter-key shape). See `references/autonomous-execution.md` for the bound on this exception.
+
+### Step 4.5: Source-surface detection (pre-gate sync)
+
+Before invoking the regression gate, sync downstream artifacts when the staged diff touches binary or embedded surfaces:
+
+- `cli/**/*.go` changed → `cd cli && make build && go install ./cmd/ao`
+- `skills/**` or `hooks/**` changed → `cd cli && make sync-hooks`
+- `skills-codex/**` changed → `bash scripts/regen-codex-hashes.sh`
+
+Without these, the gate fails on stale-binary or embedded-drift errors that look like real regressions. See `references/gate-hygiene.md` for the detection recipe.
+
 ### Step 5: Regression Gate
 
 After execution, run the project build+test bundle. If the repo execution profile declared `validation_commands`, run them. If a repo-local program contract exists, run its `validation_commands` too, de-duplicated and in declared order after the repo bootstrap checks. Also check `if [ -f scripts/check-wiring-closure.sh ]; then bash scripts/check-wiring-closure.sh; fi`.
@@ -366,6 +384,8 @@ Use the program contract's `decision_policy` as the first keep/revert rule set f
 Treat program `stop_conditions` as per-cycle done criteria. Do not mark claimed work consumed, completed, or productive until both the stop conditions and the regression gate pass.
 
 If not `--beads-only`, re-measure fitness to `fitness-latest-post.json` and detect regressions. The AgentOps CLI is required for fitness measurement. Read `references/fitness-scoring.md` for the full measurement, regression detection, and revert procedure.
+
+**Gate output parsing:** trust the structural marker `^.*Pass [0-9]+: (FAILED|BLOCKED)` over the trailing status line — the trailing line conflates blocking and advisory results. See `references/gate-hygiene.md`.
 
 Work finalization after the regression gate: claim it first, then keep `consumed: false` until the /rpi cycle succeeds. After the cycle's `/post-mortem` finishes, immediately re-read `.agents/rpi/next-work.jsonl` before selecting the next item. Read `references/knowledge-loop-integration.md` for full claim/release semantics.
 
@@ -382,11 +402,21 @@ Two paths: productive cycles get committed, idle cycles are local-only.
 ```bash
 while true; do
   # Step 1 .. Step 6
-  # Stop if kill switch, max-cycles, or a real safety breaker triggers
+  # Stop if kill switch, max-cycles, dormancy, or CONTEXT_BUDGET_EXHAUSTED
   # Otherwise increment cycle and re-enter selection
   CYCLE=$((CYCLE + 1))
 done
 ```
+
+**Stop reasons (any one terminates the loop):**
+
+1. KILL/STOP file present.
+2. `--max-cycles=N` cap reached.
+3. **Dormancy** — `IDLE_STREAK >= 2 AND GENERATOR_EMPTY_STREAK >= 2` (queue layers AND generator layers both empty across 3 consecutive passes).
+4. **CONTEXT_BUDGET_EXHAUSTED** — `context_streak >= 2` (two consecutive cycles forced into scout-mode or harvested-as-defer because the current context is too heavy to safely execute available work). See `references/context-budget.md`.
+5. Regression breaker after a revert.
+
+**Self-perpetuation modes:** the terminal-native `ao evolve` loop and the Claude-Code-harness `ScheduleWakeup` end-of-turn pattern are duals — both drive Step 1..Step 7 repeatedly against the same persisted state. See `references/autonomous-execution.md` for the ScheduleWakeup cadence and the rule that hard stops must NOT re-arm.
 
 Push only when productive work has accumulated:
 ```bash
@@ -431,15 +461,22 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 ## References
 
-- `references/cycle-history.md` — JSONL format, recovery protocol, kill switch
-- `references/compounding.md` — Knowledge flywheel and work harvesting
-- `references/goals-schema.md` — GOALS.yaml format and continuous metrics
-- `references/parallel-execution.md` — Parallel /swarm architecture
-- `references/teardown.md` — Trajectory computation and session summary
-- `references/examples.md` — Detailed usage examples
-- `references/artifacts.md` — Generated files registry
-- `references/oscillation.md` — Oscillation detection and quarantine
-- `references/quality-mode.md` — Quality-first mode: scoring, priority cascade, artifacts
+- [references/artifacts.md](references/artifacts.md) — Generated files registry
+- [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
+- [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
+- [references/context-budget.md](references/context-budget.md) — `CONTEXT_BUDGET_EXHAUSTED` as a third stop reason and handoff protocol
+- [references/cycle-history.md](references/cycle-history.md) — JSONL format, recovery protocol, kill switch
+- [references/examples.md](references/examples.md) — Detailed usage examples
+- [references/fitness-scoring.md](references/fitness-scoring.md) — Baseline capture, regression detection, revert procedure
+- [references/gate-hygiene.md](references/gate-hygiene.md) — Pre-gate source-surface detection and structural gate-output parsing
+- [references/goals-schema.md](references/goals-schema.md) — GOALS.yaml format and continuous metrics
+- [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md) — Claim/release semantics and harvest re-read
+- [references/mechanical-batches.md](references/mechanical-batches.md) — Script-first vs per-file Edit for > 20-file uniform batches
+- [references/oscillation.md](references/oscillation.md) — Oscillation detection and quarantine
+- [references/parallel-execution.md](references/parallel-execution.md) — Parallel /swarm architecture
+- [references/quality-mode.md](references/quality-mode.md) — Quality-first mode: scoring, priority cascade, artifacts
+- [references/scout-mode.md](references/scout-mode.md) — Scout-mode as a first-class cycle result; scope filter procedure
+- [references/teardown.md](references/teardown.md) — Trajectory computation and session summary
 
 ## See Also
 
@@ -452,18 +489,3 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [refactor](../refactor/SKILL.md) — Safe, verified refactoring
 - [deps](../deps/SKILL.md) — Dependency audit and vulnerability scanning
 - [perf](../perf/SKILL.md) — Performance profiling and benchmarking
-
-## Reference Documents
-
-- [references/artifacts.md](references/artifacts.md)
-- [references/compounding.md](references/compounding.md)
-- [references/cycle-history.md](references/cycle-history.md)
-- [references/examples.md](references/examples.md)
-- [references/goals-schema.md](references/goals-schema.md)
-- [references/oscillation.md](references/oscillation.md)
-- [references/parallel-execution.md](references/parallel-execution.md)
-- [references/quality-mode.md](references/quality-mode.md)
-- [references/autonomous-execution.md](references/autonomous-execution.md)
-- [references/teardown.md](references/teardown.md)
-- [references/fitness-scoring.md](references/fitness-scoring.md)
-- [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md)

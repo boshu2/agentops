@@ -4,6 +4,20 @@
 
 Evolve runs without human intervention from start to teardown. Every `/rpi` invocation uses `--auto`. Do NOT ask the user for confirmation, clarification, or approval at any point. Do NOT pause between cycles. Do NOT summarize and wait. The user's only touchpoint is the teardown report at the very end.
 
+### Operator-shape carve-out
+
+A single, bounded exception applies. `AskUserQuestion` is permitted ONLY when the cycle has identified a **shape decision** that affects > 50 files OR touches a schema/contract surface, and where picking wrong costs > 10 minutes of rework. Examples that qualify: declaration carrier shape across a 533-file pool, frontmatter-key vs `$comment`-key vs sidecar-file choice, struct-field addition to a shared contract type. Anything that fits inside an established shape continues to be fully autonomous. The carve-out exists because a 30-second user pick can unblock 300+ file edits — but it is narrow: ask once per shape decision, then resume the autonomous loop.
+
+## ScheduleWakeup self-perpetuation (Claude-Code harness)
+
+Inside the Claude-Code harness, `ao evolve` (the terminal-native loop) is not the only self-perpetuation surface. Each /evolve cycle can call `ScheduleWakeup` at end-of-turn to fire the next cycle:
+
+- Productive cycle (commit landed): `delaySeconds=270` keeps the prompt cache warm.
+- Scout cycle: `delaySeconds=600` — bigger gap, no cache reload cost since context isn't reused.
+- Idle cycle: `delaySeconds=1800` — coarse poll for fresh signal.
+
+Hard stops MUST NOT call `ScheduleWakeup`: KILL/STOP files, dormancy reached, `CONTEXT_BUDGET_EXHAUSTED` (see `references/context-budget.md`), or `--max-cycles` cap hit. The terminal-mode `ao evolve` loop and the Claude-Code `ScheduleWakeup` loop are duals: both drive Step 1..Step 7 repeatedly, both honor the same kill switches and stop conditions, both persist resume state via `.agents/evolve/session-state.json`.
+
 ## Each Cycle = Complete /rpi Run
 
 All 3 phases (discovery → implementation → validation). Never invoke a partial RPI. If a task is too large for one cycle, break it into smaller sub-tasks during discovery and let `/crank` handle the waves. Evolve's job is to keep the loop turning, not to micro-manage individual tasks.
@@ -24,7 +38,7 @@ When `PROGRAM.md` or `AUTODEV.md` exists, treat it as a hard operational constra
 
 | Anti-Pattern | Why It's Wrong | Correct Behavior |
 |--------------|----------------|------------------|
-| Ask the user anything during execution | Evolve is fully autonomous — questions break the loop | Make best judgment, report in teardown |
+| Ask the user anything during execution | Evolve is fully autonomous — questions break the loop | Make best judgment, report in teardown. Exception: shape decisions affecting > 50 files or schema/contract surfaces (see "Operator-shape carve-out" above) |
 | Stop after one `/rpi` cycle and summarize | Evolve loops until kill switch, max-cycles, or dormancy | Increment cycle and re-enter Step 1 |
 | Run `/rpi` without `--auto` | Non-auto `/rpi` has human gates that halt the loop | Always pass `--auto` to `/rpi` |
 | Run partial `/rpi` (skip validation) | Each cycle must be a complete 3-phase lifecycle | Let `/rpi` run all 3 phases autonomously |
