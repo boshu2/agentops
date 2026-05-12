@@ -73,6 +73,13 @@ teardown() {
     [[ "$output" == *"SKIP  compile-health"* ]]
 }
 
+@test "Gap 2 can require compile-health artifacts on operator boxes" {
+    AGENTOPS_THREE_GAP_REQUIRE_COMPILE_HEALTH=1 run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=durable-learning
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL  compile-health"* ]]
+    [[ "$output" == *"AGENTOPS_THREE_GAP_REQUIRE_COMPILE_HEALTH=1"* ]]
+}
+
 # ---------------------------------------------------------------------------
 # Gap 1 — council coverage (cycle 63 / soc-wxh5.2)
 #

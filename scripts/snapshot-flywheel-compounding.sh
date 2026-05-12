@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [flywheel-snapshot, corpus-state]
+# practices: [wiki-knowledge-surface, snapshot-testing, dora-metrics]
 # Operator command: write a corpus-state evidence snapshot for the
 # flywheel-compounding gate. The snapshot is the durable proof CI reads
 # without re-running the live multi-session computation.

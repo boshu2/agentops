@@ -696,12 +696,12 @@ jobs:
           if-no-files-found: warn
 
   practice-citations:
-    # Report-only advisory gate: walks repo Primitives (skills, hooks, evals,
-    # CLI commands, schemas) and reports which lack a `practices: [slug, ...]`
-    # citation derived from PRACTICE.md. Promotes to required after one clean
-    # backfill cycle.
+    # Non-blocking strict advisory gate: walks repo Primitives (skills, hooks,
+    # evals, CLI commands, schemas, and scripts with declarations) and reports
+    # missing or invalid `practices: [slug, ...]` citations derived from
+    # PRACTICE.md. Promotes to required after one clean backfill cycle.
     needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.markdown == 'true'
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.markdown == 'true'
     name: practice-citations (advisory)
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -711,8 +711,15 @@ jobs:
       - name: Run practice citation report
         run: |
           chmod +x scripts/validate-practice-citations.sh
-          ./scripts/validate-practice-citations.sh --json > practice-citations.json || true
-          ./scripts/validate-practice-citations.sh
+          set +e
+          ./scripts/validate-practice-citations.sh --strict --json > practice-citations.json
+          json_rc=$?
+          ./scripts/validate-practice-citations.sh --strict
+          text_rc=$?
+          if [ "$json_rc" -ne 0 ]; then
+            exit "$json_rc"
+          fi
+          exit "$text_rc"
 
       - name: Upload practice citation report
         if: always()

@@ -286,10 +286,18 @@ build_evals() {
   tracked=$(cd "$REPO_ROOT" && git ls-files 'evals/*/*.json' 2>/dev/null || true)
 
   local result="[]"
-  for suite_dir in "${evals_dir}"/*/; do
-    [[ -d "$suite_dir" ]] || continue
-    local suite_name
-    suite_name="$(basename "$suite_dir")"
+  declare -A suites=()
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local rel suite_name leaf
+    rel="${line#evals/}"
+    suite_name="${rel%%/*}"
+    leaf="${rel#*/}"
+    [[ -n "$suite_name" && -n "$leaf" && "$leaf" != */* ]] || continue
+    suites[$suite_name]=1
+  done <<< "$tracked"
+
+  for suite_name in "${!suites[@]}"; do
 
     local eval_files=()
     while IFS= read -r line; do

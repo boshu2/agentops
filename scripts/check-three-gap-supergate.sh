@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [three-gap-supergate, gate-composition]
+# practices: [design-by-contract, continuous-integration]
 # Three-Gap super-gates: emit a unified PASS/WARN/FAIL for each of the
 # three contract gaps the project tracks (council coverage, durable
 # learning, loop closure). Composes existing gates so the status surface
@@ -143,6 +143,9 @@ gap_durable_learning() {
     if [ -f "$defrag_latest" ] || [ "$has_overnight_preview" -eq 1 ]; then
         run_gate "compile-health" \
             "bash $REPO_ROOT/scripts/check-compile-health.sh" || fails=$((fails+1))
+    elif [ "${AGENTOPS_THREE_GAP_REQUIRE_COMPILE_HEALTH:-0}" = "1" ]; then
+        echo "  FAIL  compile-health (no defrag artifact; AGENTOPS_THREE_GAP_REQUIRE_COMPILE_HEALTH=1)"
+        fails=$((fails+1))
     else
         echo "  SKIP  compile-health (no defrag artifact; operator-side surface, gate is structural)"
     fi

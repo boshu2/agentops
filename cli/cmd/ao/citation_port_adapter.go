@@ -1,3 +1,4 @@
+// practices: [hexagonal-architecture, ddd-bounded-context]
 package main
 
 import (

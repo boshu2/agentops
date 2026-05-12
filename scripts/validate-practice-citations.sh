@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # validate-practice-citations.sh
+# practices: [adr, snapshot-testing, ddd-bounded-context]
 #
 # Walks the repo's primitives (skills, hooks, evals, CLI command files,
-# schemas) and reports which ones declare a `practices: [...]` derivation
-# from PRACTICE.md and which don't.
+# schemas, and scripts with practice declarations)
+# and reports which required ones declare a `practices: [...]` derivation from
+# PRACTICE.md and which don't.
 #
-# Initial mode: REPORT-ONLY (exit 0 with findings printed).
-# After one clean cycle of backfill, flip to STRICT (exit 1 on findings).
+# Default mode: REPORT-ONLY (exit 0 with findings printed).
+# Strict mode exits 1 on missing required declarations or invalid slugs.
 #
 # Practices derive from: <repo>/PRACTICE.md slug registry table.
 # Primitives cite slugs in frontmatter (skills, evals) or header comments
-# (hook scripts, CLI command files).
+# (hook scripts, shell scripts, CLI command files).
 #
 # practices: [tdd, bdd-gherkin, snapshot-testing]
 #
@@ -19,9 +21,6 @@
 #   scripts/validate-practice-citations.sh --strict   # exit 1 on findings
 #   scripts/validate-practice-citations.sh --json     # JSON report
 #
-# Practices applied by this script itself:
-# practices: [adr, snapshot-testing, ddd-bounded-context]
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -71,16 +70,22 @@ if [[ "$slug_count" -lt 5 ]]; then
   exit 2
 fi
 
-# Scan primitives. For now: skills, hooks, evals, CLI command files, schemas.
+# Scan primitives. Skills, hooks, evals, CLI command files, and schemas are
+# required citation surfaces. Root scripts are a declaration-optional surface
+# for now: validate any script citation that exists without reporting the many
+# uncited legacy scripts as missing.
 # Reads two patterns:
 #   1. YAML frontmatter line: "practices: [slug, slug]" or "practices: [slug,\n  slug]"
 #   2. Header comment line: "# practices: [slug, slug]"
-SCAN_TARGETS=(
+REQUIRED_SCAN_TARGETS=(
   skills/*/SKILL.md
   hooks/*.sh
   evals/agentops-core/*.json
   cli/cmd/ao/*.go
   schemas/*.json
+)
+DECLARATION_OPTIONAL_SCAN_TARGETS=(
+  scripts/*.sh
 )
 
 REPORT="$(mktemp)"
@@ -89,6 +94,7 @@ total=0
 declared=0
 missing=0
 invalid=0
+optional_without_practices=0
 
 extract_practices() {
   local file="$1"
@@ -106,32 +112,53 @@ extract_practices() {
     | sort -u || true
 }
 
-for pattern in "${SCAN_TARGETS[@]}"; do
-  for f in $pattern; do
-    [[ -e "$f" ]] || continue
-    total=$((total + 1))
-    practices="$(extract_practices "$f" || true)"
-    if [[ -z "$practices" ]]; then
+scan_file() {
+  local f="$1"
+  local require_practices="$2"
+
+  total=$((total + 1))
+  practices="$(extract_practices "$f" || true)"
+  if [[ -z "$practices" ]]; then
+    if [[ "$require_practices" == "true" ]]; then
       missing=$((missing + 1))
       echo "MISSING: $f" >> "$REPORT"
-      continue
+    else
+      optional_without_practices=$((optional_without_practices + 1))
     fi
-    declared=$((declared + 1))
-    while IFS= read -r slug; do
-      [[ -z "$slug" ]] && continue
-      if ! grep -qxF "$slug" "$CATALOG"; then
-        invalid=$((invalid + 1))
-        echo "INVALID_SLUG: $f cites unknown slug \"$slug\"" >> "$REPORT"
-      fi
-    done <<<"$practices"
+    return
+  fi
+
+  declared=$((declared + 1))
+  while IFS= read -r slug; do
+    [[ -z "$slug" ]] && continue
+    if ! grep -qxF "$slug" "$CATALOG"; then
+      invalid=$((invalid + 1))
+      echo "INVALID_SLUG: $f cites unknown slug \"$slug\"" >> "$REPORT"
+    fi
+  done <<<"$practices"
+}
+
+for pattern in "${REQUIRED_SCAN_TARGETS[@]}"; do
+  for f in $pattern; do
+    [[ -e "$f" ]] || continue
+    scan_file "$f" true
+  done
+done
+
+for pattern in "${DECLARATION_OPTIONAL_SCAN_TARGETS[@]}"; do
+  for f in $pattern; do
+    [[ -e "$f" ]] || continue
+    scan_file "$f" false
   done
 done
 
 # Emit report
 if [[ "$JSON_OUT" == "true" ]]; then
-  python3 - "$REPORT" "$CATALOG" "$total" "$declared" "$missing" "$invalid" <<'PY'
+  mode="report"
+  [[ "$STRICT" == "true" ]] && mode="strict"
+  python3 - "$REPORT" "$CATALOG" "$total" "$declared" "$missing" "$invalid" "$optional_without_practices" "$mode" <<'PY'
 import json, sys
-report, catalog, total, declared, missing, invalid = sys.argv[1:7]
+report, catalog, total, declared, missing, invalid, optional_without, mode = sys.argv[1:9]
 findings = []
 with open(report) as fh:
     for line in fh:
@@ -143,11 +170,12 @@ with open(report) as fh:
 with open(catalog) as fh:
     slugs = [l.strip() for l in fh if l.strip()]
 print(json.dumps({
-    "mode": "strict" if "--strict" in sys.argv else "report",
+    "mode": mode,
     "slug_count": len(slugs),
     "primitives_scanned": int(total),
     "with_practices_field": int(declared),
     "missing_practices_field": int(missing),
+    "declaration_optional_without_practices": int(optional_without),
     "invalid_slug_citations": int(invalid),
     "findings": findings,
 }, indent=2))
@@ -158,6 +186,7 @@ else
   echo "Primitives scanned: $total"
   echo "  with practices field: $declared"
   echo "  missing practices field: $missing"
+  echo "  declaration-optional without practices: $optional_without_practices"
   echo "  invalid slug citations: $invalid"
   echo ""
   if [[ -s "$REPORT" ]]; then

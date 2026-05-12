@@ -1,4 +1,4 @@
-// practices: [corpus-durability, ai-assisted-dev]
+// practices: [wiki-knowledge-surface, resilience-patterns, ai-assisted-dev]
 package main
 
 import (

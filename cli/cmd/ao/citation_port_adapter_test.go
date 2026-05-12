@@ -1,3 +1,4 @@
+// practices: [hexagonal-architecture, tdd]
 package main
 
 import (

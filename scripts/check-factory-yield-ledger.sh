@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [factory-yield-contract, schema-validator]
+# practices: [data-contracts, dora-metrics, design-by-contract]
 # Enforce factory-yield-ledger contract: schema exists, example parses
 # against the schema, every required correlation+yield field is present,
 # event_type=factory.yield_observation and schema_version=1 hold.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [corpus-durability, ai-assisted-dev]
+# practices: [wiki-knowledge-surface, resilience-patterns, ai-assisted-dev]
 # Fail if the newest corpus snapshot under $AGENTOPS_CORPUS_SNAPSHOT_DIR
 # (or ~/.agentops/corpus-snapshots/) is older than $AGENTOPS_CORPUS_FRESHNESS_DAYS
 # days (default 7). Skip cleanly when no snapshots exist (greenfield boxes).
