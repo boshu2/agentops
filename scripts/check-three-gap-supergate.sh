@@ -79,18 +79,24 @@ gap_durable_learning() {
         echo "  SKIP  flywheel-proof (cli/bin/ao not built)"
     fi
     # compile-health requires .agents/defrag/latest.json (or an overnight
-    # fallback). On greenfield CI runners neither exists; the nightly
-    # workflow runs `ao defrag` and then check-compile-health.sh against
-    # a tmpdir output. The supergate is per-push and should SKIP rather
-    # than fail when the artifact is structurally unavailable.
-    local agents_dir="${AGENTS_DIR:-$REPO_ROOT/.agents}"
-    if [ -z "${COMPILE_OUTPUT_DIR:-}" ] \
-       && [ ! -f "$agents_dir/defrag/latest.json" ] \
-       && ! find "$agents_dir/overnight" -path '*/defrag/latest.json' -type f 2>/dev/null | grep -q .; then
-        echo "  SKIP  compile-health (no defrag artifact; enforced by nightly workflow)"
-    else
+    # preview fallback). On greenfield CI runners neither exists, so the
+    # check would fail purely on artifact absence rather than on durable-
+    # learning health. The runtime-artifact-tagged goals (compile-freshness,
+    # compile-no-oscillation) already surface that signal on operator
+    # boxes; here we SKIP rather than fail, matching the Gap 1 council
+    # SKIP pattern (operator-side surface; gate is structural).
+    local defrag_latest="$REPO_ROOT/.agents/defrag/latest.json"
+    local overnight_root="$REPO_ROOT/.agents/overnight"
+    local has_overnight_preview=0
+    if [ -d "$overnight_root" ] && \
+       find "$overnight_root" -path '*/defrag/latest.json' -type f -print -quit 2>/dev/null | grep -q .; then
+        has_overnight_preview=1
+    fi
+    if [ -f "$defrag_latest" ] || [ "$has_overnight_preview" -eq 1 ]; then
         run_gate "compile-health" \
             "bash $REPO_ROOT/scripts/check-compile-health.sh" || fails=$((fails+1))
+    else
+        echo "  SKIP  compile-health (no defrag artifact; operator-side surface, gate is structural)"
     fi
     return "$fails"
 }
