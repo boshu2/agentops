@@ -49,7 +49,7 @@
 - **Claim:** mt-olympus city is a working multi-agent deployment of
   AgentOps.
 - **Surface:** `~/dev/mt-olympus/` (separate repo, gc supervisor
-  + bd dolt remote prefix `mo`/`hq`). Cross-fleet reference in
+  with bd dolt remote prefix `mo`/`hq`). Cross-fleet reference in
   `~/.claude/reference/bushido.md` "mt-olympus dolt" section.
 - **Gate:** Not gated by this repo's CI; cross-repo claim. Listed for
   completeness — fully verifying this requires inspecting mt-olympus

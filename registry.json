@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-10T19:28:50Z",
+  "generated_at": "2026-05-12T12:53:01Z",
   "summary": {
-    "skills": 75,
+    "skills": 77,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
-    "eval_files": 61,
-    "cli_commands": 147
+    "eval_files": 63,
+    "cli_commands": 148
   },
   "surfaces": {
     "skills": [
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 12
+        "reference_count": 16
       },
       {
         "name": "grafana-platform-dashboard",
@@ -356,6 +356,14 @@
         "reference_count": 5
       },
       {
+        "name": "validate",
+        "tier": "judgment",
+        "path": "skills/validate/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "vibe",
         "tier": "judgment",
         "path": "skills/vibe/",
@@ -370,6 +378,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 4
+      },
+      {
+        "name": "curate",
+        "tier": "knowledge",
+        "path": "skills/curate/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "domain",
@@ -1145,8 +1161,11 @@
       {
         "suite": "workbench",
         "path": "evals/workbench/",
-        "eval_count": 0,
-        "evals": []
+        "eval_count": 2,
+        "evals": [
+          "baseline-scorecard",
+          "scorecard-latest"
+        ]
       }
     ],
     "cli_commands": [
@@ -1241,6 +1260,10 @@
       {
         "name": "corpus",
         "path": "cli/cmd/ao/corpus.go"
+      },
+      {
+        "name": "corpus_snapshot",
+        "path": "cli/cmd/ao/corpus_snapshot.go"
       },
       {
         "name": "curate",

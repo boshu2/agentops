@@ -78,8 +78,20 @@ gap_durable_learning() {
     else
         echo "  SKIP  flywheel-proof (cli/bin/ao not built)"
     fi
-    run_gate "compile-health" \
-        "bash $REPO_ROOT/scripts/check-compile-health.sh" || fails=$((fails+1))
+    # compile-health requires .agents/defrag/latest.json (or an overnight
+    # fallback). On greenfield CI runners neither exists; the nightly
+    # workflow runs `ao defrag` and then check-compile-health.sh against
+    # a tmpdir output. The supergate is per-push and should SKIP rather
+    # than fail when the artifact is structurally unavailable.
+    local agents_dir="${AGENTS_DIR:-$REPO_ROOT/.agents}"
+    if [ -z "${COMPILE_OUTPUT_DIR:-}" ] \
+       && [ ! -f "$agents_dir/defrag/latest.json" ] \
+       && ! find "$agents_dir/overnight" -path '*/defrag/latest.json' -type f 2>/dev/null | grep -q .; then
+        echo "  SKIP  compile-health (no defrag artifact; enforced by nightly workflow)"
+    else
+        run_gate "compile-health" \
+            "bash $REPO_ROOT/scripts/check-compile-health.sh" || fails=$((fails+1))
+    fi
     return "$fails"
 }
 
