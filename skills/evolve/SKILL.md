@@ -111,6 +111,8 @@ ao lookup --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
 
 **Apply retrieved knowledge:** If learnings are returned, check each for applicability to the current improvement cycle. For applicable learnings, cite by filename and record: `ao metrics cite "<path>" --type applied 2>/dev/null || true`
 
+**Prior-failure injection (mandatory):** read the last 3 entries of `.agents/evolve/cycle-history.jsonl`. For any with `gate` containing `FAIL|FAILED|BLOCKED`, extract failure-surface keywords (`registry|bats|markdown|supergate|canary|coverage|toolchain`) and search `.agents/learnings/` for matching learnings. Print the top matches before work selection. Without this read path, the loop accumulates write-only ledgers and re-derives lessons each cycle. See `references/convergence-mechanics.md` for the full recipe.
+
 Before cycle recovery, load the repo execution profile contract when it exists. The repo execution profile is the source for repo policy; the user prompt should mostly supply mission/objective, not restate startup reads, validation bundle, tracker wrapper rules, or `definition_of_done`.
 
 - Locate `docs/contracts/repo-execution-profile.md` and `docs/contracts/repo-execution-profile.schema.json`.
@@ -177,6 +179,12 @@ CYCLE_START_SHA=$(git rev-parse HEAD)
 [ -f ~/.config/evolve/KILL ] && echo "KILL: $(cat ~/.config/evolve/KILL)" && exit 0
 [ -f .agents/evolve/STOP ] && echo "STOP: $(cat .agents/evolve/STOP 2>/dev/null)" && exit 0
 ```
+
+### Step 1.5: Healing-first classifier
+
+Before fitness or work selection, classify the cycle: `gh run list --limit 1 --workflow validate.yml --json conclusion --jq '.[0].conclusion'`. If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
+
+**Convergence check:** read `.agents/evolve/session-convergence.json` if present. If ALL criteria are met (CI green streak ≥ 3, outstanding HIGH+MEDIUM next-work ≤ 1, fitness ≥ baseline), emit teardown and DO NOT re-arm wakeup.
 
 ### Step 2: Measure Fitness
 
@@ -465,6 +473,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
 - [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
 - [references/context-budget.md](references/context-budget.md) — `CONTEXT_BUDGET_EXHAUSTED` as a third stop reason and handoff protocol
+- [references/convergence-mechanics.md](references/convergence-mechanics.md) — Read-path mechanisms (prior-failure injection, healing-first classifier, hypothesis tracking, STOP criteria) that turn write-only ledgers into compounding behavior
 - [references/cycle-history.md](references/cycle-history.md) — JSONL format, recovery protocol, kill switch
 - [references/examples.md](references/examples.md) — Detailed usage examples
 - [references/fitness-scoring.md](references/fitness-scoring.md) — Baseline capture, regression detection, revert procedure

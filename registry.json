@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-12T13:54:18Z",
+  "generated_at": "2026-05-12T14:10:26Z",
   "summary": {
     "skills": 77,
     "hooks": 43,
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "grafana-platform-dashboard",
