@@ -65,6 +65,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-finding-registry.sh"
     make_stub "$FAKE_REPO/scripts/check-factory-admission.sh"
     make_stub "$FAKE_REPO/scripts/check-contracts-structural-floor.sh"
+    make_stub "$FAKE_REPO/scripts/check-docs-learning-references.sh"
     make_stub "$FAKE_REPO/scripts/check-three-gap-supergate.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"

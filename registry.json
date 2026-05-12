@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-12T14:10:26Z",
+  "generated_at": "2026-05-12T20:08:13Z",
   "summary": {
     "skills": 77,
-    "hooks": 43,
+    "hooks": 46,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
@@ -726,6 +726,22 @@
         "type": "command"
       },
       {
+        "name": "check-sibling-citation-on-commit",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/check-sibling-citation-on-commit.sh",
+        "type": "command"
+      },
+      {
+        "name": "check-test-pair-on-commit",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/check-test-pair-on-commit.sh",
+        "type": "command"
+      },
+      {
         "name": "codex-parity-warn",
         "lifecycle": "PreToolUse",
         "matcher": "Edit",
@@ -843,6 +859,14 @@
         "matcher": "Write",
         "timeout": 3,
         "path": "hooks/standards-injector.sh",
+        "type": "command"
+      },
+      {
+        "name": "update-principles-check",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/update-principles-check.sh",
         "type": "command"
       },
       {
