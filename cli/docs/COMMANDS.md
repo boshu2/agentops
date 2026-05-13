@@ -583,6 +583,21 @@ ao loop history [flags]
       --start int   start cycle number (inclusive; 0 = unbounded)
 ```
 
+#### `ao loop verify`
+
+Audit .agents/evolve/cycle-history.jsonl integrity via the typed
+
+```
+ao loop verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for verify
+      --max-idle int   max acceptable trailing idle/unchanged streak before flagging dormancy (default 5)
+```
+
 ---
 
 ### `ao maturity`

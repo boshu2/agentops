@@ -61,6 +61,121 @@ func init() {
 	loopHistoryCmd.Flags().Int("end", 0, "end cycle number (inclusive; 0 = unbounded)")
 	loopHistoryCmd.Flags().Bool("latest", false, "emit only the latest entry")
 	loopCmd.AddCommand(loopHistoryCmd)
+
+	loopVerifyCmd.Flags().Int("max-idle", 5, "max acceptable trailing idle/unchanged streak before flagging dormancy")
+	loopCmd.AddCommand(loopVerifyCmd)
+}
+
+// loopVerifyCmd audits cycle-history.jsonl integrity using the typed
+// BC3 LoopReaderPort. Cycle 163: first NEW consumer of the cycle-161
+// CycleEntry widening (uses the StartedAt field added in soc-ckc4).
+//
+// Audits performed:
+//   - monotonic Number ordering (no out-of-order cycles)
+//   - no duplicate Number values (catches double-appends)
+//   - non-empty StartedAt on every entry (the cycle-161 widening
+//     surfaces operator hand-edits that forgot the timestamp)
+//   - IdleStreak < threshold (sanity check on dormancy)
+var loopVerifyCmd = &cobra.Command{
+	Use:   "verify",
+	Short: "Audit cycle-history.jsonl integrity via BC3 LoopReaderPort",
+	Long: `Audit .agents/evolve/cycle-history.jsonl integrity via the typed
+BC3 LoopReaderPort. Reports any of:
+  - non-monotonic Number ordering
+  - duplicate Number values
+  - empty StartedAt fields (since cycle 161 they are required)
+  - excessive trailing IdleStreak (>= --max-idle, default 5)
+
+Exit code is 0 when all checks pass, 1 when any issue is found.
+Useful as a pre-commit gate or CI assertion against a hand-edited ledger.`,
+	RunE: runLoopVerify,
+}
+
+func runLoopVerify(cmd *cobra.Command, _ []string) error {
+	maxIdle, _ := cmd.Flags().GetInt("max-idle")
+	if maxIdle == 0 {
+		maxIdle = 5
+	}
+	return loopVerifyRun(cmd.Context(), loopVerifyOptions{
+		writer:  cmd.OutOrStdout(),
+		maxIdle: maxIdle,
+	})
+}
+
+type loopVerifyOptions struct {
+	writer   io.Writer
+	maxIdle  int
+	verifyFn func(ctx context.Context, opts loopVerifyOptions) ([]string, error)
+}
+
+func loopVerifyRun(ctx context.Context, opts loopVerifyOptions) error {
+	if opts.writer == nil {
+		opts.writer = os.Stdout
+	}
+	fn := opts.verifyFn
+	if fn == nil {
+		fn = loopVerifyViaPort
+	}
+	issues, err := fn(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("loop verify: %w", err)
+	}
+	if len(issues) == 0 {
+		fmt.Fprintln(opts.writer, "PASS — no integrity issues found")
+		return nil
+	}
+	fmt.Fprintf(opts.writer, "FAIL — %d issue(s):\n", len(issues))
+	for _, issue := range issues {
+		fmt.Fprintf(opts.writer, "  - %s\n", issue)
+	}
+	return fmt.Errorf("cycle-history integrity check failed: %d issue(s)", len(issues))
+}
+
+// loopVerifyViaPort uses productionLoopReader (cycle 108) +
+// CycleEntry widening (cycle 161) to audit the local ledger.
+func loopVerifyViaPort(ctx context.Context, opts loopVerifyOptions) ([]string, error) {
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return nil, err
+	}
+	historyPath := filepath.Join(cwd, ".agents", "evolve", "cycle-history.jsonl")
+	reader := newProductionLoopReader(historyPath)
+
+	entries, err := reader.Range(ctx, 1, 1<<30)
+	if err != nil {
+		return nil, fmt.Errorf("range: %w", err)
+	}
+	idleStreak, err := reader.IdleStreak(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("idle-streak: %w", err)
+	}
+
+	return checkLoopIntegrity(entries, idleStreak, opts.maxIdle), nil
+}
+
+// checkLoopIntegrity is the pure-Go audit logic, separated for
+// testability. Returns a list of issue strings; empty means OK.
+func checkLoopIntegrity(entries []ports.CycleEntry, idleStreak, maxIdle int) []string {
+	issues := []string{}
+	seen := make(map[int]bool, len(entries))
+	prev := 0
+	for _, e := range entries {
+		if e.Number <= prev {
+			issues = append(issues, fmt.Sprintf("non-monotonic: cycle %d follows cycle %d", e.Number, prev))
+		}
+		if seen[e.Number] {
+			issues = append(issues, fmt.Sprintf("duplicate cycle number: %d", e.Number))
+		}
+		seen[e.Number] = true
+		if e.StartedAt == "" {
+			issues = append(issues, fmt.Sprintf("cycle %d missing StartedAt timestamp", e.Number))
+		}
+		prev = e.Number
+	}
+	if idleStreak > maxIdle {
+		issues = append(issues, fmt.Sprintf("trailing IdleStreak=%d exceeds max-idle=%d", idleStreak, maxIdle))
+	}
+	return issues
 }
 
 func runLoopHistory(cmd *cobra.Command, _ []string) error {

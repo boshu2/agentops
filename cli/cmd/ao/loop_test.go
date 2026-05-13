@@ -162,3 +162,122 @@ func TestLoopHistory_HistoryFnErrorPropagates(t *testing.T) {
 		t.Fatalf("error not wrapped: %v", err)
 	}
 }
+
+// Cycle 163: tests for ao loop verify — first NEW consumer of the
+// cycle-161 CycleEntry widening. Audits cycle-history integrity
+// using the typed LoopReaderPort surface.
+
+func TestCheckLoopIntegrity_CleanLedger(t *testing.T) {
+	entries := []ports.CycleEntry{
+		{Number: 1, StartedAt: "2026-05-13T00:00:00Z", Result: "improved"},
+		{Number: 2, StartedAt: "2026-05-13T01:00:00Z", Result: "improved"},
+		{Number: 3, StartedAt: "2026-05-13T02:00:00Z", Result: "improved"},
+	}
+	issues := checkLoopIntegrity(entries, 0, 5)
+	if len(issues) != 0 {
+		t.Fatalf("clean ledger should have no issues, got %v", issues)
+	}
+}
+
+func TestCheckLoopIntegrity_NonMonotonicNumber(t *testing.T) {
+	entries := []ports.CycleEntry{
+		{Number: 1, StartedAt: "2026-05-13T00:00:00Z"},
+		{Number: 3, StartedAt: "2026-05-13T01:00:00Z"},
+		{Number: 2, StartedAt: "2026-05-13T02:00:00Z"},
+	}
+	issues := checkLoopIntegrity(entries, 0, 5)
+	found := false
+	for _, i := range issues {
+		if strings.Contains(i, "non-monotonic: cycle 2 follows cycle 3") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected non-monotonic issue, got %v", issues)
+	}
+}
+
+func TestCheckLoopIntegrity_DuplicateNumber(t *testing.T) {
+	entries := []ports.CycleEntry{
+		{Number: 1, StartedAt: "2026-05-13T00:00:00Z"},
+		{Number: 2, StartedAt: "2026-05-13T01:00:00Z"},
+		{Number: 2, StartedAt: "2026-05-13T02:00:00Z"},
+	}
+	issues := checkLoopIntegrity(entries, 0, 5)
+	found := false
+	for _, i := range issues {
+		if strings.Contains(i, "duplicate cycle number: 2") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected duplicate issue, got %v", issues)
+	}
+}
+
+func TestCheckLoopIntegrity_MissingStartedAt(t *testing.T) {
+	entries := []ports.CycleEntry{
+		{Number: 1, StartedAt: "2026-05-13T00:00:00Z"},
+		{Number: 2},
+	}
+	issues := checkLoopIntegrity(entries, 0, 5)
+	found := false
+	for _, i := range issues {
+		if strings.Contains(i, "cycle 2 missing StartedAt") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected missing-StartedAt issue, got %v", issues)
+	}
+}
+
+func TestCheckLoopIntegrity_IdleStreakExceedsThreshold(t *testing.T) {
+	entries := []ports.CycleEntry{
+		{Number: 1, StartedAt: "2026-05-13T00:00:00Z"},
+	}
+	issues := checkLoopIntegrity(entries, 10, 5)
+	found := false
+	for _, i := range issues {
+		if strings.Contains(i, "IdleStreak=10 exceeds max-idle=5") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected idle-streak issue, got %v", issues)
+	}
+}
+
+func TestLoopVerifyRun_StubPASS(t *testing.T) {
+	stub := func(_ context.Context, _ loopVerifyOptions) ([]string, error) {
+		return nil, nil
+	}
+	var buf bytes.Buffer
+	err := loopVerifyRun(context.Background(), loopVerifyOptions{
+		writer:   &buf,
+		verifyFn: stub,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "PASS") {
+		t.Fatalf("expected PASS in output, got %q", buf.String())
+	}
+}
+
+func TestLoopVerifyRun_StubFAIL(t *testing.T) {
+	stub := func(_ context.Context, _ loopVerifyOptions) ([]string, error) {
+		return []string{"sample issue"}, nil
+	}
+	var buf bytes.Buffer
+	err := loopVerifyRun(context.Background(), loopVerifyOptions{
+		writer:   &buf,
+		verifyFn: stub,
+	})
+	if err == nil {
+		t.Fatal("expected non-nil error when issues found")
+	}
+	if !strings.Contains(buf.String(), "FAIL") || !strings.Contains(buf.String(), "sample issue") {
+		t.Fatalf("expected FAIL + issue in output, got %q", buf.String())
+	}
+}
