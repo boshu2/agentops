@@ -2927,6 +2927,23 @@ ao corpus fitness [flags]
       --json   Emit the fitness vector as JSON
 ```
 
+#### `ao corpus inject`
+
+Read knowledge from a corpus root via the typed BC1
+
+```
+ao corpus inject [--query <text>] [--root <path>] [--limit N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for inject
+      --limit int      max items to emit (0 = all) (default 10)
+      --query string   ranking query (empty = all items, score 0)
+      --root string    corpus root (default: .agents/learnings/)
+```
+
 #### `ao corpus restore`
 
 Untars a snapshot produced by ao corpus snapshot. By default refuses to overwrite an
