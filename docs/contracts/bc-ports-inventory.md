@@ -2,10 +2,8 @@
 
 > **Status:** 14 ports scaffolded (12 from the cycle 78-106 wire-up
 > arc + FactoryAdmissionPort cycle 139 / soc-2klg.1 +
-> ClaimEvidencePort cycle 141 / soc-2klg.2). 13 of 14 have
-> production adapters delivered (cycles 83 + 108-118 + 140);
-> ClaimEvidencePort scaffolded cycle 141 — production adapter
-> pending (natural follow-up cycle).
+> ClaimEvidencePort cycle 141 / soc-2klg.2). 14 of 14 have
+> production adapters delivered (cycles 83 + 108-118 + 140 + 142).
 > Every BC port has both an `InMemoryX` test double in
 > `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
 > assertions). Next-phase work continues call-site migration through
@@ -200,7 +198,8 @@ caller-refactor work:
 | 116 | `96318d7b` | `productionClaimEvidenceBinder` | BC2 | JSONL append + upgrade-only rule |
 | 117 | `8669b15e` | `productionCIStatus` | BC2 | external CLI + JSON parse (pluggable runner) |
 | 118 | `57ad553d` | `productionEventBus` | BC4 | sync in-memory pubsub |
-| 140 | _this commit_ | `productionFactoryAdmission` | BC4 | daemon.FactoryAdmissionEvidenceProvider wrapper (3 probe methods + type translation) |
+| 140 | `f4f05324` | `productionFactoryAdmission` | BC4 | daemon.FactoryAdmissionEvidenceProvider wrapper (3 probe methods + type translation) |
+| 142 | _this commit_ | `productionClaimEvidence` | BC4 | composer over GateRunnerPort (policy enforced via productionPromoteEvidenceLevel) |
 
 All adapters in `cli/cmd/ao/<x>_adapter.go` with paired
 `<x>_adapter_test.go`. Each carries a compile-time port assertion
