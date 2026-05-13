@@ -582,6 +582,43 @@ ao metrics report [flags]
 
 ---
 
+### `ao operator`
+
+Read and write operator intents via the typed BC4 OperatorPort. Intents are durable records of operator decisions (halt, rescope, handoff) appended to .agents/operator/intents.jsonl.
+
+```
+ao operator [command]
+```
+
+**Subcommands:**
+
+#### `ao operator list`
+
+Emit recorded OperatorIntents from .agents/operator/intents.jsonl
+
+```
+ao operator list [flags]
+```
+
+#### `ao operator record`
+
+Append an OperatorIntent to .agents/operator/intents.jsonl via the
+
+```
+ao operator record --kind <kind> [--subject S] [--note N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for record
+      --kind string      intent kind (required: halt|rescope|handoff|other)
+      --note string      free-text note
+      --subject string   intent subject (e.g., bd ID, file path)
+```
+
+---
+
 ### `ao pool`
 
 Manage knowledge candidates in quality pools.
