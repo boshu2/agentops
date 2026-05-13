@@ -180,6 +180,44 @@ ao citation verify --kind <file|function|symbol> --raw <text> [flags]
 
 ---
 
+### `ao claim`
+
+Bind claims to evidence files at a promotion level (PG1-PG4) and list existing bindings, via the typed BC2 ClaimEvidenceBinderPort.
+
+```
+ao claim [command]
+```
+
+**Subcommands:**
+
+#### `ao claim bind`
+
+Append (or upgrade) a claim→evidence binding via the typed BC2
+
+```
+ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [flags]
+```
+
+**Flags:**
+
+```
+      --anchor stringArray   optional in-file anchors (repeatable)
+      --claim string         claim ID (required, e.g. AOP-CLAIM-X)
+  -h, --help                 help for bind
+      --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
+      --path string          evidence file path (required, relative to repo root)
+```
+
+#### `ao claim list`
+
+Emit all known claim→evidence bindings via the typed BC2 ClaimEvidenceBinderPort. Output is line-delimited JSON.
+
+```
+ao claim list [flags]
+```
+
+---
+
 ### `ao constraint`
 
 Manage constraints compiled from promoted findings.
