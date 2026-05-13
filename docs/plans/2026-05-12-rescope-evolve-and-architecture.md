@@ -106,7 +106,7 @@ Each port becomes one bead. Each bead is sized to land as one operator-shaped co
 
 | Bead | Title | Maps from existing | Sized |
 |---|---|---|---|
-| .1 | Gate vs Check vs Validation — pick `Gate` (BC2 aggregate); rename ~90 scripts to use consistent term in headers | NEW | 1-2 cycles |
+| .1 | Gate vs Check vs Validation — pick `Gate` (BC2 aggregate); rename ~90 scripts to use consistent term in headers | ✓ AUDITED cycle 130 (0 scripts use "Validator", 38 already use "Gate", rest use neither — catalog overstated drift size; no renames needed) | 1-2 cycles |
 | .2 | Cycle vs Loop vs Iteration vs Run — pick `Cycle` (BC3 aggregate); deprecate `Run` outside Phase context | ✓ AUDITED cycle 129 (no drift; RPIRun + Iteration usage is serialized-contract, Runner naming, Runtime substring-coincidence, or scoped Dream counters — no renames needed) | 1 cycle |
 | .3 | Claim vs Assertion vs Evidence — `daemon.QueueClaim` → `QueueLease` | ✓ DONE cycle 126 (108 Go refs renamed; daemon/rpi/llmwiki/cmd-ao tests green) | 1 cycle |
 | .4 | Skill vs Primitive vs Pattern vs Practice — pin definitions per BC | ✓ AUDITED cycle 128 (no systemic misuse; `primitive` overload documented as 3 scoped senses, no renames needed) | 1 cycle |
