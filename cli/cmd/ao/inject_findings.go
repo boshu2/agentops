@@ -142,17 +142,9 @@ func findingMatchesQuery(f knowledgeFinding, queryLower string) bool {
 	return search.FindingMatchesQuery(f, queryLower)
 }
 func parseFindingFile(path string) (knowledgeFinding, error) { return search.ParseFindingFile(path) }
-func parseFindingFrontmatterFields(f *knowledgeFinding, lines []string, contentStart int) {
-	search.ParseFindingFrontmatterFields(f, lines, contentStart)
-}
-func applyFindingField(f *knowledgeFinding, line string) { search.ApplyFindingField(f, line) }
-func parseFindingTitle(f *knowledgeFinding, lines []string, contentStart int, path string) {
-	search.ParseFindingTitle(f, lines, contentStart, path)
-}
-func trimField(line string) string                  { return search.TrimField(line) }
-func parseListField(raw string) []string            { return search.ParseListField(raw) }
-func parseIntField(raw string) int                  { return search.ParseIntField(raw) }
-func parseFindingTime(raw string) (time.Time, bool) { return search.ParseFindingTime(raw) }
+func applyFindingField(f *knowledgeFinding, line string)     { search.ApplyFindingField(f, line) }
+func trimField(line string) string                           { return search.TrimField(line) }
+func parseListField(raw string) []string                     { return search.ParseListField(raw) }
 func findingStatusActiveForRetrieval(status string) bool {
 	return search.FindingStatusActiveForRetrieval(status)
 }

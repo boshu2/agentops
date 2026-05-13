@@ -549,57 +549,6 @@ func TestProcessCitationFeedback_RetrievedCitationIsSkipped(t *testing.T) {
 	}
 }
 
-// NOTE: Removed — tests confidence-gated skipping in processCitationFeedback
-// which exists on ag-wfo3 branch but wasn't merged into main's feedback loop.
-func _removedTestProcessCitationFeedback_LowConfidenceReferenceIsSkipped(t *testing.T) {
-	tmp := t.TempDir()
-	aoDir := filepath.Join(tmp, ".agents", "ao")
-	learningsDir := filepath.Join(tmp, ".agents", "learnings")
-	if err := os.MkdirAll(aoDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	learningPath := filepath.Join(learningsDir, "low-confidence-reference.jsonl")
-	if err := os.WriteFile(learningPath, []byte(`{"id":"low-confidence-reference","title":"Low Confidence Reference","utility":0.6}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	citation := types.CitationEvent{
-		ArtifactPath:    ".agents/learnings/low-confidence-reference.jsonl",
-		CitationType:    "reference",
-		MatchConfidence: 0.5,
-		MatchProvenance: "lookup:query",
-		FeedbackGiven:   false,
-	}
-	data, err := json.Marshal(citation)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), append(data, '\n'), 0o600); err != nil {
-		t.Fatal(err)
-	}
-
-	total, rewarded, skipped := processCitationFeedback(tmp)
-	if total != 1 || rewarded != 0 || skipped != 1 {
-		t.Fatalf("expected (1,0,1), got (%d,%d,%d)", total, rewarded, skipped)
-	}
-
-	feedbackData, err := os.ReadFile(filepath.Join(aoDir, "feedback.jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var event FeedbackEvent
-	if err := json.Unmarshal([]byte(strings.TrimSpace(string(feedbackData))), &event); err != nil {
-		t.Fatal(err)
-	}
-	if event.Reason != "low-confidence-evidence" {
-		t.Fatalf("expected low-confidence-evidence, got %q", event.Reason)
-	}
-}
-
 func TestProcessCitationFeedback_PrefersAppliedEvidenceOverRetrieved(t *testing.T) {
 	tmp := t.TempDir()
 	aoDir := filepath.Join(tmp, ".agents", "ao")
