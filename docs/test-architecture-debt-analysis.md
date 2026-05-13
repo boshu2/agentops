@@ -36,12 +36,9 @@
 - `contradict.go`: `oppositionPairs` (map[string]string)
 - `curate.go`: `validArtifactTypes` (map[string]bool)
 - `doctor.go`: `deprecatedCommands` (map[string]string)
-- `feedback_loop.go`: `validFeedbackCitationTypes` (map[string]bool)
 - `goals_steer.go`: `validSteers` (map[string]bool)
 - `inject_context.go`: `validIntelScopes`, `validSectionNames` (2x map[string]bool)
 - `inject_learnings.go`: `validPhases` (map[string]bool)
-- `inject_scoring.go`: `injectMaturityWeights` (map[string]float64)
-- `mine.go`: `validMineSources` (map[string]bool)
 - `plans.go`: `planStatusSymbols` (map[types.PlanStatus]string)
 - `ratchet_next.go`: `stepSkillMap` (map[string]string)
 
@@ -51,7 +48,6 @@
 - `init.go`: `agentsDirs` ([]string)
 - `pool_ingest.go`: `dateStrategies` ([]dateStrategy)
 - `retrieval_bench.go`: `liveQueries`, `benchManifestFilenames` (2x []string)
-- `rpi_complexity.go`: `complexScopeKeywords` ([]string)
 - +~15 more immutable slices
 
 ### State Saved by executeCommand()
