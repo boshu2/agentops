@@ -98,6 +98,18 @@ This drift cuts across BC1 and BC5, so it gets its own section.
 
 The pinned distinction: **Skill is invokable**, **Pattern is reusable knowledge**, **Practice is a citation**, **Primitive is the annotated unit**. Don't say "skill" when you mean "pattern"; don't say "pattern" when you mean "practice".
 
+### Sub-overload: "primitive" carries three senses (audit cycle 128)
+
+A cycle-128 audit found `primitive` is used for three distinct concepts. The BC1-Corpus sense above is the canonical one for the cross-cutting `practices: [slug]` annotation. The other two are scoped, not drift, but flagged here so readers don't conflate them:
+
+| Sense | Used in | Distinguishing context |
+|---|---|---|
+| **BC1 Corpus Primitive** | `PRACTICE.md`, `practices: [slug]` annotations atop SKILL.md / hooks / scripts | "the annotated unit of the AgentOps corpus" |
+| **Domain Primitive** | `skills/domain/SKILL.md` + its `references/*-primitive.md` files | Architecture-as-domain — 6 structural primitives (Entry, Index, Citation, Primitive, Slice, Anti-Pattern). Scope: the `domain` skill only. |
+| **Runtime primitive** (Codex/Claude tool features) | `skills/converter/SKILL.md`, `skills/standards/SKILL.md` ("prohibited primitives", "Claude primitive labels") | Atomic tool/feature exposed by a runtime (e.g., a Claude-only hook event). Scope: converter + standards skills. |
+
+These three senses do NOT need renaming — each is scoped to its surface. The flag is descriptive: when reading `primitive` in code, check the surrounding skill/file to pick the right sense.
+
 ## Rename schedule (per epic soc-5yuy children)
 
 | Drift | Resolution | Cycle slot |
@@ -139,7 +151,7 @@ soc-5yuy child PR ratchets one of these counts toward 0.
 | #1 Gate / Check / Validation | `script header references "Validator"` outside Go code | ~90 `scripts/check-*.sh` files (filenames stay; headers/docs use "Gate") | `grep -rln 'scripts/check-' scripts/` |
 | #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | _measure on demand_ | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
 | #3 Claim / Assertion / Evidence | `QueueClaim` references | ✓ 0 (down from 111 at cycle 123 baseline); cycle 126 sed rename + green tests | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
-| #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | _measure on demand_ | (audit per file; no single grep) |
+| #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | ✓ AUDITED cycle 128: no systemic misuse; `primitive` overload documented as 3 scoped senses (no renames needed) | (audit per file; no single grep) |
 | #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`); refined cycle 125 — these are 3 DIFFERENT concepts (storage/search = TranscriptSession 97 refs; gascity = published-API Session 79 refs, keep as-is) | `grep -rn 'type Session ' cli/` |
 
 Excluded from counts: `cli/testdata/` (transcript fixtures), test
@@ -150,4 +162,5 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
 - 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
 - 2026-05-13 cycle 125: refined drift #5 — the 3 bare `Session` types are 3 different concepts, not one. Added TranscriptSession (BC1) as missing canonical name. gascity.Session is a published-API surface — rename out of scope; keep + alias-document. storage.Session (93 refs) + search.Session (4 refs) rename to TranscriptSession is the actual soc-5yuy.5 unit; gascity stays.
+- 2026-05-13 cycle 128: **drift #4 RESOLVED via audit-only.** Surveyed `primitive`/`skill`/`pattern`/`practice` usage across SKILL.md, PRACTICE.md, contracts. Found no systemic misuse — Skill is consistently "invokable", Pattern is "reusable knowledge", Practice is "citation annotation". `primitive` IS overloaded across 3 distinct concepts (BC1 Corpus Primitive vs Domain Primitive in skills/domain/ vs Runtime primitive in converter/standards) — added a sub-overload table to the contract documenting all 3 senses as scoped (not drift). No renames needed; the audit IS the resolution.
 - 2026-05-13 cycle 126: **drift #3 RESOLVED.** `daemon.QueueClaim` → `QueueLease` rename shipped: 108 Go refs across cli/internal/{daemon,rpi,llmwiki} + cli/cmd/ao. Audit-then-execute: pre-rename audit (cycle-125 pattern) showed no split-concept surprise for the daemon struct itself, but post-commit self-review caught an over-broad sed in the same cycle — `rpi.ErrQueueClaimConflict` / `rpi.RequireQueueClaimOwner` (about work-item claim coordination in `.agents/rpi/next-work.jsonl`, NOT the daemon job-slot lease) were also renamed by the substring match. Reverted just those identifiers; daemon-side `QueueLease` stays. Lesson: substring-based sed can over-reach across different concepts that share a prefix; an audit needs to enumerate ALL identifiers containing the substring, not just the type definition. First soc-5yuy child to close.

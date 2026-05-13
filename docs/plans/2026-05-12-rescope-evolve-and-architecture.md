@@ -109,7 +109,7 @@ Each port becomes one bead. Each bead is sized to land as one operator-shaped co
 | .1 | Gate vs Check vs Validation — pick `Gate` (BC2 aggregate); rename ~90 scripts to use consistent term in headers | NEW | 1-2 cycles |
 | .2 | Cycle vs Loop vs Iteration vs Run — pick `Cycle` (BC3 aggregate); deprecate `Run` outside Phase context | NEW | 1 cycle |
 | .3 | Claim vs Assertion vs Evidence — `daemon.QueueClaim` → `QueueLease` | ✓ DONE cycle 126 (108 Go refs renamed; daemon/rpi/llmwiki/cmd-ao tests green) | 1 cycle |
-| .4 | Skill vs Primitive vs Pattern vs Practice — pin definitions per BC | NEW (extends `soc-w6vh.1` practice slug drift) | 1 cycle |
+| .4 | Skill vs Primitive vs Pattern vs Practice — pin definitions per BC | ✓ AUDITED cycle 128 (no systemic misuse; `primitive` overload documented as 3 scoped senses, no renames needed) | 1 cycle |
 | .5 | Session — scope per BC (`AgentSession` BC5, `OperatorSession` BC5; drop the daemon "session" usage) | NEW | 1 cycle |
 
 ---
