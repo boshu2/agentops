@@ -23,11 +23,6 @@ var (
 	feedbackHarmful bool
 )
 
-const (
-	impliedHelpfulRewardThreshold = lifecycle.ImpliedHelpfulRewardThreshold
-	impliedHarmfulRewardThreshold = lifecycle.ImpliedHarmfulRewardThreshold
-)
-
 var feedbackCmd = &cobra.Command{
 	Use:   "feedback <learning-id>",
 	Short: "Record reward feedback for a learning",

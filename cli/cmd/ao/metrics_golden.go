@@ -2,10 +2,7 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
-	"os"
-	"time"
 
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -15,10 +12,6 @@ func canonicalCitationType(ct string) string { return quality.CanonicalCitationT
 
 func populateGoldenSignals(baseDir string, days int, metrics *types.FlywheelMetrics) {
 	quality.PopulateGoldenSignals(baseDir, days, SectionFindings, metrics)
-}
-
-func computeGoldenSignals(baseDir string, days int) (*types.GoldenSignals, error) {
-	return quality.ComputeGoldenSignals(baseDir, days, SectionFindings)
 }
 
 func computeVelocityTrend(baseDir string) (trend7d, trend30d float64, verdict string, err error) {
@@ -37,16 +30,6 @@ func extractResearchRefsFromText(content string) []string {
 	return quality.ExtractResearchRefsFromText(content)
 }
 
-func countCitationsInPeriod(citationsPath string, cutoff time.Time) map[string]int {
-	return quality.CountCitationsInPeriod(citationsPath, cutoff)
-}
-
-func learningCitationCounts(entries []os.DirEntry, citationCounts map[string]int) (counts []float64, cited, total int) {
-	return quality.LearningCitationCounts(entries, citationCounts)
-}
-
-func top10BottomRatio(sorted []float64) float64 { return quality.Top10BottomRatio(sorted) }
-
 func computeReuseConcentration(baseDir string, days int) (gini, activePct, topBottomRatio float64, verdict string) {
 	return quality.ComputeReuseConcentration(baseDir, days)
 }
@@ -64,5 +47,3 @@ func giniCoefficient(values []float64) float64 { return quality.GiniCoefficient(
 func fprintGoldenSignals(w io.Writer, gs *types.GoldenSignals) {
 	quality.FprintGoldenSignals(w, gs)
 }
-
-func readJSONLFile(path string) []json.RawMessage { return quality.ReadJSONLFile(path) }
