@@ -152,6 +152,34 @@ ao ci recent [flags]
 
 ---
 
+### `ao citation`
+
+Verify citation freshness via the typed BC1 CitationPort. Useful for cross-repo citation auditing and dream-loop staleness checks.
+
+```
+ao citation [command]
+```
+
+**Subcommands:**
+
+#### `ao citation verify`
+
+Verify a single citation (file, function, or symbol) against HEAD
+
+```
+ao citation verify --kind <file|function|symbol> --raw <text> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for verify
+      --kind string   citation kind (required: file|function|symbol)
+      --raw string    citation text to verify (required)
+```
+
+---
+
 ### `ao constraint`
 
 Manage constraints compiled from promoted findings.
