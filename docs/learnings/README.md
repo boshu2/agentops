@@ -13,6 +13,7 @@ layer in between.
 
 | Date | File | One-line takeaway |
 |---|---|---|
+| 2026-05-13 | [cli-wiring-cycle-shape.md](2026-05-13-cli-wiring-cycle-shape.md) | CLI-wiring is a repeatable ~10-min cycle-shape: parent noun + verb subcommand + injectable func; 3 production adapters exposed in 3 cycles. |
 | 2026-05-13 | [loop-context-drift-87-cycle-observation.md](2026-05-13-loop-context-drift-87-cycle-observation.md) | `/loop` context accumulates but disk-state ledger protects correctness — soc-wx55q.1 P1 may be P3. |
 | 2026-05-13 | [substring-sed-rename-overreach.md](2026-05-13-substring-sed-rename-overreach.md) | Before any bulk `sed` rename, enumerate ALL substring-containing identifiers and classify by concept. |
 | 2026-05-13 | [bc-ports-wire-up-arc.md](2026-05-13-bc-ports-wire-up-arc.md) | 12 production adapters in 11 cycles via repeatable file-triplet pattern; 8 distinct adapter shapes proven. |
