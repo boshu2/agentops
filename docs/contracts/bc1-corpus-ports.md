@@ -1,9 +1,12 @@
 # BC1 Corpus Ports Contract
 
-> **Status:** scaffolded 2026-05-12 (cycles 78-81). Wire-up tracked
-> under `soc-pm5t` (BC1.1) — until that lands, the production-path
-> packages still own their own concrete types; only the test doubles
-> live behind the port interfaces.
+> **Status:** scaffolded 2026-05-12 (cycles 78-81) AND all 4
+> production adapters delivered (cycles 83, 112, 113, 114) —
+> `productionCitationAdapter`, `productionCorpusReader`,
+> `productionCorpusWriter`, and `productionFindingCompiler` live in
+> `cli/cmd/ao/`. Wire-up tracked under `soc-pm5t` (BC1.1) now means
+> "migrate existing call-sites in the production-path packages to
+> route through these adapters" — the adapters themselves are done.
 
 The Corpus bounded context (BC1) is responsible for capturing,
 retrieving, decay-ranking, and promoting knowledge artifacts. This
