@@ -670,30 +670,6 @@ func TestMetricsHealth_TablelessRun(t *testing.T) {
 	}
 }
 
-func TestMetricsHealth_LoadCycleHistory(t *testing.T) {
-	dir := t.TempDir()
-	evolveDir := filepath.Join(dir, ".agents", "evolve")
-	if err := os.MkdirAll(evolveDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	historyPath := filepath.Join(evolveDir, "cycle-history.jsonl")
-	data := `{"cycle":1,"status":"pass"}` + "\n" + "invalid-json" + "\n" + `{"cycle":2,"status":"fail"}` + "\n"
-	if err := os.WriteFile(historyPath, []byte(data), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	entries := loadCycleHistory(dir)
-	if len(entries) != 2 {
-		t.Fatalf("expected 2 parseable entries, got %d", len(entries))
-	}
-}
-
-func TestMetricsHealth_LoadCycleHistoryMissingFile(t *testing.T) {
-	if got := loadCycleHistory(t.TempDir()); got != nil {
-		t.Fatalf("expected nil history for missing file, got %v", got)
-	}
-}
-
 func TestComputeLoopDominance_StaleUsesNinetyDayWindow(t *testing.T) {
 	dir := setupHealthTestDir(t)
 	learningsDir := filepath.Join(dir, ".agents", "learnings")

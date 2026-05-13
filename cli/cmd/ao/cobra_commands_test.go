@@ -435,12 +435,12 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
+		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
-		"index", "init", "inject", "knowledge", "lookup", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "patterns", "plans",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
+		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
 		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
@@ -496,12 +496,12 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
+		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
-		"index", "init", "inject", "knowledge", "lookup", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "patterns", "plans",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
+		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
 		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",

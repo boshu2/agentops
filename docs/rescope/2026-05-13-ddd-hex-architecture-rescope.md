@@ -101,3 +101,21 @@ This document. Plus the three concrete phase-2 picks above, ready to be filed as
 ---
 
 **Bottom line:** stop adding adapters and CLI commands. Start rewiring real consumers (defrag, metrics_health, context_assemble) to use the ports we already built. Three migrations close the BC3 loop and prove the hex architecture is load-bearing rather than decorative.
+
+## Addendum (cycle 156) — first migration target was dead code
+
+**Update from the first phase-2 attempt.** When opening `cli/internal/quality/metrics_health.go::LoadCycleHistory` to migrate it to `LoopReaderPort`, two findings surfaced:
+
+1. **Schema mismatch on defrag.go.** `defrag.go::SweepOscillatingGoals` reads a `Target` field that `CycleEntry` does NOT project. Worse, **zero entries in the actual `cycle-history.jsonl` have a `target` field** — the production sweep is a permanent no-op against a per-goal schema that never materialized. Migrating defrag.go to LoopReaderPort would not be a clean swap; it'd require either (a) adding `Target` to `CycleEntry` and the ledger writers, or (b) routing defrag at a different artifact (e.g. goals.jsonl).
+
+2. **`metrics_health.LoadCycleHistory` is dead code.** `loadCycleHistory` is defined in `cli/cmd/ao/metrics_health.go:375` as a one-line shim around `quality.LoadCycleHistory`, but the shim has **zero production callers**. The only references are: the shim's own definition, the underlying `quality` function's definition, and two tests that probe the dead path directly. The cycle 144 `loadCycleHistory` collision was actually a collision against dead code — the cleanup was already overdue.
+
+**Action taken in cycle 156:** deleted `quality.LoadCycleHistory` (~23 lines), the shim in `cmd/ao/metrics_health.go` (1 line), and the two dead tests in `cmd/ao/metrics_health_test.go` (~22 lines). Net: ~46 lines of dead code removed, full test suite still green.
+
+**Rescope thesis re-validated:** the architecture exists, but the production code that *should* consume it never did. We kept building infrastructure for consumers that turned out to be either schema-mismatched (defrag) or dead code (metrics_health). The cleaner phase-2 path is **delete dead code AND migrate `context_assemble.go`**, not "migrate all three" as originally listed. Closing `soc-8fjo` (metrics_health migration) — no longer applicable, the target is gone.
+
+Updated phase-2 picks (cycle 156 forward):
+- ~~soc-8fjo~~ — RESOLVED via deletion in cycle 156.
+- `soc-0pku` — context_assemble.go → LoopReaderPort + CorpusReaderPort. Still the right migration.
+- `soc-1q1x` — defrag.go → LoopReaderPort. **Deferred**, pending Target-field schema decision on `CycleEntry`. Filed as a discussion-then-migration follow-up, not an immediate cycle pick.
+
