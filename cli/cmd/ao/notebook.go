@@ -67,7 +67,6 @@ func init() {
 // Type aliases preserve in-package identifiers for existing tests.
 type pendingEntry = notebook.PendingEntry
 type notebookSection = notebook.Section
-type sessionEntry = notebook.SessionEntry
 
 func runNotebookUpdate(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
@@ -243,14 +242,6 @@ func parseNotebookSections(path string) ([]notebookSection, error) {
 
 func parseSectionsFromString(content string) []notebookSection {
 	return notebook.ParseSectionsFromString(content)
-}
-
-func categorizeKnowledge(items []string) (worked, next, other []string) {
-	return notebook.CategorizeKnowledge(items)
-}
-
-func appendBulletSection(lines []string, heading string, items []string, maxLen int) []string {
-	return notebook.AppendBulletSection(lines, heading, items, maxLen, truncateText)
 }
 
 func buildLastSessionSection(entry *pendingEntry) notebookSection {

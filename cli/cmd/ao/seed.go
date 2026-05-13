@@ -335,11 +335,8 @@ Adopted AgentOps knowledge compounding workflow:
 // claudeMDSeedSection is the section appended to CLAUDE.md by ao seed.
 const claudeMDSeedSection = lifecycle.ClaudeMDSeedSection
 const claudeMDSeedMarker = lifecycle.ClaudeMDSeedMarker
-const claudeMDSeedMarkerLegacy = lifecycle.ClaudeMDSeedMarkerLegacy
 
-// templateConfig and templateConfigs aliases for backwards compatibility with tests.
-type templateConfig = lifecycle.TemplateConfig
-
+// templateConfigs alias kept for backwards compatibility with tests.
 var templateConfigs = lifecycle.TemplateConfigs
 
 // hasSeedMarker returns true if content contains the current or legacy seed marker.
