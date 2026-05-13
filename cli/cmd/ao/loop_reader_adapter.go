@@ -37,15 +37,19 @@ func newProductionLoopReader(path string) *productionLoopReader {
 	return &productionLoopReader{path: path}
 }
 
-// rawCycleRecord is the on-disk superset of CycleEntry. Other fields
-// (timestamps, milestone, etc.) are accepted by the parser but not
-// projected into CycleEntry — the port surface stays narrow.
+// rawCycleRecord is the on-disk superset of CycleEntry. Fields beyond
+// those projected into CycleEntry are accepted by the parser but
+// silently dropped — additional fields can be added on-demand for
+// consumers that need them (see cycle-157 post-mortem at
+// docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md).
 type rawCycleRecord struct {
 	Cycle     int    `json:"cycle"`
 	Mode      string `json:"mode"`
 	Result    string `json:"result"`
 	Commit    string `json:"commit"`
 	Milestone string `json:"milestone"`
+	StartedAt string `json:"started_at"`
+	Title     string `json:"title"`
 }
 
 // readEntries parses the on-disk file into []CycleEntry. Returns
@@ -85,6 +89,8 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 			Result:    rec.Result,
 			Commit:    rec.Commit,
 			Milestone: rec.Milestone,
+			StartedAt: rec.StartedAt,
+			Title:     rec.Title,
 		})
 	}
 	if err := scanner.Err(); err != nil {

@@ -9,13 +9,23 @@ import "context"
 // "healing"); Result is the outcome (improved/regressed/unchanged/
 // harvested/quarantined); Commit is the short SHA of the cycle's
 // commit when one was made (empty for local-only cycles); Milestone
-// is the operator-facing summary string.
+// is the operator-facing summary string. StartedAt is the cycle
+// boundary timestamp (RFC3339, empty when absent on disk). Title
+// is the short human-facing label that operators stamp onto each
+// cycle entry (e.g. "Sweep dead code"); it is the most commonly
+// consulted free-text field for cycle-history audits.
+//
+// Fields beyond Number/Mode/Result/Commit/Milestone are widened
+// on-demand for known consumers (per the cycle-157 post-mortem at
+// docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md).
 type CycleEntry struct {
 	Number    int
 	Mode      string
 	Result    string
 	Commit    string
 	Milestone string
+	StartedAt string
+	Title     string
 }
 
 // LoopReaderPort is the BC3 Loop read-side. Callers — evolve's

@@ -139,6 +139,33 @@ func TestProductionLoopReader_EmptyPathSafe(t *testing.T) {
 	}
 }
 
+// Cycle 161 (soc-ckc4): CycleEntry was widened to project StartedAt
+// and Title fields after the cycle-157 narrowness post-mortem
+// (docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md).
+// This test pins the projection so a future field rename or accidental
+// drop is caught.
+func TestProductionLoopReader_ProjectsStartedAtAndTitle(t *testing.T) {
+	dir := t.TempDir()
+	path := writeLoopFixture(t, dir,
+		`{"cycle":7,"mode":"cleanup","result":"improved","commit":"abc1234","milestone":"ms","started_at":"2026-05-13T07:00:00-04:00","title":"sweep dead code"}`,
+	)
+	r := newProductionLoopReader(path)
+	got, err := r.Latest(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StartedAt != "2026-05-13T07:00:00-04:00" {
+		t.Errorf("StartedAt = %q, want 2026-05-13T07:00:00-04:00", got.StartedAt)
+	}
+	if got.Title != "sweep dead code" {
+		t.Errorf("Title = %q, want \"sweep dead code\"", got.Title)
+	}
+	// Sanity: existing fields still project.
+	if got.Number != 7 || got.Result != "improved" || got.Milestone != "ms" {
+		t.Errorf("existing-field regression: %+v", got)
+	}
+}
+
 func TestProductionLoopReader_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := writeLoopFixture(t, dir, `{"cycle":1,"result":"improved"}`)
