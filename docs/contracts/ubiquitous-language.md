@@ -121,6 +121,24 @@ Not claiming this contract overrides PRODUCT.md or GOALS.md. Where those documen
 - Meta-contract: `docs/contracts/update-principles.md`
 - Rescope plan: `docs/plans/2026-05-12-rescope-evolve-and-architecture.md`
 
+## Current drift baseline (2026-05-13 cycle 123)
+
+Captured so each rename PR can claim a measurable fitness delta
+("X→Y for term Z"). Re-measure with the grep commands listed; each
+soc-5yuy child PR ratchets one of these counts toward 0.
+
+| Drift | Measurement | Baseline | Grep |
+|---|---|---|---|
+| #1 Gate / Check / Validation | `script header references "Validator"` outside Go code | ~90 `scripts/check-*.sh` files (filenames stay; headers/docs use "Gate") | `grep -rln 'scripts/check-' scripts/` |
+| #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | _measure on demand_ | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
+| #3 Claim / Assertion / Evidence | `QueueClaim` references | 111 (vs 3 `QueueLease`) | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
+| #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | _measure on demand_ | (audit per file; no single grep) |
+| #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`) | `grep -rn 'type Session ' cli/` |
+
+Excluded from counts: `cli/testdata/` (transcript fixtures), test
+files (`*_test.go`) where Session/Claim mock types are legitimate.
+
 ## Cycle log
 
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
+- 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
