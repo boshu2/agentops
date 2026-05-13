@@ -76,7 +76,14 @@ BC1 is largely drift-free at the aggregate level. The one term to lock: **Contex
 | Runtime-specific skill/hook implementation | **Harness** | _no drift_ |
 | Claude Code event (PreToolUse, etc.) | **HookEvent** | "tool event", "claude event" |
 
-**Ranked drift #5 (Session) resolution:** scope per BC. `AgentSession` (BC5, ephemeral provider instance) vs. `OperatorSession` (BC5, interactive CLI session). The `daemon` package should NOT have a `Session` type — anything that looked like one is either an AgentSession or an OperatorSession. Daemon manages **WorkerSlots** and **DaemonJobs**, not Sessions.
+**Ranked drift #5 (Session) resolution (refined cycle 125):** scope per BC. Four distinct Session-shaped concepts exist:
+
+- **AgentSession** (BC5, ephemeral provider instance — Claude/Codex/etc.)
+- **OperatorSession** (BC5, interactive CLI session)
+- **TranscriptSession** (BC1 Corpus — extracted knowledge from a Claude Code transcript .jsonl). Currently bare `storage.Session` (93 refs) and `search.Session` (4 refs). Cycle 125 surfaced this — was NOT in the original drift catalog.
+- **GasCitySession** (gascity package — daemon-managed worker session API; 79 refs across `Session`, `SessionCreateRequest`, `SessionListParams`, `SessionListResponse`, `SessionGetOptions`, `SessionSubmitRequest`, `SessionSubmitResponse`). Conceptually overlaps with AgentSession but the gascity API surface uses Session as the user-facing noun. Rename to AgentSession would break a published API contract; keep as-is, document the alias in code.
+
+The `daemon` package should NOT have a `Session` type — anything that looked like one is either an AgentSession, OperatorSession, or TranscriptSession. Daemon manages **WorkerSlots** and **DaemonJobs**, not Sessions.
 
 ## Ranked drift #4: Skill vs Primitive vs Pattern vs Practice
 
@@ -133,7 +140,7 @@ soc-5yuy child PR ratchets one of these counts toward 0.
 | #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | _measure on demand_ | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
 | #3 Claim / Assertion / Evidence | `QueueClaim` references | 111 (vs 3 `QueueLease`) | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
 | #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | _measure on demand_ | (audit per file; no single grep) |
-| #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`) | `grep -rn 'type Session ' cli/` |
+| #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`); refined cycle 125 — these are 3 DIFFERENT concepts (storage/search = TranscriptSession 97 refs; gascity = published-API Session 79 refs, keep as-is) | `grep -rn 'type Session ' cli/` |
 
 Excluded from counts: `cli/testdata/` (transcript fixtures), test
 files (`*_test.go`) where Session/Claim mock types are legitimate.
@@ -142,3 +149,4 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
 - 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
+- 2026-05-13 cycle 125: refined drift #5 — the 3 bare `Session` types are 3 different concepts, not one. Added TranscriptSession (BC1) as missing canonical name. gascity.Session is a published-API surface — rename out of scope; keep + alias-document. storage.Session (93 refs) + search.Session (4 refs) rename to TranscriptSession is the actual soc-5yuy.5 unit; gascity stays.
