@@ -480,6 +480,25 @@ ao loop [command]
 
 **Subcommands:**
 
+#### `ao loop append`
+
+Append a new entry to .agents/evolve/cycle-history.jsonl via the
+
+```
+ao loop append --mode <m> --result <r> [flags]
+```
+
+**Flags:**
+
+```
+      --commit string      git commit SHA (optional)
+      --cycle int          cycle number (0 = auto-assign max+1)
+  -h, --help               help for append
+      --milestone string   milestone note (optional)
+      --mode string        cycle mode (required)
+      --result string      cycle result: improved|harvested|unchanged|idle (required)
+```
+
 #### `ao loop history`
 
 Read .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
