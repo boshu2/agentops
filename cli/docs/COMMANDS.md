@@ -2985,6 +2985,26 @@ ao corpus [command]
 
 **Subcommands:**
 
+#### `ao corpus capture`
+
+Write an artifact to a corpus root via the typed BC1
+
+```
+ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...] [flags]
+```
+
+**Flags:**
+
+```
+      --body string        body text (mutually exclusive with --body-file and --body-stdin)
+      --body-file string   read body from file
+      --body-stdin         read body from stdin
+  -h, --help               help for capture
+      --meta stringArray   metadata key=value (repeatable)
+      --path string        relative path within root (required)
+      --root string        corpus root (default: .agents/learnings/)
+```
+
 #### `ao corpus fitness`
 
 Compute the corpus-quality fitness vector for the current .agents/
