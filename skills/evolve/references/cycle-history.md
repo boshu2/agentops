@@ -193,12 +193,13 @@ On session restart or after compaction:
 
 ## Kill Switch
 
-Two paths, checked at every cycle boundary:
+Three paths, checked at every cycle boundary:
 
 | File | Purpose | Who Creates It |
 |------|---------|---------------|
 | `~/.config/evolve/KILL` | Permanent stop (outside repo) | Human |
 | `.agents/evolve/STOP` | One-time local stop | Human or automation |
+| `.agents/evolve/DORMANT` | Sticky dormancy after Step 3 hard-gate fired | `/evolve` itself |
 
 To stop /evolve:
 ```bash
@@ -206,11 +207,16 @@ echo "Taking a break" > ~/.config/evolve/KILL    # Permanent
 echo "done for today" > .agents/evolve/STOP       # Local, one-time
 ```
 
+The `DORMANT` marker is written by `/evolve` when both queue layers and generator layers come up empty across 3 consecutive passes (the Step 3 hard-gate). Its purpose is to prevent post-dormancy cron fires from re-entering the full skill body — once the marker exists, Step 1 short-circuits with zero further tool calls. The marker contains three lines: cycle number, ISO timestamp, reason.
+
 To re-enable:
 ```bash
 rm ~/.config/evolve/KILL
 rm .agents/evolve/STOP
+rm .agents/evolve/DORMANT
 ```
+
+The operator typically removes `DORMANT` either when (a) new scope arrives that didn't fit any rung of the ladder when dormancy fired, or (b) the underlying ledger has gained enough new entries that generator layers will produce new work. There is no auto-clear — dormancy is sticky by design.
 
 ## Flags Reference
 

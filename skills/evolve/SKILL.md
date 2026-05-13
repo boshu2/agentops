@@ -178,7 +178,10 @@ Run at the TOP of every cycle:
 CYCLE_START_SHA=$(git rev-parse HEAD)
 [ -f ~/.config/evolve/KILL ] && echo "KILL: $(cat ~/.config/evolve/KILL)" && exit 0
 [ -f .agents/evolve/STOP ] && echo "STOP: $(cat .agents/evolve/STOP 2>/dev/null)" && exit 0
+[ -f .agents/evolve/DORMANT ] && echo "Dormant since $(head -1 .agents/evolve/DORMANT 2>/dev/null)." && exit 0
 ```
+
+**Sticky dormancy:** the `DORMANT` marker is written once when the Step 3 hard-gate fires (see "Nothing found?" section). Subsequent cycles short-circuit here with zero further tool calls — no fitness measurement, no work selection, no inference burn. Operator clears it by `rm .agents/evolve/DORMANT` when new scope arrives, or by editing it to indicate why. The marker is local-only (gitignored under `.agents/`).
 
 ### Step 1.5: Healing-first classifier
 
@@ -202,6 +205,8 @@ When a repo-local program contract exists, apply a scope filter before Step 4:
 **Step 3.0: Scope filter — route wrong-shape work to scout-mode**
 
 Before claiming a harvested item, gate scope vs session budget. If the work touches > 5 non-uniform files, introduces a new shape (schema field, struct field, validator rule, contract surface), is operator-level epic work, OR `PRODUCTIVE_THIS_SESSION > 5` and the work would extend an implementation arc rather than close one — route to **scout-mode** (read + annotate the queue entry, no execution). See `references/scout-mode.md` for the procedure and `references/mechanical-batches.md` for when a >5-file batch is uniform enough to bypass.
+
+**Metronome gate:** read `mode_repeat_streak` from `session-state.json` (kept current by `scripts/evolve-update-session-state.sh`). If `mode_repeat_streak >= 3` AND the candidate work would produce the same `mode` value as the trailing run, BLOCK selection at this rung and force a jump to the NEXT rung in the ladder. If `mode_repeat_streak >= 5`, file a `bd remember "metronome-N: <mode>"` and require operator override before continuing on that rung. See `references/metronome-gate.md` for the detection rule and the cycles 144-154 retrospective.
 
 **Step 3.1: Harvested work first**
 
@@ -326,14 +331,12 @@ See `references/quality-mode.md` for scoring and full details.
 **Nothing found?** HARD GATE — only consider dormancy after the generator layers also came up empty:
 
 ```bash
-# Count trailing idle/unchanged entries in cycle-history.jsonl (portable, no tac)
-IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
-  .agents/evolve/cycle-history.jsonl 2>/dev/null)
-
-if [ "$GENERATOR_EMPTY_STREAK" -ge 2 ] && [ "$IDLE_STREAK" -ge 2 ]; then
-  # Work layers are empty AND producer layers were empty for the 3rd consecutive pass — STOP
+IDLE_STREAK=$(jq -r '.idle_streak // 0' .agents/evolve/session-state.json 2>/dev/null)
+if [ "${GENERATOR_EMPTY_STREAK:-0}" -ge 2 ] && [ "${IDLE_STREAK:-0}" -ge 2 ]; then
+  printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" "stagnation: queue+generator empty x3" \
+    > .agents/evolve/DORMANT
   echo "Stagnation reached after repeated empty work + generator passes. Dormancy is the last-resort outcome."
-  # go to Teardown — do NOT log another idle entry
+  # go to Teardown — do NOT log another idle entry. The DORMANT marker short-circuits Step 1 next fire.
 fi
 ```
 
@@ -367,6 +370,8 @@ Or for an epic with children: `Invoke /crank {epic_id}`.
 If Step 3 created durable work instead of executing it immediately, re-enter Step 3 and let the newly-created bead item win through the normal selection order.
 
 **Mechanical-batch hint:** when the implementation phase identifies > 20 uniform per-file edits, prefer a script (`awk`/`sed`/`for f in $candidates`) over N tool-level Edit calls. See `references/mechanical-batches.md` for the decision rule and the script-first pattern.
+
+**Pre-flight schema check (architectural migrations):** if the selected work is a port/adapter migration that rewires an existing consumer, BEFORE invoking `/rpi`, sample two representative consumer call sites and compare field-use against the target port surface. If the consumer reads > 20% more fields than the port projects, abort the migration cycle and convert the work into a port-widening cycle instead. The phase-2 narrowness post-mortem (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`) is the encoded lesson; see `references/pre-flight-schema-check.md` for the procedure.
 
 **Operator-shape carve-out:** `AskUserQuestion` is permitted ONLY for shape decisions affecting > 50 files OR a schema/contract surface (carrier choice, struct-field shape, frontmatter-key shape). See `references/autonomous-execution.md` for the bound on this exception.
 
@@ -481,7 +486,9 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/goals-schema.md](references/goals-schema.md) — GOALS.yaml format and continuous metrics
 - [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md) — Claim/release semantics and harvest re-read
 - [references/mechanical-batches.md](references/mechanical-batches.md) — Script-first vs per-file Edit for > 20-file uniform batches
+- [references/metronome-gate.md](references/metronome-gate.md) — Cross-cycle detector that blocks the same-mode-repeated failure mode (cycles 144-154)
 - [references/oscillation.md](references/oscillation.md) — Oscillation detection and quarantine
+- [references/pre-flight-schema-check.md](references/pre-flight-schema-check.md) — Cheap field-fit check before architectural migration cycles
 - [references/parallel-execution.md](references/parallel-execution.md) — Parallel /swarm architecture
 - [references/quality-mode.md](references/quality-mode.md) — Quality-first mode: scoring, priority cascade, artifacts
 - [references/scout-mode.md](references/scout-mode.md) — Scout-mode as a first-class cycle result; scope filter procedure
