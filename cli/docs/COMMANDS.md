@@ -399,6 +399,36 @@ ao gate reject <candidate-id> [flags]
 
 ---
 
+### `ao loop`
+
+Operations on the /evolve cycle history and related Loop bounded-context state. The 'history' subcommand reads .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop [command]
+```
+
+**Subcommands:**
+
+#### `ao loop history`
+
+Read .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop history [flags]
+```
+
+**Flags:**
+
+```
+      --end int     end cycle number (inclusive; 0 = unbounded)
+  -h, --help        help for history
+      --latest      emit only the latest entry
+      --limit int   max entries to emit (0 = all)
+      --start int   start cycle number (inclusive; 0 = unbounded)
+```
+
+---
+
 ### `ao maturity`
 
 Check and manage CASS (Contextual Agent Session Search) maturity levels.
