@@ -107,6 +107,7 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 ```bash
 mkdir -p .agents/evolve
 ao lookup --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
+bash scripts/evolve-update-session-state.sh 2>/dev/null || true  # refresh derived idle_streak + mode_repeat_streak
 ```
 
 **Apply retrieved knowledge:** If learnings are returned, check each for applicability to the current improvement cycle. For applicable learnings, cite by filename and record: `ao metrics cite "<path>" --type applied 2>/dev/null || true`
