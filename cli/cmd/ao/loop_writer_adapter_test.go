@@ -113,6 +113,39 @@ func TestProductionLoopWriter_AppendIsLineSeparated(t *testing.T) {
 	}
 }
 
+// Cycle 162: paired with cycle 161's CycleEntry widening (soc-ckc4).
+// Confirms StartedAt + Title round-trip through writer -> reader.
+func TestProductionLoopWriter_RoundTripsStartedAtAndTitle(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cycle-history.jsonl")
+	w := newProductionLoopWriter(path)
+	written, err := w.Append(context.Background(), ports.CycleEntry{
+		Mode:      "phase2-widen",
+		Result:    "improved",
+		Commit:    "deadbee",
+		Milestone: "round-trip",
+		StartedAt: "2026-05-13T08:00:00-04:00",
+		Title:     "soc-ckc4 widening regression",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if written.StartedAt != "2026-05-13T08:00:00-04:00" || written.Title != "soc-ckc4 widening regression" {
+		t.Fatalf("Append returned-entry dropped new fields: %+v", written)
+	}
+	r := newProductionLoopReader(path)
+	got, err := r.Latest(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.StartedAt != "2026-05-13T08:00:00-04:00" {
+		t.Errorf("round-trip StartedAt = %q, want 2026-05-13T08:00:00-04:00", got.StartedAt)
+	}
+	if got.Title != "soc-ckc4 widening regression" {
+		t.Errorf("round-trip Title = %q, want \"soc-ckc4 widening regression\"", got.Title)
+	}
+}
+
 func TestProductionLoopWriter_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")

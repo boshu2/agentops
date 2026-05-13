@@ -67,6 +67,8 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 		Result:    entry.Result,
 		Commit:    entry.Commit,
 		Milestone: entry.Milestone,
+		StartedAt: entry.StartedAt,
+		Title:     entry.Title,
 	}
 	payload, err := json.Marshal(rec)
 	if err != nil {
@@ -83,15 +85,18 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 	return entry, nil
 }
 
-// loopWriterRecord is the on-disk shape this adapter writes. Kept
-// minimal — matches productionLoopReader's rawCycleRecord (cycle 108)
-// so reader/writer round-trip works.
+// loopWriterRecord is the on-disk shape this adapter writes. Matches
+// productionLoopReader's rawCycleRecord (cycle 108) so reader/writer
+// round-trip works. Widened with StartedAt+Title in cycle 162 to
+// follow the cycle-161 CycleEntry widening (soc-ckc4).
 type loopWriterRecord struct {
 	Cycle     int    `json:"cycle"`
 	Mode      string `json:"mode,omitempty"`
 	Result    string `json:"result,omitempty"`
 	Commit    string `json:"commit,omitempty"`
 	Milestone string `json:"milestone,omitempty"`
+	StartedAt string `json:"started_at,omitempty"`
+	Title     string `json:"title,omitempty"`
 }
 
 // scanMaxNumberLocked reads the file to find max(Cycle). Returns 0
