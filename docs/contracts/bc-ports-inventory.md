@@ -1,11 +1,12 @@
 # BC Ports Inventory
 
-> **Status:** 12 of 12 declared ports scaffolded as of 2026-05-12
-> (cycles 78-106). Production-side wire-up is in progress per the
-> per-BC follow-up bds (`soc-pm5t` for BC1, future bds for BC2-BC5).
-> Until wire-up lands, the production-path packages still own their
-> concrete types; only the test doubles live behind the port
-> interfaces.
+> **Status:** 12 of 12 declared ports scaffolded (cycles 78-106) AND
+> 12 of 12 production adapters delivered (cycles 83 + 108-118) as of
+> 2026-05-12. Every BC port has both an `InMemoryX` test double in
+> `cli/internal/ports/` and a `productionX` adapter in `cli/cmd/ao/`,
+> each with compile-time `var _ XPort = (*…)(nil)` assertions.
+> Next-phase work is call-site migration through these adapters
+> (per-BC follow-up bds: `soc-pm5t` for BC1, sibling bds for BC2-BC5).
 
 The 5 bounded contexts (Corpus, Validation, Loop, Factory, Runtime)
 each declare a small set of typed Go interfaces ("ports") at
@@ -153,8 +154,11 @@ caller-refactor work:
 
 - Compile-time `var _ XPort = (*InMemoryX)(nil)` assertions in
   every `inmemory_<name>.go` file (12 assertions total).
-- 80+ Go tests in `cli/internal/ports/*_test.go` (~99% statement
-  coverage as of cycle 106).
+- Compile-time `var _ XPort = (*productionX)(nil)` assertions in
+  every `cli/cmd/ao/<x>_adapter.go` file (12 assertions total —
+  one per port, as of cycle 118).
+- 80+ Go tests in `cli/internal/ports/*_test.go` and 100+ Go tests
+  across the production-adapter files in `cli/cmd/ao/*_adapter_test.go`.
 - This contract doc is linked in `docs/documentation-index.md`.
 
 ## Tracked Scaffold Commits (chronological)
@@ -173,7 +177,28 @@ caller-refactor work:
 | 104 | `d10ae648` | BC4 OperatorPort |
 | 105 | `8cd646e5` | BC4 EventBusPort |
 | 106 | `a6754235` | BC5 HarnessPort — surface complete |
-| 83 | `4e91ab58` | first production adapter (`productionCitationAdapter`, BC1 wire-up) |
+
+## Production Adapters (chronological, completed cycle 118)
+
+| Cycle | Commit | Adapter | BC | Shape |
+|---|---|---|---|---|
+| 83 | `4e91ab58` | `productionCitationAdapter` | BC1 | bd CLI wrapper |
+| 108 | `bb78cdb3` | `productionLoopReader` | BC3 | JSONL read |
+| 109 | `b0fa7dfe` | `productionLoopWriter` | BC3 | JSONL append |
+| 110 | `c511214b` | `productionOperator` | BC4 | JSONL append + reverse |
+| 111 | `c851ab8a` | `productionHarness` | BC5 | tree walk + hash join |
+| 112 | `f27b0bec` | `productionCorpusReader` | BC1 | tree walk + ranker |
+| 113 | `0be3f00b` | `productionCorpusWriter` | BC1 | idempotent file write + frontmatter |
+| 114 | `fd9dc598` | `productionFindingCompiler` | BC1 | pure-Go transform |
+| 115 | `006ad286` | `productionGateRunner` | BC2 | subprocess (exec.Command) |
+| 116 | `96318d7b` | `productionClaimEvidenceBinder` | BC2 | JSONL append + upgrade-only rule |
+| 117 | `8669b15e` | `productionCIStatus` | BC2 | external CLI + JSON parse (pluggable runner) |
+| 118 | `57ad553d` | `productionEventBus` | BC4 | sync in-memory pubsub |
+
+All adapters in `cli/cmd/ao/<x>_adapter.go` with paired
+`<x>_adapter_test.go`. Each carries a compile-time port assertion
+and follows the file-triplet pattern. Next-phase work is call-site
+migration through these adapters.
 
 ## See Also
 
