@@ -432,6 +432,14 @@ ao gate reject <candidate-id> [flags]
       --reason string   Required rejection reason
 ```
 
+#### `ao gate run`
+
+Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
+
+```
+ao gate run <name> [flags]
+```
+
 ---
 
 ### `ao harness`
