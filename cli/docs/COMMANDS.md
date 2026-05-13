@@ -117,6 +117,41 @@ ao badge [flags]
 
 ---
 
+### `ao ci`
+
+Operations on CI run history via the typed BC2 CIStatusPort. The 'latest' subcommand wraps 'gh run list --commit <sha>' through productionCIStatus; 'recent' wraps the unbound-by-sha variant.
+
+```
+ao ci [command]
+```
+
+**Subcommands:**
+
+#### `ao ci latest`
+
+Get the most recent CI run for a given commit SHA via the typed
+
+```
+ao ci latest <sha> [flags]
+```
+
+#### `ao ci recent`
+
+List recent CI runs (any SHA) via productionCIStatus. Default
+
+```
+ao ci recent [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for recent
+      --limit int   max runs to emit (0 = all up to port cap of 50) (default 10)
+```
+
+---
+
 ### `ao constraint`
 
 Manage constraints compiled from promoted findings.
