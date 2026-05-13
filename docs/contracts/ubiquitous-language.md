@@ -51,7 +51,17 @@ BC1 is largely drift-free at the aggregate level. The one term to lock: **Contex
 | Terminal-state criteria for the autonomous loop | **Convergence** | _no drift_ — new term, cycle 51 |
 | Harvested next-work, ready bead, or generator output | **WorkItem** | "task", "next-work entry" |
 
-**Ranked drift #2 (Cycle / Loop / Iteration / Run) resolution:** `Cycle` is the BC3 aggregate. `lifecycle.CloseLoopIngestResult` (Go) is fine — "loop closure" is a different concept (the act of closing the feedback loop), not a synonym for Cycle. `overnight.IterationSummary` (Go) is Dream-loop-specific terminology only; rename to `DreamCycleSummary` would align across BCs but isn't urgent. `rpi.Run` should be deprecated outside Phase context — RPI executions are Cycles with Phases inside.
+**Ranked drift #2 (Cycle / Loop / Iteration / Run) resolution (refined cycle 129):** `Cycle` is the BC3 aggregate noun. The audit found that what looked like "Run drift" is mostly NOT drift:
+
+- `lifecycle.CloseLoopIngestResult` — "loop closure" is a different concept (closing the feedback loop), not a Cycle synonym. KEEP.
+- `overnight.IterationSummary` — Dream-loop-internal terminology. KEEP scoped to Dream; cross-BC alignment would be `DreamCycleSummary` but isn't urgent.
+- `JobTypeRPIRun` enum, `RPIRunJobSpec`, `RPIRunJobSpecFromPayload`, `RPIRunRequest`, `RPIRunResult`, `RPIRunCache`, `RPIRunRegistryDir` — these are SERIALIZED CONTRACTS (JSON job specs, filesystem path constants). Renaming would break on-disk format + cross-process job spec compatibility. KEEP.
+- `RPIRunner`, `RPIRunnerOptions`, `RPIRunExecutor` — legitimate Runner/Executor naming. KEEP.
+- `RPIRuntimeCommand`, `RPIRuntimeMode` — NOT a Run concept; contains "Run" as part of "Runtime" (substring coincidence). KEEP.
+- `discoverRPIRuns`, `serveRPIRuns` — operator-facing CLI commands. Renaming = user-facing breaking change. KEEP.
+- `rpi.RPIRun` (the artifact struct) — 132+ `Iteration*` identifiers are all Dream-internal; 20+ `RPIRun*` identifiers are serialized-contract or named-typed Runner code.
+
+Cycle-129 finding: **drift #2 is audit-only.** The "Run/Iteration" usage in the codebase is mostly conceptually correct — RPI's Run is its execution pattern (analogous to GitHub Actions' CI Run); Dream's Iteration is its convergence-loop counter. Both are scoped uses, not generic drift. No code renames are needed; the contract was over-eager to flag this.
 
 ### BC4 Factory
 
@@ -149,7 +159,7 @@ soc-5yuy child PR ratchets one of these counts toward 0.
 | Drift | Measurement | Baseline | Grep |
 |---|---|---|---|
 | #1 Gate / Check / Validation | `script header references "Validator"` outside Go code | ~90 `scripts/check-*.sh` files (filenames stay; headers/docs use "Gate") | `grep -rln 'scripts/check-' scripts/` |
-| #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | _measure on demand_ | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
+| #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | ✓ AUDITED cycle 129: most usage is serialized-contract enums (JobTypeRPIRun), filesystem path constants (RPIRunRegistryDir), legitimate Runner naming, or "Runtime" substring-coincidence. No drift; no renames needed. | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
 | #3 Claim / Assertion / Evidence | `QueueClaim` references | ✓ 0 (down from 111 at cycle 123 baseline); cycle 126 sed rename + green tests | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
 | #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | ✓ AUDITED cycle 128: no systemic misuse; `primitive` overload documented as 3 scoped senses (no renames needed) | (audit per file; no single grep) |
 | #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`); refined cycle 125 — these are 3 DIFFERENT concepts (storage/search = TranscriptSession 97 refs; gascity = published-API Session 79 refs, keep as-is) | `grep -rn 'type Session ' cli/` |
@@ -162,5 +172,6 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
 - 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
 - 2026-05-13 cycle 125: refined drift #5 — the 3 bare `Session` types are 3 different concepts, not one. Added TranscriptSession (BC1) as missing canonical name. gascity.Session is a published-API surface — rename out of scope; keep + alias-document. storage.Session (93 refs) + search.Session (4 refs) rename to TranscriptSession is the actual soc-5yuy.5 unit; gascity stays.
+- 2026-05-13 cycle 129: **drift #2 RESOLVED via audit-only.** Enumerated all `RPIRun*` (~150 identifiers) and `Iteration*` (132 identifiers). Most usage is serialized-contract enums (JobTypeRPIRun), filesystem path constants (RPIRunRegistryDir), legitimate Runner naming, substring-coincidence ("Runtime"), or scoped Dream-internal counters. Contract over-flagged this — the actual codebase has Run/Iteration semantically correct. No renames needed. Third soc-5yuy child to close via audit-only (after cycle-128 drift #4 and cycle-126 drift #3 via rename).
 - 2026-05-13 cycle 128: **drift #4 RESOLVED via audit-only.** Surveyed `primitive`/`skill`/`pattern`/`practice` usage across SKILL.md, PRACTICE.md, contracts. Found no systemic misuse — Skill is consistently "invokable", Pattern is "reusable knowledge", Practice is "citation annotation". `primitive` IS overloaded across 3 distinct concepts (BC1 Corpus Primitive vs Domain Primitive in skills/domain/ vs Runtime primitive in converter/standards) — added a sub-overload table to the contract documenting all 3 senses as scoped (not drift). No renames needed; the audit IS the resolution.
 - 2026-05-13 cycle 126: **drift #3 RESOLVED.** `daemon.QueueClaim` → `QueueLease` rename shipped: 108 Go refs across cli/internal/{daemon,rpi,llmwiki} + cli/cmd/ao. Audit-then-execute: pre-rename audit (cycle-125 pattern) showed no split-concept surprise for the daemon struct itself, but post-commit self-review caught an over-broad sed in the same cycle — `rpi.ErrQueueClaimConflict` / `rpi.RequireQueueClaimOwner` (about work-item claim coordination in `.agents/rpi/next-work.jsonl`, NOT the daemon job-slot lease) were also renamed by the substring match. Reverted just those identifiers; daemon-side `QueueLease` stays. Lesson: substring-based sed can over-reach across different concepts that share a prefix; an audit needs to enumerate ALL identifiers containing the substring, not just the type definition. First soc-5yuy child to close.
