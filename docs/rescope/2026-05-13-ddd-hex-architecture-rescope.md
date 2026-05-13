@@ -142,3 +142,46 @@ Migrating would silently drop 8+ fields the formatter relies on. Not a drop-in.
 
 **Next /evolve cycle pick:** wait for soc-ckc4 decision before attempting any more phase-2 migrations. In the interim, the loop should redirect to entirely different work (testing, docs, drift, validation) rather than force-fitting another mismatch. The CLI-wiring template-application reflex remains banned.
 
+
+## Closure (cycle 167) — 13-cycle arc retrospective
+
+This rescope opened with cycle 154 (operator override) and closes with cycle 167 (13 productive cycles later). Net session product:
+
+| Phase | Cycles | Lanes worked | Net |
+|---|---|---|---|
+| Rescope + 2 failed phase-2 attempts | 155-157 | Honest assessment + dead code + narrowness | -46 LOC, 2 durable learnings |
+| Pivot — dead-code sweep | 158-160 | Staticcheck U1000 mining | -276 LOC, 38 findings cleared |
+| Phase-2 unblocker | 161-162 | CycleEntry widening (R/W symmetric) | +88 LOC (port + tests) |
+| Real consumer | 163 | `ao loop verify` audit | +249 LOC, caught 1 real drift |
+| Audit cleanup | 164 | Ledger dedup | -1 line (untracked) |
+| Doc drift | 165 | Test-arch-debt reconciled | -4 stale refs |
+| Bounded sweep | 166 | soc-k083 backlog (5 more) | -21 LOC |
+| Closure | 167 | This addendum | (this section) |
+
+**Total: 13 cycles, ~-25 net LOC across all sweeps, 43 staticcheck findings cleared (75 → 32), 2 ports widened (5 → 7 fields), 1 new audit feature (`ao loop verify`), 4 bd issues closed, 4 bd issues filed, 2 durable learnings, 1 rescope doc with 3 addenda.**
+
+### What this session validated
+
+1. **Operator overrides break compounding metronomes.** Cycle 154 was 7 consecutive template-application cycles. The rescope at cycle 155 stopped that pattern dead. Cycles 156-167 each picked a *different* kind of work, no cycle exceeded ~12 minutes, and every cycle delivered durable artifact.
+
+2. **Phase-2 attempts are diagnostic.** Three consecutive failed migrations (cycles 156, 157, and the closed soc-0pku) collectively narrowed the port-widening design space. The "narrow + grow" policy emerged from failed migrations, not from preemptive design.
+
+3. **Dead-code sweeps have a natural shape.** Cluster-pattern recognition (cycle 159) is 5-10x faster than per-symbol review. Both modes are legitimate; knowing when to switch from one to the other is the skill. Bounded pre-commitment (cycle 166: "5 findings") prevents the metronome from restarting.
+
+4. **Real consumers surface real bugs immediately.** `ao loop verify` (cycle 163) caught a duplicate on its very first run — the kind of finding that comes from building tools you actually use against real data, not test fixtures.
+
+### What stays open
+
+- `soc-1q1x` (defrag → LoopReaderPort) — blocked on `Target`-field schema decision; cycle-history.jsonl has no `target` field anywhere, so this is a "redesign defrag, not migrate it" problem.
+- `soc-k083` (32 remaining staticcheck findings) — bounded under operator review, not /evolve cycles.
+- Phase-2 BC1/BC2/BC4/BC5 — no real consumers yet outside CLI passthroughs. The on-demand widening policy applies if and when one materializes.
+
+### Closure criteria met
+
+The rescope's original phase-1/phase-2 framing:
+- ✅ Phase 1 (hex shape): 14 ports, 14 adapters, 10 CLI surfaces
+- ⚠️ Phase 2 (hex adoption): 1 real consumer (`ao loop verify`), still mostly latent
+- ✅ Decision pending: schema width policy (now "narrow + grow")
+- ✅ Decision pending: when to stop sweeping (now "bounded per-cycle")
+
+The arc is **closed for the autonomous /evolve loop**. Further phase-2 work requires operator scope (which port consumer is worth widening for) and is no longer a /evolve cycle pick. The CLI-wiring template-application reflex remains banned.
