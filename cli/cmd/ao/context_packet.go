@@ -155,8 +155,3 @@ func printPacketHuman(cmd *cobra.Command, packet StigmergicPacket) {
 func detectRepoName(cwd string) string {
 	return aocontext.DetectRepoName(cwd)
 }
-
-// fileBase returns the last path component.
-func fileBase(path string) string {
-	return aocontext.FileBase(path)
-}

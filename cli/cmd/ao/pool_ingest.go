@@ -473,7 +473,6 @@ func inferKnowledgeType(b learningBlock) types.KnowledgeType {
 }
 
 func confidenceToScore(s string) float64            { return pool.ConfidenceToScore(s) }
-func isSlugAlphanumeric(r rune) bool                { return pool.IsSlugAlphanumeric(r) }
 func computeSpecificityScore(b, l string) float64   { return pool.ComputeSpecificityScore(b, l) }
 func computeActionabilityScore(body string) float64 { return pool.ComputeActionabilityScore(body) }
 func computeNoveltyScore(body string) float64       { return pool.ComputeNoveltyScore(body) }

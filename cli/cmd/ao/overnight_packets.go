@@ -521,13 +521,6 @@ func skillContainsAddPhrase(content, phrase string) bool {
 	return strings.Contains(norm(content), np)
 }
 
-// extractScriptsRef pulls the first scripts/<...>.sh occurrence from s.
-// Kept as a thin wrapper for test compatibility; new probes should use
-// extractRepoRef directly.
-func extractScriptsRef(s string) string {
-	return extractRepoRef(s, "scripts/", ".sh")
-}
-
 // extractRepoRef pulls the first prefix<...>suffix occurrence from s.
 // Returns "" when no match is found. The prefix is required at the
 // start of the token; whitespace, quotes, parens, and backticks
