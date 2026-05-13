@@ -52,11 +52,12 @@ type CitationVerdict struct {
 // callers — `ao beads verify`, the dream-loop staleness check, and
 // any future cross-repo citation auditor — can be exercised against
 // an in-memory adapter without depending on the real repo grep + git
-// surface. The verify helpers in cli/cmd/ao/beads.go
-// (verifyFunctionCitation / verifySymbolCitation / verifyFileCitation)
-// are the production-path implementation; this port is the contract
-// they will satisfy once soc-pm5t (BC1.1 wire-up) routes callers
-// through the port.
+// surface. The production adapter
+// (cli/cmd/ao/citation_adapter.go, productionCitationAdapter)
+// wraps the existing verify helpers in cli/cmd/ao/beads.go
+// (verifyFunctionCitation / verifySymbolCitation / verifyFileCitation).
+// soc-pm5t (BC1.1 wire-up) tracks migrating direct beads.go callers
+// to route through the port instead.
 //
 // Contract:
 //

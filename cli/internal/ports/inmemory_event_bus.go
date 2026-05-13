@@ -11,9 +11,11 @@ import (
 // InMemoryEventBus is an EventBusPort backed by per-topic handler
 // slices. Dispatch is SYNCHRONOUS in this adapter — Publish calls
 // each handler inline and returns after they all complete. This
-// keeps tests deterministic and avoids goroutine-leak risk. Future
-// production adapters (NATS, Kafka, etc.) handle the async-dispatch
-// semantics the port contract permits.
+// keeps tests deterministic and avoids goroutine-leak risk. The
+// in-process production adapter
+// (cli/cmd/ao/event_bus_adapter.go, productionEventBus) uses the
+// same sync semantics. Distributed adapters (NATS, Kafka, Redis
+// Streams) are the future shape the port contract permits.
 //
 // Thread-safe via mutex on the subscribers map. Each call to
 // Publish acquires the mutex briefly to snapshot the handler slice,
