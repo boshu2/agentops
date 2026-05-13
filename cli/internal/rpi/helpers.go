@@ -199,21 +199,21 @@ func EntryConsumedTime(entry *NextWorkEntry) time.Time {
 // EnsureQueueItemClaimable checks whether a queue item can be claimed.
 func EnsureQueueItemClaimable(status string, currentClaimedBy *string, claimedBy string) error {
 	if status == "consumed" {
-		return ErrQueueLeaseConflict
+		return ErrQueueClaimConflict
 	}
 	if status == "in_progress" && (currentClaimedBy == nil || *currentClaimedBy != claimedBy) {
-		return ErrQueueLeaseConflict
+		return ErrQueueClaimConflict
 	}
 	return nil
 }
 
-// RequireQueueLeaseOwner verifies the current claim owner matches expected.
-func RequireQueueLeaseOwner(currentClaimedBy *string, expectedClaimedBy string) error {
+// RequireQueueClaimOwner verifies the current claim owner matches expected.
+func RequireQueueClaimOwner(currentClaimedBy *string, expectedClaimedBy string) error {
 	if expectedClaimedBy == "" {
 		return nil
 	}
 	if currentClaimedBy == nil || *currentClaimedBy != expectedClaimedBy {
-		return ErrQueueLeaseConflict
+		return ErrQueueClaimConflict
 	}
 	return nil
 }
