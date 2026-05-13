@@ -1,10 +1,9 @@
 # BC Ports Inventory
 
 > **Status:** 13 ports scaffolded (12 from the cycle 78-106 wire-up
-> arc + FactoryAdmissionPort from cycle 139 / soc-2klg.1). 12 of 13
-> have production adapters delivered (cycles 83 + 108-118); the new
-> FactoryAdmissionPort scaffolded cycle 139 has its in-memory test
-> double; production adapter pending (soc-2klg.1 follow-up cycle).
+> arc + FactoryAdmissionPort from cycle 139 / soc-2klg.1). 13 of 13
+> have production adapters delivered (cycles 83 + 108-118 +
+> cycle 140 FactoryAdmissionPort prod adapter).
 > Every BC port has both an `InMemoryX` test double in
 > `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
 > assertions). Next-phase work continues call-site migration through
@@ -198,6 +197,7 @@ caller-refactor work:
 | 116 | `96318d7b` | `productionClaimEvidenceBinder` | BC2 | JSONL append + upgrade-only rule |
 | 117 | `8669b15e` | `productionCIStatus` | BC2 | external CLI + JSON parse (pluggable runner) |
 | 118 | `57ad553d` | `productionEventBus` | BC4 | sync in-memory pubsub |
+| 140 | _this commit_ | `productionFactoryAdmission` | BC4 | daemon.FactoryAdmissionEvidenceProvider wrapper (3 probe methods + type translation) |
 
 All adapters in `cli/cmd/ao/<x>_adapter.go` with paired
 `<x>_adapter_test.go`. Each carries a compile-time port assertion
