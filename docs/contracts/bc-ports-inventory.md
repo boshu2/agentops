@@ -1,9 +1,11 @@
 # BC Ports Inventory
 
-> **Status:** 13 ports scaffolded (12 from the cycle 78-106 wire-up
-> arc + FactoryAdmissionPort from cycle 139 / soc-2klg.1). 13 of 13
-> have production adapters delivered (cycles 83 + 108-118 +
-> cycle 140 FactoryAdmissionPort prod adapter).
+> **Status:** 14 ports scaffolded (12 from the cycle 78-106 wire-up
+> arc + FactoryAdmissionPort cycle 139 / soc-2klg.1 +
+> ClaimEvidencePort cycle 141 / soc-2klg.2). 13 of 14 have
+> production adapters delivered (cycles 83 + 108-118 + 140);
+> ClaimEvidencePort scaffolded cycle 141 — production adapter
+> pending (natural follow-up cycle).
 > Every BC port has both an `InMemoryX` test double in
 > `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
 > assertions). Next-phase work continues call-site migration through
@@ -179,7 +181,8 @@ caller-refactor work:
 | 104 | `d10ae648` | BC4 OperatorPort |
 | 105 | `8cd646e5` | BC4 EventBusPort |
 | 106 | `a6754235` | BC5 HarnessPort — 12-port surface complete |
-| 139 | _this commit_ | BC4 FactoryAdmissionPort — 13th port (soc-2klg.1) |
+| 139 | `adafc08d` | BC4 FactoryAdmissionPort — 13th port (soc-2klg.1) |
+| 141 | _this commit_ | BC4 ClaimEvidencePort — 14th port (soc-2klg.2) |
 
 ## Production Adapters (chronological, completed cycle 118)
 
