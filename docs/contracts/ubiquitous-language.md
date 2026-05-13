@@ -93,14 +93,16 @@ Cycle-129 finding: **drift #2 is audit-only.** The "Run/Iteration" usage in the 
 | Runtime-specific skill/hook implementation | **Harness** | _no drift_ |
 | Claude Code event (PreToolUse, etc.) | **HookEvent** | "tool event", "claude event" |
 
-**Ranked drift #5 (Session) resolution (refined cycle 125):** scope per BC. Four distinct Session-shaped concepts exist:
+**Ranked drift #5 (Session) resolution (refined cycle 125, re-refined cycle 131):** scope per BC. Four distinct Session-shaped concepts exist, each scoped by its package qualifier:
 
-- **AgentSession** (BC5, ephemeral provider instance — Claude/Codex/etc.)
-- **OperatorSession** (BC5, interactive CLI session)
-- **TranscriptSession** (BC1 Corpus — extracted knowledge from a Claude Code transcript .jsonl). Currently bare `storage.Session` (93 refs) and `search.Session` (4 refs). Cycle 125 surfaced this — was NOT in the original drift catalog.
-- **GasCitySession** (gascity package — daemon-managed worker session API; 79 refs across `Session`, `SessionCreateRequest`, `SessionListParams`, `SessionListResponse`, `SessionGetOptions`, `SessionSubmitRequest`, `SessionSubmitResponse`). Conceptually overlaps with AgentSession but the gascity API surface uses Session as the user-facing noun. Rename to AgentSession would break a published API contract; keep as-is, document the alias in code.
+- **AgentSession** (BC5; `agentworker.AgentSession` — ephemeral provider instance for Claude/Codex/etc.)
+- **OperatorSession** (BC5; canonical name for interactive CLI session)
+- **TranscriptSession** (BC1 Corpus — extracted knowledge from a Claude Code transcript .jsonl). Currently lives as `storage.Session` + `search.Session`. The package qualifier IS the disambiguator: `storage.Session` reads unambiguously as "the storage package's Session = transcript-mined knowledge bundle" in context.
+- **GasCitySession** (gascity package — daemon-managed worker session API). Published-API surface, keep as-is.
 
-The `daemon` package should NOT have a `Session` type — anything that looked like one is either an AgentSession, OperatorSession, or TranscriptSession. Daemon manages **WorkerSlots** and **DaemonJobs**, not Sessions.
+Cycle-131 audit: a narrow rename of `storage.Session → storage.TranscriptSession` and `search.Session → search.TranscriptSession` would touch 342 word-bounded `Session` refs across 6 packages (storage, search, formatter, forge, context, cmd/ao). That blast radius is 3x cycle 126's QueueClaim rename (108 refs) — too big for one cycle, and like cycle 130's drift #1, the audit reveals the codebase already has unambiguous names: the Go package qualifier provides the BC scope. No rename needed.
+
+The `daemon` package should NOT have a `Session` type — anything that looked like one is either an AgentSession, OperatorSession, TranscriptSession, or GasCitySession. Daemon manages **WorkerSlots** and **DaemonJobs**, not Sessions.
 
 ## Ranked drift #4: Skill vs Primitive vs Pattern vs Practice
 
@@ -169,7 +171,7 @@ soc-5yuy child PR ratchets one of these counts toward 0.
 | #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | ✓ AUDITED cycle 129: most usage is serialized-contract enums (JobTypeRPIRun), filesystem path constants (RPIRunRegistryDir), legitimate Runner naming, or "Runtime" substring-coincidence. No drift; no renames needed. | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
 | #3 Claim / Assertion / Evidence | `QueueClaim` references | ✓ 0 (down from 111 at cycle 123 baseline); cycle 126 sed rename + green tests | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
 | #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | ✓ AUDITED cycle 128: no systemic misuse; `primitive` overload documented as 3 scoped senses (no renames needed) | (audit per file; no single grep) |
-| #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`); refined cycle 125 — these are 3 DIFFERENT concepts (storage/search = TranscriptSession 97 refs; gascity = published-API Session 79 refs, keep as-is) | `grep -rn 'type Session ' cli/` |
+| #5 Session | bare `type Session struct` declarations | ✓ AUDITED cycle 131: 4 distinct concepts disambiguated by package qualifier (agentworker.AgentSession, storage.Session/search.Session = TranscriptSession, gascity.Session, future OperatorSession). 342 word-bounded `Session` refs across 6 packages would need atomic rename — too big and not necessary since package qualifier disambiguates. No renames needed. | `grep -rn 'type Session ' cli/` |
 
 Excluded from counts: `cli/testdata/` (transcript fixtures), test
 files (`*_test.go`) where Session/Claim mock types are legitimate.
@@ -179,6 +181,7 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
 - 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
 - 2026-05-13 cycle 125: refined drift #5 — the 3 bare `Session` types are 3 different concepts, not one. Added TranscriptSession (BC1) as missing canonical name. gascity.Session is a published-API surface — rename out of scope; keep + alias-document. storage.Session (93 refs) + search.Session (4 refs) rename to TranscriptSession is the actual soc-5yuy.5 unit; gascity stays.
+- 2026-05-13 cycle 131: **drift #5 RESOLVED via audit-only.** Cycle 125 first-execution audit had said the 3 bare Session types were 3 different concepts and the storage+search subset (97 refs) was the actual unit. Cycle 131 pre-rename substring audit shows the full surface is 342 word-bounded `Session` refs across 6 packages — too big for one cycle, and the Go package qualifier (storage.Session, search.Session, gascity.Session, agentworker.AgentSession) already disambiguates the 4 concepts. No rename needed. soc-5yuy now 5/5 closed (only .3 was an actual rename; all 4 others audit-only).
 - 2026-05-13 cycle 130: **drift #1 RESOLVED via audit-only.** Surveyed scripts/check-*.sh headers — 0 use "Validator", 38 use "Gate", rest describe their function. Only Go Validator is cli/internal/ratchet (legitimate ratchet-specific concept). The catalog's "90 scripts inconsistent" claim was overstated; the codebase organically drifted toward "Gate" already. Fourth soc-5yuy child to close via audit-only (joins .2 cycle 129, .4 cycle 128). Pattern: 3 of the 5 catalog flags turned out to be audit-only resolutions.
 - 2026-05-13 cycle 129: **drift #2 RESOLVED via audit-only.** Enumerated all `RPIRun*` (~150 identifiers) and `Iteration*` (132 identifiers). Most usage is serialized-contract enums (JobTypeRPIRun), filesystem path constants (RPIRunRegistryDir), legitimate Runner naming, substring-coincidence ("Runtime"), or scoped Dream-internal counters. Contract over-flagged this — the actual codebase has Run/Iteration semantically correct. No renames needed. Third soc-5yuy child to close via audit-only (after cycle-128 drift #4 and cycle-126 drift #3 via rename).
 - 2026-05-13 cycle 128: **drift #4 RESOLVED via audit-only.** Surveyed `primitive`/`skill`/`pattern`/`practice` usage across SKILL.md, PRACTICE.md, contracts. Found no systemic misuse — Skill is consistently "invokable", Pattern is "reusable knowledge", Practice is "citation annotation". `primitive` IS overloaded across 3 distinct concepts (BC1 Corpus Primitive vs Domain Primitive in skills/domain/ vs Runtime primitive in converter/standards) — added a sub-overload table to the contract documenting all 3 senses as scoped (not drift). No renames needed; the audit IS the resolution.

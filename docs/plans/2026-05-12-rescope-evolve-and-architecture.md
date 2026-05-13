@@ -110,7 +110,7 @@ Each port becomes one bead. Each bead is sized to land as one operator-shaped co
 | .2 | Cycle vs Loop vs Iteration vs Run — pick `Cycle` (BC3 aggregate); deprecate `Run` outside Phase context | ✓ AUDITED cycle 129 (no drift; RPIRun + Iteration usage is serialized-contract, Runner naming, Runtime substring-coincidence, or scoped Dream counters — no renames needed) | 1 cycle |
 | .3 | Claim vs Assertion vs Evidence — `daemon.QueueClaim` → `QueueLease` | ✓ DONE cycle 126 (108 Go refs renamed; daemon/rpi/llmwiki/cmd-ao tests green) | 1 cycle |
 | .4 | Skill vs Primitive vs Pattern vs Practice — pin definitions per BC | ✓ AUDITED cycle 128 (no systemic misuse; `primitive` overload documented as 3 scoped senses, no renames needed) | 1 cycle |
-| .5 | Session — scope per BC (`AgentSession` BC5, `OperatorSession` BC5; drop the daemon "session" usage) | NEW | 1 cycle |
+| .5 | Session — scope per BC (`AgentSession` BC5, `OperatorSession` BC5; drop the daemon "session" usage) | ✓ AUDITED cycle 131 (4 Session concepts disambiguated by package qualifier; 342 word-bounded refs too big to atomic-rename and not necessary — daemon already has no Session type) | 1 cycle |
 
 ---
 
