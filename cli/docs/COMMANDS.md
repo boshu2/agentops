@@ -434,6 +434,34 @@ ao gate reject <candidate-id> [flags]
 
 ---
 
+### `ao harness`
+
+Inspect the sync state between the canonical skills/ tree and the skills-codex/ mirror via the typed BC5 HarnessPort. Useful as a typed alternative to scripts/audit-codex-parity.sh for drift detection.
+
+```
+ao harness [command]
+```
+
+**Subcommands:**
+
+#### `ao harness status`
+
+Emit HarnessSkillSync entries via the typed BC5 HarnessPort
+
+```
+ao harness status [--skill <name>] [--out-of-sync-only] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for status
+      --out-of-sync-only   emit only entries with OutOfSync=true
+      --skill string       filter to one skill name (empty = all)
+```
+
+---
+
 ### `ao loop`
 
 Operations on the /evolve cycle history and related Loop bounded-context state. The 'history' subcommand reads .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
