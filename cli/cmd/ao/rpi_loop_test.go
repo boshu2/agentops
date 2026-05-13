@@ -1302,8 +1302,8 @@ func TestMarkItemClaimedConflict(t *testing.T) {
 		t.Fatalf("first markItemClaimed: %v", err)
 	}
 	err := markItemClaimed(path, 0, 0, "loop:cycle-2")
-	if !errors.Is(err, errQueueClaimConflict) {
-		t.Fatalf("second markItemClaimed error = %v, want errQueueClaimConflict", err)
+	if !errors.Is(err, errQueueLeaseConflict) {
+		t.Fatalf("second markItemClaimed error = %v, want errQueueLeaseConflict", err)
 	}
 
 	claimed := readJSONLEntries(t, path)
@@ -1348,7 +1348,7 @@ func TestMarkItemClaimedConcurrentSingleWinner(t *testing.T) {
 		switch {
 		case err == nil:
 			successes++
-		case errors.Is(err, errQueueClaimConflict):
+		case errors.Is(err, errQueueLeaseConflict):
 			conflicts++
 		default:
 			t.Fatalf("unexpected concurrent claim error: %v", err)
@@ -1388,8 +1388,8 @@ func TestMarkItemConsumedOwnedConflict(t *testing.T) {
 		t.Fatalf("markItemClaimed: %v", err)
 	}
 	err := markItemConsumedOwned(path, 0, 0, "ao-rpi-loop", "loop:cycle-2")
-	if !errors.Is(err, errQueueClaimConflict) {
-		t.Fatalf("markItemConsumedOwned error = %v, want errQueueClaimConflict", err)
+	if !errors.Is(err, errQueueLeaseConflict) {
+		t.Fatalf("markItemConsumedOwned error = %v, want errQueueLeaseConflict", err)
 	}
 
 	claimed := readJSONLEntries(t, path)

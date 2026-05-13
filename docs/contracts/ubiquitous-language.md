@@ -39,7 +39,7 @@ BC1 is largely drift-free at the aggregate level. The one term to lock: **Contex
 
 **Ranked drift #1 (Gate / Check / Validation / Validator) resolution:** `Gate` is the BC2 aggregate. `Check` is a single invocation of a Gate. `Validator` (where used in Go) is the concrete adapter type — fine to keep but it implements a Gate. The 90 `scripts/check-*.sh` filenames stay (the file name describes the action; the concept inside is the Gate they enforce). The new term in code/docs should be **Gate**.
 
-**Ranked drift #3 (Claim / Assertion / Evidence) resolution:** `Claim` is the BC2 noun for what the project says publicly. `Evidence` is what backs it. `daemon.QueueClaim` (the Go type) is a naming collision and should rename to `QueueLease` (different concept entirely — leasing a job slot, not asserting a public claim).
+**Ranked drift #3 (Claim / Assertion / Evidence) resolution:** `Claim` is the BC2 noun for what the project says publicly. `Evidence` is what backs it. `daemon.QueueClaim` (the Go type) was a naming collision (different concept entirely — leasing a job slot, not asserting a public claim) — **renamed to `QueueLease` in cycle 126** (commit ahead, 108 Go refs touched across cli/internal/daemon, cli/internal/rpi, cli/internal/llmwiki, cli/cmd/ao).
 
 ### BC3 Loop
 
@@ -104,7 +104,7 @@ The pinned distinction: **Skill is invokable**, **Pattern is reusable knowledge*
 |---|---|---|
 | #1 Gate / Check / Validation | Pass through ~90 `check-*.sh` headers; pin `Gate` in Go type renames where applicable | soc-5yuy.1 |
 | #2 Cycle / Loop / Iteration / Run | Deprecate `Run` outside Phase context; `lifecycle.CloseLoopIngestResult` keeps "loop" (different concept) | soc-5yuy.2 |
-| #3 Claim / Assertion / Evidence | Rename `daemon.QueueClaim` → `QueueLease`; update consumers | soc-5yuy.3 |
+| #3 Claim / Assertion / Evidence | ✓ DONE cycle 126: `daemon.QueueClaim` → `QueueLease` (108 refs renamed; consumers updated) | soc-5yuy.3 |
 | #4 Skill / Primitive / Pattern / Practice | Audit cross-references in `skills/*/SKILL.md` and `PRACTICE.md`; correct where the wrong term is used | soc-5yuy.4 |
 | #5 Session | Rename ambiguous `daemon.Session` types per BC; add canonical `AgentSession` and `OperatorSession` where missing | soc-5yuy.5 |
 
@@ -138,7 +138,7 @@ soc-5yuy child PR ratchets one of these counts toward 0.
 |---|---|---|---|
 | #1 Gate / Check / Validation | `script header references "Validator"` outside Go code | ~90 `scripts/check-*.sh` files (filenames stay; headers/docs use "Gate") | `grep -rln 'scripts/check-' scripts/` |
 | #2 Cycle / Loop / Iteration / Run | `rpi.Run` callers outside Phase context | _measure on demand_ | `grep -rn 'rpi\.Run\b\|RpiRun\b' cli/` |
-| #3 Claim / Assertion / Evidence | `QueueClaim` references | 111 (vs 3 `QueueLease`) | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
+| #3 Claim / Assertion / Evidence | `QueueClaim` references | ✓ 0 (down from 111 at cycle 123 baseline); cycle 126 sed rename + green tests | `grep -rn 'QueueClaim' cli/ scripts/ docs/` |
 | #4 Skill / Primitive / Pattern / Practice | mixed terms in `skills/*/SKILL.md` cross-references | _measure on demand_ | (audit per file; no single grep) |
 | #5 Session | bare `type Session struct` declarations | 3 (`cli/internal/{search,storage,gascity}/types.go`); refined cycle 125 — these are 3 DIFFERENT concepts (storage/search = TranscriptSession 97 refs; gascity = published-API Session 79 refs, keep as-is) | `grep -rn 'type Session ' cli/` |
 
@@ -150,3 +150,4 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 - 2026-05-12 cycle 58: contract written; rename schedule binds soc-5yuy.1–.5 to specific drift resolutions.
 - 2026-05-13 cycle 123: added current-drift baseline section so rename PRs have a starting-count to ratchet against. QueueClaim sits at 111 refs (vs 3 QueueLease); `type Session struct` appears in 3 packages.
 - 2026-05-13 cycle 125: refined drift #5 — the 3 bare `Session` types are 3 different concepts, not one. Added TranscriptSession (BC1) as missing canonical name. gascity.Session is a published-API surface — rename out of scope; keep + alias-document. storage.Session (93 refs) + search.Session (4 refs) rename to TranscriptSession is the actual soc-5yuy.5 unit; gascity stays.
+- 2026-05-13 cycle 126: **drift #3 RESOLVED.** `daemon.QueueClaim` → `QueueLease` rename shipped: 108 Go refs across cli/internal/{daemon,rpi,llmwiki} + cli/cmd/ao. Audit-then-execute: pre-rename audit (cycle-125 pattern) showed no split-concept surprise here — all 111 baseline refs were the same concept, mechanical sed across 4 packages, all package tests green (daemon 11s, rpi 4s, llmwiki 0.1s, cmd/ao 53s). First soc-5yuy child to close.

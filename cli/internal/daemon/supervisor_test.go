@@ -224,7 +224,7 @@ func (e testOpenClawSnapshotExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeOpenClawSnapshot}
 }
 
-func (e testOpenClawSnapshotExecutor) RunJob(_ context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e testOpenClawSnapshotExecutor) RunJob(_ context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if claim.Job.JobType != JobTypeOpenClawSnapshot {
 		return JobExecutionResult{}, errors.New("test executor received unsupported job type")
 	}
@@ -246,7 +246,7 @@ func (e *oneShotOOMExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeOpenClawSnapshot}
 }
 
-func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueClaim) (JobExecutionResult, error) {
+func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecutionResult, error) {
 	e.calls++
 	if e.calls == 1 {
 		return JobExecutionResult{}, errors.New("worker killed by cgroup memory.max")
@@ -263,7 +263,7 @@ func (e *blockingOpenClawExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeOpenClawSnapshot}
 }
 
-func (e *blockingOpenClawExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *blockingOpenClawExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	close(e.started)
 	select {
 	case <-ctx.Done():

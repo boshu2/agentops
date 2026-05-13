@@ -158,7 +158,7 @@ func TestWikiForgeExecutorInvalidOutputFailsWithQuarantineArtifact(t *testing.T)
 // described in bd soc-58q5.12: RunJob must observe context cancellation
 // issued mid-claim before doing any work (payload parse, source expansion,
 // or worker spawn). Without the early ctx.Err() guard, a cancel issued
-// between QueueClaim and execution start is silently ignored until an
+// between QueueLease and execution start is silently ignored until an
 // underlying call happens to block.
 func TestWikiExecutor_RespectsCtxCancelBeforeRun(t *testing.T) {
 	store := NewStore(t.TempDir())
@@ -178,7 +178,7 @@ func TestWikiExecutor_RespectsCtxCancelBeforeRun(t *testing.T) {
 		t.Fatalf("NewWikiForgeExecutor: %v", err)
 	}
 
-	claim := QueueClaim{
+	claim := QueueLease{
 		Job: QueueJobState{
 			JobID:     jobSpec.ID,
 			JobType:   jobSpec.Type,

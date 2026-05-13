@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// ErrQueueClaimConflict signals that a next-work item is no longer available.
-var ErrQueueClaimConflict = errors.New("next-work item no longer available for this consumer")
+// ErrQueueLeaseConflict signals that a next-work item is no longer available.
+var ErrQueueLeaseConflict = errors.New("next-work item no longer available for this consumer")
 
 const (
 	// ProviderSessionLost is the normalized RPI/GasCity status when a session

@@ -84,7 +84,7 @@ func (e *LLMWikiLoopExecutor) JobTypes() []daemon.JobType {
 //  3. Look up the matching handler. If nil, return a Skipped result.
 //  4. Invoke handler.Run with the QueueJobState attempt counter.
 //  5. Emit artifacts so the supervisor can record them in the ledger.
-func (e *LLMWikiLoopExecutor) RunJob(ctx context.Context, claim daemon.QueueClaim) (daemon.JobExecutionResult, error) {
+func (e *LLMWikiLoopExecutor) RunJob(ctx context.Context, claim daemon.QueueLease) (daemon.JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}

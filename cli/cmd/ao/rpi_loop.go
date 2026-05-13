@@ -70,7 +70,7 @@ type (
 	compileProducerState      = rpi.CompileProducerState
 )
 
-var errQueueClaimConflict = rpi.ErrQueueClaimConflict
+var errQueueLeaseConflict = rpi.ErrQueueLeaseConflict
 
 // Loop control constants — canonical definitions live in internal/rpi.
 var (
@@ -377,7 +377,7 @@ func resolveLoopGoal(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSupervis
 				break
 			}
 			if err := markItemConsumed(nextWorkPath, sel.EntryIndex, sel.ItemIndex, queuePreflightConsumedBy); err != nil {
-				if errors.Is(err, errQueueClaimConflict) {
+				if errors.Is(err, errQueueLeaseConflict) {
 					continue
 				}
 				return "", nil, loopReturn, fmt.Errorf("consume preflight queue item %q: %w", sel.Item.Title, err)
@@ -652,7 +652,7 @@ func packetIsValidForTarget(packetPath, targetID string) bool {
 // success/failure queue marking.
 func runCycleWithRetries(ctx context.Context, cwd, goal string, cycle, executedCycles int, nextWorkPath string, sel *queueSelection, explicitGoal string, cfg rpiLoopSupervisorConfig) (loopCycleResult, error) {
 	if err := claimQueueSelection(nextWorkPath, sel, cycle); err != nil {
-		if errors.Is(err, errQueueClaimConflict) && explicitGoal == "" {
+		if errors.Is(err, errQueueLeaseConflict) && explicitGoal == "" {
 			fmt.Printf("Queue contention for %q; another consumer won the claim. Continuing.\n", goal)
 			return loopContinue, nil
 		}
@@ -939,8 +939,8 @@ func ensureQueueItemClaimable(status string, currentClaimedBy *string, claimedBy
 	return rpi.EnsureQueueItemClaimable(status, currentClaimedBy, claimedBy)
 }
 
-func requireQueueClaimOwner(currentClaimedBy *string, expectedClaimedBy string) error {
-	return rpi.RequireQueueClaimOwner(currentClaimedBy, expectedClaimedBy)
+func requireQueueLeaseOwner(currentClaimedBy *string, expectedClaimedBy string) error {
+	return rpi.RequireQueueLeaseOwner(currentClaimedBy, expectedClaimedBy)
 }
 
 // rewriteNextWorkFile rewrites the JSONL file with updated entries applied via
@@ -1075,7 +1075,7 @@ func markItemConsumedOwned(path string, entryIndex int, itemIndex int, consumedB
 		}
 		targetFound = true
 		if len(entry.Items) == 0 && hasLegacyFlatNextWorkItem(*entry) {
-			if err := requireQueueClaimOwner(entry.ClaimedBy, expectedClaimedBy); err != nil {
+			if err := requireQueueLeaseOwner(entry.ClaimedBy, expectedClaimedBy); err != nil {
 				return err
 			}
 			entry.Consumed = true
@@ -1088,9 +1088,9 @@ func markItemConsumedOwned(path string, entryIndex int, itemIndex int, consumedB
 			return nil
 		}
 		if itemIndex < 0 || itemIndex >= len(entry.Items) {
-			return errQueueClaimConflict
+			return errQueueLeaseConflict
 		}
-		if err := requireQueueClaimOwner(entry.Items[itemIndex].ClaimedBy, expectedClaimedBy); err != nil {
+		if err := requireQueueLeaseOwner(entry.Items[itemIndex].ClaimedBy, expectedClaimedBy); err != nil {
 			return err
 		}
 		entry.Items[itemIndex].Consumed = true
@@ -1107,7 +1107,7 @@ func markItemConsumedOwned(path string, entryIndex int, itemIndex int, consumedB
 		return err
 	}
 	if !targetFound {
-		return errQueueClaimConflict
+		return errQueueLeaseConflict
 	}
 	return nil
 }
@@ -1139,7 +1139,7 @@ func markEntryFailed(path string, entryIndex int) error {
 		return err
 	}
 	if !targetFound {
-		return errQueueClaimConflict
+		return errQueueLeaseConflict
 	}
 	return nil
 }
@@ -1166,7 +1166,7 @@ func markItemClaimed(path string, entryIndex int, itemIndex int, claimedBy strin
 			return nil
 		}
 		if itemIndex < 0 || itemIndex >= len(entry.Items) {
-			return errQueueClaimConflict
+			return errQueueLeaseConflict
 		}
 		if err := ensureQueueItemClaimable(normalizeClaimStatus(entry.Items[itemIndex].Consumed, entry.Items[itemIndex].ClaimStatus), entry.Items[itemIndex].ClaimedBy, claimedBy); err != nil {
 			return err
@@ -1182,7 +1182,7 @@ func markItemClaimed(path string, entryIndex int, itemIndex int, claimedBy strin
 		return err
 	}
 	if !targetFound {
-		return errQueueClaimConflict
+		return errQueueLeaseConflict
 	}
 	return nil
 }
@@ -1215,7 +1215,7 @@ func releaseQueueItem(path string, entryIndex int, itemIndex int, failedAt *stri
 		}
 		targetFound = true
 		if len(entry.Items) == 0 && hasLegacyFlatNextWorkItem(*entry) {
-			if err := requireQueueClaimOwner(entry.ClaimedBy, expectedClaimedBy); err != nil {
+			if err := requireQueueLeaseOwner(entry.ClaimedBy, expectedClaimedBy); err != nil {
 				return err
 			}
 			entry.ClaimStatus = "available"
@@ -1228,9 +1228,9 @@ func releaseQueueItem(path string, entryIndex int, itemIndex int, failedAt *stri
 			return nil
 		}
 		if itemIndex < 0 || itemIndex >= len(entry.Items) {
-			return errQueueClaimConflict
+			return errQueueLeaseConflict
 		}
-		if err := requireQueueClaimOwner(entry.Items[itemIndex].ClaimedBy, expectedClaimedBy); err != nil {
+		if err := requireQueueLeaseOwner(entry.Items[itemIndex].ClaimedBy, expectedClaimedBy); err != nil {
 			return err
 		}
 		entry.Items[itemIndex].ClaimStatus = "available"
@@ -1247,7 +1247,7 @@ func releaseQueueItem(path string, entryIndex int, itemIndex int, failedAt *stri
 		return err
 	}
 	if !targetFound {
-		return errQueueClaimConflict
+		return errQueueLeaseConflict
 	}
 	return nil
 }

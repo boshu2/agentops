@@ -13,7 +13,7 @@ import (
 
 // RPIRunRequest is the per-job input handed to the runner function injected
 // into RPIRunExecutor. It carries the parsed RPIRunJobSpec, the original
-// QueueClaim (so the runner can correlate IDs / heartbeat metadata), and the
+// QueueLease (so the runner can correlate IDs / heartbeat metadata), and the
 // daemon root cwd.
 //
 // soc-bcrn.3.6 (E3.W4 sub-5a): introduced as part of the in-process executor
@@ -21,7 +21,7 @@ import (
 // supplies the runner so the daemon stays free of cmd/ao imports.
 type RPIRunRequest struct {
 	Spec  RPIRunJobSpec
-	Claim QueueClaim
+	Claim QueueLease
 	Root  string
 }
 
@@ -95,7 +95,7 @@ func (e *RPIRunExecutor) JobTypes() []JobType { return []JobType{JobTypeRPIRun} 
 // supervisor's terminal record.
 //
 // RunJob requires a non-nil ctx; callers passing nil receive a Background ctx.
-func (e *RPIRunExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *RPIRunExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -188,7 +188,7 @@ func (e *RPIRunExecutor) queueOrNil() *Queue {
 // callers that only inject a runner). Errors are logged via the queue contract
 // but do not fail the job — the runner result is the source of truth for the
 // supervisor's terminal-record.
-func (e *RPIRunExecutor) emitAgentUpdate(claim QueueClaim, queue *Queue, base LedgerEventInput) {
+func (e *RPIRunExecutor) emitAgentUpdate(claim QueueLease, queue *Queue, base LedgerEventInput) {
 	if e.store == nil || queue == nil {
 		return
 	}
@@ -213,7 +213,7 @@ func (e *RPIRunExecutor) emitAgentUpdate(claim QueueClaim, queue *Queue, base Le
 // executor_policy="in-process" and backend="in-process" so downstream readers
 // can distinguish the new path from the legacy CLI-fallback shell-out during
 // the 5a/5b/5c migration.
-func rpiRunArtifactsFor(claim QueueClaim, spec RPIRunJobSpec) map[string]string {
+func rpiRunArtifactsFor(claim QueueLease, spec RPIRunJobSpec) map[string]string {
 	runID := sanitizeIDPart(spec.RunID)
 	if runID == "" {
 		runID = "unknown-run"

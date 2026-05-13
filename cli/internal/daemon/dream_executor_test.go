@@ -195,7 +195,7 @@ func TestDreamExecutor_RejectsSymlinkOutputDir(t *testing.T) {
 		t.Fatalf("NewDreamExecutor: %v", err)
 	}
 
-	claim := QueueClaim{Job: QueueJobState{
+	claim := QueueLease{Job: QueueJobState{
 		JobID:   jobSpec.ID,
 		JobType: jobSpec.Type,
 		Payload: jobSpec.Payload,

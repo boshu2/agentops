@@ -61,7 +61,7 @@ func (e *DreamExecutor) JobTypes() []JobType {
 }
 
 // RunJob requires a non-nil ctx; callers passing nil will panic on first use.
-func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if claim.Job.JobType != JobTypeDreamRun {
 		return JobExecutionResult{}, fmt.Errorf("dream executor does not support job type %s", claim.Job.JobType)
 	}

@@ -45,9 +45,9 @@ func (f *fakePlansBdSource) QueryEpics(ctx context.Context, projectID, issuePref
 	return entries, nil
 }
 
-// claimForPlansSpec returns a QueueClaim with the plans.projection spec
+// claimForPlansSpec returns a QueueLease with the plans.projection spec
 // payload-encoded the same way Queue.SubmitJob does.
-func claimForPlansSpec(t *testing.T, jobID string, spec PlansProjectionJobSpec) QueueClaim {
+func claimForPlansSpec(t *testing.T, jobID string, spec PlansProjectionJobSpec) QueueLease {
 	t.Helper()
 	raw, err := json.Marshal(spec)
 	if err != nil {
@@ -57,7 +57,7 @@ func claimForPlansSpec(t *testing.T, jobID string, spec PlansProjectionJobSpec) 
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		t.Fatalf("unmarshal spec: %v", err)
 	}
-	return QueueClaim{Job: QueueJobState{
+	return QueueLease{Job: QueueJobState{
 		JobID:   jobID,
 		JobType: JobTypePlansProjection,
 		Payload: payload,

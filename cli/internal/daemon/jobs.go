@@ -64,7 +64,7 @@ type SubmitJobInput struct {
 	Payload        map[string]any
 }
 
-type QueueClaim struct {
+type QueueLease struct {
 	Job            QueueJobState `json:"job"`
 	ClaimToken     string        `json:"claim_token"`
 	LeaseEpoch     int           `json:"lease_epoch"`
@@ -238,15 +238,15 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	return snapshot.jobByID(committed.JobID)
 }
 
-func (q *Queue) ClaimNext(actor string, opts QueueMutationOptions) (QueueClaim, error) {
+func (q *Queue) ClaimNext(actor string, opts QueueMutationOptions) (QueueLease, error) {
 	return q.ClaimNextMatching(actor, nil, opts)
 }
 
 // ClaimNextMatching claims the next claimable job accepted by match.
-func (q *Queue) ClaimNextMatching(actor string, match func(QueueJobState) bool, opts QueueMutationOptions) (QueueClaim, error) {
+func (q *Queue) ClaimNextMatching(actor string, match func(QueueJobState) bool, opts QueueMutationOptions) (QueueLease, error) {
 	snapshot, err := q.Snapshot()
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	for _, job := range snapshot.Jobs {
 		if !q.isClaimable(job) {
@@ -257,27 +257,27 @@ func (q *Queue) ClaimNextMatching(actor string, match func(QueueJobState) bool, 
 		}
 		return q.claimJobState(job, actor, opts)
 	}
-	return QueueClaim{}, ErrNoClaimableJobs
+	return QueueLease{}, ErrNoClaimableJobs
 }
 
-func (q *Queue) ClaimJob(jobID, actor string, opts QueueMutationOptions) (QueueClaim, error) {
+func (q *Queue) ClaimJob(jobID, actor string, opts QueueMutationOptions) (QueueLease, error) {
 	snapshot, err := q.Snapshot()
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	job, err := snapshot.jobByID(jobID)
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	if isTerminalStatus(job.Status) {
-		return QueueClaim{}, ErrNoClaimableJobs
+		return QueueLease{}, ErrNoClaimableJobs
 	}
 	// Advisory lock-free lease check; authoritative serialization happens in claimJobState via the ledger append.
 	if job.Status == JobStatusRunning && !q.jobLeaseExpired(job) {
-		return QueueClaim{}, ErrJobAlreadyClaimed
+		return QueueLease{}, ErrJobAlreadyClaimed
 	}
 	if !q.isClaimable(job) {
-		return QueueClaim{}, ErrNoClaimableJobs
+		return QueueLease{}, ErrNoClaimableJobs
 	}
 	return q.claimJobState(job, actor, opts)
 }
@@ -435,23 +435,23 @@ func (q *Queue) Snapshot() (QueueSnapshot, error) {
 	return q.snapshotFromEvents(events)
 }
 
-func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutationOptions) (QueueClaim, error) {
+func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutationOptions) (QueueLease, error) {
 	if (job.Status == JobStatusRetryWaiting || job.RetryExhausted) && job.Attempt >= job.MaxAttempts {
 		if err := q.appendRetryExhausted(job, actor); err != nil {
-			return QueueClaim{}, err
+			return QueueLease{}, err
 		}
-		return QueueClaim{}, ErrNoClaimableJobs
+		return QueueLease{}, ErrNoClaimableJobs
 	}
 	// Advisory lock-free lease check; the appendLeaseExpired/appendRetryExhausted calls below serialize via the ledger.
 	if job.Status == JobStatusRunning && q.jobLeaseExpired(job) {
 		if job.Attempt >= job.MaxAttempts {
 			if err := q.appendRetryExhausted(job, actor); err != nil {
-				return QueueClaim{}, err
+				return QueueLease{}, err
 			}
-			return QueueClaim{}, ErrNoClaimableJobs
+			return QueueLease{}, ErrNoClaimableJobs
 		}
 		if err := q.appendLeaseExpired(job, actor); err != nil {
-			return QueueClaim{}, err
+			return QueueLease{}, err
 		}
 		job.Status = JobStatusRetryWaiting
 	}
@@ -475,16 +475,16 @@ func (q *Queue) claimJobState(job QueueJobState, actor string, opts QueueMutatio
 		},
 	})
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	if _, err := q.appendQueueEvent(event, opts); err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	updated, err := q.currentJob(job.JobID)
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
-	return QueueClaim{
+	return QueueLease{
 		Job:            updated,
 		ClaimToken:     claimToken,
 		LeaseEpoch:     epoch,

@@ -37,7 +37,7 @@ func TestRPIRunExecutor_RunsViaFunc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
 	}
-	claim := QueueClaim{Job: QueueJobState{
+	claim := QueueLease{Job: QueueJobState{
 		JobID:     jobSpec.ID,
 		RequestID: "req-rpi-run",
 		JobType:   jobSpec.Type,
@@ -99,7 +99,7 @@ func TestRPIRunExecutor_RejectsWrongJobType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new executor: %v", err)
 	}
-	claim := QueueClaim{Job: QueueJobState{JobID: "job-phase", JobType: JobTypeRPIPhase}}
+	claim := QueueLease{Job: QueueJobState{JobID: "job-phase", JobType: JobTypeRPIPhase}}
 	_, runErr := exec.RunJob(context.Background(), claim)
 	if runErr == nil || !strings.Contains(runErr.Error(), "does not support") {
 		t.Fatalf("RunJob error = %v, want unsupported type", runErr)
@@ -128,7 +128,7 @@ func TestRPIRunExecutor_PropagatesRunnerError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
 	}
-	result, runErr := exec.RunJob(context.Background(), QueueClaim{Job: QueueJobState{
+	result, runErr := exec.RunJob(context.Background(), QueueLease{Job: QueueJobState{
 		JobID:   jobSpec.ID,
 		JobType: jobSpec.Type,
 		Payload: jobSpec.Payload,
@@ -165,7 +165,7 @@ func TestRPIRunExecutor_ValidateFullRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
 	}
-	result, runErr := exec.RunJob(context.Background(), QueueClaim{Job: QueueJobState{
+	result, runErr := exec.RunJob(context.Background(), QueueLease{Job: QueueJobState{
 		JobID:   jobSpec.ID,
 		JobType: jobSpec.Type,
 		Payload: jobSpec.Payload,
@@ -284,7 +284,7 @@ func TestRPIRunEmitsAgentUpdates(t *testing.T) {
 			if err != nil {
 				t.Fatalf("job spec: %v", err)
 			}
-			claim := QueueClaim{Job: QueueJobState{
+			claim := QueueLease{Job: QueueJobState{
 				JobID:     jobSpec.ID,
 				RequestID: "req-emit",
 				JobType:   jobSpec.Type,
@@ -398,7 +398,7 @@ func TestRPIRunEmitsCriterionVerdicts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
 	}
-	claim := QueueClaim{Job: QueueJobState{
+	claim := QueueLease{Job: QueueJobState{
 		JobID:     jobSpec.ID,
 		RequestID: "req-verdicts",
 		JobType:   jobSpec.Type,
@@ -473,7 +473,7 @@ func TestRPIRunNoEmissionWithoutStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("job spec: %v", err)
 	}
-	claim := QueueClaim{Job: QueueJobState{JobID: jobSpec.ID, JobType: jobSpec.Type, Payload: jobSpec.Payload}}
+	claim := QueueLease{Job: QueueJobState{JobID: jobSpec.ID, JobType: jobSpec.Type, Payload: jobSpec.Payload}}
 	if _, err := exec.RunJob(context.Background(), claim); err != nil {
 		t.Fatalf("RunJob: %v", err)
 	}

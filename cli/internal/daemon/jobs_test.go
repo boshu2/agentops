@@ -388,7 +388,7 @@ func assertRepeatCancelDoesNotAppend(t *testing.T, queue *Queue, cancelled Cance
 	}
 }
 
-func claimCancelTestJob(t *testing.T, queue *Queue, jobID, actor string) QueueClaim {
+func claimCancelTestJob(t *testing.T, queue *Queue, jobID, actor string) QueueLease {
 	t.Helper()
 	claim, err := queue.ClaimJob(jobID, actor, QueueMutationOptions{})
 	if err != nil {
