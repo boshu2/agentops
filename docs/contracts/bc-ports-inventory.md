@@ -1,12 +1,15 @@
 # BC Ports Inventory
 
-> **Status:** 12 of 12 declared ports scaffolded (cycles 78-106) AND
-> 12 of 12 production adapters delivered (cycles 83 + 108-118) as of
-> 2026-05-12. Every BC port has both an `InMemoryX` test double in
-> `cli/internal/ports/` and a `productionX` adapter in `cli/cmd/ao/`,
-> each with compile-time `var _ XPort = (*…)(nil)` assertions.
-> Next-phase work is call-site migration through these adapters
-> (per-BC follow-up bds: `soc-pm5t` for BC1, sibling bds for BC2-BC5).
+> **Status:** 13 ports scaffolded (12 from the cycle 78-106 wire-up
+> arc + FactoryAdmissionPort from cycle 139 / soc-2klg.1). 12 of 13
+> have production adapters delivered (cycles 83 + 108-118); the new
+> FactoryAdmissionPort scaffolded cycle 139 has its in-memory test
+> double; production adapter pending (soc-2klg.1 follow-up cycle).
+> Every BC port has both an `InMemoryX` test double in
+> `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
+> assertions). Next-phase work continues call-site migration through
+> these adapters (per-BC follow-up bds: `soc-pm5t` for BC1, sibling
+> bds for BC2-BC5).
 
 The 5 bounded contexts (Corpus, Validation, Loop, Factory, Runtime)
 each declare a small set of typed Go interfaces ("ports") at
@@ -176,7 +179,8 @@ caller-refactor work:
 | 103 | `7fd9466e` | BC3 LoopWriterPort |
 | 104 | `d10ae648` | BC4 OperatorPort |
 | 105 | `8cd646e5` | BC4 EventBusPort |
-| 106 | `a6754235` | BC5 HarnessPort — surface complete |
+| 106 | `a6754235` | BC5 HarnessPort — 12-port surface complete |
+| 139 | _this commit_ | BC4 FactoryAdmissionPort — 13th port (soc-2klg.1) |
 
 ## Production Adapters (chronological, completed cycle 118)
 
