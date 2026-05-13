@@ -119,3 +119,26 @@ Updated phase-2 picks (cycle 156 forward):
 - `soc-0pku` — context_assemble.go → LoopReaderPort + CorpusReaderPort. Still the right migration.
 - `soc-1q1x` — defrag.go → LoopReaderPort. **Deferred**, pending Target-field schema decision on `CycleEntry`. Filed as a discussion-then-migration follow-up, not an immediate cycle pick.
 
+
+## Addendum (cycle 157) — third migration attempt forced the schema decision
+
+Third phase-2 attempt (`soc-0pku`: `context_assemble.go::gatherHistory` → `LoopReaderPort`) revealed the same structural problem as the defrag attempt: **the port is too narrow for the real consumer.**
+
+- `CycleEntry` projects 5 fields: Number, Mode, Result, Commit, Milestone.
+- `gatherHistory` consumes 13 fields, including aliases: timestamp, cycle, target, goal_ids, result/status, sha, canonical_sha, log_sha, goals_passing, goals_total, summary, error.
+
+Migrating would silently drop 8+ fields the formatter relies on. Not a drop-in.
+
+**This is not a per-cycle problem; it is an architecture-level finding.** Three phase-2 migrations attempted, three different rejection modes:
+- soc-8fjo: target was dead code → deleted
+- soc-1q1x: target has a `Target` field the port doesn't project → blocked
+- soc-0pku: target reads 13 fields, port projects 5 → blocked
+
+**Captured as a durable learning:** `docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`.
+
+**Schema decision filed:** `soc-ckc4` — choose whether to (A) widen CycleEntry on-demand, (B) add a ReadRaw escape hatch, or (C) accept that cycle-history is permanently outside the typed port. Recommendation in the bead: option A, start by adding `Timestamp` and `Summary` to unblock soc-0pku, then iterate.
+
+**Phase-2 status after cycle 157:** -46 LOC dead code removed, two migrations blocked pending soc-ckc4, one durable learning banked. The architecture did not advance, but the *understanding of why it can't advance with the current port surface* did. That is the real cycle-157 product.
+
+**Next /evolve cycle pick:** wait for soc-ckc4 decision before attempting any more phase-2 migrations. In the interim, the loop should redirect to entirely different work (testing, docs, drift, validation) rather than force-fitting another mismatch. The CLI-wiring template-application reflex remains banned.
+
