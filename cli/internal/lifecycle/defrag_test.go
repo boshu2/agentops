@@ -1,7 +1,6 @@
 package lifecycle
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,79 +59,6 @@ func TestTrigramOverlap(t *testing.T) {
 	empty := map[string]bool{}
 	if got := TrigramOverlap(empty, empty); got != 0 {
 		t.Errorf("empty×empty = %v, want 0", got)
-	}
-}
-
-func TestCountAlternations(t *testing.T) {
-	tests := []struct {
-		name    string
-		results []string
-		want    int
-	}{
-		{"empty", []string{}, 0},
-		{"single", []string{"improved"}, 0},
-		{"no alternation", []string{"improved", "improved", "improved"}, 0},
-		{"two alternations", []string{"improved", "fail", "improved"}, 2},
-		{"three alternations", []string{"improved", "fail", "improved", "fail"}, 3},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			records := make([]CycleRecord, len(tc.results))
-			for i, r := range tc.results {
-				records[i] = CycleRecord{Cycle: i, Result: r}
-			}
-			if got := CountAlternations(records); got != tc.want {
-				t.Errorf("got %d, want %d", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestSweepOscillatingGoals_NoHistory(t *testing.T) {
-	tmp := t.TempDir()
-	r, err := SweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("err = %v", err)
-	}
-	if len(r.OscillatingGoals) != 0 {
-		t.Errorf("expected empty, got %v", r.OscillatingGoals)
-	}
-}
-
-func TestSweepOscillatingGoals_DetectsOscillation(t *testing.T) {
-	tmp := t.TempDir()
-	dir := filepath.Join(tmp, ".agents", "evolve")
-	_ = os.MkdirAll(dir, 0o755)
-	path := filepath.Join(dir, "cycle-history.jsonl")
-
-	records := []CycleRecord{
-		{Cycle: 1, Target: "g1", Result: "improved"},
-		{Cycle: 2, Target: "g1", Result: "fail"},
-		{Cycle: 3, Target: "g1", Result: "improved"},
-		{Cycle: 4, Target: "g1", Result: "fail"},
-		{Cycle: 1, Target: "g2", Result: "improved"},
-		{Cycle: 2, Target: "g2", Result: "improved"},
-	}
-	var sb strings.Builder
-	for _, r := range records {
-		data, _ := json.Marshal(r)
-		sb.Write(data)
-		sb.WriteByte('\n')
-	}
-	_ = os.WriteFile(path, []byte(sb.String()), 0o600)
-
-	result, err := SweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("err = %v", err)
-	}
-	if len(result.OscillatingGoals) != 1 {
-		t.Fatalf("expected 1 oscillating goal, got %d: %+v", len(result.OscillatingGoals), result.OscillatingGoals)
-	}
-	if result.OscillatingGoals[0].Target != "g1" {
-		t.Errorf("target = %q, want g1", result.OscillatingGoals[0].Target)
-	}
-	if result.OscillatingGoals[0].AlternationCount < 3 {
-		t.Errorf("alternations = %d, want >=3", result.OscillatingGoals[0].AlternationCount)
 	}
 }
 

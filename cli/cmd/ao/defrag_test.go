@@ -182,106 +182,6 @@ func TestFindDuplicateLearnings_Distinct(t *testing.T) {
 	}
 }
 
-func TestSweepOscillatingGoals_Oscillating(t *testing.T) {
-	tmp := t.TempDir()
-
-	evolveDir := filepath.Join(tmp, ".agents", "evolve")
-	if err := os.MkdirAll(evolveDir, 0o750); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a cycle history where "logging" oscillates improved/fail 4 times
-	lines := []cycleRecord{
-		{Cycle: 1, Target: "logging", Result: "improved"},
-		{Cycle: 2, Target: "logging", Result: "fail"},
-		{Cycle: 3, Target: "logging", Result: "improved"},
-		{Cycle: 4, Target: "logging", Result: "fail"},
-		{Cycle: 5, Target: "logging", Result: "improved"},
-	}
-
-	histPath := filepath.Join(evolveDir, "cycle-history.jsonl")
-	f, err := os.Create(histPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, rec := range lines {
-		data, _ := json.Marshal(rec)
-		f.Write(data)
-		f.Write([]byte("\n"))
-	}
-	f.Close()
-
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(result.OscillatingGoals) != 1 {
-		t.Fatalf("OscillatingGoals count = %d, want 1", len(result.OscillatingGoals))
-	}
-	goal := result.OscillatingGoals[0]
-	if goal.Target != "logging" {
-		t.Errorf("Target = %q, want %q", goal.Target, "logging")
-	}
-	if goal.AlternationCount != 4 {
-		t.Errorf("AlternationCount = %d, want 4", goal.AlternationCount)
-	}
-	if goal.LastCycle != 5 {
-		t.Errorf("LastCycle = %d, want 5", goal.LastCycle)
-	}
-}
-
-func TestSweepOscillatingGoals_Stable(t *testing.T) {
-	tmp := t.TempDir()
-
-	evolveDir := filepath.Join(tmp, ".agents", "evolve")
-	if err := os.MkdirAll(evolveDir, 0o750); err != nil {
-		t.Fatal(err)
-	}
-
-	// All improved — no oscillation
-	lines := []cycleRecord{
-		{Cycle: 1, Target: "tests", Result: "improved"},
-		{Cycle: 2, Target: "tests", Result: "improved"},
-		{Cycle: 3, Target: "tests", Result: "improved"},
-	}
-
-	histPath := filepath.Join(evolveDir, "cycle-history.jsonl")
-	f, err := os.Create(histPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, rec := range lines {
-		data, _ := json.Marshal(rec)
-		f.Write(data)
-		f.Write([]byte("\n"))
-	}
-	f.Close()
-
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(result.OscillatingGoals) != 0 {
-		t.Errorf("OscillatingGoals = %v, want empty", result.OscillatingGoals)
-	}
-}
-
-func TestSweepOscillatingGoals_NoHistory(t *testing.T) {
-	tmp := t.TempDir()
-
-	// No cycle-history.jsonl file at all
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.OscillatingGoals != nil {
-		t.Errorf("OscillatingGoals = %v, want nil", result.OscillatingGoals)
-	}
-}
-
 func TestRunDefrag_DryRun(t *testing.T) {
 	tmp := t.TempDir()
 
@@ -590,48 +490,6 @@ func TestWriteDefragReport_TextOutputNotJSON(t *testing.T) {
 	}
 }
 
-func TestCountAlternations(t *testing.T) {
-	tests := []struct {
-		name    string
-		records []cycleRecord
-		want    int
-	}{
-		{
-			name:    "empty",
-			records: nil,
-			want:    0,
-		},
-		{
-			name: "no alternation",
-			records: []cycleRecord{
-				{Result: "improved"},
-				{Result: "improved"},
-				{Result: "improved"},
-			},
-			want: 0,
-		},
-		{
-			name: "three alternations",
-			records: []cycleRecord{
-				{Result: "improved"},
-				{Result: "fail"},
-				{Result: "improved"},
-				{Result: "fail"},
-			},
-			want: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := countAlternations(tt.records)
-			if got != tt.want {
-				t.Errorf("countAlternations = %d, want %d", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestExecutePrune_FindsOrphans(t *testing.T) {
 	tmp := t.TempDir()
 
@@ -835,7 +693,7 @@ func TestExecuteDedup_DryRun(t *testing.T) {
 }
 
 func TestDefrag_NoFlags_DefaultsAll(t *testing.T) {
-	// When no mode flags are set, runDefrag should enable all three modes.
+	// When no mode flags are set, runDefrag should enable prune + dedup.
 	dir := chdirTemp(t)
 
 	// Seed minimal .agents/ structure so defrag has something to scan.
@@ -847,12 +705,10 @@ func TestDefrag_NoFlags_DefaultsAll(t *testing.T) {
 	// Reset flags to simulate bare "ao defrag" (no mode flags).
 	defragPrune = false
 	defragDedup = false
-	defragOscillationSweep = false
 	defragQuiet = true
 	defer func() {
 		defragPrune = false
 		defragDedup = false
-		defragOscillationSweep = false
 		defragQuiet = false
 	}()
 
@@ -861,15 +717,12 @@ func TestDefrag_NoFlags_DefaultsAll(t *testing.T) {
 		t.Fatalf("runDefrag with no flags: %v", err)
 	}
 
-	// After runDefrag, all three should have been enabled.
+	// After runDefrag, both should have been enabled.
 	if !defragPrune {
 		t.Error("expected defragPrune to be true after no-flags invocation")
 	}
 	if !defragDedup {
 		t.Error("expected defragDedup to be true after no-flags invocation")
-	}
-	if !defragOscillationSweep {
-		t.Error("expected defragOscillationSweep to be true after no-flags invocation")
 	}
 }
 
@@ -911,79 +764,3 @@ func TestTrigramOverlap_OneEmpty(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// sweepOscillatingGoals
-// ---------------------------------------------------------------------------
-
-func TestSweepOscillatingGoals_NoHistoryFile(t *testing.T) {
-	tmp := t.TempDir()
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(result.OscillatingGoals) != 0 {
-		t.Errorf("expected no oscillating goals for missing file, got %d", len(result.OscillatingGoals))
-	}
-}
-
-func TestSweepOscillatingGoals_DetectsOscillation(t *testing.T) {
-	tmp := t.TempDir()
-	histDir := filepath.Join(tmp, ".agents", "evolve")
-	if err := os.MkdirAll(histDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	// goal-a alternates 4 times (>= 3 threshold)
-	// goal-b only 1 alternation (below threshold)
-	content := `{"cycle":1,"target":"goal-a","result":"improved"}
-{"cycle":2,"target":"goal-a","result":"regressed"}
-{"cycle":3,"target":"goal-a","result":"improved"}
-{"cycle":4,"target":"goal-a","result":"regressed"}
-{"cycle":5,"target":"goal-a","result":"improved"}
-{"cycle":1,"target":"goal-b","result":"improved"}
-{"cycle":2,"target":"goal-b","result":"regressed"}
-`
-	if err := os.WriteFile(filepath.Join(histDir, "cycle-history.jsonl"), []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(result.OscillatingGoals) != 1 {
-		t.Fatalf("expected 1 oscillating goal, got %d", len(result.OscillatingGoals))
-	}
-	if result.OscillatingGoals[0].Target != "goal-a" {
-		t.Errorf("expected goal-a, got %q", result.OscillatingGoals[0].Target)
-	}
-	if result.OscillatingGoals[0].AlternationCount != 4 {
-		t.Errorf("expected 4 alternations, got %d", result.OscillatingGoals[0].AlternationCount)
-	}
-	if result.OscillatingGoals[0].LastCycle != 5 {
-		t.Errorf("expected last cycle 5, got %d", result.OscillatingGoals[0].LastCycle)
-	}
-}
-
-func TestSweepOscillatingGoals_SkipsMalformedLines(t *testing.T) {
-	tmp := t.TempDir()
-	histDir := filepath.Join(tmp, ".agents", "evolve")
-	if err := os.MkdirAll(histDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	content := `not valid json
-{"cycle":1,"target":"","result":"improved"}
-{"cycle":1,"target":"goal-x","result":"improved"}
-
-{"cycle":2,"target":"goal-x","result":"regressed"}
-`
-	if err := os.WriteFile(filepath.Join(histDir, "cycle-history.jsonl"), []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	result, err := sweepOscillatingGoals(tmp)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// goal-x only has 1 alternation, not enough
-	if len(result.OscillatingGoals) != 0 {
-		t.Errorf("expected 0 oscillating goals, got %d", len(result.OscillatingGoals))
-	}
-}

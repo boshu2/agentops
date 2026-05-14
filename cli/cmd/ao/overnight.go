@@ -658,20 +658,17 @@ func buildDreamLoopCloseLoopArtifact(iterations []ovn.IterationSummary) map[stri
 func runDreamDefragPreview(cwd, artifactPath string) error {
 	prevPrune := defragPrune
 	prevDedup := defragDedup
-	prevOscillation := defragOscillationSweep
 	prevOutputDir := defragOutputDir
 	prevQuiet := defragQuiet
 	defer func() {
 		defragPrune = prevPrune
 		defragDedup = prevDedup
-		defragOscillationSweep = prevOscillation
 		defragOutputDir = prevOutputDir
 		defragQuiet = prevQuiet
 	}()
 
 	defragPrune = true
 	defragDedup = true
-	defragOscillationSweep = true
 	defragOutputDir = filepath.Dir(artifactPath)
 	defragQuiet = true
 
