@@ -8,9 +8,45 @@
 | Surface | What to Check | Gate Command |
 |---------|---------------|--------------|
 | **Code** | Implementation matches spec, tests pass, no regressions | `make test` or project-specific test command |
-| **Documentation** | Docs reflect current behavior, no stale references | `validate-doc-release.sh`, grep for old behavior in docs |
+| **Documentation** | Docs reflect current behavior, no stale references. **CLI command/flag changes require regenerated reference docs.** | `validate-doc-release.sh`, grep for old behavior in docs, `scripts/generate-cli-reference.sh && git diff --quiet cli/docs/COMMANDS.md` |
 | **Examples** | Usage examples work, CLI help is current | Run examples, check `--help` output |
 | **Proof** | Acceptance criteria gates pass, new behavior has tests | Run acceptance criteria commands from plan |
+
+## CLI Documentation Staleness (MANDATORY when CLI surface changed)
+
+If the diff scope adds, removes, or modifies any `cobra.Command{...}` literal,
+any `.Flags()` call, or any file under `cli/cmd/` whose changes affect command
+shape (use vs. NewCmd vs. flag declarations), the Documentation surface
+**MUST** include a CLI-reference-regen check:
+
+```bash
+# Detect CLI surface change in the diff scope.
+CLI_CHANGED=0
+if git diff --name-only "${BASE:-HEAD~1}"...HEAD | grep -qE '^cli/cmd/.*\.go$'; then
+    if git diff "${BASE:-HEAD~1}"...HEAD -- 'cli/cmd/**.go' \
+       | grep -qE '^\+.*(cobra\.Command\{|\.Flags\(\)|Use:|Short:)'; then
+        CLI_CHANGED=1
+    fi
+fi
+
+if [ "$CLI_CHANGED" = "1" ]; then
+    # 1. Regenerate the canonical CLI reference
+    bash scripts/generate-cli-reference.sh
+
+    # 2. Verify the regenerated file matches what's committed
+    if ! git diff --quiet cli/docs/COMMANDS.md; then
+        echo "FAIL: cli/docs/COMMANDS.md is stale — CLI surface changed but"
+        echo "      the reference was not regenerated before commit."
+        echo "      Run scripts/generate-cli-reference.sh, commit the diff, retry."
+        exit 1
+    fi
+fi
+```
+
+This guard prevents the v2.41-evolve-run failure mode: a branch removed the
+`--oscillation-sweep` flag from `ao defrag`, `cli/docs/COMMANDS.md` still
+listed it, validation and vibe both declared PASS, and the operator caught
+the gap only after the release recommendation was already in the report.
 
 ## When to Run
 

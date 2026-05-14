@@ -450,6 +450,42 @@ fi
 
 Read `references/knowledge-loop-integration.md` for the full teardown learning extraction procedure (commit staged artifacts, run `/post-mortem`, push, report summary).
 
+**Release-context teardown (MANDATORY when the loop ran on a release-shaped branch):**
+
+When the current branch matches `release/*`, `v*-prep`, `v*-evolve-run`, or `v\d+\.\d+*`, the teardown report MUST NOT recommend `/release` as the next step. Instead, emit the explicit pre-release checklist below — the operator must run these AND confirm green before tagging:
+
+```
+## Pre-release checklist — REQUIRED before /release
+
+The autonomous loop has stopped, but release-readiness gates have NOT been run
+during cycles. The operator MUST run the following sequence and confirm green
+before invoking /release. Do NOT skip any of these on the basis of "cycles
+were green" — fast pre-push gate ≠ full pre-push gate; goals-measure ≠
+release readiness.
+
+  [ ] 1. Regenerate CLI reference docs if any cobra command/flag changed:
+         bash scripts/generate-cli-reference.sh
+         git diff cli/docs/COMMANDS.md   # commit if non-empty
+
+  [ ] 2. Run the FULL pre-push gate (NOT --fast):
+         bash scripts/pre-push-gate.sh
+
+  [ ] 3. Run the release-readiness gate:
+         bash scripts/ci-local-release.sh
+
+  [ ] 4. (Recommended) Smoke /evolve with the new typed read paths if BC port
+         wire-ups changed:
+         /evolve --quick --max-cycles=1 --dry-run
+
+Only after [1]–[3] pass: /release <version>
+
+If any check fails, fix the issue, re-run all four, then ship.
+```
+
+The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST contain this checklist verbatim, unchecked, when written by the loop. The operator checks the boxes as they complete each gate; "ready to tag" means the boxes are checked, not that the loop ran cleanly.
+
+**Rationale:** cycles 170-183 of the v2.41-evolve-run shipped clean code, all unit/integration tests green, `ao goals measure` 0/30 failing for three consecutive cycles — but the loop never ran the full pre-push gate, `ci-local-release.sh`, or `generate-cli-reference.sh`. The latter was load-bearing (the branch removed a CLI flag). Per-cycle `--fast` is a smoke test, not release readiness. Operator caught the gap; this checklist makes it mechanical.
+
 ## Examples
 
 **User says:** `/evolve --max-cycles=5`
