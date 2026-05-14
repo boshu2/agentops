@@ -75,7 +75,10 @@ Set outcome to "regressed".
 Before working a failing goal, check if it has oscillated (improved-to-fail transitions >= 3 times in `cycle-history.jsonl`). If so, quarantine it and try the next failing goal.
 
 ```bash
-OSC_COUNT=$(jq -r "select(.target==\"$FAILING\") | .result" .agents/evolve/cycle-history.jsonl \
+# Reads cycle history via BC3 LoopReaderPort (soc-y5vh.4 wrapper),
+# not raw .agents/evolve/cycle-history.jsonl slurp.
+OSC_COUNT=$(scripts/evolve-read-cycle-history.sh recent 0 \
+  | jq -r "select(.target==\"$FAILING\") | .result" \
   | awk 'prev=="improved" && $0=="fail" {count++} {prev=$0} END {print count+0}')
 if [ "$OSC_COUNT" -ge 3 ]; then
   QUARANTINED_GOALS[$FAILING]=true
