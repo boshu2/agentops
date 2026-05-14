@@ -109,6 +109,35 @@ Everything this skill does is local and reversible:
 
 ---
 
+## Examples
+
+**User says:** `$release 1.7.0`
+Agent runs pre-flight → reads `v1.6.0..HEAD` git history → classifies commits → drafts CHANGELOG.md entry + curated release notes → detects version files (package.json, version.go, plugin manifests) → presents draft for review → on approval, writes files, creates release commit, creates annotated tag, prints post-release push guidance.
+
+**User says:** `$release --check`
+Agent runs all pre-flight checks and outputs a GO/NO-GO summary table. No writes.
+
+**User says:** `$release` (no version)
+Agent classifies commits and suggests a version (major if breaking, minor if features, patch if fixes only) with reasoning, then asks the user to confirm or override.
+
+**User says:** `$release 1.7.0 --dry-run`
+Agent shows what the changelog entry + version bumps would look like, then stops without writing.
+
+See `references/release-workflow-detail.md` for the full per-step example narration.
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| "No commits since last tag" error | Working tree clean, no new commits | Commit pending changes or skip release |
+| Version mismatch warning | `package.json` and `go` version disagree | Manually sync before release, or pick one as source of truth |
+| Tests fail during pre-flight | Breaking change not caught earlier | Fix tests, or use `--skip-checks` (not recommended) |
+| Dirty working tree warning | Uncommitted changes present | Commit or stash before release |
+| GitHub Release page body is empty | GoReleaser conflict with existing draft | CI deletes existing releases before GoReleaser runs; do NOT `gh release create` locally |
+| `ci-local-release.sh` hangs on agents-hash | `~/.agents/patterns` is large | Set `AGENTS_HUB_OVERRIDE=/tmp/empty-hub` before invocation |
+
+See `references/release-workflow-detail.md` for the full troubleshooting matrix.
+
 ## See Also
 
 - [deps](../deps/SKILL.md) — Dependency audit and vulnerability scanning

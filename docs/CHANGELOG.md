@@ -7,13 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.40.0] - 2026-05-13
+
 ### Added
 
+- **Practice-citation derivation graph** — `PRACTICE.md` becomes the derivation root for every primitive in the repo. A new `practice-citation derivation graph + advisory CI gate` enforces that every skill, hook, eval suite, CLI command, and schema declares its `practices:` lineage. Twelve backfill passes (`pass-1` through `pass-12`, four `pass-12` waves across `cli/`) reached **756/756 declared** primitives — full repo coverage. Touches `skills/`, `hooks/`, `schemas/`, `evals/agentops-core/`, and `cli/` via `// practice:` comment carriers.
+- **Three-gap supergate (E5 epic)** — `scripts/check-three-gap-supergate.sh` consolidates three release-blocking gates into one entry point with Gap 1 `--strict-coverage` opt-in, wired into `scripts/pre-push-gate.sh` and the `validate-three-gap-supergate` CI workflow. Closes `soc-m47k` and three child gaps.
+- **Contract enforcement gates** — `contracts-structural-floor` (covering all 38 contracts), plus dedicated CI-blocking gates for `factory-admission`, `finding-registry`, `factory-yield-ledger`, `flywheel-compounding-snapshot`, `wiring-closure`, `goals-validate`, `flywheel-proof`, `quarantine-empty`, and `contract-canaries` (`check 24e`). `feat(gate) --two-pass mode` and local-scope default added.
+- **Behavioral eval workbench** — 12 eval tasks, first suite, three fixture components (Go CLI, Python FastAPI, DevOps scripts). Live-agent eval suite with 3 workbench cases, `scripts/eval-agent-harness.sh` wired into the eval CLI, and the suite expanded to all 12 workbench tasks.
+- **Eval CI gates** — `eval-skill-delta` CI gate + nightly schedule template, `eval-workbench-verify` gate (GOALS.md Directive 10), head-to-head delta gate against the baseline scorecard (D10). Run records upload as CI artifacts for triage; Python venv bootstrapped in `agentops-eval-advisory`.
+- **Eval harness primitives** — `context_comprehension` dimension, CDLC identity field, observability feedback loop, and industry-proven eval patterns added to the agent harness.
+- **Unified registry** — Phase 1 added `scripts/generate-registry.sh` + `registry.json` source-of-truth. Phase 2 added a job type, CLI surface, and CI gate (`registry-check`).
+- **Daemon factory-admission lane** — `feat(daemon): add factory admission job specs` + executor + lane validators, paired with `feat(gates): enforce factory-admission contract`.
+- **Daemon RPI agent-update events** — `RPIRunExecutor` emits `agent_update.criterion_verdict` per wave checkpoint (`soc-awx8`) and phase-boundary `agent-update` events (`soc-y0ct.2`).
+- **Daemon scheduling + executors** — wired skill schedules through the daemon, registered eval and planning job types, added a CLI fallback RPI executor.
+- **Nightly automation upgrades** — admission-aware morning digest with durability; manual-PR-only landing policy for evolve; fail-closed execute preflight for source mutation; blocker matrix + main CI baseline artifacts; daemon-submitted dream runs; L3 rehearsal scenario + operator runbook; scheduler install helper + updated runbook; PR digest generator from structured run state.
+- **Five-minute first-value install gate (PG1)** — first-time-user journey is now a release-blocking install proof.
+- **Corpus snapshot/restore + freshness gate (D11)** — durable corpus state with a CI-blocking freshness check.
+- **Hook commit guards** — `feat(hooks)` warns on commits with code-without-test (P2), missing sibling-pattern citation (P3), and missing fitness-delta (P4) in commit messages.
+- **Goals additions** — `code-driven` vs `runtime-artifact` summary split; `SKIP` exit code 77 + flywheel-compounding dormant precondition; `AffectsFiles` sidecar for the open-PR blocker matrix.
+- **New CLI surfaces** — `ao session spawn` (template-driven session launch) and `ao feedback-loop --drain` (clear unfed citation backlog, epic `soc-sx99` W3.1).
+- **Skills framework expansions** — `skill-builder` + `skill-auditor` pair (epic `soc-9bak`, #237); `ao quickstart` + demo surface for `ao schedule` and `ao daemon` (epic `soc-sx99` W2.2); tracer-bullet shape for the `skills/domain` ubiquitous-language corpus; scoped evidence on `/crank` and `/implement` bead closures.
+- **Schedule starter template** — tracked stock starter at `docs/templates/`.
+- **Scripts** — `corpus-stats.sh` + derived `PRODUCT.md` evidence (epic `soc-sx99` W3.3); `evolve-update-session-state.sh` derives session-state from cycle-history tail.
 - **`security` domain in eval-suite manifests** — `$defs/domain` enum in `schemas/eval-suite.v1.schema.json` now accepts `security` alongside the existing eight domains. Paired updates land in `cli/internal/eval/coverage.go` (`DefaultCoverageDomains`) and `cli/cmd/ao/cobra_commands_test.go` (`evalCoverageDomains`) so schema, production default, and test fixture stay in lock-step. `ao eval coverage` will report `security` as a missing required domain until a security-domain manifest is authored.
+
+### Changed
+
+- **Three-layer product model adopted across surfaces** — README, `PRODUCT.md`, `docs/index.md`, and downstream positioning docs aligned to the three-layer (substrate / assurance / bookkeeping) framing with the software-factory + TSMC + in/on-the-loop framing. Eight `docs(positioning)` commits cover the thesis polish, lineage cleanup, link to `vs-compound-engineer.md`, and the closure of `soc-yjzp.9` with empirical Δ=0.
+- **`/release` skill refactored under the size limit + non-HEAD cut support** — `skills/release/SKILL.md` and the Codex twin shrank from 545 lines to a 141-line flow index, with the detail extracted to `references/release-workflow-detail.md`. A new `references/release-cut-and-bump.md` documents the `release/v<ver>` branch pattern for cutting at a non-HEAD SHA. (This is the commit that prepared the v2.40 cut itself.)
+- **RPI lifecycle sharpened** — criterion contract + isolation enforcement + daemon executor swap (`soc-bcrn`, #255). The factory claim ledger reconciled via Wave 1A-D (`soc-e4ulx`, #264).
+- **CI workflow path-filters** — added path-filter conditions to 28 CI jobs (the remaining tail); bats path-filter wired so `.bats` changes gate bats-test jobs; `bats` prints captured output on failure.
+- **CI loop boundaries** — `feat(ci): enforce inner/middle/outer loop boundaries` (#230).
+- **Codex parity drift** — `feat(ci): wire check-codex-parity-drift as CI-blocking + pre-push gate (D7)`.
+- **Skill consolidation** — 12 standalone skills consolidated into `beads`, `review`, `doc`, and `research`; JSM quality playbook slices absorbed in two waves.
+- **Documentation reorg** — `docs(claims)` introduced a public evidence manifest for v2.39 README claims (PG4); `docs(parity)` updated four times; `docs(cdlc)`, `docs(readme)`, `docs(eval)`, `docs(release)`, `docs(positioning)` swept across the catalog.
+- **Dependencies bumped** — `chore(deps)` updates for `mkdocs-material` v9.7.6, `mkdocs-section-index` v0.3.12, `mkdocs-literate-nav` v0.6.3, `mkdocs-include-markdown-plugin` v7, `mkdocs-git-revision-date-localized-plugin` v1.5.1, `mkdocs-gen-files` v0.6.1, `linkchecker` v10.6.0, `pymdown-extensions` v10.21.2, Python 3.14, `dorny/paths-filter` v4. `deps(go)`: `pgregory.net/rapid` minor bump in `cli/` plus a go-minor-patch group bump (#268).
 
 ### Fixed
 
+- **`fix(ci)`** — registry non-determinism + pre-push goals-validate fallback; structural CI failures from cycles 45-47; `registry.json` knowledge_stores and schedules must match gitignored-state regen (epic `soc-sx99`); refreshed registry generation; bumped CLI surface counts after `patterns repair-filenames` addition; close practice-provenance validator gaps; `--single-pass` on pre-push-gate tests broken by `--two-pass` default.
+- **`fix(eval)`** — six fixes covering eval canary refresh, advisory job stabilization, run-record upload reliability, and miscellaneous workbench-suite drift.
+- **`fix(hooks)`** — reconcile stale `.agents/.gitignore` deny-all with parent allowlist (`soc-rv5p`, #263); prove `pre-push` transmits refs (#254).
+- **`fix(codex)`** — migrate deprecated hooks flag; remove dead Claude-specific references and runtime markers from the codex research skill.
+- **`fix(cli/rpi)`** — three correctness fixes around RPI scoping and isolation enforcement.
+- **`fix(daemon)`** — bound daemon RPI GasCity sessions; close unused-variable in `generate-registry.sh`; refresh CI registry after worker-spec additions.
+- **`fix(flywheel-lifecycle)`** — survive sparse corpus in Stage 5.
+- **`fix(next-work)`** — add `dream-degraded` to the source enum.
+- **`fix(nightly)`**, **`fix(harvest)`**, **`fix(audit-truth)`**, **`fix(evolve)`**, **`fix(parity)`**, **`fix(worktree)`**, **`fix(coverage)`**, **`fix(skills)`**, **`fix(quickstart)`**, **`fix(scripts)`**, **`fix(docs)`**, **`fix(gates)`**, **`fix(pre-push)`**, **`fix(heal,lint)`**, **`fix(rpi)`** — a long tail of single-file fixes touching individual gates, scripts, and surfaces during the nightly close-loop cycles.
 - **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) and initializes a disposable bd database before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
+
+### Internal
+
+- **RPI loop pass consumption** — 10 `chore(rpi)` consumption commits drove the practice-citation backfill epic through 12 passes, closing the `cli/` design pass and exhausting the schemas/hooks/evals pools en route to `756/756 declared`.
+- **Tests** — `test(cmd/ao)`: beads citation-verify functions, beads human-formatter functions, `runBeads*` graceful-degradation paths, `TestSanitizeDaemonSkillInvokeArtifactName` 0%-coverage hole closed.
+- **Refactors** — `refactor(daemon)` extracted routing-lane validators to drop cyclomatic complexity (two commits); `refactor(dream)` promoted probe shapes to the registry.
+- **Codex artifact hashes** regenerated after enum updates and after merges.
+- **Skill counts synced** to 71 after the consolidation passes.
+- **Two nightly autonomous runs landed** — `Nightly 2026-05-06` (3 productive cycles, +1 code-driven goal, fitness 94.29 → 100.00, #235) and `Nightly 2026-05-07` (3 productive cycles, +0 code-driven goals already 100, 2 audit-truth regressions fixed).
+- **Drain open `next-work.jsonl`** — six PRs bundled into one branch (epic `soc-xlw8`, #266).
 
 ## [2.39.0] - 2026-05-04
 
