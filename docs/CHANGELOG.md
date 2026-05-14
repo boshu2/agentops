@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/evolve` Step 1.5 healing-first classifier** now routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 `productionCIStatus`) via `ao ci recent --limit 1` instead of an inline `gh run list --workflow validate.yml --json conclusion` (`soc-y5vh.2`). Both callsites (`skills/evolve/SKILL.md` + `skills/evolve/references/convergence-mechanics.md`) updated in lockstep. Zero remaining inline `gh` shell-outs in `/evolve`'s hot read path.
 - **`cli/cmd/ao` coverage floor** raised back to 76 % in `scripts/check-cmd-ao-coverage.sh` after real statement coverage climbed to 76.1 % (23553/30953) on the v2.41-evolve-run baseline (`soc-wxh5.1`). The cycle-60 recalibration to 75 % is reversed.
 
+### Fixed
+
+- **`three-gap-supergate` goals-validate sub-gate** — `scripts/check-three-gap-supergate.sh` now `rm -f /tmp/ao-sg` before `go build -o /tmp/ao-sg`. Go refuses to overwrite a non-object file at the build-output path, so any prior process that wrote a non-binary to `/tmp/ao-sg` (including the bats-test shim go) would otherwise wedge the gate. The bats teardown in `tests/scripts/check-three-gap-supergate.bats` also cleans `/tmp/ao-sg` to remove test pollution. Caught by `ao goals measure` (1 failing → 0 failing).
+
 ## [2.40.0] - 2026-05-13
 
 ### Added
