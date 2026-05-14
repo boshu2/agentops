@@ -193,7 +193,7 @@ CYCLE_START_SHA=$(git rev-parse HEAD)
 
 ### Step 1.5: Healing-first classifier
 
-Before fitness or work selection, classify the cycle: `gh run list --limit 1 --workflow validate.yml --json conclusion --jq '.[0].conclusion'`. If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
+Before fitness or work selection, classify the cycle: `ao ci recent --limit 1 2>/dev/null | jq -r '.Conclusion // empty'`. The command routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 productionCIStatus) — no inline `gh` shell-outs in the evolve hot path (soc-y5vh.2). If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
 
 **Convergence check:** read `.agents/evolve/session-convergence.json` if present. If ALL criteria are met (CI green streak ≥ 3, outstanding HIGH+MEDIUM next-work ≤ 1, fitness ≥ baseline), emit teardown and DO NOT re-arm wakeup.
 
