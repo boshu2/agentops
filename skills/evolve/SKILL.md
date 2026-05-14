@@ -106,9 +106,16 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 
 ```bash
 mkdir -p .agents/evolve
-ao lookup --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
+ao corpus inject --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
 bash scripts/evolve-update-session-state.sh 2>/dev/null || true  # refresh derived idle_streak + mode_repeat_streak
 ```
+
+`ao corpus inject` routes through the typed BC1 `CorpusReaderPort`
+(`cli/cmd/ao/corpus_reader_adapter.go`, cycle 112 productionCorpusReader),
+emitting one ranked `ports.CorpusItem` JSON record per line from
+`.agents/learnings/` by default. This closes soc-y5vh.1 — Step 0 prior-knowledge
+retrieval is now load-bearing on the typed port, not an untyped `ao lookup`
+shell-out.
 
 **Apply retrieved knowledge:** If learnings are returned, check each for applicability to the current improvement cycle. For applicable learnings, cite by filename and record: `ao metrics cite "<path>" --type applied 2>/dev/null || true`
 
