@@ -37,6 +37,11 @@ EOF
 
 teardown() {
     rm -rf "$TMP_HOME"
+    # Gap 3 tests use a shim `go` that writes a fake /tmp/ao-sg shell
+    # script; clean it up so a subsequent real-goals run that does
+    # `go build -o /tmp/ao-sg` does not trip "output already exists
+    # and is not an object file".
+    rm -f /tmp/ao-sg
 }
 
 @test "Gap 2 SKIPs compile-health when no defrag artifact is present" {

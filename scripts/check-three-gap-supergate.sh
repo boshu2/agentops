@@ -156,8 +156,13 @@ gap_durable_learning() {
 gap_loop_closure() {
     echo "Gap 3 — Loop closure:"
     local fails=0
+    # Pre-clean /tmp/ao-sg before `go build` — `go build -o <path>` refuses to
+    # overwrite a non-object file (e.g., a shell script left by the bats-test
+    # shim go in tests/scripts/check-three-gap-supergate.bats). This is a real
+    # production hazard, not just a test concern: any prior process that wrote
+    # a non-binary to /tmp/ao-sg would otherwise wedge the gate.
     run_gate "goals-validate" \
-        "bash -c 'cd $REPO_ROOT/cli && go build -o /tmp/ao-sg ./cmd/ao && cd .. && /tmp/ao-sg goals validate --json | jq -e .valid==true'" \
+        "bash -c 'cd $REPO_ROOT/cli && rm -f /tmp/ao-sg && go build -o /tmp/ao-sg ./cmd/ao && cd .. && /tmp/ao-sg goals validate --json | jq -e .valid==true'" \
         || fails=$((fails+1))
     run_gate "wiring-closure" \
         "timeout 60 bash $REPO_ROOT/scripts/check-wiring-closure.sh" || fails=$((fails+1))
