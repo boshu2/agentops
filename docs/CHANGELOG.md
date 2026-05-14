@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`three-gap-supergate` goals-validate sub-gate** — `scripts/check-three-gap-supergate.sh` now `rm -f /tmp/ao-sg` before `go build -o /tmp/ao-sg`. Go refuses to overwrite a non-object file at the build-output path, so any prior process that wrote a non-binary to `/tmp/ao-sg` (including the bats-test shim go) would otherwise wedge the gate. The bats teardown in `tests/scripts/check-three-gap-supergate.bats` also cleans `/tmp/ao-sg` to remove test pollution. Caught by `ao goals measure` (1 failing → 0 failing).
 
+### Removed
+
+- **Dead `defrag.SweepOscillatingGoals` function** and all callers (`soc-1q1x` path 1). The function read `.agents/evolve/cycle-history.jsonl` for entries with a `target` field; zero entries have ever had one in production, so callers (`runCompileDefrag`, `runDefragPhases`, `runDreamDefragPreview`) always got empty results. Net removal: 6 files, 17 insertions / 465 deletions — `SweepOscillatingGoals` + 5 helpers + `CountAlternations` + `CycleRecord` + `OscillationResult` + `OscillatingGoal` types + `DefragReport.Oscillation` field + `defragOscillationSweep` flag + `--oscillation-sweep` CLI flag + 9 tests. Build green; 11924 tests pass.
+
 ## [2.40.0] - 2026-05-13
 
 ### Added
