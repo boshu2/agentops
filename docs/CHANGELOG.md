@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **BC3 LoopReaderPort operator wrapper** — `scripts/evolve-read-cycle-history.sh` provides `recent [N]` / `latest` / `range START END` modes around `ao loop history`, replacing inline `tail`/`awk`/`jq` shell-outs over the raw `.agents/evolve/cycle-history.jsonl` (`soc-y5vh.4`). First migrated callsite: `skills/evolve/references/convergence-mechanics.md` Mechanism 1.
+- **BC3 LoopReaderPort operator wrapper** — `scripts/evolve-read-cycle-history.sh` provides `recent [N]` / `latest` / `range START END` modes around `ao loop history`, replacing inline `tail`/`awk`/`jq` shell-outs over the raw `.agents/evolve/cycle-history.jsonl` (`soc-y5vh.4`). Three migrated callsites: `skills/evolve/references/convergence-mechanics.md` Mechanism 1, `skills/evolve/references/oscillation.md` oscillation counter, and `skills/evolve/references/fitness-scoring.md` Oscillation Detection block (`soc-lghj`).
 - **Supergate Gap 3 (loop-closure) bats coverage** — `tests/scripts/check-three-gap-supergate.bats` extended with three tests (happy-path PASS, `goals-validate` FAIL, `flywheel-proof` SKIP) using a PATH-shimmed `go` that produces a controlled `/tmp/ao-sg` (`soc-wxh5.3`). Suite goes 15 → 18 tests; closes the cycle-63 Gap 3 deferral.
 - **`.agents/operator/` write-surface contract entry** — `docs/contracts/agents-write-surfaces.md` now documents the BC4 `OperatorPort` durable-intent log (allowlist + classification row, lifecycle=`rolling`, writer=`cli`).
 
