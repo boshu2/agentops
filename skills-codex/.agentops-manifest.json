@@ -769,7 +769,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "d84dbb19b0b39d00b4b88dcd15304414cea5ab05d991c86cc1af5861257d11de",
+      "source_hash": "b90437bde434486d4a668ffab1f2038406e04b31d04c14d96d0bcf2196d686db",
       "generated_hash": "dfea29a18be66068155af4f167c493e6f289e56886a3ccda04add7d4ae5abba3"
     },
     {
@@ -973,8 +973,8 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "5da4ae75185ff97f0f50d90df13fcdff9a87065ec9b1852127f924ce8ba50e62",
-      "generated_hash": "207e4b534751c2c8794773664d4f78685e392ea3f287c02108ca0c224dd5354d"
+      "source_hash": "385dc03ac91c25a540e93842b2bad4e545f9a75a799545a4b9ff95c721f2405e",
+      "generated_hash": "3f23a9077898381752707d9d0a78f24a8aaf22c1eff03a3271838b66c69dcd9f"
     },
     {
       "name": "research",
