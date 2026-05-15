@@ -117,55 +117,13 @@ STEP 1.7 ── Lifecycle Checks (advisory except critical dependency findings)
                    worker, pool, codec).
 
 STEP 1.7.5 ── Release-Readiness Gates (MANDATORY for release-context validation)
-
-              **Release-context detection:** Set `IS_RELEASE_CONTEXT=1` when ANY of:
-                - the validation target branch matches `release/*`, `v*-prep`, `v*-evolve-run`,
-                  `v[0-9]+.[0-9]+*` (any release-shaped branch name), OR
-                - `--release-context` flag is set, OR
-                - the diff scope touches `cli/cmd/`, `cli/internal/`, hooks/, schemas/, or skills/
-                  AND the caller intends to recommend `/release` (validation answers a "ready to
-                  tag?" question)
-
-              When IS_RELEASE_CONTEXT=1, this step is **MANDATORY** — failure to run any of
-              the gates below MUST emit <promise>FAIL</promise> with a clear "release gates
-              not run" reason. Validation MUST NOT recommend `/release` until all three pass.
-
-              a) **Full pre-push gate** (NOT --fast):
-                   bash scripts/pre-push-gate.sh
-                   --fast covers ~5-10 checks; the full gate runs ~33 checks including
-                   doc-release, mkdocs strict, hooks/docs parity, shellcheck, CHANGELOG sync,
-                   headless runtime smokes. --fast alone is INSUFFICIENT for release readiness.
-
-              b) **CI-local release gate**:
-                   bash scripts/ci-local-release.sh
-                   The canonical pre-tag gate. If this script does not exist, log a SKIP and
-                   continue; if it exists and fails, treat as FAIL.
-
-              c) **CLI reference docs regen** (when CLI surface changed):
-                   If the diff scope contains additions or removals to cobra.Command
-                   definitions, flag declarations, or any `cli/cmd/ao/*.go` files that look
-                   like command source (heuristic: grep for `cobra.Command{` or `\.Flags\(\)`
-                   in the diff), then run:
-                     bash scripts/generate-cli-reference.sh
-                     git diff --quiet cli/docs/COMMANDS.md
-                   If git diff reports the file changed AFTER regen, the CLI reference was
-                   stale → emit FAIL with "CLI reference out of sync — commit the regen
-                   before declaring release-ready" reason.
-
-              All three (a/b/c-when-applicable) must report success. Record each verdict in
-              the phase summary as a checkbox row:
-                [✅] full pre-push gate
-                [✅] ci-local-release.sh
-                [✅] generate-cli-reference.sh (or [N/A] if no CLI surface change)
-
-              When IS_RELEASE_CONTEXT=0, skip this step silently. The phase summary still
-              records "Release-readiness gates: skipped (not release context)".
-
-              Skip suppression:
-                --skip-release-gates  (operator-acknowledged risk, e.g. for non-release
-                                       validation runs that incidentally hit the release-shaped
-                                       branch heuristic) — when used, record explicit reason
-                                       in the phase summary.
+              Read `references/release-readiness-gates.md` for the full procedure:
+              IS_RELEASE_CONTEXT detection (release/*, v*-prep, v*-evolve-run,
+              v\d+\.\d+*; or --release-context; or CLI/hooks/schemas/skills diff with
+              release intent) plus three gates: (a) full pre-push (NOT --fast),
+              (b) ci-local-release.sh, (c) generate-cli-reference.sh + cleanliness
+              check when CLI surface changed. Any gate failure when IS_RELEASE_CONTEXT=1
+              emits <promise>FAIL</promise>. Skip silently when IS_RELEASE_CONTEXT=0.
 
 STEP 1.8 ── Stage 4: Behavioral Validation (holdout scenarios + agent-built specs)
             Skip if: no .agents/holdout/ AND no .agents/specs/, or --no-behavioral
@@ -247,21 +205,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`). Matches `/rpi` and `/discovery` syntax. |
-| `--interactive` | off | Human gates in validation report review (before writing summary). Does NOT override `/vibe` council autonomy. |
-| `--no-lifecycle` | off | Skip ALL lifecycle checks in STEP 1.7 (test, deps, review, perf) |
-| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps, +review), `full` (+perf) |
-| `--no-retro` | off | Skip retro step only |
-| `--no-forge` | off | Skip forge step only |
-| `--no-budget` | off | Disable phase time budgets |
-| `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `/rpi --quality`. |
-| `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
-| `--release-context` | auto | Force STEP 1.7.5 release-readiness gates on. Auto-detected from branch name (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`). |
-| `--skip-release-gates` | off | Bypass STEP 1.7.5 (operator-acknowledged risk for non-release validation hitting the release-shaped branch heuristic) |
-| `--release-context` | auto | Force STEP 1.7.5 release-readiness gates on. Auto-detected from branch name (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`). |
-| `--skip-release-gates` | off | Bypass STEP 1.7.5 (operator-acknowledged risk for non-release validation hitting the release-shaped branch heuristic) |
+See `references/flags.md` for the full flag table. Highlights: `--complexity=<level>`, `--strict-surfaces`, `--allow-critical-deps`, `--release-context`, `--skip-release-gates`, `--no-{retro,forge,lifecycle,budget}`.
 
 ## Expensive Command Policy
 
