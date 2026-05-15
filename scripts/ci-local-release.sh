@@ -343,6 +343,8 @@ run_security_scan_patterns() {
             --exclude-dir=.venv \
             --exclude-dir=.venv-docs \
             --exclude-dir=venv \
+            --exclude-dir=_site \
+            --exclude-dir=site \
             --exclude-dir=tests \
             --exclude-dir=testdata \
             --exclude-dir=cli/testdata \

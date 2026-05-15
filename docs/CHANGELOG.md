@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.41.1] - 2026-05-15
+
+### Fixed
+
+- **Release CI shipped red in v2.41.0** — the v2.41.0 tag was cut on a commit where three `Validate` checks were already failing; they were masked because the path-filtered CI marks untriggered jobs `skipped` (not `failed`). This patch clears all three: `registry.json` regenerated after the v2.41 arc added 10 `ao` subcommands; `skills/validation/SKILL.md` links `references/flags.md` with a real markdown link so `heal.sh --strict` passes; the `cli-command-surface-matrix` eval baseline + fixture updated to the current heading count (`top=70 sub=173 all=243`); and 7 `/skillname` slash-command references in `skills-codex/{evolve,validation}/SKILL.md` converted to Codex `$skillname` notation so the codex-native install canary passes.
+- **`--oscillation-sweep` removal was incomplete in v2.41.0** — `soc-1q1x` deleted the `ao defrag --oscillation-sweep` flag but the cycle-181 audit only checked Go callers. Seven shell/YAML/doc callsites still referenced the removed flag, breaking the `validate-flywheel-proof` CI gate (`scripts/nightly-dream-cycle.sh` shelled the dead flag). Cleared from `.github/workflows/nightly.yml`, `scripts/nightly-dream-cycle.sh`, `scripts/check-compile-oscillation.sh`, `docs/contracts/dream-run-contract.md`, and the `compile` skill phase docs.
+- **`extract-release-notes.sh` double-blank line** — the awk extractor captured the blank line after the `## [VERSION]` heading; wrapped in the `<details>` boilerplate it produced a double-blank between `<summary>` and the first subsection. Now strips leading/trailing blank lines from the changelog section.
+- **`ci-local-release.sh` secret-scan false positive** — the secret-pattern scan recursively grepped the gitignored `_site/` MkDocs build directory, matching `password:!0` inside minified JS bundles. Added `_site` and `site` to the scan's `--exclude-dir` list.
+
 ## [2.41.0] - 2026-05-14
 
 ### Added
