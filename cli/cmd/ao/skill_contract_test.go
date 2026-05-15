@@ -60,15 +60,35 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 	for _, skill := range wrapperSkills {
 		skill := skill // capture loop variable
 		t.Run(skill, func(t *testing.T) {
-			skillFile := filepath.Join(skillsDir, skill, "SKILL.md")
-			data, err := os.ReadFile(skillFile)
-			if err != nil {
-				t.Fatalf("could not read %s: %v", skillFile, err)
+			// Billboard architecture: a skill's detail may live in references/.
+			// The verdict-heading contract holds if SKILL.md OR any
+			// references/*.md carries the heading instruction — the skill is
+			// checked as a unit, not SKILL.md alone.
+			skillDir := filepath.Join(skillsDir, skill)
+			skillFile := filepath.Join(skillDir, "SKILL.md")
+			if _, err := os.Stat(skillFile); err != nil {
+				t.Fatalf("could not stat %s: %v", skillFile, err)
 			}
 
-			if !strings.Contains(string(data), requiredHeading) {
+			candidates := []string{skillFile}
+			refs, _ := filepath.Glob(filepath.Join(skillDir, "references", "*.md"))
+			candidates = append(candidates, refs...)
+
+			found := false
+			for _, f := range candidates {
+				data, readErr := os.ReadFile(f)
+				if readErr != nil {
+					continue
+				}
+				if strings.Contains(string(data), requiredHeading) {
+					found = true
+					break
+				}
+			}
+
+			if !found {
 				t.Errorf(
-					"%s/SKILL.md is missing the required heading %q\n"+
+					"%s skill (SKILL.md + references/) is missing the required heading %q\n"+
 						"The CLI regex in extractCouncilVerdict depends on this heading being present.\n"+
 						"Regex: `(?m)^## Council Verdict:\\s*(PASS|WARN|FAIL)`",
 					skill, requiredHeading,
