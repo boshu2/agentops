@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.41.0] - 2026-05-14
+
 ### Added
 
+- **BC ports — 14/14 production-complete.** `FactoryAdmissionPort` (13th, `soc-2klg.1`) + `productionFactoryAdmission` (cycle 139–140) and `ClaimEvidencePort` (14th, `soc-2klg.2`) + `productionClaimEvidence` (cycle 141–142) land the last two BC4 ports, closing the 14-port BC inventory begun in the v2.40.0 cycle. Each port follows the `<port>.go` + `inmemory_<port>.go` + `inmemory_<port>_test.go` triplet plus a `productionX` production adapter, with compile-time interface assertions as drift guards.
+- **10 typed-port-backed `ao` subcommands** — operator-facing CLI now exposes every BC port that needs a script-side surface: `ao loop history` (`productionLoopReader`, cycle 144, slice 1 of `soc-y5vh.5`), `ao ci latest`/`recent` (`productionCIStatus`, cycle 145, slice 2), `ao corpus inject` (`productionCorpusReader`, cycle 146, slice 3; closes `soc-y5vh.5`), `ao operator record`/`list` (cycle 147 — template-applied 1st of 7), `ao harness status` (cycle 148), `ao gate run` (cycle 149), `ao corpus capture` (cycle 150, BC1 R/W pair complete on CLI), `ao loop append` (cycle 151, BC3 R/W pair complete on CLI), `ao citation verify` (cycle 152, BC1 round-trip), `ao claim bind`/`list` (cycle 153, 10th adapter CLI-exposed). Establishes a reusable cycle-shape captured in `docs/learnings/2026-05-13-cli-wiring-cycle-shape.md`.
+- **`ao loop verify`** — audits `.agents/evolve/cycle-history.jsonl` integrity via the typed BC3 `LoopReaderPort` (uses cycle-161 widening). Operator-facing health check on the loop ledger.
+- **`CycleEntry.StartedAt` + `Title` fields** (`soc-ckc4`, ports widening at cycle 161 + writer-side round-trip at cycle 162). Enables the `ao loop verify` audit and richer downstream consumers of the cycle ledger.
 - **BC3 LoopReaderPort operator wrapper** — `scripts/evolve-read-cycle-history.sh` provides `recent [N]` / `latest` / `range START END` modes around `ao loop history`, replacing inline `tail`/`awk`/`jq` shell-outs over the raw `.agents/evolve/cycle-history.jsonl` (`soc-y5vh.4`). Three migrated callsites: `skills/evolve/references/convergence-mechanics.md` Mechanism 1, `skills/evolve/references/oscillation.md` oscillation counter, and `skills/evolve/references/fitness-scoring.md` Oscillation Detection block (`soc-lghj`).
 - **Supergate Gap 3 (loop-closure) bats coverage** — `tests/scripts/check-three-gap-supergate.bats` extended with three tests (happy-path PASS, `goals-validate` FAIL, `flywheel-proof` SKIP) using a PATH-shimmed `go` that produces a controlled `/tmp/ao-sg` (`soc-wxh5.3`). Suite goes 15 → 18 tests; closes the cycle-63 Gap 3 deferral.
+- **Mandatory STEP 1.7.5 release-readiness gates** in `/validation` — auto-detects release context from branch name (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`) or `--release-context` flag and requires `scripts/pre-push-gate.sh` (full, not `--fast`), `scripts/ci-local-release.sh`, and `scripts/generate-cli-reference.sh` cleanliness check when CLI surface changed. Validation refuses to recommend `/release` until all three pass. Codex parity synced.
+- **`/evolve` teardown pre-release checklist** — when the loop runs on a release-shaped branch, the teardown report emits an explicit unchecked checklist (regen CLI docs, full pre-push, `ci-local-release.sh`, optional smoke run) instead of recommending `/release`. The handoff artifact carries the checklist verbatim; "ready to tag" means boxes checked, not cycles green.
+- **Acceptance-Text vs Delivered Drift audit** in `/post-mortem` closure-integrity check — for each closed child, parses the bead `Acceptance:` section, extracts named gates, and WARNs when the close-note does not confirm the gate ran green. Catches the failure mode where a bead's acceptance language drifts from delivered evidence (origin: cycle 182 `soc-w6vh.4`).
 - **`.agents/operator/` write-surface contract entry** — `docs/contracts/agents-write-surfaces.md` now documents the BC4 `OperatorPort` durable-intent log (allowlist + classification row, lifecycle=`rolling`, writer=`cli`).
 
 ### Changed
@@ -18,14 +27,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/evolve` Step 0 prior-knowledge retrieval** now routes through the typed BC1 `CorpusReaderPort` (`cli/cmd/ao/corpus_reader_adapter.go`, cycle 112 `productionCorpusReader`) via `ao corpus inject` instead of the legacy `ao lookup` shell-out (`soc-y5vh.1`). Skill text in `skills/evolve/SKILL.md` and `skills-codex/evolve/SKILL.md` synced; codex hashes regenerated.
 - **`/evolve` Step 1.5 healing-first classifier** now routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 `productionCIStatus`) via `ao ci recent --limit 1` instead of an inline `gh run list --workflow validate.yml --json conclusion` (`soc-y5vh.2`). Both callsites (`skills/evolve/SKILL.md` + `skills/evolve/references/convergence-mechanics.md`) updated in lockstep. Zero remaining inline `gh` shell-outs in `/evolve`'s hot read path.
 - **`cli/cmd/ao` coverage floor** raised back to 76 % in `scripts/check-cmd-ao-coverage.sh` after real statement coverage climbed to 76.1 % (23553/30953) on the v2.41-evolve-run baseline (`soc-wxh5.1`). The cycle-60 recalibration to 75 % is reversed.
+- **`/evolve` session-state refresh at Step 0** so the dormancy gate stays correct after long-running cycles harvest follow-ups (cycle 171 retrospective fix).
+- **`/release` skill refactor** — moved Examples + Troubleshooting + the non-HEAD cut-version logic into `references/release-workflow-detail.md` to bring `SKILL.md` back under the `tier=execution` size limit. Behavioral surface unchanged; cycle 169 post-mortem restoration commit restored Examples and Troubleshooting after the initial extraction.
 
 ### Fixed
 
-- **`three-gap-supergate` goals-validate sub-gate** — `scripts/check-three-gap-supergate.sh` now `rm -f /tmp/ao-sg` before `go build -o /tmp/ao-sg`. Go refuses to overwrite a non-object file at the build-output path, so any prior process that wrote a non-binary to `/tmp/ao-sg` (including the bats-test shim go) would otherwise wedge the gate. The bats teardown in `tests/scripts/check-three-gap-supergate.bats` also cleans `/tmp/ao-sg` to remove test pollution. Caught by `ao goals measure` (1 failing → 0 failing).
+- **`three-gap-supergate` goals-validate sub-gate** — `scripts/check-three-gap-supergate.sh` now `rm -f /tmp/ao-sg` before `go build -o /tmp/ao-sg`. Go refuses to overwrite a non-object file at the build-output path, so any prior process that wrote a non-binary to `/tmp/ao-sg` (including the bats-test shim go) would otherwise wedge the gate. The bats teardown in `tests/scripts/check-three-gap-supergate.bats` also cleans `/tmp/ao-sg` to remove test pollution. Caught by `ao goals measure` (1 failing → 0 failing) — first validation that the new STEP 1.7.5 mechanical gate works on real drift.
 
 ### Removed
 
 - **Dead `defrag.SweepOscillatingGoals` function** and all callers (`soc-1q1x` path 1). The function read `.agents/evolve/cycle-history.jsonl` for entries with a `target` field; zero entries have ever had one in production, so callers (`runCompileDefrag`, `runDefragPhases`, `runDreamDefragPreview`) always got empty results. Net removal: 6 files, 17 insertions / 465 deletions — `SweepOscillatingGoals` + 5 helpers + `CountAlternations` + `CycleRecord` + `OscillationResult` + `OscillatingGoal` types + `DefragReport.Oscillation` field + `defragOscillationSweep` flag + `--oscillation-sweep` CLI flag + 9 tests. Build green; 11924 tests pass.
+- **43 dead-code findings swept from `cli/`** — across multiple cycles (156 cleared 10 `staticcheck` U1000 findings, 157 swept 18 more, 158 swept 10 more, 159 swept 5 more from `soc-k083`). Closes long-standing static-analysis backlog; `LoadCycleHistory` deletion (cycle 156) was the canonical example of the dead-code pattern that `soc-1q1x` later applied to oscillation-sweep.
+
+### Internal
+
+- **DDD/Hex architecture rescope arc — 13 cycles closed.** Phase-1 complete + phase-2 retrospective (`docs/rescope/2026-05-13-ddd-hex-architecture-rescope.md`); test-architecture-debt analysis reconciled to deletions; BC ports phase-2 narrowness post-mortem captured (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`).
+- **Learnings catalog hygiene** — README + when-to-add rubric (cycle 134), empirical /loop context-drift study over 87+ cycles (cycle 135), BC-ports wire-up arc retrospective (cycle 122), CLI-wiring cycle-shape template (cycles 144–146), substring sed-rename overreach warning.
+- **Contract drift resolution** — `soc-5yuy` drift #5 resolved via audit; `cli-skills-map.md` refreshed to 70 generated CLI command headings for v2.41-prep BC-arc commands.
 
 ## [2.40.0] - 2026-05-13
 
