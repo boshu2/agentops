@@ -95,6 +95,18 @@ The existing eval suites are CI canaries (contract checks). None answers "did th
 
 **Steer:** increase (behavioral eval tasks with scoring scripts)
 
+### 12. Operating loop is the execution primitive
+
+Non-trivial work must run through the [operating loop](docs/architecture/operating-loop.md): BDD-shaped intent issue → vertical slices → conflict-free wave (when parallel) → bead acceptance against acceptance examples → evidence + ratcheted learning. The doctrine source is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](.agents/research/2026-05-15-cdlc-dojo-doctrine.md); the templates are [`docs/templates/intent-issue.md`](docs/templates/intent-issue.md) and [`docs/templates/slice-validation.md`](docs/templates/slice-validation.md).
+
+A bead is "non-trivial" when it crosses sessions, agents, files, or bounded contexts — the threshold under which the loop is overhead. Trivial one-shot work (typo fix, dep bump, doc nudge) is exempt. Everything else must, before implementation begins: name a bounded context from the [context map](docs/contracts/context-map.md); carry at least one Given/When/Then acceptance example; decompose into vertical slices with one nameable first-failing-test per slice; mark its wave plan parallel only after the wave-validity check passes; close only when every acceptance example maps to a passing test.
+
+This directive starts in **warn-only** posture. The initial gate (`scripts/check-loop-shape.sh`, to be added) checks that beads tagged non-trivial have at least one Gherkin block in the intent issue and at least one slice candidate. It flips to blocking once the corpus-wide pass rate is stable.
+
+**Steer:** increase (beads with BDD intent + slice decomposition before implementation)
+
+**Tags:** loop-shape, warn-only
+
 ### 11. Durability of the corpus across runtime cleanup
 
 On 2026-05-07, routine maintenance wiped most of `.agents/` runtime subdirs (only `.agents/nightly/` is git-tracked); a fresh `scripts/corpus-stats.sh` returns near-zero counts even though the 2026-05-04 stable snapshot recorded ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions. The dogfood receipts claim — and the broader "corpus is the moat" positioning — depends on that asset being durable across cleanup, machine moves, and reinstalls. This directive tracks the design and implementation of a snapshot/restore mechanism: scheduled snapshots of `.agents/` runtime state to durable storage, restore tooling that can rehydrate a fresh checkout, and a freshness/coverage gate so degradation is visible before the receipts go stale. Tracked under bd issue soc-rv5p.

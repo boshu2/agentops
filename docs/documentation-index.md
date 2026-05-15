@@ -48,6 +48,9 @@ Bridge / framing docs:
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
+- [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
+- [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
+- [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -206,6 +209,8 @@ Bridge / framing docs:
 ## Templates
 
 - [Templates Overview](templates/README.md) — Templates index
+- [Intent Issue Template](templates/intent-issue.md) — BDD-shaped intent issue (Given/When/Then acceptance examples, bounded context, slice candidates) — produced by `/discovery`, consumed by `/plan`
+- [Slice Validation Plan Template](templates/slice-validation.md) — Per-slice proof with first failing test, write-scope, wave-validity check, and roll-up acceptance — produced by `/plan`, executed by `/validation`
 - [Workflow Template](templates/workflow.template.md) — Template for new workflows
 - [Agent Template](templates/agent.template.md) — Template for new agents
 - [Skill Template](templates/skill.template.md) — Template for new skills
@@ -243,6 +248,7 @@ Bridge / framing docs:
 - [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
+- [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
 - [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development

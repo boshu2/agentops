@@ -1,7 +1,16 @@
 ---
 name: skill-auditor
-description: 'Audit an existing SKILL.md against the unified AgentOps template (15 checks). Triggers: "audit skill", "skill quality review", "is this skill ready".'
-practices: [code-complete, cmm-process-maturity, design-by-contract]
+description: 'Audit an existing SKILL.md against the unified AgentOps template (15
+  checks). Triggers: "audit skill", "skill quality review", "is this skill ready".'
+practices:
+- code-complete
+- cmm-process-maturity
+- design-by-contract
+hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -9,12 +18,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY, INTEL]
+    exclude:
+    - HISTORY
+    - INTEL
   intel_scope: topic
 metadata:
   tier: meta
   dependencies:
-    - heal-skill
+  - heal-skill
   stability: experimental
 output_contract: skills/skill-auditor/schemas/audit-report.json
 ---

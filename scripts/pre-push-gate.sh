@@ -396,6 +396,7 @@ HAS_LEARNING=1
 HAS_EVAL=1
 HAS_CONTRACT=1
 HAS_CI_POLICY=1
+HAS_CONTEXT_MAP=1
 HAS_SWARM=1
 HAS_CHANGELOG=1
 
@@ -446,6 +447,11 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_CI_POLICY=0
     fi
+    if echo "$all_changed" | grep -qE '^skills/.*/SKILL\.md$|^scripts/generate-context-map\.sh$|^scripts/validate-context-map-drift\.sh$|^docs/contracts/context-map\.md$'; then
+        HAS_CONTEXT_MAP=1
+    else
+        HAS_CONTEXT_MAP=0
+    fi
     if echo "$all_changed" | grep -qE '^\.agents/swarm/|^schemas/swarm-|^scripts/validate-swarm-evidence\.sh$'; then
         HAS_SWARM=1
     else
@@ -474,6 +480,7 @@ needs_check() {
         eval)     [[ "$HAS_EVAL" -eq 1 ]] ;;
         contract) [[ "$HAS_CONTRACT" -eq 1 ]] ;;
         ci_policy) [[ "$HAS_CI_POLICY" -eq 1 ]] ;;
+        context_map) [[ "$HAS_CONTEXT_MAP" -eq 1 ]] ;;
         swarm)    [[ "$HAS_SWARM" -eq 1 ]] ;;
         changelog) [[ "$HAS_CHANGELOG" -eq 1 ]] ;;
         always)   return 0 ;;
@@ -1613,6 +1620,22 @@ if needs_check ci_policy; then
     fi
 else
     skip "CI policy parity"
+fi
+
+# --- 29b. Context map drift (Fix 3 / DDD+Hexagonal v1 Issue #5) ---
+if needs_check context_map; then
+    if [[ -x scripts/validate-context-map-drift.sh ]]; then
+        if context_map_output="$(bash scripts/validate-context-map-drift.sh 2>&1)"; then
+            pass "context map drift"
+        else
+            fail "context map drift"
+            indent_output "$context_map_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-context-map-drift.sh"
+    fi
+else
+    skip "context map drift"
 fi
 
 # --- 30. ShellCheck on changed scripts ---

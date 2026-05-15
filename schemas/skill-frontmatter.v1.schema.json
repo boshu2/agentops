@@ -65,6 +65,36 @@
       "type": "array",
       "description": "Practice slugs from PRACTICE.md that this primitive embodies. Validated by scripts/validate-practice-citations.sh.",
       "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+    },
+    "hexagonal_role": {
+      "type": "string",
+      "description": "DDD/hexagonal role of this skill (frontmatter v2 backfill).",
+      "enum": ["domain", "driving-adapter", "driven-adapter", "supporting", "generic"]
+    },
+    "consumes": {
+      "type": "array",
+      "description": "Artifact-kinds or skill slugs this skill consumes (frontmatter v2 backfill).",
+      "items": { "type": "string" }
+    },
+    "produces": {
+      "type": "array",
+      "description": "Artifact-kinds this skill produces (frontmatter v2 backfill).",
+      "items": { "type": "string" }
+    },
+    "context_rel": {
+      "type": "array",
+      "description": "Context-map relationships to other bounded contexts (frontmatter v2 backfill).",
+      "items": {
+        "type": "object",
+        "required": ["kind", "with"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["shared-kernel", "customer-of", "supplier-to", "conformist-to", "acl-wraps", "separate-ways", "partnership"]
+          },
+          "with": { "type": "string", "description": "skill slug" }
+        }
+      }
     }
   },
   "additionalProperties": false

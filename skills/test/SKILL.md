@@ -1,21 +1,30 @@
 ---
 name: test
-description: 'Generate tests and coverage plans.'
-practices: [tdd, property-based-testing, bdd-gherkin]
+description: Generate tests and coverage plans.
+practices:
+- tdd
+- property-based-testing
+- bdd-gherkin
+hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards  # loads language-specific test conventions
-    - complexity # optional - identifies high-risk untested code
-output_contract: "test files, coverage report"
+  - standards
+  - complexity
+output_contract: test files, coverage report
 ---
 # Test Skill
 

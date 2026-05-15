@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-15T11:34:13Z",
+  "generated_at": "2026-05-15T20:15:27Z",
   "summary": {
     "skills": 77,
     "hooks": 46,
@@ -169,7 +169,7 @@
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 27
+        "reference_count": 30
       },
       {
         "name": "deps",
@@ -209,7 +209,7 @@
         "path": "skills/implement/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 7
       },
       {
         "name": "perf",
@@ -297,7 +297,7 @@
         "path": "skills/swarm/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 15
+        "reference_count": 19
       },
       {
         "name": "test",
@@ -329,7 +329,7 @@
         "path": "skills/post-mortem/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 20
       },
       {
         "name": "pre-mortem",
@@ -369,7 +369,7 @@
         "path": "skills/vibe/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 19
+        "reference_count": 22
       },
       {
         "name": "compile",
@@ -457,7 +457,7 @@
         "path": "skills/standards/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 21
+        "reference_count": 22
       },
       {
         "name": "discovery",
@@ -465,7 +465,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 8
+        "reference_count": 9
       },
       {
         "name": "heal-skill",
@@ -521,7 +521,7 @@
         "path": "skills/validation/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 12
+        "reference_count": 13
       },
       {
         "name": "doc",

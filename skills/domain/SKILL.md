@@ -1,21 +1,32 @@
 ---
 name: domain
-description: 'Canonical vocabulary for human-AI software work.'
-practices: [ddd-bounded-context, wiki-knowledge-surface, pragmatic-programmer]
+description: Canonical vocabulary for human-AI software work.
+practices:
+- ddd-bounded-context
+- wiki-knowledge-surface
+- pragmatic-programmer
+hexagonal_role: domain
+consumes: []
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 context:
   window: isolated
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: knowledge
   dependencies: []
   internal: false
   stability: experimental
-output_contract: "stdout: domain-language reference (loaded JIT)"
+output_contract: 'stdout: domain-language reference (loaded JIT)'
 ---
 # Domain Skill — Ubiquitous Language for Human-AI Software Building
 

@@ -9,7 +9,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/domain/packet"
 )
+
+// ExecutionPacket is a back-compat type alias for the canonical domain type
+// that now lives in cli/internal/domain/packet. New code should import the
+// domain package directly; this alias preserves existing rpi.ExecutionPacket
+// call sites during the hexagonal-seam migration (see ADR-0001).
+type ExecutionPacket = packet.ExecutionPacket
 
 // PhaseArtifactNumberPattern matches phase-N in artifact filenames.
 var PhaseArtifactNumberPattern = regexp.MustCompile(`phase-(\d+)`)
