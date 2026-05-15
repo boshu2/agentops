@@ -205,7 +205,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 
 ## Flags
 
-See `references/flags.md` for the full flag table. Highlights: `--complexity=<level>`, `--strict-surfaces`, `--allow-critical-deps`, `--release-context`, `--skip-release-gates`, `--no-{retro,forge,lifecycle,budget}`.
+See [references/flags.md](references/flags.md) for the full flag table. Highlights: `--complexity=<level>`, `--strict-surfaces`, `--allow-critical-deps`, `--release-context`, `--skip-release-gates`, `--no-{retro,forge,lifecycle,budget}`.
 
 ## Expensive Command Policy
 
