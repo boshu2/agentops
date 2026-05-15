@@ -3187,7 +3187,6 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
-      --oscillation-sweep   Flag evolve goals alternating improved/fail >=3 consecutive cycles
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output

@@ -106,9 +106,16 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 
 ```bash
 mkdir -p .agents/evolve
-ao lookup --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
+ao corpus inject --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
 bash scripts/evolve-update-session-state.sh 2>/dev/null || true  # refresh derived idle_streak + mode_repeat_streak
 ```
+
+`ao corpus inject` routes through the typed BC1 `CorpusReaderPort`
+(`cli/cmd/ao/corpus_reader_adapter.go`, cycle 112 productionCorpusReader),
+emitting one ranked `ports.CorpusItem` JSON record per line from
+`.agents/learnings/` by default. This closes soc-y5vh.1 — Step 0 prior-knowledge
+retrieval is now load-bearing on the typed port, not an untyped `ao lookup`
+shell-out.
 
 **Apply retrieved knowledge:** If learnings are returned, check each for applicability to the current improvement cycle. For applicable learnings, cite by filename and record: `ao metrics cite "<path>" --type applied 2>/dev/null || true`
 
@@ -186,7 +193,7 @@ CYCLE_START_SHA=$(git rev-parse HEAD)
 
 ### Step 1.5: Healing-first classifier
 
-Before fitness or work selection, classify the cycle: `gh run list --limit 1 --workflow validate.yml --json conclusion --jq '.[0].conclusion'`. If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
+Before fitness or work selection, classify the cycle: `ao ci recent --limit 1 2>/dev/null | jq -r '.Conclusion // empty'`. The command routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 productionCIStatus) — no inline `gh` shell-outs in the evolve hot path (soc-y5vh.2). If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
 
 **Convergence check:** read `.agents/evolve/session-convergence.json` if present. If ALL criteria are met (CI green streak ≥ 3, outstanding HIGH+MEDIUM next-work ≤ 1, fitness ≥ baseline), emit teardown and DO NOT re-arm wakeup.
 
@@ -442,6 +449,42 @@ fi
 ### Teardown
 
 Read `references/knowledge-loop-integration.md` for the full teardown learning extraction procedure (commit staged artifacts, run `/post-mortem`, push, report summary).
+
+**Release-context teardown (MANDATORY when the loop ran on a release-shaped branch):**
+
+When the current branch matches `release/*`, `v*-prep`, `v*-evolve-run`, or `v\d+\.\d+*`, the teardown report MUST NOT recommend `/release` as the next step. Instead, emit the explicit pre-release checklist below — the operator must run these AND confirm green before tagging:
+
+```
+## Pre-release checklist — REQUIRED before /release
+
+The autonomous loop has stopped, but release-readiness gates have NOT been run
+during cycles. The operator MUST run the following sequence and confirm green
+before invoking /release. Do NOT skip any of these on the basis of "cycles
+were green" — fast pre-push gate ≠ full pre-push gate; goals-measure ≠
+release readiness.
+
+  [ ] 1. Regenerate CLI reference docs if any cobra command/flag changed:
+         bash scripts/generate-cli-reference.sh
+         git diff cli/docs/COMMANDS.md   # commit if non-empty
+
+  [ ] 2. Run the FULL pre-push gate (NOT --fast):
+         bash scripts/pre-push-gate.sh
+
+  [ ] 3. Run the release-readiness gate:
+         bash scripts/ci-local-release.sh
+
+  [ ] 4. (Recommended) Smoke /evolve with the new typed read paths if BC port
+         wire-ups changed:
+         /evolve --quick --max-cycles=1 --dry-run
+
+Only after [1]–[3] pass: /release <version>
+
+If any check fails, fix the issue, re-run all four, then ship.
+```
+
+The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST contain this checklist verbatim, unchecked, when written by the loop. The operator checks the boxes as they complete each gate; "ready to tag" means the boxes are checked, not that the loop ran cleanly.
+
+**Rationale:** cycles 170-183 of the v2.41-evolve-run shipped clean code, all unit/integration tests green, `ao goals measure` 0/30 failing for three consecutive cycles — but the loop never ran the full pre-push gate, `ci-local-release.sh`, or `generate-cli-reference.sh`. The latter was load-bearing (the branch removed a CLI flag). Per-cycle `--fast` is a smoke test, not release readiness. Operator caught the gap; this checklist makes it mechanical.
 
 ## Examples
 

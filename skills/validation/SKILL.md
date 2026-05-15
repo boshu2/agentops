@@ -116,6 +116,15 @@ STEP 1.7 ── Lifecycle Checks (advisory except critical dependency findings)
                    or patterns (handler, middleware, router, parser, engine,
                    worker, pool, codec).
 
+STEP 1.7.5 ── Release-Readiness Gates (MANDATORY for release-context validation)
+              Read `references/release-readiness-gates.md` for the full procedure:
+              IS_RELEASE_CONTEXT detection (release/*, v*-prep, v*-evolve-run,
+              v\d+\.\d+*; or --release-context; or CLI/hooks/schemas/skills diff with
+              release intent) plus three gates: (a) full pre-push (NOT --fast),
+              (b) ci-local-release.sh, (c) generate-cli-reference.sh + cleanliness
+              check when CLI surface changed. Any gate failure when IS_RELEASE_CONTEXT=1
+              emits <promise>FAIL</promise>. Skip silently when IS_RELEASE_CONTEXT=0.
+
 STEP 1.8 ── Stage 4: Behavioral Validation (holdout scenarios + agent-built specs)
             Skip if: no .agents/holdout/ AND no .agents/specs/, or --no-behavioral
             Read `references/step-1.8-behavioral-validation.md` for full sub-steps.
@@ -160,7 +169,7 @@ STEP 5  ──  write phase summary to .agents/rpi/phase-3-summary-YYYY-MM-DD-<s
 
 Track state inline: `epic_id`, `complexity`, `no_retro`, `no_forge`, `strict_surfaces`, `vibe_verdict`, `post_mortem_verdict`. Load execution packet from `.agents/rpi/execution-packet.json` (or per-run archive when `run_id` is known) for `complexity`, `contract_surfaces`, `done_criteria`.
 
-**Validation has multiple blocking conditions.** It cannot fix code — only report and fail closeout. Blocking FAIL: `vibe` FAIL, code-surface failure in STEP 1.5, `--strict-surfaces` failure on any closure surface, CVSS >= 9.0 dependency findings in STEP 1.7b unless `--allow-critical-deps`, post-mortem FAIL in STEP 2. PASS/WARN: log and continue. FAIL: extract findings, write phase summary with FAIL status, output `<promise>FAIL</promise>`. Retries require re-implementation (`/crank`); caller decides whether to loop back.
+**Validation has multiple blocking conditions.** It cannot fix code — only report and fail closeout. Blocking FAIL: `vibe` FAIL, code-surface failure in STEP 1.5, `--strict-surfaces` failure on any closure surface, CVSS >= 9.0 dependency findings in STEP 1.7b unless `--allow-critical-deps`, **STEP 1.7.5 release-readiness gate failure when `IS_RELEASE_CONTEXT=1`** (full pre-push-gate, ci-local-release.sh, or CLI-reference-staleness), post-mortem FAIL in STEP 2. PASS/WARN: log and continue. FAIL: extract findings, write phase summary with FAIL status, output `<promise>FAIL</promise>`. Retries require re-implementation (`/crank`); caller decides whether to loop back. **For release-context runs:** validation MUST NOT recommend `/release` in the user-facing report unless all STEP 1.7.5 gates passed (or were N/A).
 
 ## Phase Summary Format
 
@@ -196,17 +205,7 @@ On budget expiry: allow in-flight calls to complete, write `[TIME-BOXED]` marker
 
 ## Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`). Matches `/rpi` and `/discovery` syntax. |
-| `--interactive` | off | Human gates in validation report review (before writing summary). Does NOT override `/vibe` council autonomy. |
-| `--no-lifecycle` | off | Skip ALL lifecycle checks in STEP 1.7 (test, deps, review, perf) |
-| `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps, +review), `full` (+perf) |
-| `--no-retro` | off | Skip retro step only |
-| `--no-forge` | off | Skip forge step only |
-| `--no-budget` | off | Disable phase time budgets |
-| `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `/rpi --quality`. |
-| `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
+See `references/flags.md` for the full flag table. Highlights: `--complexity=<level>`, `--strict-surfaces`, `--allow-critical-deps`, `--release-context`, `--skip-release-gates`, `--no-{retro,forge,lifecycle,budget}`.
 
 ## Expensive Command Policy
 

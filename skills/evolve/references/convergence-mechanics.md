@@ -9,7 +9,7 @@ This reference documents the three feedback mechanisms that turn raw cycle outpu
 In Step 0 (Setup), after `mkdir -p .agents/evolve`, the loop reads the last 3 entries of `cycle-history.jsonl`. For any entry where `gate` field contains a FAIL marker, it extracts the failure surface (e.g. "registry-check stale", "bats-tests goals-validate") and injects the matching learning before work selection.
 
 ```bash
-last3=$(tail -n 3 .agents/evolve/cycle-history.jsonl)
+last3=$(scripts/evolve-read-cycle-history.sh recent 3)  # routes through BC3 LoopReaderPort (soc-y5vh.4)
 fail_surfaces=$(echo "$last3" | jq -r 'select(.gate | test("FAIL|FAILED|BLOCKED")) | .gate' 2>/dev/null)
 if [ -n "$fail_surfaces" ]; then
     # Search learnings for surface keywords; print whichever match
@@ -28,8 +28,10 @@ Without this, the 2026-05-07 CI-toil learning sat for 7 days while I burned 5 cy
 Before Step 2 (measure fitness) and Step 3 (select work), the loop classifies the cycle:
 
 ```bash
-# Step 1.5: healing-first classifier
-last_ci=$(gh run list --limit 1 --workflow validate.yml --json conclusion --jq '.[0].conclusion' 2>/dev/null)
+# Step 1.5: healing-first classifier — routes through BC2 CIStatusPort
+# (cli/cmd/ao/ci_status_adapter.go, cycle 117 productionCIStatus) per
+# soc-y5vh.2. No inline gh shell-outs.
+last_ci=$(ao ci recent --limit 1 2>/dev/null | jq -r '.Conclusion // empty')
 if [ "$last_ci" = "failure" ]; then
     CYCLE_MODE="restorative"
     # Read failure surface, search for matching learning
