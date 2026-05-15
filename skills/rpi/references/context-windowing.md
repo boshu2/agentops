@@ -1,5 +1,12 @@
 # Large-Repo Context Windowing
 
+> **OPT-IN — large-repo mode only.** Context-shard generation is gated behind an
+> explicit `--large-repo` mode and is NOT part of the default RPI path. The default
+> discovery/research phase does not produce `.agents/rpi/context-shards/latest.json`.
+> `scripts/rpi/generate-context-shards.py`, `run-shard.py`, `init-shard-progress.py`,
+> and `context-window-contract.sh` are opt-in tooling for large repositories — invoke
+> them only after explicitly entering `--large-repo` mode, never as a default-path step.
+
 Use this mode when the repo is too large for stable single-window analysis.
 
 ## Why

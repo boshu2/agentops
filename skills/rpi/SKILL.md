@@ -203,7 +203,7 @@ interactive, loop, and artifact-mode examples.
 
 - [references/autonomous-execution.md](references/autonomous-execution.md)
 - [references/complexity-scaling.md](references/complexity-scaling.md)
-- [references/context-windowing.md](references/context-windowing.md)
+- [references/context-windowing.md](references/context-windowing.md) — OPT-IN large-repo mode (`--large-repo`); NOT part of the default RPI path. Default discovery/research does not generate `.agents/rpi/context-shards/latest.json`.
 - [references/discovery-artifact-mode.md](references/discovery-artifact-mode.md)
 - [references/error-handling.md](references/error-handling.md)
 - [references/examples.md](references/examples.md)
