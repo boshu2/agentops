@@ -79,7 +79,13 @@ jobs:
       - name: Verify install-smoke (fast structural check still green)
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          timeout 60 bash tests/install/test-install-smoke.sh
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 60 bash tests/install/test-install-smoke.sh
+          elif command -v gtimeout >/dev/null 2>&1; then
+            gtimeout 60 bash tests/install/test-install-smoke.sh
+          else
+            bash tests/install/test-install-smoke.sh
+          fi
 
   macos-install:
     runs-on: macos-latest
@@ -132,4 +138,10 @@ jobs:
       - name: Verify install-smoke (fast structural check still green)
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          timeout 60 bash tests/install/test-install-smoke.sh
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 60 bash tests/install/test-install-smoke.sh
+          elif command -v gtimeout >/dev/null 2>&1; then
+            gtimeout 60 bash tests/install/test-install-smoke.sh
+          else
+            bash tests/install/test-install-smoke.sh
+          fi
