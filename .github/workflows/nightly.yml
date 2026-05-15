@@ -218,7 +218,7 @@ jobs:
           NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
         run: |
           ./cli/bin/ao defrag \
-            --prune --dedup --oscillation-sweep \
+            --prune --dedup \
             --output-dir "${RUNNER_TEMP}/knowledge-cycle/compile/defrag"
           scripts/nightly-knowledge-cycle.sh record-stage compile-defrag ok "defrag wrote $(ls "${RUNNER_TEMP}/knowledge-cycle/compile/defrag" | wc -l | tr -d ' ') file(s)"
 

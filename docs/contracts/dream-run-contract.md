@@ -128,7 +128,7 @@ Required behavior:
 The first slice runs these steps in order:
 
 1. `ao flywheel close-loop --threshold 0h --json`
-2. `ao --dry-run defrag --prune --dedup --oscillation-sweep`
+2. `ao --dry-run defrag --prune --dedup`
 3. `ao metrics health --json`
 4. `ao retrieval-bench --live --json`
 5. optional: `ao knowledge brief --goal <goal> --json`
