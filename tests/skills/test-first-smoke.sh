@@ -78,6 +78,9 @@ fi
 echo -e "${BLUE}[TEST-FIRST]${NC} Crank SKILL.md (skills/crank/SKILL.md)"
 
 CRANK="skills/crank/SKILL.md"
+# Billboard refactor (#275) thinned crank SKILL.md and moved step detail into
+# references/. Content-presence checks scan the skill as a unit: SKILL.md + references/.
+CRANK_REFS="skills/crank/references/"
 
 if [[ ! -f "$CRANK" ]]; then
     fail "File missing: $CRANK"
@@ -89,39 +92,41 @@ else
         fail "--test-first not found in any table row"
     fi
 
-    # 2b: Step 3b: SPEC WAVE as ### heading
-    if grep -qE '^### Step 3b: SPEC WAVE' "$CRANK"; then
-        pass "Step 3b: SPEC WAVE section heading exists"
+    # 2b: SPEC WAVE (Step 3b) documented in the crank skill unit (SKILL.md + references/)
+    # Billboard refactor moved step detail into references/wave-dispatch.md.
+    if grep -rqsE 'Step 3b: SPEC WAVE' "$CRANK" "$CRANK_REFS"; then
+        pass "Step 3b: SPEC WAVE documented in crank skill"
     else
-        fail "Step 3b: SPEC WAVE section heading missing"
+        fail "Step 3b: SPEC WAVE missing from crank skill (SKILL.md + references/)"
     fi
 
-    # 2c: Step 3c: TEST WAVE as ### heading
-    if grep -qE '^### Step 3c: TEST WAVE' "$CRANK"; then
-        pass "Step 3c: TEST WAVE section heading exists"
+    # 2c: TEST WAVE (Step 3c) documented in the crank skill unit
+    if grep -rqsE 'Step 3c: TEST WAVE' "$CRANK" "$CRANK_REFS"; then
+        pass "Step 3c: TEST WAVE documented in crank skill"
     else
-        fail "Step 3c: TEST WAVE section heading missing"
+        fail "Step 3c: TEST WAVE missing from crank skill (SKILL.md + references/)"
     fi
 
-    # 2d: Category-based skip logic (spec-eligible or docs/chore pattern)
-    if grep -qE 'spec-eligible|spec.eligible' "$CRANK" && grep -qE 'docs.*chore|chore.*docs' "$CRANK"; then
-        pass "Category-based skip logic present (spec-eligible + docs/chore)"
+    # 2d: Category-based skip logic (spec-eligible or docs/chore pattern), skill-wide
+    if grep -rqsE 'spec-eligible|spec.eligible' "$CRANK" "$CRANK_REFS" \
+        && grep -rqsE 'docs.*chore|chore.*docs' "$CRANK" "$CRANK_REFS"; then
+        pass "Category-based skip logic present in crank skill (spec-eligible + docs/chore)"
     else
-        fail "Category-based skip logic missing (need spec-eligible AND docs/chore references)"
+        fail "Category-based skip logic missing from crank skill (need spec-eligible AND docs/chore)"
     fi
 
-    # 2e: Backward compat — Step 4 still exists
-    if grep -qE '^### Step 4:' "$CRANK"; then
-        pass "Backward compat: Step 4 still exists"
+    # 2e: Backward compat — Step 4 (standard wave execution) documented skill-wide
+    if grep -rqsE 'Step 4:' "$CRANK" "$CRANK_REFS"; then
+        pass "Backward compat: Step 4 documented in crank skill"
     else
-        fail "Backward compat: Step 4 missing (standard wave execution removed)"
+        fail "Backward compat: Step 4 missing from crank skill (standard wave execution removed)"
     fi
 
-    # 2f: Backward compat — Step 0 still exists
-    if grep -qE '^### Step 0:' "$CRANK"; then
-        pass "Backward compat: Step 0 still exists (Load Knowledge Context)"
+    # 2f: Backward compat — Step 0 (Load Knowledge Context) documented skill-wide
+    if grep -rqsE 'Step 0:' "$CRANK" "$CRANK_REFS"; then
+        pass "Backward compat: Step 0 documented in crank skill (Load Knowledge Context)"
     else
-        fail "Backward compat: Step 0 missing (Load Knowledge Context removed)"
+        fail "Backward compat: Step 0 missing from crank skill (Load Knowledge Context removed)"
     fi
 fi
 
@@ -263,11 +268,14 @@ else
         fail "### GREEN Mode section heading missing"
     fi
 
-    # 5b: Test immutability rule documented
-    if grep -qE 'Do NOT modify test|MUST NOT modify.*test|tests are immutable' "$IMPL"; then
-        pass "Test immutability rule documented"
+    # 5b: Test immutability rule documented in the implement skill unit
+    # (SKILL.md + references/). Billboard refactor moved GREEN-mode detail into
+    # references/green-mode.md; the rule is also stated inline in SKILL.md.
+    if grep -rqsiE 'do(es)? NOT modify test|MUST NOT modify (existing )?test|tests are immutable|test files (provided|immutable)|failing tests \(immutable\)' \
+        "$IMPL" "skills/implement/references/"; then
+        pass "Test immutability rule documented in implement skill"
     else
-        fail "Test immutability rule not documented"
+        fail "Test immutability rule missing from implement skill (SKILL.md + references/)"
     fi
 fi
 

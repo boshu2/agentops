@@ -72,6 +72,8 @@ Run the DAG in [references/dag.md](references/dag.md) — STEP 1 (vibe) → 1.5 
 | `--strict-surfaces` | off | Make all 4 surface failures blocking (FAIL instead of WARN). Passed automatically by `/rpi --quality`. |
 | `--allow-critical-deps` | off | Allow shipping with CVSS >= 9.0 vulnerabilities (acknowledged risk acceptance) |
 
+See [references/flags.md](references/flags.md) for flag interactions, precedence, and combined-flag examples.
+
 ## Expensive Command Policy
 
 Routine validation is targeted by default. Broad proof commands such as
@@ -79,6 +81,8 @@ Routine validation is targeted by default. Broad proof commands such as
 runners, retrieval bench, headless runtime smoke, and release gates require
 explicit operator/release/acceptance-criteria context. If one is run, record the
 reason and timeout in the phase summary.
+
+When validating release-bound work, see [references/release-readiness-gates.md](references/release-readiness-gates.md) for the additional gates that must pass before shipping.
 
 ## Quick Start
 
