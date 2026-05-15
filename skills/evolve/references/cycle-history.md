@@ -2,11 +2,31 @@
 
 ## Compaction Resilience
 
-The evolve loop MUST survive context compaction. Every productive cycle commits
-its ledger artifacts to git before proceeding. `cycle-history.jsonl` is the
-committed recovery point for cycle numbering, and `.agents/evolve/session-state.json`
+The evolve loop MUST survive context compaction. Every productive cycle appends
+to its ledger artifacts before proceeding. `cycle-history.jsonl` is the
+on-disk recovery point for cycle numbering, and `.agents/evolve/session-state.json`
 is the on-disk resume point for pending queue claims, queue refresh count, and
 generator-empty streaks.
+
+### Local-Only Status (Not Git-Tracked)
+
+Both `cycle-history.jsonl` and `session-state.json` are **local-only files**.
+The repository's nested `.agents/.gitignore` denies all paths via `*` (with
+only `!.gitignore` re-allowed), which overrides the outer `.gitignore`
+allowlists at the repo root. Aspirational allowlist entries for
+`!/.agents/evolve/cycle-history.jsonl` and `!/.agents/evolve/session-state.json`
+exist in the outer `.gitignore` but have no effect because the nested
+deny wins per gitignore precedence rules.
+
+Implication for the cycle protocol:
+
+- These files survive **session compaction** (recovered from disk on the next
+  invocation), but they do **not** survive cloning or shared with peers.
+- Important per-cycle milestones (e.g. baseline-capture results, regression
+  events, convergence-criterion transitions) MUST also be recorded in
+  **commit messages** so they remain in tracked git history.
+- Do not depend on cycle-history.jsonl as a cross-clone authoritative ledger.
+  Treat it as a session journal that helps the next-cycle bootstrap.
 
 ## Cycle History JSONL Format
 
@@ -173,12 +193,13 @@ On session restart or after compaction:
 
 ## Kill Switch
 
-Two paths, checked at every cycle boundary:
+Three paths, checked at every cycle boundary:
 
 | File | Purpose | Who Creates It |
 |------|---------|---------------|
 | `~/.config/evolve/KILL` | Permanent stop (outside repo) | Human |
 | `.agents/evolve/STOP` | One-time local stop | Human or automation |
+| `.agents/evolve/DORMANT` | Sticky dormancy after Step 3 hard-gate fired | `/evolve` itself |
 
 To stop /evolve:
 ```bash
@@ -186,11 +207,16 @@ echo "Taking a break" > ~/.config/evolve/KILL    # Permanent
 echo "done for today" > .agents/evolve/STOP       # Local, one-time
 ```
 
+The `DORMANT` marker is written by `/evolve` when both queue layers and generator layers come up empty across 3 consecutive passes (the Step 3 hard-gate). Its purpose is to prevent post-dormancy cron fires from re-entering the full skill body — once the marker exists, Step 1 short-circuits with zero further tool calls. The marker contains three lines: cycle number, ISO timestamp, reason.
+
 To re-enable:
 ```bash
 rm ~/.config/evolve/KILL
 rm .agents/evolve/STOP
+rm .agents/evolve/DORMANT
 ```
+
+The operator typically removes `DORMANT` either when (a) new scope arrives that didn't fit any rung of the ladder when dormancy fired, or (b) the underlying ledger has gained enough new entries that generator layers will produce new work. There is no auto-clear — dormancy is sticky by design.
 
 ## Flags Reference
 

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-12T13:54:18Z",
+  "generated_at": "2026-05-15T11:34:13Z",
   "summary": {
     "skills": 77,
-    "hooks": 43,
+    "hooks": 46,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 148
+    "cli_commands": 158
   },
   "surfaces": {
     "skills": [
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 19
       },
       {
         "name": "grafana-platform-dashboard",
@@ -521,7 +521,7 @@
         "path": "skills/validation/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 10
+        "reference_count": 12
       },
       {
         "name": "doc",
@@ -561,7 +561,7 @@
         "path": "skills/release/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 6
+        "reference_count": 8
       },
       {
         "name": "security",
@@ -726,6 +726,22 @@
         "type": "command"
       },
       {
+        "name": "check-sibling-citation-on-commit",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/check-sibling-citation-on-commit.sh",
+        "type": "command"
+      },
+      {
+        "name": "check-test-pair-on-commit",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/check-test-pair-on-commit.sh",
+        "type": "command"
+      },
+      {
         "name": "codex-parity-warn",
         "lifecycle": "PreToolUse",
         "matcher": "Edit",
@@ -843,6 +859,14 @@
         "matcher": "Write",
         "timeout": 3,
         "path": "hooks/standards-injector.sh",
+        "type": "command"
+      },
+      {
+        "name": "update-principles-check",
+        "lifecycle": "PreToolUse",
+        "matcher": "Bash",
+        "timeout": 5,
+        "path": "hooks/update-principles-check.sh",
         "type": "command"
       },
       {
@@ -1209,6 +1233,18 @@
         "path": "cli/cmd/ao/beads_audit_cluster.go"
       },
       {
+        "name": "ci",
+        "path": "cli/cmd/ao/ci.go"
+      },
+      {
+        "name": "citation_cmd",
+        "path": "cli/cmd/ao/citation_cmd.go"
+      },
+      {
+        "name": "claim_cmd",
+        "path": "cli/cmd/ao/claim_cmd.go"
+      },
+      {
         "name": "codex",
         "path": "cli/cmd/ao/codex.go"
       },
@@ -1259,6 +1295,14 @@
       {
         "name": "corpus",
         "path": "cli/cmd/ao/corpus.go"
+      },
+      {
+        "name": "corpus_capture",
+        "path": "cli/cmd/ao/corpus_capture.go"
+      },
+      {
+        "name": "corpus_inject",
+        "path": "cli/cmd/ao/corpus_inject.go"
       },
       {
         "name": "corpus_snapshot",
@@ -1357,6 +1401,10 @@
         "path": "cli/cmd/ao/gate.go"
       },
       {
+        "name": "gate_cmd",
+        "path": "cli/cmd/ao/gate_cmd.go"
+      },
+      {
         "name": "gc_bridge",
         "path": "cli/cmd/ao/gc_bridge.go"
       },
@@ -1413,6 +1461,10 @@
         "path": "cli/cmd/ao/handoff.go"
       },
       {
+        "name": "harness_cmd",
+        "path": "cli/cmd/ao/harness_cmd.go"
+      },
+      {
         "name": "harvest",
         "path": "cli/cmd/ao/harvest.go"
       },
@@ -1443,6 +1495,14 @@
       {
         "name": "lookup",
         "path": "cli/cmd/ao/lookup.go"
+      },
+      {
+        "name": "loop",
+        "path": "cli/cmd/ao/loop.go"
+      },
+      {
+        "name": "loop_append",
+        "path": "cli/cmd/ao/loop_append.go"
       },
       {
         "name": "maturity",
@@ -1491,6 +1551,10 @@
       {
         "name": "notebook",
         "path": "cli/cmd/ao/notebook.go"
+      },
+      {
+        "name": "operator_cmd",
+        "path": "cli/cmd/ao/operator_cmd.go"
       },
       {
         "name": "overnight",

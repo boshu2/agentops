@@ -565,3 +565,292 @@ func TestRenderLearningBody_IncludesFrontmatterAndBody(t *testing.T) {
 		}
 	}
 }
+
+// ---------- verifyFunctionCitation / verifySymbolCitation / grepSymbol ----------
+// Cycle 75 / soc-wxh5.1.1 — second concrete climb-back. These functions
+// share grepSymbol as their core; testing both verifyFunctionCitation
+// and verifySymbolCitation plus a direct grepSymbol test covers all 3
+// in one focused commit. Sibling shape: TestVerifyFileCitation_Fresh/Stale
+// above — temp dir, write fixture file, assert Status + Reason.
+
+func TestVerifyFunctionCitation_Fresh(t *testing.T) {
+	dir := t.TempDir()
+	clidir := filepath.Join(dir, "cli")
+	if err := os.MkdirAll(clidir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(clidir, "foo.go"),
+		[]byte("package foo\nfunc TargetFn() int { return 0 }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Citation{Kind: "function", Raw: "func TargetFn"}
+	verifyFunctionCitation(&c, dir)
+	if c.Status != CitationFresh {
+		t.Fatalf("status = %q, want FRESH (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "defined at") {
+		t.Fatalf("reason = %q, want substring 'defined at'", c.Reason)
+	}
+}
+
+func TestVerifyFunctionCitation_Stale(t *testing.T) {
+	dir := t.TempDir()
+	// Create the search-root dirs but no matching file.
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := Citation{Kind: "function", Raw: "func DoesNotExistAnywhere_x9z"}
+	verifyFunctionCitation(&c, dir)
+	if c.Status != CitationStale {
+		t.Fatalf("status = %q, want STALE (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "zero definitions") {
+		t.Fatalf("reason = %q, want substring 'zero definitions'", c.Reason)
+	}
+}
+
+func TestVerifySymbolCitation_Fresh(t *testing.T) {
+	dir := t.TempDir()
+	skillsdir := filepath.Join(dir, "skills")
+	if err := os.MkdirAll(skillsdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(skillsdir, "SKILL.md"),
+		[]byte("# Skill\nUses the `UNIQUE_SYM_FOR_TEST` constant.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Citation{Kind: "symbol", Raw: "`UNIQUE_SYM_FOR_TEST`"}
+	verifySymbolCitation(&c, dir)
+	if c.Status != CitationFresh {
+		t.Fatalf("status = %q, want FRESH (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "found at") {
+		t.Fatalf("reason = %q, want substring 'found at'", c.Reason)
+	}
+}
+
+func TestVerifySymbolCitation_Stale(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := Citation{Kind: "symbol", Raw: "`NEVER_DEFINED_SYM_q7w`"}
+	verifySymbolCitation(&c, dir)
+	if c.Status != CitationStale {
+		t.Fatalf("status = %q, want STALE (reason: %s)", c.Status, c.Reason)
+	}
+	if !strings.Contains(c.Reason, "zero references") {
+		t.Fatalf("reason = %q, want substring 'zero references'", c.Reason)
+	}
+}
+
+func TestGrepSymbol_EmptyInputReturnsNil(t *testing.T) {
+	got := grepSymbol(t.TempDir(), "")
+	if got != nil {
+		t.Fatalf("grepSymbol(_, \"\") = %v, want nil", got)
+	}
+}
+
+func TestGrepSymbol_FindsAcrossSourceRoots(t *testing.T) {
+	dir := t.TempDir()
+	// Plant the symbol in each of the three search roots; assert grep
+	// returns >= 1 match (limited to 10 by the function).
+	for _, sub := range []string{"cli", "skills", "scripts"} {
+		subdir := filepath.Join(dir, sub)
+		if err := os.MkdirAll(subdir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		ext := ".go"
+		if sub == "skills" {
+			ext = ".md"
+		}
+		if sub == "scripts" {
+			ext = ".sh"
+		}
+		if err := os.WriteFile(filepath.Join(subdir, "marker"+ext),
+			[]byte("contains UNIQ_CITE_TARGET_xyz once"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	matches := grepSymbol(dir, "UNIQ_CITE_TARGET_xyz")
+	if len(matches) == 0 {
+		t.Fatalf("grepSymbol returned 0 matches, want >= 1")
+	}
+}
+
+// ---------- emitVerifyHuman / emitLintHuman ----------
+// Cycle 76 / soc-wxh5.1.1 — third climb-back. Both functions take a
+// *os.File and write human-readable formatted output. Pattern: open a
+// temp file, pass it as w, close, read back, assert expected strings.
+
+func TestEmitVerifyHuman_HappyPath(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &VerifyReport{
+		BeadID:     "soc-test-1",
+		Title:      "test bead title",
+		Status:     "OK",
+		TotalCount: 3,
+		FreshCount: 2,
+		StaleCount: 1,
+		Citations: []Citation{
+			{Kind: "function", Raw: "func A", Status: CitationFresh, Reason: "fresh"},
+			{Kind: "function", Raw: "func B", Status: CitationStale, Reason: "zero defs"},
+			{Kind: "symbol", Raw: "`SYM`", Status: CitationUnknown, Reason: "uncertain"},
+		},
+	}
+	emitVerifyHuman(f, r, false)
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	for _, want := range []string{
+		"bead soc-test-1: test bead title  [OK]",
+		"citations: 3 total, 2 fresh, 1 stale",
+		"[STALE] func B — zero defs",
+		"[?????] `SYM` — uncertain",
+	} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("output missing %q\nfull output:\n%s", want, s)
+		}
+	}
+	// Default (verbose=false) must NOT echo FRESH citations.
+	if strings.Contains(s, "[FRESH]") {
+		t.Fatalf("non-verbose output should not show FRESH lines:\n%s", s)
+	}
+}
+
+func TestEmitVerifyHuman_VerboseShowsFreshAndResolved(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &VerifyReport{
+		BeadID: "soc-test-2", Title: "verbose check", Status: "OK",
+		TotalCount: 1, FreshCount: 1,
+		Citations: []Citation{
+			{Kind: "function", Raw: "func X", Status: CitationFresh, Reason: "found", Resolved: "cli/x.go:1"},
+		},
+	}
+	emitVerifyHuman(f, r, true)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	if !strings.Contains(s, "[FRESH] func X — found") {
+		t.Fatalf("verbose output missing FRESH line: %s", s)
+	}
+	if !strings.Contains(s, "→ cli/x.go:1") {
+		t.Fatalf("verbose output missing resolved arrow: %s", s)
+	}
+}
+
+func TestEmitLintHuman_ShowsOnlyStaleBeads(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &LintReport{
+		StatusFilter: "open",
+		TotalBeads:   2,
+		CleanBeads:   1,
+		StaleBeads:   1,
+		ErrorBeads:   0,
+		PerBead: []VerifyReport{
+			{BeadID: "soc-clean", Title: "clean one", StaleCount: 0,
+				Citations: []Citation{{Raw: "func A", Status: CitationFresh}}},
+			{BeadID: "soc-stale", Title: "stale one", StaleCount: 1,
+				Citations: []Citation{
+					{Raw: "func B", Status: CitationFresh, Reason: "ok"},
+					{Raw: "func C", Status: CitationStale, Reason: "zero defs"},
+				}},
+		},
+	}
+	emitLintHuman(f, r)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	for _, want := range []string{
+		"ao beads lint (status=open): 2 beads",
+		"1 clean, 1 stale, 0 errors",
+		"[STALE] soc-stale: stale one",
+		"- func C: zero defs",
+	} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("output missing %q\nfull output:\n%s", want, s)
+		}
+	}
+	// Clean bead must not appear in the per-bead section.
+	if strings.Contains(s, "[STALE] soc-clean") {
+		t.Fatalf("clean bead should not appear as STALE: %s", s)
+	}
+	// FRESH citation in stale-bead must not appear (only stale lines listed).
+	if strings.Contains(s, "func B") {
+		t.Fatalf("FRESH citation should not be in lint stale output: %s", s)
+	}
+}
+
+func TestEmitLintHuman_AllCleanProducesHeaderOnly(t *testing.T) {
+	dir := t.TempDir()
+	f, _ := os.Create(filepath.Join(dir, "out.txt"))
+	r := &LintReport{
+		StatusFilter: "open", TotalBeads: 1, CleanBeads: 1,
+		PerBead: []VerifyReport{
+			{BeadID: "soc-clean-only", Title: "all clean", StaleCount: 0},
+		},
+	}
+	emitLintHuman(f, r)
+	f.Close()
+	out, _ := os.ReadFile(filepath.Join(dir, "out.txt"))
+	s := string(out)
+	if !strings.Contains(s, "1 clean, 0 stale, 0 errors") {
+		t.Fatalf("missing summary line: %s", s)
+	}
+	if strings.Contains(s, "[STALE]") {
+		t.Fatalf("all-clean output should have no STALE markers: %s", s)
+	}
+}
+
+// ---------- runBeadsVerify / runBeadsLint graceful-degradation paths ----------
+// Cycle 77 / soc-wxh5.1.1 — fourth climb-back. Both functions are cobra
+// Run handlers. Their graceful-degradation path (bd not on PATH) is
+// testable by stubbing the bdAvailable var. Sibling pattern:
+// TestVerifyBead_DegradesWhenBDAbsent (this file, line 292).
+
+func TestRunBeadsVerify_DegradesGracefullyWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	// runBeadsVerify reads args[0] for the beadID; cmd is unused on
+	// the degradation path.
+	err := runBeadsVerify(nil, []string{"soc-graceful-test"})
+	if err != nil {
+		t.Fatalf("runBeadsVerify should return nil on graceful degradation, got %v", err)
+	}
+}
+
+func TestRunBeadsLint_DegradesGracefullyWhenBDAbsent(t *testing.T) {
+	origAvail := bdAvailable
+	defer func() { bdAvailable = origAvail }()
+	bdAvailable = func() bool { return false }
+
+	// runBeadsLint takes no positional args; cmd is unused on the
+	// degradation path.
+	err := runBeadsLint(nil, []string{})
+	if err != nil {
+		t.Fatalf("runBeadsLint should return nil on graceful degradation, got %v", err)
+	}
+}

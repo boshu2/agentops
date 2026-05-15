@@ -39,10 +39,10 @@ func (e *WikiForgeExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeWikiForge}
 }
 
-func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *WikiForgeExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	// Honor cancellation issued mid-claim before performing any work
 	// (payload parse, source expansion, or worker spawn). Without this
-	// check, a context canceled between QueueClaim and execution start
+	// check, a context canceled between QueueLease and execution start
 	// is not observed until the underlying call blocks. See bd soc-58q5.12.
 	if err := ctx.Err(); err != nil {
 		return JobExecutionResult{}, err

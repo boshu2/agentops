@@ -17,7 +17,7 @@ type JobExecutionResult struct {
 // JobExecutor runs claimed daemon jobs for one or more job types.
 type JobExecutor interface {
 	JobTypes() []JobType
-	RunJob(context.Context, QueueClaim) (JobExecutionResult, error)
+	RunJob(context.Context, QueueLease) (JobExecutionResult, error)
 }
 
 // SupervisorOptions configures a daemon queue supervisor.
@@ -178,7 +178,7 @@ func (s *Supervisor) supportsJob(job QueueJobState) bool {
 	return ok
 }
 
-func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobExecutor, claim QueueClaim) (JobExecutionResult, error) {
+func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobExecutor, claim QueueLease) (JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}

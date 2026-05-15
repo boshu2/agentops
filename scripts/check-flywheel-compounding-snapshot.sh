@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [flywheel-snapshot, corpus-state, ci-gate]
+# practices: [wiki-knowledge-surface, snapshot-testing, continuous-integration]
 # CI gate: validate a corpus-state evidence snapshot for the
 # flywheel-compounding directive. Unlike check-flywheel-compounding.sh
 # (which runs the live multi-session computation and needs a populated

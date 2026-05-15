@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [factory-admission-contract, schema-validator]
+# practices: [data-contracts, design-by-contract, microservices]
 # Enforce factory-admission contract: wraps the existing
 # tests/scripts/test-factory-admission-contracts.py so it runs as a
 # blocking gate instead of as an orphaned test fixture.

@@ -251,7 +251,53 @@ done
 
 **Origin:** na-vs9.4 — Wave 1 added vibe checkpoint detection (15 lines), Wave 2 removed it entirely. Both waves passed tests independently. The orphaned checkpoint writer in crank was only caught by manual audit.
 
-### Check 5: Stretch Goal Audit
+### Check 5: Acceptance-Text vs Delivered Drift
+
+For each closed child in scope, read the bead's `Acceptance:` (or `ACCEPTANCE CRITERIA:`) text and check whether it has obviously drifted from what the closure commit delivered. Catches a real failure mode from the v2.41-evolve-run arc: `soc-w6vh.4` had acceptance "`check-no-tracked-agents` AND `check-worktree-disposition` pass", but was closed when the operator-blocker was resolved — the gate itself still failed. The bead's acceptance language and the delivered evidence mismatched.
+
+```bash
+for child in $CLOSED_CHILDREN; do
+  ACCEPT=$(bd show "$child" 2>/dev/null \
+           | awk '/^Acceptance:/,/^[A-Z][A-Z]+:|^---/' \
+           | head -50)
+  CLOSE_NOTE=$(bd show "$child" 2>/dev/null \
+               | awk '/COMMENTS/,0' \
+               | tail -30)
+
+  # Look for explicit gate references in the acceptance text. Acceptance that
+  # names a specific script as a pass requirement is a drift hazard: closing
+  # the bead without running the script (or before the script passes) is the
+  # mismatch we want to catch.
+  GATE_REFS=$(printf '%s\n' "$ACCEPT" \
+              | grep -oE '(scripts/check-[a-z0-9-]+\.sh|check-[a-z0-9-]+|pre-push-gate|ci-local-release)' \
+              | sort -u)
+
+  if [ -n "$GATE_REFS" ]; then
+    # For each gate named in the acceptance, look for a corresponding "PASS"
+    # or "passes" reference in the close-note (operator confirmation that the
+    # gate ran green at closure time). Missing confirmation → drift WARN.
+    for gate in $GATE_REFS; do
+      if ! printf '%s\n' "$CLOSE_NOTE" | grep -qiE "$gate.*pass|$gate.*green|pass.*$gate|$gate.*ok\\b"; then
+        FAILURES="${FAILURES}\n- ACCEPTANCE DRIFT: $child — acceptance names gate '$gate' as pass requirement, close-note does not confirm green"
+      fi
+    done
+  fi
+
+  # Second heuristic: acceptance contains "OR" alternatives — verify the close
+  # note articulates which branch was taken.
+  if printf '%s\n' "$ACCEPT" | grep -qE '\bOR\b'; then
+    if ! printf '%s\n' "$CLOSE_NOTE" | grep -qiE 'chose|picked|path [0-9]|operator chose|alternative'; then
+      FAILURES="${FAILURES}\n- ACCEPTANCE BRANCH UNCLEAR: $child — acceptance has OR alternatives, close-note does not state which was satisfied"
+    fi
+  fi
+done
+```
+
+This check is **WARN-level**, not FAIL — false positives are likely (closure notes might use different wording than the acceptance). The intent is to surface drift for council review, not auto-fail.
+
+Origin: v2.41-evolve-run cycle 182. `soc-w6vh.4` acceptance: "`check-no-tracked-agents` AND `check-worktree-disposition` pass". Close-note correctly described the operator's chosen action (commit the worktree) but did NOT include language showing the worktree-disposition gate was green at close — because it wasn't (still fails on broader fleet state). A correct closure would either (a) explicitly narrow the bead's acceptance before closing, or (b) leave the bead open with a scope-narrowing follow-up filed.
+
+### Check 6: Stretch Goal Audit
 
 For children tagged "stretch" that were closed, verify either implementation exists or deferral is documented.
 
@@ -282,6 +328,7 @@ Write results into the post-mortem report under `## Closure Integrity`:
 | Phantom Beads | PASS/WARN | N phantom beads detected |
 | Orphaned Children | PASS/WARN | N orphans found |
 | Multi-Wave Regression | PASS/FAIL | N regressions detected |
+| Acceptance Drift | PASS/WARN | N closed beads whose acceptance text references gates that the close-note does not confirm green |
 | Stretch Goals | PASS/WARN | N stretch goals closed without rationale |
 
 ### Findings

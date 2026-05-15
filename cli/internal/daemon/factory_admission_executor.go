@@ -76,7 +76,7 @@ func (e *FactoryAdmissionExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeFactoryAdmission, JobTypeFactoryLocalPilot}
 }
 
-func (e *FactoryAdmissionExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *FactoryAdmissionExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -98,7 +98,7 @@ func (e *FactoryAdmissionExecutor) RunJob(ctx context.Context, claim QueueClaim)
 	}
 }
 
-func (e *FactoryAdmissionExecutor) runAdmission(ctx context.Context, claim QueueClaim, runID string, mode FactoryAdmissionMode, work FactoryWorkOrder, handoff FactoryHandoff) (JobExecutionResult, error) {
+func (e *FactoryAdmissionExecutor) runAdmission(ctx context.Context, claim QueueLease, runID string, mode FactoryAdmissionMode, work FactoryWorkOrder, handoff FactoryHandoff) (JobExecutionResult, error) {
 	queue := NewQueue(e.store, QueueOptions{Actor: e.actor, Now: e.now})
 	evaluator := FactoryAdmissionEvaluator{
 		Clock:    e.now,
@@ -147,7 +147,7 @@ func (e *FactoryAdmissionExecutor) runAdmission(ctx context.Context, claim Queue
 	return JobExecutionResult{Artifacts: resultArtifacts}, nil
 }
 
-func (e *FactoryAdmissionExecutor) submitRPIHandoff(ctx context.Context, queue *Queue, claim QueueClaim, runID string, work FactoryWorkOrder, handoff FactoryHandoff) (string, error) {
+func (e *FactoryAdmissionExecutor) submitRPIHandoff(ctx context.Context, queue *Queue, claim QueueLease, runID string, work FactoryWorkOrder, handoff FactoryHandoff) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -180,7 +180,7 @@ func (e *FactoryAdmissionExecutor) submitRPIHandoff(ctx context.Context, queue *
 	return submitted.JobID, nil
 }
 
-func (e *FactoryAdmissionExecutor) appendAdmissionEvent(queue *Queue, claim QueueClaim, decision FactoryAdmissionDecision, artifacts map[string]string) error {
+func (e *FactoryAdmissionExecutor) appendAdmissionEvent(queue *Queue, claim QueueLease, decision FactoryAdmissionDecision, artifacts map[string]string) error {
 	payload := map[string]any{
 		"run_id":         decision.RunID,
 		"work_order_id":  decision.WorkOrderID,

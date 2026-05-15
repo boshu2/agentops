@@ -353,10 +353,6 @@ func buildLearningSectionLocator(heading string, index int, seen map[string]int)
 	return search.BuildLearningSectionLocator(heading, index, seen)
 }
 
-func slugifyLearningSectionHeading(heading string) string {
-	return search.SlugifyLearningSectionHeading(heading)
-}
-
 // processLearningFile parses, filters, and scores a single learning file.
 // Returns the learning and true if it should be included, false otherwise.
 func processLearningFile(file string, queryTokensList []string, now time.Time) (learning, bool) {

@@ -64,8 +64,6 @@ var (
 // long-run prior without spuriously rewarding or punishing learnings.
 const defaultDrainReward = 0.5
 
-var validFeedbackCitationTypes = lifecycle.ValidFeedbackLoopCitationTypes
-
 func init() {
 	feedbackLoopCmd.Hidden = false
 	feedbackLoopCmd.GroupID = "workflow"

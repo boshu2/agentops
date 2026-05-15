@@ -88,9 +88,6 @@ type EventErrorSummary = minePkg.EventErrorSummary
 // GateVerdictSummary captures a gate verdict event from a run.
 type GateVerdictSummary = minePkg.GateVerdictSummary
 
-// validMineSources enumerates the allowed source names.
-var validMineSources = minePkg.ValidSources
-
 func runMine(cmd *cobra.Command, args []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {

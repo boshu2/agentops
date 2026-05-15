@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [contracts-structural-floor, doc-discipline]
+# practices: [design-by-contract, code-complete]
 # Structural enforcement floor for every docs/contracts/*.md file:
 #
 #   1. Contract has a top-level title (# heading on or near line 1)

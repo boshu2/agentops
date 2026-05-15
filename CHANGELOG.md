@@ -7,13 +7,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **`security` domain in eval-suite manifests** — `$defs/domain` enum in `schemas/eval-suite.v1.schema.json` now accepts `security` alongside the existing eight domains. Paired updates land in `cli/internal/eval/coverage.go` (`DefaultCoverageDomains`) and `cli/cmd/ao/cobra_commands_test.go` (`evalCoverageDomains`) so schema, production default, and test fixture stay in lock-step. `ao eval coverage` will report `security` as a missing required domain until a security-domain manifest is authored.
+## [2.41.1] - 2026-05-15
 
 ### Fixed
 
+- **Release CI shipped red in v2.41.0** — the v2.41.0 tag was cut on a commit where three `Validate` checks were already failing; they were masked because the path-filtered CI marks untriggered jobs `skipped` (not `failed`). This patch clears all three: `registry.json` regenerated after the v2.41 arc added 10 `ao` subcommands; `skills/validation/SKILL.md` links `references/flags.md` with a real markdown link so `heal.sh --strict` passes; the `cli-command-surface-matrix` eval baseline + fixture updated to the current heading count (`top=70 sub=173 all=243`); and 7 `/skillname` slash-command references in `skills-codex/{evolve,validation}/SKILL.md` converted to Codex `$skillname` notation so the codex-native install canary passes.
+- **`--oscillation-sweep` removal was incomplete in v2.41.0** — `soc-1q1x` deleted the `ao defrag --oscillation-sweep` flag but the cycle-181 audit only checked Go callers. Seven shell/YAML/doc callsites still referenced the removed flag, breaking the `validate-flywheel-proof` CI gate (`scripts/nightly-dream-cycle.sh` shelled the dead flag). Cleared from `.github/workflows/nightly.yml`, `scripts/nightly-dream-cycle.sh`, `scripts/check-compile-oscillation.sh`, `docs/contracts/dream-run-contract.md`, and the `compile` skill phase docs.
+- **`extract-release-notes.sh` double-blank line** — the awk extractor captured the blank line after the `## [VERSION]` heading; wrapped in the `<details>` boilerplate it produced a double-blank between `<summary>` and the first subsection. Now strips leading/trailing blank lines from the changelog section.
+- **`ci-local-release.sh` secret-scan false positive** — the secret-pattern scan recursively grepped the gitignored `_site/` MkDocs build directory, matching `password:!0` inside minified JS bundles. Added `_site` and `site` to the scan's `--exclude-dir` list.
+
+## [2.41.0] - 2026-05-14
+
+### Added
+
+- **BC ports — 14/14 production-complete.** `FactoryAdmissionPort` (13th, `soc-2klg.1`) + `productionFactoryAdmission` (cycle 139–140) and `ClaimEvidencePort` (14th, `soc-2klg.2`) + `productionClaimEvidence` (cycle 141–142) land the last two BC4 ports, closing the 14-port BC inventory begun in the v2.40.0 cycle. Each port follows the `<port>.go` + `inmemory_<port>.go` + `inmemory_<port>_test.go` triplet plus a `productionX` production adapter, with compile-time interface assertions as drift guards.
+- **10 typed-port-backed `ao` subcommands** — operator-facing CLI now exposes every BC port that needs a script-side surface: `ao loop history` (`productionLoopReader`, cycle 144, slice 1 of `soc-y5vh.5`), `ao ci latest`/`recent` (`productionCIStatus`, cycle 145, slice 2), `ao corpus inject` (`productionCorpusReader`, cycle 146, slice 3; closes `soc-y5vh.5`), `ao operator record`/`list` (cycle 147 — template-applied 1st of 7), `ao harness status` (cycle 148), `ao gate run` (cycle 149), `ao corpus capture` (cycle 150, BC1 R/W pair complete on CLI), `ao loop append` (cycle 151, BC3 R/W pair complete on CLI), `ao citation verify` (cycle 152, BC1 round-trip), `ao claim bind`/`list` (cycle 153, 10th adapter CLI-exposed). Establishes a reusable cycle-shape captured in `docs/learnings/2026-05-13-cli-wiring-cycle-shape.md`.
+- **`ao loop verify`** — audits `.agents/evolve/cycle-history.jsonl` integrity via the typed BC3 `LoopReaderPort` (uses cycle-161 widening). Operator-facing health check on the loop ledger.
+- **`CycleEntry.StartedAt` + `Title` fields** (`soc-ckc4`, ports widening at cycle 161 + writer-side round-trip at cycle 162). Enables the `ao loop verify` audit and richer downstream consumers of the cycle ledger.
+- **BC3 LoopReaderPort operator wrapper** — `scripts/evolve-read-cycle-history.sh` provides `recent [N]` / `latest` / `range START END` modes around `ao loop history`, replacing inline `tail`/`awk`/`jq` shell-outs over the raw `.agents/evolve/cycle-history.jsonl` (`soc-y5vh.4`). Three migrated callsites: `skills/evolve/references/convergence-mechanics.md` Mechanism 1, `skills/evolve/references/oscillation.md` oscillation counter, and `skills/evolve/references/fitness-scoring.md` Oscillation Detection block (`soc-lghj`).
+- **Supergate Gap 3 (loop-closure) bats coverage** — `tests/scripts/check-three-gap-supergate.bats` extended with three tests (happy-path PASS, `goals-validate` FAIL, `flywheel-proof` SKIP) using a PATH-shimmed `go` that produces a controlled `/tmp/ao-sg` (`soc-wxh5.3`). Suite goes 15 → 18 tests; closes the cycle-63 Gap 3 deferral.
+- **Mandatory STEP 1.7.5 release-readiness gates** in `/validation` — auto-detects release context from branch name (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`) or `--release-context` flag and requires `scripts/pre-push-gate.sh` (full, not `--fast`), `scripts/ci-local-release.sh`, and `scripts/generate-cli-reference.sh` cleanliness check when CLI surface changed. Validation refuses to recommend `/release` until all three pass. Codex parity synced.
+- **`/evolve` teardown pre-release checklist** — when the loop runs on a release-shaped branch, the teardown report emits an explicit unchecked checklist (regen CLI docs, full pre-push, `ci-local-release.sh`, optional smoke run) instead of recommending `/release`. The handoff artifact carries the checklist verbatim; "ready to tag" means boxes checked, not cycles green.
+- **Acceptance-Text vs Delivered Drift audit** in `/post-mortem` closure-integrity check — for each closed child, parses the bead `Acceptance:` section, extracts named gates, and WARNs when the close-note does not confirm the gate ran green. Catches the failure mode where a bead's acceptance language drifts from delivered evidence (origin: cycle 182 `soc-w6vh.4`).
+- **`.agents/operator/` write-surface contract entry** — `docs/contracts/agents-write-surfaces.md` now documents the BC4 `OperatorPort` durable-intent log (allowlist + classification row, lifecycle=`rolling`, writer=`cli`).
+
+### Changed
+
+- **`/evolve` Step 0 prior-knowledge retrieval** now routes through the typed BC1 `CorpusReaderPort` (`cli/cmd/ao/corpus_reader_adapter.go`, cycle 112 `productionCorpusReader`) via `ao corpus inject` instead of the legacy `ao lookup` shell-out (`soc-y5vh.1`). Skill text in `skills/evolve/SKILL.md` and `skills-codex/evolve/SKILL.md` synced; codex hashes regenerated.
+- **`/evolve` Step 1.5 healing-first classifier** now routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 `productionCIStatus`) via `ao ci recent --limit 1` instead of an inline `gh run list --workflow validate.yml --json conclusion` (`soc-y5vh.2`). Both callsites (`skills/evolve/SKILL.md` + `skills/evolve/references/convergence-mechanics.md`) updated in lockstep. Zero remaining inline `gh` shell-outs in `/evolve`'s hot read path.
+- **`cli/cmd/ao` coverage floor** raised back to 76 % in `scripts/check-cmd-ao-coverage.sh` after real statement coverage climbed to 76.1 % (23553/30953) on the v2.41-evolve-run baseline (`soc-wxh5.1`). The cycle-60 recalibration to 75 % is reversed.
+- **`/evolve` session-state refresh at Step 0** so the dormancy gate stays correct after long-running cycles harvest follow-ups (cycle 171 retrospective fix).
+- **`/release` skill refactor** — moved Examples + Troubleshooting + the non-HEAD cut-version logic into `references/release-workflow-detail.md` to bring `SKILL.md` back under the `tier=execution` size limit. Behavioral surface unchanged; cycle 169 post-mortem restoration commit restored Examples and Troubleshooting after the initial extraction.
+
+### Fixed
+
+- **`three-gap-supergate` goals-validate sub-gate** — `scripts/check-three-gap-supergate.sh` now `rm -f /tmp/ao-sg` before `go build -o /tmp/ao-sg`. Go refuses to overwrite a non-object file at the build-output path, so any prior process that wrote a non-binary to `/tmp/ao-sg` (including the bats-test shim go) would otherwise wedge the gate. The bats teardown in `tests/scripts/check-three-gap-supergate.bats` also cleans `/tmp/ao-sg` to remove test pollution. Caught by `ao goals measure` (1 failing → 0 failing) — first validation that the new STEP 1.7.5 mechanical gate works on real drift.
+
+### Removed
+
+- **Dead `defrag.SweepOscillatingGoals` function** and all callers (`soc-1q1x` path 1). The function read `.agents/evolve/cycle-history.jsonl` for entries with a `target` field; zero entries have ever had one in production, so callers (`runCompileDefrag`, `runDefragPhases`, `runDreamDefragPreview`) always got empty results. Net removal: 6 files, 17 insertions / 465 deletions — `SweepOscillatingGoals` + 5 helpers + `CountAlternations` + `CycleRecord` + `OscillationResult` + `OscillatingGoal` types + `DefragReport.Oscillation` field + `defragOscillationSweep` flag + `--oscillation-sweep` CLI flag + 9 tests. Build green; 11924 tests pass.
+- **43 dead-code findings swept from `cli/`** — across multiple cycles (156 cleared 10 `staticcheck` U1000 findings, 157 swept 18 more, 158 swept 10 more, 159 swept 5 more from `soc-k083`). Closes long-standing static-analysis backlog; `LoadCycleHistory` deletion (cycle 156) was the canonical example of the dead-code pattern that `soc-1q1x` later applied to oscillation-sweep.
+
+### Internal
+
+- **DDD/Hex architecture rescope arc — 13 cycles closed.** Phase-1 complete + phase-2 retrospective (`docs/rescope/2026-05-13-ddd-hex-architecture-rescope.md`); test-architecture-debt analysis reconciled to deletions; BC ports phase-2 narrowness post-mortem captured (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`).
+- **Learnings catalog hygiene** — README + when-to-add rubric (cycle 134), empirical /loop context-drift study over 87+ cycles (cycle 135), BC-ports wire-up arc retrospective (cycle 122), CLI-wiring cycle-shape template (cycles 144–146), substring sed-rename overreach warning.
+- **Contract drift resolution** — `soc-5yuy` drift #5 resolved via audit; `cli-skills-map.md` refreshed to 70 generated CLI command headings for v2.41-prep BC-arc commands.
+
+## [2.40.0] - 2026-05-13
+
+### Added
+
+- **Practice-citation derivation graph** — `PRACTICE.md` becomes the derivation root for every primitive in the repo. A new `practice-citation derivation graph + advisory CI gate` enforces that every skill, hook, eval suite, CLI command, and schema declares its `practices:` lineage. Twelve backfill passes (`pass-1` through `pass-12`, four `pass-12` waves across `cli/`) reached **756/756 declared** primitives — full repo coverage. Touches `skills/`, `hooks/`, `schemas/`, `evals/agentops-core/`, and `cli/` via `// practice:` comment carriers.
+- **Three-gap supergate (E5 epic)** — `scripts/check-three-gap-supergate.sh` consolidates three release-blocking gates into one entry point with Gap 1 `--strict-coverage` opt-in, wired into `scripts/pre-push-gate.sh` and the `validate-three-gap-supergate` CI workflow. Closes `soc-m47k` and three child gaps.
+- **Contract enforcement gates** — `contracts-structural-floor` (covering all 38 contracts), plus dedicated CI-blocking gates for `factory-admission`, `finding-registry`, `factory-yield-ledger`, `flywheel-compounding-snapshot`, `wiring-closure`, `goals-validate`, `flywheel-proof`, `quarantine-empty`, and `contract-canaries` (`check 24e`). `feat(gate) --two-pass mode` and local-scope default added.
+- **Behavioral eval workbench** — 12 eval tasks, first suite, three fixture components (Go CLI, Python FastAPI, DevOps scripts). Live-agent eval suite with 3 workbench cases, `scripts/eval-agent-harness.sh` wired into the eval CLI, and the suite expanded to all 12 workbench tasks.
+- **Eval CI gates** — `eval-skill-delta` CI gate + nightly schedule template, `eval-workbench-verify` gate (GOALS.md Directive 10), head-to-head delta gate against the baseline scorecard (D10). Run records upload as CI artifacts for triage; Python venv bootstrapped in `agentops-eval-advisory`.
+- **Eval harness primitives** — `context_comprehension` dimension, CDLC identity field, observability feedback loop, and industry-proven eval patterns added to the agent harness.
+- **Unified registry** — Phase 1 added `scripts/generate-registry.sh` + `registry.json` source-of-truth. Phase 2 added a job type, CLI surface, and CI gate (`registry-check`).
+- **Daemon factory-admission lane** — `feat(daemon): add factory admission job specs` + executor + lane validators, paired with `feat(gates): enforce factory-admission contract`.
+- **Daemon RPI agent-update events** — `RPIRunExecutor` emits `agent_update.criterion_verdict` per wave checkpoint (`soc-awx8`) and phase-boundary `agent-update` events (`soc-y0ct.2`).
+- **Daemon scheduling + executors** — wired skill schedules through the daemon, registered eval and planning job types, added a CLI fallback RPI executor.
+- **Nightly automation upgrades** — admission-aware morning digest with durability; manual-PR-only landing policy for evolve; fail-closed execute preflight for source mutation; blocker matrix + main CI baseline artifacts; daemon-submitted dream runs; L3 rehearsal scenario + operator runbook; scheduler install helper + updated runbook; PR digest generator from structured run state.
+- **Five-minute first-value install gate (PG1)** — first-time-user journey is now a release-blocking install proof.
+- **Corpus snapshot/restore + freshness gate (D11)** — durable corpus state with a CI-blocking freshness check.
+- **Hook commit guards** — `feat(hooks)` warns on commits with code-without-test (P2), missing sibling-pattern citation (P3), and missing fitness-delta (P4) in commit messages.
+- **Goals additions** — `code-driven` vs `runtime-artifact` summary split; `SKIP` exit code 77 + flywheel-compounding dormant precondition; `AffectsFiles` sidecar for the open-PR blocker matrix.
+- **New CLI surfaces** — `ao session spawn` (template-driven session launch) and `ao feedback-loop --drain` (clear unfed citation backlog, epic `soc-sx99` W3.1).
+- **Skills framework expansions** — `skill-builder` + `skill-auditor` pair (epic `soc-9bak`, #237); `ao quickstart` + demo surface for `ao schedule` and `ao daemon` (epic `soc-sx99` W2.2); tracer-bullet shape for the `skills/domain` ubiquitous-language corpus; scoped evidence on `/crank` and `/implement` bead closures.
+- **Schedule starter template** — tracked stock starter at `docs/templates/`.
+- **Scripts** — `corpus-stats.sh` + derived `PRODUCT.md` evidence (epic `soc-sx99` W3.3); `evolve-update-session-state.sh` derives session-state from cycle-history tail.
+- **`security` domain in eval-suite manifests** — `$defs/domain` enum in `schemas/eval-suite.v1.schema.json` now accepts `security` alongside the existing eight domains. Paired updates land in `cli/internal/eval/coverage.go` (`DefaultCoverageDomains`) and `cli/cmd/ao/cobra_commands_test.go` (`evalCoverageDomains`) so schema, production default, and test fixture stay in lock-step. `ao eval coverage` will report `security` as a missing required domain until a security-domain manifest is authored.
+
+### Changed
+
+- **Three-layer product model adopted across surfaces** — README, `PRODUCT.md`, `docs/index.md`, and downstream positioning docs aligned to the three-layer (substrate / assurance / bookkeeping) framing with the software-factory + TSMC + in/on-the-loop framing. Eight `docs(positioning)` commits cover the thesis polish, lineage cleanup, link to `vs-compound-engineer.md`, and the closure of `soc-yjzp.9` with empirical Δ=0.
+- **`/release` skill refactored under the size limit + non-HEAD cut support** — `skills/release/SKILL.md` and the Codex twin shrank from 545 lines to a 141-line flow index, with the detail extracted to `references/release-workflow-detail.md`. A new `references/release-cut-and-bump.md` documents the `release/v<ver>` branch pattern for cutting at a non-HEAD SHA. (This is the commit that prepared the v2.40 cut itself.)
+- **RPI lifecycle sharpened** — criterion contract + isolation enforcement + daemon executor swap (`soc-bcrn`, #255). The factory claim ledger reconciled via Wave 1A-D (`soc-e4ulx`, #264).
+- **CI workflow path-filters** — added path-filter conditions to 28 CI jobs (the remaining tail); bats path-filter wired so `.bats` changes gate bats-test jobs; `bats` prints captured output on failure.
+- **CI loop boundaries** — `feat(ci): enforce inner/middle/outer loop boundaries` (#230).
+- **Codex parity drift** — `feat(ci): wire check-codex-parity-drift as CI-blocking + pre-push gate (D7)`.
+- **Skill consolidation** — 12 standalone skills consolidated into `beads`, `review`, `doc`, and `research`; JSM quality playbook slices absorbed in two waves.
+- **Documentation reorg** — `docs(claims)` introduced a public evidence manifest for v2.39 README claims (PG4); `docs(parity)` updated four times; `docs(cdlc)`, `docs(readme)`, `docs(eval)`, `docs(release)`, `docs(positioning)` swept across the catalog.
+- **Dependencies bumped** — `chore(deps)` updates for `mkdocs-material` v9.7.6, `mkdocs-section-index` v0.3.12, `mkdocs-literate-nav` v0.6.3, `mkdocs-include-markdown-plugin` v7, `mkdocs-git-revision-date-localized-plugin` v1.5.1, `mkdocs-gen-files` v0.6.1, `linkchecker` v10.6.0, `pymdown-extensions` v10.21.2, Python 3.14, `dorny/paths-filter` v4. `deps(go)`: `pgregory.net/rapid` minor bump in `cli/` plus a go-minor-patch group bump (#268).
+
+### Fixed
+
+- **`fix(ci)`** — registry non-determinism + pre-push goals-validate fallback; structural CI failures from cycles 45-47; `registry.json` knowledge_stores and schedules must match gitignored-state regen (epic `soc-sx99`); refreshed registry generation; bumped CLI surface counts after `patterns repair-filenames` addition; close practice-provenance validator gaps; `--single-pass` on pre-push-gate tests broken by `--two-pass` default.
+- **`fix(eval)`** — six fixes covering eval canary refresh, advisory job stabilization, run-record upload reliability, and miscellaneous workbench-suite drift.
+- **`fix(hooks)`** — reconcile stale `.agents/.gitignore` deny-all with parent allowlist (`soc-rv5p`, #263); prove `pre-push` transmits refs (#254).
+- **`fix(codex)`** — migrate deprecated hooks flag; remove dead Claude-specific references and runtime markers from the codex research skill.
+- **`fix(cli/rpi)`** — three correctness fixes around RPI scoping and isolation enforcement.
+- **`fix(daemon)`** — bound daemon RPI GasCity sessions; close unused-variable in `generate-registry.sh`; refresh CI registry after worker-spec additions.
+- **`fix(flywheel-lifecycle)`** — survive sparse corpus in Stage 5.
+- **`fix(next-work)`** — add `dream-degraded` to the source enum.
+- **`fix(nightly)`**, **`fix(harvest)`**, **`fix(audit-truth)`**, **`fix(evolve)`**, **`fix(parity)`**, **`fix(worktree)`**, **`fix(coverage)`**, **`fix(skills)`**, **`fix(quickstart)`**, **`fix(scripts)`**, **`fix(docs)`**, **`fix(gates)`**, **`fix(pre-push)`**, **`fix(heal,lint)`**, **`fix(rpi)`** — a long tail of single-file fixes touching individual gates, scripts, and surfaces during the nightly close-loop cycles.
 - **GitHub eval advisory setup** — the `agentops-eval-advisory` job now installs the deterministic canary toolchain (`jq`, `ripgrep`, `bats`, `bd`, and `gocyclo`) and initializes a disposable bd database before running `scripts/eval-agentops.sh --fast`, matching the local environment expected by the public canaries.
+
+### Internal
+
+- **RPI loop pass consumption** — 10 `chore(rpi)` consumption commits drove the practice-citation backfill epic through 12 passes, closing the `cli/` design pass and exhausting the schemas/hooks/evals pools en route to `756/756 declared`.
+- **Tests** — `test(cmd/ao)`: beads citation-verify functions, beads human-formatter functions, `runBeads*` graceful-degradation paths, `TestSanitizeDaemonSkillInvokeArtifactName` 0%-coverage hole closed.
+- **Refactors** — `refactor(daemon)` extracted routing-lane validators to drop cyclomatic complexity (two commits); `refactor(dream)` promoted probe shapes to the registry.
+- **Codex artifact hashes** regenerated after enum updates and after merges.
+- **Skill counts synced** to 71 after the consolidation passes.
+- **Two nightly autonomous runs landed** — `Nightly 2026-05-06` (3 productive cycles, +1 code-driven goal, fitness 94.29 → 100.00, #235) and `Nightly 2026-05-07` (3 productive cycles, +0 code-driven goals already 100, 2 audit-truth regressions fixed).
+- **Drain open `next-work.jsonl`** — six PRs bundled into one branch (epic `soc-xlw8`, #266).
 
 ## [2.39.0] - 2026-05-04
 
@@ -199,7 +298,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Codex native hooks** — AgentOps hooks now install natively into Codex CLI v0.115.0+ via `~/.codex/hooks.json`; 8 hooks wired (session-start, inject, flywheel-close, prompt-nudge, quality-signals, go-test-precommit, commit-review, ratchet-advance); installer enables `codex_hooks` feature and upgrades from hookless fallback to native hook runtime
+- **Codex native hooks** — AgentOps hooks now install natively into Codex CLI v0.115.0+ via `~/.codex/hooks.json`; 8 hooks wired (session-start, inject, flywheel-close, prompt-nudge, quality-signals, go-test-precommit, commit-review, ratchet-advance); installer enables the `hooks` feature flag, migrates deprecated `codex_hooks` configs, and upgrades from hookless fallback to native hook runtime
 - **Knowledge compiler skill** — renamed athena → `/compile` with Karpathy-style incremental compilation, pluggable LLM backend (`AGENTOPS_COMPILE_RUNTIME=ollama|claude`), interlinked markdown wiki output at `.agents/compiled/`
 - **App struct dependency injection** — `App` struct carries `ExecCommand`, `LookPath`, `RandReader`, `Stdout`, `Stderr` seams; gc bridge, events, executor, context relevance, tracker health, and stream modules accept injected dependencies instead of mutable package-level vars
 - **Test shuffle in CI** — `-shuffle=on` added to `validate.yml` and `Makefile` test targets, exposing and fixing 6 ordering-dependent tests (cobra flag leaks, maturity var leaks, env var leaks)

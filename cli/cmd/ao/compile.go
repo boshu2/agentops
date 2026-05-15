@@ -351,9 +351,6 @@ func runCompileDefrag(cwd string, dryRun bool) error {
 	if _, err := lifecycle.ExecuteDedup(cwd, dryRun); err != nil {
 		return err
 	}
-	if _, err := lifecycle.SweepOscillatingGoals(cwd); err != nil {
-		return err
-	}
 	return nil
 }
 

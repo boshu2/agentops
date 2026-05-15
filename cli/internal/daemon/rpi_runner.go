@@ -177,10 +177,10 @@ func (r *RPIRunner) RunRPIJob(ctx context.Context, jobID string) (RPIJobRunResul
 	return r.runClaimedJob(ctx, claim)
 }
 
-func (r *RPIRunner) claimNextRPIJob() (QueueClaim, error) {
+func (r *RPIRunner) claimNextRPIJob() (QueueLease, error) {
 	snapshot, err := r.queue.Snapshot()
 	if err != nil {
-		return QueueClaim{}, err
+		return QueueLease{}, err
 	}
 	for _, job := range snapshot.Jobs {
 		if !isRPIJobType(job.JobType) {
@@ -191,14 +191,14 @@ func (r *RPIRunner) claimNextRPIJob() (QueueClaim, error) {
 			continue
 		}
 		if err != nil {
-			return QueueClaim{}, err
+			return QueueLease{}, err
 		}
 		return claim, nil
 	}
-	return QueueClaim{}, ErrNoRPIJobs
+	return QueueLease{}, ErrNoRPIJobs
 }
 
-func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueClaim) (RPIJobRunResult, error) {
+func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueLease) (RPIJobRunResult, error) {
 	_ = r.writeRPIRegistryProjection()
 	stopHeartbeat := r.startHeartbeat(ctx, claim)
 	defer stopHeartbeat()
@@ -252,7 +252,7 @@ func (r *RPIRunner) runClaimedJob(ctx context.Context, claim QueueClaim) (RPIJob
 // been claimed by some caller (the supervisor's claim path is one such
 // caller; the operator-driven `ao rpi run` is another). It does not handle
 // claim, heartbeat, or terminal write — those are the caller's responsibility.
-func (r *RPIRunner) ExecuteClaim(ctx context.Context, claim QueueClaim) (map[string]string, string, error) {
+func (r *RPIRunner) ExecuteClaim(ctx context.Context, claim QueueLease) (map[string]string, string, error) {
 	switch claim.Job.JobType {
 	case JobTypeRPIRun:
 		spec, err := RPIRunJobSpecFromPayload(claim.Job.Payload)
@@ -272,7 +272,7 @@ func (r *RPIRunner) ExecuteClaim(ctx context.Context, claim QueueClaim) (map[str
 	}
 }
 
-func (r *RPIRunner) executeRun(ctx context.Context, claim QueueClaim, spec RPIRunJobSpec) (map[string]string, string, error) {
+func (r *RPIRunner) executeRun(ctx context.Context, claim QueueLease, spec RPIRunJobSpec) (map[string]string, string, error) {
 	artifacts := map[string]string{}
 	for phase := spec.StartPhase; phase <= spec.MaxPhase; phase++ {
 		phaseSpec := NewRPIPhaseJobSpec(spec.RunID, spec.Goal, phase)
@@ -295,7 +295,7 @@ func (r *RPIRunner) executeRun(ctx context.Context, claim QueueClaim, spec RPIRu
 	return artifacts, spec.RunID, nil
 }
 
-func (r *RPIRunner) executePhase(ctx context.Context, claim QueueClaim, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
+func (r *RPIRunner) executePhase(ctx context.Context, claim QueueLease, req RPIPhaseExecutionRequest) (RPIPhaseExecutionResult, error) {
 	if strings.TrimSpace(req.Prompt) == "" {
 		prompt, err := r.promptBuilder.BuildRPIPrompt(req)
 		if err != nil {
@@ -320,7 +320,7 @@ func (r *RPIRunner) executePhase(ctx context.Context, claim QueueClaim, req RPIP
 	return result, err
 }
 
-func (r *RPIRunner) recordPhaseProgress(claim QueueClaim) RPIPhaseProgressFunc {
+func (r *RPIRunner) recordPhaseProgress(claim QueueLease) RPIPhaseProgressFunc {
 	return func(ctx context.Context, progress RPIPhaseProgress) error {
 		select {
 		case <-ctx.Done():
@@ -347,7 +347,7 @@ func (r *RPIRunner) recordPhaseProgress(claim QueueClaim) RPIPhaseProgressFunc {
 	}
 }
 
-func (r *RPIRunner) startHeartbeat(ctx context.Context, claim QueueClaim) func() {
+func (r *RPIRunner) startHeartbeat(ctx context.Context, claim QueueLease) func() {
 	interval := r.heartbeatInterval
 	if interval <= 0 {
 		interval = r.queue.opts.LeaseDuration / 2
@@ -884,7 +884,7 @@ func captureGasCityRPIEvidence(ctx context.Context, client GasCityRPIClient, req
 	return path, nil
 }
 
-func requestFromPhaseSpec(root string, claim QueueClaim, spec RPIPhaseJobSpec) RPIPhaseExecutionRequest {
+func requestFromPhaseSpec(root string, claim QueueLease, spec RPIPhaseJobSpec) RPIPhaseExecutionRequest {
 	return RPIPhaseExecutionRequest{
 		Root:                root,
 		JobID:               claim.Job.JobID,

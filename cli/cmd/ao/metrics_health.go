@@ -372,8 +372,6 @@ func countUniqueSessions(citations []types.CitationEvent) int {
 	return quality.CountUniqueSessions(citations)
 }
 
-func loadCycleHistory(baseDir string) []map[string]any { return quality.LoadCycleHistory(baseDir) }
-
 // printHealthTable prints a formatted health metrics table.
 func printHealthTable(w io.Writer, hm *healthMetrics) {
 	fmt.Fprintln(w)

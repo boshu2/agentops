@@ -15,30 +15,25 @@ import (
 )
 
 var (
-	defragPrune            bool
-	defragDedup            bool
-	defragOscillationSweep bool
-	defragStaleDays        int
-	defragOutputDir        string
-	defragQuiet            bool
+	defragPrune     bool
+	defragDedup     bool
+	defragStaleDays int
+	defragOutputDir string
+	defragQuiet     bool
 )
 
 // Type aliases for cmd/ao test compatibility.
 type DefragReport = lifecycle.DefragReport
 type PruneResult = lifecycle.PruneResult
 type DefragDedupResult = lifecycle.DefragDedupResult
-type OscillationResult = lifecycle.OscillationResult
-type OscillatingGoal = lifecycle.OscillatingGoal
-type cycleRecord = lifecycle.CycleRecord
 
 var defragCmd = &cobra.Command{
 	Use:   "defrag",
-	Short: "Prune, deduplicate, and sweep oscillating goals from .agents/",
+	Short: "Prune and deduplicate .agents/ learning artifacts",
 	Long: `Defrag performs mechanical cleanup of the knowledge base:
 
-  --prune             Find orphaned learnings (no references, >N days old)
-  --dedup             Flag learnings with >80% content similarity
-  --oscillation-sweep Read evolve cycle history; flag goals alternating >=3 cycles
+  --prune  Find orphaned learnings (no references, >N days old)
+  --dedup  Flag learnings with >80% content similarity
 
 By default, defrag applies prune/dedup changes unless you pass the global
 --dry-run flag. Use ao --dry-run defrag ... to inspect the report without
@@ -47,8 +42,8 @@ deleting orphaned or duplicate learnings.
 Output: .agents/defrag/YYYY-MM-DD.json with full delta report.
 
 Examples:
-  ao --dry-run defrag --prune --dedup --oscillation-sweep   # full report only
-  ao defrag --prune --stale-days 14                         # apply prune/delete rules`,
+  ao --dry-run defrag --prune --dedup           # full report only
+  ao defrag --prune --stale-days 14             # apply prune/delete rules`,
 	RunE: runDefrag,
 }
 
@@ -59,8 +54,6 @@ func init() {
 		"Find orphaned learnings not referenced in patterns or research")
 	defragCmd.Flags().BoolVar(&defragDedup, "dedup", false,
 		"Flag learnings with >80% content similarity")
-	defragCmd.Flags().BoolVar(&defragOscillationSweep, "oscillation-sweep", false,
-		"Flag evolve goals alternating improved/fail >=3 consecutive cycles")
 	defragCmd.Flags().IntVar(&defragStaleDays, "stale-days", 30,
 		"Days after which an unreferenced learning is considered stale")
 	defragCmd.Flags().StringVar(&defragOutputDir, "output-dir", ".agents/defrag",
@@ -90,10 +83,9 @@ func runDefrag(cmd *cobra.Command, args []string) error {
 }
 
 func defragDefaultModes() {
-	if !defragPrune && !defragDedup && !defragOscillationSweep {
+	if !defragPrune && !defragDedup {
 		defragPrune = true
 		defragDedup = true
-		defragOscillationSweep = true
 	}
 }
 
@@ -112,14 +104,6 @@ func runDefragPhases(cwd string, isDryRun bool, report *DefragReport) error {
 			return err
 		}
 		report.Dedup = result
-	}
-
-	if defragOscillationSweep {
-		result, err := lifecycle.SweepOscillatingGoals(cwd)
-		if err != nil {
-			return fmt.Errorf("oscillation sweep: %w", err)
-		}
-		report.Oscillation = result
 	}
 
 	return nil
@@ -144,10 +128,6 @@ func findDuplicateLearnings(cwd string) (*DefragDedupResult, error) {
 }
 func buildTrigrams(text string) map[string]bool   { return lifecycle.BuildTrigrams(text) }
 func trigramOverlap(a, b map[string]bool) float64 { return lifecycle.TrigramOverlap(a, b) }
-func sweepOscillatingGoals(cwd string) (*OscillationResult, error) {
-	return lifecycle.SweepOscillatingGoals(cwd)
-}
-func countAlternations(records []cycleRecord) int { return lifecycle.CountAlternations(records) }
 
 // writeDefragReport writes the report as dated JSON and latest.json.
 func writeDefragReport(dir string, r *DefragReport, w io.Writer) error {
@@ -200,9 +180,5 @@ func printDefragSummary(w io.Writer, r *DefragReport) {
 	if r.Dedup != nil {
 		fmt.Fprintf(w, "  Dedup: %d checked, %d duplicate pairs\n",
 			r.Dedup.Checked, len(r.Dedup.DuplicatePairs))
-	}
-	if r.Oscillation != nil {
-		fmt.Fprintf(w, "  Oscillation: %d oscillating goals\n",
-			len(r.Oscillation.OscillatingGoals))
 	}
 }

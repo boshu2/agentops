@@ -163,7 +163,38 @@ else
     fail "session-start remains silent in manual mode"
 fi
 
-# Test 14c: session-start can stage a factory briefing silently when startup goal exists
+# Test 14c: Codex startup migrates the deprecated hooks feature flag silently
+MOCK_CODEX_REPO="$TMPDIR/mock-codex-start"
+MOCK_CODEX_HOME="$TMPDIR/mock-codex-home"
+mkdir -p "$MOCK_CODEX_REPO" "$MOCK_CODEX_HOME"
+git -C "$MOCK_CODEX_REPO" init -q >/dev/null 2>&1
+cat > "$MOCK_CODEX_HOME/config.toml" <<'EOF'
+model = "gpt-5.2"
+
+[features]
+shell_tool = true
+codex_hooks = true
+
+[history]
+persistence = "save-all"
+EOF
+CODEX_OUTPUT=$(cd "$MOCK_CODEX_REPO" && \
+    CODEX_HOME="$MOCK_CODEX_HOME" \
+    CODEX_THREAD_ID="test-thread" \
+    bash "$HOOKS_DIR/session-start.sh" 2>/dev/null || true)
+if [ -z "$CODEX_OUTPUT" ]; then
+    pass "session-start migrates Codex feature flag silently"
+else
+    fail "session-start migrates Codex feature flag silently"
+fi
+if grep -q '^hooks = true$' "$MOCK_CODEX_HOME/config.toml" \
+    && ! grep -q '^codex_hooks[[:space:]]*=' "$MOCK_CODEX_HOME/config.toml"; then
+    pass "session-start rewrites codex_hooks to hooks"
+else
+    fail "session-start rewrites codex_hooks to hooks"
+fi
+
+# Test 14d: session-start can stage a factory briefing silently when startup goal exists
 MOCK_FACTORY_START="$TMPDIR/mock-factory-start"
 mkdir -p "$MOCK_FACTORY_START/.agents/handoff" "$MOCK_FACTORY_START/bin"
 git -C "$MOCK_FACTORY_START" init -q >/dev/null 2>&1
@@ -2289,6 +2320,9 @@ echo "=== Coverage check ==="
 # ============================================================
 
 # Verify every .sh hook file has at least one test
+# Test files may end in either .sh (legacy shell) or .bats (BATS suite);
+# both are valid coverage targets. The glob below includes both extensions
+# across the three canonical test directories.
 MISSING_HOOKS=""
 for hook_file in "$HOOKS_DIR"/*.sh; do
     hook_name=$(basename "$hook_file" .sh)
@@ -2296,8 +2330,11 @@ for hook_file in "$HOOKS_DIR"/*.sh; do
     COVERAGE_FILES=("$SCRIPT_DIR/test-hooks.sh" "$SCRIPT_DIR/hook-stdin-contracts.bats")
     for candidate in \
         "$SCRIPT_DIR/test-${hook_name}"*.sh \
+        "$SCRIPT_DIR/test-${hook_name}"*.bats \
         "$REPO_ROOT/tests/skills/test-${hook_name}"*.sh \
-        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.sh; do
+        "$REPO_ROOT/tests/skills/test-${hook_name}"*.bats \
+        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.sh \
+        "$REPO_ROOT/tests/scripts/test-${hook_name}"*.bats; do
         [ -e "$candidate" ] && COVERAGE_FILES+=("$candidate")
     done
     if ! grep -rq "$hook_name" "${COVERAGE_FILES[@]}" 2>/dev/null; then

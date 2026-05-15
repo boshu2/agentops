@@ -762,8 +762,6 @@ func calculateCASSScore(data map[string]any) float64 {
 	return search.CalculateCASSScore(data)
 }
 
-var maturityWeights = search.MaturityWeights
-
 func maturityToWeight(data map[string]any) float64 {
 	return search.MaturityToWeight(data)
 }

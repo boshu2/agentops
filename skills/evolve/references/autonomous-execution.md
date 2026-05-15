@@ -16,7 +16,7 @@ Inside the Claude-Code harness, `ao evolve` (the terminal-native loop) is not th
 - Scout cycle: `delaySeconds=600` — bigger gap, no cache reload cost since context isn't reused.
 - Idle cycle: `delaySeconds=1800` — coarse poll for fresh signal.
 
-Hard stops MUST NOT call `ScheduleWakeup`: KILL/STOP files, dormancy reached, `CONTEXT_BUDGET_EXHAUSTED` (see `references/context-budget.md`), or `--max-cycles` cap hit. The terminal-mode `ao evolve` loop and the Claude-Code `ScheduleWakeup` loop are duals: both drive Step 1..Step 7 repeatedly, both honor the same kill switches and stop conditions, both persist resume state via `.agents/evolve/session-state.json`.
+Hard stops MUST NOT call `ScheduleWakeup`: KILL/STOP files, dormancy reached, `CONTEXT_BUDGET_EXHAUSTED` (see `references/context-budget.md`), or `--max-cycles` cap hit. When dormancy fires (Step 3 hard-gate), `/evolve` writes `.agents/evolve/DORMANT` and Step 1 short-circuits on subsequent fires before any further tool calls — this is the operational enforcement of the "no ScheduleWakeup on dormancy" rule (see `references/cycle-history.md` for the marker semantics). The terminal-mode `ao evolve` loop and the Claude-Code `ScheduleWakeup` loop are duals: both drive Step 1..Step 7 repeatedly, both honor the same kill switches and stop conditions, both persist resume state via `.agents/evolve/session-state.json`.
 
 ## Each Cycle = Complete /rpi Run
 

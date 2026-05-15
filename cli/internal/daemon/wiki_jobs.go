@@ -167,7 +167,7 @@ func (r *WikiForgeRunner) RunWikiForgeJob(ctx context.Context, jobID string) (Wi
 	return r.runClaimedWikiForgeJob(ctx, claim)
 }
 
-func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim QueueClaim) (WikiForgeJobRunResult, error) {
+func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim QueueLease) (WikiForgeJobRunResult, error) {
 	if claim.Job.JobType != JobTypeWikiForge {
 		return WikiForgeJobRunResult{}, fmt.Errorf("job %s type %s is not %s", claim.Job.JobID, claim.Job.JobType, JobTypeWikiForge)
 	}
@@ -266,7 +266,7 @@ func (r *WikiForgeRunner) runClaimedWikiForgeJob(ctx context.Context, claim Queu
 	}, nil
 }
 
-func (r *WikiForgeRunner) failWikiForgeJob(claim QueueClaim, failure JobFailure) WikiForgeJobRunResult {
+func (r *WikiForgeRunner) failWikiForgeJob(claim QueueLease, failure JobFailure) WikiForgeJobRunResult {
 	job, err := r.queue.FailJob(FailJobInput{
 		JobID:      claim.Job.JobID,
 		RequestID:  RequestID(claim.Job.RequestID),
@@ -410,7 +410,7 @@ func expandWikiForgeSourcePaths(paths []string) ([]string, error) {
 	return out, nil
 }
 
-func newWikiForgePromptContext(claim QueueClaim, spec WikiForgeJobSpec, sourcePath string) (wikiForgePromptContext, error) {
+func newWikiForgePromptContext(claim QueueLease, spec WikiForgeJobSpec, sourcePath string) (wikiForgePromptContext, error) {
 	sourceBytes, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return wikiForgePromptContext{}, fmt.Errorf("read wiki forge source %q: %w", sourcePath, err)

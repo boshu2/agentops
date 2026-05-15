@@ -21,7 +21,7 @@ type SkillInvokeJobSpec struct {
 
 type SkillInvokeRequest struct {
 	Spec  SkillInvokeJobSpec
-	Claim QueueClaim
+	Claim QueueLease
 	Root  string
 }
 
@@ -55,7 +55,7 @@ func (e *SkillInvokeExecutor) JobTypes() []JobType {
 	return []JobType{JobTypeSkillInvoke}
 }
 
-func (e *SkillInvokeExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *SkillInvokeExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}

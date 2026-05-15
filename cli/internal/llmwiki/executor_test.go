@@ -26,8 +26,8 @@ func (f *fakeHandler) Run(_ context.Context, _ string, attempt int) (StageResult
 	return StageResult{Stage: f.stage, Attempt: attempt}, nil
 }
 
-func mkClaim(jobType daemon.JobType, payload map[string]any, attempt int) daemon.QueueClaim {
-	return daemon.QueueClaim{
+func mkClaim(jobType daemon.JobType, payload map[string]any, attempt int) daemon.QueueLease {
+	return daemon.QueueLease{
 		Job: daemon.QueueJobState{
 			JobID:   "job-test",
 			JobType: jobType,

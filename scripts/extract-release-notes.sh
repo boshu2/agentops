@@ -34,6 +34,12 @@ CHANGELOG_SECTION=$(awk -v ver="$VERSION" '
   found { print }
 ' "$CHANGELOG")
 
+# Strip leading + trailing blank lines so the section doesn't introduce
+# double-blanks when wrapped in `echo ""` boilerplate by the formatters below.
+CHANGELOG_SECTION="$(printf '%s\n' "$CHANGELOG_SECTION" \
+  | awk 'NF { found = 1 } found' \
+  | awk 'NF { last = NR } { line[NR] = $0 } END { for (i = 1; i <= last; i++) print line[i] }')"
+
 if [[ -z "$CHANGELOG_SECTION" ]]; then
   echo "ERROR: No CHANGELOG entry for $VERSION — add entry before releasing" >&2
   exit 1

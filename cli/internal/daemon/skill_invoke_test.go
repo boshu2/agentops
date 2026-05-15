@@ -54,7 +54,7 @@ func TestSkillInvokeExecutorRunsInjectedFunc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToJobSpec: %v", err)
 	}
-	result, err := exec.RunJob(context.Background(), QueueClaim{Job: QueueJobState{
+	result, err := exec.RunJob(context.Background(), QueueLease{Job: QueueJobState{
 		JobID:   job.ID,
 		JobType: job.Type,
 		Payload: job.Payload,
@@ -91,7 +91,7 @@ func TestSkillInvokeExecutorReturnsRunnerErrorWithArtifacts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToJobSpec: %v", err)
 	}
-	result, err := exec.RunJob(context.Background(), QueueClaim{Job: QueueJobState{
+	result, err := exec.RunJob(context.Background(), QueueLease{Job: QueueJobState{
 		JobID:   job.ID,
 		JobType: job.Type,
 		Payload: job.Payload,

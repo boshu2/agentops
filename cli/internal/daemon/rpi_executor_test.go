@@ -70,7 +70,7 @@ func TestRPIJobExecutorRunJobRejectsNonRPIJobType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new executor: %v", err)
 	}
-	claim := QueueClaim{Job: QueueJobState{JobID: "job-wiki", JobType: JobTypeWikiForge}}
+	claim := QueueLease{Job: QueueJobState{JobID: "job-wiki", JobType: JobTypeWikiForge}}
 	_, runErr := exec.RunJob(context.Background(), claim)
 	if runErr == nil {
 		t.Fatal("expected error for non-rpi job type")
@@ -98,7 +98,7 @@ func TestRPIJobExecutorRunJobExecutesPhaseSpec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("payload: %v", err)
 	}
-	claim := QueueClaim{
+	claim := QueueLease{
 		Job: QueueJobState{
 			JobID:   jobSpec.ID,
 			JobType: jobSpec.Type,
@@ -149,7 +149,7 @@ func TestRPIJobExecutorRunJobPropagatesRunPhaseTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("payload: %v", err)
 	}
-	_, err = exec.RunJob(context.Background(), QueueClaim{
+	_, err = exec.RunJob(context.Background(), QueueLease{
 		Job: QueueJobState{
 			JobID:   jobSpec.ID,
 			JobType: jobSpec.Type,
@@ -181,7 +181,7 @@ func TestRPIJobExecutorRunJobPropagatesPhaseExecutorError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("payload: %v", err)
 	}
-	claim := QueueClaim{
+	claim := QueueLease{
 		Job: QueueJobState{
 			JobID:   jobSpec.ID,
 			JobType: jobSpec.Type,

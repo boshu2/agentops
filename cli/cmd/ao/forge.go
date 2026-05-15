@@ -56,11 +56,7 @@ const (
 // issueIDPattern matches beads issue IDs like "ol-0001", "at-v123", "gt-abc-def".
 var issueIDPattern = regexp.MustCompile(`\b([a-z]{2,3})-([a-z0-9]{3,7}(?:-[a-z0-9]+)?)\b`)
 
-var (
-	sessionUUIDPattern             = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
-	sessionClaudeTranscriptPattern = regexp.MustCompile(`(ses_[A-Za-z0-9]+)`)
-	errTranscriptHasNoChatMessages = errors.New("transcript has no chat messages")
-)
+var errTranscriptHasNoChatMessages = errors.New("transcript has no chat messages")
 
 var forgeCmd = &cobra.Command{
 	Use:   "forge",

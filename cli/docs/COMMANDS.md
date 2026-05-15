@@ -117,6 +117,107 @@ ao badge [flags]
 
 ---
 
+### `ao ci`
+
+Operations on CI run history via the typed BC2 CIStatusPort. The 'latest' subcommand wraps 'gh run list --commit <sha>' through productionCIStatus; 'recent' wraps the unbound-by-sha variant.
+
+```
+ao ci [command]
+```
+
+**Subcommands:**
+
+#### `ao ci latest`
+
+Get the most recent CI run for a given commit SHA via the typed
+
+```
+ao ci latest <sha> [flags]
+```
+
+#### `ao ci recent`
+
+List recent CI runs (any SHA) via productionCIStatus. Default
+
+```
+ao ci recent [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for recent
+      --limit int   max runs to emit (0 = all up to port cap of 50) (default 10)
+```
+
+---
+
+### `ao citation`
+
+Verify citation freshness via the typed BC1 CitationPort. Useful for cross-repo citation auditing and dream-loop staleness checks.
+
+```
+ao citation [command]
+```
+
+**Subcommands:**
+
+#### `ao citation verify`
+
+Verify a single citation (file, function, or symbol) against HEAD
+
+```
+ao citation verify --kind <file|function|symbol> --raw <text> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for verify
+      --kind string   citation kind (required: file|function|symbol)
+      --raw string    citation text to verify (required)
+```
+
+---
+
+### `ao claim`
+
+Bind claims to evidence files at a promotion level (PG1-PG4) and list existing bindings, via the typed BC2 ClaimEvidenceBinderPort.
+
+```
+ao claim [command]
+```
+
+**Subcommands:**
+
+#### `ao claim bind`
+
+Append (or upgrade) a claim→evidence binding via the typed BC2
+
+```
+ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [flags]
+```
+
+**Flags:**
+
+```
+      --anchor stringArray   optional in-file anchors (repeatable)
+      --claim string         claim ID (required, e.g. AOP-CLAIM-X)
+  -h, --help                 help for bind
+      --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
+      --path string          evidence file path (required, relative to repo root)
+```
+
+#### `ao claim list`
+
+Emit all known claim→evidence bindings via the typed BC2 ClaimEvidenceBinderPort. Output is line-delimited JSON.
+
+```
+ao claim list [flags]
+```
+
+---
+
 ### `ao constraint`
 
 Manage constraints compiled from promoted findings.
@@ -397,6 +498,106 @@ ao gate reject <candidate-id> [flags]
       --reason string   Required rejection reason
 ```
 
+#### `ao gate run`
+
+Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
+
+```
+ao gate run <name> [flags]
+```
+
+---
+
+### `ao harness`
+
+Inspect the sync state between the canonical skills/ tree and the skills-codex/ mirror via the typed BC5 HarnessPort. Useful as a typed alternative to scripts/audit-codex-parity.sh for drift detection.
+
+```
+ao harness [command]
+```
+
+**Subcommands:**
+
+#### `ao harness status`
+
+Emit HarnessSkillSync entries via the typed BC5 HarnessPort
+
+```
+ao harness status [--skill <name>] [--out-of-sync-only] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for status
+      --out-of-sync-only   emit only entries with OutOfSync=true
+      --skill string       filter to one skill name (empty = all)
+```
+
+---
+
+### `ao loop`
+
+Operations on the /evolve cycle history and related Loop bounded-context state. The 'history' subcommand reads .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop [command]
+```
+
+**Subcommands:**
+
+#### `ao loop append`
+
+Append a new entry to .agents/evolve/cycle-history.jsonl via the
+
+```
+ao loop append --mode <m> --result <r> [flags]
+```
+
+**Flags:**
+
+```
+      --commit string      git commit SHA (optional)
+      --cycle int          cycle number (0 = auto-assign max+1)
+  -h, --help               help for append
+      --milestone string   milestone note (optional)
+      --mode string        cycle mode (required)
+      --result string      cycle result: improved|harvested|unchanged|idle (required)
+```
+
+#### `ao loop history`
+
+Read .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop history [flags]
+```
+
+**Flags:**
+
+```
+      --end int     end cycle number (inclusive; 0 = unbounded)
+  -h, --help        help for history
+      --latest      emit only the latest entry
+      --limit int   max entries to emit (0 = all)
+      --start int   start cycle number (inclusive; 0 = unbounded)
+```
+
+#### `ao loop verify`
+
+Audit .agents/evolve/cycle-history.jsonl integrity via the typed
+
+```
+ao loop verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for verify
+      --max-idle int   max acceptable trailing idle/unchanged streak before flagging dormancy (default 5)
+```
+
 ---
 
 ### `ao maturity`
@@ -513,6 +714,43 @@ ao metrics report [flags]
 ```
       --days int   Period in days for metrics calculation (default 7)
   -h, --help       help for report
+```
+
+---
+
+### `ao operator`
+
+Read and write operator intents via the typed BC4 OperatorPort. Intents are durable records of operator decisions (halt, rescope, handoff) appended to .agents/operator/intents.jsonl.
+
+```
+ao operator [command]
+```
+
+**Subcommands:**
+
+#### `ao operator list`
+
+Emit recorded OperatorIntents from .agents/operator/intents.jsonl
+
+```
+ao operator list [flags]
+```
+
+#### `ao operator record`
+
+Append an OperatorIntent to .agents/operator/intents.jsonl via the
+
+```
+ao operator record --kind <kind> [--subject S] [--note N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for record
+      --kind string      intent kind (required: halt|rescope|handoff|other)
+      --note string      free-text note
+      --subject string   intent subject (e.g., bd ID, file path)
 ```
 
 ---
@@ -2847,6 +3085,26 @@ ao corpus [command]
 
 **Subcommands:**
 
+#### `ao corpus capture`
+
+Write an artifact to a corpus root via the typed BC1
+
+```
+ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...] [flags]
+```
+
+**Flags:**
+
+```
+      --body string        body text (mutually exclusive with --body-file and --body-stdin)
+      --body-file string   read body from file
+      --body-stdin         read body from stdin
+  -h, --help               help for capture
+      --meta stringArray   metadata key=value (repeatable)
+      --path string        relative path within root (required)
+      --root string        corpus root (default: .agents/learnings/)
+```
+
 #### `ao corpus fitness`
 
 Compute the corpus-quality fitness vector for the current .agents/
@@ -2860,6 +3118,23 @@ ao corpus fitness [flags]
 ```
   -h, --help   help for fitness
       --json   Emit the fitness vector as JSON
+```
+
+#### `ao corpus inject`
+
+Read knowledge from a corpus root via the typed BC1
+
+```
+ao corpus inject [--query <text>] [--root <path>] [--limit N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for inject
+      --limit int      max items to emit (0 = all) (default 10)
+      --query string   ranking query (empty = all items, score 0)
+      --root string    corpus root (default: .agents/learnings/)
 ```
 
 #### `ao corpus restore`
@@ -2912,7 +3187,6 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
-      --oscillation-sweep   Flag evolve goals alternating improved/fail >=3 consecutive cycles
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output

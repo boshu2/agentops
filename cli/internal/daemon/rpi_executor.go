@@ -62,7 +62,7 @@ func (e *RPIJobExecutor) JobTypes() []JobType {
 // per-job execution.
 //
 // RunJob requires a non-nil ctx; callers passing nil will panic on first use.
-func (e *RPIJobExecutor) RunJob(ctx context.Context, claim QueueClaim) (JobExecutionResult, error) {
+func (e *RPIJobExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	if !isRPIJobType(claim.Job.JobType) {
 		return JobExecutionResult{}, fmt.Errorf("rpi executor does not support job type %s", claim.Job.JobType)
 	}

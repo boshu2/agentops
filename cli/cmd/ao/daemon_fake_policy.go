@@ -22,7 +22,7 @@ func (e daemonFakeOpenClawSnapshotExecutor) JobTypes() []daemonpkg.JobType {
 	return []daemonpkg.JobType{daemonpkg.JobTypeOpenClawSnapshot}
 }
 
-func (e daemonFakeOpenClawSnapshotExecutor) RunJob(ctx context.Context, claim daemonpkg.QueueClaim) (daemonpkg.JobExecutionResult, error) {
+func (e daemonFakeOpenClawSnapshotExecutor) RunJob(ctx context.Context, claim daemonpkg.QueueLease) (daemonpkg.JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}

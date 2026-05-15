@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# practices: [finding-registry-contract, schema-validator]
+# practices: [wiki-knowledge-surface, data-contracts, design-by-contract]
 # Enforce finding-registry contract: schema is well-formed JSON Schema,
 # the contract doc carries its AOP-CLAIM marker, the schema's required-field
 # list matches the contract doc's required-field list, and if a runtime
