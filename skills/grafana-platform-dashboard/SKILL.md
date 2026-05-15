@@ -6,6 +6,10 @@ practices:
 - distributed-tracing
 - dora-metrics
 hexagonal_role: driven-adapter
+consumes: []
+produces:
+- dashboard-validation-report
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

@@ -6,6 +6,13 @@ practices:
 - pragmatic-programmer
 - ddd-bounded-context
 hexagonal_role: driving-adapter
+consumes:
+- inject
+- repo-context
+produces:
+- .agents/research/*.md
+- result.json
+context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:

@@ -6,6 +6,10 @@ practices:
 - wiki-knowledge-surface
 - pragmatic-programmer
 hexagonal_role: domain
+consumes: []
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 context:
   window: isolated

@@ -6,6 +6,10 @@ practices:
 - ddd-bounded-context
 - prompt-as-spec
 hexagonal_role: supporting
+consumes: []
+produces:
+- documentation
+context_rel: []
 skill_api_version: 1
 metadata:
   tier: knowledge

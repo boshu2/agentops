@@ -5,6 +5,10 @@ practices:
 - refactoring
 - design-patterns
 hexagonal_role: generic
+consumes: []
+produces:
+- converted-skill
+context_rel: []
 skill_api_version: 1
 context:
   window: isolated

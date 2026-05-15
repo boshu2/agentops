@@ -6,6 +6,9 @@ practices:
 - continuous-delivery
 - infrastructure-as-code
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:

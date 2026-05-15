@@ -107,11 +107,177 @@ and [`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) li
 
 ```mermaid
 graph LR
-  %% no context_rel edges declared yet
+  beads -- "supplier-to" --> crank
+  beads -- "supplier-to" --> ratchet
+  brainstorm -- "shared-kernel" --> standards
+  bug-hunt -- "shared-kernel" --> standards
+  complexity -- "shared-kernel" --> standards
+  council -- "shared-kernel" --> standards
+  crank -- "shared-kernel" --> standards
+  design -- "shared-kernel" --> standards
+  discovery -- "shared-kernel" --> standards
+  flywheel -- "shared-kernel" --> standards
+  forge -- "shared-kernel" --> standards
+  goals -- "shared-kernel" --> standards
+  hooks-authoring -- "shared-kernel" --> standards
+  implement -- "customer-of" --> domain
+  perf -- "shared-kernel" --> standards
+  plan -- "shared-kernel" --> standards
+  post-mortem -- "shared-kernel" --> standards
+  pr-implement -- "customer-of" --> crank
+  pr-prep -- "customer-of" --> domain
+  pr-validate -- "customer-of" --> validation
+  pre-mortem -- "shared-kernel" --> standards
+  product -- "shared-kernel" --> standards
+  quickstart -- "customer-of" --> rpi
+  ratchet -- "shared-kernel" --> standards
+  retro -- "shared-kernel" --> standards
+  review -- "customer-of" --> validation
+  rpi -- "customer-of" --> crank
+  rpi -- "customer-of" --> discovery
+  rpi -- "customer-of" --> validation
+  scope -- "supplier-to" --> domain
+  security -- "supplier-to" --> vibe
+  security-suite -- "supplier-to" --> vibe
+  swarm -- "customer-of" --> crank
+  validate -- "customer-of" --> validation
+  validation -- "shared-kernel" --> standards
+  vibe -- "shared-kernel" --> standards
 ```
 
 ## Data flow (consumes / produces)
 
 | Skill | Direction | Artifact |
 |-------|-----------|----------|
-| _(none)_ | _(none)_ | _(no consumes/produces declared yet)_ |
+| `autodev` | consumes | evolve |
+| `autodev` | consumes | rpi |
+| `beads` | consumes | bd-issue |
+| `beads` | produces | bd-issue |
+| `bootstrap` | consumes | goals |
+| `bootstrap` | consumes | product |
+| `bootstrap` | consumes | readme |
+| `bootstrap` | consumes | shared |
+| `brainstorm` | consumes | standards |
+| `brainstorm` | produces | result.json |
+| `brainstorm` | produces | verdict.json |
+| `bug-hunt` | consumes | beads |
+| `bug-hunt` | consumes | standards |
+| `codex-team` | produces | .agents/swarm/results/*.json |
+| `complexity` | consumes | doc |
+| `complexity` | consumes | standards |
+| `complexity` | produces | stdout |
+| `converter` | produces | converted-skill |
+| `council` | consumes | standards |
+| `council` | produces | result.json |
+| `council` | produces | verdict.json |
+| `crank` | consumes | beads |
+| `crank` | consumes | implement |
+| `crank` | consumes | post-mortem |
+| `crank` | consumes | swarm |
+| `crank` | consumes | vibe |
+| `crank` | produces | .agents/swarm/results/*.json |
+| `crank` | produces | git-changes |
+| `curate` | produces | .agents/research/*.md |
+| `deps` | produces | result.json |
+| `design` | consumes | standards |
+| `design` | produces | result.json |
+| `discovery` | consumes | brainstorm |
+| `discovery` | consumes | design |
+| `discovery` | consumes | plan |
+| `discovery` | consumes | pre-mortem |
+| `discovery` | consumes | research |
+| `discovery` | consumes | shared |
+| `discovery` | produces | .agents/plans/*.md |
+| `discovery` | produces | bd-issue |
+| `discovery` | produces | execution-packet.json |
+| `doc` | produces | documentation |
+| `domain` | produces | stdout |
+| `dream` | produces | .agents/research/*.md |
+| `flywheel` | produces | .agents/learnings/*.md |
+| `forge` | produces | .agents/research/*.md |
+| `goals` | produces | result.json |
+| `grafana-platform-dashboard` | produces | dashboard-validation-report |
+| `handoff` | produces | .agents/research/*.md |
+| `harvest` | produces | .agents/research/*.md |
+| `hooks-authoring` | produces | result.json |
+| `implement` | consumes | domain |
+| `implement` | produces | git-changes |
+| `llm-wiki` | produces | documentation |
+| `openai-docs` | consumes | external-api |
+| `oss-docs` | produces | documentation |
+| `perf` | produces | result.json |
+| `plan` | consumes | standards |
+| `plan` | produces | .agents/plans/*.md |
+| `plan` | produces | execution-packet.json |
+| `post-mortem` | produces | result.json |
+| `pr-implement` | consumes | crank |
+| `pr-implement` | produces | git-changes |
+| `pr-plan` | produces | result.json |
+| `pr-prep` | consumes | domain |
+| `pr-prep` | produces | git-changes |
+| `pr-research` | consumes | external-api |
+| `pr-research` | produces | result.json |
+| `pr-retro` | produces | .agents/research/*.md |
+| `pr-validate` | consumes | validation |
+| `pr-validate` | produces | result.json |
+| `pre-mortem` | consumes | standards |
+| `pre-mortem` | produces | result.json |
+| `pre-mortem` | produces | verdict.json |
+| `product` | produces | result.json |
+| `provenance` | produces | result.json |
+| `push` | consumes | git-changes |
+| `push` | produces | git-changes |
+| `quickstart` | consumes | rpi |
+| `quickstart` | produces | stdout |
+| `ratchet` | produces | .agents/rpi/*.md |
+| `readme` | produces | documentation |
+| `recover` | produces | .agents/rpi/*.md |
+| `red-team` | produces | result.json |
+| `refactor` | produces | git-changes |
+| `release` | produces | result.json |
+| `research` | consumes | inject |
+| `research` | consumes | repo-context |
+| `research` | produces | .agents/research/*.md |
+| `research` | produces | result.json |
+| `retro` | consumes | standards |
+| `retro` | produces | result.json |
+| `reverse-engineer-rpi` | produces | .agents/research/*.md |
+| `review` | consumes | github-pr |
+| `review` | consumes | validation |
+| `review` | produces | result.json |
+| `rpi` | consumes | crank |
+| `rpi` | consumes | discovery |
+| `rpi` | consumes | ratchet |
+| `rpi` | consumes | validation |
+| `rpi` | produces | .agents/rpi/*.md |
+| `scaffold` | produces | converted-skill |
+| `scenario` | produces | result.json |
+| `scope` | produces | filesystem-gate |
+| `security` | consumes | repo-context |
+| `security` | produces | security-report.json |
+| `security-suite` | consumes | repo-context |
+| `security-suite` | produces | security-report.json |
+| `shared` | produces | stdout |
+| `skill-auditor` | produces | result.json |
+| `skill-builder` | produces | converted-skill |
+| `standards` | produces | stdout |
+| `status` | produces | stdout |
+| `swarm` | consumes | implement |
+| `swarm` | consumes | vibe |
+| `swarm` | produces | .agents/swarm/results/*.json |
+| `test` | produces | result.json |
+| `trace` | produces | result.json |
+| `using-agentops` | produces | documentation |
+| `validate` | consumes | validation |
+| `validate` | produces | result.json |
+| `validation` | consumes | forge |
+| `validation` | consumes | post-mortem |
+| `validation` | consumes | retro |
+| `validation` | consumes | shared |
+| `validation` | consumes | vibe |
+| `validation` | produces | .agents/research/*.md |
+| `validation` | produces | result.json |
+| `validation` | produces | verdict.json |
+| `vibe` | consumes | standards |
+| `vibe` | produces | result.json |
+| `vibe` | produces | verdict.json |

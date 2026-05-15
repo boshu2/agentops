@@ -5,6 +5,13 @@ practices:
 - supply-chain-integrity
 - sre
 hexagonal_role: driven-adapter
+consumes:
+- repo-context
+produces:
+- security-report.json
+context_rel:
+- kind: supplier-to
+  with: vibe
 skill_api_version: 1
 context:
   window: fork

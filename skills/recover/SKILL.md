@@ -6,6 +6,10 @@ practices:
 - legacy-code-seams
 - pragmatic-programmer
 hexagonal_role: driving-adapter
+consumes: []
+produces:
+- .agents/rpi/*.md
+context_rel: []
 skill_api_version: 1
 context:
   window: inherit

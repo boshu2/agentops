@@ -5,6 +5,9 @@ practices:
 - wiki-knowledge-surface
 - pragmatic-programmer
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:

@@ -7,6 +7,10 @@ practices:
 - cmm-process-maturity
 - design-by-contract
 hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:

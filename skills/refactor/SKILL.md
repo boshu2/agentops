@@ -6,6 +6,10 @@ practices:
 - legacy-code-seams
 - design-patterns
 hexagonal_role: supporting
+consumes: []
+produces:
+- git-changes
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

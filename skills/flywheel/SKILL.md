@@ -6,6 +6,12 @@ practices:
 - lean-startup
 - dora-metrics
 hexagonal_role: domain
+consumes: []
+produces:
+- .agents/learnings/*.md
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku

@@ -5,6 +5,10 @@ practices:
 - dora-metrics
 - sre
 hexagonal_role: driving-adapter
+consumes: []
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku

@@ -6,6 +6,13 @@ practices:
 - continuous-delivery
 - gitops
 hexagonal_role: driving-adapter
+consumes:
+- domain
+produces:
+- git-changes
+context_rel:
+- kind: customer-of
+  with: domain
 skill_api_version: 1
 context:
   window: fork

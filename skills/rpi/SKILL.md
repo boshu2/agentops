@@ -7,6 +7,20 @@ practices:
 - agile-manifesto
 - pragmatic-programmer
 hexagonal_role: supporting
+consumes:
+- crank
+- discovery
+- ratchet
+- validation
+produces:
+- .agents/rpi/*.md
+context_rel:
+- kind: customer-of
+  with: crank
+- kind: customer-of
+  with: discovery
+- kind: customer-of
+  with: validation
 skill_api_version: 1
 user-invocable: true
 context:
@@ -37,6 +51,14 @@ output_contract: .agents/rpi/YYYY-MM-DD-*.md
 real blocked state exhausts retries. Read
 [references/autonomous-execution.md](references/autonomous-execution.md) when
 you need the full autonomy contract.
+
+## Loop position
+
+`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validation`, `/forge`/`/retro`), and enforces three loop-level invariants:
+
+- **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
+- **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
+- **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
 
 ## Core Contract
 

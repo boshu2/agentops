@@ -5,6 +5,10 @@ practices:
 - prompt-as-spec
 - ai-assisted-dev
 hexagonal_role: driven-adapter
+consumes:
+- external-api
+produces: []
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

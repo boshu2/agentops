@@ -5,6 +5,12 @@ practices:
 - wiki-knowledge-surface
 - lean-startup
 hexagonal_role: domain
+consumes: []
+produces:
+- .agents/research/*.md
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: false
 context:
@@ -26,6 +32,8 @@ output_contract: .agents/learnings/*.md, .agents/patterns/*.md
 > **Cross-vendor analog:** the capture half of Anthropic Managed Agents' memory + dreaming pair (May 2026). Forge mines transcripts; `/dream` curates between sessions. Off the API, local, cross-vendor.
 
 **Typically runs automatically via SessionEnd hook.**
+
+> **Loop position:** capture sub-step of move 7 in the [operating loop](../../docs/architecture/operating-loop.md). Extracts candidate learnings from transcripts; the [promotion ratchet](../../docs/architecture/operating-loop.md#the-promotion-ratchet) decides which ones survive (one-offs die at handoff; repeats promote to `.agents/learnings/`). Forge is the funnel, not the filter.
 
 Extract knowledge from session transcripts.
 

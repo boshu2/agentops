@@ -6,6 +6,11 @@ practices:
 - legacy-code-seams
 - pragmatic-programmer
 hexagonal_role: driven-adapter
+consumes:
+- external-api
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

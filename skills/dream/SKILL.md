@@ -6,6 +6,10 @@ practices:
 - wiki-knowledge-surface
 - sre
 hexagonal_role: supporting
+consumes: []
+produces:
+- .agents/research/*.md
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:

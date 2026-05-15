@@ -6,6 +6,13 @@ practices:
 - property-based-testing
 - code-complete
 hexagonal_role: domain
+consumes:
+- beads
+- standards
+produces: []
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 context:
   window: fork

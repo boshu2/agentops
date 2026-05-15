@@ -6,6 +6,10 @@ practices:
 - wiki-knowledge-surface
 - pragmatic-programmer
 hexagonal_role: generic
+consumes: []
+produces:
+- documentation
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

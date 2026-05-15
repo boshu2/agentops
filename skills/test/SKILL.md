@@ -6,6 +6,10 @@ practices:
 - property-based-testing
 - bdd-gherkin
 hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

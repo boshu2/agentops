@@ -6,6 +6,13 @@ practices:
 - xp
 - pragmatic-programmer
 hexagonal_role: driving-adapter
+consumes:
+- crank
+produces:
+- git-changes
+context_rel:
+- kind: customer-of
+  with: crank
 skill_api_version: 1
 context:
   window: fork

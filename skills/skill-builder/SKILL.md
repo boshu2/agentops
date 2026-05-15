@@ -7,6 +7,10 @@ practices:
 - pragmatic-programmer
 - design-patterns
 hexagonal_role: supporting
+consumes: []
+produces:
+- converted-skill
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

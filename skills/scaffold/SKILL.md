@@ -6,6 +6,10 @@ practices:
 - design-patterns
 - hexagonal-architecture
 hexagonal_role: supporting
+consumes: []
+produces:
+- converted-skill
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

@@ -5,6 +5,9 @@ practices:
 - refactoring
 - code-complete
 hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 skill_api_version: 1
 context:
   window: isolated

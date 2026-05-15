@@ -6,6 +6,12 @@ practices:
 - design-by-contract
 - mythical-man-month
 hexagonal_role: driven-adapter
+consumes: []
+produces:
+- filesystem-gate
+context_rel:
+- kind: supplier-to
+  with: domain
 skill_api_version: 1
 context:
   window: isolated

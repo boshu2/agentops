@@ -5,6 +5,15 @@ practices:
 - agile-manifesto
 - pragmatic-programmer
 hexagonal_role: driven-adapter
+consumes:
+- bd-issue
+produces:
+- bd-issue
+context_rel:
+- kind: supplier-to
+  with: crank
+- kind: supplier-to
+  with: ratchet
 skill_api_version: 1
 context:
   window: fork

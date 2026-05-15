@@ -5,6 +5,13 @@ practices:
 - pragmatic-programmer
 - agile-manifesto
 hexagonal_role: driving-adapter
+consumes:
+- rpi
+produces:
+- stdout
+context_rel:
+- kind: customer-of
+  with: rpi
 skill_api_version: 1
 context:
   window: inherit

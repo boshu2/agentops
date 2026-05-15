@@ -6,6 +6,10 @@ practices:
 - pragmatic-programmer
 - twelve-factor-app
 hexagonal_role: domain
+consumes: []
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 user-invocable: false
 context:

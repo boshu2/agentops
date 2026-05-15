@@ -5,6 +5,10 @@ practices:
 - team-topologies
 - ai-assisted-dev
 hexagonal_role: supporting
+consumes: []
+produces:
+- .agents/swarm/results/*.json
+context_rel: []
 skill_api_version: 1
 context: fork
 metadata:

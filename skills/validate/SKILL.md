@@ -5,6 +5,13 @@ practices:
 - design-by-contract
 - llm-eval-harness
 hexagonal_role: driving-adapter
+consumes:
+- validation
+produces:
+- result.json
+context_rel:
+- kind: customer-of
+  with: validation
 skill_api_version: 1
 user-invocable: true
 context:

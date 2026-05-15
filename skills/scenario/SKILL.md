@@ -6,6 +6,10 @@ practices:
 - snapshot-testing
 - llm-eval-harness
 hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 metadata:
   tier: execution

@@ -24,6 +24,7 @@ We call this the **Context Development Lifecycle (CDLC)** — the body of this d
 
 ### Companion docs
 
+- [Operating loop](./architecture/operating-loop.md) — the **operational** discipline that runs inside these phases: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence. The CDLC describes the seven phases of context engineering; the operating loop describes how an agent actually executes work through them.
 - [Wiki for agents](./wiki-for-agents.md) — what `.agents/` actually is and why agents can read it natively
 - [Trust factory](./trust-factory.md) — how the validation gates and councils make agent output trustworthy
 
@@ -209,6 +210,25 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 | Monitor → Plan | Adapt | What should change for next time? | MemRL feedback, `/forge`, `/evolve`, `/dream` |
 
 ---
+
+## Operating loop within the phases
+
+The seven phases describe **what context engineering is**. The operating loop describes **how an agent executes work** through them. They are not the same artifact.
+
+A single turn of the operating loop touches every CDLC phase:
+
+```
+BDD-shaped intent issue            ← Generate (the intent is the spec; phase 1)
+  → vertical slices                ← Compile (one slice per Given/When/Then; phase 2)
+  → TDD per slice                  ← Test (first failing test before code; phase 3)
+  → conflict-free parallel wave    ← Distribute + Deliver (workers receive scoped context; phases 4–5)
+  → integrated bead completion     ← Observe (acceptance examples must pass; phase 6)
+  → evidence + learning capture    ← Adapt (ratcheted promotion into the next loop turn; phase 7)
+```
+
+The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
+
+Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](../.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](../GOALS.md).
 
 ## The Leverage Hierarchy
 

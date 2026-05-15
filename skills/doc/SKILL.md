@@ -6,6 +6,10 @@ practices:
 - code-complete
 - pragmatic-programmer
 hexagonal_role: supporting
+consumes: []
+produces:
+- documentation
+context_rel: []
 skill_api_version: 1
 context:
   window: fork

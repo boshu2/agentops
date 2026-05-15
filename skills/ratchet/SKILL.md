@@ -6,6 +6,12 @@ practices:
 - refactoring
 - continuous-integration
 hexagonal_role: domain
+consumes: []
+produces:
+- .agents/rpi/*.md
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: false
 context:

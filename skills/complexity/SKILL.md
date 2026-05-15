@@ -5,6 +5,14 @@ practices:
 - code-complete
 - refactoring
 hexagonal_role: domain
+consumes:
+- doc
+- standards
+produces:
+- stdout
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 context:
   window: fork

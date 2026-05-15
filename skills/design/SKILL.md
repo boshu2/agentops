@@ -6,6 +6,13 @@ practices:
 - ddd-bounded-context
 - mythical-man-month
 hexagonal_role: domain
+consumes:
+- standards
+produces:
+- result.json
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: true
 context:

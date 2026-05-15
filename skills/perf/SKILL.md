@@ -6,6 +6,12 @@ practices:
 - sre
 - code-complete
 hexagonal_role: domain
+consumes: []
+produces:
+- result.json
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 context:
   window: fork
