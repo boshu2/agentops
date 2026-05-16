@@ -52,7 +52,7 @@ var evalTaskCmd = &cobra.Command{
 	Long: `Operate on the §3 Task primitive of the eval substrate.
 
 Tasks live under $AGENTOPS_EVALS_ROOT/tasks/<id>/task.yaml and define the
-input/output contract a Run will be evaluated against. The Day-2 surface
+input/output contract a Run will be evaluated against. The command surface
 exposes:
 
   ao eval task add <task.yaml>        Register a Task by copying its file
@@ -177,10 +177,10 @@ var evalTaskRunCmd = &cobra.Command{
 in pending state, runs §6 manifest-checkable gates 1/6/7/8/9, and on pass
 transitions the manifest to running.
 
-This Day-2 command does NOT yet launch Inspect — that wiring lands Day 3.
-The atomic-write contract, manifest fields, and refusal format are all
-fully exercised here. Use --dry-run to refuse-test without creating the run
-directory.`,
+This command opens and gates the Run manifest; it does not yet launch
+Inspect itself. The atomic-write contract, manifest fields, and refusal
+format are all fully exercised here. Use --dry-run to refuse-test without
+creating the run directory.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runEvalTaskRun,
 }
@@ -469,8 +469,8 @@ func registerEvalTaskCmd() {
 	evalTaskRunCmd.Flags().StringVar(&evalTaskRunSampleSplit, "sample-split", "", "Sample split (dev|holdout); default from suite")
 	evalTaskRunCmd.Flags().IntVar(&evalTaskRunNSamples, "n-samples", 0, "Override Suite.n_samples")
 	evalTaskRunCmd.Flags().StringVar(&evalTaskRunInspectVersion, "inspect-version", "0.3.216", "Inspect AI version stamped into manifest")
-	evalTaskRunCmd.Flags().StringVar(&evalTaskRunInspectCommand, "inspect-command", "", "Recorded inspect_command (Day-2 placeholder; Day-3 wires real launch)")
-	evalTaskRunCmd.Flags().BoolVar(&evalTaskRunCrossSpec, "cross-spec", false, "Allow ModelSpec drift (Day-4 gate #4)")
+	evalTaskRunCmd.Flags().StringVar(&evalTaskRunInspectCommand, "inspect-command", "", "Inspect command recorded into the Run manifest (not executed yet)")
+	evalTaskRunCmd.Flags().BoolVar(&evalTaskRunCrossSpec, "cross-spec", false, "Allow ModelSpec drift (gate #4)")
 	evalTaskRunCmd.Flags().BoolVar(&evalTaskRunAllowWeak, "allow-weak-labels", false, "Allow runs against confidence=weak ground-truth rows (gate #7)")
 	evalTaskRunCmd.Flags().BoolVar(&evalTaskRunQuickSession, "quick", false, "Mark Run as quick_session=true (excluded from --vs auto-baseline pool)")
 	evalTaskRunCmd.Flags().BoolVar(&evalTaskRunDryRun, "dry-run", false, "Run gates and exit without writing a Run manifest")
