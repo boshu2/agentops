@@ -565,13 +565,17 @@ func TestCobraDoctorCommand(t *testing.T) {
 	t.Run("json_output", func(t *testing.T) {
 		out, err := executeCommand("doctor", "--json")
 		_ = err
-		if !strings.Contains(out, "checks") {
-			t.Errorf("expected 'checks' in JSON output, got: %s", out)
-		}
-		// Verify it's valid JSON
+		// `ao doctor --json` emits a single engine Report. A strict unmarshal
+		// fails if a second JSON document leaked onto stdout.
 		var result map[string]any
 		if jsonErr := json.Unmarshal([]byte(out), &result); jsonErr != nil {
-			t.Errorf("doctor --json did not produce valid JSON: %v\noutput: %s", jsonErr, out)
+			t.Errorf("doctor --json did not produce a single valid JSON document: %v\noutput: %s", jsonErr, out)
+		}
+		if result["schema_version"] != "1.0" {
+			t.Errorf("expected schema_version 1.0 in engine Report, got: %v", result["schema_version"])
+		}
+		if _, ok := result["findings"]; !ok {
+			t.Errorf("expected 'findings' key in engine Report, got: %s", out)
 		}
 	})
 }

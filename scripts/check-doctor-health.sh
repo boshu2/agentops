@@ -2,12 +2,17 @@
 set -euo pipefail
 
 # check-doctor-health.sh
-# Validates that ao doctor runs without required failures.
+# Validates that `ao doctor` reports no P0 (required) findings.
 # Used by ci-local-release.sh to catch path/namespace drift.
 #
-# Exit codes:
-#   0 = doctor passes (HEALTHY or DEGRADED with no required failures)
-#   1 = doctor fails or binary unavailable
+# `ao doctor --json` emits a single engine Report and exits:
+#   0 = healthy (no findings)
+#   1 = findings present (severity P0..P3)
+#   >1 = doctor itself errored (unsafe-refused, I/O error, …)
+#
+# Exit codes (this script):
+#   0 = no P0 findings (healthy, or degraded with only P1..P3 findings)
+#   1 = a P0 finding, or doctor errored / binary unavailable
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -34,31 +39,47 @@ if [[ ! -x "$AO_BIN" ]]; then
     AO_BIN="$TEMP_AO_BIN"
 fi
 
-# Run doctor in JSON mode for machine parsing
-output=$("$AO_BIN" doctor --json 2>&1) || {
-    echo "ao doctor exited with error"
-    echo "$output"
-    exit 1
-}
+# Run doctor in JSON mode for machine parsing. Exit 1 (findings present) is an
+# expected outcome, not a script failure — capture the code instead of aborting.
+# stdout is the engine Report JSON; stderr is kept separate so it never
+# pollutes the JSON we parse.
+doctor_rc=0
+err_file="$(mktemp "${TMPDIR:-/tmp}/ao-doctor-err.XXXXXX")"
+output=$("$AO_BIN" doctor --json 2>"$err_file") || doctor_rc=$?
+doctor_err="$(cat "$err_file")"
+rm -f "$err_file"
 
-result=$(echo "$output" | jq -r '.result')
-summary=$(echo "$output" | jq -r '.summary')
-
-echo "Doctor: $summary ($result)"
-
-# Fail only on UNHEALTHY (required check failures)
-if [[ "$result" == "UNHEALTHY" ]]; then
-    echo ""
-    echo "Required check(s) failed:"
-    echo "$output" | jq -r '.checks[] | select(.status == "fail") | "  \(.name): \(.detail)"'
+if [[ "$doctor_rc" -gt 1 ]]; then
+    echo "ao doctor errored (exit $doctor_rc)" >&2
+    [[ -n "$doctor_err" ]] && echo "$doctor_err" >&2
+    echo "$output" >&2
     exit 1
 fi
 
-# Warn on DEGRADED but don't fail
-if [[ "$result" == "DEGRADED" ]]; then
+if ! echo "$output" | jq -e . >/dev/null 2>&1; then
+    echo "ao doctor --json did not produce valid JSON" >&2
+    echo "$output" >&2
+    exit 1
+fi
+
+total=$(echo "$output" | jq -r '.summary.total_findings // 0')
+p0=$(echo "$output" | jq -r '[.findings[]? | select(.severity == "P0")] | length')
+
+echo "Doctor: ${total} finding(s), ${p0} required (P0)"
+
+# Fail only on required (P0) findings.
+if [[ "$p0" -gt 0 ]]; then
     echo ""
-    echo "Warnings (non-blocking):"
-    echo "$output" | jq -r '.checks[] | select(.status == "warn") | "  \(.name): \(.detail)"'
+    echo "Required (P0) finding(s):"
+    echo "$output" | jq -r '.findings[]? | select(.severity == "P0") | "  \(.id): \(.title)"'
+    exit 1
+fi
+
+# Report non-blocking findings but don't fail.
+if [[ "$total" -gt 0 ]]; then
+    echo ""
+    echo "Findings (non-blocking):"
+    echo "$output" | jq -r '.findings[]? | "  [\(.severity)] \(.id): \(.title)"'
 fi
 
 exit 0

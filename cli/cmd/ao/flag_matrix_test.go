@@ -37,16 +37,21 @@ func TestFlagMatrix_JSONOutput(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
+		// diagnostic commands exit non-zero when they report findings; for
+		// those, a non-zero exit with valid JSON is correct behavior.
+		diagnostic bool
 	}{
-		{"search", []string{"search", "--json", "test"}},
-		{"ratchet-status", []string{"ratchet", "status", "--json"}},
-		{"flywheel-status", []string{"flywheel", "status", "--json"}},
-		{"pool-list", []string{"pool", "list", "--json"}},
-		{"status", []string{"status", "--json"}},
-		{"doctor", []string{"doctor", "--json"}},
-		{"metrics-report", []string{"metrics", "report", "--json"}},
-		{"vibe-check", []string{"vibe-check", "--json"}},
-		{"knowledge-gaps", []string{"knowledge", "gaps", "--json"}},
+		{"search", []string{"search", "--json", "test"}, false},
+		{"ratchet-status", []string{"ratchet", "status", "--json"}, false},
+		{"flywheel-status", []string{"flywheel", "status", "--json"}, false},
+		{"pool-list", []string{"pool", "list", "--json"}, false},
+		{"status", []string{"status", "--json"}, false},
+		// `ao doctor --json` exits 1 when findings are present (exit-code
+		// contract: 0 healthy, 1 findings). Both produce a valid engine Report.
+		{"doctor", []string{"doctor", "--json"}, true},
+		{"metrics-report", []string{"metrics", "report", "--json"}, false},
+		{"vibe-check", []string{"vibe-check", "--json"}, false},
+		{"knowledge-gaps", []string{"knowledge", "gaps", "--json"}, false},
 		// NOTE: goals measure --json requires GOALS.md to exist; excluded from
 		// this matrix because it fails in repos without one.
 	}
@@ -56,7 +61,7 @@ func TestFlagMatrix_JSONOutput(t *testing.T) {
 			cmd := exec.Command(bin, tt.args...)
 			cmd.Dir = findRepoRoot(t)
 			out, err := cmd.CombinedOutput()
-			if err != nil {
+			if err != nil && !tt.diagnostic {
 				t.Fatalf("command %v failed (exit error: %v):\n%s", tt.args, err, string(out))
 			}
 
