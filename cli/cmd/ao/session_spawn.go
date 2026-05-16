@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,19 +11,20 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/boshu2/agentops/cli/internal/shellutil"
 	"github.com/spf13/cobra"
 )
 
 type SessionTemplate struct {
-	SchemaVersion int              `toml:"schema_version" json:"schema_version"`
-	Role          string           `toml:"role" json:"role"`
-	Description   string           `toml:"description" json:"description"`
-	Identity      SessionIdentity  `toml:"identity" json:"identity"`
-	Workspace     SessionWorkspace `toml:"workspace" json:"workspace"`
-	Init          SessionInit      `toml:"init" json:"init"`
-	Tmux          SessionTmux      `toml:"tmux" json:"tmux"`
-	Heartbeat     SessionHeartbeat `toml:"heartbeat" json:"heartbeat"`
-	OnExit        SessionOnExit    `toml:"on_exit" json:"on_exit"`
+	SchemaVersion int               `toml:"schema_version" json:"schema_version"`
+	Role          string            `toml:"role" json:"role"`
+	Description   string            `toml:"description" json:"description"`
+	Identity      SessionIdentity   `toml:"identity" json:"identity"`
+	Workspace     SessionWorkspace  `toml:"workspace" json:"workspace"`
+	Init          SessionInit       `toml:"init" json:"init"`
+	Tmux          SessionTmux       `toml:"tmux" json:"tmux"`
+	Heartbeat     SessionHeartbeat  `toml:"heartbeat" json:"heartbeat"`
+	OnExit        SessionOnExit     `toml:"on_exit" json:"on_exit"`
 	Invariants    map[string]string `toml:"invariants" json:"invariants,omitempty"`
 	References    map[string]string `toml:"references" json:"references,omitempty"`
 }
@@ -118,12 +120,29 @@ func loadSessionTemplate(path string) (*SessionTemplate, error) {
 	return &tmpl, nil
 }
 
+// sanitizeHostname strips any character outside the RFC-1123 hostname charset
+// so a hostile or unusual hostname cannot inject shell metacharacters when it
+// is expanded into init-step commands or tmux session names.
+func sanitizeHostname(h string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			return r
+		case r == '.', r == '-', r == '_':
+			return r
+		default:
+			return -1
+		}
+	}, h)
+}
+
 func buildTemplateVars(tmpl *SessionTemplate, dateOverride string) map[string]string {
 	dateVal := time.Now().UTC().Format("2006-01-02")
 	if dateOverride != "" {
 		dateVal = dateOverride
 	}
 	hostname, _ := os.Hostname()
+	hostname = sanitizeHostname(hostname)
 	home, _ := os.UserHomeDir()
 
 	sessionName := tmpl.Identity.SessionNameTemplate
@@ -147,7 +166,7 @@ func expandVars(s string, vars map[string]string) string {
 	return result
 }
 
-func runInitSteps(steps []SessionInitStep, vars map[string]string, cwd string, dryRun bool) error {
+func runInitSteps(steps []SessionInitStep, vars map[string]string, cwd, beadsActor string, dryRun bool) error {
 	for i, step := range steps {
 		expanded := expandVars(step.Cmd, vars)
 		if dryRun {
@@ -162,9 +181,13 @@ func runInitSteps(steps []SessionInitStep, vars map[string]string, cwd string, d
 			continue
 		}
 		fmt.Printf("  [%d/%d] %s ... ", i+1, len(steps), step.Name)
-		cmd := exec.Command("bash", "-c", expanded)
+		cmd := shellutil.SanitizedBashCommand(context.Background(), expanded)
 		cmd.Dir = cwd
-		cmd.Env = append(os.Environ(), "BEADS_ACTOR="+expandVars(steps[0].Cmd, vars))
+		if beadsActor != "" {
+			// SanitizedBashCommand already populates cmd.Env with the sanitized
+			// parent environment; append rather than overwrite it.
+			cmd.Env = append(cmd.Env, "BEADS_ACTOR="+beadsActor)
+		}
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			fmt.Printf("FAILED\n")
@@ -267,7 +290,8 @@ func runSessionSpawn(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nRunning %d init steps:\n", len(tmpl.Init.Steps))
 	}
 
-	if err := runInitSteps(tmpl.Init.Steps, vars, cwd, spawnDryRun); err != nil {
+	beadsActor := expandVars(tmpl.Identity.BeadsActorTemplate, vars)
+	if err := runInitSteps(tmpl.Init.Steps, vars, cwd, beadsActor, spawnDryRun); err != nil {
 		return err
 	}
 

@@ -172,7 +172,7 @@ func TestRunInitStepsDryRun(t *testing.T) {
 	}
 	vars := map[string]string{"{{date}}": "2026-05-05"}
 
-	err := runInitSteps(steps, vars, t.TempDir(), true)
+	err := runInitSteps(steps, vars, t.TempDir(), "", true)
 	if err != nil {
 		t.Fatalf("dry-run init steps: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestRunInitStepsExecutes(t *testing.T) {
 	}
 	vars := map[string]string{}
 
-	if err := runInitSteps(steps, vars, dir, false); err != nil {
+	if err := runInitSteps(steps, vars, dir, "", false); err != nil {
 		t.Fatalf("init steps: %v", err)
 	}
 	data, err := os.ReadFile(marker)
@@ -202,12 +202,54 @@ func TestRunInitStepsFailsOnError(t *testing.T) {
 	steps := []SessionInitStep{
 		{Name: "will-fail", Cmd: "exit 1"},
 	}
-	err := runInitSteps(steps, map[string]string{}, t.TempDir(), false)
+	err := runInitSteps(steps, map[string]string{}, t.TempDir(), "", false)
 	if err == nil {
 		t.Fatal("expected error from failing init step")
 	}
 	if !strings.Contains(err.Error(), "will-fail") {
 		t.Fatalf("error = %q, want step name", err.Error())
+	}
+}
+
+func TestRunInitStepsSetsBeadsActor(t *testing.T) {
+	dir := t.TempDir()
+	actorFile := filepath.Join(dir, "actor.txt")
+	steps := []SessionInitStep{
+		{Name: "first-step", Cmd: "true"},
+		{Name: "record-actor", Cmd: `printf '%s' "$BEADS_ACTOR" > ` + actorFile},
+	}
+
+	if err := runInitSteps(steps, map[string]string{}, dir, "claude-validator", false); err != nil {
+		t.Fatalf("init steps: %v", err)
+	}
+	data, err := os.ReadFile(actorFile)
+	if err != nil {
+		t.Fatalf("read actor file: %v", err)
+	}
+	if got := string(data); got != "claude-validator" {
+		t.Fatalf("BEADS_ACTOR = %q, want %q (must be the template actor, not a step command)", got, "claude-validator")
+	}
+}
+
+func TestSanitizeHostname(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"plain", "bushido-box", "bushido-box"},
+		{"dotted fqdn", "host.example.local", "host.example.local"},
+		{"underscore kept", "my_host", "my_host"},
+		{"strips shell metachars", "host; rm -rf ~", "hostrm-rf"},
+		{"strips command substitution", "h$(whoami)", "hwhoami"},
+		{"strips quotes and spaces", `a b'c"`, "abc"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sanitizeHostname(tc.in); got != tc.want {
+				t.Fatalf("sanitizeHostname(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
 	}
 }
 
