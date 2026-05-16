@@ -137,8 +137,8 @@ func TestDaemonCorruptLedgerLine_DetectFixUndo(t *testing.T) {
 			t.Fatalf("action = %+v, want WriteFile OK", r)
 		}
 	}
-	// Quarantine file holds the two corrupt raw lines.
-	q := filepath.Join(daemonStoreDir(env), "quarantine", "ledger-corrupt-"+ctx.RunID+".jsonl")
+	// Quarantine file (run-scoped) holds the two corrupt raw lines.
+	q := filepath.Join(ra.QuarantineDir(), "ledger-corrupt-"+ctx.RunID+".jsonl")
 	qgot, err := os.ReadFile(q)
 	if err != nil {
 		t.Fatalf("quarantine file missing: %v", err)
@@ -232,8 +232,8 @@ func TestDaemonTruncatedTrailingLine_DetectFixUndo(t *testing.T) {
 	if got[len(got)-1] != '\n' {
 		t.Fatal("post-fix ledger does not end with newline")
 	}
-	// Quarantine fragment holds the exact torn bytes.
-	q := filepath.Join(daemonStoreDir(env), "quarantine", "trailing-fragment-"+ctx.RunID+".bin")
+	// Quarantine fragment (run-scoped) holds the exact torn bytes.
+	q := filepath.Join(ra.QuarantineDir(), "trailing-fragment-"+ctx.RunID+".bin")
 	qgot, err := os.ReadFile(q)
 	if err != nil {
 		t.Fatalf("fragment file missing: %v", err)
@@ -494,10 +494,10 @@ func TestDaemonOrphanTmpFiles_DetectFixUndo(t *testing.T) {
 			t.Fatalf("orphan %q still present at original path", path)
 		}
 	}
-	// And present, byte-identical, under quarantine/orphan-tmp/<run>/.
+	// And present, byte-identical, under the run quarantine's orphan-tmp/<run>/.
 	for path, body := range orphans {
 		rel, _ := filepath.Rel(repo, path)
-		q := filepath.Join(store, "quarantine", "orphan-tmp", ctx.RunID, rel)
+		q := filepath.Join(ra.QuarantineDir(), "orphan-tmp", ctx.RunID, rel)
 		got, qerr := os.ReadFile(q)
 		if qerr != nil || string(got) != body {
 			t.Fatalf("quarantined %q = %q err=%v, want %q", filepath.Base(path), got, qerr, body)
@@ -606,7 +606,7 @@ func TestDaemonCorruptGzipArchive_DetectFixUndo(t *testing.T) {
 	}
 	// The two corrupt archives are present, byte-identical, under quarantine.
 	for path, body := range map[string][]byte{truncated: truncatedOriginal, invalid: invalidOriginal} {
-		q := filepath.Join(store, "quarantine", "bad-archives", ctx.RunID, filepath.Base(path))
+		q := filepath.Join(ra.QuarantineDir(), "bad-archives", ctx.RunID, filepath.Base(path))
 		got, qerr := os.ReadFile(q)
 		if qerr != nil || !bytes.Equal(got, body) {
 			t.Fatalf("quarantined %q mismatch err=%v", filepath.Base(path), qerr)
@@ -718,7 +718,7 @@ func TestDaemonArchiveUnboundedGrowth_DetectFixUndo(t *testing.T) {
 	}
 	// The two oldest archives are retired, byte-identical.
 	for _, src := range archives[:2] {
-		q := filepath.Join(store, "quarantine", "retired-archives", ctx.RunID, filepath.Base(src))
+		q := filepath.Join(ra.QuarantineDir(), "retired-archives", ctx.RunID, filepath.Base(src))
 		if _, statErr := os.Stat(q); statErr != nil {
 			t.Fatalf("oldest archive %q not retired", filepath.Base(src))
 		}
@@ -727,7 +727,7 @@ func TestDaemonArchiveUnboundedGrowth_DetectFixUndo(t *testing.T) {
 		}
 	}
 	for _, src := range snapshots[:2] {
-		q := filepath.Join(store, "quarantine", "retired-snapshots", ctx.RunID, filepath.Base(src))
+		q := filepath.Join(ra.QuarantineDir(), "retired-snapshots", ctx.RunID, filepath.Base(src))
 		if _, statErr := os.Stat(q); statErr != nil {
 			t.Fatalf("oldest snapshot %q not retired", filepath.Base(src))
 		}
