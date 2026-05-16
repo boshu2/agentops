@@ -1160,6 +1160,20 @@ else
     fail "missing file: scripts/check-corpus-freshness.sh"
 fi
 
+# --- 22g2. Loop-shape (GOALS.md Directive 12 — warn-only) ---
+# Warn-only by design: flags non-trivial beads missing a Gherkin block or slice
+# candidate. Never blocks a push (Directive 12 posture). Skips cleanly when bd
+# or jq is absent. Fast (<200ms).
+if [[ -f scripts/check-loop-shape.sh ]]; then
+    loop_shape_output="$(bash scripts/check-loop-shape.sh 2>&1 || true)"
+    if grep -q '^WARN: ' <<<"$loop_shape_output"; then
+        warn "loop-shape (non-trivial beads missing BDD/slice shape — Directive 12 warn-only)"
+        indent_output "$loop_shape_output"
+    else
+        pass "loop-shape"
+    fi
+fi
+
 # --- 22h. Flywheel-compounding snapshot (GOALS.md gate flywheel-compounding-snapshot, weight 5 — G1) ---
 # Validates the tracked corpus-state evidence file docs/releases/flywheel-compounding-snapshot.json.
 # Fast (<100ms). Refresh with: bash scripts/snapshot-flywheel-compounding.sh
