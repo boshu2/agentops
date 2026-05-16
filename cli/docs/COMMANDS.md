@@ -11,6 +11,7 @@
           --json            Output as JSON (shorthand for -o json)
       -o, --output string   Output format (json, table, yaml) (default "table")
       -v, --verbose         Enable verbose output
+          --version         version for ao
 
 ---
 
@@ -1756,7 +1757,6 @@ ao goals [command]
 ```
       --file string   Path to goals file (auto-detects GOALS.md then GOALS.yaml)
   -h, --help          help for goals
-      --json          Output as JSON
       --timeout int   Check timeout in seconds (default 240)
 ```
 

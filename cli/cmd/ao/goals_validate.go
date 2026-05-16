@@ -19,14 +19,14 @@ var goalsValidateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return goals.RunValidate(goals.ValidateOptions{
 			GoalsFile: resolveGoalsFile(),
-			JSON:      goalsJSON,
+			JSON:      goalsJSONOutput(),
 		})
 	},
 }
 
 // outputValidateResult delegates to goals.OutputValidateResult (used by tests).
 func outputValidateResult(result validateResult) error {
-	return goals.OutputValidateResult(os.Stdout, goalsJSON, result)
+	return goals.OutputValidateResult(os.Stdout, goalsJSONOutput(), result)
 }
 
 func init() {

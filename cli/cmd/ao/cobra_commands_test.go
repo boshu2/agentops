@@ -46,7 +46,7 @@ func executeCommand(args ...string) (string, error) {
 	origSeedForce := seedForce
 	origNoBeads := noBeads
 	origMinimal := minimal
-	origGoalsJSON := goalsJSON
+	origGoalsJSON := output
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
@@ -148,7 +148,7 @@ func executeCommand(args ...string) (string, error) {
 		seedForce = origSeedForce
 		noBeads = origNoBeads
 		minimal = origMinimal
-		goalsJSON = origGoalsJSON
+		output = origGoalsJSON
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
@@ -248,7 +248,7 @@ func executeCommand(args ...string) (string, error) {
 	seedForce = false
 	noBeads = false
 	minimal = false
-	goalsJSON = false
+	output = "table"
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""
@@ -884,8 +884,8 @@ Increase coverage
 		t.Fatal(err)
 	}
 
-	goalsJSON = true
-	defer func() { goalsJSON = false }()
+	output = "json"
+	defer func() { output = "table" }()
 
 	out, err := executeCommand("goals", "validate", "--json")
 	if err != nil {
@@ -1327,7 +1327,7 @@ func TestCobraGlobalFlags(t *testing.T) {
 // TestCobraOutputValidateResult exercises outputValidateResult directly.
 func TestCobraOutputValidateResult(t *testing.T) {
 	t.Run("valid_table", func(t *testing.T) {
-		goalsJSON = false
+		output = "table"
 		// Capture stdout
 		old := os.Stdout
 		r, w, _ := os.Pipe()
@@ -1357,7 +1357,7 @@ func TestCobraOutputValidateResult(t *testing.T) {
 	})
 
 	t.Run("invalid_table", func(t *testing.T) {
-		goalsJSON = false
+		output = "table"
 		old := os.Stdout
 		r, w, _ := os.Pipe()
 		os.Stdout = w
@@ -1384,8 +1384,8 @@ func TestCobraOutputValidateResult(t *testing.T) {
 	})
 
 	t.Run("valid_json", func(t *testing.T) {
-		goalsJSON = true
-		defer func() { goalsJSON = false }()
+		output = "json"
+		defer func() { output = "table" }()
 
 		old := os.Stdout
 		r, w, _ := os.Pipe()

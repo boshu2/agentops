@@ -32,9 +32,9 @@ func withOutputJSON(t *testing.T) {
 // withGoalsJSON temporarily sets the goals-specific JSON flag.
 func withGoalsJSON(t *testing.T) {
 	t.Helper()
-	prev := goalsJSON
-	goalsJSON = true
-	t.Cleanup(func() { goalsJSON = prev })
+	prev := output
+	output = "json"
+	t.Cleanup(func() { output = prev })
 }
 
 // withDoctorJSON temporarily sets the doctor-specific JSON flag.

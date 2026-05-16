@@ -763,4 +763,3 @@ func TestTrigramOverlap_OneEmpty(t *testing.T) {
 		t.Errorf("trigramOverlap(a, empty) = %v, want 0", got)
 	}
 }
-

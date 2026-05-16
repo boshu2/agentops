@@ -40,13 +40,13 @@ Set up quality gates.
 	}
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = false
+	output = "table"
 
 	// Redirect stdout to avoid test noise
 	r, w, _ := os.Pipe()
@@ -84,13 +84,13 @@ Mission.
 	}
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = false
+	output = "table"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
@@ -137,13 +137,13 @@ Body.
 	}
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = true
+	output = "json"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
@@ -200,13 +200,13 @@ func TestGoalsValidate_WarningsForEmptyMission(t *testing.T) {
 	}
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = true
+	output = "json"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
@@ -276,13 +276,13 @@ Body text without steer line.
 	}
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = true
+	output = "json"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
@@ -337,13 +337,13 @@ Mission.
 	t.Chdir(dir)
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
-	goalsJSON = true
+	output = "json"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout
@@ -374,13 +374,13 @@ func TestGoalsValidate_MissingGoalsFile(t *testing.T) {
 	dir := t.TempDir()
 
 	oldFile := goalsFile
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = filepath.Join(dir, "GOALS.md") // does not exist
-	goalsJSON = true
+	output = "json"
 
 	r, w, _ := os.Pipe()
 	oldStdout := os.Stdout

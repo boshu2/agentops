@@ -227,7 +227,7 @@ func resetCommandState(t *testing.T) {
 	origSeedForce := seedForce
 	origNoBeads := noBeads
 	origMinimal := minimal
-	origGoalsJSON := goalsJSON
+	origGoalsJSON := output
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
@@ -308,7 +308,7 @@ func resetCommandState(t *testing.T) {
 		seedForce = origSeedForce
 		noBeads = origNoBeads
 		minimal = origMinimal
-		goalsJSON = origGoalsJSON
+		output = origGoalsJSON
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
@@ -390,7 +390,7 @@ func resetCommandState(t *testing.T) {
 	seedForce = false
 	noBeads = false
 	minimal = false
-	goalsJSON = false
+	output = "table"
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""

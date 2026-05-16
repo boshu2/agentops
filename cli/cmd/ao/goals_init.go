@@ -28,7 +28,7 @@ var goalsInitCmd = &cobra.Command{
 			NonInteractive: goalsInitNonInteractive,
 			Template:       goalsInitTemplate,
 			GoalsFile:      resolveGoalsFile(),
-			JSON:           goalsJSON,
+			JSON:           goalsJSONOutput(),
 			DryRun:         dryRun,
 			Stdin:          os.Stdin,
 			TemplatesFS:    embedded.TemplatesFS,

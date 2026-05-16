@@ -28,7 +28,7 @@ var goalsMeasureCmd = &cobra.Command{
 			GoalsFile:    resolveGoalsFile(),
 			Timeout:      time.Duration(goalsTimeout) * time.Second,
 			TotalTimeout: time.Duration(goalsMeasureTotalTimeout) * time.Second,
-			JSON:         goalsJSON,
+			JSON:         goalsJSONOutput(),
 			Verbose:      verbose,
 		})
 	},

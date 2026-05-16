@@ -23,8 +23,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "ao",
-	Short: "AgentOps Knowledge Compounding CLI",
+	Use:     "ao",
+	Version: version,
+	Short:   "AgentOps Knowledge Compounding CLI",
 	Long: `ao is the CLI for AgentOps, a software-factory control plane for repo-native agent work.
 
 "Problem in. Value out. Intelligence compounds."

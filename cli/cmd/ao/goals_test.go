@@ -54,20 +54,32 @@ func TestGoalsCmd_HasGroups(t *testing.T) {
 func TestGoalsCmd_PersistentFlags(t *testing.T) {
 	flags := goalsCmd.PersistentFlags()
 
-	tests := []struct {
-		name string
-	}{
-		{"file"},
-		{"json"},
-		{"timeout"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := flags.Lookup(tt.name)
-			if f == nil {
-				t.Errorf("missing persistent flag %q", tt.name)
+	// CLI-C2 (soc-nx1o): goals no longer registers a local --json bool. The
+	// goals family reads the global -o/--output flag via goalsJSONOutput() so
+	// --json and -o json behave identically across the whole CLI.
+	for _, name := range []string{"file", "timeout"} {
+		t.Run(name, func(t *testing.T) {
+			if flags.Lookup(name) == nil {
+				t.Errorf("missing persistent flag %q", name)
 			}
 		})
+	}
+	if flags.Lookup("json") != nil {
+		t.Error("goals still registers a local --json flag; it should inherit the global --json")
+	}
+}
+
+func TestGoalsJSONOutput_ReadsGlobalOutputFlag(t *testing.T) {
+	prev := output
+	t.Cleanup(func() { output = prev })
+
+	output = "json"
+	if !goalsJSONOutput() {
+		t.Error("goalsJSONOutput() = false with output=json, want true")
+	}
+	output = "table"
+	if goalsJSONOutput() {
+		t.Error("goalsJSONOutput() = true with output=table, want false")
 	}
 }
 

@@ -33,7 +33,7 @@ var goalsSteerAddCmd = &cobra.Command{
 			Description: steerAddDescription,
 			Steer:       steerAddSteer,
 			GoalsFile:   resolveGoalsFile(),
-			JSON:        goalsJSON,
+			JSON:        goalsJSONOutput(),
 			DryRun:      dryRun,
 		})
 	},
@@ -51,7 +51,7 @@ var goalsSteerRemoveCmd = &cobra.Command{
 		return goals.RunSteerRemove(goals.SteerRemoveOptions{
 			Number:    num,
 			GoalsFile: resolveGoalsFile(),
-			JSON:      goalsJSON,
+			JSON:      goalsJSONOutput(),
 			DryRun:    dryRun,
 		})
 	},
@@ -74,7 +74,7 @@ var goalsSteerPrioritizeCmd = &cobra.Command{
 			Number:      num,
 			NewPosition: newPos,
 			GoalsFile:   resolveGoalsFile(),
-			JSON:        goalsJSON,
+			JSON:        goalsJSONOutput(),
 			DryRun:      dryRun,
 		})
 	},
