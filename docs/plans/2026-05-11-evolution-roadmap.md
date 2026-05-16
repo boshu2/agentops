@@ -7,7 +7,7 @@ detail_level: comprehensive
 research_refs:
   - PRODUCT.md
   - GOALS.md
-  - PRACTICE.md
+  - PRACTICE-REGISTRY.md
   - docs/contracts/ (38 contracts)
   - docs/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md  # durable export of .agents/learnings/2026-05-11-... per soc-w6vh.5
 ---
@@ -16,7 +16,7 @@ research_refs:
 
 ## Purpose
 
-The 13-cycle /evolve session on 2026-05-11 shipped the practice-citation epic (756/756) and surfaced a structural friction: /evolve's Step 3 ladder picks from `bd ready` or `next-work.jsonl` but neither captures the **largest source of work in this repo** — the gap between aspirational docs (`PRODUCT.md`, `GOALS.md`, `PRACTICE.md`, `docs/contracts/`, `docs/code-map/`, `docs/plans/`) and what the code actually does.
+The 13-cycle /evolve session on 2026-05-11 shipped the practice-citation epic (756/756) and surfaced a structural friction: /evolve's Step 3 ladder picks from `bd ready` or `next-work.jsonl` but neither captures the **largest source of work in this repo** — the gap between aspirational docs (`PRODUCT.md`, `GOALS.md`, `PRACTICE-REGISTRY.md`, `docs/contracts/`, `docs/code-map/`, `docs/plans/`) and what the code actually does.
 
 This document enumerates that gap as concrete beads organized into evolution epics. /evolve drains the resulting `bd ready` queue instead of guessing.
 
@@ -283,5 +283,5 @@ When even those are empty: the loop has reconciled the entire aspirational surfa
 - GOALS.md "Directives" section — source for E1
 - GOALS.md "Three-Gap Contract Proof Surface" — source for E2 + E5
 - GOALS.md "Gates" table — source for E2 priority ordering
-- PRACTICE.md slug registry — source for D9 acceptance criteria
+- PRACTICE-REGISTRY.md slug registry — source for D9 acceptance criteria
 - `docs/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md` — context for why this road map exists (durable export of the originally-local-only learning, per soc-w6vh.5)

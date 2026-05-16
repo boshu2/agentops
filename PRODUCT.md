@@ -1,23 +1,23 @@
 ---
-last_reviewed: 2026-05-10
+last_reviewed: 2026-05-15
 ---
 
 # PRODUCT.md
 
 ## Mission
 
-**AgentOps automates the discipline of building a wiki for your agents.** The wiki is markdown in `.agents/` next to your code; the agents that use it also produce it. The compounded corpus is the moat.
+**AgentOps automates the discipline of building a wiki for your agents.** The wiki is markdown in `.agents/` next to your code; the agents that use it also produce it. The compounded corpus is the moat. The product doctrine is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
 ## Product Identity
 
-AgentOps is the engineering operating system for agent teams: a disciplined engineering layer for agentic software development.
+AgentOps is the engineering operating system for agent teams: software-engineering practice encoded for LLM agents under token scarcity.
 
 It gives agents the shared practices humans use to build complex software together: domain context, standards, tests, reviews, issues, handoffs, verdicts, wikis, operating loops, and release discipline.
 
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-It encodes the **DevSecOps SDLC** as the **CDLC**, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, planner/implementer/validator separation. The deeper product layer is simple: software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and schedules. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
+It is not a packet generator. Packets are one artifact. The deeper product layer is the **Context Development Life Cycle (CDLC)**: the DevSecOps SDLC translated to context, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, and planner/implementer/validator separation. Software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and schedules. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the scheduled overnight mode of the flywheel.
 
 One factory, three operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode), the **`ao` CLI** (terminal/CI control plane), and a **scheduling daemon** (off-API, off-vendor, runs on your hardware against your subscription), with **hooks and gates** wiring policy into the runtime.
 
@@ -101,7 +101,7 @@ Read the convergence table the right way: AgentOps and every harness like it get
 1. **Repo-local memory for agent work.** Attempts, decisions, citations, verdicts, handoffs, findings, retros, and run packets become artifacts the next session can use.
 2. **Context starts warm.** AgentOps compiles prior work into phase-scoped context instead of asking every agent to rediscover the repo from scratch.
 3. **Judgment becomes a gate.** `/pre-mortem`, `/vibe`, and `/council` add fresh-context review before risky plans and code ship.
-4. **Engineering practice becomes executable.** Pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, and product-management practices become reusable skills, standards, gates, and issue flows the operator can jump into, automate, or review.
+4. **Engineering practice becomes executable.** Pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, and product-management practices become reusable skills, standards, gates, issue flows, and acceptance proofs the operator can jump into, automate, or review.
 5. **Learning compounds under operator control.** `/forge`, `/harvest`, `/dream`, `ao flywheel`, and schedules turn completed work into reusable constraints without requiring an AgentOps cloud.
 6. **The corpus stays portable.** The same local knowledge base can outlive a model, chat session, harness, or vendor.
 
@@ -136,6 +136,17 @@ The same substrate, reached three ways:
 Before the four layers run, AgentOps helps the operator define the domain the agents operate inside. This is the pragmatic-engineering, DDD, TDD, and BDD-shaped part of the product: product docs define intent, goals define fitness, issues define current work, standards define style and constraints, tests or Gherkin-like scenarios define expected behavior, and skills encode the process.
 
 The point is to take process burden off the model. The LLM still researches, plans, implements, reviews, and explains, but AgentOps curates the context in and out of each phase so the model does not have to invent the development methodology while doing the work.
+
+The narrow waist is BDD/Gherkin + DDD + Hexagonal + TDD:
+
+| Practice | Product role |
+|---|---|
+| **BDD / Gherkin** | Express intent as observable behavior and acceptance examples |
+| **DDD** | Keep human and agent inside the same bounded vocabulary |
+| **Hexagonal architecture** | Keep adapters, tools, runtimes, and vendors outside the core loop |
+| **TDD** | Give every slice a first failing test and executable done condition |
+
+All other practices attach there: CI/CD reruns the proof, SRE/DORA measures fitness, ADRs and provenance preserve decision memory, wikis and ratchets preserve learning, and Agile/XP keeps work atomic instead of waterfall-shaped.
 
 ### Four layers
 
@@ -204,6 +215,8 @@ dream daemon defrags overnight → Next session starts with better context
 ```
 
 That's the CDLC. Generate, compile, test, distribute, deliver, observe, adapt. Same shape as the DevOps SDLC. Different substrate. The model stays the same. The corpus compounds.
+
+The CDLC is not a packet pipeline. It is the operating discipline that ensures every high-value context token carries intent, boundary, evidence, decision, constraint, or next action.
 
 ### Infrastructure (underneath all four layers)
 
@@ -350,7 +363,7 @@ Explicit `--preset` overrides from the user skip auto-include (user intent takes
 
 ## See Also
 
-- [PRACTICE.md](PRACTICE.md) — engineering doctrine: the reverse-traced lineage AgentOps inherits (DevOps/SRE/XP/Agile/TDD/BDD/DDD/microservices/cloud-native/distributed-systems/pragmatic engineering) and the synthesis claim: those practices applied under the agent-context-limited constraint.
+- [PRACTICE-REGISTRY.md](PRACTICE-REGISTRY.md) — practice lineage and canonical `practices: [slug]` registry used by skills, hooks, evals, schemas, scripts, and CLI code.
 - [Context Lifecycle Contract](docs/context-lifecycle.md) — canonical definition of judgment validation, durable learning, and loop closure, with evidence map and mechanism inventory.
 - [Trust Factory](docs/trust-factory.md) — how AgentOps maps to the five-step proof contract (identity, reproducibility, evaluation, evidence, recovery).
 - [Wiki for your agents](docs/wiki-for-agents.md) — the wiki framing as a standalone document.

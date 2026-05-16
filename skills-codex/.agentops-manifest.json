@@ -757,8 +757,8 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "751ca4d8c408d4a8d91e3d49a8410c66c555261b9187ac09209d2380ee06c1f3",
-      "generated_hash": "680aa5338e5fdde5363726966312c0c6875b2942db60746b86f757da9dc93f84"
+      "source_hash": "ea4a560f7677854bc8e667ef2742dc75c3d056e00fe61382ef7737d57e45e84b",
+      "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
       "name": "dream",
@@ -829,7 +829,7 @@
     {
       "name": "inject",
       "source_skill": "skills/inject",
-      "source_hash": "54efaad72fc25a62eabbd81948e61aad7cfaf6941470086c7e238d2412985bee",
+      "source_hash": "9d4ee4646f3c4f45d31bab6b2552f033789053c5c6921f7d5ebc8be0adf4cfe0",
       "generated_hash": "58e3de10df43b799e72e2a7b92a2b449f52734f94418d3ed69ce6c6f06e4c0f8"
     },
     {
@@ -871,7 +871,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "4aba3bbff64fd319d7d3f25e25afe46e1592aeb7588fdd8b5ac22cc031f70c6a",
+      "source_hash": "cfba5481c5b8da26d8f1ddcf818e8c956a20ea4dff9e8675f21bfe337d62cc45",
       "generated_hash": "29283694bad093e402500683ebc7e2008a43c1c7c87fb2fbaef9cab763434ebe"
     },
     {
@@ -1003,8 +1003,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "699da03581ef7bdffb8d6e492702ba8e21dd7359de945aac6ca2a35c6b44dc66",
-      "generated_hash": "c4f56071bfb8efe64c63425e2d57c5a9d93a42f1f77449092cc9e18f2b55f2dc"
+      "source_hash": "9502989616b6a082e91f73f5ea6d64ca9d991da255c5dced1a87dfaef5ddef35",
+      "generated_hash": "9e363a6b078261b729dcfc722a0665273e9ecbdce894a467f9014df6040c5646"
     },
     {
       "name": "scaffold",
@@ -1057,7 +1057,7 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "c69051826b7e1ec1549519286531f76912e1e4ad79f99b31841db44b3c3cdb55",
+      "source_hash": "462a3e72377a2552d4c0761c52570a6d49afcecd0d09d6d1754759c31c6f59b4",
       "generated_hash": "3c4868a748ade4c28be2ae7f79970b9d3f49b9999dc80c7d068e53afc58069a3"
     },
     {

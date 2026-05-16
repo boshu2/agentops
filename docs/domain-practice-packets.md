@@ -53,7 +53,7 @@ above them.
 |---|---|
 | `PRODUCT.md` | Product intent, personas, value proposition, known gaps, and claim posture. |
 | `GOALS.md` | Fitness spec and directives the repo must preserve. |
-| `PRACTICE.md` | Engineering doctrine: proven practice lineage and the artifact criterion for agent-context-limited work. |
+| `PRACTICE-REGISTRY.md` | Practice lineage and canonical `practices: [slug]` registry. |
 | `AGENTS.md` or runtime instructions | Local operating rules for agents in this repo. |
 | `docs/standards/` and `skills/standards/` | Coding and review conventions. |
 | `bd` issues | Current work, dependencies, acceptance criteria, and ownership. |

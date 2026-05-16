@@ -3,7 +3,7 @@
 # AgentOps Context Map
 
 Generated from SKILL.md frontmatter. See [ADR-0001](https://github.com/boshu2/agentops/blob/main/docs/adr/ADR-0001-ddd-hexagonal-adoption.md)
-and [`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) line 80 for the architectural rationale.
+and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the architectural rationale.
 
 ## Skills by hexagonal role
 
@@ -247,6 +247,7 @@ graph LR
 | `review` | produces | result.json |
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
+| `rpi` | consumes | domain |
 | `rpi` | consumes | ratchet |
 | `rpi` | consumes | validation |
 | `rpi` | produces | .agents/rpi/*.md |

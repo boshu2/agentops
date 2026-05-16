@@ -25,10 +25,9 @@ AgentOps lifecycle: product/domain intent becomes a context briefing, then a
 council verdict, then tracked work, then an execution packet, validation
 evidence, and a handoff. Provenance and trace make that movement inspectable.
 
-`PRACTICE.md` is the foundation text for that discipline. Its synthesis is that
-the practices still stand when the consumer is an AI agent, but the artifacts
-must shrink to fit context windows, link instead of embed, and carry forcing
-functions for sync.
+Canonical doctrine for that discipline lives in `docs/cdlc.md`. `PRACTICE-REGISTRY.md`
+backs the packet with practice lineage and stable `practices: [slug]`
+citations.
 
 ## Target User
 
@@ -83,7 +82,7 @@ The packet makes these things visible before the agents judge:
 - Product identity and target user.
 - The decision under review.
 - Product, goal, issue, standards, and evidence sources.
-- The practice lineage and artifact criterion from `PRACTICE.md`.
+- The practice lineage and citations from `PRACTICE-REGISTRY.md`.
 - Engineering practices to enforce, including DDD/TDD/BDD/review/release
   discipline where relevant.
 - Non-goals and claims that require external evidence before public use.

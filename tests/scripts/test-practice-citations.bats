@@ -10,7 +10,7 @@ setup() {
     cp "$ROOT/scripts/validate-practice-citations.sh" "$VALIDATOR"
     chmod +x "$VALIDATOR"
 
-    cat > "$REPO/PRACTICE.md" <<'EOF'
+    cat > "$REPO/PRACTICE-REGISTRY.md" <<'EOF'
 # Practice Fixture
 
 ## Practice slugs (canonical registry)

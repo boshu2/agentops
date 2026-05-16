@@ -22,9 +22,10 @@ The contract is descriptive of where we want to land, not historical. Existing c
 | Runtime-mined intake (JSONL) | **Finding** | _no drift_ |
 | Record that a Learning was applied | **Citation** | _no drift_ |
 | Assembled retrieval bundle delivered to a session | **ContextPacket** | "context bundle", "retrieval packet" |
+| Compression invariant for prompt/packet/handoff content | **Context Density Rule** | "density thing", "token density", "compression rule" |
 | Decay-ranked retrieval mechanism | **`ao inject`** | _no drift_ — the command is the canonical surface |
 
-BC1 is largely drift-free at the aggregate level. The one term to lock: **ContextPacket** for the bundle the session consumes (vs. `Context` as the BC1 generic concept).
+BC1 is largely drift-free at the aggregate level. The two terms to lock: **ContextPacket** for the bundle the session consumes (vs. `Context` as the BC1 generic concept), and **Context Density Rule** for the CDLC invariant that every context token carries intent, boundary, evidence, decision, constraint, or next action.
 
 ### BC2 Validation
 
@@ -112,7 +113,7 @@ This drift cuts across BC1 and BC5, so it gets its own section.
 |---|---|---|
 | **Skill** | Invocable harness module (e.g., `skills/evolve/SKILL.md`, `/evolve`). One per harness adapter via HarnessPort. | BC5 Runtime |
 | **Pattern** | Promoted recurring friction stored under `.agents/patterns/` or `skills/*/references/*-pattern.md`. Reusable across cycles. | BC1 Corpus |
-| **Practice** | Declared discipline citation in a primitive file (the `practices: [slug]` annotation atop SKILL.md / hook / script / eval / schema files). Links the primitive back to corpus practices in `PRACTICE.md`. | BC1 Corpus metadata |
+| **Practice** | Declared discipline citation in a primitive file (the `practices: [slug]` annotation atop SKILL.md / hook / script / eval / schema files). Links the primitive back to corpus practices in `PRACTICE-REGISTRY.md`. | BC1 Corpus metadata |
 | **Primitive** | Atomic unit of the AgentOps corpus that declares its practices. Includes Skills, hooks, schemas, evals, cli/ Go files. | BC1 Corpus (the unit being annotated) |
 
 The pinned distinction: **Skill is invokable**, **Pattern is reusable knowledge**, **Practice is a citation**, **Primitive is the annotated unit**. Don't say "skill" when you mean "pattern"; don't say "pattern" when you mean "practice".
@@ -123,7 +124,7 @@ A cycle-128 audit found `primitive` is used for three distinct concepts. The BC1
 
 | Sense | Used in | Distinguishing context |
 |---|---|---|
-| **BC1 Corpus Primitive** | `PRACTICE.md`, `practices: [slug]` annotations atop SKILL.md / hooks / scripts | "the annotated unit of the AgentOps corpus" |
+| **BC1 Corpus Primitive** | `PRACTICE-REGISTRY.md`, `practices: [slug]` annotations atop SKILL.md / hooks / scripts | "the annotated unit of the AgentOps corpus" |
 | **Domain Primitive** | `skills/domain/SKILL.md` + its `references/*-primitive.md` files | Architecture-as-domain — 6 structural primitives (Entry, Index, Citation, Primitive, Slice, Anti-Pattern). Scope: the `domain` skill only. |
 | **Runtime primitive** (Codex/Claude tool features) | `skills/converter/SKILL.md`, `skills/standards/SKILL.md` ("prohibited primitives", "Claude primitive labels") | Atomic tool/feature exposed by a runtime (e.g., a Claude-only hook event). Scope: converter + standards skills. |
 
@@ -136,7 +137,7 @@ These three senses do NOT need renaming — each is scoped to its surface. The f
 | #1 Gate / Check / Validation | Pass through ~90 `check-*.sh` headers; pin `Gate` in Go type renames where applicable | soc-5yuy.1 |
 | #2 Cycle / Loop / Iteration / Run | Deprecate `Run` outside Phase context; `lifecycle.CloseLoopIngestResult` keeps "loop" (different concept) | soc-5yuy.2 |
 | #3 Claim / Assertion / Evidence | ✓ DONE cycle 126: `daemon.QueueClaim` → `QueueLease` (108 refs renamed; consumers updated) | soc-5yuy.3 |
-| #4 Skill / Primitive / Pattern / Practice | Audit cross-references in `skills/*/SKILL.md` and `PRACTICE.md`; correct where the wrong term is used | soc-5yuy.4 |
+| #4 Skill / Primitive / Pattern / Practice | Audit cross-references in `skills/*/SKILL.md` and `PRACTICE-REGISTRY.md`; correct where the wrong term is used | soc-5yuy.4 |
 | #5 Session | Rename ambiguous `daemon.Session` types per BC; add canonical `AgentSession` and `OperatorSession` where missing | soc-5yuy.5 |
 
 Each rename ships as a single-concern commit demonstrating the 5 update principles (single concern, drift test, sibling citation, fitness delta, clean branch point). The rename itself IS the fitness delta (e.g., `legacy "Loop" references: N → 0`).
@@ -184,5 +185,6 @@ files (`*_test.go`) where Session/Claim mock types are legitimate.
 - 2026-05-13 cycle 131: **drift #5 RESOLVED via audit-only.** Cycle 125 first-execution audit had said the 3 bare Session types were 3 different concepts and the storage+search subset (97 refs) was the actual unit. Cycle 131 pre-rename substring audit shows the full surface is 342 word-bounded `Session` refs across 6 packages — too big for one cycle, and the Go package qualifier (storage.Session, search.Session, gascity.Session, agentworker.AgentSession) already disambiguates the 4 concepts. No rename needed. soc-5yuy now 5/5 closed (only .3 was an actual rename; all 4 others audit-only).
 - 2026-05-13 cycle 130: **drift #1 RESOLVED via audit-only.** Surveyed scripts/check-*.sh headers — 0 use "Validator", 38 use "Gate", rest describe their function. Only Go Validator is cli/internal/ratchet (legitimate ratchet-specific concept). The catalog's "90 scripts inconsistent" claim was overstated; the codebase organically drifted toward "Gate" already. Fourth soc-5yuy child to close via audit-only (joins .2 cycle 129, .4 cycle 128). Pattern: 3 of the 5 catalog flags turned out to be audit-only resolutions.
 - 2026-05-13 cycle 129: **drift #2 RESOLVED via audit-only.** Enumerated all `RPIRun*` (~150 identifiers) and `Iteration*` (132 identifiers). Most usage is serialized-contract enums (JobTypeRPIRun), filesystem path constants (RPIRunRegistryDir), legitimate Runner naming, substring-coincidence ("Runtime"), or scoped Dream-internal counters. Contract over-flagged this — the actual codebase has Run/Iteration semantically correct. No renames needed. Third soc-5yuy child to close via audit-only (after cycle-128 drift #4 and cycle-126 drift #3 via rename).
-- 2026-05-13 cycle 128: **drift #4 RESOLVED via audit-only.** Surveyed `primitive`/`skill`/`pattern`/`practice` usage across SKILL.md, PRACTICE.md, contracts. Found no systemic misuse — Skill is consistently "invokable", Pattern is "reusable knowledge", Practice is "citation annotation". `primitive` IS overloaded across 3 distinct concepts (BC1 Corpus Primitive vs Domain Primitive in skills/domain/ vs Runtime primitive in converter/standards) — added a sub-overload table to the contract documenting all 3 senses as scoped (not drift). No renames needed; the audit IS the resolution.
+- 2026-05-13 cycle 128: **drift #4 RESOLVED via audit-only.** Surveyed `primitive`/`skill`/`pattern`/`practice` usage across SKILL.md, PRACTICE-REGISTRY.md, contracts. Found no systemic misuse — Skill is consistently "invokable", Pattern is "reusable knowledge", Practice is "citation annotation". `primitive` IS overloaded across 3 distinct concepts (BC1 Corpus Primitive vs Domain Primitive in skills/domain/ vs Runtime primitive in converter/standards) — added a sub-overload table to the contract documenting all 3 senses as scoped (not drift). No renames needed; the audit IS the resolution.
 - 2026-05-13 cycle 126: **drift #3 RESOLVED.** `daemon.QueueClaim` → `QueueLease` rename shipped: 108 Go refs across cli/internal/{daemon,rpi,llmwiki} + cli/cmd/ao. Audit-then-execute: pre-rename audit (cycle-125 pattern) showed no split-concept surprise for the daemon struct itself, but post-commit self-review caught an over-broad sed in the same cycle — `rpi.ErrQueueClaimConflict` / `rpi.RequireQueueClaimOwner` (about work-item claim coordination in `.agents/rpi/next-work.jsonl`, NOT the daemon job-slot lease) were also renamed by the substring match. Reverted just those identifiers; daemon-side `QueueLease` stays. Lesson: substring-based sed can over-reach across different concepts that share a prefix; an audit needs to enumerate ALL identifiers containing the substring, not just the type definition. First soc-5yuy child to close.
+- 2026-05-15: added **Context Density Rule** to BC1 and `skills/domain/references/context-density-rule.md`. This gives the "density thing" an explicit DDD name and keeps token-scarcity doctrine in CDLC/operating-loop surfaces rather than in the practice registry.

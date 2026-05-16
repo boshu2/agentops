@@ -86,9 +86,9 @@ Expected:
 
 This is the first artifact the viewer should understand. It names the product
 identity, target user, decision, domain sources, practice sources, evidence
-rules, and non-goals. In this repo, `PRACTICE.md` is the foundation practice
-source: it explains why AgentOps artifacts must stay small enough for agent
-context windows while linking forward to their forcing functions.
+rules, and non-goals. In this repo, `PRACTICE-REGISTRY.md` is the practice registry:
+it provides the lineage and stable slugs behind the packet's engineering
+citations.
 
 ### 4. Assemble Runtime Context
 

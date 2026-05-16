@@ -150,7 +150,7 @@ Required fields:
 - Runtime.
 - Repo type: public clone, OSS repo, private repo, synthetic demo.
 - Setup time.
-- Whether `PRACTICE.md` made the packet's engineering doctrine clearer.
+- Whether the CDLC and operating-loop docs made the packet's engineering doctrine clearer.
 - Packet path or redacted packet excerpt.
 - Council mode.
 - Verdict path or redacted verdict excerpt.

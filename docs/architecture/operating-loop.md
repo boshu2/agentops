@@ -92,7 +92,7 @@ Do not run full ceremony for every observation. Promote progressively:
 | Repeats twice across sessions or beads | `.agents/learnings/<slug>.md` |
 | Changes future agent behavior | Update a SKILL.md or a template under `docs/templates/` |
 | Must never regress | Add a validation gate (warn-only first, then blocking) |
-| Becomes core doctrine | Promote into PRODUCT.md / GOALS.md / PRACTICE.md |
+| Becomes core doctrine | Promote into PRODUCT.md / GOALS.md / docs/cdlc.md |
 
 The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only happens when capture meets pruning.
 
@@ -148,5 +148,5 @@ The loop is operational discipline. The architectural seams are structural. They
 - [Context Map](../contracts/context-map.md) — bounded contexts and skill roles
 - [`docs/templates/intent-issue.md`](../templates/intent-issue.md) — BDD intent issue template
 - [`docs/templates/slice-validation.md`](../templates/slice-validation.md) — per-slice validation plan template
-- [`PRACTICE.md`](../../PRACTICE.md) — practice slug registry
+- [`PRACTICE-REGISTRY.md`](../../PRACTICE-REGISTRY.md) — practice slug registry
 - [`GOALS.md`](../../GOALS.md) Directive #12 — fitness gate that enforces this loop for non-trivial work

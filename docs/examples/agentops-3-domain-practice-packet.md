@@ -22,7 +22,7 @@ weak review evidence, and cold starts between sessions.
 |---|---|
 | `PRODUCT.md` | Canonical product identity, target personas, 10-star experience, and claim posture. |
 | `GOALS.md` | Repo north stars, anti-stars, and gates that define what must not regress. |
-| `PRACTICE.md` | Foundation engineering doctrine and the criterion that every artifact is bounded context, spec, verification, or discovery surface. |
+| `PRACTICE-REGISTRY.md` | Practice lineage and canonical `practices: [slug]` registry for the packet's engineering citations. |
 | `README.md` | Current public front door; contains stale language the 3.0 path must replace. |
 | `docs/index.md` | Current documentation landing; should converge with README after proof exists. |
 | `soc-m6v5.9.7` | Education-led GTM and first-value proof epic. |
@@ -34,7 +34,7 @@ weak review evidence, and cold starts between sessions.
 
 | Source | Practice Encoded |
 |---|---|
-| `PRACTICE.md` | Reverse-traced engineering lineage: DevOps/SRE/XP/TDD/BDD/DDD/cloud-native/distributed-systems practices adapted to finite agent context windows. |
+| `PRACTICE-REGISTRY.md` | Reverse-traced engineering lineage and stable practice slugs for DevOps/SRE/XP/TDD/BDD/DDD/cloud-native/distributed-systems citations. |
 | `skills/council/SKILL.md` | Independent multi-judge consensus over one shared evidence packet. |
 | `docs/context-packet.md` | Phase-scoped context budget and GOALS/HISTORY/INTEL/TASK/PROTOCOL briefing model. |
 | `docs/standards/markdown-style-guide.md` | Public docs and launch copy must pass markdown hygiene. |

@@ -8,7 +8,7 @@
 
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Project overview and quick start
 - [Getting Started](getting-started/index.md) — Install + first command landing page
-- [PRACTICE.md](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) — Engineering doctrine and practice lineage for agent-context-limited artifacts
+- [PRACTICE-REGISTRY.md](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — Practice lineage and canonical `practices: [slug]` registry
 - [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md) — Public gist/launch copy for the council-first 3.0 story
 - [AgentOps 3.0 First-Value Path](first-value-path.md) — First-session path from install to domain packet, council verdict, tracked work, and optional daemon lane
 - [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
@@ -32,7 +32,7 @@
 | **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
 | **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/retro`, `/forge`, `ao lookup`, `.agents/` |
 
-Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
 Bridge / framing docs:
 

@@ -1,20 +1,21 @@
-# AgentOps Practice
+# AgentOps Practice Registry
 
-> Foundation text. Engineering doctrine for this repo. Peer to `PRODUCT.md`
-> (positioning), `GOALS.md` (fitness goals), `AGENTS.md` (vault contract).
-> Product doesn't own this file; engineering does.
+> Practice lineage and slug registry for this repo. Not product positioning and
+> not the CDLC doctrine. Canonical CDLC framing lives in `docs/cdlc.md`;
+> product posture lives in `PRODUCT.md`; measurable fitness lives in `GOALS.md`.
 
 ## What this is
 
-The codification of the engineering discipline AgentOps inherits from and
-applies. It names the lineage (reverse-traced, only practices proven in
-production), the synthesis (what AgentOps IS as a practice), the constraint
-that makes it different (consumers are AI agents with finite context windows),
-and the implication for every artifact in this repo.
+The derivation root for `practices: [slug]` citations across skills, hooks,
+evals, schemas, scripts, and CLI code. It names the practice lineage
+AgentOps inherits from, records a short agent-context interpretation, and
+defines the canonical slug registry validated by
+`scripts/validate-practice-citations.sh`.
 
-This document is one foundation text among several. When in doubt about HOW
-to build, this is the reference. When in doubt about WHAT to build, see
-`PRODUCT.md` and `GOALS.md`.
+Use this file to answer "which proven practice does this primitive embody?"
+Do not use it as a second product page. If the claim is core CDLC doctrine,
+put it in `docs/cdlc.md`, `docs/architecture/operating-loop.md`, `PRODUCT.md`,
+or `GOALS.md`.
 
 ## Lineage — reverse-traced from now to the 90s
 

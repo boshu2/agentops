@@ -89,7 +89,7 @@ Run `ao demo --quick`, then follow `docs/first-value-path.md`.
 **Demo beats**
 
 1. Open the domain/practice packet.
-2. Open `PRACTICE.md` as the foundation text behind the packet.
+2. Open `docs/cdlc.md` as the foundation text behind the packet.
 3. Point at product identity, target user, sources, practice sources, evidence
    rules, and non-goals.
 4. Copy it into `.agents/packets/`.

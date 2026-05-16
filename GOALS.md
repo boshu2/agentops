@@ -11,6 +11,7 @@ A wiki for your agents — repo-native, version-controlled, mechanically maintai
 - Knowledge captured in one session is retrieved and applied in the next
 - The flywheel runs autonomously between sessions (dream cycle), not just on-demand
 - A new user goes from install to first validated flow in under 5 minutes
+- The CDLC is the execution model: every high-value context token carries intent, boundary, evidence, decision, constraint, or next action
 
 ## Anti Stars
 
@@ -97,11 +98,13 @@ The existing eval suites are CI canaries (contract checks). None answers "did th
 
 ### 12. Operating loop is the execution primitive
 
-Non-trivial work must run through the [operating loop](docs/architecture/operating-loop.md): BDD-shaped intent issue → vertical slices → conflict-free wave (when parallel) → bead acceptance against acceptance examples → evidence + ratcheted learning. The doctrine source is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](.agents/research/2026-05-15-cdlc-dojo-doctrine.md); the templates are [`docs/templates/intent-issue.md`](docs/templates/intent-issue.md) and [`docs/templates/slice-validation.md`](docs/templates/slice-validation.md).
+Non-trivial work must run through the [operating loop](docs/architecture/operating-loop.md): BDD-shaped intent issue → vertical slices → conflict-free wave (when parallel) → bead acceptance against acceptance examples → evidence + ratcheted learning. BDD/Gherkin + DDD + Hexagonal + TDD is the narrow waist: observable intent, bounded language, explicit ports/adapters, and executable proof. The doctrine source is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](.agents/research/2026-05-15-cdlc-dojo-doctrine.md); the templates are [`docs/templates/intent-issue.md`](docs/templates/intent-issue.md) and [`docs/templates/slice-validation.md`](docs/templates/slice-validation.md).
 
 A bead is "non-trivial" when it crosses sessions, agents, files, or bounded contexts — the threshold under which the loop is overhead. Trivial one-shot work (typo fix, dep bump, doc nudge) is exempt. Everything else must, before implementation begins: name a bounded context from the [context map](docs/contracts/context-map.md); carry at least one Given/When/Then acceptance example; decompose into vertical slices with one nameable first-failing-test per slice; mark its wave plan parallel only after the wave-validity check passes; close only when every acceptance example maps to a passing test.
 
 This directive starts in **warn-only** posture. The initial gate (`scripts/check-loop-shape.sh`, to be added) checks that beads tagged non-trivial have at least one Gherkin block in the intent issue and at least one slice candidate. It flips to blocking once the corpus-wide pass rate is stable.
+
+Waterfall-shaped speculative plans fail this directive when they create context bulk before proof. The acceptable unit is atomic: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
 **Steer:** increase (beads with BDD intent + slice decomposition before implementation)
 

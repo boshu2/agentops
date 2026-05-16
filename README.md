@@ -9,7 +9,7 @@
 From agent opinions to engineering verdicts.
 
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
-**AgentOps is a disciplined engineering layer for agentic software development.** It keeps the books for coding agents, then compiles that record into context for your software factory. It captures what agents tried, what worked, what failed, what was validated, and what should constrain the next run.
+**AgentOps is software-engineering practice encoded for LLM agents under token scarcity.** It is not a packet generator; packets are one artifact. AgentOps keeps the books for coding agents, then compiles that record into context for your software factory. It captures what agents tried, what worked, what failed, what was validated, and what should constrain the next run.
 
 *AgentOps is the shovel. Start digging.*
 
@@ -113,6 +113,27 @@ The point is not a bigger prompt. The point is a repo that remembers what was tr
 
 ---
 
+## The CDLC Narrow Waist
+
+CDLC is the **Context Development Life Cycle**: AgentOps' context-native SDLC. DevOps made delivery operational for human teams. AgentOps makes context operational for agent teams, because context is the substrate LLM agents actually consume.
+
+Every token should carry one of six payloads: **intent, boundary, evidence, decision, constraint, or next action**. If it carries none of those, it probably does not belong in the prompt.
+
+The narrow waist is deliberately small:
+
+| Practice | What AgentOps uses it for |
+|---|---|
+| **BDD / Gherkin** | Dense intent in observable behavior terms |
+| **DDD** | Shared names, bounded contexts, and a vocabulary humans and agents can both use |
+| **Hexagonal architecture** | Ports and adapters that keep runtime, tool, and vendor details outside the core loop |
+| **TDD** | A local executable done condition for each slice |
+
+Everything else plugs into that waist: CI/CD repeats the proof, SRE/DORA measures fitness, ADRs and provenance preserve why-memory, wikis and ratchets preserve durable learning, and Agile/XP keeps work in small vertical slices instead of speculative waterfall plans.
+
+Atomic process is the rule: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
+
+---
+
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 
 ## What AgentOps Gives You
@@ -146,7 +167,7 @@ More: [docs/wiki-for-agents.md](docs/wiki-for-agents.md) · [docs/trust-factory.
 
 ---
 
-## Why DevOps?
+## Why CDLC?
 
 DevOps proved that disciplined systems around indeterministic workers produce reliable output. SRE proved it again with SLOs and error budgets. Kubernetes proved it for infrastructure with control loops. Coding agents are the next indeterministic worker class. Same playbook. New substrate.
 
@@ -155,7 +176,7 @@ Every primitive software engineering already gave us has a counterpart in the ag
 | Software Engineering | Coding-Agent World |
 |---|---|
 | Source code | Context (corpus, planning rules, learnings) |
-| SDLC | CDLC (Context Development Lifecycle) |
+| SDLC | CDLC (Context Development Life Cycle) |
 | Libraries (Maven, npm, crates.io) | Context libraries (the `.agents/` corpus) |
 | Compilers | Context compilers (`ao compile` → wiki) |
 | Code review | Multi-model councils |
@@ -168,7 +189,7 @@ Every primitive software engineering already gave us has a counterpart in the ag
 
 Major engineering organizations are reorganizing around feeding their agents the right context — restructuring teams, building internal context platforms, hiring "context engineering" leads. AgentOps is that pattern for solo developers and small teams. Same playbook. Same asset class. Different scale.
 
-LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. Full CDLC treatment: [docs/cdlc.md](docs/cdlc.md).
+LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how. Full treatment: [docs/cdlc.md](docs/cdlc.md).
 
 ---
 

@@ -13,6 +13,8 @@ hide:
 <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
 `.agents/` is just a wiki — markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
 
+AgentOps is software-engineering practice encoded for LLM agents under token scarcity. The CDLC turns those practices into a context-native operating loop: dense intent, explicit boundaries, executable evidence, durable decisions, real constraints, and clear next actions.
+
 *The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
 
 *AgentOps is the shovel. Start digging.*

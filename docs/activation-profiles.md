@@ -48,7 +48,7 @@ Storyboard: [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-d
 - `docs/examples/agentops-3-domain-practice-packet.md`
 - `PRODUCT.md`
 - `GOALS.md`
-- `PRACTICE.md`
+- `PRACTICE-REGISTRY.md`
 - Relevant bd issue or plan path
 - `skills/council/SKILL.md`
 - Claim or evidence rules when public copy is involved
@@ -87,7 +87,7 @@ Use when moving from a real repo task to a validated implementation path.
 
 - Domain/practice packet for the task
 - `GOALS.md`
-- `PRACTICE.md`
+- `PRACTICE-REGISTRY.md`
 - `AGENTS.md` or local runtime instructions
 - One bd issue or `.agents/rpi/execution-packet.json`
 - Repo standards and relevant tests
@@ -125,7 +125,7 @@ Use when an operator wants judgment before merging agent-produced work.
 - PR diff or local git diff
 - Domain/practice packet for the repo or feature
 - `GOALS.md`
-- `PRACTICE.md`
+- `PRACTICE-REGISTRY.md`
 - Relevant standards and tests
 - Existing council or vibe findings, if any
 
@@ -160,7 +160,7 @@ Use when preparing a release or public launch claim.
 
 - Release cut sheet
 - `PRODUCT.md`
-- `PRACTICE.md`
+- `PRACTICE-REGISTRY.md`
 - `docs/releases/` or `evals/workbench/results/` evidence
 - Claim ledger and claim markers
 - Release validation checklist

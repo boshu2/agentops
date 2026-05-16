@@ -1,6 +1,7 @@
 // Package packet defines the ExecutionPacket aggregate root.
 // This is the linked-intent object that carries discovery output
-// through the RPI pipeline. See PRACTICE.md lines 169-172.
+// through the RPI pipeline. See docs/cdlc.md and
+// docs/architecture/operating-loop.md.
 package packet
 
 // ExecutionPacket is the Aggregate Root for an RPI discovery output.

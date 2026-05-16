@@ -19,7 +19,7 @@
 | Field | Value |
 |---|---|
 | Setup time |  |
-| PRACTICE.md clarified doctrine | yes / no / not noticed |
+| CDLC doctrine clarified | yes / no / not noticed |
 | Packet path or excerpt |  |
 | Council mode | mixed / quick fallback / blocked |
 | Verdict status | PASS / WARN / BLOCK / unclear |

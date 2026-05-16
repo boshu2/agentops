@@ -2,6 +2,10 @@
 name: rpi
 description: Run discovery, crank, validation.
 practices:
+- bdd-gherkin
+- ddd-bounded-context
+- hexagonal-architecture
+- tdd
 - continuous-delivery
 - dora-metrics
 - agile-manifesto
@@ -10,6 +14,7 @@ hexagonal_role: supporting
 consumes:
 - crank
 - discovery
+- domain
 - ratchet
 - validation
 produces:
@@ -34,6 +39,7 @@ context:
 metadata:
   tier: meta
   dependencies:
+  - domain
   - discovery
   - crank
   - validation
@@ -59,6 +65,7 @@ you need the full autonomy contract.
 - **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
+- **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
 
 ## Core Contract
 
@@ -133,7 +140,9 @@ Enter at the routed phase and run every phase after it.
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
    `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
-   command without invoking it.
+   command without invoking it. Before emitting the report, apply the Context
+   Density Rule: every line should carry intent, boundary, evidence, decision,
+   constraint, or next action.
 
 ## Phase Data Contract
 

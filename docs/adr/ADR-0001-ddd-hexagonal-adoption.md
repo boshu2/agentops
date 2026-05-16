@@ -5,7 +5,7 @@
 
 ## Context
 
-[`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) line 80 and [`PRODUCT.md`](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) lines 104 and 137 already claim DDD + Hexagonal as the load-bearing architectural style. The encoding existed implicitly in `skills/rpi/references/phase-data-contracts.md` (linked-intent packet), `skills/domain/` (ubiquitous language), and the practice slug registry — but it was not mechanically enforced. This left the architecture as documentation rather than code-as-truth.
+[`docs/cdlc.md`](../cdlc.md), [`PRODUCT.md`](https://github.com/boshu2/agentops/blob/main/PRODUCT.md), and the `ddd-bounded-context` / `hexagonal-architecture` rows in [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) already identify DDD + Hexagonal as the load-bearing architectural style. The encoding existed implicitly in `skills/rpi/references/phase-data-contracts.md` (linked-intent packet), `skills/domain/` (ubiquitous language), and the practice slug registry — but it was not mechanically enforced. This left the architecture as documentation rather than code-as-truth.
 
 ## Decision
 
@@ -36,7 +36,7 @@ Adopt DDD + Hexagonal as encoded architecture, starting with `ExecutionPacket` a
 - Alistair Cockburn, 2005. *Hexagonal Architecture* — <https://alistair.cockburn.us/hexagonal-architecture/>.
 - Eric Evans, 2003. *Domain-Driven Design*.
 - Bertrand Meyer. *Object-Oriented Software Construction* — Design by Contract.
-- [`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) line 80 — load-bearing claim.
-- [`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md) lines 93–94 — ADR cadence convention (Nygard 2011).
+- [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — canonical practice slugs for `ddd-bounded-context`, `hexagonal-architecture`, and `adr`.
+- [`docs/cdlc.md`](../cdlc.md) — CDLC doctrine and narrow-waist framing.
 - [Ports and Adapters](../architecture/ports-and-adapters.md) — this ADR's companion overview.
 - [Context Map](../contracts/context-map.md) — auto-generated map of bounded contexts.

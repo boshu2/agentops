@@ -23,7 +23,7 @@ If you spawn into this repo without context, do this first:
 
 ## Foundation texts
 
-When in doubt about HOW to build, read [`PRACTICE.md`](PRACTICE.md) — engineering doctrine, the reverse-traced lineage of practices AgentOps inherits, and what the agent-context-limited constraint changes. When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md).
+When in doubt about HOW the work should flow, read [`docs/cdlc.md`](docs/cdlc.md) and [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Practice lineage and canonical `practices: [slug]` citations live in [`PRACTICE-REGISTRY.md`](PRACTICE-REGISTRY.md). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md).
 
 ## Installing/Updating Skills
 
@@ -86,7 +86,7 @@ Advisory jobs run on every PR but their failure does NOT block merge. They surfa
 | **security-toolchain-gate** | 14d | Open a `bd` issue with label `ci-advisory`. Network/install flake (item 40) is mitigated by 3-attempt exponential-backoff retry on the install step; only persistent toolchain or scanner regressions count toward the SLA. |
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
-| **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
+| **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
 | **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
 | **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
 
@@ -260,7 +260,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
-| **practice-citations** | Walks Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE.md; reports missing or invalid slug citations | Non-blocking (`continue-on-error: true`); strict advisory initially. Promotes to required after one clean backfill cycle |
+| **practice-citations** | Walks Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md; reports missing or invalid slug citations | Non-blocking (`continue-on-error: true`); strict advisory initially. Promotes to required after one clean backfill cycle |
 | **pre-push-gate-wired** | `.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref | Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke` |
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |

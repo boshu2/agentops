@@ -200,8 +200,8 @@ buf.write(
     "[ADR-0001](https://github.com/boshu2/agentops/blob/main/docs/adr/ADR-0001-ddd-hexagonal-adoption.md)\n"
 )
 buf.write(
-    "and [`PRACTICE.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE.md)"
-    " line 80 for the architectural rationale.\n"
+    "and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md)"
+    " for the architectural rationale.\n"
 )
 buf.write("\n")
 

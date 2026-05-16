@@ -110,5 +110,5 @@ Both framings describe the same product. They optimize for different listeners.
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — product-level framing and dogfood receipts
 - [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) — internal positioning and four-layer model
 - [docs/wiki-for-agents.md](./wiki-for-agents.md) — the wiki-framing companion
-- [docs/cdlc.md](./cdlc.md) — the Context Development Lifecycle in full
+- [docs/cdlc.md](./cdlc.md) — the Context Development Life Cycle in full
 - [docs/the-science.md](./the-science.md) — knowledge-decay and compounding model

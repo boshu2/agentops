@@ -5,12 +5,12 @@
 # Walks the repo's primitives (skills, hooks, evals, CLI command files,
 # schemas, and scripts with practice declarations)
 # and reports which required ones declare a `practices: [...]` derivation from
-# PRACTICE.md and which don't.
+# PRACTICE-REGISTRY.md and which don't.
 #
 # Default mode: REPORT-ONLY (exit 0 with findings printed).
 # Strict mode exits 1 on missing required declarations or invalid slugs.
 #
-# Practices derive from: <repo>/PRACTICE.md slug registry table.
+# Practices derive from: <repo>/PRACTICE-REGISTRY.md slug registry table.
 # Primitives cite slugs in frontmatter (skills, evals) or header comments
 # (hook scripts, shell scripts, CLI command files).
 #
@@ -44,7 +44,7 @@ for arg in "$@"; do
   esac
 done
 
-PRACTICE_FILE="PRACTICE.md"
+PRACTICE_FILE="PRACTICE-REGISTRY.md"
 if [[ ! -f "$PRACTICE_FILE" ]]; then
   echo "ERROR: $PRACTICE_FILE not found (run from repo root)" >&2
   exit 2

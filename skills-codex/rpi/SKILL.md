@@ -33,6 +33,12 @@ skills with direct agent spawns, or skip `$validation`. Read
 [../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
 for the full anti-compression contract.
 
+## Context Density Rule
+
+At every phase boundary, preserve only context that carries intent, boundary,
+evidence, decision, constraint, or next action. Omit or link anything else.
+The domain entry is `../domain/references/context-density-rule.md`.
+
 RPI owns one lifecycle objective across all phases. Preserve the discovered
 `epic_id` when present; otherwise preserve the original goal and execution
 packet objective. A child bead or one ready slice is context, not a replacement
@@ -91,7 +97,9 @@ Enter at the routed phase and run every phase after it.
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
    `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
-   command without invoking it.
+   command without invoking it. Before emitting the report, apply the Context
+   Density Rule: every line should carry intent, boundary, evidence, decision,
+   constraint, or next action.
 
 ## Phase Data Contract
 

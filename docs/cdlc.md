@@ -1,15 +1,17 @@
 # Context Development Life Cycle
 
-> **TL;DR:** Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. The same shape, applied to context, is what AgentOps does. Every phase of the software development lifecycle has a context counterpart. AgentOps implements all of them.
+> **TL;DR:** AgentOps is not a packet generator. It is software-engineering practice encoded for LLM agents under token scarcity. CDLC is AgentOps' context-native SDLC: every phase of software delivery has a context counterpart, and every high-value context token follows the **Context Density Rule**: carry intent, boundary, evidence, decision, constraint, or next action.
 
 Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. The same shape, applied to context, is what AgentOps does.
+
+Packets, briefings, skills, verdicts, and learnings are artifacts. The deeper product is the practice layer: BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, wikis, Agile/XP, and pragmatic engineering encoded into the runtime structure agents work inside.
 
 The translation is direct. Each piece of the software-engineering stack has a coding-agent counterpart:
 
 | Software Engineering | Coding-Agent World |
 |---|---|
 | Source code | Context (corpus, planning rules, learnings) |
-| SDLC | Context Development Lifecycle |
+| SDLC | Context Development Life Cycle |
 | Libraries (Maven, npm, crates.io) | Context libraries (the `.agents/` corpus) |
 | Compilers | Context compilers (`ao compile` → wiki) |
 | Code review | Multi-model councils |
@@ -20,7 +22,7 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
-We call this the **Context Development Lifecycle (CDLC)** — the body of this doc explains how each SDLC phase has a CDLC counterpart.
+We call this the **Context Development Life Cycle (CDLC)** — the body of this doc explains how each SDLC phase has a CDLC counterpart.
 
 ### Companion docs
 
@@ -55,6 +57,39 @@ The answer is the same shape. Different substrate.
 ```
 
 The SDLC produces deployable artifacts. The CDLC produces injectable context. Both compound through feedback loops. Both degrade without discipline.
+
+---
+
+## The Narrow Waist
+
+The CDLC has a narrow waist because LLM agents do not have infinite context:
+
+```
+historical software-engineering practice
+        ↓
+agent-context-limited constraint
+        ↓
+small verifiable slices
+        ↓
+dense intent + executable evidence
+        ↓
+less rediscovery, less drift, less hallucinated done
+```
+
+Four practices carry the highest density:
+
+| Practice | CDLC role |
+|---|---|
+| **BDD / Gherkin** | States what behavior matters in observable terms |
+| **DDD** | Gives humans and agents shared names, aggregates, and bounded contexts |
+| **Hexagonal architecture** | Keeps tools, model runtimes, and vendor adapters outside the core loop |
+| **TDD** | Gives the agent an executable local done condition |
+
+Everything else plugs into that waist. CI/CD runs the proof repeatedly. SRE/DORA measures health. ADRs and provenance explain why decisions happened. Wikis and ratchets keep knowledge durable. Agile/XP keeps work in small vertical increments. Pragmatic engineering keeps the slice evidence-bearing and reversible.
+
+The density invariant has a domain name: **Context Density Rule**. The domain entry lives at [`skills/domain/references/context-density-rule.md`](../skills/domain/references/context-density-rule.md).
+
+That is why waterfall is the wrong shape here. It spends context on large speculative artifacts before proof exists. CDLC prefers atomic process: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
 ---
 

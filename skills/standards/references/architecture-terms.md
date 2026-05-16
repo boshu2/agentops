@@ -1,6 +1,6 @@
 # Architecture Terms (Ubiquitous-Language Register)
 
-This file is the canonical register for the DDD/Hexagonal vocabulary AgentOps uses. Per `PRACTICE.md` it is the shared kernel for cross-skill terminology — every skill, hook, schema, and CLI command that names one of these concepts MUST use the term as defined here. New terms are appended; existing entries are revised in place rather than renamed. Citations point to the source work that named the concept (`Author Year`) or to a line in `PRACTICE.md`. Code anchors are relative-path links; some anchors point at files scheduled by later waves of the DDD+Hexagonal v1 plan and may not yet exist on disk — that is intentional forward referencing.
+This file is the canonical register for the DDD/Hexagonal vocabulary AgentOps uses. It complements `PRACTICE-REGISTRY.md`, which owns practice slugs rather than architecture terms. Every skill, hook, schema, and CLI command that names one of these concepts MUST use the term as defined here. New terms are appended; existing entries are revised in place rather than renamed. Citations point to the source work that named the concept (`Author Year`) or to a canonical AgentOps doctrine surface. Code anchors are relative-path links; some anchors point at files scheduled by later waves of the DDD+Hexagonal v1 plan and may not yet exist on disk — that is intentional forward referencing.
 
 ## Aggregate / Aggregate Root
 
@@ -12,7 +12,7 @@ This file is the canonical register for the DDD/Hexagonal vocabulary AgentOps us
 
 ## Ubiquitous Language
 
-**Ubiquitous Language** — Evans, *Domain-Driven Design*, 2003 (Part I, ch. 2). A *ubiquitous language* is a vocabulary deliberately shared between domain experts and code so that the same words name the same concepts in conversation, documentation, and source — eliminating the translation layer that otherwise rots requirements. AgentOps maintains its ubiquitous language as two coupled registries: the practice-slug registry at [`../../../PRACTICE.md`](../../../PRACTICE.md) (see line 217, "Practice slugs (canonical registry)") for cross-era practice names, and this file for DDD/Hexagonal architectural terms. Anchor: [`../../../PRACTICE.md`](../../../PRACTICE.md) — the slug registry section.
+**Ubiquitous Language** — Evans, *Domain-Driven Design*, 2003 (Part I, ch. 2). A *ubiquitous language* is a vocabulary deliberately shared between domain experts and code so that the same words name the same concepts in conversation, documentation, and source — eliminating the translation layer that otherwise rots requirements. AgentOps maintains its ubiquitous language as two coupled registries: the practice-slug registry at [`../../../PRACTICE-REGISTRY.md`](../../../PRACTICE-REGISTRY.md) for cross-era practice names, and this file for DDD/Hexagonal architectural terms. Anchor: [`../../../PRACTICE-REGISTRY.md`](../../../PRACTICE-REGISTRY.md) — the slug registry section.
 
 ## Port / Adapter
 
