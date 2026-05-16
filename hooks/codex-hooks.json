@@ -39,16 +39,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/prompt-nudge.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/intent-echo.sh",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/quality-signals.sh",
             "timeout": 3
           }

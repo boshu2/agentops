@@ -66,6 +66,9 @@ How the skill's execution context relates to the parent session.
 | `inherit` | Use full parent context as-is. For session utilities (status, handoff, recover). |
 
 **v1 status:** Parsed and stored. Not enforced at runtime (Phase 2).
+Do not rely on this field alone for `/rpi` phase isolation; use the
+phase-isolated skill transport contract in
+[`skills/rpi/references/isolation-contract.md`](https://github.com/boshu2/agentops/blob/main/skills/rpi/references/isolation-contract.md).
 
 #### `context.sections`
 

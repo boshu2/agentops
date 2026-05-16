@@ -1,6 +1,8 @@
 # AgentOps — One-Page Brief
 
-`.agents/` is just a wiki — markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
+AgentOps is an SDLC control plane for agentic software development. It keeps the books, compiles context, gates output, and compounds learning so coding agents can work in small, verifiable slices instead of cold one-off prompts.
+
+`.agents/` is the substrate: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
 
 *The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
 
@@ -10,7 +12,7 @@ AgentOps is the shovel. Start digging.
 
 ## What It Is
 
-A wiki for your agents — repo-native, version-controlled, mechanically maintained.
+An SDLC control plane backed by a repo-native, version-controlled, mechanically maintained wiki for your agents.
 
 <!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
 AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
@@ -101,7 +103,7 @@ By session 100, the repo already carries prior failures, design choices, plannin
 The most accurate current framing is:
 
 ```text
-Public category    -> software factory for coding agents
+Public category    -> SDLC control plane for coding agents
 Product layers     -> Bookkeeping + Context Compiler + Validation Gates + Knowledge Flywheel
 Internal proof     -> three-gap lifecycle contract
 Runtime mechanics  -> Brownian Ratchet + Stigmergic Spiral + Knowledge Flywheel
@@ -197,7 +199,7 @@ TRIGGER                   HOOK                        WHAT IT DOES
 Session starts         session-start.sh            Stage runtime state
 Session ends           session-end-maintenance.sh  Harvest learnings
 Agent stops            ao-flywheel-close.sh        Close learning loop
-Prompt submit         prompt-nudge.sh             Remind missing intent / ratchet state
+Prompt submit         factory-router.sh           Route explicit factory intake
 Pre tool use          pre-mortem-gate.sh          Require review before risky work
 Post tool use         go-complexity-precommit.sh  Block over-complex edits
 Task complete         task-validation-gate.sh     Execute compiled validation constraints

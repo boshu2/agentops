@@ -147,7 +147,7 @@ if [ -f "$CHAIN" ]; then
     fi
 fi
 
-# Write dedup flag file for prompt-nudge coordination
+# Write a dedup flag so later lifecycle checks can suppress duplicate guidance.
 FLAG_DIR="$ROOT/.agents/ao"
 mkdir -p "$FLAG_DIR" 2>/dev/null
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $STEP" > "$FLAG_DIR/.ratchet-advance-fired"

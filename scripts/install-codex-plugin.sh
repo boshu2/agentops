@@ -24,6 +24,7 @@ MARKETPLACE_NAME="agentops-marketplace"
 PLUGIN_KEY="${PLUGIN_NAME}@${MARKETPLACE_NAME}"
 VERSION="${AGENTOPS_INSTALL_VERSION:-unknown}"
 UPDATE_CMD="${AGENTOPS_UPDATE_COMMAND:-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash}"
+WITH_HOOKS="${AGENTOPS_INSTALL_HOOKS:-0}"
 PLUGIN_SKILLS_SRC=""
 
 PLUGIN_MANIFEST="${REPO_ROOT}/.codex-plugin/plugin.json"
@@ -51,6 +52,8 @@ Options:
   --skills-src <dir>    Codex-native skills source root (default: <repo-root>/skills-codex)
   --version <value>     Version string to record in install metadata
   --update-command <s>  Update command to record in install metadata
+  --with-hooks          Also install native Codex hooks into CODEX_HOME/hooks.json
+  --no-hooks            Do not install hooks (default)
   --help                Show this help
 EOF
 }
@@ -102,6 +105,14 @@ while [[ $# -gt 0 ]]; do
       UPDATE_CMD="${2:-}"
       shift 2
       ;;
+    --with-hooks)
+      WITH_HOOKS=1
+      shift
+      ;;
+    --no-hooks)
+      WITH_HOOKS=0
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -111,8 +122,21 @@ while [[ $# -gt 0 ]]; do
       usage >&2
       exit 2
       ;;
-  esac
+esac
 done
+
+WITH_HOOKS_NORMALIZED="$(printf '%s' "$WITH_HOOKS" | tr '[:upper:]' '[:lower:]')"
+case "$WITH_HOOKS_NORMALIZED" in
+  1|true|yes|on)
+    WITH_HOOKS=1
+    ;;
+  0|false|no|off|"")
+    WITH_HOOKS=0
+    ;;
+  *)
+    fail "Invalid AGENTOPS_INSTALL_HOOKS/--with-hooks value: $WITH_HOOKS"
+    ;;
+esac
 
 if [[ "$REPO_ROOT" != /* ]]; then
   REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
@@ -291,8 +315,6 @@ merge_codex_hook_manifest() {
         "stop-team-guard.sh",
         "stop-auto-handoff.sh",
         "ao-flywheel-close.sh",
-        "prompt-nudge.sh",
-        "intent-echo.sh",
         "quality-signals.sh",
         "dangerous-git-guard.sh",
         "go-test-precommit.sh",
@@ -445,6 +467,7 @@ cp -R "$TMP_DIR/plugin" "$PLUGIN_CACHE_ROOT"
 upsert_toml_key "$CONFIG_FILE" "[features]" "plugins" "true"
 upsert_toml_key "$CONFIG_FILE" "[plugins.\"${PLUGIN_KEY}\"]" "enabled" "true"
 upsert_toml_key "$CONFIG_FILE" "[ui]" "suppress_unstable_features_warning" "true"
+remove_toml_key "$CONFIG_FILE" "[features]" "codex_hooks"
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 MANIFEST_HASH="$(sha256_file "$PLUGIN_SKILLS_SRC/$SKILL_MANIFEST_NAME")"
@@ -452,6 +475,12 @@ require_path "$PLUGIN_SKILLS_DST/$SKILL_MANIFEST_NAME" "installed Codex skill ma
 INSTALLED_MANIFEST_HASH="$(sha256_file "$PLUGIN_SKILLS_DST/$SKILL_MANIFEST_NAME")"
 [[ "$MANIFEST_HASH" == "$INSTALLED_MANIFEST_HASH" ]] || fail "Installed plugin cache manifest hash mismatch; expected $MANIFEST_HASH, got $INSTALLED_MANIFEST_HASH"
 SKILL_COUNT="$(find "$PLUGIN_SKILLS_DST" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
+HOOK_RUNTIME="hookless-default"
+HOOKS_INSTALLED=false
+if [[ "$WITH_HOOKS" == "1" ]]; then
+  HOOK_RUNTIME="codex-native-hooks"
+  HOOKS_INSTALLED=true
+fi
 
 archive_legacy_codex_skills
 archive_user_raw_skills
@@ -460,7 +489,8 @@ cat > "$PLUGIN_STATE_FILE" <<EOF
 {
   "installed_at": "$INSTALLED_AT",
   "install_mode": "native-plugin",
-  "hook_runtime": "codex-native-hooks",
+  "hook_runtime": "$HOOK_RUNTIME",
+  "hooks_installed": $HOOKS_INSTALLED,
   "version": "$VERSION",
   "manifest_hash": "$MANIFEST_HASH",
   "skill_count": $SKILL_COUNT,
@@ -473,9 +503,10 @@ cat > "$INSTALL_META" <<EOF
   "installed_at": "$INSTALLED_AT",
   "source": "install-codex-plugin.sh",
   "install_mode": "native-plugin",
-  "hook_runtime": "codex-native-hooks",
+  "hook_runtime": "$HOOK_RUNTIME",
+  "hooks_installed": $HOOKS_INSTALLED,
   "hook_contract": "docs/contracts/hook-runtime-contract.md",
-  "lifecycle_commands": ["ao codex start", "ao codex stop"],
+  "lifecycle_commands": ["ao rpi phased", "ao codex status"],
   "plugin_key": "$PLUGIN_KEY",
   "version": "$VERSION",
   "plugin_root": "$PLUGIN_CACHE_ROOT",
@@ -487,11 +518,14 @@ cat > "$INSTALL_META" <<EOF
 }
 EOF
 
-# ── Install Codex-native hooks ──
+# ── Optional Codex-native hooks ──
 HOOKS_SRC="${REPO_ROOT}/hooks"
 HOOKS_DST="${PLUGIN_CACHE_ROOT}/hooks"
 
-if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
+if [[ "$WITH_HOOKS" != "1" ]]; then
+  info "Codex hooks not installed (hookless default)"
+  echo "  Optional: rerun with --with-hooks to install native Codex hooks."
+elif [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
   mkdir -p "$HOOKS_DST"
   # Copy hook scripts to plugin cache
   for hook_script in "$HOOKS_SRC"/*.sh; do
@@ -529,8 +563,7 @@ if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
     jq '.' "$RENDERED_HOOKS_FILE" > "$CODEX_HOOKS_FILE"
   fi
 
-  # Enable the current Codex hooks feature flag and remove the deprecated key.
-  remove_toml_key "$CONFIG_FILE" "[features]" "codex_hooks"
+  # Enable the current Codex hooks feature flag.
   upsert_toml_key "$CONFIG_FILE" "[features]" "hooks" "true"
 
   HOOK_HANDLER_COUNT="$(count_codex_hook_handlers "$RENDERED_HOOKS_FILE")"

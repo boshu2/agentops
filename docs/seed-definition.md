@@ -28,7 +28,7 @@ ao quick-start
 
 Optional layers are deliberately separate: `/bootstrap` adds PRODUCT.md,
 README.md, and PROGRAM.md/AUTODEV.md; `bd init --prefix <prefix>` adds
-tracking; `ao init --hooks` activates hooks; `ao init --with-schedule` opts
+tracking; `ao init --hooks` explicitly activates optional hooks; `ao init --with-schedule` opts
 into continuous scheduling.
 
 ### 1. GOALS.md -- Fitness Specification
@@ -81,7 +81,7 @@ Hooks that fire on session lifecycle events when activated. The minimum viable s
 | SessionEnd | session-end | Extract learnings (`ao forge`), expire stale artifacts |
 | Stop | stop | Close the feedback loop (`ao flywheel close-loop`) |
 
-**Why it exists:** Hooks are Meadows #5 -- structural rules. Without hooks, knowledge extraction depends on the agent remembering to run `ao forge`. Agents forget. Hooks do not. The core seed keeps hook activation optional so setup is safe in any repo; `ao init --hooks` turns on the structural enforcement when the operator is ready.
+**Why it exists:** Hooks are Meadows #5 -- structural rules. Without hooks, knowledge extraction depends on the agent remembering to run `ao forge`. Agents forget. Hooks do not. The core seed keeps hook activation optional so setup is safe in any repo; `ao init --hooks` or `install-codex.sh --with-hooks` turns on structural enforcement when the operator is ready.
 
 **Meadows mapping:** #5 (rules), #6 (information flows -- hooks ensure knowledge moves from session output to persistent storage to next session input).
 

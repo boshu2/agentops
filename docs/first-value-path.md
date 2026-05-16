@@ -45,6 +45,12 @@ curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/instal
 ao version
 ```
 
+Codex installs hookless by default. Native hooks are an advanced opt-in:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks
+```
+
 Expected:
 
 ```text

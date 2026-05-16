@@ -65,11 +65,6 @@ assert_hook_schema() {
     [ -z "$output" ]
 }
 
-# ═══════════════════════════════════════════════════════════════════════
-# 2. prompt-nudge.sh (UserPromptSubmit) — registered
-#    Only emits JSON when there is a nudge to give (ratchet gate active).
-# ═══════════════════════════════════════════════════════════════════════
-
 @test "factory-router: intake prompt stays silent while staging state" {
     local mock="$TMP_TEST_DIR/mock-factory-router"
     mkdir -p "$mock/.agents/ao" "$mock/bin"
@@ -96,66 +91,6 @@ EOF
     [ -z "$output" ]
     [ "$(cat "$mock/.agents/ao/factory-goal.txt" 2>/dev/null)" = "fix auth bootstrap" ]
     [ "$(cat "$mock/.agents/ao/factory-briefing.txt" 2>/dev/null)" = "$briefing_path" ]
-}
-
-@test "prompt-nudge: when nudge fires, output conforms to schema with hookEventName=UserPromptSubmit" {
-    # Set up ratchet state so prompt-nudge has something to nudge about.
-    # Simulate: research step done, plan step pending, user says "implement".
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    echo '{"step":"research","status":"done","ts":"2026-01-01T00:00:00Z"}' > "$MOCK_REPO/.agents/ao/chain.jsonl"
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"implement the feature now"}' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-    # If output is non-empty, it must conform to schema
-    if [ -n "$output" ]; then
-        assert_hook_schema "$output" "UserPromptSubmit"
-    fi
-}
-
-@test "prompt-nudge: empty output is acceptable when no nudge condition met" {
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"hello"}' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-    # No nudge triggered — output should be empty
-    [ -z "$output" ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
-# 3. new-user-welcome.sh (UserPromptSubmit) — registered
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "new-user-welcome: fresh-repo prompt output conforms to schema with hookEventName=UserPromptSubmit" {
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    touch "$MOCK_REPO/.agents/ao/.new-user-welcome-needed"
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"help me understand this auth repo"}' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    assert_hook_schema "$output" "UserPromptSubmit"
-}
-
-# ═══════════════════════════════════════════════════════════════════════
-# 4. intent-echo.sh (UserPromptSubmit) — registered
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "intent-echo: destructive prompt output conforms to schema with hookEventName=UserPromptSubmit" {
-    # soc-y1bk: dedup state lives under $MOCK_REPO/.agents/ao/ now (helper cds
-    # there at setup), so cleanup of the real repo's flag is no longer needed.
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"prompt":"delete all the old files and remove everything"}' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-    if [ -n "$output" ]; then
-        assert_hook_schema "$output" "UserPromptSubmit"
-    fi
-}
-
-@test "intent-echo: non-destructive prompt emits no JSON" {
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"prompt":"add a new test"}' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
 }
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -403,8 +338,6 @@ AOEOF
     # SessionStart and factory-router are intentionally silent.
     local -A hook_event_map
     hook_event_map=(
-        ["prompt-nudge.sh"]="UserPromptSubmit"
-        ["intent-echo.sh"]="UserPromptSubmit"
         ["commit-review-gate.sh"]="PreToolUse"
         ["go-vet-post-edit.sh"]="PostToolUse"
         ["research-loop-detector.sh"]="PostToolUse"

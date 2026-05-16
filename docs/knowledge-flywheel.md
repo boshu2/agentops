@@ -15,15 +15,15 @@ The flywheel is the mechanism that closes both gaps. Each stage below maps to on
 
 ## The Solution
 
-AgentOps turns session output into durable environment state. The automation path depends on the runtime: hook-capable runtimes (including Codex v0.115.0+ with native hooks) can drive startup and closeout automatically, while older Codex versions use explicit lifecycle commands that provide the same flywheel stages without pretending hooks exist.
+AgentOps turns session output into durable environment state. The automation path depends on the runtime: hook-capable runtimes can drive startup and closeout automatically, while Codex installs hookless by default and uses explicit lifecycle commands that provide the same flywheel stages without pretending hooks exist.
 
 ## Runtime Modes
 
 | Mode | Start path | Closeout path | What is automatic |
 |------|------------|---------------|-------------------|
 | Hook-capable runtime | SessionStart hook or `ao inject` | SessionEnd/Stop hooks or `ao forge transcript` + `ao flywheel close-loop` | Startup retrieval, transcript forging, pool maintenance when hooks are installed |
-| Codex native hooks (v0.115.0+) | Quiet native `SessionStart` hook via `scripts/install-codex-plugin.sh` | Native `Stop` hook plus explicit `ao codex stop` when transcript-driven closeout is needed | Silent startup maintenance, prompt/tool guardrails, and turn-scope close-loop are automatic; context retrieval stays explicit through `ao codex start` / `ao codex ensure-start` to avoid noisy hook injection |
-| Codex hookless fallback (pre-v0.115.0) | `ao codex start` | `ao codex stop` | Startup context assembly, transcript discovery fallback, citation capture, and close-loop status through explicit commands |
+| Codex optional native hooks | Quiet native `SessionStart` hook via `scripts/install-codex-plugin.sh --with-hooks` | Native `Stop` hook plus explicit `ao codex stop` when transcript-driven closeout is needed | Silent startup maintenance, prompt/tool guardrails, and turn-scope close-loop are automatic after opt-in; context retrieval stays explicit through `ao codex start` / `ao codex ensure-start` to avoid noisy hook injection |
+| Codex hookless default | `ao codex start` or `ao rpi phased` | `ao codex stop` or validation closeout | Startup context assembly, transcript discovery fallback, citation capture, and close-loop status through explicit commands |
 | Manual fallback | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Nothing hidden; operator runs the lifecycle directly |
 
 ## The Flywheel

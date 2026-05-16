@@ -10,6 +10,7 @@ check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '
 check "SKILL.md has name: refactor" "grep -q '^name: refactor' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions regression testing" "grep -qi 'regression' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions incremental or step-wise execution" "grep -qiE 'incremental|step|safe' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md requires cross-language removed-symbol sweep" "grep -q 'check-removed-symbol-refs.sh' '$SKILL_DIR/SKILL.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

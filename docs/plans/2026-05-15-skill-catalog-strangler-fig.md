@@ -109,6 +109,20 @@ These are the artifacts to introduce in the first migration wave:
 
 ## Migration Phases
 
+### Active Discovery Pilot Exception
+
+The factory-first migration remains the catalog-wide strategy, but discovery is
+an explicit S3 pilot exception. Token measurement found discovery to be the
+highest-bloat RPI phase, so this slice wraps the old primitives now:
+`brainstorm`, `design`, `research`, `plan`, and `pre-mortem` stay live as
+adapters, while discovery carries forward only artifact paths plus the six
+Context Density Rule fields.
+
+This does not replace S1/S2. It gives `skill-builder` and `skill-auditor` a
+real exemplar to learn from before they generate or judge the full catalog.
+Scope stays narrow: `skills/discovery`, `skills-codex/discovery`, and the
+phase-boundary contracts.
+
 ### S0: Keep the old system green
 
 Do not rewrite the catalog before the factory tools can express the new shape.

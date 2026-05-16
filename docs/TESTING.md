@@ -181,7 +181,7 @@ Hooks are tested using the [BATS](https://github.com/bats-core/bats-core) framew
 
 | File | Covers |
 |------|--------|
-| `test-hooks.bats` | All hook categories (prompt-nudge, session-start, kill switch, etc.) |
+| `test-hooks.bats` | Active hook categories (session-start, factory-router, kill switch, etc.) |
 | `hook-output-schema.bats` | Hook output JSON schema contracts |
 | `hook-stdin-contracts.bats` | Hook stdin JSON input contracts |
 | `constraint-compiler.bats` | Constraint compiler logic |

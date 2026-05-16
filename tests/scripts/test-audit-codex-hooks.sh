@@ -164,16 +164,16 @@ EOF
     fail "repair did not write native event-map hooks.json"
     return
   fi
-  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$codex_home/hooks.json" >/dev/null; then
+  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 20' "$codex_home/hooks.json" >/dev/null; then
     fail "repair did not restore the canonical handler set"
     return
   fi
-  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/tmp/agentops-plugin/hooks/"))] | length == 22' \
+  if ! jq -e '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/tmp/agentops-plugin/hooks/"))] | length == 20' \
     "$codex_home/hooks.json" >/dev/null; then
     fail "repair did not render commands with the active plugin root"
     return
   fi
-  if ! jq -e '.total_handlers == 22 and .agentops_handlers == 22 and .foreign_handlers == 0' <<< "$output" >/dev/null; then
+  if ! jq -e '.total_handlers == 20 and .agentops_handlers == 20 and .foreign_handlers == 0' <<< "$output" >/dev/null; then
     fail "repair audit output had unexpected counts: $output"
     return
   fi

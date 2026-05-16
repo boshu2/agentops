@@ -356,9 +356,6 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 	if err != nil {
 		return codexStartResult{}, fmt.Errorf("write codex startup context: %w", err)
 	}
-	if showNewUserWelcome {
-		_ = os.Remove(filepath.Join(cwd, ".agents", "ao", ".new-user-welcome-needed"))
-	}
 
 	state, statePath, err := loadOrInitCodexLifecycleState(cwd)
 	if err != nil {
@@ -767,9 +764,6 @@ func ensureCodexLifecycleDirs(cwd string) error {
 }
 
 func codexShouldShowNewUserWelcome(cwd string) bool {
-	if _, err := os.Stat(filepath.Join(cwd, ".agents", "ao", ".new-user-welcome-needed")); err == nil {
-		return true
-	}
 	_, err := os.Stat(filepath.Join(cwd, ".agents"))
 	return os.IsNotExist(err)
 }

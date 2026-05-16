@@ -1579,7 +1579,39 @@ else
     skip "hooks/docs parity"
 fi
 
-# --- 28b. Codex hook manifest parity (R2 from soc-h53j) ---
+# --- 28a. Hook lease inventory ---
+if needs_check hook || needs_check contract; then
+    if [[ -x scripts/check-hook-lease-inventory.sh ]]; then
+        if hook_lease_output="$(./scripts/check-hook-lease-inventory.sh 2>&1)"; then
+            pass "hook lease inventory"
+        else
+            fail "hook lease inventory"
+            indent_output "$hook_lease_output"
+        fi
+    else
+        fail "missing executable: scripts/check-hook-lease-inventory.sh"
+    fi
+else
+    skip "hook lease inventory"
+fi
+
+# --- 28b. Hook replacement ports ---
+if needs_check hook || needs_check contract || needs_check go; then
+    if [[ -x scripts/check-hook-port-replacements.sh ]]; then
+        if hook_port_output="$(./scripts/check-hook-port-replacements.sh 2>&1)"; then
+            pass "hook replacement ports"
+        else
+            fail "hook replacement ports"
+            indent_output "$hook_port_output"
+        fi
+    else
+        fail "missing executable: scripts/check-hook-port-replacements.sh"
+    fi
+else
+    skip "hook replacement ports"
+fi
+
+# --- 28c. Codex hook manifest parity (R2 from soc-h53j) ---
 # When hooks/ changes, verify the local Codex hook manifest still maps cleanly to
 # AgentOps-managed handlers. Skip silently when no Codex install is present so
 # operators without ~/.codex (or with a non-AgentOps install path) are not blocked.

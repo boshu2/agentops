@@ -32,7 +32,7 @@ WORKFLOW_PATH="${WORKFLOW_PATH:-$BATS_TEST_DIRNAME/../../.github/workflows/valid
 }
 
 @test "validate.yml changes job exposes bats output" {
-    run grep -E "^      bats: \\\$\{\{ steps\.filter\.outputs\.bats \}\}" "$WORKFLOW_PATH"
+    run grep -F "      bats: \${{ steps.release.outputs.release == 'true' || steps.filter.outputs.bats }}" "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]
 }
 

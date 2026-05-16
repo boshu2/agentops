@@ -39,7 +39,7 @@ git tag vX.Y.Z
 - [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
 - [ ] Release validation did not mutate tracked `.agents/findings/*` metadata; `scripts/ci-local-release.sh` guards this by default.
 - [ ] All tests pass locally (`cd cli && make test`)
-- [ ] CI green on main (check Actions tab)
+- [ ] Full Validate green on the exact release SHA (`scripts/verify-release-ci.sh vX.Y.Z` after pushing; release tag pushes force every path-filtered lane on)
 - [ ] Version number follows semver (vX.Y.Z)
 - [ ] CHANGELOG.md updated with release notes
 - [ ] plugin.json version matches tag
@@ -110,8 +110,12 @@ git pull
 # Create annotated tag
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 
-# Push tag (triggers release workflow)
+# Push commit and tag (triggers Validate and the release workflow)
+git push origin main
 git push origin vX.Y.Z
+
+# Release is not done until full Validate is green for the exact tagged SHA
+scripts/verify-release-ci.sh vX.Y.Z
 ```
 
 ### 4. Monitor the Publisher Workflow
@@ -196,6 +200,17 @@ If `./scripts/ci-local-release.sh` fails, do not tag or publish.
 3. Delete the tag: `git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`
 4. Re-run the local gate until all checks pass
 5. Create and push the tag
+
+### Exact-SHA Validate Fails
+
+If `scripts/verify-release-ci.sh vX.Y.Z` prints `NO-GO release-ci`, the release
+is not complete even if the tag exists locally or the publisher workflow starts.
+
+**To fix:**
+1. Open the reported run URL and repair the failing Validate job.
+2. Commit the fix on `main`.
+3. Move the release tag to the fixed commit with `scripts/retag-release.sh vX.Y.Z`, or delete and recreate the local tag before any public release exists.
+4. Re-run `scripts/verify-release-ci.sh vX.Y.Z` and record the `GO release-ci` line in the handoff or release audit notes.
 
 ### Publish Fails
 

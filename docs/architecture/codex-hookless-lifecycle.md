@@ -1,6 +1,6 @@
 # Codex Hookless Lifecycle
 
-> **Note:** This document describes the legacy hookless fallback for Codex versions prior to v0.115.0. Starting with Codex v0.115.0 (March 2026), native hooks are supported and installed by `scripts/install-codex-plugin.sh`. Current Codex native hooks cover `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest`, but not `SessionEnd`, so the hookless fallback and explicit closeout path still matter when transcript-driven maintenance is required.
+> **Note:** Codex supports native hooks, but AgentOps installs hookless by default. Native hooks are an optional `scripts/install-codex-plugin.sh --with-hooks` / `scripts/install-codex.sh --with-hooks` profile. The hookless lifecycle remains the first-value path because packets, explicit gates, and closeout artifacts are portable across runtimes.
 
 AgentOps originally assumed a hook-capable runtime lifecycle such as Claude/OpenCode `session-start`, `session-end`, and `stop`. Codex Desktop does not expose that lifecycle surface under `~/.codex`, so the Codex runtime needs an explicit fallback that keeps the flywheel working without pretending hooks exist.
 

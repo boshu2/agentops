@@ -40,7 +40,6 @@ HOOK_FILES=(
   "hooks/git-worker-guard.sh"
   "hooks/pre-mortem-gate.sh"
   "hooks/context-guard.sh"
-  "hooks/prompt-nudge.sh"
   "hooks/ratchet-advance.sh"
   "hooks/standards-injector.sh"
   "hooks/stop-team-guard.sh"

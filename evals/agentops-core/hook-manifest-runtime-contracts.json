@@ -66,11 +66,11 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..125"},
-        {"type": "stdout_contains", "value": "ok 24 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
-        {"type": "stdout_contains", "value": "ok 39 dangerous-git-guard: force push blocked with exit 2"},
-        {"type": "stdout_contains", "value": "ok 53 codex-parity-warn: shared skill edit emits parity warning"},
-        {"type": "stdout_contains", "value": "ok 125 task-validation-gate: empty stdin exits gracefully"}
+        {"type": "stdout_contains", "value": "1..104"},
+        {"type": "stdout_contains", "value": "ok 19 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
+        {"type": "stdout_contains", "value": "ok 34 dangerous-git-guard: force push blocked with exit 2"},
+        {"type": "stdout_contains", "value": "ok 48 codex-parity-warn: shared skill edit emits parity warning"},
+        {"type": "stdout_contains", "value": "ok 104 task-validation-gate: empty stdin exits gracefully"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
@@ -79,7 +79,7 @@
       "id": "hook-manifest-command-inventory",
       "title": "Claude hook manifest preserves lifecycle and safety command inventory",
       "kind": "artifact_check",
-      "objective": "Keep the primary hooks manifest wired to the session lifecycle, prompt nudges, pre-tool safety guards, post-tool quality checks, and task completion validation.",
+      "objective": "Keep the primary hooks manifest wired to the session lifecycle, factory intake, pre-tool safety guards, post-tool quality checks, and task completion validation.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"SessionStart\""},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "\"SessionEnd\""},
@@ -129,12 +129,11 @@
       "id": "codex-hook-runtime-subset",
       "title": "Codex hook manifest preserves supported runtime subset",
       "kind": "artifact_check",
-      "objective": "Protect the intentionally smaller native Codex hook manifest: startup, closeout, prompt nudges, pre-command tests/review, and ratchet advancement.",
+      "objective": "Protect the intentionally smaller native Codex hook manifest: startup, closeout, quality signals, pre-command tests/review, and ratchet advancement.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "\"matcher\": \"startup|resume\""},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "session-start.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "ao-flywheel-close.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "prompt-nudge.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "quality-signals.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "go-test-precommit.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "commit-review-gate.sh"},

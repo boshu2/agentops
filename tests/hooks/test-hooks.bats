@@ -18,18 +18,6 @@ hook_temporarily_disabled() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# prompt-nudge.sh
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "prompt-nudge: JSON injection resistance — special characters escaped" {
-    # Verifies jq -n safely escapes all dangerous payloads
-    for PAYLOAD in '"' '\\' '$(whoami)' '`id`' '<script>' "'; DROP TABLE" '{"nested":"json"}'; do
-        RESULT=$(jq -n --arg nudge "$PAYLOAD" '{"hookSpecificOutput":{"additionalContext":$nudge}}')
-        echo "$RESULT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-    done
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # session-start.sh / precompact-snapshot.sh
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -157,16 +145,6 @@ GIT
     local count
     count=$(grep -cE '^/?\.agents(/|$)' "$mock/.gitignore" || true)
     [ "$count" -eq 2 ]
-}
-
-@test "session-start: fresh repo stages one-time new-user welcome marker" {
-    local mock="$TMP_TEST_DIR/mock-fresh-session"
-    mkdir -p "$mock"
-    git -C "$mock" init -q >/dev/null 2>&1
-    run bash -c 'cd "$1" && bash "$2" 2>&1' -- "$mock" "$HOOKS_DIR/session-start.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-    [ -f "$mock/.agents/ao/.new-user-welcome-needed" ]
 }
 
 @test "session-start: factory mode stages a matched briefing without injecting it" {
@@ -563,18 +541,6 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# intent-echo.sh
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "intent-echo: destructive keyword triggers context (original)" {
-    # soc-y1bk: dedup flag now lives under $MOCK_REPO/.agents/ao/ (helper cds there).
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-    OUTPUT=$(printf '%s' '{"prompt":"delete all the old files"}' | bash "$HOOKS_DIR/intent-echo.sh" 2>&1)
-    echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # factory-router.sh
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -698,10 +664,6 @@ AOEOF
 
 @test "hooks.json: commit-review-gate wired in PreToolUse/Bash" {
     jq -e '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[] | select(.command | contains("commit-review-gate.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
-}
-
-@test "hooks.json: intent-echo wired in UserPromptSubmit" {
-    jq -e '.hooks.UserPromptSubmit[].hooks[] | select(.command | contains("intent-echo.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
 }
 
 @test "hooks.json: factory-router wired in UserPromptSubmit" {

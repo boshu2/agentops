@@ -79,8 +79,6 @@ EXPECTED_CODEX_HOOK_SCRIPTS=(
   "stop-team-guard.sh"
   "stop-auto-handoff.sh"
   "ao-flywheel-close.sh"
-  "prompt-nudge.sh"
-  "intent-echo.sh"
   "quality-signals.sh"
   "dangerous-git-guard.sh"
   "go-test-precommit.sh"
@@ -205,24 +203,19 @@ rg -q '^\[ui\]$' "$CODEX_HOME/config.toml" || fail "config.toml missing [ui] sec
 rg -q '^suppress_unstable_features_warning = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing suppress_unstable_features_warning = true"
 rg -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$CODEX_HOME/config.toml" || fail "config.toml missing AgentOps plugin block"
 rg -q '^enabled = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing enabled = true"
-rg -q '^hooks = true$' "$CODEX_HOME/config.toml" || fail "config.toml missing hooks = true"
+if rg -q '^hooks = true$' "$CODEX_HOME/config.toml"; then
+  fail "default install should not enable hooks = true"
+fi
 if rg -q '^codex_hooks[[:space:]]*=' "$CODEX_HOME/config.toml"; then
   fail "config.toml still contains deprecated codex_hooks"
 fi
-[[ -f "$CODEX_HOME/hooks.json" ]] || fail "Missing ~/.codex/hooks.json after native install"
-jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 5 native Codex hook events in ~/.codex/hooks.json"
-jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 22 native Codex hook handlers in ~/.codex/hooks.json"
-jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Missing session-start.sh handler in ~/.codex/hooks.json"
-if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null; then
-  fail "Codex SessionStart should not install noisy ao-inject.sh"
-fi
+[[ ! -f "$CODEX_HOME/hooks.json" ]] || fail "Default install should not create ~/.codex/hooks.json"
 rg -q '"install_mode": "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata missing native-plugin mode"
-rg -q '"hook_runtime": "codex-native-hooks"' "$CODEX_HOME/.agentops-codex-install.json" \
-  || fail "install metadata missing native hook_runtime field"
+rg -q '"hook_runtime": "hookless-default"' "$CODEX_HOME/.agentops-codex-install.json" \
+  || fail "install metadata missing hookless-default hook_runtime field"
+rg -q '"hooks_installed": false' "$CODEX_HOME/.agentops-codex-install.json" \
+  || fail "install metadata should record hooks_installed=false"
 rg -q '"hook_contract": "docs/contracts/hook-runtime-contract.md"' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata missing hook_contract reference"
 rg -q '"user_skills_root": null' "$CODEX_HOME/.agentops-codex-install.json" \
@@ -259,12 +252,22 @@ HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
   --repo-root "$REPO_ROOT" \
   --codex-home "$EXPLICIT_CODEX_HOME" \
   --version "test-local" \
-  --update-command "test-local" >/dev/null
+  --update-command "test-local" \
+  --with-hooks >/dev/null
 [[ -f "$EXPLICIT_CODEX_HOME/hooks.json" ]] || fail "install-codex-plugin.sh did not create hooks.json under --codex-home"
 [[ ! -f "$REAL_HOME_ROOT/.codex/hooks.json" ]] || fail "install-codex-plugin.sh leaked hooks.json into \$HOME instead of --codex-home"
+jq -e '.hooks | type == "object" and length == 5' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Expected 5 native Codex hook events in explicit hooks install"
+jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 20' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Expected 20 native Codex hook handlers in explicit hooks install"
+jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Missing session-start.sh handler in explicit hooks install"
 if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null; then
   fail "install-codex-plugin.sh left stale ao-inject.sh in existing Codex hooks"
 fi
+rg -q '^hooks = true$' "$EXPLICIT_CODEX_HOME/config.toml" || fail "explicit hooks install should enable hooks = true"
+rg -q '"hooks_installed": true' "$EXPLICIT_CODEX_HOME/.agentops-codex-install.json" \
+  || fail "explicit hooks install metadata should record hooks_installed=true"
 
 info "Checking Codex entrypoint files for runtime-agnostic instructions"
 entrypoint_files=()

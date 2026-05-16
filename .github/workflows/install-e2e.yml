@@ -79,7 +79,18 @@ jobs:
       - name: Verify install-smoke (fast structural check still green)
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          timeout 60 bash tests/install/test-install-smoke.sh
+          run_with_timeout() {
+            seconds="$1"
+            shift
+            if command -v timeout >/dev/null 2>&1; then
+              timeout "$seconds" "$@"
+            elif command -v gtimeout >/dev/null 2>&1; then
+              gtimeout "$seconds" "$@"
+            else
+              perl -e 'alarm shift @ARGV; exec @ARGV or die "exec failed: $!\n"' "$seconds" "$@"
+            fi
+          }
+          run_with_timeout 60 bash tests/install/test-install-smoke.sh
 
   macos-install:
     runs-on: macos-latest
@@ -132,4 +143,15 @@ jobs:
       - name: Verify install-smoke (fast structural check still green)
         run: |
           chmod +x tests/install/test-install-smoke.sh
-          timeout 60 bash tests/install/test-install-smoke.sh
+          run_with_timeout() {
+            seconds="$1"
+            shift
+            if command -v timeout >/dev/null 2>&1; then
+              timeout "$seconds" "$@"
+            elif command -v gtimeout >/dev/null 2>&1; then
+              gtimeout "$seconds" "$@"
+            else
+              perl -e 'alarm shift @ARGV; exec @ARGV or die "exec failed: $!\n"' "$seconds" "$@"
+            fi
+          }
+          run_with_timeout 60 bash tests/install/test-install-smoke.sh

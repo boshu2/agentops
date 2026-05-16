@@ -1,124 +1,203 @@
-# Discovery DAG and step detail
+# Discovery Artifact-First DAG
 
-> Procedure body extracted from SKILL.md to keep the billboard within the meta-tier line cap. SKILL.md owns the quick-ref, flags, and pointers; this file owns the executable workflow.
+Discovery is the densest RPI phase. Its job is not to keep research,
+planning, and pre-mortem prose resident in the caller. Its job is to run the
+declared child skill contracts and compile their artifacts into one execution
+packet.
 
-## DAG — Execute This Sequentially
+## Phase Rule
 
-```
-mkdir -p .agents/rpi
-detect bd and ao CLI availability
-```
+Every child step returns:
 
-**Run every step in order. Do not stop between steps.**
+- artifact path
+- verdict or status
+- one-line extraction for the six density fields
+- next action or block reason
 
-```
-STEP 1  ──  if not --skip-brainstorm AND goal is vague (<50 chars or vague keywords):
-              Skill(skill="brainstorm", args="<goal>")
-              Use refined goal for subsequent steps if produced.
+Do not paste raw child output into discovery state. Link it.
 
-STEP 1.5 ── if PRODUCT.md exists in repo root
-              AND goal appears to be a feature or capability
-              (not a bug fix, chore, or docs task — i.e., goal does NOT start with
-               "fix", "chore", "docs", "typo", "bump", "update dep", "lint", "format"):
-                Skill(skill="design", args="<goal> [--quick]")
-                FAIL verdict? → output <promise>BLOCKED</promise>, stop (design is a blocking product-alignment gate).
-              Skip silently if PRODUCT.md does not exist or goal is non-feature.
+## State
 
-STEP 2  ──  if ao available:
-              ao search "<goal keywords>" 2>/dev/null || true
-              ao lookup --query "<goal keywords>" --limit 5 2>/dev/null || true
-              Assemble ranked packet: compiled planning rules + active findings
-              + unconsumed high-severity next-work items. Carry forward as context.
-              For each returned learning, check applicability to the goal. If applicable,
-              cite by filename and record: ao metrics cite "<path>" --type applied 2>/dev/null || true
-              (orchestrator-owned: this knowledge retrieval is intentionally inline CLI,
-               not a Skill() delegation. Do NOT expand into a separate /research call.)
-
-STEP 3  ──  Skill(skill="research", args="<goal> [--auto]")
-              Pass --auto unless --interactive. Output lands in .agents/research/.
-              After: identify applicable test levels (L0-L3) for downstream /plan.
-
-STEP 4  ──  Skill(skill="plan", args="<goal> [--auto]")
-              Pass --auto unless --interactive.
-              After: extract epic-id, auto-detect complexity from issue count
-              (1-2 → fast, 3-6 → standard, 7+ → full) unless --complexity override.
-              The plan output MUST include `acceptance_criteria` fenced YAML
-              blocks at TWO levels: per-epic (parent epic body) AND per-bead
-              (each issue body). Criterion contract documented under
-              "Acceptance Criteria Contract" below; canonical machine-readable
-              shape lives in `schemas/execution-packet.schema.json` (#/$defs/Criterion).
-
-STEP 4.5 ── if --no-scaffold is NOT set (alias: --no-lifecycle, deprecated)
-              AND plan output contains new project/module creation
-              (keywords: scaffold, new project, bootstrap, init, create module,
-               new package, new service):
-                detect language from plan context or existing project files
-                Skill(skill="scaffold", args="<detected-language> <project-name>")
-                Scaffold output becomes input context for pre-mortem.
-              Skip if: --no-scaffold flag (or deprecated --no-lifecycle), no new project/module detected in plan.
-
-STEP 5  ──  Skill(skill="pre-mortem", args="<plan-path> [--quick]")
-              Use --quick for fast/standard. Full council for full.
-              PASS/WARN? → continue to STEP 6
-              FAIL?      → re-plan with findings, re-run pre-mortem (max 3 total)
-                           Still FAIL after 3? → output <promise>BLOCKED</promise>, stop
-
-STEP 6  ──  Write execution-packet.json (latest alias) + per-run packet archive
-              to .agents/rpi/ and .agents/rpi/runs/<run-id>/ when run_id exists.
-              Include plan_path, test_levels, ranked_packet_path, epic-id, complexity.
-              Record the criteria fences from STEP 4's plan into the packet under
-              `epic_criteria` (array) and `bead_criteria` (object keyed by bead ID).
-              Canonical shape: `schemas/execution-packet.schema.json`.
-              ao ratchet record discovery 2>/dev/null || true
-              Output <promise>DONE</promise>
-```
-
-**That's it.** Steps 1→1.5→2→3→4→5→6. No stopping between steps.
-
-## Setup Detail
-
-**State:**
-```
+```text
 discovery_state = {
   goal: "<goal string>",
-  interactive: <true if --interactive>,
-  complexity: <fast|standard|full or null for auto-detect>,
-  skip_brainstorm: <true if --skip-brainstorm or goal is >50 chars and specific>,
-  epic_id: null,
-  attempt: 1,
+  objective: "<bounded behavior objective>",
+  complexity: "<fast|standard|full>",
+  tracking_mode: "<beads|tasklist>",
+  artifacts: {
+    brainstorm_path: null,
+    design_path: null,
+    ranked_packet_path: null,
+    research_path: null,
+    plan_path: null,
+    pre_mortem_path: null
+  },
+  density: {
+    intent: null,
+    boundary: null,
+    evidence: [],
+    decision: null,
+    constraint: [],
+    next_action: null
+  },
   verdict: null
 }
 ```
 
-**CLI dependency detection:**
+## DAG
+
+Run every step in order. Stop only on an explicit BLOCKED verdict.
+
+### STEP 0 - Initialize
+
 ```bash
-if command -v bd &>/dev/null; then TRACKING_MODE="beads"; else TRACKING_MODE="tasklist"; fi
-if command -v ao &>/dev/null; then AO_AVAILABLE=true; else AO_AVAILABLE=false; fi
+mkdir -p .agents/rpi
+if command -v bd >/dev/null 2>&1; then TRACKING_MODE=beads; else TRACKING_MODE=tasklist; fi
+if command -v ao >/dev/null 2>&1; then AO_AVAILABLE=true; else AO_AVAILABLE=false; fi
 ```
 
-## Gate Detail
+Classify complexity from explicit flag first, then goal shape:
 
-Discovery has two blocking gates.
+- `fast`: short, specific, one-surface goal or `--fast-path`
+- `standard`: medium goal or one scope keyword
+- `full`: `--deep`, architecture keywords, cross-catalog changes, or >120 chars
 
-- **STEP 1.5 (design gate):** `FAIL` blocks discovery immediately for feature/capability goals when `PRODUCT.md` exists.
-- **STEP 5 (pre-mortem gate):** Max 3 attempts with plan→pre-mortem retry loop.
-  - **PASS/WARN:** Store verdict, apply any required pre-mortem hardening back into the plan issues or file-backed task specs, then proceed to STEP 6.
-  - **FAIL:** Log `"Pre-mortem: FAIL (attempt N/3) -- retrying plan with feedback"`. Re-invoke `/plan` with findings context, then re-invoke `/pre-mortem`. After 3 total failures: output `<promise>BLOCKED</promise>`, stop.
+### STEP 1 - Intent Clarification
 
-## Step Detail
+If the goal is vague and `--skip-brainstorm` is not set:
 
-- **STEP 1 (brainstorm):** Skip if `--skip-brainstorm`, or goal >50 chars with no vague keywords (`improve`, `better`, `something`, `somehow`, `maybe`), or brainstorm artifact already exists in `.agents/brainstorm/`.
-- **STEP 1.5 (design gate):** Optional. Runs `/design` when PRODUCT.md exists at repo root and the goal is a feature or capability (not a bug fix, chore, or docs task). Design verdict `FAIL` blocks discovery; `PASS` or `WARN` continues. Skipped silently when PRODUCT.md is absent.
-- **STEP 2 (search history):** Ranked packet assembly — match compiled planning rules, active findings from `.agents/findings/*.md`, and unconsumed high-severity items from `.agents/rpi/next-work.jsonl`. Rank by goal-text overlap → issue-type overlap → file-path overlap.
-- **STEP 3.1 (test levels):** After research, determine L0-L3 applicability. External APIs/I/O → L0+L1+L2 min. Cross-module → add L2. Full subsystem → add L3. Record in `discovery_state.test_levels`.
-- **STEP 4 (plan):** After plan, record the exact `plan_path` for STEP 5. If tracker probes are healthy, extract epic-id via `bd list --type epic --status open`. If tracker probes are degraded, keep the objective + `plan_path` in `.agents/rpi/execution-packet.json` and continue in `tasklist` mode without inventing an epic. The plan emitted by `/plan` MUST include `acceptance_criteria` fenced YAML at two levels: per-epic (parent epic body) and per-bead (each issue body). Criterion shape is fixed by `schemas/execution-packet.schema.json` (`#/$defs/Criterion`). See Acceptance Criteria Contract below for the YAML form.
-- **STEP 5 (pre-mortem):** Pass the recorded `plan_path` into `/pre-mortem`. Do not rely on "most recent" plan/spec selection during discovery retries.
-- **STEP 5.5 (pre-mortem fix propagation):** Before STEP 6, copy any required pseudocode fixes from the pre-mortem report into the affected plan issues or file-backed task specs. Workers read issue/task bodies, not the pre-mortem report.
-- **STEP 6 (output):** Write execution packet and phase summary per `references/output-templates.md`. Keep `.agents/rpi/execution-packet.json` as the latest alias and archive the same packet to `.agents/rpi/runs/<run-id>/execution-packet.json` when `run_id` exists. Include `plan_path`, `test_levels`, and `ranked_packet_path` in the execution packet for `/crank` and standalone `/validation` consumption. Record the criteria fences from STEP 4's plan into the packet: `epic_criteria` (array, from the epic body) and `bead_criteria` (object keyed by bead ID, one array per bead). Both fields are typed by `#/$defs/Criterion` in `schemas/execution-packet.schema.json` — that schema is the canonical source of truth for criterion shape, not this SKILL.md.
+```text
+Skill(skill="brainstorm", args="<goal>")
+```
+
+Record only `brainstorm_path` and the refined objective. Do not carry the full
+brainstorm transcript.
+
+Skip when the goal is already specific (>50 chars, no vague keywords) or a
+recent matching brainstorm artifact exists.
+
+### STEP 1.5 - Product Design Gate
+
+When `PRODUCT.md` exists and the goal is a feature/capability rather than a
+bug, docs task, chore, dependency bump, lint, or format task:
+
+```text
+Skill(skill="design", args="<objective> --quick")
+```
+
+Design FAIL blocks discovery. PASS/WARN records `design_path` and one
+decision line.
+
+### STEP 2 - Bounded Prior Art
+
+If `ao` is available, retrieve pointers, not full context:
+
+```bash
+ao search "<objective keywords>" 2>/dev/null || true
+ao lookup --query "<objective keywords>" --limit 5 2>/dev/null || true
+```
+
+Apply each returned item explicitly:
+
+- applicable? yes/no
+- density field affected: intent, boundary, evidence, decision, constraint, or next action
+- citation path
+
+Write the ranked result path to `ranked_packet_path`. If no artifact exists,
+record a short inline list of citation paths only.
+
+### STEP 3 - Research Contract
+
+Invoke research as its own skill contract:
+
+```text
+Skill(skill="research", args="<objective> [--auto]")
+```
+
+The research artifact is the source of detail. Discovery extracts only:
+
+- `research_path`
+- impacted bounded contexts
+- relevant files or symbols
+- applicable test levels
+- constraints that must affect the plan
+
+### STEP 4 - Plan Contract
+
+Invoke plan as its own skill contract:
+
+```text
+Skill(skill="plan", args="<objective> [--auto]")
+```
+
+The plan artifact is the source of slice detail. Discovery extracts only:
+
+- `plan_path`
+- `epic_id` when one exists
+- issue count and wave count
+- acceptance criteria YAML fences
+- next `/crank` target
+
+The plan output MUST include `acceptance_criteria` fenced YAML at two levels:
+the parent epic body and each child bead body. Criterion shape is canonical in
+`schemas/execution-packet.schema.json` (`#/$defs/Criterion`).
+
+### STEP 4.5 - Optional Scaffold
+
+If the plan creates a new project, package, module, service, or bootstrap
+surface, and `--no-scaffold` is not set:
+
+```text
+Skill(skill="scaffold", args="<detected-language> <project-name>")
+```
+
+Record only the scaffold artifact path and constraints that affect
+pre-mortem.
+
+### STEP 5 - Pre-Mortem Contract
+
+Invoke pre-mortem against the exact plan artifact:
+
+```text
+Skill(skill="pre-mortem", args="<plan_path> [--quick]")
+```
+
+Use `--quick` for fast/standard and full council for full. PASS/WARN continues.
+FAIL triggers re-plan with the pre-mortem findings, up to 3 total attempts.
+After 3 FAIL verdicts, write BLOCKED and stop.
+
+Before STEP 6, propagate required pre-mortem hardening into the plan issues or
+file-backed task specs. Workers read issues and specs, not the pre-mortem
+report.
+
+### STEP 6 - Compile Execution Packet
+
+Write:
+
+- `.agents/rpi/execution-packet.json`
+- `.agents/rpi/runs/<run-id>/execution-packet.json` when `run_id` exists
+- `.agents/rpi/phase-1-summary-YYYY-MM-DD-<slug>.md`
+
+The packet is the narrow waist. It contains the six density fields, artifact
+paths, criteria, validation lanes, tracker state, test levels, complexity, and
+next action. It does not contain raw research, raw plan prose, or raw council
+deliberation.
+
+```bash
+ao ratchet record discovery 2>/dev/null || true
+```
+
+Emit:
+
+```text
+<promise>DONE</promise>
+```
 
 ## Acceptance Criteria Contract
 
-Both the epic and each child bead carry an `acceptance_criteria` fenced YAML block. STEP 6 lifts these into the execution packet (`epic_criteria`, `bead_criteria`). Canonical shape: `schemas/execution-packet.schema.json` (`#/$defs/Criterion`).
+Both the epic and each child bead carry an `acceptance_criteria` fenced YAML
+block. STEP 6 lifts these into the execution packet as `epic_criteria` and
+`bead_criteria`.
 
 ```yaml
 acceptance_criteria:
@@ -128,9 +207,10 @@ acceptance_criteria:
     check_command: "<shell command or script path>"
     evidence_path: "<glob>"
     evidence_required: true | false
-    weight: 0.0–1.0
+    weight: 0.0-1.0
     optional: true | false
-    agent_judge: "<council:name>"  # REQUIRED only when check_type == custom_rubric
+    agent_judge: "<council:name>"  # required only for custom_rubric
 ```
 
-`agent_judge` is REQUIRED when `check_type == "custom_rubric"` — `custom_rubric` accepts free-text `check_command`, so the judge field names the council/judge that owns the verdict. Enforced by the schema's `if/then` clause; missing it is a packet-write error, not a runtime warning.
+`agent_judge` is required when `check_type == "custom_rubric"`. Missing it is
+a packet-write error, not a runtime warning.

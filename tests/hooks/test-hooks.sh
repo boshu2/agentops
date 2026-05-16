@@ -59,39 +59,6 @@ hook_temporarily_disabled() {
 }
 
 # ============================================================
-echo "=== prompt-nudge.sh ==="
-# ============================================================
-
-# Test 1: Empty prompt => silent exit
-OUTPUT=$(echo '{"prompt":""}' | AGENTOPS_HOOKS_DISABLED=0 bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "empty prompt produces no output"; else fail "empty prompt produces no output"; fi
-
-# Test 2: Kill switch disables hook
-OUTPUT=$(echo '{"prompt":"implement a feature"}' | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "kill switch disables hook"; else fail "kill switch disables hook"; fi
-
-# Test 3: No chain.jsonl => silent exit (run in mock repo to avoid real chain.jsonl)
-NUDGE_MOCK="$TMPDIR/nudge-mock"
-setup_mock_repo "$NUDGE_MOCK"
-OUTPUT=$(cd "$NUDGE_MOCK" && echo '{"prompt":"implement something"}' | bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "no chain.jsonl produces no output"; else fail "no chain.jsonl produces no output"; fi
-
-# Test 4: jq -n produces valid JSON with special characters
-SAFE_JSON=$(jq -n --arg nudge 'Test "nudge" with <special> chars & more' '{"hookSpecificOutput":{"additionalContext":$nudge}}')
-if echo "$SAFE_JSON" | jq . >/dev/null 2>&1; then pass "jq -n produces valid JSON with special chars"; else fail "jq -n produces valid JSON with special chars"; fi
-
-# Test 5: JSON injection resistance - special characters in nudge
-for PAYLOAD in '"' '\\' '$(whoami)' '`id`' '<script>' "'; DROP TABLE" '{"nested":"json"}'; do
-    RESULT=$(jq -n --arg nudge "$PAYLOAD" '{"hookSpecificOutput":{"additionalContext":$nudge}}')
-    if echo "$RESULT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-        pass "jq escapes payload: $PAYLOAD"
-    else
-        fail "jq escapes payload: $PAYLOAD"
-    fi
-done
-
-
-# ============================================================
 echo ""
 echo "=== session-start.sh / precompact-snapshot.sh ==="
 # ============================================================
@@ -314,7 +281,7 @@ echo "=== task-validation-gate.sh ==="
 MOCK_TASK_VALIDATION="$TMPDIR/mock-task-validation"
 setup_mock_repo "$MOCK_TASK_VALIDATION"
 mkdir -p "$MOCK_TASK_VALIDATION/hooks"
-touch "$MOCK_TASK_VALIDATION/hooks/prompt-nudge.sh"
+touch "$MOCK_TASK_VALIDATION/hooks/context-guard.sh"
 REPO_CONTENT_FILE="$MOCK_TASK_VALIDATION/test-content.js"
 REPO_REGEX_FILE="$MOCK_TASK_VALIDATION/test-regex.txt"
 echo "function authenticate() {}" > "$REPO_CONTENT_FILE"
@@ -369,7 +336,7 @@ cd "$REPO_ROOT"
 
 # Test 27: feature requires metadata.validation.tests
 EC=0
-OUTPUT=$(cd "$MOCK_TASK_VALIDATION" && echo '{"issue_type":"feature","metadata":{"validation":{"files_exist":["hooks/prompt-nudge.sh"]}}}' | AGENTOPS_METADATA_GATE=strict bash "$HOOKS_DIR/task-validation-gate.sh" 2>&1) || EC=$?
+OUTPUT=$(cd "$MOCK_TASK_VALIDATION" && echo '{"issue_type":"feature","metadata":{"validation":{"files_exist":["hooks/context-guard.sh"]}}}' | AGENTOPS_METADATA_GATE=strict bash "$HOOKS_DIR/task-validation-gate.sh" 2>&1) || EC=$?
 if [ "$EC" -eq 2 ] && echo "$OUTPUT" | grep -q "metadata.validation.tests"; then
     pass "feature missing tests in metadata.validation blocks"
 else
@@ -396,7 +363,7 @@ if [ $? -eq 0 ]; then pass "task-validation kill switch passes validation"; else
 cd "$REPO_ROOT"
 
 # Test 31: files_exist - existing repo file (relative path)
-INPUT=$(jq -n '{"metadata":{"validation":{"files_exist":["hooks/prompt-nudge.sh"]}}}')
+INPUT=$(jq -n '{"metadata":{"validation":{"files_exist":["hooks/context-guard.sh"]}}}')
 cd "$MOCK_TASK_VALIDATION" && echo "$INPUT" | bash "$HOOKS_DIR/task-validation-gate.sh" >/dev/null 2>&1
 if [ $? -eq 0 ]; then pass "files_exist with existing repo file passes"; else fail "files_exist with existing repo file passes"; fi
 cd "$REPO_ROOT"
@@ -1863,47 +1830,6 @@ if jq -e '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[] | select(.
     pass "commit-review-gate.sh wired in hooks.json"
 else
     fail "commit-review-gate.sh not found in hooks.json"
-fi
-
-# ============================================================
-echo "=== intent-echo.sh ==="
-# ============================================================
-
-# Test: Normal prompt => silent pass
-OUTPUT=$(echo '{"prompt":"add a new test"}' | AGENTOPS_INTENT_ECHO_DISABLED=0 bash "$HOOKS_DIR/intent-echo.sh" 2>&1)
-RC=$?
-if [[ $RC -eq 0 ]] && [[ -z "$OUTPUT" ]]; then
-    pass "intent-echo: normal prompt silent"
-else
-    fail "intent-echo: normal prompt should be silent (got exit $RC, output: $OUTPUT)"
-fi
-
-# Test: Destructive keyword triggers
-# Clean dedup flag first
-rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
-OUTPUT=$(echo '{"prompt":"delete all the old files"}' | bash "$HOOKS_DIR/intent-echo.sh" 2>&1)
-RC=$?
-if [[ $RC -eq 0 ]] && echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-    pass "intent-echo: destructive keyword triggers context injection"
-else
-    fail "intent-echo: destructive keyword should trigger (got exit $RC)"
-fi
-rm -f "$REPO_ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
-
-# Test: Kill switch
-OUTPUT=$(echo '{"prompt":"delete everything"}' | AGENTOPS_INTENT_ECHO_DISABLED=1 bash "$HOOKS_DIR/intent-echo.sh" 2>&1)
-RC=$?
-if [[ $RC -eq 0 ]] && [[ -z "$OUTPUT" ]]; then
-    pass "intent-echo: kill switch works"
-else
-    fail "intent-echo: kill switch should silence (got exit $RC)"
-fi
-
-# Test: Manifest wiring check
-if jq -e '.hooks.UserPromptSubmit[].hooks[] | select(.command | contains("intent-echo.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "intent-echo.sh wired in hooks.json"
-else
-    fail "intent-echo.sh not found in hooks.json"
 fi
 
 # ============================================================

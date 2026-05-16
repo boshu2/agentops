@@ -305,7 +305,7 @@ If you see errors for commands like `bd mol`, `gt convoy`, or `bd cook`, these a
 | Check | What it verifies | How to fix |
 |-------|-----------------|------------|
 | **CLI Dependencies** | `gt` and `bd` are on your PATH (nice-to-have for multi-repo ops + beads issue tracking). | Install missing tools (e.g., `brew install gastown`, `brew install beads`). |
-| **Hook Coverage** | Claude Code: hooks configured via `~/.claude/settings.json`. Codex v0.115.0+: native hooks configured via `~/.codex/hooks.json`; older Codex versions fall back to `ao codex start/stop`. | Claude: `ao hooks install`. Codex: `scripts/install-codex-plugin.sh` or `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash`. See `docs/contracts/hook-runtime-contract.md`. |
+| **Hook Coverage** | Claude Code: hooks configured via `~/.claude/settings.json`. Codex installs hookless by default; optional native hooks live in `~/.codex/hooks.json` only after opt-in. | Claude: `ao hooks install`. Codex: `scripts/install-codex-plugin.sh --with-hooks` or `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks`. See `docs/contracts/hook-runtime-contract.md`. |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
 | **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |

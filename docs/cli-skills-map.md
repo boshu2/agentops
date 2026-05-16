@@ -27,7 +27,7 @@ Every `ao` command that is actively called by at least one skill or hook.
 |---------|--------------|--------------|
 | `ao inject` | crank, evolve, implement, inject, recover, research, retro | worktree-setup.sh |
 | `ao forge` | flywheel, forge, post-mortem, retro, vibe, evolve, crank | session-end-maintenance.sh |
-| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, prompt-nudge.sh, precompact-snapshot.sh |
+| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, precompact-snapshot.sh |
 | `ao goals` | goals, evolve | — |
 | `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe | session-start.sh |
 | `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm | — |
@@ -126,7 +126,6 @@ Which `ao` commands each hook invokes.
 | **ao-flywheel-close.sh** | Stop | `flywheel close-loop` |
 | **ratchet-advance.sh** | PostToolUse | `ratchet record` |
 | **context-guard.sh** | UserPromptSubmit | `context guard` |
-| **prompt-nudge.sh** | UserPromptSubmit | `ratchet status` |
 | **precompact-snapshot.sh** | PreCompact | `ratchet status` |
 | **stop-auto-handoff.sh** | Stop | `ratchet status` |
 | **worktree-setup.sh** | setup script (outside `hooks/hooks.json`) | `inject` |
@@ -187,8 +186,6 @@ During Session
       → ao ratchet record
   → context-guard.sh (UserPromptSubmit)
       → ao context guard
-  → prompt-nudge.sh (UserPromptSubmit)
-      → ao ratchet status
   → citation-tracker.sh (PostToolUse)
       → appends citation events to .agents/ao/citations.jsonl (no ao command)
 

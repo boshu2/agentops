@@ -12,6 +12,24 @@ Write the current packet to:
   "schema_version": 1,
   "run_id": "<run-id or omitted>",
   "objective": "<goal>",
+  "density": {
+    "intent": "<behavior or capability>",
+    "boundary": {
+      "bounded_context": "<context>",
+      "non_goals": ["<explicit non-goal>"],
+      "write_scope": ["<path or surface>"]
+    },
+    "evidence": ["<acceptance example, test, gate, or verdict>"],
+    "decision": "<why this slice/plan shape was chosen>",
+    "constraint": ["<safety, runtime, token, or process limit>"],
+    "next_action": "<exact /crank command or block reason>"
+  },
+  "artifacts": {
+    "research_path": ".agents/research/<topic>.md",
+    "plan_path": ".agents/plans/<plan>.md",
+    "pre_mortem_path": ".agents/council/<pre-mortem>.md",
+    "ranked_packet_path": ".agents/rpi/ranked-packet.json"
+  },
   "epic_id": "<epic-id or omitted>",
   "plan_path": ".agents/plans/<plan-file>.md",
   "contract_surfaces": ["docs/contracts/repo-execution-profile.md"],
@@ -49,6 +67,9 @@ Write the current packet to:
 }
 ```
 
+The `density` block is the phase boundary. Raw research, raw plan prose, and
+raw council deliberation stay in the referenced artifacts.
+
 ## acceptance_criteria — per-epic + per-bead
 
 The packet carries criteria at two slots — `epic_criteria` (array, one entry per epic-level acceptance statement) and `bead_criteria` (object keyed by bead ID, value is an array per bead). Both slots are typed by `#/$defs/Criterion` in [`schemas/execution-packet.schema.json`](../../../schemas/execution-packet.schema.json) — that schema is the canonical machine-readable form. Discovery STEP 6 lifts the YAML fences from the plan and serializes them into the packet; do not redefine the shape here.
@@ -63,7 +84,7 @@ acceptance_criteria:
     check_command: "<shell command or script path>"
     evidence_path: "<glob>"
     evidence_required: true | false
-    weight: 0.0–1.0
+    weight: 0.0-1.0
     optional: true | false
     agent_judge: "<council:name>"  # REQUIRED only when check_type == custom_rubric
 ```
@@ -99,6 +120,8 @@ Write to `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md`:
 - **Pre-mortem:** <PASS|WARN> (attempt <N>/3)
 - **Brainstorm:** <used|skipped>
 - **History search:** <findings count or skipped>
+- **Density:** intent, boundary, evidence, decision, constraint, next action
+  all present
 - **Status:** DONE
 - **Timestamp:** <ISO-8601>
 ```

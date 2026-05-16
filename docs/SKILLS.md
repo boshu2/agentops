@@ -484,7 +484,7 @@ phases, and flags.
 | Skill | Purpose |
 |-------|---------|
 | `/autodev` | Manage the `PROGRAM.md` operational contract for autonomous development loops |
-| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, hooks) |
+| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
 | `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
 | `/deps` | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/design` | Product validation gate — aligns goal with `PRODUCT.md` before discovery |

@@ -1,8 +1,8 @@
 # Context Development Life Cycle
 
-> **TL;DR:** AgentOps is not a packet generator. It is software-engineering practice encoded for LLM agents under token scarcity. CDLC is AgentOps' context-native SDLC: every phase of software delivery has a context counterpart, and every high-value context token follows the **Context Density Rule**: carry intent, boundary, evidence, decision, constraint, or next action.
+> **TL;DR:** AgentOps is an SDLC control plane for agentic software development. Its internal mechanism is the Context Development Life Cycle (CDLC): every phase of software delivery has a context counterpart, and every high-value context token follows the **Context Density Rule**: carry intent, boundary, evidence, decision, constraint, or next action.
 
-Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. The same shape, applied to context, is what AgentOps does.
+Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. AgentOps keeps the public category language people already understand - SDLC, DevOps, CI/CD, tests, review, release gates - and applies that same shape to context.
 
 Packets, briefings, skills, verdicts, and learnings are artifacts. The deeper product is the practice layer: BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, wikis, Agile/XP, and pragmatic engineering encoded into the runtime structure agents work inside.
 
@@ -22,7 +22,7 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
-We call this the **Context Development Life Cycle (CDLC)** — the body of this doc explains how each SDLC phase has a CDLC counterpart.
+We call the internal lifecycle the **Context Development Life Cycle (CDLC)**. You do not need to know that name to understand the product: AgentOps is the SDLC control plane, and CDLC is how it compiles context for agent work.
 
 ### Companion docs
 
@@ -36,7 +36,7 @@ We call this the **Context Development Life Cycle (CDLC)** — the body of this 
 
 In 2009, DevOps asked: *what if ops looked more like dev?* The answer was CI/CD, infrastructure as code, and the SDLC infinity loop — Plan, Code, Build, Test, Release, Deploy, Operate, Monitor.
 
-The CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
+Inside an agentic SDLC, the CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
 
 The answer is the same shape. Different substrate.
 
@@ -56,7 +56,7 @@ The answer is the same shape. Different substrate.
     infinity loop                  infinity loop
 ```
 
-The SDLC produces deployable artifacts. The CDLC produces injectable context. Both compound through feedback loops. Both degrade without discipline.
+The SDLC produces deployable artifacts. The CDLC produces injectable context for the agents doing that work. Both compound through feedback loops. Both degrade without discipline.
 
 ---
 
@@ -109,7 +109,7 @@ Create the context that agents will consume. Prompts, skills, instructions, spec
 - `/research` — investigate before writing context
 - `/plan` — decompose goals into structured implementation specs
 - SKILL.md authoring — reusable context packages with triggers, steps, and output contracts
-- `ao inject --for=<skill>` — pull library documentation into the context window
+- `ao context assemble` — request skill- or phase-scoped context explicitly
 - MCP integrations — pull context from GitLab, GitHub, Slack, tickets
 
 The generation phase is where most teams stop. They write a Claude.md, maybe a few rules, and call it done. CDLC says generation is one-seventh of the work.
@@ -126,7 +126,8 @@ Assemble raw context into phase-appropriate, role-scoped, freshness-weighted pac
 **AgentOps implementation:**
 
 - `ao context assemble` — build phase-scoped context packets
-- `ao inject` — retrieve decay-ranked learnings, trim to token budget
+- `ao lookup` — retrieve decay-ranked learnings on demand
+- `ao inject` — deprecated compatibility adapter for legacy retrieval paths
 - `ao compile` — rebuild the derived knowledge wiki (Mine → Grow → Defrag → Lint)
 - `ao maturity --expire/--evict` — remove stale context before it pollutes the window
 - Finding compiler — distill raw findings into prevention rules
@@ -183,8 +184,8 @@ Inject the right context into the right session at the right time.
 
 **AgentOps implementation:**
 
-- `SessionStart` hooks — automatic context loading on every session
-- `ao inject` — decay-ranked retrieval with token budgeting
+- Explicit context packets — deliver the assembled phase context to the agent
+- Optional `SessionStart` hooks — runtime adapter profile, not the default path
 - `ao lookup` — on-demand knowledge search during a session
 - SkillLoadEvent — track which skills were loaded (citation pipeline)
 - Phase-scoped delivery — `/research` gets different context than `/implement`
@@ -237,10 +238,10 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 | SDLC Phase | CDLC Phase | Key Question | AgentOps Surface |
 |---|---|---|---|
 | Plan | Generate | What context should exist? | `/research`, `/plan`, SKILL.md |
-| Code + Build | Compile | How is context assembled for this task? | `ao context assemble`, `ao inject`, `ao compile` |
+| Code + Build | Compile | How is context assembled for this task? | `ao context assemble`, `ao lookup`, `ao compile` |
 | Test | Test | Does this context produce the right behavior? | `/pre-mortem`, `/vibe`, `ao eval run` |
 | Release | Distribute | How do others get this context? | Skills registry, `/converter`, `install.sh` |
-| Deploy | Deliver | Did the right context reach the agent? | `SessionStart` hooks, `ao inject`, SkillLoadEvent |
+| Deploy | Deliver | Did the right context reach the agent? | Explicit phase packets, optional `SessionStart` hooks, SkillLoadEvent |
 | Operate | Observe | Is the context working in practice? | `quality-signals.sh`, citation tracking, session-outcome |
 | Monitor → Plan | Adapt | What should change for next time? | MemRL feedback, `/forge`, `/evolve`, `/dream` |
 
@@ -312,7 +313,7 @@ Full convergence map tying each CDLC phase to all five threads: [The Science —
 
 ## Why This Matters
 
-LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
+LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. AgentOps is the SDLC control plane; the CDLC is how it engineers the fuel.
 
 DevOps proved that disciplined systems around indeterministic workers (humans) produce reliable output. SRE proved it again with SLOs and error budgets. Kubernetes proved it for infrastructure with control loops.
 
