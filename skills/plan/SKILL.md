@@ -206,7 +206,7 @@ Read [references/wave-matrices.md](references/wave-matrices.md) for the full fil
 
 **Write to:** `.agents/plans/YYYY-MM-DD-<goal-slug>.md`
 
-Read [references/plan-document-template.md](references/plan-document-template.md) for the full canonical template (Context, Files to Modify, Boundaries, Baseline Audit, Implementation, Tests, Conformance Checks, Verification, Issues, Execution Order, Planning Rules Compliance, Post-Merge Cleanup, Next Steps) and the **Baseline Audit Gate** (BLOCK if missing, WARN if incomplete, `--skip-audit-gate` to opt out).
+Read [references/plan-document-template.md](references/plan-document-template.md) for the full canonical template (Context, Intent Issue, Files to Modify, Boundaries, Baseline Audit, Implementation, Tests, Slice Validation Plan, Conformance Checks, Verification, Issues, Execution Order, Planning Rules Compliance, Post-Merge Cleanup, Next Steps) and the **Baseline Audit Gate** (BLOCK if missing, WARN if incomplete, `--skip-audit-gate` to opt out). The **Intent Issue** section links the upstream [BDD intent issue](../../docs/templates/intent-issue.md) and carries its acceptance examples; the **Slice Validation Plan** section embeds the [slice-validation surface](../../docs/templates/slice-validation.md) (one slice per Given/When/Then with a first failing test, write scope, bounded context, owner), the wave-validity gate, and a roll-up acceptance table. Conformance Checks remains the machine-checkable layer — Gherkin is the behavior layer, not a replacement.
 
 ### Step 7: Create Tasks for In-Session Tracking
 
