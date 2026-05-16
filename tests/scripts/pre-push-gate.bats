@@ -60,6 +60,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/proof-run.sh"
     make_stub "$FAKE_REPO/scripts/check-wiring-closure.sh"
     make_stub "$FAKE_REPO/scripts/check-corpus-freshness.sh"
+    make_stub "$FAKE_REPO/scripts/check-loop-shape.sh"
     make_stub "$FAKE_REPO/scripts/check-flywheel-compounding-snapshot.sh"
     make_stub "$FAKE_REPO/scripts/snapshot-flywheel-compounding.sh"
     make_stub "$FAKE_REPO/scripts/check-factory-yield-ledger.sh"
