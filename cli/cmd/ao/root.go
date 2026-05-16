@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
 var (
@@ -80,6 +82,13 @@ func Execute() {
 		}
 		var docErr *doctorExitError
 		if errors.As(err, &docErr) {
+			// Exit 1 means findings are present — a normal diagnostic result,
+			// not a failure, so it carries no stderr noise. Higher codes are
+			// genuine failures; surface the reason on stderr (doctor commands
+			// set SilenceErrors, so cobra prints nothing itself).
+			if docErr.ExitCode() != doctor.ExitFindings && docErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, "ao doctor: "+docErr.Error())
+			}
 			os.Exit(docErr.ExitCode())
 		}
 		os.Exit(1)
