@@ -88,13 +88,20 @@ func countEstablished(dir string) int                    { return quality.CountE
 
 func runDoctor(cmd *cobra.Command, args []string) error {
 	// Engine-flag invocations (--fix, --explain, --robot-triage) route entirely
-	// through the diagnose-and-repair engine. The bare command and --json keep
-	// their legacy 16-check behavior; the engine's findings are appended
-	// additively below so existing output never regresses.
+	// through the diagnose-and-repair engine.
 	if doctorFix || doctorExplainFlag != "" || doctorRobotTriage {
 		return runDoctorEngineDefault(cmd)
 	}
 
+	// `ao doctor --json` is the engine's machine surface: a single diagnose
+	// Report (schema_version, exit_code, findings). --product-runtime keeps the
+	// legacy fail-closed check path in both JSON and human form.
+	if doctorWantsJSON() && !doctorProductRuntime {
+		return runDoctorEngineDefault(cmd)
+	}
+
+	// Human-readable form: the legacy check table, with engine findings
+	// appended additively so existing output never regresses.
 	checks := gatherDoctorChecks()
 	if doctorProductRuntime {
 		checks = gatherDoctorProductRuntimeChecks()
@@ -113,14 +120,20 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 }
 
 // appendEngineFindings runs the doctor engine's detectors and appends their
-// findings to the default `ao doctor` output. It never alters the legacy
+// findings to the human-readable `ao doctor` output. It never alters the legacy
 // `checks` output or the bare command's exit semantics — a doctorExitError is
 // only returned when engine findings exist (mapped to exit 1).
 func appendEngineFindings(cmd *cobra.Command) error {
 	// With no detectors registered there is nothing to add and no reason to
 	// create a run directory; skip entirely so the legacy command stays
-	// side-effect-free. Later waves register detectors and this lights up.
+	// side-effect-free.
 	if len(doctor.Detectors()) == 0 {
+		return nil
+	}
+	// JSON callers receive the engine Report from the dedicated --json path in
+	// runDoctor; never emit a second JSON document here. This path is reached
+	// in JSON mode only via --product-runtime, which stays on the legacy table.
+	if doctorWantsJSON() {
 		return nil
 	}
 	opts, err := doctorEngineOptions()
@@ -131,11 +144,7 @@ func appendEngineFindings(cmd *cobra.Command) error {
 	if derr != nil || rep == nil || len(rep.Findings) == 0 {
 		return nil
 	}
-	if doctorWantsJSON() {
-		_ = printDoctorJSON(cmd, rep)
-	} else {
-		renderEngineFindings(cmd, rep)
-	}
+	renderEngineFindings(cmd, rep)
 	return exitErr(rep.ExitCode, "doctor findings present")
 }
 

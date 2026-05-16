@@ -157,3 +157,4 @@ packs/
 # AgentOps session artifacts
 .agents/
 evals/workbench/scorecard-latest.json
+.doctor/

@@ -70,6 +70,22 @@ func registerDoctorSurface() {
 		newDoctorLsCmd(),
 		newDoctorDiffCmd(),
 	)
+
+	// Doctor commands carry their result in the exit code. Findings (exit 1)
+	// are a normal diagnostic outcome, not a failure, so cobra must not print
+	// "Error: ..." to stderr. Genuine failures are surfaced by Execute()
+	// instead (see root.go). SilenceErrors does not inherit — set it per cmd.
+	doctorCmd.SilenceErrors = true
+	for _, sub := range doctorCmd.Commands() {
+		sub.SilenceErrors = true
+	}
+	// SilenceErrors also mutes flag-parse errors (e.g. an unknown flag), which
+	// ARE genuine usage failures the caller must see. Restore them via an
+	// explicit flag-error func (inherited by subcommands).
+	doctorCmd.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
+		fmt.Fprintln(c.ErrOrStderr(), "Error:", err.Error())
+		return err
+	})
 }
 
 // doctorEngineOptions builds doctor.Options from the current process context.

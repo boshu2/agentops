@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
 func TestComputeResult(t *testing.T) {
@@ -1474,16 +1476,21 @@ func TestRunDoctor_JSONOutput(t *testing.T) {
 
 	_ = runDoctor(doctorCmd, nil)
 
-	// Should be valid JSON
-	var result doctorOutput
-	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
-		t.Errorf("expected valid JSON output, got error: %v\nOutput: %s", err, buf.String())
+	// `ao doctor --json` emits a single engine Report, not the legacy
+	// check-table shape. Strict unmarshal fails if a second JSON document
+	// (the old concatenated legacy output) leaked onto stdout.
+	var rep doctor.Report
+	if err := json.Unmarshal(buf.Bytes(), &rep); err != nil {
+		t.Fatalf("expected a single valid engine Report, got error: %v\nOutput: %s", err, buf.String())
 	}
-	if len(result.Checks) == 0 {
-		t.Error("expected at least one check in JSON output")
+	if rep.SchemaVersion != "1.0" {
+		t.Errorf("expected schema_version 1.0, got %q", rep.SchemaVersion)
 	}
-	if result.Result == "" {
-		t.Error("expected non-empty result field")
+	if rep.Tool != "ao" {
+		t.Errorf("expected tool 'ao', got %q", rep.Tool)
+	}
+	if rep.ExitCode != 0 && rep.ExitCode != 1 {
+		t.Errorf("expected diagnose exit_code 0 or 1, got %d", rep.ExitCode)
 	}
 }
 

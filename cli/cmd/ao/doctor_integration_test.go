@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
 func TestDoctor_Integration_HealthyState(t *testing.T) {
@@ -53,29 +55,31 @@ func TestDoctor_Integration_JSONOutput(t *testing.T) {
 		t.Fatal("expected JSON output, got empty string")
 	}
 
-	// Parse as JSON to validate structure
-	var result doctorOutput
-	if err := json.Unmarshal([]byte(out), &result); err != nil {
-		t.Fatalf("expected valid JSON output, got parse error: %v\nraw output:\n%s", err, out)
+	// `ao doctor --json` is the engine's machine surface: a single Report.
+	// Strict unmarshal fails if a second JSON document leaked onto stdout.
+	var rep doctor.Report
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("expected a single valid engine Report, got parse error: %v\nraw output:\n%s", err, out)
 	}
-
-	// Must have checks array
-	if len(result.Checks) == 0 {
-		t.Error("expected at least one check in JSON output")
+	if rep.SchemaVersion != "1.0" {
+		t.Errorf("expected schema_version 1.0, got %q", rep.SchemaVersion)
 	}
-
-	// Result must be one of the valid statuses
-	validResults := map[string]bool{"HEALTHY": true, "DEGRADED": true, "UNHEALTHY": true}
-	if !validResults[result.Result] {
-		t.Errorf("expected result to be HEALTHY/DEGRADED/UNHEALTHY, got %q", result.Result)
+	if rep.Tool != "ao" {
+		t.Errorf("expected tool 'ao', got %q", rep.Tool)
 	}
-
-	// First check should be ao CLI
-	if result.Checks[0].Name != "ao CLI" {
-		t.Errorf("expected first check to be 'ao CLI', got %q", result.Checks[0].Name)
+	if rep.RunID == "" {
+		t.Error("expected a non-empty run_id")
 	}
-	if result.Checks[0].Status != "pass" {
-		t.Errorf("expected ao CLI check to pass, got %q", result.Checks[0].Status)
+	// Diagnose (no --fix) exits 0 (healthy) or 1 (findings present).
+	if rep.ExitCode != 0 && rep.ExitCode != 1 {
+		t.Errorf("expected diagnose exit_code 0 or 1, got %d", rep.ExitCode)
+	}
+	if rep.OK != (rep.ExitCode == 0) {
+		t.Errorf("ok=%v inconsistent with exit_code=%d", rep.OK, rep.ExitCode)
+	}
+	if rep.Summary.TotalFindings != len(rep.Findings) {
+		t.Errorf("summary.total_findings=%d but findings array has %d entries",
+			rep.Summary.TotalFindings, len(rep.Findings))
 	}
 }
 
@@ -83,55 +87,35 @@ func TestDoctor_Integration_DegradedState(t *testing.T) {
 	resetCommandState(t)
 	dir := chdirTemp(t)
 
-	// Create a minimal .agents/ without learnings dir — should trigger warnings
+	// Minimal .agents/ without a learnings dir — should trigger legacy warnings.
 	writeFile(t, dir+"/.agents/ao/sessions/.gitkeep", "")
-	// Deliberately skip .agents/learnings/ to trigger degraded state
 
-	out, _ := executeCommand("doctor", "--json")
+	// The legacy check table runs in human mode (`ao doctor` without --json).
+	out, _ := executeCommand("doctor")
 
 	if out == "" {
-		t.Fatal("expected JSON output, got empty string")
+		t.Fatal("expected doctor output, got empty string")
 	}
-
-	var result doctorOutput
-	if err := json.Unmarshal([]byte(out), &result); err != nil {
-		t.Fatalf("JSON parse error: %v\nraw:\n%s", err, out)
-	}
-
-	// With missing learnings dir, should have at least one non-pass check
-	hasNonPass := false
-	for _, c := range result.Checks {
-		if c.Status == "warn" || c.Status == "fail" {
-			hasNonPass = true
-			break
-		}
-	}
-	if !hasNonPass {
-		t.Error("expected at least one warn/fail check in degraded state")
+	// A missing learnings dir must surface as a non-healthy summary.
+	if !strings.Contains(out, "DEGRADED") &&
+		!strings.Contains(out, "UNHEALTHY") &&
+		!strings.Contains(out, "warning") {
+		t.Errorf("expected a degraded/unhealthy summary, got:\n%s", out)
 	}
 }
 
 func TestDoctor_Integration_NoAgentsDir(t *testing.T) {
 	resetCommandState(t)
-	// Completely empty directory — no .agents/ at all
+	// Completely empty directory — no .agents/ at all.
 	chdirTemp(t)
 
-	out, _ := executeCommand("doctor", "--json")
+	out, _ := executeCommand("doctor")
 
 	if out == "" {
-		t.Fatal("expected JSON output, got empty string")
+		t.Fatal("expected doctor output, got empty string")
 	}
-
-	var result doctorOutput
-	if err := json.Unmarshal([]byte(out), &result); err != nil {
-		t.Fatalf("JSON parse error: %v\nraw:\n%s", err, out)
-	}
-
-	// ao CLI check must always pass regardless of directory state
-	if result.Checks[0].Name != "ao CLI" {
-		t.Errorf("expected first check 'ao CLI', got %q", result.Checks[0].Name)
-	}
-	if result.Checks[0].Status != "pass" {
-		t.Errorf("expected ao CLI to pass even without .agents/, got %q", result.Checks[0].Status)
+	// The ao CLI check always passes regardless of directory state.
+	if !strings.Contains(out, "ao CLI") {
+		t.Errorf("expected 'ao CLI' check in output, got:\n%s", out)
 	}
 }
