@@ -13,7 +13,7 @@ BDD-shaped intent issue
   → evidence + learning capture (under the promotion ratchet)
 ```
 
-The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](../../.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Promote changes there first, then update this doc.
+The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Promote changes there first, then update this doc.
 
 ## Governing principles
 
@@ -31,7 +31,7 @@ The intent issue is not ready until the acceptance examples are testable. Requir
 
 - Feature / capability name
 - Given / When / Then examples (one happy path + at least one edge)
-- Domain terms used (anchored to the repo's ubiquitous-language register; for AgentOps that is [`skills/domain/references/`](../../skills/domain/references/) and [`skills/standards/references/architecture-terms.md`](../../skills/standards/references/architecture-terms.md))
+- Domain terms used (anchored to the repo's ubiquitous-language register; for AgentOps that is [`skills/domain/references/`](../../skills/domain/references/) and [`skills/standards/references/architecture-terms.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/architecture-terms.md))
 - Bounded context per the [context map](../contracts/context-map.md)
 - Non-goals
 - Rollback / containment path
@@ -141,12 +141,12 @@ The loop is operational discipline. The architectural seams are structural. They
 
 ## See also
 
-- [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](../../.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
+- [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
 - [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
 - [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside
 - [Context Map](../contracts/context-map.md) — bounded contexts and skill roles
 - [`docs/templates/intent-issue.md`](../templates/intent-issue.md) — BDD intent issue template
 - [`docs/templates/slice-validation.md`](../templates/slice-validation.md) — per-slice validation plan template
-- [`PRACTICE-REGISTRY.md`](../../PRACTICE-REGISTRY.md) — practice slug registry
-- [`GOALS.md`](../../GOALS.md) Directive #12 — fitness gate that enforces this loop for non-trivial work
+- [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — practice slug registry
+- [`GOALS.md`](https://github.com/boshu2/agentops/blob/main/GOALS.md) Directive #12 — fitness gate that enforces this loop for non-trivial work

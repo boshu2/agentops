@@ -87,7 +87,7 @@ Four practices carry the highest density:
 
 Everything else plugs into that waist. CI/CD runs the proof repeatedly. SRE/DORA measures health. ADRs and provenance explain why decisions happened. Wikis and ratchets keep knowledge durable. Agile/XP keeps work in small vertical increments. Pragmatic engineering keeps the slice evidence-bearing and reversible.
 
-The density invariant has a domain name: **Context Density Rule**. The domain entry lives at [`skills/domain/references/context-density-rule.md`](../skills/domain/references/context-density-rule.md).
+The density invariant has a domain name: **Context Density Rule**. The domain entry lives at [`skills/domain/references/context-density-rule.md`](https://github.com/boshu2/agentops/blob/main/skills/domain/references/context-density-rule.md).
 
 That is why waterfall is the wrong shape here. It spends context on large speculative artifacts before proof exists. CDLC prefers atomic process: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
@@ -263,7 +263,7 @@ BDD-shaped intent issue            ← Generate (the intent is the spec; phase 1
 
 The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
 
-Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](../.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](../GOALS.md).
+Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](https://github.com/boshu2/agentops/blob/main/GOALS.md).
 
 ## The Leverage Hierarchy
 
