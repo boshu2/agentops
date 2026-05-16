@@ -78,6 +78,10 @@ func Execute() {
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
 		}
+		var docErr *doctorExitError
+		if errors.As(err, &docErr) {
+			os.Exit(docErr.ExitCode())
+		}
 		os.Exit(1)
 	}
 }
