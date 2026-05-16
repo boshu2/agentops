@@ -264,6 +264,9 @@ func executeAtomic(path string, op Op) error {
 	case WriteFile:
 		return atomicWrite(parent, path, v.Content, v.Mode)
 	case AppendFile:
+		if err := os.MkdirAll(parent, 0o755); err != nil {
+			return err
+		}
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return err
@@ -298,9 +301,14 @@ func executeAtomic(path string, op Op) error {
 }
 
 // atomicWrite writes content to path via a same-dir temp file + rename.
+// WriteFile has create-or-overwrite semantics, so a missing parent directory
+// is created here (same as the Rename op does for its destination).
 func atomicWrite(dir, path string, content []byte, mode os.FileMode) error {
 	if mode == 0 {
 		mode = 0o644
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
 	}
 	tmp, err := os.CreateTemp(dir, ".doctor.tmp.*")
 	if err != nil {

@@ -208,9 +208,16 @@ func TestCapabilities_JSONValidates(t *testing.T) {
 	if caps.Detectors == nil || caps.Fixers == nil {
 		t.Fatal("detectors/fixers must be non-nil (empty arrays)")
 	}
-	if len(caps.Detectors) != 0 || len(caps.Fixers) != 0 {
-		t.Fatalf("FOUNDATION wave must register zero detectors/fixers, got %d/%d",
-			len(caps.Detectors), len(caps.Fixers))
+	// Every registered detector must have a unique, non-empty id.
+	seen := make(map[string]bool)
+	for _, d := range caps.Detectors {
+		if d.ID == "" {
+			t.Fatal("capabilities detector with empty id")
+		}
+		if seen[d.ID] {
+			t.Fatalf("duplicate detector id in capabilities: %q", d.ID)
+		}
+		seen[d.ID] = true
 	}
 	if len(caps.WriteScopes) == 0 {
 		t.Fatal("write scopes must be populated from safety envelope")
@@ -250,12 +257,15 @@ func TestNewRunArtifact_LayoutAndGitignore(t *testing.T) {
 	}
 }
 
-// TestDiagnose_EmptyRegistryHealthy verifies a clean run with no detectors.
-func TestDiagnose_EmptyRegistryHealthy(t *testing.T) {
+// TestDiagnose_NoDetectorsSelectedHealthy verifies that when the detector
+// selection is empty (here forced via an --only filter that matches nothing),
+// diagnose reports a healthy workspace and still writes its run artifacts.
+func TestDiagnose_NoDetectorsSelectedHealthy(t *testing.T) {
 	repo := t.TempDir()
 	home := t.TempDir()
 	rep, err := Diagnose(Options{
 		RepoRoot: repo, CWD: repo, HomeDir: home, ToolVersion: "2.0.0",
+		Only: []string{"__no_such_detector__"},
 	})
 	if err != nil {
 		t.Fatalf("Diagnose failed: %v", err)
@@ -275,12 +285,14 @@ func TestDiagnose_EmptyRegistryHealthy(t *testing.T) {
 	}
 }
 
-// TestFix_EmptyRegistryNoFindings verifies fix with empty registry exits 0.
-func TestFix_EmptyRegistryNoFindings(t *testing.T) {
+// TestFix_NoDetectorsSelectedNoFindings verifies fix with an empty detector
+// selection (forced via an --only filter that matches nothing) exits 0.
+func TestFix_NoDetectorsSelectedNoFindings(t *testing.T) {
 	repo := t.TempDir()
 	home := t.TempDir()
 	rep, err := Fix(Options{
 		RepoRoot: repo, CWD: repo, HomeDir: home, ToolVersion: "2.0.0",
+		Only: []string{"__no_such_detector__"},
 	})
 	if err != nil {
 		t.Fatalf("Fix failed: %v", err)
