@@ -2,7 +2,7 @@
 
 The /evolve loop only compounds when each cycle reads prior cycles' outcomes and lets them change behavior. Append-only ledgers that no step reads are write-only artifacts — they accumulate without compounding.
 
-This reference documents the three feedback mechanisms that turn raw cycle output into next-cycle behavior change.
+This reference documents the four feedback mechanisms that turn raw cycle output into next-cycle behavior change.
 
 ## Mechanism 1: Step 0 reads prior-failure surface
 
@@ -49,25 +49,45 @@ This eliminates the cycle-46-47 pattern where I added new evidence files onto a 
 
 ## Mechanism 3: Hypothesis tracking for skill changes
 
-When a cycle edits `skills/evolve/SKILL.md`, it MUST append to `.agents/evolve/hypotheses.jsonl` with shape:
+When a cycle edits `skills/evolve/SKILL.md`, it MUST append to the hypothesis
+ledger through the typed BC3 `HypothesisLedgerPort` (soc-y5vh.8):
 
-```json
-{"id":"H<cycle>.<patch>","cycle_landed":N,"check_at_cycle":N+15,"patch":"<one-line>","hypothesis":"<expected effect>","measure":"<how to verify>","verdict":"PENDING"}
+```bash
+ao loop hypothesis append --id "H<cycle>.<patch>" --cycle-landed N --check-at-cycle $((N+15)) \
+  --patch "<one-line>" --hypothesis "<expected effect>" --measure "<how to verify>"
 ```
 
-At `check_at_cycle`, the loop reads `hypotheses.jsonl`, evaluates each PENDING row's `measure`, and writes the verdict (VERIFIED / FALSIFIED). Falsified hypotheses are revisited: either the patch is wrong, or the measurement was wrong.
+This routes through `productionHypothesisLedger` instead of a raw append to
+`.agents/evolve/hypotheses.jsonl`; the port rejects empty and duplicate IDs.
+At `check_at_cycle`, the loop reads the ledger with `ao loop hypothesis list`
+(one JSON record per line), evaluates each PENDING row's `measure`, and
+writes the verdict (VERIFIED / FALSIFIED). Falsified hypotheses are
+revisited: either the patch is wrong, or the measurement was wrong.
 
 Without this, cycle 45's 6 patches landed unmeasured and 2 of them (H45.2 source-surface auto-rebuild, H45.3 grep-based gate parsing) were silently inert for the next 5 cycles — text in SKILL.md but no harness automation behind them.
 
 ## Mechanism 4: Convergence criteria with a STOP
 
-`.agents/evolve/session-convergence.json` defines the terminal state. When all criteria are met:
+`.agents/evolve/session-convergence.json` records the terminal state; the STOP
+decision is evaluated through the typed BC3 `ConvergenceCheckPort` (soc-y5vh.8):
 
-- CI Validate green for the last 3 pushes
-- HIGH+MEDIUM unconsumed next-work entries <= 1
-- Fitness score >= session baseline
+```bash
+ao loop converged --green-streak "$STREAK" --unconsumed-high-medium "$HM" --fitness-baseline
+# emits {converged, ci_green_streak, unconsumed_high_medium, fitness_baseline_captured, reasons}
+```
 
-The loop emits a teardown report and does NOT call `ScheduleWakeup`. The wakeup chain terminates. The autonomous loop is bounded by criteria, not by wakeup count.
+The predicate is pure — the loop supplies the evidence it already has
+(`ao ci recent` for the streak, the next-work findings count, the
+fitness-baseline flag). The criteria are met when all hold:
+
+- CI Validate green for the last 3 pushes (green streak ≥ 3)
+- HIGH+MEDIUM unconsumed next-work entries ≤ 1
+- a fitness baseline has been captured
+
+When `ao loop converged` reports `converged: true`, the loop emits a teardown
+report and does NOT call `ScheduleWakeup`. The wakeup chain terminates. The
+autonomous loop is bounded by criteria, not by wakeup count. `reasons` names
+every unmet criterion when `converged` is false.
 
 Without an explicit STOP, the loop drifts indefinitely. With STOP, it converges.
 

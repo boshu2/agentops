@@ -566,6 +566,23 @@ ao loop append --mode <m> --result <r> [flags]
       --trace-json string   XP/BDD/TDD evidence trace as a JSON object — a file path or inline JSON (optional)
 ```
 
+#### `ao loop converged`
+
+Evaluate the evolve loop's convergence STOP predicate via the typed
+
+```
+ao loop converged [flags]
+```
+
+**Flags:**
+
+```
+      --fitness-baseline             a fitness baseline artifact has been captured
+      --green-streak int             current leading green CI streak (caller-supplied evidence)
+  -h, --help                         help for converged
+      --unconsumed-high-medium int   current unconsumed HIGH+MEDIUM finding count
+```
+
 #### `ao loop history`
 
 Read .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
@@ -582,6 +599,43 @@ ao loop history [flags]
       --latest      emit only the latest entry
       --limit int   max entries to emit (0 = all)
       --start int   start cycle number (inclusive; 0 = unbounded)
+```
+
+#### `ao loop hypothesis`
+
+Operations on the /evolve hypothesis ledger (.agents/evolve/hypotheses.jsonl) via the typed BC3 HypothesisLedgerPort.
+
+```
+ao loop hypothesis [command]
+```
+
+##### `ao loop hypothesis append`
+
+Append a falsifiable hypothesis to .agents/evolve/hypotheses.jsonl
+
+```
+ao loop hypothesis append --id <id> --hypothesis <h> --measure <m> [flags]
+```
+
+**Flags:**
+
+```
+      --check-at-cycle int   future cycle that evaluates the measure
+      --cycle-landed int     cycle the patch landed
+  -h, --help                 help for append
+      --hypothesis string    expected effect of the patch
+      --id string            unique hypothesis ID, e.g. H210.1 (required)
+      --measure string       how the effect is verified
+      --patch string         one-line description of what landed
+      --verdict string       verdict: PENDING|VERIFIED|FALSIFIED (default "PENDING")
+```
+
+##### `ao loop hypothesis list`
+
+Read .agents/evolve/hypotheses.jsonl via the typed BC3
+
+```
+ao loop hypothesis list [flags]
 ```
 
 #### `ao loop verify`
