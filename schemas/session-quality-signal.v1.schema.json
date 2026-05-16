@@ -5,6 +5,10 @@
   "type": "object",
   "required": ["timestamp", "signal_type", "detail", "session_id"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "timestamp": { "type": "string", "format": "date-time" },
     "signal_type": { "type": "string", "enum": ["repeated_prompt", "correction", "read_only_spiral"] },
     "detail": { "type": "string" },

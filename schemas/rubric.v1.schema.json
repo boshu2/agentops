@@ -8,6 +8,10 @@
   "additionalProperties": false,
   "required": ["criteria", "pass_threshold"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "version": {
       "type": "integer",
       "const": 1,

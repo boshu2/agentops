@@ -8,6 +8,10 @@
   "additionalProperties": true,
   "required": ["status"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "task": {
       "type": "string",
       "description": "Task identifier — usually an issue ID, epic-task slug, or short slug. Either 'task' or 'task_id' is required."

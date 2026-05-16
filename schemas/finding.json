@@ -5,6 +5,10 @@
   "practices": ["dora-metrics", "wiki-knowledge-surface"],
   "type": "object",
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "id": {
       "type": "string",
       "description": "Finding identifier for cross-skill correlation (e.g., f-2026-03-12-001). Maps to finding-artifact.id."
