@@ -92,6 +92,15 @@ func daemonStoreDir(env *DetectEnv) string {
 	return filepath.Join(env.RepoRoot, ".agents", "daemon")
 }
 
+// daemonQuarantineRoot returns the run-scoped quarantine directory,
+// .doctor/runs/<run-id>/quarantine. Daemon fixers move or copy offending data
+// here — not into the user's daemon store — so `ao doctor undo` leaves the
+// repo byte-identical to its pre-fix state. Quarantine output travels with the
+// run directory and is reclaimed by `ao doctor gc`.
+func daemonQuarantineRoot(ctx *MutateContext) string {
+	return filepath.Join(ctx.RunDir, "quarantine")
+}
+
 // daemonLedgerPath returns the active ledger path under the daemon store.
 func daemonLedgerPath(env *DetectEnv) string {
 	return filepath.Join(daemonStoreDir(env), "ledger.jsonl")
@@ -277,7 +286,7 @@ func (corruptLedgerLineFixer) Preconditions() []string {
 	}
 }
 func (corruptLedgerLineFixer) WritesTo() []string {
-	return []string{".agents/daemon/ledger.jsonl", ".agents/daemon/quarantine"}
+	return []string{".agents/daemon/ledger.jsonl"}
 }
 func (corruptLedgerLineFixer) Ops() []string     { return []string{"WriteFile"} }
 func (corruptLedgerLineFixer) Reversible() bool  { return true }
@@ -325,7 +334,7 @@ func (f corruptLedgerLineFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Find
 	// single WriteFile op. WriteFile's atomicWrite MkdirAll's the parent, so
 	// the quarantine/ directory is created through the chokepoint; AppendFile
 	// would not create the parent and would fail on a fresh store.
-	quarantine := filepath.Join(daemonStoreDir(env), "quarantine", "ledger-corrupt-"+ctx.RunID+".jsonl")
+	quarantine := filepath.Join(daemonQuarantineRoot(ctx), "ledger-corrupt-"+ctx.RunID+".jsonl")
 	var qbuf bytes.Buffer
 	for _, c := range corrupt {
 		payload, merr := json.Marshal(map[string]any{"line_no": c.no, "raw": c.raw, "run_id": ctx.RunID})
@@ -437,7 +446,7 @@ func (truncatedTrailingLineFixer) Preconditions() []string {
 	}
 }
 func (truncatedTrailingLineFixer) WritesTo() []string {
-	return []string{".agents/daemon/ledger.jsonl", ".agents/daemon/quarantine"}
+	return []string{".agents/daemon/ledger.jsonl"}
 }
 func (truncatedTrailingLineFixer) Ops() []string     { return []string{"WriteFile"} }
 func (truncatedTrailingLineFixer) Reversible() bool  { return true }
@@ -473,8 +482,8 @@ func (f truncatedTrailingLineFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []
 		cleanPrefix, fragment = raw[:idx+1], raw[idx+1:]
 	}
 	// WriteFile (not AppendFile) so atomicWrite MkdirAll's the quarantine/
-	// parent on a fresh store; the fragment file is always newly created.
-	quarantine := filepath.Join(daemonStoreDir(env), "quarantine", "trailing-fragment-"+ctx.RunID+".bin")
+	// parent; the fragment file is always newly created.
+	quarantine := filepath.Join(daemonQuarantineRoot(ctx), "trailing-fragment-"+ctx.RunID+".bin")
 	r1, qerr := Mutate(ctx, quarantine, WriteFile{Content: fragment, Mode: 0o600})
 	if qerr != nil {
 		res.Err = fmt.Errorf("doctor: %s: quarantine torn fragment: %w", f.ID(), qerr)
@@ -821,7 +830,7 @@ func (f orphanTmpFilesFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding
 		res.Fixed = true
 		return res, nil
 	}
-	qroot := filepath.Join(daemonStoreDir(env), "quarantine", "orphan-tmp", ctx.RunID)
+	qroot := filepath.Join(daemonQuarantineRoot(ctx), "orphan-tmp", ctx.RunID)
 	for _, src := range orphans {
 		rel, err := filepath.Rel(env.RepoRoot, src)
 		if err != nil {
@@ -994,7 +1003,7 @@ func (corruptGzipArchiveFixer) ID() string { return "fm-daemon-corrupt-gzip-arch
 func (corruptGzipArchiveFixer) Preconditions() []string {
 	return []string{
 		"no `ao daemon run` process is live (concurrency_lost otherwise)",
-		".agents/daemon and quarantine/bad-archives are inside write_scopes",
+		".agents/daemon and the run quarantine dir (.doctor) are inside write_scopes",
 	}
 }
 func (corruptGzipArchiveFixer) WritesTo() []string {
@@ -1016,7 +1025,7 @@ func (f corruptGzipArchiveFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Fin
 		res.Fixed = true
 		return res, nil
 	}
-	quarantine := filepath.Join(daemonStoreDir(env), "quarantine", "bad-archives", ctx.RunID)
+	quarantine := filepath.Join(daemonQuarantineRoot(ctx), "bad-archives", ctx.RunID)
 	// Deterministic order over the bad set.
 	paths := make([]string, 0, len(bad))
 	for p := range bad {
@@ -1138,7 +1147,7 @@ func (archiveUnboundedGrowthFixer) Preconditions() []string {
 	return []string{
 		"no `ao daemon run` process is live (concurrency_lost otherwise)",
 		"runs after fm-daemon-corrupt-gzip-archive and fm-daemon-snapshot-schema-mismatch",
-		".agents/daemon/quarantine is inside write_scopes",
+		"the run quarantine dir (.doctor) is inside write_scopes",
 	}
 }
 func (archiveUnboundedGrowthFixer) WritesTo() []string {
@@ -1168,8 +1177,8 @@ func (f archiveUnboundedGrowthFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 		res.Fixed = true
 		return res, nil
 	}
-	qArch := filepath.Join(daemonStoreDir(env), "quarantine", "retired-archives", ctx.RunID)
-	qSnap := filepath.Join(daemonStoreDir(env), "quarantine", "retired-snapshots", ctx.RunID)
+	qArch := filepath.Join(daemonQuarantineRoot(ctx), "retired-archives", ctx.RunID)
+	qSnap := filepath.Join(daemonQuarantineRoot(ctx), "retired-snapshots", ctx.RunID)
 	for _, src := range archRetire {
 		r, err := Mutate(ctx, src, Rename{To: filepath.Join(qArch, filepath.Base(src))})
 		if err != nil {
