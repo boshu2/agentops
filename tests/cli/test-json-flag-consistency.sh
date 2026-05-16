@@ -43,11 +43,19 @@ echo "Binary: $AO"
 echo ""
 
 # ── Helper: test a command with --json ───────────────────────────────
-# Usage: test_json_cmd <label> <ao-args...>
+# Usage: test_json_cmd [--diagnostic] <label> <ao-args...>
 # Runs the command, checks:
 #   1. --json flag is accepted (not "unknown flag")
 #   2. stdout is valid JSON (via jq empty)
+# With --diagnostic, the command is allowed to exit 1 as well as 0 —
+# diagnostic commands (e.g. `ao doctor`) exit 1 when findings are present,
+# which is a contractual outcome, not a failure. Exit codes >=2 still fail.
 test_json_cmd() {
+  local max_rc=0
+  if [[ "${1:-}" == "--diagnostic" ]]; then
+    max_rc=1
+    shift
+  fi
   local label="$1"; shift
   local stdout stderr rc
 
@@ -61,14 +69,14 @@ test_json_cmd() {
     return
   fi
 
-  if [[ $rc -ne 0 ]]; then
+  if [[ $rc -gt $max_rc ]]; then
     fail "$label — exited $rc with --json"
     return
   fi
 
   # Empty stdout: command ran but produced no output
   if [[ -z "$stdout" ]]; then
-    fail "$label — exited 0 but produced no JSON output"
+    fail "$label — produced no JSON output despite --json flag"
     return
   fi
 
@@ -86,7 +94,7 @@ echo "--- Core commands ---"
 test_json_cmd "ao version"          version
 test_json_cmd "ao config --show"    config --show
 test_json_cmd "ao status"           status
-test_json_cmd "ao doctor"           doctor
+test_json_cmd --diagnostic "ao doctor" doctor
 test_json_cmd "ao badge"            badge
 
 echo ""
