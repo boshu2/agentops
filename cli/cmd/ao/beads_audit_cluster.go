@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -124,10 +125,40 @@ var execGitLog = func(args ...string) (string, error) {
 	return string(out), err
 }
 
-// repoPatternExists searches the worktree for a literal pattern. Tests
-// override it to keep audit classification deterministic.
-var repoPatternExists = func(pattern string) bool {
-	return patternExistsInRepo(pattern)
+// repoPatternExists searches the worktree for a literal pattern, reusing a
+// content index so the tree is walked once per audit instead of once per
+// pattern (soc-2grz, PERF-C2). Tests override it to keep audit classification
+// deterministic.
+var repoPatternExists = func(pattern string, cache *repoContentCache) bool {
+	return patternExistsInIndex(pattern, cache.index())
+}
+
+// repoContentCache walks the scoped audit roots at most once and memoizes a
+// path -> file-content map. recordAuditStaleFinding probes up to 10 patterns
+// per bead; without the cache that was up to 10N full-repo walks for N beads.
+type repoContentCache struct {
+	once sync.Once
+	data map[string]string
+}
+
+// index returns the memoized worktree content map, building it on first use.
+func (c *repoContentCache) index() map[string]string {
+	c.once.Do(func() { c.data = buildRepoContentIndex() })
+	return c.data
+}
+
+// patternExistsInIndex reports whether any indexed file contains the literal
+// pattern.
+func patternExistsInIndex(pattern string, index map[string]string) bool {
+	if pattern == "" {
+		return false
+	}
+	for _, content := range index {
+		if strings.Contains(content, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 type AuditFinding struct {
@@ -208,32 +239,37 @@ func auditBeads(autoClose bool) (*AuditReport, error) {
 	fileToBeads := make(map[string]map[string]bool)
 	consolidatableIDs := make(map[string]bool)
 
+	// PERF-C2 (soc-2grz): capture git history once and share a lazily-built
+	// worktree content index, rather than re-shelling/re-walking per bead.
+	commits := captureAuditCommits()
+	cache := &repoContentCache{}
+
 	for _, bead := range beads {
 		if bead.ID == "" {
 			continue
 		}
-		if recordAuditBeadFlow(report, bead, autoClose, fileToBeads) {
+		if recordAuditBeadFlow(report, bead, autoClose, fileToBeads, commits) {
 			continue
 		}
 		recordAuditBeadPaths(fileToBeads, bead.ID, extractAuditFilePaths(bead.textBody(), 10))
-		recordAuditStaleFinding(report, bead)
+		recordAuditStaleFinding(report, bead, cache)
 	}
 
 	finalizeAuditReport(report, fileToBeads, consolidatableIDs)
 	return report, nil
 }
 
-func recordAuditBeadFlow(report *AuditReport, bead beadRecord, autoClose bool, fileToBeads map[string]map[string]bool) bool {
+func recordAuditBeadFlow(report *AuditReport, bead beadRecord, autoClose bool, fileToBeads map[string]map[string]bool, commits []auditCommit) bool {
 	desc := bead.textBody()
-	if recordLikelyFixedAuditFinding(report, bead, desc, autoClose) {
+	if recordLikelyFixedAuditFinding(report, bead, desc, autoClose, commits) {
 		return true
 	}
 	recordAuditBeadPaths(fileToBeads, bead.ID, extractAuditFilePaths(desc, 10))
 	return false
 }
 
-func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc string, autoClose bool) bool {
-	if evidence := firstGitLogLines("--all", "--oneline", "--grep="+bead.ID); evidence != "" {
+func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc string, autoClose bool, commits []auditCommit) bool {
+	if evidence := grepCommitsForID(commits, bead.ID); evidence != "" {
 		report.LikelyFixed = append(report.LikelyFixed, AuditFinding{
 			ID:       bead.ID,
 			Title:    bead.displayTitle(),
@@ -247,7 +283,7 @@ func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc st
 	}
 	paths := extractAuditFilePaths(desc, 10)
 	if bead.CreatedAt != "" && len(paths) > 0 {
-		if evidence := fileChangesSince(bead.CreatedAt, paths); evidence != "" {
+		if evidence := fileChangesSinceCommits(commits, bead.CreatedAt, paths); evidence != "" {
 			report.LikelyFixed = append(report.LikelyFixed, AuditFinding{
 				ID:       bead.ID,
 				Title:    bead.displayTitle(),
@@ -263,9 +299,9 @@ func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc st
 	return false
 }
 
-func recordAuditStaleFinding(report *AuditReport, bead beadRecord) {
+func recordAuditStaleFinding(report *AuditReport, bead beadRecord, cache *repoContentCache) {
 	patterns := extractAuditPatterns(bead.textBody(), 10)
-	if len(patterns) > 0 && !anyPatternExists(patterns) {
+	if len(patterns) > 0 && !anyPatternExists(patterns, cache) {
 		report.LikelyStale = append(report.LikelyStale, AuditFinding{
 			ID:     bead.ID,
 			Title:  bead.displayTitle(),
@@ -361,20 +397,102 @@ func parseBDRecord(raw []byte) (beadRecord, error) {
 	return record, nil
 }
 
-func firstGitLogLines(args ...string) string {
-	out, err := execGitLog(append([]string{"log"}, args...)...)
-	if err != nil {
-		return ""
-	}
-	return firstNNonEmptyLines(out, 3)
+// auditCommit is one reachable commit's metadata, captured once for the whole
+// audit instead of re-shelling to git per bead.
+type auditCommit struct {
+	shortSHA string
+	subject  string
+	body     string
+	commitAt time.Time
+	files    map[string]struct{}
 }
 
-func fileChangesSince(createdAt string, paths []string) string {
+// captureAuditCommits runs a single `git log --all` and parses every reachable
+// commit's metadata and touched files. The audit previously forked git once
+// per bead for --grep matching and once per (bead, path) pair for --since file
+// history; this collapses all of it to one subprocess (soc-2grz, PERF-C2).
+func captureAuditCommits() []auditCommit {
+	const recSep, fldSep = "\x1e", "\x1f"
+	out, err := execGitLog("log", "--all", "--name-only",
+		"--pretty=format:"+recSep+"%h"+fldSep+"%cI"+fldSep+"%s"+fldSep+"%b"+fldSep)
+	if err != nil || strings.TrimSpace(out) == "" {
+		return nil
+	}
+	var commits []auditCommit
+	for _, record := range strings.Split(out, recSep) {
+		if record = strings.TrimLeft(record, "\n"); record == "" {
+			continue
+		}
+		// parts: short-sha, committer-date, subject, body, "\n<files>".
+		parts := strings.SplitN(record, fldSep, 5)
+		if len(parts) < 5 {
+			continue
+		}
+		commit := auditCommit{
+			shortSHA: strings.TrimSpace(parts[0]),
+			commitAt: parseGitTime(parts[1]),
+			subject:  strings.TrimSpace(parts[2]),
+			body:     parts[3],
+			files:    map[string]struct{}{},
+		}
+		for _, line := range strings.Split(parts[4], "\n") {
+			if f := strings.TrimSpace(line); f != "" {
+				commit.files[f] = struct{}{}
+			}
+		}
+		commits = append(commits, commit)
+	}
+	return commits
+}
+
+// parseGitTime parses a strict-ISO git date, returning the zero time on error.
+func parseGitTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(s))
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// grepCommitsForID returns up to 3 "<short-sha> <subject>" lines for commits
+// whose message references the bead ID, mirroring `git log --oneline --grep`.
+func grepCommitsForID(commits []auditCommit, id string) string {
+	if id == "" {
+		return ""
+	}
+	var lines []string
+	for _, c := range commits {
+		if strings.Contains(c.subject, id) || strings.Contains(c.body, id) {
+			lines = append(lines, c.shortSHA+" "+c.subject)
+			if len(lines) == 3 {
+				break
+			}
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// fileChangesSinceCommits returns "<short-sha> <subject>" evidence for commits
+// after createdAt that touched one of the given paths, mirroring the prior
+// per-path `git log --oneline --since=<createdAt> -- <path>` calls.
+func fileChangesSinceCommits(commits []auditCommit, createdAt string, paths []string) string {
+	since := parseGitTime(createdAt)
 	var chunks []string
-	for _, path := range paths {
-		evidence := firstGitLogLines("--oneline", "--since="+createdAt, "--", path)
-		if evidence != "" {
-			chunks = append(chunks, evidence)
+	for _, p := range paths {
+		var lines []string
+		for _, c := range commits {
+			if !since.IsZero() && !c.commitAt.After(since) {
+				continue
+			}
+			if _, ok := c.files[p]; ok {
+				lines = append(lines, c.shortSHA+" "+c.subject)
+				if len(lines) == 3 {
+					break
+				}
+			}
+		}
+		if len(lines) > 0 {
+			chunks = append(chunks, strings.Join(lines, "\n"))
 		}
 	}
 	return strings.Join(chunks, "\n")
@@ -430,33 +548,38 @@ func extractAuditPatterns(desc string, limit int) []string {
 	return out
 }
 
-func anyPatternExists(patterns []string) bool {
+func anyPatternExists(patterns []string, cache *repoContentCache) bool {
 	for _, pattern := range patterns {
-		if repoPatternExists(pattern) {
+		if repoPatternExists(pattern, cache) {
 			return true
 		}
 	}
 	return false
 }
 
+// patternExistsInRepo reports whether a literal pattern occurs anywhere in the
+// scoped audit roots. It builds a fresh index per call; the audit pipeline
+// instead shares one repoContentCache across all patterns.
 func patternExistsInRepo(pattern string) bool {
-	if pattern == "" {
-		return false
-	}
+	return patternExistsInIndex(pattern, buildRepoContentIndex())
+}
+
+// buildRepoContentIndex walks the scoped audit roots once and returns a
+// root-prefixed path -> content map of searchable files under the size cap.
+func buildRepoContentIndex() map[string]string {
+	index := map[string]string{}
 	roots := []string{"cli", "skills", "skills-codex", "scripts", "docs", "tests"}
 	for _, root := range roots {
 		openRoot, err := os.OpenRoot(root)
 		if err != nil {
 			continue
 		}
-		found := false
 		_ = fs.WalkDir(openRoot.FS(), ".", func(walkPath string, d fs.DirEntry, err error) error {
-			if err != nil || found {
+			if err != nil {
 				return nil
 			}
 			if d.IsDir() {
-				base := path.Base(walkPath)
-				switch base {
+				switch path.Base(walkPath) {
 				case ".git", ".beads", ".agents", "node_modules", "vendor", "testdata":
 					return fs.SkipDir
 				}
@@ -469,18 +592,14 @@ func patternExistsInRepo(pattern string) bool {
 			if statErr != nil || info.Size() > 1_000_000 {
 				return nil
 			}
-			content, readErr := openRoot.ReadFile(walkPath)
-			if readErr == nil && strings.Contains(string(content), pattern) {
-				found = true
+			if content, readErr := openRoot.ReadFile(walkPath); readErr == nil {
+				index[path.Join(root, walkPath)] = string(content)
 			}
 			return nil
 		})
 		_ = openRoot.Close()
-		if found {
-			return true
-		}
 	}
-	return false
+	return index
 }
 
 func isAuditSearchFile(path string) bool {
