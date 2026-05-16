@@ -337,8 +337,16 @@ func Fix(opts Options) (*Report, error) {
 	rep.BackupsDir = filepath.Join(rep.RunDir, "backups")
 	rep.UndoCommand = fmt.Sprintf("ao doctor undo %s", filepath.Base(ra.RunDir))
 	rep.ExitCode = fixExitCode(len(findings), fixedCount, failed)
+	if opts.DryRun {
+		// A dry-run executes nothing; per the doctor CLI contract
+		// (`--dry-run --fix`) it always exits 0 — the plan was printed and no
+		// state changed. The findings array still carries what *would* be done.
+		rep.ExitCode = ExitHealthy
+		rep.NextSteps = []string{"Dry run — no changes made. Re-run without --dry-run to apply."}
+	} else {
+		rep.NextSteps = []string{rep.UndoCommand + "  # if --fix went wrong"}
+	}
 	rep.OK = rep.ExitCode == ExitHealthy
-	rep.NextSteps = []string{rep.UndoCommand + "  # if --fix went wrong"}
 	return rep, persistRun(ra, opts, rep, totalActions)
 }
 
