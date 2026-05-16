@@ -57,6 +57,7 @@ var bdAvailable = func() bool {
 var beadsCmd = &cobra.Command{
 	Use:   "beads",
 	Short: "Complementary tooling for the bd (beads) issue tracker",
+	Args:  cobra.NoArgs,
 	Long: `Commands that help maintain the bd issue tracker alongside the main
 bd CLI. These tools focus on catching stale descriptions before a new
 session acts on them and harvesting closure reasons into durable learnings.

@@ -161,6 +161,7 @@ type codexStatusResult struct {
 var codexCmd = &cobra.Command{
 	Use:   "codex",
 	Short: "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
+	Args:  cobra.NoArgs,
 	Long: `Codex lifecycle commands for the AgentOps knowledge flywheel.
 
 Codex CLI v0.115.0+ supports native hooks — prefer those for automatic lifecycle.

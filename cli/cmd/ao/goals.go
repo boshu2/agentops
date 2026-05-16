@@ -10,6 +10,7 @@ import (
 var goalsCmd = &cobra.Command{
 	Use:   "goals",
 	Short: "Fitness goal measurement and validation",
+	Args:  cobra.NoArgs,
 	Long: `Track, measure, and validate project fitness goals.
 
 Supports both GOALS.yaml (versions 1-3) and GOALS.md (version 4) formats.

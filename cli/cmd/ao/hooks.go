@@ -123,6 +123,7 @@ type hooksMapLoadResult struct {
 var hooksCmd = &cobra.Command{
 	Use:   "hooks",
 	Short: "Manage runtime hooks for automatic knowledge flywheel",
+	Args:  cobra.NoArgs,
 	Long: `The hooks command manages runtime hooks that automate the CASS knowledge flywheel.
 Note: Hook install targets Claude Code (~/.claude/settings.json). Codex uses a
 native hook install via scripts/install-codex-plugin.sh when available; older
