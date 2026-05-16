@@ -103,9 +103,28 @@ func (ra *RunArtifact) updateLatestSymlink() error {
 	return nil
 }
 
-// ensureGitignore appends ".doctor/" to the repo's .gitignore if absent.
+// gitRootOrSelf returns the nearest ancestor of dir that contains a .git
+// entry, or dir itself if none is found.
+func gitRootOrSelf(dir string) string {
+	for d := dir; ; {
+		if _, err := os.Stat(filepath.Join(d, ".git")); err == nil {
+			return d
+		}
+		parent := filepath.Dir(d)
+		if parent == d {
+			return dir
+		}
+		d = parent
+	}
+}
+
+// ensureGitignore appends ".doctor/" to the git repo's root .gitignore if
+// absent. It targets the repository root (nearest ancestor with a .git entry)
+// rather than the doctor's cwd, so running `ao doctor` from a subdirectory
+// never scatters stray .gitignore files. ".doctor/" matches at any depth, so a
+// single root entry covers every run location.
 func ensureGitignore(repoRoot string) error {
-	gi := filepath.Join(repoRoot, ".gitignore")
+	gi := filepath.Join(gitRootOrSelf(repoRoot), ".gitignore")
 	data, err := os.ReadFile(gi)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("doctor: read .gitignore: %w", err)

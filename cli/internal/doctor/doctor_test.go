@@ -257,6 +257,46 @@ func TestNewRunArtifact_LayoutAndGitignore(t *testing.T) {
 	}
 }
 
+// TestEnsureGitignore_TargetsGitRoot verifies the doctor writes ".doctor/" to
+// the repository root's .gitignore even when invoked from a subdirectory, so a
+// run from a nested dir never scatters stray .gitignore files.
+func TestEnsureGitignore_TargetsGitRoot(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sub := filepath.Join(root, "cli", "cmd", "ao")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := gitRootOrSelf(sub); got != root {
+		t.Errorf("gitRootOrSelf(sub) = %q, want repo root %q", got, root)
+	}
+
+	// A run created from the subdir must gitignore at the root, not the subdir.
+	if _, err := NewRunArtifact(sub, "sha", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(sub, ".gitignore")); !os.IsNotExist(err) {
+		t.Errorf("subdir .gitignore was created (err=%v); doctor must not litter subdirs", err)
+	}
+	gi, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+	if err != nil {
+		t.Fatalf("root .gitignore not written: %v", err)
+	}
+	if !contains(string(gi), ".doctor/") {
+		t.Errorf("root .gitignore missing .doctor/, got %q", gi)
+	}
+}
+
+// TestGitRootOrSelf_NoGitReturnsSelf verifies the fallback when no .git exists.
+func TestGitRootOrSelf_NoGitReturnsSelf(t *testing.T) {
+	dir := t.TempDir()
+	if got := gitRootOrSelf(dir); got != dir {
+		t.Errorf("gitRootOrSelf(no-git) = %q, want %q", got, dir)
+	}
+}
+
 // TestDiagnose_NoDetectorsSelectedHealthy verifies that when the detector
 // selection is empty (here forced via an --only filter that matches nothing),
 // diagnose reports a healthy workspace and still writes its run artifacts.
