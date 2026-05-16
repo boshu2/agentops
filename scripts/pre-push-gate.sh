@@ -116,7 +116,6 @@ else
 fi
 FAST_MODE=false
 TWO_PASS=false
-SINGLE_PASS=false
 SMOKE_EVOLVE=false
 FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
@@ -212,8 +211,8 @@ Options:
   --accumulate  Continue after failures and report all blocking failures
   --two-pass    Pass 1: --fast --scope head --fail-fast (blocking)
                 Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
-                NOTE: two-pass is now the default for local pushes
-  --single-pass Opt out of two-pass default; run full single-pass gate
+                Opt-in only; local --fast defaults to one bounded pass.
+  --single-pass Compatibility no-op; local default is already single-pass.
   --smoke-evolve Opt-in: after the normal gate, run scripts/test-evolve-cycle-smoke.sh
                  (one bounded ao evolve cycle; asserts commit lands and no new
                  orphans). Takes 15-30 min; off by default. soc-k3fa / mc-m3.5-pre4.
@@ -221,7 +220,9 @@ Options:
 Environment:
   PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
   PRE_PUSH_TWO_PASS=1           enable two-pass mode via env
-  PRE_PUSH_RUN_EVAL=1           run eval canaries even when eval files did not change
+  PRE_PUSH_RUN_EVAL=1           run eval canaries in local fast mode
+  PRE_PUSH_RUN_CONTRACT_CANARIES=1
+                                run blocking contract canaries in local fast mode
   PRE_PUSH_STRICT_EVAL=1        make local fast eval canaries blocking
   PRE_PUSH_AGENT_HEALTH=1       run local fast AgentOps health/ratchet checks
   PRE_PUSH_AGENT_HASH=1         force local fast agents-hub content hash gate
@@ -231,8 +232,6 @@ EOF
 
 if truthy "${PRE_PUSH_TWO_PASS:-0}"; then
     TWO_PASS=true
-elif [[ -n "${PRE_PUSH_TWO_PASS:-}" ]] && ! truthy "${PRE_PUSH_TWO_PASS}"; then
-    SINGLE_PASS=true
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -259,7 +258,6 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --single-pass)
-            SINGLE_PASS=true
             shift
             ;;
         --smoke-evolve)
@@ -299,11 +297,6 @@ if [[ "$FAIL_FAST_SETTING" == "auto" ]]; then
     fi
 elif truthy "$FAIL_FAST_SETTING"; then
     FAIL_FAST_EFFECTIVE=true
-fi
-
-# --- Default to two-pass for local pushes (inner/middle loop separation) ---
-if [[ "$SINGLE_PASS" != "true" ]] && [[ "$TWO_PASS" != "true" ]] && ! is_ci_env; then
-    TWO_PASS=true
 fi
 
 # --- Two-pass mode: re-invoke as pass 1 (blocking) + pass 2 (advisory) ---
@@ -527,12 +520,48 @@ needs_release_audit_artifact_check() {
     changed_paths | grep -qE '^(docs/releases/.*-audit\.md|scripts/(ci-local-release|resolve-release-artifacts|validate-release-audit-artifacts)\.sh|tests/scripts/release-artifacts\.bats)$'
 }
 
+# --- 28c. Codex hook manifest parity (early local runtime drift) ---
+run_codex_hook_manifest_parity() {
+    # When hooks/ changes, verify the local Codex hook manifest still maps
+    # cleanly to AgentOps-managed handlers. Run this before expensive eval/docs
+    # tails so stale local runtime drift fails fast.
+    # Skip key: AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 for emergency disable
+    # without --no-verify.
+    if needs_check hook; then
+        if prepush_skip_flag CODEX_HOOKS; then
+            skip "codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"
+        elif [[ -x scripts/audit-codex-hooks.sh ]]; then
+            codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+            if [[ -f "$codex_home_path/hooks.json" ]]; then
+                if codex_hooks_output="$(scripts/audit-codex-hooks.sh --strict 2>&1)"; then
+                    pass "codex hook manifest parity"
+                else
+                    fail "codex hook manifest parity (run: bash scripts/audit-codex-hooks.sh --strict)"
+                    indent_output "$codex_hooks_output"
+                fi
+            else
+                skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
+            fi
+        else
+            fail "missing executable: scripts/audit-codex-hooks.sh"
+        fi
+    else
+        skip "codex hook manifest parity"
+    fi
+}
+
 if [[ "$FAST_MODE" == "true" ]]; then
     echo "pre-push gate (fast): validating changed files before push..."
     echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING eval=$HAS_EVAL contract=$HAS_CONTRACT ci_policy=$HAS_CI_POLICY swarm=$HAS_SWARM changelog=$HAS_CHANGELOG"
+    if ! is_ci_env; then
+        echo "  lane=local-fast heavy=opt-in eval=${PRE_PUSH_RUN_EVAL:-0} contract_canaries=${PRE_PUSH_RUN_CONTRACT_CANARIES:-0} two_pass=${PRE_PUSH_TWO_PASS:-0}"
+    fi
 else
     echo "pre-push gate: validating before push..."
 fi
+
+# --- 0. Local runtime drift before expensive tails ---
+run_codex_hook_manifest_parity
 
 # --- 1. Go build + vet ---
 if needs_check go; then
@@ -1301,6 +1330,8 @@ if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
     run_eval_canaries=false
 elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
     run_eval_canaries=true
+elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+    run_eval_canaries=false
 elif needs_check eval; then
     run_eval_canaries=true
 fi
@@ -1308,7 +1339,7 @@ fi
 if [[ "$run_eval_canaries" == "true" ]]; then
     if [[ -x scripts/eval-agentops.sh ]]; then
         eval_args=(--fast)
-        if [[ "$FAST_MODE" == "true" ]] && ! truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+        if [[ "$FAST_MODE" == "true" ]]; then
             selected_eval_suites="$(select_fast_eval_suites "$all_changed" || true)"
             if [[ -n "$selected_eval_suites" ]]; then
                 while IFS= read -r suite_path; do
@@ -1344,7 +1375,11 @@ if [[ "$run_eval_canaries" == "true" ]]; then
         fail "missing executable: scripts/eval-agentops.sh"
     fi
 else
-    skip "AgentOps eval canaries (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "AgentOps eval canaries (local fast: opt-in with PRE_PUSH_RUN_EVAL=1)"
+    else
+        skip "AgentOps eval canaries (no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    fi
 fi
 
 # --- 24d. AgentOps eval baseline-audit ---
@@ -1356,6 +1391,8 @@ if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
     run_baseline_audit=false
 elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
     run_baseline_audit=true
+elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+    run_baseline_audit=false
 elif needs_check eval; then
     run_baseline_audit=true
 fi
@@ -1408,13 +1445,21 @@ except Exception:
         fi
     fi
 else
-    skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "AgentOps eval baseline-audit (local fast: opt-in with PRE_PUSH_RUN_EVAL=1)"
+    else
+        skip "AgentOps eval baseline-audit (no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    fi
 fi
 
 # --- 24e. Official contract canaries (blocking, canary-sensitive changes) ---
 run_contract_canaries=false
 if [[ "${PRE_PUSH_SKIP_EVAL:-0}" != "1" ]]; then
     if truthy "${PRE_PUSH_RUN_CONTRACT_CANARIES:-0}"; then
+        run_contract_canaries=true
+    elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        run_contract_canaries=false
+    elif [[ "$FAST_MODE" != "true" ]]; then
         run_contract_canaries=true
     elif [[ "$FAST_MODE" == "true" ]] && [[ -n "${all_changed:-}" ]]; then
         if echo "$all_changed" | grep -qE '^tests/canaries/|^scripts/test-agentops-contract-canaries\.sh$|^\.github/workflows/validate\.yml$'; then
@@ -1446,7 +1491,11 @@ if [[ "$run_contract_canaries" == "true" ]]; then
         skip "contract canaries (runner not found)"
     fi
 else
-    skip "contract canaries (no canary-sensitive changes; set PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "contract canaries (local fast: opt-in with PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    else
+        skip "contract canaries (no canary-sensitive changes; set PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    fi
 fi
 
 # --- 25. Doc-release stabilization gate ---
@@ -1609,33 +1658,6 @@ if needs_check hook || needs_check contract || needs_check go; then
     fi
 else
     skip "hook replacement ports"
-fi
-
-# --- 28c. Codex hook manifest parity (R2 from soc-h53j) ---
-# When hooks/ changes, verify the local Codex hook manifest still maps cleanly to
-# AgentOps-managed handlers. Skip silently when no Codex install is present so
-# operators without ~/.codex (or with a non-AgentOps install path) are not blocked.
-# Skip key: AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 for emergency disable without --no-verify.
-if needs_check hook; then
-    if prepush_skip_flag CODEX_HOOKS; then
-        skip "codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"
-    elif [[ -x scripts/audit-codex-hooks.sh ]]; then
-        codex_home_path="${CODEX_HOME:-$HOME/.codex}"
-        if [[ -f "$codex_home_path/hooks.json" ]]; then
-            if codex_hooks_output="$(scripts/audit-codex-hooks.sh --strict 2>&1)"; then
-                pass "codex hook manifest parity"
-            else
-                fail "codex hook manifest parity (run: bash scripts/audit-codex-hooks.sh --strict)"
-                indent_output "$codex_hooks_output"
-            fi
-        else
-            skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
-        fi
-    else
-        fail "missing executable: scripts/audit-codex-hooks.sh"
-    fi
-else
-    skip "codex hook manifest parity"
 fi
 
 # --- 29. CI policy parity ---
