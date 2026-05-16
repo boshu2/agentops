@@ -139,19 +139,21 @@ func toSet(items []string) map[string]bool {
 	return m
 }
 
-// runDetectors runs the selected detectors and returns sorted findings plus a
-// flag indicating an online probe was needed but --online was not passed.
-func runDetectors(env *DetectEnv, dets []Detector, online bool) ([]Finding, bool, error) {
+// runDetectors runs the selected detectors and returns sorted findings plus the
+// count of detectors skipped because they need --online and it was not passed.
+// A skipped online detector reduces coverage; it is reported in the summary and
+// next_steps but never escalates the exit code (offline is the default mode).
+func runDetectors(env *DetectEnv, dets []Detector, online bool) ([]Finding, int, error) {
 	var findings []Finding
-	onlineNeeded := false
+	onlineSkipped := 0
 	for _, d := range dets {
 		if d.OnlineRequired() && !online {
-			onlineNeeded = true
+			onlineSkipped++
 			continue
 		}
 		fs, err := d.Detect(env)
 		if err != nil {
-			return nil, onlineNeeded, fmt.Errorf("doctor: detector %s failed: %w", d.ID(), err)
+			return nil, onlineSkipped, fmt.Errorf("doctor: detector %s failed: %w", d.ID(), err)
 		}
 		findings = append(findings, fs...)
 	}
@@ -161,7 +163,17 @@ func runDetectors(env *DetectEnv, dets []Detector, online bool) ([]Finding, bool
 		}
 		return findings[i].ID < findings[j].ID
 	})
-	return findings, onlineNeeded, nil
+	return findings, onlineSkipped, nil
+}
+
+// onlineCoverageNote returns a next_steps hint when online detectors were
+// skipped, or nil when coverage was complete.
+func onlineCoverageNote(onlineSkipped int, online bool) []string {
+	if onlineSkipped > 0 && !online {
+		return []string{fmt.Sprintf(
+			"%d check(s) need --online; re-run with --online for full coverage.", onlineSkipped)}
+	}
+	return nil
 }
 
 // summarize builds the ReportSummary from a finding set.
@@ -200,22 +212,20 @@ func Diagnose(opts Options) (*Report, error) {
 		Logger:    os.Stderr,
 	}
 	dets := selectDetectors(opts)
-	findings, onlineNeeded, err := runDetectors(env, dets, opts.Online)
+	findings, onlineSkipped, err := runDetectors(env, dets, opts.Online)
 	if err != nil {
 		return nil, err
 	}
 
 	rep := buildReport(ra, opts.ToolVersion, sha, now, findings)
-	switch {
-	case onlineNeeded:
-		rep.ExitCode = ExitOnlineRequired
-	case len(findings) > 0:
+	rep.Summary.OnlineRequired = onlineSkipped
+	if len(findings) > 0 {
 		rep.ExitCode = ExitFindings
-	default:
+	} else {
 		rep.ExitCode = ExitHealthy
 	}
 	rep.OK = rep.ExitCode == ExitHealthy
-	rep.NextSteps = diagnoseNextSteps(findings)
+	rep.NextSteps = append(diagnoseNextSteps(findings), onlineCoverageNote(onlineSkipped, opts.Online)...)
 	if err := persistRun(ra, opts, rep, 0); err != nil {
 		return rep, err
 	}
@@ -295,21 +305,18 @@ func Fix(opts Options) (*Report, error) {
 		TargetSHA: sha, Online: opts.Online, Logger: os.Stderr,
 	}
 	dets := selectDetectors(opts)
-	findings, onlineNeeded, err := runDetectors(env, dets, opts.Online)
+	findings, onlineSkipped, err := runDetectors(env, dets, opts.Online)
 	if err != nil {
 		return nil, err
 	}
 	rep := buildReport(ra, opts.ToolVersion, sha, now, findings)
+	rep.Summary.OnlineRequired = onlineSkipped
 
-	if onlineNeeded {
-		rep.ExitCode = ExitOnlineRequired
-		rep.NextSteps = []string{"Re-run with --online to enable network probes."}
-		return rep, persistRun(ra, opts, rep, 0)
-	}
 	if len(findings) == 0 {
 		rep.ExitCode = ExitHealthy
 		rep.OK = true
-		rep.NextSteps = []string{"No findings. Nothing to fix."}
+		rep.NextSteps = append([]string{"No findings. Nothing to fix."},
+			onlineCoverageNote(onlineSkipped, opts.Online)...)
 		return rep, persistRun(ra, opts, rep, 0)
 	}
 
