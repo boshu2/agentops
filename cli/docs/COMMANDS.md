@@ -1572,13 +1572,13 @@ ao eval task run <task-id> [flags]
 
 ```
       --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
-      --cross-spec               Allow ModelSpec drift (Day-4 gate #4)
+      --cross-spec               Allow ModelSpec drift (gate #4)
       --dry-run                  Run gates and exit without writing a Run manifest
       --ground-truth string      Ground-truth row id (head of supersession chain)
       --harness string           Harness id (recorded into manifest)
       --harness-dir string       Path to harness source dir for snapshot + gate #8
   -h, --help                     help for run
-      --inspect-command string   Recorded inspect_command (Day-2 placeholder; Day-3 wires real launch)
+      --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
       --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
       --model-spec string        ModelSpec id (already captured via ao eval models capture)
       --n-samples int            Override Suite.n_samples
