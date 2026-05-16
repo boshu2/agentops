@@ -146,6 +146,63 @@ func TestProductionLoopWriter_RoundTripsStartedAtAndTitle(t *testing.T) {
 	}
 }
 
+// soc-y5vh.9: the XP/BDD/TDD trace round-trips writer -> reader, and a
+// trace-less entry stays trace-less (nil Trace, no "trace" key on disk).
+func TestProductionLoopWriter_RoundTripsTrace(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cycle-history.jsonl")
+	w := newProductionLoopWriter(path)
+
+	traced := ports.CycleEntry{
+		Mode:   "evolve",
+		Result: "improved",
+		Trace: &ports.CycleTrace{
+			GoalHypothesis:     "raise test-pass-rate",
+			SelectedGap:        "loop ledger lacks evidence trace",
+			Gherkin:            "Feature: trace\n  Scenario: reconstruct",
+			FirstFailingProof:  "go test FAIL",
+			RedEvidence:        "red",
+			GreenEvidence:      "green",
+			RefactorNote:       "none",
+			ValidationEvidence: "go test ./... green",
+			RatchetAction:      "ao ratchet record implement",
+			GoalReshape:        "gap closed",
+		},
+	}
+	if _, err := w.Append(context.Background(), traced); err != nil {
+		t.Fatalf("Append traced: %v", err)
+	}
+	if _, err := w.Append(context.Background(), ports.CycleEntry{Mode: "evolve", Result: "unchanged"}); err != nil {
+		t.Fatalf("Append plain: %v", err)
+	}
+
+	body, _ := os.ReadFile(path)
+	if !strings.Contains(string(body), `"trace":{`) {
+		t.Fatalf("traced entry did not write a trace object\n%s", body)
+	}
+	if strings.Count(string(body), `"trace"`) != 1 {
+		t.Fatalf("trace-less entry leaked a trace key\n%s", body)
+	}
+
+	r := newProductionLoopReader(path)
+	entries, err := r.Range(context.Background(), 1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("got %d entries, want 2", len(entries))
+	}
+	if entries[0].Trace == nil {
+		t.Fatal("traced entry lost its Trace on read")
+	}
+	if entries[0].Trace.RatchetAction != "ao ratchet record implement" {
+		t.Errorf("round-trip RatchetAction = %q, want \"ao ratchet record implement\"", entries[0].Trace.RatchetAction)
+	}
+	if entries[1].Trace != nil {
+		t.Errorf("trace-less entry read back a non-nil Trace: %+v", entries[1].Trace)
+	}
+}
+
 func TestProductionLoopWriter_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")

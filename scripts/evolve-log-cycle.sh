@@ -26,8 +26,16 @@ Optional:
   --quality-score <n>         Optional quality score field
   --goal-ids <csv>            Optional parallel goal ids
   --parallel                  Mark entry as parallel
+  --trace-json <path|json|->  XP/BDD/TDD evidence trace as a JSON object
+                              (file path, inline JSON, or - for stdin)
   --timestamp <iso8601>       Override timestamp for deterministic tests
   -h, --help                  Show help
+
+The --trace-json payload records the continuous-evolution kernel for one
+cycle: goal_hypothesis, selected_gap, gherkin (or exemption_reason for a
+trivial one-shot cycle), first_failing_proof, red_evidence, green_evidence,
+refactor_note, validation_evidence, ratchet_action, goal_reshape. It is
+recorded as-is; completeness is advisory, never blocking.
 EOF
 }
 
@@ -80,6 +88,8 @@ CYCLE_START_SHA=""
 QUALITY_SCORE=""
 GOAL_IDS=""
 PARALLEL=false
+TRACE_JSON_ARG=""
+TRACE_JSON=""
 TIMESTAMP="$(iso_timestamp)"
 
 while [[ $# -gt 0 ]]; do
@@ -136,6 +146,10 @@ while [[ $# -gt 0 ]]; do
       PARALLEL=true
       shift
       ;;
+    --trace-json)
+      TRACE_JSON_ARG="${2:-}"
+      shift 2
+      ;;
     --timestamp)
       TIMESTAMP="${2:-}"
       shift 2
@@ -168,6 +182,24 @@ esac
 
 if [[ "$RESULT" == "unchanged" && "$TARGET" != "idle" ]]; then
   die "unchanged results must use --target idle; attempted productive cycles should report their intended productive result and let the substantive-delta gate downgrade if needed"
+fi
+
+# Resolve --trace-json: a file path, '-' for stdin, or inline JSON. The
+# payload must be a JSON object; arrays, scalars, and malformed JSON are
+# rejected. The trace itself is recorded as-is — completeness is advisory
+# (see references/cycle-history.md), never blocking (soc-y5vh.9).
+if [[ -n "$TRACE_JSON_ARG" ]]; then
+  if [[ "$TRACE_JSON_ARG" == "-" ]]; then
+    TRACE_JSON="$(cat)"
+  elif [[ -f "$TRACE_JSON_ARG" ]]; then
+    TRACE_JSON="$(cat "$TRACE_JSON_ARG")"
+  else
+    TRACE_JSON="$TRACE_JSON_ARG"
+  fi
+  TRACE_TYPE="$(printf '%s' "$TRACE_JSON" | jq -r 'type' 2>/dev/null)" \
+    || die "--trace-json is not valid JSON"
+  [[ "$TRACE_TYPE" == "object" ]] \
+    || die "--trace-json must be a JSON object, got: ${TRACE_TYPE:-invalid}"
 fi
 
 HISTORY_PATH="$(resolve_path "$REPO_ROOT" "$HISTORY")"
@@ -237,6 +269,8 @@ ENTRY="$(
     --argjson parallel "$PARALLEL" \
     --argjson has_quality "$( [[ -n "$QUALITY_SCORE" ]] && echo true || echo false )" \
     --argjson quality_score "${QUALITY_SCORE:-0}" \
+    --argjson has_trace "$( [[ -n "$TRACE_JSON" ]] && echo true || echo false )" \
+    --argjson trace "${TRACE_JSON:-null}" \
     '
       {
         cycle: $cycle,
@@ -258,6 +292,7 @@ ENTRY="$(
           goal_ids: ($goal_ids | split(",") | map(gsub("^\\s+|\\s+$"; "") | select(length > 0)))
         } else {} end)
       + (if $productive and $has_quality then {quality_score: $quality_score} else {} end)
+      + (if $has_trace then {trace: $trace} else {} end)
     '
 )"
 

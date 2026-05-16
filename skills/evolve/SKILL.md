@@ -426,6 +426,8 @@ Two paths: productive cycles get committed, idle cycles are local-only.
 
 **IDLE cycles** (nothing found even after generator layers): log via `evolve-log-cycle.sh` with `--result "unchanged"`. No git add, no commit.
 
+**Record the XP/BDD/TDD trace.** When a cycle worked a product or goal-backed gap, pass `--trace-json` to `evolve-log-cycle.sh` (or `ao loop append`) so the cycle records the continuous-evolution kernel — goal hypothesis → selected gap → Gherkin scenario → first failing proof → red/green evidence → refactor note → validation evidence → ratchet action → goal reshape — and a reviewer can reconstruct the cycle without the transcript. A trivial one-shot cycle records a `trace.exemption_reason` instead of carrying false BDD/TDD ceremony. Trace completeness is advisory, never a gate. See `references/cycle-history.md` ("XP/BDD/TDD Evidence Trace").
+
 ### Step 7: Loop or Stop
 
 ```bash

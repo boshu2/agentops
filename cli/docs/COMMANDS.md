@@ -557,12 +557,13 @@ ao loop append --mode <m> --result <r> [flags]
 **Flags:**
 
 ```
-      --commit string      git commit SHA (optional)
-      --cycle int          cycle number (0 = auto-assign max+1)
-  -h, --help               help for append
-      --milestone string   milestone note (optional)
-      --mode string        cycle mode (required)
-      --result string      cycle result: improved|harvested|unchanged|idle (required)
+      --commit string       git commit SHA (optional)
+      --cycle int           cycle number (0 = auto-assign max+1)
+  -h, --help                help for append
+      --milestone string    milestone note (optional)
+      --mode string         cycle mode (required)
+      --result string       cycle result: improved|harvested|unchanged|idle (required)
+      --trace-json string   XP/BDD/TDD evidence trace as a JSON object — a file path or inline JSON (optional)
 ```
 
 #### `ao loop history`

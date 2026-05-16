@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -32,7 +33,8 @@ rest are optional.
 Examples:
   ao loop append --mode evolve --result improved
   ao loop append --mode evolve --result unchanged --commit deadbeef
-  ao loop append --cycle 200 --mode test --result improved --milestone "test entry"`,
+  ao loop append --cycle 200 --mode test --result improved --milestone "test entry"
+  ao loop append --mode evolve --result improved --trace-json cycle-trace.json`,
 	RunE: runLoopAppend,
 }
 
@@ -42,6 +44,7 @@ type loopAppendOptions struct {
 	result    string
 	commit    string
 	milestone string
+	traceJSON string
 	writer    io.Writer
 	appendFn  func(ctx context.Context, opts loopAppendOptions) (ports.CycleEntry, error)
 }
@@ -52,6 +55,7 @@ func init() {
 	loopAppendCmd.Flags().String("result", "", "cycle result: improved|harvested|unchanged|idle (required)")
 	loopAppendCmd.Flags().String("commit", "", "git commit SHA (optional)")
 	loopAppendCmd.Flags().String("milestone", "", "milestone note (optional)")
+	loopAppendCmd.Flags().String("trace-json", "", "XP/BDD/TDD evidence trace as a JSON object — a file path or inline JSON (optional)")
 	_ = loopAppendCmd.MarkFlagRequired("mode")
 	_ = loopAppendCmd.MarkFlagRequired("result")
 	loopCmd.AddCommand(loopAppendCmd)
@@ -63,14 +67,40 @@ func runLoopAppend(cmd *cobra.Command, _ []string) error {
 	result, _ := cmd.Flags().GetString("result")
 	commit, _ := cmd.Flags().GetString("commit")
 	milestone, _ := cmd.Flags().GetString("milestone")
+	traceJSON, _ := cmd.Flags().GetString("trace-json")
 	return loopAppendRun(cmd.Context(), loopAppendOptions{
 		cycle:     cycle,
 		mode:      mode,
 		result:    result,
 		commit:    commit,
 		milestone: milestone,
+		traceJSON: traceJSON,
 		writer:    cmd.OutOrStdout(),
 	})
+}
+
+// loadCycleTrace resolves the --trace-json argument into a CycleTrace.
+// An empty argument yields a nil trace (no trace recorded). A path to
+// an existing file is read; otherwise the argument is treated as
+// inline JSON. The payload MUST be a JSON object — arrays, scalars,
+// and malformed JSON are rejected with an error naming the flag.
+func loadCycleTrace(arg string) (*ports.CycleTrace, error) {
+	if arg == "" {
+		return nil, nil
+	}
+	raw := []byte(arg)
+	if info, statErr := os.Stat(arg); statErr == nil && info.Mode().IsRegular() {
+		data, err := os.ReadFile(arg)
+		if err != nil {
+			return nil, fmt.Errorf("--trace-json: read %q: %w", arg, err)
+		}
+		raw = data
+	}
+	var trace ports.CycleTrace
+	if err := json.Unmarshal(raw, &trace); err != nil {
+		return nil, fmt.Errorf("--trace-json must be a JSON object: %w", err)
+	}
+	return &trace, nil
 }
 
 func loopAppendRun(ctx context.Context, opts loopAppendOptions) error {
@@ -104,6 +134,10 @@ func loopAppendViaPort(ctx context.Context, opts loopAppendOptions) (ports.Cycle
 	if err := os.MkdirAll(filepath.Dir(historyPath), 0o755); err != nil {
 		return ports.CycleEntry{}, fmt.Errorf("mkdir: %w", err)
 	}
+	trace, err := loadCycleTrace(opts.traceJSON)
+	if err != nil {
+		return ports.CycleEntry{}, err
+	}
 	w := newProductionLoopWriter(historyPath)
 	return w.Append(ctx, ports.CycleEntry{
 		Number:    opts.cycle,
@@ -111,5 +145,6 @@ func loopAppendViaPort(ctx context.Context, opts loopAppendOptions) (ports.Cycle
 		Result:    opts.result,
 		Commit:    opts.commit,
 		Milestone: opts.milestone,
+		Trace:     trace,
 	})
 }
