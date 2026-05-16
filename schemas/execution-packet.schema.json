@@ -44,6 +44,12 @@
     "plan_path": {
       "type": "string"
     },
+    "density": {
+      "$ref": "#/$defs/Density"
+    },
+    "artifacts": {
+      "$ref": "#/$defs/Artifacts"
+    },
     "contract_surfaces": {
       "type": "array",
       "items": {
@@ -95,6 +101,20 @@
     "complexity": {
       "type": "string"
     },
+    "pre_mortem_verdict": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"]
+    },
+    "test_levels": {
+      "$ref": "#/$defs/TestLevels"
+    },
+    "ranked_packet_path": {
+      "type": "string"
+    },
+    "discovery_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
     "proof_artifacts": {
       "type": "array",
       "items": {
@@ -127,9 +147,179 @@
     },
     "mixed_mode_degraded_reason": {
       "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "discovery_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scope": {
+      "$ref": "#/$defs/DiscoveryArtifactScope"
+    },
+    "abort_gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tdd_matrix": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "$defs": {
+    "Density": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent",
+        "boundary",
+        "evidence",
+        "decision",
+        "constraint",
+        "next_action"
+      ],
+      "properties": {
+        "intent": {
+          "type": "string"
+        },
+        "boundary": {
+          "$ref": "#/$defs/Boundary"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decision": {
+          "type": "string"
+        },
+        "constraint": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "next_action": {
+          "type": "string"
+        }
+      }
+    },
+    "Boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bounded_context",
+        "non_goals",
+        "write_scope"
+      ],
+      "properties": {
+        "bounded_context": {
+          "type": "string"
+        },
+        "non_goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "write_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "research_path": {
+          "type": "string"
+        },
+        "plan_path": {
+          "type": "string"
+        },
+        "pre_mortem_path": {
+          "type": "string"
+        },
+        "ranked_packet_path": {
+          "type": "string"
+        }
+      }
+    },
+    "TestLevels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "recommended",
+        "rationale"
+      ],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TestLevel"
+          }
+        },
+        "recommended": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TestLevel"
+          }
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "TestLevel": {
+      "type": "string",
+      "enum": ["L0", "L1", "L2", "L3"]
+    },
+    "DiscoveryArtifactScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "in_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "loc_estimate": {
+          "type": "integer"
+        }
+      }
+    },
     "Criterion": {
       "type": "object",
       "additionalProperties": false,

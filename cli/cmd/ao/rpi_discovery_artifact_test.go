@@ -102,6 +102,32 @@ func TestRPIDiscoveryArtifact_LoadEmptyPath(t *testing.T) {
 	}
 }
 
+func TestRPIDiscoveryArtifact_LoadRejectsDirectoryAndPreloadNoop(t *testing.T) {
+	tmp := t.TempDir()
+	if _, err := loadDiscoveryArtifact(tmp); err == nil {
+		t.Fatalf("expected directory artifact error")
+	}
+	if _, err := loadDiscoveryArtifact("bad\x00path"); err == nil {
+		t.Fatalf("expected invalid path artifact error")
+	}
+
+	art, args, err := preloadDiscoveryArtifact(" ", []string{"keep goal"})
+	if err != nil {
+		t.Fatalf("preloadDiscoveryArtifact empty path: %v", err)
+	}
+	if art != nil {
+		t.Fatalf("artifact = %#v, want nil for empty path", art)
+	}
+	if !stringSlicesEqual(args, []string{"keep goal"}) {
+		t.Fatalf("args = %#v, want preserved args", args)
+	}
+
+	_, _, err = preloadDiscoveryArtifact(filepath.Join(tmp, "missing.md"), nil)
+	if err == nil {
+		t.Fatalf("expected missing artifact preload error")
+	}
+}
+
 func TestRPIDiscoveryArtifact_PreloadUsesArtifactGoalFallback(t *testing.T) {
 	tmp := t.TempDir()
 	artPath := filepath.Join(tmp, "art.md")
@@ -139,6 +165,49 @@ func TestRPIDiscoveryArtifact_ApplyIgnoresDiscoveryStart(t *testing.T) {
 	packetPath := filepath.Join(tmp, ".agents", "rpi", "execution-packet.json")
 	if _, err := os.Stat(packetPath); !os.IsNotExist(err) {
 		t.Fatalf("execution packet stat err = %v, want not exist", err)
+	}
+}
+
+func TestRPIDiscoveryArtifact_ApplyWritesImplementationPacket(t *testing.T) {
+	tmp := t.TempDir()
+	art := &discoveryArtifact{
+		Goal:       "implementation handoff",
+		InScope:    []string{"cli/cmd/ao/rpi_discovery_artifact.go"},
+		AbortGates: []string{"required gate"},
+		SourcePath: filepath.Join(tmp, "art.md"),
+	}
+
+	if err := applyDiscoveryArtifactToPacket(tmp, art, 2, "override goal"); err != nil {
+		t.Fatalf("applyDiscoveryArtifactToPacket: %v", err)
+	}
+	packetPath := filepath.Join(tmp, ".agents", "rpi", "execution-packet.json")
+	buf, err := os.ReadFile(packetPath)
+	if err != nil {
+		t.Fatalf("read execution packet: %v", err)
+	}
+	var packet map[string]any
+	if err := json.Unmarshal(buf, &packet); err != nil {
+		t.Fatalf("unmarshal packet: %v", err)
+	}
+	if got, want := packet["objective"], "override goal"; got != want {
+		t.Fatalf("objective = %v, want %v", got, want)
+	}
+	if got, want := packet["phase"], "implementation"; got != want {
+		t.Fatalf("phase = %v, want %v", got, want)
+	}
+}
+
+func TestRPIDiscoveryArtifact_ApplySurfacesPacketWriteError(t *testing.T) {
+	tmp := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmp, "docs", "contracts"), 0o750); err != nil {
+		t.Fatalf("create contracts dir: %v", err)
+	}
+	if err := os.WriteFile(repoExecutionProfileJSONPath(tmp), []byte("{"), 0o600); err != nil {
+		t.Fatalf("write invalid profile: %v", err)
+	}
+	art := &discoveryArtifact{Goal: "bad profile", SourcePath: filepath.Join(tmp, "art.md")}
+	if err := applyDiscoveryArtifactToPacket(tmp, art, 2, ""); err == nil {
+		t.Fatalf("expected applyDiscoveryArtifactToPacket profile error")
 	}
 }
 
@@ -274,6 +343,41 @@ func TestRPIDiscoveryArtifact_GoalOverrideWins(t *testing.T) {
 	}
 }
 
+func TestRPIDiscoveryArtifact_WriteRejectsNilAndProfileErrors(t *testing.T) {
+	tmp := t.TempDir()
+	if _, err := writeExecutionPacketFromArtifact(tmp, nil, ""); err == nil {
+		t.Fatalf("expected nil discovery artifact error")
+	}
+
+	fileRoot := filepath.Join(tmp, "file-root")
+	if err := os.WriteFile(fileRoot, []byte("not a dir"), 0o600); err != nil {
+		t.Fatalf("write file root: %v", err)
+	}
+	if _, err := writeExecutionPacketFromArtifact(fileRoot, &discoveryArtifact{Goal: "mkdir error"}, ""); err == nil {
+		t.Fatalf("expected packet directory creation error")
+	}
+
+	writeRoot := filepath.Join(tmp, "write-root")
+	packetPath := filepath.Join(writeRoot, ".agents", "rpi", "execution-packet.json")
+	if err := os.MkdirAll(packetPath, 0o750); err != nil {
+		t.Fatalf("create packet path as directory: %v", err)
+	}
+	if _, err := writeExecutionPacketFromArtifact(writeRoot, &discoveryArtifact{Goal: "write error"}, ""); err == nil {
+		t.Fatalf("expected packet write error")
+	}
+
+	if err := os.MkdirAll(filepath.Join(tmp, "docs", "contracts"), 0o750); err != nil {
+		t.Fatalf("create contracts dir: %v", err)
+	}
+	if err := os.WriteFile(repoExecutionProfileJSONPath(tmp), []byte("{"), 0o600); err != nil {
+		t.Fatalf("write invalid profile: %v", err)
+	}
+	art := &discoveryArtifact{Goal: "profile error", SourcePath: filepath.Join(tmp, "art.md")}
+	if _, err := writeExecutionPacketFromArtifact(tmp, art, ""); err == nil {
+		t.Fatalf("expected invalid repo execution profile error")
+	}
+}
+
 // TestRPIDiscoveryArtifact_ParseEmptyContent asserts the minimal degraded
 // behavior documented in the spec: empty content produces an empty artifact
 // (no goal, no scope) without panicking. Callers are expected to downgrade.
@@ -287,6 +391,42 @@ func TestRPIDiscoveryArtifact_ParseEmptyContent(t *testing.T) {
 	}
 	if len(art.InScope) != 0 {
 		t.Errorf("in_scope = %v, want empty", art.InScope)
+	}
+}
+
+func TestRPIDiscoveryArtifact_ParserHelperFallbacks(t *testing.T) {
+	body, fm := splitFrontmatter(`---
+# ignored
+
+goal: helper goal
+loc_estimate: '13'
+---
+## Heading Only
+
+plain fallback`)
+	if fm["goal"] != "helper goal" || fm["loc_estimate"] != "13" {
+		t.Fatalf("frontmatter = %#v", fm)
+	}
+	if body == "" {
+		t.Fatalf("body is empty")
+	}
+	if got := extractGoalFromBody("## ignored heading\n\nplain fallback"); got != "plain fallback" {
+		t.Fatalf("extractGoalFromBody fallback = %q", got)
+	}
+	if got := extractBulletItem("-    "); got != "" {
+		t.Fatalf("extractBulletItem blank = %q", got)
+	}
+
+	pathCases := map[string]bool{
+		"":               false,
+		"`cli/file.go`":  true,
+		"not a path":     false,
+		"docs/contracts": true,
+	}
+	for input, want := range pathCases {
+		if got := looksLikePath(input); got != want {
+			t.Fatalf("looksLikePath(%q) = %v, want %v", input, got, want)
+		}
 	}
 }
 
