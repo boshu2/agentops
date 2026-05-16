@@ -30,6 +30,8 @@ output_contract: 'stdout: injected knowledge summary'
 
 **On-demand knowledge retrieval. Not run automatically at startup (since ag-8km).**
 
+It is read-only: it only reads knowledge for injection and never writes to `.agents/`.
+
 Inject relevant prior knowledge into the current session.
 
 ## How It Works
