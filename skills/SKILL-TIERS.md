@@ -426,7 +426,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | Vendor | CLI | Command |
 |--------|-----|---------|
 | Claude | `claude` | `claude --print "prompt" > output.md` |
-| Codex | `codex` | `AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
+| Codex | `codex` | `codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
 | OpenCode | `opencode` | (similar pattern) |
 
 ### Default Models
@@ -443,7 +443,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 # Each judge receives a prompt, writes output to .agents/council/, signals completion
 
 # Codex CLI judges (--mixed mode, via shell)
-AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-output.md "..."
+codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-output.md "..."
 ```
 
 ### Consolidated Output
@@ -467,25 +467,41 @@ Individual judge outputs also go to `.agents/council/`:
 
 ## Execution Modes
 
-Skills follow a two-tier execution model based on visibility needs:
+Skills follow an execution-isolation model based on visibility and context cost:
 
-> **The Rule:** Orchestrators stay inline for visibility. Discovery primitives, judgment skills, and worker spawners fork to keep the caller's context clean.
+> **The Rule:** Lifecycle orchestration stays visible. Expensive phase execution
+> and worker execution isolate behind declared skill contracts and return
+> bounded artifacts.
 
 ### Tier 1: NO-FORK (stay in main context)
 
-Orchestrators, single-task executors, and investigative skills stay in the main session so the operator can see progress, phase transitions, and intervene.
+Lifecycle orchestrators and direct single-task executors stay in the main
+session so the operator can see progress, phase transitions, and intervene.
 
 | Skill | Role | Why |
 |-------|------|-----|
 | evolve | Orchestrator | Long loop, need cycle-by-cycle visibility |
-| rpi | Orchestrator | Sequential phases, need phase gates |
-| crank | Orchestrator | Wave orchestrator, need wave reports |
-| discovery | Orchestrator | Discovery phase orchestrator, need gate visibility |
-| validation | Orchestrator | Validation phase orchestrator, need verdict visibility |
+| rpi | Orchestrator | Keeps phase order, objective, retries, and operator visibility |
+| crank | Direct orchestrator | Wave reports visible when called directly |
+| discovery | Direct orchestrator | Gate visibility when called directly |
+| validation | Direct orchestrator | Verdict visibility when called directly |
 | implement | Single-task | Single issue, medium duration |
 | bug-hunt | Investigator | Hypothesis loop, need to see reasoning |
 
-### Tier 1.5: FORK (discovery primitives)
+### Tier 1.5: PHASE ISOLATION (declared phase contracts)
+
+When `/rpi` calls lifecycle phases, the phase skill contract should run behind
+isolated transport when the runtime supports it. `/rpi` stays visible; the
+phase context receives only the objective plus bounded handoff artifact and
+returns artifact path, verdict, and next action.
+
+| Skill | Role | Why |
+|-------|------|-----|
+| discovery | Phase 1 contract | Research and planning context should not stay resident through implementation |
+| crank | Phase 2 contract | Wave execution context should not stay resident through validation |
+| validation | Phase 3 contract | Review and closeout context should not pollute the next lifecycle turn |
+
+### Tier 2: FORK (discovery primitives)
 
 Discovery skills that produce filesystem artifacts. User wants the output, not the process. Heavy codebase exploration and decomposition runs in a forked subagent; only the summary and artifact path return to the caller's context.
 
@@ -495,7 +511,7 @@ Discovery skills that produce filesystem artifacts. User wants the output, not t
 | plan | Discovery | Decomposition + beads creation → `.agents/plans/*.md` + beads |
 | retro | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
 
-### Tier 2: FORK (judgment + worker spawners)
+### Tier 3: FORK (judgment + worker spawners)
 
 Judgment skills validate artifacts in isolation. Worker spawners fan out parallel work. Results merge back via filesystem.
 
@@ -514,11 +530,16 @@ Note: `swarm` is an orchestrator (no `context: fork`) that spawns runtime worker
 Some skills are orchestrators when called directly but workers when spawned by another skill. The caller determines the role:
 
 - **implement**: Called directly → orchestrator (stays). Spawned by swarm → worker (already forked by swarm).
-- **crank**: Called directly → orchestrator (stays). Called by rpi → still in context (rpi chains sequentially, doesn't fork).
+- **crank**: Called directly -> orchestrator (stays visible). Called by rpi -> phase contract (prefer phase-isolated transport; fallback stays visible but must keep artifact handoffs bounded).
 
 ### Mechanism
 
-Set `context: { window: fork }` in skill frontmatter to fork into a subagent. The skill's markdown body becomes the subagent's task prompt. Set on discovery primitives, judgment skills, and worker spawners. Never on orchestrators that need visibility.
+`context.window` is a declaration, not sufficient enforcement by itself. Use it
+for discovery primitives, judgment skills, and worker spawners where the
+runtime honors it. For `/rpi` phases, use the
+[`phase skill isolation contract`](rpi/references/isolation-contract.md): the
+orchestrator stays visible while the phase contract runs through isolated
+transport and returns only bounded artifacts.
 
 ---
 

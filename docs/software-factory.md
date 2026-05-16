@@ -45,7 +45,7 @@ with zero operator action:
 
 ```
 SessionStart  →  session-start.sh stages runtime state
-UserPromptSubmit  →  factory-router.sh, prompt-nudge.sh, quality-signals.sh
+UserPromptSubmit  →  factory-router.sh, context-guard.sh, quality-signals.sh
 PreToolUse    →  pre-mortem-gate.sh blocks unvalidated /crank
 PostToolUse   →  go-vet, complexity, research-loop-detector
 Stop          →  ao-flywheel-close.sh persists learnings
@@ -82,7 +82,7 @@ Key differences from the hook-native path (using the canonical daemon route):
 | Validation gates | `pre-mortem-gate.sh` blocks tool calls | Daemon worker enforces gates inside the job |
 | Code quality | `go-vet-post-edit.sh`, `go-complexity-precommit.sh` fire after edits | Worker runs `cd cli && make test` inside the job |
 | Flywheel closure | `ao-flywheel-close.sh` fires on Stop | Daemon emits learnings on job completion |
-| Execution nudges | `prompt-nudge.sh`, `research-loop-detector.sh` | Worker discipline + daemon-side stall detection |
+| Execution nudges | Execution-packet `next_action`, `research-loop-detector.sh` | Worker discipline + daemon-side stall detection |
 
 Both paths exist because people use Codex or they use Claude Code.
 
@@ -110,10 +110,8 @@ run without operator action and keep the conveyor belt honest.
 | | `compile-session-defrag.sh` | Knowledge defragmentation pass |
 | **Stop** | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` | Preserves active work and closes the flywheel loop |
 | **UserPromptSubmit** | `factory-router.sh` | Routes operator intent to the correct lane |
-| | `new-user-welcome.sh` | Gives fresh repos a one-time path into `/research`, `/implement`, or `/council` |
-| | `prompt-nudge.sh` | Reminds about pending gates (e.g. pre-mortem) |
-| | `intent-echo.sh` | Injects intent-echo discipline |
-| | `quality-signals.sh` | Surfaces quality context before work begins |
+| | `context-guard.sh` | Reports context pressure without resident prompt nudges |
+| | `quality-signals.sh` | Captures quality signals before work begins |
 | **PreToolUse** | `pre-mortem-gate.sh` | Blocks `/crank` or `/implement` without pre-mortem |
 | | `dangerous-git-guard.sh` | Blocks destructive git operations |
 | | `go-test-precommit.sh` | Requires Go tests pass before commits |
@@ -145,7 +143,7 @@ Hooks enforce the factory's design rules automatically:
   work from advancing.
 - **Ratchet checkpoints** — `ao-flywheel-close.sh` ensures learnings persist
   after each session.
-- **Execution discipline** — `research-loop-detector.sh` and `prompt-nudge.sh`
+- **Execution discipline** — execution-packet `next_action` and `research-loop-detector.sh`
   keep the agent producing artifacts instead of stalling.
 - **Code quality** — `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, and
   `write-time-quality.sh` catch regressions at edit time, not CI time.

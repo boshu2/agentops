@@ -5,7 +5,7 @@ How each consolidated phase passes data to the next. Artifacts are filesystem-ba
 | Transition | Output | Extraction | Input to Next |
 |------------|--------|------------|---------------|
 | → Discovery | Goal string + repo execution profile contract | Goal from the `/rpi` invocation; repo policy from `docs/contracts/repo-execution-profile.md`, `repo-execution-profile.schema.json`, and `repo-execution-profile.json` when present | `repo_profile` state is loaded before research/planning begins, including validation lane mutation metadata |
-| Discovery → Implementation | Epic execution context or file-backed objective + discovery summary + `execution_packet` | `phased-state.json` + `.agents/rpi/phase-1-summary.md` + `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive) | `/crank <epic-id>` when `epic_id` exists; otherwise `/crank .agents/rpi/execution-packet.json` with repo policy, contract surfaces, validation bundle, and `validation_lanes` already normalized |
+| Discovery → Implementation | Dense execution packet + discovery summary | `.agents/rpi/phase-1-summary-*.md` + `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive). Child outputs cross only as artifact paths. | `/crank <epic-id>` when `epic_id` exists; otherwise `/crank .agents/rpi/execution-packet.json` with density fields, repo policy, criteria, validation bundle, and `validation_lanes` already normalized |
 | Implementation → Validation | Completed/partial crank status + implementation summary + `execution_packet` | `bd children <epic-id>` or file-backed implementation state + `.agents/rpi/phase-2-summary.md` + `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive) | `/validation <epic-id>` when `epic_id` exists; otherwise standalone `/validation` with the same repo execution profile fields, validation lanes, and done criteria |
 | Validation → Next Cycle (optional) | Vibe/post-mortem verdicts + harvested follow-up work + queue lifecycle fields (`claim_status`, `claimed_by`, `claimed_at`, `consumed`, `failed_at`) | Latest council reports + `.agents/rpi/next-work.jsonl` | Stop, loop (`--loop`), suggest next `/rpi` (`--spawn-next`), or hand work back to `/evolve` |
 
@@ -13,6 +13,15 @@ Execution packet v1 should remain additive. Recommended fields:
 - `schema_version`
 - `run_id`
 - `objective`
+- `density.intent`
+- `density.boundary`
+- `density.evidence`
+- `density.decision`
+- `density.constraint`
+- `density.next_action`
+- `artifacts.research_path`
+- `artifacts.plan_path`
+- `artifacts.pre_mortem_path`
 - `epic_id` (optional when the tracker cannot mint an epic)
 - `plan_path`
 - `contract_surfaces`

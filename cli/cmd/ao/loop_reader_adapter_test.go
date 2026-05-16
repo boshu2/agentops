@@ -166,6 +166,33 @@ func TestProductionLoopReader_ProjectsStartedAtAndTitle(t *testing.T) {
 	}
 }
 
+// soc-y5vh.9: the on-disk "trace" object projects into CycleEntry.Trace,
+// and an entry with no trace key projects a nil Trace.
+func TestProductionLoopReader_ProjectsTrace(t *testing.T) {
+	dir := t.TempDir()
+	path := writeLoopFixture(t, dir,
+		`{"cycle":1,"mode":"evolve","result":"unchanged"}`,
+		`{"cycle":2,"mode":"evolve","result":"improved","trace":{"goal_hypothesis":"raise fitness","selected_gap":"no trace field","gherkin":"Feature: t","first_failing_proof":"FAIL","red_evidence":"red","green_evidence":"green","refactor_note":"none","validation_evidence":"green","ratchet_action":"record","goal_reshape":"gap closed"}}`,
+	)
+	r := newProductionLoopReader(path)
+	entries, err := r.Range(context.Background(), 1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("got %d entries, want 2", len(entries))
+	}
+	if entries[0].Trace != nil {
+		t.Errorf("trace-less entry projected non-nil Trace: %+v", entries[0].Trace)
+	}
+	if entries[1].Trace == nil {
+		t.Fatal("traced entry projected nil Trace")
+	}
+	if entries[1].Trace.GoalHypothesis != "raise fitness" || entries[1].Trace.GoalReshape != "gap closed" {
+		t.Errorf("trace fields mis-projected: %+v", entries[1].Trace)
+	}
+}
+
 func TestProductionLoopReader_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := writeLoopFixture(t, dir, `{"cycle":1,"result":"improved"}`)

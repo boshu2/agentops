@@ -1,10 +1,14 @@
 # BC Ports Inventory
 
-> **Status:** 14 ports scaffolded (12 from the cycle 78-106 wire-up
+> **Status:** 20 ports scaffolded (12 from the cycle 78-106 wire-up
 > arc + FactoryAdmissionPort cycle 139 / soc-2klg.1 +
-> ClaimEvidencePort cycle 141 / soc-2klg.2). 14 of 14 have
-> production adapters delivered (cycles 83 + 108-118 + 140 + 142).
-> Every BC port has both an `InMemoryX` test double in
+> ClaimEvidencePort cycle 141 / soc-2klg.2 + four AgentOps 3.0
+> hookless replacement ports from soc-m6v5.9.8.2 + two BC3 Loop
+> evidence/stop ports from soc-y5vh.3). 16 of 20 have production
+> adapters delivered (cycles 83 + 108-118 + 140 + 142 + 193-194).
+> The 4 remaining ports have in-memory adapters and tests; production
+> adapters land as their hook leases and loop call-sites are migrated.
+> Every BC port has an `InMemoryX` test double in
 > `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
 > assertions). Next-phase work continues call-site migration through
 > these adapters (per-BC follow-up bds: `soc-pm5t` for BC1, sibling
@@ -29,7 +33,7 @@ compile-side contract `FindingCompilerPort` mirrors), bd epics
 
 ## Roster
 
-### BC1 Corpus (4 ports)
+### BC1 Corpus / Context Compiler (5 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
@@ -37,16 +41,18 @@ compile-side contract `FindingCompilerPort` mirrors), bd epics
 | `CorpusWriterPort` | `corpus_writer.go` | Typed capture (Capture, idempotent) |
 | `FindingCompilerPort` | `finding_compiler.go` | Promote finding → plan/pre-mortem/constraint outputs |
 | `CitationPort` | `citation.go` | Verify per-citation freshness against HEAD |
+| `ContextCompilerPort` | `context_compiler.go` | Assemble bounded phase context explicitly, replacing startup/prompt context hooks |
 
 Detailed semantics: [`bc1-corpus-ports.md`](bc1-corpus-ports.md).
 
-### BC2 Validation (3 ports)
+### BC2 Validation / Evidence and Trust (4 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
 | `GateRunnerPort` | `gate_runner.go` | Run a named gate; return PASS/WARN/FAIL/SKIP/UNKNOWN verdict |
 | `CIStatusPort` | `ci_status.go` | Read CI history (Latest(sha), Recent(limit)) |
 | `ClaimEvidenceBinderPort` | `claim_evidence_binder.go` | Bind claim→evidence at a promotion-gate level (PG1-PG4, upgrade-only) |
+| `SafetyPolicyPort` | `safety_policy.go` | Evaluate deterministic safety policies for mutation/read operations |
 
 Adapter contracts:
 
@@ -58,12 +64,15 @@ Adapter contracts:
 - `ClaimEvidenceBinderPort.Bind` is idempotent; allows level upgrade;
   rejects downgrade with error containing "downgrade".
 
-### BC3 Loop (2 ports)
+### BC3 Loop / Explicit Lifecycle (5 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
 | `LoopReaderPort` | `loop_reader.go` | Read evolve cycle ledger (Latest, Range, IdleStreak) |
 | `LoopWriterPort` | `loop_writer.go` | Append cycle entries (auto-assign Number; reject duplicates) |
+| `CloseoutPort` | `closeout.go` | Run explicit end-of-cycle/session closeout actions |
+| `HypothesisLedgerPort` | `hypothesis_ledger.go` | Append/read empirical evolve hypotheses without coupling callers to JSONL |
+| `ConvergenceCheckPort` | `convergence_check.go` | Evaluate the structural evolve stop predicate from typed evidence |
 
 Adapter contracts:
 
@@ -73,13 +82,22 @@ Adapter contracts:
 - `LoopWriterPort.Append` auto-assigns `Number` when it's 0
   (next = max+1); honors explicit Number; rejects duplicates with
   error containing "duplicate".
+- `HypothesisLedgerPort.Append` rejects empty and duplicate IDs.
+  `List` returns append order. `Find` returns `(zero, false, nil)`
+  for unknown IDs. Returned evidence slices are defensive copies.
+- `ConvergenceCheckPort.Check` counts the leading most-recent CI
+  success streak only. Default criteria are CI green streak >=3,
+  HIGH+MEDIUM unconsumed <=1, and fitness baseline captured.
+  Non-success, queued, or in-progress runs break the streak.
 
-### BC4 Factory (2 ports)
+### BC4 Factory (4 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
 | `OperatorPort` | `operator.go` | Record human-in-loop intents (Record, List most-recent-first) |
 | `EventBusPort` | `event_bus.go` | Pub/sub for factory events (Publish, Subscribe with cancel) |
+| `FactoryAdmissionPort` | `factory_admission.go` | Probe repo, PR, and CI evidence for factory admission decisions |
+| `ClaimEvidencePort` | `claim_evidence.go` | Derive claim-to-evidence promotion from gate verdicts without downgrades |
 
 Adapter contracts:
 
@@ -89,18 +107,50 @@ Adapter contracts:
   Subscribe returns a cancel function that blocks until in-flight
   dispatch completes. Handler errors do not stop sibling
   subscribers. Empty Topic on Publish rejected.
+- `FactoryAdmissionPort` returns Known-bearing evidence slices so
+  callers can distinguish unavailable evidence from a clean result.
+- `ClaimEvidencePort.Derive` enforces upgrade-only promotion:
+  PASS promotes to PG2 minimum, WARN to PG1 minimum, FAIL/SKIP/UNKNOWN
+  keep the existing level.
 
-### BC5 Runtime (1 port)
+### BC5 Runtime Shell (2 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
 | `HarnessPort` | `harness.go` | Report skill↔harness sync state (Status, StatusForSkill) |
+| `WorkspacePort` | `workspace.go` | Setup and cleanup runtime workspaces/worktrees |
 
 Adapter contracts:
 
 - `HarnessPort.Status` returns a fresh defensive copy.
 - `HarnessPort.StatusForSkill` rejects empty skill; unknown skill
   returns non-nil empty slice.
+- `WorkspacePort.Setup` and `WorkspacePort.Cleanup` reject empty
+  workspace ids and return typed lifecycle results.
+
+## AgentOps 3.0 Hookless Replacement Ports
+
+The hookless-first 3.0 migration adds four ports specifically to
+absorb hidden runtime hook behavior before deletion:
+
+| Replacement port | Replaces hook class |
+|---|---|
+| `ContextCompilerPort` | SessionStart context injection, context guard, standards injector, context monitor |
+| `SafetyPolicyPort` | destructive git, worker authority, edit scope, holdout isolation, team lifecycle guards |
+| `CloseoutPort` | SessionEnd/Stop maintenance, handoff, flywheel closeout, compile defrag |
+| `WorkspacePort` | WorktreeCreate/WorktreeRemove setup and cleanup |
+
+These complement existing ports already used by the hook lease
+inventory:
+
+- `GateRunnerPort` for deterministic validation hooks
+- `EventBusPort` for non-resident event subscribers
+- `HarnessPort` for Codex/Claude projection refresh and parity
+- `OperatorPort` for prompt routing as explicit operator intent
+
+Drift check: `scripts/check-hook-port-replacements.sh` verifies the
+lease inventory references real port files and that every required
+hook replacement port is referenced by at least one non-remove hook.
 
 ## Adapter Construction Pattern (universal across BCs)
 
@@ -155,11 +205,10 @@ caller-refactor work:
 ## Drift-Blocking Surfaces
 
 - Compile-time `var _ XPort = (*InMemoryX)(nil)` assertions in
-  every `inmemory_<name>.go` file (12 assertions total).
+  every BC `inmemory_<name>.go` file (20 assertions total).
 - Compile-time `var _ XPort = (*productionX)(nil)` assertions in
-  every `cli/cmd/ao/<x>_adapter.go` file (12 assertions total —
-  one per port, as of cycle 118).
-- 80+ Go tests in `cli/internal/ports/*_test.go` and 100+ Go tests
+  every `cli/cmd/ao/<x>_adapter.go` file (14 assertions total).
+- 100+ Go tests in `cli/internal/ports/*_test.go` and 100+ Go tests
   across the production-adapter files in `cli/cmd/ao/*_adapter_test.go`.
 - This contract doc is linked in `docs/documentation-index.md`.
 
@@ -181,6 +230,8 @@ caller-refactor work:
 | 106 | `a6754235` | BC5 HarnessPort — 12-port surface complete |
 | 139 | `adafc08d` | BC4 FactoryAdmissionPort — 13th port (soc-2klg.1) |
 | 141 | _this commit_ | BC4 ClaimEvidencePort — 14th port (soc-2klg.2) |
+| 3.0 S2 | _this branch_ | BC1/BC2/BC3/BC5 hookless replacement ports: ContextCompilerPort, SafetyPolicyPort, CloseoutPort, WorkspacePort |
+| 192 | _this commit_ | BC3 HypothesisLedgerPort + ConvergenceCheckPort: 19th/20th ports (soc-y5vh.3) |
 
 ## Production Adapters (chronological, completed cycle 118)
 
@@ -200,6 +251,8 @@ caller-refactor work:
 | 118 | `57ad553d` | `productionEventBus` | BC4 | sync in-memory pubsub |
 | 140 | `f4f05324` | `productionFactoryAdmission` | BC4 | daemon.FactoryAdmissionEvidenceProvider wrapper (3 probe methods + type translation) |
 | 142 | _this commit_ | `productionClaimEvidence` | BC4 | composer over GateRunnerPort (policy enforced via productionPromoteEvidenceLevel) |
+| 193 | _this commit_ | `productionHypothesisLedger` | BC3 | JSONL append/read for `.agents/evolve/hypotheses.jsonl` |
+| 194 | _this commit_ | `productionConvergenceCheck` | BC3 | Pure STOP predicate over typed CI/finding/baseline evidence |
 
 All adapters in `cli/cmd/ao/<x>_adapter.go` with paired
 `<x>_adapter_test.go`. Each carries a compile-time port assertion

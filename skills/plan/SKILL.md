@@ -42,6 +42,29 @@ Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of th
 
 **CLI dependencies:** bd (issue creation). If bd is unavailable, write the plan to `.agents/plans/` as markdown with issue descriptions, and use TaskList for tracking instead. The plan document is always created regardless of bd availability.
 
+## Discovery Boundary
+
+Use the [Skill Ports and Adapters](../../docs/contracts/skill-ports-and-adapters.md)
+vocabulary for the boundary from Discovery into Plan:
+
+| Boundary piece | Plan contract |
+|---|---|
+| Inbound port | `plan_slices` from BDD intent, bead, research artifact, or execution packet |
+| Outbound ports | `persist_issue`, `verify_symbols`, `retrieve_context`, `seed_execution_packet` |
+| Driving adapter | `/plan` skill invocation |
+| Driven adapters | bd, `rg`, `.agents/findings`, `.agents/plans`, execution-packet writer |
+| Context packet | slice plan, file dependency matrix, acceptance criteria, test levels |
+| Guard adapter | stale-scope verification, symbol verification, wave-validity check |
+
+```gherkin
+Feature: Plan converts dense intent into executable slices
+  Scenario: Plan consumes Discovery output
+    Given Discovery provides density fields and artifact links
+    When Plan receives the `plan_slices` port request
+    Then each slice has acceptance criteria, write scope, test levels, and ownership
+    And no slice depends on raw Discovery chat context
+```
+
 ## Flags
 
 | Flag | Default | Description |

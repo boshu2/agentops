@@ -43,13 +43,14 @@ func newProductionLoopReader(path string) *productionLoopReader {
 // consumers that need them (see cycle-157 post-mortem at
 // docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md).
 type rawCycleRecord struct {
-	Cycle     int    `json:"cycle"`
-	Mode      string `json:"mode"`
-	Result    string `json:"result"`
-	Commit    string `json:"commit"`
-	Milestone string `json:"milestone"`
-	StartedAt string `json:"started_at"`
-	Title     string `json:"title"`
+	Cycle     int               `json:"cycle"`
+	Mode      string            `json:"mode"`
+	Result    string            `json:"result"`
+	Commit    string            `json:"commit"`
+	Milestone string            `json:"milestone"`
+	StartedAt string            `json:"started_at"`
+	Title     string            `json:"title"`
+	Trace     *ports.CycleTrace `json:"trace,omitempty"`
 }
 
 // readEntries parses the on-disk file into []CycleEntry. Returns
@@ -91,6 +92,7 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 			Milestone: rec.Milestone,
 			StartedAt: rec.StartedAt,
 			Title:     rec.Title,
+			Trace:     rec.Trace,
 		})
 	}
 	if err := scanner.Err(); err != nil {

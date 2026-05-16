@@ -86,7 +86,7 @@
       "id": "hook-regression-suite",
       "title": "broad hook regression suite passes",
       "kind": "command",
-      "objective": "Exercise hook-specific behavior across prompt nudges, guards, ratchets, holdout isolation, handoff, constraints, worktree hooks, and embedded ao delegation.",
+      "objective": "Exercise hook-specific behavior across factory routing, guards, ratchets, holdout isolation, handoff, constraints, worktree hooks, and embedded ao delegation.",
       "runtime": "shell",
       "timeout_seconds": 240,
       "inputs": {

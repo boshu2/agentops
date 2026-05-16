@@ -1,6 +1,6 @@
 # How It Works
 
-> Agent output quality is determined by context input quality. Every pattern below — fresh context per worker, ratcheted progress, least-privilege loading — exists to ensure the right information is in the right window at the right time.
+> Agent output quality is determined by context input quality. AgentOps is the SDLC control plane that keeps that context small, bounded, verifiable, and compounding.
 
 Parallel agents produce noisy output; councils filter it; ratchets lock progress so it can never regress.
 
@@ -18,7 +18,7 @@ The same split now applies to Dream:
 
 - skills remain the interactive operator surface
 - the `ao` binary is the headless automation surface
-- shared config is the control plane
+- shared config is the control surface
 
 That matters most for overnight work. GitHub nightly is the public proof harness. `ao overnight` is the private local compounding engine.
 
@@ -89,16 +89,24 @@ Supports both Codex sub-agents (`spawn_agent`) and Claude agent teams (`TeamCrea
 
 Operational contract reference: `skills/shared/references/ralph-loop-contract.md` (reverse-engineered from `ghuntley/how-to-ralph-wiggum` and mapped to AgentOps primitives).
 
-## Two-Tier Execution Model
+## Execution Isolation Model
 
-The target model is: **keep orchestration visible in the main session, and let spawned workers carry the isolated context.** Most current meta-skills follow that shape, but a few SKILL contracts still declare `context.window: fork` while the runtime behavior has shifted toward visible orchestration. When docs and contracts disagree, treat the live `SKILL.md` as authoritative.
+The target model is: **keep lifecycle orchestration visible in the main
+session, and isolate expensive execution behind skill contracts.** The main
+session should show phase order, retry decisions, and operator intervention
+points. Phase and worker contexts should die after they write bounded
+artifacts.
 
 | Tier | Skills | Behavior |
 |------|--------|----------|
-| **NO-FORK** (orchestrators) | evolve, rpi, crank, vibe, post-mortem, pre-mortem | Stay in main session — operator sees progress and can intervene |
-| **FORK** (worker spawners) | council, codex-team | Fork into subagents — results merge back via filesystem |
+| **Visible orchestration** | evolve, rpi | Stay in main session - operator sees progress and can intervene |
+| **Phase isolation** | discovery, crank, validation when called by rpi | Execute the declared phase skill contract in an isolated phase context; return artifact path, verdict, and next action |
+| **Worker isolation** | council, codex-team, swarm workers | Fork into subagents or equivalent workers; results merge back via filesystem |
 
-This was learned through production experience: orchestration that disappears into a fork becomes hard to supervise. The long-term direction is to keep macro progress visible and isolate only the worker layer, but the repo still contains a small amount of contract drift that has not been fully normalized.
+This was learned through production experience: orchestration that disappears
+into a fork becomes hard to supervise. The refined direction is visible
+orchestration plus isolated execution, not direct agent work replacing skill
+contracts.
 
 `/swarm` is a special case — it's an orchestrator (no fork) that spawns runtime workers via `TeamCreate`/`spawn_agent`. The workers are runtime sub-agents, not SKILL.md skills.
 
@@ -146,7 +154,7 @@ The active runtime manifest currently declares **7 hook event sections** in `hoo
 
 | Hook surface | Trigger | What it does | Gap closed |
 |--------------|---------|--------------|------------|
-| Prompt guidance | `UserPromptSubmit` | Runs `factory-router.sh` (captures first-goal intake when startup had none), `new-user-welcome.sh` (one-time fresh-repo onboarding), `prompt-nudge.sh` (ratchet nudges), and `intent-echo.sh` (confirms high-stakes intent) without adding startup briefings to the conversation | Judgment validation |
+| Prompt guidance | `UserPromptSubmit` | Runs `factory-router.sh` for explicit factory intake, `context-guard.sh` for context pressure, and `quality-signals.sh` for feedback capture without adding resident prompt nudges | Judgment validation |
 | Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `commit-review-gate.sh` (pre-commit checks), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
 | Post-tool checks | `PostToolUse` | `write-time-quality.sh` (edit quality), `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh` (detects stalled loops), `context-monitor.sh` | Judgment validation, Loop closure |
 | Task completion gate | `TaskCompleted` | Runs `task-validation-gate.sh` — executes compiled constraints from `.agents/constraints/index.json` before accepting task completion | Judgment validation, Loop closure |

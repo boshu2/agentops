@@ -314,100 +314,6 @@ AOEOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# 7. intent-echo.sh — .prompt (UserPromptSubmit)
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "intent-echo: normal prompt exits silently" {
-    # soc-y1bk: dedup flag lives under $MOCK_REPO/.agents/ao/ now (helper cds
-    # there at setup) so the hook does not poison the real repo.
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"prompt":"add a new test"}' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "intent-echo: destructive keyword triggers context injection" {
-    rm -f "$MOCK_REPO/.agents/ao/.intent-echo-fired" 2>/dev/null
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"prompt":"delete all the old files"}' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
-@test "intent-echo: kill switch silences output" {
-    run bash -c 'printf "%s" "$1" | AGENTOPS_INTENT_ECHO_DISABLED=1 bash "$2" 2>&1' \
-        -- '{"prompt":"delete everything"}' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "intent-echo: malformed JSON exits gracefully" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- 'not valid {json' "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-}
-
-@test "intent-echo: empty stdin exits gracefully" {
-    run bash -c 'printf "" | bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/intent-echo.sh"
-    [ "$status" -eq 0 ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
-# 8. new-user-welcome.sh — .prompt (UserPromptSubmit)
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "new-user-welcome: missing marker exits silently" {
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"help me understand auth"}' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "new-user-welcome: substantive prompt emits context and clears marker" {
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    touch "$MOCK_REPO/.agents/ao/.new-user-welcome-needed"
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"help me understand auth"}' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-    [ ! -f "$MOCK_REPO/.agents/ao/.new-user-welcome-needed" ]
-}
-
-@test "new-user-welcome: slash command exits silently and keeps marker" {
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    touch "$MOCK_REPO/.agents/ao/.new-user-welcome-needed"
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"/research auth"}' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-    [ -f "$MOCK_REPO/.agents/ao/.new-user-welcome-needed" ]
-}
-
-@test "new-user-welcome: kill switch silences output" {
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    touch "$MOCK_REPO/.agents/ao/.new-user-welcome-needed"
-    run bash -c 'cd "$1" && printf "%s" "$2" | AGENTOPS_NEW_USER_WELCOME_DISABLED=1 bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"help me understand auth"}' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-    [ -f "$MOCK_REPO/.agents/ao/.new-user-welcome-needed" ]
-}
-
-@test "new-user-welcome: malformed JSON exits gracefully" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- 'not valid {json' "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-}
-
-@test "new-user-welcome: empty stdin exits gracefully" {
-    run bash -c 'printf "" | bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/new-user-welcome.sh"
-    [ "$status" -eq 0 ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # 9. pre-mortem-gate.sh — .tool_input.skill, .tool_input.args
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -472,43 +378,6 @@ AOEOF
 @test "pre-mortem-gate: empty stdin exits gracefully" {
     run bash -c 'printf "" | bash "$1" 2>&1' \
         -- "$HOOKS_DIR/pre-mortem-gate.sh"
-    [ "$status" -eq 0 ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
-# 10. prompt-nudge.sh — .prompt (UserPromptSubmit)
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "prompt-nudge: empty prompt exits silently" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"prompt":""}' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "prompt-nudge: kill switch silences output" {
-    run bash -c 'printf "%s" "$1" | AGENTOPS_HOOKS_DISABLED=1 bash "$2" 2>&1' \
-        -- '{"prompt":"implement a feature"}' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "prompt-nudge: no chain.jsonl exits silently" {
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"prompt":"implement something"}' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "prompt-nudge: malformed JSON exits gracefully" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- 'not json' "$HOOKS_DIR/prompt-nudge.sh"
-    [ "$status" -eq 0 ]
-}
-
-@test "prompt-nudge: empty stdin exits gracefully" {
-    run bash -c 'printf "" | bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/prompt-nudge.sh"
     [ "$status" -eq 0 ]
 }
 
@@ -748,9 +617,9 @@ AOEOF
 
 @test "task-validation-gate: files_exist with existing file passes" {
     mkdir -p "$MOCK_REPO/hooks"
-    touch "$MOCK_REPO/hooks/prompt-nudge.sh"
+    touch "$MOCK_REPO/hooks/context-guard.sh"
     run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"metadata":{"validation":{"files_exist":["hooks/prompt-nudge.sh"]}}}' "$HOOKS_DIR/task-validation-gate.sh"
+        -- "$MOCK_REPO" '{"metadata":{"validation":{"files_exist":["hooks/context-guard.sh"]}}}' "$HOOKS_DIR/task-validation-gate.sh"
     [ "$status" -eq 0 ]
 }
 

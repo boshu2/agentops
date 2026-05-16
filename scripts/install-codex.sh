@@ -3,6 +3,7 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks
 #
 # What it does:
 #   1. Downloads a temporary AgentOps archive (no local git clone)
@@ -29,6 +30,56 @@ fail()  { echo -e "${RED}✗${NC} $*"; exit 1; }
 UPDATE_CMD="curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash"
 SOURCE_ROOT_OVERRIDE="${AGENTOPS_BUNDLE_ROOT:-}"
 INSTALL_REF="${AGENTOPS_INSTALL_REF:-main}"
+WITH_HOOKS="${AGENTOPS_INSTALL_HOOKS:-0}"
+
+usage() {
+  cat <<'EOF'
+install-codex.sh
+
+Install AgentOps into the local Codex native plugin cache.
+
+Options:
+  --with-hooks  Also install native Codex hooks into CODEX_HOME/hooks.json
+  --no-hooks    Do not install hooks (default)
+  --help        Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-hooks)
+      WITH_HOOKS=1
+      shift
+      ;;
+    --no-hooks)
+      WITH_HOOKS=0
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown arg: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+WITH_HOOKS_NORMALIZED="$(printf '%s' "$WITH_HOOKS" | tr '[:upper:]' '[:lower:]')"
+case "$WITH_HOOKS_NORMALIZED" in
+  1|true|yes|on)
+    WITH_HOOKS=1
+    ;;
+  0|false|no|off|"")
+    WITH_HOOKS=0
+    ;;
+  *)
+    fail "Invalid AGENTOPS_INSTALL_HOOKS/--with-hooks value: $WITH_HOOKS"
+    ;;
+esac
+
 if [[ "$INSTALL_REF" == "main" ]]; then
   ARCHIVE_URL="https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main"
 else
@@ -72,12 +123,26 @@ fi
 
 # skills-codex/ is pre-built in the bundle (manually maintained, no sync needed)
 
-bash "$SRC_ROOT/scripts/install-codex-plugin.sh" \
-  --repo-root "$SRC_ROOT" \
-  --version "$INSTALL_REF" \
+plugin_args=(
+  --repo-root "$SRC_ROOT"
+  --version "$INSTALL_REF"
   --update-command "$UPDATE_CMD"
+)
+if [[ "$WITH_HOOKS" == "1" ]]; then
+  plugin_args+=(--with-hooks)
+else
+  plugin_args+=(--no-hooks)
+fi
+
+bash "$SRC_ROOT/scripts/install-codex-plugin.sh" "${plugin_args[@]}"
 
 echo ""
+if [[ "$WITH_HOOKS" != "1" ]]; then
+  echo "Hook note:"
+  echo "  AgentOps installs hookless by default. To opt into native Codex hooks:"
+  echo "  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks"
+  echo ""
+fi
 echo "Update note:"
 echo "  AgentOps ships frequent updates."
 echo "  Re-run this installer regularly to pick up the latest main branch changes:"

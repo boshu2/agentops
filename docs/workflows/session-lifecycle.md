@@ -1,8 +1,8 @@
 # Session Lifecycle Workflow
 
-**Purpose:** Runtime-aware guide to working across sessions with hook-capable runtimes (including Codex v0.115.0+ native hooks) and the Codex hookless fallback for older versions
+**Purpose:** Runtime-aware guide to working across sessions with hook-capable runtimes, optional Codex native hooks, and the default Codex hookless path
 
-**Philosophy:** Talk naturally when lifecycle hooks exist. Codex v0.115.0+ supports native hooks (installed by `scripts/install-codex-plugin.sh`) and works like Claude Code. Older Codex versions use the explicit lifecycle commands instead of assuming hidden automation.
+**Philosophy:** Talk naturally when lifecycle hooks exist, but do not make hidden automation the first-value path. Codex installs hookless by default; native hooks are an optional `scripts/install-codex-plugin.sh --with-hooks` profile. Hookless Codex uses explicit lifecycle commands and RPI packets instead of assuming runtime hooks.
 
 ---
 
@@ -109,8 +109,8 @@ SessionEnd would normally run.
 | Mode | Start | Closeout | Notes |
 |------|-------|----------|-------|
 | Hook-capable | Natural language, `/session-start`, or startup hooks | Natural language, `/session-end`, or session-end hooks | Best fit for Claude/OpenCode when hooks are installed; `CLAUDE.md` is the startup surface and hooks stage state silently |
-| Codex native hooks (v0.115.0+) | Quiet native `SessionStart` maintenance plus explicit `ao codex start` / `ao codex ensure-start` when context retrieval is needed | Native `Stop` hook for turn-scope close-loop; explicit `ao codex stop` / `ao codex ensure-stop` for transcript-driven closeout | Native `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest`; startup hooks stay quiet and no native `SessionEnd` event exists today |
-| Codex hookless fallback (pre-v0.115.0) | `ao factory start --goal "<goal>"`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface under `~/.codex`; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
+| Codex optional native hooks | Quiet native `SessionStart` maintenance plus explicit `ao codex start` / `ao codex ensure-start` when context retrieval is needed | Native `Stop` hook for turn-scope close-loop; explicit `ao codex stop` / `ao codex ensure-stop` for transcript-driven closeout | Opt-in with `install-codex.sh --with-hooks`; startup hooks stay quiet and no native `SessionEnd` event exists today |
+| Codex hookless default | `ao factory start --goal "<goal>"`, `ao rpi phased`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface required; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
 | Dream overnight run | `ao overnight setup --apply` then `ao overnight start --goal "<goal>"` | `ao overnight report --from <dir>` | Private local overnight mode. Dream bootstraps config and scheduler assistance, while the host OS still owns actual scheduling semantics |
 | Manual fallback | `ao inject`, `ao lookup` | `ao forge transcript`, `ao flywheel close-loop` | Lowest-level portable path |
 
@@ -159,9 +159,9 @@ SessionEnd would normally run.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Codex Hookless Lifecycle (pre-v0.115.0)
+## Codex Hookless Lifecycle
 
-> Codex v0.115.0+ supports native hooks and follows the hook-capable lifecycle above. The diagram below applies to older Codex versions using the hookless fallback.
+> Codex native hooks are optional. The diagram below applies to the default hookless Codex path.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -334,8 +334,8 @@ Next time, just say "continue the caching work" and I'll pick up where you left 
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| `ao codex start` | Start an explicit Codex hookless session | Start of work in Codex pre-v0.115.0 (v0.115.0+ uses native hooks automatically) |
-| `ao codex stop` | Close out a Codex session without runtime hooks | End of work in Codex pre-v0.115.0 |
+| `ao codex start` | Start an explicit Codex hookless session | Start of work when you want explicit startup context |
+| `ao codex stop` | Close out a Codex session without runtime hooks | End of work when you want transcript-driven closeout |
 | `ao codex status` | Inspect Codex lifecycle and flywheel health | Any time in Codex |
 | Natural-language goal | Native factory intake when hooks are installed | Preferred operator entrypoint in Claude/OpenCode |
 | `/session-start` | Initialize session, load context | Start of work in hook-capable runtimes |

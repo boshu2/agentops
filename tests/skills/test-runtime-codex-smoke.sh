@@ -57,8 +57,8 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         && pass "hooks/codex-hooks.json is valid JSON" || fail "hooks/codex-hooks.json is invalid JSON"
     jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
-    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 22' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "codex hook bundle defines 22 native hook handlers" || fail "codex hook bundle handler count drifted"
+    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 20' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 20 native hook handlers" || fail "codex hook bundle handler count drifted"
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes session-start.sh"
     else
@@ -93,10 +93,10 @@ fi
 
 if [[ -f "$PLUGIN_INSTALL" ]]; then
     bash -n "$PLUGIN_INSTALL" && pass "install-codex-plugin.sh syntax valid" || fail "install-codex-plugin.sh syntax invalid"
-    grep -q '"hooks" "true"' "$PLUGIN_INSTALL" \
-        && pass "install-codex-plugin.sh enables the hooks feature" || fail "install-codex-plugin.sh missing hooks feature handling"
+    grep -q -- '--with-hooks' "$PLUGIN_INSTALL" \
+        && pass "install-codex-plugin.sh exposes hook opt-in" || fail "install-codex-plugin.sh missing --with-hooks handling"
     grep -q 'hooks.json' "$PLUGIN_INSTALL" \
-        && pass "install-codex-plugin.sh installs ~/.codex/hooks.json" || fail "install-codex-plugin.sh missing hooks.json install flow"
+        && pass "install-codex-plugin.sh retains optional hooks.json install flow" || fail "install-codex-plugin.sh missing hooks.json install flow"
 else
     fail "scripts/install-codex-plugin.sh not found"
 fi
@@ -129,8 +129,11 @@ fi
 
 if [[ -f "$CODEX_HOME/config.toml" ]]; then
     pass "config.toml created in ~/.codex"
-    grep -q '^hooks = true$' "$CODEX_HOME/config.toml" \
-        && pass "config.toml enables hooks" || fail "config.toml missing hooks = true"
+    if grep -q '^hooks = true$' "$CODEX_HOME/config.toml"; then
+        fail "default config.toml should not enable hooks"
+    else
+        pass "default config.toml leaves hooks disabled"
+    fi
     if grep -q '^codex_hooks[[:space:]]*=' "$CODEX_HOME/config.toml"; then
         fail "config.toml still contains deprecated codex_hooks"
     else
@@ -143,23 +146,39 @@ else
 fi
 
 if [[ -f "$CODEX_HOME/hooks.json" ]]; then
-    pass "$CODEX_HOME/hooks.json created by installer"
-    jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
-        && pass "$CODEX_HOME/hooks.json uses the native event-map schema" || fail "$CODEX_HOME/hooks.json did not install the native event-map schema"
-    jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOME/hooks.json" >/dev/null 2>&1 \
-        && pass "$CODEX_HOME/hooks.json includes session-start.sh" || fail "$CODEX_HOME/hooks.json missing session-start.sh"
+    fail "$CODEX_HOME/hooks.json should not be created by default install"
 else
-    fail "$CODEX_HOME/hooks.json missing after install"
+    pass "default install does not create hooks.json"
 fi
 
 if [[ -f "$CODEX_HOME/.agentops-codex-install.json" ]]; then
     jq -e '.install_mode == "native-plugin"' "$CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
         && pass "install metadata records native-plugin mode" || fail "install metadata missing native-plugin mode"
-    jq -e '.hook_runtime == "codex-native-hooks"' "$CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
-        && pass "install metadata records codex-native-hooks runtime" || fail "install metadata missing codex-native-hooks runtime"
+    jq -e '.hook_runtime == "hookless-default" and .hooks_installed == false' "$CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
+        && pass "install metadata records hookless default" || fail "install metadata missing hookless default"
 else
     fail "Codex install metadata missing"
 fi
+
+HOOK_HOME_ROOT="$TMP_ROOT/hook-home"
+HOOK_CODEX_HOME="$HOOK_HOME_ROOT/.codex"
+if HOME="$HOOK_HOME_ROOT" AGENTOPS_BUNDLE_ROOT="$REPO_ROOT" AGENTOPS_INSTALL_REF="test-local" \
+    bash "$PUBLIC_INSTALL" --with-hooks >/dev/null 2>&1; then
+    pass "install-codex.sh --with-hooks succeeds into temp HOME"
+else
+    fail "install-codex.sh --with-hooks failed in temp HOME"
+fi
+if [[ -f "$HOOK_CODEX_HOME/hooks.json" ]]; then
+    pass "--with-hooks creates hooks.json"
+    jq -e '.hooks | type == "object" and length == 5' "$HOOK_CODEX_HOME/hooks.json" >/dev/null 2>&1 \
+        && pass "--with-hooks hooks.json uses the native event-map schema" || fail "--with-hooks hooks.json did not install the native event-map schema"
+else
+    fail "--with-hooks did not create hooks.json"
+fi
+grep -q '^hooks = true$' "$HOOK_CODEX_HOME/config.toml" \
+    && pass "--with-hooks enables hooks in config.toml" || fail "--with-hooks config.toml missing hooks = true"
+jq -e '.hook_runtime == "codex-native-hooks" and .hooks_installed == true' "$HOOK_CODEX_HOME/.agentops-codex-install.json" >/dev/null 2>&1 \
+    && pass "--with-hooks metadata records native hooks" || fail "--with-hooks metadata missing native hooks"
 
 if [[ ! -e "$HOME_ROOT/.agents/skills" ]] && [[ ! -e "$CODEX_HOME/skills" ]]; then
     pass "install leaves no raw ~/.agents/skills or ~/.codex/skills mirror"

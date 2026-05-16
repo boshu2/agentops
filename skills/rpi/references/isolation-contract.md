@@ -1,27 +1,50 @@
 # Phase Skill Isolation Contract
 
-How RPI keeps phase skills (`/discovery`, `/crank`, `/validation`) from compressing each other's work into a single agent context, and the levers used to enforce that boundary.
+How RPI keeps phase skills (`/discovery`, `/crank`, `/validation`) from
+compressing each other's work into one agent context while preserving strict
+delegation and operator visibility.
 
 ## Declaration vs enforcement
 
-**Declaration.** [`PRODUCT.md`](../../../PRODUCT.md) operational principle #5 (two-tier execution) DECLARES that phase skills must run as isolated execution contexts that delegate work to other phase skills, not inline. The orchestrator (`/rpi`) owns the lifecycle objective; each phase skill owns its phase artifact, gate, and retry policy. Inlining the work — "I'll just do discovery in this same context" — breaks that ownership chain even when the build still passes.
+**Declaration.** [`PRODUCT.md`](../../../PRODUCT.md) operational principle #5
+(two-tier execution) declares that phase skills own their own phase artifacts,
+gates, and retry policies. `/rpi` owns the lifecycle objective and phase order,
+not the internals of discovery, implementation, or validation.
 
-**Enforcement.** This document plus [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) ENFORCE that contract by detecting compression patterns in phase-skill SKILL.md bodies. Once `cli/internal/daemon/rpi_run.go` lands (UW5 / E3.W4), enforcement extends to **true isolation** at the process level — phase skills run as separate daemon-launched processes whose contexts cannot bleed into each other. Until then, the lint plus the text contract are the active surface.
+**Enforcement.** This document plus
+[`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh)
+enforce the authored contract by detecting compression patterns in phase-skill
+SKILL.md bodies. Runtime isolation is a separate transport concern: when a
+runtime supports phase-isolated transport, the orchestrator gives a phase runner
+only the lifecycle objective, the bounded execution packet path, and the phase
+skill name. The runner executes that declared phase contract and returns only
+the phase artifact, verdict, and next action.
+
+**Important distinction.** A subagent, daemon job, or spawned process may be a
+transport for a declared skill contract. It must not become a replacement for
+the skill. "Run `/discovery` in an isolated phase context" preserves strict
+delegation. "Skip `/discovery` and have an agent research/plan directly" is
+compression.
 
 The companion [`shared/references/strict-delegation-contract.md`](../../shared/references/strict-delegation-contract.md) gives the human-readable rationale and the canonical anti-pattern catalogue. Read this file for the mechanical contract; read that one for the philosophy.
 
 ## Four levers
 
-These are the four mechanical levers available to keep phase contexts isolated. They are listed in increasing strength, with the recommended posture last.
+These are the four mechanical levers available to keep phase contexts bounded.
+They are listed in increasing strength, with the recommended posture last.
 
 | Lever | Description | Mechanical strength |
 |---|---|---|
-| A | Text-only instructions in SKILL.md | Weak — relies on agent compliance |
-| B | PreToolUse hook intercepting Edit/Write at runtime | Medium |
-| C | Daemon path (process-level isolation via `cli/internal/daemon/rpi_run.go` once E3.W4 lands) | Strong |
-| D | Combination — text contract + lint + daemon | Strongest (recommended) |
+| A | Text contract in SKILL.md and this reference | Weak - relies on agent compliance |
+| B | Static lint via `scripts/check-skill-isolation.sh` | Medium - catches authored compression |
+| C | Artifact-only handoff via `.agents/rpi/execution-packet.json` and phase summaries | Strong - limits what crosses phases |
+| D | Phase-isolated skill transport | Strongest - phase context can die after the artifact returns |
 
-**Recommended posture: D.** Layered enforcement keeps the contract durable when any single lever weakens. A drifts when a SKILL.md is edited by a tired operator. B silences itself when a hook config gets out of sync. C protects against agent prompt-injection but cannot prevent a compressed-on-paper contract from being declared. The combination keeps each layer honest about the others.
+**Recommended posture: D with A-C always on.** Layered enforcement keeps the
+contract durable when any single lever weakens. Text drifts, lint only sees
+source files, artifact handoffs can be overstuffed, and transport can be
+implemented incorrectly. Together they preserve the narrow waist: phase skill
+contract in, bounded artifact out.
 
 ## Compression patterns (what NOT to do)
 
@@ -47,16 +70,17 @@ When the lint script needs to evolve, prefer narrowing the trigger over widening
 
 ## Mechanical enforcement
 
-Two surfaces, layered:
+Three surfaces, layered:
 
 1. **Lint.** [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) walks `skills/{rpi,discovery,crank,validation}/SKILL.md` (or any path passed positionally) and exits non-zero on the first compression pattern. Run with `-q` / `--quiet` to suppress diagnostic output and rely on exit code only. The script ships a `--self-test` mode that injects a known violation into a tmpdir and asserts the lint catches it.
-2. **Daemon path (forward reference).** Once `cli/internal/daemon/rpi_run.go` lands in E3.W4 (UW5 of the RPI lifecycle sharpening epic), `/rpi` will be able to launch each phase as a separate daemon process. That gives **true isolation**: discovery's context, file-system reads, and accumulated reasoning cannot leak into crank, because crank runs in a fresh process. The lint catches authored compression in SKILL.md text; `rpi_run.go` will catch runtime compression at the process boundary. Together they close the loop.
+2. **Artifact handoff.** [`phase-data-contracts.md`](phase-data-contracts.md) defines the bounded files that may cross phase boundaries. Discovery hands implementation an execution packet, implementation hands validation a phase summary and changed surfaces, and validation hands RPI a verdict. Raw reasoning does not cross phases.
+3. **Phase-isolated skill transport.** When the runtime can isolate phase execution, RPI should run each phase contract in a fresh phase context and keep the main orchestrator visible. The transport may be a daemon job, a process runner, or a subagent wrapper, but its contract is the same: load the declared phase skill, execute it against the bounded handoff, write the expected artifact, and return only artifact path, verdict, and next action.
 
 Cross-references:
 - [`PRODUCT.md`](../../../PRODUCT.md) — declaration (operational principle #5)
 - [`shared/references/strict-delegation-contract.md`](../../shared/references/strict-delegation-contract.md) — companion contract with rationale and anti-pattern examples
 - [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) — current mechanical enforcement
-- `cli/internal/daemon/rpi_run.go` (forthcoming, E3.W4) — process-level enforcement via daemon path
+- [`phase-data-contracts.md`](phase-data-contracts.md) — artifact-only phase handoff contract
 
 ## See also
 

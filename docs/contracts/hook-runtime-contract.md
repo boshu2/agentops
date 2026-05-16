@@ -8,8 +8,8 @@
 | Runtime | Detection | Hook Surface |
 |---------|-----------|-------------|
 | Claude Code | `CLAUDE_PLUGIN_ROOT` env or `~/.claude/settings.json` exists | Full hook manifest (`hooks.json`) |
-| Codex (native hooks) | `CODEX_HOME` env plus `~/.codex/version.json` / `config.toml` / `hooks.json` indicate native hooks are supported and enabled | Native hook manifest via `scripts/install-codex-plugin.sh` (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `PermissionRequest`) |
-| Codex (hookless fallback) | `CODEX_HOME` env or `~/.codex/config.toml` exists but native hooks are unavailable or not configured | Explicit lifecycle (`ao codex start/stop`) |
+| Codex (optional native hooks) | `CODEX_HOME` env plus `~/.codex/version.json` / `config.toml` / `hooks.json` indicate native hooks are supported and enabled | Native hook manifest via `scripts/install-codex-plugin.sh --with-hooks` (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `PermissionRequest`) |
+| Codex (hookless default) | `CODEX_HOME` env or `~/.codex/config.toml` exists but native hooks are unavailable or not configured | Explicit lifecycle (`ao rpi phased`, `ao codex start/stop`) |
 | Manual | Neither detected | Explicit `ao inject` / `ao forge` commands |
 
 ## Runtime Proof Tiers
@@ -35,7 +35,7 @@ require external CLIs, credentials, or paid model calls.
 
 ## Event Mapping
 
-| Capability | Claude/OpenCode hook-capable | Codex native hooks (v0.115.0+) | Codex hookless fallback |
+| Capability | Claude/OpenCode hook-capable | Codex optional native hooks | Codex hookless default |
 |-----------|------------------------------|------------------------------|------------------------|
 | `SessionStart` | Native `SessionStart` hook | Native `SessionStart` hook | `ao codex start` / `ao codex ensure-start` |
 | `UserPromptSubmit` | Native `UserPromptSubmit` hook | Native `UserPromptSubmit` hook | Skill/runtime preambles |
@@ -59,26 +59,28 @@ ao hook install  # Merges hooks.json into ~/.claude/settings.json
 - All events wired automatically
 - `CLAUDE.md` remains the startup surface; hooks prepare factory state silently and keep only explicit safety nudges operator-facing
 
-### Codex (v0.115.0+ — native hooks)
+### Codex (optional native hooks)
 
 ```bash
 # Plugin install (handled by install-codex-plugin.sh):
 # 1. Enable plugin in ~/.codex/config.toml
 # 2. Stage skills-codex/ bundle
-# 3. Install native hook manifest for the current Codex event set
+# 3. Optional: install native hook manifest for the current Codex event set
+scripts/install-codex-plugin.sh --with-hooks
 ```
 
 - Native hook manifest installed from `hooks/codex-hooks.json`
 - Current Codex-native surface: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest`
 - Transcript-driven closeout still uses `ao codex stop` / `ao codex ensure-stop` because Codex does not expose a native `SessionEnd` event today
 
-### Codex (pre-v0.115.0 — hookless fallback)
+### Codex (hookless default)
 
 ```bash
-# Legacy plugin install for older Codex versions:
+# Default plugin install:
 # 1. Enable plugin in ~/.codex/config.toml
 # 2. Stage skills-codex/ bundle
 # 3. No hook manifest — lifecycle is skill-driven
+scripts/install-codex-plugin.sh
 ```
 
 - Skills invoke `ao codex ensure-start` at entry

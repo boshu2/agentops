@@ -85,7 +85,7 @@ fi
 build_agentops_scripts_json() {
   local hooks_dir="$REPO_ROOT/hooks"
   if [[ ! -d "$hooks_dir" ]]; then
-    printf '%s\n' '["session-start.sh","ao-flywheel-close.sh","prompt-nudge.sh","quality-signals.sh","go-test-precommit.sh","commit-review-gate.sh","ratchet-advance.sh"]'
+    printf '%s\n' '["session-start.sh","ao-flywheel-close.sh","quality-signals.sh","go-test-precommit.sh","commit-review-gate.sh","ratchet-advance.sh"]'
     return 0
   fi
 

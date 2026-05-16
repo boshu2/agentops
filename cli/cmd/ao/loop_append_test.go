@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -83,6 +85,51 @@ func TestLoopAppend_AutoAssignsCycleWhenZero(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "cycle=100") {
 		t.Fatalf("auto-assigned cycle not surfaced: %q", buf.String())
+	}
+}
+
+// soc-y5vh.9: loadCycleTrace resolves --trace-json from inline JSON or a
+// file path, and rejects malformed input.
+func TestLoadCycleTrace_EmptyArgYieldsNil(t *testing.T) {
+	tr, err := loadCycleTrace("")
+	if err != nil {
+		t.Fatalf("empty arg: %v", err)
+	}
+	if tr != nil {
+		t.Fatalf("empty arg returned %+v, want nil", tr)
+	}
+}
+
+func TestLoadCycleTrace_InlineJSON(t *testing.T) {
+	tr, err := loadCycleTrace(`{"goal_hypothesis":"raise pass rate","ratchet_action":"record implement"}`)
+	if err != nil {
+		t.Fatalf("inline JSON: %v", err)
+	}
+	if tr == nil || tr.GoalHypothesis != "raise pass rate" || tr.RatchetAction != "record implement" {
+		t.Fatalf("inline JSON parsed to %+v", tr)
+	}
+}
+
+func TestLoadCycleTrace_FromFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "trace.json")
+	if err := os.WriteFile(path, []byte(`{"exemption_reason":"trivial typo fix"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tr, err := loadCycleTrace(path)
+	if err != nil {
+		t.Fatalf("file arg: %v", err)
+	}
+	if tr == nil || tr.ExemptionReason != "trivial typo fix" {
+		t.Fatalf("file arg parsed to %+v", tr)
+	}
+}
+
+func TestLoadCycleTrace_MalformedRejected(t *testing.T) {
+	for _, bad := range []string{`{not json`, `[1,2,3]`, `"a string"`} {
+		if _, err := loadCycleTrace(bad); err == nil {
+			t.Errorf("loadCycleTrace(%q) accepted malformed input", bad)
+		}
 	}
 }
 

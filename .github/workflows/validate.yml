@@ -3,6 +3,8 @@ name: Validate
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   pull_request:
     branches: [main]
 
@@ -10,21 +12,31 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      go: ${{ steps.filter.outputs.go }}
-      skills: ${{ steps.filter.outputs.skills }}
-      hooks: ${{ steps.filter.outputs.hooks }}
-      docs: ${{ steps.filter.outputs.docs }}
-      eval: ${{ steps.filter.outputs.eval }}
-      codex: ${{ steps.filter.outputs.codex }}
-      shell: ${{ steps.filter.outputs.shell }}
-      bats: ${{ steps.filter.outputs.bats }}
-      ci: ${{ steps.filter.outputs.ci }}
-      contracts: ${{ steps.filter.outputs.contracts }}
-      learning: ${{ steps.filter.outputs.learning }}
-      markdown: ${{ steps.filter.outputs.markdown }}
+      go: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.go }}
+      skills: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.skills }}
+      hooks: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.hooks }}
+      docs: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.docs }}
+      eval: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.eval }}
+      codex: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.codex }}
+      shell: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.shell }}
+      bats: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.bats }}
+      ci: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.ci }}
+      contracts: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.contracts }}
+      learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
+      markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
     steps:
       - uses: actions/checkout@v6
+      - name: Detect release tag push
+        id: release
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: dorny/paths-filter@v4
+        if: steps.release.outputs.release != 'true'
         id: filter
         with:
           filters: |
@@ -1773,10 +1785,18 @@ jobs:
           echo "check-test-staleness: ${{ needs.check-test-staleness.result }}"
           echo "swarm-evidence: ${{ needs.swarm-evidence.result }}"
 
-          # Fail only on actual failures — skipped jobs (path-filtered) are OK
+          # Fail on actual failures. On release tags, skipped jobs are also a
+          # failure because validate.yml must be a full exact-SHA release
+          # verdict, not a path-filtered partial signal.
           if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo ""
             echo "❌ Some checks failed (failure detected)"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* && "${{ contains(needs.*.result, 'skipped') }}" == "true" ]]; then
+            echo ""
+            echo "❌ Release-tag Validate had skipped jobs; skipped is not a release verdict"
             exit 1
           fi
 

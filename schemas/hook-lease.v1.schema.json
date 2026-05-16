@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/hook-lease.v1.schema.json",
+  "title": "AgentOps Hook Lease Inventory v1",
+  "$comment": "practices: [hexagonal-architecture, ddd-bounded-context, data-contracts]",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_from",
+    "hook_count",
+    "unique_hook_count",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "generated_from": {
+      "type": "string"
+    },
+    "classification_source": {
+      "type": "string"
+    },
+    "hook_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unique_hook_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hookLease"
+      }
+    },
+    "additional_surfaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/additionalHookSurface"
+      }
+    }
+  },
+  "$defs": {
+    "hookLease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event",
+        "matcher",
+        "command",
+        "hook_file",
+        "timeout",
+        "owner_bubble",
+        "disposition",
+        "replacement",
+        "evidence_status",
+        "context_injection",
+        "side_effects",
+        "summary",
+        "rationale"
+      ],
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "matcher": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "hook_file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+\\.sh$"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner_bubble": {
+          "type": "string",
+          "enum": [
+            "Work Lifecycle",
+            "Context Compiler",
+            "Evidence and Trust",
+            "Knowledge Flywheel",
+            "Skill Catalog",
+            "Runtime Shell"
+          ]
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "remove",
+            "gate",
+            "event-subscriber",
+            "explicit-command",
+            "optional-adapter"
+          ]
+        },
+        "replacement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_status": {
+          "type": "string",
+          "enum": [
+            "deterministic-safety",
+            "deterministic-maintenance",
+            "needs-eval",
+            "token-risk-needs-remeasure",
+            "unproven"
+          ]
+        },
+        "context_injection": {
+          "type": "boolean"
+        },
+        "side_effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "summary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "additionalHookSurface": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/hookLeaseBase"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hook_file",
+            "runtime_status",
+            "owner_bubble",
+            "disposition",
+            "replacement",
+            "evidence_status",
+            "context_injection",
+            "side_effects",
+            "summary",
+            "rationale"
+          ],
+          "properties": {
+            "hook_file": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+\\.sh$"
+            },
+            "runtime_status": {
+              "type": "string",
+              "minLength": 1
+            },
+            "owner_bubble": {"$ref": "#/$defs/ownerBubble"},
+            "disposition": {"$ref": "#/$defs/disposition"},
+            "replacement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_status": {"$ref": "#/$defs/evidenceStatus"},
+            "context_injection": {"type": "boolean"},
+            "side_effects": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string"}
+            },
+            "summary": {"type": "string"},
+            "rationale": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "hookLeaseBase": {
+      "type": "object"
+    },
+    "ownerBubble": {
+      "type": "string",
+      "enum": [
+        "Work Lifecycle",
+        "Context Compiler",
+        "Evidence and Trust",
+        "Knowledge Flywheel",
+        "Skill Catalog",
+        "Runtime Shell"
+      ]
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "remove",
+        "gate",
+        "event-subscriber",
+        "explicit-command",
+        "optional-adapter"
+      ]
+    },
+    "evidenceStatus": {
+      "type": "string",
+      "enum": [
+        "deterministic-safety",
+        "deterministic-maintenance",
+        "needs-eval",
+        "token-risk-needs-remeasure",
+        "unproven"
+      ]
+    }
+  }
+}

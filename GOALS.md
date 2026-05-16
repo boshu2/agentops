@@ -1,6 +1,6 @@
 # Goals
 
-A wiki for your agents — repo-native, version-controlled, mechanically maintained — that turns your context into the durable moat under any model or harness.
+An SDLC control plane for agentic software development, backed by a repo-native wiki for your agents that turns context into the durable moat under any model or harness.
 
 ## North Stars
 
@@ -11,7 +11,7 @@ A wiki for your agents — repo-native, version-controlled, mechanically maintai
 - Knowledge captured in one session is retrieved and applied in the next
 - The flywheel runs autonomously between sessions (dream cycle), not just on-demand
 - A new user goes from install to first validated flow in under 5 minutes
-- The CDLC is the execution model: every high-value context token carries intent, boundary, evidence, decision, constraint, or next action
+- AgentOps speaks public SDLC language while executing the CDLC internally: every high-value context token carries intent, boundary, evidence, decision, constraint, or next action
 
 ## Anti Stars
 

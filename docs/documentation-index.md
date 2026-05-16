@@ -51,6 +51,7 @@ Bridge / framing docs:
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
+- [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -205,6 +206,7 @@ Bridge / framing docs:
 - [Validated Release Pipeline](plans/2026-01-28-validated-release-pipeline.md) — Release pipeline design (2026-01-28)
 - [All Improvements](plans/2026-02-24-all-improvements.md) — Comprehensive improvement plan (2026-02-24)
 - [AO Search as an Upstream CASS Wrapper](plans/2026-03-22-ao-search-cass-wrapper.md) — Make `ao search` broker to upstream `cass` plus AO-local fallback (2026-03-22)
+- [AgentOps 3.0 Hookless CDLC Rearchitecture](plans/2026-05-15-agentops-3-hookless-cdlc-rearchitecture.md) — Hookless-first 3.0 plan with bounded contexts, hook lease disposition, and migration waves
 
 ## Templates
 
@@ -249,6 +251,9 @@ Bridge / framing docs:
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
+- [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters
+- [Skill Ports and Adapters](contracts/skill-ports-and-adapters.md) — V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters, context packets, and guard surfaces
+- [Skill Lease Audit](contracts/skill-lease-audit.md) — V0 lease-on-life audit classifying all shared skills as keep, merge, split, retire, or unknown
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
 - [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
@@ -266,10 +271,13 @@ Bridge / framing docs:
 - [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md) — Public claim posture ledger mapping software-factory claims to evidence level, owner issue, closure gate, and safe wording
 - [Factory Claim Ledger Schema](contracts/factory-claim-ledger.schema.json) — Contract-local JSON Schema for claim-ledger rows and posture enums
 - [Factory Claim Ledger Example](contracts/factory-claim-ledger.example.json) — Current claim ledger fixture covering README, PRODUCT, GOALS, docs index, assurance, contracts, and comparison claims
+- [Hook Lease Inventory](contracts/hook-lease-inventory.md) — AgentOps 3.0 hook disposition inventory generated from `hooks/hooks.json`, classifying each hook as remove, gate, event subscriber, explicit command, or optional adapter
+- [Hook Lease Classification Data](contracts/hook-lease-classification.v1.json) — Machine-readable hook disposition seed used to generate the hook lease inventory
+- [Hook Lease Schema](https://github.com/boshu2/agentops/blob/main/schemas/hook-lease.v1.schema.json) — JSON Schema for generated hook lease inventory entries
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
-- [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — The 4 BC1 ports (CorpusReaderPort, CorpusWriterPort, FindingCompilerPort, CitationPort) scaffolded under cli/internal/ports/; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
-- [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 12 BC ports (BC1 Corpus 4 + BC2 Validation 3 + BC3 Loop 2 + BC4 Factory 2 + BC5 Runtime 1) with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order. Surface complete as of cycle 106.
+- [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
+- [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes

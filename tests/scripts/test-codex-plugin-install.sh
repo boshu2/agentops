@@ -150,12 +150,14 @@ EOF
 run_install() {
   local fixture="$1"
   local codex_home="$2"
+  shift 2
 
   bash "$SCRIPT" \
     --repo-root "$fixture" \
     --codex-home "$codex_home" \
     --version "fixture-version" \
-    --update-command "fixture-update" >/dev/null
+    --update-command "fixture-update" \
+    "$@" >/dev/null
 }
 
 test_installs_plugin_cache_and_config() {
@@ -206,8 +208,11 @@ EOF
     rg -q '^suppress_unstable_features_warning = true$' "$codex_home/config.toml" && \
     rg -q '^\[plugins\."agentops@agentops-marketplace"\]$' "$codex_home/config.toml" && \
     rg -q '^enabled = true$' "$codex_home/config.toml" && \
-    rg -q '^hooks = true$' "$codex_home/config.toml" && \
     ! rg -q '^codex_hooks[[:space:]]*=' "$codex_home/config.toml" && \
+    ! rg -q '^hooks = true$' "$codex_home/config.toml" && \
+    ! [[ -f "$codex_home/hooks.json" ]] && \
+    rg -q '"hook_runtime": "hookless-default"' "$codex_home/.agentops-codex-install.json" && \
+    rg -q '"hooks_installed": false' "$codex_home/.agentops-codex-install.json" && \
     rg -q '"user_skills_root": null' "$codex_home/.agentops-codex-install.json"; then
     pass "installs plugin cache and migrates deprecated codex_hooks config"
   else
@@ -223,7 +228,7 @@ test_installs_codex_native_hooks_with_lib_layout() {
 
   setup_fixture "$fixture"
 
-  if ! run_install "$fixture" "$codex_home"; then
+  if ! run_install "$fixture" "$codex_home" --with-hooks; then
     fail "install with Codex hooks should succeed"
     return
   fi

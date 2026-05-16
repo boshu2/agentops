@@ -113,6 +113,38 @@ patch_file() {
   changes=$((changes + 1))
 }
 
+check_file_pattern() {
+  local file="$1"
+  local match_regex="$2"
+  local desc="$3"
+  local match_count
+
+  if [[ ! -f "$file" ]]; then
+    echo "ERROR: $desc file not found: $file"
+    errors=$((errors + 1))
+    return
+  fi
+
+  match_count=$(grep -E -c "$match_regex" "$file" || true)
+  if [[ "$match_count" -eq 0 ]]; then
+    echo "ERROR: $desc pattern not found (fail-closed)"
+    echo "       file: $file"
+    echo "       match: $match_regex"
+    errors=$((errors + 1))
+    return
+  fi
+
+  if [[ "$match_count" -gt 1 ]]; then
+    echo "ERROR: $desc pattern matched $match_count lines (expected exactly 1)"
+    echo "       file: $file"
+    echo "       match: $match_regex"
+    errors=$((errors + 1))
+    return
+  fi
+
+  echo "OK:      $desc"
+}
+
 # SKILL-TIERS.md header counts
 patch_file "$REPO_ROOT/skills/SKILL-TIERS.md" \
   '^### User-Facing Skills \([0-9]+\)' \
@@ -153,10 +185,9 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   "s|[0-9]+ skills — reusable context packages|${TOTAL} skills — reusable context packages|" \
   "PRODUCT.md context compiler skill count"
 
-patch_file "$REPO_ROOT/PRODUCT.md" \
-  '[0-9]+ lifecycle hooks — context loads' \
-  "s|[0-9]+ lifecycle hooks — context loads|${HOOK_EVENT_SECTIONS} lifecycle hooks — context loads|" \
-  "PRODUCT.md context compiler hook count"
+check_file_pattern "$REPO_ROOT/PRODUCT.md" \
+  'Optional lifecycle hooks — adapter profiles' \
+  "PRODUCT.md optional hook posture"
 
 patch_file "$REPO_ROOT/PRODUCT.md" \
   'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \

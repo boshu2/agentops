@@ -135,7 +135,7 @@ This is the stigmergic memory layer. No agent has to remember yesterday if the e
 | `knowledge injection` | startup context loading | Now broader: `lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together |
 | `three hooks` | session start/end/stop | The runtime currently declares 7 hook event sections, with three lifecycle anchors plus prompt/tool/task guardrails |
 | `Research-Plan-Implement` | product slogan | Still appears in names and legacy docs, but phased execution and validation are first-class now |
-| `orchestrators never fork` | architectural rule of thumb | Desired direction, but some live skill contracts still declare `context.window: fork`; trust `SKILL.md` until the contracts are fully harmonized |
+| `orchestrators never fork` | architectural rule of thumb | Refined: lifecycle orchestration stays visible; expensive phase execution may isolate behind the declared skill contract and bounded artifacts |
 
 ## Audit Snapshot
 

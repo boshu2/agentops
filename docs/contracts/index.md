@@ -167,6 +167,13 @@ skills, the runtime, and external integrations.
 
     Canonical event mapping across Claude, Codex, and manual runtimes.
 
+-   :material-tag-check: **[Hook Lease Inventory](hook-lease-inventory.md)**
+
+    ---
+
+    AgentOps 3.0 hook disposition inventory generated from the live hook
+    manifest.
+
 -   :material-console: **[Headless Invocation Standards](headless-invocation-standards.md)**
 
     ---
@@ -186,6 +193,27 @@ skills, the runtime, and external integrations.
     ---
 
     Interface contract for adaptive context assembly and token budgeting.
+
+-   :material-vector-polyline: **[Skill Domain Map](skill-domain-map.md)**
+
+    ---
+
+    V0 DDD map assigning every shared skill to one primary skill domain with
+    ports, artifacts, and adapters.
+
+-   :material-call-split: **[Skill Ports and Adapters](skill-ports-and-adapters.md)**
+
+    ---
+
+    V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters,
+    context packets, and guard surfaces.
+
+-   :material-clipboard-check-outline: **[Skill Lease Audit](skill-lease-audit.md)**
+
+    ---
+
+    V0 lease-on-life audit classifying every shared skill as keep, merge,
+    split, retire, or unknown before any cut is attempted.
 
 -   :material-shield-star: **[Session Intelligence Trust Model](session-intelligence-trust-model.md)**
 

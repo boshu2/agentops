@@ -127,14 +127,8 @@ for dir in .agents/research .agents/products .agents/retros .agents/learnings \
     mkdir -p "$ROOT/$dir" 2>/dev/null
 done
 
-if [ "$FRESH_REPO" = "1" ]; then
-    : > "$ROOT/.agents/ao/.new-user-welcome-needed" 2>/dev/null || true
-fi
-
 session_write_environment_manifest "$ROOT" "$AO_DIR"
 
-# Clear stale dedup flags from prior sessions (prevents cross-session suppression)
-rm -f "$ROOT/.agents/ao/.intent-echo-fired" 2>/dev/null
 rm -f "$ROOT/.agents/ao/.factory-router-fired" \
       "$ROOT/.agents/ao/.factory-intake-needed" \
       "$ROOT/.agents/ao/factory-goal.txt" \

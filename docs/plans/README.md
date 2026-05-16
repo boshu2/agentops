@@ -6,6 +6,7 @@ Time-stamped plans and validated design notes.
 - [2026-02-24 All Improvements Extraction](./2026-02-24-all-improvements.md)
 - [2026-03-22 AO Search as an Upstream CASS Wrapper](./2026-03-22-ao-search-cass-wrapper.md)
 - [2026-04-01 Knowledge Activation Productization](./2026-04-01-knowledge-activation-productization.md)
+- [2026-05-15 AgentOps 3.0 Hookless CDLC Rearchitecture](./2026-05-15-agentops-3-hookless-cdlc-rearchitecture.md)
 - [2026-05-15 Skill Catalog Strangler Fig](./2026-05-15-skill-catalog-strangler-fig.md)
 
 Back: [Docs Index](../documentation-index.md)

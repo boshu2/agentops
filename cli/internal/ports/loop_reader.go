@@ -18,6 +18,11 @@ import "context"
 // Fields beyond Number/Mode/Result/Commit/Milestone are widened
 // on-demand for known consumers (per the cycle-157 post-mortem at
 // docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md).
+//
+// Trace is the optional XP/BDD/TDD evidence trace (soc-y5vh.9). It is
+// nil for cycles logged before the trace field existed and for any
+// cycle that does not record one; the `json:"trace,omitempty"` tag
+// keeps those entries byte-identical in `ao loop history` output.
 type CycleEntry struct {
 	Number    int
 	Mode      string
@@ -26,6 +31,7 @@ type CycleEntry struct {
 	Milestone string
 	StartedAt string
 	Title     string
+	Trace     *CycleTrace `json:"trace,omitempty"`
 }
 
 // LoopReaderPort is the BC3 Loop read-side. Callers — evolve's

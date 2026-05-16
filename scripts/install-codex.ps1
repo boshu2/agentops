@@ -2,6 +2,7 @@
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\install-codex.ps1
+#   powershell -ExecutionPolicy Bypass -File .\scripts\install-codex.ps1 -WithHooks
 #   irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
 
 [CmdletBinding()]
@@ -9,7 +10,8 @@ param(
   [string]$RepoRoot = $env:AGENTOPS_BUNDLE_ROOT,
   [string]$CodexHome = $env:CODEX_HOME,
   [string]$Version = $env:AGENTOPS_INSTALL_REF,
-  [string]$UpdateCommand = "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex"
+  [string]$UpdateCommand = "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex",
+  [switch]$WithHooks
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +20,7 @@ $PluginName = "agentops"
 $MarketplaceName = "agentops-marketplace"
 $PluginKey = "$PluginName@$MarketplaceName"
 $InstallRef = if ([string]::IsNullOrWhiteSpace($Version)) { "main" } else { $Version }
+$InstallHooks = $WithHooks.IsPresent -or ($env:AGENTOPS_INSTALL_HOOKS -match '^(1|true|yes|on)$')
 $ArchiveUrl = if ($InstallRef -eq "main") {
   "https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main"
 } else {
@@ -228,8 +231,6 @@ function Get-AgentOpsCodexHookScripts {
     "stop-team-guard.sh",
     "stop-auto-handoff.sh",
     "ao-flywheel-close.sh",
-    "prompt-nudge.sh",
-    "intent-echo.sh",
     "quality-signals.sh",
     "dangerous-git-guard.sh",
     "go-test-precommit.sh",
@@ -477,7 +478,6 @@ try {
   Upsert-TomlKey $configFile "[plugins.`"$PluginKey`"]" "enabled" "true"
   Upsert-TomlKey $configFile "[ui]" "suppress_unstable_features_warning" "true"
   Remove-TomlKey $configFile "[features]" "codex_hooks"
-  Upsert-TomlKey $configFile "[features]" "hooks" "true"
 
   $manifestHash = (Get-FileHash -LiteralPath $skillManifest -Algorithm SHA256).Hash.ToLowerInvariant()
   $installedManifest = Join-Path $pluginCacheRoot "skills-codex\.agentops-manifest.json"
@@ -496,10 +496,12 @@ try {
   $userBackup = Archive-SkillRoot -Root $userSkillsRoot -SkillsSource $skillsSrc -ManagedRoot $managedUserRoot
 
   $installedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+  $hookRuntime = if ($InstallHooks) { "codex-native-hooks" } else { "hookless-default" }
   $state = [ordered]@{
     installed_at = $installedAt
     install_mode = "native-plugin"
-    hook_runtime = "codex-native-hooks"
+    hook_runtime = $hookRuntime
+    hooks_installed = $InstallHooks
     version = $InstallRef
     manifest_hash = $manifestHash
     skill_count = $skillCount
@@ -511,9 +513,10 @@ try {
     installed_at = $installedAt
     source = "install-codex.ps1"
     install_mode = "native-plugin"
-    hook_runtime = "codex-native-hooks"
+    hook_runtime = $hookRuntime
+    hooks_installed = $InstallHooks
     hook_contract = "docs/contracts/hook-runtime-contract.md"
-    lifecycle_commands = @("ao codex start", "ao codex stop")
+    lifecycle_commands = @("ao rpi phased", "ao codex status")
     plugin_key = $PluginKey
     version = $InstallRef
     plugin_root = $pluginCacheRoot
@@ -525,7 +528,13 @@ try {
   }
   $meta | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $installMeta -Encoding utf8
 
-  Install-CodexHooks -RepoRoot $RepoRoot -PluginCacheRoot $pluginCacheRoot -CodexHome $CodexHome
+  if ($InstallHooks) {
+    Upsert-TomlKey $configFile "[features]" "hooks" "true"
+    Install-CodexHooks -RepoRoot $RepoRoot -PluginCacheRoot $pluginCacheRoot -CodexHome $CodexHome
+  } else {
+    Write-Info "Codex hooks not installed (hookless default)"
+    Write-Host "  Optional: rerun with -WithHooks to install native Codex hooks."
+  }
 
   Write-Info "Native Codex plugin installed"
   Write-Host "  Plugin key: $PluginKey"

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-15T20:15:27Z",
+  "generated_at": "2026-05-16T03:33:51Z",
   "summary": {
     "skills": 77,
-    "hooks": 46,
+    "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
@@ -393,7 +393,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 8
+        "reference_count": 9
       },
       {
         "name": "harvest",
@@ -947,30 +947,6 @@
         "matcher": "all",
         "timeout": 8,
         "path": "hooks/factory-router.sh",
-        "type": "command"
-      },
-      {
-        "name": "intent-echo",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 3,
-        "path": "hooks/intent-echo.sh",
-        "type": "command"
-      },
-      {
-        "name": "new-user-welcome",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 3,
-        "path": "hooks/new-user-welcome.sh",
-        "type": "command"
-      },
-      {
-        "name": "prompt-nudge",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/prompt-nudge.sh",
         "type": "command"
       },
       {

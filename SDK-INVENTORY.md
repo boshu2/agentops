@@ -197,7 +197,7 @@ Cleanest split.
 | Manifest format | `hooks.json` shape | SPEC (platform) |
 | Session lifecycle utility | `session-start.sh`, `session-end-maintenance.sh` | RUNTIME utility |
 | Compile pipeline | `compile-session-defrag.sh` | OPINIONATED |
-| UX hooks | `intent-echo.sh`, `prompt-nudge.sh`, `new-user-welcome.sh` | OPINIONATED |
+| UX hooks | Removed from 3.0 runtime manifest; replaced by README/quickstart and execution-packet fields | RETIRED |
 | Safety | `dangerous-git-guard.sh`, `edit-scope-guard.sh`, `edit-audit.sh`, `edit-knowledge-surface.sh`, `git-worker-guard.sh`, `lead-only-worker-git-guard.sh` | OPINIONATED |
 | Workflow gates | `pre-mortem-gate.sh` (10K), `commit-review-gate.sh`, `holdout-isolation-gate.sh`, `task-validation-gate.sh` (30K!), `eval-verdict-compiler.sh` (10K), `factory-router.sh`, `finding-compiler.sh` (30K!) | OPINIONATED |
 | Worktree | `worktree-cleanup.sh`, `worktree-setup.sh`, `subagent-stop.sh`, `stop-auto-handoff.sh`, `stop-team-guard.sh` | mixed (split: utility vs. gate logic) |

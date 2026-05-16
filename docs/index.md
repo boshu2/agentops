@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Software factory for coding agents. Keep the books, compile context, gate output, and compound knowledge so every session starts loaded, not cold.
+description: SDLC control plane for coding agents. Keep the books, compile context, gate output, and compound knowledge so every session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -8,12 +8,12 @@ hide:
 
 # AgentOps { .landing-hero }
 
-### A wiki for your agents. Built so you own the moat.
+### The SDLC control plane for coding agents.
 
 <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
-`.agents/` is just a wiki — markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
+AgentOps keeps the books, compiles context, gates output, and compounds learning for agentic software development. Its substrate is `.agents/`: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to.
 
-AgentOps is software-engineering practice encoded for LLM agents under token scarcity. The CDLC turns those practices into a context-native operating loop: dense intent, explicit boundaries, executable evidence, durable decisions, real constraints, and clear next actions.
+AgentOps uses software-engineering practice people already understand — Agile/XP, BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, provenance, and durable knowledge — then compiles those practices into dense, verifiable context for LLM agents under token scarcity. The internal lifecycle is the CDLC: context gets developed, tested, delivered, observed, and improved like any other software asset.
 
 *The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
 

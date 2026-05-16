@@ -16,14 +16,16 @@
 // This package is being filled out incrementally per the BC epics:
 //
 //   - soc-2c1p (BC1 Corpus): CorpusReaderPort, CorpusWriterPort,
-//     FindingCompilerPort, CitationPort
+//     FindingCompilerPort, CitationPort, ContextCompilerPort
 //   - soc-wxh5 (BC2 Validation): GateRunnerPort, CIStatusPort,
-//     ClaimEvidenceBinderPort
-//   - soc-y5vh (BC3 Loop): LoopReaderPort, LoopWriterPort
-//   - soc-2klg (BC4 Factory): OperatorPort, EventBusPort
-//   - soc-zd7c (BC5 Runtime): HarnessPort
+//     ClaimEvidenceBinderPort, SafetyPolicyPort
+//   - soc-y5vh (BC3 Loop): LoopReaderPort, LoopWriterPort,
+//     CloseoutPort, HypothesisLedgerPort, ConvergenceCheckPort
+//   - soc-2klg (BC4 Factory): OperatorPort, EventBusPort,
+//     FactoryAdmissionPort, ClaimEvidencePort
+//   - soc-zd7c (BC5 Runtime): HarnessPort, WorkspacePort
 //
-// New ports are added one per cycle, with at least one in-memory
+// New ports are added in bounded slices, with at least one in-memory
 // adapter and a Go test that fires on regression. See
 // docs/plans/2026-05-12-rescope-evolve-and-architecture.md for the
 // rescoping rationale and ordering.

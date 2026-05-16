@@ -123,33 +123,6 @@ test_standards_injector() {
     assert_empty "$unsupported" "standards-injector unsupported extension"
 }
 
-test_prompt_nudge() {
-    local repo output ctx dedup_output
-    repo="$TMP_ROOT/prompt-nudge"
-    setup_git_repo "$repo"
-    mkdir -p "$repo/.agents/ao" "$repo/bin"
-    printf '{"step":"research","status":"done"}\n' > "$repo/.agents/ao/chain.jsonl"
-    cat > "$repo/bin/ao" <<'EOF'
-#!/usr/bin/env bash
-if [[ "${1:-}" = "ratchet" && "${2:-}" = "status" ]]; then
-    printf '{"steps":[{"step":"pre-mortem","status":"pending"},{"step":"vibe","status":"pending"}]}\n'
-    exit 0
-fi
-exit 1
-EOF
-    chmod +x "$repo/bin/ao"
-
-    output="$(cd "$repo" && jq -n '{"prompt":"implement the feature"}' | PATH="$repo/bin:$PATH" bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)"
-    json_event "$output" "UserPromptSubmit" "prompt-nudge"
-    ctx="$(context_of "$output")"
-    assert_contains "$ctx" "pre-mortem hasn't been run" "prompt-nudge"
-    assert_bytes_le "$ctx" 200 "prompt_nudge_bytes"
-
-    touch "$repo/.agents/ao/.ratchet-advance-fired"
-    dedup_output="$(cd "$repo" && jq -n '{"prompt":"implement the feature"}' | PATH="$repo/bin:$PATH" bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)"
-    assert_empty "$dedup_output" "prompt-nudge dedup flag"
-}
-
 test_precompact_snapshot() {
     local repo output ctx
     repo="$TMP_ROOT/precompact"
@@ -264,7 +237,6 @@ main() {
     trap 'rm -rf "$TMP_ROOT"' EXIT
 
     test_standards_injector
-    test_prompt_nudge
     test_precompact_snapshot
     test_context_monitor
     test_commit_review_gate

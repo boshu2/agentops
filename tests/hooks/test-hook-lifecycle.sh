@@ -8,9 +8,8 @@
 #   2. PreToolUse(Read)  → citation-tracker.sh (citation recorded)
 #   3. PreToolUse(Bash)  → git-worker-guard.sh (worker git commit blocked)
 #   4. PostToolUse(Bash) → ratchet-advance.sh (advance suggestion on ratchet record)
-#   5. UserPromptSubmit  → prompt-nudge.sh (valid JSON when chain exists)
-#   6. Stop              → stop-auto-handoff.sh (handoff file written)
-#   7. SessionEnd        → session-end-maintenance.sh (clean completion)
+#   5. Stop              → stop-auto-handoff.sh (handoff file written)
+#   6. SessionEnd        → session-end-maintenance.sh (clean completion)
 #
 # Usage: ./tests/hooks/test-hook-lifecycle.sh
 
@@ -401,57 +400,7 @@ fi
 
 # ============================================================
 echo ""
-echo "=== Step 5: UserPromptSubmit — Prompt Nudge ==="
-# ============================================================
-
-# prompt-nudge.sh requires chain.jsonl to exist and ao to be available
-# We test the structural behavior: kill switch, no chain, proper JSON format.
-
-cd "$LIFECYCLE_REPO"
-
-# Test 5a: kill switch suppresses output
-NUDGE_KILL_OUTPUT=$(echo '{"prompt":"implement the feature"}' | \
-    AGENTOPS_HOOKS_DISABLED=1 \
-    bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$NUDGE_KILL_OUTPUT" ]; then
-    pass "step 5: prompt-nudge kill switch suppresses output"
-else
-    fail "step 5: prompt-nudge kill switch suppresses output"
-fi
-
-# Test 5b: empty prompt exits silently
-NUDGE_EMPTY=$(echo '{"prompt":""}' | bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$NUDGE_EMPTY" ]; then
-    pass "step 5: prompt-nudge silent on empty prompt"
-else
-    fail "step 5: prompt-nudge silent on empty prompt"
-fi
-
-# Test 5c: no chain.jsonl exits silently
-# Make sure chain.jsonl doesn't exist in this repo
-rm -f "$LIFECYCLE_REPO/.agents/ao/chain.jsonl" 2>/dev/null
-NUDGE_NOCHAIN=$(echo '{"prompt":"implement something"}' | \
-    bash "$HOOKS_DIR/prompt-nudge.sh" 2>&1 || true)
-if [ -z "$NUDGE_NOCHAIN" ]; then
-    pass "step 5: prompt-nudge silent without chain.jsonl"
-else
-    fail "step 5: prompt-nudge silent without chain.jsonl"
-fi
-
-# Test 5d: with chain.jsonl present, hook runs (may or may not produce output depending on ao)
-echo '{"step":"research","status":"done","ts":"2026-02-25T10:00:00Z"}' > "$LIFECYCLE_REPO/.agents/ao/chain.jsonl"
-NUDGE_CHAIN_EXIT=0
-echo '{"prompt":"implement the feature"}' | \
-    bash "$HOOKS_DIR/prompt-nudge.sh" >/dev/null 2>&1 || NUDGE_CHAIN_EXIT=$?
-if [ $NUDGE_CHAIN_EXIT -eq 0 ]; then
-    pass "step 5: prompt-nudge exits 0 with chain.jsonl present"
-else
-    fail "step 5: prompt-nudge exits 0 with chain.jsonl present"
-fi
-
-# ============================================================
-echo ""
-echo "=== Step 6: Stop — Auto Handoff ==="
+echo "=== Step 5: Stop — Auto Handoff ==="
 # ============================================================
 
 # stop-auto-handoff.sh captures last_assistant_message and writes a handoff file
@@ -584,7 +533,6 @@ HOOKS_WITH_KILL_SWITCH=(
     "citation-tracker.sh"
     "git-worker-guard.sh"
     "ratchet-advance.sh"
-    "prompt-nudge.sh"
     "stop-auto-handoff.sh"
     "session-end-maintenance.sh"
     "pending-cleaner.sh"

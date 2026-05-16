@@ -81,6 +81,50 @@
         }
       }
     },
+    "density": {
+      "type": "object",
+      "description": "Advisory-only Context Density Rule coverage. This does not affect the aggregate verdict and does not enforce execution-packet density.",
+      "required": ["status", "advisory", "fields", "summary"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "warn"],
+          "description": "pass when all six advisory density fields are present, warn otherwise."
+        },
+        "advisory": {
+          "type": "boolean",
+          "const": true,
+          "description": "Always true. Density coverage is report-only at the skill-auditor layer."
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["id", "present", "evidence"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "enum": [
+                  "intent",
+                  "boundary",
+                  "evidence",
+                  "decision",
+                  "constraint",
+                  "next_action"
+                ]
+              },
+              "present": {"type": "boolean"},
+              "evidence": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "summary": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
     "summary": {
       "type": "string",
       "description": "Human-readable one-paragraph rollup. Suitable for embedding in a markdown audit report."

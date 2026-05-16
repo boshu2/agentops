@@ -1,8 +1,8 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Ports and Adapters](ports-and-adapters.md) (the architectural seams) and [CDLC](../cdlc.md) (the conceptual phases this loop runs inside).
+> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Ports and Adapters](ports-and-adapters.md) (the architectural seams) and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
 
-AgentOps' execution discipline is one repeatable loop, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
+AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
 
 ```text
 BDD-shaped intent issue
@@ -22,6 +22,9 @@ The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-do
 3. **The first failing test is the slice's contract.** Code without a failing test has no acceptance surface; an agent has no way to know when it is done.
 4. **Parallelism is explicit ownership.** Waves are valid only when the conflict-free check below passes. Default to sequential.
 5. **Less process, more executable shared language.** The promotion ratchet kills artifacts that do not change future behavior.
+6. **Context crosses boundaries as artifacts.** RPI keeps orchestration visible,
+   but phase execution should cross through bounded packets and summaries, not
+   raw accumulated chat context.
 
 ## The seven moves
 

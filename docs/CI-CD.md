@@ -1,12 +1,12 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate |
+| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Primary quality gate; tag pushes force every path-filtered lane on |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
@@ -93,6 +93,12 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
 Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output. `agentops-contract-canaries` is the blocking deterministic test gate for the stable public canary subset.
+
+For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
+For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
+skips the path-filter step. The release-tag `summary` also fails if any job is
+skipped. A green release Validate run therefore means every blocking lane ran
+for the exact tagged SHA; skipped is not treated as passed for releases.
 
 ## Blocking vs Soft Gates
 

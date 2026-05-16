@@ -15,24 +15,16 @@ Used when `codex` CLI is available on PATH. Agents run as background shell proce
 ```bash
 # With structured output (preferred for council judges)
 Bash(
-  command='AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-1.json "JUDGE PROMPT HERE"',
+  command='codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-1.json "JUDGE PROMPT HERE"',
   run_in_background=true
 )
 
 # Without structured output (fallback)
 Bash(
-  command='AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-1.md "JUDGE PROMPT HERE"',
+  command='codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o .agents/council/codex-1.md "JUDGE PROMPT HERE"',
   run_in_background=true
 )
 ```
-
-**`AGENTOPS_INTENT_ECHO_DISABLED=1` is mandatory.** The `intent-echo.sh`
-UserPromptSubmit hook installed in `~/.codex/hooks.json` (agentops-codex
-install) detects high-stakes keywords in long prompts and forces an
-Intent/Confirm preamble. Non-interactive `codex exec` cannot satisfy the
-confirm step, so the preamble becomes the captured assistant message and the
-council judge never produces real output. See
-`.agents/learnings/2026-05-02-codex-intent-echo-hook-blocks-mixed-council.md`.
 
 **Flag order:** `-s`/`--full-auto` → `-m` → `-C` → `--output-schema` → `-o` → prompt
 
@@ -108,9 +100,9 @@ For `--mixed` council, spawn runtime-native judges AND Codex CLI judges in paral
 Task(subagent_type="general-purpose", team_name="council-20260217-auth", name="judge-1", prompt="...", description="Judge 1")
 Task(subagent_type="general-purpose", team_name="council-20260217-auth", name="judge-2", prompt="...", description="Judge 2")
 
-# Codex CLI judges (parallel background shells) — env var is mandatory, not optional
-Bash(command='AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-1.json "PACKET"', run_in_background=true)
-Bash(command='AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-2.json "PACKET"', run_in_background=true)
+# Codex CLI judges (parallel background shells)
+Bash(command='codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-1.json "PACKET"', run_in_background=true)
+Bash(command='codex exec -s read-only -m gpt-5.3-codex -C "$(pwd)" --output-schema skills/council/schemas/verdict.json -o .agents/council/codex-2.json "PACKET"', run_in_background=true)
 ```
 
 All four spawn in the **same message** — maximum parallelism.

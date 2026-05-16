@@ -22,7 +22,7 @@ AgentOps currently ships a full Claude runtime manifest across the supported hoo
 | `SessionStart` | Prepare runtime state, consume handoffs, stage factory briefing state | `session-start.sh` |
 | `SessionEnd` | Compile session signal, maintain the knowledge pool | `session-end-maintenance.sh`, `compile-session-defrag.sh` |
 | `Stop` | Preserve handoff/team state and close the flywheel for the turn | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` |
-| `UserPromptSubmit` | Route the prompt, nudge discipline, echo intent, watch context | `factory-router.sh`, `prompt-nudge.sh`, `intent-echo.sh`, `context-guard.sh`, `quality-signals.sh` |
+| `UserPromptSubmit` | Route explicit factory intake, watch context, and capture quality signals | `factory-router.sh`, `context-guard.sh`, `quality-signals.sh` |
 | `PreToolUse` | Gate risky tool calls and inject compact file-scoped guidance | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `standards-injector.sh`, `holdout-isolation-gate.sh` |
 | `PostToolUse` | Quality and loop-detection after edits | `write-time-quality.sh`, `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh`, `context-monitor.sh` |
 | `TaskCompleted` | Validate task closure metadata and structural checks | `task-validation-gate.sh` |
@@ -60,7 +60,9 @@ ao hooks uninstall     # removes ao hook entries (other entries are preserved)
 
 ### Codex (v0.115.0+)
 
-Use `scripts/install-codex-plugin.sh` or `scripts/install-codex.sh` to install the native hook manifest to `~/.codex/hooks.json`.
+Codex installs hookless by default. Use `scripts/install-codex-plugin.sh --with-hooks`
+or `scripts/install-codex.sh --with-hooks` only when you intentionally want the
+native hook manifest in `~/.codex/hooks.json`.
 
 ### Codex (older)
 

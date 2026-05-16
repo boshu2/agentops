@@ -62,6 +62,9 @@ Pick the installer for your runtime.
     curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
     ```
 
+    Codex installs hookless by default. Use `install-codex.sh --with-hooks`
+    only when you intentionally want native Codex hooks.
+
 === "OpenCode"
 
     ```bash

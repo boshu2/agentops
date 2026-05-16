@@ -152,14 +152,27 @@ This is why the system survives context compaction: everything important is on d
 
 For long-running loops like `/evolve`, disk-backed state is enforced with hard gates: cycle-history.jsonl writes are verified (read back and compared), fitness snapshots must exist before regression gates run, and a continuity check confirms cycle N was logged before starting N+1. Any verification failure stops the loop rather than continuing ungated.
 
-### Two-Tier Execution Model
+### Visible Orchestration, Isolated Execution
 
-Skills follow a strict rule: **the orchestrator never forks; the workers it spawns always fork.**
+Skills follow a stricter rule than "everything forks" or "nothing forks":
+**the lifecycle orchestrator stays visible, while expensive phase or worker
+execution is isolated behind a declared contract.**
 
-- **NO-FORK (Tier 1):** Orchestrators (`/evolve`, `/rpi`, `/crank`, `/vibe`, `/post-mortem`) stay in the main session. The operator sees cycle progress, phase transitions, and can intervene.
-- **FORK (Tier 2):** Worker spawners (`/council`, `/codex-team`) fork into subagents via `context: fork`. Results merge back through the filesystem.
+- **Visible orchestrator:** `/rpi`, `/evolve`, and other lifecycle controllers
+  keep phase order, retry policy, and operator intervention in the main
+  session.
+- **Isolated phase transport:** `/rpi` phase contracts (`/discovery`, `/crank`,
+  `/validation`) may run in isolated phase contexts when the runtime supports
+  it. The orchestrator passes only the objective and bounded handoff artifact;
+  the phase returns artifact path, verdict, and next action.
+- **Isolated workers:** worker spawners (`/council`, `/codex-team`, `/swarm`
+  workers) fork into subagents or equivalent runtime workers. Results merge
+  back through filesystem artifacts.
 
-This was a production lesson: orchestrators that forked became invisible — no cycle-by-cycle visibility during overnight evolve runs, no phase gates visible in rpi. The fix removed `context: fork` from all orchestrators and kept it only on worker spawners.
+The production lesson still holds: orchestration that disappears into a fork
+becomes hard to supervise. The updated target is not invisible orchestration.
+It is visible orchestration plus isolated execution, with artifact-only
+handoffs at every boundary.
 
 Full classification: [`SKILL-TIERS.md`](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md)
 
