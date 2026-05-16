@@ -139,19 +139,19 @@ func TestSteerAdd_AppendsDirective(t *testing.T) {
 	oldSteer := steerAddSteer
 	oldDesc := steerAddDescription
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		steerAddSteer = oldSteer
 		steerAddDescription = oldDesc
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	steerAddSteer = "explore"
 	steerAddDescription = "Try new things"
 	dryRun = false
-	goalsJSON = false
+	output = "table"
 
 	err := goalsSteerAddCmd.RunE(goalsSteerAddCmd, []string{"Experiment more"})
 	if err != nil {
@@ -236,15 +236,15 @@ func TestSteerRemove_RemovesAndRenumbers(t *testing.T) {
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = false
-	goalsJSON = false
+	output = "table"
 
 	// Remove directive #2 ("Stay secure")
 	err := goalsSteerRemoveCmd.RunE(goalsSteerRemoveCmd, []string{"2"})
@@ -310,15 +310,15 @@ func TestSteerRemove_DryRun(t *testing.T) {
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = true
-	goalsJSON = false
+	output = "table"
 
 	err := goalsSteerRemoveCmd.RunE(goalsSteerRemoveCmd, []string{"1"})
 	if err != nil {
@@ -352,15 +352,15 @@ func TestSteerPrioritize_MovesToNewPosition(t *testing.T) {
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = false
-	goalsJSON = false
+	output = "table"
 
 	// Move directive #3 ("Reduce debt") to position 1
 	err := goalsSteerPrioritizeCmd.RunE(goalsSteerPrioritizeCmd, []string{"3", "1"})
@@ -499,15 +499,15 @@ func TestSteerPrioritize_DryRun(t *testing.T) {
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = true
-	goalsJSON = false
+	output = "table"
 
 	err := goalsSteerPrioritizeCmd.RunE(goalsSteerPrioritizeCmd, []string{"3", "1"})
 	if err != nil {

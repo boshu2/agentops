@@ -19,7 +19,7 @@ var goalsPruneCmd = &cobra.Command{
 		return goals.RunPrune(goals.PruneOptions{
 			GoalsFile: resolveGoalsFile(),
 			DryRun:    dryRun,
-			JSON:      goalsJSON,
+			JSON:      goalsJSONOutput(),
 		})
 	},
 }

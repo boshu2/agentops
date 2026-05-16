@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -111,8 +112,8 @@ func (spec DreamRunJobSpec) Validate() error {
 	if strings.TrimSpace(spec.DreamRunID) == "" {
 		return fmt.Errorf("dream_run_id is required")
 	}
-	if strings.TrimSpace(spec.OutputDir) == "" {
-		return fmt.Errorf("output_dir is required")
+	if err := validateOutputDir("output_dir", spec.OutputDir); err != nil {
+		return err
 	}
 	if spec.MaxIterations < 0 {
 		return fmt.Errorf("max_iterations must be >= 0")
@@ -133,8 +134,8 @@ func (spec DreamStageJobSpec) Validate() error {
 	if strings.TrimSpace(spec.DreamRunID) == "" {
 		return fmt.Errorf("dream_run_id is required")
 	}
-	if strings.TrimSpace(spec.OutputDir) == "" {
-		return fmt.Errorf("output_dir is required")
+	if err := validateOutputDir("output_dir", spec.OutputDir); err != nil {
+		return err
 	}
 	if spec.Iteration < 0 {
 		return fmt.Errorf("iteration must be >= 0")
@@ -152,8 +153,8 @@ func (manifest DreamStageManifest) Validate() error {
 	if strings.TrimSpace(manifest.DreamRunID) == "" {
 		return fmt.Errorf("dream_run_id is required")
 	}
-	if strings.TrimSpace(manifest.OutputDir) == "" {
-		return fmt.Errorf("output_dir is required")
+	if err := validateOutputDir("output_dir", manifest.OutputDir); err != nil {
+		return err
 	}
 	if err := ValidateDreamMode(manifest.Mode); err != nil {
 		return err
@@ -244,6 +245,45 @@ func ValidateDreamMode(mode DreamMode) error {
 	default:
 		return fmt.Errorf("invalid Dream mode %q", mode)
 	}
+}
+
+// validateOutputDir rejects an operator-supplied output_dir that is empty or
+// that escapes its parent via ".." traversal. The job payload is
+// operator-controlled, so an unvalidated output_dir lets a caller redirect
+// dream summary/log writes outside the intended tree (soc-ly33, SEC-C2).
+// filepath.Clean collapses interior ".." segments, so any escape survives as
+// a leading "..". Absolute-path containment against the daemon working
+// directory is enforced separately in the executor (outputDirContained),
+// where the daemon cwd is known; the symlink pre-check in dream_executor.go
+// covers the complementary symlink-redirect vector.
+func validateOutputDir(field, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fmt.Errorf("%s is required", field)
+	}
+	cleaned := filepath.Clean(value)
+	if cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("%s %q escapes its parent via .. traversal", field, value)
+	}
+	return nil
+}
+
+// outputDirContained verifies that an operator-supplied output_dir resolves to
+// a path inside the daemon working directory cwd. It is the absolute-path
+// counterpart to validateOutputDir's ".." check (soc-ly33, SEC-C2).
+func outputDirContained(cwd, outputDir string) error {
+	abs := filepath.Clean(outputDir)
+	if !filepath.IsAbs(abs) {
+		abs = filepath.Join(cwd, abs)
+	}
+	rel, err := filepath.Rel(filepath.Clean(cwd), abs)
+	if err != nil {
+		return fmt.Errorf("output_dir %q is not contained within the daemon working directory", outputDir)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("output_dir %q escapes the daemon working directory", outputDir)
+	}
+	return nil
 }
 
 func validateOptionalDuration(field, value string) error {

@@ -70,6 +70,61 @@ func TestDreamJobSpecsValidateAndRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDreamSpecsRejectOutputDirPathTraversal(t *testing.T) {
+	escapes := []string{
+		"../escape",
+		"../../etc/agentops",
+		".agents/../../escape",
+		"",
+		"   ",
+	}
+	for _, dir := range escapes {
+		run := NewDreamRunJobSpec("dream-20260516", dir)
+		if err := run.Validate(); err == nil {
+			t.Errorf("DreamRunJobSpec.Validate accepted escaping output_dir %q", dir)
+		}
+		stage := NewDreamStageJobSpec("dream-20260516", dir, DreamStageReduce)
+		if err := stage.Validate(); err == nil {
+			t.Errorf("DreamStageJobSpec.Validate accepted escaping output_dir %q", dir)
+		}
+		manifest := DefaultDreamStageManifest("dream-20260516", dir)
+		if err := manifest.Validate(); err == nil {
+			t.Errorf("DreamStageManifest.Validate accepted escaping output_dir %q", dir)
+		}
+	}
+
+	// A contained relative path stays valid.
+	ok := NewDreamRunJobSpec("dream-20260516", ".agents/overnight/dream-20260516")
+	if err := ok.Validate(); err != nil {
+		t.Fatalf("DreamRunJobSpec.Validate rejected a contained output_dir: %v", err)
+	}
+}
+
+func TestOutputDirContained(t *testing.T) {
+	cwd := "/srv/agentops"
+	contained := []string{
+		"/srv/agentops/.agents/overnight/run",
+		".agents/overnight/run",
+		"/srv/agentops",
+	}
+	for _, dir := range contained {
+		if err := outputDirContained(cwd, dir); err != nil {
+			t.Errorf("outputDirContained(%q, %q) rejected a contained path: %v", cwd, dir, err)
+		}
+	}
+	escaping := []string{
+		"/etc/agentops-dream",
+		"/srv/agentops-evil",
+		"../escape",
+		"/tmp/elsewhere",
+	}
+	for _, dir := range escaping {
+		if err := outputDirContained(cwd, dir); err == nil {
+			t.Errorf("outputDirContained(%q, %q) accepted an escaping path", cwd, dir)
+		}
+	}
+}
+
 func TestDreamStageManifestRejectsInvalidStageModeAndOrder(t *testing.T) {
 	manifest := DefaultDreamStageManifest("dream-20260428", ".agents/overnight/dream-20260428")
 	manifest.Mode = "autonomous"

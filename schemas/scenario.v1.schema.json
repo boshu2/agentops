@@ -6,6 +6,10 @@
     "practices": ["property-based-testing", "llm-eval-harness"],
     "type": "object",
     "properties": {
+        "schema_version": {
+            "type": "integer",
+            "const": 1
+        },
         "id": {
             "type": "string",
             "pattern": "^(s-\\d{4}-\\d{2}-\\d{2}-\\d{3}|auto-.+)$",

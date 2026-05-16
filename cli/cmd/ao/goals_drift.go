@@ -17,7 +17,7 @@ var goalsDriftCmd = &cobra.Command{
 		return goals.RunDrift(goals.DriftOptions{
 			GoalsFile: resolveGoalsFile(),
 			Timeout:   time.Duration(goalsTimeout) * time.Second,
-			JSON:      goalsJSON,
+			JSON:      goalsJSONOutput(),
 		})
 	},
 }

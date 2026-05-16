@@ -30,6 +30,7 @@ type factoryStartResult struct {
 var factoryCmd = &cobra.Command{
 	Use:   "factory",
 	Short: "Software-factory operator surface for briefing-first agent work",
+	Args:  cobra.NoArgs,
 	Long: `Software-factory operator surface for AgentOps.
 
 This surface keeps the operator lane explicit:

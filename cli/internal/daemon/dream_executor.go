@@ -70,6 +70,13 @@ func (e *DreamExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecut
 		return JobExecutionResult{}, err
 	}
 	artifacts := dreamRunArtifacts(spec.OutputDir)
+	// soc-ly33 (SEC-C2): output_dir is operator-supplied via the job payload.
+	// validateOutputDir already rejected ".." traversal; this rejects an
+	// absolute output_dir that resolves outside the daemon working tree before
+	// MkdirAll touches the filesystem.
+	if err := outputDirContained(e.cwd, spec.OutputDir); err != nil {
+		return JobExecutionResult{Artifacts: artifacts}, err
+	}
 	// soc-58q5.13 (W-C-18): refuse to traverse a symlink at the planned
 	// output_dir. The path is operator-supplied via the job payload, so an
 	// attacker who can pre-create a symlink at OutputDir could redirect

@@ -349,7 +349,7 @@ func TestAuditBeads_ClassifiesStaleAndConsolidatable(t *testing.T) {
 	execGitLog = func(args ...string) (string, error) {
 		return "", nil
 	}
-	repoPatternExists = func(pattern string) bool {
+	repoPatternExists = func(pattern string, cache *repoContentCache) bool {
 		return false
 	}
 

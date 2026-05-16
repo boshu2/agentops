@@ -12,6 +12,10 @@
     "payload"
   ],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "agent_update_version": {
       "type": "integer",
       "const": 1

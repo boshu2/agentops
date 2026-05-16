@@ -184,7 +184,7 @@ func outputAutodevValidateResult(result autodevValidateResult) error {
 	for _, err := range result.Errors {
 		fmt.Printf("  ERROR: %s\n", err)
 	}
-	return fmt.Errorf("validation failed")
+	return fmt.Errorf("%s is invalid: %d validation error(s) listed above", result.Path, len(result.Errors))
 }
 
 func displayProgramPath(path string) string {

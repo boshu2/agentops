@@ -8,6 +8,10 @@
   "additionalProperties": true,
   "required": ["ts", "event", "worker_id"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "ts": {
       "type": "string",
       "format": "date-time",

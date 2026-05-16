@@ -8,6 +8,7 @@ import (
 var rpiCmd = &cobra.Command{
 	Use:   "rpi",
 	Short: "RPI lifecycle automation",
+	Args:  cobra.NoArgs,
 	Long: `Commands for automating the RPI lifecycle.
 
 Commands:

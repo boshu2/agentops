@@ -101,6 +101,7 @@ type agentopsDaemonRunOptions struct {
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Run and inspect the AgentOps daemon",
+	Args:  cobra.NoArgs,
 }
 
 var daemonRunCmd = &cobra.Command{

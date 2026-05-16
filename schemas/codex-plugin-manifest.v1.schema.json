@@ -7,6 +7,10 @@
   "additionalProperties": false,
   "required": ["name"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "$schema": {
       "type": "string"
     },

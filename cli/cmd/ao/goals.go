@@ -10,6 +10,7 @@ import (
 var goalsCmd = &cobra.Command{
 	Use:   "goals",
 	Short: "Fitness goal measurement and validation",
+	Args:  cobra.NoArgs,
 	Long: `Track, measure, and validate project fitness goals.
 
 Supports both GOALS.yaml (versions 1-3) and GOALS.md (version 4) formats.
@@ -38,9 +39,16 @@ const defaultGoalsTimeoutSeconds = 240
 // Shared flags
 var (
 	goalsFile    string // --file, auto-detects GOALS.md then GOALS.yaml
-	goalsJSON    bool   // --json
 	goalsTimeout int    // --timeout in seconds, default defaultGoalsTimeoutSeconds
 )
+
+// goalsJSONOutput reports whether the goals family should emit JSON. It reads
+// the global -o/--output flag (set to "json" by either -o json or --json) so
+// the goals subcommands honor the same output flag as the rest of the CLI
+// instead of a disconnected local --json bool.
+func goalsJSONOutput() bool {
+	return GetOutput() == "json"
+}
 
 func init() {
 	goalsCmd.AddGroup(
@@ -49,7 +57,6 @@ func init() {
 		&cobra.Group{ID: "management", Title: "Management:"},
 	)
 	goalsCmd.PersistentFlags().StringVar(&goalsFile, "file", "", "Path to goals file (auto-detects GOALS.md then GOALS.yaml)")
-	goalsCmd.PersistentFlags().BoolVar(&goalsJSON, "json", false, "Output as JSON")
 	goalsCmd.PersistentFlags().IntVar(&goalsTimeout, "timeout", defaultGoalsTimeoutSeconds, "Check timeout in seconds")
 	goalsCmd.GroupID = "workflow"
 	rootCmd.AddCommand(goalsCmd)
