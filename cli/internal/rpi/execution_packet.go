@@ -56,3 +56,40 @@ type ValidationLane struct {
 	TimeoutSeconds      int      `json:"timeout_seconds,omitempty"`
 	ExpensiveReason     string   `json:"expensive_reason,omitempty"`
 }
+
+// ExecutionPacketDensity carries the dense phase-boundary context that
+// discovery passes to implementation without copying raw research or plan prose.
+type ExecutionPacketDensity struct {
+	Intent     string                  `json:"intent"`
+	Boundary   ExecutionPacketBoundary `json:"boundary"`
+	Evidence   []string                `json:"evidence"`
+	Decision   string                  `json:"decision"`
+	Constraint []string                `json:"constraint"`
+	NextAction string                  `json:"next_action"`
+}
+
+// ExecutionPacketBoundary describes the work boundary for the next phase.
+type ExecutionPacketBoundary struct {
+	BoundedContext string   `json:"bounded_context"`
+	NonGoals       []string `json:"non_goals"`
+	WriteScope     []string `json:"write_scope"`
+}
+
+// ExecutionPacketArtifacts links the compact packet to larger durable
+// artifacts. Empty paths are omitted so early seed packets can remain valid
+// before discovery has produced every artifact.
+type ExecutionPacketArtifacts struct {
+	ResearchPath     string `json:"research_path,omitempty"`
+	PlanPath         string `json:"plan_path,omitempty"`
+	PreMortemPath    string `json:"pre_mortem_path,omitempty"`
+	RankedPacketPath string `json:"ranked_packet_path,omitempty"`
+}
+
+// ExecutionPacketTestLevels records the test pyramid levels selected for the
+// handoff. Required levels are the minimum autonomous proof floor; recommended
+// levels are advisory unless a bead acceptance criterion names them.
+type ExecutionPacketTestLevels struct {
+	Required    []string `json:"required"`
+	Recommended []string `json:"recommended"`
+	Rationale   string   `json:"rationale"`
+}

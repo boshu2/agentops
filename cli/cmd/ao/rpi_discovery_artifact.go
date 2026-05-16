@@ -297,16 +297,40 @@ func writeExecutionPacketFromArtifact(cwd string, art *discoveryArtifact, goalOv
 	if err != nil {
 		return "", err
 	}
+	generatedAt := time.Now().UTC().Format(time.RFC3339)
 
 	packet := map[string]any{
 		// Canonical executionPacket fields (kept in-sync with rpi_execution_packet.go).
-		"schema_version":      1,
-		"objective":           goal,
+		"schema_version": 1,
+		"objective":      goal,
+		"density": map[string]any{
+			"intent": goal,
+			"boundary": map[string]any{
+				"bounded_context": executionPacketBoundedContext(cwd),
+				"non_goals":       orEmptyStringSlice(art.OutOfScope),
+				"write_scope":     orEmptyStringSlice(art.InScope),
+			},
+			"evidence":    append(orEmptyStringSlice(art.TDDMatrix), orEmptyStringSlice(art.AbortGates)...),
+			"decision":    "Discovery artifact supplied by operator; implementation starts from the artifact-backed execution packet.",
+			"constraint":  orEmptyStringSlice(art.AbortGates),
+			"next_action": "/crank .agents/rpi/execution-packet.json",
+		},
+		"artifacts": map[string]any{
+			"research_path":      art.SourcePath,
+			"ranked_packet_path": executionPacketRankedPacketPath,
+		},
 		"contract_surfaces":   contractSurfaces,
 		"validation_commands": orEmptyStringSlice(profile.ValidationCommands),
 		"validation_lanes":    profile.ValidationLanes,
 		"done_criteria":       doneCriteria,
 		"tracker_mode":        "discovery-artifact",
+		"test_levels": map[string]any{
+			"required":    []string{"L0", "L1"},
+			"recommended": []string{"L2"},
+			"rationale":   "Discovery-artifact handoff preserves the standard autonomous proof floor unless the artifact narrows it with explicit criteria.",
+		},
+		"ranked_packet_path":  executionPacketRankedPacketPath,
+		"discovery_timestamp": generatedAt,
 
 		// Discovery-artifact-mode extensions (documented in
 		// skills/rpi/references/discovery-artifact-mode.md).
@@ -321,7 +345,7 @@ func writeExecutionPacketFromArtifact(cwd string, art *discoveryArtifact, goalOv
 		"abort_gates":  orEmptyStringSlice(art.AbortGates),
 		"tdd_matrix":   orEmptyStringSlice(art.TDDMatrix),
 		"risks":        orEmptyStringSlice(art.Risks),
-		"generated_at": time.Now().UTC().Format(time.RFC3339),
+		"generated_at": generatedAt,
 	}
 
 	packetPath := filepath.Join(packetDir, "execution-packet.json")
