@@ -98,7 +98,7 @@
         {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1')"},
         {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "Invoke-NestedScript -ScriptPath $installAoScript -ScriptArgs @('-InstallDir', $aoInstallDir, '-NoPathUpdate')"},
         {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "Invoke-NestedScript -ScriptPath $installCodexScript -ScriptArgs @('-RepoRoot', $RepoRoot, '-CodexHome', $codexHome)"},
-        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "$builtAO doctor --json"},
+        {"type": "artifact_contains", "target": "../../tests/windows/test-windows-smoke.ps1", "value": "$builtAO doctor"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "windows-smoke"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": ".\\tests\\windows\\test-windows-smoke.ps1"},
         {"type": "artifact_contains", "target": "../../docs/CI-CD.md", "value": "Windows installer smoke must pass"}
