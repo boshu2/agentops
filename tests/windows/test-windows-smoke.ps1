@@ -205,11 +205,15 @@ try {
     throw "go build failed"
   }
 
-  $doctorJSON = & $builtAO doctor --json
-  if ($LASTEXITCODE -ne 0) {
-    throw "ao doctor --json failed"
+  # The Windows install hints live in the legacy check table, which the plain
+  # `ao doctor` still emits — `ao doctor --json` is now the engine Report and
+  # carries findings, not those hints. `ao doctor` exits 0 (healthy) or 1
+  # (findings present); both are valid diagnostic outcomes, only a higher code
+  # is a real failure.
+  $doctorText = (& $builtAO doctor 2>&1) -join "`n"
+  if ($LASTEXITCODE -gt 1) {
+    throw "ao doctor failed (exit $LASTEXITCODE)"
   }
-  $doctorText = ($doctorJSON -join "`n")
   if ($doctorText -notmatch 'install-codex\.ps1') {
     throw "doctor output did not include the Windows Codex installer hint"
   }
