@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -956,28 +957,87 @@ func displayPhaseName(state phasedState) string {
 	return cliRPI.DisplayPhaseName(state.SchemaVersion, state.Phase)
 }
 
-// checkTmuxSessionAlive checks if any tmux session matching ao-rpi-<runID>-* exists.
-func checkTmuxSessionAlive(runID string) bool {
-	if runID == "" {
-		return false
+// rpiTmuxSessions memoizes the tmux session snapshot for the lifetime of one
+// `ao rpi status` invocation. checkTmuxSessionAlive used to fork
+// `tmux has-session` up to 3 times per non-terminal run — 3N subprocesses with
+// a 2s timeout each, so a status scan over N runs could stall for ~6N seconds
+// if tmux was slow or absent. A single `tmux ls` filtered in Go collapses that
+// to one subprocess regardless of run count (soc-d7v5, PERF-C1). The snapshot
+// also folds in the single resolveRPIToolchainDefaults call.
+var (
+	rpiTmuxMu       sync.Mutex
+	rpiTmuxLoaded   bool
+	rpiTmuxSessions map[string]struct{}
+)
+
+// liveTmuxSessions returns the set of tmux session names visible to the daemon,
+// captured once per process. An absent tmux server or any probe error yields
+// an empty set, matching the prior has-session "not found" behavior.
+func liveTmuxSessions() map[string]struct{} {
+	rpiTmuxMu.Lock()
+	defer rpiTmuxMu.Unlock()
+	if rpiTmuxLoaded {
+		return rpiTmuxSessions
 	}
+	rpiTmuxSessions = probeTmuxSessions()
+	rpiTmuxLoaded = true
+	return rpiTmuxSessions
+}
+
+// resetTmuxSessionCache clears the memoized snapshot so the next
+// liveTmuxSessions call re-probes. Only tests that swap the tmux binary or
+// PATH need this; production never calls it.
+func resetTmuxSessionCache() {
+	rpiTmuxMu.Lock()
+	defer rpiTmuxMu.Unlock()
+	rpiTmuxLoaded = false
+	rpiTmuxSessions = nil
+}
+
+// probeTmuxSessions runs a single `tmux ls` and parses the session names.
+func probeTmuxSessions() map[string]struct{} {
+	sessions := map[string]struct{}{}
 	tmuxCommand := "tmux"
 	if tc, err := resolveRPIToolchainDefaults(); err == nil {
 		tmuxCommand = tc.TmuxCommand
 	} else {
 		VerbosePrintf("Warning: could not resolve RPI toolchain for tmux probe: %v\n", err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), tmuxProbeTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, tmuxCommand, "ls", "-F", "#{session_name}").Output()
+	if err != nil {
+		return sessions // no tmux server or probe failure: empty set
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			sessions[name] = struct{}{}
+		}
+	}
+	return sessions
+}
+
+// tmuxSessionAlive reports whether any ao-rpi-<runID>-p{1,2,3} session is
+// present in the given session set. Split from checkTmuxSessionAlive so the
+// matching logic is testable without a tmux server.
+func tmuxSessionAlive(runID string, sessions map[string]struct{}) bool {
+	if runID == "" {
+		return false
+	}
 	for i := 1; i <= 3; i++ {
-		sessionName := fmt.Sprintf("ao-rpi-%s-p%d", runID, i)
-		ctx, cancel := context.WithTimeout(context.Background(), tmuxProbeTimeout)
-		cmd := exec.CommandContext(ctx, tmuxCommand, "has-session", "-t", sessionName)
-		err := cmd.Run()
-		cancel()
-		if err == nil {
+		if _, ok := sessions[fmt.Sprintf("ao-rpi-%s-p%d", runID, i)]; ok {
 			return true
 		}
 	}
 	return false
+}
+
+// checkTmuxSessionAlive checks if any tmux session matching ao-rpi-<runID>-* exists.
+func checkTmuxSessionAlive(runID string) bool {
+	if runID == "" {
+		return false
+	}
+	return tmuxSessionAlive(runID, liveTmuxSessions())
 }
 
 // locateRunMetadata finds the phasedState for a given run ID.

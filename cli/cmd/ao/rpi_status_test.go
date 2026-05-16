@@ -250,6 +250,36 @@ func TestRPIStatusDetermineRunStatus(t *testing.T) {
 	}
 }
 
+func TestTmuxSessionAlive(t *testing.T) {
+	// PERF-C1 (soc-d7v5): matching logic is split from the tmux probe so it
+	// can be exercised against an in-memory session set.
+	sessions := map[string]struct{}{
+		"ao-rpi-run-alpha-p2": {},
+		"ao-rpi-run-beta-p1":  {},
+		"unrelated-session":   {},
+	}
+	tests := []struct {
+		name  string
+		runID string
+		want  bool
+	}{
+		{"match on phase 2", "run-alpha", true},
+		{"match on phase 1", "run-beta", true},
+		{"no session for run", "run-gamma", false},
+		{"empty run id", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tmuxSessionAlive(tt.runID, sessions); got != tt.want {
+				t.Errorf("tmuxSessionAlive(%q) = %v, want %v", tt.runID, got, tt.want)
+			}
+		})
+	}
+	if tmuxSessionAlive("run-alpha", map[string]struct{}{}) {
+		t.Error("tmuxSessionAlive should be false against an empty session set")
+	}
+}
+
 func TestRPIStatusSiblingDiscovery(t *testing.T) {
 	// Create a parent directory with cwd and a sibling worktree
 	parent := t.TempDir()
@@ -997,6 +1027,8 @@ func TestRPIStatusRegistryDiscovery_EmptyDir(t *testing.T) {
 // block indefinitely when tmux is unavailable or slow. The test measures elapsed
 // time and asserts it stays well below 20 seconds (3 phases x 2s timeout = 6s max).
 func TestCheckTmuxSessionAlive_Timeout(t *testing.T) {
+	resetTmuxSessionCache()
+	t.Cleanup(resetTmuxSessionCache)
 	start := time.Now()
 	alive := checkTmuxSessionAlive("nonexistent-run-id-xyz")
 	elapsed := time.Since(start)
@@ -1028,7 +1060,9 @@ func TestCheckTmuxSessionAlive_EmptyRunID(t *testing.T) {
 func TestCheckTmuxSessionAlive_UsesConfiguredTmuxCommand(t *testing.T) {
 	tmpBin := t.TempDir()
 	customTmux := filepath.Join(tmpBin, "tmux-custom")
-	script := "#!/usr/bin/env bash\nexit 0\n"
+	// PERF-C1 (soc-d7v5): the probe is now a single `tmux ls`, so the stub
+	// must emit a matching session name rather than just exiting 0.
+	script := "#!/usr/bin/env bash\necho ao-rpi-run-custom-tmux-p2\n"
 	if err := os.WriteFile(customTmux, []byte(script), 0755); err != nil {
 		t.Fatalf("write custom tmux script: %v", err)
 	}
@@ -1038,6 +1072,8 @@ func TestCheckTmuxSessionAlive_UsesConfiguredTmuxCommand(t *testing.T) {
 	t.Setenv("AGENTOPS_RPI_TMUX_COMMAND", "tmux-custom")
 	t.Setenv("PATH", tmpBin+":"+os.Getenv("PATH"))
 
+	resetTmuxSessionCache()
+	t.Cleanup(resetTmuxSessionCache)
 	if !checkTmuxSessionAlive("run-custom-tmux") {
 		t.Fatal("expected run to be considered alive when configured tmux command succeeds")
 	}
