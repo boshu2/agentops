@@ -414,19 +414,19 @@ echo "=== --json Flag Matrix ==="
 echo ""
 # ============================================================
 
-# doctor --json
+# doctor --json — a single engine Report (schema_version, findings, exit_code)
 echo "--- doctor --json ---"
-OUTPUT=$("$TMPBIN" doctor --json 2>&1) || true
-if echo "$OUTPUT" | jq -e '.checks' >/dev/null 2>&1; then
-    pass "doctor --json returns checks array"
+OUTPUT=$("$TMPBIN" doctor --json 2>/dev/null) || true
+if echo "$OUTPUT" | jq -e 'has("schema_version") and has("findings") and has("exit_code")' >/dev/null 2>&1; then
+    pass "doctor --json returns an engine Report"
 else
-    fail "doctor --json returns checks array"
+    fail "doctor --json returns an engine Report"
 fi
 
-if echo "$OUTPUT" | jq -e '.checks[] | select(.status)' >/dev/null 2>&1; then
-    pass "doctor --json checks have status field"
+if echo "$OUTPUT" | jq -e '.findings | type == "array"' >/dev/null 2>&1; then
+    pass "doctor --json findings is an array"
 else
-    fail "doctor --json checks have status field"
+    fail "doctor --json findings is an array"
 fi
 
 # search --json empty case
