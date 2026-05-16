@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 )
 
 // ErrLockHeld is the sentinel error returned when an advisory lock is already
@@ -35,7 +34,7 @@ func (g *Guard) Release() error {
 	if g.mgr != nil {
 		g.mgr.forget(g.path)
 	}
-	_ = syscall.Flock(int(g.file.Fd()), syscall.LOCK_UN)
+	_ = unlockFile(g.file)
 	return g.file.Close()
 }
 
@@ -85,7 +84,7 @@ func (lm *LockManager) Acquire(path string) (*Guard, error) {
 	if err != nil {
 		return nil, fmt.Errorf("doctor: open lockfile: %w", err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+	if err := tryLockExclusive(f); err != nil {
 		_ = f.Close()
 		return nil, ErrLockHeld
 	}
