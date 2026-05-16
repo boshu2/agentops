@@ -104,15 +104,21 @@ func (ra *RunArtifact) updateLatestSymlink() error {
 }
 
 // gitRootOrSelf returns the nearest ancestor of dir that contains a .git
-// entry, or dir itself if none is found.
+// entry, or dir itself if none is found. dir is resolved to an absolute path
+// first — a relative path like "." has filepath.Dir(".") == ".", which would
+// otherwise stop the walk immediately at the cwd.
 func gitRootOrSelf(dir string) string {
-	for d := dir; ; {
-		if _, err := os.Stat(filepath.Join(d, ".git")); err == nil {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	for d := abs; ; {
+		if _, statErr := os.Stat(filepath.Join(d, ".git")); statErr == nil {
 			return d
 		}
 		parent := filepath.Dir(d)
 		if parent == d {
-			return dir
+			return abs
 		}
 		d = parent
 	}
