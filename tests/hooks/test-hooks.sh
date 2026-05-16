@@ -564,7 +564,10 @@ MOCK_HANDOFF_CONTENT="$TMPDIR/mock-handoff-content"
 mkdir -p "$MOCK_HANDOFF_CONTENT/.agents/ao"
 git -C "$MOCK_HANDOFF_CONTENT" init -q >/dev/null 2>&1
 (cd "$MOCK_HANDOFF_CONTENT" && bash "$HOOKS_DIR/precompact-snapshot.sh" >/dev/null 2>&1 || true)
-HANDOFF_FILE=$(ls -t "$MOCK_HANDOFF_CONTENT/.agents/handoff/auto-"*.md 2>/dev/null | head -1)
+# `head -1` closes the pipe early; under `set -euo pipefail` the SIGPIPE on
+# `ls` makes the pipeline exit 141 and aborts the whole suite. `|| true`
+# keeps the captured first line while neutralizing that exit status.
+HANDOFF_FILE=$(ls -t "$MOCK_HANDOFF_CONTENT/.agents/handoff/auto-"*.md 2>/dev/null | head -1 || true)
 if [ -f "$HANDOFF_FILE" ]; then
     if grep -q "Ratchet State" "$HANDOFF_FILE"; then
         pass "handoff contains Ratchet State section"
@@ -597,7 +600,7 @@ mkdir -p "$MOCK_STOP_PACKET/.agents/ao"
 git -C "$MOCK_STOP_PACKET" init -q >/dev/null 2>&1
 printf '{"last_assistant_message":"STOP_PACKET_MARKER_123"}' \
   | (cd "$MOCK_STOP_PACKET" && bash "$HOOKS_DIR/stop-auto-handoff.sh" >/dev/null 2>&1 || true)
-STOP_PACKET_FILE=$(ls -t "$MOCK_STOP_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1)
+STOP_PACKET_FILE=$(ls -t "$MOCK_STOP_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1 || true)
 if [ -f "$STOP_PACKET_FILE" ] \
   && jq -e '.schema_version == 1 and .packet_type == "stop" and .source_hook == "stop-auto-handoff" and (.payload.last_assistant_message | contains("STOP_PACKET_MARKER_123"))' "$STOP_PACKET_FILE" >/dev/null 2>&1; then
     pass "stop-auto-handoff emits schema packet v1"
@@ -611,7 +614,7 @@ mkdir -p "$MOCK_SUB_PACKET/.agents/ao"
 git -C "$MOCK_SUB_PACKET" init -q >/dev/null 2>&1
 printf '{"last_assistant_message":"SUB_PACKET_MARKER_999","agent_name":"worker-a"}' \
   | (cd "$MOCK_SUB_PACKET" && bash "$HOOKS_DIR/subagent-stop.sh" >/dev/null 2>&1 || true)
-SUB_PACKET_FILE=$(ls -t "$MOCK_SUB_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1)
+SUB_PACKET_FILE=$(ls -t "$MOCK_SUB_PACKET/.agents/ao/packets/pending/"*.json 2>/dev/null | head -1 || true)
 if [ -f "$SUB_PACKET_FILE" ] \
   && jq -e '.schema_version == 1 and .packet_type == "subagent_stop" and .source_hook == "subagent-stop" and .payload.agent_name == "worker-a"' "$SUB_PACKET_FILE" >/dev/null 2>&1; then
     pass "subagent-stop emits schema packet v1"

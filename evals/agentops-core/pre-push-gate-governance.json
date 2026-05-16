@@ -45,7 +45,7 @@
         {"type": "stdout_contains", "value": "ok 6 pre-push-gate.sh passes when no Go changes"},
         {"type": "stdout_contains", "value": "ok 21 pre-push-gate.sh clears GIT env for skill CLI snippets"},
         {"type": "stdout_contains", "value": "ok 22 pre-push-gate.sh clears GIT env for CLI docs parity"},
-        {"type": "stdout_contains", "value": "ok 42 pre-push-gate.sh test-home-isolation lint stub exists in fake repo (paired stub guard)"}
+        {"type": "stdout_contains", "value": "ok 45 pre-push-gate.sh test-home-isolation lint stub exists in fake repo (paired stub guard)"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
