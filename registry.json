@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-16T03:33:51Z",
+  "generated_at": "2026-05-16T15:02:21Z",
   "summary": {
     "skills": 77,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 158
+    "cli_commands": 160
   },
   "surfaces": {
     "skills": [
@@ -489,7 +489,7 @@
         "path": "skills/skill-auditor/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "skill-builder",
@@ -1479,6 +1479,14 @@
       {
         "name": "loop_append",
         "path": "cli/cmd/ao/loop_append.go"
+      },
+      {
+        "name": "loop_converged",
+        "path": "cli/cmd/ao/loop_converged.go"
+      },
+      {
+        "name": "loop_hypothesis",
+        "path": "cli/cmd/ao/loop_hypothesis.go"
       },
       {
         "name": "maturity",

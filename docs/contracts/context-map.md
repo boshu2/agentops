@@ -15,7 +15,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `council` — Run multi-judge consensus.
 - `crank` — Execute epics through waves.
 - `design` — Validate product fit before discovery.
-- `discovery` — Create execution packets.
+- `discovery` — Create dense execution packets.
 - `domain` — Canonical vocabulary for human-AI software work.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
