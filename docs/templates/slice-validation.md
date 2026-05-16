@@ -73,7 +73,7 @@
 - Tests added: `<paths>`
 - Snapshots updated: `<paths>`
 - Council verdicts: `<verdict ids>`
-- Pre-mortem outcome: `<.agents/research/*.md>`
+- Pre-mortem outcome: `<.agents/council/YYYY-MM-DD-pre-mortem-*.md>`
 - Post-mortem learning: `<.agents/learnings/*.md or "stayed in handoff per ratchet">`
 - Ratchet entry: `<entry id>`
 

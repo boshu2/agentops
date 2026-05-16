@@ -78,7 +78,7 @@ Feature: <feature name from above>
 - Parent bead: `<bd id or "to be created">`
 - ADR (if architectural): `<adr id or "n/a">`
 - Prior research: `<.agents/research/*.md or "n/a">`
-- Pre-mortem: `<.agents/research/*.md or "to run">`
+- Pre-mortem: `<.agents/council/YYYY-MM-DD-pre-mortem-*.md or "to run">`
 
 ---
 
