@@ -44,6 +44,7 @@ jobs:
               - 'cli/**'
               - 'go.mod'
               - 'go.sum'
+              - 'tests/windows/**'
             skills:
               - 'skills/**'
               - 'skills-codex/**'
