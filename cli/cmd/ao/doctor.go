@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/doctor"
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -43,6 +44,11 @@ func init() {
 	doctorCmd.GroupID = "core"
 	doctorCmd.Flags().BoolVar(&doctorJSON, "json", false, "Output results as JSON")
 	doctorCmd.Flags().BoolVar(&doctorProductRuntime, "product-runtime", false, "Fail closed on daemon product runtime readiness checks")
+	// Attach the diagnose-and-repair engine surface: additive flags
+	// (--fix, --dry-run, --only, ...) plus subcommands (fix, undo, explain,
+	// capabilities, health, robot-docs, gc, ls, diff). The legacy 16-check
+	// behavior is preserved when no engine flag/subcommand is used.
+	registerDoctorSurface()
 	rootCmd.AddCommand(doctorCmd)
 }
 
@@ -81,15 +87,56 @@ func newestFileModTime(entries []os.DirEntry) time.Time  { return quality.Newest
 func countEstablished(dir string) int                    { return quality.CountEstablished(dir) }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
+	// Engine-flag invocations (--fix, --explain, --robot-triage) route entirely
+	// through the diagnose-and-repair engine. The bare command and --json keep
+	// their legacy 16-check behavior; the engine's findings are appended
+	// additively below so existing output never regresses.
+	if doctorFix || doctorExplainFlag != "" || doctorRobotTriage {
+		return runDoctorEngineDefault(cmd)
+	}
+
 	checks := gatherDoctorChecks()
 	if doctorProductRuntime {
 		checks = gatherDoctorProductRuntimeChecks()
 	}
-	return quality.RunDoctor(quality.DoctorOptions{
+	if err := quality.RunDoctor(quality.DoctorOptions{
 		JSON:   doctorJSON,
 		Checks: checks,
 		Stdout: cmd.OutOrStdout(),
-	})
+	}); err != nil {
+		return err
+	}
+	// Additive: also run the registered failure-mode detectors and surface
+	// their findings without disturbing the legacy `checks` output above. With
+	// the FOUNDATION wave's empty registry this is a no-op; later waves light up.
+	return appendEngineFindings(cmd)
+}
+
+// appendEngineFindings runs the doctor engine's detectors and appends their
+// findings to the default `ao doctor` output. It never alters the legacy
+// `checks` output or the bare command's exit semantics — a doctorExitError is
+// only returned when engine findings exist (mapped to exit 1).
+func appendEngineFindings(cmd *cobra.Command) error {
+	// With no detectors registered there is nothing to add and no reason to
+	// create a run directory; skip entirely so the legacy command stays
+	// side-effect-free. Later waves register detectors and this lights up.
+	if len(doctor.Detectors()) == 0 {
+		return nil
+	}
+	opts, err := doctorEngineOptions()
+	if err != nil {
+		return nil // never let the engine break the legacy command
+	}
+	rep, derr := doctor.Diagnose(opts)
+	if derr != nil || rep == nil || len(rep.Findings) == 0 {
+		return nil
+	}
+	if doctorWantsJSON() {
+		_ = printDoctorJSON(cmd, rep)
+	} else {
+		renderEngineFindings(cmd, rep)
+	}
+	return exitErr(rep.ExitCode, "doctor findings present")
 }
 
 func checkCLIDependencies() doctorCheck {

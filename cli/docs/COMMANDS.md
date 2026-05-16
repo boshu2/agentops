@@ -339,15 +339,116 @@ ao dedup [flags]
 Run health checks on your AgentOps installation.
 
 ```
-ao doctor [flags]
+ao doctor [command]
 ```
 
 **Flags:**
 
 ```
+      --dry-run           With --fix: print the plan, change nothing
+      --explain string    Expand a single finding by id
+      --fix               Apply fixers for findings (routes through mutate())
   -h, --help              help for doctor
       --json              Output results as JSON
+      --online            Enable network probes (default: offline-only)
+      --only strings      Scope to a subset of detectors or subsystems
       --product-runtime   Fail closed on daemon product runtime readiness checks
+      --quick             Run only fast-path detectors (< 200ms)
+      --robot             Alias for --json with structured wrapper
+      --robot-triage      Emit the mega-command triage JSON
+      --severity string   Minimum severity to emit (P0|P1|P2|P3) (default "P3")
+      --since string      Diff findings against an earlier run
+      --skip strings      Inverse of --only
+```
+
+**Subcommands:**
+
+#### `ao doctor capabilities`
+
+Print the machine-readable doctor contract (JSON)
+
+```
+ao doctor capabilities [flags]
+```
+
+#### `ao doctor diff`
+
+Show what --fix would change (read-only)
+
+```
+ao doctor diff [flags]
+```
+
+#### `ao doctor explain`
+
+Expand a single finding with full evidence
+
+```
+ao doctor explain <finding-id> [flags]
+```
+
+#### `ao doctor fix`
+
+Run detectors, then apply fixers (backs up before every mutation)
+
+```
+ao doctor fix [flags]
+```
+
+#### `ao doctor gc`
+
+Prune old runs (requires --yes and --before <date>)
+
+```
+ao doctor gc [flags]
+```
+
+**Flags:**
+
+```
+      --before string   Prune runs started before this date (YYYY-MM-DD)
+  -h, --help            help for gc
+      --yes             Confirm pruning (required)
+```
+
+#### `ao doctor health`
+
+Cheap one-line liveness summary
+
+```
+ao doctor health [flags]
+```
+
+#### `ao doctor ls`
+
+List runs in .doctor/runs/
+
+```
+ao doctor ls [flags]
+```
+
+#### `ao doctor robot-docs`
+
+Print the paste-ready agent handbook (Markdown)
+
+```
+ao doctor robot-docs [flags]
+```
+
+#### `ao doctor undo`
+
+Restore from .doctor/runs/<run-id>/backups/ (run-id may be 'latest')
+
+```
+ao doctor undo <run-id> [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Print the restore plan; do not execute
+  -h, --help      help for undo
+      --strict    Refuse if any backup is missing or hash-mismatched (default true)
 ```
 
 ---
