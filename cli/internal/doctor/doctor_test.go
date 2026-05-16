@@ -302,6 +302,43 @@ func TestFix_NoDetectorsSelectedNoFindings(t *testing.T) {
 	}
 }
 
+// TestFix_DryRunExitsZeroWithFindings verifies that `--fix --dry-run` exits 0
+// per the doctor CLI contract even when corrupt state would yield findings,
+// and that the dry-run touches nothing on disk.
+func TestFix_DryRunExitsZeroWithFindings(t *testing.T) {
+	env, repo := daemonTestEnv(t)
+	ledger := daemonLedgerPath(env)
+	corrupt := validLedgerLine("evt-0001") + "\n{bad json\n"
+	if err := os.WriteFile(ledger, []byte(corrupt), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	rep, err := Fix(Options{
+		RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), ToolVersion: "2.0.0",
+		Only:   []string{"fm-daemon-corrupt-ledger-line"},
+		DryRun: true,
+	})
+	if err != nil {
+		t.Fatalf("Fix dry-run failed: %v", err)
+	}
+	if len(rep.Findings) == 0 {
+		t.Fatal("expected the corrupt ledger to produce a finding")
+	}
+	if rep.ExitCode != ExitHealthy {
+		t.Errorf("dry-run exit_code = %d, want %d (ExitHealthy)", rep.ExitCode, ExitHealthy)
+	}
+	if !rep.OK {
+		t.Error("dry-run ok = false, want true")
+	}
+	got, err := os.ReadFile(ledger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != corrupt {
+		t.Errorf("dry-run modified the ledger:\n got %q\nwant %q", got, corrupt)
+	}
+}
+
 // TestGC_RefusesWithoutGates verifies gc never deletes silently.
 func TestGC_RefusesWithoutGates(t *testing.T) {
 	repo := t.TempDir()
