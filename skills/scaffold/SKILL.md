@@ -40,6 +40,7 @@ Generate real files, run real commands, verify real output. Every invocation pro
 | **Project** | `/scaffold <language> <name>` | Full project directory with build, test, lint |
 | **Component** | `/scaffold component <type> <name>` | New module/package added to existing project |
 | **CI** | `/scaffold ci <platform>` | CI/CD pipeline configuration |
+| **Domain-Slice** | `/scaffold domain <name>` | Domain-slice manifest for a scoped `ao rpi phased --domain` run |
 
 ## Step 0: Determine Mode
 

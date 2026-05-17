@@ -90,6 +90,27 @@ Catalog:
 
 - [`references/INDEX.md`](references/INDEX.md) — full corpus index
 
+## Domain as a scoped RPI loop (runtime)
+
+The `Slice` primitive above has a runtime counterpart: a **domain slice** can
+be run as a scoped Research-Plan-Implement loop. A *domain* is a named vertical
+slice with an explicit boundary contract — a manifest at
+`docs/domains/<name>/manifest.yaml` listing the Primitives the slice may touch,
+its goal, and its decision gate.
+
+```bash
+ao rpi phased --domain <name> "<goal>"        # run RPI scoped to a domain slice
+ao rpi phased --scaffold-domain <name>         # write a manifest template, then exit
+ao rpi phased --scaffold-domain <name> --force # overwrite an existing manifest
+```
+
+`--domain` loads `docs/domains/<name>/manifest.yaml` and carries its boundaries
+into every phase prompt, so the loop stays inside the slice. `--scaffold-domain`
+writes the manifest template and exits without running RPI — use it to bootstrap
+a new slice, then fill in the boundary before running. The manifest schema and
+resolution rules are in `docs/adr/ADR-0004`; the `/scaffold` skill documents the
+bootstrap step.
+
 ## What's NOT here
 
 - Procedural how-tos (those live in other skills)
